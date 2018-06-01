@@ -119,8 +119,8 @@
          (attr (hidden-seg-reg-layout-slice :attr hidden))
          (d/b (data-segment-descriptor-attributes-layout-slice :d/b attr))
          (e (data-segment-descriptor-attributes-layout-slice :e attr))
-         (lower (if e (1+ limit) 0))
-         (upper (if e (if d/b #xffffffff #xffff) limit)))
+         (lower (if (= e 1) (1+ limit) 0))
+         (upper (if (= e 1) (if (= d/b 1) #xffffffff #xffff) limit)))
       (mv (n32 base) lower upper)))
   :inline t
   ///

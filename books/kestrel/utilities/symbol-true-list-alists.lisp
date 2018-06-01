@@ -1,6 +1,6 @@
-; Alists from Symbols to NIL-Terminated Lists
+; Alists from Symbols to True Lists
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,8 +18,7 @@
   :key (symbolp x)
   :val (true-listp x)
   :parents (kestrel-utilities alists)
-  :short "Recognize @('nil')-terminated alists
-          from symbols to @('nil')-terminated lists."
+  :short "Recognize true alists from symbols to true lists."
   :keyp-of-nil t
   :valp-of-nil t
   :true-listp t)

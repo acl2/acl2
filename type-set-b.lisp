@@ -3774,13 +3774,19 @@
 ; subfunctions of assume-true-false make the assumption that they extend the
 ; type-alist; see infect-new-type-alist-entries.
 
-; It seems worth checking that we're not losing a contradiction, so we check
-; that in an assertion.  We might drop this assertion in the future.
+; It is tempting to check that we're not losing a contradiction, and at one
+; time we made check such a check by asserting:
 
-             (assert$ (equal (ts= (cadar type-alist) *ts-nil*)
-                             (equal equiv-call *nil*))
-                      (cons *nil-fn-ts-entry*
-                            acc)))
+;   (equal (ts= (cadar type-alist) *ts-nil*)
+;          (equal equiv-call *nil*))
+
+; But in fact, once we started using type-alist-reducible-entry to strengthen
+; assume-true-false(-bc), we found that this check could fail!  This isn't
+; surprising: a contradiction could be logically present in a type-alist, but
+; not exposed until simplifying it.  We simply add *nil-fn-ts-entry* even in
+; that case.
+
+             (cons *nil-fn-ts-entry* acc))
             (t
              (cons (list* equiv-call
                           (cadar type-alist)
@@ -6051,7 +6057,7 @@
         (t (bind-free-vars-to-unbound-free-vars
             (cdr vars)
             (cons (cons (car vars)
-                        (packn (list "UNBOUND-FREE-" (car vars))))
+                        (packn (list 'unbound-free- (car vars))))
                   alist)))))
 
 ; The Accumulated Persistence Essay
@@ -9457,14 +9463,73 @@
                                  (mv-atf not-flg nil t
                                          nil type-alist
                                          xttree x-ts-ttree))
-                                ((ts-disjointp x-ts *ts-nil*)
-                                 (mv (er hard 'assume-true-false-if
-                                         "We did not believe that this could ~
-                                          happen.  Please send the authors of ~
-                                          ACL2 a replayable transcript of ~
-                                          this problem if possible, so that ~
-                                          we can see what went wrong.")
-                                     nil nil nil nil))
+
+; Here, we formerly checked (ts-disjointp x-ts *ts-nil*) and caused a hard
+; error if that was true, suggesting to contact the implementors with an
+; example.  However, the example below shows that this case can occur.  We are
+; in an inconsistent context, and we simply ignore the problematic entry
+; accessed by look-in-type-alist, starting after Version_8.0.
+
+; We have provoked this case, where (ts-disjointp x-ts *ts-nil*), with the
+; following example.  It is derived from an example sent to us by Dave Greve,
+; and the defun below is essentially his, included with his permission.
+; Below we say more about invoking the error in Version_8.0.
+
+;   (include-book "arithmetic-5/top" :dir :system)
+;   
+;   (defun find-next (var best list)
+;     (if (not (consp list))
+;         best
+;       (let ((new (car list)))
+;         (let ((best (if (< best var)
+;                         best (if (< new var) new var))))
+;           (if (and (< new var) (<= best new))
+;               (find-next var new (cdr list))
+;             (find-next var best (cdr list)))))))
+;   
+;   (thm (implies (and (rationalp (find-next var list1 list2))
+;                      (<= var 0))
+;                 xxx))
+
+; To get a sense of what went wrong, you can do the following in Version 8.0
+; before evaluating the forms (or at least, the THM) above.
+
+;   (value :q)
+;   (setq *hard-error-is-error* t)
+;   (set-debugger-enable t)
+;   (lp)
+
+; When in the CCL debugger, submit these expressions.
+
+;   (:form 2)
+;   (butlast * 5)
+
+; This provides a call of assume-true-false-if that leads to the error.  By
+; eliminating some distracting entries from the type-alist, we obtain this
+; call, which leads to the error even when you start up ACL2 and provide no
+; initial events.
+
+;   (assume-true-false-if
+;    nil
+;    '(if (acl2-numberp var)
+;         (if (acl2-numberp (car list2))
+;             (< (car list2) var)
+;           'nil)
+;       (if (acl2-numberp (car list2))
+;           (< (car list2) '0)
+;         'nil))
+;    nil nil nil
+;    '(((car list2) -128)
+;      ((if (acl2-numberp var)
+;           (if (acl2-numberp (car list2))
+;               (< (car list2) var)
+;             'nil)
+;         (if (acl2-numberp (car list2))
+;             (< (car list2) '0)
+;           'nil))
+;       -129))
+;    nil (ens state) (w state) nil nil nil)
+
                                 (t
                                  (mv-atf not-flg nil t
                                          nil
@@ -9488,14 +9553,14 @@
                                  (mv-atf not-flg t nil
                                          type-alist nil
                                          xttree x-ts-ttree))
-                                ((ts= x-ts *ts-nil*)
-                                 (mv (er hard 'assume-true-false-if
-                                         "We did not believe that this could ~
-                                          happen.  Please send the authors of ~
-                                          ACL2 a replayable transcript of ~
-                                          this problem if possible, so that ~
-                                          we can see what went wrong.")
-                                     nil nil nil nil))
+
+; Here, we formerly checked (ts= x-ts *ts-nil*) and caused a hard error if that
+; was true, suggesting to contact the implementors with an example.  However,
+; we have seen a case like this arise; see the example above, under the
+; preceding call of look-in-type-alist.  We believe that this odd case
+; indicates an inconsistent context, so we simply ignore the problematic entry
+; accessed by look-in-type-alist.
+
                                 (t
                                  (mv-atf not-flg t nil
                                          (extend-type-alist-simple
@@ -11125,19 +11190,165 @@
                 pot-lst pt
                 ts-backchain-limit))
 
+(defstub assume-true-false-aggressive-p () t)
+(defattach assume-true-false-aggressive-p constant-nil-function-arity-0)
+
+(defun top-level-if-reduce-rec (test term not-flg)
+
+; See top-level-if-reduce.  We return (mv changedp reduced-term), where if
+; changedp is nil, then reduced-term is EQ to term.
+
+  (cond ((ffn-symb-p term 'if)
+         (cond ((equal test (fargn term 1))
+                (mv t (if not-flg (fargn term 3) (fargn term 2))))
+               ((and (ffn-symb-p (fargn term 1) 'not)
+                     (equal test (fargn (fargn term 1) 1)))
+                (mv t (if not-flg (fargn term 2) (fargn term 3))))
+               (t (mv-let (changedp-tbr tbr)
+                    (top-level-if-reduce-rec test (fargn term 2) not-flg)
+                    (mv-let (changedp-fbr fbr)
+                      (top-level-if-reduce-rec test (fargn term 3) not-flg)
+                      (cond ((or changedp-tbr changedp-fbr)
+                             (mv t
+                                 (fcons-term* 'if (fargn term 1) tbr fbr)))
+                            (t (mv nil term))))))))
+        (t (mv nil term))))
+
+(defun top-level-if-reduce (test term not-flg)
+
+; Reduce top-level subterms of term under the assumption that test is true if
+; not-flg is nil, or under the assumption that test is false if not-flg is
+; true.  (Here, "top-level" is in the sense of the if-then-else structure: we
+; continue the search only through true and false branches of IF calls.)
+; Specifically: we reduce each top-level subterm (if test tbr fbr) to tbr if
+; not-flg is false, else to fbr; and we reduce each top-level subterm (if (not
+; test) tbr fbr) to fbr if not-flg is true, else to tbr.
+
+; For efficiency, it may be a good idea first to call (top-level-if-p test
+; term) to determine whether there is any such opportunity for reduction,
+; before doing the more elaborate term walk of top-level-if-reduce-rec.
+
+  (mv-let (changedp val)
+    (top-level-if-reduce-rec test term not-flg)
+    (declare (ignore changedp))
+    val))
+
+(defun top-level-if-p (test term)
+
+; Return true when either test or its negation occurs as a top-level IF test in
+; term.
+
+  (cond ((ffn-symb-p term 'if)
+         (or (equal test (fargn term 1))
+             (and (ffn-symb-p (fargn term 1) 'not)
+                  (equal test (fargn (fargn term 1) 1)))
+             (top-level-if-p test (fargn term 2))
+             (top-level-if-p test (fargn term 3))))
+        (t nil)))
+
+(defun type-alist-reducible-entries (term type-alist bound)
+
+; Return an entry (term2 ts . ttree) in type-alist for which term or (not term)
+; is a top-level test of term2.  Or, return nil if no such entry is found.
+; Bound is a natural number or nil; we look for up to bound-many entries,
+; except that nil represents that there is no bound.
+
+  (cond
+   ((or (endp type-alist)
+        (and bound (zp bound)))
+    nil)
+   (t
+    (let* ((rest-type-alist (cdr type-alist))
+           (bound-1 (and bound (1- bound)))
+           (entry (car type-alist))
+           (term2 (car entry)))
+      (cond
+       ((top-level-if-p term term2)
+        (cons entry
+              (type-alist-reducible-entries term rest-type-alist bound-1)))
+       (t (type-alist-reducible-entries term rest-type-alist bound-1)))))))
+
+(defun assume-true-false-aggressive-1 (entries tta fta x xttree wrld ignore0)
+  (cond
+   ((endp entries)
+    (mv nil nil tta fta nil))
+   (t
+    (let* ((entry (car entries))
+           (term (car entry))
+           (ts (cadr entry))
+           (new-ttree (cons-tag-trees xttree (cddr entry)))
+           (new-tta (if (eq ignore0 :tta)
+                        tta
+                      (extend-type-alist (top-level-if-reduce x term nil)
+                                         ts new-ttree tta wrld)))
+           (new-fta (if (eq ignore0 :fta)
+                        fta
+                      (extend-type-alist (top-level-if-reduce x term t)
+                                         ts new-ttree fta wrld))))
+      (assume-true-false-aggressive-1
+       (cdr entries) new-tta new-fta x xttree wrld ignore0)))))
+
+(defun assume-true-false-aggressive (x xttree force-flg dwp type-alist
+                                       ens w pot-lst pt
+                                       ignore0 ts-backchain-limit
+                                       bound)
+  (mv-let
+    (mbt mbf tta fta ttree)
+    (assume-true-false-rec x xttree force-flg dwp type-alist
+                           nil ; ancestors
+                           ens w pot-lst pt ignore0
+                           ts-backchain-limit)
+    (cond
+     ((or mbt mbf)
+      (mv mbt mbf tta fta ttree))
+     (t
+      (let ((entries
+             (type-alist-reducible-entries x
+                                           type-alist
+                                           (and (natp bound) bound))))
+        (assume-true-false-aggressive-1
+         entries
+
+; Each member of entries subsumes some member of the given type-alist.  It is
+; tempting not to bother removing them from tta or fta.  But we have seen a
+; case where without these removals, the type-alist exploded to more than
+; 1,000,000 entries, ultimately causing a stack overflow with top-level-if-p,
+; when assume-true-false-aggressive-p was given attachment
+; constant-nil-function-arity-0.
+
+         (set-difference-equal tta entries)
+         (set-difference-equal fta entries)
+         x xttree w ignore0))))))
+
 (defun assume-true-false (x xttree force-flg dwp type-alist ens w pot-lst pt
                             ignore0)
-  (assume-true-false-rec x xttree force-flg dwp type-alist
-                         nil ; ancestors
-                         ens w pot-lst pt ignore0
-                         (backchain-limit w :ts)))
+  (let ((bound (assume-true-false-aggressive-p)))
+    (cond
+     (bound
+      (assume-true-false-aggressive x xttree force-flg dwp type-alist
+                                    ens w pot-lst pt ignore0
+                                    (backchain-limit w :ts)
+                                    bound))
+     (t
+      (assume-true-false-rec x xttree force-flg dwp type-alist
+                             nil ; ancestors
+                             ens w pot-lst pt ignore0
+                             (backchain-limit w :ts))))))
 
 (defun assume-true-false-bc (x xttree force-flg dwp type-alist ens w pot-lst pt
                                ignore0 ts-backchain-limit)
-  (assume-true-false-rec x xttree force-flg dwp type-alist
-                         nil ; ancestors
-                         ens w pot-lst pt ignore0
-                         ts-backchain-limit))
+  (let ((bound (assume-true-false-aggressive-p)))
+    (cond
+     (bound
+      (assume-true-false-aggressive x xttree force-flg dwp type-alist
+                                    ens w pot-lst pt ignore0
+                                    ts-backchain-limit
+                                    bound))
+     (t
+      (assume-true-false-rec x xttree force-flg dwp type-alist
+                             nil ; ancestors
+                             ens w pot-lst pt ignore0
+                             ts-backchain-limit)))))
 
 (defun ok-to-force-ens (ens)
   (and (enabled-numep *force-xnume* ens)

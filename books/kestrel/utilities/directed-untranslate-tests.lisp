@@ -39,7 +39,7 @@
                         (CONS A (CONS B 'NIL))
                         Y))
                (sterm '(< Y (BAR (CONS A (CONS B 'NIL))))))
-           (lambdafy tterm sterm))
+           (lambdafy tterm sterm nil (w state)))
          '((LAMBDA (X Y) (< Y (BAR X)))
            (CONS A (CONS B 'NIL))
            Y)))
@@ -154,7 +154,7 @@
                         D C))
                (sterm '(< (H (CONS C (CONS D 'NIL)))
                           (BAR (CONS A (CONS B 'NIL))))))
-           (lambdafy tterm sterm))
+           (lambdafy tterm sterm nil (w state)))
          '((LAMBDA (X D C)
                    ((LAMBDA (Y X) (< Y (BAR X)))
                     (H (CONS C (CONS D 'NIL)))
@@ -395,7 +395,7 @@
                         D C))
                (sterm '(< (H (CONS C (CONS D 'NIL)))
                           (MESS A))))
-           (lambdafy tterm sterm))
+           (lambdafy tterm sterm nil (w state)))
          '((LAMBDA (X D C)
                    ((LAMBDA (Y X) (< Y (MESS X)))
                     (H (CONS C (CONS D 'NIL)))
@@ -675,7 +675,7 @@
                         D C))
                (sterm '(< (H (CONS C (CONS D 'NIL)))
                           (MESS A))))
-           (lambdafy tterm sterm))
+           (lambdafy tterm sterm nil (w state)))
          '((LAMBDA (X D C)
                    ((LAMBDA (Y X)
                             ((LAMBDA (Z Y) (< Y Z)) (MESS X) Y))
@@ -986,7 +986,7 @@
                         (CONS A (CONS B 'NIL))
                         A))
                (sterm '(< A (BAR (H (CONS A (CONS B 'NIL)))))))
-           (lambdafy tterm sterm))
+           (lambdafy tterm sterm nil (w state)))
          '((LAMBDA (X A)
                    ((LAMBDA (X A) (< A (BAR X)))
                     (H X)
@@ -1249,7 +1249,9 @@
  (equal
   (lambdafy '((LAMBDA (Y1) (CONS (CDR Y1) Y1))
               (CONS X Y))
-            '(CONS Y (CONS X Y)))
+            '(CONS Y (CONS X Y))
+            nil
+            (w state))
   '((LAMBDA (Y1 Y) (CONS Y Y1))
     (CONS X Y)
     Y)))
@@ -1260,7 +1262,9 @@
  (equal
   (lambdafy '((LAMBDA (Y) (CONS (CDR Y) Y))
               (CONS X Y))
-            '(CONS Y (CONS X Y)))
+            '(CONS Y (CONS X Y))
+            nil
+            (w state))
 ; Formerly ((LAMBDA (Y) (CONS Y Y)) (CONS X Y))
   '((LAMBDA (Y1 Y) (CONS Y Y1))
     (CONS X Y)
@@ -1276,7 +1280,7 @@
  (let ((tterm '((LAMBDA (Y) (CONS Y Y))
                 (CONS X Y)))
        (sterm '(CONS (CONS X Y) (CONS X Y))))
-   (equal (lambdafy tterm sterm)
+   (equal (lambdafy tterm sterm nil (w state))
           tterm)))
 
 ; But imagine that we alpha-convert tterm in this example, replacing y by y1.
@@ -1289,7 +1293,7 @@
  (let ((tterm '((LAMBDA (Y1) (CONS Y1 Y1))
                 (CONS X Y)))
        (sterm '(CONS (CONS X Y) (CONS X Y))))
-   (equal (lambdafy tterm sterm)
+   (equal (lambdafy tterm sterm nil (w state))
           tterm)))
 
 ; So for purposes of lambdafy, we will initially rename top-level lambda
@@ -1430,10 +1434,6 @@
           (directed-untranslate uterm tterm sterm nil nil (w state)))
         '(mv (first x) y)))
 
-; !! Add an assert! for the following.  Also consider changing du-untranslate
-; to try to eliminate every (let () ...), or otherwise avoid that when the
-; following example is run before handling mv-let.
-
 (defund foo (x y) (mv x y))
 (defund foo2 (x y) (mv x y))
 (defund bar (x y) (mv x y))
@@ -1445,8 +1445,9 @@
                                      (mv-nth '0 mv)
                                      (mv-nth '1 mv)))
                        (foo x y)))
-              (sterm '(bar2 (mv-nth 0 (foo2 x y))
-                            (mv-nth 1 (foo2 x y)))))
+              (sterm '(bar2 (mv-nth '0 (foo2 x y))
+                            (mv-nth '1 (foo2 x y)))))
+; !! Try '(nil nil) for exec-p.
           (directed-untranslate uterm tterm sterm nil nil (w state)))
         '(mv-let (x y) (foo2 x y) (bar2 x y))))
 
@@ -1481,3 +1482,151 @@
 )
 
 ; ------------------------------
+
+; Example 8: Handling declare forms under LET, LET*, and MV-LET
+
+; Handling of LET with type declaration form.
+
+(local-test
+
+(assert!
+ (equal (let ((uterm '(let ((y (+ x x)))
+                        (declare (type integer y))
+                        (+ 0 y)))
+              (tterm '((lambda (y)
+                         (return-last 'progn
+                                      (check-dcl-guardian (integerp y)
+                                                          '(integerp y))
+                                      (binary-+ '0 y)))
+                       (binary-+ x x)))
+              (sterm '(binary-+ x x))
+              (iff-flg nil)
+              (stobjs-out '(nil))
+              (wrld (w state)))
+          (directed-untranslate
+           uterm tterm sterm iff-flg stobjs-out wrld))
+        '(let ((y (+ x x))) y)))
+
+; Handling of LET* with type declaration form.
+
+(assert!
+ (equal (let ((uterm '(let* ((y (* (first x) (first x)))
+                             (y2 (+ y y)))
+                        (declare (type integer y y2))
+                        (+ 0 y2)))
+              (tterm '((lambda
+                         (y)
+                         (return-last
+                          'progn
+                          (check-dcl-guardian (integerp y)
+                                              '(integerp y))
+                          ((lambda (y2)
+                             (return-last
+                              'progn
+                              (check-dcl-guardian (integerp y2)
+                                                  '(integerp y2))
+                              (binary-+ '0 y2)))
+                           (binary-+ y y))))
+                       (binary-* (car x) (car x))))
+              (sterm '(binary-+ (binary-* (car x) (car x))
+                                (binary-* (car x) (car x))))
+              (iff-flg nil)
+              (stobjs-out '(nil))
+              (wrld (w state)))
+          (directed-untranslate
+           uterm tterm sterm iff-flg stobjs-out wrld))
+        '(let* ((y (* (first x) (first x)))
+                (y2 (+ y y)))
+           y2)))
+
+; Handling of MV-LET with type declaration forms.
+
+(defund foo (x y) (mv x y))
+(defund foo2 (x y) (mv x y))
+(defund bar (x y) (mv x y))
+(defund bar2 (x y) (mv x y))
+
+(assert!
+ (equal (let ((uterm '(mv-let (x y)
+                        (foo x y)
+                        (declare (type integer x y))
+                        (bar x y)))
+              (tterm '((lambda
+                         (mv)
+                         ((lambda (x y)
+                            (return-last
+                             'progn
+                             (return-last
+                              'progn
+                              (check-dcl-guardian (integerp x)
+                                                  '(integerp x))
+                              (check-dcl-guardian (integerp y)
+                                                  '(integerp y)))
+                             (bar x y)))
+                          (mv-nth '0 mv)
+                          (mv-nth '1 mv)))
+                       (foo x y)))
+              (sterm '(bar2 (mv-nth 0 (foo2 x y))
+                            (mv-nth 1 (foo2 x y)))))
+          (directed-untranslate uterm tterm sterm nil nil (w state)))
+        '(mv-let (x y) (foo2 x y) (bar2 x y))))
+
+; Handling of LET with ignore declaration form.
+
+(assert!
+ (equal (let ((uterm '(let ((y (first x)) (z x))
+                        (declare (ignore z))
+                        (+ y y)))
+              (tterm '((lambda (y z) (binary-+ y y))
+                       (car x)
+                       (hide x)))
+              (sterm '(binary-+ (car x) (car x))))
+          (directed-untranslate uterm tterm sterm nil nil (w state)))
+        '(let ((y (first x))) (+ y y))))
+)
+
+; ------------------------------
+
+; Example 9: Preserving invariant checked by check-du-inv when handling mv-let
+
+; This example comes from Stephen Westfold.  It failed until expand-mv-let
+; added, to its result, extra variables to the top-level binding of the MV
+; variable result.
+
+(local-test
+
+(defstub drone-choose-and-execute-plan.1 (* * *) => (mv * *))
+(defstub drones-choose-and-execute-plans.1 (* * *) => (mv * *))
+(defstub replace-dr-st (* *) => *)
+(assert!
+ (let ((uterm '(mv-let
+                 (drn-st-new coord-st-1)
+                 (drone-choose-and-execute-plan.1 plans drn-st coord-st)
+                 (mv-let (drn-sts-new coord-st-2)
+                   (drones-choose-and-execute-plans.1
+                    (rest drn-plan-pairs)
+                    (replace-dr-st drn-sts drn-st-new)
+                    coord-st-1)
+                   (mv drn-sts-new coord-st-2))))
+       (tterm '((lambda
+                  (mv drn-sts drn-plan-pairs)
+                  ((lambda
+                     (drn-st-new coord-st-1 drn-sts drn-plan-pairs)
+                     ((lambda (mv)
+                        ((lambda (drn-sts-new coord-st-2)
+                           (cons drn-sts-new (cons coord-st-2 'nil)))
+                         (mv-nth '0 mv)
+                         (mv-nth '1 mv)))
+                      (drones-choose-and-execute-plans.1
+                       (cdr drn-plan-pairs)
+                       (replace-dr-st drn-sts drn-st-new)
+                       coord-st-1)))
+                   (mv-nth '0 mv)
+                   (mv-nth '1 mv)
+                   drn-sts drn-plan-pairs))
+                (drone-choose-and-execute-plan.1 plans drn-st coord-st)
+                drn-sts drn-plan-pairs)))
+   (equal
+    (directed-untranslate uterm tterm tterm nil nil (w state))
+    uterm)))
+)

@@ -162,7 +162,7 @@
                 nil)
                (t (illegal-use-pkg hint
                                    "The hint is a list that is not ~
-                                    null-terminated."))))
+                                    nil-terminated."))))
         (t (cons (fix-use-hint-for-pkg-1 (car lst) pkg wrld hint)
                  (fix-use-hint-for-pkg-lst (car lst) pkg wrld hint)))))
 

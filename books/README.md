@@ -1,4 +1,4 @@
-Community ACL2 System and Books
+ACL2 System and Community Books
 ===============================
 
 **WARNING**: On rare occasions development versions of ACL2 may be

@@ -36,6 +36,7 @@
 (include-book "tools/flag" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "misc/hons-help" :dir :system)
+(include-book "clause-processors/join-thms" :dir :system)
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 (local (include-book "centaur/misc/alist-equiv" :dir :system))
 (local (include-book "std/lists/take" :dir :system))

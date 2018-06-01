@@ -1576,6 +1576,14 @@
   `(prog2$ (er hard? ,@args)
            ,val))
 
+(defmacro er-hard?-val? (val quiet &rest args)
+
+; We use er-hard?-val to signal an error unless quiet is true,
+
+  `(if ,quiet
+       ,val
+     (er-hard-val ,val ,@args)))
+
 (defmacro the-fixnum! (n ctx)
 
 ; See also the-half-fixnum!.
@@ -2041,11 +2049,15 @@
 
 (defun flsz (x termp j maximum state eviscp)
   #-acl2-infix (declare (ignore termp))
+  (declare (type (signed-byte 30) j maximum))
   (cond #+acl2-infix
         ((output-in-infixp state)
          (flatsize-infix x (print-base) (print-radix) termp j maximum state
                          eviscp))
-        (t (flsz1 x (print-base) (print-radix) j maximum state eviscp))))
+        (t (flsz1 x
+                  (the-fixnum (print-base))
+                  (print-radix)
+                  j maximum state eviscp))))
 
 (defun max-width (lst maximum)
   (cond ((null lst) maximum)
@@ -2475,17 +2487,143 @@
           (declare (ignore er))
           state)))))
 
+(defconst *illegal-fmt-keys*
+
+; Warning: Keep this in sync with the cases in illegal-fmt-string.
+
+  '(bad-evisc-tuple
+    bad-tilde-&v-arg
+    bad-tilde-*-arg
+    bad-tilde-@-arg
+    bad-tilde-c-arg
+    bad-tilde-n-arg
+    bad-tilde-s-arg
+    bad-tilde-t-arg-natp
+    bad-tilde-t-arg-not-natp
+    bad-tilde-_-arg
+    find-alternative-skip
+    find-alternative-start
+    find-alternative-start1-a
+    find-alternative-start1-b
+    find-alternative-stop
+    tilde-arg-points-past-string
+    unbound-tilde-arg
+    unrecognized-tilde-arg))
+
+(defun illegal-fmt-string (key)
+
+; Warning: Keep the cases below in sync with *illegal-fmt-keys*.
+
+  (declare (xargs :guard (member-eq key *illegal-fmt-keys*)))
+  (case key
+    (bad-evisc-tuple
+     "In the fmt string displayed below, the tilde directive at location ~x0 ~
+      associates character ~x1 with ~x2, which does not satisfy ~x3.~|~%~x4")
+    (bad-tilde-&v-arg
+     "The tilde directive at location ~x0 in the fmt string below uses the ~
+      variable ~x1.  That ~s2 directive requires a true list, but it was ~
+      supplied the value ~x3.~|~%~x4")
+    (bad-tilde-*-arg
+     "The tilde directive, ~~*, at location ~x0 in the fmt string below uses ~
+      the variable ~x1.  That directive requires a list of the form (\"str0\" ~
+      \"str1\" \"str2\" \"str3\" lst . alist) such that lst is a true-list ~
+      and alist satisfies ~x2, but it was supplied the value ~x3.~|~%~x4")
+    (bad-tilde-@-arg
+     "The tilde-@ directive at position ~x0 of the string below is illegal ~
+      because its variable evaluated to ~x1, which does not satisfy ~
+      ~x2.~|~%~x3")
+    (bad-tilde-c-arg
+     "The tilde-c directive at position ~x0 of the string below is illegal ~
+      because its variable evaluated to ~x1, which is not of the form (n . ~
+      width), where n and width are integers and width is nonnegative.~|~%~x2")
+    (bad-tilde-n-arg
+     "The tilde directive at location ~x0 in the fmt string below uses the ~
+      variable ~x1.  That ~s2 directive requires either an integer or a CONS ~
+      whose CAR is an integer, but it was supplied the value ~x3.~|~%~x4")
+    (bad-tilde-s-arg
+     "The tilde-~s0 directive at position ~x1 of the string below is illegal ~
+      because its variable evaluated to ~x2, which is not a symbol, a string, ~
+      or a number.~|~%~x3")
+    (bad-tilde-t-arg-natp
+     "It is illegal to tab past the value of (@ fmt-hard-right-margin), ~x0, ~
+      and hence the directive ~~t~s1 to tab to column ~x2 is illegal.  See ~
+      :DOC set-fmt-hard-right-margin.")
+    (bad-tilde-t-arg-not-natp
+     "The tilde directive at location ~x0 in the fmt string below uses the ~
+      variable ~x1.  That ~~t directive requires a natural number, but it was ~
+      supplied the value ~x2.~|~%~x3")
+    (bad-tilde-_-arg
+     "The tilde-_ directive at position ~x0 of the string below is illegal ~
+      because its variable evaluated to ~x1, which fails to be a natural ~
+      number not exceeding ~x2.~|~%~x3")
+    (find-alternative-skip
+     "While looking for the terminating bracket of a tilde alternative ~
+      directive in the string below we ran off the end of the string.~|~%~x0")
+    (find-alternative-start
+     "The tilde-# directive at ~x0 in the fmt string below must be followed ~
+      immediately by ~~[.~|~%~x1")
+    (find-alternative-start1-a
+     "The tilde-# directive ~s0 at position ~x1 of the string below ~
+      does not have enough alternative clauses.  When the terminal bracket ~
+      was reached we still needed ~#2~[~/1 more alternative~/~x3 more ~
+      alternatives~].~|~%~x4")
+    (find-alternative-start1-b
+     "While searching for the appropriate alternative clause of a tilde-# ~
+      directive in the string below, we ran off the end of the string.~|~%~x0")
+    (find-alternative-stop
+     "While looking for the end of a tilde-# directive's alternative clause ~
+      in the string below, we ran off the end of the string.~|~%~x0")
+    (tilde-arg-points-past-string
+     "The tilde directive at location ~x0 in the fmt string below requires ~
+      that we look at the character ~x1 further down in the string.  But the ~
+      string terminates at location ~x2.~|~%~x3")
+    (unbound-tilde-arg
+     "Unbound Fmt Variable.  The tilde directive at location ~x0 in the fmt ~
+      string below uses the variable ~x1.  But this variable is not bound in ~
+      the association list, ~x2, supplied with the fmt string.")
+    (unrecognized-tilde-arg
+     "The tilde directive at position ~x0 of the string below is ~
+      unrecognized.~|~%~x1")
+    (otherwise
+     (er hard 'illegal-fmt-string
+         "Implementation error in illegal-fmt-string: unknown key, ~x0."
+         key))))
+
+(defmacro illegal-fmt-msg (key &rest args)
+  (declare (xargs :guard (member-eq key *illegal-fmt-keys*)))
+
+; The final newline separates the string from a "See :DOC set-iprint" message,
+; which can be printed by fmt-abbrev1 if a value is elided during printing an
+; error message.
+
+  `(msg "Illegal Fmt Syntax.  ~@0"
+        (msg ,(illegal-fmt-string key)
+
+; If you want to be able to trace illegal-fmt-string, then change the preceding
+; s-expression to (illegal-fmt-string ',key) and the redefine functions that
+; call this macro.
+
+             ,@args)))
+
 (defun scan-past-whitespace (s i maximum)
-  (declare (type (signed-byte 30) i maximum)
-           (type string s))
+  (declare (type (unsigned-byte 29) i maximum)
+           (type string s)
+           (xargs :guard (and (<= i maximum)
+                              (<= maximum (length s)))
+                  :measure (nfix (- maximum i))
+                  :ruler-extenders :all))
   (the-fixnum
-   (cond ((< i maximum)
+   (cond ((not (mbt (and (integerp i) (integerp maximum))))
+          maximum)
+         ((< i maximum)
           (cond ((member (charf s i) '(#\Space #\Tab #\Newline))
                  (scan-past-whitespace s (+f i 1) maximum))
                 (t i)))
          (t maximum))))
 
 (defun zero-one-or-more (x)
+  (declare (xargs :guard (or (integerp x)
+                             (true-listp x))))
   (let ((n (cond ((integerp x) x)
                  (t (length x)))))
     (case n
@@ -2493,50 +2631,80 @@
           (1 1)
           (otherwise 2))))
 
-(defun find-alternative-skip (s i maximum)
+(defun find-alternative-skip (s i maximum quiet)
 
-; This function finds the first character after a list of alternatives.  i is
+; This function finds the first position after a list of alternatives.  i is
 ; the value of find-alternative-stop, i.e., it points to the ~ in the ~/ or ~]
 ; that closed the alternative used.
 
 ; Suppose s is "~#7~[ab~/cd~/ef~]acl2".
 ;               01234567890123456789
 ; If i is 11, the answer is 17.
-;
 
-  (declare (type (signed-byte 30) i maximum)
-           (type string s))
+; In case of failure, this function logically returns (1+ maximum), but if
+; quiet is nil then it causes a hard error.
+
+  (declare (type (unsigned-byte 29) i maximum)
+           (type string s)
+           (xargs :guard (and (<= maximum (length s))
+                              (< (length s) (fixnum-bound))
+                              (<= i maximum))
+                  :measure (nfix (- maximum i))
+                  :ruler-extenders :lambdas))
   (the-fixnum
-   (cond ((< i maximum)
+   (cond ((and (mbt (and (integerp i) (integerp maximum)))
+               (< (1+f i) maximum))
           (let ((char-s-i (charf s i)))
             (declare (type character char-s-i))
             (case char-s-i
               (#\~
-               (let ((char-s-1+i (charf s (1+f i))))
-                 (declare (type character char-s-1+i))
+               (let ((i+2 (+f 2 i))
+                     (char-s-1+i (charf s (1+f i))))
+                 (declare (type character char-s-1+i)
+                          (type (unsigned-byte 29) i+2))
                  (case char-s-1+i
-                   (#\] (+f 2 i))
-                   (#\[ (find-alternative-skip
-                         s
-                         (find-alternative-skip s (+f 2 i)
-                                                maximum)
-                         maximum))
-                   (otherwise (find-alternative-skip
-                               s (+f 2 i) maximum)))))
-              (otherwise
-               (find-alternative-skip s (+f 1 i) maximum)))))
-         (t (er-hard-val 0 'find-alternative-skip
-                "Illegal Fmt Syntax -  While looking for the terminating ~
-                bracket of a tilde alternative directive in the string ~
-                below we ran off the end of the string.~|~%~x0"
-                s)))))
+                   (#\] i+2)
+                   (#\[ (let ((new-i
+                               (find-alternative-skip s i+2 maximum quiet)))
+                          (declare (type (unsigned-byte 29) new-i))
+                          (cond
+                           ((and (mbt (and (integerp new-i)
+                                           (< i new-i)))
+                                 (not (eql new-i (1+f maximum))))
+                            (find-alternative-skip s new-i maximum quiet))
+                           (t
+                            (1+f maximum)))))
+                   (otherwise (find-alternative-skip s i+2 maximum quiet)))))
+              (otherwise (find-alternative-skip s (+f 1 i) maximum quiet)))))
+         (t (er-hard?-val?
+             (1+f maximum) quiet 'find-alternative-skip
+             "~@0"
+             (illegal-fmt-msg find-alternative-skip s))))))
 
-(defun find-alternative-start1 (x s i maximum)
-  (declare (type (signed-byte 30) x i maximum)
-           (type string s))
+(defun find-alternative-start1 (x s i maximum quiet)
+
+; This function recurs on x in support of find-alternative-start.  See the
+; comment in find-alternative-start, in particular for a discussion of return
+; values in the error cases.
+
+; Suppose s is "~#7~[ab~/cd~/ef~]acl2".  The indices into s are:
+;               01234567890123456789
+; This function is supposed to be called with i pointing to the character
+; immediately following "~[", which is 5 in this example.
+
+  (declare (type (unsigned-byte 29) x i maximum)
+           (type string s)
+           (xargs :guard (and (<= maximum (length s))
+                              (< (length s) (fixnum-bound))
+                              (<= i maximum))
+                  :measure (nfix (- maximum i))
+                  :ruler-extenders :lambdas))
   (the-fixnum
    (cond ((= x 0) i)
-         ((< i maximum)
+         ((and (mbt (and (natp x)
+                         (integerp i)
+                         (integerp maximum)))
+               (< (1+f i) maximum))
           (let ((char-s-i (charf s i)))
             (declare (type character char-s-i))
             (case char-s-i
@@ -2545,90 +2713,127 @@
                  (declare (type character char-s-1+-i))
                  (case char-s-1+-i
                    (#\/ (find-alternative-start1
-                         (1-f x) s (+f 2 i)
-                         maximum))
-                   (#\] (er-hard-val 0 'find-alternative-start1
-                            "Illegal Fmt Syntax -- The tilde directive ~
-                             terminating at position ~x0 of the string below ~
-                             does not have enough alternative clauses.  When ~
-                             the terminal bracket was reached we still needed ~
-                             ~#1~[~/1 more alternative~/~x2 more ~
-                             alternatives~].~|~%~x3"
-                            i
-                            (zero-one-or-more x)
-                            x
-                            s))
-                   (#\[ (find-alternative-start1
-                         x s
-                         (find-alternative-skip s (+f 2 i) maximum)
-                         maximum))
+                         (1-f x) s (+f 2 i) maximum quiet))
+                   (#\] (er-hard?-val?
+                         (-f i) quiet 'find-alternative-start1
+                         "~@0"
+                         (illegal-fmt-msg find-alternative-start1-a
+                                          "terminating"
+                                          i
+                                          (zero-one-or-more x)
+                                          x
+                                          s)))
+                   (#\[ (let ((k (find-alternative-skip s (+f 2 i) maximum
+                                                        quiet)))
+                          (declare (type (unsigned-byte 29) k))
+                          (cond
+                           ((eql k (1+f maximum)) ; error case
+                            maximum)
+                           (t (find-alternative-start1 x s k maximum quiet)))))
                    (otherwise
-                    (find-alternative-start1
-                     x s (+f 2 i) maximum)))))
+                    (find-alternative-start1 x s (+f 2 i) maximum quiet)))))
               (otherwise
-               (find-alternative-start1 x s (+f 1 i)
-                                        maximum)))))
-         (t (er-hard-val 0 'find-alternative-start1
-                "Illegal Fmt Syntax -- While searching for the appropriate ~
-                alternative clause of a tilde alternative directive in the ~
-                string below, we ran off the end of the string.~|~%~x0"
-                s)))))
+               (find-alternative-start1 x s (+f 1 i) maximum quiet)))))
+         (t (er-hard?-val?
+             (-f maximum) quiet 'find-alternative-start1
+             "~@0"
+             (illegal-fmt-msg find-alternative-start1-b s))))))
 
 (defun fmt-char (s i j maximum err-flg)
-  (declare (type (signed-byte 30) i maximum)
+  (declare (type (unsigned-byte 29) i maximum)
 
 ; We only increment i by a small amount, j.
 
            (type (integer 0 100) j)
-           (type string s))
+           (type string s)
+           (xargs :guard (and (<= maximum (length s)) ; typically, =
+                              (<= (+ i j) maximum)
+                              (or (null err-flg)
+				  (not (= (+ i j) maximum))))))
   (the character
-       (cond ((< (+f i j) maximum) (charf s (+f i j)))
+       (cond ((< (+f i j) maximum)
+
+; In spite of the guard, we do the inexpensive runtime check above since we may
+; call fmt-char under a :program mode function, e.g., fmt.
+
+              (charf s (+f i j)))
              (t
               (prog2$ ; return an arbitrary character
-               (cond (err-flg
-                      (er hard 'fmt-char
-                          "Illegal Fmt Syntax.  The tilde directive at ~
-                           location ~x0 in the fmt string below requires that ~
-                           we look at the character ~x1 further down in the ~
-                           string.  But the string terminates at location ~
-                           ~x2.~|~%~x3"
-                          i j maximum s))
-                     (t nil))
+               (cond
+                (err-flg
+
+; This calculation is a bit ugly.  We are making it in April, 2018, after many
+; years of an error message for ~X01 (or ~P34, etc. -- any of ~X, ~Y, ~P, or
+; ~Q) stating that the tilde directive starts at location n where n-1 should be
+; reported -- in which case, we need to look j+1 = 3 further down the string
+; from the tilde.
+
+                 (mv-let (i j)
+                   (if (or (= 0 i)
+                           (eql (charf s i) #\~)
+                           (not (eql (charf s (1-f i)) #\~))) ; never true?
+                       (mv i j)
+                     (mv (1-f i) (1+f j)))
+                   (er hard 'fmt-char
+                       "~@0"
+                       (illegal-fmt-msg
+                        tilde-arg-points-past-string
+                        i j maximum s))))
+                (t nil))
                #\a)))))
 
-(defun find-alternative-start (x s i maximum)
+(defun find-alternative-start (x s i maximum quiet)
 
 ; This function returns the index of the first character in the xth
 ; alternative, assuming i points to the ~ that begins the alternative
-; directive.  If x is not an integer, we assume it is a non-empty
-; list.  If its length is 1, pick the 0th alternative.  Otherwise,
-; pick the 1st.  This means we can test on a list to get a "plural" test.
+; directive.  If x is not an integer, we assume it is a non-empty list.  If its
+; length is 1, pick the 0th alternative.  Otherwise, pick the 1st.  This means
+; we can test on a list to get a "plural" test.
 
-; Suppose s is "~#7~[ab~/cd~/ef~]acl2".  The indices into s are
+; Suppose s is "~#7~[ab~/cd~/ef~]acl2".  The indices into s are:
 ;               01234567890123456789
-; This function is supposed to be called with i=0.  Suppose register
-; 7 contains a 1.  That's the value of x.  This function will return
-; 9, the index of the beginning of alternative x.
+; This function is supposed to be called with i equal to the position of #\~ in
+; "~#", which in this case is 0.  Suppose character #\7 is associated with 1.
+; That's the value of x.  This function will return 9, the index of the
+; beginning of alternative x.
 
-  (declare (type (signed-byte 30) i maximum)
-           (type string s))
+; In the normal case, the index returned is strictly less than maximum-1.
+; There are three error cases, where below, i is a positive integer.
+
+; (- i)       A "~]" was reached before there were enough alternatives, and i
+;             is the index of that "~".
+;             [illegal-fmt-string: find-alternative-start1-a]
+
+; -maximum    The indicated alternative was never reached.
+;             [illegal-fmt-string: find-alternative-start1-b]
+
+; maximum     A "~]" was not reached.
+;             [illegal-fmt-string: find-alternative-skip]
+
+; maximum+1   The "~[" was missing after the initial "~#c".
+;             [illegal-fmt-string: find-alternative-start]
+
+  (declare (type (unsigned-byte 29) i maximum)
+           (type string s)
+           (xargs :guard (and (<= maximum (length s))
+                              (< (length s) (fixnum-bound))
+                              (< (+ i 4) maximum))))
   (the-fixnum
-   (let ((x (cond ((integerp x) (the-fixnum! x 'find-alternative-start))
+   (let ((x (cond ((natp x) (the-fixnum! x 'find-alternative-start))
                   ((and (consp x)
                         (atom (cdr x)))
                    0)
                   (t 1))))
-     (declare (type (signed-byte 30) x))
+     (declare (type (unsigned-byte 29) x))
      (cond ((not (and (eql (the character (fmt-char s i 3 maximum t)) #\~)
                       (eql (the character (fmt-char s i 4 maximum t)) #\[)))
-            (er-hard-val 0 'find-alternative-start
-                "Illegal Fmt Syntax:  The tilde directive at ~x0 in the ~
-                fmt string below must be followed immediately by ~~[. ~
-                ~|~%~x1"
-                i s))
-           (t (find-alternative-start1 x s (+f i 5) maximum))))))
+            (er-hard?-val?
+             (1+f maximum) quiet 'find-alternative-start
+             "~@0"
+             (illegal-fmt-msg find-alternative-start i s)))
+           (t (find-alternative-start1 x s (+f i 5) maximum quiet))))))
 
-(defun find-alternative-stop (s i maximum)
+(defun find-alternative-stop (s i maximum quiet)
 
 ; This function finds the end of the alternative into which i is
 ; pointing.  i is usually the first character of the current alternative.
@@ -2638,10 +2843,17 @@
 ;               01234567890123456789
 ; and i is 9.  Then the answer is 11.
 
-  (declare (type (signed-byte 30) i maximum)
-           (type string s))
+  (declare (type (unsigned-byte 29) i maximum)
+           (type string s)
+           (xargs :guard (and (<= maximum (length s))
+                              (< (length s) (fixnum-bound))
+                              (<= i maximum))
+                  :measure (nfix (- (1+ maximum) i))
+                  :ruler-extenders :lambdas))
   (the-fixnum
-   (cond ((< i maximum)
+   (cond ((and (mbt (and (integerp i)
+                         (integerp maximum)))
+               (< (1+f i) maximum))
           (let ((char-s-i (charf s i)))
             (declare (type character char-s-i))
             (case char-s-i
@@ -2649,20 +2861,21 @@
                      (declare (type character char-s-1+i))
                      (case char-s-1+i
                        (#\/ i)
-                       (#\[ (find-alternative-stop
-                             s
-                             (find-alternative-skip s (+f 2 i) maximum)
-                             maximum))
+                       (#\[ (let ((k (find-alternative-skip s (+f 2 i)
+                                                            maximum quiet)))
+                              (declare (type (unsigned-byte 29) k))
+                              (cond
+                               ((eql k (1+f maximum)) ; error case
+                                k)
+                               (t (find-alternative-stop s k maximum quiet)))))
                        (#\] i)
                        (otherwise (find-alternative-stop
-                                   s (+f 2 i) maximum)))))
-              (otherwise (find-alternative-stop s (+f 1 i) maximum)))))
-         (t (er-hard-val 0 'find-alternative-stop
-                "Illegal Fmt Syntax -- While looking for the terminating ~
-                slash of a tilde alternative directive alternative clause ~
-                in the string below we ran off the end of the string. ~
-                ~|~%~x0"
-                s)))))
+                                   s (+f 2 i) maximum quiet)))))
+              (otherwise (find-alternative-stop s (+f 1 i) maximum quiet)))))
+         (t (er-hard?-val?
+             (1+f maximum) quiet 'find-alternative-stop
+             "~@0"
+             (illegal-fmt-msg find-alternative-stop s))))))
 
 (defun punctp (c)
   (if (member c '(#\. #\, #\: #\; #\? #\! #\) #\]))
@@ -2746,16 +2959,44 @@
                                channel state)))))))
 
 (defun fmt-var (s alist i maximum)
-  (declare (type (signed-byte 30) i maximum)
-           (type string s))
+
+; We return the value associated in alist with the character at position i+2 of
+; s.  We assume that there is a tilde character at position i or (less
+; frequently) i-1.
+
+; There is a call of assoc below that appears both in the guard and in the
+; body.  This is not normally inefficient, since normally the guard will not be
+; evaluated when under a call of a function whose symbol-class is :program or
+; :common-lisp-compliant.  We want this assoc call in the guard in order to
+; have confidence that we won't encounter the hard error below (rather than the
+; alternative, which is to omit the assoc call from the guard and use (er hard?
+; ...) instead of (er hard ...)).
+
+  (declare (type (unsigned-byte 29) i maximum)
+           (type string s)
+           (xargs :guard (and (<= maximum (length s)) ; typically, =
+                              (< (+ i 2) maximum)
+                              (character-alistp alist)
+                              (assoc (the character
+                                          (fmt-char s i 2 maximum t))
+                                     alist))))
   (let ((x (assoc (the character (fmt-char s i 2 maximum t)) alist)))
     (cond (x (cdr x))
-          (t (er hard 'fmt-var
-                 "Unbound Fmt Variable.  The tilde directive at location ~x0 ~
-                  in the fmt string below uses the variable ~x1.  But ~
-                  this variable is not bound in the association list, ~
-                  ~x2, supplied with the fmt string.~|~%~x3"
-                 i (char s (+f i 2)) alist s)))))
+          (t (let ((tilde-position
+
+; This calculation is a bit ugly.  We are making it in April, 2018, after many
+; years of an error message for ~X01 (or ~P34, etc. -- any of ~X, ~Y, ~P, or
+; ~Q) stating that the tilde directive starts at location n where n-1 should be
+; reported.
+
+                    (if (eql (charf s i) #\~)
+                        i
+                      (1-f i))))
+               (er hard 'fmt-var
+                   "~@0"
+                   (illegal-fmt-msg
+                    unbound-tilde-arg
+                    tilde-position (char s (+f i 2)) alist s)))))))
 
 (defun splat-atom (x print-base print-radix indent col channel state)
 
@@ -2918,6 +3159,7 @@
   (list alist   print-level print-length hiding-cars))
 
 (defun standard-evisc-tuplep (x)
+  (declare (xargs :guard t))
   (or (null x)
       (and (true-listp x)
            (= (length x) 4)
@@ -3054,6 +3296,13 @@
     (return-from fmt-ppr *the-live-state*)))
   (ppr2 (ppr1 x (print-base) (print-radix) width rpc state eviscp)
         col channel state eviscp))
+
+(defun msgp (x)
+  (declare (xargs :guard t))
+  (or (stringp x)
+      (and (consp x)
+           (stringp (car x))
+           (character-alistp (cdr x)))))
 
 (mutual-recursion
 
@@ -3296,18 +3545,26 @@
                      0 10 col channel state nil)))))))))))
 
 (defun fmt0 (s alist i maximum col channel state evisc-tuple)
-  (declare (type (signed-byte 30) i maximum col)
+
+; Warning: Keep this in sync with fmx-cw-msg-1-body and :DOC fmt.
+
+  (declare (xargs :guard ; incomplete guard
+
+; The guard on this function is quite incomplete.  Some runtime checks can
+; result in hard errors even when the guard is met.  We have attempted to
+; eliminate raw Lisp errors, 
+
+                  (and (stringp s)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple)))
+           (type (unsigned-byte 29) i maximum col)
            (type string s))
-
-; WARNING:  If you add new tilde-directives update :DOC fmt and the
-; copies in :DOC fmt1 and :DOC fms.
-
-  (declare (type (signed-byte 30) col))
+  (declare (type (unsigned-byte 29) col))
   (the2s
-   (signed-byte 30)
+   (unsigned-byte 29)
    (cond
     ((>= i maximum)
-     (mv (the (signed-byte 30) col) state))
+     (mv (the (unsigned-byte 29) col) state))
     (t
      (let ((c (charf s i)))
        (declare (type character c))
@@ -3316,7 +3573,7 @@
          (let ((fmc (the character (fmt-char s i 1 maximum t))))
            (declare (type character fmc))
            (case
-            fmc
+             fmc
              ((#\p #\q #\P #\Q #\x #\y #\X #\Y)
 
 ; The only difference between pqPQ and xyXY is that the former can cause infix
@@ -3346,22 +3603,32 @@
                               (eql fmc #\q) (eql fmc #\Q)))
                       (local-evisc-tuple
                        (cond (caps
-                              (fmt-var s alist (1+f i) maximum))
+                              (let ((x (fmt-var s alist (1+f i) maximum)))
+                                (cond
+                                ((not (standard-evisc-tuplep x))
+                                 (er hard 'fmt0
+                                     "~@0"
+                                     (illegal-fmt-msg
+                                      bad-evisc-tuple
+                                      i
+                                      (charf s (+f i 3))
+                                      x 'standard-evisc-tuplep s)))
+                                (t x))))
                              (t evisc-tuple)))
                       (evisc-table (table-alist 'evisc-table (w state)))
                       (eviscp (or local-evisc-tuple evisc-table)))
                  (mv-let
-                  (x state)
-                  (cond (eviscp (eviscerate-top
-                                 (fmt-var s alist i maximum)
-                                 (cadr local-evisc-tuple)   ;;; print-level
-                                 (caddr local-evisc-tuple)  ;;; print-length
-                                 (car local-evisc-tuple)    ;;; alist
-                                 evisc-table
-                                 (cadddr local-evisc-tuple) ;;; hiding-cars
-                                 state))
-                        (t (mv (fmt-var s alist i maximum)
-                               state)))
+                   (x state)
+                   (cond (eviscp (eviscerate-top
+                                  (fmt-var s alist i maximum)
+                                  (cadr local-evisc-tuple) ;;; print-level
+                                  (caddr local-evisc-tuple) ;;; print-length
+                                  (car local-evisc-tuple)   ;;; alist
+                                  evisc-table
+                                  (cadddr local-evisc-tuple) ;;; hiding-cars
+                                  state))
+                         (t (mv (fmt-var s alist i maximum)
+                                state)))
 
 ; Through Version_3.4, ACL2 could hyphenate rule names during proof commentary
 ; because of the following COND branch in the case of ~x/~y/~X/~Y (though
@@ -3384,138 +3651,134 @@
 ;                                           3))
 ;                                   maximum col channel state evisc-tuple)))
 
-                  (let ((fmt-hard-right-margin
-                         (fmt-hard-right-margin state)))
-                    (declare (type (signed-byte 30) fmt-hard-right-margin))
-                    (let ((sz (flsz x pq col fmt-hard-right-margin state
-                                    eviscp)))
-                      (declare (type (signed-byte 30) sz))
-                      (cond
-                       ((and px
-                             (> col (the-fixnum *fmt-ppr-indentation*))
-                             (>= sz fmt-hard-right-margin)
-                             (not (>= (flsz x
-                                            pq
-                                            (the-fixnum
-                                             *fmt-ppr-indentation*)
-                                            fmt-hard-right-margin
-                                            state eviscp)
-                                      fmt-hard-right-margin)))
-                        (pprogn
-                         (newline channel state)
-                         (spaces1 (the-fixnum *fmt-ppr-indentation*) 0
-                                  fmt-hard-right-margin
-                                  channel state)
-                         (fmt0 s alist i maximum
-                               (the-fixnum *fmt-ppr-indentation*)
-                               channel state evisc-tuple)))
-                       ((or qy
-                            (>= sz fmt-hard-right-margin))
-                        (pprogn
-                         (cond (qy
-                                state)
-                               ((= col 0) state)
-                               (t (newline channel state)))
-                         (if qy
-                             state
-                           (spaces1 (the-fixnum *fmt-ppr-indentation*)
-                                    0 fmt-hard-right-margin channel state))
-                         (let ((c (fmt-char s i
-                                            (the-fixnum
-                                             (if caps
-                                                 4
-                                               3))
-                                            maximum nil)))
-                           (cond ((punctp c)
-                                  (pprogn
-                                   (fmt-ppr
-                                    x
-                                    pq
-                                    (+f fmt-hard-right-margin
-                                        (-f (if qy
-                                                col
-                                              *fmt-ppr-indentation*)))
-                                    1
-                                    (the-fixnum
-                                     (if qy
-                                         col
-                                       *fmt-ppr-indentation*))
-                                    channel state eviscp)
-                                   (princ$ c channel state)
-                                   (newline channel state)
-                                   (fmt0 s alist
-                                         (scan-past-whitespace
-                                          s
-                                          (+f i (if caps
-                                                    5
-                                                  4))
-                                          maximum)
-                                         maximum 0 channel state
-                                         evisc-tuple)))
-                                 (t
-                                  (pprogn
-                                   (fmt-ppr
-                                    x
-                                    pq
-                                    (+f fmt-hard-right-margin
-                                        (-f (if qy
-                                                col
-                                              *fmt-ppr-indentation*)))
-                                    0
-                                    (the-fixnum
-                                     (if qy
-                                         col
-                                       *fmt-ppr-indentation*))
-                                    channel state eviscp)
-                                   (newline channel state)
-                                   (fmt0 s alist
-                                         (scan-past-whitespace
-                                          s
-                                          (+f i (if caps
-                                                    4
-                                                  3))
-                                          maximum)
-                                         maximum 0 channel state
-                                         evisc-tuple)))))))
-                       (t (pprogn
-                           (flpr x pq channel state eviscp)
-                           (fmt0 s alist
-                                 (+f i (if caps
-                                           4
-                                         3))
-                                 maximum sz
-                                 channel state evisc-tuple))))))))))
+                   (let ((fmt-hard-right-margin
+                          (fmt-hard-right-margin state)))
+                     (declare (type (unsigned-byte 29) fmt-hard-right-margin))
+                     (let ((sz (flsz x pq col fmt-hard-right-margin state
+                                     eviscp)))
+                       (declare (type (unsigned-byte 29) sz))
+                       (cond
+                        ((and px
+                              (> col (the-fixnum *fmt-ppr-indentation*))
+                              (>= sz fmt-hard-right-margin)
+                              (not (>= (flsz x
+                                             pq
+                                             (the-fixnum
+                                              *fmt-ppr-indentation*)
+                                             fmt-hard-right-margin
+                                             state eviscp)
+                                       fmt-hard-right-margin)))
+                         (pprogn
+                          (newline channel state)
+                          (spaces1 (the-fixnum *fmt-ppr-indentation*) 0
+                                   fmt-hard-right-margin
+                                   channel state)
+                          (fmt0 s alist i maximum
+                                (the-fixnum *fmt-ppr-indentation*)
+                                channel state evisc-tuple)))
+                        ((or qy
+                             (>= sz fmt-hard-right-margin))
+                         (pprogn
+                          (cond (qy
+                                 state)
+                                ((= col 0) state)
+                                (t (newline channel state)))
+                          (if qy
+                              state
+                            (spaces1 (the-fixnum *fmt-ppr-indentation*)
+                                     0 fmt-hard-right-margin channel state))
+                          (let ((c (fmt-char s i
+                                             (the-fixnum
+                                              (if caps
+                                                  4
+                                                3))
+                                             maximum nil)))
+                            (cond ((punctp c)
+                                   (pprogn
+                                    (fmt-ppr
+                                     x
+                                     pq
+                                     (+f fmt-hard-right-margin
+                                         (-f (if qy
+                                                 col
+                                               *fmt-ppr-indentation*)))
+                                     1
+                                     (the-fixnum
+                                      (if qy
+                                          col
+                                        *fmt-ppr-indentation*))
+                                     channel state eviscp)
+                                    (princ$ c channel state)
+                                    (newline channel state)
+                                    (fmt0 s alist
+                                          (scan-past-whitespace
+                                           s
+                                           (+f i (if caps
+                                                     5
+                                                   4))
+                                           maximum)
+                                          maximum 0 channel state
+                                          evisc-tuple)))
+                                  (t
+                                   (pprogn
+                                    (fmt-ppr
+                                     x
+                                     pq
+                                     (+f fmt-hard-right-margin
+                                         (-f (if qy
+                                                 col
+                                               *fmt-ppr-indentation*)))
+                                     0
+                                     (the-fixnum
+                                      (if qy
+                                          col
+                                        *fmt-ppr-indentation*))
+                                     channel state eviscp)
+                                    (newline channel state)
+                                    (fmt0 s alist
+                                          (scan-past-whitespace
+                                           s
+                                           (+f i (if caps
+                                                     4
+                                                   3))
+                                           maximum)
+                                          maximum 0 channel state
+                                          evisc-tuple)))))))
+                        (t (pprogn
+                            (flpr x pq channel state eviscp)
+                            (fmt0 s alist
+                                  (+f i (if caps
+                                            4
+                                          3))
+                                  maximum sz
+                                  channel state evisc-tuple))))))))))
              (#\@ (let ((s1 (fmt-var s alist i maximum)))
                     (mv-letc (col state)
                              (cond ((stringp s1)
                                     (fmt0 s1 alist 0
                                           (the-fixnum! (length s1) 'fmt0)
                                           col channel state evisc-tuple))
-                                   ((consp s1)
+                                   ((msgp s1)
                                     (fmt0 (car s1)
                                           (append (cdr s1) alist)
                                           0
                                           (the-fixnum! (length (car s1)) 'fmt0)
                                           col channel state evisc-tuple))
-                                   (t (mv (er-hard-val 0 'fmt0
-                                              "Illegal Fmt Syntax.  The ~
-                                               tilde-@ directive at position ~
-                                               ~x0 of the string below is ~
-                                               illegal because its variable ~
-                                               evaluated to ~x1, which is ~
-                                               neither a string nor a ~
-                                               list.~|~%~x2"
-                                              i s1 s)
+                                   (t (mv (er-hard-val
+                                           0 'fmt0 "~@0"
+                                           (illegal-fmt-msg
+                                            bad-tilde-@-arg
+                                            i s1 'msgp s))
                                           state)))
                              (fmt0 s alist (+f i 3) maximum col
                                    channel state evisc-tuple))))
              (#\# (let ((n (find-alternative-start
-                            (fmt-var s alist i maximum) s i maximum)))
+                            (fmt-var s alist i maximum) s i maximum nil)))
                     (declare (type (signed-byte 30) n))
-                    (let ((m (find-alternative-stop s n maximum)))
-                      (declare (type (signed-byte 30) m))
-                      (let ((o (find-alternative-skip s m maximum)))
-                        (declare (type (signed-byte 30) o))
+                    (let ((m (find-alternative-stop s n maximum nil)))
+                      (declare (type (unsigned-byte 29) m))
+                      (let ((o (find-alternative-skip s m maximum nil)))
+                        (declare (type (unsigned-byte 29) o))
                         (mv-letc (col state) (fmt0 s alist
                                                    (the-fixnum n)
                                                    (the-fixnum m)
@@ -3524,79 +3787,115 @@
                                  (fmt0 s alist (the-fixnum o) maximum
                                        col channel state evisc-tuple))))))
              (#\* (let ((x (fmt-var s alist i maximum)))
-                    (mv-letc (col state)
-                             (fmt0* (car x) (cadr x) (caddr x) (cadddr x)
-                                    (car (cddddr x))
-                                    (append (cdr (cddddr x)) alist)
-                                    col channel state evisc-tuple)
-                             (fmt0 s alist (+f i 3) maximum col
-                                   channel state evisc-tuple))))
-             (#\& (let ((i+3 (+f i 3)))
-                    (declare (type (signed-byte 30) i+3))
-                    (mv-letc (col state)
-                             (fmt0&v '&
-                                     (fmt-var s alist i maximum)
-                                     (punctp (and (< i+3 maximum)
-                                                  (char s i+3)))
-                                     col channel state evisc-tuple)
-                             (fmt0 s alist
-                                   (the-fixnum
-                                    (cond
-                                     ((punctp (and (< i+3 maximum)
-                                                   (char s i+3)))
-                                      (+f i 4))
-                                     (t i+3)))
-                                   maximum
-                                   col channel state evisc-tuple))))
-             (#\v (let ((i+3 (+f i 3)))
-                    (declare (type (signed-byte 30) i+3))
-                    (mv-letc (col state)
-                             (fmt0&v 'v
-                                     (fmt-var s alist i maximum)
-                                     (punctp (and (< i+3 maximum)
-                                                  (char s i+3)))
-                                     col channel state evisc-tuple)
-                             (fmt0 s alist
-                                   (the-fixnum
-                                    (cond
-                                     ((punctp (and (< i+3 maximum)
-                                                   (char s i+3)))
-                                      (+f i 4))
-                                     (t i+3)))
-                                   maximum
-                                   col channel state evisc-tuple))))
-             (#\n (maybe-newline
+                    (cond
+                     ((or (< (len x) 5)
+                          (not (stringp (car x)))
+                          (not (stringp (cadr x)))
+                          (not (stringp (caddr x)))
+                          (not (stringp (cadddr x)))
+                          (not (true-listp (car (cddddr x))))
+                          (not (character-alistp (cdr (cddddr x)))))
+                      (mv (er-hard-val
+                           0 'fmt0 "~@0"
+                           (illegal-fmt-msg
+                            bad-tilde-*-arg
+                            i
+                            (char s (+f i 2))
+                            'character-alistp
+                            x
+                            s))
+                          state))
+                     (t
+                      (mv-letc (col state)
+                               (fmt0* (car x) (cadr x) (caddr x) (cadddr x)
+                                      (car (cddddr x))
+                                      (append (cdr (cddddr x)) alist)
+                                      col channel state evisc-tuple)
+                               (fmt0 s alist (+f i 3) maximum col
+                                     channel state evisc-tuple))))))
+             ((#\& #\v)
+              (let ((i+3 (+f i 3))
+                    (lst (fmt-var s alist i maximum)))
+                (declare (type (unsigned-byte 29) i+3))
+                (cond
+                 ((not (true-listp lst))
+                  (mv (er-hard-val
+                       0 'fmt0 "~@0"
+                       (illegal-fmt-msg
+                        bad-tilde-&v-arg
+                        i
+                        (char s (+f i 2))
+                        (if (eql fmc #\&) "~&" "~v")
+                        lst
+                        s))
+                      state))
+                 (t
+                  (mv-letc (col state)
+                           (fmt0&v (if (eql fmc #\&) '& 'v)
+                                   lst
+                                   (punctp (and (< i+3 maximum)
+                                                (char s i+3)))
+                                   col channel state evisc-tuple)
+                           (fmt0 s alist
+                                 (the-fixnum
+                                  (cond
+                                   ((punctp (and (< i+3 maximum)
+                                                 (char s i+3)))
+                                    (+f i 4))
+                                   (t i+3)))
+                                 maximum
+                                 col channel state evisc-tuple))))))
+             ((#\n #\N)
+              (let ((k (fmt-var s alist i maximum)))
+                (cond
+                 ((not (or (integerp k)
+                           (and (consp k)
+                                (integerp (car k)))))
+                  (mv (er-hard-val
+                       0 'fmt0 "~@0"
+                       (illegal-fmt-msg
+                        bad-tilde-n-arg
+                        i
+                        (char s (+f i 2))
+                        (if (eql fmc #\n) "~n" "~N")
+                        k
+                        s))
+                      state))
+                 (t
+                  (maybe-newline
                    (mv-letc (col state)
-                            (spell-number (fmt-var s alist i maximum)
-                                          nil col channel state evisc-tuple)
+                            (spell-number k
+                                          (eql fmc #\N)
+                                          col channel state evisc-tuple)
                             (fmt0 s alist (+f i 3) maximum col channel
-                                  state evisc-tuple))))
-             (#\N (maybe-newline
-                   (mv-letc (col state)
-                            (spell-number (fmt-var s alist i maximum)
-                                          t col channel state evisc-tuple)
-                            (fmt0 s alist (+f i 3) maximum col channel
-                                  state evisc-tuple))))
+                                  state evisc-tuple)))))))
              (#\t (maybe-newline
                    (let ((goal-col (fmt-var s alist i maximum))
                          (fmt-hard-right-margin (fmt-hard-right-margin state)))
-                     (declare (type (signed-byte 30)
-                                    goal-col fmt-hard-right-margin))
+                     (declare (type (unsigned-byte 29) fmt-hard-right-margin))
                      (pprogn
-                      (cond ((> goal-col fmt-hard-right-margin)
-                             (let ((er (er hard 'fmt0
-                                           "It is illegal to tab past the ~
-                                            value of (@ ~
-                                            fmt-hard-right-margin), ~x0, and ~
-                                            hence the directive ~~t~s1 to tab ~
-                                            to column ~x2 is illegal.  See ~
-                                            :DOC set-fmt-hard-right-margin."
-                                           fmt-hard-right-margin
-                                           (string (fmt-char s i 2 maximum t))
-                                           goal-col)))
+                      (cond ((or (not (natp goal-col))
+                                 (> goal-col fmt-hard-right-margin))
+                             (let ((er
+                                    (if (natp goal-col)
+                                        (er hard 'fmt0
+                                            "~@0"
+                                            (illegal-fmt-msg
+                                             bad-tilde-t-arg-natp
+                                             fmt-hard-right-margin
+                                             (string (fmt-char s i 2 maximum t))
+                                             goal-col))
+                                      (er hard 'fmt0
+                                          "~@0"
+                                          (illegal-fmt-msg
+                                           bad-tilde-t-arg-not-natp
+                                           i
+                                           (char s (+f i 2))
+                                           goal-col
+                                           s)))))
                                (declare (ignore er))
                                state))
-                            ((>= col goal-col)
+                            ((>= col (the-fixnum goal-col))
                              (pprogn (newline channel state)
                                      (spaces1 (the-fixnum goal-col) 0
                                               fmt-hard-right-margin
@@ -3619,15 +3918,11 @@
                                                            col channel state)
                                      (fmt0 s alist (+f i 3) maximum col channel
                                            state evisc-tuple)))
-                           (t (mv (er-hard-val 0 'fmt0
-                                      "Illegal Fmt Syntax.  The tilde-c ~
-                                       directive at position ~x0 of the string ~
-                                       below is illegal because its variable ~
-                                       evaluated to ~x1, which is not of the ~
-                                       form (n . width), where n and width are ~
-                                       integers and width is ~
-                                       nonnegative.~|~%~x2"
-                                      i pair s)
+                           (t (mv (er-hard-val
+                                   0 'fmt0 "~@0"
+                                   (illegal-fmt-msg
+                                    bad-tilde-c-arg 
+                                    i pair s))
                                   state))))))
              ((#\f #\F)
               (maybe-newline
@@ -3638,21 +3933,29 @@
                                col channel state)
                         (fmt0 s alist (+f i 3) maximum col channel
                               state evisc-tuple))))
-             (#\s (maybe-newline
+             ((#\s #\S)
+              (let ((x (fmt-var s alist i maximum)))
+                (cond
+                 ((or (symbolp x)
+                      (stringp x)
+                      (acl2-numberp x))
+                  (maybe-newline
                    (mv-letc (col state)
-                            (fmt-tilde-s (fmt-var s alist i maximum) col
-                                         channel state)
+                            (if (eql fmc #\s)
+                                (fmt-tilde-s x col channel state)
+                              (fmt-tilde-cap-s x col channel state))
                             (fmt0 s alist (+f i 3) maximum col channel
                                   state evisc-tuple))))
-             (#\S (maybe-newline
-                   (mv-letc (col state)
-                            (fmt-tilde-cap-s (fmt-var s alist i maximum) col
-                                             channel state)
-                            (fmt0 s alist (+f i 3) maximum col channel
-                                  state evisc-tuple))))
+                 (t (mv (er-hard-val
+                         0 'fmt0 "~@0"
+                         (illegal-fmt-msg
+                          bad-tilde-s-arg
+                          (if (eql fmc #\s) "s" "S")
+                          i x s))
+                        state)))))
              (#\Space (let ((fmt-hard-right-margin
                              (fmt-hard-right-margin state)))
-                        (declare (type (signed-byte 30) fmt-hard-right-margin))
+                        (declare (type (unsigned-byte 29) fmt-hard-right-margin))
                         (pprogn
                          (cond ((> col fmt-hard-right-margin)
                                 (newline channel state))
@@ -3666,12 +3969,19 @@
              (#\_ (maybe-newline
                    (let ((fmt-hard-right-margin
                           (fmt-hard-right-margin state)))
-                     (declare (type (signed-byte 30) fmt-hard-right-margin))
-                     (let ((n (the-half-fixnum! (fmt-var s alist i maximum)
-                                                'fmt0)))
-                       (declare (type (signed-byte 30) n))
+                     (declare (type (unsigned-byte 29) fmt-hard-right-margin))
+                     (let* ((n0 (fmt-var s alist i maximum))
+                            (n (if (and (natp n0)
+                                        (<= n0 (floor (fixnum-bound) 2)))
+                                   n0 ; (the-half-fixnum! n0 'fmt0)
+                                 (er-hard-val
+                                  0 'fmt0 "~@0"
+                                  (illegal-fmt-msg
+                                   bad-tilde-_-arg 
+                                   i n0 (floor (fixnum-bound) 2) s)))))
+                       (declare (type (unsigned-byte 29) n))
                        (let ((new-col (+f col n)))
-                         (declare (type (signed-byte 30) new-col))
+                         (declare (type (unsigned-byte 29) new-col))
                          (pprogn
                           (spaces n col channel state)
                           (cond
@@ -3710,14 +4020,12 @@
                                 maximum 0 channel state evisc-tuple)))
                         (t (fmt0 s alist (+f i 2) maximum col channel
                                  state evisc-tuple))))
-             (otherwise (let ((x
-                               (er hard 'fmt0
-                                   "Illegal Fmt Syntax.  The tilde ~
-                                     directive at position ~x0 of the ~
-                                     string below is unrecognized.~|~%~x1"
-                                   i s)))
-                          (declare (ignore x))
-                          (mv 0 state))))))
+             (otherwise (mv (er-hard-val
+                             0 'fmt0 "~@0"
+                             (illegal-fmt-msg
+                              unrecognized-tilde-arg
+                              i s))
+                            state)))))
         ((and (> col (fmt-soft-right-margin state))
               (eql c #\Space))
          (pprogn (newline channel state)
@@ -3796,7 +4104,11 @@
 
 ; WARNING:  The master copy of the tilde-directives list is in :DOC fmt.
 
-  (declare (type (signed-byte 30) col))
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple)))
+           (type (signed-byte 30) col))
   (the2s
    (signed-byte 30)
    (mv-let (col state)
@@ -3817,6 +4129,10 @@
 ; For a discussion of our style of pretty-printing, see
 ; http://www.cs.utexas.edu/~boyer/pretty-print.pdf.
 
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple))))
   (the2s
    (signed-byte 30)
    (pprogn
@@ -3827,6 +4143,10 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple))))
   (pprogn
    (newline channel state)
    (mv-let (col state)
@@ -3838,6 +4158,10 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple))))
   (mv-let (erp col state)
           (state-global-let*
            ((write-for-read t))
@@ -3851,6 +4175,10 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
+  (declare (xargs :guard ; incomplete guard
+                  (and (stringp str)
+                       (character-alistp alist)
+                       (standard-evisc-tuplep evisc-tuple))))
   (mv-let (erp col state)
           (state-global-let*
            ((write-for-read t))
@@ -3874,10 +4202,351 @@
 
 (defmacro fmx (str &rest args)
   (declare (xargs :guard (<= (length args) 10)))
-  `(fmt ,str ,(make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                                   #\5 #\6 #\7 #\8 #\9)
-                                 args)
-        *standard-co* state nil))
+  `(fmt1 ,str
+         ,(make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
+                               #\5 #\6 #\7 #\8 #\9)
+                             args)
+         0 *standard-co* state nil))
+
+(defmacro fmx-cw-msg-1-body ()
+
+; Warning: Keep this in sync with fmt0 and :DOC fmt.
+
+; This unusual way of specifying a function body is useful for sharing code
+; between the definition of fmx-cw-msg-1 and the rewrite rule,
+; fmx-cw-msg-1-opener.
+
+; Warning: To see the effect of changing this definition during an interactive
+; session, you will also need to redefine fmx-cw-msg-1 (say, by redefining it
+; to be a term different from, but provably equal to, (fmx-cw-msg-1-body)).
+
+  '(cond
+    ((zp clk) ; impossible?
+     (msg "Stack depth exceeded for guard check!"))
+    ((or (not (mbt (natp i)))
+         (not (mbt (natp maximum)))
+         (>= i maximum))
+     nil)
+    (t
+     (let ((c0 (the character (charf s i)))
+           (i+1 (1+f i))
+           (clk-1 (1-f clk)))
+       (declare (type character c0)
+                (type (unsigned-byte 29) i+1 clk-1))
+       (cond
+        ((eql c0 #\~)
+         (cond
+          ((not (< i+1 maximum))
+           (illegal-fmt-msg
+            tilde-arg-points-past-string
+            i 1 maximum s))
+          (t
+           (let ((c1 (the character (charf s i+1))))
+             (declare (type character c1))
+             (case
+               c1
+               ((#\Space #\Newline #\| #\% #\~ #\-)
+                nil)
+               (otherwise
+                (let ((i+2 (+f i 2)))
+                  (declare (type (unsigned-byte 29) i+2))
+                  (cond
+                   ((not (< i+2 maximum))
+                    (illegal-fmt-msg
+                     tilde-arg-points-past-string
+                     i 2 maximum s))
+                   (t
+                    (let* ((c2 (the character (charf s i+2)))
+                           (pair2 (assoc c2 alist))
+                           (val2 (cdr pair2))
+                           (i+3 (+f i 3)))
+                      (declare (type character c2)
+                               (type (unsigned-byte 29) i+3))
+                      (cond
+                       ((not pair2)
+                        (illegal-fmt-msg
+                         unbound-tilde-arg
+                         i c2 alist s))
+                       (t
+                        (case
+                          c1
+                          ((#\p #\q #\x #\y)
+                           (fmx-cw-msg-1 s alist i+3 maximum clk-1))
+                          ((#\P #\Q #\X #\Y)
+                           (cond
+                            ((not (< i+3 maximum))
+                             (illegal-fmt-msg
+                              tilde-arg-points-past-string
+                              i 3 maximum s))
+                            (t
+                             (let* ((c3 (the character (charf s i+3)))
+                                    (pair3 (assoc c3 alist))
+                                    (val3 (cdr pair3)))
+                               (declare (type character c3))
+                               (cond
+                                ((not pair3)
+                                 (illegal-fmt-msg
+                                  unbound-tilde-arg
+                                  i c3 alist s))
+                                ((not (standard-evisc-tuplep val3))
+                                 (illegal-fmt-msg
+                                  bad-evisc-tuple
+                                  i c3 val3 'standard-evisc-tuplep s))
+                                (t
+                                 (fmx-cw-msg-1 s alist
+                                               (+f i 4)
+                                               maximum
+                                               clk-1)))))))
+                          (#\@
+                           (or
+                            (cond
+                             ((and (stringp val2)
+                                   (< (length val2) (fixnum-bound)))
+                              (fmx-cw-msg-1
+                               val2 alist 0
+                               (length val2)
+                               clk-1))
+                             ((and (consp val2)
+                                   (msgp val2)
+                                   (< (length (car val2)) (fixnum-bound)))
+                              (fmx-cw-msg-1 (car val2)
+                                            (append (cdr val2) alist)
+                                            0
+                                            (length (car val2))
+                                            clk-1))
+                             (t
+                              (illegal-fmt-msg
+                               bad-tilde-@-arg
+                               i val2 'character-alistp s)))
+                            (fmx-cw-msg-1 s alist i+3 maximum clk-1)))
+                          (#\#
+                           (cond
+                            ((not (< i+3 maximum))
+                             (illegal-fmt-msg
+                              tilde-arg-points-past-string
+                              i 3 maximum s))
+                            (t
+                             (let ((i+4 (+f i 4)))
+                               (declare (type (unsigned-byte 29) i+4))
+                               (cond
+                                ((not (< i+4 maximum))
+                                 (illegal-fmt-msg
+                                  tilde-arg-points-past-string
+                                  i 4 maximum s))
+                                (t
+                                 (let ((n (find-alternative-start
+                                           c2 s i maximum t))
+                                       (max+1 (1+f maximum)))
+                                   (declare (type (signed-byte 30) n max+1))
+                                   (cond
+                                    ((= n max+1)
+                                     (illegal-fmt-msg
+                                      find-alternative-start i s))
+                                    ((= n maximum)
+                                     (illegal-fmt-msg
+                                      find-alternative-skip s))
+                                    ((= n (-f maximum))
+                                     (illegal-fmt-msg
+                                      find-alternative-start1-b s))
+                                    ((< n 0)
+                                     (illegal-fmt-msg
+                                      find-alternative-start1-a
+                                      "starting"
+                                      i
+                                      (zero-one-or-more (-f n))
+                                      (-f n)
+                                      s))
+                                    (t
+                                     (let ((m (find-alternative-stop
+                                               s n maximum t)))
+                                       (declare (type (unsigned-byte 29)
+                                                      m))
+                                       (cond
+                                        ((eql m max+1)
+                                         (illegal-fmt-msg
+                                          find-alternative-stop
+                                          s))
+                                        (t
+                                         (let ((o (find-alternative-skip
+                                                   s m maximum t)))
+                                           (declare
+                                            (type (unsigned-byte 29) o))
+                                           (cond
+                                            ((eql m max+1)
+                                             (illegal-fmt-msg
+                                              find-alternative-skip
+                                              s))
+                                            (t
+                                             (or (fmx-cw-msg-1
+                                                  s alist n m clk-1)
+                                                 (fmx-cw-msg-1
+                                                  s alist o maximum
+                                                  clk-1)))))))))))))))))
+                          ((#\& #\v)
+                           (cond
+                            ((not (true-listp val2))
+                             (illegal-fmt-msg
+                              bad-tilde-&v-arg
+                              i c2
+                              (if (eql c1 #\&) "~&" "~v")
+                              val2 s))
+                            (t
+                             (fmx-cw-msg-1 s alist i+3 maximum clk-1))))
+                          (#\*
+                           (cond
+                            ((not (and (>= (len val2) 5)
+                                       (character-alistp
+                                        (cdr (cddddr val2)))))
+                             (illegal-fmt-msg
+                              bad-tilde-*-arg
+                              i c2 'character-alistp val2 s))
+                            (t
+                             (fmx-cw-msg-1 s alist i+3 maximum clk-1))))
+                          ((#\n #\N)
+                           (cond
+                            ((not (or (integerp val2)
+                                      (and (consp val2)
+                                           (integerp (car val2)))))
+                             (illegal-fmt-msg
+                              bad-tilde-n-arg
+                              i
+                              c2
+                              (if (eql c1 #\n) "~n" "~N")
+                              val2
+                              s))
+                            (t
+                             (fmx-cw-msg-1 s alist i+3 maximum clk-1))))
+                          (#\t
+                           (let ((goal-col val2))
+                             (cond
+                              ((not (natp goal-col))
+                               (illegal-fmt-msg
+                                bad-tilde-t-arg-not-natp
+                                i
+                                c2
+                                goal-col
+                                s))
+                              (nil ; (> goal-col fmt-hard-right-margin)
+
+; We don't have state available, so we cannot obtain the current value of the
+; state global, fmt-hard-right-margin.  Thus we use a condition of nil above.
+; We could use the default value for that global, as shown below, but that
+; might frustrate users who set a bigger value and thus expect to be able to
+; tab past the default.
+
+                               (illegal-fmt-msg
+                                bad-tilde-t-arg-natp
+                                *fmt-hard-right-margin-default*
+                                (string c2)
+                                goal-col))
+                              (t
+                               (fmx-cw-msg-1 s alist i+3 maximum clk-1)))))
+                          (#\c
+                           (let ((pair val2))
+                             (cond
+                              ((and (consp pair)
+                                    (integerp (car pair))
+                                    (integerp (cdr pair))
+                                    (>= (cdr pair) 0))
+                               (fmx-cw-msg-1 s alist i+3 maximum clk-1))
+                              (t
+                               (illegal-fmt-msg
+                                bad-tilde-c-arg 
+                                i pair s)))))
+                          ((#\f #\F)
+                           (fmx-cw-msg-1 s alist i+3 maximum clk-1))
+                          ((#\s #\S)
+                           (let ((x val2))
+                             (cond
+                              ((or (symbolp x)
+                                   (stringp x)
+                                   (acl2-numberp x))
+                               (fmx-cw-msg-1 s alist i+3 maximum clk-1))
+                              (t
+                               (illegal-fmt-msg
+                                bad-tilde-s-arg
+                                (if (eql c1 #\s) "s" "S")
+                                i x s)))))
+                          (#\_
+                           (cond
+                            ((and (natp c2)
+                                  (<= c2 ; for the-half-fixnum!
+                                      (floor (fixnum-bound) 2)))
+                             (fmx-cw-msg-1 s alist i+3 maximum clk-1))
+                            (t
+                             (illegal-fmt-msg
+                              bad-tilde-_-arg 
+                              i c2 (floor (fixnum-bound) 2) s))))
+                          ((#\Newline #\| #\% #\~ #\-)
+                           (fmx-cw-msg-1 s alist i+2 maximum clk-1))
+                          (otherwise
+                           (illegal-fmt-msg
+                              unrecognized-tilde-arg
+                              i s)))))))))))))))
+        (t (fmx-cw-msg-1 s alist i+1 maximum clk-1)))))))
+
+(defun fmx-cw-msg-1 (s alist i maximum clk)
+  (declare (type (unsigned-byte 29) i maximum clk)
+           (type string s)
+           (xargs :guard (and (character-alistp alist)
+                              (< (length s) (fixnum-bound))
+                              (<= maximum (length s)))
+                  :guard-hints (("Goal" :in-theory (disable nth)))
+                  :measure (nfix clk)))
+  (fmx-cw-msg-1-body))
+
+(defun fmx-cw-msg (str alist)
+  (declare (xargs :guard t))
+  (cond
+   ((not (stringp str))
+    (msg "Not a string:~|~x0" str))
+   ((not (character-alistp alist))
+    (msg "Not a character-alistp:~|~x0" alist))
+   (t (let ((len (length str)))
+        (cond
+         ((not (< len (fixnum-bound)))
+          (msg "String is too long:~|~x0" str))
+         (t (fmx-cw-msg-1 str alist 0 (length str) (fixnum-bound))))))))
+
+(defun fmx-cw-fn-guard (str alist)
+  (declare (xargs :guard t))
+  (null (fmx-cw-msg str alist)))
+
+(defun fmx-cw-fn (str alist)
+  (declare (xargs :guard (fmx-cw-fn-guard str alist)))
+  (fmt-to-comment-window str alist 0 nil))
+
+(defun fmx!-cw-fn (str alist)
+  (declare (xargs :guard (fmx-cw-fn-guard str alist)))
+  (fmt-to-comment-window! str alist 0 nil))
+
+(defmacro fmx-cw (str &rest args)
+
+; WARNING: Keep this in sync with cw, cw!, and other fmx-cw macros.
+
+; This is a guarded version of cw.
+; See the comments there, including this warning:
+
+; WARNING: Keep this in sync with cw!.
+
+  `(fmx-cw-fn ,str
+              (pairlis2 '(#\0 #\1 #\2 #\3 #\4
+                          #\5 #\6 #\7 #\8 #\9)
+                        (list ,@args))))
+
+(defmacro fmx!-cw (str &rest args)
+
+; WARNING: Keep this in sync with cw, cw!, and other fmx-cw macros.
+
+; This is a guarded version of cw.
+; See the comments there, including this warning:
+
+; WARNING: Keep this in sync with cw!.
+
+  `(fmx!-cw-fn ,str
+               (pairlis2 '(#\0 #\1 #\2 #\3 #\4
+                           #\5 #\6 #\7 #\8 #\9)
+                         (list ,@args))))
 
 (defun fmt-doc-example1 (lst i)
   (cond ((null lst) nil)
@@ -5304,13 +5973,32 @@
   (intern-in-package-of-symbol (coerce (packn1 lst) 'string)
                                witness))
 
+(defun find-first-non-cl-symbol (lst)
+  (declare (xargs :guard (good-atom-listp lst)))
+  (cond ((endp lst) nil)
+        ((and (symbolp (car lst))
+              (not (equal (symbol-package-name (car lst))
+                          "COMMON-LISP")))
+         (car lst))
+        (t (find-first-non-cl-symbol (cdr lst)))))
+
 (defun packn (lst)
   (declare (xargs :guard (good-atom-listp lst)))
-  (let ((ans
-; See comment in intern-in-package-of-symbol for an explanation of this trick.
-         (intern (coerce (packn1 lst) 'string)
-                 "ACL2")))
-    ans))
+
+; This function produces a symbol which is named by concatenating string
+; representations of the elements of lst, which may be any good atoms.  The
+; package of the output symbol will be the package of the first symbol in the
+; input list which is not in the "COMMON-LISP" package, or, if no such symbol
+; exists, will be "ACL2".
+
+; We treat the "COMMON-LISP" package as a special exception because in ACL2 we
+; limit the usage of symbols in that package, for example by disallowing their
+; use as function names.  We therefore prefer not to allow packn to create
+; symbols in the "COMMON-LISP" package.  The function packn-pos may be called
+; instead when it is desired to specify explicitly a package for the symbol.
+
+  (packn-pos lst (or (find-first-non-cl-symbol lst)
+                     'packn)))
 
 (defun pack2 (n1 n2)
   (packn (list n1 n2)))
@@ -6529,10 +7217,11 @@
      ((and (> (length (symbol-name pat)) 0)
            (eql #\! (char (symbol-name pat) 0)))
       (mv (cons (list 'equal x
-                      (intern (coerce (cdr (coerce (symbol-name pat)
-                                                   'list))
-                                      'string)
-                              "ACL2"))
+                      (intern-in-package-of-symbol
+                       (subseq (symbol-name pat)
+                               1
+                               (length (symbol-name pat)))
+                       pat))
                 tests)
           bindings))
      ((eq pat '&) (mv tests bindings))

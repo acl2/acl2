@@ -108,7 +108,8 @@
 ; (depends-on "eventdata-raw.lsp")
 (include-raw "eventdata-raw.lsp")
 
-(defattach acl2::finalize-event-user sidekick-finalize-event-user)
+(defattach (acl2::finalize-event-user sidekick-finalize-event-user)
+  :system-ok t)
 
 (define eventdata->namex ((x alistp))
   (let ((look (assoc 'acl2::namex x)))

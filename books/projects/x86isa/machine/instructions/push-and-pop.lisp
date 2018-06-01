@@ -9,8 +9,8 @@
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
-; The documentation is ambiguous about the determination of the operand size of
-; the PUSH and POP instructions in 64-bit mode.
+; The Intel and AMD documentation is ambiguous about the determination of the
+; operand size of the PUSH and POP instructions in 64-bit mode.
 ;
 ; The PUSH and POP instruction reference in Intel manual, Mar'17, Vol. 2 says
 ; that the D flag of the current code segment descriptor determines the default
@@ -57,6 +57,7 @@
 ;; push
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-general-register
   :parents (one-byte-opcodes)
 
@@ -77,12 +78,13 @@
   :body
 
   (b* ((ctx 'x86-push-general-register)
+
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock)
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
                  (prefixes-slice :group-3-prefix prefixes)))
+
        ((the (integer 1 8) operand-size)
         (if (64-bit-modep x86)
             (if p3? 2 8)
@@ -93,45 +95,43 @@
             (if (= cs.d 1)
                 (if p3? 2 4)
               (if p3? 4 2)))))
+
        (rsp (read-*sp x86))
        ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
-       (inst-ac? (alignment-checking-enabled-p x86))
-       ((when (and inst-ac?
-                   (not (equal (logand
-                                new-rsp
-                                (the (integer 0 15)
-                                  (- operand-size 1)))
-                               0))))
-        (!!fault-fresh :ac 0 :new-rsp-not-aligned new-rsp)) ;; #AC(0)
-
        ;; See "Z" in http://ref.x86asm.net/geek.html#x50
        (reg (mbe :logic (loghead 3 opcode)
                  :exec (the (unsigned-byte 3)
-                         (logand #x07 opcode))))
+                            (logand #x07 opcode))))
        ;; See Intel Table 3.1, p.3-3, Vol. 2-A
        (val (rgfi-size operand-size (reg-index reg rex-byte #.*b*) rex-byte
                        x86))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
        ((mv flg x86)
-        (wme-size operand-size
-                  (the (signed-byte #.*max-linear-address-size*) new-rsp)
-                  *ss*
-                  val
-                  x86))
+        (wme-size
+         operand-size
+         (the (signed-byte #.*max-linear-address-size*) new-rsp)
+         *ss*
+         val
+         (alignment-checking-enabled-p x86)
+         x86
+         :mem-ptr? nil))
        ((when flg) ;; Would also handle bad rsp values.
-        (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
+        (cond
+         ;; FIXME? The non-canonical-address error won't come up here
+         ;; because we already check for that in add-to-*sp above.
+         ((and (consp flg) (eql (car flg) :non-canonical-address))
+          (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
+         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :memory-access-unaligned flg)) ;; #AC(0)
+         (t ;; Unclassified error!
+          (!!fault-fresh flg))))
 
        (x86 (write-*sp new-rsp x86))
        (x86 (write-*ip temp-rip x86)))
@@ -157,13 +157,14 @@
     (add-to-implemented-opcodes-table 'PUSH #x57 '(:nil nil)
                                       'x86-push-general-register)))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-Ev
   :parents (one-byte-opcodes)
 
-  :short "PUSH: FF/6 r/m"
+  :short "PUSH: FF /6 r/m"
 
   :long "<p>Op/En: M</p>
-   <p><tt>FF/6 r/m16/32/64</tt></p>
+   <p><tt>FF /6 r/m16/32/64</tt></p>
    <p>Note that <tt>FF/6 r/m32</tt> is N.E. in 64-bit mode
       and that <tt>FF/6 r/m64</tt> is N.E. in 32-bit mode.</p>
 
@@ -174,12 +175,6 @@
    <p>This opcode belongs to Group 5, and it has an opcode
    extension (ModR/m.reg = 6).</p>"
 
-  ;; This instruction has been extended to 32-bit mode except for the call to
-  ;; X86-OPERAND-FROM-MODR/M-AND-SIB-BYTES, which still needs to be extended to
-  ;; 32-bit mode. The top-level dispatch is still calling this function only in
-  ;; 64-bit mode (i.e. this instruction is still considered unimplemented in
-  ;; 32-bit mode).
-
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
@@ -189,15 +184,16 @@
   :body
 
   (b* ((ctx 'x86-push-Ev)
+
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock)
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p3? (eql #.*operand-size-override*
                  (prefixes-slice :group-3-prefix prefixes)))
        (p4? (eql #.*addr-size-override*
                  (prefixes-slice :group-4-prefix prefixes)))
+
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
 
@@ -216,40 +212,31 @@
        ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
-       (inst-ac? (alignment-checking-enabled-p x86))
-       ((when (and inst-ac?
-                   (not (equal (logand
-                                new-rsp
-                                (the (integer 0 15)
-                                  (- operand-size 1)))
-                               0))))
-        (!!fault-fresh :ac 0 :new-rsp-not-aligned new-rsp)) ;; #AC(0)
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
 
-       ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) ?E-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* operand-size
-         ;; inst-ac? is nil here because we only need increment-RIP-by
-         ;; from this function.
-         nil
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by) ?E-addr x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+                                                operand-size
+                                                t ; do alignment checking
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((mv flg temp-rip) (increment-*ip temp-rip increment-RIP-by x86))
+       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
 
@@ -258,9 +245,19 @@
                   (the (signed-byte #.*max-linear-address-size*) new-rsp)
                   *ss*
                   E
-                  x86))
+                  (alignment-checking-enabled-p x86)
+                  x86
+                  :mem-ptr? nil))
        ((when flg) ;; Would also handle bad rsp values.
-        (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
+        (cond
+         ;; FIXME? The non-canonical-address error won't come up here
+         ;; because we already check for that in add-to-*sp above.
+         ((and (consp flg) (eql (car flg) :non-canonical-address))
+          (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
+         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :memory-access-unaligned new-rsp)) ;; #AC(0)
+         (t ;; Unclassified error!
+          (!!fault-fresh flg))))
 
        (x86 (write-*sp new-rsp x86))
        (x86 (write-*ip temp-rip x86)))
@@ -290,7 +287,6 @@ decoding with the execution in this case.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :guard-hints (("Goal" :in-theory (e/d* () ())))
 
   :implemented
   (progn
@@ -341,23 +337,16 @@ decoding with the execution in this case.</p>"
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               temp-rip))))
+                                  temp-rip))))
         (!!fault-fresh :gp 0 :temp-rip-not-canonical temp-rip)) ;; #GP(0)
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
-
        ((mv flg1 x86)
-        (wme-size operand-size
-                  (the (signed-byte #.*max-linear-address-size*) new-rsp)
+        (wme-size operand-size new-rsp
                   *ss*
                   (mbe :logic (loghead (ash operand-size 3) imm)
                        :exec (logand
@@ -365,13 +354,24 @@ decoding with the execution in this case.</p>"
                                 (2 #.*2^16-1*)
                                 (8 #.*2^64-1*))
                               (the (signed-byte 32) imm)))
-                  x86))
+                  (alignment-checking-enabled-p x86)
+                  x86
+                  :mem-ptr? nil))
        ((when flg1) ;; Would also handle "bad" rsp values.
-        (!!fault-fresh :ss 0 :SS-exception-wme-size-error flg1)) ;; #SS(0)
+        (cond
+         ;; FIXME? The non-canonical-address error won't come up here
+         ;; because we already check for that in add-to-*sp above.
+         ((and (consp flg1) (eql (car flg1) :non-canonical-address))
+          (!!fault-fresh :ss 0 :new-rsp-not-canonical flg1)) ;; #SS(0)
+         ((and (consp flg1) (eql (car flg1) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :new-rsp-unaligned flg1)) ;; #AC(0)
+         (t ;; Unclassified error!
+          (!!fault-fresh flg1))))
+
        (x86 (!rgfi *rsp* new-rsp x86))
        (x86 (!rip temp-rip x86)))
 
-      x86))
+    x86))
 
 (def-inst x86-push-segment-register
   :parents (two-byte-opcodes)
@@ -427,14 +427,9 @@ the execution in this case.</p>"
        ((the (unsigned-byte 16) val)
         (seg-visiblei (if (eql opcode #xA0) *FS* *GS*) x86))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
 
@@ -445,20 +440,31 @@ the execution in this case.</p>"
                   ;; If operand-size is 64, val is zero-extended here
                   ;; automatically.
                   val
-                  x86))
+                  (alignment-checking-enabled-p x86)
+                  x86
+                  :mem-ptr? nil))
        ((when flg) ;; Would also handle bad rsp values.
-        (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
+        (cond
+         ;; FIXME? The non-canonical-address error won't come up here
+         ;; because we already check for that above.
+         ((and (consp flg) (eql (car flg) :non-canonical-address))
+          (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
+         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :memory-access-unaligned rsp)) ;; #AC(0)
+         (t ;; Unclassified error!
+          (!!fault-fresh flg))))
 
        (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*) new-rsp) x86))
        (x86 (!rip temp-rip x86)))
 
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: (one-byte opcode map)
 ;; pop
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-pop-general-register
   :parents (one-byte-opcodes)
 
@@ -494,32 +500,31 @@ the execution in this case.</p>"
                 (if p3? 2 4)
               (if p3? 4 2)))))
        (rsp (read-*sp x86))
-       (inst-ac? (alignment-checking-enabled-p x86))
-       ((when (and inst-ac?
-                   (not (equal (logand rsp (the (integer 0 15)
-                                                (- operand-size 1)))
-                               0))))
-        (!!fault-fresh :ac 0 :rsp-not-aligned rsp)) ;; #AC(0)
 
        ((mv flg new-rsp) (add-to-*sp rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
        ((mv flg0 val x86)
-        (rme-size operand-size rsp *ss* :r x86))
+        (rme-size operand-size rsp *ss* :r (alignment-checking-enabled-p x86) x86
+                  :mem-ptr? nil))
        ((when flg0)
-        (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; #SS(0)
+        (cond
+         ;; FIXME? The non-canonical-address error won't come
+         ;; up here because we already check for that in add-to-*sp
+         ;; above.
+         ((and (consp flg0) (eql (car flg0) :non-canonical-address))
+          (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; #SS(0)
+         ((and (consp flg0) (eql (car flg0) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :memory-access-unaligned rsp)) ;; #AC(0)
+         (t ;; Unclassified error!
+          (!!fault-fresh flg0))))
 
        ;; See "Z" in http://ref.x86asm.net/geek.html#x58.
        (reg (logand opcode #x07))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
        ;; (Intel manual, Mar'17, Vol. 2 says, in the specification of POP,
@@ -585,7 +590,7 @@ the execution in this case.</p>"
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p3? (equal #.*operand-size-override*
-                  (prefixes-slice :group-3-prefix prefixes)))
+                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
@@ -604,19 +609,24 @@ the execution in this case.</p>"
               (if p3? 4 2)))))
 
        (rsp (read-*sp x86))
-       (inst-ac? (alignment-checking-enabled-p x86))
-       ((when (and inst-ac?
-                   (not (equal (logand rsp (the (integer 0 15) (- operand-size 1)))
-                               0))))
-        (!!fault-fresh :ac 0 :rsp-not-aligned rsp)) ;; #AC(0)
 
        ((mv flg new-rsp) (add-to-*sp rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
+       (check-alignment? (alignment-checking-enabled-p x86))
        ((mv flg0 val x86)
-        (rme-size operand-size rsp *ss* :r x86))
+        (rme-size operand-size rsp *ss* :r check-alignment? x86
+                  :mem-ptr? nil))
        ((when flg0)
-        (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; # SS(0)
+        (cond
+         ;; FIXME? The non-canonical-address error won't come up here
+         ;; because we already check for that in add-to-*sp above.
+         ((and (consp flg0) (eql (car flg0) :non-canonical-address))
+          (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; #SS(0)
+         ((and (consp flg0) (eql (car flg0) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :memory-access-unaligned flg0)) ;; #AC(0)
+         (t ;; Unclassified error!
+          (!!fault-fresh flg0))))
 
        ((mv flg1
             (the (signed-byte 64) v-addr)
@@ -657,25 +667,18 @@ the execution in this case.</p>"
 
        ((mv flg3 x86)
         (x86-operand-to-reg/mem
-         operand-size inst-ac?
+         operand-size check-alignment?
          nil ;; Not a memory pointer operand
          val v-addr rex-byte r/m mod x86))
        ((when flg3)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
 
-       ((mv flg temp-rip) (increment-*ip temp-rip increment-RIP-by x86))
+       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
 
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
        (x86 (write-*sp new-rsp x86))
@@ -834,12 +837,6 @@ the execution in this case.</p>"
        (new-rsp (- rsp operand-size))
        ((when (not (canonical-address-p new-rsp)))
         (!!fault-fresh :ss 0 :new-rsp-not-canonical new-rsp)) ;; #SS(0)
-       (inst-ac? (alignment-checking-enabled-p x86))
-       ((when (and inst-ac?
-                   (not (equal (logand new-rsp
-                                       (the (integer 0 15) (- operand-size 1)))
-                               0))))
-        (!!fault-fresh :ac 0 :new-rsp-not-aligned new-rsp)) ;; #AC(0)
 
        ((the (unsigned-byte 32) eflags) (rflags x86))
 
@@ -864,9 +861,19 @@ the execution in this case.</p>"
                   (the (signed-byte #.*max-linear-address-size*) new-rsp)
                   *ss*
                   eflags
-                  x86))
+                  (alignment-checking-enabled-p x86)
+                  x86
+                  :mem-ptr? nil))
        ((when flg)
-        (!!fault-fresh :ss 0 :wme-size-error flg)) ;; #SS(0)
+        (cond
+         ;; FIXME? The non-canonical-address error won't come
+         ;; up here because we already check for that in above.
+         ((and (consp flg) (eql (car flg) :non-canonical-address))
+          (!!fault-fresh :ss 0 :wme-size-error flg)) ;; #SS(0)
+         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :memory-access-unaligned flg)) ;; #AC(0)
+         (t ;; Unclassified error!
+          (!!fault-fresh flg))))
        (x86 (!rip temp-rip x86))
        (x86 (!rgfi *rsp* new-rsp x86)))
     x86))
@@ -953,12 +960,6 @@ the execution in this case.</p>"
        (rsp (rgfi *rsp* x86))
        ((when (not (canonical-address-p rsp)))
         (!!fault-fresh :ss 0 :rsp-not-canonical rsp)) ;; #SS(0)
-       (inst-ac? (alignment-checking-enabled-p x86))
-       ((when (and inst-ac?
-                   (not (equal (logand rsp
-                                       (the (integer 0 15) (- operand-size 1)))
-                               0))))
-        (!!fault-fresh :ac 0 :rsp-not-aligned rsp)) ;; #AC(0)
        ((the (signed-byte #.*max-linear-address-size+1*) new-rsp)
         (+ (the (signed-byte #.*max-linear-address-size*) rsp) operand-size))
        ;; Raise a #SS exception.
@@ -966,14 +967,23 @@ the execution in this case.</p>"
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               new-rsp))))
+                                  new-rsp))))
         (!!fault-fresh :ss 0
                        :ss-exception-new-rsp-not-canonical new-rsp)) ;; #SS(0)
 
        ((mv flg0 val x86)
-        (rme-size operand-size rsp *ss* :r x86))
+        (rme-size operand-size rsp *ss* :r (alignment-checking-enabled-p x86) x86
+                  :mem-ptr? nil))
        ((when flg0)
-        (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; #SS(0)
+        (cond
+         ;; FIXME? The non-canonical-address error won't come up here
+         ;; because we already check for that above.
+         ((and (consp flg0) (eql (car flg0) :non-canonical-address))
+          (!!fault-fresh :ss 0 :riml64-error flg0)) ;; #SS(0)
+         ((and (consp flg0) (eql (car flg0) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :memory-access-unaligned flg0)) ;; #AC(0)
+         (t ;; Unclassified error!
+          (!!fault-fresh flg0))))
 
        ((the (unsigned-byte 32) val)
         ;; All reserved bits should be unaffected.  This ensures that the bit 1
@@ -1010,7 +1020,7 @@ the execution in this case.</p>"
                    :exec (<= #.*2^47*
                              (the (signed-byte
                                    #.*max-linear-address-size+1*)
-                               temp-rip))))
+                                  temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
        (x86 (!rip temp-rip x86)))
     x86))
@@ -1019,7 +1029,7 @@ the execution in this case.</p>"
 ;; INSTRUCTION: PUSHA/PUSHAD
 ;; ======================================================================
 
-;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
 
 (def-inst x86-pusha
 
@@ -1029,8 +1039,22 @@ the execution in this case.</p>"
 
   :long
   "<p>
-   This is invalid in 64-bit mode.
-   It throws a #UD exception.
+   In 64-bit mode, this instruction is invalid; it throws a #UD exception.
+   </p>
+   <p>
+   Note that the stack pointer is read twice:
+   via  @(tsee read-*sp) and via @(tsee rgfi-size).
+   The former is used as the address to write into the stack,
+   while the latter is used as (part of) the data to write into the stack.
+   In principle, the sizes of these two stack pointers may differ:
+   the former's size is determined solely by CS.D,
+   while the latter's size is also influenced
+   by the operand size override prefix.
+   It seems odd that the two sizes would differ, though.
+   </p>
+   <p>
+   We use some simple and repetitive code to write the registers into the stack.
+   It may be possible to optimize it by pushing all the registers in one shot.
    </p>"
 
   :implemented
@@ -1039,15 +1063,97 @@ the execution in this case.</p>"
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
+  :prepwork
+  ((local (in-theory (e/d* () ((tau-system))))))
   :body
-  (b* ((ctx 'x86-pusha))
-    (!!fault-fresh :ud nil))) ;; #UD
+
+  (b* ((ctx 'x86-pusha)
+
+       ((when (64-bit-modep x86)) (!!fault-fresh :ud nil)) ;; #UD
+
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       ((the (integer 2 4) operand-size)
+        (select-operand-size nil 0 nil prefixes x86))
+
+       (rsp (read-*sp x86))
+
+       (eax/ax (rgfi-size operand-size *rax* 0 x86))
+       (ecx/cx (rgfi-size operand-size *rcx* 0 x86))
+       (edx/dx (rgfi-size operand-size *rdx* 0 x86))
+       (ebx/bx (rgfi-size operand-size *rbx* 0 x86))
+       (esp/sp (rgfi-size operand-size *rsp* 0 x86))
+       (ebp/bp (rgfi-size operand-size *rbp* 0 x86))
+       (esi/si (rgfi-size operand-size *rsi* 0 x86))
+       (edi/di (rgfi-size operand-size *rdi* 0 x86))
+
+       ;; Because it suffices to check the initial stack pointer for
+       ;; alignment just once here, we bypass alignment checking from
+       ;; the second call of wme-size onwards.
+       (check-alignment? (alignment-checking-enabled-p x86))
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* eax/ax check-alignment? x86 :mem-ptr? nil))
+       ((when flg)
+        (cond
+         ;; FIXME? The non-canonical-address error won't come up here
+         ;; because we already check for that in add-to-*sp above.
+         ((and (consp flg) (eql (car flg) :non-canonical-address))
+          (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :push flg)) ;; #AC(0)
+         (t                                ;; Unclassified error!
+          (!!fault-fresh flg))))
+
+       (check-alignment? nil)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* ecx/cx check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* edx/dx check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* ebx/bx check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* esp/sp check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* ebp/bp check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* esi/si check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size operand-size rsp *ss* edi/di check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       (x86 (write-*sp rsp x86))
+       (x86 (write-*ip temp-rip x86)))
+
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: POPA/POPAD
 ;; ======================================================================
 
-;; Added by Alessandro Coglio (coglio@kestrel.edu), Kestrel Institute.
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
 
 (def-inst x86-popa
 
@@ -1057,8 +1163,11 @@ the execution in this case.</p>"
 
   :long
   "<p>
-   This is invalid in 64-bit mode.
-   It throws a #UD exception.
+   In 64-bit mode, this instruction is invalid; it throws a #UD exception.
+   </p>
+   <p>
+   We use some simple and repetitive code to read the registers from the stack.
+   It may be possible to optimize it by popping all the registers in one shot.
    </p>"
 
   :implemented
@@ -1067,8 +1176,110 @@ the execution in this case.</p>"
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
+  :prepwork
+  ( ;; I wouldn't need the following two lemmas if I left tau enabled.
+   ;; Since tau slows the guard proof down, I'd rather have these
+   ;; lemmas here locally.
+   (local
+    (defthm integerp-of-rme16-value
+      (implies (x86p x86)
+               (b* (((mv ?flg ?word ?x86-new)
+                     (rme16 eff-addr
+                            seg-reg r-x check-alignment? x86)))
+                 (integerp word)))))
+
+   (local
+    (defthm integerp-of-rme32-value
+      (implies (x86p x86)
+               (b* (((mv ?flg ?dword ?x86-new)
+                     (rme32 eff-addr seg-reg
+                            r-x check-alignment? x86 :mem-ptr? mem-ptr?)))
+                 (integerp dword)))))
+
+   (local (in-theory (e/d* (rme-size-of-2-to-rme16
+                            rme-size-of-4-to-rme32)
+                           ((tau-system))))))
+
   :body
-  (b* ((ctx 'x86-popa))
-    (!!fault-fresh :ud nil))) ;; #UD
+  (b* ((ctx 'x86-popa)
+
+       ((when (64-bit-modep x86)) (!!fault-fresh :ud nil)) ;; #UD
+
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       ((the (integer 2 4) operand-size)
+        (select-operand-size nil 0 nil prefixes x86))
+
+       (rsp (read-*sp x86))
+
+       ;; Because it suffices to check the initial stack pointer for
+       ;; alignment just once here, we bypass alignment checking from
+       ;; the second call of rme-size onwards.
+       (check-alignment? (alignment-checking-enabled-p x86))
+
+       ((mv flg edi/di x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((when flg)
+        (cond
+         ((and (consp flg) (eql (car flg) :non-canonical-address))
+          (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :pop flg)) ;; #AC(0)
+         (t                               ;; Unclassified error!
+          (!!fault-fresh flg))))
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       (check-alignment? nil)
+
+       ((mv flg esi/si x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ((mv flg ebp/bp x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ;; pushed ESP/SP is not actually read (see pseudocode in
+       ;; Intel manual, Mar'17, Volume 2, POPA/POPAD reference):
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ((mv flg ebx/bx x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ((mv flg edx/dx x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ((mv flg ecx/cx x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ((mv flg eax/ax x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       (x86 (!rgfi-size operand-size *rdi* edi/di 0 x86))
+       (x86 (!rgfi-size operand-size *rsi* esi/si 0 x86))
+       (x86 (!rgfi-size operand-size *rbp* ebp/bp 0 x86))
+       ;; ESP/SP is not actually written (see pseudocode in
+       ;; Intel manual, Mar'17, Volume 2, POPA/POPAD reference)
+       (x86 (!rgfi-size operand-size *rbx* ebx/bx 0 x86))
+       (x86 (!rgfi-size operand-size *rdx* edx/dx 0 x86))
+       (x86 (!rgfi-size operand-size *rcx* ecx/cx 0 x86))
+       (x86 (!rgfi-size operand-size *rax* eax/ax 0 x86))
+
+       (x86 (write-*sp rsp x86))
+       (x86 (write-*ip temp-rip x86)))
+
+    x86))
 
 ;; ======================================================================

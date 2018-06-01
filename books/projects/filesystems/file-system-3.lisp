@@ -12,131 +12,27 @@
 
 (include-book "misc/assert" :dir :system)
 (include-book "bounded-nat-listp")
+(include-book "block-listp")
 (include-book "file-system-2")
-
-;; I don't think blocks are 8 characters long in any system; I simply set this
-;; in order to actually get fragmentation without having to make unreasonably
-;; large examples.
-(defconst *blocksize* 8)
-
-;; This fragments a character-list into blocks that are *blocksize*-character
-;; long. If the character-list is not exactly aligned to a block boundary, we
-;; fill the space with null characters.
-;; It will be used in wrchs.
-(defun make-blocks (text)
-  (declare (xargs :guard (character-listp text)
-                  :measure (len text)))
-  (if (atom text)
-      nil
-    (cons (make-character-list (take *blocksize* text))
-          (make-blocks (nthcdr *blocksize* text)))))
-
-;; Characterisation of a disk, which is a list of blocks as described before.
-(defun block-listp (block-list)
-  (declare (xargs :guard t))
-  (if (atom block-list)
-      (eq block-list nil)
-    (and (character-listp (car block-list))
-         (equal (len (car block-list)) *blocksize*)
-         (block-listp (cdr block-list)))))
-
-;; Proving that we get a proper block-list out of make-blocks.
-(defthm make-blocks-correctness-2
-        (implies (character-listp text)
-                 (block-listp (make-blocks text))))
-;; Lemma
-(defthm block-listp-correctness-1
-  (implies (block-listp block-list)
-           (true-listp block-list))
-  :rule-classes (:forward-chaining))
-
-;; Lemma
-(defthm block-listp-correctness-2
-  (implies (and (block-listp block-list1) (block-listp block-list2))
-           (block-listp (binary-append block-list1 block-list2))))
-
-;; This function spells out how many characters can be in a file given the
-;; number of blocks associated with it. It is kept disabled in order to avoid
-;; huge arithmetic-heavy subgoals where they're not wanted.
-(defund feasible-file-length-p (index-list-length file-length)
-  (declare (xargs :guard (and (natp file-length) (natp index-list-length))))
-  (and (> file-length
-          (* *blocksize* (- index-list-length 1)))
-       (<= file-length
-           (* *blocksize* index-list-length))))
-
-;; This is the counterpart of make-blocks that collapses blocks into a
-;; character-list of the appropriate length.
-;; It will be used in stat and, by extension, in rdchs.
-(defun unmake-blocks (blocks n)
-  (declare (xargs :guard (and (block-listp blocks)
-                              (natp n)
-                              (feasible-file-length-p (len blocks) n))
-                  :guard-hints (("Goal" :in-theory (enable feasible-file-length-p)) )))
-  (if (atom blocks)
-      nil
-    (if (atom (cdr blocks))
-        (take n (car blocks))
-      (binary-append (car blocks)
-                     (unmake-blocks (cdr blocks) (- n *blocksize*))))))
-
-;; Proving that we get a proper character-list out provided we don't ask for
-;; more characters than we have.
-(defthm unmake-blocks-correctness-1
-  (implies (and (block-listp blocks)
-                (natp n)
-                (feasible-file-length-p (len blocks) n))
-           (character-listp (unmake-blocks blocks n)))
-  :hints (("Goal" :in-theory (enable feasible-file-length-p)) ))
-
-(defthm unmake-make-blocks-lemma-1
-        (implies (natp n)
-                 (iff (consp (nthcdr n l)) (> (len l) n)))
-        :hints (("Goal" :induct (nthcdr n l))))
-
-(defthm unmake-make-blocks-lemma-2
-  (implies (and (natp n) (>= (len l) n))
-           (equal (len (nthcdr n l)) (- (len l) n))))
-
-(encapsulate ()
-  (local (include-book "std/lists/repeat" :dir :system))
-
-  ;; Proving that make and unmake are, in a sense, inverse functions of each
-  ;; other.
-  (defthm unmake-make-blocks
-    (implies (and (character-listp text))
-             (equal (unmake-blocks (make-blocks text) (len text)) text))
-    :hints (("Subgoal *1/3.2" :in-theory (disable unmake-make-blocks-lemma-1)
-             :use (:instance unmake-make-blocks-lemma-1 (n *blocksize*) (l
-                                                                         text)))
-            ("Subgoal *1/3.1'"
-             :in-theory (disable already-a-character-list
-                                 take-of-too-many)
-             :use ((:instance take-of-too-many (x text) (n *blocksize*))
-                   (:instance unmake-make-blocks-lemma-1 (n *blocksize*) (l
-                                                                          text))))))
-
-  )
-
-;; This is a function that might be needed later.
-;; This is to be returned when a block is not found. It's full of null
-;; characters and is *blocksize* long.
-(defconst *nullblock* (make-character-list (take *blocksize* nil)))
 
 ;; This function serves to get the specified blocks from a disk. If the block
 ;; is not found (most likely because of an invalid index) we return a null block
 ;; as noted above.
-(defun fetch-blocks-by-indices (block-list index-list)
+(defun
+  fetch-blocks-by-indices
+  (block-list index-list)
   (declare (xargs :guard (and (block-listp block-list)
                               (nat-listp index-list))))
-  (if (atom index-list)
-      nil
-    (let ((tail (fetch-blocks-by-indices block-list (cdr index-list))) )
-      (if (>= (car index-list) (len block-list))
-          (cons *nullblock* tail)
+  (if
+   (atom index-list)
+   nil
+   (let
+    ((tail
+      (fetch-blocks-by-indices block-list (cdr index-list))))
+    (if (>= (car index-list) (len block-list))
+        (cons *nullblock* tail)
         (cons (nth (car index-list) block-list)
-              tail)
-        ))))
+              tail)))))
 
 ;; Prove that a proper block-list is returned.
 (defthm fetch-blocks-by-indices-correctness-1
@@ -157,23 +53,6 @@
    (equal (fetch-blocks-by-indices (binary-append block-list extra-blocks)
                                    index-list)
           (fetch-blocks-by-indices block-list index-list))))
-
-(defthm
-  make-blocks-correctness-1
-  (implies (character-listp text)
-           (and (< (- (* *blocksize* (len (make-blocks text)))
-                      *blocksize*)
-                   (len text))
-                (not (< (* *blocksize* (len (make-blocks text)))
-                        (len text)))))
-  :instructions (:induct (:change-goal (main . 2) t)
-                         :bash :promote
-                         (:claim (character-listp (nthcdr *blocksize* text)))
-                         (:casesplit (>= (len text) *blocksize*))
-                         :bash :bash (:demote 1)
-                         (:dive 1 1)
-                         :x
-                         :top :s))
 
 ;; This function, which is kept disabled, recognises a regular file entry. I am
 ;; deciding not to make things overly complicated by making getter and setter
@@ -456,8 +335,7 @@
 ; This function deletes a file or directory given its path.
 
 ; Note that we don't need to do anything with the disk - the blocks can just
-; lie there, forever unreferred to. In a later model we might think about
-; re-using the blocks.
+; lie there, forever unreferred to. In model 4, we start re-using the blocks.
 (defun l3-unlink (hns fs)
   (declare (xargs :guard (and (symbol-listp hns)
                               (l3-fs-p fs))))
@@ -561,12 +439,6 @@
   
   )
 
-(defthm make-blocks-correctness-3
-  (implies (and (character-listp cl))
-           (feasible-file-length-p (len (make-blocks cl))  (len cl)))
-  :hints (("Goal" :in-theory (e/d (feasible-file-length-p) (make-blocks-correctness-1))
-           :use (:instance make-blocks-correctness-1 (text cl))) ))
-
 ; This function writes a specified text string to a specified position to a
 ; text file at a specified path.
 (defun l3-wrchs (hns fs disk start text)
@@ -613,7 +485,7 @@
   (implies (l3-fs-p fs)
            (l3-fs-p (delete-assoc-equal s fs))))
 
-(defthm l3-wrchs-returns-fs-lemma-2
+(defthmd l3-wrchs-returns-fs-lemma-2
   (implies (and (consp (assoc-equal s fs))
                 (l3-fs-p fs)
                 (consp (cdr (assoc-equal s fs)))
@@ -726,27 +598,19 @@
           (l3-to-l2-fs fs1 disk))))
 
 ;; This theorem shows the equivalence of the l3 and l2 versions of wrchs.
-(defthm l3-wrchs-correctness-1
+(defthm
+  l3-wrchs-correctness-1
   (implies (and (l3-bounded-fs-p fs (len disk))
                 (stringp text)
                 (natp start)
                 (symbol-listp hns)
                 (block-listp disk))
-           (equal (l2-wrchs hns (l3-to-l2-fs fs disk) start text)
-                  (mv-let (new-fs new-disk) (l3-wrchs hns fs disk start text)
+           (equal (l2-wrchs hns (l3-to-l2-fs fs disk)
+                            start text)
+                  (mv-let (new-fs new-disk)
+                    (l3-wrchs hns fs disk start text)
                     (l3-to-l2-fs new-fs new-disk))))
-  :hints (("Subgoal *1/8.9'"
-           :in-theory (disable l3-wrchs-returns-fs)
-           :use (:instance l3-wrchs-returns-fs (hns (cdr hns))
-                           (fs (cdr (assoc-equal (car hns) fs)))))
-          ("Subgoal *1/8.1'"
-           :in-theory (disable l3-wrchs-returns-fs l3-fs-p-assoc)
-           :use ((:instance l3-wrchs-returns-fs
-                            (fs (cdr (assoc-equal (car hns) fs)))
-                            (hns (cdr hns)))
-                 (:instance l3-fs-p-assoc
-                            (fs (cdr (assoc-equal (car hns) fs))))))
-          ("Subgoal *1/8'''"
+  :hints (("subgoal *1/8'''"
            :in-theory (disable l3-wrchs-returns-fs)
            :use (:instance l3-wrchs-returns-fs (hns (cdr hns))
                            (fs (cdr (assoc-equal (car hns) fs)))))))
@@ -846,8 +710,89 @@
            :use (:instance l3-wrchs-returns-fs (hns (cdr hns))
                            (fs (cdr (assoc-equal (car hns) fs))))) ))
 
+(defthm l3-read-after-write-1-lemma-2
+  (implies (and (l3-fs-p fs)
+                (block-listp disk)
+                (not (stringp (l3-stat hns fs disk))))
+           (l3-fs-p (l3-stat hns fs disk))))
+
+(defthm
+  l3-read-after-write-1-lemma-3
+  (implies
+   (and (l3-bounded-fs-p fs (len disk))
+        (block-listp disk)
+        (symbol-listp hns1)
+        (symbol-listp hns2)
+        (stringp text2)
+        (natp start2))
+   (mv-let (new-fs new-disk)
+     (l3-wrchs hns2 fs disk start2 text2)
+     (equal (stringp (l3-stat hns1 new-fs new-disk))
+            (stringp (l3-stat hns1 fs disk)))))
+  :hints
+  (("goal"
+    :in-theory (disable l2-read-after-write-2-lemma-4
+                        l3-stat-correctness-1
+                        l3-stat-correctness-2
+                        l3-wrchs-returns-fs)
+    :use
+    ((:instance l2-read-after-write-2-lemma-4
+                (fs (l3-to-l2-fs fs disk)))
+     (:instance
+      l3-stat-correctness-1 (hns hns1)
+      (fs (mv-nth 0 (l3-wrchs hns2 fs disk start2 text2)))
+      (disk (mv-nth 1
+                    (l3-wrchs hns2 fs disk start2 text2))))
+     (:instance
+      l3-stat-correctness-2 (hns hns1)
+      (fs (mv-nth 0 (l3-wrchs hns2 fs disk start2 text2)))
+      (disk (mv-nth 1
+                    (l3-wrchs hns2 fs disk start2 text2))))
+     (:instance l3-wrchs-returns-fs (hns hns2)
+                (start start2)
+                (text text2))))))
+
+(defthm
+  l3-stat-after-write
+  (implies
+   (and (l3-bounded-fs-p fs (len disk))
+        (stringp text2)
+        (symbol-listp hns1)
+        (symbol-listp hns2)
+        (natp start2)
+        (stringp (l3-stat hns1 fs disk))
+        (block-listp disk))
+   (mv-let
+     (new-fs new-disk)
+     (l3-wrchs hns2 fs disk start2 text2)
+     (equal
+      (l3-stat hns1 new-fs new-disk)
+      (if
+       (equal hns1 hns2)
+       (coerce (insert-text (coerce (l3-stat hns1 fs disk) 'list)
+                            start2 text2)
+               'string)
+       (l3-stat hns1 fs disk)))))
+  :hints
+  (("goal"
+    :in-theory (disable l3-stat-correctness-1
+                        l2-stat-after-write l3-wrchs-returns-fs)
+    :use
+    ((:instance l3-stat-correctness-1 (hns hns1))
+     (:instance
+      l3-stat-correctness-1 (hns hns1)
+      (fs (mv-nth 0 (l3-wrchs hns2 fs disk start2 text2)))
+      (disk (mv-nth 1
+                    (l3-wrchs hns2 fs disk start2 text2))))
+     (:instance l2-stat-after-write
+                (fs (l3-to-l2-fs fs disk)))
+     (:instance l3-wrchs-returns-fs (hns hns2)
+                (start start2)
+                (text text2))))))
+
 ;; This is a proof of the first read-after-write property.
-(defthm l3-read-after-write-1
+(defthm
+  l3-read-after-write-1
   (implies (and (l3-bounded-fs-p fs (len disk))
                 (stringp text)
                 (symbol-listp hns)
@@ -860,54 +805,42 @@
              (equal (l3-rdchs hns new-fs new-disk start n)
                     text)))
   :hints
-  (("Goal" :use ((:instance l3-rdchs-correctness-1
-                            (fs (mv-nth 0 (l3-wrchs hns fs disk start text)))
-                            (disk (mv-nth 1 (l3-wrchs hns fs disk start text)))
-                            (n (length text)))
-                 l3-wrchs-correctness-1
-                 (:instance l2-read-after-write-1
-                            (fs (l3-to-l2-fs fs disk)))
-                 l3-wrchs-returns-fs))))
+  (("goal"
+    :in-theory (disable l3-read-after-write-1-lemma-3
+                        l3-stat-after-write)
+    :use ((:instance l3-read-after-write-1-lemma-3 (hns1 hns)
+                     (hns2 hns)
+                     (start2 start)
+                     (text2 text))
+          (:instance l3-stat-after-write (hns1 hns)
+                     (hns2 hns)
+                     (start2 start)
+                     (text2 text))))))
 
 ;; This is a proof of the second read-after-write property.
 (defthm
   l3-read-after-write-2
-  (implies (and (block-listp disk)
-                (l3-bounded-fs-p fs (len disk))
-                (stringp text1)
-                (stringp text2)
-                (symbol-listp hns1)
-                (symbol-listp hns2)
-                (not (equal hns1 hns2))
-                (natp start1)
-                (natp start2)
-                (natp n1)
-                (natp n2)
-                (stringp (l3-stat hns1 fs disk)))
-           (mv-let (new-fs new-disk)
-             (l3-wrchs hns2 fs disk start2 text2)
-             (equal (l3-rdchs hns1 new-fs new-disk start1 n1)
-                    (l3-rdchs hns1 fs disk start1 n1))))
+  (implies
+   (and (block-listp disk)
+        (l3-bounded-fs-p fs (len disk))
+        (stringp text1)
+        (stringp text2)
+        (symbol-listp hns1)
+        (symbol-listp hns2)
+        (not (equal hns1 hns2))
+        (natp start1)
+        (natp start2)
+        (natp n1)
+        (natp n2))
+   (mv-let (new-fs new-disk)
+     (l3-wrchs hns2 fs disk start2 text2)
+     (equal (l3-rdchs hns1 new-fs new-disk start1 n1)
+            (l3-rdchs hns1 fs disk start1 n1))))
   :hints
   (("goal"
-    :in-theory (disable l3-wrchs-returns-fs
-                        l2-read-after-write-2
-                        l3-rdchs-correctness-1
-                        l3-rdchs-correctness-1)
-    :use ((:instance l3-wrchs-returns-fs (hns hns2)
-                     (start start2)
-                     (text text2))
-          (:instance l2-read-after-write-2
-                     (fs (l3-to-l2-fs fs disk)))
-          (:instance l3-rdchs-correctness-1
-                     (fs (mv-nth 0 (l3-wrchs hns2 fs disk start2 text2)))
-                     (disk (mv-nth 1 (l3-wrchs hns2 fs disk start2 text2)))
-                     (hns hns1)
-                     (start start1)
-                     (n n1))
-          (:instance l3-rdchs-correctness-1 (hns hns1)
-                     (start start1)
-                     (n n1))))))
+    :in-theory (disable l3-read-after-write-1-lemma-3
+                        l3-stat-after-write)
+    :use (l3-read-after-write-1-lemma-3 l3-stat-after-write))))
 
 ;; This proves the equivalent of the first read-after-write property for
 ;; create.
@@ -966,7 +899,8 @@
                        (:rewrite l3-create-returns-fs)
                        (:rewrite l3-stat-correctness-1)
                        (:rewrite l3-create-correctness-1)
-                       (:rewrite l3-rdchs-correctness-1))
+                       (:rewrite l3-rdchs-correctness-1)
+                       l3-bounded-fs-p-correctness-1)
            :use ((:instance l2-read-after-create-2
                             (fs (l3-to-l2-fs fs disk)))
                  l3-to-l2-fs-correctness-1

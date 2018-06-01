@@ -1,6 +1,6 @@
 ; Error Checking
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -460,23 +460,22 @@
 
 (def-error-checker ensure-symbol-list
   ((x "Value to check."))
-  "Cause an error if a value is not a @('nil')-terminated list of symbols."
+  "Cause an error if a value is not a true list of symbols."
   (((symbol-listp x)
-    "~@0 must be a NIL-terminated list of symbols." description)))
+    "~@0 must be a true list of symbols." description)))
 
 (def-error-checker ensure-symbol-alist
   ((x "Value to check."))
-  "Cause an error if a value is not a @('nil')-terminated alist
+  "Cause an error if a value is not a true alist
    whose keys are symbols."
   (((symbol-alistp x)
     "~@0 must be an alist with symbols as keys." description)))
 
 (def-error-checker ensure-symbol-true-list-alist
   ((x "Value to check."))
-  "Cause an error if a value is not
-   an alist from symbols to @('nil')-terminated lists."
+  "Cause an error if a value is not an alist from symbols to true lists."
   (((symbol-true-list-alistp x)
-    "~@0 must be an alist from symbols to NIL-terminated lists."
+    "~@0 must be an alist from symbols to true lists."
     description)))
 
 (def-error-checker ensure-symbol-different
@@ -489,15 +488,15 @@
 
 (def-error-checker ensure-list-no-duplicates
   ((list true-listp "List to check."))
-  "Cause an error if a @('nil')-terminated list has duplicates."
+  "Cause an error if a true list has duplicates."
   (((no-duplicatesp-equal list)
     "~@0 must have no duplicates." description)))
 
 (def-error-checker ensure-list-subset
   ((list true-listp "List to check.")
    (super true-listp "List that must include all the elements of @('list')."))
-  "Cause an error if any element of a @('nil')-terminated list
-   is not a member of another @('nil')-terminated list."
+  "Cause an error if any element of a true list
+   is not a member of another true list."
   (((subsetp-equal list super)
     "~@0 must have only elements in ~x1, but it includes the ~@2."
     description
@@ -509,18 +508,39 @@
 
 (def-error-checker ensure-doublet-list
   ((x "Value to check."))
-  "Cause an error if a value is not a @('nil')-terminated list of doublets."
+  "Cause an error if a value is not a true list of doublets."
   (((doublet-listp x)
-    "~@0 must be a NIL-terminated list of doublets."
+    "~@0 must be a true list of doublets."
     description)))
 
 (def-error-checker ensure-keyword-value-list
   ((x "Value to check."))
-  "Cause an error if a value if not a @('nil')-terminated list of even length
+  "Cause an error if a value if not a true list of even length
    with keywords at its even-numbered positions (counting from 0)."
-  (((keyword-value-listp x) "~@0 must a NIL-terminated list of even length ~
+  (((keyword-value-listp x) "~@0 must a true list of even length ~
                              with keywords at its even-numbered positions ~
                              (counting from 0)." description)))
+
+(def-error-checker ensure-member-of-list
+  ((x "Value to check.")
+   (list true-listp "List that must include @('x') as member.")
+   (list-description msgp "Description of @('list') for the error message."))
+  "Cause an error if a value is not a member of a list."
+  (((member-equal x list)
+    "~@0 must be ~@1." description list-description)))
+
+(def-error-checker ensure-not-member-of-list
+  ((x "Value to check.")
+   (list true-listp "List that must not include @('x') as member.")
+   (list-description msgp "Description of @('list') for the error message."))
+  "Cause an error if a value is a member of a list."
+  (((not (member-equal x list))
+    "~@0 must not be ~@1." description list-description)))
+
+(def-error-checker ensure-symbol-not-keyword
+  ((symb symbolp "Symbol to check."))
+  "Cause an error if a symbol is a keyword."
+  (((not (keywordp symb)) "~@0 must not be a keyword." description)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -832,6 +852,12 @@
   "Cause an error if a function is in program mode."
   (((logicp fn (w state))
     "~@0 must be in logic mode." description)))
+
+(def-error-checker ensure-function-program-mode
+  ((fn (function-namep fn (w state)) "Function to check."))
+  "Cause an error if a function is in logic mode."
+  (((programp fn (w state))
+    "~@0 must be in program mode." description)))
 
 (def-error-checker ensure-function-defined
   ((fn (logic-function-namep fn (w state)) "Function to check."))

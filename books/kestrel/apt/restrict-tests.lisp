@@ -1,6 +1,6 @@
 ; APT Domain Restriction Transformation -- Tests
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -146,7 +146,9 @@
   (must-be-redundant
    (defun nfix{1} (x)
      (declare (xargs :guard (natp x)))
-     (if (natp x) (if (and (integerp x) (<= 0 x)) x 0) :undefined))
+     (if (mbt (natp x))
+         (if (and (integerp x) (<= 0 x)) x 0)
+       :undefined))
    (defthm nfix-~>-nfix{1} (implies (natp x) (equal (nfix x) (nfix{1} x))))))
 
  ;; recursive, with guard verification:
@@ -157,7 +159,9 @@
      (declare (xargs :measure (acl2-count x)
                      :ruler-extenders :all
                      :guard (true-listp x)))
-     (if (true-listp x) (if (consp x) (+ 1 (len{1} (cdr x))) 0) :undefined))
+     (if (mbt (true-listp x))
+         (if (consp x) (+ 1 (len{1} (cdr x))) 0)
+       :undefined))
    (defthm len-~>-len{1} (implies (true-listp x) (equal (len x) (len{1} x))))))
 
  ;; non-recursive, without guard verification:
@@ -167,7 +171,9 @@
   (must-be-redundant
    (defun f{1} (x)
      (declare (xargs :guard (natp x) :verify-guards nil))
-     (if (natp x) x :undefined))
+     (if (mbt (natp x))
+         x
+       :undefined))
    (defthm f-~>-f{1} (implies (natp x) (equal (f x) (f{1} x))))))
 
  ;; recursive, without guard verification:
@@ -178,7 +184,9 @@
    (defun f{1} (x)
      (declare (xargs :measure (acl2-count x) :ruler-extenders :all
                      :guard (natp x) :verify-guards nil))
-     (if (natp x) (and (not (zp x)) (f{1} (+ -1 x))) :undefined))
+     (if (mbt (natp x))
+         (and (not (zp x)) (f{1} (+ -1 x)))
+       :undefined))
    (defthm f-~>-f{1} (implies (natp x) (equal (f x) (f{1} x)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -531,8 +539,6 @@
  (must-succeed
   (restrict nfix (natp x)
             :hints (:restriction-guard
-                    (("Goal" :in-theory (enable natp)))
-                    :restriction-of-rec-calls
                     (("Goal" :in-theory (enable natp))))))
 
  ;; necessary hints:
@@ -544,7 +550,7 @@
     (local (defun q (x) x))
     (defthmd p=>q (implies (p x) (q x))))
   (defun f (x) (declare (xargs :guard (p x) :verify-guards t)) x)
-  (defun r (x) (declare (xargs :guard (q x) :verify-guards t)) x)
+  (defun r (x) (declare (xargs :guard (q x) :verify-guards t)) (and x t))
   (must-fail (restrict f (r x)))
   (restrict f (r x)
             :hints (:restriction-guard (("Goal" :in-theory (enable p=>q)))))))
@@ -567,32 +573,20 @@
  (must-succeed (restrict nfix (natp x) :print nil)
                :with-output-off nil)
 
- ;; expansion output only:
- (must-succeed (restrict nfix (natp x) :print :expand)
+ ;; error output:
+ (must-succeed (restrict nfix (natp x) :print :error)
                :with-output-off nil)
 
- ;; submission output only:
- (must-succeed (restrict nfix (natp x) :print :submit)
-               :with-output-off nil)
-
- ;; result output only:
+ ;; result output::
  (must-succeed (restrict nfix (natp x) :print :result)
                :with-output-off nil)
 
- ;; expansion and submission output only:
- (must-succeed (restrict nfix (natp x) :print (:expand :submit))
-               :with-output-off nil)
-
- ;; expansion and result output only:
- (must-succeed (restrict nfix (natp x) :print (:expand :result))
-               :with-output-off nil)
-
- ;; submission and result output only:
- (must-succeed (restrict nfix (natp x) :print (:submit :result))
+ ;; information output:
+ (must-succeed (restrict nfix (natp x) :print :info)
                :with-output-off nil)
 
  ;; all output:
- (must-succeed (restrict nfix (natp x) :print t)
+ (must-succeed (restrict nfix (natp x) :print :all)
                :with-output-off nil)
 
  :with-output-off nil)
@@ -617,9 +611,10 @@
  (must-succeed*
   (restrict nfix (natp x) :show-only t)
   (restrict nfix (natp x) :show-only t :print nil)
-  (restrict nfix (natp x) :show-only t :print :expand)
-  (restrict nfix (natp x) :show-only t :print :submit)
+  (restrict nfix (natp x) :show-only t :print :error)
   (restrict nfix (natp x) :show-only t :print :result)
+  (restrict nfix (natp x) :show-only t :print :info)
+  (restrict nfix (natp x) :show-only t :print :all)
   (assert! (not (function-namep 'nfix{1} (w state))))
   :with-output-off nil)
 
@@ -641,39 +636,39 @@
  (must-succeed*
   (restrict nfix (natp x))
   (must-be-redundant (restrict nfix (natp x)))
-  (must-be-redundant (restrict nfix (natp x) :print t))
+  (must-be-redundant (restrict nfix (natp x) :print :all))
   (must-be-redundant (restrict nfix (natp x) :print nil))
   (must-be-redundant (restrict nfix (natp x) :show-only t))
   (must-be-redundant (restrict nfix (natp x) :show-only nil))
-  (must-be-redundant (restrict nfix (natp x) :print t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :print :all :show-only t))
   (must-be-redundant (restrict nfix (natp x) :print nil :show-only t))
-  (must-be-redundant (restrict nfix (natp x) :print t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :print :all :show-only nil))
   (must-be-redundant (restrict nfix (natp x) :print nil :show-only nil)))
 
- ;; initial call with :PRINT T and without :SHOW-ONLY:
+ ;; initial call with :PRINT :ALL and without :SHOW-ONLY:
  (must-succeed*
-  (restrict nfix (natp x) :print t)
+  (restrict nfix (natp x) :print :all)
   (must-be-redundant (restrict nfix (natp x)))
-  (must-be-redundant (restrict nfix (natp x) :print t))
+  (must-be-redundant (restrict nfix (natp x) :print :all))
   (must-be-redundant (restrict nfix (natp x) :print nil))
   (must-be-redundant (restrict nfix (natp x) :show-only t))
   (must-be-redundant (restrict nfix (natp x) :show-only nil))
-  (must-be-redundant (restrict nfix (natp x) :print t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :print :all :show-only t))
   (must-be-redundant (restrict nfix (natp x) :print nil :show-only t))
-  (must-be-redundant (restrict nfix (natp x) :print t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :print :all :show-only nil))
   (must-be-redundant (restrict nfix (natp x) :print nil :show-only nil)))
 
  ;; initial call with :PRINT NIL and without :SHOW-ONLY:
  (must-succeed*
   (restrict nfix (natp x) :print nil)
   (must-be-redundant (restrict nfix (natp x)))
-  (must-be-redundant (restrict nfix (natp x) :print t))
+  (must-be-redundant (restrict nfix (natp x) :print :all))
   (must-be-redundant (restrict nfix (natp x) :print nil))
   (must-be-redundant (restrict nfix (natp x) :show-only t))
   (must-be-redundant (restrict nfix (natp x) :show-only nil))
-  (must-be-redundant (restrict nfix (natp x) :print t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :print :all :show-only t))
   (must-be-redundant (restrict nfix (natp x) :print nil :show-only t))
-  (must-be-redundant (restrict nfix (natp x) :print t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :print :all :show-only nil))
   (must-be-redundant (restrict nfix (natp x) :print nil :show-only nil)))
 
  ;; initial call without :PRINT and with :SHOW-ONLY T:
@@ -685,31 +680,31 @@
  (must-succeed*
   (restrict nfix (natp x) :show-only nil)
   (must-be-redundant (restrict nfix (natp x)))
-  (must-be-redundant (restrict nfix (natp x) :print t))
+  (must-be-redundant (restrict nfix (natp x) :print :all))
   (must-be-redundant (restrict nfix (natp x) :print nil))
   (must-be-redundant (restrict nfix (natp x) :show-only t))
   (must-be-redundant (restrict nfix (natp x) :show-only nil))
-  (must-be-redundant (restrict nfix (natp x) :print t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :print :all :show-only t))
   (must-be-redundant (restrict nfix (natp x) :print nil :show-only t))
-  (must-be-redundant (restrict nfix (natp x) :print t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :print :all :show-only nil))
   (must-be-redundant (restrict nfix (natp x) :print nil :show-only nil)))
 
- ;; initial call with :PRINT T and with :SHOW-ONLY T:
+ ;; initial call with :PRINT :ALL and with :SHOW-ONLY T:
  (must-succeed*
-  (restrict nfix (natp x) :print t :show-only t)
+  (restrict nfix (natp x) :print :all :show-only t)
   (must-fail-local (must-be-redundant (restrict nfix (natp x)))))
 
- ;; initial call with :PRINT T and with :SHOW-ONLY NIL:
+ ;; initial call with :PRINT :ALL and with :SHOW-ONLY NIL:
  (must-succeed*
-  (restrict nfix (natp x) :print t :show-only nil)
+  (restrict nfix (natp x) :print :all :show-only nil)
   (must-be-redundant (restrict nfix (natp x)))
-  (must-be-redundant (restrict nfix (natp x) :print t))
+  (must-be-redundant (restrict nfix (natp x) :print :all))
   (must-be-redundant (restrict nfix (natp x) :print nil))
   (must-be-redundant (restrict nfix (natp x) :show-only t))
   (must-be-redundant (restrict nfix (natp x) :show-only nil))
-  (must-be-redundant (restrict nfix (natp x) :print t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :print :all :show-only t))
   (must-be-redundant (restrict nfix (natp x) :print nil :show-only t))
-  (must-be-redundant (restrict nfix (natp x) :print t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :print :all :show-only nil))
   (must-be-redundant (restrict nfix (natp x) :print nil :show-only nil)))
 
  ;; initial call with :PRINT NIL and with :SHOW-ONLY T:
@@ -721,13 +716,13 @@
  (must-succeed*
   (restrict nfix (natp x) :print nil :show-only nil)
   (must-be-redundant (restrict nfix (natp x)))
-  (must-be-redundant (restrict nfix (natp x) :print t))
+  (must-be-redundant (restrict nfix (natp x) :print :all))
   (must-be-redundant (restrict nfix (natp x) :print nil))
   (must-be-redundant (restrict nfix (natp x) :show-only t))
   (must-be-redundant (restrict nfix (natp x) :show-only nil))
-  (must-be-redundant (restrict nfix (natp x) :print t :show-only t))
+  (must-be-redundant (restrict nfix (natp x) :print :all :show-only t))
   (must-be-redundant (restrict nfix (natp x) :print nil :show-only t))
-  (must-be-redundant (restrict nfix (natp x) :print t :show-only nil))
+  (must-be-redundant (restrict nfix (natp x) :print :all :show-only nil))
   (must-be-redundant (restrict nfix (natp x) :print nil :show-only nil)))
 
  ;; non-redundant calls:

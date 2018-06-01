@@ -1,7 +1,7 @@
 ; World Queries
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2017 Regents of the University of Texas
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -36,7 +36,7 @@
    </p>
    <p>
    Many of these world query utilities come in two variants:
-   a &ldquo;fast&rdquo; one and a &ldquo;logic-friendly&rdquo; one.
+   a ``fast'' one and a ``logic-friendly'' one.
    The former has relatively weak and no (strong) return type theorems;
    the latter has stronger guards and some run-time checks
    that are believed to never fail
@@ -59,7 +59,7 @@
    </p>
    <p>
    The fast variants provided below are named in a way
-   that is &ldquo;consistent&rdquo; with the built-in world query utilities.
+   that is ``consistent'' with the built-in world query utilities.
    The logic-friendly world query utilities are named by adding @('+')
    after the name of the corresponding fast world query utilities
    (both built-in and provided below).
@@ -164,21 +164,21 @@
   (function-namep x wrld)
   :guard (plist-worldp wrld)
   :parents (world-queries)
-  :short "Recognize @('nil')-terminated lists of symbols that name functions."
+  :short "Recognize true lists of symbols that name functions."
   :true-listp t)
 
 (std::deflist theorem-name-listp (x wrld)
   (theorem-namep x wrld)
   :guard (plist-worldp wrld)
   :parents (world-queries)
-  :short "Recognize @('nil')-terminated lists of symbols that name theorems."
+  :short "Recognize true lists of symbols that name theorems."
   :true-listp t)
 
 (std::deflist macro-name-listp (x wrld)
   (macro-namep x wrld)
   :guard (plist-worldp wrld)
   :parents (world-queries)
-  :short "Recognize @('nil')-terminated lists of symbols that name macros."
+  :short "Recognize true lists of symbols that name macros."
   :true-listp t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,7 +190,7 @@
   :returns (yes/no booleanp)
   :verify-guards nil
   :parents (world-queries)
-  :short "Recognize @('nil')-terminated lists of logical names."
+  :short "Recognize true lists of logical names."
   :long
   "<p>
    See @('logical-namep') in the ACL2 source code.
@@ -238,8 +238,7 @@
     (if (symbol-listp result)
         result
       (raise "Internal error: ~
-              the formals ~x0 of ~x1 are not ~
-              a NIL-terminated list of symbols."
+              the formals ~x0 of ~x1 are not a true list of symbols."
              result fn)))
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
@@ -280,8 +279,7 @@
     (if (symbol-listp result)
         result
       (raise "Internal error: ~
-              the STOBJS-IN property ~x0 of ~x1 ~
-              is not a NIL-terminated list of symbols."
+              the STOBJS-IN property ~x0 of ~x1 is not a true list of symbols."
              result fn))))
 
 (define stobjs-out+ ((fn (function-namep fn wrld))
@@ -306,8 +304,7 @@
     (if (symbol-listp result)
         result
       (raise "Internal error: ~
-              the STOBJS-OUT property ~x0 of ~x1 ~
-              is not a a NIL-terminated list of symbols."
+              the STOBJS-OUT property ~x0 of ~x1 is not a true list of symbols."
              result fn))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -329,8 +326,7 @@
     (if (true-listp result)
         result
       (raise "Internal error: ~
-              the MACRO-ARGS property ~x0 of ~x1 ~
-              is not a NIL-terminated list."
+              the MACRO-ARGS property ~x0 of ~x1 is not a true list."
              result mac))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -541,8 +537,8 @@
   :returns (unwrapped-body "A @(tsee pseudo-termp).")
   :verify-guards nil
   :parents (world-queries)
-  :short "Body of a logic-mode defined non-executable function,
-          without the &ldquo;non-executable wrapper&rdquo;."
+  :short "Body of a named logic-mode defined non-executable function,
+          without the ``non-executable wrapper''."
   :long
   "<p>
    @(tsee defun-nx) generates
@@ -612,7 +608,7 @@
   :guard (not (member-eq fn *stobjs-out-invalid*))
   :returns (n natp "Actually a @(tsee posp).")
   :parents (world-queries)
-  :short "Number of values returned by a function."
+  :short "Number of values returned by a named function."
   :long
   "<p>
    This is 1, unless the function uses @(tsee mv)
@@ -662,7 +658,7 @@
   :returns (yes/no booleanp)
   :verify-guards nil
   :parents (world-queries)
-  :short "Check if a function has no input or output @(see stobj)s."
+  :short "Check if a named function has no input or output @(see stobj)s."
   :long
   "<p>
    The function must not be in @('*stobjs-out-invalid*'),
@@ -694,9 +690,9 @@
   :returns (clique "A @(tsee symbol-listp).")
   :parents (world-queries)
   :short "List of mutually recursive functions of which
-          this function is a member,
+          the specified named function is a member,
           based on the @(tsee defun) form that introduced this function,
-          or @('nil') if this function is not recursive."
+          or @('nil') if the specified function is not recursive."
   :long
   "<p>
    This is a specialization of @(tsee recursivep)
@@ -726,8 +722,7 @@
     (if (symbol-listp result)
         result
       (raise "Internal error: ~
-              the RECURSIVEP property ~x0 of ~x1 ~
-              is not a NIL-terminated list of symbols."
+              the RECURSIVEP property ~x0 of ~x1 is not a true list of symbols."
              result fn))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -736,7 +731,7 @@
   :returns (measure "A @(tsee pseudo-termp).")
   :verify-guards nil
   :parents (world-queries)
-  :short "Measure expression of a logic-mode recursive function."
+  :short "Measure expression of a named logic-mode recursive function."
   :long
   "<p>
    See @(see xargs) for a discussion of the @(':measure') keyword.
@@ -784,7 +779,8 @@
   :returns (measured-subset "A @(tsee symbol-listp).")
   :verify-guards nil
   :parents (world-queries)
-  :short "Subset of the formal arguments of a logic-mode recursive function
+  :short "Subset of the formal arguments
+          of a named logic-mode recursive function
           that occur in its @(see measure) expression."
   :long
   "<p>
@@ -820,8 +816,7 @@
        (measured-subset (access justification justification :subset))
        ((unless (symbol-listp measured-subset))
         (raise "Internal error: ~
-                the measured subset ~x0 of ~x1 ~
-                is not a NIL-terminated list of symbols."
+                the measured subset ~x0 of ~x1 is not a true list of symbols."
                measured-subset fn)))
     measured-subset))
 
@@ -831,7 +826,7 @@
   :returns (well-founded-relation "A @(tsee symbolp).")
   :verify-guards nil
   :parents (world-queries)
-  :short "Well-founded relation of a logic-mode recursive function."
+  :short "Well-founded relation of a named logic-mode recursive function."
   :long
   "<p>
    See @(see well-founded-relation-rule)
@@ -882,7 +877,7 @@
   :returns (ruler-extenders "A @(tsee symbol-listp) of @(':all').")
   :verify-guards nil
   :parents (world-queries)
-  :short "Ruler-extenders of a logic-mode recursive function."
+  :short "Ruler-extenders of a named logic-mode recursive function."
   :long
   "<p>
    See @(see rulers) for background.
@@ -923,7 +918,7 @@
                     (eq ruler-extenders :all)))
         (raise "Internal error: ~
                 the well-founded relation ~x0 of ~x1 ~
-                is not a NIL-terminated list of symbols or :ALL."
+                is neither a true list of symbols nor :ALL."
                ruler-extenders fn)))
     ruler-extenders))
 
@@ -1107,7 +1102,7 @@
 (define induction-machine ((fn symbolp) (wrld plist-worldp))
   :returns (result "A @('pseudo-induction-machinep').")
   :parents (world-queries)
-  :short "Induction machine of a (singly) recursive logic-mode function."
+  :short "Induction machine of a named logic-mode (singly) recursive function."
   :long
   "<p>
    This is a list of @('tests-and-calls') records
@@ -1188,8 +1183,7 @@
 (std::deflist pseudo-tests-and-call-listp (x)
   (pseudo-tests-and-callp x)
   :parents (world-queries)
-  :short "Recognize @('nil')-terminated lists of
-          well-formed @('tests-and-call') records."
+  :short "Recognize true lists of well-formed @('tests-and-call') records."
   :true-listp t
   :elementp-of-nil nil)
 
@@ -1199,19 +1193,38 @@
   :returns (calls-with-tests "A @(tsee pseudo-tests-and-call-listp).")
   :mode :program
   :parents (world-queries)
-  :short "Recursive calls of a (singly) recursive logic-mode function,
+  :short "Recursive calls of a named non-mutually-recursive function,
           along with the controlling tests."
   :long
   "<p>
-   This is similar to the result of @(tsee induction-machine),
+   For singly recursive logic-mode functions,
+   this is similar to the result of @(tsee induction-machine),
    but each record has one recursive call (instead of zero or more),
    and there is exactly one record for each recursive call.
    </p>
    <p>
+   This utility works on both logic-mode and program-mode functions
+   (if the program-mode functions have an @('unnormalized-body') property).
+   This utility should not be called on a function that is
+   mutually recursive with other functions;
+   it must be called only on singly recursive functions,
+   or on non-recursive functions (the result is @('nil') in this case).
+   </p>
+   <p>
    This utility may be extended to handle also mutually recursive functions.
+   </p>
+   <p>
+   If the function is in logic mode and recursive,
+   we obtain its ruler extenders and pass them to
+   the built-in function @('termination-machine').
+   Otherwise, we pass the default ruler extenders.
    </p>"
-  (termination-machine
-   (list fn) (ubody fn wrld) nil nil (ruler-extenders fn wrld)))
+  (b* ((ruler-extenders (if (and (logicp fn wrld)
+                                 (irecursivep fn wrld))
+                            (ruler-extenders fn wrld)
+                          (default-ruler-extenders wrld))))
+    (termination-machine
+     (list fn) (ubody fn wrld) nil nil ruler-extenders)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1219,14 +1232,14 @@
   :returns (yes/no "A @(tsee booleanp).")
   :mode :program
   :parents (world-queries)
-  :short "Check if the definition of a function is disabled."
+  :short "Check if the definition of a named function is disabled."
   (if (member-equal `(:definition ,fn) (disabledp fn)) t nil))
 
 (define fundef-enabledp ((fn (function-namep fn (w state))) state)
   :returns (yes/no "A @(tsee booleanp).")
   :mode :program
   :parents (world-queries)
-  :short "Check if the definition of a function is enabled."
+  :short "Check if the definition of a named function is enabled."
   (not (fundef-disabledp fn state)))
 
 (define rune-disabledp ((rune (runep rune (w state))) state)
@@ -1258,7 +1271,7 @@
 (std::deflist pseudo-event-landmark-listp (x)
   (pseudo-event-landmarkp x)
   :parents (world-queries)
-  :short "Recognize @('nil')-terminated lists of event landmarks."
+  :short "Recognize true lists of event landmarks."
   :long
   "<p>
    See @('pseudo-event-landmarkp')
@@ -1270,7 +1283,7 @@
 (std::deflist pseudo-command-landmark-listp (x)
   (pseudo-command-landmarkp x)
   :parents (world-queries)
-  :short "Recognize @('nil')-terminated lists of command landmarks."
+  :short "Recognize true lists of command landmarks."
   :long
   "<p>
    See @('pseudo-command-landmarkp')

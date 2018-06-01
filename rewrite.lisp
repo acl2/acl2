@@ -4400,8 +4400,12 @@
           (t
            (mv term ttree)))))
 
-(defun rewrite-if1
-  (test left right type-alist geneqv ens ok-to-force wrld ttree)
+(defstub rewrite-if-avoid-swap () => *)
+
+(defattach (rewrite-if-avoid-swap constant-nil-function-arity-0))
+
+(defun rewrite-if1 (test left right swapped-p type-alist geneqv ens ok-to-force
+                         wrld ttree)
 
 ; Test, left and right are rewritten terms.  They were rewritten under
 ; appropriate extensions of type-alist.  We implement the following
@@ -4424,22 +4428,31 @@
 ; *nil* because of rewrite-solidify.  So we no longer use
 ; known-whether-nil here.
 
-  (cond ((equal left right) (mv left ttree))
-        ((equal right *nil*)
-         (cond
-          ((equal test left)
-           (mv test ttree))
-          ((equal left *t*)
-           (mv-let (ts ts-ttree)
-             (type-set test ok-to-force nil type-alist ens wrld ttree nil nil)
-             (cond ((ts-subsetp ts *ts-boolean*)
-                    (mv test ts-ttree))
-                   (t (rewrite-if11 (mcons-term* 'if test left right)
-                                    type-alist geneqv wrld ttree)))))
-          (t (rewrite-if11 (mcons-term* 'if test left right)
-                           type-alist geneqv wrld ttree))))
-        (t (rewrite-if11 (mcons-term* 'if test left right)
-                         type-alist geneqv wrld ttree))))
+  (flet ((if-call (test left right swapped-p)
+                  (cond ((and swapped-p (rewrite-if-avoid-swap))
+                         (mcons-term* 'if (dumb-negate-lit test) right left))
+                        (t (mcons-term* 'if test left right)))))
+    (cond ((equal left right) (mv left ttree))
+          ((equal right *nil*)
+           (cond
+            ((equal test left)
+             (mv test ttree))
+            ((equal left *t*)
+             (mv-let (ts ts-ttree)
+               (type-set test ok-to-force nil type-alist ens wrld ttree nil nil)
+               (cond ((ts-subsetp ts *ts-boolean*)
+                      (mv test ts-ttree))
+                     (t (rewrite-if11 (if-call test left right swapped-p)
+                                      type-alist geneqv wrld ttree)))))
+            (t (rewrite-if11 (if-call test left right swapped-p)
+                             type-alist geneqv wrld ttree))))
+          ((and swapped-p
+                (equal left *nil*)
+                (equal right *t*)
+                (rewrite-if-avoid-swap))
+           (mv (fcons-term* 'not test) ttree))
+          (t (rewrite-if11 (if-call test left right swapped-p)
+                           type-alist geneqv wrld ttree)))))
 
 ; Rockwell Addition: In the not-to-be-rewritten test below, we used to
 ; create an instantiation with sublis-var.  Now we chase var bindings.
@@ -8050,32 +8063,38 @@
        '(get-brr-local 'ancestors state)))
 
 (defun tilde-@-failure-reason-phrase1-backchain-limit (hyp-number
-                                                       pairs
+                                                       info
                                                        state)
-  (msg "a backchain limit was reached while processing :HYP ~x0.  ~@1"
-       hyp-number
-       (cond ((null pairs)
-              (let ((str "  Note that the brr command, :ANCESTORS, will show ~
-                          you the ancestors stack."))
-                (cond ((backchain-limit (w state) :rewrite)
-                       (msg "This appears to be due to the global ~
-                             backchain-limit of ~x0.~@1"
-                            (backchain-limit (w state) :rewrite)
-                            str))
-                      (t
-                       (msg "It is not clear how this could have happened.  ~
-                             Consider emailing a reproducible example to the ~
-                             ACL2 implementors.~@0"
-                            str)))))
-             (t
-              (msg "The ancestors stack is below.  The ~#0~[entry~/entries~] ~
-                    at index ~&0 ~#0~[shows~/each show~] a rune whose ~
-                    ~#0~[~/respective ~]backchain limit of ~v1 has been ~
-                    reached, for backchaining through its indicated ~
-                    hypothesis.~|~%~@2"
-                   (strip-cars pairs)
-                   (strip-cdrs pairs)
-                   (show-ancestors-stack-msg state))))))
+  (msg
+   "a backchain limit was reached while processing :HYP ~x0.  ~@1"
+   hyp-number
+   (cond
+    ((eq info :limit-0) ; see relieve-hyp
+     (msg "Note that the limit is 0 for that :HYP."))
+    (t ; info is a list of ancestors
+     (let ((pairs (backchain-limit-enforcers 0 info (w state))))
+       (cond
+        ((null pairs)
+         (let ((str "  Note that the brr command, :ANCESTORS, will show you ~
+                     the ancestors stack."))
+           (cond ((backchain-limit (w state) :rewrite)
+                  (msg "This appears to be due to the global backchain-limit ~
+                        of ~x0.~@1"
+                       (backchain-limit (w state) :rewrite)
+                       str))
+                 (t
+                  (msg "It is not clear how this could have happened.  ~
+                        Consider emailing a reproducible example to the ACL2 ~
+                        implementors.~@0"
+                       str)))))
+        (t
+         (msg "The ancestors stack is below.  The ~#0~[entry~/entries~] at ~
+               index ~&0 ~#0~[shows~/each show~] a rune whose ~
+               ~#0~[~/respective ~]backchain limit of ~v1 has been reached, ~
+               for backchaining through its indicated hypothesis.~|~%~@2"
+              (strip-cars pairs)
+              (strip-cdrs pairs)
+              (show-ancestors-stack-msg state)))))))))
 
 (mutual-recursion
 
@@ -8208,7 +8227,7 @@
                ((eq (cadr failure-reason) 'backchain-limit)
                 (tilde-@-failure-reason-phrase1-backchain-limit
                  n
-                 (backchain-limit-enforcers 0 (cddr failure-reason) (w state))
+                 (cddr failure-reason)
                  state))
                ((eq (cadr failure-reason) 'rewrote-to)
                 (msg ":HYP ~x0 rewrote to ~X12."
@@ -11544,6 +11563,14 @@
 
 (defun make-lambda-application (formals body actuals)
 
+; Warning: If you consider making a call of this function, ask yourself whether
+; make-lambda-term would be more appropriate; the answer depends on why you are
+; calling this function.  For example, the present function requires that every
+; free variable in body is a member of formals, but make-lambda-term does not.
+; The present function will drop an unused formal, but make-lambda-term does
+; not (though its caller could choose to "hide" such a formal; see
+; translate11-let).
+
 ; Example:
 ; (make-lambda-application '(x y z)
 ;                          '(foo x z)
@@ -12113,22 +12140,57 @@
                                    :obj '?
                                    :geneqv *geneqv-iff*
                                    :pequiv-info nil)
-                    (sl-let (rewritten-concl ttree)
-                            (rewrite-entry (rewrite (fargn term 2) alist 1)
-                                           :obj '?
-                                           :geneqv *geneqv-iff*
-                                           :pequiv-info nil)
-                            (mv step-limit
-                                (subcor-var
+                    (cond
+                     ((equal rewritten-test *nil*)
+                      (mv step-limit *t* ttree))
+                     (t
+                      (sl-let (rewritten-concl ttree)
+                              (rewrite-entry (rewrite (fargn term 2) alist 1)
+                                             :obj '?
+                                             :geneqv *geneqv-iff*
+                                             :pequiv-info nil)
+                              (cond
+                               ((equal rewritten-concl *nil*)
+                                (mv step-limit
+                                    (dumb-negate-lit rewritten-test)
+                                    ttree))
+                               ((or (quotep rewritten-concl) ; not *nil*
+				    (equal rewritten-test rewritten-concl))
+                                (mv step-limit *t* ttree))
+                               ((quotep rewritten-test) ; not *nil*
+
+; We already handle the case above that rewritten-test is *nil*.  So (implies
+; test concl) almost simplifies to rewritten-concl, the issue being that
+; implies returns a boolean but rewritten-concl might not be Boolean.  At this
+; point we have already handled the case that rewritten-concl is a quotep (so,
+; there is no opportunity at this point to simplify, for example, '3 to 't);
+; but we could perhaps simplify here by checking that the rewritten-concl has a
+; Boolean type-set.  However, it seems unlikely that such extra computational
+; effort would be worthwhile, since calls of implies can generally be expected
+; to be in a Boolean context, and we already optimize for that case just below.
+
+                                (let ((rune
+                                       (geneqv-refinementp 'iff geneqv wrld)))
+                                  (cond
+                                   (rune (mv step-limit
+                                             rewritten-concl
+                                             (push-lemma rune ttree)))
+                                   (t (mv step-limit
+                                          (fcons-term* 'if
+                                                       rewritten-concl
+                                                       *t*
+                                                       *nil*)
+                                          ttree)))))
+                               (t (mv step-limit
+                                      (subcor-var
 
 ; It seems reasonable to keep this in sync with the corresponding use of
 ; subcor-var in rewrite-atm.
 
-                                 (formals 'IMPLIES wrld)
-                                 (list rewritten-test
-                                       rewritten-concl)
-                                 (body 'IMPLIES t wrld))
-                                ttree))))
+                                       (formals 'IMPLIES wrld)
+                                       (list rewritten-test rewritten-concl)
+                                       (body 'IMPLIES t wrld))
+                                      ttree))))))))
            ((eq (ffn-symb term) 'double-rewrite)
             (sl-let
              (term ttree)
@@ -12345,26 +12407,30 @@
   (the-mv
    3
    (signed-byte 30)
-   (cond
-    ((and (ffn-symb-p test 'if)
-          (equal (fargn test 2) *nil*)
-          (equal (fargn test 3) *t*))
+   (mv-let
+     (test unrewritten-test left right swapped-p)
+     (cond
+      ((and (ffn-symb-p test 'if)
+            (equal (fargn test 2) *nil*)
+            (equal (fargn test 3) *t*))
 
 ; Note: In Nqthm the equality test against *t* was a known-whether-nil check.
 ; But unrewritten-test has been rewritten under equiv = 'iff.  Hence, its two
 ; branches were rewritten under 'iff.  Thus, if one of them is known non-nil
 ; under the type-alist then it was rewritten to *t*.
 
-     (rewrite-entry (rewrite-if (fargn test 1) nil right left alist)))
-    ((quotep test)
+       (mv (fargn test 1) nil right left t))
+      (t (mv test unrewritten-test left right nil)))
+     (cond
+      ((quotep test)
 
 ; It often happens that the test rewrites to *t* or *nil* and we can
 ; avoid the assume-true-false below.
 
-     (if (cadr test)
-         (if (and unrewritten-test ; optimization (see e.g. rewrite-if above)
-                  (geneqv-refinementp 'iff geneqv wrld)
-                  (equal unrewritten-test left))
+       (if (cadr test)
+           (if (and unrewritten-test ; optimization (see e.g. rewrite-if above)
+                    (geneqv-refinementp 'iff geneqv wrld)
+                    (equal unrewritten-test left))
 
 ; We are in the process of rewriting a term of the form (if x x y), which
 ; presumably came from an untranslated term of the form (or x y).  We do not
@@ -12372,16 +12438,16 @@
 ; the fact that the following is a theorem:  (iff (if x x y) (if x t y)).
 ; We will use this observation later in the body of this function as well.
 
-             (mv step-limit *t* ttree)
-           (rewrite-entry (rewrite left alist 2)))
-       (rewrite-entry (rewrite right alist 3))))
-    (t (let ((ens (access rewrite-constant rcnst :current-enabled-structure)))
-         (mv-let
-          (must-be-true
-           must-be-false
-           true-type-alist
-           false-type-alist
-           ts-ttree)
+               (mv step-limit *t* ttree)
+             (rewrite-entry (rewrite left alist 2)))
+         (rewrite-entry (rewrite right alist 3))))
+      (t (let ((ens (access rewrite-constant rcnst :current-enabled-structure)))
+           (mv-let
+             (must-be-true
+              must-be-false
+              true-type-alist
+              false-type-alist
+              ts-ttree)
 
 ; Once upon a time, the call of assume-true-false below was replaced by a call
 ; of repetitious-assume-true-false.  See the Essay on Repetitive Typing.  This
@@ -12426,58 +12492,60 @@
 ; power when rewriting the current clause, because it is potentially expensive
 ; and the user can see (and therefore change) what is going on.
 
-          (if ancestors
-              (assume-true-false test nil
-                                 (ok-to-force rcnst)
-                                 nil type-alist ens wrld
-                                 simplify-clause-pot-lst
-                                 (access rewrite-constant rcnst :pt)
-                                 nil)
-            (assume-true-false test nil
-                               (ok-to-force rcnst)
-                               nil type-alist ens wrld nil nil nil))
-          (cond
-           (must-be-true
-            (if (and unrewritten-test
-                     (geneqv-refinementp 'iff geneqv wrld)
-                     (equal unrewritten-test left))
-                (mv step-limit *t* (cons-tag-trees ts-ttree ttree))
-              (rewrite-entry (rewrite left alist 2)
-                             :type-alist true-type-alist
-                             :ttree (cons-tag-trees ts-ttree ttree))))
-           (must-be-false
-            (rewrite-entry (rewrite right alist 3)
-                           :type-alist false-type-alist
-                           :ttree (cons-tag-trees ts-ttree ttree)))
-           (t (let ((ttree (normalize-rw-any-cache ttree)))
-                (sl-let
-                 (rewritten-left ttree)
-                 (if (and unrewritten-test
-                          (geneqv-refinementp 'iff geneqv wrld)
-                          (equal unrewritten-test left))
-                     (mv step-limit *t* ttree)
-                   (sl-let (rw-left ttree1)
-                           (rewrite-entry (rewrite left alist 2)
-                                          :type-alist true-type-alist
-                                          :ttree (rw-cache-enter-context ttree))
-                           (mv step-limit
-                               rw-left
-                               (rw-cache-exit-context ttree ttree1))))
-                 (sl-let (rewritten-right ttree1)
-                         (rewrite-entry (rewrite right alist 3)
-                                        :type-alist false-type-alist
-                                        :ttree (rw-cache-enter-context ttree))
-                         (mv-let
-                           (rewritten-term ttree)
-                           (rewrite-if1 test
-                                        rewritten-left rewritten-right
-                                        type-alist geneqv ens
-                                        (ok-to-force rcnst)
-                                        wrld
-                                        (rw-cache-exit-context ttree ttree1))
-                           (rewrite-entry
-                            (rewrite-with-lemmas
-                             rewritten-term))))))))))))))
+             (if ancestors
+                 (assume-true-false test nil
+                                    (ok-to-force rcnst)
+                                    nil type-alist ens wrld
+                                    simplify-clause-pot-lst
+                                    (access rewrite-constant rcnst :pt)
+                                    nil)
+               (assume-true-false test nil
+                                  (ok-to-force rcnst)
+                                  nil type-alist ens wrld nil nil nil))
+             (cond
+              (must-be-true
+               (if (and unrewritten-test
+                        (geneqv-refinementp 'iff geneqv wrld)
+                        (equal unrewritten-test left))
+                   (mv step-limit *t* (cons-tag-trees ts-ttree ttree))
+                 (rewrite-entry (rewrite left alist 2)
+                                :type-alist true-type-alist
+                                :ttree (cons-tag-trees ts-ttree ttree))))
+              (must-be-false
+               (rewrite-entry (rewrite right alist 3)
+                              :type-alist false-type-alist
+                              :ttree (cons-tag-trees ts-ttree ttree)))
+              (t (let ((ttree (normalize-rw-any-cache ttree)))
+                   (sl-let
+                    (rewritten-left ttree)
+                    (if (and unrewritten-test
+                             (geneqv-refinementp 'iff geneqv wrld)
+                             (equal unrewritten-test left))
+                        (mv step-limit *t* ttree)
+                      (sl-let (rw-left ttree1)
+                              (rewrite-entry (rewrite left alist 2)
+                                             :type-alist true-type-alist
+                                             :ttree (rw-cache-enter-context ttree))
+                              (mv step-limit
+                                  rw-left
+                                  (rw-cache-exit-context ttree ttree1))))
+                    (sl-let (rewritten-right ttree1)
+                            (rewrite-entry (rewrite right alist 3)
+                                           :type-alist false-type-alist
+                                           :ttree (rw-cache-enter-context
+                                                   ttree))
+                            (mv-let
+                              (rewritten-term ttree)
+                              (rewrite-if1 test
+                                           rewritten-left rewritten-right
+                                           swapped-p
+                                           type-alist geneqv ens
+                                           (ok-to-force rcnst)
+                                           wrld
+                                           (rw-cache-exit-context ttree ttree1))
+                              (rewrite-entry
+                               (rewrite-with-lemmas
+                                rewritten-term)))))))))))))))
 
 (defun rewrite-args (args alist bkptr rewritten-args-rev
                           deep-pequiv-lst shallow-pequiv-lst
@@ -13125,7 +13193,14 @@
                                           (if on-ancestorsp
                                               'ancestors
                                             (cons 'backchain-limit
-                                                  ancestors))
+                                                  (or ancestors
+
+; If there are no ancestors, then the failure may be because the rune specifies
+; a backchain-limit of 0.
+
+                                                      (and (eql backchain-limit
+                                                                0)
+                                                           :limit-0))))
                                           unify-subst ttree)))))
                                   (t
                                    (mv-let

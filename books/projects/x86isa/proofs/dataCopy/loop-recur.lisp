@@ -10,7 +10,10 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (in-theory (e/d* ()
+(local (in-theory (e/d* (rime-size
+                         rme-size
+                         wime-size
+                         wme-size)
                         (mv-nth-1-wb-and-!flgi-commute
                          ia32e-la-to-pa-values-and-!flgi
                          las-to-pas
@@ -74,9 +77,12 @@
                              sal/shl-spec
                              sal/shl-spec-64
 
+                             select-segment-register
+
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32
@@ -87,6 +93,8 @@
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              address-aligned-p
                              riml-size
                              riml32

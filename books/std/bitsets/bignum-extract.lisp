@@ -30,7 +30,9 @@
 
 (in-package "BITSETS")
 (include-book "std/util/define" :dir :system)
-(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "ihs/logops-lemmas" :dir :system))
+
+(local (in-theory (disable logand acl2::loghead unsigned-byte-p)))
 
 (define bignum-extract
   :parents (ttag-bitset-members)
@@ -69,13 +71,7 @@ may have or may not be more optimal.</p>"
                           (ash x (* -32 slice)))))
   ///
   (defthm unsigned-byte-p-of-bignum-extract
-    (unsigned-byte-p 32 (bignum-extract x slice))
-    :hints(("Goal"
-            :in-theory (disable bitops::unsigned-byte-p-of-logand-1)
-            :use ((:instance bitops::unsigned-byte-p-of-logand-1
-                   (n 32)
-                   (x (1- (expt 2 32)))
-                   (y (ash (ifix x) (* -32 (nfix slice)))))))))
+    (unsigned-byte-p 32 (bignum-extract x slice)))
 
   (make-event
    `(defthm upper-bound-of-bignum-extract

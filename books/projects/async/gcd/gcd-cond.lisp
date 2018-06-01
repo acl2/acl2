@@ -71,7 +71,8 @@
                        (sis 'go 0 *branch$go-num*)))))
  :guard (natp data-width))
 
-;; DE netlist generator. A generated netlist will contain an instance of GCD-COND.
+;; DE netlist generator.  A generated netlist will contain an instance of
+;; GCD-COND.
 
 (defun gcd-cond$netlist (data-width)
   (declare (xargs :guard (and (natp data-width)
@@ -105,98 +106,102 @@
         (net-arity-okp (gcd-cond$netlist 64))
         (gcd-cond& (gcd-cond$netlist 64) 64))))
 
-;; Extracting the input data
+;; Extract the input and output signals from GCD-COND
 
-(defun gcd-cond$data-in (inputs data-width)
-  (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
-  (take (* 2 (mbe :logic (nfix data-width)
-                  :exec  data-width))
-        (nthcdr 3 inputs)))
+(progn
+  ;; Extract the input data
 
-(defthm len-gcd-cond$data-in
-  (equal (len (gcd-cond$data-in inputs data-width))
-         (* 2 (nfix data-width))))
+  (defun gcd-cond$data-in (inputs data-width)
+    (declare (xargs :guard (and (true-listp inputs)
+                                (natp data-width))))
+    (take (* 2 (mbe :logic (nfix data-width)
+                    :exec  data-width))
+          (nthcdr 3 inputs)))
 
-(in-theory (disable gcd-cond$data-in))
+  (defthm len-gcd-cond$data-in
+    (equal (len (gcd-cond$data-in inputs data-width))
+           (* 2 (nfix data-width))))
 
-;; Extracting the "flag" signal
+  (in-theory (disable gcd-cond$data-in))
 
-(defund gcd-cond$flag (inputs data-width)
-  (b* ((data-in (gcd-cond$data-in inputs data-width))
-       (a=0 (f$fast-zero (take data-width data-in)))
-       (b=0 (f$fast-zero (nthcdr data-width data-in)))
-       (a=b (f$v-equal (take data-width data-in)
-                       (nthcdr data-width data-in))))
-    (f-nor3 a=0 b=0 a=b)))
+  ;; Extract the "flag" signal
 
-;; Extracting the inputs for the branch joint
+  (defund gcd-cond$flag (inputs data-width)
+    (b* ((data-in (gcd-cond$data-in inputs data-width))
+         (a=0 (f$fast-zero (take data-width data-in)))
+         (b=0 (f$fast-zero (nthcdr data-width data-in)))
+         (a=b (f$v-equal (take data-width data-in)
+                         (nthcdr data-width data-in))))
+      (f-nor3 a=0 b=0 a=b)))
 
-(defund gcd-cond$br-inputs (inputs data-width)
-  (b* ((full-in (nth 0 inputs))
-       (empty-out0- (nth 1 inputs))
-       (empty-out1- (nth 2 inputs))
-       (flag (gcd-cond$flag inputs data-width))
-       (data-in (gcd-cond$data-in inputs data-width))
-       (go-signals (nthcdr (gcd-cond$data-ins-len data-width) inputs)))
-    (list* full-in empty-out0- empty-out1- flag
-           (append data-in go-signals))))
+  ;; Extract the inputs for the branch joint
 
-;; Extracting the "act0" signal
+  (defund gcd-cond$br-inputs (inputs data-width)
+    (b* ((full-in (nth 0 inputs))
+         (empty-out0- (nth 1 inputs))
+         (empty-out1- (nth 2 inputs))
+         (flag (gcd-cond$flag inputs data-width))
+         (data-in (gcd-cond$data-in inputs data-width))
+         (go-signals (nthcdr (gcd-cond$data-ins-len data-width) inputs)))
+      (list* full-in empty-out0- empty-out1- flag
+             (append data-in go-signals))))
 
-(defund gcd-cond$act0 (inputs data-width)
-  (branch$act0 (gcd-cond$br-inputs inputs data-width)
-               (* 2 data-width)))
+  ;; Extract the "act0" signal
 
-;; Extracting the "act1" signal
+  (defund gcd-cond$act0 (inputs data-width)
+    (branch$act0 (gcd-cond$br-inputs inputs data-width)
+                 (* 2 data-width)))
 
-(defund gcd-cond$act1 (inputs data-width)
-  (branch$act1 (gcd-cond$br-inputs inputs data-width)
-               (* 2 data-width)))
+  ;; Extract the "act1" signal
 
-;; Extracting the "act" signal
+  (defund gcd-cond$act1 (inputs data-width)
+    (branch$act1 (gcd-cond$br-inputs inputs data-width)
+                 (* 2 data-width)))
 
-(defund gcd-cond$act (inputs data-width)
-  (f-or (gcd-cond$act0 inputs data-width)
-        (gcd-cond$act1 inputs data-width)))
+  ;; Extract the "act" signal
 
-;; Extracting the 1st output data item
+  (defund gcd-cond$act (inputs data-width)
+    (f-or (gcd-cond$act0 inputs data-width)
+          (gcd-cond$act1 inputs data-width)))
 
-(defund gcd-cond$data-out0 (inputs data-width)
-  (b* ((data-in (gcd-cond$data-in inputs data-width)))
-    (fv-if (f$fast-zero (take data-width data-in))
-           (nthcdr data-width data-in)
-           (take data-width data-in))))
+  ;; Extract the 1st output data item
 
-(defthm len-gcd-cond$data-out0
-  (equal (len (gcd-cond$data-out0 inputs data-width))
-         (nfix data-width))
-  :hints (("Goal" :in-theory (enable gcd-cond$data-out0))))
+  (defund gcd-cond$data-out0 (inputs data-width)
+    (b* ((data-in (gcd-cond$data-in inputs data-width)))
+      (fv-if (f$fast-zero (take data-width data-in))
+             (nthcdr data-width data-in)
+             (take data-width data-in))))
 
-(defthm bvp-gcd-cond$data-out0
-  (implies (and (natp data-width)
-                (<= 3 data-width)
-                (bvp (gcd-cond$data-in inputs data-width)))
-           (bvp (gcd-cond$data-out0 inputs data-width)))
-  :hints (("Goal" :in-theory (enable gcd-cond$data-out0))))
+  (defthm len-gcd-cond$data-out0
+    (equal (len (gcd-cond$data-out0 inputs data-width))
+           (nfix data-width))
+    :hints (("Goal" :in-theory (enable gcd-cond$data-out0))))
 
-;; Extracting the 2nd output data item
+  (defthm bvp-gcd-cond$data-out0
+    (implies (and (natp data-width)
+                  (<= 3 data-width)
+                  (bvp (gcd-cond$data-in inputs data-width)))
+             (bvp (gcd-cond$data-out0 inputs data-width)))
+    :hints (("Goal" :in-theory (enable gcd-cond$data-out0))))
 
-(defund gcd-cond$data-out1 (inputs data-width)
-  (b* ((data-in (gcd-cond$data-in inputs data-width)))
-  (v-threefix data-in)))
+  ;; Extract the 2nd output data item
 
-(defthm len-gcd-cond$data-out1
-  (equal (len (gcd-cond$data-out1 inputs data-width))
-         (* 2 (nfix data-width)))
-  :hints (("Goal" :in-theory (enable gcd-cond$data-out1))))
+  (defund gcd-cond$data-out1 (inputs data-width)
+    (b* ((data-in (gcd-cond$data-in inputs data-width)))
+      (v-threefix data-in)))
 
-(defthm bvp-gcd-cond$data-out1
-  (implies (bvp (gcd-cond$data-in inputs data-width))
-           (bvp (gcd-cond$data-out1 inputs data-width)))
-  :hints (("Goal" :in-theory (enable gcd-cond$data-out1))))
+  (defthm len-gcd-cond$data-out1
+    (equal (len (gcd-cond$data-out1 inputs data-width))
+           (* 2 (nfix data-width)))
+    :hints (("Goal" :in-theory (enable gcd-cond$data-out1))))
 
-(not-primp-lemma gcd-cond)
+  (defthm bvp-gcd-cond$data-out1
+    (implies (bvp (gcd-cond$data-in inputs data-width))
+             (bvp (gcd-cond$data-out1 inputs data-width)))
+    :hints (("Goal" :in-theory (enable gcd-cond$data-out1))))
+  )
+
+(not-primp-lemma gcd-cond) ;; Prove that GCD-COND is not a DE primitive.
 
 ;; The value lemma for GCD-COND
 
@@ -237,8 +242,6 @@
                          st
                          netlist)
              :in-theory (e/d (de-rules
-                              get-field
-                              len-1-true-listp=>true-listp
                               not-primp-gcd-cond
                               gcd-cond&
                               gcd-cond*$destructure

@@ -56,14 +56,9 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
@@ -77,7 +72,7 @@
 
        (select-byte-operand (equal #xA4 opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes))
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
 
        (src-addr (if p4?
                      (rgfi-size counter/addr-size *rsi* rex-byte x86)
@@ -272,14 +267,9 @@
        (lock? (equal #.*lock* group-1-prefix))
        ((when lock?) (!!ms-fresh :lock-prefix prefixes))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
 
@@ -292,7 +282,7 @@
 
        (select-byte-operand (equal #xA6 opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes))
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
 
        (src-addr (if p4?
                      (rgfi-size counter/addr-size *rsi* rex-byte x86)
@@ -466,14 +456,9 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
@@ -496,7 +481,7 @@
 
        (select-byte-operand (equal #xAA opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes))
+        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
 
        (rAX (rgfi-size operand-size *rax* rex-byte x86))
 

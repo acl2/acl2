@@ -172,7 +172,11 @@ sub abs_canonical_path {
     my $absdir = get_abs_path($voldir); # Cwd::fast_abs_path($voldir);
     # print "absdir: $absdir\n";
     if ($absdir) {
-	return File::Spec->catfile($absdir, $file);
+	if ($file) {
+	    return File::Spec->catfile($absdir, $file);
+	} else {
+	    return $absdir;
+	}
     } else {
 	print "Warning: canonical_path: Directory not found: " . $voldir . "\n";
 	return 0;
@@ -455,6 +459,31 @@ sub find_most_expensive {
     return ($most_expensive_file, $most_expensive_file_total);
 }
 
+sub find_max_depth {
+    # horrible: updateds is either 1 or a reference to a hash holding the names of updated targets.
+    my ($files, $costs, $updateds) = @_;
+
+    my $deepest_file_total = 0;
+    my $deepest_file = 0;
+
+    foreach my $file (@{$files}) {
+	if ($file =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
+	    if (($updateds==1) || $updateds->{$file}) {
+		my $file_costs = $costs->{$file};
+		if ($file_costs) {
+		    my $this_file_depth = $file_costs->{"depth"};
+		    if ($this_file_depth > $deepest_file_total) {
+			$deepest_file = $file;
+			$deepest_file_total = $this_file_depth;
+		    }
+		}
+	    }
+	}
+    }
+
+    return ($deepest_file, $deepest_file_total);
+}
+
 sub compute_cost_paths_aux {
     # horrible: updateds is either 1 or a reference to a hash holding the names of updated targets.
     my ($target,$deps,$basecosts,$costs,$updateds,$warnings) = @_;
@@ -471,7 +500,9 @@ sub compute_cost_paths_aux {
     if (! defined $certtime) {
 	# Probably the .lisp file doesn't exist
 	my %entry = ( "totaltime" => 0.0,
-		      "maxpath" => "ERROR" );
+		      "maxpath" => "ERROR",
+	              "depth" => 0,
+                      "maxdepthpath" => "ERROR");
 	$costs->{$target} = \%entry;
 	return $costs->{$target};
     }
@@ -544,8 +575,11 @@ sub compute_cost_paths_aux {
 
     if ($updated) {
 	($most_expensive_dep, $most_expensive_dep_total) = find_most_expensive($targetdeps, $costs, $updateds);
+	(my $deepest_dep, my $dep_depth) = find_max_depth($targetdeps, $costs, $updateds);
 	my %entry = ( "totaltime" => $most_expensive_dep_total + $certtime, 
-		      "maxpath" => $most_expensive_dep);
+		      "maxpath" => $most_expensive_dep,
+                      "depth" => $dep_depth + 1,
+	              "maxdepthpath" => $deepest_dep );
 	$costs->{$target} = \%entry;
 	if ($updateds != 1) {
 	    $updateds->{$target} = 1;
@@ -667,6 +701,70 @@ sub critical_path_report {
 
     return $ret;
 }
+
+sub deepest_path_report {
+
+# deepest_path_report(costs,htmlp) returns a string describing the
+# deepest path for file according to the costs_table, either in TEXT or HTML
+# format per the value of htmlp.
+    my ($costs,$basecosts,$savings,$topfile,$htmlp,$short) = @_;
+
+
+    my $ret;
+
+    if ($htmlp) {
+	$ret = "<table class=\"critpath_table\">\n"
+	     . "<tr class=\"critpath_head\">"
+	     . "<th>Deepest Path</th>" 
+	     . "<th>Time</th>"
+	     . "<th>Cumulative</th>"
+	     . "</tr>\n";
+    }
+    else {
+	$ret = "Deepest Path\n\n"
+	     . sprintf("%-50s %10s %10s %10s %10s\n", "File", "Cumulative", "Time", "Speedup", "Remove");
+    }
+
+    my $file = $topfile;
+    while ($file) 
+    {
+	my $filecosts = $costs->{$file};
+	my $shortcert = short_cert_name($file, $short);
+	my $selftime = $basecosts->{$file};
+	my $cumtime = $filecosts->{"totaltime"};
+	my $filesavings = $savings->{$file};
+	my $sp_savings = $filesavings->{"speedup"};
+	my $rem_savings = $filesavings->{"remove"};
+
+	my $selftime_pr = human_time($selftime, 1);
+	my $cumtime_pr = human_time($cumtime, 1);
+	my $spsav_pr = human_time($sp_savings, 1);
+	my $remsav_pr = human_time($rem_savings, 1);
+
+	if ($htmlp) {
+	    $ret .= "<tr class=\"critpath_row\">"
+	 	 . "<td class=\"critpath_name\">$shortcert</td>"
+		 . "<td class=\"critpath_self\">$selftime_pr</td>"
+		 . "<td class=\"critpath_total\">$cumtime_pr</td>"
+		 . "</tr>\n";
+	}
+	else {
+	    $ret .= sprintf("%-50s %10s %10s %10s %10s\n", $shortcert, $cumtime_pr, $selftime_pr, $spsav_pr, $remsav_pr);
+	}
+
+	$file = $filecosts->{"maxdepthpath"};
+    }
+
+    if ($htmlp) {
+	$ret .= "</table>\n\n";
+    }
+    else {
+	$ret .= "\n\n";
+    }
+
+    return $ret;
+}
+
 	
 sub classify_book_time {
     

@@ -24,7 +24,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::p
     "In SOFT,
@@ -106,7 +106,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::p
     "@(tsee defunvar),
@@ -140,7 +140,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::p
     "A function variable is an uninterpreted ACL2 function
@@ -163,7 +163,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::p
     "A second-order function is an ACL2 function
@@ -193,7 +193,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::p
     "A second-order theorem is an ACL2 theorem
@@ -221,7 +221,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::p
     "An instance of a second-order function is an ACL2 function
@@ -255,7 +255,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::p
     "An instance of a second-order theorem is an ACL2 theorem
@@ -283,7 +283,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::p
     "A <see topic='@(url acl2::term)'>term</see> @('term') depends on
@@ -315,7 +315,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::p
     "A function variable instantiation is
@@ -372,7 +372,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::h3 "General Form")
 
@@ -449,7 +449,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::h3 "General Form")
 
@@ -536,7 +536,7 @@
    (xdoc::h4 "Example 2")
 
    (xdoc::code
-    ";; A recursive predicate that recognizes NIL-terminated lists"
+    ";; A recursive predicate that recognizes true lists"
     ";; whose elements satisfy the predicate parameter:"
     "(defun2 all[?p] (?p) (l)"
     "  (cond ((atom l) (null l))"
@@ -546,7 +546,7 @@
 
    (xdoc::code
     ";; A recursive function that homomorphically lifts ?F"
-    ";; to operate on NIL-terminated lists whose elements satisfy ?P:"
+    ";; to operate on true lists whose elements satisfy ?P:"
     "(defun2 map[?f][?p] (?f ?p) (l)"
     "  (declare (xargs :guard (all[?p] l)))"
     "  (cond ((endp l) nil)"
@@ -585,7 +585,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::h3 "General Form")
 
@@ -683,7 +683,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::h3 "General Form")
 
@@ -827,7 +827,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::h3 "General Form")
 
@@ -974,7 +974,7 @@
    (xdoc::ul
 
     (xdoc::li
-     (str::cat
+     (xdoc::app
       (xdoc::code
        "(defun2 fun (fvar1 ... fvarN) ...)")
       (xdoc::p
@@ -994,7 +994,7 @@
         of @('sofun').")))
 
     (xdoc::li
-     (str::cat
+     (xdoc::app
       (xdoc::code
        "(defun fun ...)")
       (xdoc::p
@@ -1014,7 +1014,7 @@
         of @('sofun').")))
 
     (xdoc::li
-     (str::cat
+     (xdoc::app
       (xdoc::code
        "(defchoose2 fun (bvar1 ... bvarP) (fvar1 ... fvarN) ...)")
       (xdoc::p
@@ -1029,7 +1029,7 @@
         The @(':strengthen') value of @('fun') is the same as @('sofun').")))
 
     (xdoc::li
-     (str::cat
+     (xdoc::app
       (xdoc::code
        "(defchoose fun (bvar1 ... bvarP) ...)")
       (xdoc::p
@@ -1044,7 +1044,7 @@
         The @(':strengthen') value of @('fun') is the same as @('sofun').")))
 
     (xdoc::li
-     (str::cat
+     (xdoc::app
       (xdoc::code
        "(defun-sk2 fun (fvar1 ... fvarN) ...)")
       (xdoc::p
@@ -1061,7 +1061,7 @@
         The @(':quant-ok') value of @('fun') is @('t').")))
 
     (xdoc::li
-     (str::cat
+     (xdoc::app
       (xdoc::code
        "(defun-sk fun ...)")
       (xdoc::p
@@ -1096,7 +1096,7 @@
    (xdoc::h4 "Example 2")
 
    (xdoc::code
-    ";; Recognize NIL-terminated lists of values that satisfy ?P:"
+    ";; Recognize true lists of values that satisfy ?P:"
     "(defun2 all[?p] (?p) (l)"
     "  (cond ((atom l) (null l))"
     "        (t (and (?p (car l)) (all[?p] (cdr l))))))"
@@ -1104,14 +1104,14 @@
     ";; Recognize octets:"
     "(defun octetp (x) (and (natp x) (< x 256)))"
     ""
-    ";; Recognize NIL-terminated lists of octets:"
+    ";; Recognize true lists of octets:"
     "(defun-inst all[octetp]"
     "  (all[?p] (?p . octetp)))")
 
    (xdoc::h4 "Example 3")
 
    (xdoc::code
-    ";; Homomorphically lift ?F to on NIL-terminated lists of ?P values:"
+    ";; Homomorphically lift ?F to on true lists of ?P values:"
     "(defun2 map[?f][?p] (?f ?p) (l)"
     "  (declare (xargs :guard (all[?p] l)))"
     "  (cond ((endp l) nil)"
@@ -1188,7 +1188,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::h3 "General Form")
 
@@ -1252,7 +1252,7 @@
    (xdoc::h4 "Example 1")
 
    (xdoc::code
-    ";; Homomorphically lift ?F to on NIL-terminated lists of ?P values:"
+    ";; Homomorphically lift ?F to on true lists of ?P values:"
     "(defun2 map[?f][?p] (?f ?p) (l)"
     "  (declare (xargs :guard (all[?p] l)))"
     "  (cond ((endp l) nil)"
@@ -1332,7 +1332,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::h3 "General Form")
 
@@ -1406,7 +1406,7 @@
    (xdoc::h4 "Example 1")
 
    (xdoc::code
-    ";; Homomorphically lift ?F to on NIL-terminated lists of ?P values:"
+    ";; Homomorphically lift ?F to on true lists of ?P values:"
     "(defun2 map[?f][?p] (?f ?p) (l)"
     "  (declare (xargs :guard (all[?p] l)))"
     "  (cond ((endp l) nil)"
@@ -1470,7 +1470,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::h4 "Nullary Function Variables")
 
@@ -1508,7 +1508,7 @@
 
   :long
 
-  (str::cat
+  (xdoc::topapp
 
    (xdoc::h4 "Mutual Recursion")
 

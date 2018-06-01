@@ -125,14 +125,9 @@
                                temp-rip))))
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (imm0 (mbe :logic (part-select imm :low 0 :high 1)
                   :exec  (the (unsigned-byte 2)
@@ -240,14 +235,9 @@
                                temp-rip))))
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (imm0 (logbit 0 imm))
        (imm1 (logbit 1 imm))
@@ -349,14 +339,9 @@
                                temp-rip))))
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (dword0 (if (int= high/low #.*HIGH-PACK*)
                    (mbe :logic (part-select xmm :low 64 :high 95)
@@ -486,14 +471,9 @@
                                temp-rip))))
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (qword0 (if (int= high/low #.*HIGH-PACK*)
                    (mbe :logic (part-select xmm :low 64 :high 127)

@@ -33,10 +33,14 @@
          top-level-opcode-execute
          two-byte-opcode-decode-and-execute
          x86-operand-from-modr/m-and-sib-bytes
+         x86-operand-from-modr/m-and-sib-bytes$
          x86-effective-addr
          x86-effective-addr-from-sib
          x86-operand-to-reg/mem
+         x86-operand-to-reg/mem$
          rr08 rr32 rr64 wr08 wr32 wr64
+         rme-size wme-size
+         rime-size wime-size
          riml08 riml32 riml64
          !flgi-undefined
          write-user-rflags

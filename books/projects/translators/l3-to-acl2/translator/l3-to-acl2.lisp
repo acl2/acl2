@@ -334,9 +334,9 @@
         (trans-value `(,sym)))
 
 ; If x1 is an option type expression, or for that matter any other type
-; expression not handled above, we simply make no contraints on the type of the
-; field.  This seems harmless enough for now, though we may want to revisit it
-; when we start doing proofs.
+; expression not handled above, we simply make no constraints on the type of
+; the field.  This seems harmless enough for now, though we may want to revisit
+; it when we start doing proofs.
 
 ;       (trans-err ctx
 ;                  "Unexpected type for stobj field, ~x0"
@@ -495,7 +495,7 @@
     (('eq & &)
      (trans-value `bty))
     (& (trans-err ctx
-                  "Unrecognized type expresion: ~x0"
+                  "Unrecognized type expression: ~x0"
                   l3-expr))))
 
 (defun l3-get-type-lst (lst ctx bindings)
@@ -601,7 +601,7 @@
               (cond ((iff x1 x2)
                      (er hard 'expr-st$-out-p
                          "Surprise!  Expr-st$-out-p returns different state ~
-                          resutls, ~x0 and ~x1, for the two branches of an ~
+                          results, ~x0 and ~x1, for the two branches of an ~
                           ITE expression:~|~x2"
                          x1 x2 x))
                     (t
@@ -637,7 +637,7 @@
     (('ln &) nil)
     (('eq & &) nil)
     (& (er hard 'expr-st$-out-p
-           "Unrecognized expresion: ~x0"
+           "Unrecognized expression: ~x0"
            x))))
 
 (defun expr-st$-out-listp (x n)
@@ -966,7 +966,7 @@
                           (t 'equal))))
         (trans-value `(,eq-sym ,x1 ,x2)))))
     (& (trans-err ctx
-                  "Unrecognized expresion: ~x0"
+                  "Unrecognized expression: ~x0"
                   l3-expr))))
 
 (defun l3-trans-cs-clauses (clauses typ ctx bindings)
@@ -982,17 +982,17 @@
             (trans-value trans-clauses))
            (t (trans-value
                (append trans-clauses
-                       `((& (assert! nil
+                       `((& (impossible
 
 ; Here we assume that if the processor state st$ is returned, then it is
 ; returned as st$ or (mv .. st$).
 
-                                     ,(case-match typ
-                                        ('qty 'st$)
-                                        ((t0 'qty)
-                                         `(mv (arb ,t0) st$))
-                                        (&
-                                         `(arb ,typ)))))))))))))
+                             ,(case-match typ
+                                ('qty 'st$)
+                                ((t0 'qty)
+                                 `(mv (arb ,t0) st$))
+                                (&
+                                 `(arb ,typ)))))))))))))
 
 (defun l3-trans-cs-clauses-rec (clauses ctx bindings)
   (declare (xargs :stobjs bindings))
@@ -1277,8 +1277,8 @@
 
 (include-book "misc/file-io" :dir :system)
 
-(make-event
- `(defconst *translator-dir* ,(cbd)))
+(defconst *l3-book-path*
+  "projects/translators/l3-to-acl2/translator/l3")
 
 (defun l3-to-acl2-fn (infile outfile logic-p str-to-sym form state)
   (declare (xargs :stobjs state))
@@ -1288,9 +1288,7 @@
                                          state)))
     (write-list (list* '(in-package "ACL2")
                        `(value-triple '(:generated-by ,form))
-                       `(include-book ,(concatenate 'string
-                                                    *translator-dir*
-                                                    "l3"))
+                       `(include-book ,*l3-book-path* :dir :system)
                        output-list)
                 outfile
                 ctx

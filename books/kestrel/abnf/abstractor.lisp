@@ -235,7 +235,7 @@
   :returns (nat natp)
   :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('BIT') parse trees is abstracted to
-          the big endian value of its bits."
+          the big-endian value of its bits."
   (abstract-*bit-aux trees 0)
   :no-function t
 
@@ -252,7 +252,7 @@
   :returns (nat natp)
   :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('DIGIT') parse trees is abstracted to
-          the big endian value of its decimal digits."
+          the big-endian value of its decimal digits."
   (abstract-*digit-aux trees 0)
   :no-function t
 
@@ -269,7 +269,7 @@
   :returns (nat natp)
   :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('HEXDIG') parse trees is abstracted to
-          the big endian value of its hexadecimal digits."
+          the big-endian value of its hexadecimal digits."
   (abstract-*hexdig-aux trees 0)
   :no-function t
 
@@ -286,7 +286,7 @@
   :returns (nat natp)
   :parents (concrete-to-abstract-syntax)
   :short "A @('(\".\" 1*BIT)') or @('(\"-\" 1*BIT)') parse tree
-          is abstracted to the big endian value of its bits."
+          is abstracted to the big-endian value of its bits."
   (b* (((fun (fail)) (prog2$ (abstract-fail) 0))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
@@ -299,7 +299,7 @@
   :returns (nat natp)
   :parents (concrete-to-abstract-syntax)
   :short "A @('(\".\" 1*DIGIT)') or @('(\"-\" 1*DIGIT)') parse tree
-          is abstracted to the big endian value of its decimal digits."
+          is abstracted to the big-endian value of its decimal digits."
   (b* (((fun (fail)) (prog2$ (abstract-fail) 0))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
@@ -312,7 +312,7 @@
   :returns (nat natp)
   :parents (concrete-to-abstract-syntax)
   :short "A @('(\".\" 1*HEXDIG)') or @('(\"-\" 1*HEXDIG)') parse tree
-          is abstracted to the big endian value of its hexadecimal digits."
+          is abstracted to the big-endian value of its hexadecimal digits."
   (b* (((fun (fail)) (prog2$ (abstract-fail) 0))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
@@ -325,7 +325,7 @@
   :returns (nats nat-listp)
   :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('(\".\" 1*BIT)') parse trees
-          is abstracted to the list of their corresponding big endian values."
+          is abstracted to the list of their corresponding big-endian values."
   (b* (((when (endp trees)) nil)
        (nat (abstract-dot/dash-1*bit (car trees)))
        (nats (abstract-*-dot-1*bit (cdr trees))))
@@ -336,7 +336,7 @@
   :returns (nats nat-listp)
   :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('(\".\" 1*DIGIT)') parse trees
-          is abstracted to the list of their corresponding big endian values."
+          is abstracted to the list of their corresponding big-endian values."
   (b* (((when (endp trees)) nil)
        (nat (abstract-dot/dash-1*digit (car trees)))
        (nats (abstract-*-dot-1*digit (cdr trees))))
@@ -347,7 +347,7 @@
   :returns (nats nat-listp)
   :parents (concrete-to-abstract-syntax)
   :short "A list of zero or more @('(\".\" 1*HEXDIG)') parse trees
-          is abstracted to the list of their corresponding big endian values."
+          is abstracted to the list of their corresponding big-endian values."
   (b* (((when (endp trees)) nil)
        (nat (abstract-dot/dash-1*hexdig (car trees)))
        (nats (abstract-*-dot-1*hexdig (cdr trees))))
@@ -391,8 +391,8 @@
   :parents (concrete-to-abstract-syntax)
   :short "A @('[ 1*(\".\" 1*BIT) / (\"-\" 1*BIT) ]') parse tree
           is abstracted to
-          either the list of its big endian values (for the first alternative)
-          or its single big endian value (for the second alternative)."
+          either the list of its big-endian values (for the first alternative)
+          or its single big-endian value (for the second alternative)."
   (b* (((fun (fail)) (abstract-fail))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
@@ -411,8 +411,8 @@
   :parents (concrete-to-abstract-syntax)
   :short "A @('[ 1*(\".\" 1*DIGIT) / (\"-\" 1*DIGIT) ]') parse tree
           is abstracted to
-          either the list of its big endian values (for the first alternative)
-          or its single big endian value (for the second alternative)."
+          either the list of its big-endian values (for the first alternative)
+          or its single big-endian value (for the second alternative)."
   (b* (((fun (fail)) (abstract-fail))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
@@ -431,8 +431,8 @@
   :parents (concrete-to-abstract-syntax)
   :short "A @('[ 1*(\".\" 1*HEXDIG) / (\"-\" 1*HEXDIG) ]') parse tree
           is abstracted to
-          either the list of its big endian values (for the first alternative)
-          or its single big endian value (for the second alternative)."
+          either the list of its big-endian values (for the first alternative)
+          or its single big-endian value (for the second alternative)."
   (b* (((fun (fail)) (abstract-fail))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
@@ -707,8 +707,8 @@
   :returns (mv (min natp) (max natip))
   :parents (concrete-to-abstract-syntax)
   :short "A @('(*DIGIT \"*\" *DIGIT)') parse tree is abstracted to
-          (i) the big endian value of its first @('*DIGIT') and
-          (ii) either the big endian value of its second @('*DIGIT')
+          (i) the big-endian value of its first @('*DIGIT') and
+          (ii) either the big-endian value of its second @('*DIGIT')
           (if non-empty)
           or infinity
           (if empty)."

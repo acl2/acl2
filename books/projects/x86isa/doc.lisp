@@ -115,7 +115,8 @@
  instruction fetch-decode-execute cycle.</p>
 
  <p>The model is being extended to support 32-bit mode, both as the legacy
- protected mode and as the compatibility sub-mode of Intel's IA-32e mode.</p>
+ protected mode and as the compatibility sub-mode of Intel's IA-32e mode.  This
+ extension is still experimental; it has not been thoroughly tested yet.</p>
 
  <p>To see a list of opcodes implemented in these books, see @(see
  implemented-opcodes).</p>

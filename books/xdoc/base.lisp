@@ -161,3 +161,15 @@
     (if (equal (cdr (assoc :name (car x))) name)
         (car x)
       (find-topic name (cdr x)))))
+
+
+(defun gather-topic-names (x)
+  (declare (xargs :mode :program))
+  (if (atom x)
+      nil
+    (cons (cdr (assoc :name (car x)))
+          (gather-topic-names (cdr x)))))
+
+(defun topics-fal (x)
+  (declare (xargs :mode :program))
+  (make-fast-alist (pairlis$ (gather-topic-names x) x)))

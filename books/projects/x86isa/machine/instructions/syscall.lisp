@@ -49,14 +49,9 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce) (ia32_efer-slice :ia32_efer-sce ia32-efer))
@@ -206,14 +201,9 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce) (ia32_efer-slice :ia32_efer-sce ia32-efer))
@@ -438,14 +428,9 @@ REX.W + 0F 07: SYSRET</p>
 
   (b* ((ctx 'x86-sysret)
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((when (not (logbitp #.*w* rex-byte)))
         (!!ms-fresh :unsupported-sysret-because-rex.w!=1 rex-byte))

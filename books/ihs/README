@@ -46,7 +46,7 @@ Part of the IHS library is simply a characterization of Common Lisp built-in
 logical operations, e.g., LOGAND, LOGIOR, etc.  This set of primitives has
 been extended with other useful operations, e.g., (LOGHEAD size i) returns
 the `size' low-order bits of `i'.  Thus, 32-bit unsigned addition can be
-specified as (LOGHEAD 32 (+ i j)). [ Signed addition would be 
+specified as (LOGHEAD 32 (+ i j)). [ Signed addition would be
 (LOGEXT 32 (+ i j)). ]
 
 All of these books are documented!  Once INCLUDEd you can start traversing
@@ -74,7 +74,7 @@ sped possible simulation can also have a look at LOGOPS-EFFICIENCY-HACK in
 here.  Lemma support is "logops-lemmas.lisp".
 
 To create specifications using IHS it is sufficient to simply INCLUDE the
-book "ihs-definitions".  Include "ihs-lemmas" for lemma support. 
+book "ihs-definitions".  Include "ihs-lemmas" for lemma support.
 
 Files:
 ======
@@ -135,7 +135,7 @@ released with ACL2.
 
 (defmacro include-library-book (book)
   "Include a book from the ACL2 distribution."
-  `(INCLUDE-BOOK 
+  `(INCLUDE-BOOK
     ,(concatenate 'string "/usr/local/src/acl2-sources/books/" book)))
 
 (include-library-book "ihs/ihs-definitions")
@@ -163,4 +163,3 @@ released with ACL2.
 ;  to disable forcing except in cases where it is absolutely needed.
 
 (in-theory (disable (force)))
-

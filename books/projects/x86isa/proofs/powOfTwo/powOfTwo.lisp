@@ -221,17 +221,24 @@
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr08
                              wr32
                              wr64
                              rr32
                              rr64
+                             rime-size
+                             rme-size
+                             wime-size
+                             wme-size
                              rml32
                              rml64
                              wml32
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              riml-size
                              riml32
                              n32-to-i32
@@ -266,17 +273,24 @@
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr08
                              wr32
                              wr64
                              rr32
                              rr64
+                             rime-size
+                             rme-size
+                             wime-size
+                             wme-size
                              rml32
                              rml64
                              wml32
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              riml-size
                              riml32
                              n32-to-i32

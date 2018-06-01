@@ -1,6 +1,6 @@
 ; Kestrel Utilities
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,8 +15,8 @@
 (include-book "apply-fn-if-known")
 (include-book "arglistp-theorems")
 (include-book "assert")
+(include-book "auto-instance")
 (include-book "auto-termination")
-(include-book "bytes")
 (include-book "characters")
 (include-book "copy-def")
 (include-book "defchoose-queries")
@@ -24,15 +24,20 @@
 (include-book "defthmr")
 (include-book "defmacroq")
 (include-book "defun-sk-queries")
+(include-book "digits-any-base")
+(include-book "digits-any-base-pow2")
 (include-book "directed-untranslate")
 (include-book "doublets")
 (include-book "enumerations")
 (include-book "er-soft-plus")
 (include-book "error-checking")
 (include-book "event-forms")
+(include-book "fixbytes/instances")
 (include-book "fresh-names")
 (include-book "include-book-paths")
 (include-book "install-not-norm-event")
+(include-book "integer-range-fixing")
+(include-book "integer-range-lists")
 (include-book "integers-from-to")
 (include-book "keyword-value-lists")
 (include-book "list-set-theorems")
@@ -52,7 +57,9 @@
 (include-book "oset-theorems")
 (include-book "osets")
 (include-book "paired-names")
+(include-book "proof-builder-macros")
 (include-book "prove-interface")
+(include-book "skip-in-book")
 (include-book "strings")
 (include-book "symbol-symbol-alists")
 (include-book "symbol-true-list-alists")
@@ -70,6 +77,7 @@
 (include-book "world-queries")
 (include-book "world-theorems")
 (include-book "xdoc-constructors")
+(include-book "zp-lists")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

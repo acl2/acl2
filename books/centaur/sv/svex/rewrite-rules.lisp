@@ -30,7 +30,7 @@
 
 (in-package "SV")
 (include-book "rewrite-base")
-(include-book "xeval")
+(include-book "seval")
 (include-book "4vmask")
 (include-book "centaur/bitops/trailing-0-count" :dir :system)
 (include-book "rsh-concat")
@@ -1641,7 +1641,7 @@
   :checks ((or (not multirefp)
                (eql (svex-kind y) :quote))
            (svex-quoted-index-p w)
-           (eql 0 (loghead (2vec->val (svex-quote->val w)) mask))
+           (not (sparseint-test-bitand (sparseint-concatenate (2vec->val (svex-quote->val w)) -1 0) mask))
            (not (and (equal (svex-kind x) :quote)
                      (equal (svex-quote->val x) 0)))
            (bind xx (svex-quote 0)))
@@ -1666,7 +1666,7 @@
 (def-svex-rewrite concat-under-mask-2
   :lhs (concat w x y)
   :checks ((svex-quoted-index-p w)
-           (eql 0 (logtail (2vec->val (svex-quote->val w)) mask)))
+           (not (sparseint-test-bitand (sparseint-concatenate (2vec->val (svex-quote->val w)) 0 -1) mask)))
   :rhs x
   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh 4vec-shift-core))
          (bitops::logbitp-reasoning :prune-examples nil))
@@ -2148,7 +2148,7 @@
 (def-svex-rewrite zerox-under-mask-1
   :lhs (zerox w x)
   :checks ((svex-quoted-index-p w)
-           (eql 0 (loghead (2vec->val (svex-quote->val w)) mask)))
+           (not (sparseint-test-bitand (sparseint-concatenate (2vec->val (svex-quote->val w)) -1 0) mask)))
   :rhs 0
   :hints(("Goal" :in-theory (enable svex-apply 4vec-zero-ext 4vec-mask))
          (bitops::logbitp-reasoning :prune-examples nil)))
@@ -2156,7 +2156,7 @@
 (def-svex-rewrite zerox-under-mask-2
   :lhs (zerox w x)
   :checks ((svex-quoted-index-p w)
-           (eql 0 (logtail (2vec->val (svex-quote->val w)) mask)))
+           (not (sparseint-test-bitand (sparseint-concatenate (2vec->val (svex-quote->val w)) 0 -1) mask)))
   :rhs x
   :hints(("Goal" :in-theory (enable svex-apply 4vec-zero-ext 4vec-mask))
          (bitops::logbitp-reasoning :prune-examples nil)))
@@ -2164,7 +2164,7 @@
 (def-svex-rewrite signx-under-mask
   :lhs (signx w x)
   :checks ((svex-quoted-index-p w)
-           (eql 0 (logtail (2vec->val (svex-quote->val w)) mask)))
+           (not (sparseint-test-bitand (sparseint-concatenate (2vec->val (svex-quote->val w)) 0 -1) mask)))
   :rhs x
   :hints(("Goal" :in-theory (enable svex-apply 4vec-sign-ext 4vec-mask))
          (bitops::logbitp-reasoning :prune-examples nil)))
@@ -2172,6 +2172,22 @@
 (defmacro hidelet (term)
   `(hide (let () ,term)))
 
+
+
+
+(local (Defthm sparseint-val-of-s4vec->upper
+         (equal (sparseint-val (s4vec->upper x))
+                (4vec->upper (s4vec->4vec x)))
+         :hints(("Goal" :in-theory (enable s4vec->4vec)))))
+
+(local (Defthm sparseint-val-of-s4vec->lower
+         (equal (sparseint-val (s4vec->lower x))
+                (4vec->lower (s4vec->4vec x)))
+         :hints(("Goal" :in-theory (enable s4vec->4vec)))))
+
+
+(local (in-theory (disable 4vec->upper-of-s4vec->4vec
+                           4vec->lower-of-s4vec->4vec)))
 
 (defsection bit?-rewrites
   (local (in-theory (disable bitops::logand-natp-type-2
@@ -2194,8 +2210,8 @@
   (def-svex-rewrite bit?-of-1s
     :lhs (bit? c x y)
     :checks (;; c is 1 in all the care bits
-             (eql (logior (lognot mask) (4vec->upper (svex-xeval c))) -1)
-             (eql (logior (lognot mask) (4vec->lower (svex-xeval c))) -1))
+             (not (sparseint-test-bitandc2 mask (s4vec->upper (svex-s4xeval c))))
+             (not (sparseint-test-bitandc2 mask (s4vec->lower (svex-s4xeval c)))))
     :rhs x
     :hints(("Goal" :in-theory (enable svex-apply 4vec-bit? 3vec-bit?
                                       4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2208,8 +2224,8 @@
   (def-svex-rewrite bit?-of-0s
     :lhs (bit? c x y)
     :checks (;; c is 0 in all the care bits
-             (eql (logand mask (4vec->upper (svex-xeval c))) 0)
-             (eql (logand mask (4vec->lower (svex-xeval c))) 0))
+             (not (sparseint-test-bitand mask (s4vec->upper (svex-s4xeval c))))
+             (not (sparseint-test-bitand mask (s4vec->lower (svex-s4xeval c)))))
     :rhs y
     :hints(("Goal" :in-theory (enable svex-apply 4vec-bit? 3vec-bit?
                                       4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2223,12 +2239,8 @@
 (def-svex-rewrite bitand-under-mask-1
   :lhs (bitand x y)
   :checks (;; x is 1 in all the care bits
-           (eql (logior (lognot mask)
-                        (4vec->upper (svex-xeval x)))
-                -1)
-           (eql (logior (lognot mask)
-                        (4vec->lower (svex-xeval x)))
-                -1))
+           (not (sparseint-test-bitandc2 mask (s4vec->upper (svex-s4xeval x))))
+           (not (sparseint-test-bitandc2 mask (s4vec->lower (svex-s4xeval x)))))
   :rhs (unfloat y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitand 3vec-bitand
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2241,12 +2253,8 @@
 (def-svex-rewrite bitand-under-mask-2
   :lhs (bitand x y)
   :checks (;; y is 1 in all the care bits
-           (eql (logior (lognot mask)
-                        (4vec->upper (svex-xeval y)))
-                -1)
-           (eql (logior (lognot mask)
-                        (4vec->lower (svex-xeval y)))
-                -1))
+           (not (sparseint-test-bitandc2 mask (s4vec->upper (svex-s4xeval y))))
+           (not (sparseint-test-bitandc2 mask (s4vec->lower (svex-s4xeval y)))))
   :rhs (unfloat x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitand 3vec-bitand
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2259,12 +2267,8 @@
 (def-svex-rewrite resand-under-mask-1
   :lhs (resand x y)
   :checks (;; x is z in all the care bits
-           (eql (logand mask
-                        (4vec->upper (svex-xeval x)))
-                0)
-           (eql (logior (lognot mask)
-                        (4vec->lower (svex-xeval x)))
-                -1))
+           (not (sparseint-test-bitand mask (s4vec->upper (svex-s4xeval x))))
+           (not (sparseint-test-bitandc2 mask (s4vec->lower (svex-s4xeval x)))))
   :rhs y
   :hints(("Goal" :in-theory (enable svex-apply 4vec-resand
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2277,12 +2281,8 @@
 (def-svex-rewrite resand-under-mask-2
   :lhs (resand x y)
   :checks (;; y is z in all the care bits
-           (eql (logand mask
-                        (4vec->upper (svex-xeval y)))
-                0)
-           (eql (logior (lognot mask)
-                        (4vec->lower (svex-xeval y)))
-                -1))
+           (not (sparseint-test-bitand mask (s4vec->upper (svex-s4xeval y))))
+           (not (sparseint-test-bitandc2 mask (s4vec->lower (svex-s4xeval y)))))
   :rhs x
   :hints(("Goal" :in-theory (enable svex-apply 4vec-resand
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2295,12 +2295,8 @@
 (def-svex-rewrite bitor-under-mask-1
   :lhs (bitor x y)
   :checks (;; x is 0 in all the care bits
-           (eql (logand mask
-                        (4vec->upper (svex-xeval x)))
-                0)
-           (eql (logand mask
-                        (4vec->lower (svex-xeval x)))
-                0))
+           (not (sparseint-test-bitand mask (s4vec->upper (svex-s4xeval x))))
+           (not (sparseint-test-bitand mask (s4vec->lower (svex-s4xeval x)))))
   :rhs (unfloat y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitor 3vec-bitor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2313,12 +2309,8 @@
 (def-svex-rewrite bitor-under-mask-2
   :lhs (bitor x y)
   :checks (;; y is 0 in all the care bits
-           (eql (logand mask
-                        (4vec->upper (svex-xeval y)))
-                0)
-           (eql (logand mask
-                        (4vec->lower (svex-xeval y)))
-                0))
+           (not (sparseint-test-bitand mask (s4vec->upper (svex-s4xeval y))))
+           (not (sparseint-test-bitand mask (s4vec->lower (svex-s4xeval y)))))
   :rhs (unfloat x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitor 3vec-bitor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2331,12 +2323,8 @@
 (def-svex-rewrite resor-under-mask-1
   :lhs (resor x y)
   :checks (;; x is z in all the care bits
-           (eql (logand mask
-                        (4vec->upper (svex-xeval x)))
-                0)
-           (eql (logior (lognot mask)
-                        (4vec->lower (svex-xeval x)))
-                -1))
+           (not (sparseint-test-bitand mask (s4vec->upper (svex-s4xeval x))))
+           (not (sparseint-test-bitandc2 mask (s4vec->lower (svex-s4xeval x)))))
   :rhs y
   :hints(("Goal" :in-theory (enable svex-apply 4vec-resor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2349,12 +2337,8 @@
 (def-svex-rewrite resor-under-mask-2
   :lhs (resor x y)
   :checks (;; y is z in all the care bits
-           (eql (logand mask
-                        (4vec->upper (svex-xeval y)))
-                0)
-           (eql (logior (lognot mask)
-                        (4vec->lower (svex-xeval y)))
-                -1))
+           (not (sparseint-test-bitand mask (s4vec->upper (svex-s4xeval y))))
+           (not (sparseint-test-bitandc2 mask (s4vec->lower (svex-s4xeval y)))))
   :rhs x
   :hints(("Goal" :in-theory (enable svex-apply 4vec-resor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2368,12 +2352,8 @@
 (def-svex-rewrite res-under-mask-1
   :lhs (res x y)
   :checks (;; x is z in all the care bits
-           (eql (logand mask
-                        (4vec->upper (svex-xeval x)))
-                0)
-           (eql (logior (lognot mask)
-                        (4vec->lower (svex-xeval x)))
-                -1))
+           (not (sparseint-test-bitand mask (s4vec->upper (svex-s4xeval x))))
+           (not (sparseint-test-bitandc2 mask (s4vec->lower (svex-s4xeval x)))))
   :rhs y
   :hints(("Goal" :in-theory (enable svex-apply 4vec-res
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2386,12 +2366,8 @@
 (def-svex-rewrite res-under-mask-2
   :lhs (res x y)
   :checks (;; y is z in all the care bits
-           (eql (logand mask
-                        (4vec->upper (svex-xeval y)))
-                0)
-           (eql (logior (lognot mask)
-                        (4vec->lower (svex-xeval y)))
-                -1))
+           (not (sparseint-test-bitand mask (s4vec->upper (svex-s4xeval y))))
+           (not (sparseint-test-bitandc2 mask (s4vec->lower (svex-s4xeval y)))))
   :rhs x
   :hints(("Goal" :in-theory (enable svex-apply 4vec-res
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2417,37 +2393,50 @@
                                           bitops::logbitp-case-splits)))))
 
 
-(define res-combine-cond ((x 4vec-p) (y 4vec-p) (mask 4vmask-p))
-  (b* (((4vec x))
-       ((4vec y)))
-    (equal 0
-           (logand
-            (4vmask-fix mask)
-            (logior (logxor x.upper y.upper)
-                    (logxor x.lower y.lower)
-                    (logand x.upper (lognot x.lower))
-                    (logand y.upper (lognot y.lower))) ;; x, y differ or either is x
-            (logior x.upper (lognot x.lower))     ;; x is not z
-            (logior y.upper (lognot y.lower)))))  ;; y is not z
+
+
+(define res-combine-cond ((x s4vec-p) (y s4vec-p) (mask 4vmask-p))
+  (b* (((s4vec x))
+       ((s4vec y)))
+    ;; For all care bits. either x or y is z, or else x and y are the same and neither is x.
+    ;; This is equivalent to (bitwise)
+    ;;   x is z OR y is z OR (x is 1 and y is 1) OR (x is 0 and y is 0).
+    ;; (~x.upper and x.lower) OR (~y.upper and y.lower)
+    ;; OR (x.upper and x.lower and y.upper and y.lower)
+    ;; OR (~x.upper and ~x.lower and ~y.upper and ~y.lower).
+    ;; which is the same as:
+    ;; (~x.upper and x.lower) OR (~y.upper and y.lower)
+    ;; OR (x.lower  and y.lower)
+    ;; OR (~x.upper and ~y.upper).
+    ;; What order to do these in, I have no idea.
+    (not (sparseint-test-bitandc2
+          (4vmask-fix mask)
+          (sparseint-bitor (sparseint-bitor (sparseint-bitandc1 x.upper x.lower)
+                                            (sparseint-bitnor x.upper y.upper))
+                           (sparseint-bitor (sparseint-bitandc1 y.upper y.lower)
+                                            (sparseint-bitand x.lower y.lower))))))
   ///
+
   (defthm res-combine-cond-commutative
     (equal (res-combine-cond x y mask)
            (res-combine-cond y x mask))
     :rule-classes ((:rewrite :loop-stopper ((x y)))))
   (deffixequiv res-combine-cond))
 
-(define 4vec-res-must-choose-mask ((x 4vec-p)
-                                   (y 4vec-p)
+(define 4vec-res-must-choose-mask ((x s4vec-p)
+                                   (y s4vec-p)
                                    (mask 4vmask-p))
   :prepwork ((local (in-theory (enable logbitp-when-4vec-[=-svex-eval-strong))))
   ;; determines bits where (res x y) is known to equal x but not known to equal
   ;; y, and mask is active.  On other bits, it's ok to choose y as long as
   ;; res-combine-cond holds.
-  (b* (((4vec x)) ((4vec y)))
-    (logand (4vmask-fix mask)
-            (logior (logxor x.upper y.upper)
-                    (logxor x.lower y.lower)) ;; x != y
-            (logior x.upper (lognot x.lower))))  ;; x is not z
+  :returns (mask sparseint-p)
+  (b* (((s4vec x)) ((s4vec y)))
+    (sparseint-bitand (4vmask-fix mask)
+                      (sparseint-bitand
+                       (sparseint-bitor (sparseint-bitxor x.upper y.upper)
+                                        (sparseint-bitxor x.lower y.lower)) ;; x != y
+                       (sparseint-bitorc2 x.upper x.lower))))  ;; x is not z
   ///
   (local (in-theory (disable acl2::zip-open not
                              4vec->lower-when-2vec-p
@@ -2461,10 +2450,10 @@
                              bitops::logior-<-0-linear-1)))
 
   (defthm 4vec-res-must-choose-mask-correct-bit-upper
-    (implies (and (res-combine-cond (svex-xeval x) (svex-xeval y) mask)
-                  (not (logbitp n (4vec-res-must-choose-mask
-                                   (svex-xeval x) (svex-xeval y) mask)))
-                  (logbitp n (4vmask-fix mask)))
+    (implies (and (res-combine-cond (svex-s4xeval x) (svex-s4xeval y) mask)
+                  (not (logbitp n (sparseint-val (4vec-res-must-choose-mask
+                                                  (svex-s4xeval x) (svex-s4xeval y) mask))))
+                  (logbitp n (sparseint-val (4vmask-fix mask))))
              (equal (logbitp n (4vec->upper (4vec-res (svex-eval x env)
                                                       (svex-eval y env))))
                     (logbitp n (4vec->upper (svex-eval y env)))))
@@ -2475,10 +2464,10 @@
                 '(:in-theory (enable bool->bit)))))
 
   (defthm 4vec-res-must-choose-mask-correct-bit-lower
-    (implies (and (res-combine-cond (svex-xeval x) (svex-xeval y) mask)
-                  (not (logbitp n (4vec-res-must-choose-mask
-                                   (svex-xeval x) (svex-xeval y) mask)))
-                  (logbitp n (4vmask-fix mask)))
+    (implies (and (res-combine-cond (svex-s4xeval x) (svex-s4xeval y) mask)
+                  (not (logbitp n (sparseint-val (4vec-res-must-choose-mask
+                                                  (svex-s4xeval x) (svex-s4xeval y) mask))))
+                  (logbitp n (sparseint-val (4vmask-fix mask))))
              (equal (logbitp n (4vec->lower (4vec-res (svex-eval x env)
                                                       (svex-eval y env))))
                     (logbitp n (4vec->lower (svex-eval y env)))))
@@ -2527,15 +2516,16 @@
                     :in-theory (enable bitops::trailing-0-count-properties)))))
 
   (defthm 4vec-res-must-choose-mask-correct-range
-    (implies (and (equal 0 (loghead width (logtail lsb (4vec-res-must-choose-mask
-                                                        (svex-xeval x) (svex-xeval y) mask))))
-                  (res-combine-cond (svex-xeval x) (svex-xeval y) mask)
+    (implies (and (equal 0 (loghead width (logtail lsb (sparseint-val
+                                                        (4vec-res-must-choose-mask
+                                                         (svex-s4xeval x) (svex-s4xeval y) mask)))))
+                  (res-combine-cond (svex-s4xeval x) (svex-s4xeval y) mask)
                   (natp lsb) (nat-equiv lsb1 lsb) (natp width) (4vmask-p mask))
-             (equal (4vec-mask (logtail lsb1 mask)
+             (equal (4vec-mask (sparseint-rightshift lsb1 mask)
                                (4vec-rsh (2vec lsb)
                                          (4vec-res (svex-eval x env)
                                                    (svex-eval y env))))
-                    (4vec-mask (logtail lsb mask)
+                    (4vec-mask (sparseint-rightshift lsb mask)
                                (4vec-concat (2vec width)
                                             (4vec-rsh (2vec lsb)
                                                       (svex-eval y env))
@@ -2551,16 +2541,17 @@
 
   (defthm 4vec-res-must-choose-mask-correct-range-trailing-0
     (let ((width (bitops::trailing-0-count
-                  (logtail lsb1 (4vec-res-must-choose-mask
-                                                        (svex-xeval x) (svex-xeval y) mask)))))
+                  (logtail lsb1 (sparseint-val
+                                 (4vec-res-must-choose-mask
+                                  (svex-s4xeval x) (svex-s4xeval y) mask))))))
       (implies (and (< 0 width)
-                    (res-combine-cond (svex-xeval x) (svex-xeval y) mask)
+                    (res-combine-cond (svex-s4xeval x) (svex-s4xeval y) mask)
                     (natp lsb) (nat-equiv lsb1 lsb) (natp width) (4vmask-p mask))
-               (equal (4vec-mask (logtail lsb1 mask)
+               (equal (4vec-mask (sparseint-rightshift lsb1 mask)
                                  (4vec-rsh (2vec lsb)
                                            (4vec-res (svex-eval x env)
                                                      (svex-eval y env))))
-                      (4vec-mask (logtail lsb mask)
+                      (4vec-mask (sparseint-rightshift lsb mask)
                                  (4vec-concat (2vec width)
                                               (4vec-rsh (2vec lsb)
                                                         (svex-eval y env))
@@ -2569,22 +2560,24 @@
                                                                   (svex-eval y env))))))))
       :hints(("Goal" :use ((:instance 4vec-res-must-choose-mask-correct-range
                             (width (bitops::trailing-0-count
-                                    (logtail lsb1 (4vec-res-must-choose-mask
-                                                  (svex-xeval x) (svex-xeval y) mask))))))
+                                    (logtail lsb1 (sparseint-val
+                                                   (4vec-res-must-choose-mask
+                                                    (svex-s4xeval x) (svex-s4xeval y) mask)))))))
               :in-theory (disable 4vec-res-must-choose-mask-correct-range))))
 
   (defthm 4vec-res-must-choose-mask-correct-range-trailing-0-2
     (let ((width (bitops::trailing-0-count
-                  (logtail lsb1 (4vec-res-must-choose-mask
-                                                        (svex-xeval x) (svex-xeval y) mask)))))
+                  (logtail lsb1 (sparseint-val
+                                 (4vec-res-must-choose-mask
+                                  (svex-s4xeval x) (svex-s4xeval y) mask))))))
       (implies (and (< 0 width)
-                    (res-combine-cond (svex-xeval x) (svex-xeval y) mask)
+                    (res-combine-cond (svex-s4xeval x) (svex-s4xeval y) mask)
                     (natp lsb) (nat-equiv lsb1 lsb) (natp width) (4vmask-p mask))
-               (equal (4vec-mask (logtail lsb1 mask)
+               (equal (4vec-mask (sparseint-rightshift lsb1 mask)
                                  (4vec-rsh (2vec lsb)
                                            (4vec-res (svex-eval y env)
                                                      (svex-eval x env))))
-                      (4vec-mask (logtail lsb mask)
+                      (4vec-mask (sparseint-rightshift lsb mask)
                                  (4vec-concat (2vec width)
                                               (4vec-rsh (2vec lsb)
                                                         (svex-eval y env))
@@ -2594,7 +2587,7 @@
       :hints(("Goal" :use ((:instance 4vec-res-must-choose-mask-correct-range
                             (width (bitops::trailing-0-count
                                     (logtail lsb1 (4vec-res-must-choose-mask
-                                                  (svex-xeval x) (svex-xeval y) mask))))))
+                                                  (svex-s4xeval x) (svex-s4xeval y) mask))))))
               :in-theory (disable 4vec-res-must-choose-mask-correct-range))))
 
 
@@ -2618,16 +2611,18 @@
   ;;                                                             4vec-res-must-choose-mask)))))
 
   (defthm 4vec-res-must-choose-mask-correct-tail
-    (implies (and (equal 0 (logtail lsb1 (4vec-res-must-choose-mask
-                                         (svex-xeval x) (svex-xeval y) mask)))
-                  (res-combine-cond (svex-xeval x) (svex-xeval y) mask)
+    (implies (and (equal 0 (logtail lsb1
+                                    (sparseint-val
+                                     (4vec-res-must-choose-mask
+                                      (svex-s4xeval x) (svex-s4xeval y) mask))))
+                  (res-combine-cond (svex-s4xeval x) (svex-s4xeval y) mask)
                   (natp lsb) (nat-equiv lsb1 lsb)
                   (4vmask-p mask))
-             (equal (4vec-mask (logtail lsb1 mask)
+             (equal (4vec-mask (sparseint-rightshift lsb1 mask)
                                (4vec-rsh (2vec lsb)
                                          (4vec-res (svex-eval x env)
                                                    (svex-eval y env))))
-                    (4vec-mask (logtail lsb mask)
+                    (4vec-mask (sparseint-rightshift lsb mask)
                                (4vec-rsh (2vec lsb) (svex-eval y env)))))
     :hints(("Goal" :in-theory (enable 4vec-mask 4vec-rsh 4vec-shift-core))
            (logbitp-reasoning :prune-examples nil
@@ -2637,24 +2632,27 @@
                                                               4vec-res-must-choose-mask)))))
 
   (defthm 4vec-res-must-choose-mask-correct-tail2
-    (implies (and (res-combine-cond (svex-xeval x) (svex-xeval y) mask)
-                  (equal 0 (logtail lsb1 (4vec-res-must-choose-mask
-                                         (svex-xeval x) (svex-xeval y) mask)))
+    (implies (and (res-combine-cond (svex-s4xeval x) (svex-s4xeval y) mask)
+                  (equal 0 (logtail lsb1 (sparseint-val
+                                          (4vec-res-must-choose-mask
+                                           (svex-s4xeval x) (svex-s4xeval y) mask))))
                   (natp lsb) (nat-equiv lsb1 lsb)
                   (4vmask-p mask))
-             (equal (4vec-mask (logtail lsb1 mask)
+             (equal (4vec-mask (sparseint-rightshift lsb1 mask)
                                (4vec-rsh (2vec lsb)
                                          (4vec-res (svex-eval y env)
                                                    (svex-eval x env))))
-                    (4vec-mask (logtail lsb mask)
+                    (4vec-mask (sparseint-rightshift lsb mask)
                                (4vec-rsh (2vec lsb) (svex-eval y env)))))
     :hints (("goal" :use 4vec-res-must-choose-mask-correct-tail
              :in-theory (disable 4vec-res-must-choose-mask-correct-tail))))
 
+  (local (in-theory (enable not)))
+
   (defthm res-combine-cond-implies-logand-of-must-choose
     (implies (res-combine-cond x y mask)
-             (equal (logand (4vec-res-must-choose-mask x y mask)
-                            (4vec-res-must-choose-mask y x mask))
+             (equal (logand (sparseint-val (4vec-res-must-choose-mask x y mask))
+                            (sparseint-val (4vec-res-must-choose-mask y x mask)))
                     0))
     :hints (("goal" :in-theory (enable res-combine-cond 4vec-res-must-choose-mask))
             (logbitp-reasoning)))
@@ -2666,8 +2664,8 @@
 
 
 
-(define res-to-concat ((xmask integerp) ;; z-mask-mask of x
-                       (ymask integerp) ;; z-mask-mask of 
+(define res-to-concat ((xmask sparseint-p) ;; z-mask-mask of x
+                       (ymask sparseint-p) ;; z-mask-mask of y
                        (mask 4vmask-p)
                        (offset natp)
                        (x svex-p)
@@ -2722,31 +2720,35 @@
                                       len)))))
 
   :verify-guards nil
-  :measure (nfix (- (min (integer-length xmask) (integer-length ymask)) (nfix offset)))
+  :measure (nfix (- (min (integer-length (sparseint-val xmask))
+                         (integer-length (sparseint-val ymask)))
+                    (nfix offset)))
   :hints ((and stable-under-simplificationp
                '(:in-theory (enable nfix integer-length-0))))
-  :guard (and (equal 0 (logand xmask ymask))
-              (<= (bitops::trailing-0-count-from xmask offset)
-                  (bitops::trailing-0-count-from ymask offset)))
+  :guard (and (equal 0 (logand (sparseint-val xmask)
+                               (sparseint-val ymask)))
+              (<= (bitops::trailing-0-count-from (sparseint-val xmask) offset)
+                  (bitops::trailing-0-count-from (sparseint-val ymask) offset)))
   :returns (concat svex-p)
   (b* ((x (svex-fix x))
        (y (svex-fix y))
        (?mask (4vmask-fix mask))
        (offset (lnfix offset))
        (resfn (mbe :logic (fnsym-fix resfn) :exec resfn))
-       ((when (<= (integer-length xmask) offset))
-        (if (logbitp offset xmask)
+       ((when (<= (sparseint-length xmask) offset))
+        (if (eql 1 (sparseint-bit offset xmask))
             (svex-rsh offset x)
           (svex-rsh offset y)))
-       ((when (<= (integer-length ymask) offset))
-        (if (logbitp offset ymask)
+       ((when (<= (sparseint-length ymask) offset))
+        (if (eql 1 (sparseint-bit offset ymask))
             (svex-rsh offset y)
           (svex-rsh offset x)))
-       (ycount (bitops::trailing-0-count-from ymask offset))
+       (ycount (sparseint-trailing-0-count-from ymask offset))
        ((unless (posp ycount))
         (svex-rsh offset (svex-call resfn (list x y)))))
     (svex-concat ycount (svex-rsh offset x)
-                 (res-to-concat (lifix ymask) (lifix xmask)
+                 (res-to-concat (sparseint-fix ymask)
+                                (sparseint-fix xmask)
                                 mask
                                 (+ offset ycount)
                                 y x resfn)))
@@ -2784,8 +2786,8 @@
            (implies (4vec-index-p width)
                     (equal (4vec-mask mask (4vec-concat width x y))
                            (4vec-concat width (4vec-mask mask x)
-                                        (4vec-mask (logtail (2vec->val width)
-                                                            (4vmask-fix mask))
+                                        (4vec-mask (sparseint-rightshift (2vec->val width)
+                                                                  (4vmask-fix mask))
                                                    y))))
            :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat))
                   (logbitp-reasoning))))
@@ -2809,12 +2811,28 @@
   (local (in-theory (disable res-combine-cond-implies-logand-of-must-choose)))
 
   (local (defthm res-must-choose-mask-neg1-when-res-combine-cond
-           (implies (and (equal -1 (logtail offset (4vec-res-must-choose-mask y x mask)))
+           (implies (and (equal -1 (logtail offset (sparseint-val (4vec-res-must-choose-mask y x mask))))
                          (res-combine-cond x y mask))
-                    (equal (logtail offset (4vec-res-must-choose-mask x y mask)) 0))
+                    (equal (logtail offset (sparseint-val (4vec-res-must-choose-mask x y mask))) 0))
            :hints (("goal" :use res-combine-cond-implies-logand-of-must-choose
                     :in-theory (disable res-combine-cond-implies-logand-of-must-choose))
                    (logbitp-reasoning :prune-examples nil))))
+
+  (local (defun 4vmask-equal (x y)
+           (sparseint-equal (4vmask-fix x) (4vmask-fix y))))
+
+  (local (defequiv 4vmask-equal))
+
+  (local (defcong 4vmask-equal equal (4vec-mask mask x) 1
+           :hints(("Goal" :in-theory (enable 4vec-mask)))))
+
+  (local (defthm sparseint-rightshift-compose-under-4vmask-equal
+           (4vmask-equal (sparseint-rightshift n (sparseint-rightshift m x))
+                         (sparseint-rightshift (+ (nfix n) (nfix m)) x))))
+
+  (local (defthm sparseint-rightshift-0-under-4vmask-equal
+           (4vmask-equal (sparseint-rightshift 0 x)
+                         (sparseint-fix x))))
 
   ;; (local (defthm loghead-of-trailing-0-count-forward
   ;;          (implies (< 0 (bitops::trailing-0-count x))
@@ -2822,14 +2840,14 @@
   ;;          :rule-classes :forward-chaining))
 
   (defthm res-to-concat-correct
-    (implies (and (res-combine-cond (svex-xeval x) (svex-xeval y) mask)
-                  (equal xmask (4vec-res-must-choose-mask (svex-xeval x) (svex-xeval y) mask))
-                  (equal ymask (4vec-res-must-choose-mask (svex-xeval y) (svex-xeval x) mask))
+    (implies (and (res-combine-cond (svex-s4xeval x) (svex-s4xeval y) mask)
+                  (equal xmask (4vec-res-must-choose-mask (svex-s4xeval x) (svex-s4xeval y) mask))
+                  (equal ymask (4vec-res-must-choose-mask (svex-s4xeval y) (svex-s4xeval x) mask))
                   (equal resfn 'res)
                   (4vmask-p mask))
-             (equal (4vec-mask (logtail offset mask)
+             (equal (4vec-mask (sparseint-rightshift offset mask)
                                (svex-eval (res-to-concat xmask ymask mask offset x y resfn) env))
-                    (4vec-mask (logtail offset mask)
+                    (4vec-mask (sparseint-rightshift offset mask)
                                (4vec-rsh (2vec (nfix offset))
                                          (svex-apply resfn
                                                      (list (svex-eval x env)
@@ -2856,9 +2874,9 @@
 
 
   (defthm res-to-concat-correct-0-offset
-    (implies (and (res-combine-cond (svex-xeval x) (svex-xeval y) mask)
-                  (equal xmask (4vec-res-must-choose-mask (svex-xeval x) (svex-xeval y) mask))
-                  (equal ymask (4vec-res-must-choose-mask (svex-xeval y) (svex-xeval x) mask))
+    (implies (and (res-combine-cond (svex-s4xeval x) (svex-s4xeval y) mask)
+                  (equal xmask (4vec-res-must-choose-mask (svex-s4xeval x) (svex-s4xeval y) mask))
+                  (equal ymask (4vec-res-must-choose-mask (svex-s4xeval y) (svex-s4xeval x) mask))
                   (equal resfn 'res))
              (equal (4vec-mask mask (svex-eval (res-to-concat xmask ymask mask 0 x y resfn) env))
                     (4vec-mask mask
@@ -2878,15 +2896,15 @@
 
 (define res-to-concat-top ((x svex-p) (y svex-p) (mask 4vmask-p) (resfn fnsym-p))
   :returns (res svex-p)
-  :guard (res-combine-cond (svex-xeval x) (svex-xeval y) mask)
+  :guard (res-combine-cond (svex-s4xeval x) (svex-s4xeval y) mask)
   (b* ((mask (4vmask-fix mask))
-       (xval (svex-xeval x))
-       (yval (svex-xeval y))
+       (xval (svex-s4xeval x))
+       (yval (svex-s4xeval y))
        (xmask (4vec-res-must-choose-mask xval yval mask))
        (ymask (4vec-res-must-choose-mask yval xval mask)))
-    (if (or (zip xmask)
-            (< (bitops::trailing-0-count xmask)
-               (bitops::trailing-0-count ymask)))
+    (if (or (sparseint-equal xmask 0)
+            (< (sparseint-trailing-0-count xmask)
+               (sparseint-trailing-0-count ymask)))
         (res-to-concat xmask ymask mask 0 x y resfn)
       (res-to-concat ymask xmask mask 0 y x resfn)))
   ///
@@ -2918,7 +2936,7 @@
 
   (defthm res-to-concat-top-correct
     (implies (and (member resfn '(res))
-                  (res-combine-cond (svex-xeval x) (svex-xeval y) mask))
+                  (res-combine-cond (svex-s4xeval x) (svex-s4xeval y) mask))
              (equal (4vec-mask mask (svex-eval (res-to-concat-top x y mask resfn) env))
                     (4vec-mask mask (svex-eval (svex-call resfn (list x y)) env))))
     :hints(("Goal" :in-theory (enable svex-apply svexlist-eval))))
@@ -2934,7 +2952,7 @@
 ;; but that are Boolean and agree on the overlap. (bitxor x y) & (not-z x) & (not-z y) = 0.
 (def-svex-rewrite res-to-concat
   :lhs (res x y)
-  :checks ((res-combine-cond (svex-xeval x) (svex-xeval y) mask)
+  :checks ((res-combine-cond (svex-s4xeval x) (svex-s4xeval y) mask)
            (bind v (res-to-concat-top x y mask 'res)))
   :rhs v)
 
@@ -2957,12 +2975,9 @@
 (def-svex-rewrite bitxor-identity-under-mask-1
   :lhs (bitxor x y)
   :checks (;; x is 0 in all the care bits
-           (eql (logand mask
-                        (4vec->upper (svex-xeval x)))
-                0)
-           (eql (logand mask
-                        (4vec->lower (svex-xeval x)))
-                0))
+           (not (sparseint-test-bitand mask
+                                       (s4vec->upper (svex-s4xeval x))))
+           (not (sparseint-test-bitand mask (s4vec->lower (svex-s4xeval x)))))
   :rhs (unfloat y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitxor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2975,12 +2990,8 @@
 (def-svex-rewrite bitxor-negation-under-mask-1
   :lhs (bitxor x y)
   :checks (;; x is 1 in all the care bits
-           (eql (logior (lognot mask)
-                        (4vec->upper (svex-xeval x)))
-                -1)
-           (eql (logior (lognot mask)
-                        (4vec->lower (svex-xeval x)))
-                -1))
+           (not (sparseint-test-bitandc2 mask (s4vec->upper (svex-s4xeval x))))
+           (not (sparseint-test-bitandc2 mask (s4vec->lower (svex-s4xeval x)))))
   :rhs (bitnot y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitxor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -2993,13 +3004,9 @@
 
 (def-svex-rewrite bitxor-identity-under-mask-2
   :lhs (bitxor x y)
-  :checks (;; x is 0 in all the care bits
-           (eql (logand mask
-                        (4vec->upper (svex-xeval y)))
-                0)
-           (eql (logand mask
-                        (4vec->lower (svex-xeval y)))
-                0))
+  :checks (;; y is 0 in all the care bits
+           (not (sparseint-test-bitand mask (s4vec->upper (svex-s4xeval y))))
+           (not (sparseint-test-bitand mask (s4vec->lower (svex-s4xeval y)))))
   :rhs (unfloat x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitxor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -3011,13 +3018,9 @@
 
 (def-svex-rewrite bitxor-negation-under-mask-2
   :lhs (bitxor x y)
-  :checks (;; x is 1 in all the care bits
-           (eql (logior (lognot mask)
-                        (4vec->upper (svex-xeval y)))
-                -1)
-           (eql (logior (lognot mask)
-                        (4vec->lower (svex-xeval y)))
-                -1))
+  :checks (;; y is 1 in all the care bits
+           (not (sparseint-test-bitandc2 mask (s4vec->upper (svex-s4xeval y))))
+           (not (sparseint-test-bitandc2 mask (s4vec->lower (svex-s4xeval y)))))
   :rhs (bitnot x)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-bitxor
                                     4vec-bitnot 3vec-bitnot 3vec-fix 4vec-mask))
@@ -3182,8 +3185,8 @@
          (implies (natp width)
                   (equal (4vec-mask mask (4vec-concat (2vec width) x y))
                          (4vec-concat (2vec width)
-                                      (4vec-mask (loghead width (4vmask-fix mask)) x)
-                                      (4vec-mask (logtail width (4vmask-fix mask)) y))))
+                                      (4vec-mask (sparseint-concatenate width (4vmask-fix mask) 0) x)
+                                      (4vec-mask (sparseint-rightshift width (4vmask-fix mask)) y))))
          :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat))
                 (logbitp-reasoning))))
 
@@ -3196,7 +3199,7 @@
   :verify-guards nil
   (b* ((x-width (lnfix x-width))
        (mask (4vmask-fix mask))
-       ((when (eql 0 (loghead x-width mask)))
+       ((when (not (sparseint-test-bitand (sparseint-concatenate x-width -1 0) mask)))
         (svex-concat x-width 0 y))
        ((mv matched a-width a b) (match-concat x))
        ((unless matched) (svex-concat x-width x y))
@@ -3204,13 +3207,22 @@
         (normalize-concat-aux
          a-width
          a
-         (normalize-concat-aux (- x-width a-width) b y (logtail a-width mask))
+         (normalize-concat-aux (- x-width a-width) b y (sparseint-rightshift a-width mask))
          mask)))
     (normalize-concat-aux x-width a y mask))
   ///
   (verify-guards normalize-concat-aux)
 
   
+  (local (defthm logand-loghead-neg1
+           (equal (logand (loghead n -1) x)
+                  (loghead n x))
+           :hints((logbitp-reasoning))))
+
+  (local (defthm 4vec-mask-when-val-is-0
+           (implies (equal (sparseint-val (4vmask-fix m)) 0)
+                    (equal (4vec-mask m x) '(-1 . 0)))
+           :hints(("Goal" :in-theory (enable 4vec-mask)))))
 
   (defret normalize-concat-aux-correct
     (equal (4vec-mask mask (svex-eval concat env))
@@ -3234,12 +3246,18 @@
   :returns (concat svex-p)
   :verify-guards nil
   (b* ((mask (4vmask-fix mask))
-       ((when (eql mask 0)) 0)
+       ((when (sparseint-equal mask 0)) 0)
        ((mv matched a-width a b) (match-concat x))
        ((unless matched) (svex-fix x)))
-    (normalize-concat-aux a-width a (normalize-concat b (logtail a-width mask)) mask))
+    (normalize-concat-aux a-width a (normalize-concat b (sparseint-rightshift a-width mask)) mask))
   ///
   (verify-guards normalize-concat)
+
+  (local (defthm 4vec-mask-when-val-is-0
+           (implies (equal (sparseint-val (4vmask-fix m)) 0)
+                    (equal (4vec-mask m x) '(-1 . 0)))
+           :hints(("Goal" :in-theory (enable 4vec-mask)))))
+
   (defret normalize-concat-correct
     (equal (4vec-mask mask (svex-eval concat env))
            (4vec-mask mask (svex-eval x env)))
@@ -3461,7 +3479,7 @@
 
   (def-svex-rewrite qmark-select-1
     :lhs (? a b c)
-    :checks ((not (eql 0 (4vec->lower (3vec-fix (svex-xeval a))))))
+    :checks ((not (sparseint-equal 0 (s4vec->lower (s3vec-fix (svex-s4xeval a))))))
     :rhs b
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask
                                            3vec-fix 4vec-[=)
@@ -3473,7 +3491,7 @@
 
   (def-svex-rewrite qmark*-select-1
     :lhs (?* a b c)
-    :checks ((not (eql 0 (4vec->lower (3vec-fix (svex-xeval a))))))
+    :checks ((not (sparseint-equal 0 (s4vec->lower (s3vec-fix (svex-s4xeval a))))))
     :rhs b
     :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask
                                            3vec-fix 4vec-[=)
@@ -3485,7 +3503,7 @@
 
   (def-svex-rewrite qmark-select-0
     :lhs (? a b c)
-    :checks ((eql 0 (4vec->upper (3vec-fix (svex-xeval a)))))
+    :checks ((sparseint-equal 0 (s4vec->upper (s3vec-fix (svex-s4xeval a)))))
     :rhs c
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask
                                            3vec-fix 4vec-[=)
@@ -3497,7 +3515,7 @@
 
   (def-svex-rewrite qmark*-select-0
     :lhs (?* a b c)
-    :checks ((eql 0 (4vec->upper (3vec-fix (svex-xeval a)))))
+    :checks ((sparseint-equal 0 (s4vec->upper (s3vec-fix (svex-s4xeval a)))))
     :rhs c
     :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask
                                            3vec-fix 4vec-[=)
@@ -3570,7 +3588,7 @@
 
   (def-svex-rewrite ?*-merge-branches
     :lhs (?* test x y)
-    :checks ((not (2vec-p (svex-xeval test)))
+    :checks ((not (s4vec-2vec-p (svex-s4xeval test)))
              (bind res (merge-branches test
                                        (normalize-concat x mask)
                                        (normalize-concat y mask)
@@ -3631,11 +3649,11 @@
 
 (def-svex-rewrite partsel-of-partinst-same
   :lhs (partsel lsb width (partinst lsb width x val))
-  :checks ((4vec-index-p (svex-xeval lsb)))
+  :checks ((s4vec-index-p (svex-s4xeval lsb)))
   :rhs (zerox width val)
   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-part-install 4vec-zero-ext
                                     4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
-                                    4vec-index-p svex-eval-when-2vec-p-of-minval))
+                                    s4vec-index-p svex-eval-when-2vec-p-of-minval))
          (svex-generalize-lookups)
          (logbitp-reasoning)))
 
@@ -3649,22 +3667,22 @@
 
 (def-svex-rewrite partsel-of-partinst-nonoverlapping
   :lhs (partsel lsb1 width1 (partinst lsb2 width2 x val))
-  :checks ((let lsb1-val (svex-xeval lsb1))
-           (2vec-p lsb1-val)
-           (let width1-val (svex-xeval width1))
-           (4vec-index-p width1-val)
-           (let lsb2-val (svex-xeval lsb2))
-           (2vec-p lsb2-val)
-           (let width2-val (svex-xeval width2))
-           (4vec-index-p width2-val)
-           (or (<= (+ (2vec->val lsb1-val) (2vec->val width1-val))
-                   (2vec->val lsb2-val))
-               (<= (+ (2vec->val lsb2-val) (2vec->val width2-val))
-                   (2vec->val lsb1-val))))
+  :checks ((let lsb1-val (svex-s4xeval lsb1))
+           (s4vec-2vec-p lsb1-val)
+           (let width1-val (svex-s4xeval width1))
+           (s4vec-index-p width1-val)
+           (let lsb2-val (svex-s4xeval lsb2))
+           (s4vec-2vec-p lsb2-val)
+           (let width2-val (svex-s4xeval width2))
+           (s4vec-index-p width2-val)
+           (or (not (sparseint-< (s4vec->upper lsb2-val)
+                                 (sparseint-plus (s4vec->upper lsb1-val) (s4vec->upper width1-val))))
+               (not (sparseint-< (s4vec->upper lsb1-val)
+                                 (sparseint-plus (s4vec->upper lsb2-val) (s4vec->upper width2-val))))))
   :rhs (partsel lsb1 width1 x)
   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-part-install 4vec-zero-ext
                                     4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
-                                    4vec-index-p svex-eval-when-2vec-p-of-minval))
+                                    s4vec-index-p svex-eval-when-2vec-p-of-minval))
          (svex-generalize-lookups)
          (logbitp-reasoning)))
 
@@ -3683,16 +3701,17 @@
 
 (def-svex-rewrite partsel-of-rsh
   :lhs (partsel lsb width (rsh shift x))
-  :checks ((let lsb-val (svex-xeval lsb))
-           (4vec-index-p lsb-val)
-           (let shift-val (svex-xeval shift))
-           (4vec-index-p shift-val)
-           (bind newlsb (svex-quote (2vec (+ (2vec->val lsb-val)
-                                             (2vec->val shift-val))))))
+  :checks ((let lsb-val (svex-s4xeval lsb))
+           (s4vec-index-p lsb-val)
+           (let shift-val (svex-s4xeval shift))
+           (s4vec-index-p shift-val)
+           (bind newlsb (svex-quote (2vec (sparseint-val
+                                           (sparseint-plus (s4vec->upper lsb-val)
+                                                           (s4vec->upper shift-val)))))))
   :rhs (partsel newlsb width x)
   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
                                     4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
-                                    4vec-index-p svex-eval-when-2vec-p-of-minval))
+                                    s4vec-index-p svex-eval-when-2vec-p-of-minval))
          (svex-generalize-lookups)
          (logbitp-reasoning)))
 
@@ -3738,37 +3757,37 @@
 
 (def-svex-rewrite partsel-of-partsel
   :lhs (partsel lsb1 width1 (partsel lsb2 width2 x))
-  :checks ((let lsb1-val (svex-xeval lsb1))
-           (4vec-index-p lsb1-val)
-           (let width1-val (svex-xeval width1))
-           (4vec-index-p width1-val)
-           (let lsb2-val (svex-xeval lsb2))
-           (4vec-index-p lsb2-val)
-           (let width2-val (svex-xeval width2))
-           (4vec-index-p width2-val)
-           (bind new-lsb (svex-quote (2vec (+ (2vec->val lsb1-val)
-                                              (2vec->val lsb2-val)))))
+  :checks ((let lsb1-val (svex-s4xeval lsb1))
+           (s4vec-index-p lsb1-val)
+           (let width1-val (svex-s4xeval width1))
+           (s4vec-index-p width1-val)
+           (let lsb2-val (svex-s4xeval lsb2))
+           (s4vec-index-p lsb2-val)
+           (let width2-val (svex-s4xeval width2))
+           (s4vec-index-p width2-val)
+           (bind new-lsb (svex-quote (2vec (sparseint-val (sparseint-plus (s4vec->upper lsb1-val)
+                                                                          (s4vec->upper lsb2-val))))))
            (bind new-width (svex-quote (2vec (min (max 0
-                                                       (- (2vec->val width2-val)
-                                                          (2vec->val lsb1-val)))
-                                                  (2vec->val width1-val))))))
+                                                       (sparseint-val (sparseint-binary-minus (s4vec->upper width2-val)
+                                                                                              (s4vec->upper lsb1-val))))
+                                                  (sparseint-val (s4vec->upper width1-val)))))))
   :rhs (partsel new-lsb new-width x)
   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
                                     4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
-                                    4vec-index-p svex-eval-when-2vec-p-of-minval))
+                                    s4vec-index-p svex-eval-when-2vec-p-of-minval))
          (svex-generalize-lookups)
          (logbitp-reasoning)))
 
-
+(local (in-theory (enable s4vec-index-p)))
 (def-svex-rewrite partsel-0-under-mask
   :lhs (partsel 0 width x)
-  :checks ((let width-val (svex-xeval width))
-           (4vec-index-p width-val)
-           (equal 0 (logtail (2vec->val width-val) mask)))
+  :checks ((let width-val (svex-s4xeval width))
+           (s4vec-index-p width-val)
+           (not (sparseint-test-bitand (sparseint-concatenate (sparseint-val (s4vec->upper width-val)) 0 -1) mask)))
   :rhs x
   :hints(("Goal" :in-theory (enable 4vec-part-select 4vec-zero-ext
                                     4vec-concat 4vec-rsh 4vec-shift-core svex-apply 4vec-mask
-                                    4vec-index-p svex-eval-when-2vec-p-of-minval))
+                                    s4vec-index-p svex-eval-when-2vec-p-of-minval))
          (svex-generalize-lookups)
          (logbitp-reasoning :prune-examples nil)))
 
@@ -3849,6 +3868,19 @@
           (logbitp-reasoning)))
 
 
+(define s4vec-mask-to-zero ((mask 4vmask-p)
+                            (x s4vec-p))
+  :returns (new-x s4vec-p)
+  (b* ((mask (4vmask-fix mask))
+       ((s4vec x)))
+    (s4vec (sparseint-bitand mask x.upper)
+           (sparseint-bitand mask x.lower)))
+  ///
+  (defret <fn>-correct
+    (equal (s4vec->4vec new-x)
+           (4vec-mask-to-zero mask (s4vec->4vec x)))
+    :hints(("Goal" :in-theory (enable 4vec-mask-to-zero)))))
+
 (local (defthm 4vec-mask-to-zero-preserves-[=
          (implies (4vec-[= x y)
                   (4vec-[= (4vec-mask-to-zero mask x)
@@ -3857,42 +3889,64 @@
                                         ((tau-system))))
                 (logbitp-reasoning))))
 
+(local (defthmd equal-of-4vec->upper
+         (implies (and (equal (4vec->lower x) y)
+                       (4vec-p x))
+                  (equal (equal (4vec->upper x) z)
+                         (and (integerp z)
+                              (equal x (4vec z y)))))
+         ))
+                  
+                  ;; (equal (equal x y)
+                  ;;        (and (4vec-p y)
+                  ;;             (equal (4vec->upper x) (4vec->upper y))
+                  ;;             (equal (4vec->lower
+
 (local
  (defthmd uor-under-mask-lemma
-   (implies (bind-free '((env . env)) (env))
-            (equal (equal (4vec-mask-to-zero mask (svex-xeval x)) 0)
-                   (and (Equal (4vec-mask-to-zero mask (svex-eval x env)) 0)
-                        (hide (equal (4vec-mask-to-zero mask (svex-xeval x)) 0)))))
+   (implies (and (equal (4vec->upper (4vec-mask-to-zero mask (svex-xeval x))) 0)
+                 (equal (4vec->lower (4vec-mask-to-zero mask (svex-xeval x))) 0))
+            (Equal (4vec-mask-to-zero mask (svex-eval x env)) 0))
    :hints(("Goal" :use ((:instance 4vec-mask-to-zero-preserves-[=
                          (x (svex-xeval x)) (y (svex-eval x env))))
-           :in-theory (disable 4vec-mask-to-zero-preserves-[=)
+           :in-theory (e/d (equal-of-4vec->upper)
+                           (4vec-mask-to-zero-preserves-[=))
            :expand ((:free (x) (hide x)))))))
 
 (def-svex-rewrite uor-under-mask-1
   :lhs (uor x)
-  :checks ((equal mask 1)
-           (equal (4vec-mask-to-zero -2 (svex-xeval x)) 0))
+  :checks ((sparseint-equal mask 1)
+           (let mask-x (s4vec-mask-to-zero -2 (svex-s4xeval x)))
+           (sparseint-equal (s4vec->upper mask-x) 0)
+           (sparseint-equal (s4vec->lower mask-x) 0))
   :rhs (unfloat x)
-  :hints (("goal" :in-theory (enable svex-apply uor-under-mask-lemma))
+  :hints (("goal" :in-theory (enable svex-apply))
+           ;; :use ((:instance uor-under-mask-lemm)
+          (svex-generalize-lookups)
+          (and stable-under-simplificationp
+               '(:use ((:instance uor-under-mask-lemma
+                        (mask -2)))))
           (and stable-under-simplificationp
                '(:in-theory (enable 4vec-reduction-or 3vec-reduction-or
                                     3vec-fix svex-apply 4vec-mask 4vec-mask-to-zero)))
-          (svex-generalize-lookups)
           (bitops::logbitp-reasoning
            :prune-examples nil
            :add-hints (:in-theory (enable* bitops::bool->bit
-                                           bitops::logbitp-case-splits)))))
+                                           bitops::logbitp-case-splits)))
+          ))
 
 
 
 (def-svex-rewrite concat-redundant-tail
   :lhs (concat width x y)
-  :checks ((let width-val (svex-xeval width))
-           (4vec-index-p width-val)
-           (let y-val (svex-xeval y))
-           (4vec-xfree-p y-val)
-           (let x-val (svex-xeval x))
-           (equal (4vec-rsh width-val x-val) y-val))
+  :checks ((let width-val (svex-s4xeval width))
+           (s4vec-index-p width-val)
+           (let y-val (svex-s4xeval y))
+           (s4vec-xfree-p y-val)
+           (let x-val (svex-s4xeval x))
+           (let rsh  (s4vec-rsh width-val x-val))
+           (sparseint-equal (s4vec->upper rsh) (s4vec->upper y-val))
+           (sparseint-equal (s4vec->lower rsh) (s4vec->lower y-val)))
   :rhs x
   :hints (("goal" :in-theory (enable 4vec-concat 4vec-xfree-p 4vec-mask 4vec-rsh 4vec-shift-core svex-apply
                                      svex-eval-when-2vec-p-of-minval
@@ -3989,7 +4043,7 @@
 
 (define 4vec-xfree-under-mask ((x 4vec-p) (mask 4vmask-p))
   (b* (((4vec x) x))
-    (eql -1 (logior (lognot (4vmask-fix mask)) (logior (lognot x.upper) x.lower))))
+    (eql -1 (logior (lognot (sparseint-val (4vmask-fix mask))) (logior (lognot x.upper) x.lower))))
   ///
   (local (defthm equal-of-4vecs
            (implies (and (4vec-p a)
@@ -4003,11 +4057,11 @@
                   (4vec-xfree-under-mask (svex-xeval n) mask))
              (equal (4vec-mask mask (svex-eval n env))
                     (4vec-mask mask (svex-xeval n))))
-  :hints (("goal" :use ((:instance svex-eval-gte-xeval (x n)))
-           :in-theory (e/d ( 4vec-equiv 4vec-mask)
-                           (svex-eval-gte-xeval))
-           :expand ((4vec-[= (svex-xeval n) (svex-eval n env))))
-          (bitops::logbitp-reasoning)))
+    :hints (("goal" :use ((:instance svex-eval-gte-xeval (x n)))
+             :in-theory (e/d ( 4vec-equiv 4vec-mask)
+                             (svex-eval-gte-xeval))
+             :expand ((4vec-[= (svex-xeval n) (svex-eval n env))))
+            (bitops::logbitp-reasoning)))
 
   (deffixequiv 4vec-xfree-under-mask)
 
@@ -4043,6 +4097,16 @@
              :in-theory (disable svex-eval-when-4vec-xfree-under-mask-of-minval
                                  equal-of-4vecs 4vec-xfree-under-mask)))))
 
+(define s4vec-xfree-under-mask ((x s4vec-p) (mask 4vmask-p))
+  :returns (xfree)
+  (b* (((s4vec x) x))
+    (not (sparseint-test-bitand (4vmask-fix mask) (sparseint-bitandc2 x.upper x.lower))))
+  ///
+  (defret <fn>-correct
+    (equal xfree
+           (4vec-xfree-under-mask (s4vec->4vec x) mask))
+    :hints(("Goal" :in-theory (enable 4vec-xfree-under-mask))
+           (logbitp-reasoning))))
 
 #|
 (trace$
@@ -4064,9 +4128,9 @@
   :returns (mv (successp booleanp)
                (pat (iff (svex-p pat) successp))
                (subst svex-alist-p))
-  (b* ((xeval (svex-xeval (svex-call fn args)))
-       ((when (4vec-xfree-under-mask xeval mask))
-        (mv t (svex-quote (4vec-mask-to-zero mask xeval)) nil)))
+  (b* ((xeval (svex-s4xeval (svex-call fn args)))
+       ((when (s4vec-xfree-under-mask xeval mask))
+        (mv t (svex-quote (s4vec->4vec (s4vec-mask-to-zero mask xeval))) nil)))
     nil 
     (svex-rewrite-cases mask
                         (mbe :logic (fnsym-fix fn) :exec fn)

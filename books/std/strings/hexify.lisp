@@ -189,7 +189,7 @@ produces binary output instead of hex output.</p>"
 
 
 (defsection binify-width
-  :parents (bin)
+  :parents (binary)
   :short "Convert numbers into readable binary strings, fixing the number of digits printed"
 
   :long "<p>@(call binify) is identical to @(see str::hexify-width) except that

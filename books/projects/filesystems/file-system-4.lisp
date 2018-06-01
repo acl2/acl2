@@ -119,6 +119,8 @@
                               (block-listp disk))))
   (l3-rdchs hns fs disk start n))
 
+; This function writes a specified text string to a specified position to a
+; text file at a specified path.
 (defun l4-wrchs (hns fs disk alv start text)
   (declare (xargs :guard (and (symbol-listp hns)
                               (l4-fs-p fs)
@@ -195,22 +197,24 @@
   (declare (xargs :guard t))
   (and (l4-fs-p fs)
        (boolean-listp alv)
-       (let ( (all-indices (l4-list-all-indices fs)))
-         (and (nat-listp all-indices)
-              (no-duplicatesp all-indices)
-              (indices-marked-p all-indices alv)))))
+       (let ((all-indices (l4-list-all-indices fs)))
+            (and (no-duplicatesp all-indices)
+                 (indices-marked-p all-indices alv)))))
 
-(defthm l4-wrchs-returns-fs
-  (implies (and (symbol-listp hns)
-                (l3-fs-p fs)
-                (boolean-listp alv)
-                (integerp start)
-                (<= 0 start)
-                (stringp text)
-                (block-listp disk))
-           (l3-fs-p (mv-nth 0 (l4-wrchs hns fs disk alv start text))))
-  :hints (("Subgoal *1/5'''" :in-theory (enable l3-regular-file-entry-p))
-          ("Subgoal *1/6'4'" :in-theory (enable l3-regular-file-entry-p))))
+(defthm
+  l4-wrchs-returns-fs
+  (implies
+   (and (symbol-listp hns)
+        (l3-fs-p fs)
+        (boolean-listp alv)
+        (integerp start)
+        (<= 0 start)
+        (stringp text)
+        (block-listp disk))
+   (l3-fs-p (mv-nth 0
+                    (l4-wrchs hns fs disk alv start text))))
+  :hints (("subgoal *1/6"
+           :in-theory (enable l3-regular-file-entry-p))))
 
 (defthm l4-wrchs-returns-alv
   (implies (and (symbol-listp hns)
@@ -554,7 +558,7 @@
             l
             (l4-collect-all-index-lists (cdr (assoc-equal name fs))))))
 
-(defthm
+(defthmd
   l4-wrchs-returns-stricter-fs-lemma-27
   (implies
    (and
@@ -618,13 +622,18 @@
         (equal (len alv) (len disk))
         (bounded-nat-listp (flatten l)
                            (len alv))
-        (not (member-intersectp-equal l (l4-collect-all-index-lists fs)))
+        (not (member-intersectp-equal
+              l (l4-collect-all-index-lists fs)))
         (indices-marked-listp l alv)
         (true-list-listp l))
-   (indices-marked-listp l
-                         (mv-nth 2
-                                 (l4-wrchs hns fs disk alv start text))))
-  :hints (("Goal" :induct (indices-marked-listp l alv))))
+   (indices-marked-listp
+    l
+    (mv-nth 2
+            (l4-wrchs hns fs disk alv start text))))
+  :hints
+  (("goal"
+    :in-theory (enable l4-wrchs-returns-stricter-fs-lemma-27)
+    :induct (indices-marked-listp l alv))))
 
 (defthm
   l4-wrchs-returns-stricter-fs-lemma-29
@@ -685,6 +694,94 @@
 (defthm
   l4-wrchs-returns-stricter-fs-lemma-31
   (implies
+   (and
+    (l3-fs-p fs)
+    (boolean-listp alv)
+    (indices-marked-listp (l4-collect-all-index-lists fs)
+                          alv)
+    (integerp start)
+    (<= 0 start)
+    (stringp text)
+    (block-listp disk)
+    (equal (len alv) (len disk))
+    (consp (assoc-equal name fs))
+    (l3-regular-file-entry-p (cdr (assoc-equal name fs)))
+    (<=
+     (len
+      (make-blocks
+       (insert-text
+        (unmake-blocks (fetch-blocks-by-indices
+                        disk (cadr (assoc-equal name fs)))
+                       (cddr (assoc-equal name fs)))
+        start text)))
+     (count-free-blocks
+      (set-indices-in-alv alv (cadr (assoc-equal name fs))
+                          nil))))
+   (l3-regular-file-entry-p
+    (cons
+     (find-n-free-blocks
+      (set-indices-in-alv alv (cadr (assoc-equal name fs))
+                          nil)
+      (len
+       (make-blocks
+        (insert-text
+         (unmake-blocks (fetch-blocks-by-indices
+                         disk (cadr (assoc-equal name fs)))
+                        (cddr (assoc-equal name fs)))
+         start text))))
+     (len
+      (insert-text
+       (unmake-blocks (fetch-blocks-by-indices
+                       disk (cadr (assoc-equal name fs)))
+                      (cddr (assoc-equal name fs)))
+       start text)))))
+  :hints (("goal" :in-theory (enable l3-regular-file-entry-p))))
+
+(defthm
+  l4-wrchs-returns-stricter-fs-lemma-32
+  (implies
+   (and
+    (l3-fs-p fs)
+    (boolean-listp alv)
+    (indices-marked-listp (l4-collect-all-index-lists fs)
+                          alv)
+    (integerp start)
+    (<= 0 start)
+    (stringp text)
+    (block-listp disk)
+    (equal (len alv) (len disk))
+    (consp fs)
+    (consp (assoc-equal name fs))
+    (l3-regular-file-entry-p (cdr (assoc-equal name fs)))
+    (equal
+     (count-free-blocks (set-indices-in-alv alv (cadr (assoc-equal name fs))
+                                            nil))
+     (len
+      (make-blocks
+       (insert-text
+        (unmake-blocks
+         (fetch-blocks-by-indices disk (cadr (assoc-equal name fs)))
+         (cddr (assoc-equal name fs)))
+        start text)))))
+   (l3-regular-file-entry-p
+    (cons
+     (find-n-free-blocks
+      (set-indices-in-alv alv (cadr (assoc-equal name fs))
+                          nil)
+      (count-free-blocks (set-indices-in-alv alv (cadr (assoc-equal name fs))
+                                             nil)))
+     (len
+      (insert-text
+       (unmake-blocks
+        (fetch-blocks-by-indices disk (cadr (assoc-equal name fs)))
+        (cddr (assoc-equal name fs)))
+       start text)))))
+  :hints (("goal" :in-theory (disable l4-wrchs-returns-stricter-fs-lemma-31)
+           :use l4-wrchs-returns-stricter-fs-lemma-31)))
+
+(defthm
+  l4-wrchs-returns-stricter-fs-lemma-33
+  (implies
    (and (symbol-listp hns)
         (l3-fs-p fs)
         (boolean-listp alv)
@@ -701,14 +798,10 @@
    (not-intersectp-list l
                         (l4-collect-all-index-lists
                          (mv-nth 0
-                                 (l4-wrchs hns fs disk alv start text)))))
-  :hints (("subgoal *1/6.2" :in-theory (enable l3-regular-file-entry-p))
-          ("subgoal *1/5.2" :in-theory (enable l3-regular-file-entry-p))
-          ("subgoal *1/4.2" :in-theory (enable l3-regular-file-entry-p))
-          ("subgoal *1/3.2" :in-theory (enable l3-regular-file-entry-p))))
+                                 (l4-wrchs hns fs disk alv start text))))))
 
 (defthm
-  l4-wrchs-returns-stricter-fs-lemma-32
+  l4-wrchs-returns-stricter-fs-lemma-34
   (implies
    (and (symbol-listp hns)
         (l3-fs-p fs)
@@ -732,33 +825,30 @@
   :hints (("Goal" :induct (indices-marked-listp l alv))
           ("Subgoal *1/2" :expand (flatten l))))
 
-(defthm l4-wrchs-returns-stricter-fs-lemma-33
+(defthm
+  l4-wrchs-returns-stricter-fs-lemma-35
   (implies
    (and (symbol-listp hns)
         (l3-fs-p fs)
         (boolean-listp alv)
-        (disjoint-list-listp (l4-collect-all-index-lists fs))
-        (no-duplicates-listp (l4-collect-all-index-lists fs))
         (indices-marked-listp (l4-collect-all-index-lists fs)
                               alv)
         (integerp start)
         (<= 0 start)
         (stringp text)
         (block-listp disk)
-        (equal (len alv) (len disk)))
-   (and
-    (indices-marked-listp
-     (l4-collect-all-index-lists (mv-nth 0
-                                         (l4-wrchs hns fs disk alv start text)))
-     (mv-nth 2
-             (l4-wrchs hns fs disk alv start text)))
-    (disjoint-list-listp (l4-collect-all-index-lists
-                          (mv-nth 0
-                                  (l4-wrchs hns fs disk alv start text))))))
-  :hints (("Goal" :induct t)
-          ("Subgoal *1/7.2" :in-theory (disable l4-collect-all-index-lists-correctness-2))
-          ("Subgoal *1/7''" :in-theory (disable l4-collect-all-index-lists-correctness-2))
-          ("subgoal *1/6" :in-theory (enable l3-regular-file-entry-p))))
+        (equal (len alv) (len disk))
+        (not (member-intersectp-equal l (l4-collect-all-index-lists fs)))
+        (indices-marked-listp l alv)
+        (nat-listp (flatten l))
+        (true-list-listp l))
+   (not (member-intersectp-equal
+         l
+         (l4-collect-all-index-lists
+          (mv-nth 0
+                  (l4-wrchs hns fs disk alv start text))))))
+ :hints (("goal" :induct (indices-marked-listp l alv))
+         ("subgoal *1/2" :expand (flatten l))))
 
 ;; find a simpler problem that doesn't have all these details, that shows the
 ;; same kind of issue
@@ -803,8 +893,8 @@
                 (block-listp disk)
                 (l4-fs-p (l4-stat hns fs disk)))
            (equal (l2-stat hns (l4-to-l2-fs fs disk))
-                  (l4-to-l2-fs (l4-stat hns fs disk) disk)))
-  )
+                  (l4-to-l2-fs (l4-stat hns fs disk)
+                               disk))))
 
 ;; This theorem proves the equivalence of the l4 and l2 versions of rdchs.
 (defthm l4-rdchs-correctness-1
@@ -912,13 +1002,6 @@
                     (index (car index-list))
                     (value (car value-list))))))
 
-(defthm
-  l4-wrchs-correctness-1-lemma-10
-  (implies (and (natp n)
-                (boolean-listp alv)
-                (indices-marked-p index-list alv))
-           (not (intersectp-equal index-list (find-n-free-blocks alv n)))))
-
 (defthm l4-wrchs-correctness-1-lemma-11
   (implies (and (natp n)
                 (boolean-listp alv)
@@ -930,12 +1013,6 @@
   l4-wrchs-correctness-1-lemma-12
   (implies
    (and (l3-fs-p fs1)
-        (equal (l2-wrchs hns (l3-to-l2-fs fs1 disk)
-                         start text)
-               (l3-to-l2-fs (mv-nth 0
-                                    (l4-wrchs hns fs1 disk alv start text))
-                            (mv-nth 1
-                                    (l4-wrchs hns fs1 disk alv start text))))
         (l3-fs-p fs2)
         (boolean-listp alv)
         (disjoint-list-listp (l4-collect-all-index-lists fs1))
@@ -951,231 +1028,261 @@
         (block-listp disk)
         (equal (len alv) (len disk))
         (<= 0 (count-free-blocks alv))
-        (not (member-intersectp-equal (l4-collect-all-index-lists fs1)
-                                      (l4-collect-all-index-lists fs2))))
-   (equal (l3-to-l2-fs fs2
-                       (mv-nth 1
-                               (l4-wrchs hns fs1 disk alv start text)))
+        (not (member-intersectp-equal
+              (l4-collect-all-index-lists fs1)
+              (l4-collect-all-index-lists fs2))))
+   (equal (l3-to-l2-fs
+           fs2
+           (mv-nth 1
+                   (l4-wrchs hns fs1 disk alv start text)))
           (l3-to-l2-fs fs2 disk)))
-  :instructions
-  ((:prove
-    :hints
-    (("subgoal *1/11.2''"
-      :in-theory (disable l4-wrchs-correctness-1-lemma-9
-                          find-n-free-blocks-correctness-7)
-      :use
-      ((:instance
-        find-n-free-blocks-correctness-7
-        (alv (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs1))
-                                 nil))
-        (n
-         (len
-          (make-blocks
-           (insert-text
-            (unmake-blocks
-             (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs1)))
-             (cddr (assoc-equal (car hns) fs1)))
-            start text)))))
-       (:instance
-        l4-wrchs-correctness-1-lemma-9 (fs fs2)
-        (index-list
-         (find-n-free-blocks
-          (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs1))
-                              nil)
-          (len
-           (make-blocks
-            (insert-text
-             (unmake-blocks (fetch-blocks-by-indices
-                             disk (cadr (assoc-equal (car hns) fs1)))
-                            (cddr (assoc-equal (car hns) fs1)))
-             start text)))))
-        (value-list
+  :hints
+  (("subgoal *1/11.2''"
+    :in-theory (disable l4-wrchs-correctness-1-lemma-9
+                        find-n-free-blocks-correctness-7)
+    :use
+    ((:instance
+      find-n-free-blocks-correctness-7
+      (alv (set-indices-in-alv
+            alv (cadr (assoc-equal (car hns) fs1))
+            nil))
+      (n
+       (len
+        (make-blocks
+         (insert-text
+          (unmake-blocks
+           (fetch-blocks-by-indices
+            disk (cadr (assoc-equal (car hns) fs1)))
+           (cddr (assoc-equal (car hns) fs1)))
+          start text)))))
+     (:instance
+      l4-wrchs-correctness-1-lemma-9 (fs fs2)
+      (index-list
+       (find-n-free-blocks
+        (set-indices-in-alv
+         alv (cadr (assoc-equal (car hns) fs1))
+         nil)
+        (len
          (make-blocks
           (insert-text
            (unmake-blocks
-            (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs1)))
+            (fetch-blocks-by-indices
+             disk (cadr (assoc-equal (car hns) fs1)))
             (cddr (assoc-equal (car hns) fs1)))
-           start text))))))
-     ("subgoal *1/10.2''"
-      :in-theory (disable l4-wrchs-correctness-1-lemma-9
-                          find-n-free-blocks-correctness-7)
-      :use
-      ((:instance
-        find-n-free-blocks-correctness-7
-        (alv (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs1))
-                                 nil))
-        (n
-         (len
-          (make-blocks
-           (insert-text
-            (unmake-blocks
-             (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs1)))
-             (cddr (assoc-equal (car hns) fs1)))
-            start text)))))
-       (:instance
-        l4-wrchs-correctness-1-lemma-9 (fs fs2)
-        (index-list
-         (find-n-free-blocks
-          (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs1))
-                              nil)
-          (len
-           (make-blocks
-            (insert-text
-             (unmake-blocks (fetch-blocks-by-indices
-                             disk (cadr (assoc-equal (car hns) fs1)))
-                            (cddr (assoc-equal (car hns) fs1)))
-             start text)))))
-        (value-list
+           start text)))))
+      (value-list
+       (make-blocks
+        (insert-text
+         (unmake-blocks
+          (fetch-blocks-by-indices
+           disk (cadr (assoc-equal (car hns) fs1)))
+          (cddr (assoc-equal (car hns) fs1)))
+         start text))))))
+   ("subgoal *1/10.2''"
+    :in-theory (disable l4-wrchs-correctness-1-lemma-9
+                        find-n-free-blocks-correctness-7)
+    :use
+    ((:instance
+      find-n-free-blocks-correctness-7
+      (alv (set-indices-in-alv
+            alv (cadr (assoc-equal (car hns) fs1))
+            nil))
+      (n
+       (len
+        (make-blocks
+         (insert-text
+          (unmake-blocks
+           (fetch-blocks-by-indices
+            disk (cadr (assoc-equal (car hns) fs1)))
+           (cddr (assoc-equal (car hns) fs1)))
+          start text)))))
+     (:instance
+      l4-wrchs-correctness-1-lemma-9 (fs fs2)
+      (index-list
+       (find-n-free-blocks
+        (set-indices-in-alv
+         alv (cadr (assoc-equal (car hns) fs1))
+         nil)
+        (len
          (make-blocks
           (insert-text
            (unmake-blocks
-            (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs1)))
+            (fetch-blocks-by-indices
+             disk (cadr (assoc-equal (car hns) fs1)))
             (cddr (assoc-equal (car hns) fs1)))
-           start text))))))
-     ("subgoal *1/8.2''"
-      :in-theory (disable l4-wrchs-correctness-1-lemma-9
-                          find-n-free-blocks-correctness-7)
-      :use
-      ((:instance
-        find-n-free-blocks-correctness-7
-        (alv (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs1))
-                                 nil))
-        (n
-         (len
-          (make-blocks
-           (insert-text
-            (unmake-blocks
-             (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs1)))
-             (cddr (assoc-equal (car hns) fs1)))
-            start text)))))
-       (:instance
-        l4-wrchs-correctness-1-lemma-9 (fs fs2)
-        (index-list
-         (find-n-free-blocks
-          (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs1))
-                              nil)
-          (len
-           (make-blocks
-            (insert-text
-             (unmake-blocks (fetch-blocks-by-indices
-                             disk (cadr (assoc-equal (car hns) fs1)))
-                            (cddr (assoc-equal (car hns) fs1)))
-             start text)))))
-        (value-list
+           start text)))))
+      (value-list
+       (make-blocks
+        (insert-text
+         (unmake-blocks
+          (fetch-blocks-by-indices
+           disk (cadr (assoc-equal (car hns) fs1)))
+          (cddr (assoc-equal (car hns) fs1)))
+         start text))))))
+   ("subgoal *1/8.2''"
+    :in-theory (disable l4-wrchs-correctness-1-lemma-9
+                        find-n-free-blocks-correctness-7)
+    :use
+    ((:instance
+      find-n-free-blocks-correctness-7
+      (alv (set-indices-in-alv
+            alv (cadr (assoc-equal (car hns) fs1))
+            nil))
+      (n
+       (len
+        (make-blocks
+         (insert-text
+          (unmake-blocks
+           (fetch-blocks-by-indices
+            disk (cadr (assoc-equal (car hns) fs1)))
+           (cddr (assoc-equal (car hns) fs1)))
+          start text)))))
+     (:instance
+      l4-wrchs-correctness-1-lemma-9 (fs fs2)
+      (index-list
+       (find-n-free-blocks
+        (set-indices-in-alv
+         alv (cadr (assoc-equal (car hns) fs1))
+         nil)
+        (len
          (make-blocks
           (insert-text
            (unmake-blocks
-            (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs1)))
+            (fetch-blocks-by-indices
+             disk (cadr (assoc-equal (car hns) fs1)))
             (cddr (assoc-equal (car hns) fs1)))
-           start text))))))
-     ("subgoal *1/7.2''"
-      :in-theory (disable l4-wrchs-correctness-1-lemma-9
-                          find-n-free-blocks-correctness-7)
-      :use
-      ((:instance
-        find-n-free-blocks-correctness-7
-        (alv (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs1))
-                                 nil))
-        (n
-         (len
-          (make-blocks
-           (insert-text
-            (unmake-blocks
-             (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs1)))
-             (cddr (assoc-equal (car hns) fs1)))
-            start text)))))
-       (:instance
-        l4-wrchs-correctness-1-lemma-9 (fs fs2)
-        (index-list
-         (find-n-free-blocks
-          (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs1))
-                              nil)
-          (len
-           (make-blocks
-            (insert-text
-             (unmake-blocks (fetch-blocks-by-indices
-                             disk (cadr (assoc-equal (car hns) fs1)))
-                            (cddr (assoc-equal (car hns) fs1)))
-             start text)))))
-        (value-list
+           start text)))))
+      (value-list
+       (make-blocks
+        (insert-text
+         (unmake-blocks
+          (fetch-blocks-by-indices
+           disk (cadr (assoc-equal (car hns) fs1)))
+          (cddr (assoc-equal (car hns) fs1)))
+         start text))))))
+   ("subgoal *1/7.2''"
+    :in-theory (disable l4-wrchs-correctness-1-lemma-9
+                        find-n-free-blocks-correctness-7)
+    :use
+    ((:instance
+      find-n-free-blocks-correctness-7
+      (alv (set-indices-in-alv
+            alv (cadr (assoc-equal (car hns) fs1))
+            nil))
+      (n
+       (len
+        (make-blocks
+         (insert-text
+          (unmake-blocks
+           (fetch-blocks-by-indices
+            disk (cadr (assoc-equal (car hns) fs1)))
+           (cddr (assoc-equal (car hns) fs1)))
+          start text)))))
+     (:instance
+      l4-wrchs-correctness-1-lemma-9 (fs fs2)
+      (index-list
+       (find-n-free-blocks
+        (set-indices-in-alv
+         alv (cadr (assoc-equal (car hns) fs1))
+         nil)
+        (len
          (make-blocks
           (insert-text
            (unmake-blocks
-            (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs1)))
+            (fetch-blocks-by-indices
+             disk (cadr (assoc-equal (car hns) fs1)))
             (cddr (assoc-equal (car hns) fs1)))
-           start text))))))
-     ("subgoal *1/6.2''"
-      :in-theory (disable l4-wrchs-correctness-1-lemma-9
-                          find-n-free-blocks-correctness-7)
-      :use
-      ((:instance
-        find-n-free-blocks-correctness-7
-        (alv (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs1))
-                                 nil))
-        (n
-         (len
-          (make-blocks
-           (insert-text
-            (unmake-blocks
-             (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs1)))
-             (cddr (assoc-equal (car hns) fs1)))
-            start text)))))
-       (:instance
-        l4-wrchs-correctness-1-lemma-9 (fs fs2)
-        (index-list
-         (find-n-free-blocks
-          (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs1))
-                              nil)
-          (len
-           (make-blocks
-            (insert-text
-             (unmake-blocks (fetch-blocks-by-indices
-                             disk (cadr (assoc-equal (car hns) fs1)))
-                            (cddr (assoc-equal (car hns) fs1)))
-             start text)))))
-        (value-list
+           start text)))))
+      (value-list
+       (make-blocks
+        (insert-text
+         (unmake-blocks
+          (fetch-blocks-by-indices
+           disk (cadr (assoc-equal (car hns) fs1)))
+          (cddr (assoc-equal (car hns) fs1)))
+         start text))))))
+   ("subgoal *1/6.2''"
+    :in-theory (disable l4-wrchs-correctness-1-lemma-9
+                        find-n-free-blocks-correctness-7)
+    :use
+    ((:instance
+      find-n-free-blocks-correctness-7
+      (alv (set-indices-in-alv
+            alv (cadr (assoc-equal (car hns) fs1))
+            nil))
+      (n
+       (len
+        (make-blocks
+         (insert-text
+          (unmake-blocks
+           (fetch-blocks-by-indices
+            disk (cadr (assoc-equal (car hns) fs1)))
+           (cddr (assoc-equal (car hns) fs1)))
+          start text)))))
+     (:instance
+      l4-wrchs-correctness-1-lemma-9 (fs fs2)
+      (index-list
+       (find-n-free-blocks
+        (set-indices-in-alv
+         alv (cadr (assoc-equal (car hns) fs1))
+         nil)
+        (len
          (make-blocks
           (insert-text
            (unmake-blocks
-            (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs1)))
+            (fetch-blocks-by-indices
+             disk (cadr (assoc-equal (car hns) fs1)))
             (cddr (assoc-equal (car hns) fs1)))
-           start text))))))
-     ("subgoal *1/4.2''"
-      :in-theory (disable l4-wrchs-correctness-1-lemma-9
-                          find-n-free-blocks-correctness-7)
-      :use
-      ((:instance
-        find-n-free-blocks-correctness-7
-        (alv (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs1))
-                                 nil))
-        (n
-         (len
-          (make-blocks
-           (insert-text
-            (unmake-blocks
-             (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs1)))
-             (cddr (assoc-equal (car hns) fs1)))
-            start text)))))
-       (:instance
-        l4-wrchs-correctness-1-lemma-9 (fs fs2)
-        (index-list
-         (find-n-free-blocks
-          (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs1))
-                              nil)
-          (len
-           (make-blocks
-            (insert-text
-             (unmake-blocks (fetch-blocks-by-indices
-                             disk (cadr (assoc-equal (car hns) fs1)))
-                            (cddr (assoc-equal (car hns) fs1)))
-             start text)))))
-        (value-list
+           start text)))))
+      (value-list
+       (make-blocks
+        (insert-text
+         (unmake-blocks
+          (fetch-blocks-by-indices
+           disk (cadr (assoc-equal (car hns) fs1)))
+          (cddr (assoc-equal (car hns) fs1)))
+         start text))))))
+   ("subgoal *1/4.2''"
+    :in-theory (disable l4-wrchs-correctness-1-lemma-9
+                        find-n-free-blocks-correctness-7)
+    :use
+    ((:instance
+      find-n-free-blocks-correctness-7
+      (alv (set-indices-in-alv
+            alv (cadr (assoc-equal (car hns) fs1))
+            nil))
+      (n
+       (len
+        (make-blocks
+         (insert-text
+          (unmake-blocks
+           (fetch-blocks-by-indices
+            disk (cadr (assoc-equal (car hns) fs1)))
+           (cddr (assoc-equal (car hns) fs1)))
+          start text)))))
+     (:instance
+      l4-wrchs-correctness-1-lemma-9 (fs fs2)
+      (index-list
+       (find-n-free-blocks
+        (set-indices-in-alv
+         alv (cadr (assoc-equal (car hns) fs1))
+         nil)
+        (len
          (make-blocks
           (insert-text
            (unmake-blocks
-            (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs1)))
+            (fetch-blocks-by-indices
+             disk (cadr (assoc-equal (car hns) fs1)))
             (cddr (assoc-equal (car hns) fs1)))
-           start text))))))))))
+           start text)))))
+      (value-list
+       (make-blocks
+        (insert-text
+         (unmake-blocks
+          (fetch-blocks-by-indices
+           disk (cadr (assoc-equal (car hns) fs1)))
+          (cddr (assoc-equal (car hns) fs1)))
+         start text))))))))
 
 (defthm
   l4-wrchs-correctness-1-lemma-13
@@ -1189,34 +1296,6 @@
                                    index-list)
           value-list)))
 
-(defun count-free-blocks-alt (alv n)
-  (declare (xargs :guard (and (natp n) (boolean-listp alv))))
-  (if (zp n)
-      0
-    (+ (if (nth (- n 1) alv) 0 1)
-       (count-free-blocks-alt alv (- n 1)))))
-
-(defthm
-  count-free-blocks-alt-correctness-1
-  (implies (and (boolean-listp alv)
-                (boolean-listp ac)
-                (natp n)
-                (<= n (len alv)))
-           (equal (count-free-blocks-alt (revappend ac alv)
-                                         (+ n (len ac)))
-                  (count-free-blocks (first-n-ac n alv ac))))
-  :hints (("goal" :induct (first-n-ac n alv ac))))
-
-(defthm
-  count-free-blocks-alt-correctness-2
-  (implies (and (boolean-listp alv)
-                (equal n (len alv)))
-           (equal (count-free-blocks-alt alv n)
-                  (count-free-blocks alv)))
-  :hints (("goal" :in-theory (disable count-free-blocks-alt-correctness-1)
-           :use (:instance count-free-blocks-alt-correctness-1
-                           (ac nil)))))
-
 (defthm
   l4-wrchs-correctness-1-lemma-14
   (implies (and (boolean-listp alv)
@@ -1226,23 +1305,6 @@
            (equal (count-free-blocks-alt (set-indices-in-alv alv nil nil)
                                          n)
                   (count-free-blocks-alt alv n))))
-
-(defun count-before-n (l b)
-      (declare (xargs :guard (and (natp b) (nat-listp l))))
-      (if (atom l) 0 (+ (if (< (car l) b) 1 0) (count-before-n (cdr l) b))))
-
-(defthm count-before-n-correctness-1
-  (<= (count-before-n l b) (len l))
-  :rule-classes (:linear))
-
-(defthm count-before-n-correctness-2
-  (implies (nat-listp l)
-           (iff (equal (count-before-n l b) (len l))
-                (bounded-nat-listp l b))))
-
-(defthm count-before-n-correctness-3
-  (implies (nat-listp l)
-           (equal (count-before-n l 0) 0)))
 
 (defthm l4-wrchs-correctness-1-lemma-15
   (implies (and (boolean-listp alv)
@@ -1323,45 +1385,6 @@
                      (l index-list)
                      (b (len alv)))))))
 
-(encapsulate ()
-  (local (include-book "std/lists/nthcdr" :dir :system))
-
-  (local (defun nthcdr-*blocksize*-induction-2 (text1 text2)
-           (cond ((or (atom text1) (atom text2))
-                  (list text1 text2))
-                 (t (nthcdr-*blocksize*-induction-2 (nthcdr *blocksize* text1)
-                                                    (nthcdr *blocksize* text2))))))
-
-  (defthm
-    make-blocks-correctness-4
-    (implies (equal (len text1) (len text2))
-             (equal (len (make-blocks text1))
-                    (len (make-blocks text2))))
-    :hints (("goal" :induct (nthcdr-*blocksize*-induction-2 text1 text2)))))
-
-(defthm
-  len-of-make-unmake
-  (implies (and (block-listp blocks)
-                (natp n)
-                (feasible-file-length-p (len blocks) n))
-           (equal (len (make-blocks (unmake-blocks blocks n)))
-                  (len blocks)))
-  :hints
-  (("goal" :in-theory (enable feasible-file-length-p))
-   ("subgoal *1/8.1'"
-    :expand (append (car blocks)
-                    (unmake-blocks (cdr blocks) (+ -8 n))))
-   ("subgoal *1/5.1'"
-    :expand (append (car blocks)
-                    (unmake-blocks (cdr blocks) (+ -8 n))))
-   ("subgoal *1/2'4'" :expand (make-blocks (first-n-ac n (car blocks) nil)))
-   ("subgoal *1/2.1'" :in-theory (disable len-of-first-n-ac)
-    :use (:instance len-of-first-n-ac (i n)
-                    (l (car blocks))
-                    (ac nil)))
-   ("subgoal *1/5.2'" :cases ((atom (cdr blocks))))
-   ("subgoal *1/5.2'''" :expand (len (cdr blocks)))))
-
 (defthm
   l4-wrchs-correctness-1-lemma-19
   (implies
@@ -1384,67 +1407,47 @@
       (set-indices-in-alv alv (car entry) nil)
       (len
        (make-blocks
-        (insert-text (unmake-blocks (fetch-blocks-by-indices disk (car entry))
-                                    (cdr entry))
-                     start text)))))
+        (insert-text
+         (unmake-blocks
+          (fetch-blocks-by-indices disk (car entry))
+          (cdr entry))
+         start text)))))
     (len
      (make-blocks
-      (insert-text (unmake-blocks (fetch-blocks-by-indices disk (car entry))
-                                  (cdr entry))
-                   start text)))))
-  :instructions
-  (:promote
-   (:dive 1)
-   (:rewrite find-n-free-blocks-correctness-2)
-   :top :bash :s-prop (:dive 1 1)
-   (:rewrite l4-wrchs-correctness-1-lemma-18)
-   :top
-   (:claim
-    (<=
-     (len
-      (make-blocks
-       (insert-text (unmake-blocks (fetch-blocks-by-indices disk (car entry))
-                                   (cdr entry))
-                    start text)))
-     (+ (len (make-blocks (insert-text nil start text)))
-        (len (car entry))))
-    :hints :none)
-   :bash :s-prop
-   (:casesplit
-    (>= (len (unmake-blocks (fetch-blocks-by-indices disk (car entry))
-                            (cdr entry)))
-        (+ start (len (coerce text 'list)))))
-   (:dive 1 2)
-   (:rewrite make-blocks-correctness-4
-             ((text2 (unmake-blocks (fetch-blocks-by-indices disk (car entry))
-                                    (cdr entry)))))
-   (:dive 1)
-   :top
-   (:claim
-    (equal
-     (len
-      (make-blocks (unmake-blocks (fetch-blocks-by-indices disk (car entry))
-                                  (cdr entry))))
-     (len (fetch-blocks-by-indices disk (car entry))))
-    :hints :none)
-   :bash (:change-goal nil t)
-   (:dive 1)
-   (:rewrite len-of-insert-text)
-   :top :bash :bash (:dive 1 2)
-   (:rewrite make-blocks-correctness-4
-             ((text2 (insert-text nil start text))))
-   :top :bash (:dive 1)
-   (:rewrite len-of-insert-text)
-   :nx (:rewrite len-of-insert-text)
-   :top
-   :bash :bash
-   :bash :bash))
+      (insert-text
+       (unmake-blocks (fetch-blocks-by-indices disk (car entry))
+                      (cdr entry))
+       start text)))))
+  :hints
+  (("goal'"
+    :in-theory (disable make-blocks-correctness-4)
+    :use
+    ((:instance
+      make-blocks-correctness-4
+      (text1
+       (insert-text
+        (unmake-blocks
+         (fetch-blocks-by-indices disk (car entry))
+         (cdr entry))
+        start text))
+      (text2 (insert-text nil start text)))
+     (:instance
+      make-blocks-correctness-4
+      (text1
+       (insert-text
+        (unmake-blocks
+         (fetch-blocks-by-indices disk (car entry))
+         (cdr entry))
+        start text))
+      (text2
+       (unmake-blocks (fetch-blocks-by-indices disk (car entry))
+                      (cdr entry))))))
+   ("subgoal 2" :in-theory (enable len-of-insert-text))))
 
 (defthm
   l4-wrchs-correctness-1-lemma-20
   (implies
-   (and (consp hns)
-        (l3-fs-p fs)
+   (and (l3-fs-p fs)
         (boolean-listp alv)
         (disjoint-list-listp (l4-collect-all-index-lists fs))
         (no-duplicates-listp (l4-collect-all-index-lists fs))
@@ -1457,27 +1460,25 @@
         (equal (len alv) (len disk))
         (<= (len (make-blocks (insert-text nil start text)))
             (count-free-blocks alv))
-        (consp fs)
-        (consp (assoc-equal (car hns) fs))
-        (not (cdr hns))
-        (l3-regular-file-entry-p (cdr (assoc-equal (car hns) fs))))
+        (consp (assoc-equal name fs))
+        (l3-regular-file-entry-p (cdr (assoc-equal name fs))))
    (l3-regular-file-entry-p
     (cons
      (find-n-free-blocks
-      (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs))
+      (set-indices-in-alv alv (cadr (assoc-equal name fs))
                           nil)
       (len
        (make-blocks
         (insert-text
-         (unmake-blocks
-          (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs)))
-          (cddr (assoc-equal (car hns) fs)))
+         (unmake-blocks (fetch-blocks-by-indices
+                         disk (cadr (assoc-equal name fs)))
+                        (cddr (assoc-equal name fs)))
          start text))))
      (len
       (insert-text
-       (unmake-blocks
-        (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs)))
-        (cddr (assoc-equal (car hns) fs)))
+       (unmake-blocks (fetch-blocks-by-indices
+                       disk (cadr (assoc-equal name fs)))
+                      (cddr (assoc-equal name fs)))
        start text)))))
   :hints
   (("goal"
@@ -1485,20 +1486,20 @@
     (l3-regular-file-entry-p
      (cons
       (find-n-free-blocks
-       (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs))
+       (set-indices-in-alv alv (cadr (assoc-equal name fs))
                            nil)
        (len
         (make-blocks
          (insert-text
-          (unmake-blocks
-           (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs)))
-           (cddr (assoc-equal (car hns) fs)))
+          (unmake-blocks (fetch-blocks-by-indices
+                          disk (cadr (assoc-equal name fs)))
+                         (cddr (assoc-equal name fs)))
           start text))))
       (len
        (insert-text
-        (unmake-blocks
-         (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs)))
-         (cddr (assoc-equal (car hns) fs)))
+        (unmake-blocks (fetch-blocks-by-indices
+                        disk (cadr (assoc-equal name fs)))
+                       (cddr (assoc-equal name fs)))
         start text)))))))
 
 ;; This theorem shows the equivalence of the l4 and l2 versions of wrchs.
@@ -1517,42 +1518,7 @@
                   (mv-let (new-fs new-disk new-alv)
                     (l4-wrchs hns fs disk alv start text)
                     (declare (ignore new-alv))
-                    (l4-to-l2-fs new-fs new-disk))))
-  :hints
-  (("subgoal *1/7.4.4"
-    :in-theory (disable find-n-free-blocks-correctness-7)
-    :use
-    (:instance
-     find-n-free-blocks-correctness-7
-     (alv (set-indices-in-alv alv (cadr (assoc-equal (car hns) fs))
-                              nil))
-     (n
-      (len
-       (make-blocks
-        (insert-text
-         (unmake-blocks
-          (fetch-blocks-by-indices disk (cadr (assoc-equal (car hns) fs)))
-          (cddr (assoc-equal (car hns) fs)))
-         start text))))))
-   ("subgoal *1/7.4" :in-theory (enable l3-regular-file-entry-p))))
-
-(defthm
-  l4-read-after-write-1
-  (implies (and (l4-stricter-fs-p fs alv)
-                (stringp text)
-                (natp start)
-                (symbol-listp hns)
-                (block-listp disk)
-                (equal (len alv) (len disk))
-                (<= (len (make-blocks (insert-text nil start text)))
-                    (count-free-blocks alv))
-                (equal n (length text))
-                (stringp (l4-stat hns fs disk)))
-           (mv-let (new-fs new-disk new-alv)
-             (l4-wrchs HNS FS DISK ALV START TEXT)
-             (declare (ignore new-alv))
-             (equal (l4-rdchs hns new-fs new-disk start n)
-                    text))))
+                    (l4-to-l2-fs new-fs new-disk)))))
 
 (defthm l4-wrchs-returns-disk-lemma-1
   (implies (and (equal (len index-list)
@@ -1589,48 +1555,393 @@
            (block-listp (mv-nth 1 (l4-wrchs hns fs disk alv start text)))))
 
 (defthm
-  l4-read-after-write-2
-  (implies (and (l4-stricter-fs-p fs alv)
-                (stringp text1)
-                (stringp text2)
-                (natp start1)
-                (natp start2)
-                (symbol-listp hns1)
-                (symbol-listp hns2)
-                (not (equal hns1 hns2))
-                (natp n1)
-                (natp n2)
-                (block-listp disk)
-                (boolean-listp alv)
-                (equal (len alv) (len disk))
-                (<= (len (make-blocks (insert-text nil start2 text2)))
-                    (count-free-blocks alv))
-                (stringp (l4-stat hns1 fs disk)))
-           (mv-let (new-fs new-disk new-alv)
-             (l4-wrchs hns2 fs disk alv start2 text2)
-             (declare (ignore new-alv))
-             (equal (l4-rdchs hns1 new-fs new-disk start1 n1)
-                    (l4-rdchs hns1 fs disk start1 n1))))
+  l4-stat-after-write-lemma-1
+  (implies
+   (and (l4-stricter-fs-p fs alv)
+        (block-listp disk)
+        (symbol-listp hns1)
+        (symbol-listp hns2)
+        (natp start2)
+        (stringp text2)
+        (equal (len disk) (len alv))
+        (<= (len (make-blocks (insert-text nil start2 text2)))
+            (count-free-blocks alv)))
+   (mv-let (new-fs new-disk new-alv)
+     (l4-wrchs hns2 fs disk alv start2 text2)
+     (declare (ignore new-alv))
+     (equal (stringp (l4-stat hns1 new-fs new-disk))
+            (stringp (l4-stat hns1 fs disk)))))
+  :hints
+  (("goal" :in-theory (disable l2-read-after-write-2-lemma-4
+                               l4-wrchs-correctness-1)
+    :use ((:instance l2-read-after-write-2-lemma-4
+                     (fs (l4-to-l2-fs fs disk)))
+          (:instance l4-wrchs-correctness-1 (hns hns2)
+                     (start start2)
+                     (text text2))))))
+
+(defthm
+  l4-stat-after-write
+  (implies
+   (and (l4-stricter-fs-p fs alv)
+        (stringp text2)
+        (symbol-listp hns1)
+        (symbol-listp hns2)
+        (natp start2)
+        (stringp (l4-stat hns1 fs disk))
+        (boolean-listp alv)
+        (equal (len alv) (len disk))
+        (block-listp disk)
+        (<= (len (make-blocks (insert-text nil start2 text2)))
+            (count-free-blocks alv)))
+   (mv-let
+     (new-fs new-disk new-alv)
+     (l4-wrchs hns2 fs disk alv start2 text2)
+     (declare (ignore new-alv))
+     (equal
+      (l4-stat hns1 new-fs new-disk)
+      (if
+       (equal hns1 hns2)
+       (coerce (insert-text (coerce (l4-stat hns1 fs disk) 'list)
+                            start2 text2)
+               'string)
+       (l4-stat hns1 fs disk)))))
   :hints
   (("goal"
-    :in-theory (disable l4-rdchs-correctness-1
-                        l4-wrchs-correctness-1
-                        l4-wrchs-returns-fs)
+    :do-not-induct t
+    :in-theory (disable l3-stat-correctness-1
+                        l3-stat-correctness-2
+                        l2-stat-after-write l4-wrchs-returns-fs
+                        l4-wrchs-returns-disk
+                        l4-stat-after-write-lemma-1
+                        l4-wrchs-correctness-1)
     :use
-    ((:instance l4-rdchs-correctness-1 (hns hns1)
-                (start start1)
-                (n n1))
-     (:instance l4-rdchs-correctness-1 (hns hns1)
-                (start start1)
-                (n n1)
-                (fs (mv-nth 0
-                            (l4-wrchs hns2 fs disk alv start2 text2)))
-                (disk (mv-nth 1
-                              (l4-wrchs hns2 fs disk alv start2 text2))))
-     (:instance l4-wrchs-correctness-1 (hns hns2)
+    ((:instance l3-stat-correctness-1 (hns hns1))
+     (:instance
+      l3-stat-correctness-1 (hns hns1)
+      (fs (mv-nth 0
+                  (l4-wrchs hns2 fs disk alv start2 text2)))
+      (disk (mv-nth 1
+                    (l4-wrchs hns2 fs disk alv start2 text2))))
+     (:instance l3-stat-correctness-2 (hns hns1))
+     (:instance
+      l3-stat-correctness-2 (hns hns1)
+      (fs (mv-nth 0
+                  (l4-wrchs hns2 fs disk alv start2 text2)))
+      (disk (mv-nth 1
+                    (l4-wrchs hns2 fs disk alv start2 text2))))
+     (:instance l2-stat-after-write
+                (fs (l3-to-l2-fs fs disk)))
+     (:instance l4-wrchs-returns-fs (hns hns2)
                 (start start2)
                 (text text2))
-     (:instance l4-wrchs-returns-fs (hns hns2)
+     (:instance l4-wrchs-returns-disk (hns hns2)
+                (start start2)
+                (text text2))
+     l4-stat-after-write-lemma-1
+     (:instance l4-wrchs-correctness-1 (hns hns2)
                 (start start2)
                 (text text2))))))
 
+(defthm
+  l4-read-after-write-1
+  (implies (and (l4-stricter-fs-p fs alv)
+                (stringp text)
+                (natp start)
+                (symbol-listp hns)
+                (block-listp disk)
+                (equal (len alv) (len disk))
+                (<= (len (make-blocks (insert-text nil start text)))
+                    (count-free-blocks alv))
+                (equal n (length text))
+                (stringp (l4-stat hns fs disk)))
+           (mv-let (new-fs new-disk new-alv)
+             (l4-wrchs hns fs disk alv start text)
+             (declare (ignore new-alv))
+             (equal (l4-rdchs hns new-fs new-disk start n)
+                    text))))
+
+(defthm
+  l4-read-after-write-2
+  (implies
+   (and (l4-stricter-fs-p fs alv)
+        (stringp text2)
+        (natp start1)
+        (natp start2)
+        (symbol-listp hns1)
+        (symbol-listp hns2)
+        (not (equal hns1 hns2))
+        (natp n1)
+        (block-listp disk)
+        (boolean-listp alv)
+        (equal (len alv) (len disk))
+        (<= (len (make-blocks (insert-text nil start2 text2)))
+            (count-free-blocks alv)))
+   (mv-let (new-fs new-disk new-alv)
+     (l4-wrchs hns2 fs disk alv start2 text2)
+     (declare (ignore new-alv))
+     (equal (l4-rdchs hns1 new-fs new-disk start1 n1)
+            (l4-rdchs hns1 fs disk start1 n1))))
+  :hints
+  (("goal"
+    :in-theory (disable l4-stat-after-write-lemma-1
+                        l4-stat-after-write)
+    :use (l4-stat-after-write-lemma-1 l4-stat-after-write))))
+
+(defun l4-create (hns fs disk alv text)
+  (declare (xargs :guard (and (symbol-listp hns)
+                              (l3-fs-p fs)
+                              (stringp text)
+                              (block-listp disk)
+                              (boolean-listp alv)
+                              (equal (len alv) (len disk)))))
+  (if (atom hns)
+      (mv fs disk alv) ;; error - showed up at fs with no name  - so leave fs unchanged
+    (let ((sd (assoc (car hns) fs)))
+      (if (atom sd)
+          (if (atom (cdr hns))
+              (let* ((blocks (make-blocks (coerce text 'list)))
+                     (indices (find-n-free-blocks alv (len blocks))))
+                (if (not (equal (len indices) (len blocks)))
+                    ;; we have an error because of insufficient disk space
+                    ;; - so we leave the fs unchanged
+                    (mv sd disk alv)
+                  (mv (cons (cons (car hns)
+                                  (cons indices
+                                        (length text)))
+                            fs)
+                      (set-indices disk indices blocks)
+                      (set-indices-in-alv alv indices t))))
+            (mv-let (new-fs new-disk new-alv) (l4-create (cdr hns) nil disk alv text)
+              (mv (cons (cons (car hns) new-fs) fs) new-disk new-alv)))
+        (let ((contents (cdr sd)))
+          (if (l3-regular-file-entry-p contents)
+              (mv (cons (cons (car sd) contents) ;; file already exists, so leave fs unchanged
+                        (delete-assoc (car hns) fs))
+                  disk
+                  alv)
+            (mv-let (new-fs new-disk new-alv) (l4-create (cdr hns) contents disk alv text)
+              (mv (cons (cons (car sd)
+                              new-fs)
+                        (delete-assoc (car hns) fs))
+                  new-disk
+                  new-alv)))
+          )))))
+
+(defthm
+  l4-create-returns-fs
+  (implies
+   (and (symbol-listp hns)
+        (l3-fs-p fs)
+        (boolean-listp alv)
+        (stringp text)
+        (block-listp disk))
+   (l3-fs-p (mv-nth 0 (l4-create hns fs disk alv text))))
+  :hints
+  (("subgoal *1/3"
+    :in-theory (enable l3-regular-file-entry-p))
+   ("subgoal *1/2'4'"
+    :in-theory (disable consp-assoc-equal)
+    :use (:instance consp-assoc-equal (name (car hns))
+                    (l fs)))))
+
+(defthm
+  l4-create-correctness-1-lemma-1
+  (implies
+   (and (l3-fs-p fs1)
+        (l3-fs-p fs2)
+        (boolean-listp alv)
+        (disjoint-list-listp (l4-collect-all-index-lists fs1))
+        (no-duplicates-listp (l4-collect-all-index-lists fs1))
+        (indices-marked-listp (l4-collect-all-index-lists fs1)
+                              alv)
+        (indices-marked-listp (l4-collect-all-index-lists fs2)
+                              alv)
+        (stringp text)
+        (symbol-listp hns)
+        (block-listp disk)
+        (equal (len alv) (len disk))
+        (not (member-intersectp-equal
+              (l4-collect-all-index-lists fs1)
+              (l4-collect-all-index-lists fs2))))
+   (equal
+    (l3-to-l2-fs fs2
+                 (mv-nth 1 (l4-create hns fs1 disk alv text)))
+    (l3-to-l2-fs fs2 disk))))
+
+;; This theorem shows the equivalence of the l4 and l2 versions of create.
+(defthm
+  l4-create-correctness-1
+  (implies (and (l4-stricter-fs-p fs alv)
+                (stringp text)
+                (symbol-listp hns)
+                (block-listp disk)
+                (equal (len alv) (len disk))
+                (<= (len (make-blocks (coerce text 'list)))
+                    (count-free-blocks alv)))
+           (equal (l2-create hns (l4-to-l2-fs fs disk) text)
+                  (mv-let (new-fs new-disk new-alv)
+                    (l4-create hns fs disk alv text)
+                    (declare (ignore new-alv))
+                    (l4-to-l2-fs new-fs new-disk))))
+  :hints
+  (   ("Subgoal *1/3.1''" :in-theory (enable l3-regular-file-entry-p))
+      ("Subgoal *1/3.2''" :in-theory (enable l3-regular-file-entry-p))))
+
+(defthm l4-create-returns-disk
+  (implies (and (symbol-listp hns)
+                (l3-fs-p fs)
+                (boolean-listp alv)
+                (stringp text)
+                (block-listp disk)
+                (equal (len disk) (len alv))
+                (bounded-nat-listp (l4-list-all-indices fs) (len disk)))
+           (block-listp (mv-nth 1 (l4-create hns fs disk alv text)))))
+
+(defthm
+  l4-read-after-create-1
+  (implies (and (l4-stricter-fs-p fs alv)
+                (stringp text)
+                (symbol-listp hns)
+                (block-listp disk)
+                (equal (len alv) (len disk))
+                (<= (len (make-blocks (coerce text 'list)))
+                    (count-free-blocks alv))
+                (equal n (length text))
+                (not (l4-stat hns fs disk)))
+           (mv-let (new-fs new-disk new-alv)
+             (l4-create hns fs disk alv text)
+             (declare (ignore new-alv))
+             (implies (stringp (l4-stat hns new-fs new-disk))
+                      (equal (l4-rdchs hns new-fs new-disk 0 n)
+                             text))))
+  :hints
+  (("goal"
+    :in-theory (disable l4-rdchs-correctness-1
+                        l2-read-after-create-1
+                        l4-create-correctness-1)
+    :use ((:instance l4-rdchs-correctness-1
+                     (fs (mv-nth 0 (l4-create hns fs disk alv text)))
+                     (disk (mv-nth 1 (l4-create hns fs disk alv text)))
+                     (start 0)
+                     (n (length text)))
+          (:instance l2-read-after-create-1 (n (length text))
+                     (fs (l4-to-l2-fs fs disk)))
+          l4-create-correctness-1))))
+
+(defthm
+  l4-read-after-create-2
+  (implies
+   (and (l4-stricter-fs-p fs alv)
+        (stringp text2)
+        (symbol-listp hns1)
+        (symbol-listp hns2)
+        (not (equal hns1 hns2))
+        (natp start1)
+        (natp n1)
+        (not (l4-stat hns2 fs disk))
+        (stringp (l4-stat hns1 fs disk))
+        (block-listp disk)
+        (boolean-listp alv)
+        (equal (len alv) (len disk))
+        (<= (len (make-blocks (coerce text2 'list)))
+            (count-free-blocks alv)))
+   (mv-let
+     (new-fs new-disk new-alv)
+     (l4-create hns2 fs disk alv text2)
+     (declare (ignore new-alv))
+     (implies (stringp (l4-stat hns2 new-fs new-disk))
+              (equal (l4-rdchs hns1 new-fs new-disk start1 n1)
+                     (l4-rdchs hns1 fs disk start1 n1)))))
+  :hints
+  (("goal"
+    :in-theory (disable (:rewrite l2-read-after-create-2)
+                        (:rewrite l3-to-l2-fs-correctness-1)
+                        (:rewrite l3-stat-correctness-2)
+                        (:rewrite l4-create-returns-fs)
+                        (:rewrite l3-stat-correctness-1)
+                        (:rewrite l4-create-correctness-1)
+                        (:rewrite l3-rdchs-correctness-1))
+    :use
+    ((:instance l2-read-after-create-2
+                (fs (l3-to-l2-fs fs disk)))
+     l3-to-l2-fs-correctness-1
+     (:instance l3-stat-correctness-2 (hns hns2))
+     (:instance l3-stat-correctness-1 (hns hns1))
+     (:instance
+      l3-stat-correctness-1 (hns hns2)
+      (fs (mv-nth 0 (l4-create hns2 fs disk alv text2)))
+      (disk (mv-nth 1 (l4-create hns2 fs disk alv text2))))
+     (:instance l4-create-returns-fs (hns hns2)
+                (text text2))
+     (:instance
+      l3-stat-correctness-1 (hns hns2)
+      (fs (mv-nth 0 (l4-create hns2 fs disk alv text2)))
+      (disk (mv-nth 1 (l4-create hns2 fs disk alv text2))))
+     (:instance l4-create-correctness-1 (hns hns2)
+                (text text2))
+     (:instance l3-rdchs-correctness-1 (hns hns1)
+                (start start1)
+                (n n1))
+     (:instance
+      l3-rdchs-correctness-1 (hns hns1)
+      (start start1)
+      (n n1)
+      (fs (mv-nth 0 (l4-create hns2 fs disk alv text2)))
+      (disk (mv-nth 1
+                    (l4-create hns2 fs disk alv text2))))))))
+
+; This function deletes a file or directory given its path.
+(defun
+  l4-unlink (hns fs alv)
+  (declare (xargs :guard (and (symbol-listp hns)
+                              (l3-fs-p fs)
+                              (boolean-listp alv))))
+  (if
+   (atom hns)
+   (mv fs alv) ;;error case, basically
+   (if
+    (atom (cdr hns))
+    (mv
+     (delete-assoc (car hns) fs)
+     (if
+      (and (consp (assoc (car hns) fs))
+           (l3-regular-file-entry-p (cdr (assoc (car hns) fs))))
+      (set-indices-in-alv alv (car (cdr (assoc (car hns) fs)))
+                          nil)
+      alv))
+    (if
+     (atom fs)
+     (mv nil alv)
+     (let
+      ((sd (assoc (car hns) fs)))
+      (if
+       (atom sd)
+       (mv fs alv)
+       (let ((contents (cdr sd)))
+            (if (l3-regular-file-entry-p contents)
+                (mv fs alv) ;; we still have names but we're at a regular file - error
+                (mv-let (new-fs new-alv)
+                  (l4-unlink (cdr hns) contents alv)
+                  (mv (cons (cons (car sd) new-fs)
+                            (delete-assoc (car hns) fs))
+                      new-alv))))))))))
+
+(defthm l4-unlink-returns-fs
+  (implies (and (symbol-listp hns)
+                (l3-fs-p fs)
+                (boolean-listp alv))
+           (l3-fs-p (mv-nth 0 (l4-unlink hns fs alv)))))
+
+;; This theorem shows the equivalence of the l4 and l2 versions of unlink.
+(defthm
+    l4-unlink-correctness-1
+  (implies (and (l4-stricter-fs-p fs alv)
+                (symbol-listp hns)
+                (block-listp disk)
+                (equal (len alv) (len disk)))
+           (equal (l2-unlink hns (l4-to-l2-fs fs disk))
+                  (mv-let (new-fs new-alv)
+                    (l4-unlink hns fs alv)
+                    (declare (ignore new-alv))
+                    (l4-to-l2-fs new-fs disk)))))

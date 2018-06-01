@@ -185,6 +185,8 @@
 (defnd encodingp (x f)
   (and (formatp f) (bvecp x (+ 1 (expw f) (sigw f)))))
 
+(defnd hp () '(nil 11 5))
+
 (defnd sp () '(nil 24 8))
 
 (defnd dp () '(nil 53 11))
@@ -353,12 +355,12 @@
 (defund indef (f)
   (declare (xargs :guard (formatp f)))
   (if (explicitp f)
-      (cat (1- (expt 2 (+ (expw f) 3)))
-           (+ (expw f) 3)
+      (cat (1- (expt 2 (+ (expw f) 2)))
+           (+ (expw f) 2)
            0
            (- (sigw f) 2))
-    (cat (1- (expt 2 (+ (expw f) 2)))
-         (+ (expw f) 2)
+    (cat (1- (expt 2 (+ (expw f) 1)))
+         (+ (expw f) 1)
          0
          (1- (sigw f)))))
 

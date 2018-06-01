@@ -59,13 +59,13 @@
   (equal (make-character-list (binary-append x y))
          (binary-append (make-character-list x) (make-character-list y))))
 
-(defthm len-of-nthcdr-1 (<= (len (nthcdr n l)) (len l))
-  :rule-classes :linear)
-
-(defthm len-of-nthcdr-2
-  (implies (and (consp l) (integerp n) (> n 0))
-           (< (len (nthcdr n l)) (len l)))
-  :rule-classes :linear)
+;; The following is redundant with the definition in
+;; books/std/lists/nthcdr.lisp, from where it was taken with thanks to Jared
+;; Davis.
+(defthm len-of-nthcdr
+  (equal (len (nthcdr n l))
+         (nfix (- (len l) (nfix n))))
+  :hints (("Goal" :induct (nthcdr n l))))
 
 (defthmd revappend-is-append-of-rev
   (equal (revappend x (binary-append y z))
@@ -79,12 +79,6 @@
           ("Subgoal *1/1'''"
            :use (:instance revappend-is-append-of-rev
                            (x ac) (y nil) (z l)))))
-
-(defthm take-of-take
-  (implies (and (natp m) (integerp n) (<= m n) (<= n (len l)))
-           (equal (first-n-ac m (take n l) ac) (first-n-ac m l ac)))
-  :hints (("Goal" :in-theory (disable binary-append-take-nthcdr)
-           :use (:instance binary-append-take-nthcdr (ac nil) (i n))) ))
 
 (defthm nth-of-binary-append-1
   (implies (and (integerp n) (>= n (len x)))
@@ -106,8 +100,8 @@
                 (member-equal x lst))
            (and (integerp x) (<= 0 x)))
   :rule-classes ((:rewrite :corollary (implies (and (nat-listp lst)
-                                                   (member-equal x lst))
-                                              (<= 0 x)))
+                                                    (member-equal x lst))
+                                               (<= 0 x)))
                  (:forward-chaining :corollary (implies (and (member-equal x lst)
                                                              (nat-listp lst))
                                                         (integerp x)))))
@@ -172,21 +166,32 @@
                 (member-equal x lst1))
            (member-equal x lst2)))
 
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/nth.lisp, from where it was taken with thanks.
 (defthm nth-of-revappend
-  (implies (and (natp n))
-           (equal (nth n (revappend x y))
-                  (if (< n (len x))
-                      (nth (- (len x) (+ n 1)) x)
-                      (nth (- n (len x)) y)))))
+  (equal (nth n (revappend x y))
+         (if (< (nfix n) (len x))
+             (nth (- (len x) (+ 1 (nfix n))) x)
+           (nth (- n (len x)) y))))
 
+;; The following is redundant with the eponymous theorem in
+;; books/misc/gentle.lisp, from where it was taken with thanks to
+;; Messrs. Boyer, Hunt and Davis.
 (defthm true-listp-of-make-list-ac
-  (implies (true-listp ac)
-           (true-listp (make-list-ac n val ac))))
+  (equal (true-listp (make-list-ac n val ac))
+         (true-listp ac))
+  :rule-classes ((:rewrite)
+                 (:type-prescription
+                  :corollary
+                  (implies (true-listp ac)
+                           (true-listp (make-list-ac n val ac))))))
 
+;; The following is redundant with the eponymous theorem in
+;; books/centaur/ubdds/param.lisp, from where it was taken with thanks to
+;; Messrs. Boyer and Hunt.
 (defthm len-of-make-list-ac
-  (implies (and (integerp n) (>= n 0))
-           (equal (len (make-list-ac n val ac))
-                  (+ n (len ac)))))
+  (equal (len (make-list-ac n val acc))
+         (+ (nfix n) (len acc))))
 
 (defthm boolean-listp-of-make-list-ac
   (implies (booleanp val)
@@ -207,4 +212,134 @@
   (equal (cdr (make-list-ac n val ac))
          (if (zp n)
              (cdr ac)
-             (make-list-ac (- n 1) val ac))))
+           (make-list-ac (- n 1) val ac))))
+
+(defthm member-equal-of-nth
+  (implies (and (natp n) (< n (len l)))
+           (member-equal (nth n l) l)))
+
+(encapsulate
+  ()
+
+  (local (include-book "ihs/logops-lemmas" :dir :system))
+
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (defthm
+    logand-ash-lemma-1
+    (implies (and (natp c))
+             (unsigned-byte-p c (logand i (- (ash 1 c) 1)))))
+  )
+
+(defthm make-character-list-of-revappend
+  (equal (make-character-list (revappend x y))
+         (revappend (make-character-list x)
+                    (make-character-list y))))
+
+(defthm
+  first-n-ac-of-make-character-list
+  (implies (and (<= i (len l)))
+           (equal (first-n-ac i (make-character-list l)
+                              (make-character-list ac))
+                  (make-character-list (first-n-ac i l ac)))))
+
+(defthm
+  take-more
+  (implies
+   (and (true-listp l)
+        (natp i)
+        (>= i (len l)))
+   (equal (binary-append (first-n-ac i l ac1) ac2)
+          (revappend ac1
+                     (binary-append l
+                                    (make-list-ac (- i (len l)) nil ac2)))))
+  :hints
+  (("goal'" :induct (first-n-ac i l ac1))
+   ("subgoal *1/6'''" :expand (make-list-ac i nil ac2))
+   ("subgoal *1/1''" :use (:instance revappend-is-append-of-rev (x ac1)
+                                     (y l)
+                                     (z ac2)))))
+
+(defthm
+  take-of-take
+  (implies (and (true-listp l)
+                (natp m)
+                (integerp n)
+                (<= m n)
+                (<= m (len l)))
+           (equal (first-n-ac m (take n l) ac)
+                  (first-n-ac m l ac)))
+  :hints
+  (("goal" :do-not-induct t
+    :in-theory (disable binary-append-take-nthcdr
+                        first-n-ac-of-binary-append-1)
+    :use ((:instance binary-append-take-nthcdr (ac nil)
+                     (i n))
+          (:instance first-n-ac-of-binary-append-1 (i m)
+                     (x (first-n-ac n l nil))
+                     (y (nthcdr n l)))))
+   ("goal'4'" :in-theory (disable take-more)
+    :use (:instance take-more (i n)
+                    (ac1 nil)
+                    (ac2 nil)))
+   ("goal'6'"
+    :in-theory (disable first-n-ac-of-binary-append-1)
+    :use (:instance first-n-ac-of-binary-append-1 (i m)
+                    (x l)
+                    (y (make-list-ac (+ n (- (len l)))
+                                     nil nil))))))
+
+(defthm boolean-listp-of-revappend
+  (implies (boolean-listp x)
+           (equal (boolean-listp (revappend x y))
+                  (boolean-listp y))))
+
+(defthm boolean-listp-of-first-n-ac
+  (implies (and (boolean-listp l)
+                (boolean-listp ac))
+           (boolean-listp (first-n-ac i l ac))))
+
+(defthm consp-of-first-n-ac
+  (iff (consp (first-n-ac i l ac))
+       (or (consp ac) (not (zp i)))))
+
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/nth.lisp, from where it was taken with thanks.
+(defthm nth-of-make-list-ac
+  (equal (nth n (make-list-ac m val acc))
+         (if (< (nfix n) (nfix m))
+             val
+           (nth (- n (nfix m)) acc))))
+
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/nth.lisp, from where it was taken with thanks.
+(defthm nth-of-nthcdr
+  (equal (nth n (nthcdr m x))
+         (nth (+ (nfix n) (nfix m)) x)))
+
+(defthmd intersect-with-subset
+  (implies (and (subsetp-equal x y)
+                (intersectp-equal x z))
+           (intersectp-equal y z)))
+
+(defthm update-nth-of-make-list
+  (implies (and (integerp key) (>= key n) (natp n))
+           (equal (update-nth key val (make-list-ac n l ac))
+                  (make-list-ac n l (update-nth (- key n) val ac)))))
+
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/update-nth.lisp, from where it was taken with thanks.
+(defthm nthcdr-of-update-nth
+  (equal (nthcdr n1 (update-nth n2 val x))
+         (if (< (nfix n2) (nfix n1))
+             (nthcdr n1 x)
+           (update-nth (- (nfix n2) (nfix n1)) val (nthcdr n1 x)))))
+
+(defthmd car-of-assoc-equal
+  (let ((sd (assoc-equal x alist)))
+    (implies (consp sd) (equal (car sd) x))))
+
+(defthm update-nth-of-update-nth
+  (implies (not (equal (nfix key1) (nfix key2)))
+           (equal (update-nth key1 val1 (update-nth key2 val2 l))
+                  (update-nth key2 val2 (update-nth key1 val1 l)))))

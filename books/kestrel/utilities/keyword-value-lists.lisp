@@ -1,6 +1,6 @@
 ; Keyword-Value Lists
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2018 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
@@ -22,7 +22,7 @@
 (define keyword-value-list-to-alist ((kvlist keyword-value-listp))
   :returns (alist alistp)
   :parents (kestrel-utilities system-utilities)
-  :short "Turn a @('nil')-terminated list of even length
+  :short "Turn a true list of even length
           with keywords at its even-numbered positions (counting from 0),
           into the corresponding alist."
   :long

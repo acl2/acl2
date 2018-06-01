@@ -34,6 +34,7 @@
 (include-book "spellcheck")
 (include-book "word-wrap")
 (include-book "defxdoc-raw") ; for xdoc::all-xdoc-topics
+(include-book "std/strings/fast-cat" :dir :system)
 (set-state-ok t)
 (program)
 

@@ -680,6 +680,21 @@
 
       ))
 
+#+acl2-loop-only
+(defconst nil 'nil
+
+; We cannot document a NIL symbol.
+
+ " NIL, a symbol, represents in Common Lisp both the false truth value
+ and the empty list.")
+
+#+acl2-loop-only
+(defconst t 't
+
+; We cannot document a NIL symbol.  So, we do not document T either.
+
+  "T, a symbol, represents the true truth value in Common Lisp.")
+
 (defconst *stobj-inline-declare*
 
 ; This constant is being introduced in v2-8.  In this file it is only used in
@@ -1859,21 +1874,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ;                               LOGIC
 
-#+acl2-loop-only
-(defconst nil 'nil
-
-; We cannot document a NIL symbol.
-
- " NIL, a symbol, represents in Common Lisp both the false truth value
- and the empty list.")
-
-#+acl2-loop-only
-(defconst t 't
-
-; We cannot document a NIL symbol.  So, we do not document T either.
-
-  "T, a symbol, represents the true truth value in Common Lisp.")
-
 (defun insist (x)
 
 ; This function is used in guard-clauses-for-fn, so in order to be sure that
@@ -2864,7 +2864,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; symbol-package of sym is one of those known to ACL2.  Thus, the only case of
 ; concern is the case that sym resides in the "COMMON-LISP" package.  Since sym
 ; is an ACL2 object, then by the Invariant on Symbols in the Common Lisp
-; Package (see bad-lisp-objectp), its symbol-package is *main-lisp-package* or
+; Package (see bad-lisp-atomp), its symbol-package is *main-lisp-package* or
 ; else its *initial-lisp-symbol-mark* property is "COMMON-LISP".  So we set the
 ; *initial-lisp-symbol-mark* for ans in each of these sub-cases, which
 ; preserves the above invariant.
@@ -3352,6 +3352,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defthm symbol-alistp-forward-to-eqlable-alistp
   (implies (symbol-alistp x)
+           (eqlable-alistp x))
+  :rule-classes :forward-chaining)
+
+(defthm symbol-alistp-forward-to-eqlable-alistp
+  (implies (symbol-alistp x)
+           (eqlable-alistp x))
+  :rule-classes :forward-chaining)
+
+(defun character-alistp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (consp (car x))
+                (characterp (car (car x)))
+                (character-alistp (cdr x))))))
+
+(defthm character-alistp-forward-to-eqlable-alistp
+  (implies (character-alistp x)
            (eqlable-alistp x))
   :rule-classes :forward-chaining)
 
@@ -7417,13 +7434,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      (hard-error 'let*-macro
                                  "Implementation error: Ignored variables ~x0 ~
                                   must be bound in superior LET* form!"
-                                 ignore-vars))
+                                 (list (cons #\0 ignore-vars))))
                  (prog2$ (or (null ignorable-vars)
                              (hard-error 'let*-macro
                                          "Implementation error: Ignorable ~
                                           variables ~x0 must be bound in ~
                                           superior LET* form!"
-                                         ignorable-vars))
+                                         (list (cons #\0 ignorable-vars))))
                          body)))
         (t ; (consp bindings)
          (cons 'let
@@ -20001,7 +20018,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (skip-proofs
 (defun print-rational-as-decimal (x channel state)
   (declare (xargs :guard (and (rationalp x)
+                              (symbolp channel)
                               (state-p state)
+                              (boundp-global 'print-base state)
                               (equal (print-base) 10)
                               (open-output-channel-p channel :character state))))
   (let ((x00 (round (* 100 (abs x)) 1)))
@@ -20023,6 +20042,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun print-timer (name channel state)
   (declare (xargs :guard (and (symbolp name)
                               (state-p state)
+                              (boundp-global 'print-base state)
                               (open-output-channel-p channel :character state)
                       (consp (get-timer name state)))))
   (print-rational-as-decimal (car (get-timer name state)) channel state))
@@ -21299,7 +21319,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (f-put-global 'compiler-enabled val state))
         (t (prog2$ (hard-error 'set-compiler-enabled
                                "Illegal value for set-compiler-enabled: ~x0"
-                               val)
+                               (list (cons #\0 val)))
                    state))))
 
 (defun set-port-file-enabled (val state)
@@ -21309,7 +21329,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (f-put-global 'port-file-enabled val state))
         (t (prog2$ (hard-error 'set-port-file-enabled
                                "Illegal value for set-port-file-enabled: ~x0"
-                               val)
+                               (list (cons #\0 val)))
                    state))))
 
 (defun default-measure-function (wrld)
@@ -24957,33 +24977,26 @@ Lisp definition."
         ((endp (cdr l)) (car l))
         (t (conjoin2 (car l) (conjoin (cdr l))))))
 
-(defun conjoin2-untranslated-terms (t1 t2)
-
-; See conjoin2.  This function has the analogous spec, but where t1 and t2 need
-; not be translated.
-
-  (declare (xargs :guard t))
-  (cond ((or (equal t1 *nil*) (eq t1 nil))
-         *nil*)
-        ((or (equal t2 *nil*) (eq t2 nil))
-         *nil*)
-        ((or (equal t1 *t*) (eq t1 t))
-         t2)
-        ((or (equal t2 *t*) (eq t2 t))
-         t1)
-        (t (fcons-term* 'if t1 t2 *nil*))))
-
 (defun conjoin-untranslated-terms (l)
 
-; This function is analogous to conjoin, but where t1 and t2 need not be
-; translated.
+; This function is analogous to conjoin, but where the terms need not be
+; translated.  Normally we expect that the result will be translated; but as a
+; courtesy to those who might want to use this utility, we attempt to return a
+; "pretty" untranslated term.
 
   (declare (xargs :guard (true-listp l)))
-  (cond ((endp l) *t*)
-        ((endp (cdr l)) (car l))
-        (t (conjoin2-untranslated-terms
-            (car l)
-            (conjoin-untranslated-terms (cdr l))))))
+  (cond ((or (member nil l :test 'eq)
+             (member *nil* l :test 'equal))
+         nil)
+        (t (let* ((l2 (if (member t l :test 'eq)
+                          (remove t l :test 'eq)
+                        l))
+                  (l3 (if (member *t* l2 :test 'equal)
+                          (remove *t* l2 :test 'equal)
+                        l2)))
+             (cond ((null l3) t)
+                   ((null (cdr l3)) (car l3))
+                   (t (cons 'and l3)))))))
 
 (defun disjoin2 (t1 t2)
 
@@ -26982,7 +26995,8 @@ Lisp definition."
     (er hard? 'time-tracker
         "Illegal first argument for ~x0 (should be a symbol): ~x1.  See :DOC ~
          time-tracker."
-        'time-tracker))
+        'time-tracker
+        tag))
    ((and (not (booleanp tag))
          (not (member-eq kwd
                          '(:init :end :print? :stop :start :start!))))
@@ -27481,6 +27495,14 @@ Lisp definition."
                    (natp val)
                    val)
               state)))
+
+(defun constant-t-function-arity-0 ()
+  (declare (xargs :mode :logic :guard t))
+  t)
+
+(defun constant-nil-function-arity-0 ()
+  (declare (xargs :mode :logic :guard t))
+  nil)
 
 (encapsulate
   ()

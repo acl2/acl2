@@ -1,6 +1,6 @@
 ; Theorems about Typed Lists
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -33,7 +33,17 @@
 
   (defrule car-of-nat-list-fix-iff-consp
     (iff (car (nat-list-fix x))
-         (consp x))))
+         (consp x)))
+
+  (defrule rev-of-nat-list-fix
+    (equal (rev (nat-list-fix x))
+           (nat-list-fix (rev x)))
+    :enable nat-list-fix)
+
+  (defrule nat-list-fix-of-list-fix
+    (equal (nat-list-fix (list-fix x))
+           (nat-list-fix x))
+    :enable nat-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

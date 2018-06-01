@@ -115,8 +115,7 @@
 (defthm l2-stat-correctness-1-lemma-4
   (implies (and (l2-fs-p fs) (stringp (cadr (assoc-equal name fs))))
            (equal (cdr (assoc-equal name (l2-to-l1-fs fs)))
-                  (cadr (assoc-equal name fs))
-                  )))
+                  (cadr (assoc-equal name fs)))))
 
 (defthm l2-stat-correctness-1-lemma-5
   (implies (and (consp (assoc-equal name fs))
@@ -126,12 +125,17 @@
 
 ;; This is the first of two theorems showing the equivalence of the l2 and l1
 ;; versions of stat.
-(defthm l2-stat-correctness-1
-  (implies (and (symbol-listp hns)
-                (l2-fs-p fs)
+(defthm
+  l2-stat-correctness-1
+  (implies (and (l2-fs-p fs)
                 (stringp (l2-stat hns fs)))
            (equal (l1-stat hns (l2-to-l1-fs fs))
-                  (l2-stat hns fs))))
+                  (l2-stat hns fs)))
+  :hints
+  (("subgoal *1/5.2'"
+    :in-theory (disable l2-to-l1-fs-correctness-1)
+    :use (:instance l2-to-l1-fs-correctness-1
+                    (fs (cdr (assoc-equal (car hns) fs)))))))
 
 (defthm l2-stat-correctness-2-lemma-1
   (implies (and (l2-fs-p fs) (consp (assoc-equal name fs)))
@@ -145,12 +149,10 @@
 ;; This is the second of two theorems showing the equivalence of the l2 and l1
 ;; versions of stat.
 (defthm l2-stat-correctness-2
-  (implies (and (symbol-listp hns)
-                (l2-fs-p fs)
+  (implies (and (l2-fs-p fs)
                 (l2-fs-p (l2-stat hns fs)))
            (equal (l1-stat hns (l2-to-l1-fs fs))
-                  (l2-to-l1-fs (l2-stat hns fs))))
-  )
+                  (l2-to-l1-fs (l2-stat hns fs)))))
 
 ;; This is simply a useful property of stat.
 (defthm l2-stat-of-stat
@@ -220,16 +222,6 @@
                       (delete-assoc (car hns) fs))))))))
     ))
 
-;; putting these lemmas on the back burner because we would need to add uniquep
-;; to our l2-fs-p definition to make this work
-;; (defthm l2-unlink-works-lemma-1 (not (assoc-equal key (delete-assoc-equal key alist))))
-
-;; (defthm l2-unlink-works (implies (l2-fs-p fs) (not (l2-stat hns (l2-unlink hns fs)))))
-
-(defthm l2-wrchs-guard-lemma-1
-  (implies (and (stringp str))
-           (character-listp (nthcdr n (coerce str 'list)))))
-
 ; This function writes a specified text string to a specified position to a
 ; text file at a specified path.
 (defun l2-wrchs (hns fs start text)
@@ -250,7 +242,7 @@
             (cons (cons (car sd)
                         (if (and (consp (cdr sd)) (stringp (cadr sd)))
                             (let ((file (cdr sd)))
-                              (if (cdr hns)
+                              (if (consp (cdr hns))
                                   file ;; error, so leave fs unchanged
                                 (let* ((oldtext (coerce (car file) 'list))
                                        (newtext
@@ -260,8 +252,7 @@
                                    (coerce newtext 'string)
                                    newlength))))
                           (l2-wrchs (cdr hns) contents start text)))
-                  (delete-assoc (car hns) fs))
-            ))))))
+                  (delete-assoc (car hns) fs))))))))
 
 (defthm l2-wrchs-returns-fs-lemma-1
   (implies (and (consp (assoc-equal s fs))
@@ -278,7 +269,7 @@
                 (not (stringp (cadr (assoc-equal s fs)))))
            (l2-fs-p (cdr (assoc-equal s fs)))))
 
-(defthm l2-wrchs-returns-fs-lemma-4
+(defthmd l2-wrchs-returns-fs-lemma-4
   (implies (and (consp (assoc-equal name fs))
                 (l2-fs-p fs)
                 (consp (cdr (assoc-equal name fs)))
@@ -287,15 +278,17 @@
                 (<= 0 (cddr (assoc-equal name fs))))))
 
 (defthm l2-wrchs-returns-fs-lemma-5
-  (implies (and (l2-fs-p fs)
-                (consp (assoc-equal name fs)))
-           (symbolp name)))
+  (implies (and (consp (assoc-equal name fs))
+                (l2-fs-p fs))
+           (symbolp name))
+  :rule-classes :forward-chaining)
 
 ;; This theorem shows that the property l2-fs-p is preserved by wrchs.
-(defthm l2-wrchs-returns-fs
+(defthm
+  l2-wrchs-returns-fs
   (implies (l2-fs-p fs)
            (l2-fs-p (l2-wrchs hns fs start text)))
-  :rule-classes (:rewrite :type-prescription))
+  :hints (("goal" :in-theory (enable l2-wrchs-returns-fs-lemma-4))))
 
 ;; This theorem shows that the property l2-fs-p is preserved by unlink.
 (defthm l2-unlink-returns-fs
@@ -313,13 +306,17 @@
            (consp (l2-to-l1-fs fs))))
 
 ;; This theorem shows the equivalence of the l2 and l1 versions of wrchs.
-(defthm l2-wrchs-correctness-1
-  (implies (and (l2-fs-p fs)
-                (stringp text)
-                (natp start)
-                (symbol-listp (cdr hns)))
-           (equal (l1-wrchs hns (l2-to-l1-fs fs) start text)
-                  (l2-to-l1-fs (l2-wrchs hns fs start text)))))
+(defthm
+  l2-wrchs-correctness-1
+  (implies (l2-fs-p fs)
+           (equal (l1-wrchs hns (l2-to-l1-fs fs)
+                            start text)
+                  (l2-to-l1-fs (l2-wrchs hns fs start text))))
+  :hints
+  (("subgoal *1/5.1''"
+    :in-theory (disable l2-wrchs-returns-fs)
+    :use (:instance l2-wrchs-returns-fs (hns (cdr hns))
+                    (fs (cdr (assoc-equal (car hns) fs)))))))
 
 ;; This function creates a text file (and all necessary subdirectories) given a
 ;; path and some initial text.
@@ -347,12 +344,13 @@
           )))))
 
 ;; This theorem shows that the property l2-fs-p is preserved by create.
-(defthm l2-create-returns-fs
+(defthm
+  l2-create-returns-fs
   (implies (and (symbol-listp hns)
                 (l2-fs-p fs)
                 (stringp text))
            (l2-fs-p (l2-create hns fs text)))
-  :rule-classes (:rewrite :type-prescription))
+  :hints (("goal" :in-theory (enable l2-wrchs-returns-fs-lemma-4))))
 
 (defthm l2-create-correctness-1-lemma-1
   (implies (and (not (consp (cdr (assoc-equal name fs))))
@@ -377,10 +375,6 @@
   (implies (consp (assoc-equal name alist))
            (equal (car (assoc-equal name alist)) name)))
 
-(defthm l2-read-after-write-1-lemma-2
-  (implies (and (l2-fs-p fs) (stringp text) (stringp (l2-stat hns fs)))
-           (stringp (l2-stat hns (l2-wrchs hns fs start text)))))
-
 (defthm l2-read-after-write-1-lemma-3
   (implies (l2-rdchs hns fs start n)
            (stringp (l2-stat hns fs))))
@@ -394,58 +388,6 @@
            (<= (+ start (len (coerce text 'list)))
                (len (coerce (l2-stat hns (l2-wrchs hns fs start text))
                             'list)))))
-
-;; This is a new proof of the first read-after-write property, which
-;; does not rely upon the l1 proof of the same property.
-(defthm l2-read-after-write-1
-  (implies (and (l2-fs-p fs)
-                (stringp text)
-                (symbol-listp hns)
-                (natp start)
-                (equal n (length text))
-                (stringp (l2-stat hns fs)))
-           (equal (l2-rdchs hns (l2-wrchs hns fs start text) start n) text)))
-
-;; The following comment details the induction scheme for the proof of
-;; l2-read-after-write-2.
-;; we want to prove
-;; (implies (and (l2-fs-p fs)
-;;               (stringp text2)
-;;               (symbol-listp hns1)
-;;               (symbol-listp hns2)
-;;               (not (equal hns1 hns2))
-;;               (natp start2)
-;;               (stringp (l2-stat hns1 fs)))
-;;          (equal (l2-stat hns1 (l2-wrchs hns2 fs start2 text2))
-;;                 (l2-stat hns1 fs)))
-;; now, let's semi-formally write the cases we want.
-;; case 1: (atom hns1) - this will violate the hypothesis
-;; (stringp (l2-stat hns1 fs))
-;; case 2: (and (consp hns1) (atom fs)) - this will yield nil in both cases
-;; case 3: (and (consp hns1) (consp fs) (atom (assoc (car hns1) fs))) - this
-;; will yield nil in both cases (might need a lemma)
-;; case 4: (and (consp hns1) (consp fs) (consp (assoc (car hns1) fs))
-;;              (atom hns2)) - in this case
-;; (l2-wrchs hns2 fs start2 text2) will be the same as fs
-;; case 5: (and (consp hns1) (consp fs) (consp (assoc (car hns1) fs))
-;;              (consp hns2) (not (equal (car hns1) (car hns2)))) - in this
-;; case, (assoc (car hns1) (l2-wrchs hns2 fs start2 text2)) =
-;; (assoc (car hns1) (delete-assoc (car hns2) fs)) =
-;; (assoc (car hns1) fs) and from here on the terms will be equal
-;; case 6: (and (consp hns1) (consp fs) (consp (assoc (car hns1) fs))
-;;              (consp hns2) (equal (car hns1) (car hns2)) (atom (cdr hns1))) -
-;; in this case (consp (cdr hns2)) is implicit because of
-;; (not (equal hns1 hns2)) and (stringp (l2-stat hns1 fs)) implies that
-;; (l2-wrchs hns2 fs start2 text2) = fs
-;; case 7: (and (consp hns1) (consp fs) (consp (assoc (car hns1) fs))
-;;              (consp hns2) (equal (car hns1) (car hns2)) (consp (cdr hns1))) -
-;; (l2-stat hns1 (l2-wrchs hns2 fs start2 text2)) =
-;; (l2-stat hns1 (cons (cons (car hns1)
-;;                        (l2-wrchs (cdr hns2) (cdr (assoc (car hns1) fs)) start2 text2))
-;;                  (delete-assoc (car hns1) fs)) =
-;; (l2-stat (cdr hns1) (l2-wrchs (cdr hns2) (cdr (assoc (car hns1) fs)) start2 text2)) =
-;; (l2-stat (cdr hns1) (cdr (assoc (car hns1) fs))) = (induction hypothesis)
-;; (l2-stat hns1 fs)
 
 (defthm l2-read-after-write-2-lemma-1
   (implies (l2-fs-p fs)
@@ -461,51 +403,65 @@
                 (stringp (l2-stat hns1 fs)))
            (equal (l2-stat hns1 fs) (cadr (assoc (car hns1) fs)))))
 
-(encapsulate
-  ()
-  (local (defun induction-scheme (hns1 hns2 fs)
-           (if (atom hns1)
-               fs
-             (if (atom fs)
-                 nil
-               (let ((sd (assoc (car hns2) fs)))
-                 (if (atom sd)
-                     fs
-                   (if (atom hns2)
-                       fs
-                     (if (not (equal (car hns1) (car hns2)))
-                         fs
-                       (let ((contents (cdr sd)))
-                         (if (atom (cdr hns1))
-                             (cons (cons (car sd)
-                                         contents)
-                                   (delete-assoc (car hns2) fs))
-                           (cons (cons (car sd)
-                                       (induction-scheme (cdr hns1) (cdr hns2) contents))
-                                 (delete-assoc (car hns2) fs)))
-                         ))))
-                 )))))
+(defthm l2-read-after-write-2-lemma-3
+  (implies (and (not (stringp (l2-stat hns fs)))
+                (l2-fs-p fs))
+           (l2-fs-p (l2-stat hns fs))))
 
-  (defthm l2-read-after-write-2-lemma-3
-    (implies (and (l2-fs-p fs)
-                  (stringp text2)
-                  (symbol-listp hns1)
-                  (symbol-listp hns2)
-                  (not (equal hns1 hns2))
-                  (natp start2)
-                  (stringp (l2-stat hns1 fs)))
-             (equal (l2-stat hns1 (l2-wrchs hns2 fs start2 text2)) (l2-stat hns1 fs)))
-    :hints (("Goal"  :induct (induction-scheme hns1 hns2 fs))
-            ("Subgoal *1/7.1''" :in-theory (disable alistp-l2-fs-p)
-             :use (:instance alistp-l2-fs-p (fs (l2-wrchs (cdr hns2)
-                                                    (cdr (assoc-equal (car hns1) fs))
-                                                    start2 text2))))))
+(defthm
+  l2-read-after-write-2-lemma-4
+  (implies
+   (l2-fs-p fs)
+   (equal
+    (stringp (l2-stat hns1 (l2-wrchs hns2 fs start2 text2)))
+    (stringp (l2-stat hns1 fs))))
+  :hints
+  (("goal"
+    :in-theory (disable l1-read-after-write-2-lemma-3
+                        l2-stat-correctness-1)
+    :use ((:instance l1-read-after-write-2-lemma-3
+                     (fs (l2-to-l1-fs fs)))
+          (:instance l2-stat-correctness-1 (hns hns1)
+                     (fs (l2-wrchs hns2 fs start2 text2)))
+          (:instance l2-stat-correctness-1 (hns hns1))))))
 
-  )
+(defthm
+  l2-stat-after-write
+  (implies
+   (and (l2-fs-p fs)
+        (stringp text2)
+        (symbol-listp hns1)
+        (symbol-listp hns2)
+        (natp start2)
+        (stringp (l2-stat hns1 fs)))
+   (equal
+    (l2-stat hns1 (l2-wrchs hns2 fs start2 text2))
+    (if (equal hns1 hns2)
+        (coerce (insert-text (coerce (l2-stat hns1 fs) 'list)
+                             start2 text2)
+                'string)
+        (l2-stat hns1 fs))))
+  :hints
+  (("goal"
+    :in-theory (disable l2-stat-correctness-1
+                        l1-stat-after-write)
+    :use ((:instance l2-stat-correctness-1 (hns hns1))
+          (:instance l2-stat-correctness-1 (hns hns1)
+                     (fs (l2-wrchs hns2 fs start2 text2)))
+          (:instance l1-stat-after-write
+                     (fs (l2-to-l1-fs fs)))))))
 
-;; This is a new proof of the second read-after-write property, which does not
-;; rely on the equivalent proof in l1.
-(defthm l2-read-after-write-2
+(defthm l2-read-after-write-1
+  (implies (and (l2-fs-p fs)
+                (stringp text)
+                (symbol-listp hns)
+                (natp start)
+                (equal n (length text))
+                (stringp (l2-stat hns fs)))
+           (equal (l2-rdchs hns (l2-wrchs hns fs start text) start n) text)))
+
+(defthm
+  l2-read-after-write-2
   (implies (and (l2-fs-p fs)
                 (stringp text2)
                 (symbol-listp hns1)
@@ -513,9 +469,9 @@
                 (not (equal hns1 hns2))
                 (natp start1)
                 (natp start2)
-                (natp n1)
-                (stringp (l2-stat hns1 fs)))
-           (equal (l2-rdchs hns1 (l2-wrchs hns2 fs start2 text2) start1 n1)
+                (natp n1))
+           (equal (l2-rdchs hns1 (l2-wrchs hns2 fs start2 text2)
+                            start1 n1)
                   (l2-rdchs hns1 fs start1 n1))))
 
 ;; This proves the equivalent of the first read-after-write property for

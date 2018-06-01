@@ -50,9 +50,9 @@
 
 (include-book "excps")
 
-;; This is relevant to code derived from SystemC:
+;; This is relevant to code derived from C++:
 
-(include-book "masc")
+(include-book "rac")
 
 ;; This must be included to use GL with this library:
 

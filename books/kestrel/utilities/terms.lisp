@@ -94,6 +94,23 @@
                                               rev-result))))
      :verify-guards nil)))
 
+(define apply-terms-same-args ((fns pseudo-termfnp) (args pseudo-term-listp))
+  :returns (terms "A @(tsee pseudo-term-listp).")
+  :verify-guards nil
+  :parents (term-utilities)
+  :short "Apply each function symbol or lambda expression of a list
+          to the same list of pseudo-term arguments,
+          obtaining a list of corresponding function applications."
+  :long
+  "<p>
+   This utility lifts @(tsee apply-term)
+   from a single function to a list of functions.
+   </p>"
+  (if (endp fns)
+      nil
+    (cons (apply-term (car fns) args)
+          (apply-terms-same-args (cdr fns) args))))
+
 (define fapply-term ((fn pseudo-termfnp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)
              (= (len terms)
@@ -151,6 +168,22 @@
                                          (cons (fapply-term* fn (car terms))
                                                rev-result))))
      :verify-guards nil)))
+
+(define fapply-terms-same-args ((fns pseudo-termfnp) (args pseudo-term-listp))
+  :returns (terms "A @(tsee pseudo-term-listp).")
+  :verify-guards nil
+  :parents (term-utilities)
+  :short "Variant of @(tsee apply-terms-same-args)
+          that performs no simplification."
+  :long
+  "<p>
+   The meaning of the starting @('f') in the name of this utility
+   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
+   </p>"
+  (if (endp fns)
+      nil
+    (cons (fapply-term (car fns) args)
+          (fapply-terms-same-args (cdr fns) args))))
 
 (defines fsublis-var
   :parents (term-utilities)
@@ -345,6 +378,32 @@
     (sublis-fn-rec-lst alist terms nil t)
     (assert$ (null vars)
              result)))
+
+(defines all-lambdas
+  :parents (term-utilities)
+  :short "Lambda expressions in a term."
+  :verify-guards nil ; done below
+
+  (define all-lambdas ((term pseudo-termp) (ans pseudo-lambda-listp))
+    :returns (final-ans pseudo-lambda-listp :hyp :guard)
+    (b* (((when (variablep term)) ans)
+         ((when (fquotep term)) ans)
+         (fn (ffn-symb term))
+         (ans (if (flambdap fn)
+                  (all-lambdas (lambda-body fn) (add-to-set-equal fn ans))
+                ans)))
+      (all-lambdas-lst (fargs term) ans)))
+
+  (define all-lambdas-lst ((terms pseudo-term-listp) (ans pseudo-lambda-listp))
+    :returns (final-ans pseudo-lambda-listp :hyp :guard)
+    (if (endp terms)
+        ans
+      (all-lambdas-lst (cdr terms)
+                       (all-lambdas (car terms) ans))))
+
+  ///
+
+  (verify-guards all-lambdas))
 
 (defines all-program-ffn-symbs
   :parents (term-utilities)
@@ -635,7 +694,7 @@
    An untranslated @(see lambda) expression is
    a lambda expression as entered by the user.
    This function checks whether @('x')is
-   a @('nil')-terminated list of exactly three elements,
+   a true list of exactly three elements,
    whose first element is the symbol @('lambda'),
    whose second element is a list of legal variable symbols without duplicates,
    and whose third element is an untranslated term that is valid for evaluation.
@@ -654,7 +713,7 @@
    if @(tsee check-user-term) does not terminate.
    </p>"
   (b* (((unless (true-listp x))
-        (mv (msg "~x0 is not a NIL-terminated list." x) nil))
+        (mv (msg "~x0 is not a true list." x) nil))
        ((unless (= (len x) 3))
         (mv (msg "~x0 does not consist of exactly three elements." x) nil))
        ((unless (eq (first x) 'lambda))
@@ -685,3 +744,32 @@
        (obligation-clauses (cadr val))
        (obligation-formula (termify-clause-set obligation-clauses)))
     obligation-formula))
+
+(define all-vars-in-untranslated-term (x (wrld plist-worldp))
+  :returns (term "A @(tsee pseudo-termp).")
+  :mode :program
+  :parents (term-utilities)
+  :short "The variables free in the given untranslated term."
+  :long
+  "<p>
+   This function returns the variables of the given untranslated term.  They
+   are returned in reverse order of print occurrence, for consistency with the
+   function, @(tsee all-vars).
+   </p>
+   <p>
+   The input is translated for reasoning, so restrictions for executability are
+   not enforced.  There is also no restriction on the input being in
+   @(':')@(tsee logic) mode.
+   </p>
+  "
+  (let ((ctx 'all-vars-in-untranslated-term))
+    (mv-let (erp term)
+      (translate-cmp x
+                     t ; stobjs-out
+                     nil ; logic-modep (not required)
+                     nil ; known-stobjs
+                     ctx
+                     wrld
+                     (default-state-vars nil))
+      (cond (erp (er hard erp "~@0" term))
+            (t (all-vars term))))))

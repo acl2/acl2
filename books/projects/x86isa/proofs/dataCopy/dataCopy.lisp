@@ -11,7 +11,10 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (in-theory (e/d* ()
+(local (in-theory (e/d* (rime-size
+                         rme-size
+                         wime-size
+                         wme-size)
                         (mv-nth-1-wb-and-!flgi-commute
                          ia32e-la-to-pa-values-and-!flgi
                          las-to-pas
@@ -66,6 +69,7 @@
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32
@@ -76,6 +80,8 @@
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              riml-size
                              riml32
                              n32-to-i32
@@ -606,10 +612,12 @@
                                     jcc/cmovcc/setcc-spec
                                     sal/shl-spec
                                     sal/shl-spec-64
+                                    address-aligned-p
 
                                     top-level-opcode-execute
                                     !rgfi-size
                                     x86-operand-to-reg/mem
+                                    x86-operand-to-reg/mem$
                                     wr64
                                     wr32
                                     wr16
@@ -622,6 +630,8 @@
                                     wml64
                                     rr32
                                     x86-operand-from-modr/m-and-sib-bytes
+                                    x86-operand-from-modr/m-and-sib-bytes$
+                                    check-instruction-length
                                     riml-size
                                     riml32
                                     n32-to-i32
@@ -1324,6 +1334,7 @@
                              top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
+                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32
@@ -1334,6 +1345,8 @@
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
+                             x86-operand-from-modr/m-and-sib-bytes$
+                             check-instruction-length
                              riml-size
                              riml32
                              riml64
@@ -1342,6 +1355,7 @@
                              riml08
                              two-byte-opcode-decode-and-execute
                              x86-effective-addr
+                             address-aligned-p
                              signed-byte-p)
                             ()))))
 

@@ -80,19 +80,13 @@
 
 ; In the days when The Rubric was necessary, the raw lisp variable
 ; *allow-concrete-execution-of-apply-stubs* told us whether it had been
-; executed.  We now just set that variable to t.  We could have eliminated it
-; entirely, but left references to that variable in our code to mark places
-; where we're providing explicit support for execution of apply$.
-
-(defvar *allow-concrete-execution-of-apply-stubs*
-  t)
+; executed.  Later, we just set that variable to t.  Since then (after
+; Version_8.0) we have eliminated that variable.
 
 (defun query-badge-userfn-structure (msgp fn wrld)
 
-; This function is only called in contexts in which
-; *allow-concrete-execution-of-apply-stubs* is true.  This function takes a
-; purported function symbol, fn, and determines if it has been assigned a badge
-; by def-warrant.  We return one of three answers:
+; This function takes a purported function symbol, fn, and determines if it has
+; been assigned a badge by def-warrant.  We return one of three answers:
 
 ; - (mv nil badge): fn was found in the badge-table and the badge is badge.
 ;      Note that fn may or may not have a warrant!  It does have a warrant if
@@ -178,8 +172,7 @@
 
 (defun concrete-badge-userfn (fn)
   (cond
-   ((or (not *allow-concrete-execution-of-apply-stubs*)
-        (not *aokp*))    ; See Note 1.
+   ((not *aokp*)    ; See Note 1.
     (throw-raw-ev-fncall ; See Note 2.
      (list* 'ev-fncall-null-body-er
             nil
@@ -355,8 +348,7 @@
 (defun concrete-apply$-userfn (fn args)
 ;           (progn (chk-live-state-p ',name state)
   (cond
-   ((or (not *allow-concrete-execution-of-apply-stubs*)
-        (not *aokp*))
+   ((not *aokp*)
     (throw-raw-ev-fncall
      (list* 'ev-fncall-null-body-er
             nil
@@ -807,8 +799,9 @@
   (cond
    ((member-equal fn bad-lambdas)
 
-; See The CL-Cache Implementation Details for a discussion of the uses of
-; equal (member-equal) and eq (member-eq) here.
+; See The CL-Cache Implementation Details for a discussion of the uses of equal
+; (member-equal) and eq (member-eq) here -- in particular, a discussion about
+; warning only in the EQUAL case, not the EQ case.
 
     (if (member-eq fn bad-lambdas)
         nil
@@ -974,7 +967,7 @@
 ; one can use a trust tag to invoke it in raw Lisp.
 
   (declare (type (integer 3 *) size))
-  (progn$ (or 
+  (progn$ (or
 
 ; The following check is important since the type declaration won't necessarily
 ; be checked in safety 0.
@@ -1026,9 +1019,12 @@
 
   (let ((cl-cache *cl-cache*))
     (cond ((consp cl-cache)
+           (format t "========== Entries ==========~&")
            (loop for i from 1 to (access cl-cache cl-cache :size)
                  as pair in (access cl-cache cl-cache :alist)
-                 do (format t "~3d. ~s~&" i pair)))
+                 do (format t "~3d. ~s~&" i pair))
+           (format t "========== Bad lambdas ==========~&~s~&"
+                   (access cl-cache cl-cache :bad-lambdas)))
           (t (format t
                      "Cl-cache is uninitialized with size ~s.~%"
                      *cl-cache*))))
@@ -1068,30 +1064,35 @@
 
 (defun compile-tame-compliant-unrestricted-lambda (fn)
 
-; This function is used directly in the raw Lisp code for apply$-lambda.
+; This function is used directly in the raw Lisp code for apply$-lambda.  It
+; either returns nil or, only when appropriate (and ideally, always when
+; appropriate), it returns a compiled lambda corresponding to the input lambda,
+; fn.
 
   (let* ((cl-cache *cl-cache*)
          (state *the-live-state*)
-         (wrld (w state)))
+         (wrld (w state))
+         (valid-p ; cache is valid
+          (and (consp cl-cache)
+               (eq (access cl-cache cl-cache :world)
+                   wrld)))
+         (valid-cl-alist (and valid-p
+                              (access cl-cache cl-cache :alist))))
     (cond
-     ((and (consp cl-cache)
-           (eq (access cl-cache cl-cache :world)
-               wrld)) ; Cache is valid
+     ((car valid-cl-alist) ; hence valid-p
       (prog1
-          (let* ((cl-alist (access cl-cache cl-cache :alist))
-                 (bad-lambdas (access cl-cache cl-cache :bad-lambdas)))
+          (let ((bad-lambdas (access cl-cache cl-cache :bad-lambdas)))
 
 ; We make *cl-cache* invalid here, to be restored if we don't interrupt.
 
             (setq *cl-cache* (access cl-cache cl-cache :size))
-            (assert (car cl-alist)) ; valid cl-cache has at least one entry
             (cond
-             ((equal (caar cl-alist) fn)
+             ((equal (caar valid-cl-alist) fn)
 
 ; The cl-cache is valid and its first entry is also valid.  Simply return the
 ; compiled function.
 
-              (cdar cl-alist))
+              (cdar valid-cl-alist))
              (t
 
 ; We search the cl-cache starting with the second element.  The variable, tail,
@@ -1103,8 +1104,8 @@
 ; special.
 
               (loop for i from 1 to (- (access cl-cache cl-cache :size) 2)
-                    as tail on (cdr cl-alist)
-                    as previous-tail on cl-alist
+                    as tail on (cdr valid-cl-alist)
+                    as previous-tail on valid-cl-alist
 
 ; The following code doesn't seem (after limited testing) to speed things up in
 ; general, so there doesn't seem to be much reason to add it.
@@ -1116,10 +1117,10 @@
 ;                     (and (cadr tail) (equal (cadar tail) fn))))
 ; ; optimization: just swap
 ;              do
-;              (let ((pair1 (car cl-alist))
-;                    (pair2 (nth i cl-alist)))
-;                (setf (car cl-alist) pair2
-;                      (nth i cl-alist) pair1)
+;              (let ((pair1 (car valid-cl-alist))
+;                    (pair2 (nth i valid-cl-alist)))
+;                (setf (car valid-cl-alist) pair2
+;                      (nth i valid-cl-alist) pair1)
 ;                (return (cdr pair2)))
 
                     when (or (null (car tail)) ; fn not found
@@ -1162,39 +1163,42 @@
                                   (add-to-set-eq fn bad-lambdas))
                                  (return nil)))))))))
         (setq *cl-cache* cl-cache)))
-     (t (let* ((size (cl-cache-size cl-cache))
-               (cl-cache *cl-cache*))
+     (t (let ((size (cl-cache-size cl-cache))
+              (cl-cache *cl-cache*))
 
-; Next we make *cl-cache* invalid, to be restored if we don't interrupt.
+          (when (not valid-p) ; else leave cl-cache unchanged
 
-          (setq *cl-cache* size)
-          (setq cl-cache
-                (cond ((consp cl-cache)
+; First we make *cl-cache* invalid, to be restored if we don't interrupt.
+
+            (setq *cl-cache* size)
+            (setq cl-cache
+                  (cond ((consp cl-cache)
 
 ; We reuse the structure of cl-cache, updating its fields appropriately with
 ; minimal consing.
 
-                       (loop for i from 1 to size
-                             as tail on (access cl-cache cl-cache :alist)
-                             do
-                             (setf (car tail) nil))
-                       (change cl-cache cl-cache
-                               :world wrld
-                               :bad-lambdas nil))
-                      (t (make-cl-cache size))))
-          (prog1
-              (cond
-               ((tame-compliant-unrestricted-lambdap fn nil)
-                (let ((c (compile nil fn))
-                      (cl-alist (access cl-cache cl-cache :alist)))
-                  (setf (car cl-alist)
-                        (cons fn c))
-                  c))
-               (t (update-cl-cache-bad-lambdas
-                   cl-cache
-                   (list fn))
+                         (loop for i from 1 to size
+                               as tail on (access cl-cache cl-cache :alist)
+                               do
+                               (setf (car tail) nil))
+                         (change cl-cache cl-cache
+                                 :world wrld
+                                 :bad-lambdas nil))
+                        (t (make-cl-cache size)))))
+          (let ((bad-lambdas (access cl-cache cl-cache :bad-lambdas)))
+            (prog1
+                (cond
+                 ((tame-compliant-unrestricted-lambdap fn bad-lambdas)
+                  (let ((c (compile nil fn))
+                        (cl-alist (access cl-cache cl-cache :alist)))
+                    (setf (car cl-alist)
+                          (cons fn c))
+                    c))
+                 (t
+                  (update-cl-cache-bad-lambdas cl-cache
+                                               (add-to-set-eq fn bad-lambdas))
                   nil))
-            (setq *cl-cache* cl-cache)))))))
+              (setq *cl-cache* cl-cache))))))))
 
 ; Historical Essay on the Performance of APPLY$
 
@@ -1671,7 +1675,8 @@
 ; Goal:
 
 ; Our goal is to show that there is an evaluation theory that makes all
-; warrants valid.  That evaluation theory is created by
+; warrants valid.  That evaluation theory is created by admitting the following
+; events in an extension of the current chronology.
 
 ; (DEFATTACH BADGE-USERFN BADGE-USERFN!)
 ; (DEFATTACH APPLY$-USERFN APPLY$-USERFN!)
@@ -1685,7 +1690,51 @@
 
 ; To define APPLY$-USERFN! we will define a doppelganger for every function
 ; with a badge except for the user-defined functions that are not ancestrally
-; dependent on APPLY$.
+; dependent on APPLY$-USERFN!.
+
+; Remark on attachments.  Recall our logical foundation for attachments, which
+; shows that attachments preserve consistency by constructing an "evaluation
+; chronology" whose theory is the evaluation theory for the given chronology.
+; (For details, see the Essay on Defattach and, in particular, the theorem
+; labeled "Evaluation History".)  How can we combine that construction
+; appropriately with our doppelganger construction, to meet our goal to show
+; that there is an evaluation theory making all warrants valid?  Two
+; possibilities come to mind, and each incurs an obligation as shown below
+; based on the requirement that defattach events do not introduce cycles in the
+; extended ancestor relation.  (It is also required that no attached function
+; is ancestral in any defaxiom, but that requirement is automatically enforced
+; by explicit use of the two defattach displayed above.)
+
+; (a) First extend the current chronology with the doppelganger construction.
+;     Then admit the two defattach events above.
+
+; Obligation: There must be no cycles introduced into the extended ancestor
+; relation by those two defattach events.
+
+; (b) First extend the current chronology to an evaluation chronology.  Then
+;     perform the doppelganger construction.  Finally, admit the two defattach
+;     events above.
+
+; Obligation: As in (a), plus tameness must be preserved when moving to the
+; evaluation chronology so that we can do the doppelganger construction.
+
+; While the obligation for (b) seems plausible, the obligation for (a) seems
+; simpler since we needn't think about tameness.  So let's focus on (a).
+
+; Clearly (DEFATTACH BADGE-USERFN BADGE-USERFN!) does not introduce a cycle,
+; since badge-userfn! is defined -- or at least, could be defined -- entirely
+; using IF and CONS as the only function symbols.
+
+; Now consider (DEFATTACH APPLY$-USERFN APPLY$-USERFN!).  Looking at community
+; book books/projects/apply-model/ex1/doppelgangers.lisp for guidance, we see
+; that apply$-userfn! simply calls apply$-userfn1!, which in turn is defined in
+; the big doppelganger mutual-recursion.  Let f be a function symbol called in
+; the body of a function g! defined in that mutual-recursion, such that f is
+; not itself defined there.  Then f must be badged; otherwise g would not be
+; badged, hence g! would not be defined.  Since f is badged, and it is not
+; defined in that mutual-recursion, then f does not ancestrally depend on
+; apply$-userfn, which implies that there is no cycle containing the link from
+; apply$-userfn to apply$-userfn!.  End of Remark.
 
 ; =================================================================
 ; Review:
@@ -1732,8 +1781,8 @@
 ; (e.g., SQUARE and COLLECT).
 
 ; Non-primitive badged functions are partitioned into:
-; G1 -- ancestrally independent of APPLY$, and
-; G2 -- ancestrally dependent on APPLY$.
+; G1 -- ancestrally independent of APPLY$-USERFN, and
+; G2 -- ancestrally dependent on APPLY$-USERFN.
 ; Thus ``all non-primitive badged functions'' is the same set as ``all G1 and
 ; G2 functions.''
 
@@ -1766,12 +1815,12 @@
 ; (x1 ... xn), and body, b, include the following.  Note that the first three
 ; bullet points apply to both G1 and G2 functions but the final ones are
 ; relevant only to G2 functions (because no G1 function can call a function
-; with :FN/:EXPR ilks or else it would be dependent on APPLY$):
+; with :FN/:EXPR ilks or else it would be dependent on APPLY$-USERFN):
 
 ; - f's measure term is entirely in G1 functions.  In our model, this is
 ;   insured by the acceptable-warranted-justificationp called from badger in
 ;   apply.lisp: the measure is tame (all badged) and ancestrally independent of
-;   APPLY$, i.e., G1.
+;   APPLY$-USERFN, i.e., G1.
 
 ; - f's measure is natural number valued and its well-founded relation is O<
 ;   over O-P.  We assume without loss of generality that the measure takes all
@@ -1816,8 +1865,8 @@
 ; We could loosen some of the restrictions.  The insistence that the measure be
 ; a natp is only relevant for G2 functions and even then could be loosened to
 ; bounded ordinal.  We'd have to change the proof here.  We could eliminate the
-; restriction that measures be independent of APPLY$ if we were sure of the
-; claim that every tame expression is G1 definable.  See the discussion in
+; restriction that measures be independent of APPLY$-USERFN if we were sure of
+; the claim that every tame expression is G1 definable.  See the discussion in
 ; acceptable-warranted-justificationp.  We could allow mutual recursion if we
 ; generalized the badger to handle it; we'd have to allow it in our G2
 ; doppelganger construction.
@@ -1837,11 +1886,11 @@
 ; in this application.  We know that every G1 function is justified in terms of
 ; G1 functions (every justification of a badged function has well-founded
 ; relation O< on domain O-P with a tame measure that is ancestrally independent
-; of APPLY$ (and, coincidentally, natp valued, though while always enforced
-; that observation needn't be for G1 functions)).  That means that if we just
-; copy the user's unguarded G1 definitions down in the same order they will be
-; admissible for the same reasons as before.  None of them rely on G2 functions
-; for admission.
+; of APPLY$-USERFN (and, coincidentally, natp valued, though while always
+; enforced that observation needn't be for G1 functions)).  That means that if
+; we just copy the user's unguarded G1 definitions down in the same order they
+; will be admissible for the same reasons as before.  None of them rely on G2
+; functions for admission.
 
 ; So now we describe how to define the doppelgangers for G2 functions.
 
@@ -3190,31 +3239,18 @@
 
 (defun apply$-lambda (fn args)
 
-; Keep this in sync with the logical definition (as noted below), which is in
-; apply.lisp.  The present definition is the one that will be installed in
-; ACL2, because of the inclusion of apply$-lambda in
-; *boot-strap-pass-2-acl2-loop-only-fns*.
+; This raw Lisp definition of apply$-lambda is the one that will be installed
+; in ACL2, because the inclusion of apply$-lambda in
+; *boot-strap-pass-2-acl2-loop-only-fns* avoids installationx of the logical
+; definition of apply$-lambda.
 
   (declare (ftype (function (t t) (values t))
                   ev$))
   (let ((compiled-version ; see the Essay on the Compiled-LAMBDA Cache
          (and *aokp*
-              *allow-concrete-execution-of-apply-stubs*
               (compile-tame-compliant-unrestricted-lambda fn))))
     (when compiled-version
       (return-from apply$-lambda
-                   (let ((arity (length (cadr fn))))
-                     (apply compiled-version
-                            (if (= arity
-                                   (length args))
-                                args
-                              (take arity args)))))))
-
-; Warning: Keep the code below in sync with the logical definition of
-; apply$-lambda.
-
-  (ev$ (ec-call (car (ec-call (cdr (cdr fn))))) ; = (lambda-body fn)
-       (ec-call
-        (pairlis$ (ec-call (car (cdr fn))) ; = (lambda-formals fn)
-                  args))))
+                   (apply compiled-version args))))
+  (apply$-lambda-logical fn args))
 

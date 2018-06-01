@@ -535,7 +535,7 @@
   (ubdd-listp (q-param x depth)))
 
 (defthm len-of-make-list-ac
-  (equal (len (make-list-ac n nil acc))
+  (equal (len (make-list-ac n val acc))
          (+ (nfix n) (len acc))))
 
 (defthm len-q-param

@@ -1,0 +1,375 @@
+
+enum RndDir {rndNear, rndZero, rndInf};
+
+const ui2 rmodeNear = 0;
+const ui2 rmodeUP = 1;
+const ui2 rmodeDN = 2;
+const ui2 rmodeZero = 3;
+const uint IDC = 7;
+const uint IXC = 4;
+const uint UFC = 3;
+const uint OFC = 2;
+const uint DZC = 1;
+const uint IOC = 0;
+const ui64 DefNan = 0x7FF8000000000000;
+
+RndDir computeRndDir(ui2 rmode, bool sign) {
+  if (rmode == rmodeNear) {
+    return rndNear;
+  }
+  else if (rmode == rmodeZero || rmode == rmodeUP && sign || rmode == rmodeDN && !sign) {
+    return rndZero;
+  }
+  else  {
+    return rndInf;
+  }
+}
+
+ui64 gag(ui64 x) {
+  return x | 0x0008000000000000;
+}
+
+bool sign(ui117 op) {
+  return op[116];
+}
+
+ui11 expnt(ui117 op) {
+  return op[115:105];
+}
+
+ui105 frac(ui117 op) {
+  return op[104:0];
+}
+
+<ui117, ui8> checkDenorm(ui117 op, ui8 flags, bool fz) {
+  if (fz && expnt(op) == 0 && frac(op) != 0) {
+    op[104:0] = 0;
+    flags[IDC] = 1;
+  }
+  return <op, flags>;
+}
+
+<bool, ui64, ui8> checkSpecial(ui117 opa, ui117 opb, bool fz, bool dn, ui2 rmode, bool opbLong, bool mulOvfl, bool piz, bool mulStk, ui8 flags) {
+  bool signa = sign(opa), signb = sign(opb);
+  ui11 expa = expnt(opa), expb = expnt(opb);
+  ui105 fraca = frac(opa), fracb = frac(opb);
+  bool opaZero = (expa == 0) && (fraca == 0);
+  bool opaInf = (expa == 0x7FF) && (fraca == 0);
+  bool opaNan = (expa == 0x7FF) && (fraca != 0);
+  bool opaQnan = opaNan && fraca[104];
+  bool opaSnan = opaNan && !fraca[104];
+  bool opbZero = (expb == 0) && (fracb == 0) && !mulOvfl && !mulStk;
+  bool opbInf = (expb == 0x7FF) && (fracb == 0) && !opbLong;
+  bool opbNan = (expb == 0x7FF) && (fracb != 0) && !opbLong;
+  bool opbQnan = opbNan && fracb[104];
+  bool opbSnan = opbNan && !fracb[104];
+  bool isSpecial = false, ioc = false;
+  ui64 D = 0;
+  if (opaSnan) {
+    isSpecial = true;
+    D = dn ? DefNan : gag(opa[116:53]);
+    flags[IOC] = 1;
+  }
+  else if (piz) {
+    isSpecial = true;
+    D = DefNan;
+  }
+  else if (opbSnan) {
+    isSpecial = true;
+    D = dn ? DefNan : gag(opb[116:53]);
+    flags[IOC] = 1;
+  }
+  else if (opaQnan) {
+    isSpecial = true;
+    D = dn ? DefNan : opa[116:53];
+  }
+  else if (opbQnan) {
+    isSpecial = true;
+    D = dn ? DefNan : opb[116:53];
+  }
+  else if (opaInf) {
+    isSpecial = true;
+    if (opbInf && signa != signb) {
+      D = DefNan;
+      flags[IOC] = 1;
+    }
+    else  {
+      D = opa[116:53];
+    }
+  }
+  else if (opbInf) {
+    isSpecial = true;
+    D = opb[116:53];
+  }
+  else if (opaZero && opbZero && signa == signb) {
+    isSpecial = true;
+    D[63] = signa;
+  }
+  else if (expa == expb && fraca == fracb && !mulOvfl && !mulStk && signa != signb) {
+    isSpecial = true;
+    if (rmode == rmodeDN) {
+      D[63] = 1;
+    }
+  }
+  return <isSpecial, D, flags>;
+}
+
+bool isFar(ui11 expa, ui11 expb, bool usa) {
+  ui12 expaP1 = expa + 1;
+  ui12 expbP1 = expb + 1;
+  bool isNear = usa && (expa == expb || expa == expbP1 || expb == expaP1);
+  return !isNear;
+}
+
+<ui108, bool, bool> add(ui117 opa, ui117 opb, bool far, bool usa, bool mulStk) {
+  bool signa = sign(opa), signb = sign(opb);
+  ui11 expa = expnt(opa), expb = expnt(opb);
+  ui105 fraca = frac(opa), fracb = frac(opb), fracl, fracs;
+  bool opbGEopa = expb > expa || expb == expa && fracb >= fraca;
+  ui108 siga = 0;
+  siga[106] = expa != 0;
+  siga[105:1] = fraca;
+  ui108 sigb = 0;
+  sigb[106] = expb != 0;
+  sigb[105:1] = fracb;
+  ui108 sigaPrime = siga, sigbPrime = sigb;
+  if (far && usa) {
+    sigaPrime <<= 1;
+    sigbPrime <<= 1;
+  }
+  bool signl;
+  ui108 sigl, sigs;
+  ui12 expDiff;
+  if (opbGEopa) {
+    signl = signb;
+    sigl = sigbPrime;
+    sigs = sigaPrime;
+    if (expa == 0 && expb != 0) {
+      expDiff = expb - expa - 1;
+    }
+    else  {
+      expDiff = expb - expa;
+    }
+  }
+  else  {
+    signl = signa;
+    sigl = sigaPrime;
+    sigs = sigbPrime;
+    if (expb == 0 && expa != 0) {
+      expDiff = expa - expb - 1;
+    }
+    else  {
+      expDiff = expa - expb;
+    }
+  }
+  ui7 rshift = expDiff[6:0];
+  if (expDiff[11:7] != 0) {
+    rshift |= 0x70;
+  }
+  ui108 sigShft = sigs >> rshift;
+  bool shiftOut = (sigShft << rshift) != sigs;
+  bool cin = usa && !(mulStk && !opbGEopa || far && shiftOut);
+  ui108 ops = usa ? ~sigShft : sigShft;
+  ui108 sum = sigl + ops + cin;
+  bool stk = mulStk || far && shiftOut;
+  return <sum, stk, signl>;
+}
+
+ui7 CLZ(ui128 x) {
+  bool z[128];
+  ui7 c[128];
+  for (uint i = 0; i < 128; i++) {
+    z[i] = !x[i];
+    c[i] = 0;
+  }
+  uint n = 128;
+  for (uint k = 0; k < 7; k++) {
+    n = n / 2;
+    for (uint i = 0; i < n; i++) {
+      c[i] = z[2 * i + 1] ? c[2 * i] : c[2 * i + 1];
+      c[i][k] = z[2 * i + 1];
+      z[i] = z[2 * i + 1] && z[2 * i];
+    }
+  }
+  return c[0];
+}
+
+ui7 LZA128(ui128 a, ui128 b) {
+  ui128 p = a ^ b;
+  ui128 k = ~a & ~b;
+  ui128 w = ~(p ^ (k << 1));
+  return CLZ(w >> 1);
+}
+
+ui7 computeLZA(ui117 opa, ui117 opb) {
+  ui128 in1LZA = 0, in2LZA = 0;
+  ui11 expa = expnt(opa), expb = expnt(opb);
+  ui105 fraca = frac(opa), fracb = frac(opb), fracl, fracs;
+  bool opbGEopa = expb > expa || expb == expa && fracb >= fraca;
+  if (opbGEopa) {
+    fracl = fracb;
+    fracs = fraca;
+  }
+  else  {
+    fracl = fraca;
+    fracs = fracb;
+  }
+  in1LZA[127] = 1;
+  in1LZA[126:22] = fracl;
+  if (expb[0] == expa[0]) {
+    in2LZA = (1 << 22) - 1;
+    in2LZA[126:22] = ~fracs;
+  }
+  else  {
+    in2LZA = (1 << 21) - 1;
+    in2LZA[125:21] = ~fracs;
+    in2LZA[127] = 1;
+  }
+  return LZA128(in1LZA, in2LZA);
+}
+
+<ui7, ui12> computeLshift(ui117 opa, ui117 opb, bool far, bool usa) {
+  ui11 expa = expnt(opa), expb = expnt(opb);
+  ui12 expl = expa >= expb ? expa : expb;
+  ui7 lshift;
+  ui12 expShft;
+  ui7 lza = computeLZA(opa, opb);
+  if (far) {
+    lshift = 0;
+    expShft = usa ? expl - 1 : expl;
+  }
+  else if (lza < expl) {
+    lshift = lza;
+    expShft = expl - lza;
+  }
+  else  {
+    lshift = expl == 0 ? 0 : expl - 1;
+    expShft = 0;
+  }
+  return <lshift, expShft>;
+}
+
+<bool, bool, bool, bool> rndInfo(ui108 sum, bool stk, ui7 lshift, RndDir rndDir) {
+  ui56 lOvflMask = 0x80000000000000 >> lshift;
+  ui55 gOvflMask = lOvflMask >> 1;
+  ui54 sOvflMask = 0x3FFFFFFFFFFFFF >> lshift;
+  ui55 lNormMask = lOvflMask >> 1;
+  ui54 gNormMask = lOvflMask >> 2;
+  ui53 sNormMask = sOvflMask >> 1;
+  bool lOvfl = (sum & lOvflMask) != 0;
+  bool gOvfl = (sum & gOvflMask) != 0;
+  bool sOvfl = (sum & sOvflMask) != 0 || stk;
+  bool lNorm = (sum & lNormMask) != 0;
+  bool gNorm = (sum & gNormMask) != 0;
+  bool sNorm = (sum & sNormMask) != 0 || stk;
+  bool incOvfl = (rndDir == rndNear) && gOvfl && (lOvfl || sOvfl) || (rndDir == rndInf) && (gOvfl || sOvfl);
+  bool incNorm = (rndDir == rndNear) && gNorm && (lNorm || sNorm) || (rndDir == rndInf) && (gNorm || sNorm);
+  bool inxOvfl = gOvfl || sOvfl;
+  bool inxNorm = gNorm || sNorm;
+  return <incOvfl, incNorm, inxOvfl, inxNorm>;
+}
+
+<ui64, ui8> fadd64(ui64 opa, ui117 opb, bool fz, bool dn, ui2 rmode, bool fma, bool inz, bool piz, bool expOvfl, ui8 mulExcps) {
+  ui64 D;
+  ui8 flags = 0;
+  bool opbLong = fma && !inz;
+  bool mulOvfl = opbLong && expOvfl;
+  piz = fma && piz;
+  bool mulStk = mulExcps[IXC] && opbLong;
+  if (fma) {
+    flags = mulExcps;
+    flags[IXC] = flags[IXC] && !opbLong;
+  }
+  ui117 opax = 0;
+  opax[116:53] = opa;
+  ui117 opaz, opbz;
+  <opaz, flags> = checkDenorm(opax, flags, fz);
+  if (!fma) {
+    <opbz, flags> = checkDenorm(opb, flags, fz);
+  }
+  else  {
+    opbz = opb;
+  }
+  bool isSpecial;
+  <isSpecial, D, flags> = checkSpecial(opaz, opbz, fz, dn, rmode, opbLong, mulOvfl, piz, mulStk, flags);
+  if (isSpecial) {
+    return <D, flags>;
+  }
+  else  {
+    bool usa = sign(opaz) != sign(opbz);
+    bool far = isFar(expnt(opaz), expnt(opbz), usa);
+    ui108 sum;
+    bool stk, signl;
+    <sum, stk, signl> = add(opaz, opbz, far, usa, mulStk);
+    ui7 lshift;
+    ui12 expShft;
+    <lshift, expShft> = computeLshift(opaz, opbz, far, usa);
+    ui108 sumShft = sum << lshift;
+    bool signOut = mulOvfl ? sign(opb) : signl;
+    RndDir rndDir = computeRndDir(rmode, signOut);
+    bool incOvfl, incNorm, inxOvfl, inxNorm;
+    <incOvfl, incNorm, inxOvfl, inxNorm> = rndInfo(sum, stk, lshift, rndDir);
+    ui54 sumUnrnd = sumShft[107:54];
+    ui54 sumNorm = sumUnrnd + incNorm;
+    ui54 sumOvfl = sumUnrnd[53:1] + incOvfl;
+    bool tiny = !sumUnrnd[53] && !sumUnrnd[52];
+    bool ovfl = sumNorm[53];
+    bool ovfl2 = (sumUnrnd[53:1] == ((1 << 53) - 1)) && incOvfl;
+    bool infOrMax = expShft == 0x7FE && (ovfl || ovfl2) || expShft == 0x7FD && ovfl2 || expShft == 0x7FF && opbLong || mulOvfl;
+    ui11 expOut;
+    ui52 fracOut;
+    if (infOrMax) {
+      if (rndDir == rndZero) {
+        expOut = 0x7FE;
+        fracOut = 0xFFFFFFFFFFFFF;
+      }
+      else  {
+        expOut = 0x7FF;
+        fracOut = 0;
+      }
+      flags[OFC] = 1;
+      flags[IXC] = 1;
+    }
+    else if (tiny) {
+      if (fz) {
+        expOut = 0;
+        fracOut = 0;
+        flags[UFC] = 1;
+      }
+      else if (sumNorm[52]) {
+        expOut = 1;
+        fracOut = 0;
+        flags[UFC] = 1;
+        flags[IXC] = 1;
+      }
+      else  {
+        expOut = expShft;
+        fracOut = sumNorm[51:0];
+        if (inxNorm) {
+          flags[UFC] = 1;
+          flags[IXC] = 1;
+        }
+      }
+    }
+    else if (ovfl2) {
+      expOut = expShft + 2;
+      fracOut = 0;
+      flags[IXC] = flags[IXC] || inxOvfl;
+    }
+    else if (ovfl) {
+      expOut = expShft == 0 ? 2 : expShft + 1;
+      fracOut = sumOvfl[51:0];
+      flags[IXC] = flags[IXC] || inxOvfl;
+    }
+    else  {
+      expOut = expShft == 0 && sumNorm[52] ? 1 : expShft;
+      fracOut = sumNorm[51:0];
+      flags[IXC] = flags[IXC] || inxNorm;
+    }
+    D[63] = signOut;
+    D[62:52] = expOut;
+    D[51:0] = fracOut;
+    return <D, flags>;
+  }
+}
+

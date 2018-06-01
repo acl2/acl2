@@ -19,18 +19,20 @@
   :short "Tutorial and documentation for the ACL2 book, Smtlink."
   :long "<h3>Introduction</h3>
 <p>A framework for integrating external SMT solvers into ACL2 based on the
-  @(see ACL2::clause-processor) and the @(tsee ACL2::computed-hint)
+  @(see ACL2::clause-processor) and the @(tsee ACL2::computed-hints)
   mechanism.</p>
 
 <h4>Overview</h4>
 <p>@('Smtlink') is a framework for representing suitable ACL2 theorems as a SMT
 (Satisfiability Modulo Theories) formula, and calling SMT solvers from within
-ACL2.  Two phases of translation happen in the framework.  The first
-translation is fully verified using several verified clause processor
-interleaved with computed hints, therefore is ensured to be sound.  The second
-phase involves a partial transliteration from ACL2's LISP language to the
-target SMT solver's language.  This phase is done through a trusted clause
-processor and thus is not verified in ACL2 to be sound.</p>
+ACL2.  Two phases of translation are carried out in the framework. The first
+phase, including function expansion and all kinds of transformations, is fully
+verified using several verified clause processors interleaved with computed
+hints. This first translation is therefore ensured to be sound.  The second
+phase involves a transliteration from ACL2's LISP language to the target SMT
+solver's language.  This phase is carried out by ACL2's trusted clause
+processor, rather than a verified clause processor, and thus, it has not been
+verified in ACL2 to be sound.</p>
 
 <p>SMT solvers combine domain-specific techniques together into a SAT
 (Satisfiability) Solver and solves domain-specific satisfiability problems.

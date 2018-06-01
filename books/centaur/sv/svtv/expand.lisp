@@ -32,7 +32,7 @@
 (in-package "SV")
 (include-book "structure")
 (include-book "../mods/moddb")
-(include-book "centaur/esim/stv/stv-util" :dir :system)
+;; (include-book "centaur/esim/stv/stv-util" :dir :system)
 (include-book "std/strings/strtok" :dir :system)
 (include-book "std/strings/strrpos" :dir :system)
 (include-book "std/strings/strpos" :dir :system)
@@ -127,7 +127,8 @@
                              string-listp member-equal default-car default-cdr
                              str::take-leading-digits-when-digit-listp
                              str::explode-when-not-stringp
-                             acl2::member-when-atom)))
+                             ;; acl2::member-when-atom
+                             )))
 
   (deffixequiv svtv-parse-path-indices))
 
@@ -137,8 +138,8 @@
 (define svtv-parse-path/select-aux ((dotted-parts string-listp)
                                     (orig-x stringp))
   :prepwork ((local (in-theory (disable (tau-system)
-                                        acl2::take-redefinition
-                                        acl2::take-of-len-free
+                                        ;; acl2::take-redefinition
+                                        ;; acl2::take-of-len-free
                                         acl2::take-of-too-many
                                         subseq-list)))
              (local (defthm len-equal-0
@@ -207,7 +208,8 @@
                              str::take-leading-digits-when-digit-listp
                              str::explode-when-not-stringp
                              acl2::lower-bound-of-len-when-sublistp
-                             acl2::member-when-atom not)))
+                             ;; acl2::member-when-atom
+                             not)))
 
   (deffixequiv svtv-parse-path/select-aux))
 

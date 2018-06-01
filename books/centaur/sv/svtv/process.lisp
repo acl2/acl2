@@ -39,7 +39,9 @@
 (include-book "../svex/compose")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/gl/auto-bindings" :dir :system)
+(include-book "std/alists/alist-defuns" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "std/alists/fal-extract" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
 (local (in-theory (disable nth update-nth acl2::nth-when-zp)))
 (local (std::add-default-post-define-hook :fix))
@@ -48,11 +50,11 @@
 (local (xdoc::set-default-parents process.lisp))
 
 
-(local (defthm integerp-lookup-in-4vmask-alist
-         (implies (and (4vmask-alist-p x)
-                       (hons-assoc-equal k x))
-                  (integerp (cdr (hons-assoc-equal k x))))
-         :hints(("Goal" :in-theory (enable 4vmask-alist-p)))))
+;; (local (defthm integerp-lookup-in-4vmask-alist
+;;          (implies (and (4vmask-alist-p x)
+;;                        (hons-assoc-equal k x))
+;;                   (integerp (cdr (hons-assoc-equal k x))))
+;;          :hints(("Goal" :in-theory (enable 4vmask-alist-p)))))
 
 
 (defthm svtv-entry-p-nth
@@ -196,7 +198,7 @@
        ((when (atom inalist)) nil)
        ((cons var expr) (car inalist))
        (mask (or (cdr (hons-get var masks)) 0))
-       (exp (svex-call 'bit? (list (svex-quote (2vec mask))
+       (exp (svex-call 'bit? (list (svex-quote (2vec (sparseint-val mask)))
                                    expr
                                    (svex-var (svex-phase-var var phase))))))
     (cons (cons var exp)
@@ -858,6 +860,13 @@
                 (hons-assoc-equal k x))
            (svex-p (cdr (hons-assoc-equal k x))))
   :hints(("Goal" :in-theory (enable svex-alist-p))))
+
+(local
+ (defthm car-hons-assoc-equal
+   (implies (hons-assoc-equal k x)
+            (equal (car (hons-assoc-equal k x)) k))))
+
+
 
 (defthm svex-alist-p-of-fal-extract
   (implies (svex-alist-p x)
@@ -1725,6 +1734,33 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
          (raise "Arguments to svtv-easy-bindings should be input names or ~
                  a :mix, :seq, or :rev form, so ~x0 is illegal." (car x)))))
 
+(define svtv-easy-bindings-svtv-vars ((x   "Some arguments to easy-bindings"))
+  ;; Extracts the SVTV variables that are used.
+  (cond ((atom x)
+         nil)
+        ((symbolp (car x))
+         ;; Should be an SVTV input.
+         (cons (car x)
+               (svtv-easy-bindings-svtv-vars (cdr X))))
+        ((atom (car x))
+         (raise "Illegal argumen to svtv-easy-bindings: ~x0" (car x)))
+        ((or (eq (caar x) :nat)
+             (eq (caar x) :int)
+             (eq (caar x) :bool)
+             (eq (caar x) :skip))
+         (svtv-easy-bindings-svtv-vars (cdr x)))
+        ((or (eq (caar x) :mix)
+             (eq (caar x) :seq))
+         (let ((elems (cdar x)))
+           (append (svtv-easy-bindings-svtv-vars elems)
+                   (svtv-easy-bindings-svtv-vars (cdr x)))))
+        ((eq (caar x) :rev)
+         (append (svtv-easy-bindings-svtv-vars (cdar x))
+                 (svtv-easy-bindings-svtv-vars (cdr x))))
+        (t
+         (raise "Arguments to svtv-easy-bindings should be input names or ~
+                 a :mix, :seq, or :rev form, so ~x0 is illegal." (car x)))))
+
 (program)
 
 (define svtv-easy-bindings
@@ -1778,7 +1814,7 @@ irrelevant inputs are removed.</p>"
 
   (b* ((binds   (svtv-easy-bindings-main order svtv))
        (unbound (set-difference-equal (svtv->ins svtv)
-                                      (acl2::pat-flatten1 binds))))
+                                      (svtv-easy-bindings-svtv-vars order))))
     (gl::auto-bindings-fn
      (append binds
              ;; bozo ugly, but workable enough...

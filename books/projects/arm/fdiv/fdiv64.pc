@@ -1,0 +1,688 @@
+
+// Compute Q, incremented Q, and sticky bit: 
+
+<ui53, ui53, bool> computeQ(ui54 QP, ui54 QN, ui59 RP, ui59 RN, ui2 fmt, bool isSqrt) {
+
+  // Sign of remainder:
+  ui59 rem = RP + ~RN + 1;
+  bool remSign = rem[58];
+  bool remZero = (RP ^ RN) == 0;
+
+  // If the remainder is negative, then the quotient must be decremented.  This is
+  // achieved by eliminating the carry-in bit:
+  bool cin = !remSign;
+
+  // If the sum is to be rounded up, then a rounding increment is added.  Note that
+  // the position of the increment is the lsb of the result.  For fdiv, this is bit 1 
+  // for SP and bit 2 for DP and HP; for fsqrt, it is the opposite:
+  bool lsbIs2 = isSqrt == (fmt == SP);
+  ui3 inc = lsbIs2 ? 4 : 2;
+
+  // RTL computes 4 sums in parallel with the rounding increment:
+  //   Q0     cin = 0, inc = 0
+  //   Q0inc  cin = 0, inc > 0
+  //   Q1     cin = 1, inc = 0
+  //   Q1inc  cin = 1, inc > 0
+
+  // Two adders are used to compute Q0 and Q1inc; the other sums are derived from these.
+  // The simplest sum is Q0:
+
+  ui54 Q0 = QP + ~QN;
+
+  // In order to compute Q1inc, inc is added in via a 3-2 compressor.
+  ui54 QN1inc = QP ^ ~QN ^ inc;
+  ui54 QP1inc = (QP & ~QN | (QP | ~QN) & inc) << 1;
+  ui54 Q1inc = QP1inc + QN1inc + 1;
+
+  // For the other two sums, first we compute the bottom 3 bits:
+  ui3 Q1Low = QP[2:0] + ~QN[2:0] + 1;
+  ui3 Q0incLow = QP1inc[2:0] + QN1inc[2:0];
+  ui54 Q1 = Q1Low;
+  ui54 Q0inc = Q0incLow;
+
+  // The upper bits are just copied (note the difference between fdiv and fsqrt):
+  if (Q1 == 0) {
+    Q1[53:3] = Q1inc[53:3];
+  }
+  else  {
+    Q1[53:3] = Q0[53:3];
+  }
+  if (Q0inc <= 1 || Q0inc <= 3 && lsbIs2) {
+    Q0inc[53:3] = Q1inc[53:3];
+  }
+  else  {
+    Q0inc[53:3] = Q0[53:3];
+  }
+ 
+  // When cin is finally available, the following selections are made: 
+  ui54 Q01 = cin ? Q1 : Q0;
+  ui54 Q01inc = cin ? Q1inc : Q0inc;
+
+  // Discard the extra bit if present:
+  ui53 Qtrunc = lsbIs2 ? Q01 >> 1 : Q01;
+  ui53 Qinc = lsbIs2 ? Q01inc >> 1 : Q01inc;
+  return <Qtrunc, Qinc, !remZero>;
+}
+
+// Right-shift a 64-bit vector:
+
+<ui64, bool> rShft64(ui64 x, ui6 s) {
+  ui64 xs = x >> s;
+  bool stk = x != (xs << s);
+  return <xs, stk>;
+}
+
+// Compute rounded result for both normal and denormal cases:
+
+<ui53, bool, ui53, bool>
+rounder(ui53 Qtrunc, ui53 Qinc, bool stk, bool sign, si13 expQ, ui2 rmode, ui2 fmt) {
+
+  // Rounding decision for normal case:
+  bool lsb = Qtrunc[1], grd = Qtrunc[0];
+  ui53 Qrnd;
+  if ((rmode == rmodeNear) && grd && (lsb || stk) ||
+      (rmode == rmodeUP) && !sign && (grd || stk) ||
+      (rmode == rmodeDN) && sign && (grd || stk)) {
+    Qrnd = Qinc[53:1];
+  }
+  else  {
+    Qrnd = Qtrunc[53:1];
+  }
+  bool inx = grd || stk;
+
+  // Right-shifted quotient and rounding decision for subnormal case:
+  ui64 QDen = 0; // Insert integer bit
+  switch (fmt) {
+  case DP:
+    QDen[53] = 1;
+    QDen[52:0] = Qtrunc[52:0];
+    break;
+  case SP:
+    QDen[24] = 1;
+    QDen[23:0] = Qtrunc[23:0];
+    break;
+  case HP:
+    QDen[11] = 1;
+    QDen[10:0] = Qtrunc[10:0];
+  }
+  ui12 shft12 = 1 - expQ; // shift is at most 63
+  ui6 shft = shft12 >= 64 ? 63 : shft12;
+  bool lsbDen, grdDen, stkDen;
+  ui64 Qshft;
+  <Qshft, stkDen> = rShft64(QDen, shft);
+  lsbDen = Qshft[1];
+  grdDen = Qshft[0];
+  stkDen = stkDen || stk;
+  ui54 QrndDen;
+  if ((rmode == rmodeNear) && grdDen && (lsbDen || stkDen) ||
+      (rmode == rmodeUP) && !sign && (grdDen || stkDen) ||
+      (rmode == rmodeDN) && sign && (grdDen || stkDen)) {
+    QrndDen = Qshft[53:1] + 1;
+  }
+  else  {
+    QrndDen = Qshft[53:1];
+  }
+  bool inxDen = grdDen || stkDen;
+  return <Qrnd, inx, QrndDen, inxDen>;
+}
+
+// Final result:
+
+<ui64, ui8>
+final(ui53 Qrnd, bool inx, ui53 QrndDen, bool inxDen, bool sign,
+      si13 expQ, ui2 rmode, bool fz, ui2 fmt, ui8 flags) {
+
+  // Selection of infinity or max normal for overflow case:
+  bool selMaxNorm = rmode == rmodeDN && !sign ||
+                    rmode == rmodeUP && sign ||
+                    rmode == rmodeZero;
+  ui64 D = 0;  // data result
+  switch (fmt) {
+  case DP:
+    D[63] = sign;
+    if (expQ >= 0x7FF) { // overflow
+      if (selMaxNorm) {
+        D[62:52] = 0x7FE;
+        D[51:0] = 0xFFFFFFFFFFFFF;
+      }
+      else  {
+        D[62:52] = 0x7FF;
+        D[51:0] = 0;
+      }
+      flags[OFC] = 1; // overflow
+      flags[IXC] = 1; // inexact  
+    }
+    else if (expQ <= 0) { // subnormal
+      if (fz) {
+        flags[UFC] = 1; // underflow but not inexact
+      }
+      else  {
+        ui11 exp = QrndDen[52];
+        D[62:52] = exp;
+        D[51:0] = QrndDen[51:0];
+        flags[IXC] = flags[IXC] || inxDen;
+        flags[UFC] = flags[UFC] || inxDen;
+      }
+    }
+    else  { // normal
+      D[62:52] = expQ;
+      D[51:0] = Qrnd[51:0];
+      flags[IXC] = flags[IXC] || inx;
+    }
+    break;
+  case SP:
+    D[31] = sign;
+    if (expQ >= 0xFF) { // overflow
+      if (selMaxNorm) {
+        D[30:23] = 0xFE;
+        D[22:0] = 0x7FFFFF;
+      }
+      else  {
+        D[30:23] = 0xFF;
+        D[22:0] = 0;
+      }
+      flags[OFC] = 1; // overflow
+      flags[IXC] = 1; // inexact    
+    }
+    else if (expQ <= 0) { // subnormal
+      if (fz) {
+        flags[UFC] = 1; // underflow but not inexact
+      }
+      else  {
+        ui8 exp = QrndDen[23];
+        D[30:23] = exp;
+        D[22:0] = QrndDen[22:0];
+        flags[IXC] = flags[IXC] || inxDen;
+        flags[UFC] = flags[UFC] || inxDen;
+      }
+    }
+    else  { // normal
+      D[30:23] = expQ;
+      D[22:0] = Qrnd[22:0];
+      flags[IXC] = flags[IXC] || inx;
+    }
+    break;
+  case HP:
+    D[15] = sign;
+    if (expQ >= 0x1F) { // overflow
+      if (selMaxNorm) {
+        D[14:10] = 0x1E;
+        D[9:0] = 0x3FF;
+      }
+      else  {
+        D[14:10] = 0x1F;
+        D[9:0] = 0;
+      }
+      flags[OFC] = 1; // overflow
+      flags[IXC] = 1; // inexact    
+    }
+    else if (expQ <= 0) { // subnormal
+      if (fz) {
+        flags[UFC] = 1; // underflow but not inexact
+      }
+      else  {
+        ui5 exp = QrndDen[10];
+        D[14:10] = exp;
+        D[9:0] = QrndDen[9:0];
+        flags[IXC] = flags[IXC] || inxDen;
+        flags[UFC] = flags[UFC] || inxDen;
+      }
+    }
+    else  {
+      D[14:10] = expQ;
+      D[9:0] = Qrnd[9:0];
+      flags[IXC] = flags[IXC] || inx;
+    }
+    break;
+  }
+  return <D, flags>;
+}
+
+<ui64, ui8>
+specialCase(bool sign, ui64 opa, ui64 opb, Class classa, Class classb,
+	    ui2 fmt, bool dn, ui8 flags) {
+  bool isSpecial = false;
+  ui64 D = 0;
+  ui64 aNan, bNan, manMSB, infinity, defNaN, zero = 0;
+  switch (fmt) {
+  case DP:
+    aNan = opa[63:0];
+    bNan = opb[63:0];
+    zero[63] = sign;
+    infinity = 0x7FF0000000000000;
+    manMSB = 0x8000000000000;
+    break;
+  case SP:
+    aNan = opa[31:0];
+    bNan = opb[31:0];
+    zero[31] = sign;
+    infinity = 0x7F800000;
+    manMSB = 0x400000;
+    break;
+  case HP:
+    aNan = opa[15:0];
+    bNan = opb[15:0];
+    zero[15] = sign;
+    infinity = 0x7C00;
+    manMSB = 0x200;
+    break;
+  }
+  defNaN = infinity | manMSB;
+  if (classa == SNAN) {
+    D = dn ? defNaN : aNan | manMSB;
+    flags[IOC] = 1; // invalid operand
+  }
+  else if (classb == SNAN) {
+    D = dn ? defNaN : bNan | manMSB;
+    flags[IOC] = 1; // invalid operand
+  }
+  else if (classa == QNAN) {
+    D = dn ? defNaN : aNan;
+  }
+  else if (classb == QNAN) {
+    D = dn ? defNaN : bNan;
+  }
+  else if (classa == INF) {
+    if (classb == INF) {
+      D = defNaN;
+      flags[IOC] = 1; // invalid operand
+    }
+    else  {
+      D = infinity | zero;
+    }
+  }
+  else if (classb == INF) {
+    D = zero;
+  }
+  else if (classa == ZERO) {
+    if (classb == ZERO) {
+      D = defNaN;
+      flags[IOC] = 1; // invalid operand
+    }
+    else  {
+      D = zero;
+    }
+  }
+  else if (classb == ZERO) {
+    D = infinity | zero;
+    flags[DZC] = 1; // division by 0
+  }
+  return <D, flags>;
+}
+
+// Normalize denormal operands and compute exponent difference:
+
+<ui53, ui53, si13> normalize(ui11 expa, ui11 expb, ui52 mana, ui52 manb, ui2 fmt) {
+  ui53 siga = 0, sigb = 0;
+  uint bias;
+  switch (fmt) {
+  case DP:
+    siga = mana;
+    sigb = manb;
+    bias = 0x3FF;
+    break;
+  case SP:
+    siga[51:29] = mana;
+    sigb[51:29] = manb;
+    bias = 0x7F;
+    break;
+  case HP:
+    siga[51:42] = mana;
+    sigb[51:42] = manb;
+    bias = 0xF;
+  }
+  si13 expaShft, expbShft;
+  if (expa == 0) {
+    ui6 clz = CLZ53(siga);
+    siga <<= clz;
+    expaShft = 1 - clz;
+  }
+  else  {
+    siga[52] = 1;
+    expaShft = expa;
+  }
+  if (expb == 0) {
+    ui6 clz = CLZ53(sigb);
+    sigb <<= clz;
+    expbShft = 1 - clz;
+  }
+  else  {
+    sigb[52] = 1;
+    expbShft = expb;
+  }
+  si13 expDiff = expaShft - expbShft + bias;
+  return <siga, sigb, expDiff>;
+}
+
+// Prescale the divisor d and the dividend x = 4R0.
+// Use the redundant form of x to compute q1.
+// Convert d and x to non-redundant form.
+// Shift x 1 bit if necessary to ensure that the quotient is in [1, 2) and
+// decrement the quotient exponent accordingly.
+// Return d along with q1*d and x, which are the sum and carry vectors of R1,
+// and the quotient exponent.
+
+<ui57, ui59, ui59, si13, int> prescale(ui56 siga, ui56 sigb, si13 expDiff) {
+  ui56 div1, div2, div3, divSum, divCar;
+  if (!sigb[51] && (sigb[50] || !sigb[49])) {
+    div1 = sigb << 2;
+  }
+  else if (!sigb[50] && (sigb[51] || sigb[49])) {
+    div1 = sigb << 1;
+  }
+  else  {
+    div1 = 0;
+  }
+  if (!sigb[51] && !sigb[50]) {
+    div2 = sigb << 2;
+  }
+  else if ((sigb[51] || sigb[50]) && !sigb[49] || sigb[51] && sigb[50]) {
+    div2 = sigb;
+  }
+  else  {
+    div2 = 0;
+  }
+  div3 = sigb << 3;
+  divSum = div1 ^ div2 ^ div3;
+  divCar = (div1 & div2 | div1 & div3 | div2 & div3) << 1;
+  ui57 div = divSum + divCar;
+
+  // Prescale the dividend using the same scaling factor:
+  ui56 rem1, rem2, rem3, remSum, remCar;
+  if (!sigb[51] && (sigb[50] || !sigb[49])) {
+    rem1 = siga << 2;
+  }
+  else if (!sigb[50] && (sigb[51] || sigb[49])) {
+    rem1 = siga << 1;
+  }
+  else  {
+    rem1 = 0;
+  }
+  if (!sigb[51] && !sigb[50]) {
+    rem2 = siga << 2;
+  }
+  else if ((sigb[51] || sigb[50]) && !sigb[49] || sigb[51] && sigb[50]) {
+    rem2 = siga;
+  }
+  else  {
+    rem2 = 0;
+  }
+  rem3 = siga << 3;
+  remSum = rem1 ^ rem2 ^ rem3;
+  remCar = (rem1 & rem2 | rem1 & rem3 | rem2 & rem3) << 1;
+
+  // Compare siga and sigb:
+  ui53 sigaBar = ~siga;
+  ui54 sigCmp = sigb + sigaBar;
+  bool sigaLTsigb = sigCmp[53];
+
+  // Compute 5-bit approximation of scaled dividend:
+  ui5 remCarBits, remSumBits;
+  bool remCin;
+  if (sigaLTsigb) {
+    remCarBits = remCar[55:52];
+    remSumBits = remSum[55:52];
+    remCin = remCar[51] || remSum[51];
+  }
+  else  {
+    remCarBits = remCar[55:53];
+    remSumBits = remSum[55:53];
+    remCin = remCar[52] || remSum[52];
+  }
+  ui5 remBits = remCarBits + remSumBits + remCin;
+
+  // q1 = 2 if remBits[4:0] >= 13, otherwise q1 = 1:
+  int q1 = remBits[4] || remBits[3] && remBits[2] & (remBits[1] || remBits[0]) ? 2 : 1;
+  
+  // Carry vector of R1 and exponent of the quotient:
+  ui59 RP = remSum + remCar;
+  if (sigaLTsigb) {
+    RP <<= 1;
+    expDiff--;
+  }
+
+  // sum vector of R1:
+  ui59 RN = 0;
+  if (q1 == 2) {
+    RN[57:1] = div;
+  }
+  else  {
+    RN[56:0] = div;
+  }
+  return <div, RP, RN, expDiff, q1>;
+}
+
+// Derive the next quotient digit qi+1 from a 6-bit approximation of the remainder Ri:
+
+iint nextDigit(ui6 remS6) {
+
+  // remS6 >= 13:
+  if (!remS6[5] && (remS6[4] || (remS6[3] && remS6[2] && (remS6[1] || remS6[0])))) {
+    return 2;
+  }
+
+  // remS6 >= 4
+   else if (!remS6[5] && (remS6[3] || remS6[2])) {
+    return 1;
+  }
+
+  // remS6 >= -3
+  else if (!remS6[5] || remS6[5] && remS6[4] && remS6[3] && remS6[2] && (remS6[1] || remS6[0])) {
+    return 0;
+  }
+
+  // remS6 >= -12
+  else if (remS6[4] && (remS6[3] || remS6[2])) {
+    return -1;
+  }
+  else  {
+    return -2;
+  }
+}
+
+// Derive the next remainder Ri+1 from the remainder Ri, quotient digit qi+1,
+// and divisor:
+
+<ui59, ui59> nextRem(ui59 RP, ui59 RN, ui59 div, int q, ui2 fmt) {
+  ui59 divMult = div;
+  switch (q) {
+  case 2:
+    divMult <<= 1;
+    divMult = ~divMult;
+    break;
+  case 1:
+    divMult = ~divMult;
+    break;
+  case 0:
+    divMult = 0;
+    break;
+  case -1:
+    break;
+  case -2:
+    divMult <<= 1;
+  }
+  ui59 RP4 = RP << 2;
+  ui59 RN4 = RN << 2;
+  ui59 sum = RN4 ^ RP4 ^ divMult;
+  ui59 car = ~RN4 & RP4 | (~RN4 | RP4) & divMult;
+  ui59 car2 = car << 1;
+  switch (fmt) {
+  case DP:
+    RP = car2;
+    RP[0] = q > 0;
+    RN = sum;
+    break;
+  case SP:
+    RP[58:29] = car2[58:29];
+    RP[29] = q > 0;
+    RN[58:29] = sum[58:29];
+    break;
+  case HP:
+    RP[58:42] = car2[58:42];
+    RP[42] = q > 0;
+    RN[58:42] = sum[58:42];
+  }
+  return <RP, RN>;
+}
+
+// Update signed-digit quotient with next digit:
+
+<ui54, ui54> nextQuot(ui54 QP, ui54 QN, int q) {
+  QP <<= 2;
+  QN <<= 2;
+  if (q >= 0) {
+    QP[1:0] = q;
+  }
+  else  {
+    QN[1:0] = -q;
+  }
+  return <QP, QN>;
+}
+
+// In each of the three iterations of a cycle, the next quotient digit and remainder
+// (in redundant form) are computed.  The remainder upon entering the cycle is Ri.
+// The quotient digits and remainders computed in the cycle are qi1, qi2, qi3, and Ri1, Ri2, Ri3.
+// The remainders are redundantly represented by RPi* and RNi*.
+
+// In the first iteration, two non-redundant approximations of Ri1 are returned along with qi1, RPi1, and RNi1:
+// (1) a 6-bit sum Ri1S6, which is used in the second iteration to compute qi2;
+// (2) a 9-bit sum Ri1S9, which is used in the second iteration in combination with the divisor
+//     to compute a 7-bit approximation of Ri2, which is used in the third iteration to compute qi3.
+
+<int, ui59, ui59, ui6, ui9> iter1(ui59 RPi, ui59 RNi, ui57 div, ui2 fmt) {
+  ui6 RiS6 = RPi[56:51] + ~RNi[56:51] + 1;
+  int qi1 = nextDigit(RiS6);
+  ui59 RPi1, RNi1;
+  <RPi1, RNi1> = nextRem(RPi, RNi, div, qi1, fmt);
+  ui6 Ri1S6 = RPi1[56:51] + ~RNi1[56:51] + 1;
+  ui9 Ri1S9 = RPi1[56:48] + ~RNi1[56:48] + 1;
+  return <qi1, RPi1, RNi1, Ri1S6, Ri1S9>;
+}
+
+// In the second iteration, a 7-bit non-redundant approximation of Ri2 is returned along with
+// qi2, RPi2, and RNi2:
+
+<int, ui59, ui59, ui7> iter2(ui59 RPi1, ui59 RNi1, ui6 Ri1S6, ui9 Ri1S9, ui57 div, ui2 fmt) {
+  int qi2 = nextDigit(Ri1S6);
+  ui59 RPi2, RNi2;
+  <RPi2, RNi2> = nextRem(RPi1, RNi1, div, qi2, fmt);
+  ui7 divShft7;
+  switch (qi2) {
+  case 2:
+    divShft7 = ~div[55:49];
+    break;
+  case 1:
+    divShft7 = ~div[56:50];
+    break;
+  case 0:
+    divShft7 = 0;
+    break;
+  case -1:
+    divShft7 = div[56:50];
+    break;
+  case -2:
+    divShft7 = div[55:49];
+  }
+  ui7 Ri2S7 = Ri1S9[6:0] + divShft7 + 1;
+  return <qi2, RPi2, RNi2, Ri2S7>;
+}
+
+// The third iteration returns qi3, RPi3, and RNi3:
+
+<int, ui59, ui59> iter3(ui59 RPi2, ui59 RNi2, ui7 Ri2S7, ui57 div, ui2 fmt) {
+  int qi3 = nextDigit(Ri2S7[6:1]);
+  ui59 RPi3, RNi3;
+  <RPi3, RNi3> = nextRem(RPi2, RNi2, div, qi3, fmt);
+  return <qi3, RPi3, RNi3>;
+}
+
+<ui64, ui8> fdiv64(ui64 opa, ui64 opb, ui2 fmt, bool fz, bool dn, ui2 rmode) {
+
+  // Analyze operands and process special cases:
+  bool signa, signb;    // operand signs
+  ui11 expa, expb;      // operand exponents
+  ui52 mana, manb;      // operand mantissas
+  Class classa, classb; // operand classes
+  ui8 flags = 0;        // exception flags
+  tie(signa, expa, mana, classa, flags) = analyze(opa, fmt, fz, flags);
+  tie(signb, expb, manb, classb, flags) = analyze(opb, fmt, fz, flags);
+  bool sign = signa ^ signb; // sign of quotient
+
+  // Detect early exit:
+  if (classa == ZERO || classa == INF || classa == SNAN || classa == QNAN ||
+      classb == ZERO || classb == INF || classb == SNAN || classb == QNAN) {
+    return specialCase(sign, opa, opb, classa, classb, fmt, dn, flags);
+  }
+  else  {
+
+    // Detect division by a power of 2:
+    bool divPow2 = classa == NORM && classb == NORM && manb == 0;
+
+   // Normalize denormals and compute exponent difference:
+    ui53 siga, sigb; // significands
+    si13 expDiff;    // exponent difference
+    <siga, sigb, expDiff> = normalize(expa, expb, mana, manb, fmt);
+    ui57 div;    // non-redundant prescaled divisor
+    ui59 RP, RN; // redundant prescaled remainder
+    ui54 QP = 0, QN = 0; // redundant quotient
+    si13 expQ; // quotient exponent
+    int q; // quotient digit
+
+    // Prescale divisor and remainder
+    <div, RP, RN, expQ> = prescale(siga, sigb, expDiff);
+    
+    ui5 N; // number of cycles in the iterative phase
+    if (divPow2) {
+      N = 0;
+    }
+    else  {
+      switch (fmt) {
+      case DP:
+        N = 9;
+        break;
+      case SP:
+        N = 4;
+        break;
+      case HP:
+        N = 2;
+      }
+    }
+    for (uint i = 0; i < N; i++) { // ith cycle, consisting of 3 iterations
+    
+      // 1st iteration:
+      ui6 RS6; // 6-bit approximation of remainder
+      ui9 RS9; // 9-bit approximation of remainder
+      <q, RP, RN, RS6> = iter1(RP, RN, div, fmt);
+      <QP, QN> = nextQuot(QP, QN, q);
+  
+      // 2nd iteration:
+      ui7 RS7;
+      <q, RP, RN, RS7> = iter2(RP, RN, RS6, RS9, div, fmt);
+      <QP, QN> = nextQuot(QP, QN, q);
+     
+      // 3rd iteration:
+      <q, RP, RN> = iter3(RP, RN, RS7, div, fmt);
+      <QP, QN> = nextQuot(QP, QN, q);
+    }
+ 
+   // Assimilate quotient:
+   ui53 Qtrunc, Qinc; // Non-redundant quotient and incrementded quotient
+    bool stk;     // sticky bit
+    if (divPow2) {
+      Qtrunc = mana << 1;
+      stk = 0;
+    }
+    else  {
+      <Qtrunc, Qinc, stk> = computeQ(QP, QN, RP, RN, fmt, false);
+    }
+
+    // Round:
+    ui53 Qrnd, QrndDen;
+    bool inx, inxDen;
+    <Qrnd, inx, QrndDen, inxDen> = rounder(Qtrunc, Qinc, stk, sign, expQ, rmode, fmt);
+ 
+    // Compute exceptions and assemble final result:
+   return final(Qrnd, inx, QrndDen, inxDen, sign, expQ, rmode, fz, fmt, flags);
+  }
+}
+

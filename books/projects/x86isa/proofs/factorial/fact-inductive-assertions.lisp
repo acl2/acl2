@@ -423,7 +423,7 @@
                          x86))
            (inv n0 addr (x86-fetch-decode-execute x86)))
   :hints (("Goal"
-           :in-theory (e/d* ()
+           :in-theory (e/d* (check-instruction-length)
                             (get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
                              get-prefixes-opener-lemma-group-3-prefix
@@ -443,6 +443,8 @@
                         two-byte-opcode-execute
                         !rgfi-size
                         x86-operand-to-reg/mem
+                        x86-operand-to-reg/mem$
+                        check-instruction-length
                         wr64
                         wr32
                         rr32
@@ -451,6 +453,7 @@
                         rml64
                         wml32
                         x86-operand-from-modr/m-and-sib-bytes
+                        x86-operand-from-modr/m-and-sib-bytes$
                         riml-size
                         riml32
                         riml08
@@ -497,6 +500,7 @@
                         top-level-opcode-execute
                         !rgfi-size
                         x86-operand-to-reg/mem
+                        x86-operand-to-reg/mem$
                         wr64
                         wr32
                         rr32
@@ -505,6 +509,8 @@
                         rml64
                         wml32
                         x86-operand-from-modr/m-and-sib-bytes
+                        x86-operand-from-modr/m-and-sib-bytes$
+                        check-instruction-length
                         riml-size
                         riml32
                         riml08
@@ -556,14 +562,19 @@
              top-level-opcode-execute
              !rgfi-size
              x86-operand-to-reg/mem
+             x86-operand-to-reg/mem$
              wr64
              wr32
              rr32
              rr64
+             rme-size
+             rime-size
              rml32
              rml64
              wml32
              x86-operand-from-modr/m-and-sib-bytes
+             x86-operand-from-modr/m-and-sib-bytes$
+             check-instruction-length
              riml-size
              riml32
              riml08
@@ -622,8 +633,8 @@
                 (equal (rip x86) addr)
                 (assertions n0 addr x86) ;; (Begin n0 n)
                 (equal (rip (x86-run k x86)) (+ 25 addr)))
-           (assertions n0 addr (x86-run k x86)) ;; (Halt n0 a)
-           )
+           ;; (Halt n0 a)
+           (assertions n0 addr (x86-run k x86)))
   :hints (("Goal" :in-theory (e/d ()
                                   (assertions
                                    Inv-Inv-x86-run))

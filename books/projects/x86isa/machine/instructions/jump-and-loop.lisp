@@ -39,6 +39,7 @@
 ;; are 64 bits by default; but they can be overridden to 32 bits by an address
 ;; size prefix.
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-near-jmp-Op/En-D
 
   ;; Op/En: D
@@ -48,8 +49,12 @@
   ;;                sign-extended to 64-bits
 
   :parents (one-byte-opcodes)
-  :guard-debug t
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+
+  :guard-hints (("Goal" :in-theory (e/d (rime-size-of-1-to-rime08
+                                         rime-size-of-2-to-rime16
+                                         rime-size-of-4-to-rime32)
+                                        ())))
+
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
@@ -63,66 +68,50 @@
   :body
 
   (b* ((ctx 'x86-near-jmp-Op/En-D)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       (p3? (equal #.*operand-size-override*
+                   (prefixes-slice :group-3-prefix prefixes)))
 
        ((the (integer 0 4) offset-size)
-        (case opcode
-          (#xEB 1)
-          (#xE9 4)
-          ;; Will cause an error in riml-size
-          (otherwise 0)))
+        (if (eql opcode #xEB) ; jump short
+            1 ; always 8 bits (rel8)
+          ;; opcode = #xE9 -- jump near relative:
+          (if (64-bit-modep x86)
+              4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
+            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+                 (cs.d (code-segment-descriptor-attributes-layout-slice
+                        :d cs-attr)))
+              (if (= cs.d 1)
+                  (if p3? 2 4) ; 16 or 32 bits (rel16 or rel32)
+                (if p3? 4 2))))))
 
        ((mv ?flg (the (signed-byte 32) offset) x86)
-        (mbe :logic
-             (riml-size offset-size temp-rip :x x86)
-             :exec
-             (case offset-size
-               (1
-                (mv-let (flag val x86)
-                  (rml08 temp-rip :x x86)
-                  (mv flag
-                      (n08-to-i08 val)
-                      x86)))
-               (4
-                (mv-let (flag val x86)
-                  (rml32 temp-rip :x x86)
-                  (mv flag
-                      (n32-to-i32 val)
-                      x86)))
-               (otherwise
-                (mv 'riml-size 0 x86)))))
+        (rime-size offset-size temp-rip *cs* :x nil x86))
+       ((when flg) (!!ms-fresh :rime-size-error flg))
 
-       ((when flg)
-        (!!ms-fresh :riml-size-error flg))
+       ((mv flg next-rip)
+        (add-to-*ip temp-rip (the (integer 0 4) offset-size) x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) next-rip)
-        (+ (the (integer 0 4) offset-size) temp-rip))
-       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size+1*)
-           next-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip next-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ next-rip offset))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (or
-                          (< (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip)
-                             #.*-2^47*)
-                          (<= #.*2^47*
-                              (the (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                temp-rip)))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
+       ((mv flg temp-rip) (add-to-*ip next-rip offset x86))
+       ((when flg) (!!ms-fresh :virtual-memory-error temp-rip))
+
+       ;; when the size is 16 bits, zero the high bits of EIP
+       ;; (see pseudocode of JMP in Intel manual, Mar'17, Vol. 2:
+       (temp-rip (if (eql offset-size 2)
+                     (logand #xffff temp-rip)
+                   temp-rip))
+
        ;; Update the x86 state:
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 (def-inst x86-near-jmp-Op/En-M
@@ -169,19 +158,13 @@
        ((when flg)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes-error flg))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size+1*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Converting (unsigned-byte-p 64 jmp-addr) to a "good" address
        ;; in our world...
@@ -276,7 +259,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
        (offset-size
         ;; Offset size can be 2, 4, or 8 bytes.
-        (select-operand-size nil rex-byte nil prefixes))
+        (select-operand-size nil rex-byte nil prefixes x86))
        (inst-ac? t)
        ((mv flg mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
@@ -292,18 +275,10 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        ((when flg)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes-error flg))
 
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size+1*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength?
+        (check-instruction-length start-rip temp-rip increment-RIP-by))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (selector (the (unsigned-byte 16) (n16 mem)))
        (offset (mbe :logic (part-select mem :low 16 :width
@@ -658,7 +633,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 ;; INSTRUCTION: LOOP
 ;; ======================================================================
 
-; From Intel Vol. 1, 6-11:
+; From Intel Vol. 1, Section 6.3.7:
 
 ;; In 64-bit mode, the operand size for all near branches (CALL, RET, JCC,
 ;; JCXZ, JMP, and LOOP) is forced to 64 bits. These instructions update the
@@ -681,27 +656,33 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 ;; are 64 bits by default; but they can be overridden to 32 bits by an address
 ;; size prefix.
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-loop
 
   ;; E0: LOOPNE/LOOPNZ rel8
   ;; E1: LOOPE/LOOPZ rel8
   ;; E2: LOOP rel8
 
-  ;; Intel Vol2A, p. 3-604 says:
+  ;; Intel Vol2A, LOOP/LOOPcc specification says:
   ;; "Performs the loop operation using the RCX, ECX or CX as a counter
   ;; (depending on whether address size is 64 bits, 32 bits, or 16
-  ;; bits."
+  ;; bits)."
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08
+                                         riml32
+                                         rime-size
+                                         select-address-size)
+                                        ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip))
-                :hints (("Goal" :in-theory (e/d* ()
+                :hints (("Goal" :in-theory (e/d* (rime-size)
                                                  (unsigned-byte-p
                                                   member-equal
                                                   acl2::logtail-identity
-                                                  not rml-size
+                                                  not
+                                                  rml-size
                                                   select-operand-size)))))
   :prepwork
   ((local (in-theory (e/d* (far-jump-guard-helpers)
@@ -722,30 +703,21 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
   :body
 
   (b* ((ctx 'x86-loop)
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        ;; CMP does not allow a LOCK prefix.
-        (!!ms-fresh :lock-prefix prefixes))
 
-       ((the (signed-byte #.*max-linear-address-size+2*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size+1*)
-           ;; Accounting for rel8 byte to compute the instruction
-           ;; length.
-           (+ 1 temp-rip))
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       ;; temp-rip right now points to the rel8 byte.  Add 1 to
+       ;; temp-rip to account for rel8 when computing the length
+       ;; of this instruction.
+       (badlength? (check-instruction-length start-rip temp-rip 1))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
-       ((the (integer 4 8) counter-size)
-        (if p4?
-            4 ;; ECX is chosen
-          8   ;; RCX is chosen
-          ))
+       ((the (integer 2 8) counter-size) (select-address-size p4? x86))
        (counter (rgfi-size counter-size *rcx* rex-byte x86))
        (counter (trunc counter-size (1- counter)))
 
@@ -759,31 +731,28 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                    (not (equal counter 0)))
             ;; #xE0: LOOPNE/LOOPNZ
             (and (equal zf 0)
-                 (not (equal counter 0))))))
+                 (not (equal counter 0)))))))
 
-       ((mv flg0 (the (signed-byte #.*max-linear-address-size+1*) rel8/temp-rip) x86)
-        (if branch-cond
-            (riml-size 1 temp-rip :x x86)
-          (mv nil (1+ temp-rip) x86)))
-       ((when flg0)
-        (!!ms-fresh :rim-error flg0))
+    (if branch-cond
 
-       ((the (signed-byte 51) temp-rip)
-        (if branch-cond
-            (b* (((the (signed-byte 50) next-rip)
-                  (1+ temp-rip))
-                 ((the (signed-byte 51) temp-rip)
-                  (+ next-rip rel8/temp-rip)))
-              temp-rip)
-          rel8/temp-rip))
+        ;; branch condition is true:
+        (b* (;; read rel8 (a value between -128 and +127):
+             ((mv flg rel8 x86) (rime-size 1 temp-rip *cs* :x nil x86))
+             ((when flg) (!!ms-fresh :rime-size-error flg))
+             ;; add rel8 to the address of the next instruction,
+             ;; which is one past temp-rip to take the rel8 byte into account:
+             ((mv flg next-rip) (add-to-*ip temp-rip (1+ rel8) x86))
+             ((when flg) (!!ms-fresh :rip-increment-error flg))
+             ;; set instruction pointer to new value:
+             (x86 (write-*ip next-rip x86)))
+          x86)
 
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (or
-                          (< (the (signed-byte 51) temp-rip) #.*-2^47*)
-                          (<= #.*2^47* (the (signed-byte 51) temp-rip)))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
-       ;; Update the x86 state:
-       (x86 (!rip temp-rip x86)))
-    x86))
+      ;; branch condition is false:
+      (b* (;; go to the next instruction,
+           ;; which starts just after the rel8 byte:
+           ((mv flg next-rip) (add-to-*ip temp-rip 1 x86))
+           ((when flg) (!!ms-fresh :rip-increment-error flg))
+           (x86 (write-*ip next-rip x86)))
+        x86))))
 
 ;; ======================================================================

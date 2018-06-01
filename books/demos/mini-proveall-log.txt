@@ -609,8 +609,9 @@ ACL2 !>>>>(DEFTHM LT-NON-SYMMETRIC
 
 ACL2 Warning [Non-rec] in ( DEFTHM LT-NON-SYMMETRIC ...):  A :REWRITE
 rule generated from LT-NON-SYMMETRIC will be triggered only by terms
-containing the non-recursive function symbol LT.  Unless this function
-is disabled, this rule is unlikely ever to be used.
+containing the function symbol LT, which has a non-recursive definition.
+Unless this definition is disabled, this rule is unlikely ever to be
+used.
 
 
 ACL2 Warning [Subsume] in ( DEFTHM LT-NON-SYMMETRIC ...):  The previously

@@ -99,14 +99,9 @@
                                temp-rip))))
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Raise an error if v-addr is not 16-byte aligned.
        ;; In case the second operand is an XMM register, v-addr = 0.
@@ -255,14 +250,9 @@
                                temp-rip))))
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((mv flg2 result (the (unsigned-byte 32) mxcsr))
         (if (equal sp/dp #.*OP-DP*)
@@ -365,14 +355,9 @@
                                temp-rip))))
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Raise an error if v-addr is not 16-byte aligned.
        ;; In case the second operand is an XMM register, v-addr = 0.
@@ -532,14 +517,9 @@
                                temp-rip))))
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Raise an error if v-addr is not 16-byte aligned.
        ;; In case the second operand is an XMM register, v-addr = 0.
@@ -663,14 +643,9 @@
                                temp-rip))))
         (!!ms-fresh :temp-rip-not-canonical temp-rip))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((mv flg1 result (the (unsigned-byte 32) mxcsr))
         (if (equal sp/dp #.*OP-DP*)

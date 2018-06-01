@@ -84,7 +84,10 @@
 ; to fix that.  For now just don't include it on Allegro.  Actually it looks
 ; like there may be bugs on CMUCL also.
 #+(and (not cmucl)
-       (not allegro))
+       (not allegro)
+; Matt K: SBCL 1.4.7 has problems too.  See the comment in fastnumio-raw.lsp.
+; For now I'll take the easy way out and avoid SBCL here too.
+       (not sbcl))
 (load-system-from-acl2-quicklisp-bundle "fastnumio")
 
 (load-system-from-acl2-quicklisp-bundle "html-template")

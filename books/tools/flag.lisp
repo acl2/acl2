@@ -29,6 +29,8 @@
 ; Original authors: Sol Swords and Jared Davis
 ;                   {sswords,jared}@centtech.com
 
+; Matt Kaufmann added the :last-body argument of make-flag, May 2018.
+
 #||  for interactive development, you'll need to ld the package first:
 
 (ld ;; fool dependency scanner
@@ -109,6 +111,10 @@ package.</li>
 
 <li>@(':ruler-extenders') lets you give a value for the @(see
 acl2::ruler-extenders) of the new flag function.</li>
+
+<li>@(':last-body') is @('nil') by default, specifying that the original
+definition is used when extracting the body of each function; otherwise, the
+most recent definition rule is used.</li>
 
 </ul>
 
@@ -466,18 +472,18 @@ one such form may affect what you might think of as the proof of another.</p>
      nil)))
 
 
-(defun make-flag-body-aux (flag-var fn-name formals alist full-alist world)
+(defun make-flag-body-aux (flag-var fn-name formals alist full-alist last-body world)
   (if (consp alist)
-      (let* ((orig-body (get-body (caar alist) nil world))
+      (let* ((orig-body (get-body (caar alist) last-body world))
              (new-body (mangle-body orig-body fn-name full-alist formals world)))
         (cond ((consp (cdr alist))
                (cons `((equal ,flag-var ',(cdar alist)) ,new-body)
-                     (make-flag-body-aux flag-var fn-name formals (cdr alist) full-alist world)))
+                     (make-flag-body-aux flag-var fn-name formals (cdr alist) full-alist last-body world)))
               (t
                (list `(t ,new-body)))))
     (er hard 'make-flag-body-aux "Never get here.")))
 
-(defun make-flag-body (fn-name flag-var alist hints ruler-extenders world)
+(defun make-flag-body (fn-name flag-var alist hints ruler-extenders last-body world)
   (let ((formals (merge-formals alist world)))
   `(defun-nx ,fn-name (,flag-var . ,formals)
      (declare (xargs :verify-guards nil
@@ -491,7 +497,7 @@ one such form may affect what you might think of as the proof of another.</p>
               (ignorable . ,formals))
      (cond
        .
-       ,(make-flag-body-aux flag-var fn-name formals alist alist world)))))
+       ,(make-flag-body-aux flag-var fn-name formals alist alist last-body world)))))
 
 (defun extract-keyword-from-args (kwd args)
   (if (consp args)
@@ -925,7 +931,7 @@ one such form may affect what you might think of as the proof of another.</p>
 (defun make-flag-fn (flag-fn-name clique-member-name flag-var flag-mapping hints
                                   defthm-macro-name
                                   formals-subst
-                                  local ruler-extenders world)
+                                  local ruler-extenders last-body world)
   (let* ((flag-var (or flag-var
                        (intern-in-package-of-symbol "FLAG" flag-fn-name)))
          (alist (or flag-mapping
@@ -941,7 +947,7 @@ one such form may affect what you might think of as the proof of another.</p>
       (set-ignore-ok t) ;; can't wrap this in local --- fubar!
 
       (,(if local 'local 'id)
-       ,(make-flag-body flag-fn-name flag-var alist hints ruler-extenders world))
+       ,(make-flag-body flag-fn-name flag-var alist hints ruler-extenders last-body world))
       ,(make-defthm-macro defthm-macro-name alist flag-var
                           `(,flag-fn-name ,flag-var
                                           . ,(apply-formals-subst formals formals-subst)))
@@ -999,7 +1005,8 @@ one such form may affect what you might think of as the proof of another.</p>
     :hints
     :defthm-macro-name
     :local
-    :ruler-extenders))
+    :ruler-extenders
+    :last-body))
 
 (defun make-flag-dwim (args world)
   ;; Stupid wrapper so that you don't have to explicitly name the flag var
@@ -1036,6 +1043,7 @@ one such form may affect what you might think of as the proof of another.</p>
                   (cdr (assoc :formals-subst kwd-alist))
                   (cdr (assoc :local kwd-alist))
                   (cdr (assoc :ruler-extenders kwd-alist))
+                  (cdr (assoc :last-body kwd-alist))
                   world)))
 
 (defmacro make-flag (&rest args)

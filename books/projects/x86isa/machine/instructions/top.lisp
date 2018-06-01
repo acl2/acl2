@@ -101,6 +101,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; be called only in the supervisor mode.  For now, we use the HALT instruction
 ;; for convenience, e.g., when we want to stop program execution.
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-hlt
 
   ;; Op/En: NP
@@ -118,17 +119,16 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   (b* ((ctx 'x86-hlt)
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ;; Update the x86 state:
 
-       ;; See p.3-481, Intel Vol. 2A. Instruction pointer is saved.
+       ;; Intel Vol. 2A, HLT specification: Instruction pointer is saved.
        ;; "If an interrupt ... is used to resume execution after a HLT
        ;; instruction, the saved instruction pointer points to the instruction
        ;; following the HLT instruction."
-       (x86 (!rip temp-rip x86)))
-      (!!ms-fresh :legal-halt :hlt)))
+       (x86 (write-*ip temp-rip x86)))
+    (!!ms-fresh :legal-halt :hlt)))
 
 ;; ======================================================================
 ;; INSTRUCTION: CMC/CLC/STC/CLD/STD

@@ -347,7 +347,7 @@ J & George
 
 (defun int2fp (x dstf)
   (mv-let (result flags)
-          (rtl::sse-round x *mxcsr* dstf)
+          (rtl::sse-post-comp x *mxcsr* dstf)
           (declare (ignore flags))
           result))
 
@@ -356,7 +356,7 @@ J & George
         ((rtl::infp x srcf) (rtl::iencode (rtl::sgnf x srcf) dstf))
         ((rtl::zerp x srcf) (rtl::zencode (rtl::sgnf x srcf) dstf))
         (t (mv-let (result flags)
-                   (rtl::sse-round (rtl::decode x srcf) *mxcsr* dstf)
+                   (rtl::sse-post-comp (rtl::decode x srcf) *mxcsr* dstf)
                    (declare (ignore flags))
                    result))))
 
@@ -406,7 +406,7 @@ J & George
              (rtl::infp y f))
          x)
         (t (mv-let (result flags)
-                   (rtl::sse-round (- (rtl::decode x f)
+                   (rtl::sse-post-comp (- (rtl::decode x f)
                                       (* (truncate (rtl::decode x f)
                                                    (rtl::decode y f))
                                          (rtl::decode y f)))

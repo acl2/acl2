@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; March 2018
 
 (in-package "ADE")
 
@@ -53,7 +53,6 @@
     ;; (ao4                    4    1    0)
     (ao6                    3    1    0)
     ;; (ao7                    3    1    0)
-
     (b-and                  2    1    0)
     (b-and3                 3    1    0)
     (b-and4                 4    1    0)

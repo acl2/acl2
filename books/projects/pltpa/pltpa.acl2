@@ -1,0 +1,8 @@
+(defpkg "PLTP"
+  (set-difference-eq
+   (union-eq '(packn1)
+             (union-eq *acl2-exports*
+                       *common-lisp-symbols-from-main-lisp-package*))
+   '(eval subst args getprop putprop untranslate boolean
+          all-vars all-vars-list reduce props induct prove
+          *features* set-feature)))

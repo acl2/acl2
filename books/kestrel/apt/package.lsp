@@ -31,6 +31,8 @@
                          apply-term*
                          assert-equal
                          body
+                         check-user-lambda
+                         compute-stobj-flags
                          conjoin
                          conjoin-untranslated-terms
                          conjoin2
@@ -137,6 +139,7 @@
                          keyword-value-list-to-alist
                          lambda-body
                          lambda-formals
+                         macro-namep
                          macro-required-args
                          make-event-terse
                          make-implication
@@ -152,6 +155,7 @@
                          packn
                          pairlis-x1
                          pseudo-event-formp
+                         pseudo-event-form-listp
                          pseudo-lambdap
                          pseudo-termfnp
                          pseudo-tests-and-call-listp
@@ -169,6 +173,7 @@
                          set-numbered-name-index-start
                          simplify-hyps
                          sr-limit
+                         stobjs-in
                          stobjs-out
                          strip-cddrs
                          strip-keyword-list
@@ -190,7 +195,9 @@
                          tool2-fn
                          trans-eval-error-triple
                          translate-term-lst
+                         try-event
                          ubody
+                         uguard
                          unnormalized-body
                          untranslate-lst
                          unwrapped-nonexec-body

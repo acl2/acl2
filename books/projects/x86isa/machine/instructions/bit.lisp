@@ -43,7 +43,7 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
        ((the (integer 1 8) operand-size)
-        (select-operand-size nil rex-byte nil prefixes))
+        (select-operand-size nil rex-byte nil prefixes x86))
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
@@ -81,16 +81,10 @@
                                    #.*max-linear-address-size+1*)
                                temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((the (integer 0 64) bitOffset)
         (mod bitOffset (the (integer 0 64) (ash operand-size 3))))
@@ -150,7 +144,7 @@
        (p2 (prefixes-slice :group-2-prefix prefixes))
 
        ((the (integer 1 8) operand-size)
-        (select-operand-size nil rex-byte nil prefixes))
+        (select-operand-size nil rex-byte nil prefixes x86))
        (bitOffset (rgfi-size operand-size (reg-index reg rex-byte #.*r*)
                              rex-byte x86))
        ((mv flg0 (the (signed-byte 64) v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
@@ -196,16 +190,10 @@
                                    #.*max-linear-address-size+1*)
                                temp-rip))))
         (!!ms-fresh :virtual-memory-error temp-rip))
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((mv flg2 bitOffset bitBase x86)
         (if (equal mod #b11)
