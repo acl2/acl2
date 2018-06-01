@@ -203,12 +203,13 @@
     `("def " ,fn-name "(): return ArraySort(" ,key-type ", " ,maybe-val ")")))
 
 (define make-pair-type ((key-type symbolp)
-                        (val-type symbolp))
+                        (val-type symbolp)
+                        (int-to-rat booleanp))
   :returns (pair-type stringp)
   (b* ((key-type (symbol-fix key-type))
        (val-type (symbol-fix val-type))
-       (key-type-str (symbol-name key-type))
-       (val-type-str (symbol-name val-type))
+       (key-type-str (translate-type key-type int-to-rat nil))
+       (val-type-str (translate-type val-type int-to-rat nil))
        (pair-type
         (concatenate 'string key-type-str "-" val-type-str "-pair"))
        )
@@ -233,7 +234,7 @@
        ;; translate-fty-option doesn't generate extra-fn
        ((mv maybe-val-type &)
         (translate-fty-option maybe-val val-type int-to-rat))
-       (assoc-return (make-pair-type key-type val-type))
+       (assoc-return (make-pair-type key-type val-type int-to-rat))
        (assoc-return-type
         (translate-fty-alist-assoc-return key-type val-type assoc-return
                                           int-to-rat))
