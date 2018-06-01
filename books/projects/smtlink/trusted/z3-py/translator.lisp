@@ -90,6 +90,14 @@
          (fn-actuals (pseudo-term-list-fix fn-actuals))
          (- (cw "fn-actuals: ~q0" fn-actuals))
          (fty-info (fty-info-alist-fix fty-info))
+         ;; dealing with magic-fix
+         ((if (and (equal fn-call 'CDR)
+                   (and (car fn-actuals) (null (cdr fn-actuals)))
+                   (consp (car fn-actuals))
+                   (equal (caar fn-actuals) 'MAGIC-FIX)
+                   (stringp (cadar fn-actuals))))
+          (list (concatenate 'string (cadar fn-actuals) "."
+                             (str::downcase-string (translate-symbol fn-call)))))
          (fixed
           (cond ((or (equal fn-call 'CAR)
                      (equal fn-call 'CDR)
@@ -216,7 +224,6 @@
          ((unless (consp a.expr-lst))
           (mv nil a.uninterpreted-lst a.symbol-list a.symbol-index))
          ((cons expr rest) a.expr-lst)
-         (- (cw "expr: ~q0" expr))
          ((mv translated-rest uninterpreted-rest symbols-rest symbol-index-rest)
           (translate-expression (change-te-args a :expr-lst rest)))
          ;; If first term is an symbolp, should be a variable name
@@ -276,17 +283,33 @@
                  (change-te-args a :expr-lst fn-actuals
                                  :uninterpreted-lst uninterpreted-rest
                                  :symbol-list symbols-rest
-                                 :symbol-index symbol-index-rest)))
-               ((unless (consp translated-actuals))
-                (mv (er hard? 'SMT-translator=>translate-expression
-                        "translated-actuals is not a consp: ~q0"
-                        translated-actuals)
-                    nil nil 0)))
-            (mv (cons (car translated-actuals) translated-rest)
+                                 :symbol-index symbol-index-rest))))
+            (mv (cons translated-actuals translated-rest)
                 uninterpreted-1
                 (cons (generate-symbol-enumeration symbol-index-1)
                       symbol-list-1)
                 (1+ symbol-index-1))))
+
+         ;; If fn-call is magic-fix
+         ((if (equal fn-call 'MAGIC-FIX))
+          (b* (((unless (and (consp fn-actuals)
+                             (consp (cdr fn-actuals))
+                             (null (cddr fn-actuals))))
+                (mv (er hard? 'SMT-translator=>translate-expression "Wrong ~
+         number of arguments for magic-fix function: ~q0" expr)
+                    nil nil 0))
+               ((mv translated-actuals uninterpreted-1 symbol-list-1 symbol-index-1)
+                (translate-expression
+                 (change-te-args a
+                                 :expr-lst (cdr fn-actuals)
+                                 :uninterpreted-lst uninterpreted-rest
+                                 :symbol-list symbols-rest
+                                 :symbol-index symbol-index-rest))))
+            (mv (cons translated-actuals translated-rest)
+                uninterpreted-1
+                symbol-list-1
+                symbol-index-1)))
+
          ;; If fn-call is a fty fixing call
          (fixing? (fixing-of-flextype fn-call a.fty-info))
          ((if fixing?)
@@ -317,13 +340,8 @@
                           translated-rest)
                     uninterpreted-1
                     symbol-list-1
-                    symbol-index-1))
-               ((unless (consp translated-actuals))
-                (mv (er hard? 'SMT-translator=>translate-expression
-                        "translated-actuals is not a consp: ~q0"
-                        translated-actuals)
-                    nil nil 0)))
-            (mv (cons (car translated-actuals) translated-rest)
+                    symbol-index-1)))
+            (mv (cons translated-actuals translated-rest)
                 uninterpreted-1
                 symbol-list-1
                 symbol-index-1)))
@@ -519,6 +537,24 @@
                                 'quote))
                     (not (pseudo-lambdap (car (car (te-args->expr-lst args))))))
                (pseudo-term-listp (cdr (car (te-args->expr-lst args))))))
+
+    (defthm crock-pseudo-term-listp
+      (implies (pseudo-term-listp (cdr (car (te-args->expr-lst args))))
+               (pseudo-term-listp (cddr (car (te-args->expr-lst args))))))
+
+    (defthm pseudo-term-listp-of-cddar-of-te-args->expr-lst
+      (implies (and (te-args-p args)
+                    (consp (te-args->expr-lst args))
+                    (not (symbolp (car (te-args->expr-lst args))))
+                    (not (equal (car (car (te-args->expr-lst args)))
+                                'quote))
+                    (not (pseudo-lambdap (car (car (te-args->expr-lst args))))))
+               (pseudo-term-listp (cddr (car (te-args->expr-lst args)))))
+      :hints (("Goal"
+               :in-theory (e/d ()
+                               (pseudo-term-listp-of-cdar-of-te-args->expr-lst))
+               :use ((:instance pseudo-term-listp-of-cdar-of-te-args->expr-lst
+                                (args args))))))
 
     (local (defthm lemma-12
              (implies (and (pseudo-term-listp x) (consp x)
