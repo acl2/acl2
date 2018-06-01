@@ -10,4 +10,5 @@
 
 (define magic-fix ((type stringp)
                    (x t))
+  (declare (ignore type))
   x)
