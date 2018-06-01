@@ -2159,7 +2159,7 @@
                                    function symbol~#1~[ ~&1, which has a ~
                                    non-recursive definition.~@2  Unless this ~
                                    definition is~/s ~&1, which have ~
-                                   non-recursive definitions.~@3  Unless ~
+                                   non-recursive definitions.~@2  Unless ~
                                    these definitions are~] disabled, such ~
                                    triggering terms are unlikely to arise and ~
                                    so ~x0 is unlikely to ever be used."
