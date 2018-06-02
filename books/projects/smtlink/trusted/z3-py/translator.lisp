@@ -217,7 +217,13 @@
              (translate-bool expr nil))
             ((SMT-numberp expr)
              (translate-number expr))
-            (t (concatenate 'string "Symbol." (translate-symbol expr))))))
+            (t (concatenate 'string "Symbol." (translate-symbol expr)))))
+    ///
+    (more-returns
+     (translated-quote
+      (implies (and (symbolp expr) (not (booleanp expr)))
+               (stringp translated-quote))
+      :name stringp-of-translated-quote-when-symbolp)))
 
   (define translate-expression ((args te-args-p))
     :returns (mv (translated paragraphp
@@ -248,8 +254,9 @@
           (b* ((translated-quote (translate-quote (cadr expr))))
             (mv (cons translated-quote translated-rest)
                 uninterpreted-rest
-                (if (symbolp (cadr expr))
-                    (cons translated-quote symbols-rest)
+                (if (and (symbolp (cadr expr))
+                         (not (booleanp (cadr expr))))
+                    (cons (translate-symbol (cadr expr)) symbols-rest)
                   symbols-rest)
                 symbol-index-rest)))
          ;; The first term is now a function call:
@@ -322,16 +329,21 @@
 
          ;; If fn-call is a fty fixing call
          (fixing? (fixing-of-flextype fn-call a.fty-info))
+         (- (cw "fixing? : ~q0" fixing?))
+         (- (cw "expr: ~q0" expr))
+         (- (CW "(and (consp fn-actuals) (null (cdr fn-actuals))): ~q0"
+                (and (consp fn-actuals) (null (cdr fn-actuals)))))
          ((if fixing?)
           (b* (((unless (and (consp fn-actuals) (null (cdr fn-actuals))))
                 (mv (er hard? 'SMT-translator=>translate-expression "Wrong ~
          number of arguments for a fixing function: ~q0" expr)
                     nil nil 0))
                (fixed (car fn-actuals))
+               (- (cw "fixed: ~q0" fixed))
                ;; special case when it's a fixing on nil
                ((if (and (consp fixed)
                          (equal (car fixed) 'quote)
-                         (symbolp (cadr expr))))
+                         (equal (cadr fixed) nil)))
                 (mv (cons (translate-bool (cadr fixed) fixing?)
                           translated-rest)
                     uninterpreted-rest

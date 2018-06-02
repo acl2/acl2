@@ -20,11 +20,11 @@
                        :hints (("Goal" :in-theory (enable paragraphp wordp))))
   (cond
    ;; Boolean: nil
-   ((and (equal b 'nil)
+   ((and (equal b nil)
          (equal nil-type nil))
     (list "False"))
    ;; A fty nil
-   ((equal b 'nil)
+   ((equal b nil)
     (list (concatenate 'string (lisp-to-python-names nil-type) ".nil")))
    ;; Boolean: t
    (t (list "True"))))
@@ -187,7 +187,7 @@
        (maybe-val (translate-symbol maybe-val))
        (assoc-return (paragraph-fix assoc-return))
        (fn-name
-        `(,name "_" ,(translate-symbol 'ASSOC-EQUAL))))
+        `(,name "_" ,(str::downcase-string (translate-symbol 'ASSOC-EQUAL)))))
     `("def " ,fn-name "(key, alist): return If(Select(alist, key) == "
                                    ,maybe-val ".nil, " ,assoc-return ".nil, "
                                    ,assoc-return ".cons(key, " ,maybe-val
