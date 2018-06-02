@@ -13,6 +13,7 @@
 ;; INSTRUCTION: CBW/CWDE/CDQE/CLTQ
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cbw/cwd/cdqe
 
   ;; Op/En: NP
@@ -36,9 +37,9 @@
   :body
 
   (b* ((ctx 'x86-cbw/cwd/cdqe)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -47,6 +48,7 @@
        ((the (integer 1 8) register-size)
         (select-operand-size nil rex-byte nil prefixes x86))
        ((the (integer 1 4) src-size) (ash register-size -1))
+
        ((the (unsigned-byte 32) src)
         (mbe :logic
              (rgfi-size src-size *rax* rex-byte x86)
@@ -56,6 +58,7 @@
                (2 (rr16 *rax* x86))
                (4 (rr32 *rax* x86))
                (otherwise 0))))
+
        (dst (if (logbitp (the (integer 0 32)
                            (1- (the (integer 0 32) (ash src-size 3))))
                          src)
@@ -64,15 +67,18 @@
                                        (2 (n16-to-i16 src))
                                        (t (n32-to-i32 src))))
               src))
+
        ;; Update the x86 state:
        (x86 (!rgfi-size register-size *rax* dst rex-byte x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
+
     x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: CWD/CDQ/CQO
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cwd/cdq/cqo
 
   ;; Op/En: NP
@@ -91,9 +97,9 @@
   :body
 
   (b* ((ctx 'x86-cwd/cdq/cqo)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -101,13 +107,17 @@
 
        ((the (integer 1 8) src-size)
         (select-operand-size nil rex-byte nil prefixes x86))
+
        (src (rgfi-size src-size *rax* rex-byte x86))
+
        (rDX (if (logbitp (1- (ash src-size 3)) src)
                 (trunc src-size -1)
               0))
+
        ;; Update the x86 state:
        (x86 (!rgfi-size src-size *rdx* rDX rex-byte x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
+
       x86))
 
 ;; ======================================================================
