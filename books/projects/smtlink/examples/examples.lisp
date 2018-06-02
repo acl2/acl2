@@ -27,7 +27,7 @@
 (def-saved-event x^2+y^2
   (defun x^2+y^2 (x y) (+ (* x x) (* y y))))
 
-(defthm fty-theorem
+(defthm fty-deflist-theorem
   (implies (and (integer-listp l)
                 (consp (acl2::integer-list-fix l))
                 (consp (acl2::integer-list-fix (cdr (acl2::integer-list-fix l)))))
@@ -39,6 +39,29 @@
           :smtlink
           (:fty (acl2::integer-list))))
   :rule-classes nil)
+
+(defalist symbol-integer-alist
+  :key-type symbolp
+  :val-type integerp
+  :true-listp t)
+
+;; (defthm fty-def-alist-theorem
+;;   (implies (and (integer-symbol-alist-p l)
+;;                 (symbolp s1)
+;;                 (symbolp s2)
+;;                 (not (null (assoc-equal s1 (integer-symbol-alist-fix l))))
+;;                 (not (null (assoc-equal s2 (integer-symbol-alist-fix l)))))
+;;            (>= (x^2+y^2
+;;                 (cdr (smt::magic-fix ""
+;;                                      (assoc-equal s1 (integer-symbol-alist-fix l))))
+;;                 (cdr (smt::magic-fix ""
+;;                                      (assoc-equal s2 (integer-symbol-alist-fix l))))
+;;                0)))
+;;   :hints(("Goal"
+;;           :smtlink
+;;           (:fty (symbol-integer-alist))))
+;;   :rule-classes nil)
+
 
 (def-saved-event poly-ineq
   (defthm poly-ineq-example

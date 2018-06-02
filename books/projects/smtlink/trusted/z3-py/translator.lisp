@@ -15,9 +15,9 @@
 
 (include-book "./translate-fty")
 
-(defsection SMT-translator
-  :parents (z3-py)
-  :short "SMT-translator does the LISP to Python translation."
+;; (defsection SMT-translator
+;;   :parents (z3-py)
+;;   :short "SMT-translator does the LISP to Python translation."
 
   (define SMT-numberp ((sym))
     (declare (xargs :guard t))
@@ -86,17 +86,18 @@
                          :hints (("Goal" :in-theory (enable wordp))))
     :guard-hints (("Goal" :in-theory (e/d (string-or-symbol-p) ())))
     (b* ((fn-call (symbol-fix fn-call))
-         (- (cw "fn-call: ~q0" fn-call))
          (fn-actuals (pseudo-term-list-fix fn-actuals))
-         (- (cw "fn-actuals: ~q0" fn-actuals))
          (fty-info (fty-info-alist-fix fty-info))
          ;; dealing with magic-fix
-         ((if (and (equal fn-call 'CDR)
+         ((if (and (or (equal fn-call 'CDR)
+                       (equal fn-call 'CONSP))
                    (and (car fn-actuals) (null (cdr fn-actuals)))
                    (consp (car fn-actuals))
-                   (equal (caar fn-actuals) 'MAGIC-FIX)
-                   (stringp (cadar fn-actuals))))
-          (list (concatenate 'string (cadar fn-actuals) "."
+                   (equal (caar fn-actuals) 'SMT::MAGIC-FIX)
+                   (consp (cadar fn-actuals))
+                   (equal (car (cadar fn-actuals)) 'QUOTE)
+                   (stringp (cadr (cadar fn-actuals)))))
+          (list (concatenate 'string (cadr (cadar fn-actuals)) "_"
                              (str::downcase-string (translate-symbol fn-call)))))
          (fixed
           (cond ((or (equal fn-call 'CAR)
@@ -141,31 +142,39 @@
 
   (define translate-field-accessor ((fty-name symbolp)
                                     (fn-call symbolp))
-    :returns (translated paragraphp)
+    :returns (translated paragraphp
+                         :hints (("Goal" :in-theory (enable paragraphp wordp))))
+    :guard-hints (("Goal" :in-theory (e/d (string-or-symbol-p)
+                                          ())))
     (b* ((fty-name (symbol-fix fty-name))
          (fn-call (symbol-fix fn-call))
          (fty-name-str (symbol-name fty-name))
          (fn-call-str (symbol-name fn-call))
-         ((unless (<= (+ 2 (length fty-name-str)) (len fn-call-str)))
+         ((unless (<= (+ 2 (length fty-name-str)) (length fn-call-str)))
           (er hard? 'SMT-translator=>translate-field-accessor "Something is ~
-             wrong: ~p0 and ~p1" fty-name-str fn-call-str))
-         (pos-prefix (position fty-name-str fn-call-str :test 'equal))
+             wrong1: ~p0 and ~p1" fty-name-str fn-call-str))
+         (pos-prefix (search fty-name-str fn-call-str :test 'equal))
          ((unless (equal pos-prefix 0))
           (er hard? 'SMT-translator=>translate-field-accessor "Something is ~
-             wrong: ~p0 and ~p1" fty-name-str fn-call-str))
+             wrong2: ~p0 and ~p1" fty-name-str fn-call-str))
          (pos1 (length fty-name-str))
-         (pos-infix (position "->" fn-call-str :test 'equal))
+         (pos-infix (search "->" fn-call-str :test 'equal))
          ((unless (equal pos1 pos-infix))
           (er hard? 'SMT-translator=>translate-field-accessor "Something is ~
-             wrong: ~p0 and ~p1" fty-name-str fn-call-str))
+             wrong3: ~p0 and ~p1" fty-name-str fn-call-str))
          (pos-suffix (+ 2 pos1))
          (pos2 (search "$INLINE" fn-call-str :from-end t :test 'equal))
+         ((unless (and (natp pos2)
+                       (<= pos-suffix pos2)
+                       (<= pos2 (length fn-call-str))))
+          (er hard? 'SMT-translator=>translate-field-accessor "Something is ~
+             wrong4: ~p0 and ~p1" fty-name-str fn-call-str))
          (suffix (subseq fn-call-str pos-suffix pos2))
          ((unless (stringp suffix))
           (er hard? 'SMT-translator=>translate-field-accessor "Something is ~
-             wrong: ~p0 and ~p1" fty-name-str fn-call-str)))
-      (list (concatenate 'string (translate-symbol fty-name-str)  "."
-                         (translate-symbol suffix)))))
+             wrong5: ~p0 and ~p1" fty-name-str fn-call-str)))
+      (list (concatenate 'string (lisp-to-python-names fty-name-str)  "."
+                         (lisp-to-python-names suffix)))))
 
   (define translate-fty ((fn-call symbolp)
                          (fn-actuals pseudo-term-listp)
@@ -196,18 +205,19 @@
       new-sym))
 
   (define translate-quote ((expr t))
-    :returns (mv (translated-quote paragraphp)
-                 (translated-symbol stringp))
+    :returns (translated-quote paragraphp
+                               :hints (("Goal" :in-theory (e/d (paragraphp wordp)
+                                                               ()))))
     (b* (((unless (or (symbolp expr)
                       (SMT-numberp expr)
                       (booleanp expr)))
-          (mv (er hard? 'SMT-translator=>translate-expression "Atom not ~
-                       supported: ~q0" expr) "")))
+          (er hard? 'SMT-translator=>translate-expression "Atom not ~
+                       supported: ~q0" expr)))
       (cond ((booleanp expr)
-             (mv (translate-bool expr nil) ""))
+             (translate-bool expr nil))
             ((SMT-numberp expr)
-             (mv (translate-number expr) ""))
-            (t (mv `("Symbol." ,(translate-symbol expr)) "")))))
+             (translate-number expr))
+            (t (concatenate 'string "Symbol." (translate-symbol expr))))))
 
   (define translate-expression ((args te-args-p))
     :returns (mv (translated paragraphp
@@ -235,13 +245,12 @@
               symbol-index-rest))
          ;; If car of term is 'quote, some constants
          ((if (equal (car expr) 'quote))
-          (b* (((mv translated-quote translated-symbol)
-                (translate-quote (cadr expr))))
+          (b* ((translated-quote (translate-quote (cadr expr))))
             (mv (cons translated-quote translated-rest)
                 uninterpreted-rest
-                (if (equal translated-symbol "")
-                    symbols-rest
-                  (cons translated-symbol symbols-rest))
+                (if (symbolp (cadr expr))
+                    (cons translated-quote symbols-rest)
+                  symbols-rest)
                 symbol-index-rest)))
          ;; The first term is now a function call:
          ;; Either a lambda or a symbol
@@ -290,8 +299,9 @@
                       symbol-list-1)
                 (1+ symbol-index-1))))
 
-         ;; If fn-call is magic-fix
-         ((if (equal fn-call 'MAGIC-FIX))
+         ;; If fn-call is smt::magic-fix, this function is used by the user.
+         ;; Therefore probably in a different package?
+         ((if (equal fn-call 'SMT::MAGIC-FIX))
           (b* (((unless (and (consp fn-actuals)
                              (consp (cdr fn-actuals))
                              (null (cddr fn-actuals))))
@@ -347,9 +357,7 @@
                 symbol-index-1)))
 
          ;; If fn-call is a fty call, but not a fixing function
-         (- (cw "fn-call: ~q0" fn-call))
          (fty? (fncall-of-flextype fn-call a.fty-info))
-         (- (cw "fty?: ~q0" fty?))
          ((if fty?)
           (b* ((translated-fn-call
                 (translate-fty fn-call fn-actuals a.fty-info))
@@ -637,7 +645,6 @@
     (b* ((name (symbol-fix name))
          (type (symbol-fix type))
          (translated-name (translate-symbol name))
-         (- (cw "fty-info: ~q0" fty-info))
          (fty-item (assoc-equal type fty-info))
          (type (if fty-item (fty-info->name (cdr fty-item)) type))
          (translated-type
@@ -717,9 +724,10 @@
          ((cons first rest) args)
          ((decl d) first)
          ((hint-pair h) d.type)
-         (- (cw "uninterpreted type: ~q0" type))
+         (fty-item (assoc-equal h.thm fty-info))
+         (type-name (if fty-item (fty-info->name (cdr fty-item)) h.thm))
          (translated-type
-          (translate-type h.thm int-to-rat 'uninterpreted)))
+          (translate-type type-name int-to-rat 'uninterpreted)))
       (cons `(#\, #\Space ,translated-type)
             (translate-uninterpreted-arguments type rest
                                                fty-info int-to-rat))))
@@ -789,16 +797,17 @@
          (symbols (str::string-list-fix symbols))
          ((unless (consp symbols)) nil)
          ((cons first rest) symbols))
-      (cons `(,symbol-name " = " ,symbol-name ".declare('" ,first "')" #\Newline)
+      (cons `(,symbol-name ".declare('" ,first "')" #\Newline)
             (translate-symbol-declare symbol-name rest))))
 
   (define translate-symbol-enumeration ((symbols string-listp))
     :returns (translated paragraphp
                          :hints (("Goal" :in-theory (e/d (paragraphp)
                                                          ()))))
-    (b* (((if (endp symbols)) nil)
+    (b* ((symbols
+          (if (endp symbols) (list (generate-symbol-enumeration 0)) symbols))
          (symbol-name (cdr (assoc-equal 'symbolp *SMT-types*)))
-         (datatype-line `(,symbol-name " = Datatype('" ,symbol-name "')"
+         (datatype-line `(,symbol-name " = z3.Datatype('" ,symbol-name "')"
                                        #\Newline))
          (enumerations (translate-symbol-declare symbol-name symbols))
          (create-line `(,symbol-name " = " ,symbol-name ".create()" #\Newline)))
@@ -820,7 +829,6 @@
           (with-fast-alist fn-lst
             (translate-uninterpreted-decl-lst uninterpreted fn-lst h.fty-info
                                               translated-theorem h.int-to-rat)))
-         (- (cw "h.type-decl-list: ~q0" h.type-decl-list))
          (translated-theorem-with-type-decls
           (translate-type-decl-list h.type-decl-list
                                     h.fty-info
@@ -830,9 +838,7 @@
          (translated-theorem-with-fty-type-decls
           `(,@translated-fty-types
             ,@translated-theorem-with-type-decls))
-         (- (cw "translated-theorem-with-fty-type-decls: ~q0"
-                translated-theorem-with-fty-type-decls))
          (translated-symbol (translate-symbol-enumeration symbols))
          )
       `(,translated-symbol ,@translated-theorem-with-fty-type-decls)))
-  )
+;;  )

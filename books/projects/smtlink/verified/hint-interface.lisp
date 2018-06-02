@@ -198,7 +198,6 @@
      (guard hint-pair-p :default (make-hint-pair))
      (returns decl-listp :default nil)            ;; belong to auxiliary hypotheses
      (more-returns hint-pair-listp :default nil)  ;; belong to auxiliary hypotheses
-     (body pseudo-termp :default nil)
      (expansion-depth natp :default 1)
      (flattened-formals symbol-listp :default nil)
      (flattened-returns symbol-listp :default nil)))

@@ -172,8 +172,10 @@
     :parents (argument-lst-syntax)
     :returns (valid-type? booleanp)
     :short "Types allowed in Smtlink."
-    (if (assoc-equal term *SMT-uninterpreted-types*)
-        t nil))
+    ;; (if (assoc-equal term *SMT-uninterpreted-types*)
+    ;;     t nil)
+    (symbolp term)
+    )
 
   (define argument-syntax-p ((term t))
     :parents (argument-lst-syntax)

@@ -402,8 +402,7 @@
          (fty-info (fty-info-alist-fix fty-info))
          ;; if it's a function existing in the fty-info table
          (item (assoc-equal fn-name fty-info))
-         ((if item) t)
-         (- (cw "fn-name: ~q0" fn-name)))
+         ((if item) t))
       ;; special cases
       (fncall-of-flextype-special fn-name))
     ///
@@ -516,18 +515,25 @@
     :returns (SMT-types alistp)
     *SMT-types*)
 
+
+  (local
+   (defthm crock1
+     (implies (and (fty-info-alist-p fty-info)
+                   (assoc-equal a fty-info))
+              (consp (assoc-equal a fty-info))))
+   )
+
+  (local
+   (defthm crock2
+     (implies (and (fty-info-alist-p fty-info)
+                   (assoc-equal a fty-info))
+              (fty-info-p (cdr (assoc-equal a fty-info)))))
+   )
+
   (define generate-fty-field-alist ((fields t)
                                     (fty-info fty-info-alist-p))
     :returns (mv (type-lst symbol-listp)
                  (field-alst fty-field-alist-p))
-    :guard-hints (("Subgoal 3"
-                   :induct (assoc-equal
-                            (cdr (assoc-equal 'type (cdr (car fields))))
-                            fty-info))
-                  ("Subgoal 2"
-                   :induct (assoc-equal
-                            (cdr (assoc-equal 'type (cdr (car fields))))
-                            fty-info) ))
     (b* ((fty-info (fty-info-alist-fix fty-info))
          ((unless (consp fields))
           (mv nil nil))
@@ -546,18 +552,19 @@
           (prog2$ (er hard? 'fty=>generate-fty-field-alist "Should be a symbolp: ~q0"
                       type)
                   (mv nil nil)))
+         ((mv cdr-type-lst cdr-field-alst)
+          (generate-fty-field-alist rest fty-info))
          ;; is the type a basic type?
          (basic? (assoc-equal type (SMT-types)))
          ((if basic?)
-          (mv (list type) (acons name type nil)))
+          (mv (cons type cdr-type-lst)
+              (acons name type cdr-field-alst)))
          (info (assoc-equal type fty-info))
          ((unless info)
           (prog2$ (er hard? 'fty=>generate-fty-field-alist "type ~p0 doesn't ~
                                  exist~%" type)
                   (mv nil nil)))
          (type-name (fty-info->name (cdr info)))
-         ((mv cdr-type-lst cdr-field-alst)
-          (generate-fty-field-alist rest fty-info))
          )
       (mv (cons type-name cdr-type-lst)
           (acons name type-name cdr-field-alst)))
@@ -900,8 +907,7 @@
       :measure (list (generate-type-measure fty-info acc) 2 0)
       :well-founded-relation acl2::nat-list-<
       :verify-guards nil
-      (b* ((- (cw "name: ~q0" name))
-           (acc (fty-types-fix acc))
+      (b* ((acc (fty-types-fix acc))
            ((unless (alistp flextypes-table))
             (prog2$ (er hard? 'fty=>generate-fty-type "flextypes-table is not an ~
                            alist?~%")

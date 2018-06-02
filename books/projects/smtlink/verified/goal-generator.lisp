@@ -428,7 +428,6 @@
                    (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
                  (basic-function (member-equal fn-call *SMT-basics*))
                  (flex? (fncall-of-flextype fn-call fty-info))
-                 (- (cw "fn-call: ~p0, flex?: ~p1~%" fn-call flex?))
                  (lvl-item (assoc-equal fn-call a.fn-lvls))
                  (extract-res (meta-extract-formula fn-call state))
                  ((if (or basic-function flex?
@@ -518,9 +517,20 @@
            ;; If fn-call is not expanded to level 0, still can expand.
            (new-fn-lvls (update-fn-lvls fn-call a.fn-lvls))
            ((func f) (cdr fn))
+           (extract-res (meta-extract-formula fn-call state))
+           ((unless (true-listp extract-res))
+            (prog2$
+             (er hard? 'SMT-goal-generator=>expand "meta-extract-formula returning a non-true-listp for ~q0The extracted result is ~q1" fn-call extract-res)
+             (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
+           (body (nth 2 extract-res))
+           ((unless (pseudo-termp body))
+            (prog2$
+             (er hard? 'SMT-goal-generator=>expand "meta-extract-formula returning a non-pseudo-term for ~q0The body is ~q1" fn-call body)
+             (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
+           (- (cw "SMT-goal-generator=>Expanding ... ~q0" fn-call))
            (formals f.flattened-formals)
            (body-res
-            (expand (change-ex-args a :term-lst (list f.body)
+            (expand (change-ex-args a :term-lst (list body)
                                     :fn-lvls new-fn-lvls)
                     fty-info state))
            ((ex-outs b) body-res)

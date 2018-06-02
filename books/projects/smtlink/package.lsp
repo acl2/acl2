@@ -20,7 +20,7 @@
     *standard-acl2-imports*
     *common-lisp-symbols-from-main-lisp-package*
     ;; Things we want to export
-    '(magic-fix)
+    '()
     ;; Things we want to import
     '(b*
       define

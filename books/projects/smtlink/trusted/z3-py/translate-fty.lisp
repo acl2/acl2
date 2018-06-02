@@ -86,7 +86,7 @@
                (extended-extra-fn paragraphp))
   (b* ((name (symbol-fix name))
        (name (translate-symbol name))
-       (datatype-line `(,name "= Datatype" #\( #\' #\" ,name #\' #\) #\Newline))
+       (datatype-line `(,name "= z3.Datatype" #\( #\' ,name #\' #\) #\Newline))
        (translated-fields (translate-fty-field-lst fields int-to-rat))
        (fields-line `(,name ".declare('" ,name "'" ,@translated-fields ")"
                             #\Newline)))
@@ -104,7 +104,7 @@
   (b* ((name (symbol-fix name))
        (name (translate-symbol name))
        (datatype-line
-        `(,name "= Datatype" #\( #\' ,name #\' #\) #\Newline))
+        `(,name "= z3.Datatype" #\( #\' ,name #\' #\) #\Newline))
        (translated-type (translate-type some-type int-to-rat nil))
        (declare-line1
         `(,name ".declare('some', ('val', " ,translated-type "))" #\Newline))
@@ -125,7 +125,7 @@
   (b* ((name (symbol-fix name))
        (name (translate-symbol name))
        (datatype-line
-        `(,name "= Datatype" #\( #\' ,name #\' #\) #\Newline))
+        `(,name "= z3.Datatype" #\( #\' ,name #\' #\) #\Newline))
        (translated-elt-type (translate-type elt-type int-to-rat nil))
        (declare-line1
         `(,name ".declare('cons', ('car', " ,translated-elt-type "), "
@@ -151,15 +151,18 @@
        (val-type (symbol-fix val-type))
        (val-type (translate-type val-type int-to-rat nil))
        (assoc-return (paragraph-fix assoc-return))
-       (datatype-line `(,assoc-return "= Datatype('" ,assoc-return "')"
+       (datatype-line `(,assoc-return "= z3.Datatype('" ,assoc-return "')"
                                           #\Newline))
        (declare-line1 `(,assoc-return ".declare('cons', ('car', " ,key-type
                                       "), ('cdr', " ,val-type "))" #\Newline))
        (declare-line2 `(,assoc-return ".declare('nil')" #\Newline))
+       (consp-fn `("def " ,assoc-return "_consp(l): return Not(l == "
+                   ,assoc-return ".nil)" #\Newline))
        )
     `(,@datatype-line
       ,@declare-line1
-      ,@declare-line2)))
+      ,@declare-line2
+      ,@consp-fn)))
 
 (define translate-fty-alist-acons ((name symbolp))
   :returns (translated paragraphp
@@ -168,7 +171,8 @@
   (b* ((name (symbol-fix name))
        (name (translate-symbol name))
        (fn-name `(,name "_acons")))
-    `("def " ,fn-name "(key, value, alist): return Store(alist, key, value)")))
+    `("def " ,fn-name "(key, value, alist): return Store(alist, key, value)"
+      #\Newline)))
 
 (define translate-fty-alist-assoc ((name symbolp)
                                    (maybe-val symbolp)
@@ -176,31 +180,18 @@
   :returns (translated paragraphp
                        :hints (("Goal"
                                 :in-theory (enable paragraphp wordp))))
+  :guard-debug t
   (b* ((name (symbol-fix name))
        (name (translate-symbol name))
        (maybe-val (symbol-fix maybe-val))
        (maybe-val (translate-symbol maybe-val))
        (assoc-return (paragraph-fix assoc-return))
-       (fn-name `(,name "_assoc")))
+       (fn-name
+        `(,name "_" ,(translate-symbol 'ASSOC-EQUAL))))
     `("def " ,fn-name "(key, alist): return If(Select(alist, key) == "
                                    ,maybe-val ".nil, " ,assoc-return ".nil, "
                                    ,assoc-return ".cons(key, " ,maybe-val
-                                   ".val(Select(alist, key))))")))
-
-(define translate-fty-alist-type ((key-type symbolp)
-                                  (val-type symbolp)
-                                  (maybe-val symbolp)
-                                  (int-to-rat booleanp))
-  :returns (translated paragraphp
-                       :hints (("Goal"
-                                :in-theory (enable paragraphp wordp))))
-  (b* ((key-type (symbol-fix key-type))
-       (key-type (translate-type key-type int-to-rat nil))
-       (val-type (symbol-fix val-type))
-       (val-type (translate-type val-type int-to-rat nil))
-       (maybe-val (symbol-fix maybe-val))
-       (fn-name `(,key-type "_" ,val-type "_alist")))
-    `("def " ,fn-name "(): return ArraySort(" ,key-type ", " ,maybe-val ")")))
+                                   ".val(Select(alist, key))))" #\Newline)))
 
 (define make-pair-type ((key-type symbolp)
                         (val-type symbolp))
@@ -213,6 +204,22 @@
         (concatenate 'string key-type-str "_" val-type-str))
        )
     (str::downcase-string pair-type)))
+
+(define translate-fty-alist-type ((name symbolp)
+                                  (key-type symbolp)
+                                  (maybe-val symbolp)
+                                  (int-to-rat booleanp))
+  :returns (translated paragraphp
+                       :hints (("Goal"
+                                :in-theory (enable paragraphp wordp))))
+  (b* ((name (symbol-fix name))
+       (name (translate-symbol name))
+       (key-type (symbol-fix key-type))
+       (key-type (translate-type key-type int-to-rat nil))
+       (maybe-val (symbol-fix maybe-val))
+       (maybe-val (translate-type maybe-val int-to-rat nil))
+       )
+    `(,name " = ArraySort(" ,key-type ", " ,maybe-val ")" #\Newline)))
 
 (define translate-fty-alist ((name symbolp)
                              (key-type symbolp)
@@ -237,17 +244,17 @@
        (assoc-return-type
         (translate-fty-alist-assoc-return key-type val-type assoc-return
                                           int-to-rat))
-       (alist-fn
-        (translate-fty-alist-type key-type val-type maybe-val int-to-rat))
+       (alist-equality
+        (translate-fty-alist-type name key-type maybe-val int-to-rat))
        (acons-fn (translate-fty-alist-acons name))
        (assoc-fn
         (translate-fty-alist-assoc name maybe-val assoc-return))
        )
     (mv `(,maybe-val-type
+          ,alist-equality
           ,assoc-return-type)
         `(,acons-fn
-          ,assoc-fn
-          ,alist-fn))))
+          ,assoc-fn))))
 
 
 (define translate-one-fty-type ((name symbolp)
@@ -300,5 +307,5 @@
        (symbol-lst (translate-symbol-lst (strip-cars fty-types)))
        (create-line
         (if (endp symbol-lst) nil
-          `("[" ,@symbol-lst "] = CreateDatatypes(" ,@symbol-lst ")" #\Newline))))
+          `("[" ,@symbol-lst "] = z3.CreateDatatypes(" ,@symbol-lst ")" #\Newline))))
     `(,translated ,create-line ,extra-fn)))
