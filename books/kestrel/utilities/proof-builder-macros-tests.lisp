@@ -34,7 +34,7 @@
                   :guard-hints
                   (("Goal"
                     :instructions
-                    ((quiet! (prove-guard f1)))))))
+                    ((prove-guard f1))))))
   (cdr x))
 
 (defund my-consp-2 (x)
@@ -47,15 +47,15 @@
                    :guard-hints
                    (("Goal"
                      :instructions
-                     ((quiet! (prove-guard f1)))))))
+                     ((prove-guard f1))))))
    (cdr x)))
 
 (defun f3 (x)
    (declare (xargs :guard (my-consp-2 x)
                    :guard-hints
                    (("Goal"
-                     :instructions
-                     ((quiet! (prove-guard f1 (enable my-consp-2))))))))
+                     :instructions ; verbose this time
+                     ((prove-guard f1 (enable my-consp-2) nil t))))))
    (cdr x))
 
 (must-fail
@@ -64,9 +64,9 @@
                    :guard-hints
                    (("Goal"
                      :instructions
-                     ((quiet! (prove-guard f1
-                                           (enable my-consp) ; insufficent
-                                           )))))))
+                     ((prove-guard f1
+                                   (enable my-consp) ; insufficent
+                                   ))))))
    (cdr x)))
 
 (defun f4 (x)
@@ -74,9 +74,11 @@
                    :guard-hints
                    (("Goal"
                      :instructions
-                     ((quiet! (prove-guard f1
-                                           (enable my-consp) ; insufficent
-                                           (enable my-consp-2))))))))
+                     ((prove-guard f1
+                                   (enable my-consp) ; insufficent
+                                   (enable my-consp-2)
+; Partially verbose:
+                                   some))))))
    (cdr x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -89,6 +91,12 @@
   (if (my-consp x)
       (f5 (cdr x))
     x))
+
+(must-fail
+ (defun f6 (x)
+   (if (my-consp x)
+       (f6 (cdr x))
+     x)))
 
 (defun f6 (x)
   (declare (xargs :hints
@@ -120,3 +128,37 @@
   (if (my-consp-3 x)
       (f7 (cdr x))
     x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Here are some trivial tests of fancy-use.  They do not stress it, but they
+; test several aspects of its functionality.
+
+(must-fail
+ (defun f8 (x)
+   (if (my-consp x)
+       (f8 (cdr x))
+     x)))
+
+(defun f8 (x)
+  (declare (xargs :hints
+                  (("Goal"
+                    :instructions
+                    ((fancy-use (:termination-theorem f5)))))))
+  (if (my-consp x)
+      (f8 (cdr x))
+    x))
+
+(must-fail
+ (defthm my-consp-is-consp
+   (equal (my-consp a)
+          (consp a))
+   :rule-classes nil))
+
+(defthm my-consp-is-consp
+  (equal (my-consp a)
+         (consp a))
+  :hints (("Goal"
+           :instructions
+           ((fancy-use (:instance my-consp (x a))))))
+  :rule-classes nil)

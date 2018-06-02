@@ -539,8 +539,6 @@
  (must-succeed
   (restrict nfix (natp x)
             :hints (:restriction-guard
-                    (("Goal" :in-theory (enable natp)))
-                    :restriction-of-rec-calls
                     (("Goal" :in-theory (enable natp))))))
 
  ;; necessary hints:

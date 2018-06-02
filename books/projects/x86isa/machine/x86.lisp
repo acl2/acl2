@@ -1065,14 +1065,8 @@
 
     (#xAF
      "(IMUL Gv Ev)"
-     (if (64-bit-modep x86)
-         (x86-imul-Op/En-RM start-rip temp-rip prefixes rex-byte opcode
-                            modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "IMUL is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-imul-Op/En-RM
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     ((#xB0 #xB1)
      "B0: (CMPXCHG Eb Gb); B1: (CMPXCHG Ev Gv)"
@@ -1979,14 +1973,8 @@
 
     (#x69
      "(IMUL Gv Ev iz)"
-     (if (64-bit-modep x86)
-         (x86-imul-Op/En-RMI start-rip temp-rip prefixes rex-byte opcode
-                             modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(IMUL Gv Ev iz) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-imul-Op/En-RMI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x6A
      "(PUSH lb)"
@@ -2001,14 +1989,8 @@
 
     (#x6B
      "(IMUL Gv Ev ib)"
-     (if (64-bit-modep x86)
-         (x86-imul-Op/En-RMI start-rip temp-rip prefixes rex-byte opcode
-                             modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(IMUL Gv Ev ib) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-imul-Op/En-RMI
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x6C
      "(INS Yb DX) or (INSB Yb DX)"
@@ -2680,14 +2662,8 @@
 
     (#xE8
      "(CALL Jz)"
-     (if (64-bit-modep x86)
-         (x86-call-E8-Op/En-M start-rip temp-rip prefixes rex-byte opcode
-                              modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(CALL Jz) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-call-E8-Op/En-M
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xE9
      "(JMP near Jz)"
@@ -2747,23 +2723,10 @@
                  (list start-rip temp-rip prefixes rex-byte opcode))
            x86)))
        (#x4
-        (if (64-bit-modep x86)
-            (x86-mul start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                     x86)
-          (x86-step-unimplemented
-           (cons (cons "(MUL Eb) is not implemented in 32-bit mode."
-                       (ms x86))
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-           x86)))
+        (x86-mul start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x5
-        (if (64-bit-modep x86)
-            (x86-imul-Op/En-M start-rip temp-rip prefixes rex-byte opcode
-                              modr/m sib x86)
-          (x86-step-unimplemented
-           (cons (cons "(IMUL Eb) is not implemented in 32-bit mode."
-                       (ms x86))
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-           x86)))
+        (x86-imul-Op/En-M
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x6
         (x86-div start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x7
@@ -2794,23 +2757,10 @@
                  (list start-rip temp-rip prefixes rex-byte opcode))
            x86)))
        (#x4
-        (if (64-bit-modep x86)
-            (x86-mul start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                     x86)
-          (x86-step-unimplemented
-           (cons (cons "(MUL Ev) is not implemented in 32-bit mode."
-                       (ms x86))
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-           x86)))
+        (x86-mul start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x5
-        (if (64-bit-modep x86)
-            (x86-imul-Op/En-M start-rip temp-rip prefixes rex-byte opcode
-                              modr/m sib x86)
-          (x86-step-unimplemented
-           (cons (cons "(IMUL Ev) is not implemented in 32-bit mode."
-                       (ms x86))
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-           x86)))
+        (x86-imul-Op/En-M
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x6
         (x86-div start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x7
@@ -2881,14 +2831,8 @@
                  (list start-rip temp-rip prefixes rex-byte opcode))
            x86)))
        (#x2
-        (if (64-bit-modep x86)
-            (x86-call-FF/2-Op/En-M start-rip temp-rip prefixes rex-byte
-                                   opcode modr/m sib x86)
-          (x86-step-unimplemented
-           (cons (cons "CALLN Ev is not implemented in 32-bit mode."
-                       (ms x86))
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-           x86)))
+        (x86-call-FF/2-Op/En-M
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x4
         (if (64-bit-modep x86)
             (x86-near-jmp-Op/En-M start-rip temp-rip prefixes rex-byte opcode

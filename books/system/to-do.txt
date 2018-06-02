@@ -414,3 +414,101 @@ verify-guards-for-system-functions might be the more appropriate place
 to start if you want to do that.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Add two missing "Non-rec" warnings.}}
+
+There are two cases where "Non-rec" warnings fail to be printed, but
+should be:
+
+1. Non-recursive functions in triggers of type-prescription rules
+2. Non-recursive functions in hypotheses of linear rules
+
+Below we explain each of these in turn.
+
+-----
+
+1. Non-recursive functions in triggers of type-prescription rules
+
+There's no non-recursive function ("[Non-rec]") warning for the
+:type-prescription rule consp-my-cons below, but there should be.  The
+existing code (source function chk-acceptable-type-prescription-rule)
+clearly doesn't even try to give a "[Non-rec]" warning for
+:type-prescription rules except for non-recursive functions in their
+hypotheses.
+
+ACL2 !>(defun my-cons (x y) (cons x y))
+
+Since MY-CONS is non-recursive, its admission is trivial.  We observe
+that the type of MY-CONS is described by the theorem (CONSP (MY-CONS X Y)).
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN MY-CONS ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+ MY-CONS
+ACL2 !>(defthm consp-my-cons
+	 (consp (my-cons x y))
+	 :rule-classes :type-prescription)
+
+ACL2 Observation in ( DEFTHM CONSP-MY-CONS ...):  Our heuristics choose
+(MY-CONS X Y) as the :TYPED-TERM.
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM CONSP-MY-CONS ...)
+Rules: ((:TYPE-PRESCRIPTION MY-CONS))
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ CONSP-MY-CONS
+ACL2 !>
+
+-----
+
+2. Non-recursive functions in hypotheses of linear rules
+
+Here is one more case where we should create a "[Non-rec]" warning,
+but we don't.  The log below illustrates that a rewrite rule can give
+us a "[Non-rec]" in addition to the "[Free]" warning, but that's not
+the case for a linear rule -- and it should be.  (Both of these are
+designed to fail; of interest are the warnings.)
+
+ACL2 !>(defthm test
+         (implies (natp y) ; enabled non-rec fn
+                  (< (* (car x) x) x))
+         :rule-classes :rewrite)
+
+ACL2 Warning [Free] in ( DEFTHM TEST ...):  A :REWRITE rule generated
+from TEST contains the free variable Y.  This variable will be chosen
+by searching for an instance of (NATP Y) in the context of the term
+being rewritten.  This is generally a severe restriction on the applicability
+of a :REWRITE rule.  See :DOC free-variables.
+
+
+ACL2 Warning [Non-rec] in ( DEFTHM TEST ...):  As noted, we will instantiate
+the free variable, Y, of a :REWRITE rule generated from TEST, by searching
+for the hypothesis shown above.  However, this hypothesis mentions
+the function symbol NATP, which is defun'd non-recursively.  Unless
+disabled, this function symbol is unlikely to occur in the conjecture
+being proved and hence the search for the required hypothesis will
+likely fail.
+
+[[.. non-warning output elided ..]]
+******** FAILED ********
+ACL2 !>(defthm test
+         (implies (natp y) ; enabled non-rec fn
+                  (< (* (car x) x) x))
+         :rule-classes :linear)
+
+ACL2 Warning [Free] in ( DEFTHM TEST ...):  A :LINEAR rule generated
+from TEST will be triggered by the term (BINARY-* (CAR X) X).  When
+TEST is triggered by (BINARY-* (CAR X) X) the variable Y will be chosen
+by searching for an instance of (NATP Y) among the hypotheses of the
+conjecture being rewritten.  This is generally a severe restriction
+on the applicability of the :LINEAR rule.
+
+[[.. non-warning output elided ..]]
+******** FAILED ********
+ACL2 !>
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
