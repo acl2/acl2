@@ -273,6 +273,9 @@
  efficiently, as well as a more general macro, @(tsee acl2-pc::fancy-use), for
  using lemma instances (via @(':use')) efficiently.</p>
 
+ <p>Added some theorems to the <see topic='@(url
+ character-utilities)'>character utilities</see>.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
