@@ -142,4 +142,8 @@
     (equal (chars=>nats-exec chars nil)
            (chars=>nats chars)))
 
-  (verify-guards chars=>nats))
+  (verify-guards chars=>nats)
+
+  (defrule len-of-chars=>nats
+    (equal (len (chars=>nats chars))
+           (len chars))))

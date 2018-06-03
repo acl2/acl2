@@ -2270,25 +2270,13 @@
 
     (#x98
      "(CWB) or (CWDE) or (CDQE)"
-     (if (64-bit-modep x86)
-         (x86-cbw/cwd/cdqe start-rip temp-rip prefixes rex-byte opcode modr/m
-                           sib x86)
-       (x86-step-unimplemented
-        (cons (cons "CWB/CWDE/CDQE is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-cbw/cwd/cdqe
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x99
      "(CWD) or (CDQ) or (CQO)"
-     (if (64-bit-modep x86)
-         (x86-cwd/cdq/cqo start-rip temp-rip prefixes rex-byte opcode modr/m
-                          sib x86)
-       (x86-step-unimplemented
-        (cons (cons "CWD/CDQ/CQO is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-cwd/cdq/cqo
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x9A
      "far CALL"
