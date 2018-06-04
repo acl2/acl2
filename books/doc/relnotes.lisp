@@ -173,6 +173,10 @@
  less sense than it did; the best we could come up with as a replacement is
  <i>Restricted Algorithmic C</i>. </p>
 
+ <p>The utility @(tsee make-flag) has a new keyword argument, @(':last-body'),
+ to specify using the most recent @(see definition) rule for a function symbol
+ instead of its original definition.</p>
+
  <h4><see topic='@(url kestrel-utilities)'>Kestrel Utilities</see></h4>
 
  <p>Added utility @(see include-book-paths) to list paths via @(tsee
@@ -181,10 +185,6 @@
 
  <p>Added a <see topic='@(url fty)'>fixtype</see> for <see topic='@(url
  set::std/osets)'>finite sets</see>.</p>
-
- <p>The utility @(tsee make-flag) has a new keyword argument, @(':last-body'),
- to specify using the most recent @(see definition) rule for a function symbol
- instead of its original definition.</p>
 
  <p>Improved the @('copy-def') utility (community book
  @('kestrel/utilities/copy-def.lisp')) by adding an @(':expand') hint in the
