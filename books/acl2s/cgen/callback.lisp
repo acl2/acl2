@@ -9,7 +9,7 @@
 
 (include-book "type")
 
-(include-book "simple-graph-array")
+(include-book "topological-sort")
 (include-book "cgen-search" :ttags :all)
 (include-book "acl2s-parameter")
 
@@ -38,14 +38,14 @@
         (get-ordered-alst (cdr keys) alst (append ans (list at)))
         (get-ordered-alst (cdr keys) alst ans)))))
 
-(defun do-let*-ordering (vt-lst debug-flag)
+(defun do-let*-ordering (vt-lst)
   (declare (xargs :guard (symbol-alistp vt-lst)
                   :mode :program))
   (b* ((vars (union-eq (all-vars1-lst (strip-cars vt-lst) nil)
                        (all-vars1-lst (strip-cdrs vt-lst) nil)))
        (dep-g (let-binding->dep-graph-alst vt-lst 
                                            (cgen::make-empty-adj-list vars)))
-       (sorted-vars (cgen::approximate-topological-sort dep-g debug-flag)))
+       (sorted-vars (cgen::topological-sort dep-g)))
     (get-ordered-alst (reverse sorted-vars) vt-lst nil)))
 #||
 (do-let*-ordering '((X3 '+)
@@ -56,7 +56,7 @@
                     (Z (CONS Y X3))
                     (Y (CONS X X3))
                     (W (CONS Z Y))) 
-                  nil)
+                  )
 ||#
 
 
@@ -139,7 +139,7 @@
 
        ;; Ordering is necessary to avoid errors in printing top-level cts
 
-       (ord-elide-map (do-let*-ordering elided-var-map (system-debug-flag vl)))
+       (ord-elide-map (do-let*-ordering elided-var-map))
        (tau-interval-alist (tau-interval-alist-clause cl vars ens))
        ((mv erp cgen-state state)  (cgen-search-fn name hyps concl 
                                                    type-alist tau-interval-alist
@@ -216,7 +216,7 @@
 ; ACHTUNG - get-hyps only looks at outermost implies.
        ((mv hyp concl) (mv (get-hyp term) (get-concl term)))
        (hyps (if (eq hyp 't) '() (acl2::expand-assumptions-1 hyp)))
-       (vars (vars-in-dependency-order hyps concl vl (w state)))
+       (vars (vars-in-dependency-order hyps concl (w state)))
        (d-typ-al (dumb-type-alist-infer
                    (cons (cgen-dumb-negate-lit concl) hyps) vars 
                    vl (w state)))
@@ -388,7 +388,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
          (b* ((gen-cl (car cl-list))
               (type-alist (get-acl2-type-alist gen-cl))
               ((mv H C) (cgen::clause-mv-hyps-concl gen-cl))
-              (vars (vars-in-dependency-order H C vl wrld))
+              (vars (vars-in-dependency-order H C wrld))
 
               (vt-alist (make-weakest-type-alist vars))
               ;; (term (if (null H)

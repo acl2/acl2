@@ -1031,7 +1031,7 @@ of the entries is same as the keys"
   (for ((x.y in alist)) (collect (cons (cdr x.y) (car x.y)))))
 
 
-(include-book "simple-graph-array")
+(include-book "topological-sort")
 (defun let-binding->dep-graph-alst (vt-lst ans)
   "Walk down the var-term list vt-lst and add edges. 
    Build graph alist in ans"
@@ -1053,12 +1053,12 @@ of the entries is same as the keys"
         (get-ordered-alst (cdr keys) alst (append ans (list at)))
         (get-ordered-alst (cdr keys) alst ans)))))
 
-(defun do-let*-ordering1 (vars vt-lst debug-flag)
+(defun do-let*-ordering1 (vars vt-lst)
   (declare (xargs :guard (symbol-alistp vt-lst)
                   :mode :program))
   (b* ((dep-g (let-binding->dep-graph-alst vt-lst 
                                            (cgen::make-empty-adj-list vars)))
-       (sorted-vars (cgen::approximate-topological-sort dep-g debug-flag)))
+       (sorted-vars (cgen::topological-sort dep-g)))
     (get-ordered-alst (reverse sorted-vars) vt-lst nil)))
 
 (defloop subst-common-subterms-with-corr-vars (alist es)
@@ -1123,7 +1123,7 @@ of the entries is same as the keys"
        (vars (strip-cars A))
        (let*-b (acl2::listlis vars svals))
        (let*-b (remove-x=x-bindings let*-b))
-       (let*-b (do-let*-ordering1 vars let*-b nil))
+       (let*-b (do-let*-ordering1 vars let*-b))
        )
     let*-b))
        

@@ -261,7 +261,7 @@ Why is ACL2 not good at this?
                     (debug-flag vl))
                "Cgen/Debug : cgen-search:: elim-bindings:~x0  H:~x1~%" elim-bindings H))
 
-       (vars (vars-in-dependency-order H C vl (w state)))
+       (vars (vars-in-dependency-order H C (w state)))
        )
          
   
@@ -366,7 +366,7 @@ Why is ACL2 not good at this?
 
     (b* (((mv start state) (acl2::read-run-time state))
          (vl (cget verbosity-level))
-         (vars (vars-in-dependency-order H C vl (w state)))
+         (vars (vars-in-dependency-order H C (w state)))
          (s-hist-entry% (initial-s-hist-entry% name H C vars elide-map start))
          (test-outcomes% (access s-hist-entry% test-outcomes))
          (gcs% (cget gcs))
