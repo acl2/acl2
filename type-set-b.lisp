@@ -3197,24 +3197,6 @@
          (car lst))
         (t (find-runed-type-prescription rune (cdr lst)))))
 
-(defconst *expandable-boot-strap-non-rec-fns*
-  '(not
-    implies eq atom eql = /= null endp zerop
-
-; If we ever make 1+ and 1- functions again, they should go back on this list.
-
-    synp plusp minusp listp return-last mv-list cons-with-hint
-
-; We added the-error for Version_4.0 (replaced by the-check after Version_6.1).
-; Before that change, but after changing constraint-info to avoid calling
-; remove-guard-holders on a definition body (a change in support of
-; canonical-ancestors, for use of the Attachment Restriction Lemma in
-; justifying attachment to metafunctions and clause-processors,
-; cf. chk-evaluator-use-in-rule), the event (defsort :compare< << :prefix <<)
-; failed from community book defsort/uniquep.lisp.
-
-    the-check wormhole-eval force case-split double-rewrite))
-
 ; Warning: All functions listed above must be defun'd non-recursively
 ; before deftheory definition-minimal-theory!
 
@@ -8086,7 +8068,7 @@
          (mv-let (ts1 ttree1)
                  (type-set-rec (subcor-var (formals fn w)
                                            (fargs x)
-                                           (body fn t w))
+                                           (bbody fn))
                                force-flg
                                nil ; dwp
                                type-alist
@@ -9476,7 +9458,7 @@
 ; Below we say more about invoking the error in Version_8.0.
 
 ;   (include-book "arithmetic-5/top" :dir :system)
-;   
+;
 ;   (defun find-next (var best list)
 ;     (if (not (consp list))
 ;         best
@@ -9486,7 +9468,7 @@
 ;           (if (and (< new var) (<= best new))
 ;               (find-next var new (cdr list))
 ;             (find-next var best (cdr list)))))))
-;   
+;
 ;   (thm (implies (and (rationalp (find-next var list1 list2))
 ;                      (<= var 0))
 ;                 xxx))
@@ -10069,7 +10051,7 @@
           (assume-true-false-rec
            (subcor-var (formals (ffn-symb x) w)
                        (fargs x)
-                       (body (ffn-symb x) t w))
+                       (bbody (ffn-symb x)))
            xttree force-flg dwp type-alist ancestors ens w
            pot-lst pt ignore backchain-limit)
           (if xnot-flg
@@ -12410,7 +12392,7 @@
               (normalize
                (subcor-var (formals (ffn-symb term) wrld)
                            (fargs term)
-                           (body (ffn-symb term) t wrld))
+                           (bbody (ffn-symb term)))
                iff-flg type-alist ens wrld ttree ts-backchain-limit))
              (t
 
