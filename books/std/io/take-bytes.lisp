@@ -37,6 +37,7 @@
 (local (include-book "base"))
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
 (set-state-ok t)
 
 (defsection take-bytes

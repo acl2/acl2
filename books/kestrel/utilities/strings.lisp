@@ -61,7 +61,12 @@
 
   (more-returns
    (nats nat-listp
-         :name nat-listp-of-string=>nats)))
+         :name nat-listp-of-string=>nats))
+
+  (defrule len-of-string=>nats
+    (implies (stringp string)
+             (equal (len (string=>nats string))
+                    (length string)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
