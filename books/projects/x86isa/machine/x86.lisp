@@ -1093,21 +1093,15 @@
     (#xBA
      "Group 8: Opcode-extension: Modr/m.reg
       4:(BT Ev, Ib); Otherwise: unimplemented"
-     (if (64-bit-modep x86)
-         (case (mrm-reg modr/m)
-           (4
-            (x86-bt-0f-ba start-rip temp-rip prefixes rex-byte opcode
-                          modr/m sib x86))
-           (otherwise
-            (x86-step-unimplemented
-             (cons (ms x86)
-                   (list start-rip temp-rip prefixes rex-byte opcode))
-             x86)))
-       (x86-step-unimplemented
-        (cons (cons "Group 8 is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (case (mrm-reg modr/m)
+       (4
+        (x86-bt-0f-ba start-rip temp-rip prefixes rex-byte opcode
+                      modr/m sib x86))
+       (otherwise
+        (x86-step-unimplemented
+         (cons (ms x86)
+               (list start-rip temp-rip prefixes rex-byte opcode))
+         x86))))
 
     (#xBC
      "(BSF r16/32/64 r/m16/32/64)"
