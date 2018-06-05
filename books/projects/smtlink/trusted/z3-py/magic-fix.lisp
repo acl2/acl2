@@ -8,7 +8,7 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
 
-(define magic-fix ((type stringp)
+(define magic-fix ((type symbolp)
                    (x t))
   (declare (ignore type))
   x)

@@ -1069,9 +1069,9 @@
 (defsection process-smtlink-hints
   :parents (Smtlink-process-user-hint)
 
-  (define make-merge-formals-helper ((content argument-lst-syntax-p) (smt-func func-p))
+  (define make-merge-formals-helper ((content argument-lst-syntax-p))
     :parents (process-smtlink-hints)
-    :returns (func func-p)
+    :returns (decls decl-listp)
     :short "Adding user defined formals to overwrite what's already in smt-func."
     :measure (len content)
     :hints (("Goal" :in-theory (enable argument-lst-syntax-fix)))
@@ -1082,17 +1082,13 @@
                                              smt-typep
                                              hints-syntax-p)))
     (b* ((content (argument-lst-syntax-fix content))
-         (smt-func (func-fix smt-func))
-         ((func f) smt-func)
-         ((unless (consp content)) smt-func)
+         ((unless (consp content)) nil)
          ((cons first rest) content)
          ((list* argname type & hints) first)
-         (new-formals (cons (make-decl :name argname
-                                       :type (make-hint-pair :thm type
-                                                             :hints hints))
-                            f.formals))
-         (new-func (change-func f :formals new-formals)))
-        (make-merge-formals-helper rest new-func)))
+         (new-formal (make-decl :name argname
+                                :type (make-hint-pair :thm type
+                                                      :hints hints))))
+        (cons new-formal (make-merge-formals-helper rest))))
 
   (define remove-duplicate-from-decl-list ((decls decl-listp) (seen symbol-listp))
     :parents (process-smtlink-hints)
@@ -1111,13 +1107,16 @@
     :parents (process-smtlink-hints)
     :returns (func func-p)
     :short "Adding user defined formals to overwrite what's already in smt-func."
-    (b* ((new-func (make-merge-formals-helper content smt-func))
-         ((func f) new-func))
-        (change-func f :formals (remove-duplicate-from-decl-list f.formals nil))))
+    (b* ((new-formals (make-merge-formals-helper content))
+         ((func f) smt-func)
+         (all-formals
+          (remove-duplicate-from-decl-list (append new-formals f.formals)
+                                           nil)))
+        (change-func f :formals all-formals)))
 
-  (define make-merge-returns-helper ((content argument-lst-syntax-p) (smt-func func-p))
+  (define make-merge-returns-helper ((content argument-lst-syntax-p))
     :parents (process-smtlink-hints)
-    :returns (func func-p)
+    :returns (decls decl-listp)
     :short "Adding user defined returns to overwrite what's already in smt-func."
     :measure (len content)
     :hints (("Goal" :in-theory (enable argument-lst-syntax-fix)))
@@ -1129,25 +1128,24 @@
                                              smt-typep
                                              )))
     (b* ((content (argument-lst-syntax-fix content))
-         (smt-func (func-fix smt-func))
-         ((func f) smt-func)
-         ((unless (consp content)) smt-func)
+         ((unless (consp content)) nil)
          ((cons first rest) content)
          ((cons argname (cons type (cons & hints))) first)
-         (new-returns (cons (make-decl :name argname
-                                       :type (make-hint-pair :thm type
-                                                             :hints (car hints)))
-                            f.returns))
-         (new-func (change-func f :returns new-returns)))
-        (make-merge-returns-helper rest new-func)))
+         (new-return (make-decl :name argname
+                                :type (make-hint-pair :thm type
+                                                      :hints (car hints)))))
+      (cons new-return (make-merge-returns-helper rest))))
 
   (define make-merge-returns ((content argument-lst-syntax-p) (smt-func func-p))
     :parents (process-smtlink-hints)
     :returns (func func-p)
     :short "Adding user defined returns to overwrite what's already in smt-func."
-    (b* ((new-func (make-merge-returns-helper content smt-func))
-         ((func f) new-func))
-        (change-func f :returns (remove-duplicate-from-decl-list f.returns nil))))
+    (b* ((new-return (make-merge-returns-helper content))
+         ((func f) smt-func)
+         (all-returns
+          (remove-duplicate-from-decl-list (append new-return f.returns)
+                                           nil)))
+        (change-func f :returns all-returns)))
 
   (define make-merge-guard ((content hypothesis-syntax-p) (smt-func func-p))
     :parents (process-smtlink-hints)
@@ -1469,15 +1467,13 @@
                                (w state) (acl2::default-state-vars t)))
          ((when err)
           (er hard? 'Smtlink-process-user-hint->trans-argument "Error ~
-    translating form: ~@0" to-be-trans))
-         (- (cw "~q0" `(,name ,(car term)))))
+    translating form: ~@0" to-be-trans)))
         `(,name ,(car term))))
 
   (define trans-formals ((val t) (state))
     :parents (translate-cmp-smtlink)
     :mode :program
-    (b* ((- (cw "trans formals: ~q0" val))
-         ((unless (true-listp val)) val)
+    (b* (((unless (true-listp val)) val)
          ((unless (consp val)) val)
          ((cons first rest) val)
          (new-first (trans-argument first state)))
@@ -1504,11 +1500,9 @@
   (define trans-function ((val t) (state))
     :parents (translate-cmp-smtlink)
     :mode :program
-    (b* ((- (cw "val: ~q0" val))
-         ((unless (and (true-listp val) (consp val)))
+    (b* (((unless (and (true-listp val) (consp val)))
           val)
          ((list* first second rest) val)
-         (- (cw "first: ~q0, second: ~q1, rest: ~q2" first second rest))
          (new-second (trans-func-option first second state))
          (new-functions `(,first ,new-second ,@(trans-function rest state))))
         new-functions))
@@ -1516,8 +1510,7 @@
   (define trans-functions ((val t) (state))
     :parents (translate-cmp-smtlink)
     :mode :program
-    (b* ((- (cw "val: ~q0" val))
-         ((unless (true-listp val)) val)
+    (b* (((unless (true-listp val)) val)
          ((unless (consp val)) val)
          ((cons first rest) val)
          ((cons fname options) first)
@@ -1554,8 +1547,7 @@
          ((unless (cdr hint)) hint)
          ((list* first second rest) hint)
          (new-second (trans-hint-option first second state))
-         (new-hint `(,first ,new-second ,@(trans-hint rest state)))
-         (- (cw "I'm finished~%")))
+         (new-hint `(,first ,new-second ,@(trans-hint rest state))))
         new-hint))
   )
 

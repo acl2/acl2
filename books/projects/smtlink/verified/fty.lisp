@@ -14,9 +14,9 @@
 
 (include-book "basics")
 
-(defsection fty-support
-  :parents (verified)
-  :short "Supports for ftytypes"
+;; (defsection fty-support
+;;   :parents (verified)
+;;   :short "Supports for ftytypes"
 
   (verify-termination fty::flexprod-field-p)
   (verify-termination fty::flexprod-field->acc-name$inline)
@@ -24,6 +24,7 @@
   (verify-termination fty::flexprod-field-p)
   (verify-termination fty::flexprod-field->name$inline)
   (verify-termination fty::flexprod-p)
+  (verify-termination fty::flexprod->type-name$inline)
   (verify-termination fty::flexprod->kind$inline)
   (verify-termination fty::flexsum-p)
   (verify-termination fty::flexsum->fix$inline)
@@ -169,12 +170,40 @@
   (define generate-option ((name symbolp)
                            (pred symbolp)
                            (fix symbolp)
+                           (prod fty::flexprod-p)
                            (acc fty-info-alist-p))
     :returns (alst fty-info-alist-p)
+    :guard-debug t
     (b* ((name (symbol-fix name))
          (pred (symbol-fix pred))
          (fix (symbol-fix fix))
          (acc (fty-info-alist-fix acc))
+         ((unless (fty::flexprod-p prod)) acc)
+         (fields (fty::flexprod->fields prod))
+         ((unless (and (consp fields) (null (cdr fields))))
+          (prog2$ (er hard? 'fty=>generate-option "fields incorrect for option some type: ~q0"
+                      fields)
+                  acc))
+         (some-name (fty::flexprod->type-name prod))
+         ((unless (symbolp some-name))
+          (prog2$ (er hard? 'fty=>generate-option "Should be a symbolp: ~q0"
+                      some-name)
+                  acc))
+         (field (car fields))
+         ((unless (fty::flexprod-field-p field))
+          (prog2$ (er hard? 'fty=>generate-option "needs to be a field: ~q0"
+                      field)
+                  acc))
+         (accessor (fty::flexprod-field->acc-name field))
+         ((unless (symbolp accessor))
+          (prog2$ (er hard? 'fty=>generate-option "Should be a symbolp: ~q0"
+                      accessor)
+                  acc))
+         (acc-type (fty::flexprod-field->type field))
+         ((unless (symbolp acc-type))
+          (prog2$ (er hard? 'fty=>generate-option "Should be a symbolp: ~q0"
+                      acc-type)
+                  acc))
          (acc-p
           (acons
            pred (make-fty-info :name name
@@ -182,14 +211,30 @@
                                :type :recognizer
                                :guards nil
                                :returns 'booleanp)
-           acc)))
+           acc))
+         (acc-some
+          (acons some-name
+                 (make-fty-info :name name
+                                :category :option
+                                :type :constructor
+                                :guards (list acc-type)
+                                :returns pred)
+                 acc-p))
+         (acc-some-val
+          (acons (make-inline accessor)
+                 (make-fty-info :name name
+                                :category :option
+                                :type :field
+                                :guards (list pred) ;; this guard is not complete
+                                :returns acc-type)
+                 acc-some)))
       (acons (make-inline fix)
              (make-fty-info :name name
                             :category :option
                             :type :fix
                             :guards (list pred)
                             :returns pred)
-             acc-p)))
+             acc-some-val)))
 
   (define generate-flexsum ((type fty::flexsum-p)
                             (acc fty-info-alist-p))
@@ -222,11 +267,14 @@
         (generate-prod name pred fix (car prods) acc))
        ((and (equal (len prods) 2)
              (fty::flexprod-p (car prods)) (fty::flexprod-p (cadr prods))
-             (or (and (equal (fty::flexprod->kind (car prods)) :none)
-                      (equal (fty::flexprod->kind (cadr prods)) :some))
-                 (and (equal (fty::flexprod->kind (cadr prods)) :none)
-                      (equal (fty::flexprod->kind (car prods)) :some))))
-        (generate-option name pred fix acc))
+             (and (equal (fty::flexprod->kind (car prods)) :none)
+                  (equal (fty::flexprod->kind (cadr prods)) :some)))
+        (generate-option name pred fix (cadr prods) acc))
+       ((and (equal (len prods) 2)
+             (fty::flexprod-p (car prods)) (fty::flexprod-p (cadr prods))
+             (and (equal (fty::flexprod->kind (cadr prods)) :none)
+                  (equal (fty::flexprod->kind (car prods)) :some)))
+        (generate-option name pred fix (car prods) acc))
        (t acc))))
 
   (define generate-flexlist ((flexlst fty::flexlist-p)
@@ -449,6 +497,16 @@
          ((unless (equal type :fix)) nil))
       (equal (fty-info->category info) :option)))
 
+(define fncall-of-flextype-option ((fn-name symbolp)
+                                   (fty-info fty-info-alist-p))
+  :returns (option? booleanp)
+  (b* ((fn-name (symbol-fix fn-name))
+       (fty-info (fty-info-alist-fix fty-info))
+       (item (assoc-equal fn-name fty-info))
+       ((unless item) nil)
+       (info (cdr item)))
+    (equal (fty-info->category info) :option)))
+
 
   ;;----------------------------------------------------------
   ;;     datatypes for storing fty types information
@@ -591,7 +649,7 @@
              generate-type-measure-increase-prod
              (acc acc)
              (fty-info fty-info)
-             (name name)
+             (name (symbol-fix name))
              (prod
               (FTY-TYPE-PROD
                (MV-NTH
@@ -664,170 +722,209 @@
                                     (prod fty::flexprod-p)
                                     (flextypes-table alistp)
                                     (fty-info fty-info-alist-p)
-                                    (acc fty-types-p))
-      :returns (updated-acc fty-types-p)
+                                    (acc fty-types-p)
+                                    (ordered-acc fty-types-p))
+      :returns (mv (updated-acc fty-types-p)
+                   (updated-ordered-acc fty-types-p))
       :measure (list (generate-type-measure fty-info acc) 0 0)
       :well-founded-relation acl2::nat-list-<
       :verify-guards nil
       (b* ((acc (fty-types-fix acc))
+           (ordered-acc (fty-types-fix ordered-acc))
+           (name (symbol-fix name))
            ((if (equal (generate-type-measure fty-info acc) 0))
             (prog2$ (er hard? 'fty=>generate-flexprod-type "accumulator exceeding
                                 length of all fty functions.~%")
-                    acc))
-           ((if (assoc-equal name acc)) acc)
-           ((unless (fty::flexprod-p prod)) acc)
+                    (mv acc ordered-acc)))
+           ((if (assoc-equal name acc)) (mv acc ordered-acc))
+           ((unless (fty::flexprod-p prod)) (mv acc ordered-acc))
            (fields (fty::flexprod->fields prod))
            ((mv type-lst field-alst)
             (generate-fty-field-alist fields fty-info))
            (new-prod
             (make-fty-type-prod :fields field-alst))
-           (new-acc (acons name new-prod acc)))
-        (generate-fty-type-list type-lst flextypes-table fty-info new-acc)))
+           (new-acc-1 (acons name new-prod acc))
+           ((mv new-acc-2 updated-ordered-acc)
+            (generate-fty-type-list type-lst flextypes-table fty-info new-acc-1
+                                    ordered-acc)))
+        (mv new-acc-2
+            (acons name new-prod updated-ordered-acc))))
 
     (define generate-flexoption-type ((name symbolp)
                                       (option fty::flexprod-p)
                                       (flextypes-table alistp)
                                       (fty-info fty-info-alist-p)
-                                      (acc fty-types-p))
-      :returns (updated-acc fty-types-p)
+                                      (acc fty-types-p)
+                                      (ordered-acc fty-types-p))
+      :returns (mv (updated-acc fty-types-p)
+                   (updated-ordered-acc fty-types-p))
       :measure (list (generate-type-measure fty-info acc) 0 0)
       :well-founded-relation acl2::nat-list-<
       :verify-guards nil
       (b* ((acc (fty-types-fix acc))
+           (ordered-acc (fty-types-fix ordered-acc))
            (name (symbol-fix name))
            ((if (equal (generate-type-measure fty-info acc) 0))
             (prog2$ (er hard? 'fty=>generate-flexprod-type "accumulator exceeding
                                 length of all fty functions.~%")
-                    acc))
-           ((if (assoc-equal name acc)) acc)
-           ((unless (fty::flexprod-p option)) acc)
+                    (mv acc ordered-acc)))
+           ((if (assoc-equal name acc)) (mv acc ordered-acc))
+           ((unless (fty::flexprod-p option)) (mv acc ordered-acc))
            (fields (fty::flexprod->fields option))
            ((unless (and (consp fields) (null (cdr fields))))
             (prog2$ (er hard? 'fty=>generate-flexoption-type "A flexoption type ~
                                   with more than one field?: ~q0" fields)
-                    acc))
+                    (mv acc ordered-acc)))
            (first (car fields))
            ((unless (fty::flexprod-field-p first))
             (prog2$ (er hard? 'fty=>generate-flexoption-type "Found a none field
                                   type in a flexprod :field field: ~q0" first)
-                    acc))
+                    (mv acc ordered-acc)))
            (some-type (fty::flexprod-field->type first))
            ((unless (symbolp some-type))
             (prog2$ (er hard? 'fty=>generate-flexoption-type "Must be a symbol ~q0"
                         some-type)
-                    acc))
+                    (mv acc ordered-acc)))
            ;; is the type a basic type?
            (basic? (assoc-equal some-type (SMT-types)))
            ((if basic?)
-            (acons name
-                   (make-fty-type-option :some-type some-type)
-                   acc))
+            (mv (acons name
+                       (make-fty-type-option :some-type some-type)
+                       acc)
+                (acons name
+                       (make-fty-type-option :some-type some-type)
+                       ordered-acc)))
            (some-info (assoc-equal some-type fty-info))
            ((unless some-info)
             (prog2$ (er hard? 'fty=>generate-flexoption-type "some-type ~p0 doesn't ~
                                  exist~%" some-type)
-                    acc))
+                    (mv acc ordered-acc)))
            (some-name (fty-info->name (cdr some-info)))
            (new-option
             (make-fty-type-option :some-type some-name))
-           (new-acc (acons name new-option acc)))
-        (generate-fty-type some-name flextypes-table fty-info new-acc))
+           (new-acc-1 (acons name new-option acc))
+           ((mv new-acc-2 new-ordered-acc)
+            (generate-fty-type some-name flextypes-table fty-info new-acc-1
+                               ordered-acc)))
+        (mv new-acc-2
+            (acons name new-option new-ordered-acc)))
       )
 
     (define generate-flexsum-type ((flexsum fty::flexsum-p)
                                    (flextypes-table alistp)
                                    (fty-info fty-info-alist-p)
-                                   (acc fty-types-p))
-      :returns (updated-acc fty-types-p)
+                                   (acc fty-types-p)
+                                   (ordered-acc fty-types-p))
+      :returns (mv (updated-acc fty-types-p)
+                   (updated-ordered-acc fty-types-p))
       :measure (list (generate-type-measure fty-info acc) 1 0)
       :well-founded-relation acl2::nat-list-<
       :verify-guards nil
       (b* ((acc (fty-types-fix acc))
-           ((unless (fty::flexsum-p flexsum)) acc)
+           (ordered-acc (fty-types-fix ordered-acc))
+           ((unless (fty::flexsum-p flexsum)) (mv acc ordered-acc))
            (prods (fty::flexsum->prods flexsum))
            ((unless (consp prods))
             (prog2$ (cw "Warning: empty defprod ~q0" prods)
-                    acc))
+                    (mv acc ordered-acc)))
            (name (fty::flexsum->name flexsum))
            ((unless (symbolp name))
             (prog2$ (er hard? 'fty=>generate-flexsum-type "Should be a symbolp: ~q0"
                         name)
-                    acc))
+                    (mv acc ordered-acc)))
            ((unless (or (equal (len prods) 1)
                         (equal (len prods) 2)))
             (prog2$ (cw "Warning: tagsum not supported ~q0" prods)
-                    acc))
+                    (mv acc ordered-acc)))
            )
         (cond
          ((and (equal (len prods) 1) (fty::flexprod-p (car prods)))
-          (generate-flexprod-type name (car prods) flextypes-table fty-info acc))
+          (generate-flexprod-type name (car prods) flextypes-table fty-info acc
+                                  ordered-acc))
          ((and (equal (len prods) 2)
                (fty::flexprod-p (car prods)) (fty::flexprod-p (cadr prods))
                (and (equal (fty::flexprod->kind (car prods)) :none)
                     (equal (fty::flexprod->kind (cadr prods)) :some))
                )
-          (generate-flexoption-type name (cadr prods) flextypes-table fty-info acc))
+          (generate-flexoption-type name (cadr prods) flextypes-table fty-info
+                                    acc ordered-acc))
          ((and (equal (len prods) 2)
                (fty::flexprod-p (car prods)) (fty::flexprod-p (cadr prods))
                (and (equal (fty::flexprod->kind (cadr prods)) :none)
                     (equal (fty::flexprod->kind (car prods)) :some)))
-          (generate-flexoption-type name (car prods) flextypes-table fty-info acc))
-         (t acc)))
+          (generate-flexoption-type name (car prods) flextypes-table fty-info
+                                    acc ordered-acc))
+         (t (mv acc ordered-acc))))
       )
 
     (define generate-flexalist-type ((flexalst fty::flexalist-p)
                                      (flextypes-table alistp)
                                      (fty-info fty-info-alist-p)
-                                     (acc fty-types-p))
-      :returns (updated-acc fty-types-p)
+                                     (acc fty-types-p)
+                                     (ordered-acc fty-types-p))
+      :returns (mv (updated-acc fty-types-p)
+                   (updated-ordered-acc fty-types-p))
       :measure (list (generate-type-measure fty-info acc) 1 0)
       :well-founded-relation acl2::nat-list-<
       :verify-guards nil
       (b* ((acc (fty-types-fix acc))
+           (ordered-acc (fty-types-fix ordered-acc))
            ((if (equal (generate-type-measure fty-info acc) 0))
             (prog2$ (er hard? 'fty=>generate-flexprod-type "accumulator exceeding
                                 length of all fty functions.~%")
-                    acc))
-           ((unless (fty::flexalist-p flexalst)) acc)
+                    (mv acc ordered-acc)))
+           ((unless (fty::flexalist-p flexalst)) (mv acc ordered-acc))
            (name (fty::flexalist->name flexalst))
            ((unless (symbolp name))
             (prog2$ (er hard? 'fty=>generate-flexalist-type "Should be a symbolp: ~q0"
                         name)
-                    acc))
-           ((if (assoc-equal name acc)) acc)
+                    (mv acc ordered-acc)))
+           ((if (assoc-equal name acc)) (mv acc ordered-acc))
            (key-type (fty::flexalist->key-type flexalst))
            ((unless (symbolp key-type))
             (prog2$ (er hard? 'fty=>generate-flexalist-type "Should be a symbolp: ~q0"
                         key-type)
-                    acc))
+                    (mv acc ordered-acc)))
            (val-type (fty::flexalist->val-type flexalst))
            ((unless (symbolp val-type))
             (prog2$ (er hard? 'fty=>generate-flexalist-type "Should be a symbolp: ~q0"
                         val-type)
-                    acc))
+                    (mv acc ordered-acc)))
            (basic-key? (assoc-equal key-type (SMT-types)))
            (basic-val? (assoc-equal val-type (SMT-types)))
            (key-info (assoc-equal key-type fty-info))
            (val-info (assoc-equal val-type fty-info)))
         (cond ((and basic-key? basic-val?)
-               (acons name
-                      (make-fty-type-alist :key-type key-type
-                                           :val-type val-type)
-                      acc))
+               (mv (acons name
+                          (make-fty-type-alist :key-type key-type
+                                               :val-type val-type)
+                          acc)
+                   (acons name
+                          (make-fty-type-alist :key-type key-type
+                                               :val-type val-type)
+                          ordered-acc)))
               ((and basic-key? val-info)
                (b* ((val-name (fty-info->name (cdr val-info)))
                     (new-alist (make-fty-type-alist
                                 :key-type key-type
                                 :val-type val-name))
-                    (new-acc (acons name new-alist acc)))
-                 (generate-fty-type val-name flextypes-table fty-info new-acc)))
+                    (new-acc-1 (acons name new-alist acc))
+                    ((mv new-acc-2 new-ordered-acc)
+                     (generate-fty-type val-name flextypes-table fty-info
+                                        new-acc-1 ordered-acc)))
+                 (mv new-acc-2
+                     (acons name new-alist new-ordered-acc))))
               ((and basic-val? key-info)
                (b* ((key-name (fty-info->name (cdr key-info)))
                     (new-alist (make-fty-type-alist
                                 :key-type key-name
                                 :val-type val-type))
-                    (new-acc (acons name new-alist acc)))
-                 (generate-fty-type key-name flextypes-table fty-info new-acc)))
+                    (new-acc-1 (acons name new-alist acc))
+                    ((mv new-acc-2 new-ordered-acc)
+                     (generate-fty-type key-name flextypes-table fty-info
+                                        new-acc-1 ordered-acc)))
+                 (mv new-acc-2
+                     (acons name new-alist new-ordered-acc))))
               ((and key-info val-info)
                (b* ((val-name (fty-info->name (cdr val-info)))
                     (key-name (fty-info->name (cdr key-info)))
@@ -835,83 +932,99 @@
                                 :key-type key-name
                                 :val-type val-name))
                     (new-acc (acons name new-alist acc))
-                    (new-acc1
+                    ((mv new-acc-1 new-ordered-acc-1)
                      (generate-fty-type key-name flextypes-table fty-info
-                                        new-acc))
-                    (new-acc1
-                     (mbe :logic (if (o<= (generate-type-measure fty-info new-acc1)
+                                        new-acc ordered-acc))
+                    (new-acc-1
+                     (mbe :logic (if (o<= (generate-type-measure fty-info new-acc-1)
                                           (generate-type-measure fty-info new-acc))
-                                     new-acc1
+                                     new-acc-1
                                    nil)
-                          :exec new-acc1))
-                    ((if (null new-acc1)) new-acc))
-                 (generate-fty-type val-name flextypes-table fty-info new-acc1)))
+                          :exec new-acc-1))
+                    ((if (null new-acc-1)) (mv new-acc new-ordered-acc-1))
+                    ((mv new-acc-2 new-ordered-acc-2)
+                     (generate-fty-type val-name flextypes-table fty-info
+                                        new-acc-1 new-ordered-acc-1)))
+                 (mv new-acc-2
+                     (acons name new-alist new-ordered-acc-2))))
               (t (prog2$ (er hard? 'fty=>generate-flexalist-type "key-type ~p0 ~
                              and val-type ~p1 doesn't exist~%" key-type val-type)
-                         acc)))))
+                         (mv acc ordered-acc))))))
 
     (define generate-flexlist-type ((flexlst fty::flexlist-p)
                                     (flextypes-table alistp)
                                     (fty-info fty-info-alist-p)
-                                    (acc fty-types-p))
-      :returns (updated-acc fty-types-p)
+                                    (acc fty-types-p)
+                                    (ordered-acc fty-types-p))
+      :returns (mv (updated-acc fty-types-p)
+                   (updated-ordered-acc fty-types-p))
       :measure (list (generate-type-measure fty-info acc) 1 0)
       :well-founded-relation acl2::nat-list-<
       :verify-guards nil
       (b* ((acc (fty-types-fix acc))
+           (ordered-acc (fty-types-fix ordered-acc))
            ((if (equal (generate-type-measure fty-info acc) 0))
             (prog2$ (er hard? 'fty=>generate-flexprod-type "accumulator exceeding ~
                                 length of all fty functions.~%")
-                    acc))
-           ((unless (fty::flexlist-p flexlst)) acc)
+                    (mv acc ordered-acc)))
+           ((unless (fty::flexlist-p flexlst)) (mv acc ordered-acc))
            (name (fty::flexlist->name flexlst))
            ((unless (symbolp name))
             (prog2$ (er hard? 'fty=>generate-flexlist-type "Name should be a symbol ~
                                 ~q0" name)
-                    acc))
-           ((if (assoc-equal name acc)) acc)
+                    (mv acc ordered-acc)))
+           ((if (assoc-equal name acc)) (mv acc ordered-acc))
            (true-listp? (fty::flexlist->true-listp flexlst))
            ((unless true-listp?)
             (prog2$ (er hard? 'fty=>generate-flexlist-type "Smtlink can't handle ~
                                 lists that are not true-listp yet due to ~
                                 soundness concerns: ~q0"
                         name)
-                    acc))
+                    (mv acc ordered-acc)))
            (elt-type (fty::flexlist->elt-type flexlst))
            ((unless (symbolp elt-type))
             (prog2$ (er hard? 'fty=>generate-flexlist-type "Should be a symbolp: ~q0"
                         elt-type)
-                    acc))
+                    (mv acc ordered-acc)))
            ;; is the type a basic type?
            (basic? (assoc-equal elt-type (SMT-types)))
            ((if basic?)
-            (acons name
-                   (make-fty-type-list :elt-type elt-type)
-                   acc))
+            (mv (acons name
+                       (make-fty-type-list :elt-type elt-type)
+                       acc)
+                (acons name
+                       (make-fty-type-list :elt-type elt-type)
+                       ordered-acc)))
            (info (assoc-equal elt-type fty-info))
            ((unless info)
             (prog2$ (er hard? 'fty=>generate-flexlist-type "elt-type ~p0 doesn't ~
                                 exist in fty-info~%" elt-type)
-                    acc))
+                    (mv acc ordered-acc)))
            (elt-name (fty-info->name (cdr info)))
            (new-list (make-fty-type-list :elt-type elt-name))
-           (new-acc (acons name new-list acc)))
-        (generate-fty-type elt-name flextypes-table fty-info new-acc))
+           (new-acc-1 (acons name new-list acc))
+           ((mv new-acc-2 new-ordered-acc)
+            (generate-fty-type elt-name flextypes-table fty-info
+                               new-acc-1 ordered-acc)))
+        (mv new-acc-2 (acons name new-list new-ordered-acc)))
       )
 
     (define generate-fty-type ((name symbolp)
                                (flextypes-table alistp)
                                (fty-info fty-info-alist-p)
-                               (acc fty-types-p))
-      :returns (updated-acc fty-types-p)
+                               (acc fty-types-p)
+                               (ordered-acc fty-types-p))
+      :returns (mv (updated-acc fty-types-p)
+                   (updated-ordered-acc fty-types-p))
       :measure (list (generate-type-measure fty-info acc) 2 0)
       :well-founded-relation acl2::nat-list-<
       :verify-guards nil
       (b* ((acc (fty-types-fix acc))
+           (ordered-acc (fty-types-fix ordered-acc))
            ((unless (alistp flextypes-table))
             (prog2$ (er hard? 'fty=>generate-fty-type "flextypes-table is not an ~
                            alist?~%")
-                    acc))
+                    (mv acc ordered-acc)))
            ;; is the type a flextype?
            (exist? (assoc-equal name flextypes-table))
            ((unless exist?)
@@ -919,38 +1032,40 @@
              (er hard? 'fty=>generate-fty-type "Found a type that's ~
                                   not basic and not fty: ~q0"
                  name)
-             acc))
+             (mv acc ordered-acc)))
            (agg (cdr exist?))
            ((unless (fty::flextypes-p agg))
             (prog2$ (er hard? 'fty=>generate-fty-type "Should be a flextypes, but ~
                        found ~q0" agg)
-                    acc))
+                    (mv acc ordered-acc)))
            (types (fty::flextypes->types agg))
            ((if (or (not (true-listp types))
                     (atom types)
                     (not (null (cdr types)))))
             (prog2$ (er hard? 'fty=>generate-fty-type "Possible recursive types ~
                       found, not supported in Smtlink yet.~%")
-                    acc))
+                    (mv acc ordered-acc)))
            (type (car types)))
         (cond
          ;; if it's a flexsum, its a defprod or a defoption
          ((fty::flexsum-p type)
-          (generate-flexsum-type type flextypes-table fty-info acc))
+          (generate-flexsum-type type flextypes-table fty-info acc ordered-acc))
          ;; if it's a flexlist, it's a deflist
          ((fty::flexlist-p type)
-          (generate-flexlist-type type flextypes-table fty-info acc))
+          (generate-flexlist-type type flextypes-table fty-info acc ordered-acc))
          ;; if it's a flexalist, it's a defalist
          ((fty::flexalist-p type)
-          (generate-flexalist-type type flextypes-table fty-info acc))
+          (generate-flexalist-type type flextypes-table fty-info acc ordered-acc))
          ;; else, ignore
-         (t acc))))
+         (t (mv acc ordered-acc)))))
 
     (define generate-fty-type-list ((name-lst symbol-listp)
                                     (flextypes-table alistp)
                                     (fty-info fty-info-alist-p)
-                                    (acc fty-types-p))
-      :returns (updated-acc fty-types-p)
+                                    (acc fty-types-p)
+                                    (ordered-acc fty-types-p))
+      :returns (mv (updated-acc fty-types-p)
+                   (updated-ordered-acc fty-types-p))
       :measure (list (generate-type-measure fty-info acc) 3 (len name-lst))
       :well-founded-relation acl2::nat-list-<
       :hints
@@ -964,7 +1079,7 @@
                generate-type-measure-increase-prod
                (acc acc)
                (fty-info fty-info)
-               (name name)
+               (name (symbol-fix name))
                (prod
                 (FTY-TYPE-PROD
                  (MV-NTH
@@ -1035,20 +1150,22 @@
       :verify-guards nil
       (b* ((name-lst (symbol-list-fix name-lst))
            (acc (fty-types-fix acc))
-           ((unless (consp name-lst)) acc)
+           (ordered-acc (fty-types-fix ordered-acc))
+           ((unless (consp name-lst)) (mv acc ordered-acc))
            ((cons first rest) name-lst)
            ;; is the type a basic type?
            (basic? (assoc-equal first (SMT-types)))
            ((if basic?)
-            (generate-fty-type-list rest flextypes-table fty-info acc))
-           (new-acc (generate-fty-type first flextypes-table fty-info acc))
+            (generate-fty-type-list rest flextypes-table fty-info acc ordered-acc))
+           ((mv new-acc new-ordered-acc)
+            (generate-fty-type first flextypes-table fty-info acc ordered-acc))
            (new-acc (mbe :logic (if (o<= (generate-type-measure fty-info new-acc)
                                          (generate-type-measure fty-info acc))
                                     new-acc
                                   nil)
                          :exec new-acc))
-           ((if (null new-acc)) acc))
-        (generate-fty-type-list rest flextypes-table fty-info new-acc))
+           ((if (null new-acc)) (mv acc new-ordered-acc)))
+        (generate-fty-type-list rest flextypes-table fty-info new-acc new-ordered-acc))
       )
 
     )
@@ -1174,7 +1291,8 @@
         (alistp flextypes-table)
         (symbolp name))
        (<= (generate-type-measure fty-info
-                                  (generate-fty-type name flextypes-table fty-info acc))
+                                  (mv-nth 0 (generate-fty-type name
+                                                               flextypes-table fty-info acc ordered-acc)))
            (generate-type-measure fty-info acc))))
      ((equal flag 'generate-fty-type-list)
       (implies
@@ -1184,8 +1302,8 @@
         (alistp flextypes-table)
         (symbol-listp name-lst))
        (<= (generate-type-measure fty-info
-                                  (generate-fty-type-list name-lst
-                                                          flextypes-table fty-info acc))
+                                  (mv-nth 0 (generate-fty-type-list name-lst flextypes-table
+                                                                    fty-info acc ordered-acc)))
            (generate-type-measure fty-info acc))))
      ((equal flag 'generate-flexlist-type)
       (implies
@@ -1195,9 +1313,9 @@
         (fty-info-alist-p fty-info)
         (fty-types-p acc))
        (<= (generate-type-measure fty-info
-                                  (generate-flexlist-type flexlst
-                                                          flextypes-table fty-info
-                                                          acc))
+                                  (mv-nth 0 (generate-flexlist-type flexlst
+                                                                    flextypes-table fty-info
+                                                                    acc ordered-acc)))
            (generate-type-measure fty-info acc))))
      ((equal flag 'generate-flexalist-type)
       (implies
@@ -1207,9 +1325,9 @@
         (fty-info-alist-p fty-info)
         (fty-types-p acc))
        (<= (generate-type-measure fty-info
-                                  (generate-flexalist-type flexalst
-                                                           flextypes-table fty-info
-                                                           acc))
+                                  (mv-nth 0 (generate-flexalist-type flexalst
+                                                                     flextypes-table fty-info
+                                                                     acc ordered-acc)))
            (generate-type-measure fty-info acc))))
      ((equal flag 'generate-flexsum-type)
       (implies
@@ -1219,9 +1337,9 @@
         (fty-info-alist-p fty-info)
         (fty-types-p acc))
        (<= (generate-type-measure fty-info
-                                  (generate-flexsum-type flexsum
-                                                         flextypes-table fty-info
-                                                         acc))
+                                  (mv-nth 0 (generate-flexsum-type flexsum
+                                                                   flextypes-table fty-info
+                                                                   acc ordered-acc)))
            (generate-type-measure fty-info acc))))
      ((equal flag 'generate-flexprod-type)
       (implies
@@ -1232,9 +1350,9 @@
         (fty-info-alist-p fty-info)
         (fty-types-p acc))
        (<= (generate-type-measure fty-info
-                                  (generate-flexprod-type name prod
-                                                          flextypes-table fty-info
-                                                          acc))
+                                  (mv-nth 0 (generate-flexprod-type name prod
+                                                                    flextypes-table fty-info
+                                                                    acc ordered-acc)))
            (generate-type-measure fty-info acc))))
      ((equal flag 'generate-flexoption-type)
       (implies
@@ -1245,9 +1363,9 @@
         (fty-info-alist-p fty-info)
         (fty-types-p acc))
        (<= (generate-type-measure fty-info
-                                  (generate-flexoption-type name option
-                                                            flextypes-table fty-info
-                                                            acc))
+                                  (mv-nth 0 (generate-flexoption-type name option
+                                                                      flextypes-table fty-info
+                                                                      acc ordered-acc)))
            (generate-type-measure fty-info acc))))
      (t t))
     :hints (("Goal"
@@ -1263,7 +1381,8 @@
              :induct (GENERATE-FTY-TYPES-MUTUAL-FLAG
                       FLAG PROD
                       OPTION FLEXSUM FLEXALST FLEXLST NAME
-                      NAME-LST FLEXTYPES-TABLE FTY-INFO ACC))
+                      NAME-LST FLEXTYPES-TABLE FTY-INFO ACC
+                      ORDERED-ACC))
             ("Subgoal *1/42"
              :in-theory (e/d (generate-flexlist-type)
                              (generate-type-measure-increase-list
@@ -1398,7 +1517,7 @@
                     generate-type-measure-increase-prod
                     (acc acc)
                     (fty-info fty-info)
-                    (name name)
+                    (name (symbol-fix name))
                     (prod
                      (fty-type-prod
                       (mv-nth
@@ -1417,8 +1536,9 @@
       (symbol-listp name-lst)
       (consp name-lst))
      (<= (generate-type-measure fty-info
-                                (generate-fty-type (car name-lst)
-                                                   flextypes-table fty-info acc))
+                                (mv-nth 0 (generate-fty-type (car name-lst)
+                                                             flextypes-table
+                                                             fty-info acc ordered-acc)))
          (generate-type-measure fty-info acc)))
     :hints (("goal"
              :use ((:instance crock5-lemma
@@ -1466,22 +1586,24 @@
         acc))
       (generate-type-measure
        fty-info
-       (generate-fty-type
-        (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::key-type
-                                                            (cdr flexalst)))
-                                          fty-info)))
-        flextypes-table fty-info
-        (cons
-         (cons
-          (cdr (assoc-equal 'fty::name (cdr flexalst)))
-          (fty-type-alist
-           (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::key-type
-                                                               (cdr flexalst)))
-                                             fty-info)))
-           (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::val-type
-                                                               (cdr flexalst)))
-                                             fty-info)))))
-         acc)))))
+       (mv-nth 0
+               (generate-fty-type
+                (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::key-type
+                                                                    (cdr flexalst)))
+                                                  fty-info)))
+                flextypes-table fty-info
+                (cons
+                 (cons
+                  (cdr (assoc-equal 'fty::name (cdr flexalst)))
+                  (fty-type-alist
+                   (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::key-type
+                                                                       (cdr flexalst)))
+                                                     fty-info)))
+                   (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::val-type
+                                                                       (cdr flexalst)))
+                                                     fty-info)))))
+                 acc)
+                ordered-acc)))))
     :hints (("goal"
              :use ((:instance crock5-lemma
                               (flag 'generate-fty-type)
@@ -1505,4 +1627,4 @@
   (verify-guards generate-fty-type-list
     :guard-debug t
     :hints nil)
-  )
+;;  )

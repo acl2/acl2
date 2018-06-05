@@ -25,19 +25,21 @@
     (list "False"))
    ;; A fty nil
    ((equal b nil)
-    (list (concatenate 'string (lisp-to-python-names nil-type) ".nil")))
+    (list (str::downcase-string (concatenate 'string (lisp-to-python-names
+                                                      nil-type) ".nil"))))
    ;; Boolean: t
    (t (list "True"))))
 
 (define translate-symbol ((sym symbolp))
   :returns (translated paragraphp
                        :hints (("Goal" :in-theory (enable paragraphp wordp))))
-  (lisp-to-python-names sym))
+  (str::downcase-string (lisp-to-python-names sym)))
 
 (define translate-symbol-lst ((formals symbol-listp))
   :returns (translated paragraphp
                        :hints (("Goal" :in-theory (enable translate-symbol
-                                                          paragraphp))))
+                                                          paragraphp
+                                                          wordp))))
   :measure (len formals)
   (b* ((formals (symbol-list-fix formals))
        ((unless (consp formals)) nil)
@@ -58,14 +60,14 @@
                     (assoc-equal 'rationalp *SMT-types*))
                    (t (assoc-equal type *SMT-types*))))
        ((unless (endp item)) (cdr item)))
-    (lisp-to-python-names type)))
+    (str::downcase-string (lisp-to-python-names type))))
 
 (define translate-fty-field-lst ((fields fty-field-alist-p)
                                  (int-to-rat booleanp))
   :returns (translated paragraphp
                        :hints (("Goal" :in-theory (enable translate-type
                                                           translate-symbol
-                                                          paragraphp))))
+                                                          paragraphp wordp))))
   :measure (len fields)
   :hints (("Goal" :in-theory (e/d (fty-field-alist-fix) ())))
   (b* ((fields (fty-field-alist-fix fields))
@@ -80,27 +82,26 @@
 (define translate-fty-prod ((name symbolp)
                             (fields fty-field-alist-p)
                             (int-to-rat booleanp))
-  :returns (mv (translated paragraphp
-                           :hints (("Goal"
-                                    :in-theory (enable paragraphp wordp))))
-               (extended-extra-fn paragraphp))
+  :returns (translated paragraphp
+                       :hints (("Goal"
+                                :in-theory (enable paragraphp wordp))))
   (b* ((name (symbol-fix name))
        (name (translate-symbol name))
        (datatype-line `(,name "= z3.Datatype" #\( #\' ,name #\' #\) #\Newline))
        (translated-fields (translate-fty-field-lst fields int-to-rat))
        (fields-line `(,name ".declare('" ,name "'" ,@translated-fields ")"
-                            #\Newline)))
-    (mv `(,datatype-line
-          ,fields-line)
-        nil)))
+                            #\Newline))
+       (create-line `(,name " = " ,name ".create()" #\Newline)))
+    `(,datatype-line
+      ,fields-line
+      ,create-line)))
 
 (define translate-fty-option ((name symbolp)
                               (some-type symbolp)
                               (int-to-rat booleanp))
-  :returns (mv (translated paragraphp
-                           :hints (("Goal"
-                                    :in-theory (enable paragraphp wordp))))
-               (extended-extra-fn paragraphp))
+  :returns (translated paragraphp
+                       :hints (("Goal"
+                                :in-theory (enable paragraphp wordp))))
   (b* ((name (symbol-fix name))
        (name (translate-symbol name))
        (datatype-line
@@ -109,19 +110,19 @@
        (declare-line1
         `(,name ".declare('some', ('val', " ,translated-type "))" #\Newline))
        (declare-line2
-        `(,name ".declare('nil')" #\Newline)))
-    (mv `(,datatype-line
-          ,declare-line1
-          ,declare-line2)
-        nil)))
+        `(,name ".declare('nil')" #\Newline))
+       (create-line `(,name " = " ,name ".create()" #\Newline)))
+    `(,datatype-line
+      ,declare-line1
+      ,declare-line2
+      ,create-line)))
 
 (define translate-fty-list ((name symbolp)
                             (elt-type symbolp)
                             (int-to-rat booleanp))
-  :returns (mv (translated paragraphp
-                           :hints (("Goal"
-                                    :in-theory (enable paragraphp wordp))))
-               (extended-extra-fn paragraphp))
+  :returns (translated paragraphp
+                       :hints (("Goal"
+                                :in-theory (enable paragraphp wordp))))
   (b* ((name (symbol-fix name))
        (name (translate-symbol name))
        (datatype-line
@@ -133,11 +134,13 @@
        (declare-line2
         `(,name ".declare('nil')" #\Newline))
        (consp-fn `("def " ,name "_consp(l): return Not(l == " ,name ".nil)"
-                       #\Newline)))
-    (mv `(,datatype-line
-          ,declare-line1
-          ,declare-line2)
-        `(,consp-fn))))
+                   #\Newline))
+       (create-line `(,name " = " ,name ".create()" #\Newline)))
+    `(,datatype-line
+      ,declare-line1
+      ,declare-line2
+      ,create-line
+      ,consp-fn)))
 
 (define translate-fty-alist-assoc-return ((key-type symbolp)
                                           (val-type symbolp)
@@ -158,10 +161,12 @@
        (declare-line2 `(,assoc-return ".declare('nil')" #\Newline))
        (consp-fn `("def " ,assoc-return "_consp(l): return Not(l == "
                    ,assoc-return ".nil)" #\Newline))
+       (create-line `(,assoc-return " = " ,assoc-return ".create()" #\Newline))
        )
     `(,@datatype-line
       ,@declare-line1
       ,@declare-line2
+      ,create-line
       ,@consp-fn)))
 
 (define translate-fty-alist-acons ((name symbolp))
@@ -187,7 +192,7 @@
        (maybe-val (translate-symbol maybe-val))
        (assoc-return (paragraph-fix assoc-return))
        (fn-name
-        `(,name "_" ,(str::downcase-string (translate-symbol 'ASSOC-EQUAL)))))
+        `(,name "_" ,(translate-symbol 'ASSOC-EQUAL))))
     `("def " ,fn-name "(key, alist): return If(Select(alist, key) == "
                                    ,maybe-val ".nil, " ,assoc-return ".nil, "
                                    ,assoc-return ".cons(key, " ,maybe-val
@@ -198,12 +203,12 @@
   :returns (pair-type stringp)
   (b* ((key-type (symbol-fix key-type))
        (val-type (symbol-fix val-type))
-       (key-type-str (translate-symbol key-type))
-       (val-type-str (translate-symbol val-type))
+       (key-type-str (symbol-name key-type))
+       (val-type-str (symbol-name val-type))
        (pair-type
         (concatenate 'string key-type-str "_" val-type-str))
        )
-    (str::downcase-string pair-type)))
+    (str::downcase-string (lisp-to-python-names pair-type))))
 
 (define translate-fty-alist-type ((name symbolp)
                                   (key-type symbolp)
@@ -225,10 +230,9 @@
                              (key-type symbolp)
                              (val-type symbolp)
                              (int-to-rat booleanp))
-  :returns (mv (translated paragraphp
+  :returns (translated paragraphp
                            :hints (("Goal"
                                     :in-theory (enable paragraphp wordp))))
-               (extended-extra-fn paragraphp))
   :guard-hints (("Goal" :in-theory (e/d (paragraphp wordp) ())))
   (b* ((name (symbol-fix name))
        (key-type (symbol-fix key-type))
@@ -237,8 +241,7 @@
        (val-type-str (translate-type val-type int-to-rat nil))
        (maybe-val-str (concatenate 'string "maybe_" val-type-str))
        (maybe-val (intern$ maybe-val-str val-type-pkg))
-       ;; translate-fty-option doesn't generate extra-fn
-       ((mv maybe-val-type &)
+       (maybe-val-type
         (translate-fty-option maybe-val val-type int-to-rat))
        (assoc-return (make-pair-type key-type val-type))
        (assoc-return-type
@@ -250,20 +253,19 @@
        (assoc-fn
         (translate-fty-alist-assoc name maybe-val assoc-return))
        )
-    (mv `(,maybe-val-type
-          ,alist-equality
-          ,assoc-return-type)
-        `(,acons-fn
-          ,assoc-fn))))
+    (append `(,maybe-val-type
+              ,alist-equality
+              ,assoc-return-type)
+            `(,acons-fn
+              ,assoc-fn))))
 
 
 (define translate-one-fty-type ((name symbolp)
                                 (body fty-type-p)
                                 (int-to-rat booleanp))
-  :returns (mv (translated paragraphp
-                           :hints (("Goal"
-                                    :in-theory (enable paragraphp wordp))))
-               (extended-extra-fn paragraphp))
+  :returns (translated paragraphp
+                       :hints (("Goal"
+                                :in-theory (enable paragraphp wordp))))
   (b* ((body (fty-type-fix body)))
     (cond ((equal (fty-type-kind body) :prod)
            (translate-fty-prod name (fty-type-prod->fields body) int-to-rat))
@@ -276,36 +278,26 @@
           ((equal (fty-type-kind body) :alist)
            (translate-fty-alist name (fty-type-alist->key-type body)
                                 (fty-type-alist->val-type body) int-to-rat))
-          (t (mv nil nil)))))
+          (t nil))))
 
 (define translate-fty-types-recur ((fty-types fty-types-p)
                                    (int-to-rat booleanp))
-  :returns (mv (translated paragraphp)
-               (extended-extra-fn paragraphp))
+  :returns (translated paragraphp)
   :measure (len fty-types)
   :hints (("Goal" :in-theory (e/d (fty-types-fix)
                                   ())))
   (b* ((fty-types (fty-types-fix fty-types))
-       ((unless (consp fty-types)) (mv nil nil))
+       ((unless (consp fty-types)) nil)
        ((cons first rest) fty-types)
        ((cons name body) first)
-       ((mv translated-first extra-fn-first)
+       (translated-first
         (translate-one-fty-type name body int-to-rat))
-       ((mv translated-rest extra-fn-rest)
+       (translated-rest
         (translate-fty-types-recur rest int-to-rat))
-       (translated (cons translated-first translated-rest))
-       (extra-fn (cons extra-fn-first extra-fn-rest)))
-    (mv translated extra-fn)))
+       (translated (cons translated-first translated-rest)))
+    translated))
 
 (define translate-fty-types ((fty-types fty-types-p)
                              (int-to-rat booleanp))
-  :returns (translated paragraphp
-                       :hints (("Goal"
-                                :in-theory (enable paragraphp wordp))))
-  (b* (((mv translated extra-fn)
-        (translate-fty-types-recur fty-types int-to-rat))
-       (symbol-lst (translate-symbol-lst (strip-cars fty-types)))
-       (create-line
-        (if (endp symbol-lst) nil
-          `("[" ,@symbol-lst "] = z3.CreateDatatypes(" ,@symbol-lst ")" #\Newline))))
-    `(,translated ,create-line ,extra-fn)))
+  :returns (translated paragraphp)
+  (translate-fty-types-recur fty-types int-to-rat))

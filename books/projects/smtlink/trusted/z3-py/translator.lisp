@@ -89,16 +89,22 @@
          (fn-actuals (pseudo-term-list-fix fn-actuals))
          (fty-info (fty-info-alist-fix fty-info))
          ;; dealing with magic-fix
-         ((if (and (or (equal fn-call 'CDR)
-                       (equal fn-call 'CONSP))
-                   (and (car fn-actuals) (null (cdr fn-actuals)))
+         ((if (and (and (car fn-actuals) (null (cdr fn-actuals)))
                    (consp (car fn-actuals))
                    (equal (caar fn-actuals) 'SMT::MAGIC-FIX)
                    (consp (cadar fn-actuals))
                    (equal (car (cadar fn-actuals)) 'QUOTE)
-                   (stringp (cadr (cadar fn-actuals)))))
-          (list (concatenate 'string (cadr (cadar fn-actuals)) "_"
-                             (str::downcase-string (translate-symbol fn-call)))))
+                   (symbolp (cadr (cadar fn-actuals)))))
+          (if (equal fn-call 'CONSP)
+              (list (str::downcase-string
+                     (concatenate 'string
+                                  (lisp-to-python-names (cadr (cadar fn-actuals))) "_"
+                                  (translate-symbol fn-call))))
+            ;; the only case fall here is 'CDR for MAGIC-FIX'ed types
+            (list (str::downcase-string
+                   (concatenate 'string
+                                (lisp-to-python-names (cadr (cadar fn-actuals))) "."
+                                (translate-symbol fn-call))))))
          (fixed
           (cond ((or (equal fn-call 'CAR)
                      (equal fn-call 'CDR)
@@ -124,21 +130,23 @@
                  (er hard? 'SMT-translator=>translate-fty-special "Impossible path:
                                  ~q0" fn-call))))
          ((unless (and (consp fixed) (car fixed) (symbolp (car fixed))))
-          (er hard? 'SMT-translator=>translate-fty-special "Not fixed:
+          (er hard? 'SMT-translator=>translate-fty-special "Not fixed1:
                                  ~q0" fixed))
          (fixing? (fixing-of-flextype (car fixed) fty-info))
          ((unless fixing?)
-          (er hard? 'SMT-translator=>translate-fty-special "Not fixed:
+          (er hard? 'SMT-translator=>translate-fty-special "Not fixed2:
                                  ~q0" (car fixed))))
       ;; acons and assoc are treated differently because they are not class
       ;; methods in Z3 either
       (if (or (equal fn-call 'ACONS)
               (equal fn-call 'ASSOC-EQUAL)
               (equal fn-call 'CONSP))
-          (list (concatenate 'string (translate-symbol fixing?) "_"
-                             (str::downcase-string (translate-symbol fn-call))))
-        (list (concatenate 'string (translate-symbol fixing?)  "."
-                           (str::downcase-string (translate-symbol fn-call)))))))
+          (list (str::downcase-string
+                 (concatenate 'string (translate-symbol fixing?) "_"
+                              (translate-symbol fn-call))))
+        (list (str::downcase-string
+               (concatenate 'string (translate-symbol fixing?)  "."
+                            (translate-symbol fn-call)))))))
 
   (define translate-field-accessor ((fty-name symbolp)
                                     (fn-call symbolp))
@@ -173,13 +181,16 @@
          ((unless (stringp suffix))
           (er hard? 'SMT-translator=>translate-field-accessor "Something is ~
              wrong5: ~p0 and ~p1" fty-name-str fn-call-str)))
-      (list (concatenate 'string (lisp-to-python-names fty-name-str)  "."
-                         (lisp-to-python-names suffix)))))
+      (list (str::downcase-string
+             (concatenate 'string (lisp-to-python-names fty-name-str)  "."
+                          (lisp-to-python-names suffix))))))
 
   (define translate-fty ((fn-call symbolp)
                          (fn-actuals pseudo-term-listp)
                          (fty-info fty-info-alist-p))
-    :returns (translated paragraphp)
+    :returns (translated paragraphp
+                         :hints (("Goal" :in-theory (e/d (paragraphp wordp)
+                                                         ()))))
     :guard (or (fncall-of-flextype-special fn-call)
                (assoc-equal fn-call fty-info))
     :guard-hints (("Goal" :in-theory (e/d (string-or-symbol-p) ())))
@@ -190,12 +201,18 @@
          (item (assoc-equal fn-call fty-info))
          (fty-name (fty-info->name (cdr item)))
          (fty-type (fty-info->type (cdr item)))
+         (option? (fncall-of-flextype-option fn-call fty-info))
+         ((if (and option? (equal fty-type :constructor)))
+          (list (concatenate 'string (translate-symbol fty-name) ".some")))
+         ((if (and option? (equal fty-type :field)))
+          (list (concatenate 'string (translate-symbol fty-name) ".val")))
          ((unless (or (equal fty-type :field)
                       (equal fty-type :constructor)))
           (er hard? 'SMT-translator=>translate-fty "Unexpected fty function ~
                          found: ~p0 of ~p1~%" fn-call fty-type))
          ((if (equal fty-type :constructor))
-          (list (concatenate 'string (translate-symbol fn-call)))))
+          (list (concatenate 'string (translate-symbol fty-name)
+                             "." (translate-symbol fn-call)))))
       (translate-field-accessor fty-name fn-call)))
 
   (define generate-symbol-enumeration ((symbol-index natp))
@@ -315,6 +332,23 @@
                 (mv (er hard? 'SMT-translator=>translate-expression "Wrong ~
          number of arguments for magic-fix function: ~q0" expr)
                     nil nil 0))
+               ;; special case when it's a fixing on nil
+               (the-type (car fn-actuals))
+               (the-nil (cadr fn-actuals))
+               ((if (and (consp the-nil)
+                         (equal (car the-nil) 'quote)
+                         (consp (cdr the-nil))
+                         (equal (cadr the-nil) nil)
+                         ;;
+                         (consp the-type)
+                         (equal (car the-type) 'quote)
+                         (consp (cdr the-type))
+                         (symbolp (cadr the-type))))
+                (mv (cons (translate-bool nil (cadr the-type))
+                          translated-rest)
+                    uninterpreted-rest
+                    symbols-rest
+                    symbol-index-rest))
                ((mv translated-actuals uninterpreted-1 symbol-list-1 symbol-index-1)
                 (translate-expression
                  (change-te-args a
@@ -329,22 +363,18 @@
 
          ;; If fn-call is a fty fixing call
          (fixing? (fixing-of-flextype fn-call a.fty-info))
-         (- (cw "fixing? : ~q0" fixing?))
-         (- (cw "expr: ~q0" expr))
-         (- (CW "(and (consp fn-actuals) (null (cdr fn-actuals))): ~q0"
-                (and (consp fn-actuals) (null (cdr fn-actuals)))))
          ((if fixing?)
           (b* (((unless (and (consp fn-actuals) (null (cdr fn-actuals))))
                 (mv (er hard? 'SMT-translator=>translate-expression "Wrong ~
          number of arguments for a fixing function: ~q0" expr)
                     nil nil 0))
                (fixed (car fn-actuals))
-               (- (cw "fixed: ~q0" fixed))
                ;; special case when it's a fixing on nil
                ((if (and (consp fixed)
                          (equal (car fixed) 'quote)
+                         (consp (cdr fixed))
                          (equal (cadr fixed) nil)))
-                (mv (cons (translate-bool (cadr fixed) fixing?)
+                (mv (cons (translate-bool nil fixing?)
                           translated-rest)
                     uninterpreted-rest
                     symbols-rest
@@ -355,14 +385,7 @@
                                  :expr-lst fn-actuals
                                  :uninterpreted-lst uninterpreted-rest
                                  :symbol-list symbols-rest
-                                 :symbol-index symbol-index-rest)))
-               ;; if it's an option type fixing function, and it's not nil
-               ((if (fixing-of-flextype-option fn-call a.fty-info))
-                (mv (cons `(,fixing? ".val(" ,translated-actuals ")")
-                          translated-rest)
-                    uninterpreted-1
-                    symbol-list-1
-                    symbol-index-1)))
+                                 :symbol-index symbol-index-rest))))
             (mv (cons translated-actuals translated-rest)
                 uninterpreted-1
                 symbol-list-1
@@ -722,13 +745,14 @@
            (prove-theorem `("_SMT_.prove(theorem)" #\Newline)))
         (mv `(,theorem-assign ,prove-theorem) short-uninterpreted symbols))))
 
-  (local (in-theory (enable paragraphp translate-type)))
   (define translate-uninterpreted-arguments ((type symbolp)
                                              (args decl-listp)
                                              (fty-info fty-info-alist-p)
                                              (int-to-rat booleanp))
     :returns (translated paragraphp
-                         :hints (("Goal" :in-theory (disable true-listp))))
+                         :hints (("Goal" :in-theory (e/d (wordp
+                                                          paragraphp translate-type)
+                                                         (true-listp)))))
     :measure (len args)
     (b* ((type (symbol-fix type))
          (args (decl-list-fix args))
@@ -744,11 +768,14 @@
             (translate-uninterpreted-arguments type rest
                                                fty-info int-to-rat))))
 
-  (local (in-theory (enable wordp)))
   (define translate-uninterpreted-decl ((fn func-p)
                                         (fty-info fty-info-alist-p)
                                         (int-to-rat booleanp))
-    :returns (translated paragraphp)
+    :returns (translated
+              paragraphp
+              :hints (("Goal" :in-theory (e/d (wordp
+                                               paragraphp translate-type)
+                                              (true-listp)))))
     (b* ((fn (func-fix fn))
          ;; Bind everything needed from fn
          ((func f) fn)
@@ -760,8 +787,8 @@
           (er hard? 'SMT-translator=>translate-uninterpreted-decl "Currently, ~
             mv returns are not supported."))
          (translated-returns
-          (translate-uninterpreted-arguments 'returns f.returns
-                                             fty-info int-to-rat)))
+           (translate-uninterpreted-arguments 'returns f.returns
+                                              fty-info int-to-rat)))
       `(,(translate-symbol name) "= z3.Function("
         #\' ,name #\' ,translated-formals ,translated-returns
         ")" #\Newline)))
@@ -796,14 +823,16 @@
   (local
    (defthm crock-translate-symbol-declare
      (paragraphp (car (str::string-list-fix symbols)))
-     :hints (("Goal" :in-theory (e/d (paragraphp
+     :hints (("Goal" :in-theory (e/d (paragraphp wordp
                                       str::string-list-fix)
                                      ()))))
    )
 
   (define translate-symbol-declare ((symbol-name stringp)
                                     (symbols string-listp))
-    :returns (translated paragraphp)
+    :returns (translated paragraphp
+                         :hints (("Goal" :in-theory (e/d (wordp
+                                                          paragraphp translate-type)))))
     :measure (len symbols)
     (b* ((symbol-name (str-fix symbol-name))
          (symbols (str::string-list-fix symbols))
@@ -827,6 +856,15 @@
         ,@enumerations
         ,create-line)))
 
+(local (defthm remove-duplicates-maintain-string-listp
+         (implies (string-listp x)
+                  (string-listp (remove-duplicates-equal x)))
+         :hints (("Goal"
+                  :in-theory (enable remove-duplicates-equal)))))
+
+(local (defthm string-listp-is-true-listp
+         (implies (string-listp x) (true-listp x))))
+
   (define SMT-translation ((term pseudo-termp) (smtlink-hint smtlink-hint-p))
     :returns (py-term paragraphp)
     (b* ((term (pseudo-term-fix term))
@@ -836,7 +874,7 @@
          (fn-lst (make-alist-fn-lst h.functions))
          ((mv translated-theorem uninterpreted symbols)
           (translate-theorem term fn-lst h.fty-info))
-         (- (cw "symbols: ~q0" symbols))
+         (symbols (remove-duplicates-equal symbols))
          (translated-uninterpreted-decls
           (with-fast-alist fn-lst
             (translate-uninterpreted-decl-lst uninterpreted fn-lst h.fty-info
