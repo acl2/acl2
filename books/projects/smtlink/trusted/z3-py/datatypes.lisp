@@ -41,6 +41,11 @@
   (wordp (lisp-to-python-names x))
   :hints (("Goal" :in-theory (enable wordp))))
 
+(deflist word-list
+  :elt-type wordp
+  :pred word-listp
+  :true-listp t)
+
   (define paragraphp ((par))
     :parents (SMT-translator)
     (declare (xargs :guard t))
@@ -102,3 +107,8 @@
       :equiv paragraph-equiv
       :define t)
     )
+
+(defthm word-listp-is-paragraphp
+  (implies (word-listp x)
+           (paragraphp x))
+  :hints (("Goal" :in-theory (enable word-listp paragraphp))))

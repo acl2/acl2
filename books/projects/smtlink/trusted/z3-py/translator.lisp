@@ -13,7 +13,8 @@
 (include-book "kestrel/utilities/terms" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
 
-(include-book "./translate-fty")
+(include-book "translate-fty")
+(include-book "pretty-printer")
 
 ;; (defsection SMT-translator
 ;;   :parents (z3-py)
@@ -741,7 +742,7 @@
                              :symbol-index 0
                              :symbol-list nil))))
            (short-uninterpreted (remove-duplicates-equal uninterpreted))
-           (theorem-assign `("theorem" = ,translated-theorem-body #\Newline))
+           (theorem-assign `("theorem = " ,translated-theorem-body #\Newline))
            (prove-theorem `("_SMT_.prove(theorem)" #\Newline)))
         (mv `(,theorem-assign ,prove-theorem) short-uninterpreted symbols))))
 
@@ -874,11 +875,12 @@
          (fn-lst (make-alist-fn-lst h.functions))
          ((mv translated-theorem uninterpreted symbols)
           (translate-theorem term fn-lst h.fty-info))
+         (pretty-translated-theorem (pretty-print-theorem translated-theorem 160))
          (symbols (remove-duplicates-equal symbols))
          (translated-uninterpreted-decls
           (with-fast-alist fn-lst
             (translate-uninterpreted-decl-lst uninterpreted fn-lst h.fty-info
-                                              translated-theorem h.int-to-rat)))
+                                              pretty-translated-theorem h.int-to-rat)))
          (translated-theorem-with-type-decls
           (translate-type-decl-list h.type-decl-list
                                     h.fty-info
