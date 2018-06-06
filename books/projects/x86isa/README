@@ -42,7 +42,9 @@ principal features below.
 
   1.  Out of the 64-bit and Compatibility sub-modes available in the
       IA-32e mode of Intel(R) 64 architecture, we specify only the
-      former, i.e., the 64-bit mode.
+      former, i.e., the 64-bit mode.  However, the model is being
+      extended to also cover 32-bit mode (both the Compatibility
+      sub-mode of the IA-32e mode and the Protected mode).
 
   2.  Our model supports both efficient reasoning and simulation of
       x86 machine-code programs.  The ability to run real, unmodified
@@ -55,7 +57,8 @@ principal features below.
       byte-addressable.  However, it offers sequential consistency as
       opposed to a relaxed memory model like TSO.
 
-  4.  All addressing modes of the 64-bit mode are supported.
+  4.  All addressing modes of the 64-bit and 32-bit modes are
+      supported.
 
   5.  Our model can operate in the following modes:
 
