@@ -60,7 +60,8 @@ principal features below.
   4.  All addressing modes of the 64-bit and 32-bit modes are
       supported.
 
-  5.  Our model can operate in the following modes:
+  5.  Our model can operate in the following modes (these modes refer
+      to the model; they are not processor modes):
 
 	a. System-level Mode:
 
