@@ -6882,12 +6882,6 @@
 ; an equivalence relation that might not be a known equivalence relation during
 ; the first pass of certification or encapsulate.
 
-  (declare
-
-; Fn was formerly used in an error message, which has been replaced by the
-; comment below about *definition-minimal-theory*.
-
-   (ignore fn))
   (let ((install-body (if install-body-supplied-p
                           install-body
                         :NORMALIZE))
@@ -6945,7 +6939,26 @@
           er-preamble
           (set-difference-eq (all-vars body) args)
           install-body-msg))
-     (t (value nil)))))
+     (t (pprogn (cond ((member-eq fn *definition-minimal-theory*)
+
+; This restriction is to allow us to assume that calls of (body fn t wrld),
+; which occur in several places in the source code, refer to the original
+; normalized body of fn, which excuses us from tracking the corresponding rune.
+
+                       (warning$ ctx "Definition"
+                                 "The proposed :DEFINITION rule might not ~
+                                  always be the one applied when expanding ~
+                                  calls of ~x0 during proofs.  Instead, these ~
+                                  calls and, more generally, calls of any ~
+                                  function symbol that is in the list ~x1, ~
+                                  will often be expanded using the original ~
+                                  definition of the function symbol.  Add ~
+                                  :INSTALL-BODY ~x2 to the proposed ~
+                                  :DEFINITION rule class to avoid this ~
+                                  warning."
+                                 fn '*definition-minimal-theory* nil))
+                      (t state))
+                (value nil))))))
 
 (defun chk-acceptable-definition-rule
   (name clique controller-alist install-body-tail term ctx ens wrld state)

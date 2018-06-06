@@ -34,7 +34,7 @@
 (in-package "ACL2")
 (set-verify-guards-eagerness 2)
 (include-book "std/lists/repeat" :dir :system)
-(include-book "std/lists/take" :dir :system)
+(local (include-book "std/lists/take" :dir :system))
 (include-book "arithmetic/nat-listp" :dir :system)
 
 
