@@ -29268,7 +29268,7 @@
 ; covered most cases above, we leave it up to the user to investigate which
 ; part of ev-fncall-w-guard fails.  The condition (all-nils stobjs-in) from
 ; ev-fncall-w-guard1 is automatically met here, since stobjs could not be put
-; intot he list, args.
+; into the list, args.
 
                     (msg "even though the call of ~x0 is well-formed, it ~
                           fails to satisfy ~x1"
