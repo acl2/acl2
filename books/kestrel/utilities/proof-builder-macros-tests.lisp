@@ -149,6 +149,16 @@
       (f8 (cdr x))
     x))
 
+(defun f9 (x)
+  (declare (xargs :hints
+                  (("Goal"
+                    :instructions
+                    ((fancy-use (nth ; just to test syntax
+                                 (:termination-theorem f5))))))))
+  (if (my-consp x)
+      (f9 (cdr x))
+    x))
+
 (must-fail
  (defthm my-consp-is-consp
    (equal (my-consp a)
