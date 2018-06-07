@@ -2670,14 +2670,8 @@
 
     (#xF5
      "(CMC)"
-     (if (64-bit-modep x86)
-         (x86-cmc/clc/stc/cld/std start-rip temp-rip prefixes rex-byte opcode
-                                  modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "CMC is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-cmc/clc/stc/cld/std
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xF6
      "(GRP3 Eb): Opcode-extension: Modr/m.reg
@@ -2749,14 +2743,8 @@
 
     ((#xF8 #xF9 #xFC #xFD)
      "F8: CLC; F9: STC; #xFC CLD; $xFD: STD"
-     (if (64-bit-modep x86)
-         (x86-cmc/clc/stc/cld/std start-rip temp-rip prefixes rex-byte opcode
-                                  modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "CLC/STC/CLD/STD is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-cmc/clc/stc/cld/std
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xFE
      "(GRP4 INC/DEC Eb): Opcode-extension: Modr/m.reg

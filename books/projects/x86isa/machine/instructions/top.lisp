@@ -134,6 +134,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; INSTRUCTION: CMC/CLC/STC/CLD/STD
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cmc/clc/stc/cld/std
 
   ;; Op/En: NP
@@ -164,9 +165,9 @@ writes the final value of the instruction pointer into RIP.</p>")
   :body
 
   (b* ((ctx 'x86-cmc/clc/stc/cld/std)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (x86 (case opcode
               (#xF5 ;; CMC
@@ -183,7 +184,7 @@ writes the final value of the instruction pointer into RIP.</p>")
               (otherwise ;; #xFD STD
                (!flgi #.*df* 1 x86))))
 
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
       x86))
 
 ;; ======================================================================
