@@ -42,7 +42,7 @@
        ((cons first rest) thm)
        ((if (<= wlimit acc))
         `(,first #\Newline
-                 ,@(pretty-print-recur rest wlimit (1+ acc)))))
+                 ,@(pretty-print-recur rest wlimit 0))))
     (cons first (pretty-print-recur rest wlimit (1+ acc)))))
 
 (define pretty-print-theorem ((thm paragraphp) (wlimit natp))
