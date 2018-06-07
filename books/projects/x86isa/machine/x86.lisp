@@ -2314,14 +2314,7 @@
 
     (#x9E
      "(SAHF)"
-     (if (64-bit-modep x86)
-         (x86-sahf start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                   x86)
-       (x86-step-unimplemented
-        (cons (cons "SAHF is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-sahf start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x9F
      "(LAHF)"

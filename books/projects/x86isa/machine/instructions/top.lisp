@@ -191,6 +191,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; INSTRUCTION: SAHF
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-sahf
 
   ;; Opcode: #x9E
@@ -210,8 +211,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   (b* ((ctx 'x86-sahf)
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        ((the (unsigned-byte 16) ax)
         (mbe :logic (rgfi-size 2 *rax* rex-byte x86)
              :exec (rr16 *rax* x86)))
@@ -221,7 +221,7 @@ writes the final value of the instruction pointer into RIP.</p>")
        ((the (unsigned-byte 8) ah) (logand #b11010111 (logior #b10 ah)))
        ;; Update the x86 state:
        (x86 (!rflags ah x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
       x86))
 
 ;; ======================================================================
