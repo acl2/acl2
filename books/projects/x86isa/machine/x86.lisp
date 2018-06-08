@@ -2717,25 +2717,19 @@
     (#xFE
      "(GRP4 INC/DEC Eb): Opcode-extension: Modr/m.reg
       0:(INC Eb); 1:(DEC Eb); Otherwise:unimplemented"
-     (if (64-bit-modep x86)
-         (case (mrm-reg ModR/M)
-           (#x0
-            (x86-inc/dec-FE-FF start-rip temp-rip prefixes rex-byte
-                               opcode modr/m sib x86))
-           (#x1
-            (x86-inc/dec-FE-FF start-rip temp-rip prefixes rex-byte
-                               opcode modr/m sib x86))
-           (otherwise
-            (x86-step-unimplemented (cons (ms x86)
-                                          (list start-rip temp-rip
-                                                prefixes rex-byte
-                                                opcode))
-                                    x86)))
-       (x86-step-unimplemented
-        (cons (cons "GRP4 is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (case (mrm-reg ModR/M)
+       (#x0
+        (x86-inc/dec-FE-FF
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
+       (#x1
+        (x86-inc/dec-FE-FF
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
+       (otherwise
+        (x86-step-unimplemented (cons (ms x86)
+                                      (list start-rip temp-rip
+                                            prefixes rex-byte
+                                            opcode))
+                                x86))))
 
     (#xFF
      "(GRP5 INC/DEC Ev): Opcode-extension: Modr/m.reg
@@ -2744,23 +2738,11 @@
       Otherwise:unimplemented"
      (case (mrm-reg ModR/M)
        (#x0
-        (if (64-bit-modep x86)
-            (x86-inc/dec-FE-FF start-rip temp-rip prefixes rex-byte
-                               opcode modr/m sib x86)
-          (x86-step-unimplemented
-           (cons (cons "INC Ev is not implemented in 32-bit mode."
-                       (ms x86))
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-           x86)))
+        (x86-inc/dec-FE-FF
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x1
-        (if (64-bit-modep x86)
-            (x86-inc/dec-FE-FF start-rip temp-rip prefixes rex-byte
-                               opcode modr/m sib x86)
-          (x86-step-unimplemented
-           (cons (cons "DEC Ev is not implemented in 32-bit mode."
-                       (ms x86))
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-           x86)))
+        (x86-inc/dec-FE-FF
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x2
         (x86-call-FF/2-Op/En-M
          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
