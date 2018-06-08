@@ -292,8 +292,8 @@
  variants of) the PUSH, POP, MOV, LEA, XCHG, ADD, ADC, SUB, SBB, OR, AND, XOR,
  CMP, TEST, MUL, IMUL, DIV, IDIV, CBW, CWDE, CDQE, CWD, CDQ, CQO, ROL, ROR,
  RCL, RCR, SAL, SAR, SHL, SHR, BT, JMP, Jcc, LOOP, LOOPcc, CALL, RET, CMC, CLC,
- STC, CLD, STD, SAHF, and HLT instructions also work in 32-bit mode now; the
- 32-bit instructions PUSHA, POPA, INC with opcodes 40h-47h, and DEC with
+ STC, CLD, STD, SAHF, LAHF, and HLT instructions also work in 32-bit mode now;
+ the 32-bit instructions PUSHA, POPA, INC with opcodes 40h-47h, and DEC with
  opcodes 48h-4Fh are now part of the model.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly

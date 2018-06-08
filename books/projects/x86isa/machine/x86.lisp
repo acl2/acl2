@@ -2318,14 +2318,7 @@
 
     (#x9F
      "(LAHF)"
-     (if (64-bit-modep x86)
-         (x86-lahf start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                   x86)
-       (x86-step-unimplemented
-        (cons (cons "LAHF is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-lahf start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     ((#xA0 #xA1)
      "(MOVI b Rx)"

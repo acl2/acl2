@@ -228,6 +228,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; INSTRUCTION: LAHF
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-lahf
 
   ;; Opcode: #x9F
@@ -247,8 +248,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   (b* ((ctx 'x86-lahf)
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        ((the (unsigned-byte 8) ah)
         (logand #xff (the (unsigned-byte 32) (rflags x86))))
        ((the (unsigned-byte 16) ax)
@@ -258,7 +258,7 @@ writes the final value of the instruction pointer into RIP.</p>")
        ;; Update the x86 state:
        (x86 (mbe :logic (!rgfi-size 2 *rax* ax rex-byte x86)
                  :exec (wr16 *rax* ax x86)))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
       x86))
 
 ;; ======================================================================
