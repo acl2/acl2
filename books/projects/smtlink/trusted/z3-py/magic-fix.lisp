@@ -12,3 +12,5 @@
                    (x t))
   (declare (ignore type))
   x)
+
+(in-theory (enable magic-fix))

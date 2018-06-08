@@ -528,10 +528,14 @@
              (er hard? 'SMT-goal-generator=>expand "meta-extract-formula returning a non-pseudo-term for ~q0The body is ~q1" fn-call body)
              (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
            (- (cw "SMT-goal-generator=>Expanding ... ~q0" fn-call))
+           (updated-expand-lst
+            (if (assoc-equal term a.expand-lst)
+                a.expand-lst (cons `(,term . ,term) a.expand-lst)))
            (formals f.flattened-formals)
            (body-res
             (expand (change-ex-args a :term-lst (list body)
-                                    :fn-lvls new-fn-lvls)
+                                    :fn-lvls new-fn-lvls
+                                    :expand-lst updated-expand-lst)
                     fty-info state))
            ((ex-outs b) body-res)
            (expanded-lambda-body (car b.expanded-term-lst))
@@ -1052,6 +1056,7 @@
 
            ;; Combine expanded main clause and its hint
            (fncall-lst (strip-cars e.expanded-fn-lst))
+           (- (cw "e.expanded-fn-lst: ~q0" e.expanded-fn-lst))
            ((unless (alistp fncall-lst))
             (prog2$
              (er hard? 'SMT-goal-generator=>SMT-goal-generator "Function call list should be an alistp: ~q0" fncall-lst)
