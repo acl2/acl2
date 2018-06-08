@@ -2663,14 +2663,8 @@
          #.*OP-TEST* start-rip temp-rip prefixes rex-byte opcode modr/m sib
          x86))
        ((#x2 #x3)
-        (if (64-bit-modep x86)
-            (x86-not/neg-F6-F7 start-rip temp-rip prefixes rex-byte opcode
-                               modr/m sib x86)
-          (x86-step-unimplemented
-           (cons (cons "(NOT Eb) is not implemented in 32-bit mode."
-                       (ms x86))
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-           x86)))
+        (x86-not/neg-F6-F7
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x4
         (x86-mul start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x5
@@ -2697,14 +2691,8 @@
          #.*OP-TEST* start-rip temp-rip prefixes rex-byte opcode modr/m sib
          x86))
        ((#x2 #x3)
-        (if (64-bit-modep x86)
-            (x86-not/neg-F6-F7 start-rip temp-rip prefixes rex-byte opcode
-                               modr/m sib x86)
-          (x86-step-unimplemented
-           (cons (cons "(NOT Ev) is not implemented in 32-bit mode."
-                       (ms x86))
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-           x86)))
+        (x86-not/neg-F6-F7
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x4
         (x86-mul start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x5
