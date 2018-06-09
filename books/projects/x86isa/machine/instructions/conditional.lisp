@@ -235,18 +235,19 @@
            (x86 (write-*ip next-rip x86)))
         x86))))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-two-byte-jcc
 
   ;; Jump (near) if condition is met
 
-  ;; Intel Vol. 2A, p. 3-554 says: "In 64-bit mode, operand size is
-  ;; fixed at 64 bits. JMP Short is RIP + 32-bit offset sign extended to
-  ;; 64 bits."
+  ;; Intel manual, Mar'17, Vol. 2A, Jcc reference says:
+  ;; "In 64-bit mode, operand size is fixed at 64 bits.
+  ;; JMP Short is RIP + 32-bit offset sign extended to 64 bits."
 
   ;; Two-byte Jcc: The operand-size is forced to a 64-bit operand size
   ;; when in 64-bit mode (prefixes that change operand size are ignored
   ;; for this instruction in 64-bit mode).  See Intel Manual, Vol. 2C,
-  ;; p. A-8.
+  ;; Table A-1, row with 'f64'.
 
   ;; Op/En: D
   ;; Op    Instruction                                  Condition
@@ -268,10 +269,11 @@
   ;; 0F 8F JNLE/G rel32                                 Jump if ZF = 0 and SF = OF
 
   :parents (two-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32 rime-size) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+                               (canonical-address-p temp-rip))
+                :hints (("Goal" :in-theory (enable rime-size))))
 
   :implemented
   (progn
@@ -313,49 +315,56 @@
   ;; Note: Here opcode is the second byte of the two byte opcode.
 
   (b* ((ctx 'x86-two-byte-jcc)
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
 
-       ;; temp-rip right now points to the rel32 byte.  Add 4 to
-       ;; temp-rip to account for rel32 when computing the length
+       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       ((the (integer 0 4) offset-size)
+        (if (64-bit-modep x86)
+            4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
+               (p3? (eql #.*operand-size-override*
+                         (prefixes-slice :group-3-prefix prefixes))))
+            ;; 16 or 32 bits (rel16 or rel32):
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
+
+       ;; temp-rip right now points to the rel16/rel32 byte.  Add 2 or 4 to
+       ;; temp-rip to account for rel16/rel32 when computing the length
        ;; of this instruction.
-       (badlength? (check-instruction-length start-rip temp-rip 4))
+       (badlength? (check-instruction-length start-rip temp-rip offset-size))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
-       ((mv ?flg (the (signed-byte #.*max-linear-address-size+1*)
-                   rel32/next-rip)
-            x86)
-        (if branch-cond
-            (riml-size 4 temp-rip :x x86) ;; rel32
-          (mv nil (+ 4 temp-rip) x86)))  ;; next-rip
-       ((when flg)
-        (!!ms-fresh :riml-size-error flg))
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (if branch-cond
-            (+ (the (signed-byte #.*max-linear-address-size+1*)
-                 (+ 4 temp-rip)) ;; rip of the next instruction
-               rel32/next-rip)   ;; rel32
-          rel32/next-rip)        ;; next-rip
-        )
+       (branch-cond (jcc/cmovcc/setcc-spec opcode x86)))
 
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (or
-                          (< (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip)
-                             #.*-2^47*)
-                          (<= #.*2^47*
-                              (the (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                temp-rip)))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
+    (if branch-cond
 
-       ;; Update the x86 state:
-       (x86 (!rip temp-rip x86)))
-      x86))
+        ;; branch condition is true:
+        (b* (;; read rel16/rel32 (as a signed value):
+             ((mv flg offset x86)
+              (rime-size offset-size temp-rip *cs* :x nil x86))
+             ((when flg) (!!ms-fresh :rime-size-error flg))
+             ;; add rel16/rel32 to the address of the next instruction,
+             ;; which is 2 or 4 past temp-rip to take the rel16/32 into
+             ;; account:
+             ((mv flg next-rip)
+              (add-to-*ip temp-rip (+ offset-size offset) x86))
+             ((when flg) (!!ms-fresh :rip-increment-error flg))
+             ;; set instruction pointer to new value:
+             (x86 (write-*ip next-rip x86)))
+          x86)
+
+      ;; branch condition is false:
+      (b* (;; fo to the next instruction,
+           ;; which starts just after the rel16/rel32:
+           ((mv flg next-rip) (add-to-*ip temp-rip offset-size x86))
+           ((when flg) (!!ms-fresh :rip-increment-error flg))
+           (x86 (write-*ip next-rip x86)))
+        x86))))
 
 (def-inst x86-jrcxz
 

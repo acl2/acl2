@@ -970,14 +970,8 @@
     ((#x80 #x81 #x82 #x83 #x84 #x85 #x86 #x87 #x88 #x89 #x8A
            #x8B #x8C #x8D #x8E #x8F)
      "(Jcc Jz)"
-     (if (64-bit-modep x86)
-         (x86-two-byte-jcc start-rip temp-rip prefixes rex-byte opcode
-                           modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(Jcc Jz) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-two-byte-jcc
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     ((#x90 #x91 #x92 #x93 #x94 #x95 #x96 #x97 #x98 #x99 #x9A
            #x9B #x9C #x9D #x9E #x9F)
