@@ -366,10 +366,12 @@
            (x86 (write-*ip next-rip x86)))
         x86))))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-jrcxz
 
   ;; Jump (short) if condition is met
 
+  ;; E3 cb: JCXZ  rel8 Jump short if CX  is 0
   ;; E3 cb: JECXZ rel8 Jump short if ECX is 0
   ;; E3 cb: JRCXZ rel8 Jump short if RCX is 0
 
@@ -380,19 +382,24 @@
   ;; Op/En: D
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08
+                                         riml32
+                                         rime-size
+                                         select-address-size)
+                                        ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+                               (canonical-address-p temp-rip))
+                :hints (("Goal" :in-theory (enable rime-size))))
   :implemented
   (add-to-implemented-opcodes-table 'JRCXZ #xE3 '(:nil nil) 'x86-jrcxz)
 
   :body
 
   (b* ((ctx 'x86-jrcxz)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ;; temp-rip right now points to the rel8 byte.  Add 1 to
        ;; temp-rip to account for rel8 when computing the length
@@ -403,37 +410,32 @@
 
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
-       (register-size (if p4? 4 8))
-       (branch-cond
-        (equal (rgfi-size register-size *rcx* rex-byte x86) 0))
-       ((mv ?flg (the (signed-byte #.*max-linear-address-size+1*) rel8/next-rip) x86)
-        (if branch-cond
-            (riml-size 1 temp-rip :x x86)
-          (mv nil (+ 1 temp-rip) x86)))
-       ((when flg)
-        (!!ms-fresh :riml-size-error flg))
+       (register-size (select-address-size p4? x86))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (if branch-cond
-            (+ (the (signed-byte #.*max-linear-address-size+1*)
-                 (+ 1 temp-rip)) ;; rip of the next instruction
-               rel8/next-rip)    ;; rel8
-          rel8/next-rip)         ;; next-rip
-        )
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (or
-                          (< (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip)
-                             #.*-2^47*)
-                          (<= #.*2^47*
-                              (the (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                temp-rip)))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
-       ;; Update the x86 state:
-       (x86 (!rip temp-rip x86)))
-      x86))
+       (branch-cond
+        (equal (rgfi-size register-size *rcx* rex-byte x86) 0)))
+
+    (if branch-cond
+
+        ;; branch condition is true:
+        (b* (;; read rel8 (a value between -128 and +127):
+             ((mv flg rel8 x86) (rime-size 1 temp-rip *cs* :x nil x86))
+             ((when flg) (!!ms-fresh :rime-size-error flg))
+             ;; add rel8 to the address of the next instruction,
+             ;; which is one past temp-rip to take the rel8 byte into account:
+             ((mv flg next-rip) (add-to-*ip temp-rip (1+ rel8) x86))
+             ((when flg) (!!ms-fresh :rip-increment-error flg))
+             ;; set instruction pointer to new value:
+             (x86 (write-*ip next-rip x86)))
+          x86)
+
+      ;; branch condition is false:
+      (b* (;; go to the next instruction,
+           ;; which starts just after the rel8 byte:
+           ((mv flg next-rip) (add-to-*ip temp-rip 1 x86))
+           ((when flg) (!!ms-fresh :rip-increment-error flg))
+           (x86 (write-*ip next-rip x86)))
+        x86))))
 
 (def-inst x86-cmovcc
 
