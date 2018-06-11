@@ -596,14 +596,7 @@
     ((#x40 #x41 #x42 #x43 #x44 #x45 #x46 #x47 #x48 #x49 #x4A
            #x4B #x4C #x4D #x4E #x4F)
      "(CMOVcc Gv, Ev)"
-     (if (64-bit-modep x86)
-         (x86-cmovcc start-rip temp-rip prefixes rex-byte opcode modr/m
-                     sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(CMOVcc Gv, Ev) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-cmovcc start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x51
      "F2h: (SQRTSD xmm1 xmm2/m64);

@@ -437,6 +437,7 @@
            (x86 (write-*ip next-rip x86)))
         x86))))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cmovcc
 
   ;; Op/En: RM
@@ -461,7 +462,6 @@
   ;; 0F 4E CMOVLE/CMOVNG r16/32/64, r/m16/32/64         Move if ZF = 1 or SF != OF
   ;; 0F 4F CMOVG/CMOVNLE r16/32/64, r/m16/32/64         Move if ZF = 0 and SF = OF
 
-
   :parents (two-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
@@ -478,34 +478,42 @@
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        (p2 (prefixes-slice :group-2-prefix prefixes))
 
        ((the (integer 1 8) operand-size)
         (select-operand-size nil rex-byte nil prefixes x86))
+
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
+
+       (seg-reg (select-segment-register p2 p4? mod  r/m x86))
+
        (inst-ac? t)
-       ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* operand-size inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       ((mv flg0
+            reg/mem
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+                                                operand-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -516,10 +524,13 @@
        ;; Update the x86 state:
        (x86
         (if branch-cond
-            (!rgfi-size operand-size (reg-index reg rex-byte #.*r*)
-                        reg/mem rex-byte x86)
+            (!rgfi-size operand-size
+                        (reg-index reg rex-byte #.*r*)
+                        reg/mem
+                        rex-byte
+                        x86)
           x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86)
 
   :implemented
