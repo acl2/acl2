@@ -1007,9 +1007,7 @@
            (flextypes-table (table-alist 'fty::flextypes-table (w state)))
            ((unless (alistp flextypes-table)) hints)
            (hints (generate-fty-info-alist hints flextypes-table))
-           (- (cw "fty-info: ~q0" (smtlink-hint->fty-info hints)))
            (hints (generate-fty-types-top hints flextypes-table))
-           (- (cw "fty-types: ~q0" (smtlink-hint->fty-types hints)))
 
            ((smtlink-hint h) hints)
            ;; Make an alist version of fn-lst
@@ -1056,7 +1054,6 @@
 
            ;; Combine expanded main clause and its hint
            (fncall-lst (strip-cars e.expanded-fn-lst))
-           (- (cw "e.expanded-fn-lst: ~q0" e.expanded-fn-lst))
            ((unless (alistp fncall-lst))
             (prog2$
              (er hard? 'SMT-goal-generator=>SMT-goal-generator "Function call list should be an alistp: ~q0" fncall-lst)

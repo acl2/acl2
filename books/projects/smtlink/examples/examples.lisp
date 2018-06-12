@@ -27,88 +27,6 @@
 (def-saved-event x^2+y^2
   (defun x^2+y^2 (x y) (+ (* x x) (* y y))))
 
-(defthm fty-deflist-theorem
-  (implies (and (integer-listp l)
-                (consp (acl2::integer-list-fix l))
-                (consp (acl2::integer-list-fix (cdr (acl2::integer-list-fix l)))))
-           (>= (x^2+y^2 (car (acl2::integer-list-fix l))
-                        (car (acl2::integer-list-fix
-                              (cdr (acl2::integer-list-fix l)))))
-               0))
-  :hints(("Goal"
-          :smtlink
-          (:fty (acl2::integer-list))))
-  :rule-classes nil)
-
-(defalist symbol-integer-alist
-  :key-type symbolp
-  :val-type integerp
-  :true-listp t)
-
-(defthm fty-defalist-theorem
-  (implies (and (symbol-integer-alist-p l)
-                (symbolp s1)
-                (symbolp s2)
-                (not (equal (assoc-equal s1 (symbol-integer-alist-fix l))
-                            (smt::magic-fix 'symbolp_integerp nil)))
-                (not (equal (assoc-equal s2 (symbol-integer-alist-fix l))
-                            (smt::magic-fix 'symbolp_integerp nil))))
-           (>= (x^2+y^2
-                (cdr (smt::magic-fix 'symbolp_integerp
-                                     (assoc-equal s1 (symbol-integer-alist-fix l))))
-                (cdr (smt::magic-fix 'symbolp_integerp
-                                     (assoc-equal s2 (symbol-integer-alist-fix l)))))
-               0))
-  :hints(("Goal"
-          :smtlink
-          (:fty (symbol-integer-alist))))
-  :rule-classes nil)
-
-(defprod sandwich
-  ((bread integerp)
-   (fillings symbolp)))
-
-(defthm fty-defprod-theorem
-  (implies (and (sandwich-p s1)
-                (sandwich-p s2))
-           (>= (x^2+y^2
-                (sandwich->bread (sandwich-fix s1))
-                (sandwich->bread (sandwich-fix s2)))
-               0))
-  :hints(("Goal"
-          :smtlink
-          (:fty (sandwich))))
-  :rule-classes nil)
-
-(defoption maybe-integer integerp)
-
-(define x^2+y^2-fixed ((x maybe-integer-p)
-                       (y maybe-integer-p))
-  :returns (res maybe-integer-p)
-  (b* ((x (maybe-integer-fix x))
-       (y (maybe-integer-fix y))
-       ((if (equal x (maybe-integer-fix nil)))
-        (maybe-integer-fix nil))
-       ((if (equal y (maybe-integer-fix nil)))
-        (maybe-integer-fix nil)))
-    (maybe-integer-some
-     (+ (* (maybe-integer-some->val x)
-           (maybe-integer-some->val x))
-        (* (maybe-integer-some->val y)
-           (maybe-integer-some->val y))))))
-
-(defthm fty-defoption-theorem
-  (implies (and (maybe-integer-p m1)
-                (maybe-integer-p m2)
-                (not (equal m1 (maybe-integer-fix nil)))
-                (not (equal m2 (maybe-integer-fix nil))))
-           (>= (maybe-integer-some->val (x^2+y^2-fixed m1 m2))
-               0))
-  :hints(("Goal"
-          :smtlink
-          (:fty (maybe-integer))))
-  :rule-classes nil)
-
 (def-saved-event poly-ineq
   (defthm poly-ineq-example
     (implies (and (real/rationalp x) (real/rationalp y)
@@ -368,3 +286,150 @@ here in this theorem, @('(integerp (/ x y))') is a constraint/hypotheses rather
 than a type declaration. When ACL2 tried to translate it as a constraint, it
 finds out @('integerp') is not a supported function.</p>
 ")
+
+(defthm fty-deflist-theorem
+  (implies (and (integer-listp l)
+                (consp (acl2::integer-list-fix l))
+                (consp (acl2::integer-list-fix (cdr (acl2::integer-list-fix l)))))
+           (>= (x^2+y^2 (car (acl2::integer-list-fix l))
+                        (car (acl2::integer-list-fix
+                              (cdr (acl2::integer-list-fix l)))))
+               0))
+  :hints(("Goal"
+          :smtlink
+          (:fty (acl2::integer-list))))
+  :rule-classes nil)
+
+(acl2::must-fail
+(defthm fty-deflist-theorem-fail
+  (implies (and (integer-listp l)
+                (consp (acl2::integer-list-fix l))
+                (consp (acl2::integer-list-fix (cdr (acl2::integer-list-fix l)))))
+           (>= (x^2+y^2 (car (acl2::integer-list-fix l))
+                        (car (acl2::integer-list-fix
+                              (cdr (acl2::integer-list-fix l)))))
+               1))
+  :hints(("Goal"
+          :smtlink
+          (:fty (acl2::integer-list))))
+  :rule-classes nil)
+)
+
+(defalist symbol-integer-alist
+  :key-type symbolp
+  :val-type integerp
+  :true-listp t)
+
+(defthm fty-defalist-theorem
+  (implies (and (symbol-integer-alist-p l)
+                (symbolp s1)
+                (symbolp s2)
+                (not (equal (assoc-equal s1 (symbol-integer-alist-fix l))
+                            (smt::magic-fix 'symbolp_integerp nil)))
+                (not (equal (assoc-equal s2 (symbol-integer-alist-fix l))
+                            (smt::magic-fix 'symbolp_integerp nil))))
+           (>= (x^2+y^2
+                (cdr (smt::magic-fix 'symbolp_integerp
+                                     (assoc-equal s1 (symbol-integer-alist-fix l))))
+                (cdr (smt::magic-fix 'symbolp_integerp
+                                     (assoc-equal s2 (symbol-integer-alist-fix l)))))
+               0))
+  :hints(("Goal"
+          :smtlink
+          (:fty (symbol-integer-alist))))
+  :rule-classes nil)
+
+(acl2::must-fail
+(defthm fty-defalist-theorem-fail
+  (implies (and (symbol-integer-alist-p l)
+                (symbolp s1)
+                (symbolp s2)
+                (not (equal (assoc-equal s1 (symbol-integer-alist-fix l))
+                            (smt::magic-fix 'symbolp_integerp nil)))
+                (not (equal (assoc-equal s2 (symbol-integer-alist-fix l))
+                            (smt::magic-fix 'symbolp_integerp nil))))
+           (>= (x^2+y^2
+                (cdr (smt::magic-fix 'symbolp_integerp
+                                     (assoc-equal s1 (symbol-integer-alist-fix l))))
+                (cdr (smt::magic-fix 'symbolp_integerp
+                                     (assoc-equal s2 (symbol-integer-alist-fix l)))))
+               1))
+  :hints(("Goal"
+          :smtlink
+          (:fty (symbol-integer-alist))))
+  :rule-classes nil)
+)
+
+(defprod sandwich
+  ((bread integerp)
+   (fillings symbolp)))
+
+(defthm fty-defprod-theorem
+  (implies (and (sandwich-p s1)
+                (sandwich-p s2))
+           (>= (x^2+y^2
+                (sandwich->bread (sandwich-fix s1))
+                (sandwich->bread (sandwich-fix s2)))
+               0))
+  :hints(("Goal"
+          :smtlink
+          (:fty (sandwich))))
+  :rule-classes nil)
+
+(acl2::must-fail
+(defthm fty-defprod-theorem-fail
+  (implies (and (sandwich-p s1)
+                (sandwich-p s2))
+           (>= (x^2+y^2
+                (sandwich->bread (sandwich-fix s1))
+                (sandwich->bread (sandwich-fix s2)))
+               1))
+  :hints(("Goal"
+          :smtlink
+          (:fty (sandwich))))
+  :rule-classes nil)
+)
+
+
+(defoption maybe-integer integerp)
+
+(define x^2+y^2-fixed ((x maybe-integer-p)
+                       (y maybe-integer-p))
+  :returns (res maybe-integer-p)
+  (b* ((x (maybe-integer-fix x))
+       (y (maybe-integer-fix y))
+       ((if (equal x (maybe-integer-fix nil)))
+        (maybe-integer-fix nil))
+       ((if (equal y (maybe-integer-fix nil)))
+        (maybe-integer-fix nil)))
+    (maybe-integer-some
+     (+ (* (maybe-integer-some->val x)
+           (maybe-integer-some->val x))
+        (* (maybe-integer-some->val y)
+           (maybe-integer-some->val y))))))
+
+(defthm fty-defoption-theorem
+  (implies (and (maybe-integer-p m1)
+                (maybe-integer-p m2)
+                (not (equal m1 (maybe-integer-fix nil)))
+                (not (equal m2 (maybe-integer-fix nil))))
+           (>= (maybe-integer-some->val (x^2+y^2-fixed m1 m2))
+               0))
+  :hints(("Goal"
+          :smtlink
+          (:fty (maybe-integer))))
+  :rule-classes nil)
+
+(acl2::must-fail
+(defthm fty-defoption-theorem-fail
+  (implies (and (maybe-integer-p m1)
+                (maybe-integer-p m2)
+                (not (equal m1 (maybe-integer-fix nil)))
+                (not (equal m2 (maybe-integer-fix nil))))
+           (>= (maybe-integer-some->val (x^2+y^2-fixed m1 m2))
+               1))
+  :hints(("Goal"
+          :smtlink
+          (:fty (maybe-integer))))
+  :rule-classes nil)
+)

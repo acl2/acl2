@@ -22,7 +22,6 @@
        ;; Currently using just the expanded clause without learning the fixing
        ;; functions. The code assumes all fixing functions are inserted by the
        ;; user.
-       (- (cw "cl: ~q0" cl))
        (fix-hint h.fix-hint)
        (fixed-hint-pair (make-hint-pair :thm (disjoin cl)
                                         :hints fix-hint)))

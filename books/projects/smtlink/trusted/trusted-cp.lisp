@@ -46,7 +46,7 @@
           (mv (cons "NOTE: Unable to prove goal with ~
                       SMT-trusted-cp and indicated hint." nil)
               (list cl) state))))
-    
+
     (push-untouchable SMT-prove-stub t)
     )
 
@@ -59,7 +59,7 @@
     :stobjs state
     (prog2$ (cw "Using default SMT-trusted-cp...~%")
             (SMT-trusted-cp-main cl smtlink-hint nil state)))
-  
+
   (define SMT-trusted-cp-custom ((cl pseudo-term-listp)
                                  (smtlink-hint smtlink-hint-p)
                                  state)
@@ -67,7 +67,7 @@
     :stobjs state
     (prog2$ (cw "Using custom SMT-trusted-cp...~%")
             (SMT-trusted-cp-main cl smtlink-hint t state)))
-  
+
   (define-trusted-clause-processor
     SMT-trusted-cp
     nil
