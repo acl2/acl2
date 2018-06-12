@@ -1043,14 +1043,7 @@
 
     ((#xB0 #xB1)
      "B0: (CMPXCHG Eb Gb); B1: (CMPXCHG Ev Gv)"
-     (if (64-bit-modep x86)
-         (x86-cmpxchg start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                      x86)
-       (x86-step-unimplemented
-        (cons (cons "CMPXCHG is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-cmpxchg start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     ((#xB6 #xB7)
      "B6: (MOVZX Gv Eb); B7: (MOVZX Gv Ew)"
