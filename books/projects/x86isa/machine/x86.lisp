@@ -969,14 +969,7 @@
     ((#x90 #x91 #x92 #x93 #x94 #x95 #x96 #x97 #x98 #x99 #x9A
            #x9B #x9C #x9D #x9E #x9F)
      "(SETcc Eb)"
-     (if (64-bit-modep x86)
-         (x86-setcc start-rip temp-rip prefixes rex-byte opcode
-                    modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "SETcc is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-setcc start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x1F
      "(NOP)"

@@ -568,6 +568,7 @@
     (add-to-implemented-opcodes-table 'CMOVNLE #x0F4F '(:nil nil)
                                       'x86-cmovcc)))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-setcc
 
   ;; Op/En: M
@@ -605,53 +606,34 @@
 
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
-       ((mv flg0 (the (signed-byte 64) v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
+
+       ((mv flg0
+            (the (signed-byte 64) addr)
+            (the (unsigned-byte 3) increment-RIP-by)
+            x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+          (x86-effective-addr p4?
+                              temp-rip
+                              rex-byte
+                              r/m
+                              mod
+                              sib
                               0 ;; No immediate operand
                               x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
-       ((mv flg1 v-addr)
-        (case p2
-          (0 (mv nil v-addr))
-          ;; I don't really need to check whether FS and GS base are
-          ;; canonical or not.  On the real machine, if the MSRs
-          ;; containing these bases are assigned non-canonical
-          ;; addresses, an exception is raised.
-          (#.*fs-override*
-           (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
-                  (fs-base (n64-to-i64 nat-fs-base)))
-             (if (not (canonical-address-p fs-base))
-                 (mv 'Non-Canonical-FS-Base fs-base)
-               (mv nil (+ fs-base v-addr)))))
-          (#.*gs-override*
-           (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
-                  (gs-base (n64-to-i64 nat-gs-base)))
-             (if (not (canonical-address-p gs-base))
-                 (mv 'Non-Canonical-GS-Base gs-base)
-               (mv nil (+ gs-base v-addr)))))
-          (t (mv 'Unidentified-P2 v-addr))))
-       ((when flg1)
-        (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg1))
-       ((when (not (canonical-address-p v-addr)))
-        (!!ms-fresh :v-addr-not-canonical v-addr))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -659,18 +641,26 @@
 
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
 
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
        ;; Update the x86 state:
        (inst-ac? t)
        (val (if branch-cond 1 0))
        ((mv flg2 x86)
-        (x86-operand-to-reg/mem
-         1 inst-ac? nil ;; Not a memory pointer operand
-         val (the (signed-byte #.*max-linear-address-size+1*) v-addr)
-         rex-byte r/m mod x86))
+        (x86-operand-to-reg/mem$ 1
+                                 inst-ac?
+                                 nil ;; Not a memory pointer operand
+                                 val
+                                 seg-reg
+                                 (the (signed-byte 64) addr)
+                                 rex-byte
+                                 r/m
+                                 mod
+                                 x86))
        ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
        ((when flg2)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86)
 
   :implemented
