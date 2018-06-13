@@ -5,7 +5,7 @@
 #
 # License: A 3-clause BSD license.
 # See the LICENSE file distributed with ACL2
-
+import re
 from z3 import *
 
 def sort(x):
@@ -96,7 +96,8 @@ class ACL22SMT(object):
                 if v.children() == []:
                     if not(is_int_value(v) or \
                            is_rational_value(v) or \
-                           is_true(v) or is_false(v)):
+                           is_true(v) or is_false(v) or \
+                           v.sexpr() == 'nil'):
                         return [v]
                     else:
                         return []
@@ -133,13 +134,15 @@ class ACL22SMT(object):
         dontcare_acl2 = []
 
         def translate_value(n, v):
+            translated_v = str(v)
             if (is_algebraic_value(v)):
                 rt_obj = str(v.sexpr())
-                rt_obj = rt_obj.replace("root-obj", "cex-root-obj " + "'" + n + " state")
-                rt_obj = rt_obj.replace("(+", "'(+")
+                rt_obj = rt_obj.replace("root-obj", "cex-root-obj " + n + " state")
                 translated_v = rt_obj
-            else:
-                translated_v = str(v).replace(".0", "").replace("False", "nil").replace("True","t")
+
+            translated_v = translated_v.replace(",", "")
+            translated_v = re.sub(r"([a-zA-Z0-9]+?)\(", r"\(\1 ", translated_v)
+            translated_v = translated_v.replace(".0", "").replace("False", "nil").replace("True","t")
             return translated_v
 
         def translate_model(model):
