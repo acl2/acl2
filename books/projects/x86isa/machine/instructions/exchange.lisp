@@ -312,12 +312,13 @@
 ;; INSTRUCTION: NOP
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-two-byte-nop
 
   ;; Op/En: NP
   ;; 0F 1F/0
 
-  ;; The Intel manual (Vol. 2B, p. 4-162) has a note on the recommended
+  ;; The Intel manual (Vol. 2B, NOP specification) has a note on the recommended
   ;; multi-byte NOP sequences, and the address-size override prefix is
   ;; absent from all of them.  However, since the operand for the
   ;; multi-byte NOP is an r/m operand, we account for the effect of that
@@ -334,40 +335,44 @@
 
   :body
 
-
   (b* ((ctx 'x86-two-byte-nop)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
+
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
-       ((mv flg0 (the (signed-byte 64) ?v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
+       ((mv flg0
+            (the (signed-byte 64) ?addr)
+            (the (unsigned-byte 3) increment-RIP-by)
+            x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+          (x86-effective-addr p4?
+                              temp-rip
+                              rex-byte
+                              r/m
+                              mod
+                              sib
                               0 ;; No immediate operand
                               x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                                  temp-rip))))
-        (!!ms-fresh :next-rip-invalid temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :next-rip-invalid temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; (def-inst x86-nop
