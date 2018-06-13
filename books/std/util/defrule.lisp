@@ -111,8 +111,10 @@ acl2::local).</p>
 
 <p>We often write lemmas in support of one larger theorem.  In this case, you
 can provide these lemmas as a list of events with the @(':prep-lemmas')
-argument.  Note that including a book via the @(':prep-lemmas') keyword does
-not work.</p>
+argument.  Despite the name, it is also possible to include function
+definitions with the @(':prep-lemmas') keyword; for instance, when a recursive
+function is needed to serve as an induction scheme. Note that including a book
+via @(':prep-lemmas') does not work.</p>
 
 <p>To include a book or many books for use in the main theorem you are proving,
 supply a list of include-book commands with the @(':prep-books')

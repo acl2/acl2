@@ -269,8 +269,9 @@ M1 !>>(DEFTHM CODE-IS-CORRECT
 
 ACL2 Warning [Non-rec] in ( DEFTHM CODE-IS-CORRECT ...):  A :REWRITE
 rule generated from CODE-IS-CORRECT will be triggered only by terms
-containing the non-recursive function symbol MS.  Unless this function
-is disabled, this rule is unlikely ever to be used.
+containing the function symbol MS, which has a non-recursive definition.
+Unless this definition is disabled, this rule is unlikely ever to be
+used.
 
 
 By the simple :definitions MS and NATP we reduce the conjecture to
@@ -813,9 +814,9 @@ M1 !>>(DEFTHM CORR
                                         (* K (^ I J)))))))
 
 ACL2 Warning [Non-rec] in ( DEFTHM CORR ...):  A :REWRITE rule generated
-from CORR will be triggered only by terms containing the non-recursive
-function symbols HALTEDP and MS.  Unless these functions are disabled,
-this rule is unlikely ever to be used.
+from CORR will be triggered only by terms containing the function symbols
+HALTEDP and MS, which have non-recursive definitions.  Unless these
+definitions are disabled, this rule is unlikely ever to be used.
 
 
 ACL2 Warning [Subsume] in ( DEFTHM CORR ...):  The previously added
@@ -825,9 +826,9 @@ Because the new rule will be tried first, it may nonetheless find application.
 
 
 ACL2 Warning [Non-rec] in ( DEFTHM CORR ...):  A :REWRITE rule generated
-from CORR will be triggered only by terms containing the non-recursive
-function symbol MS.  Unless this function is disabled, this rule is
-unlikely ever to be used.
+from CORR will be triggered only by terms containing the function symbol
+MS, which has a non-recursive definition.  Unless this definition is
+disabled, this rule is unlikely ever to be used.
 
 
 By the simple :definitions HALTEDP, MS and NATP we reduce the conjecture
@@ -1179,8 +1180,9 @@ M1 !>>(DEFTHM THIS-IS-NOT-A-THEOREM
 
 ACL2 Warning [Non-rec] in ( DEFTHM THIS-IS-NOT-A-THEOREM ...):  A :REWRITE
 rule generated from THIS-IS-NOT-A-THEOREM will be triggered only by
-terms containing the non-recursive function symbol MS.  Unless this
-function is disabled, this rule is unlikely ever to be used.
+terms containing the function symbol MS, which has a non-recursive
+definition.  Unless this definition is disabled, this rule is unlikely
+ever to be used.
 
 
 ACL2 Warning [Free] in ( DEFTHM THIS-IS-NOT-A-THEOREM ...):  A :REWRITE

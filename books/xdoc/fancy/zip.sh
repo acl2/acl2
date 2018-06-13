@@ -73,6 +73,9 @@ mkdir -p download
 mkdir download/manual
 cp -R -- $FILES download/manual
 
+echo "Creating index.html in download/ directory"
+cp download-index.html download/index.html
+
 cd download
 
 echo "Creating manual.tar.gz"
@@ -85,5 +88,3 @@ echo "Creating manual.zip"
 zip -r -9 manual.zip manual
 
 rm -rf manual
-
-

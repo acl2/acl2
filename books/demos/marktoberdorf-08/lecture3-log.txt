@@ -706,9 +706,9 @@ M1 >>(DEFTHM STEP-1
                                          *G*))))
 
 ACL2 Warning [Non-rec] in ( DEFTHM STEP-1 ...):  A :REWRITE rule generated
-from STEP-1 will be triggered only by terms containing the non-recursive
-function symbol G-SCHED.  Unless this function is disabled, this rule
-is unlikely ever to be used.
+from STEP-1 will be triggered only by terms containing the function
+symbol G-SCHED, which has a non-recursive definition.  Unless this
+definition is disabled, this rule is unlikely ever to be used.
 
 
 By the simple :definition G-SCHED, the :executable-counterpart of REPEAT
@@ -927,8 +927,9 @@ M1 >>(DEFTHM COROLLARY1
 
 ACL2 Warning [Non-rec] in ( DEFTHM COROLLARY1 ...):  A :REWRITE rule
 generated from COROLLARY1 will be triggered only by terms containing
-the non-recursive function symbol HALTEDP.  Unless this function is
-disabled, this rule is unlikely ever to be used.
+the function symbol HALTEDP, which has a non-recursive definition.
+Unless this definition is disabled, this rule is unlikely ever to be
+used.
 
 
 By case analysis we reduce the conjecture to
@@ -1018,14 +1019,16 @@ M1 >>(DEFTHM COROLLARY2
 
 ACL2 Warning [Non-rec] in ( DEFTHM COROLLARY2 ...):  A :REWRITE rule
 generated from COROLLARY2 will be triggered only by terms containing
-the non-recursive function symbol COMPILE.  Unless this function is
-disabled, this rule is unlikely ever to be used.
+the function symbol COMPILE, which has a non-recursive definition.
+Unless this definition is disabled, this rule is unlikely ever to be
+used.
 
 
 ACL2 Warning [Non-rec] in ( DEFTHM COROLLARY2 ...):  A :REWRITE rule
 generated from COROLLARY2 will be triggered only by terms containing
-the non-recursive function symbols HALTEDP and COMPILE.  Unless these
-functions are disabled, this rule is unlikely ever to be used.
+the function symbols HALTEDP and COMPILE, which have non-recursive
+definitions.  Unless these definitions are disabled, this rule is unlikely
+ever to be used.
 
 
 By the :executable-counterpart of COMPILE we reduce the conjecture

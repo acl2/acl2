@@ -376,8 +376,9 @@
   (cond ((or (variablep term)
              (fquotep term))
          t)
-        ((lambda-applicationp (ffn-symb term)) ; optimization
-         nil)
+        ((lambda-applicationp term)
+         (and (all-ffn-symbs-subsetp (lambda-body (ffn-symb term)) fns)
+              (all-ffn-symbs-lst-subsetp (fargs term) fns)))
         ((member-eq (ffn-symb term) fns)
          (all-ffn-symbs-lst-subsetp (fargs term) fns))
         (t nil)))

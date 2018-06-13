@@ -15,6 +15,7 @@
 ;; INSTRUCTION: MUL
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mul
 
   :parents (one-byte-opcodes)
@@ -32,10 +33,13 @@
   :long
   "<h4>Op/En: M</h4>
 
-  <p>F6/4: MUL r/m8:  AX := AL \* r/m8</p>
-  <p>F7/4: MUL r/m16: DX:AX := AX \* r/m16<br/>
-        MUL r/m32: EDX:EAX := EAX \* r/m32<br/>
-        MUL r/m64: RDX:RAX := RAX \* r/m64<br/></p>"
+   <p>F6/4: <br/>
+      MUL r/m8: AX := AL \* r/m8<br/><br/>
+
+      F7/4: <br/>
+      MUL r/m16: DX:AX := AX \* r/m16<br/>
+      MUL r/m32: EDX:EAX := EAX \* r/m32<br/>
+      MUL r/m64: RDX:RAX := RAX \* r/m64<br/></p>"
 
   :implemented
   (progn
@@ -46,11 +50,13 @@
   :body
 
   (b* ((ctx 'x86-mul)
+
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
@@ -59,15 +65,27 @@
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size select-byte-operand rex-byte nil prefixes x86))
 
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
        (inst-ac? t)
-       ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* reg/mem-size inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       ((mv flg0
+            reg/mem
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+                                                reg/mem-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -118,13 +136,14 @@
                  (x86 (!flgi #.*of* 1 x86)))
             x86)))
 
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: IMUL
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-imul-Op/En-M
 
   :parents (one-byte-opcodes)
@@ -149,22 +168,24 @@
   :long
   "<h4>Op/En: M</h4>
 
-  <p>F6/5: <br/>
-     IMUL r/m8:  AX      := AL  \* r/m8<br/><br/>
+   <p>F6/5: <br/>
+      IMUL r/m8: AX := AL \* r/m8<br/><br/>
 
-     F7/5: <br/>
-     IMUL r/m16: DX:AX   := AX  \* r/m16<br/>
-     IMUL r/m32: EDX:EAX := EAX \* r/m32<br/>
-     IMUL r/m64: RDX:RAX := RAX \* r/m64<br/></p>"
+      F7/5: <br/>
+      IMUL r/m16: DX:AX := AX  \* r/m16<br/>
+      IMUL r/m32: EDX:EAX := EAX \* r/m32<br/>
+      IMUL r/m64: RDX:RAX := RAX \* r/m64<br/></p>"
 
   :body
 
   (b* ((ctx 'x86-imul-Op/En-M)
+
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
@@ -173,14 +194,27 @@
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size select-byte-operand rex-byte nil prefixes x86))
 
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
        (inst-ac? t)
-       ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?v-addr x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* reg/mem-size inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       ((mv flg0
+            reg/mem
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+                                                reg/mem-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -192,12 +226,14 @@
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       ;; Computing the result:
        (rAX (rgfi-size reg/mem-size *rax* rex-byte x86))
+
+       ;; Computing the result:
        ((mv product-high product-low product (the (unsigned-byte 1) cf-and-of))
         (imul-spec reg/mem-size rAX reg/mem))
 
        ;; Updating the x86 state:
+
        (x86
         (case reg/mem-size
           (1 ;; AX := AL * r/m8
@@ -221,9 +257,10 @@
                (x86 (!flgi #.*of* cf-and-of x86)))
           x86))
 
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-imul-Op/En-RM
 
   :parents (two-byte-opcodes)
@@ -239,35 +276,50 @@
   :long
   "<h4>Op/En: RM</h4>
 
-  <p>0F AF:<br/>
-     IMUL r16, r/m16: r16 := r16 \* r/m16 <br/>
-     IMUL r32, r/m32: r32 := r32 \* r/m32 <br/>
-     IMUL r64, r/m64: r64 := r64 \* r/m64 <br/> </p>"
+   <p>0F AF:<br/>
+      IMUL r16, r/m16: r16 := r16 \* r/m16 <br/>
+      IMUL r32, r/m32: r32 := r32 \* r/m32 <br/>
+      IMUL r64, r/m64: r64 := r64 \* r/m64 <br/> </p>"
 
   :body
 
   (b* ((ctx 'x86-imul-Op/En-RM)
+
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size nil rex-byte nil prefixes x86))
+
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
        (inst-ac? t)
-       ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* reg/mem-size inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       ((mv flg0
+            reg/mem
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+                                                reg/mem-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -279,8 +331,10 @@
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       (register (rgfi-size reg/mem-size (reg-index reg rex-byte #.*r*)
-                            rex-byte x86))
+       (register (rgfi-size reg/mem-size
+                            (reg-index reg rex-byte #.*r*)
+                            rex-byte
+                            x86))
 
        ;; Computing the result:
        ((mv ?product-high product-low ?product (the (unsigned-byte 1) cf-and-of))
@@ -288,8 +342,11 @@
 
        ;; Updating the x86 state:
        (x86
-        (!rgfi-size reg/mem-size (reg-index reg rex-byte #.*r*)
-                    product-low rex-byte x86))
+        (!rgfi-size reg/mem-size
+                    (reg-index reg rex-byte #.*r*)
+                    product-low
+                    rex-byte
+                    x86))
 
        (x86
         (let* ((x86 (!flgi #.*cf* cf-and-of x86))
@@ -300,9 +357,10 @@
                (x86 (!flgi #.*of* cf-and-of x86)))
           x86))
 
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-imul-Op/En-RMI
 
   :parents (one-byte-opcodes)
@@ -314,7 +372,7 @@
   :long
   "<h4>Op/En: RMI</h4>
 
-  <p>6B ib:<br/>
+   <p>6B ib:<br/>
       IMUL r16, r/m16, imm8<br/>
       IMUL r32, r/m32, imm8 <br/>
       IMUL r64, r/m64, imm8 <br/> <br/>
@@ -331,16 +389,21 @@
     (add-to-implemented-opcodes-table 'PUSHF #x6B '(:nil nil)
                                       'x86-imul-Op/En-RMI))
 
+  :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08
+                                           rme-size-of-2-to-rme16
+                                           rme-size-of-4-to-rme32)))
+
   :body
 
   (b* ((ctx 'x86-imul-Op/En-RMI)
+
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
@@ -355,32 +418,40 @@
           (if (equal reg/mem-size 2)
               2
             4)))
+
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
        (inst-ac? t)
-       ((mv flg0 reg/mem
+       ((mv flg0
+            reg/mem
             (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* reg/mem-size inst-ac?
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$
+         #.*gpr-access*
+         reg/mem-size
+         inst-ac?
          nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
+         seg-reg
+         p4?
+         temp-rip
+         rex-byte
+         r/m
+         mod
+         sib
          imm-size ;; imm-size bytes of immediate data
          x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        ((mv flg1 (the (unsigned-byte 32) imm) x86)
-        (rml-size imm-size temp-rip :x x86))
+        (rme-size imm-size temp-rip *cs* :x nil x86))
        ((when flg1)
-        (!!ms-fresh :riml-size-error flg1))
+        (!!ms-fresh :rime-size-error flg1))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
         (add-to-*ip temp-rip imm-size x86))
@@ -396,9 +467,11 @@
 
        ;; Updating the x86 state:
        (x86
-        (!rgfi-size reg/mem-size (reg-index reg rex-byte #.*r*)
-                    product-low rex-byte x86))
-
+        (!rgfi-size reg/mem-size
+                    (reg-index reg rex-byte #.*r*)
+                    product-low
+                    rex-byte
+                    x86))
 
        (x86
         (let* ((x86 (!flgi #.*cf* cf-and-of x86))
@@ -409,7 +482,7 @@
                (x86 (!flgi #.*of* cf-and-of x86)))
           x86))
 
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================

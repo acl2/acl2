@@ -27473,6 +27473,92 @@ Lisp definition."
             (cw "; Note: Set-gc-strategy is a no-op in this host Lisp.~|"))))
   (read-acl2-oracle state))
 
+(defconst *expandable-boot-strap-non-rec-fns*
+  '(not
+    implies eq atom eql = /= null endp zerop
+
+; If we ever make 1+ and 1- functions again, they should go back on this list.
+
+    synp plusp minusp listp return-last mv-list cons-with-hint
+
+; We added the-error for Version_4.0 (replaced by the-check after Version_6.1).
+; Before that change, but after changing constraint-info to avoid calling
+; remove-guard-holders on a definition body (a change in support of
+; canonical-ancestors, for use of the Attachment Restriction Lemma in
+; justifying attachment to metafunctions and clause-processors,
+; cf. chk-evaluator-use-in-rule), the event (defsort :compare< << :prefix <<)
+; failed from community book defsort/uniquep.lisp.
+
+    the-check wormhole-eval force case-split double-rewrite))
+
+(defconst *definition-minimal-theory*
+
+; We include mv-nth because of the call of simplifiable-mv-nthp in the
+; definition of call-stack, which (as noted there) results in a use of the
+; definition of mv-nth without tracking it in a ttree.
+
+  (list* 'mv-nth 'iff *expandable-boot-strap-non-rec-fns*))
+
+(defconst *definition-minimal-theory-alist*
+
+; This alist associates each function in *definition-minimal-theory* with its
+; normalized body.  It is built as follows.  The equality of this constant to
+; that expression is checked at the end of the boot-strap.
+
+;   (merge-sort-lexorder
+;    (loop for f in *definition-minimal-theory* collect
+;          (cons f (body f t (w *the-live-state*)))))
+
+  '((/= if (equal x y) 'nil 't)
+    (= equal x y)
+    (atom if (consp x) 'nil 't)
+    (case-split . x)
+    (cons-with-hint cons x y)
+    (double-rewrite . x)
+    (endp if (consp x) 'nil 't)
+    (eq equal x y)
+    (eql equal x y)
+    (force . x)
+    (iff if p (if q 't 'nil) (if q 'nil 't))
+    (implies if p (if q 't 'nil) 't)
+    (listp if (consp x) 't (equal x 'nil))
+    (minusp < x '0)
+    (mv-list . x)
+    (mv-nth if (consp l)
+            (if (zp n)
+                (car l)
+              (mv-nth (binary-+ '-1 n) (cdr l)))
+            'nil)
+    (not if p 'nil 't)
+    (null equal x 'nil)
+    (plusp < '0 x)
+    (return-last . last-arg)
+    (synp quote t)
+    (the-check . y)
+    (wormhole-eval quote nil)
+    (zerop equal x '0)))
+
+(defun bbody-fn (fn)
+
+; This is just (body fn t wrld), where wrld is the boot-strap world, except
+; that currently it may only be applied to functions in
+; *definition-minimal-theory*.
+
+  (declare (xargs :guard (member-eq fn *definition-minimal-theory*)))
+  (let ((pair (assoc-eq fn *definition-minimal-theory-alist*)))
+    (cond (pair (cdr pair))
+          (t (er hard! 'bbody
+                 "Implementation error: Illegal call of bbody: the symbol ~x0 ~
+                  is not in ~x1."
+                 *definition-minimal-theory-alist*)))))
+
+(defmacro bbody (fn)
+  (cond ((and (consp fn)
+              (consp (cdr fn))
+              (eq (car fn) 'quote))
+         (kwote (bbody-fn (cadr fn))))
+        (t `(bbody-fn ,fn))))
+
 (defun file-length$ (file state)
   (declare (xargs :guard (stringp file)
                   :stobjs state))

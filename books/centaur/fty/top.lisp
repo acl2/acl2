@@ -86,7 +86,7 @@ built on top of @(see defprod), (see deflist), etc.</li>
   :short "The fixtype approach to type-safe programming in ACL2."
 
   :long "<p>The @(see FTY) library is based on a systematic discipline for
-using types in ACL2 definitions.  This discipline easy on the prover and
+using types in ACL2 definitions.  This discipline is easy on the prover and
 provides good execution performance.</p>
 
 <h3>The FTY Discipline</h3>

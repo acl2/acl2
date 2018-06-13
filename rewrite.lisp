@@ -4944,13 +4944,15 @@
 ; We forcibly expand all calls in term of the fns in fns.  They better
 ; all be non-recursive or this may take a while.
 
+; We assume that fns is a subset of *definition-minimal-theory*.
+
   (cond ((variablep term) term)
         ((fquotep term) term)
         (t (let ((args (expand-some-non-rec-fns-lst fns (fargs term) wrld)))
              (cond ((member-equal (ffn-symb term) fns)
                     (subcor-var (formals (ffn-symb term) wrld)
                                 args
-                                (body (ffn-symb term) t wrld)))
+                                (bbody (ffn-symb term))))
                    (t (cons-term (ffn-symb term) args)))))))
 
 (defun expand-some-non-rec-fns-lst (fns lst wrld)
@@ -4979,7 +4981,9 @@
             (expand-some-non-rec-fns
 
 ; The list of functions expanded is arbitrary, but they must all be
-; non-recursively defined.  Guards are permitted but of course it is the
+; non-recursively defined; indeed, because of the use of bbody in the
+; definition of expand-some-non-rec-fns, these function must all belong to
+; *definition-minimal-theory*.  Guards are permitted but of course it is the
 ; guarded body that we substitute.  The IF tautology checker doesn't know
 ; anything about any function symbol besides IF and NOT (and QUOTEd constants).
 ; The list below pretty obviously has to include IMPLIES and IFF.  It should
@@ -12189,7 +12193,7 @@
 
                                        (formals 'IMPLIES wrld)
                                        (list rewritten-test rewritten-concl)
-                                       (body 'IMPLIES t wrld))
+                                       (bbody 'IMPLIES))
                                       ttree))))))))
            ((eq (ffn-symb term) 'double-rewrite)
             (sl-let

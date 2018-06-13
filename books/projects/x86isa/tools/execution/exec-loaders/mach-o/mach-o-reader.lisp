@@ -11,6 +11,7 @@
 (include-book "std/io/read-file-bytes" :dir :system)
 (include-book "mach-o-stobj"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(local (include-book "std/lists/take" :dir :system))
 
 ;; ======================================================================
 

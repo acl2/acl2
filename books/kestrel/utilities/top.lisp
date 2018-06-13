@@ -57,6 +57,7 @@
 (include-book "oset-theorems")
 (include-book "osets")
 (include-book "paired-names")
+(include-book "proof-builder-macros")
 (include-book "prove-interface")
 (include-book "skip-in-book")
 (include-book "strings")

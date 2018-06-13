@@ -1,4 +1,4 @@
-; Fixtypes for Unsigned and Signed Bytes -- Macros
+; Fixtypes for Unsigned and Signed Bytes -- Macro
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -33,12 +33,12 @@
    for unsigned or signed bytes of specified sizes,
    as well as for true lists thereof.
    It also generates various theorems that relate the unary predicates
-   to the binary predicates and to other buit-in predicates.
+   to the binary predicates and to other built-in predicates.
    The first argument to the macro must be
    a positive integer @('n') that specifies the size;
    the second argument must be
-   a keyword among @(':unsigned') and @(':signed')
-   that specifies whether the bytes are unsigned or signed.
+   one of the keywords @(':unsigned') and @(':signed'),
+   which specifies whether the bytes are unsigned or signed.
    </p>
    <p>
    More precisely, this macro generates:
@@ -74,7 +74,7 @@
      </li>
      <li>
      A rule to prove @(tsee true-listp)
-     from the binary predicate of lists of unsigned or signed bytes.
+     from the unary predicate of lists of unsigned or signed bytes.
      Since @(tsee true-listp) is relatively common,
      this rule is disabled by default for efficiency.
      </li>

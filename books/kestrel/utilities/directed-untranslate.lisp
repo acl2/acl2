@@ -277,15 +277,17 @@
                  rationalp stringp symbolp))
 
 (defun boolean-fnp (fn wrld)
-  (if (member-eq fn *boolean-primitives*)
-      t
+  (cond
+   ((not (symbolp fn)) nil)
+   ((member-eq fn *boolean-primitives*) t)
+   (t
     (let ((tp (cert-data-tp-from-runic-type-prescription fn wrld)))
       (and tp
            (null (access type-prescription tp :vars))
            (assert$ (null (access type-prescription tp :hyps))
                     (ts-subsetp
                      (access type-prescription tp :basic-ts)
-                     *ts-boolean*))))))
+                     *ts-boolean*)))))))
 
 (defun directed-untranslate-drop-disjuncts-rec (uterm tterm sterm top
                                                       iff-flg wrld)

@@ -1,8 +1,10 @@
 [Note: The license below is based on the template found July 25, 2014
-       at: http://opensource.org/licenses/BSD-3-Clause.  It applies to all
-       files distributed from
-       http://www.cs.utexas.edu/users/moore/acl2/current/ except as otherwise
-       noted.
+       at: http://opensource.org/licenses/BSD-3-Clause.  Except as
+       otherwise noted, it applies to all files distributed from
+       http://www.cs.utexas.edu/users/moore/acl2/current/,
+       as well as to all files distributed from
+       https://github.com/acl2/acl2 other than those in the
+       ACL2 Community Books (the books/ subdirectory).
 When a file in the ACL2 Community Books refers to this LICENSE, that file's
 specified copyright supersedes the copyright shown immediately below.]
 
