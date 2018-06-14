@@ -45,13 +45,13 @@
        ((unless (stringp sys-dir))
         (er hard? 'SMT-config=>*default-smtlink-config* "Failed to find ~
 where the system books are."))
-       (relative-smtlink-dir "smtlink/z3_interface")
+       (relative-smtlink-dir "projects/smtlink/z3_interface")
        (interface-dir
         (concatenate 'string sys-dir relative-smtlink-dir)))
     (make-smtlink-config :interface-dir interface-dir
                          :smt-module "ACL2_to_Z3"
                          :smt-class "ACL22SMT"
-                         :smt-cmd "/usr/local/bin/python"
+                         :smt-cmd "/usr/bin/env python"
                          :pythonpath "")))
 
 ;; -----------------------------------------------------------------
@@ -98,7 +98,6 @@ where the system books are."))
        ((unless (consp lines)) nil)
        ((cons first rest) lines)
        (extracted-line (str::strtok first (list #\=)))
-       (- (cw "extracted-line: ~q0" extracted-line))
        ((unless (and (consp extracted-line) (endp (cddr extracted-line))
                      (stringp (car extracted-line))
                      (stringp (cadr extracted-line))))
@@ -127,7 +126,9 @@ where the system books are."))
        ((cons first rest) config-alist)
        ((cons option value) first)
        (new-cnf (cond
-                 ((equal option "interface-dir")
+                 ;; if value is "", use the default-cnf
+                 ;; default-cnf is $ACL2_SYSTEM_BOOKS/projects/smtlink/z3_interface
+                 ((and (equal option "interface-dir") (not (equal value "default")))
                   (change-smtlink-config default-cnf :interface-dir value))
                  ((equal option "smt-module")
                   (change-smtlink-config default-cnf :SMT-module value))
