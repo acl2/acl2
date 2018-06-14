@@ -318,6 +318,7 @@
 
   (defequiv true-set-equiv
     :hints (("Goal" :in-theory (enable true-set-equiv))))
+  (in-theory (disable (:type-prescription true-set-equiv)))
 
   (defsection function-option-name-lst
     :parents (function-syntax)

@@ -34,18 +34,24 @@
     :pred sym-nat-alistp
     :true-listp t)
 
-  (defthm consp-of-sym-nat-alist-fix
-    (implies (consp (sym-nat-alist-fix x)) (consp x))
-    :hints (("Goal" :in-theory (enable sym-nat-alist-fix))))
+  (local
+   (defthm consp-of-sym-nat-alist-fix
+     (implies (consp (sym-nat-alist-fix x)) (consp x))
+     :hints (("Goal" :in-theory (enable sym-nat-alist-fix))))
+   )
 
-  (defthm len-of-sym-nat-alist-fix-<
-    (> (1+ (len x)) (len (sym-nat-alist-fix x)))
-    :hints (("Goal" :in-theory (enable sym-nat-alist-fix))))
+  (local
+   (defthm len-of-sym-nat-alist-fix-<
+     (> (1+ (len x)) (len (sym-nat-alist-fix x)))
+     :hints (("Goal" :in-theory (enable sym-nat-alist-fix))))
+   )
 
-  (defthm natp-of-cdar-sym-nat-alist-fix
-    (implies (consp (sym-nat-alist-fix x))
-             (natp (cdar (sym-nat-alist-fix x))))
-    :hints (("Goal" :in-theory (enable sym-nat-alist-fix))))
+  (local
+   (defthm natp-of-cdar-sym-nat-alist-fix
+     (implies (consp (sym-nat-alist-fix x))
+              (natp (cdar (sym-nat-alist-fix x))))
+     :hints (("Goal" :in-theory (enable sym-nat-alist-fix))))
+   )
 
   (define update-fn-lvls ((fn symbolp) (fn-lvls sym-nat-alistp))
     :returns (updated-fn-lvls sym-nat-alistp)
@@ -137,12 +143,14 @@
      (expanded-fn-lst pseudo-term-alistp "List of expanded function calls,
     needed for expand hint for proving G' implies G theorem." :default nil)))
 
-  (defthm natp-of-sum-lvls-lemma
-    (implies (and (consp (sym-nat-alist-fix fn-lvls)) (natp x))
-             (natp (+ (cdr (car (sym-nat-alist-fix fn-lvls))) x)))
-    :hints (("Goal"
-             :in-theory (enable sym-nat-alist-fix)
-             :use ((:instance natp-of-cdar-sym-nat-alist-fix)))))
+  (local
+   (defthm natp-of-sum-lvls-lemma
+     (implies (and (consp (sym-nat-alist-fix fn-lvls)) (natp x))
+              (natp (+ (cdr (car (sym-nat-alist-fix fn-lvls))) x)))
+     :hints (("Goal"
+              :in-theory (enable sym-nat-alist-fix)
+              :use ((:instance natp-of-cdar-sym-nat-alist-fix)))))
+   )
 
   (define sum-lvls ((fn-lvls sym-nat-alistp))
     :returns (sum natp :hints (("Goal"
@@ -325,12 +333,14 @@
     (defthm integerp-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p
       (implies (and (ex-args-p x) (assoc-equal foo (ex-args->fn-lvls x)))
                (integerp (cdr (assoc-equal foo (ex-args->fn-lvls x)))))
-      :hints(("Goal" :use ((:instance natp-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p (x x))))))
+      :hints(("Goal" :use ((:instance
+                            natp-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p (x x))))))
 
     (defthm non-neg-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p
       (implies (and (ex-args-p x) (assoc-equal foo (ex-args->fn-lvls x)))
                (<= 0 (cdr (assoc-equal foo (ex-args->fn-lvls x)))))
-      :hints(("Goal" :use ((:instance natp-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p (x x))))))
+      :hints(("Goal" :use ((:instance
+                            natp-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p (x x))))))
 
     (defthm consp-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p
       (implies (and (ex-args-p x) (assoc-equal foo (ex-args->fn-lvls x)))
@@ -341,6 +351,37 @@
   (encapsulate
     ()
     (set-well-founded-relation l<)
+    (local (in-theory (e/d
+                       ()
+                       (ACL2::PSEUDO-LAMBDAP-WHEN-PSEUDO-TERMP
+                        ACL2::SUBSETP-CONS-2
+                        CONSP-OF-SYM-NAT-ALIST-FIX
+                        DEFAULT-CDR
+                        SYM-NAT-ALISTP-OF-CDR-WHEN-SYM-NAT-ALISTP
+                        NTH
+                        TRUE-LISTP
+                        ACL2::PSEUDO-LAMBDAP-OF-CAR-WHEN-PSEUDO-LAMBDA-LISTP
+                        ACL2::PSEUDO-LAMBDA-LISTP-OF-CDR-WHEN-PSEUDO-LAMBDA-LISTP
+                        ACL2::PSEUDO-TERMP-CDR-ASSOC-EQUAL
+                        SYM-NAT-ALISTP-WHEN-NOT-CONSP
+                        ACL2::SUBSETP-CAR-MEMBER
+                        STRIP-CDRS
+                        (:TYPE-PRESCRIPTION SYM-NAT-ALIST-FIX$INLINE)
+                        ACL2::SUBSETP-WHEN-ATOM-RIGHT
+                        RATIONAL-LISTP
+                        INTEGER-LISTP
+                        ATOM
+                        ACL2::SYMBOL-LISTP-WHEN-NOT-CONSP
+                        ACL2::PSEUDO-LAMBDAP-WHEN-MEMBER-EQUAL-OF-PSEUDO-LAMBDA-LISTP
+                        ACL2::SYMBOL-LISTP-CDR-ASSOC-EQUAL
+                        ACL2::SYMBOL-LIST-LISTP
+                        ACL2::RATIONALP-OF-CAR-WHEN-RATIONAL-LISTP
+                        ACL2::INTEGERP-OF-CAR-WHEN-INTEGER-LISTP
+                        CONSP-WHEN-MEMBER-EQUAL-OF-SYM-NAT-ALISTP
+                        ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
+                        ACL2::PSEUDO-LAMBDAP-OF-NTH-WHEN-PSEUDO-LAMBDA-LISTP
+                        ACL2::PSEUDO-LAMBDA-LISTP-WHEN-NOT-CONSP
+                        ACL2::SUBSETP-WHEN-ATOM-LEFT))))
 
     ;; Q FOR YAN:
     ;; 1. merge expand-args->fn-lst and expand-args->fn-lvls
@@ -581,6 +622,26 @@
 
   (verify-guards expand
     :hints (("Goal"
+             :in-theory (e/d
+                         ()
+                         (NTH
+                          FGETPROP
+                          TRUE-LISTP
+                          DEFAULT-CDR
+                          ASSOC-EQUAL
+                          ACL2::SUBSETP-CONS-2
+                          ACL2::O-P-O-INFP-CAR
+                          CONSP-OF-SYM-NAT-ALIST-FIX
+                          ACL2::SYMBOL-LISTP-WHEN-NOT-CONSP
+                          ACL2::PSEUDO-LAMBDA-LISTP-WHEN-NOT-CONSP
+                          ACL2::PSEUDO-LAMBDAP-WHEN-PSEUDO-TERMP
+                          CONSP-WHEN-MEMBER-EQUAL-OF-SYM-NAT-ALISTP
+                          SYM-NAT-ALISTP-OF-CDR-WHEN-SYM-NAT-ALISTP
+                          ACL2::PSEUDO-LAMBDAP-OF-NTH-WHEN-PSEUDO-LAMBDA-LISTP
+                          ACL2::PSEUDO-LAMBDA-LISTP-OF-CDR-WHEN-PSEUDO-LAMBDA-LISTP
+                          ACL2::PSEUDO-LAMBDAP-OF-CAR-WHEN-PSEUDO-LAMBDA-LISTP
+                          ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
+                          ACL2::PSEUDO-LAMBDAP-WHEN-MEMBER-EQUAL-OF-PSEUDO-LAMBDA-LISTP))
              :use ((:instance pseudo-term-listp-of-pseudo-lambdap-of-cdar-ex-args->term-lst)
                    (:instance  symbolp-of-caar-of-ex-args->term-lst)))))
 
@@ -1082,4 +1143,29 @@
         new-hints))
     (verify-guards SMT-goal-generator)
     )
+
+  (in-theory (disable CONSP-WHEN-MEMBER-EQUAL-OF-SYM-NAT-ALISTP
+                      pseudo-term-list-of-cdar-of-ex-args->term-lst
+                      pseudo-term-listp-of-cdr-of-ex-args->term-lst
+                      symbolp-of-car-of-ex-args->term-lst
+                      pseudo-termp-of-car-of-ex-args->term-lst
+                      len-equal-of-formals-of-pseudo-lambdap-and-actuals-of-pseudo-termp
+                      symbolp-of-caar-of-ex-args->term-lst
+                      symbol-listp-of-formals-of-pseudo-lambdap
+                      not-cddr-of-car-of-pseudo-term-list-fix-of-expand-args->term-lst
+                      consp-cdr-of-car-of-pseudo-term-list-fix-of-expand-args->term-lst
+                      pseudo-term-listp-of-pseudo-lambdap-of-cdar-ex-args->term-lst
+                      pseudo-termp-of-body-of-pseudo-lambdap
+                      consp-of-cdr-of-pseudo-lambdap
+                      CONSP-OF-PSEUDO-LAMBDAP
+                      consp-of-cddr-of-pseudo-lambdap
+                      not-stringp-of-cadr-of-pseudo-lambdap
+                      integerp-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p
+                      non-neg-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p
+                      consp-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p
+                      not-symbolp-then-consp-of-car-of-fhg-args->term-lst
+                      pseudo-term-listp-of-cdr-of-fhg-args->term-lst
+                      pseudo-term-listp-of-cdar-of-fhg-args->term-lst
+                      symbolp-of-caar-of-fhg-args->term-lst
+                      len-equal-of-formals-of-pseudo-lambdap-and-actuals-of-pseudo-termp-of-car-of-fhg-args->term-lst))
   )

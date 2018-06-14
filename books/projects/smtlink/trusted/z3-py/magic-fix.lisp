@@ -14,3 +14,4 @@
   x)
 
 (in-theory (enable magic-fix))
+(in-theory (disable (:type-prescription magic-fix)))
