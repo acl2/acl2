@@ -64,7 +64,7 @@ and lemmas for reasoning about them.")
          ;;   (time (loop for i fixnum from 1 to 100000000 do
          ;;               (rem places width))))
          (implies (and (natp places)
-                       (posp width))
+                       (natp width))
                   (equal (rem places width)
                          (mod places width)))
          :hints(("Goal" :in-theory (enable mod rem)))))
@@ -196,6 +196,9 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
 
   (local (in-theory (disable max)))
 
+  (defthm rotate-left-zero-width
+    (equal (rotate-left x 0 places) 0))
+
   (defthm rotate-left-by-zero
     (equal (rotate-left x width 0)
            (loghead width x))
@@ -239,7 +242,7 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
     :hints(("Goal" :in-theory (enable logbitp-of-loghead-split))))
 
   (defthm unsigned-byte-p-of-rotate-left-1
-    (implies (posp width)
+    (implies (natp width)
              (unsigned-byte-p width (rotate-left-1 x width)))
     :hints(("Goal"
             :in-theory (e/d* (ihsext-recursive-redefs)
@@ -253,7 +256,7 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
 
   (local (defthm lalala
            (implies (and (syntaxp (quotep c))
-                         (posp n)
+                         (natp n)
                          (natp m)
                          (integerp g3)
                          (equal c (- m n))
@@ -263,7 +266,7 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
            :hints(("Goal" :in-theory (e/d (mod) ((force)))))))
 
   (local (defthm case-split-mod-of-decrement-l0
-           (implies (and (posp n)
+           (implies (and (natp n)
                          (integerp a)
                          (equal (mod a n) 0))
                     (equal (mod (+ -1 a) n)
@@ -274,7 +277,7 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
                                            (acl2::z n)))))))
 
   (local (defthm case-split-mod-of-decrement-l1
-           (implies (and (posp n)
+           (implies (and (natp n)
                          (integerp a)
                          (not (equal (mod a n) 0)))
                     (equal (mod (+ -1 a) n)
@@ -282,7 +285,7 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
            :hints(("goal" :in-theory (e/d (mod))))))
 
   (defthmd case-split-mod-of-decrement
-    (implies (and (posp n)
+    (implies (and (natp n)
                   (integerp a))
              (equal (mod (+ -1 a) n)
                     (if (equal (mod a n) 0)
@@ -350,26 +353,19 @@ enabled when you want to use them.</p>"
 
   (local (include-book "std/basic/inductions" :dir :system))
 
-  (defthm unsigned-byte-p-of-rotate-left
-    (implies (posp width)
+  (defrule unsigned-byte-p-of-rotate-left
+    (implies (natp width)
              (unsigned-byte-p width (rotate-left x width places)))
-    :hints(("Goal"
-            :induct (acl2::dec-induct places)
-            :in-theory (e/d* (rotate-left**)
-                             (unsigned-byte-p)))))
+    :induct (acl2::dec-induct places)
+    :enable rotate-left**
+    :disable unsigned-byte-p)
 
-  (local (include-book "ihs/logops-lemmas"
-                       :dir :system))
-
-  (defthm
-    rotate-left-of-rotate-left
-    (implies (not (zp width))
-             (equal (rotate-left (rotate-left x width places1)
-                                  width places2)
-                    (rotate-left x width (+ (nfix places1) (nfix places2)))))
-    :hints
-    (("goal" :in-theory (e/d (rotate-left**) (loghead))
-      :induct (acl2::dec-induct places2)))))
+  (defrule rotate-left-of-rotate-left
+    (equal (rotate-left (rotate-left x width places1) width places2)
+           (rotate-left x width (+ (nfix places1) (nfix places2))))
+    :induct (acl2::dec-induct places2)
+    :in-theory (e/d (rotate-left**) (loghead))
+    :hints (("Subgoal *1/1" :cases ((natp width))))))
 
 
 
@@ -499,6 +495,9 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
 
   (local (in-theory (disable max)))
 
+  (defthm rotate-right-zero-width
+    (equal (rotate-right x 0 places) 0))
+
   (defthm rotate-right-by-zero
     (equal (rotate-right x width 0)
            (loghead width x))
@@ -546,7 +545,7 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
     :hints(("Goal" :in-theory (enable logbitp-of-loghead-split))))
 
   (defthm unsigned-byte-p-of-rotate-right-1
-    (implies (posp width)
+    (implies (natp width)
              (unsigned-byte-p width (rotate-right-1 x width)))
     :hints(("Goal"
             :in-theory (e/d* (ihsext-recursive-redefs)
@@ -614,23 +613,16 @@ explicitly enabled when you want to use them.</p>"
 
   (local (include-book "std/basic/inductions" :dir :system))
 
-  (defthm unsigned-byte-p-of-rotate-right
-    (implies (posp width)
+  (defrule unsigned-byte-p-of-rotate-right
+    (implies (natp width)
              (unsigned-byte-p width (rotate-right x width places)))
-    :hints(("Goal"
-            :induct (acl2::dec-induct places)
-            :in-theory (e/d* (rotate-right**)
-                             (unsigned-byte-p)))))
+    :induct (acl2::dec-induct places)
+    :enable rotate-right**
+    :disable unsigned-byte-p)
 
-  (local (include-book "ihs/logops-lemmas"
-                       :dir :system))
-
-  (defthm
-    rotate-right-of-rotate-right
-    (implies (not (zp width))
-             (equal (rotate-right (rotate-right x width places1)
-                                  width places2)
-                    (rotate-right x width (+ (nfix places1) (nfix places2)))))
-    :hints
-    (("goal" :in-theory (e/d (rotate-right**) (loghead))
-      :induct (acl2::dec-induct places2)))))
+  (defrule rotate-right-of-rotate-right
+    (equal (rotate-right (rotate-right x width places1) width places2)
+           (rotate-right x width (+ (nfix places1) (nfix places2))))
+    :induct (acl2::dec-induct places2)
+    :in-theory (e/d (rotate-right**) (loghead))
+    :hints (("Subgoal *1/1" :cases ((natp width))))))
