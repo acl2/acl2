@@ -366,7 +366,7 @@ enabled when you want to use them.</p>"
     (implies (not (zp width))
              (equal (rotate-left (rotate-left x width places1)
                                   width places2)
-                    (rotate-left x width (+ (lnfix places1) (lnfix places2)))))
+                    (rotate-left x width (+ (nfix places1) (nfix places2)))))
     :hints
     (("goal" :in-theory (e/d (rotate-left**) (loghead))
       :induct (acl2::dec-induct places2)))))
@@ -630,7 +630,7 @@ explicitly enabled when you want to use them.</p>"
     (implies (not (zp width))
              (equal (rotate-right (rotate-right x width places1)
                                   width places2)
-                    (rotate-right x width (+ (lnfix places1) (lnfix places2)))))
+                    (rotate-right x width (+ (nfix places1) (nfix places2)))))
     :hints
     (("goal" :in-theory (e/d (rotate-right**) (loghead))
       :induct (acl2::dec-induct places2)))))
