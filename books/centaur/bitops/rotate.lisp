@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "BITOPS")
-(include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "std/basic/arith-equivs" :dir :system)
