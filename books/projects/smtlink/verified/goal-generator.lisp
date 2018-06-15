@@ -20,6 +20,7 @@
 (include-book "hint-interface")
 (include-book "extractor")
 (include-book "basics")
+(include-book "computed-hints")
 
 ;; To be compatible with Arithmetic books
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
@@ -1120,10 +1121,7 @@
              (er hard? 'SMT-goal-generator=>SMT-goal-generator "Function call list should be an alistp: ~q0" fncall-lst)
              hints))
            (expand-hint (remove-duplicates-equal (strip-cars fncall-lst)))
-           (hint-with-fn-expand
-            (if (equal nil expand-hint)
-                h.main-hint
-              (append `(:in-theory (enable ,@expand-hint)) h.main-hint)))
+           (hint-with-fn-expand (treat-in-theory-hint expand-hint h.main-hint))
            (expanded-clause-w/-hint (make-hint-pair :thm G-prim-without-type
                                                     :hints hint-with-fn-expand))
 

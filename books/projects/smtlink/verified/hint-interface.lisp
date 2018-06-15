@@ -121,6 +121,11 @@
            (true-list-fix x))
     :hints (("Goal" :in-theory (enable true-list-fix))))
 
+  (defthm true-list-fix-preserve-length
+    (equal (len (true-list-fix x))
+           (len x))
+    :hints (("Goal" :in-theory (enable true-list-fix))))
+
   (deffixtype true-list
     :fix true-list-fix
     :pred true-listp
