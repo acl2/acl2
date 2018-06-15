@@ -348,18 +348,28 @@ enabled when you want to use them.</p>"
 (defsection rotate-left-extra
   :extension (rotate-left)
 
-  (local (defun my-induct (places)
-           (if (zp places)
-               0
-             (my-induct (- places 1)))))
+  (local (include-book "std/basic/inductions" :dir :system))
 
   (defthm unsigned-byte-p-of-rotate-left
     (implies (posp width)
              (unsigned-byte-p width (rotate-left x width places)))
     :hints(("Goal"
-            :induct (my-induct places)
+            :induct (acl2::dec-induct places)
             :in-theory (e/d* (rotate-left**)
-                             (unsigned-byte-p))))))
+                             (unsigned-byte-p)))))
+
+  (local (include-book "ihs/logops-lemmas"
+                       :dir :system))
+
+  (defthm
+    rotate-left-of-rotate-left
+    (implies (not (zp width))
+             (equal (rotate-left (rotate-left x width places1)
+                                  width places2)
+                    (rotate-left x width (+ (lnfix places1) (lnfix places2)))))
+    :hints
+    (("goal" :in-theory (e/d (rotate-left**) (loghead))
+      :induct (acl2::dec-induct places2)))))
 
 
 
@@ -602,15 +612,25 @@ explicitly enabled when you want to use them.</p>"
 (defsection rotate-right-extra
   :extension (rotate-right)
 
-  (local (defun my-induct (places)
-           (if (zp places)
-               0
-             (my-induct (- places 1)))))
+  (local (include-book "std/basic/inductions" :dir :system))
 
   (defthm unsigned-byte-p-of-rotate-right
     (implies (posp width)
              (unsigned-byte-p width (rotate-right x width places)))
     :hints(("Goal"
-            :induct (my-induct places)
+            :induct (acl2::dec-induct places)
             :in-theory (e/d* (rotate-right**)
-                             (unsigned-byte-p))))))
+                             (unsigned-byte-p)))))
+
+  (local (include-book "ihs/logops-lemmas"
+                       :dir :system))
+
+  (defthm
+    rotate-right-of-rotate-right
+    (implies (not (zp width))
+             (equal (rotate-right (rotate-right x width places1)
+                                  width places2)
+                    (rotate-right x width (+ (lnfix places1) (lnfix places2)))))
+    :hints
+    (("goal" :in-theory (e/d (rotate-right**) (loghead))
+      :induct (acl2::dec-induct places2)))))
