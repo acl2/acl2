@@ -2707,14 +2707,8 @@
         (x86-call-FF/2-Op/En-M
          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x4
-        (if (64-bit-modep x86)
-            (x86-near-jmp-Op/En-M start-rip temp-rip prefixes rex-byte opcode
-                                  modr/m sib x86)
-          (x86-step-unimplemented
-           (cons (cons "JMPN Ev is not implemented in 32-bit mode."
-                       (ms x86))
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-           x86)))
+        (x86-near-jmp-Op/En-M
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x5
         (if (64-bit-modep x86)
             (x86-far-jmp-Op/En-D start-rip temp-rip prefixes rex-byte opcode
