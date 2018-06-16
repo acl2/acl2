@@ -6281,7 +6281,11 @@
 ; Otherwise, return action.lisp if action is a string, else the given filename.
 
   (declare (xargs :guard (and (stringp filename)
-                              (stringp system-books-dir))))
+                              (stringp system-books-dir)
+                              (<= (length system-books-dir) (fixnum-bound))
+                              (or (eq action :make-cons)
+                                  (eq action nil)
+                                  (stringp action)))))
   (cond ((and (stringp filename) ; could already be (:system . fname)
               (string-prefixp system-books-dir filename))
          (let ((relative-pathname
