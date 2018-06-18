@@ -1,7 +1,7 @@
 ; Event-Level Evaluation
 ;
-; Copyright (C) 2017 Regents of the University of Texas
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Regents of the University of Texas
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -375,68 +375,107 @@ including a book (because of the way that @('must-fail') is implemented using
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc ensure-error
-  :parents (testing-utilities errors)
+(defsection must-fail-with-error
+  :parents (testing-utilities errors must-fail)
   :short "Ensure that an error occurs"
 
-  :long "<p>Evaluation of @('(ensure-error <form>)') returns without error
- exactly when evaluation of @('<form>') causes an error.</p>
+  :long "<p>Evaluation of @('(must-fail-with-error <form>)') returns without
+ error exactly when evaluation of @('<form>') causes an error.</p>
 
- <p>See @(see must-fail) for more details, as @('ensure-error') abbreviates
- @('must-fail') as follows.</p>
+ <p>See @(see must-fail) for more details, as @('must-fail-with-error')
+ abbreviates @('must-fail') as follows.</p>
 
- @(def ensure-error)
+ @(def must-fail-with-error)
 
- <p>Also see @(see ensure-soft-error) and @(see ensure-hard-error).</p>")
+ <p>Also see @(see must-fail-with-soft-error) and
+ @(see must-fail-with-hard-error).</p>"
 
-(defmacro ensure-error (form &rest args)
-  (list* 'must-fail form :expected :any args))
+  (defmacro must-fail-with-error (form &rest args)
+    (list* 'must-fail form :expected :any args)))
+
+;; deprecated:
+
+(defsection ensure-error
+  :parents (must-fail-with-error)
+  :short "Deprecated synonym of @(tsee must-fail-with-error)"
+  (defmacro ensure-error (&rest args)
+    `(must-fail-with-error ,@args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc ensure-soft-error
-  :parents (testing-utilities errors)
+(defsection must-fail-with-soft-error
+  :parents (testing-utilities errors must-fail)
   :short "Ensure that a soft error occurs"
 
-  :long "<p>Evaluation of @('(ensure-soft-error <form>)') returns without error
- exactly when evaluation of @('<form>') causes a soft error.</p>
+  :long "<p>Evaluation of @('(must-fail-with-soft-error <form>)') returns
+ without error exactly when evaluation of @('<form>') causes a soft error.</p>
 
- <p>See @(see must-fail) for more details, as @('ensure-soft-error')
+ <p>See @(see must-fail) for more details, as @('must-fail-with-soft-error')
  abbreviates @('must-fail') as follows.</p>
 
- @(def ensure-soft-error)
+ @(def must-fail-with-soft-error)
 
- <p>Also see @(see ensure-error) and @(see ensure-hard-error).</p>")
+ <p>Also see @(see must-fail-with-error) and
+ @(see must-fail-with-hard-error).</p>"
 
-(defmacro ensure-soft-error (form &rest args)
-  (list* 'must-fail form :expected :soft args))
+  (defmacro must-fail-with-soft-error (form &rest args)
+    (list* 'must-fail form :expected :soft args)))
+
+;; deprecated:
+
+(defsection ensure-soft-error
+  :parents (must-fail-with-soft-error)
+  :short "Deprecated synonym of @(tsee must-fail-with-soft-error)"
+  (defmacro ensure-soft-error (&rest args)
+    `(must-fail-with-soft-error ,@args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc ensure-hard-error
-  :parents (testing-utilities errors)
+(defsection must-fail-with-hard-error
+  :parents (testing-utilities errors must-fail)
   :short "Ensure that a hard error occurs"
 
-  :long "<p>Evaluation of @('(ensure-hard-error <form>)') returns without error
- exactly when evaluation of @('<form>') causes a hard error.</p>
+  :long "<p>Evaluation of @('(must-fail-with-hard-error <form>)') returns
+ without error exactly when evaluation of @('<form>') causes a hard error.</p>
 
- <p>See @(see must-fail) for more details, as @('ensure-hard-error')
+ <p>See @(see must-fail) for more details, as @('must-fail-with-hard-error')
  abbreviates @('must-fail') as follows.</p>
 
- @(def ensure-hard-error)
+ @(def must-fail-with-hard-error)
 
- <p>Also see @(see ensure-error) and @(see ensure-soft-error).</p>")
+ <p>Also see @(see must-fail-with-error) and
+ @(see must-fail-with-soft-error).</p>"
 
-(defmacro ensure-hard-error (form &rest args)
-  (list* 'must-fail form :expected :hard args))
+  (defmacro must-fail-with-hard-error (form &rest args)
+    (list* 'must-fail form :expected :hard args)))
+
+;; deprecated:
+
+(defsection ensure-hard-error
+  :parents (must-fail-with-hard-error)
+  :short "Deprecated synonym of @(tsee must-fail-with-hard-error)"
+  (defmacro ensure-hard-error (&rest args)
+    `(must-fail-with-hard-error ,@args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro thm? (&rest args)
+(defmacro must-prove (&rest args)
   `(must-succeed (thm ,@args)))
 
-(defmacro not-thm? (&rest args)
+;; deprecated:
+
+(defmacro thm? (&rest args)
+  `(must-prove ,@args))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro must-not-prove (&rest args)
   `(must-fail (thm ,@args)))
+
+;; deprecated:
+
+(defmacro not-thm? (&rest args)
+  `(must-not-prove ,@args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

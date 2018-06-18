@@ -166,6 +166,13 @@
  since tests about the @('misc/assert.lisp') utilities are now in a separate
  book @('misc/assert-tests.lisp').</p>
 
+ <p>The @('misc/eval.lisp') utilities @(tsee ensure-error), @(tsee
+ ensure-soft-error), @(tsee ensure-hard-error), @('thm?'), and @('not-thm?')
+ have been renamed to @(tsee must-fail-with-error), @(tsee
+ must-fail-with-soft-error), @(tsee must-fail-with-hard-error),
+ @('must-prove'), and @('must-not-prove').  The old names are still available
+ as deprecated synonyms, which will be removed in one of the next releases.</p>
+
  <p>The old directory @('books/projects/masc/') has been replaced by the bew
  directory@('books/projects/rac/').  The reason is that our RTL modeling
  language now uses the register class templates of Algorithm C instead of those
