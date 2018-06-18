@@ -37,7 +37,7 @@
                    :check-expansion ....)
    })
    <p>
-   @('form') should evaluate to an error triple @('(mv erp val state)').
+   @('Form') should evaluate to an error triple @('(mv erp val state)').
    If @('erp') is @('nil') and @('val') is the value of @('expr')
    then @('(must-eval-to form expr)') expands to @('(value-triple \'val)');
    otherwise expansion causes an appropriate soft error.
@@ -52,7 +52,7 @@
    <p>
    The @(':with-output-off') option serves to suppress output from @('form'):
    when not @('nil'), it is used as the @(':off') argument of @(tsee with-output).
-   The default is @(':all'), i.e. all output is suppressed.
+   The default is @(':all'), i.e., all output is suppressed.
    </p>
    <p>
    The @(':check-expansion') option determines whether @('form')
@@ -106,13 +106,13 @@
   :long
   "<p>
    This calls @(tsee must-eval-to) with @('t') as the @('expr') argument.
-   @('form') should evaluate to an error triple @('(mv erp val state)').
-   If @('erp') is @('nil') and @('val') is @('y')
+   @('Form') should evaluate to an error triple @('(mv erp val state)').
+   If @('erp') is @('nil') and @('val') is @('t')
    then @('(must-eval-to form expr)') expands to @('(value-triple t)');
    otherwise expansion causes an appropriate soft error.
    </p>
    <p>
-   The optional arguments have the same meaning as in @(tsee must-eval-to).
+   The keyword arguments have the same meaning as in @(tsee must-eval-to).
    </p>
    @(def must-eval-to-t)")
 
