@@ -312,9 +312,10 @@ expected to fail instead of succeed.  The option @(':expected') is described
 below; for everything else, please see the documentation for @('must-succeed')
 for syntax, options, and additional discussion.</p>
 
-<p>Also see @(see ensure-error), @(see ensure-soft-error), and @(see
-ensure-hard-error), which are essentially aliases for @('must-fail') with
-different values for the option, @(':expected'), which we now describe.</p>
+<p>Also see @(see must-fail-with-error), @(see must-fail-with-soft-error), and
+@(see must-fail-with-hard-error), which are essentially aliases for
+@('must-fail') with different values for the option, @(':expected'), which we
+now describe.</p>
 
 <p>When the value of keyword @(':expected') is @(':any'), then @('must-fail')
 succeeds if and only if ACL2 causes an error during evaluation of the supplied
