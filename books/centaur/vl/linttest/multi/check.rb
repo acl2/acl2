@@ -30,7 +30,7 @@
 #
 # Original author: Jared Davis <jared@centtech.com>
 
-require 'require_relative'
+require 'require_relative' if RUBY_VERSION =~ /1\.8/
 require_relative '../utils'
 
 # Don't outlaw bad warnings because the "buggy" module has parse errors.
