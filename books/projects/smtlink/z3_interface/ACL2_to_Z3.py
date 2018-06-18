@@ -75,7 +75,12 @@ class ACL22SMT(object):
     def Qx(self, x, y): return Q(x,y)
 
     def ifx(self, condx, thenx, elsex):
-        return If(condx, thenx, elsex)
+        try:
+            return If(condx, thenx, elsex)
+        except:
+            print "If failed"
+            print 'If(' + str(condx) + ', ' + str(thenx) + ', ' + str(elsex) + ')'
+            raise Exception('giving up')
 
     def hint_okay(self):
         return False
