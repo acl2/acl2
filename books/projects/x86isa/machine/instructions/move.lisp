@@ -365,6 +365,7 @@
        (x86 (write-*ip temp-rip x86)))
       x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-MI
 
   ;; Op/En: MI
@@ -375,7 +376,9 @@
   ;; C7/0: MOV r/m64, imm32
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08
+                                         riml32
+                                         rme-size) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -390,79 +393,54 @@
   :body
 
   (b* ((ctx 'x86-mov-Op/En-MI)
+
        (mod (mrm-mod modr/m))
        (r/m (mrm-r/m modr/m))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
+       (byte-operand? (eql opcode #xC6))
        ((the (integer 1 8) imm-size)
-        (if (equal opcode #xC6)
-            1
-          (if (logbitp #.*w* rex-byte)
-              4
-            (if p3?
-                2
-              4))))
+        (select-operand-size byte-operand? rex-byte t prefixes x86))
+
        ((the (integer 1 8) reg/mem-size)
         (if (and (equal opcode #xC7)
                  (logbitp #.*w* rex-byte))
             8
           imm-size))
 
-       ((mv flg0 (the (signed-byte 64) v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
+       ((mv flg0
+            (the (signed-byte 64) addr)
+            (the (unsigned-byte 3) increment-RIP-by)
+            x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+          (x86-effective-addr p4?
+                              temp-rip
+                              rex-byte
+                              r/m
+                              mod
+                              sib
                               imm-size ;; bytes of immediate data
                               x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
-       ((mv flg1 v-addr)
-        (case p2
-          (0 (mv nil v-addr))
-          ;; I don't really need to check whether FS and GS base are
-          ;; canonical or not.  On the real machine, if the MSRs
-          ;; containing these bases are assigned non-canonical
-          ;; addresses, an exception is raised.
-          (#.*fs-override*
-           (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
-                  (fs-base (n64-to-i64 nat-fs-base)))
-             (if (not (canonical-address-p fs-base))
-                 (mv 'Non-Canonical-FS-Base fs-base)
-               (mv nil (+ fs-base v-addr)))))
-          (#.*gs-override*
-           (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
-                  (gs-base (n64-to-i64 nat-gs-base)))
-             (if (not (canonical-address-p gs-base))
-                 (mv 'Non-Canonical-GS-Base gs-base)
-               (mv nil (+ gs-base v-addr)))))
-          (t (mv 'Unidentified-P2 v-addr))))
-       ((when flg1)
-        (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg1))
-       ((when (not (canonical-address-p v-addr)))
-        (!!ms-fresh :v-addr-not-canonical v-addr))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
+       (seg-reg (select-segment-register p2 p4? 0 0 x86))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        ((mv flg2 imm x86)
-        (rml-size imm-size temp-rip :x x86))
+        (rme-size imm-size temp-rip *cs* :x nil x86))
        ((when flg2)
-        (!!ms-fresh :imm-rml-size-error flg2))
+        (!!ms-fresh :imm-rme-size-error flg2))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
         (add-to-*ip temp-rip imm-size x86))
@@ -480,14 +458,20 @@
        ;; Update the x86 state:
        (inst-ac? t)
        ((mv flg3 x86)
-        (x86-operand-to-reg/mem
-         reg/mem-size inst-ac?
-         nil ;; Not a memory pointer operand
-         imm v-addr rex-byte r/m mod x86))
+        (x86-operand-to-reg/mem$ reg/mem-size
+                                 inst-ac?
+                                 nil ;; Not a memory pointer operand
+                                 imm
+                                 seg-reg
+                                 addr
+                                 rex-byte
+                                 r/m
+                                 mod
+                                 x86))
        ;; Note: If flg2 is non-nil, we bail out without changing the x86 state.
        ((when flg3)
         (!!ms-fresh :x86-operand-to-reg/mem flg3))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================
