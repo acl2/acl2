@@ -192,14 +192,31 @@
 (define xdoc::p ((string stringp))
   :returns (text xdoc::textp)
   :parents (xdoc::xdoc-constructors)
-  :short "Build an XML paragraph @('\<p\>...\</p\>')."
+  :short "Build an XML paragraph @('\<p\>...\</p\>') from a string."
   :long
   "<p>
-   The argument is a string, and not a @(tsee xdoc::textp) value,
-   because a paragraph is expected to be ``atomic''.
-   This can be revisited in the future.
+   The paragraph just contains the string, i.e. it is ``atomic''.
+   </p>
+   <p>
+   Use @(tsee xdoc::p*) to build non-``atomic'' paragraphs.
    </p>"
   (xdoc::tag "p" (xdoc::text string)))
+
+(defsection xdoc::p*
+  :parents (xdoc::xdoc-constructors)
+  :short "Build an XML paragraph @('\<p\>...\</p\>') from
+          zero or more pieces of XDOC text."
+  :long
+  "<p>
+   The arguments are evaluated and must return @(tsee xdoc::textp) values,
+   which are concatenated into a resulting @(tsee xdoc::textp) value.
+   </p>
+   <p>
+   Use @(tsee xdoc::p) to build ``atomic'' paragraphs.
+   </p>
+   @(def xdoc::p*)"
+  (defmacro xdoc::p* (&rest pieces)
+    `(xdoc::tag "p" (concatenate 'string ,@pieces))))
 
 (define xdoc::li ((string stringp))
   :returns (text xdoc::textp)
@@ -210,7 +227,7 @@
    The list item just contains the string, i.e. it is ``atomic''
    </p>
    <p>
-   See @(tsee xdoc::li*) for non-``atomic'' list items.
+   See @(tsee xdoc::li*) to build non-``atomic'' list items.
    </p>"
   (xdoc::tag "li" (xdoc::text string)))
 
@@ -224,7 +241,7 @@
    which are concatenated into a resulting @(tsee xdoc::textp) value.
    </p>
    <p>
-   See @(tsee xdoc::li) for ``atomic'' list items.
+   Use @(tsee xdoc::li) to build ``atomic'' list items.
    </p>
    @(def xdoc::li*)"
   (defmacro xdoc::li* (&rest pieces)
