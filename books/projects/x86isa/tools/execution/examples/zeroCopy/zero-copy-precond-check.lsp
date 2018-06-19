@@ -7,11 +7,11 @@
 
 (include-book "../../top" :ttags :all)
 ;; For all-xlation-governing-entries-paddrs:
-(include-book "../../../../proofs/utilities/system-level-mode/top" :ttags :all)
+(include-book "../../../../proofs/utilities/sys-view/top" :ttags :all)
 (include-book "readValues-addr-byte" :ttags :all)
 
 ;; For the guard proof of the new function introduced by
-;; (x86-debug). The system-level-mode/top book disabled
+;; (x86-debug). The sys-view/top book disabled
 ;; unsigned-byte-p, which causes this failure.
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
@@ -22,12 +22,12 @@
 ;; 2. Set CR0.PG  = 1
 ;; 3. Set CR4.PAE = 1
 ;; 4. Set CR3.PDB = (logtail 12 address-of-pml4-table)
-(init-system-level-mode
+(init-sys-view
  ;; Address of PML4 Table
  0
  x86)
 
-(!page-structure-marking-mode nil x86)
+(!marking-view nil x86)
 
 ;; The default paging structures occupy 2,101,248 bytes (#x201000) and
 ;; are located at address 0. Since the program below exists in the
@@ -35,7 +35,7 @@
 ;; and the program.
 
 ;; A simple sanity check:
-(assert-event (equal (programmer-level-mode x86) nil))
+(assert-event (equal (app-view x86) nil))
 
 ;; Set CPL = 0 (actually, it's 0 by default, which should change, maybe)
 (!seg-visiblei *cs* (!seg-sel-layout-slice :rpl 0 (seg-visiblei *cs* x86)) x86)
@@ -381,8 +381,8 @@
 ;; Tests related to the program.
 (and
  (x86p x86)
- (not (programmer-level-mode x86))
- (not (page-structure-marking-mode x86))
+ (not (app-view x86))
+ (not (marking-view x86))
  (not (alignment-checking-enabled-p x86))
 
  ;; CR3's reserved bits must be zero (MBZ).
@@ -429,7 +429,7 @@
             ;; !!! las-to-pas) is the same as the input x86 to rb?
             ;; !!! But I'm not too worried about this. I've already
             ;; !!! proved
-            ;; !!! mv-nth-2-rb-in-system-level-non-marking-mode, which
+            ;; !!! mv-nth-2-rb-in-system-level-non-marking-view, which
             ;; !!! states that if the model is in non-marking mode and
             ;; !!! rb returns no error, then the output x86 from that
             ;; !!! rb is the same as the input x86.
@@ -478,7 +478,7 @@
        ;; Reading from stack: The stack is located in a
        ;; contiguous region of memory --- no overlaps among
        ;; physical addresses of the stack. I need this hypothesis
-       ;; so that rb-wb-equal-in-system-level-non-marking-mode
+       ;; so that rb-wb-equal-in-system-level-non-marking-view
        ;; can fire.
        ;; (no-duplicates-p
        ;;  (mv-nth 1 (las-to-pas

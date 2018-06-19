@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-memory")
+(include-book "application-level-memory")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================

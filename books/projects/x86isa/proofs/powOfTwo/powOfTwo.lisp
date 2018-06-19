@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
 
 (local (include-book "centaur/gl/gl" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -176,8 +176,8 @@
    (not (alignment-checking-enabled-p x86))
    ;; The model is operating in 64-bit mode.
    (64-bit-modep x86)
-   ;; The model is operating in the programmer-level mode.
-   (programmer-level-mode x86)
+   ;; The model is operating in the application-level view.
+   (app-view x86)
    ;; The program is located at linear addresses ranging from (rip
    ;; x86) to (+ -1 (len *program*) (rip x86)).
    (program-at (rip x86) *program* x86)

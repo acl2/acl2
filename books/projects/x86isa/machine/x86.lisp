@@ -13,7 +13,7 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
 (local (in-theory (e/d ()
-                       (programmer-level-mode-rml08-no-error
+                       (app-view-rml08-no-error
                         (:meta acl2::mv-nth-cons-meta)
                         rme08-value-when-error
                         member-equal))))
@@ -25,6 +25,8 @@
   :short "Definitions of the x86 fetch, decode, and execute function
   and the top-level run function"
   )
+
+(local (xdoc::set-default-parents x86-decoder))
 
 ;; ======================================================================
 
@@ -183,9 +185,9 @@
      (if (64-bit-modep x86)
          (case (mrm-reg modr/m)
            (2
-            (if (programmer-level-mode x86)
+            (if (app-view x86)
                 (x86-step-unimplemented
-                 (cons (cons "LLDT is not implemented in Programmer-level Mode!"
+                 (cons (cons "LLDT is not implemented in Application-level Mode!"
                              (ms x86))
                        (list start-rip temp-rip prefixes rex-byte opcode))
                  x86)
@@ -208,18 +210,18 @@
      (if (64-bit-modep x86)
          (case (mrm-reg modr/m)
            (2
-            (if (programmer-level-mode x86)
+            (if (app-view x86)
                 (x86-step-unimplemented
-                 (cons (cons "LGDT is not implemented in Programmer-level Mode!"
+                 (cons (cons "LGDT is not implemented in Application-level Mode!"
                              (ms x86))
                        (list start-rip temp-rip prefixes rex-byte opcode))
                  x86)
               (x86-lgdt start-rip temp-rip prefixes rex-byte opcode
                         modr/m sib x86)))
            (3
-            (if (programmer-level-mode x86)
+            (if (app-view x86)
                 (x86-step-unimplemented
-                 (cons (cons "LIDT is not supported in Programmer-level Mode!"
+                 (cons (cons "LIDT is not supported in Application-level Mode!"
                              (ms x86))
                        (list start-rip temp-rip prefixes rex-byte opcode))
                  x86)
@@ -239,8 +241,8 @@
     (#x05
      "(SYSCALL)"
      (if (64-bit-modep x86)
-         (if (programmer-level-mode x86)
-             (x86-syscall-programmer-level-mode
+         (if (app-view x86)
+             (x86-syscall-app-view
               start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
            (x86-syscall
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -253,9 +255,9 @@
     (#x07
      "(SYSRET)"
      (if (64-bit-modep x86)
-         (if (programmer-level-mode x86)
+         (if (app-view x86)
              (x86-step-unimplemented
-              (cons (cons "SYSRET is not supported in Programmer-level Mode!"
+              (cons (cons "SYSRET is not supported in Application-level Mode!"
                           (ms x86))
                     (list start-rip temp-rip prefixes rex-byte opcode))
               x86)
@@ -3031,27 +3033,27 @@
                                      negative-logand-to-positive-logand-with-n44p-x
                                      force (force))))))
 
-  (defthm get-prefixes-does-not-modify-x86-state-in-programmer-level-mode
-    (implies (programmer-level-mode x86)
+  (defthm get-prefixes-does-not-modify-x86-state-in-app-view
+    (implies (app-view x86)
              (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))
                     x86))
     :hints (("Goal"
              :in-theory
              (union-theories
               '(get-prefixes
-                rme08-does-not-affect-state-in-programmer-level-mode)
+                rme08-does-not-affect-state-in-app-view)
               (theory 'minimal-theory)))))
 
-  (defthm get-prefixes-does-not-modify-x86-state-in-system-level-non-marking-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (page-structure-marking-mode x86))
+  (defthm get-prefixes-does-not-modify-x86-state-in-system-level-non-marking-view
+    (implies (and (not (app-view x86))
+                  (not (marking-view x86))
                   (x86p x86)
                   (not (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))))
              (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))
                     x86))
     :hints (("Goal"
              :in-theory (union-theories '(get-prefixes
-                                          mv-nth-2-rme08-in-system-level-non-marking-mode)
+                                          mv-nth-2-rme08-in-system-level-non-marking-view)
                                         (theory 'minimal-theory)))))
 
   (local (in-theory (e/d  (rme08 rml08 rvm08)
@@ -3110,7 +3112,7 @@
     :hints (("Goal" :in-theory (e/d (get-prefixes) ()))))
 
   (defthm get-prefixes-opener-lemma-no-prefix-byte
-    ;; Note that this lemma is applicable in the system-level mode too.
+    ;; Note that this lemma is applicable in the system-level view too.
     ;; This lemma would be used for those instructions which do not have
     ;; any prefix byte.
     (implies (and (let*
@@ -3133,8 +3135,8 @@
                        (!prefixes-slice :num-prefixes (- 15 cnt) prefixes))))))
 
   (defthm get-prefixes-opener-lemma-group-1-prefix
-    (implies (and (or (programmer-level-mode x86)
-                      (not (page-structure-marking-mode x86)))
+    (implies (and (or (app-view x86)
+                      (not (marking-view x86)))
                   (let* ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
@@ -3158,9 +3160,9 @@
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-2-prefix
-    (implies (and (or (programmer-level-mode x86)
-                      (and (not (programmer-level-mode x86))
-                           (not (page-structure-marking-mode x86))))
+    (implies (and (or (app-view x86)
+                      (and (not (app-view x86))
+                           (not (marking-view x86))))
                   (let* ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
@@ -3184,9 +3186,9 @@
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-3-prefix
-    (implies (and (or (programmer-level-mode x86)
-                      (and (not (programmer-level-mode x86))
-                           (not (page-structure-marking-mode x86))))
+    (implies (and (or (app-view x86)
+                      (and (not (app-view x86))
+                           (not (marking-view x86))))
                   (let* ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
@@ -3210,9 +3212,9 @@
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-4-prefix
-    (implies (and (or (programmer-level-mode x86)
-                      (and (not (programmer-level-mode x86))
-                           (not (page-structure-marking-mode x86))))
+    (implies (and (or (app-view x86)
+                      (and (not (app-view x86))
+                           (not (marking-view x86))))
                   (let* ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
@@ -3436,8 +3438,8 @@ semantic function.</p>"
                            (mv-nth 1 (add-to-*ip temp-rip2 1 x86))
                          temp-rip2))
 
-      (or (programmer-level-mode x86)
-          (not (page-structure-marking-mode x86)))
+      (or (app-view x86)
+          (not (marking-view x86)))
       (not (if (equal prefix-length 0)
                (mv-nth 0 (add-to-*ip start-rip 1 x86))
              (mv-nth 0 (add-to-*ip start-rip (1+ prefix-length) x86))))
@@ -3471,7 +3473,7 @@ semantic function.</p>"
             (top-level-opcode-execute start-rip temp-rip3 prefixes rex-byte
                                       opcode/escape-byte modr/m sib x86)))
     :hints (("Goal"
-             :cases ((programmer-level-mode x86))
+             :cases ((app-view x86))
              :in-theory (e/d ()
                              (top-level-opcode-execute
                               signed-byte-p

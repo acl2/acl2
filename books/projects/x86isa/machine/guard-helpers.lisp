@@ -141,7 +141,7 @@
    (:mix (:nat a 64) (:nat b 64) (:nat c 64)))
   :rule-classes :linear)
 
-(def-gl-export rml80-in-system-level-mode-guard-proof-helper
+(def-gl-export rml80-in-sys-view-guard-proof-helper
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d) (n08p e)
             (n08p f) (n08p g) (n08p h) (n08p i) (n08p j))
   :concl (<
@@ -186,9 +186,9 @@
                  rml32-guard-proof-helper
                  rb-and-rvm64-helper
                  rml64-guard-proof-helper
-                 rml80-in-system-level-mode-guard-proof-helper)))
+                 rml80-in-sys-view-guard-proof-helper)))
 
-(def-gl-export rml32-rb-system-level-mode-proof-helper
+(def-gl-export rml32-rb-sys-view-proof-helper
   :hyp (and (n08p a)
             (n08p b)
             (n08p c)
@@ -199,7 +199,7 @@
   (gl::auto-bindings
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8))))
 
-;; (def-gl-export rml64-in-system-level-mode-guard-proof-helper
+;; (def-gl-export rml64-in-sys-view-guard-proof-helper
 ;;   :hyp (and (n08p a)
 ;;             (n08p b)
 ;;             (n08p c)
@@ -225,7 +225,7 @@
 ;;                      (:nat g 8)
 ;;                      (:nat h 8))))
 
-(def-gl-export rml64-to-rb-in-system-level-mode-helper
+(def-gl-export rml64-to-rb-in-sys-view-helper
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f) (n08p g) (n08p h))
   :concl (equal
@@ -249,7 +249,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-(def-gl-export rml64-in-system-level-mode-guard-proof-helper
+(def-gl-export rml64-in-sys-view-guard-proof-helper
   :hyp (and (n08p a)
             (n08p b)
             (n08p c)

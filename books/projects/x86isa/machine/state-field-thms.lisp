@@ -70,8 +70,8 @@ re-arrange these nests of updates.</p>
     :FAULT
     :ENV
     :UNDEF
-    :PROGRAMMER-LEVEL-MODE
-    :PAGE-STRUCTURE-MARKING-MODE
+    :APP-VIEW
+    :MARKING-VIEW
     :OS-INFO))
 
 (defconst *x86-array-fields-as-keywords*
@@ -266,14 +266,14 @@ re-arrange these nests of updates.</p>
    `(PROGN
      ,@(x86-stobj-field-thms-fn *pruned-x86-model-modified-mem*)))
 
-  (defthm booleanp-programmer-level-mode-type
+  (defthm booleanp-app-view-type
     (implies (force (x86p x86))
-             (booleanp (xr :programmer-level-mode i x86)))
+             (booleanp (xr :app-view i x86)))
     :rule-classes :type-prescription)
 
-  (defthm booleanp-page-structure-marking-mode-type
+  (defthm booleanp-marking-view-type
     (implies (force (x86p x86))
-             (booleanp (xr :page-structure-marking-mode i x86)))
+             (booleanp (xr :marking-view i x86)))
     :rule-classes :type-prescription)
 
   ;; Type of writers in terms of XW:
@@ -313,8 +313,8 @@ re-arrange these nests of updates.</p>
                            (:msr          (and (integerp index)
                                                (unsigned-byte-p 64 value)))
                            (:env          (env-alistp value))
-                           (:programmer-level-mode (booleanp value))
-                           (:page-structure-marking-mode (booleanp value))
+                           (:app-view (booleanp value))
+                           (:marking-view (booleanp value))
                            (:os-info      (keywordp value))
                            (:mem          (and (integerp index)
                                                (unsigned-byte-p 8 value)))

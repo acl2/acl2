@@ -111,8 +111,8 @@ after the above @('include-book').</p>
 </li>
 
 <li> If you desire to run the model in the @(see
-programmer-level-mode), skip this step.  Use the function @(see
-init-system-level-mode) to switch the model to the system-level mode
+app-view), skip this step.  Use the function @(see
+init-sys-view) to switch the model to the system-level view
 and load our default configuration of 1G page tables \(set up to
 provide an identity mapping from linear to physical addresses\) into
 the model's memory at the provided address, i.e., @('0x0') in our
@@ -121,7 +121,7 @@ flexibility in constructing and loading page tables, see @(csee
 Setting-up-Page-Tables).
 
 <code>
-(init-system-level-mode 0 x86)
+(init-sys-view 0 x86)
 </code>
 </li>
 
@@ -190,7 +190,7 @@ memory.  Initialization of other components of the x86 state can be
 done by using the appropriate updater functions directly.  For
 example, @('!stri') can be used to update system registers like
 @('GDTR') and @('IDTR') when operating in the system-level
-mode.</p></li>
+view.</p></li>
 
 </ul>
 
@@ -343,26 +343,7 @@ remember to initialize the x86 state appropriately.</p>
 
   )
 
-;; <p>You can be liberated from the issues of guessing a good clock value
-;; by using breakpoint debugging \(see @(see Dynamic-instrumentation)\).
-;; The following forms will continue program execution until @('#xF4'),
-;; i.e., the halt instruction, is encountered.</p>
-
-;; <p>If you are in programmer-level mode \(i.e.,
-;; @('(programmer-level-mode x86)') is @('t'):</p>
-
-;; <code>
-;; (x86-break '(equal (memi (rip x86) x86) #xF4))
-;; (x86-debug)
-;; </code>
-
-;; <p>If you are in system-level mode \(i.e., @('(programmer-level-mode
-;; x86)') is @('nil'):</p>
-
-;; <code>
-;; ...
-;; </code>
-
+(local (xdoc::set-default-parents program-execution))
 
 ;; ======================================================================
 
@@ -451,14 +432,14 @@ remember to initialize the x86 state appropriately.</p>
 (defmacro binary-file-load (filename)
   `(binary-file-load-fn ,filename elf mach-o x86 state))
 
-(define init-system-level-mode
+(define init-sys-view
   ((paging-base-addr :type (unsigned-byte 52))
    x86)
   ;; TO-DO: I should have the 40-bit wide PDB as the input, instead of
   ;; the 52-bit wide physical address of the PML4 Table.
 
   :parents (program-execution)
-  :short "Switches the model to the system-level mode and load our
+  :short "Switches the model to the system-level view and load our
 default configuration of 1G page tables"
 
   :guard (equal (loghead 12 paging-base-addr) 0)
@@ -469,21 +450,21 @@ default configuration of 1G page tables"
   ((local (include-book "centaur/gl/gl" :dir :system))
 
    (local
-    (def-gl-thm init-system-level-mode-helper-1
+    (def-gl-thm init-sys-view-helper-1
       :hyp (unsigned-byte-p 64 x)
       :concl (equal (logior 32 (logand 4294967263 (loghead 21 x)))
                     (logior 32 (logand 2097119 (loghead 21 x))))
       :g-bindings (gl::auto-bindings (:nat x 64))))
 
    (local
-    (def-gl-thm init-system-level-mode-helper-2
+    (def-gl-thm init-sys-view-helper-2
       :hyp (unsigned-byte-p 64 x)
       :concl (equal (logior 256 (logand 65279 (loghead 12 x)))
                     (logior 256 (logand 3839 (loghead 12 x))))
       :g-bindings (gl::auto-bindings (:nat x 64))))
 
    (local
-    (def-gl-thm init-system-level-mode-helper-3
+    (def-gl-thm init-sys-view-helper-3
       :hyp (unsigned-byte-p 64 x)
       :concl (equal (logior 2147483648
                             (logand 18446744071562067967
@@ -491,15 +472,15 @@ default configuration of 1G page tables"
                     (logior 2147483648 (loghead 31 x)))
       :g-bindings (gl::auto-bindings (:nat x 64)))))
 
-  (b* ((ctx 'init-system-level-mode)
+  (b* ((ctx 'init-sys-view)
        ((when (not (equal (loghead 12 paging-base-addr) 0)))
         (!!ms-fresh :misaligned-paging-base-address paging-base-addr))
        (paging-base-addr40 (logtail 12 paging-base-addr))
 
        (x86
-        ;; The default value of programmer-level mode is t; nil
-        ;; switches the model to the system-level mode.
-        (!programmer-level-mode nil x86))
+        ;; The default value of app-view is t; nil switches the model
+        ;; to the system-level view.
+        (!app-view nil x86))
 
        (cr0 (n32 (ctri #.*cr0* x86)))
        (cr4 (n21 (ctri #.*cr4* x86)))

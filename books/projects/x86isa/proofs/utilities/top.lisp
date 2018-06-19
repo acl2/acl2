@@ -5,7 +5,7 @@
 
 ;; ----------------------------------------------------------------------
 
-(include-book "programmer-level-mode/top" :ttags :all)
-(include-book "system-level-mode/top" :ttags :all)
+(include-book "app-view/top" :ttags :all)
+(include-book "sys-view/top" :ttags :all)
 
 ;; ----------------------------------------------------------------------

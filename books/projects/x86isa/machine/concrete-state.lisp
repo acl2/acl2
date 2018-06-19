@@ -275,11 +275,6 @@
              :resizable nil)
 
       ;; MXCSR
-      ;; We do not separate out the MXCSR flags like we did for RFLAGS
-      ;; since on average, MXCSR flags are not as often
-      ;; accessed/updated as the RFLAGS, simply because in avergae
-      ;; programs, there are more general-purpose instructions than
-      ;; floating-point instructions.
       ;; Top 16 bits are reserved.
       (mxcsr$c :type (unsigned-byte 32)
                ;; Bits 7 through 12 are the individual masks for the
@@ -303,11 +298,9 @@
       ;; We need some way to pass exceptions and such around.  So we
       ;; stuff them into the fault slot, to be processed by the step
       ;; function.
-
       (fault$c :type t :initially nil)
 
       ;; Environment for the programs running on our x86 model:
-
       (env$c :type (satisfies env-alistp) :initially nil)
 
       ;; Field that seeds unknown values that characterize commonly
@@ -318,17 +311,16 @@
       ;; support for paging is absent, and it is present otherwise.
       ;; This field is an artifact of our model, and does not exist on
       ;; the real x86 processors.
-      (programmer-level-mode$c :type (satisfies booleanp) :initially t)
+      (app-view$c :type (satisfies booleanp) :initially t)
 
       ;; The following field also acts as a switch. When its value is
       ;; t, then accessed and dirty bits in the paging structures are
       ;; set during those data structure traversals, as
       ;; expected. Otherwise, these bits are not set. This switch is
-      ;; meaningful only in the system-level mode of operation.
-      (page-structure-marking-mode$c :type (satisfies booleanp) :initially t)
+      ;; meaningful only in when the model is in sys-view.
+      (marking-view$c :type (satisfies booleanp) :initially t)
 
-      ;; The os-info$c is meaningful only when we are in the
-      ;; programmer-level mode.
+      ;; The os-info$c is meaningful only in the application-level view.
       (os-info$c               :type (satisfies keywordp) :initially :linux)
 
       ;; For our ACL2 model, we define a paging-like mechanism to

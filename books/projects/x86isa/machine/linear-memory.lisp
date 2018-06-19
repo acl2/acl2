@@ -35,7 +35,7 @@ same as a physical address.</li>
 <li><i>Physical Address:</i> The memory that the processor addresses
 on its bus is called physical memory. Physical memory is organized as
 a sequence of 8-bit bytes. Each byte is assigned a unique address,
-called a physical address. When employing the processor s memory
+called a physical address. When employing the processor's memory
 management facilities, programs do not directly address physical
 memory.</li>
 
@@ -528,8 +528,8 @@ memory.</li>
 
     (if (zp n)
         (mv nil 0 x86)
-      ;; rb-1 is used only in the programmer-level mode, so it makes
-      ;; sense to use rvm08 here.
+      ;; rb-1 is used only in the app-level view so it makes sense to
+      ;; use rvm08 here.
       (b* (((unless (canonical-address-p addr))
             (mv t 0 x86))
            ((mv flg0 byte0 x86)
@@ -558,20 +558,20 @@ memory.</li>
       (implies (x86p x86)
                (x86p (mv-nth 2 (rb-1 n addr r-x x86)))))
 
-    (defthm rb-1-returns-x86-programmer-level-mode
-      (implies (programmer-level-mode x86)
+    (defthm rb-1-returns-x86-app-view
+      (implies (app-view x86)
                (equal (mv-nth 2 (rb-1 n addr r-x x86)) x86)))
 
     (local
-     (defthm rb-1-returns-no-error-programmer-level-mode-helper
-       (implies (xr :programmer-level-mode 0 x86)
+     (defthm rb-1-returns-no-error-app-view-helper
+       (implies (xr :app-view 0 x86)
                 (not (mv-nth 0 (rb-1 1 #.*2^47-1* r-x x86))))
        :hints (("Goal" :expand (rb-1 1 #.*2^47-1* r-x x86)))))
 
-    (defthm rb-1-returns-no-error-programmer-level-mode
+    (defthm rb-1-returns-no-error-app-view
       (implies (and (canonical-address-p addr)
                     (canonical-address-p (+ -1 n addr))
-                    (programmer-level-mode x86))
+                    (app-view x86))
                (equal (mv-nth 0 (rb-1 n addr r-x x86)) nil))
       :hints (("Goal" :in-theory (e/d (rvm08) ()))))
 
@@ -635,7 +635,7 @@ memory.</li>
      x86)
     :enabled t
     :guard (and (canonical-address-p (+ -1 n lin-addr))
-                (not (programmer-level-mode x86)))
+                (not (app-view x86)))
     ;; It'd be sweet if las-to-pas returned the following instead of a
     ;; list of physical addresses: <n, phy-addr>, where this region of
     ;; physical memory corresponds to the linear memory region under
@@ -723,7 +723,7 @@ memory.</li>
     (make-event
      (generate-read-fn-over-xw-thms
       (remove-elements-from-list
-       '(:mem :rflags :fault :ctr :msr :programmer-level-mode :page-structure-marking-mode :seg-visible)
+       '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible)
        *x86-field-names-as-keywords*)
       'las-to-pas
       (acl2::formals 'las-to-pas (w state))
@@ -732,7 +732,7 @@ memory.</li>
     (make-event
      (generate-read-fn-over-xw-thms
       (remove-elements-from-list
-       '(:mem :rflags :fault :ctr :msr :programmer-level-mode :page-structure-marking-mode :seg-visible)
+       '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible)
        *x86-field-names-as-keywords*)
       'las-to-pas
       (acl2::formals 'las-to-pas (w state))
@@ -760,7 +760,7 @@ memory.</li>
     (make-event
      (generate-write-fn-over-xw-thms
       (remove-elements-from-list
-       '(:mem :rflags :fault :ctr :msr :programmer-level-mode :page-structure-marking-mode :seg-visible)
+       '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible)
        *x86-field-names-as-keywords*)
       'las-to-pas
       (acl2::formals 'las-to-pas (w state))
@@ -773,8 +773,8 @@ memory.</li>
                       (xw :rflags 0 value (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))))
       :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-    (defthm mv-nth-2-las-to-pas-system-level-non-marking-mode
-      (implies (and (not (page-structure-marking-mode x86))
+    (defthm mv-nth-2-las-to-pas-system-level-non-marking-view
+      (implies (and (not (marking-view x86))
                     (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86))))
                (equal (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))
                       x86))
@@ -857,7 +857,7 @@ memory.</li>
   ;;   :short "Used to discharge @('mbe') proof obligations for @(see
   ;;   rml128) and @(see wml128)"
   ;;   :enabled t
-  ;;   :guard (not (programmer-level-mode x86))
+  ;;   :guard (not (app-view x86))
 
   ;;   (if (atom l-addrs)
   ;;       (mv nil (acl2::rev p-addrs) x86)
@@ -935,7 +935,7 @@ memory.</li>
     :parents (reasoning-about-memory-reads-and-writes physical-memory)
     :enabled t
     :verify-guards nil
-    :guard (not (programmer-level-mode x86))
+    :guard (not (app-view x86))
     (if (endp p-addrs)
         0
       (b* ((addr0 (car p-addrs))
@@ -990,7 +990,7 @@ memory.</li>
     :verify-guards nil
     :guard (canonical-address-p (+ -1 n addr))
 
-    (if (programmer-level-mode x86)
+    (if (app-view x86)
         (rb-1 n addr r-x x86)
       (b* (((mv flgs p-addrs x86)
             (las-to-pas n addr r-x x86))
@@ -1017,8 +1017,8 @@ memory.</li>
       (equal (mv-nth 1 (rb 0 addr r-x x86)) 0)
       :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-    (defthmd rb-is-rb-1-for-programmer-level-mode
-      (implies (programmer-level-mode x86)
+    (defthmd rb-is-rb-1-for-app-view
+      (implies (app-view x86)
                (equal (rb n addr r-x x86)
                       (rb-1 n addr r-x x86))))
 
@@ -1026,18 +1026,18 @@ memory.</li>
       (implies (x86p x86)
                (x86p (mv-nth 2 (rb n addr r-x x86)))))
 
-    (defthm rb-returns-no-error-programmer-level-mode
-      (implies (and (programmer-level-mode x86)
+    (defthm rb-returns-no-error-app-view
+      (implies (and (app-view x86)
                     (canonical-address-p addr)
                     (canonical-address-p (+ -1 n addr)))
                (equal (mv-nth 0 (rb n addr r-x x86)) nil)))
 
-    (defthm rb-returns-x86-programmer-level-mode
-      (implies (programmer-level-mode x86)
+    (defthm rb-returns-x86-app-view
+      (implies (app-view x86)
                (equal (mv-nth 2 (rb n addr r-x x86)) x86)))
 
-    (defthm rb-returns-x86-in-non-marking-mode-if-no-error
-      (implies (and (not (page-structure-marking-mode x86))
+    (defthm rb-returns-x86-in-non-marking-view-if-no-error
+      (implies (and (not (marking-view x86))
                     (not (mv-nth 0 (rb n-1 addr-1 r-x-1 x86))))
                (equal (mv-nth 2 (rb n-1 addr-1 r-x-1 x86))
                       x86))
@@ -1057,17 +1057,17 @@ memory.</li>
       :gen-linear t
       :hints-l (("Goal" :in-theory (e/d* () (rb)))))
 
-    (defthm-usb size-of-rb-in-programmer-level-mode
+    (defthm-usb size-of-rb-in-app-view
       ;; No need to know whether the addresses are canonical or not...
-      :hyp (and (programmer-level-mode x86) (natp n) (x86p x86))
+      :hyp (and (app-view x86) (natp n) (x86p x86))
       :bound (ash n 3)
       :concl (mv-nth 1 (rb n addr r-x x86))
       :gen-linear t
       :hints-l (("Goal" :in-theory (e/d* () (rb)))))
 
-    (defthm rb-values-and-!flgi-in-system-level-mode
+    (defthm rb-values-and-!flgi-in-sys-view
       (implies (and (not (equal index *ac*))
-                    (not (programmer-level-mode x86))
+                    (not (app-view x86))
                     (x86p x86))
                (and (equal (mv-nth 0 (rb n addr r-x (!flgi index value x86)))
                            (mv-nth 0 (rb n addr r-x x86)))
@@ -1077,9 +1077,9 @@ memory.</li>
                :do-not-induct t
                :in-theory (e/d* (rb) ()))))
 
-    (defthm rb-values-and-!flgi-undefined-in-system-level-mode
+    (defthm rb-values-and-!flgi-undefined-in-sys-view
       (implies (and (not (equal index *ac*))
-                    (not (programmer-level-mode x86))
+                    (not (app-view x86))
                     (x86p x86))
                (and (equal (mv-nth 0 (rb n addr r-x (!flgi-undefined index x86)))
                            (mv-nth 0 (rb n addr r-x x86)))
@@ -1113,8 +1113,8 @@ memory.</li>
 
         (if (zp n)
             (mv nil x86)
-          ;; wb-1 is used only in the programmer-level mode, so it makes
-          ;; sense to use wvm08 here.
+          ;; wb-1 is used only in the app-view, so it makes sense to
+          ;; use wvm08 here.
           (b* (((unless (canonical-address-p addr))
                 (mv t x86))
                ((mv flg0 x86)
@@ -1134,15 +1134,15 @@ memory.</li>
                (x86p (mv-nth 1 (wb-1 n addr w value x86)))))
 
     (local
-     (defthm wb-1-returns-no-error-programmer-level-mode-helper
-       (implies (xr :programmer-level-mode 0 x86)
+     (defthm wb-1-returns-no-error-app-view-helper
+       (implies (xr :app-view 0 x86)
                 (not (mv-nth 0 (wb-1 1 #.*2^47-1* w value x86))))
        :hints (("Goal" :expand (wb-1 1 #.*2^47-1* w value x86)))))
 
-    (defthm wb-1-returns-no-error-programmer-level-mode
+    (defthm wb-1-returns-no-error-app-view
       (implies (and (canonical-address-p addr)
                     (canonical-address-p (+ -1 n addr))
-                    (programmer-level-mode x86))
+                    (app-view x86))
                (equal (mv-nth 0 (wb-1 n addr w value x86))
                       nil))
       :hints (("Goal" :in-theory (e/d (wvm08) ())))))
@@ -1152,7 +1152,7 @@ memory.</li>
                                     x86)
     :parents (reasoning-about-memory-reads-and-writes physical-memory)
     :enabled t
-    :guard (not (programmer-level-mode x86))
+    :guard (not (app-view x86))
     (if (endp p-addrs)
         x86
       (b* ((addr0 (car p-addrs))
@@ -1176,7 +1176,7 @@ memory.</li>
                       (xr fld index x86)))
       :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-    (defthm write-to-physical-memory-xw-in-system-level-mode
+    (defthm write-to-physical-memory-xw-in-sys-view
       ;; Keep the state updated by write-to-physical-memory inside all other nests of writes.
       (implies (not (equal fld :mem))
                (equal (write-to-physical-memory p-addrs bytes (xw fld index value x86))
@@ -1202,7 +1202,7 @@ memory.</li>
     :guard (canonical-address-p (+ -1 n addr))
     :enabled t
 
-    (if (programmer-level-mode x86)
+    (if (app-view x86)
         (wb-1 n addr w value x86)
       (b* (((mv flgs p-addrs x86)
             (las-to-pas n addr :w x86))
@@ -1216,8 +1216,8 @@ memory.</li>
       (equal (mv-nth 1 (wb 0 addr val w x86)) x86)
       :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-    (defthmd wb-is-wb-1-for-programmer-level-mode
-      (implies (programmer-level-mode x86)
+    (defthmd wb-is-wb-1-for-app-view
+      (implies (app-view x86)
                (equal (wb n addr w value x86)
                       (wb-1 n addr w value x86))))
 
@@ -1225,32 +1225,32 @@ memory.</li>
       (implies (x86p x86)
                (x86p (mv-nth 1 (wb n addr w value x86)))))
 
-    (defthm wb-returns-no-error-programmer-level-mode
+    (defthm wb-returns-no-error-app-view
       (implies (and (canonical-address-p addr)
                     (canonical-address-p (+ -1 n addr))
-                    (programmer-level-mode x86))
+                    (app-view x86))
                (equal (mv-nth 0 (wb n addr w value x86)) nil))))
 
-  (defthm wb-by-wb-1-for-programmer-level-mode-induction-rule
+  (defthm wb-by-wb-1-for-app-view-induction-rule
     t
     :rule-classes ((:induction :pattern (wb n addr w value x86)
-                               :condition (programmer-level-mode x86)
+                               :condition (app-view x86)
                                :scheme (wb-1 n addr w value x86))))
 
   (local (in-theory (e/d () (force (force)))))
 
-  ;; Relating rb and xr/xw in the programmer-level mode:
+  ;; Relating rb and xr/xw in the application-level view:
 
-  (defthm xr-rb-state-in-programmer-level-mode
-    (implies (programmer-level-mode x86)
+  (defthm xr-rb-state-in-app-view
+    (implies (app-view x86)
              (equal (xr fld index (mv-nth 2 (rb n addr r-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ()))))
 
-  (defthm rb-xw-values-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
+  (defthm rb-xw-values-in-app-view
+    (implies (and (app-view x86)
                   (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (and (equal (mv-nth 0 (rb n addr r-x (xw fld index value x86)))
                          (mv-nth 0 (rb n addr r-x x86)))
                   (equal (mv-nth 1 (rb n addr r-x (xw fld index value x86)))
@@ -1258,17 +1258,17 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
              :induct (rb-1 n addr r-x x86))))
 
-  (defthm rb-xw-state-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
-                  (not (equal fld :programmer-level-mode)))
+  (defthm rb-xw-state-in-app-view
+    (implies (and (app-view x86)
+                  (not (equal fld :app-view)))
              (equal (mv-nth 2 (rb n addr r-x (xw fld index value x86)))
                     (xw fld index value (mv-nth 2 (rb n addr r-x x86)))))
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ()))))
 
-  ;; Relating rb and xr/xw in the system-level mode:
+  ;; Relating rb and xr/xw in the system-level view:
 
-  (defthm xr-rb-1-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
+  (defthm xr-rb-1-state-in-sys-view
+    (implies (and (not (app-view x86))
                   (not (equal fld :mem))
                   (not (equal fld :fault)))
              (equal (xr fld index (mv-nth 2 (rb-1 n addr r-x x86)))
@@ -1276,8 +1276,8 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
              :induct (rb-1 n addr r-x x86))))
 
-  ;; (defthm xr-rb-state-in-system-level-mode
-  ;;   (implies (and (not (programmer-level-mode x86))
+  ;; (defthm xr-rb-state-in-sys-view
+  ;;   (implies (and (not (app-view x86))
   ;;                 (not (equal fld :mem))
   ;;                 (not (equal fld :fault)))
   ;;            (equal (xr fld index (mv-nth 2 (rb addr r-x x86)))
@@ -1285,8 +1285,8 @@ memory.</li>
   ;;   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
 
   ;; The following make-event generates a bunch of rules that together
-  ;; say the same thing as xr-rb-state-in-system-level-mode, but these
-  ;; rules are more efficient than xr-rb-state-in-system-level-mode as
+  ;; say the same thing as xr-rb-state-in-sys-view, but these
+  ;; rules are more efficient than xr-rb-state-in-sys-view as
   ;; they match less frequently.
   (make-event
    (generate-xr-over-write-thms
@@ -1297,16 +1297,16 @@ memory.</li>
     (acl2::formals 'rb (w state))
     :output-index 2))
 
-  (defthm rb-1-xw-values-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
+  (defthm rb-1-xw-values-in-sys-view
+    (implies (and (not (app-view x86))
                   (not (equal fld :mem))
                   (not (equal fld :rflags))
                   (not (equal fld :ctr))
                   (not (equal fld :seg-visible))
                   (not (equal fld :msr))
                   (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
+                  (not (equal fld :app-view))
+                  (not (equal fld :marking-view)))
              (and (equal (mv-nth 0 (rb-1 n addr r-x (xw fld index value x86)))
                          (mv-nth 0 (rb-1 n addr r-x x86)))
                   (equal (mv-nth 1 (rb-1 n addr r-x (xw fld index value x86)))
@@ -1314,16 +1314,16 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
              :induct (rb-1 n addr r-x x86))))
 
-  ;; (defthm rb-xw-values-in-system-level-mode
-  ;;   (implies (and (not (programmer-level-mode x86))
+  ;; (defthm rb-xw-values-in-sys-view
+  ;;   (implies (and (not (app-view x86))
   ;;                 (not (equal fld :mem))
   ;;                 (not (equal fld :rflags))
   ;;                 (not (equal fld :ctr))
   ;;                 (not (equal fld :seg-visible))
   ;;                 (not (equal fld :msr))
   ;;                 (not (equal fld :fault))
-  ;;                 (not (equal fld :programmer-level-mode))
-  ;;                 (not (equal fld :page-structure-marking-mode)))
+  ;;                 (not (equal fld :app-view))
+  ;;                 (not (equal fld :marking-view)))
   ;;            (and (equal (mv-nth 0 (rb addr r-x (xw fld index value x86)))
   ;;                        (mv-nth 0 (rb addr r-x x86)))
   ;;                 (equal (mv-nth 1 (rb addr r-x (xw fld index value x86)))
@@ -1332,14 +1332,14 @@ memory.</li>
 
 
   ;; The following make-events generate a bunch of rules that together
-  ;; say the same thing as rb-xw-values-in-system-level-mode, but
+  ;; say the same thing as rb-xw-values-in-sys-view, but
   ;; these rules are more efficient than
-  ;; rb-xw-values-in-system-level-mode as they match less frequently.
+  ;; rb-xw-values-in-sys-view as they match less frequently.
   (make-event
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible :msr :fault
-            :programmer-level-mode :page-structure-marking-mode)
+            :app-view :marking-view)
      *x86-field-names-as-keywords*)
     'rb
     (acl2::formals 'rb (w state))
@@ -1349,14 +1349,14 @@ memory.</li>
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible :msr :fault
-            :programmer-level-mode :page-structure-marking-mode)
+            :app-view :marking-view)
      *x86-field-names-as-keywords*)
     'rb
     (acl2::formals 'rb (w state))
     :output-index 1))
 
-  (defthm rb-1-xw-rflags-not-ac-values-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
+  (defthm rb-1-xw-rflags-not-ac-values-in-sys-view
+    (implies (and (not (app-view x86))
                   (equal (rflags-slice :ac value)
                          (rflags-slice :ac (rflags x86))))
              (and (equal (mv-nth 0 (rb-1 n addr r-x (xw :rflags 0 value x86)))
@@ -1366,8 +1366,8 @@ memory.</li>
     :hints (("Goal" :induct (rb-1 n addr r-x x86)
              :in-theory (e/d* (rb rb-1) ()))))
 
-  (defthm rb-xw-rflags-not-ac-values-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
+  (defthm rb-xw-rflags-not-ac-values-in-sys-view
+    (implies (and (not (app-view x86))
                   (equal (rflags-slice :ac value)
                          (rflags-slice :ac (rflags x86))))
              (and (equal (mv-nth 0 (rb n addr r-x (xw :rflags 0 value x86)))
@@ -1376,51 +1376,51 @@ memory.</li>
                          (mv-nth 1 (rb n addr r-x x86)))))
     :hints (("Goal" :in-theory (e/d* (rb) ()))))
 
-  (defthm rb-1-xw-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
+  (defthm rb-1-xw-state-in-sys-view
+    (implies (and (not (app-view x86))
                   (not (equal fld :mem))
                   (not (equal fld :rflags))
                   (not (equal fld :ctr))
                   (not (equal fld :seg-visible))
                   (not (equal fld :msr))
                   (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
+                  (not (equal fld :app-view))
+                  (not (equal fld :marking-view)))
              (equal (mv-nth 2 (rb-1 n addr r-x (xw fld index value x86)))
                     (xw fld index value (mv-nth 2 (rb-1 n addr r-x x86)))))
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
              :induct (rb-1 n addr r-x x86))))
 
-  ;; (defthm rb-xw-state-in-system-level-mode
-  ;;   (implies (and (not (programmer-level-mode x86))
+  ;; (defthm rb-xw-state-in-sys-view
+  ;;   (implies (and (not (app-view x86))
   ;;                 (not (equal fld :mem))
   ;;                 (not (equal fld :rflags))
   ;;                 (not (equal fld :ctr))
   ;;                 (not (equal fld :seg-visible))
   ;;                 (not (equal fld :msr))
   ;;                 (not (equal fld :fault))
-  ;;                 (not (equal fld :programmer-level-mode))
-  ;;                 (not (equal fld :page-structure-marking-mode)))
+  ;;                 (not (equal fld :app-view))
+  ;;                 (not (equal fld :marking-view)))
   ;;            (equal (mv-nth 2 (rb addr r-x (xw fld index value x86)))
   ;;                   (xw fld index value (mv-nth 2 (rb addr r-x x86)))))
   ;;   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
 
   ;; The following make-events generate a bunch of rules that together
-  ;; say the same thing as rb-xw-state-in-system-level-mode but
+  ;; say the same thing as rb-xw-state-in-sys-view but
   ;; these rules are more efficient than
-  ;; rb-xw-state-in-system-level-mode as they match less frequently.
+  ;; rb-xw-state-in-sys-view as they match less frequently.
   (make-event
    (generate-write-fn-over-xw-thms
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible :msr :fault
-            :programmer-level-mode :page-structure-marking-mode)
+            :app-view :marking-view)
      *x86-field-names-as-keywords*)
     'rb
     (acl2::formals 'rb (w state))
     :output-index 2))
 
-  (defthm rb-1-xw-rflags-not-ac-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
+  (defthm rb-1-xw-rflags-not-ac-state-in-sys-view
+    (implies (and (not (app-view x86))
                   (equal (rflags-slice :ac value)
                          (rflags-slice :ac (rflags x86))))
              (equal (mv-nth 2 (rb-1 n addr r-x (xw :rflags 0 value x86)))
@@ -1428,58 +1428,58 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
              :induct (rb-1 n addr r-x x86))))
 
-  (defthm rb-xw-rflags-not-ac-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
+  (defthm rb-xw-rflags-not-ac-state-in-sys-view
+    (implies (and (not (app-view x86))
                   (equal (rflags-slice :ac value)
                          (rflags-slice :ac (rflags x86))))
              (equal (mv-nth 2 (rb n addr r-x (xw :rflags 0 value x86)))
                     (xw :rflags 0 value (mv-nth 2 (rb n addr r-x x86)))))
     :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
 
-  ;; Relating wb and xr/xw in the programmer-level mode:
+  ;; Relating wb and xr/xw in the application-level view:
 
-  (defthm xr-wb-1-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
+  (defthm xr-wb-1-in-app-view
+    (implies (and (app-view x86)
                   (not (equal fld :mem)))
              (equal (xr fld index (mv-nth 1 (wb-1 n addr w value x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* (wb-1) ()))))
 
-  (defthm xr-wb-in-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
+  (defthm xr-wb-in-app-view
+    (implies (and (app-view x86)
                   (not (equal fld :mem)))
              (equal (xr fld index (mv-nth 1 (wb n addr w value x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
-  (defthm wb-1-xw-in-programmer-level-mode
+  (defthm wb-1-xw-in-app-view
     ;; Keep the state updated by wb-1 inside all other nests of writes.
-    (implies (and (programmer-level-mode x86)
+    (implies (and (app-view x86)
                   (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (and (equal (mv-nth 0 (wb-1 n addr w val (xw fld index value x86)))
                          (mv-nth 0 (wb-1 n addr w val x86)))
                   (equal (mv-nth 1 (wb-1 n addr w val (xw fld index value x86)))
                          (xw fld index value (mv-nth 1 (wb-1 n addr w val x86))))))
     :hints (("Goal" :in-theory (e/d* (wb-1) ()))))
 
-  (defthm wb-xw-in-programmer-level-mode
+  (defthm wb-xw-in-app-view
     ;; Keep the state updated by wb inside all other nests of writes.
-    (implies (and (programmer-level-mode x86)
+    (implies (and (app-view x86)
                   (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (and (equal (mv-nth 0 (wb n addr w val (xw fld index value x86)))
                          (mv-nth 0 (wb n addr w val x86)))
                   (equal (mv-nth 1 (wb n addr w val (xw fld index value x86)))
                          (xw fld index value (mv-nth 1 (wb n addr w val x86))))))
     :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
-  ;; Relating wb and xr/xw in the system-level mode:
+  ;; Relating wb and xr/xw in the system-level view:
 
   ;; The following make-events generate a bunch of rules that together
-  ;; say the same thing as xr-wb-in-system-level-mode but
+  ;; say the same thing as xr-wb-in-sys-view but
   ;; these rules are more efficient than
-  ;; xr-wb-in-system-level-mode as they match less frequently.
+  ;; xr-wb-in-sys-view as they match less frequently.
   (make-event
    (generate-xr-over-write-thms
     (remove-elements-from-list
@@ -1489,7 +1489,7 @@ memory.</li>
     (acl2::formals 'wb (w state))
     :output-index 1))
 
-  (defthm xr-fault-wb-in-system-level-marking-mode
+  (defthm xr-fault-wb-in-system-level-marking-view
     (implies
      (not (mv-nth 0 (las-to-pas n addr :w (double-rewrite x86))))
      (equal (xr :fault 0 (mv-nth 1 (wb n addr w val x86)))
@@ -1506,15 +1506,15 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* (64-bit-modep) ()))))
 
   ;; The following make-events generate a bunch of rules that together
-  ;; say the same thing as wb-xw-in-system-level-mode, but these rules
-  ;; are more efficient than wb-xw-in-system-level-mode as they match
+  ;; say the same thing as wb-xw-in-sys-view, but these rules
+  ;; are more efficient than wb-xw-in-sys-view as they match
   ;; less frequently.  Note that wb is kept inside all other nests of
   ;; writes.
   (make-event
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible :msr :fault
-            :programmer-level-mode :page-structure-marking-mode)
+            :app-view :marking-view)
      *x86-field-names-as-keywords*)
     'wb
     (acl2::formals 'wb (w state))
@@ -1524,13 +1524,13 @@ memory.</li>
    (generate-write-fn-over-xw-thms
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible :msr :fault
-            :programmer-level-mode :page-structure-marking-mode)
+            :app-view :marking-view)
      *x86-field-names-as-keywords*)
     'wb
     (acl2::formals 'wb (w state))
     :output-index 1))
 
-  (defthm wb-xw-rflags-not-ac-in-system-level-mode
+  (defthm wb-xw-rflags-not-ac-in-sys-view
     ;; Keep the state updated by wb inside all other nests of writes.
     (implies (equal (rflags-slice :ac value)
                     (rflags-slice :ac (rflags x86)))
@@ -1542,8 +1542,8 @@ memory.</li>
 
   ;; (defthm mv-nth-1-wb-and-!flgi-commute
   ;;   (implies (and (not (equal index *ac*))
-  ;;                 (not (programmer-level-mode x86))
-  ;;                 (not (page-structure-marking-mode x86)))
+  ;;                 (not (app-view x86))
+  ;;                 (not (marking-view x86)))
   ;;            (equal (mv-nth 1 (wb addr-lst (!flgi index val x86)))
   ;;                   (!flgi index val (mv-nth 1 (wb addr-lst x86)))))
   ;;   :hints (("Goal" :in-theory (e/d* (!flgi
@@ -1562,15 +1562,15 @@ memory.</li>
 
   (defthm mv-nth-1-wb-and-!flgi-undefined-commute
     (implies (and (not (equal index *ac*))
-                  (not (programmer-level-mode x86))
-                  (not (page-structure-marking-mode x86)))
+                  (not (app-view x86))
+                  (not (marking-view x86)))
              (equal (mv-nth 1 (wb n addr w val (!flgi-undefined index x86)))
                     (!flgi-undefined index (mv-nth 1 (wb n addr w val x86)))))
     :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (wb !flgi)))))
 
-  (defthm xr-fault-wb-in-system-level-mode
+  (defthm xr-fault-wb-in-sys-view
     (implies (and (not (mv-nth 0 (las-to-pas n addr :w x86)))
-                  (not (page-structure-marking-mode x86)))
+                  (not (marking-view x86)))
              (equal (xr :fault 0 (mv-nth 1 (wb n addr w val x86)))
                     (xr :fault 0 x86)))
     :hints
@@ -1608,10 +1608,10 @@ memory.</li>
                        (+ 8 (ash n 3))))
        :hints (("Goal" :in-theory (e/d* (ash) ()))))))
 
-  (defthm split-rb-in-programmer-level-mode
+  (defthm split-rb-in-app-view
     (implies (and (canonical-address-p (+ -1 i j lin-addr))
                   (canonical-address-p lin-addr)
-                  (programmer-level-mode x86)
+                  (app-view x86)
                   (natp i)
                   (natp j))
              (equal (mv-nth 1 (rb (+ i j) lin-addr r-x x86))
@@ -1634,11 +1634,11 @@ memory.</li>
            (split-wb-induction-scheme (1- i) j (1+ lin-addr) (logtail 8 val)
                                       (mv-nth 1 (wvm08 lin-addr (loghead 8 val) x86))))))
 
-  (defthm split-wb-in-programmer-level-mode
+  (defthm split-wb-in-app-view
     (implies (and (canonical-address-p lin-addr)
                   (canonical-address-p (+ -1 i j lin-addr))
                   (unsigned-byte-p (ash (+ i j) 3) val)
-                  (programmer-level-mode x86)
+                  (app-view x86)
                   (posp i)
                   (natp j))
              (equal (mv-nth 1 (wb-1 (+ i j) lin-addr w val x86))
@@ -1657,7 +1657,7 @@ memory.</li>
 ;; read/write functions:
 
 ;; I haven't used physical memory functions like rm-low-* and wm-low-*
-;; in the system-level mode below because the *-low-* functions take
+;; in the system-level view below because the *-low-* functions take
 ;; one physical address as input and assume that the values to be read
 ;; or written are from contiguous physical memory locations. In the
 ;; functions below, there's no guarantee that the translation of
@@ -1677,7 +1677,7 @@ memory.</li>
 (local
  (defthmd rb-1-in-terms-of-its-components
    ;; Ugh, dumb rule.
-   (implies (and (programmer-level-mode x86)
+   (implies (and (app-view x86)
                  (canonical-address-p lin-addr)
                  (canonical-address-p (+ -1 n lin-addr))
                  (x86p x86))
@@ -1728,7 +1728,7 @@ memory.</li>
        :logic
        (rb 1 lin-addr r-x x86)
        :exec
-       (if (programmer-level-mode x86)
+       (if (app-view x86)
            (rvm08 lin-addr x86)
          (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
                (la-to-pa lin-addr r-x x86))
@@ -1759,13 +1759,13 @@ memory.</li>
              (equal (mv-nth 1 (rml08 addr r-x x86)) 0))
     :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
 
-  (defthm rml08-does-not-affect-state-in-programmer-level-mode
-    (implies (programmer-level-mode x86)
+  (defthm rml08-does-not-affect-state-in-app-view
+    (implies (app-view x86)
              (equal (mv-nth 2 (rml08 start-rip :x x86)) x86))
     :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
 
-  (defthm programmer-level-mode-rml08-no-error
-    (implies (and (programmer-level-mode x86)
+  (defthm app-view-rml08-no-error
+    (implies (and (app-view x86)
                   (canonical-address-p addr)
                   (x86p x86))
              (and (equal (mv-nth 0 (rml08 addr r-x x86)) nil)
@@ -1774,43 +1774,43 @@ memory.</li>
                   (equal (mv-nth 2 (rml08 addr r-x x86)) x86)))
     :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
 
-  (defthm xr-rml08-state-in-programmer-level-mode
-    (implies (programmer-level-mode x86)
+  (defthm xr-rml08-state-in-app-view
+    (implies (app-view x86)
              (equal (xr fld index (mv-nth 2 (rml08 addr r-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-  (defthm xr-rml08-state-in-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
+  (defthm xr-rml08-state-in-sys-view
+    (implies (and (not (app-view x86))
                   (not (equal fld :mem))
                   (not (equal fld :fault)))
              (equal (xr fld index (mv-nth 2 (rml08 addr r-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-  (defthm rml08-xw-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
+  (defthm rml08-xw-app-view
+    (implies (and (app-view x86)
                   (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (and (equal (mv-nth 0 (rml08 addr r-x (xw fld index value x86)))
                          (mv-nth 0 (rml08 addr r-x x86)))
                   (equal (mv-nth 1 (rml08 addr r-x (xw fld index value x86)))
                          (mv-nth 1 (rml08 addr r-x x86)))
                   ;; No need for the conclusion about the state because
-                  ;; "rml08-does-not-affect-state-in-programmer-level-mode".
+                  ;; "rml08-does-not-affect-state-in-app-view".
                   ))
     :hints (("Goal" :in-theory (e/d* () (rb)))))
 
   (defthm rml08-xw-system-mode
-    (implies (and (not (programmer-level-mode x86))
+    (implies (and (not (app-view x86))
                   (not (equal fld :fault))
                   (not (equal fld :seg-visible))
                   (not (equal fld :mem))
                   (not (equal fld :ctr))
                   (not (equal fld :msr))
                   (not (equal fld :rflags))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
+                  (not (equal fld :app-view))
+                  (not (equal fld :marking-view)))
              (and (equal (mv-nth 0 (rml08 addr r-x (xw fld index value x86)))
                          (mv-nth 0 (rml08 addr r-x x86)))
                   (equal (mv-nth 1 (rml08 addr r-x (xw fld index value x86)))
@@ -1819,7 +1819,7 @@ memory.</li>
                          (xw fld index value (mv-nth 2 (rml08 addr r-x x86)))))))
 
   (defthm rml08-xw-system-mode-rflags-not-ac
-    (implies (and (not (programmer-level-mode x86))
+    (implies (and (not (app-view x86))
                   (equal (rflags-slice :ac value)
                          (rflags-slice :ac (rflags x86))))
              (and (equal (mv-nth 0 (rml08 addr r-x (xw :rflags 0 value x86)))
@@ -1829,9 +1829,9 @@ memory.</li>
                   (equal (mv-nth 2 (rml08 addr r-x (xw :rflags 0 value x86)))
                          (xw :rflags 0 value (mv-nth 2 (rml08 addr r-x x86)))))))
 
-  (defthm mv-nth-2-rml08-in-system-level-non-marking-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (page-structure-marking-mode x86))
+  (defthm mv-nth-2-rml08-in-system-level-non-marking-view
+    (implies (and (not (app-view x86))
+                  (not (marking-view x86))
                   (x86p x86)
                   (not (mv-nth 0 (rml08 lin-addr r-x x86))))
              (equal (mv-nth 2 (rml08 lin-addr r-x x86))
@@ -1881,7 +1881,7 @@ memory.</li>
       (mbe
        :logic (wb 1 lin-addr :w val x86)
        :exec
-       (if (programmer-level-mode x86)
+       (if (app-view x86)
            (wvm08 lin-addr val x86)
          (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
                (la-to-pa lin-addr :w x86))
@@ -1901,31 +1901,31 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d () (force (force)))))
     :rule-classes (:rewrite :type-prescription))
 
-  (defthm programmer-level-mode-wml08-no-error
-    (implies (and (programmer-level-mode x86)
+  (defthm app-view-wml08-no-error
+    (implies (and (app-view x86)
                   (canonical-address-p addr))
              (equal (mv-nth 0 (wml08 addr val x86)) nil))
     :hints (("Goal" :in-theory (e/d (wml08 wvm08) ()))))
 
-  (defthm xr-wml08-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
+  (defthm xr-wml08-app-view
+    (implies (and (app-view x86)
                   (not (equal fld :mem)))
              (equal (xr fld index (mv-nth 1 (wml08 addr val x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* (wvm08) ()))))
 
-  (defthm xr-wml08-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
+  (defthm xr-wml08-sys-view
+    (implies (and (not (app-view x86))
                   (not (equal fld :mem))
                   (not (equal fld :fault)))
              (equal (xr fld index (mv-nth 1 (wml08 addr val x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-  (defthm wml08-xw-programmer-level-mode
-    (implies (and (programmer-level-mode x86)
+  (defthm wml08-xw-app-view
+    (implies (and (app-view x86)
                   (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (and (equal (mv-nth 0 (wml08 addr val (xw fld index value x86)))
                          (mv-nth 0 (wml08 addr val x86)))
                   (equal (mv-nth 1 (wml08 addr val (xw fld index value x86)))
@@ -1933,15 +1933,15 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* (wml08 wvm08) ()))))
 
   (defthm wml08-xw-system-mode
-    (implies (and (not (programmer-level-mode x86))
+    (implies (and (not (app-view x86))
                   (not (equal fld :fault))
                   (not (equal fld :seg-visible))
                   (not (equal fld :mem))
                   (not (equal fld :ctr))
                   (not (equal fld :rflags))
                   (not (equal fld :msr))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
+                  (not (equal fld :app-view))
+                  (not (equal fld :marking-view)))
              (and (equal (mv-nth 0 (wml08 addr val (xw fld index value x86)))
                          (mv-nth 0 (wml08 addr val x86)))
                   (equal (mv-nth 1 (wml08 addr val (xw fld index value x86)))
@@ -1949,7 +1949,7 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
   (defthm wml08-xw-system-mode-rflags-not-ac
-    (implies (and (not (programmer-level-mode x86))
+    (implies (and (not (app-view x86))
                   (equal (rflags-slice :ac value)
                          (rflags-slice :ac (rflags x86))))
              (and (equal (mv-nth 0 (wml08 addr val (xw :rflags 0 value x86)))
@@ -1984,7 +1984,7 @@ memory.</li>
   :prepwork
 
   ((defthmd rb-and-rvm16
-     (implies (and (programmer-level-mode x86)
+     (implies (and (app-view x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (1+ lin-addr))
                    (x86p x86))
@@ -2009,7 +2009,7 @@ memory.</li>
             (mbe :logic
                  (rb 2 lin-addr r-x x86)
                  :exec
-                 (if (programmer-level-mode x86)
+                 (if (app-view x86)
 
                      (rvm16 lin-addr x86)
 
@@ -2094,7 +2094,7 @@ memory.</li>
   :prepwork
 
   ((defthmd wb-and-wvm16
-     (implies (and (programmer-level-mode x86)
+     (implies (and (app-view x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (1+ lin-addr)))
               (equal (wvm16 lin-addr val x86)
@@ -2118,7 +2118,7 @@ memory.</li>
              :logic
              (wb 2 lin-addr :w val x86)
              :exec
-             (if (programmer-level-mode x86)
+             (if (app-view x86)
 
                  (wvm16 lin-addr val x86)
 
@@ -2180,14 +2180,14 @@ memory.</li>
                                          (:rewrite acl2::zip-open)
                                          (:linear ash-monotone-2)
                                          (:linear bitops::logior-<-0-linear-2)
-                                         (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                                         (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                                          (:rewrite bitops::logior-equal-0)
                                          (:linear memi-is-n08p)))))
 
   :prepwork
 
   ((defthmd rb-and-rvm32
-     (implies (and (programmer-level-mode x86)
+     (implies (and (app-view x86)
                    (x86p x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 3 lin-addr)))
@@ -2211,7 +2211,7 @@ memory.</li>
             (mbe :logic
                  (rb 4 lin-addr r-x x86)
                  :exec
-                 (if (programmer-level-mode x86)
+                 (if (app-view x86)
 
                      (rvm32 lin-addr x86)
 
@@ -2317,14 +2317,14 @@ memory.</li>
                                          (:rewrite acl2::zip-open)
                                          (:linear ash-monotone-2)
                                          (:linear bitops::logior-<-0-linear-2)
-                                         (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                                         (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                                          (:rewrite bitops::logior-equal-0)
                                          (:linear memi-is-n08p)))))
 
   :prepwork
 
   ((defthmd wb-and-wvm32
-     (implies (and (programmer-level-mode x86)
+     (implies (and (app-view x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 3 lin-addr)))
               (equal (wvm32 lin-addr val x86)
@@ -2348,7 +2348,7 @@ memory.</li>
              :logic
              (wb 4 lin-addr :w val x86)
              :exec
-             (if (programmer-level-mode x86)
+             (if (app-view x86)
                  (wvm32 lin-addr val x86)
 
                (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
@@ -2442,7 +2442,7 @@ memory.</li>
                                   (:rewrite acl2::zip-open)
                                   (:linear ash-monotone-2)
                                   (:linear bitops::logior-<-0-linear-2)
-                                  (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                                  (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                                   (:rewrite bitops::logior-equal-0)
                                   (:linear memi-is-n08p)))))
 
@@ -2450,7 +2450,7 @@ memory.</li>
   ((local
     (defthmd rb-and-rvm48-helper
       (implies
-       (and (programmer-level-mode x86)
+       (and (app-view x86)
             (x86p x86)
             (canonical-address-p lin-addr)
             (canonical-address-p (+ 5 lin-addr)))
@@ -2466,7 +2466,7 @@ memory.</li>
                                (force (force)))))))
 
    (defthmd rb-and-rvm48
-     (implies (and (programmer-level-mode x86)
+     (implies (and (app-view x86)
                    (x86p x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 5 lin-addr)))
@@ -2495,7 +2495,7 @@ memory.</li>
             (mbe :logic
                  (rb 6 lin-addr r-x x86)
                  :exec
-                 (if (programmer-level-mode x86)
+                 (if (app-view x86)
 
                      (rvm48 lin-addr x86)
 
@@ -2596,7 +2596,7 @@ memory.</li>
   :prepwork
 
   ((defthmd wb-and-wvm48
-     (implies (and (programmer-level-mode x86)
+     (implies (and (app-view x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 5 lin-addr)))
               (equal (wvm48 lin-addr val x86)
@@ -2620,7 +2620,7 @@ memory.</li>
              :logic
              (wb 6 lin-addr :w val x86)
              :exec
-             (if (programmer-level-mode x86)
+             (if (app-view x86)
 
                  (wvm48 lin-addr val x86)
 
@@ -2731,7 +2731,7 @@ memory.</li>
                      (:rewrite acl2::zip-open)
                      (:linear ash-monotone-2)
                      (:linear bitops::logior-<-0-linear-2)
-                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                      (:rewrite bitops::logior-equal-0)
                      (:linear memi-is-n08p)))))
 
@@ -2742,7 +2742,7 @@ memory.</li>
 
    (local
     (defthmd rb-and-rvm64-helper-1
-      (implies (and (programmer-level-mode x86)
+      (implies (and (app-view x86)
                     (x86p x86)
                     (canonical-address-p lin-addr)
                     (canonical-address-p (+ 7 lin-addr)))
@@ -2760,7 +2760,7 @@ memory.</li>
 
    (local
     (defthmd rb-and-rvm64-helper-2
-      (implies (and (programmer-level-mode x86)
+      (implies (and (app-view x86)
                     (x86p x86)
                     (canonical-address-p lin-addr)
                     (canonical-address-p (+ 7 lin-addr)))
@@ -2770,13 +2770,13 @@ memory.</li>
                              32))
                 (mv-nth 1 (rb-1 8 lin-addr r-x x86))))
       :hints (("Goal"
-               :use ((:instance split-rb-in-programmer-level-mode
+               :use ((:instance split-rb-in-app-view
                                 (i 4)
                                 (j 4)))
                :in-theory (e/d () (force (force)))))))
 
    (defthmd rb-and-rvm64
-     (implies (and (programmer-level-mode x86)
+     (implies (and (app-view x86)
                    (x86p x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 7 lin-addr)))
@@ -2809,7 +2809,7 @@ memory.</li>
                  (rb 8 lin-addr r-x x86)
 
                  :exec
-                 (if (programmer-level-mode x86)
+                 (if (app-view x86)
 
                      (rvm64 lin-addr x86)
 
@@ -2957,14 +2957,14 @@ memory.</li>
                      (:rewrite acl2::zip-open)
                      (:linear ash-monotone-2)
                      (:linear bitops::logior-<-0-linear-2)
-                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                      (:rewrite bitops::logior-equal-0)
                      (:linear memi-is-n08p)))))
 
   :prepwork
 
   ((defthmd wb-and-wvm64
-     (implies (and (programmer-level-mode x86)
+     (implies (and (app-view x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 7 lin-addr)))
               (equal (wvm64 lin-addr val x86)
@@ -2988,7 +2988,7 @@ memory.</li>
              :logic
              (wb 8 lin-addr :w val x86)
              :exec
-             (if (programmer-level-mode x86)
+             (if (app-view x86)
 
                  (wvm64 lin-addr val x86)
 
@@ -3113,7 +3113,7 @@ memory.</li>
                                                       (+ 1 lin-addr) r-x
                                                       (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86))))))))
     :in-theory (e/d (rb-and-rvm80
-                     rml80-in-system-level-mode-guard-proof-helper
+                     rml80-in-sys-view-guard-proof-helper
                      rml08)
                     (not
                      ash-monotone-2
@@ -3121,12 +3121,12 @@ memory.</li>
                      (:rewrite acl2::zip-open)
                      (:linear ash-monotone-2)
                      (:linear bitops::logior-<-0-linear-2)
-                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                      (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
   ((defthmd rb-and-rvm80
-     (implies (and (programmer-level-mode x86)
+     (implies (and (app-view x86)
                    (x86p x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 9 lin-addr)))
@@ -3152,7 +3152,7 @@ memory.</li>
                  (rb 10 lin-addr r-x x86)
 
                  :exec
-                 (if (programmer-level-mode x86)
+                 (if (app-view x86)
 
                      (rvm80 lin-addr x86)
 
@@ -3293,13 +3293,13 @@ memory.</li>
                      (:rewrite acl2::zip-open)
                      (:linear ash-monotone-2)
                      (:linear bitops::logior-<-0-linear-2)
-                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                      (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
 
   ((defthmd wb-and-wvm80
-     (implies (and (programmer-level-mode x86)
+     (implies (and (app-view x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 9 lin-addr)))
               (equal (wvm80 lin-addr val x86)
@@ -3324,7 +3324,7 @@ memory.</li>
              (wb 10 lin-addr :w val x86)
 
              :exec
-             (if (programmer-level-mode x86)
+             (if (app-view x86)
 
                  (wvm80 lin-addr val x86)
 
@@ -3433,7 +3433,7 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d () (rb force (force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
 
-;; TODO: Prove rml128 equivalent to rb in the system-level mode.
+;; TODO: Prove rml128 equivalent to rb in the system-level view.
 (define rml128 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                 (r-x      :type (member :r :x))
                 (x86))
@@ -3451,7 +3451,7 @@ memory.</li>
                                   (:rewrite acl2::zip-open)
                                   (:linear ash-monotone-2)
                                   (:linear bitops::logior-<-0-linear-2)
-                                  (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                                  (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                                   (:rewrite bitops::logior-equal-0)
                                   (:linear memi-is-n08p)))))
 
@@ -3459,7 +3459,7 @@ memory.</li>
   ((local
     (defthmd rb-and-rvm128-helper-1
       (implies
-       (and (programmer-level-mode x86)
+       (and (app-view x86)
             (x86p x86)
             (canonical-address-p lin-addr)
             (canonical-address-p (+ 15 lin-addr)))
@@ -3476,7 +3476,7 @@ memory.</li>
    (local
     (defthmd rb-and-rvm128-helper-2
       (implies
-       (and (programmer-level-mode x86)
+       (and (app-view x86)
             (x86p x86)
             (canonical-address-p lin-addr)
             (canonical-address-p (+ 15 lin-addr)))
@@ -3487,11 +3487,11 @@ memory.</li>
       :hints (("Goal"
                :in-theory (e/d () (force (force)))
                :use
-               ((:instance split-rb-in-programmer-level-mode
+               ((:instance split-rb-in-app-view
                            (i 8) (j 8)))))))
 
    (defthmd rb-and-rvm128
-     (implies (and (programmer-level-mode x86)
+     (implies (and (app-view x86)
                    (x86p x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 15 lin-addr)))
@@ -3543,7 +3543,7 @@ memory.</li>
                                15+lin-addr)
                           #.*2^47*))
 
-            (if (programmer-level-mode x86)
+            (if (app-view x86)
                 (mbe :logic (rb 16 lin-addr r-x x86)
                      :exec (rvm128 lin-addr x86))
 
@@ -3675,7 +3675,7 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
 
-;; TODO: Prove wml128 equivalent to rb in the system-level mode.
+;; TODO: Prove wml128 equivalent to rb in the system-level view.
 (define wml128 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                 (val      :type (unsigned-byte 128))
                 (x86))
@@ -3692,13 +3692,13 @@ memory.</li>
                             (:rewrite acl2::zip-open)
                             (:linear ash-monotone-2)
                             (:linear bitops::logior-<-0-linear-2)
-                            (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-mode)
+                            (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                             (:rewrite bitops::logior-equal-0)
                             (:linear memi-is-n08p)))))
 
   :prepwork
   ((defthmd wb-and-wvm128
-     (implies (and (programmer-level-mode x86)
+     (implies (and (app-view x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 15 lin-addr)))
               (equal (wvm128 lin-addr val x86)
@@ -3718,7 +3718,7 @@ memory.</li>
                                15+lin-addr)
                           #.*2^47*))
 
-            (if (programmer-level-mode x86)
+            (if (app-view x86)
 
                 (mbe :logic (wb 16 lin-addr :w val x86)
                      :exec (wvm128 lin-addr val x86))
@@ -3926,7 +3926,7 @@ memory.</li>
                (x86p (mv-nth 2 (rml-size bytes lin-addr r-x x86)))))
 
     ;; TODO Prove the following after proving the equivalence of rml128
-    ;; and rb in system-level mode.
+    ;; and rb in system-level view.
     ;; (defthmd rml-size-to-rb
     ;;   (implies (and (canonical-address-p (+ -1 nbytes lin-addr))
     ;;                 (canonical-address-p lin-addr))
@@ -3996,7 +3996,7 @@ memory.</li>
       :hints (("Goal" :in-theory (e/d () (rb force (force) unsigned-byte-p signed-byte-p)))))
 
     ;; TODO Prove the following after proving the equivalence of wml128
-    ;; and wb in system-level mode.
+    ;; and wb in system-level view.
     ;; (defthmd wml-size-to-wb
     ;;   (implies (and (canonical-address-p (+ -1 nbytes lin-addr))
     ;;                 (canonical-address-p lin-addr))
@@ -4196,7 +4196,7 @@ memory.</li>
 ;; where the :logic part is defined in terms of WB.
 
 ;; Note that write-canonical-address-to-memory is optimized in the
-;; programmer-level mode only --- in the system-level mode, it's
+;; application-level view only --- in the system-level mode, it's
 ;; merely a call of wml64.
 
 (define write-canonical-address-to-memory-user-exec
@@ -4209,11 +4209,11 @@ memory.</li>
 
   :guard (and (canonical-address-p lin-addr)
               (canonical-address-p (+ 7 lin-addr))
-              (programmer-level-mode x86))
+              (app-view x86))
   :guard-hints (("Goal" :in-theory (e/d (n16-to-i16)
                                         ())))
 
-  (if (mbt (and (programmer-level-mode x86)
+  (if (mbt (and (app-view x86)
                 (canonical-address-p (+ 7 lin-addr))))
 
       (b* (((the (unsigned-byte 32) canonical-address-low-nat)
@@ -4234,19 +4234,19 @@ memory.</li>
                                  (the (signed-byte
                                        #.*max-linear-address-size+1*)
                                       next-addr))))
-            (mv 'wml64-canonical-address-user-mode x86))
+            (mv 'wml64-canonical-address-user-view x86))
            ((mv flg1 x86)
             (wiml32 next-addr canonical-address-high-int x86))
            ((when (or flg0 flg1))
-            (mv 'wml64-canonical-address-user-mode x86)))
+            (mv 'wml64-canonical-address-user-view x86)))
         (mv nil x86))
 
     (mv 'unreachable x86)))
 
 (local
- (defthmd wb-1-in-programmer-level-mode
+ (defthmd wb-1-in-app-view
    (implies (and (x86p x86)
-                 (programmer-level-mode x86)
+                 (app-view x86)
                  (canonical-address-p lin-addr)
                  (canonical-address-p (+ -1 n lin-addr)))
             (equal (wb-1 n lin-addr w val x86)
@@ -4255,7 +4255,7 @@ memory.</li>
 
 (local
  (defthm write-canonical-address-to-memory-user-exec-and-wb
-   (implies (and (programmer-level-mode x86)
+   (implies (and (app-view x86)
                  (canonical-address-p lin-addr)
                  (canonical-address-p canonical-address)
                  (canonical-address-p (+ 7 lin-addr))
@@ -4264,13 +4264,13 @@ memory.</li>
                     lin-addr canonical-address x86)
                    (wb 8 lin-addr :w (loghead 64 canonical-address) x86)))
    :hints (("Goal"
-            :use ((:instance split-wb-in-programmer-level-mode
+            :use ((:instance split-wb-in-app-view
                              (i 4)
                              (j 4)
                              (w :w)
                              (lin-addr lin-addr)
                              (val (loghead 64 canonical-address)))
-                  (:instance wb-1-in-programmer-level-mode
+                  (:instance wb-1-in-app-view
                              (n 8)
                              (lin-addr lin-addr)
                              (w :w)
@@ -4302,7 +4302,7 @@ memory.</li>
                       #.*2^47*))
 
 
-        (if (programmer-level-mode x86)
+        (if (app-view x86)
 
             (mbe :logic
                  (wb 8 lin-addr :w (loghead 64 canonical-address) x86)
@@ -4315,11 +4315,11 @@ memory.</li>
                      :exec (logand #.*2^64-1* canonical-address))))
             ;; Note that calling wml64 here will be a tad expensive ---
             ;; for one, there's an extra function call. Also, the
-            ;; programmer-level-mode field will have to be checked
+            ;; app-view field will have to be checked
             ;; again inside wml64. However, this is better for
             ;; reasoning than laying down the code again. As it is,
-            ;; performance in the system-level mode is quite less than
-            ;; that in programmer-level mode.
+            ;; performance in the system-level view is quite less than
+            ;; that in application-level view.
             (wml64 lin-addr canonical-address-unsigned-val x86)))
 
       (mv 'write-canonical-address-to-memory-error x86)))
@@ -4602,10 +4602,10 @@ memory.</li>
 
     ///
 
-    (defthm program-at-xw-in-programmer-level-mode
-      (implies (and (programmer-level-mode x86)
+    (defthm program-at-xw-in-app-view
+      (implies (and (app-view x86)
                     (not (equal fld :mem))
-                    (not (equal fld :programmer-level-mode)))
+                    (not (equal fld :app-view)))
                (equal (program-at addr bytes (xw fld index value x86))
                       (program-at addr bytes x86)))
       :hints (("Goal" :in-theory (e/d* () (rb)))))))

@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
 (include-book "../../tools/execution/init-state" :ttags :all)
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "misc/eval" :dir :system)
@@ -272,7 +272,7 @@
             (< n (expt 2 32)))
   :concl (b* ((start-address #x400610)
               (halt-address #x400643)
-              (x86 (!programmer-level-mode t (create-x86)))
+              (x86 (!app-view t (create-x86)))
               ((mv flg x86)
                (init-x86-state-64
                 nil start-address halt-address
@@ -300,7 +300,7 @@
             (< n (expt 2 64)))
   :concl (b* ((start-address #x400650)
               (halt-address #x4006c2)
-              (x86 (!programmer-level-mode t (create-x86)))
+              (x86 (!app-view t (create-x86)))
               ((mv flg x86)
                (init-x86-state-64
                 nil start-address halt-address
@@ -334,7 +334,7 @@
 ;;             (< m (expt 2 64)))
 ;;   :concl (b* ((start-address #x400650)
 ;;               (halt-address #x4006c2)
-;;               (x86 (!programmer-level-mode t (create-x86)))
+;;               (x86 (!app-view t (create-x86)))
 ;;               ((mv flg x86)
 ;;                (init-x86-state-64
 ;;                 nil start-address halt-address
@@ -464,7 +464,7 @@
              (< n (expt 2 32)))
    :concl (b* ((start-address #x400610)
                (halt-address #x400643)
-               (x86 (!programmer-level-mode t (create-x86)))
+               (x86 (!app-view t (create-x86)))
                ((mv flg x86)
                 (init-x86-state-64
                  nil start-address halt-address
@@ -489,7 +489,7 @@
 
 (b* ((start-address #x400610)
      (halt-address #x400643)
-     (x86 (!programmer-level-mode t x86))
+     (x86 (!app-view t x86))
      ((mv ?flg x86)
       (init-x86-state-64
        nil start-address halt-address
@@ -504,7 +504,7 @@
 
 (b* ((start-address #x400610)
      (halt-address #x400643)
-     (x86 (!programmer-level-mode t x86))
+     (x86 (!app-view t x86))
      ((mv ?flg x86)
       (init-x86-state-64
        nil start-address halt-address
@@ -525,7 +525,7 @@
             (< n (expt 2 32)))
   :concl (b* ((start-address #x400610)
               (halt-address #x400643)
-              (x86 (!programmer-level-mode t (create-x86)))
+              (x86 (!app-view t (create-x86)))
               ((mv flg x86)
                (init-x86-state-64
                 nil start-address halt-address

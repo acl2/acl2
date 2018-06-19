@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -18,8 +18,8 @@
                          las-to-pas
                          las-to-pas-values-and-!flgi
                          mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
-                         xr-fault-wb-in-system-level-marking-mode
-                         xr-fault-wb-in-system-level-mode))))
+                         xr-fault-wb-in-system-level-marking-view
+                         xr-fault-wb-in-sys-view))))
 
 ;; ======================================================================
 
@@ -179,7 +179,7 @@
 
   (and (x86p x86)
        (64-bit-modep x86)
-       (xr :programmer-level-mode 0 x86)
+       (xr :app-view 0 x86)
        (equal (xr :ms 0 x86) nil)
        (equal (xr :fault 0 x86) nil)
        (unsigned-byte-p 34 m)
@@ -251,7 +251,7 @@
   (implies (loop-preconditions k m addr src-addr dst-addr x86)
            (and (x86p x86)
                 (64-bit-modep x86)
-                (xr :programmer-level-mode 0 x86)
+                (xr :app-view 0 x86)
                 (equal (xr :ms 0 x86) nil)
                 (equal (xr :fault 0 x86) nil)
                 (unsigned-byte-p 34 m)

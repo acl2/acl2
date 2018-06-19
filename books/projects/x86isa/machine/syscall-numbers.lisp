@@ -25,7 +25,7 @@
 contents of the @('os-info') field of the x86 state. Currently
 supported values of this field are @(':linux') and @(':darwin'), with
 @(':linux') being the default value. Note that the field @('os-info')
-is meaningful only in the @(see programmer-level-mode).</p>"
+is meaningful only in the @(see app-view).</p>"
 
   )
 
@@ -37,7 +37,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_read-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  0)
@@ -48,7 +48,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_write-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  1)
@@ -59,7 +59,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_open-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  2)
@@ -70,7 +70,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_close-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  3)
@@ -81,7 +81,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_stat-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  4)
@@ -91,7 +91,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_fstat-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  5)
@@ -101,7 +101,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_lstat-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  6)
@@ -111,7 +111,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_lseek-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  8)
@@ -121,7 +121,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_dup-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  32)
@@ -131,7 +131,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_dup2-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  33)
@@ -141,7 +141,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_fcntl-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  72)
@@ -151,7 +151,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_truncate-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  76)
@@ -161,7 +161,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_ftruncate-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  77)
@@ -171,7 +171,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_link-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  86)
@@ -181,7 +181,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_unlink-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  87)
@@ -191,7 +191,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_fadvise64-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  221)
@@ -201,7 +201,7 @@ is meaningful only in the @(see programmer-level-mode).</p>"
 
 (define sys_dup3-idx ((x86))
   :enabled t
-  (if (programmer-level-mode x86)
+  (if (app-view x86)
       (let ((os (os-info x86)))
         (cond
          ((equal os :linux)  292)

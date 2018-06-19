@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
 (local (include-book "centaur/gl/gl" :dir :system))
 
 (set-irrelevant-formals-ok t)
@@ -311,7 +311,7 @@
              (not (ms x86))
              (not (fault x86))
              (64-bit-modep x86)
-             (programmer-level-mode x86)
+             (app-view x86)
              ;; Program is in the memory
              (canonical-address-p addr)
              (canonical-address-p (+ addr (len *factorial_recursive*)))
@@ -321,7 +321,7 @@
                (not (ms x86))
                (not (fault x86))
                (64-bit-modep x86)
-               (programmer-level-mode x86)
+               (app-view x86)
                ;; Program is in the memory
                (canonical-address-p addr)
                (canonical-address-p (+ addr (len *factorial_recursive*)))
@@ -329,7 +329,7 @@
         (if (equal (rip x86) (+ 25 addr))
             (and (halt n0 a)
                  (64-bit-modep x86)
-                 (programmer-level-mode x86)
+                 (app-view x86)
                  (not (fault x86))
                  (ms x86)
                  ;; Program is in the memory
@@ -414,7 +414,7 @@
                 (not (ms x86))
                 (not (fault x86))
                 (64-bit-modep x86)
-                (programmer-level-mode x86)
+                (app-view x86)
                 (canonical-address-p addr)
                 (canonical-address-p (+ 25 addr))
                 (program-at addr
@@ -643,7 +643,7 @@
 (defthm partial-correctness-of-fact-recursive-effects
   (implies (and (x86p x86)
                 (64-bit-modep x86)
-                (programmer-level-mode x86)
+                (app-view x86)
                 (equal (rip x86) addr)
                 (and (begin n0 (rr32 *rdi* x86))
                      (not (ms x86))
@@ -665,7 +665,7 @@
 (defthm partial-correctness-of-fact-recursive
   (implies (and (ok-inputs n0 x86)
                 (64-bit-modep x86)
-                (programmer-level-mode x86)
+                (app-view x86)
                 (equal (rip x86) addr)
                 (and (begin n0 (rr32 *rdi* x86))
                      (not (ms x86))

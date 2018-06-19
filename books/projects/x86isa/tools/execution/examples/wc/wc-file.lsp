@@ -17,7 +17,7 @@
 (binary-file-load "wc-file.o")
 
 ;; Set the OS-Info:
-(!programmer-level-mode t x86)
+(!app-view t x86)
 ;; Change :darwin to :linux if you're on a linux machine. Unfortunately, no
 ;; other OSes are supported.
 (!os-info :darwin x86)
