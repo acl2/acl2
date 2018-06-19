@@ -329,3 +329,14 @@
    The argument is the value for the @('src') attribute.
    </p>"
   (concatenate 'string "<img src=\"" src "\"/>"))
+
+(define xdoc::def ((name stringp))
+  :returns (text xdoc::textp :hints (("Goal" :in-theory (enable xdoc::textp))))
+  :parents (xdoc::xdoc-constructors)
+  :short "Build an XDOC definition directive."
+  :long
+  "<p>
+   This is a @('@(def ...)') directive.
+   The name is supplied as an argument.
+   </p>"
+  (concatenate 'string "@(def " name))
