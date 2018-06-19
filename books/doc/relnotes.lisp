@@ -283,6 +283,11 @@
  <p>Added some theorems to the <see topic='@(url
  character-utilities)'>character utilities</see>.</p>
 
+ <p>Added <see topic='@(url xdoc::xdoc-constructors)'>the XDOC
+ constructors</see>, which are utilities to construct well-tagged XDOC strings
+ via ACL2 function calls whose nesting structure mirrors the nesting of the
+ XML.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
