@@ -18,11 +18,11 @@
   rme08) and updater function is @(see wme08).  Their 16, 32, 64, and
   128 bit counterparts are also available.  These functions behave
   differently depending upon the value of
-  @('programmer-level-mode').</p>
+  @('app-view').</p>
 
 <p>The functions defined here, like @(see rm-low-32) and @(see
 wm-low-32), are low-level read and write functions that access
-physical memory directly in the system-level mode.  We do not
+physical memory directly in the system-level view.  We do not
 recommend using these functions at the top-level.</p>")
 
 (local (xdoc::set-default-parents physical-memory))
@@ -92,14 +92,14 @@ recommend using these functions at the top-level.</p>")
 (define rm-low-32
   ((addr :type (unsigned-byte #.*physical-address-size*))
    (x86))
-  :guard (and (not (programmer-level-mode x86))
+  :guard (and (not (app-view x86))
               (integerp addr)
               (<= 0 addr)
               (< (+ 3 addr) *mem-size-in-bytes*))
   :inline t
   :parents (physical-memory)
 
-  (if (mbt (not (programmer-level-mode x86)))
+  (if (mbt (not (app-view x86)))
 
       (let ((addr (mbe :logic (ifix addr)
                        :exec addr)))
@@ -128,8 +128,8 @@ recommend using these functions at the top-level.</p>")
 
   ///
 
-  (defthm rm-low-32-in-programmer-level-mode
-    (implies (programmer-level-mode x86)
+  (defthm rm-low-32-in-app-view
+    (implies (app-view x86)
              (equal (rm-low-32 p-addr x86) 0)))
 
   (defthm-usb n32p-rm-low-32
@@ -141,7 +141,7 @@ recommend using these functions at the top-level.</p>")
 
   (defthm rm-low-32-xw
     (implies (and (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (equal (rm-low-32 addr (xw fld index val x86))
                     (rm-low-32 addr x86)))
     :hints (("Goal" :in-theory (e/d* (rm-low-32) (force (force)))))))
@@ -149,14 +149,14 @@ recommend using these functions at the top-level.</p>")
 (define rm-low-64
   ((addr :type (unsigned-byte #.*physical-address-size*))
    (x86))
-  :guard (and (not (programmer-level-mode x86))
+  :guard (and (not (app-view x86))
               (integerp addr)
               (<= 0 addr)
               (< (+ 7 addr) *mem-size-in-bytes*))
   :guard-hints (("Goal" :in-theory (e/d () (rm-low-32 force (force)))))
   :parents (physical-memory)
 
-  (if (mbt (not (programmer-level-mode x86)))
+  (if (mbt (not (app-view x86)))
 
       (let ((addr (mbe :logic (ifix addr)
                        :exec addr)))
@@ -175,8 +175,8 @@ recommend using these functions at the top-level.</p>")
 
   ///
 
-  (defthm rm-low-64-in-programmer-level-mode
-    (implies (programmer-level-mode x86)
+  (defthm rm-low-64-in-app-view
+    (implies (app-view x86)
              (equal (rm-low-64 p-addr x86) 0)))
 
   (defthm-usb n64p-rm-low-64
@@ -190,7 +190,7 @@ recommend using these functions at the top-level.</p>")
 
   (defthm rm-low-64-xw
     (implies (and (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (equal (rm-low-64 addr (xw fld index val x86))
                     (rm-low-64 addr x86)))
     :hints (("Goal" :in-theory (e/d* (rm-low-64) (force (force)))))))
@@ -210,12 +210,12 @@ recommend using these functions at the top-level.</p>")
    (val :type (unsigned-byte 32))
    (x86))
   :inline t
-  :guard (and (not (programmer-level-mode x86))
+  :guard (and (not (app-view x86))
               (< (+ 3 addr) *mem-size-in-bytes*))
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :parents (physical-memory)
 
-  (if (mbt (not (programmer-level-mode x86)))
+  (if (mbt (not (app-view x86)))
 
       (let ((addr (mbe :logic (ifix addr)
                        :exec addr)))
@@ -256,7 +256,7 @@ recommend using these functions at the top-level.</p>")
 
   (defthm wm-low-32-xw
     (implies (and (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (equal (wm-low-32 addr val (xw fld index value x86))
                     (xw fld index value (wm-low-32 addr val x86))))
     :hints (("Goal" :in-theory (e/d* (wm-low-32) (force (force)))))))
@@ -265,12 +265,12 @@ recommend using these functions at the top-level.</p>")
   ((addr :type (unsigned-byte #.*physical-address-size*))
    (val :type (unsigned-byte 64))
    (x86))
-  :guard (and (not (programmer-level-mode x86))
+  :guard (and (not (app-view x86))
               (< (+ 7 addr) *mem-size-in-bytes*))
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :parents (physical-memory)
 
-  (if (mbt (not (programmer-level-mode x86)))
+  (if (mbt (not (app-view x86)))
 
       (let ((addr (mbe :logic (ifix addr)
                        :exec addr)))
@@ -298,7 +298,7 @@ recommend using these functions at the top-level.</p>")
 
   (defthm wm-low-64-xw
     (implies (and (not (equal fld :mem))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (equal (wm-low-64 addr val (xw fld index value x86))
                     (xw fld index value (wm-low-64 addr val x86))))
     :hints (("Goal" :in-theory (e/d* (wm-low-64) (force (force)))))))

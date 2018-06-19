@@ -17,6 +17,8 @@
   :short "Miscellaneous utilities for instruction decoding and for writing
   instruction specification functions" )
 
+(local (xdoc::set-default-parents decoding-and-spec-utils))
+
 ;; ======================================================================
 
 (defsection error-objects

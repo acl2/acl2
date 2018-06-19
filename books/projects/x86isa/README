@@ -179,7 +179,7 @@ Two ways of building the X86ISA books are:
 
    Users of these books who wish to simulate x86 programs with
    non-deterministic computations like SYSCALL (in
-   programmer-level-mode) and RDRAND should use this Makefile and run
+   app-view) and RDRAND should use this Makefile and run
    make with X86ISA_EXEC set to t (which is the default value).
 
    make JOBS=8 \

@@ -2,7 +2,7 @@
 ;; Thanks to Dmitry Nadezhin for bringing this case to my attention!
 
 (in-package "X86ISA")
-(include-book "projects/x86isa/proofs/utilities/programmer-level-mode/top" :dir :system)
+(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)
 
 ;; ======================================================================
 
@@ -23,7 +23,7 @@
     ((start-rip #x100000f74)
      (x86 (!ms nil x86))
      (x86 (!fault nil x86))
-     (x86 (!programmer-level-mode t x86))
+     (x86 (!app-view t x86))
      (x86 (!rip start-rip x86))
      ((mv flg0 x86)
       (wm64      start-rip  (combine-bytes *mov_test_code*) x86))
@@ -45,7 +45,7 @@
     ((start-rip #x100000f74)
      (x86 (!ms nil x86))
      (x86 (!fault nil x86))
-     (x86 (!programmer-level-mode t x86))
+     (x86 (!app-view t x86))
      (x86 (!rip start-rip x86))
      ((mv flg0 x86)
       (wm64 start-rip (combine-bytes *add_test_code*) x86))

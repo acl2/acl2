@@ -5,7 +5,7 @@
 (include-book "../../top" :ttags :all)
 
 ;; For the guard proof of the new function introduced by
-;; (x86-debug). The system-level-mode/top book disabled
+;; (x86-debug). The sys-view/top book disabled
 ;; unsigned-byte-p, which causes this failure.
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
@@ -16,18 +16,18 @@
 ;; 2. Set CR0.PG  = 1
 ;; 3. Set CR4.PAE = 1
 ;; 4. Set CR3.PDB = (logtail 12 address-of-pml4-table)
-(init-system-level-mode
+(init-sys-view
  ;; Address of PML4 Table
  0
  x86)
 
-(!page-structure-marking-mode nil x86)
+(!marking-view nil x86)
 
 ;; The default paging structures occupy 2,101,248 bytes (#x201000) and
 ;; are located at address 0.
 
 ;; A simple sanity check:
-(assert-event (equal (programmer-level-mode x86) nil))
+(assert-event (equal (app-view x86) nil))
 
 ;; Set CPL = 0 (actually, it's 0 by default, which should change, maybe)
 (!seg-visiblei *cs* (!seg-sel-layout-slice :rpl 0 (seg-visiblei *cs* x86)) x86)

@@ -63,16 +63,16 @@
 ;; System Program:
 
 ;; The zeroCopy program has been proved correct in both the marking
-;; and non-marking mode of the x86 model.
+;; and non-marking view of the x86 model.
 
 (local
  (encapsulate
    ()
-   (local (include-book "zeroCopy/non-marking-mode/zeroCopy" :ttags :all))))
+   (local (include-book "zeroCopy/non-marking-view/zeroCopy" :ttags :all))))
 (local
  (encapsulate
    ()
-   (local (include-book "zeroCopy/marking-mode/zeroCopy" :ttags :all))))
+   (local (include-book "zeroCopy/marking-view/zeroCopy" :ttags :all))))
 
 ;; ======================================================================
 
@@ -91,19 +91,19 @@
 
 ;; The following books present small examples that Shilpi presents in
 ;; her PhD dissertation to illustrate how symbolic simulation is
-;; controlled in all modes of operation of the x86 model.
+;; controlled in all views of operation of the x86 model.
 
 (local
  (encapsulate
    ()
-   (local (include-book "dissertation-examples/clc-stc-programmer-mode" :ttags :all))))
+   (local (include-book "dissertation-examples/clc-stc-app-view" :ttags :all))))
 (local
  (encapsulate
    ()
-   (local (include-book "dissertation-examples/clc-stc-system-level-marking-mode" :ttags :all))))
+   (local (include-book "dissertation-examples/clc-stc-system-level-marking-view" :ttags :all))))
 (local
  (encapsulate
    ()
-   (local (include-book "dissertation-examples/clc-stc-system-level-non-marking-mode" :ttags :all))))
+   (local (include-book "dissertation-examples/clc-stc-system-level-non-marking-view" :ttags :all))))
 
 ;; ======================================================================

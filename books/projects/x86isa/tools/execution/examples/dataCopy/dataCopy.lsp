@@ -28,7 +28,7 @@
 ;;    100000da2:	5d                      pop    %rbp
 ;;    100000da3:	c3                      retq
 
-(!programmer-level-mode t x86)
+(!app-view t x86)
 
 ;; Initialize the x86 state:
 (init-x86-state

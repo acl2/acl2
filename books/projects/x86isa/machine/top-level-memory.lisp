@@ -120,37 +120,37 @@
              (equal (mv-nth 1 (rme08 eff-addr seg-reg r-x x86)) 0))
     :enable (rml08 rvm08))
 
-  (defrule rme08-does-not-affect-state-in-programmer-level-mode
-    (implies (programmer-level-mode x86)
+  (defrule rme08-does-not-affect-state-in-app-view
+    (implies (app-view x86)
              (equal (mv-nth 2 (rme08 eff-addr seg-reg r-x x86)) x86))
     :enable rml08)
 
-  (defrule mv-nth-2-rme08-in-system-level-non-marking-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (page-structure-marking-mode x86))
+  (defrule mv-nth-2-rme08-in-system-level-non-marking-view
+    (implies (and (not (app-view x86))
+                  (not (marking-view x86))
                   (x86p x86)
                   (not (mv-nth 0 (rme08 eff-addr seg-reg r-x x86))))
              (equal (mv-nth 2 (rme08 eff-addr seg-reg r-x x86))
                     x86)))
 
-  (defrule xr-rme08-state-programmer-level-mode
-    (implies (programmer-level-mode x86)
+  (defrule xr-rme08-state-app-view
+    (implies (app-view x86)
              (equal (xr fld index (mv-nth 2 (rme08 addr seg-reg r-x x86)))
                     (xr fld index x86)))
     :enable rml08)
 
-  (defrule xr-rme08-state-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
+  (defrule xr-rme08-state-sys-view
+    (implies (and (not (app-view x86))
                   (not (equal fld :mem))
                   (not (equal fld :fault)))
              (equal (xr fld index (mv-nth 2 (rme08 addr seg-reg r-x x86)))
                     (xr fld index x86))))
 
-  (defrule rme08-xw-programmer-level-mode
+  (defrule rme08-xw-app-view
     (implies
-     (and (programmer-level-mode x86)
+     (and (app-view x86)
           (not (equal fld :mem))
-          (not (equal fld :programmer-level-mode))
+          (not (equal fld :app-view))
           (not (equal fld :seg-hidden))
           (not (equal fld :msr)))
      (and (equal (mv-nth 0 (rme08 addr seg-reg r-x (xw fld index value x86)))
@@ -158,13 +158,13 @@
           (equal (mv-nth 1 (rme08 addr seg-reg r-x (xw fld index value x86)))
                  (mv-nth 1 (rme08 addr seg-reg r-x x86)))
           ;; No need for the conclusion about the state because
-          ;; "rme08-does-not-affect-state-in-programmer-level-mode".
+          ;; "rme08-does-not-affect-state-in-app-view".
           ))
     )
 
-  (defrule rme08-xw-system-level-mode
+  (defrule rme08-xw-sys-view
     (implies
-     (and (not (programmer-level-mode x86))
+     (and (not (app-view x86))
           (not (equal fld :fault))
           (not (equal fld :seg-visible))
           (not (equal fld :seg-hidden))
@@ -172,8 +172,8 @@
           (not (equal fld :ctr))
           (not (equal fld :msr))
           (not (equal fld :rflags))
-          (not (equal fld :programmer-level-mode))
-          (not (equal fld :page-structure-marking-mode)))
+          (not (equal fld :app-view))
+          (not (equal fld :marking-view)))
      (and (equal (mv-nth 0 (rme08 addr seg-reg r-x (xw fld index value x86)))
                  (mv-nth 0 (rme08 addr seg-reg r-x x86)))
           (equal (mv-nth 1 (rme08 addr seg-reg r-x (xw fld index value x86)))
@@ -181,9 +181,9 @@
           (equal (mv-nth 2 (rme08 addr seg-reg r-x (xw fld index value x86)))
                  (xw fld index value (mv-nth 2 (rme08 addr seg-reg r-x x86)))))))
 
-  (defrule rme08-xw-system-level-mode-rflags-not-ac
+  (defrule rme08-xw-sys-view-rflags-not-ac
     (implies
-     (and (not (programmer-level-mode x86))
+     (and (not (app-view x86))
           (equal (rflags-slice :ac value)
                  (rflags-slice :ac (rflags x86))))
      (and (equal (mv-nth 0 (rme08 addr seg-reg r-x (xw :rflags 0 value x86)))
