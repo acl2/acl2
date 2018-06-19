@@ -204,14 +204,31 @@
 (define xdoc::li ((string stringp))
   :returns (text xdoc::textp)
   :parents (xdoc::xdoc-constructors)
-  :short "Build an XML list item @('\<li\>...\</li\>')."
+  :short "Build an XML list item @('\<li\>...\</li\>') from a string."
   :long
   "<p>
-   The argument is a string, and not a @(tsee xdoc::textp) value,
-   because a list item is expected to be ``atomic''.
-   This can be revisited in the future.
+   The list item just contains the string, i.e. it is ``atomic''
+   </p>
+   <p>
+   See @(tsee xdoc::li*) for non-``atomic'' list items.
    </p>"
   (xdoc::tag "li" (xdoc::text string)))
+
+(defsection xdoc::li*
+  :parents (xdoc::xdoc-constructors)
+  :short "Build an XML list item @('\<li\>...\</li\>') from
+          zero or more pieces of XDOC text."
+  :long
+  "<p>
+   The arguments are evaluated and must return @(tsee xdoc::textp) values,
+   which are concatenated into a resulting @(tsee xdoc::textp) value.
+   </p>
+   <p>
+   See @(tsee xdoc::li) for ``atomic'' list items.
+   </p>
+   @(def xdoc::li*)"
+  (defmacro xdoc::li* (&rest pieces)
+    `(xdoc::tag "li" (concatenate 'string ,@pieces))))
 
 (defsection xdoc::ul
   :parents (xdoc::xdoc-constructors)
