@@ -96,8 +96,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-equal (xdoc::p*)
+              "<p></p>
+
+")
+
+(assert-equal (xdoc::p*
+               (xdoc::p "one")
+               (xdoc::p "two")
+               (xdoc::p "three"))
+              "<p><p>one</p>
+
+<p>two</p>
+
+<p>three</p>
+
+</p>
+
+")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-equal (xdoc::li "some text")
               "<li>some text</li>
+
+")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (xdoc::li*)
+              "<li></li>
+
+")
+
+(assert-equal (xdoc::li*
+               (xdoc::p "one")
+               (xdoc::p "two")
+               (xdoc::p "three"))
+              "<li><p>one</p>
+
+<p>two</p>
+
+<p>three</p>
+
+</li>
 
 ")
 

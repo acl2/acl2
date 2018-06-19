@@ -166,6 +166,13 @@
  since tests about the @('misc/assert.lisp') utilities are now in a separate
  book @('misc/assert-tests.lisp').</p>
 
+ <p>The @('misc/eval.lisp') utilities @(tsee ensure-error), @(tsee
+ ensure-soft-error), @(tsee ensure-hard-error), @(tsee thm?), and @(tsee
+ not-thm?)  have been renamed to @(tsee must-fail-with-error), @(tsee
+ must-fail-with-soft-error), @(tsee must-fail-with-hard-error), @(tsee
+ must-prove), and @(tsee must-not-prove).  The old names are still available as
+ deprecated synonyms, which will be removed in one of the next releases.</p>
+
  <p>The old directory @('books/projects/masc/') has been replaced by the bew
  directory@('books/projects/rac/').  The reason is that our RTL modeling
  language now uses the register class templates of Algorithm C instead of those
@@ -276,6 +283,11 @@
  <p>Added some theorems to the <see topic='@(url
  character-utilities)'>character utilities</see>.</p>
 
+ <p>Added <see topic='@(url xdoc::xdoc-constructors)'>the XDOC
+ constructors</see>, which are utilities to construct well-tagged XDOC strings
+ via ACL2 function calls whose nesting structure mirrors the nesting of the
+ XML.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
@@ -289,13 +301,14 @@
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>The model includes more support for 32-bit mode.  In particular: (some
- variants of) the PUSH, POP, MOV, LEA, XCHG, ADD, ADC, SUB, SBB, OR, AND, XOR,
- NEG, NOT, CMP, TEST, MUL, IMUL, DIV, IDIV, INC with opcodes FEh-FFh, DEC with
- opcodes FEh-FFh, CBW, CWDE, CDQE, CWD, CDQ, CQO, ROL, ROR, RCL, RCR, SAL, SAR,
- SHL, SHR, BT, JMP, Jcc, LOOP, LOOPcc, CALL, RET, CMC, CLC, STC, CLD, STD,
- SAHF, LAHF, RDRAND, and HLT instructions also work in 32-bit mode now; the
- 32-bit instructions PUSHA, POPA, INC with opcodes 40h-47h, and DEC with
- opcodes 48h-4Fh are now part of the model.</p>
+ variants of) the PUSH, POP, MOV, LEA, XCHG, CMPXCHG, ADD, ADC, SUB, SBB, OR,
+ AND, XOR, NEG, NOT, CMP, TEST, MUL, IMUL, DIV, IDIV, INC with opcodes FEh-FFh,
+ DEC with opcodes FEh-FFh, CBW, CWDE, CDQE, CWD, CDQ, CQO, ROL, ROR, RCL, RCR,
+ SAL, SAR, SHL, SHR, BT, JMP, Jcc, JCXZ, JECXZ, JRCXZ, CMOVcc, SETcc, LOOP,
+ LOOPcc, CALL, RET, CMC, CLC, STC, CLD, STD, SAHF, LAHF, RDRAND, HLT, and NOP
+ instructions also work in 32-bit mode now; the 32-bit instructions PUSHA,
+ POPA, INC with opcodes 40h-47h, and DEC with opcodes 48h-4Fh are now part of
+ the model.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>

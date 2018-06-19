@@ -114,9 +114,12 @@
        (x86 (write-*ip temp-rip x86)))
     x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-near-jmp-Op/En-M
 
-  ;; Absolute indirect jump: RIP = r/m64
+  ;; Absolute indirect jump: RIP = r/m16/32/64
+  ;; FF/4: JMP r/m16
+  ;; FF/4: JMP r/m32
   ;; FF/4: JMP r/m64
   ;; Op/En: M
 
@@ -133,9 +136,10 @@
   :body
 
   (b* ((ctx 'x86-near-jmp-Op/En-M)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        ;; Note that the reg field serves as an opcode extension for
        ;; this instruction.  The reg field will always be 4 when this
@@ -143,18 +147,43 @@
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p3? (equal #.*operand-size-override*
+                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
+       ((the (integer 2 8) operand-size)
+        (if (64-bit-modep x86)
+            8 ; Intel manual, Mar'17, Volume 1, Section 6.3.7
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d (code-segment-descriptor-attributes-layout-slice
+                      :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
+
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
        (inst-ac? t)
-       ((mv flg jmp-addr (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* 8 inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       ((mv flg
+            jmp-addr
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+                                                operand-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes-error flg))
 
@@ -166,13 +195,23 @@
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       ;; Converting (unsigned-byte-p 64 jmp-addr) to a "good" address
-       ;; in our world...
-       (jmp-addr (n64-to-i64 jmp-addr))
-       ((when (not (canonical-address-p jmp-addr)))
-        (!!ms-fresh :virtual-memory-error jmp-addr))
+       ;; Note that instruction pointers are modeled as signed in 64-bit mode,
+       ;; but unsigned in 32-bit mode.
+       (jmp-addr (if (64-bit-modep x86)
+                     (i64 jmp-addr)
+                   jmp-addr))
+       ;; Ensure that the return address is canonical (for 64-bit mode) and
+       ;; within code segment limits (for 32-bit mode). See pseudocode in Intel
+       ;; manual.
+       ((unless (if (64-bit-modep x86)
+                    (canonical-address-p jmp-addr)
+                  (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+                       (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
+                    (and (<= 0 jmp-addr) (<= jmp-addr cs.limit)))))
+        (!!fault-fresh :gp 0 :bad-return-address jmp-addr)) ;; #GP(0)
+
        ;; Update the x86 state:
-       (x86 (!rip jmp-addr x86)))
+       (x86 (write-*ip jmp-addr x86)))
       x86))
 
 (local
@@ -241,11 +280,13 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
   :body
 
   (b* ((ctx 'x86-far-jmp-Op/En-M)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) ;; #UD
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
+
        ;; Note that this exception was not mentioned in the Intel
        ;; Manuals, but I think that the reason for this omission was
        ;; that the JMP instruction reference sheet mentioned direct
@@ -256,20 +297,35 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
         (!!ms-fresh :source-operand-not-memory-location mod))
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes-slice :group-4-prefix prefixes)))
+
        (offset-size
         ;; Offset size can be 2, 4, or 8 bytes.
         (select-operand-size nil rex-byte nil prefixes x86))
+
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
        (inst-ac? t)
-       ((mv flg mem (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+       ((mv flg
+            mem
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$
          #.*gpr-access*
          ;; offset-size is the number of bytes of the
          ;; offset.  We need two more bytes for the selector.
          (the (integer 2 10) (+ 2 offset-size))
-         inst-ac? t ;; A memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
+         inst-ac?
+         t ;; A memory pointer operand
+         seg-reg
+         p4?
+         temp-rip
+         rex-byte
+         r/m
+         mod
+         sib
          0 ;; No immediate operand
          x86))
        ((when flg)
@@ -299,7 +355,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        ;; the destination operand is NULL.
        ((when (and (equal sel-ti 0)
                    (equal sel-index 0)))
-        (!!ms-fresh :gp-nullselector 0))
+        (!!fault-fresh :gp 0 :gp-nullselector 0)) ;; #GP(0)
 
        ((mv dt-base-addr dt-limit)
         (if (equal sel-ti 0)
@@ -320,8 +376,9 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        ;; The exception #GP(selector) is raised when offset is beyond
        ;; the code segment limit.
        ((when (< dt-limit sel-index))
-        (!!ms-fresh :gp-selector-limit-check-failed
-                    (list selector dt-base-addr dt-limit)))
+        (!!fault-fresh
+         :gp sel-index ;; #GP(selector)
+         :gp-selector-limit-check-failed (list selector dt-base-addr dt-limit)))
 
        ;; Now that we know the segment selector is valid, we check if
        ;; the segment descriptor is valid.
@@ -382,9 +439,10 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                  ;; for this privilege check.  If access is not
                  ;; allowed, #GP(segment-selector) is raised.
                  ((when (not (<= dpl cpl)))
-                  (!!ms-fresh :privilege-check-fail
-                              (acons :dpl dpl
-                                     (acons :cpl cpl nil))))
+                  (!!fault-fresh
+                   :gp sel-index ;; #GP(selector)
+                   :privilege-check-fail (acons :dpl dpl
+                                           (acons :cpl cpl nil))))
 
                  ;; Trimming the offset based on the operand-size:
                  (jmp-addr
@@ -396,7 +454,8 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                  ;; #GP(0) is thrown if the target offset in destination is
                  ;; non-canonical.
                  ((when (not (canonical-address-p jmp-addr)))
-                  (!!ms-fresh :target-offset-virtual-memory-error jmp-addr))
+                  (!!fault-fresh
+                   :gp 0 :target-offset-virtual-memory-error jmp-addr)) ;; #GP(0)
 
                  (new-cs-visible
                   (!seg-sel-layout-slice :rpl cpl selector))
@@ -419,7 +478,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                  ;; Update x86 state:
                  (x86 (!seg-visiblei *cs* new-cs-visible x86))
                  (x86 (!seg-hiddeni  *cs* new-cs-hidden  x86))
-                 (x86 (!rip jmp-addr x86)))
+                 (x86 (write-*ip jmp-addr x86)))
               x86)
 
           ;; Non-Conforming Code Segment:
@@ -434,10 +493,11 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                ;; raised.
                ((when (not (and (<= sel-rpl cpl)
                                 (equal cpl dpl))))
-                (!!ms-fresh :privilege-check-fail
-                            (acons :dpl dpl
-                                   (acons :cpl cpl
-                                          (acons :rpl sel-rpl nil)))))
+                (!!fault-fresh
+                 :gp sel-index ;; #GP(selector)
+                 :privilege-check-fail (acons :dpl dpl
+                                         (acons :cpl cpl
+                                           (acons :rpl sel-rpl nil)))))
 
                ;; Trimming the offset based on the operand-size:
                (jmp-addr
@@ -472,7 +532,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                ;; Update x86 state:
                (x86 (!seg-visiblei *cs* new-cs-visible x86))
                (x86 (!seg-hiddeni  *cs* new-cs-hidden  x86))
-               (x86 (!rip jmp-addr x86)))
+               (x86 (write-*ip jmp-addr x86)))
             x86))
 
       ;; Call Gate Descriptor:

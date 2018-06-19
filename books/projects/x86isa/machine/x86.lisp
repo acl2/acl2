@@ -596,14 +596,7 @@
     ((#x40 #x41 #x42 #x43 #x44 #x45 #x46 #x47 #x48 #x49 #x4A
            #x4B #x4C #x4D #x4E #x4F)
      "(CMOVcc Gv, Ev)"
-     (if (64-bit-modep x86)
-         (x86-cmovcc start-rip temp-rip prefixes rex-byte opcode modr/m
-                     sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(CMOVcc Gv, Ev) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-cmovcc start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x51
      "F2h: (SQRTSD xmm1 xmm2/m64);
@@ -976,32 +969,19 @@
     ((#x90 #x91 #x92 #x93 #x94 #x95 #x96 #x97 #x98 #x99 #x9A
            #x9B #x9C #x9D #x9E #x9F)
      "(SETcc Eb)"
-     (if (64-bit-modep x86)
-         (x86-setcc start-rip temp-rip prefixes rex-byte opcode
-                    modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "SETcc is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-setcc start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x1F
      "(NOP)"
-     (if (64-bit-modep x86)
-         (case (mrm-reg modr/m)
-           (0
-            (x86-two-byte-nop start-rip temp-rip prefixes rex-byte opcode
-                              modr/m sib x86))
-           (t
-            (x86-step-unimplemented
-             (cons (ms x86)
-                   (list start-rip temp-rip prefixes rex-byte opcode))
-             x86)))
-       (x86-step-unimplemented
-        (cons (cons "NOP is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (case (mrm-reg modr/m)
+       (0
+        (x86-two-byte-nop start-rip temp-rip prefixes rex-byte opcode
+                          modr/m sib x86))
+       (t
+        (x86-step-unimplemented
+         (cons (ms x86)
+               (list start-rip temp-rip prefixes rex-byte opcode))
+         x86))))
 
     (#xA0
      "(Push FS)"
@@ -1057,14 +1037,7 @@
 
     ((#xB0 #xB1)
      "B0: (CMPXCHG Eb Gb); B1: (CMPXCHG Ev Gv)"
-     (if (64-bit-modep x86)
-         (x86-cmpxchg start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                      x86)
-       (x86-step-unimplemented
-        (cons (cons "CMPXCHG is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-cmpxchg start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     ((#xB6 #xB7)
      "B6: (MOVZX Gv Eb); B7: (MOVZX Gv Ew)"
@@ -2600,14 +2573,7 @@
 
     (#xE3
      "(JrCXZ Jb)"
-     (if (64-bit-modep x86)
-         (x86-jrcxz start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                    x86)
-       (x86-step-unimplemented
-        (cons (cons "(JrCXZ Jb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-jrcxz start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xE8
      "(CALL Jz)"
@@ -2741,14 +2707,8 @@
         (x86-call-FF/2-Op/En-M
          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x4
-        (if (64-bit-modep x86)
-            (x86-near-jmp-Op/En-M start-rip temp-rip prefixes rex-byte opcode
-                                  modr/m sib x86)
-          (x86-step-unimplemented
-           (cons (cons "JMPN Ev is not implemented in 32-bit mode."
-                       (ms x86))
-                 (list start-rip temp-rip prefixes rex-byte opcode))
-           x86)))
+        (x86-near-jmp-Op/En-M
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
        (#x5
         (if (64-bit-modep x86)
             (x86-far-jmp-Op/En-D start-rip temp-rip prefixes rex-byte opcode

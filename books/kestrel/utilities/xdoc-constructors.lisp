@@ -10,9 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
-(include-book "std/strings/cat" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -47,7 +45,7 @@
    maps @('xdoc::textp') values to strings.
    If these XDOC constructors are used properly,
    without bypassing the (non-enforced) @('xdoc::textp') abstraction,
-   (e.g. by using @(tsee str::cat) directly)
+   (e.g. by using @(tsee concatenate) directly)
    then changing the internal representation of @('xdoc::textp')
    and the definition of the XDOC constructors accordingly
    should require no change in calling code.
@@ -98,7 +96,7 @@
    </p>
    @(def xdoc::app)"
   (defmacro xdoc::app (&rest pieces)
-    `(str::cat ,@pieces)))
+    `(concatenate 'string ,@pieces)))
 
 (defsection xdoc::topapp
   :parents (xdoc::xdoc-constructors)
@@ -115,7 +113,7 @@
    </p>
    @(def xdoc::topapp)"
   (defmacro xdoc::topapp (&rest pieces)
-    `(str::cat ,@pieces)))
+    `(concatenate 'string ,@pieces)))
 
 (define xdoc::tag ((tag-name stringp) (text xdoc::textp))
   :returns (text1 xdoc::textp :hints (("Goal" :in-theory (enable xdoc::textp))))
@@ -130,10 +128,10 @@
   (b* ((open-angle (coerce (list #\<) 'string))
        (close-angle (coerce (list #\>) 'string))
        (slash (coerce (list #\/) 'string))
-       (open-tag (str::cat open-angle tag-name close-angle))
-       (close-tag (str::cat open-angle slash tag-name close-angle))
+       (open-tag (concatenate 'string open-angle tag-name close-angle))
+       (close-tag (concatenate 'string open-angle slash tag-name close-angle))
        (newline (coerce (list #\Newline) 'string)))
-    (str::cat open-tag text close-tag newline newline))
+    (concatenate 'string open-tag text close-tag newline newline))
   :guard-hints (("Goal" :in-theory (enable xdoc::textp))))
 
 (define xdoc::h1 ((string stringp))
@@ -194,26 +192,60 @@
 (define xdoc::p ((string stringp))
   :returns (text xdoc::textp)
   :parents (xdoc::xdoc-constructors)
-  :short "Build an XML paragraph @('\<p\>...\</p\>')."
+  :short "Build an XML paragraph @('\<p\>...\</p\>') from a string."
   :long
   "<p>
-   The argument is a string, and not a @(tsee xdoc::textp) value,
-   because a paragraph is expected to be ``atomic''.
-   This can be revisited in the future.
+   The paragraph just contains the string, i.e. it is ``atomic''.
+   </p>
+   <p>
+   Use @(tsee xdoc::p*) to build non-``atomic'' paragraphs.
    </p>"
   (xdoc::tag "p" (xdoc::text string)))
+
+(defsection xdoc::p*
+  :parents (xdoc::xdoc-constructors)
+  :short "Build an XML paragraph @('\<p\>...\</p\>') from
+          zero or more pieces of XDOC text."
+  :long
+  "<p>
+   The arguments are evaluated and must return @(tsee xdoc::textp) values,
+   which are concatenated into a resulting @(tsee xdoc::textp) value.
+   </p>
+   <p>
+   Use @(tsee xdoc::p) to build ``atomic'' paragraphs.
+   </p>
+   @(def xdoc::p*)"
+  (defmacro xdoc::p* (&rest pieces)
+    `(xdoc::tag "p" (concatenate 'string ,@pieces))))
 
 (define xdoc::li ((string stringp))
   :returns (text xdoc::textp)
   :parents (xdoc::xdoc-constructors)
-  :short "Build an XML list item @('\<li\>...\</li\>')."
+  :short "Build an XML list item @('\<li\>...\</li\>') from a string."
   :long
   "<p>
-   The argument is a string, and not a @(tsee xdoc::textp) value,
-   because a list item is expected to be ``atomic''.
-   This can be revisited in the future.
+   The list item just contains the string, i.e. it is ``atomic''
+   </p>
+   <p>
+   See @(tsee xdoc::li*) to build non-``atomic'' list items.
    </p>"
   (xdoc::tag "li" (xdoc::text string)))
+
+(defsection xdoc::li*
+  :parents (xdoc::xdoc-constructors)
+  :short "Build an XML list item @('\<li\>...\</li\>') from
+          zero or more pieces of XDOC text."
+  :long
+  "<p>
+   The arguments are evaluated and must return @(tsee xdoc::textp) values,
+   which are concatenated into a resulting @(tsee xdoc::textp) value.
+   </p>
+   <p>
+   Use @(tsee xdoc::li) to build ``atomic'' list items.
+   </p>
+   @(def xdoc::li*)"
+  (defmacro xdoc::li* (&rest pieces)
+    `(xdoc::tag "li" (concatenate 'string ,@pieces))))
 
 (defsection xdoc::ul
   :parents (xdoc::xdoc-constructors)
@@ -222,11 +254,12 @@
   "<p>
    The arguments are evaluated and must return @(tsee xdoc::textp) values,
    which are concatenated into a resulting @(tsee xdoc::textp) value.
-   The arguments are expected to be calls to @(tsee xdoc::li).
+   The arguments are expected to be
+   calls to @(tsee xdoc::li) or @(tsee xdoc::li*).
    </p>
    @(def xdoc::ul)"
   (defmacro xdoc::ul (&rest items)
-    `(xdoc::tag "ul" (str::cat ,@items))))
+    `(xdoc::tag "ul" (concatenate 'string ,@items))))
 
 (defsection xdoc::ol
   :parents (xdoc::xdoc-constructors)
@@ -235,11 +268,12 @@
   "<p>
    The arguments are evaluated and must return @(tsee xdoc::textp) values,
    which are concatenated into a resulting @(tsee xdoc::textp) value.
-   The arguments are expected to be calls to @(tsee xdoc::li).
+   The arguments are expected to be
+   calls to @(tsee xdoc::li) or @(tsee xdoc::li*).
    </p>
    @(def xdoc::ol)"
   (defmacro xdoc::ol (&rest items)
-    `(xdoc::tag "ol" (str::cat ,@items))))
+    `(xdoc::tag "ol" (concatenate 'string ,@items))))
 
 (defsection xdoc::blockquote
   :parents (xdoc::xdoc-constructors)
@@ -252,7 +286,7 @@
    </p>
    @(def xdoc::blockquote)"
   (defmacro xdoc::blockquote (&rest items)
-    `(xdoc::tag "blockquote" (str::cat ,@items))))
+    `(xdoc::tag "blockquote" (concatenate 'string ,@items))))
 
 (defsection xdoc::code
   :parents (xdoc::xdoc-constructors)
@@ -274,19 +308,27 @@
     ((unterminated-lines string-listp)
      (reversed-current-terminated-lines string-listp))
     :returns (final-terminated-lines string-listp :hyp :guard)
-    (cond ((endp unterminated-lines) (rev reversed-current-terminated-lines))
+    (cond ((endp unterminated-lines) (reverse
+                                      reversed-current-terminated-lines))
           (t (b* ((unterminated-line (car unterminated-lines))
-                  (terminated-line (str::cat unterminated-line
-                                             (coerce '(#\Newline) 'string))))
+                  (terminated-line (concatenate 'string
+                                                unterminated-line
+                                                (coerce '(#\Newline) 'string))))
                (xdoc::terminate-lines
                 (cdr unterminated-lines)
-                (cons terminated-line reversed-current-terminated-lines))))))
+                (cons terminated-line reversed-current-terminated-lines)))))
+    :prepwork
+    ((local
+      (defthm returns-lemma ; to prove the :RETURNS theorem above
+        (implies (and (string-listp x)
+                      (string-listp y))
+                 (string-listp (revappend x y)))))))
 
   (defmacro xdoc::code (&rest lines)
     (declare (xargs :guard (string-listp lines)))
     (let ((newline (coerce (list #\Newline) 'string))
           (lines (xdoc::terminate-lines lines nil)))
-      `(str::cat "@({" ,newline ,@lines "})" ,newline ,newline))))
+      `(concatenate 'string "@({" ,newline ,@lines "})" ,newline ,newline))))
 
 (defsection xdoc::desc
   :parents (xdoc::xdoc-constructors)
@@ -310,8 +352,9 @@
    </p>"
   (defmacro xdoc::desc (desc-id &rest desc-items)
     (declare (xargs :guard (stringp desc-id)))
-    `(str::cat (xdoc::p ,desc-id)
-               (xdoc::blockquote ,@desc-items))))
+    `(concatenate 'string
+                  (xdoc::p ,desc-id)
+                  (xdoc::blockquote ,@desc-items))))
 
 (define xdoc::img ((src stringp))
   :returns (text xdoc::textp :hints (("Goal" :in-theory (enable xdoc::textp))))
@@ -321,4 +364,15 @@
   "<p>
    The argument is the value for the @('src') attribute.
    </p>"
-  (str::cat "<img src=\"" src "\"/>"))
+  (concatenate 'string "<img src=\"" src "\"/>"))
+
+(define xdoc::def ((name stringp))
+  :returns (text xdoc::textp :hints (("Goal" :in-theory (enable xdoc::textp))))
+  :parents (xdoc::xdoc-constructors)
+  :short "Build an XDOC definition directive."
+  :long
+  "<p>
+   This is a @('@(def ...)') directive.
+   The name is supplied as an argument.
+   </p>"
+  (concatenate 'string "@(def " name))
