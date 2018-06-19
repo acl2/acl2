@@ -237,7 +237,8 @@
   "<p>
    The arguments are evaluated and must return @(tsee xdoc::textp) values,
    which are concatenated into a resulting @(tsee xdoc::textp) value.
-   The arguments are expected to be calls to @(tsee xdoc::li).
+   The arguments are expected to be
+   calls to @(tsee xdoc::li) or @(tsee xdoc::li*).
    </p>
    @(def xdoc::ul)"
   (defmacro xdoc::ul (&rest items)
@@ -250,7 +251,8 @@
   "<p>
    The arguments are evaluated and must return @(tsee xdoc::textp) values,
    which are concatenated into a resulting @(tsee xdoc::textp) value.
-   The arguments are expected to be calls to @(tsee xdoc::li).
+   The arguments are expected to be
+   calls to @(tsee xdoc::li) or @(tsee xdoc::li*).
    </p>
    @(def xdoc::ol)"
   (defmacro xdoc::ol (&rest items)
