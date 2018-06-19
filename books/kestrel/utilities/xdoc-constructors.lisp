@@ -10,9 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
-(include-book "std/strings/cat" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -47,7 +45,7 @@
    maps @('xdoc::textp') values to strings.
    If these XDOC constructors are used properly,
    without bypassing the (non-enforced) @('xdoc::textp') abstraction,
-   (e.g. by using @(tsee str::cat) directly)
+   (e.g. by using @(tsee concatenate) directly)
    then changing the internal representation of @('xdoc::textp')
    and the definition of the XDOC constructors accordingly
    should require no change in calling code.
@@ -98,7 +96,7 @@
    </p>
    @(def xdoc::app)"
   (defmacro xdoc::app (&rest pieces)
-    `(str::cat ,@pieces)))
+    `(concatenate 'string ,@pieces)))
 
 (defsection xdoc::topapp
   :parents (xdoc::xdoc-constructors)
@@ -115,7 +113,7 @@
    </p>
    @(def xdoc::topapp)"
   (defmacro xdoc::topapp (&rest pieces)
-    `(str::cat ,@pieces)))
+    `(concatenate 'string ,@pieces)))
 
 (define xdoc::tag ((tag-name stringp) (text xdoc::textp))
   :returns (text1 xdoc::textp :hints (("Goal" :in-theory (enable xdoc::textp))))
@@ -130,10 +128,10 @@
   (b* ((open-angle (coerce (list #\<) 'string))
        (close-angle (coerce (list #\>) 'string))
        (slash (coerce (list #\/) 'string))
-       (open-tag (str::cat open-angle tag-name close-angle))
-       (close-tag (str::cat open-angle slash tag-name close-angle))
+       (open-tag (concatenate 'string open-angle tag-name close-angle))
+       (close-tag (concatenate 'string open-angle slash tag-name close-angle))
        (newline (coerce (list #\Newline) 'string)))
-    (str::cat open-tag text close-tag newline newline))
+    (concatenate 'string open-tag text close-tag newline newline))
   :guard-hints (("Goal" :in-theory (enable xdoc::textp))))
 
 (define xdoc::h1 ((string stringp))
@@ -226,7 +224,7 @@
    </p>
    @(def xdoc::ul)"
   (defmacro xdoc::ul (&rest items)
-    `(xdoc::tag "ul" (str::cat ,@items))))
+    `(xdoc::tag "ul" (concatenate 'string ,@items))))
 
 (defsection xdoc::ol
   :parents (xdoc::xdoc-constructors)
@@ -239,7 +237,7 @@
    </p>
    @(def xdoc::ol)"
   (defmacro xdoc::ol (&rest items)
-    `(xdoc::tag "ol" (str::cat ,@items))))
+    `(xdoc::tag "ol" (concatenate 'string ,@items))))
 
 (defsection xdoc::blockquote
   :parents (xdoc::xdoc-constructors)
@@ -252,7 +250,7 @@
    </p>
    @(def xdoc::blockquote)"
   (defmacro xdoc::blockquote (&rest items)
-    `(xdoc::tag "blockquote" (str::cat ,@items))))
+    `(xdoc::tag "blockquote" (concatenate 'string ,@items))))
 
 (defsection xdoc::code
   :parents (xdoc::xdoc-constructors)
@@ -274,19 +272,27 @@
     ((unterminated-lines string-listp)
      (reversed-current-terminated-lines string-listp))
     :returns (final-terminated-lines string-listp :hyp :guard)
-    (cond ((endp unterminated-lines) (rev reversed-current-terminated-lines))
+    (cond ((endp unterminated-lines) (reverse
+                                      reversed-current-terminated-lines))
           (t (b* ((unterminated-line (car unterminated-lines))
-                  (terminated-line (str::cat unterminated-line
-                                             (coerce '(#\Newline) 'string))))
+                  (terminated-line (concatenate 'string
+                                                unterminated-line
+                                                (coerce '(#\Newline) 'string))))
                (xdoc::terminate-lines
                 (cdr unterminated-lines)
-                (cons terminated-line reversed-current-terminated-lines))))))
+                (cons terminated-line reversed-current-terminated-lines)))))
+    :prepwork
+    ((local
+      (defthm returns-lemma ; to prove the :RETURNS theorem above
+        (implies (and (string-listp x)
+                      (string-listp y))
+                 (string-listp (revappend x y)))))))
 
   (defmacro xdoc::code (&rest lines)
     (declare (xargs :guard (string-listp lines)))
     (let ((newline (coerce (list #\Newline) 'string))
           (lines (xdoc::terminate-lines lines nil)))
-      `(str::cat "@({" ,newline ,@lines "})" ,newline ,newline))))
+      `(concatenate 'string "@({" ,newline ,@lines "})" ,newline ,newline))))
 
 (defsection xdoc::desc
   :parents (xdoc::xdoc-constructors)
@@ -310,8 +316,9 @@
    </p>"
   (defmacro xdoc::desc (desc-id &rest desc-items)
     (declare (xargs :guard (stringp desc-id)))
-    `(str::cat (xdoc::p ,desc-id)
-               (xdoc::blockquote ,@desc-items))))
+    `(concatenate 'string
+                  (xdoc::p ,desc-id)
+                  (xdoc::blockquote ,@desc-items))))
 
 (define xdoc::img ((src stringp))
   :returns (text xdoc::textp :hints (("Goal" :in-theory (enable xdoc::textp))))
@@ -321,4 +328,4 @@
   "<p>
    The argument is the value for the @('src') attribute.
    </p>"
-  (str::cat "<img src=\"" src "\"/>"))
+  (concatenate 'string "<img src=\"" src "\"/>"))
