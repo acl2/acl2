@@ -973,109 +973,103 @@
 
    (xdoc::ul
 
-    (xdoc::li
-     (xdoc::app
-      (xdoc::code
-       "(defun2 fun (fvar1 ... fvarN) ...)")
-      (xdoc::p
-       "if @('sofun') was introduced via @(tsee defun2)
-        and @('fun') is second-order
-        (i.e. the list @('(fvar1 ... fvarN)') is present).
-        The body, measure (if recursive), and guard of @('fun')
-        are obtained by
-        <see topic='@(url function-variable-instantiation)'>applying
-        the instantiation</see>
-        to the body, measure (if recursive), and guard of @('sofun').
-        If @('fun') is recursive,
-        its termination proof uses
-        a <see topic='@(url acl2::functional-instantiation)'>functional
-        instance</see> of the
-        <see topic='@(url termination-theorem)'>termination theorem</see>
-        of @('sofun').")))
+    (xdoc::li*
+     (xdoc::code
+      "(defun2 fun (fvar1 ... fvarN) ...)")
+     (xdoc::p
+      "if @('sofun') was introduced via @(tsee defun2)
+       and @('fun') is second-order
+       (i.e. the list @('(fvar1 ... fvarN)') is present).
+       The body, measure (if recursive), and guard of @('fun')
+       are obtained by
+       <see topic='@(url function-variable-instantiation)'>applying
+       the instantiation</see>
+       to the body, measure (if recursive), and guard of @('sofun').
+       If @('fun') is recursive,
+       its termination proof uses
+       a <see topic='@(url acl2::functional-instantiation)'>functional
+       instance</see> of the
+       <see topic='@(url termination-theorem)'>termination theorem</see>
+       of @('sofun')."))
 
-    (xdoc::li
-     (xdoc::app
-      (xdoc::code
-       "(defun fun ...)")
-      (xdoc::p
-       "if @('sofun') was introduced via @(tsee defun2)
-        and @('fun') is first-order
-        (i.e. the list @('(fvar1 ... fvarN)') is absent).
-        The body, measure (if recursive), and guard of @('fun')
-        are obtained by
-        <see topic='@(url function-variable-instantiation)'>applying
-        the instantiation</see>
-        to the body, measure (if recursive), and guard of @('sofun').
-        If @('fun') is recursive,
-        its termination proof uses
-        a <see topic='@(url acl2::functional-instantiation)'>functional
-        instance</see> of the
-        <see topic='@(url termination-theorem)'>termination theorem</see>
-        of @('sofun').")))
+    (xdoc::li*
+     (xdoc::code
+      "(defun fun ...)")
+     (xdoc::p
+      "if @('sofun') was introduced via @(tsee defun2)
+       and @('fun') is first-order
+       (i.e. the list @('(fvar1 ... fvarN)') is absent).
+       The body, measure (if recursive), and guard of @('fun')
+       are obtained by
+       <see topic='@(url function-variable-instantiation)'>applying
+       the instantiation</see>
+       to the body, measure (if recursive), and guard of @('sofun').
+       If @('fun') is recursive,
+       its termination proof uses
+       a <see topic='@(url acl2::functional-instantiation)'>functional
+       instance</see> of the
+       <see topic='@(url termination-theorem)'>termination theorem</see>
+       of @('sofun')."))
 
-    (xdoc::li
-     (xdoc::app
-      (xdoc::code
-       "(defchoose2 fun (bvar1 ... bvarP) (fvar1 ... fvarN) ...)")
-      (xdoc::p
-       "if @('sofun') was introduced via @(tsee defchoose2)
-        and @('fun') is second-order
-        (i.e. the list @('(fvar1 ... fvarN)') is present).
-        The body of @('fun')
-        is obtained by
-        <see topic='@(url function-variable-instantiation)'>applying
-        the instantiation</see>
-        to the body of @('sofun').
-        The @(':strengthen') value of @('fun') is the same as @('sofun').")))
+    (xdoc::li*
+     (xdoc::code
+      "(defchoose2 fun (bvar1 ... bvarP) (fvar1 ... fvarN) ...)")
+     (xdoc::p
+      "if @('sofun') was introduced via @(tsee defchoose2)
+       and @('fun') is second-order
+       (i.e. the list @('(fvar1 ... fvarN)') is present).
+       The body of @('fun')
+       is obtained by
+       <see topic='@(url function-variable-instantiation)'>applying
+       the instantiation</see>
+       to the body of @('sofun').
+       The @(':strengthen') value of @('fun') is the same as @('sofun')."))
 
-    (xdoc::li
-     (xdoc::app
-      (xdoc::code
-       "(defchoose fun (bvar1 ... bvarP) ...)")
-      (xdoc::p
-       "if @('sofun') was introduced via @(tsee defchoose2)
-        and @('fun') is first-order
-        (i.e. the list @('(fvar1 ... fvarN)') is absent).
-        The body of @('fun')
-        is obtained by
-        <see topic='@(url function-variable-instantiation)'>applying
-        the instantiation</see>
-        to the body of @('sofun').
-        The @(':strengthen') value of @('fun') is the same as @('sofun').")))
+    (xdoc::li*
+     (xdoc::code
+      "(defchoose fun (bvar1 ... bvarP) ...)")
+     (xdoc::p
+      "if @('sofun') was introduced via @(tsee defchoose2)
+       and @('fun') is first-order
+       (i.e. the list @('(fvar1 ... fvarN)') is absent).
+       The body of @('fun')
+       is obtained by
+       <see topic='@(url function-variable-instantiation)'>applying
+       the instantiation</see>
+       to the body of @('sofun').
+       The @(':strengthen') value of @('fun') is the same as @('sofun')."))
 
-    (xdoc::li
-     (xdoc::app
-      (xdoc::code
-       "(defun-sk2 fun (fvar1 ... fvarN) ...)")
-      (xdoc::p
-       "if @('sofun') was introduced via @(tsee defun-sk2)
-        and @('fun') is second-order
-        (i.e. the list @('(fvar1 ... fvarN)') is present).
-        The body and guard of @('fun')
-        are obtained by
-        <see topic='@(url function-variable-instantiation)'>applying
-        the instantiation</see>
-        to the body and guard of @('sofun').
-        The guard of @('fun') is not verified.
-        The @(':strengthen') value of @('fun') is the same as @('sofun').
-        The @(':quant-ok') value of @('fun') is @('t').")))
+    (xdoc::li*
+     (xdoc::code
+      "(defun-sk2 fun (fvar1 ... fvarN) ...)")
+     (xdoc::p
+      "if @('sofun') was introduced via @(tsee defun-sk2)
+       and @('fun') is second-order
+       (i.e. the list @('(fvar1 ... fvarN)') is present).
+       The body and guard of @('fun')
+       are obtained by
+       <see topic='@(url function-variable-instantiation)'>applying
+       the instantiation</see>
+       to the body and guard of @('sofun').
+       The guard of @('fun') is not verified.
+       The @(':strengthen') value of @('fun') is the same as @('sofun').
+       The @(':quant-ok') value of @('fun') is @('t')."))
 
-    (xdoc::li
-     (xdoc::app
-      (xdoc::code
-       "(defun-sk fun ...)")
-      (xdoc::p
-       "if @('sofun') was introduced via @(tsee defun-sk2)
-        and @('fun') is first-order
-        (i.e. the list @('(fvar1 ... fvarN)') is absent).
-        The body and guard of @('fun')
-        are obtained by
-        <see topic='@(url function-variable-instantiation)'>applying
-        the instantiation</see>
-        to the body and guard of @('sofun').
-        The guard of @('fun') is not verified.
-        The @(':strengthen') value of @('fun') is the same as @('sofun').
-        The @(':quant-ok') value of @('fun') is @('t')."))))
+    (xdoc::li*
+     (xdoc::code
+      "(defun-sk fun ...)")
+     (xdoc::p
+      "if @('sofun') was introduced via @(tsee defun-sk2)
+       and @('fun') is first-order
+       (i.e. the list @('(fvar1 ... fvarN)') is absent).
+       The body and guard of @('fun')
+       are obtained by
+       <see topic='@(url function-variable-instantiation)'>applying
+       the instantiation</see>
+       to the body and guard of @('sofun').
+       The guard of @('fun') is not verified.
+       The @(':strengthen') value of @('fun') is the same as @('sofun').
+       The @(':quant-ok') value of @('fun') is @('t').")))
 
    (xdoc::h3 "Examples")
 
