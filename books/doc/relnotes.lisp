@@ -313,6 +313,15 @@
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
 
+ <p>The notion of programmer-level mode and system-level mode have been renamed
+ to `application-level view' and `system-level view', to avoid overloading the
+ word `mode', which in the x86 has a more specific meaning.  Similarly, the
+ notion of page structure marking mode has been renamed `marking view'.  This
+ involved renaming the @('programmer-level-mode') and
+ @('page-structure-marking-mode') field of the state stobj to the shorter
+ @('app-view') and @('marking-view'), and also renaming some functions and
+ theorems acccordingly.</p>
+
  <h4><see topic='@(url apt::apt)'>APT</see></h4>
 
  <p>Improved documentation.</p>
