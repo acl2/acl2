@@ -165,7 +165,8 @@ expression with @(see vl-expr-to-svex).</p>")
               ;; taskdecls, initial/finals, assertions, properties, ...
               (vl-assign vl-assign-elaborate-aux)
               (vl-modinst vl-modinst-elaborate-aux)
-              (vl-always vl-always-elaborate-aux))
+              (vl-always vl-always-elaborate-aux)
+              (vl-atts   :skip))
     :type-fns ((vl-datatype vl-datatype-elaborate-fn)
                (vl-typedef vl-typedef-elaborate-fn)
                (vl-fundecl vl-fundecl-elaborate-fn)
@@ -175,7 +176,8 @@ expression with @(see vl-expr-to-svex).</p>")
                (vl-stmt     vl-stmt-elaborate-fn)
                (vl-assign vl-assign-elaborate-fn)
                (vl-modinst vl-modinst-elaborate-fn)
-               (vl-always vl-always-elaborate-fn))
+               (vl-always vl-always-elaborate-fn)
+               (vl-atts   vl-atts-elaborate-fn))
     :prod-fns ((vl-hidindex  (indices vl-indexlist-resolve-constants-fn))
                (vl-range     (msb vl-index-resolve-if-constant-fn)
                              (lsb vl-index-resolve-if-constant-fn))
@@ -706,6 +708,30 @@ expression with @(see vl-expr-to-svex).</p>")
               elabindex))))
     ///
     (in-theory (disable vl-index-expr-resolve-paramref)))
+
+
+  (define vl-atts-elaborate ((x vl-atts-p)
+                             elabindex
+                             &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+    :measure (acl2::nat-list-measure
+              (list reclimit 1 (vl-atts-count x) 0))
+    :returns (mv (ok)
+                 (warnings vl-warninglist-p)
+                 (new-x vl-atts-p)
+                 new-elabindex)
+    (b* ((x (vl-atts-fix x))
+         ((when (atom x)) (mv t nil nil elabindex))
+         ((mv ok warnings val elabindex)
+          (if (equal (caar x) "VL_ORIG_EXPR")
+              (mv t nil (cdar x) elabindex)
+            (vl-maybe-expr-elaborate (cdar x) elabindex :reclimit reclimit)))
+         ((mv ok1 warnings1 cdr elabindex)
+          (vl-atts-elaborate (cdr x) elabindex :reclimit reclimit)))
+      (mv (and ok1 ok)
+          (append-without-guard warnings1 warnings)
+          (cons (cons (caar x) val) cdr)
+          elabindex)))
+         
 
 
   #||

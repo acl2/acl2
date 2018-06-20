@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; April 2018
 
 ;; An n-bit, big-endian "greater than" comparator
 
@@ -49,7 +49,8 @@
                               ind-in)
                         (f-and (f-xnor a b) flag-in))))
   :hints (("Goal"
-           :expand (se '1-bit-> (list ind-in flag-in a b) sts netlist)
+           :expand (:free (inputs)
+                          (se '1-bit-> inputs sts netlist))
            :in-theory (enable de-rules 1-bit->&))))
 
 ;; ======================================================================
@@ -284,11 +285,8 @@
                       netlist)
                   (list (fv-> nil t a b))))
   :hints (("Goal"
-           :do-not '(preprocess)
-           :expand (se (si 'v-> n)
-                       (append a b)
-                       sts
-                       netlist)
+           :expand (:free (inputs n)
+                          (se (si 'v-> n) inputs sts netlist))
            :in-theory (e/d* (de-rules
                              v->&
                              not-primp-v->)

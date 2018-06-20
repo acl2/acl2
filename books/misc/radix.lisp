@@ -128,16 +128,16 @@
 
 ;; Following are examples to format the converted numbers.
 ;;
-;;(fmx "hex of x is ~x0~%" (radix::int2hex 100 (radix::hex-print-size 100) t))
+;;(fmx "~%hex of x is ~x0~%" (radix::int2hex 100 (radix::hex-print-size 100) t))
 ;;
 ;; Macro to print a non-negative integer in hex.
 ;(defmacro hexprint+ (x)
-;  `(fmx "~@0~%" (radix::nat2hex ,x T)))
+;  `(fmx "~%~@0~%" (radix::nat2hex ,x T)))
 
 ;; Print an integer in hex assuming that it is 32-bit word.
 ;(defmacro hexprintw (x)
-;  `(fmx "~@0~%" (radix::int2hex ,x 8 T)))
+;  `(fmx "~%~@0~%" (radix::int2hex ,x 8 T)))
 
 ;;; Print an integer in hex assuming that is is 64 bit word (quad-word).
 ;(defmacro hexprintq (x)
-;  `(fmx "~@0~%" (radix::int2hex ,x 16 T)))
+;  `(fmx "~%~@0~%" (radix::int2hex ,x 16 T)))

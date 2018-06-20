@@ -1,6 +1,6 @@
 ; String Utilities
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -38,16 +38,16 @@
 (std::deflist nonempty-string-listp (x)
   (nonempty-stringp x)
   :parents (string-utilities)
-  :short "Recognize @('nil')-terminated lists of nonempty strings."
+  :short "Recognize true lists of nonempty strings."
   :true-listp t
   :elementp-of-nil nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nats=>string ((nats (unsigned-byte-listp 8 nats)))
-  :returns (string stringp :rule-classes (:rewrite :type-prescription))
+  :returns (string stringp)
   :parents (string-utilities)
-  :short "Convert a list of natural numbers below 256
+  :short "Convert a true list of natural numbers below 256
           to the corresponding string."
   (implode (nats=>chars nats)))
 
@@ -55,16 +55,18 @@
   :returns (nats (unsigned-byte-listp 8 nats))
   :parents (string-utilities)
   :short "Convert a string
-          to the corresponding list of natural numbers below 256."
+          to the corresponding true list of natural numbers below 256."
   (chars=>nats (explode string))
   ///
 
   (more-returns
-   (nats true-listp
-         :name true-listp-of-string=>nats
-         :rule-classes :type-prescription)
    (nats nat-listp
-         :name nat-listp-of-string=>nats)))
+         :name nat-listp-of-string=>nats))
+
+  (defrule len-of-string=>nats
+    (implies (stringp string)
+             (equal (len (string=>nats string))
+                    (length string)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

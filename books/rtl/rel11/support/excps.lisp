@@ -166,18 +166,18 @@
 ;; in the event that SSE-BINARY-SPEC returns a non-NIL value, it returns the same value.
 
 ;; SSE-BINARY-SPEC is based on two auxiliary functions, SSE-BINARY-PRE-COMP and
-;; SSE-BINARY-POST-COMP, each of which returns an optional value and a 6-bit vector
+;; SSE-BINARY-COMP, each of which returns an optional value and a 6-bit vector
 ;; of exception flags, which are written to the MXCSR.
 
 ;; SSE-BINARY-PRE-COMP calls SSE-BINARY-PRE-COMP-EXCP, which detects pre-computation
 ;; exceptions, and SSE-BINARY-PRE-COMP-VAL, which may compute a value.  If an unmasked
 ;; exception occurs, the value is invalid and the operation is terminated.  Otherwise,
-;; if the value is NIL, then the computation proceeds by calling SSE-BINARY-POST-COMP, and
+;; if the value is NIL, then the computation proceeds by calling SSE-BINARY-COMP, and
 ;; if non-NIL, the operation is terminated and that value is returned.
 
-;; SSE-BINARY-POST-COMP either returns an infinity or decodes the operands and computes the
+;; SSE-BINARY-COMP either returns an infinity or decodes the operands and computes the
 ;; unrounded result.  If that result is 0, then it sets the sign according to the operand
-;; signs and the rounding mode and returns.  Otherwise, it calls SSE-ROUND, which detects
+;; signs and the rounding mode and returns.  Otherwise, it calls SSE-POST-COMP, which detects
 ;; post-computation exceptions and computes the rounded result, which is invalid in the
 ;; event of an unmasked exception.
 
@@ -293,7 +293,7 @@
   :enable nrepp
   :use nrepp-spn))
 
-(defund sse-round (u mxcsr f)
+(defund sse-post-comp (u mxcsr f)
   (declare (xargs :guard (and (real/rationalp u)
                               (not (= u 0))
                               (natp mxcsr)
@@ -336,9 +336,9 @@
             (mv () (set-flag (ubit) flags)))
        (mv (nencode r f) flags)))))
 
-(defrule sse-round-type
-  (natp (mv-nth 1 (sse-round u mxcsr f)))
-  :enable sse-round
+(defrule sse-post-comp-type
+  (natp (mv-nth 1 (sse-post-comp u mxcsr f)))
+  :enable sse-post-comp
   :disable (rnd drnd)
   :rule-classes :type-prescription)
 
@@ -384,7 +384,7 @@
     (mul (* aval bval))
     (div (/ aval bval))))
 
-(defund sse-binary-post-comp (op a b mxcsr f)
+(defund sse-binary-comp (op a b mxcsr f)
   (declare (xargs :guard (and (member op '(add sub mul div))
                               (encodingp a f)
                               (encodingp b f)
@@ -399,11 +399,11 @@
            (u (binary-eval op aval bval)))
         (if (or (and (eql op 'div) (infp b f)) (= u 0))
             (mv (zencode (binary-zero-sgn op asgn bsgn (mxcsr-rc mxcsr)) f) 0)
-          (sse-round u mxcsr f)))))
+          (sse-post-comp u mxcsr f)))))
 
-(defrule sse-binary-post-comp-type
-  (natp (mv-nth 1 (sse-binary-post-comp op a b mxcsr f)))
-  :enable sse-binary-post-comp
+(defrule sse-binary-comp-type
+  (natp (mv-nth 1 (sse-binary-comp op a b mxcsr f)))
+  :enable sse-binary-comp
   :rule-classes :type-prescription)
 
 (defund sse-binary-spec (op a b mxcsr f)
@@ -417,7 +417,7 @@
         (mv () (logior mxcsr pre-flags))
       (if result
           (mv result (logior mxcsr pre-flags))
-        (mv-let (result post-flags) (sse-binary-post-comp op adaz bdaz mxcsr f)
+        (mv-let (result post-flags) (sse-binary-comp op adaz bdaz mxcsr f)
           (mv (and (not (unmasked-excp-p post-flags (mxcsr-masks mxcsr)))
                    result)
               (logior (logior mxcsr pre-flags) post-flags)))))))
@@ -463,7 +463,7 @@
   (let ((a (dazify a (bitn mxcsr (daz)) f)))
     (mv a (sse-sqrt-pre-comp-val a f) (sse-sqrt-pre-comp-excp a f))))
 
-(defund sse-sqrt-post-comp (a mxcsr f)
+(defund sse-sqrt-comp (a mxcsr f)
   (declare (xargs :guard (and (encodingp a f)
                               (or (zerp a f) (= (sgnf a f) 0))
                               (natp mxcsr))
@@ -472,11 +472,11 @@
                                                     sigf manf)))))
   (if (or (infp a f) (zerp a f))
       (mv a 0)
-    (sse-round (qsqrt (decode a f) (+ (prec f) 2)) mxcsr f)))
+    (sse-post-comp (qsqrt (decode a f) (+ (prec f) 2)) mxcsr f)))
 
-(defrule sse-sqrt-post-comp-type
-  (natp (mv-nth 1 (sse-sqrt-post-comp a mxcsr f)))
-  :enable sse-sqrt-post-comp
+(defrule sse-sqrt-comp-type
+  (natp (mv-nth 1 (sse-sqrt-comp a mxcsr f)))
+  :enable sse-sqrt-comp
   :disable qsqrt
   :rule-classes :type-prescription)
 
@@ -489,7 +489,7 @@
         (mv () (logior mxcsr pre-flags))
       (if result
           (mv result (logior mxcsr pre-flags))
-        (mv-let (result post-flags) (sse-sqrt-post-comp adaz mxcsr f)
+        (mv-let (result post-flags) (sse-sqrt-comp adaz mxcsr f)
           (mv (and (not (unmasked-excp-p post-flags (mxcsr-masks mxcsr)))
                    result)
               (logior (logior mxcsr pre-flags) post-flags)))))))
@@ -508,7 +508,9 @@
   (and (or (infp a f) (infp b f))
        (or (zerp a f)
            (zerp b f)
-           (and (infp c f)
+           (and (not (nanp a f))
+                (not (nanp b f))
+                (infp c f)
                 (not (= (sgnf c f)
                         (logxor (sgnf a f) (sgnf b f))))))))
 
@@ -551,7 +553,7 @@
          (c (dazify c daz f)))
     (mv a b c (sse-fma-pre-comp-val a b c f) (sse-fma-pre-comp-excp a b c f))))
 
-(defund sse-fma-post-comp (a b c mxcsr f)
+(defund sse-fma-comp (a b c mxcsr f)
   (declare (xargs :guard (and (encodingp a f)
                               (encodingp b f)
                               (encodingp c f)
@@ -573,11 +575,11 @@
                            (if (eql (mxcsr-rc mxcsr) 'rdn) 1 0))
                          f)
                 0)
-          (sse-round u mxcsr f))))))
+          (sse-post-comp u mxcsr f))))))
 
-(defrule sse-fma-post-comp-type
-  (natp (mv-nth 1 (sse-fma-post-comp a b c mxcsr f)))
-  :enable sse-fma-post-comp
+(defrule sse-fma-comp-type
+  (natp (mv-nth 1 (sse-fma-comp a b c mxcsr f)))
+  :enable sse-fma-comp
   :rule-classes :type-prescription)
 
 (defund sse-fma-spec (a b c mxcsr f)
@@ -591,7 +593,7 @@
         (mv () (logior mxcsr pre-flags))
       (if result
           (mv result (logior mxcsr pre-flags))
-        (mv-let (result post-flags) (sse-fma-post-comp adaz bdaz cdaz mxcsr f)
+        (mv-let (result post-flags) (sse-fma-comp adaz bdaz cdaz mxcsr f)
           (mv (and (not (unmasked-excp-p post-flags (mxcsr-masks mxcsr)))
                    result)
               (logior (logior mxcsr pre-flags) post-flags)))))))
@@ -748,7 +750,7 @@
   :enable (ep)
   :rule-classes :linear))
 
-(defund x87-round (u fcw)
+(defund x87-post-comp (u fcw)
   (declare (xargs :guard (and (real/rationalp u)
                               (not (= u 0))
                               (natp fcw))
@@ -796,13 +798,13 @@
                 (mv (nencode s (ep)) (if (> (abs r) (abs u)) (set-flag (c1) flags) flags)))))
         (mv (nencode r (ep)) (if (> (abs r) (abs u)) (set-flag (c1) flags) flags))))))
 
-(defrule x87-round-type
-  (natp (mv-nth 1 (x87-round u fcw)))
-  :enable x87-round
+(defrule x87-post-comp-type
+  (natp (mv-nth 1 (x87-post-comp u fcw)))
+  :enable x87-post-comp
   :disable (member-equal (expt) acl2::|(expt c (* d n))|)
   :rule-classes :type-prescription)
 
-(defund x87-binary-post-comp (op a af b bf fcw)
+(defund x87-binary-comp (op a af b bf fcw)
   (declare (xargs :guard (and (member op '(add sub mul div))
                               (encodingp a af)
                               (encodingp b bf)
@@ -817,11 +819,11 @@
            (u (binary-eval op aval bval)))
         (if (or (and (eql op 'div) (infp b bf)) (= u 0))
             (mv (zencode (binary-zero-sgn op asgn bsgn (fcw-rc fcw)) (ep)) 0)
-          (x87-round u fcw)))))
+          (x87-post-comp u fcw)))))
 
-(defrule x87-binary-post-comp-type
-  (natp (mv-nth 1 (x87-binary-post-comp op a af b bf fcw)))
-  :enable x87-binary-post-comp
+(defrule x87-binary-comp-type
+  (natp (mv-nth 1 (x87-binary-comp op a af b bf fcw)))
+  :enable x87-binary-comp
   :rule-classes :type-prescription)
 
 (defund x87-binary-spec (op a af b bf fcw fsw)
@@ -840,7 +842,7 @@
           (mv () (set-es (logior fsw pre-flags)))
         (if result
             (mv result (logior fsw pre-flags))
-          (mv-let (result post-flags) (x87-binary-post-comp op a af b bf fcw)
+          (mv-let (result post-flags) (x87-binary-comp op a af b bf fcw)
             (mv result
                 (if (unmasked-excp-p post-flags fcw)
                     (set-es (logior (logior fsw pre-flags) post-flags))
@@ -886,7 +888,7 @@
                               (<= (prec f) 64))))
   (mv (x87-sqrt-pre-comp-val a f) (x87-sqrt-pre-comp-excp a f)))
 
-(defund x87-sqrt-post-comp (a f fcw)
+(defund x87-sqrt-comp (a f fcw)
   (declare (xargs :guard (and (encodingp a f)
                               (or (zerp a f) (= (sgnf a f) 0))
                               (<= (prec f) 64)
@@ -896,11 +898,11 @@
                                                     sigf manf)))))
   (if (or (infp a f) (zerp a f))
       (mv a 0)
-    (x87-round (qsqrt (decode a f) 66) fcw)))
+    (x87-post-comp (qsqrt (decode a f) 66) fcw)))
 
-(defrule x87-sqrt-post-comp-type
-  (natp (mv-nth 1 (x87-sqrt-post-comp a f fcw)))
-  :enable x87-sqrt-post-comp
+(defrule x87-sqrt-comp-type
+  (natp (mv-nth 1 (x87-sqrt-comp a f fcw)))
+  :enable x87-sqrt-comp
   :disable qsqrt
   :rule-classes :type-prescription)
 
@@ -917,7 +919,7 @@
           (mv () (set-es (logior fsw pre-flags)))
         (if result
             (mv result (logior fsw pre-flags))
-          (mv-let (result post-flags) (x87-sqrt-post-comp a f fcw)
+          (mv-let (result post-flags) (x87-sqrt-comp a f fcw)
             (mv result
                 (if (unmasked-excp-p post-flags fcw)
                     (set-es (logior (logior fsw pre-flags) post-flags))
@@ -951,24 +953,6 @@
 
 (defn dn () 25) ; default NaN mode
 
-;; Operand is forced to zero (not applicable to HP format):
-
-(defun is-fz (x fpscr f)
-  (declare (xargs :guard (and (encodingp x f)
-                              (natp fpscr))))
-  (and (denormp x f)
-       (= (bitn fpscr (fz)) 1)
-       (not (equal f (sp)))))
-
-;; Operand after possibly forcing it to zero:
-
-(defun post-fz (x fpscr f)
-  (declare (xargs :guard (and (encodingp x f)
-                              (natp fpscr))))
-  (if (is-fz x fpscr f)
-      (zencode (sgnf x f) f)
-    x))
-
 ;; In most cases, hardware sets an exception flag only if the corresponding
 ;; trap enable bit is 0.  The exception is that FZ never generates a trapped
 ;; underflow, so UFC is always set in this case:
@@ -996,36 +980,33 @@
 ;; result and the updated FPSCR.
 
 ;; ARM-BINARY-SPEC is based on two auxiliary functions: ARM-BINARY-PRE-COMP returns
-;; an optional value and an updated FPSCR, and ARM-BINARY-POST-COMP returns a value
+;; an optional value and an updated FPSCR, and ARM-BINARY-COMP returns a value 
 ;; an updated FPSCR.
 
 ;; ARM-BINARY-PRE-COMP calls ARM-BINARY-PRE-COMP-EXCP, which detects pre-computation
 ;; exceptions, and ARM-BINARY-PRE-COMP-VAL, which may compute a value.  If the value
-;; is NIL, then the computation proceeds by calling ARM-BINARY-POST-COMP, and if non-NIL,
+;; is NIL, then the computation proceeds by calling ARM-BINARY-COMP, and if non-NIL, 
 ;; the operation is terminated and that value is returned.
 
-;; ARM-BINARY-POST-COMP either returns an infinity or decodes the operands and computes the
+;; ARM-BINARY-COMP either returns an infinity or decodes the operands and computes the
 ;; unrounded result.  If that result is 0, then it sets the sign according to the operand
-;; signs and the rounding mode and returns.  Otherwise, it calls ARM-ROUND, which detects
-;; post-computation exceptions and computes the rounded result.
+;; signs and the rounding mode and returns.  Otherwise, it calls ARM-POST-COMP, which detects
+;; computation exceptions and computes the rounded result.
 
 (defun arm-binary-pre-comp-excp (op a b fpscr f)
   (declare (xargs :guard (and (member op '(add sub mul div))
                               (encodingp a f)
                               (encodingp b f)
                               (natp fpscr))))
-  (let ((fpscr (if (or (is-fz a fpscr f) (is-fz b fpscr f))
-                   (cond-set-flag (idc) fpscr)
-                 fpscr)))
-    (if (or (snanp a f) (snanp b f))
-        (cond-set-flag (ioc) fpscr)
-      (if (or (qnanp a f) (qnanp b f))
-          fpscr
-        (if (binary-undefined-p op a f b f)
-            (cond-set-flag (ioc) fpscr)
-          (if (and (eql op 'div) (zerp b f) (not (infp a f)))
-              (cond-set-flag (dzc) fpscr)
-            fpscr))))))
+  (if (or (snanp a f) (snanp b f))
+      (cond-set-flag (ioc) fpscr)
+    (if (or (qnanp a f) (qnanp b f))
+        fpscr
+      (if (binary-undefined-p op a f b f)
+          (cond-set-flag (ioc) fpscr)
+        (if (and (eql op 'div) (zerp b f) (not (infp a f)))
+            (cond-set-flag (dzc) fpscr)
+          fpscr)))))
 
 (defun arm-binary-pre-comp-val (op a b fpscr f)
   (declare (xargs :guard (and (member op '(add sub mul div))
@@ -1044,19 +1025,34 @@
               (indef f)
             ()))))))
 
+(local (defthm denormp-format
+  (implies (denormp x f)
+           (formatp f))
+  :hints (("Goal" :in-theory (enable denormp encodingp)))))
+
 (defun arm-binary-pre-comp (op a b fpscr f)
   (declare (xargs :guard (and (member op '(add sub mul div))
                               (encodingp a f)
                               (encodingp b f)
-                              (natp fpscr))
-                  :guard-hints (("goal" :in-theory (e/d (set-flag) (encodingp encodingp-disjoint-cases formatp member))))))
-  (let* ((a (post-fz a fpscr f))
-         (b (post-fz b fpscr f))
-         (val (arm-binary-pre-comp-val op a b fpscr f))
-         (fpscr (arm-binary-pre-comp-excp op a b fpscr f)))
-    (mv a b val fpscr)))
-
-(defun arm-round (u fpscr f)
+                              (natp fpscr))))
+  (mv-let (a b fpscr)
+          (if (= (bitn fpscr (fz)) 1)
+              (mv (if (denormp a f)
+                      (zencode (sgnf a f) f)
+                    a)
+                  (if (denormp b f)
+                      (zencode (sgnf b f) f)
+                    b)
+                  (if (and (or (denormp a f) (denormp b f))
+                           (not (equal f (hp))))
+                      (cond-set-flag (idc) fpscr)
+                    fpscr))
+            (mv a b fpscr))
+    (mv a b 
+        (arm-binary-pre-comp-val op a b fpscr f)
+        (arm-binary-pre-comp-excp op a b fpscr f))))
+    
+(defun arm-post-comp (u fpscr f)
   (declare (xargs :guard (and (real/rationalp u)
                               (not (= u 0))
                               (natp fpscr)
@@ -1095,7 +1091,7 @@
         (mv (nencode r f)
             (if (= r u) fpscr (cond-set-flag (ixc) fpscr)))))))
 
-(defun arm-binary-post-comp (op a b fpscr f)
+(defun arm-binary-comp (op a b fpscr f)
   (declare (xargs :guard (and (member op '(add sub mul div))
                               (encodingp a f)
                               (encodingp b f)
@@ -1104,7 +1100,7 @@
                   (("goal" :in-theory (enable decode-0)
                            :use ((:instance bvecp-member (x (bits fpscr 23 22)) (n 2)))))))
   (if (or (infp a f) (if (eql op 'div) (zerp b f) (infp b f)))
-      (mv (iencode (binary-inf-sgn op a f b f) f) 0)
+      (mv (iencode (binary-inf-sgn op a f b f) f) fpscr)
     (let* ((asgn (sgnf a f))
            (bsgn (sgnf b f))
            (aval (decode a f))
@@ -1112,7 +1108,7 @@
            (u (binary-eval op aval bval)))
         (if (or (and (eql op 'div) (infp b f)) (= u 0))
             (mv (zencode (binary-zero-sgn op asgn bsgn (fpscr-rc fpscr)) f) fpscr)
-          (arm-round u fpscr f)))))
+          (arm-post-comp u fpscr f)))))
 
 (defun arm-binary-spec (op a b fpscr f)
   (declare (xargs :guard (and (member op '(add sub mul div))
@@ -1124,7 +1120,7 @@
   (mv-let (a b result fpscr) (arm-binary-pre-comp op a b fpscr f)
     (if result
         (mv result fpscr)
-      (arm-binary-post-comp op a b fpscr f))))
+      (arm-binary-comp op a b fpscr f))))
 
 
 ;;--------------------------------------------------------------------------------
@@ -1141,9 +1137,7 @@
         fpscr
       (if (and (not (zerp a f)) (= (sgnf a f) 1))
           (cond-set-flag (ioc) fpscr)
-        (if (is-fz a fpscr f)
-            (cond-set-flag (idc) fpscr)
-          fpscr)))))
+        fpscr))))
 
 (defun arm-sqrt-pre-comp-val (a fpscr f)
   (declare (xargs :guard (and (encodingp a f)
@@ -1157,10 +1151,14 @@
 (defun arm-sqrt-pre-comp (a fpscr f)
   (declare (xargs :guard (and (encodingp a f)
                               (natp fpscr))))
-  (let* ((a (post-fz a fpscr f))
-         (val (arm-sqrt-pre-comp-val a fpscr f))
-         (fpscr (arm-sqrt-pre-comp-excp a fpscr f)))
-    (mv a val fpscr)))
+  (mv-let (a fpscr)
+    (if (and (denormp a f) (= (bitn fpscr (fz)) 1))
+        (mv (zencode (sgnf a f) f)
+            (if (not (equal f (hp)))
+                (cond-set-flag (idc) fpscr)
+              fpscr))
+      (mv a fpscr))
+    (mv a (arm-sqrt-pre-comp-val a fpscr f) (arm-sqrt-pre-comp-excp a fpscr f))))
 
 (local (defthm hack-1
   (implies (and (encodingp a f)
@@ -1169,7 +1167,7 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (enable ddecode ndecode encodingp decode)))))
 
-(defun arm-sqrt-post-comp (a fpscr f)
+(defun arm-sqrt-comp (a fpscr f)
   (declare (xargs :guard (and (encodingp a f)
                               (or (zerp a f) (= (sgnf a f) 0))
                               (natp fpscr))
@@ -1180,7 +1178,7 @@
                                  (:instance bvecp-member (x (bits fpscr 23 22)) (n 2)))))))
   (if (or (infp a f) (zerp a f))
       (mv a fpscr)
-    (arm-round (qsqrt (decode a f) (+ (prec f) 2)) fpscr f)))
+    (arm-post-comp (qsqrt (decode a f) (+ (prec f) 2)) fpscr f)))
 
 (defun arm-sqrt-spec (a fpscr f)
   (declare (xargs :guard (and (encodingp a f)
@@ -1189,7 +1187,7 @@
   (mv-let (a result fpscr) (arm-sqrt-pre-comp a fpscr f)
     (if result
         (mv result fpscr)
-      (arm-sqrt-post-comp a fpscr f))))
+      (arm-sqrt-comp a fpscr f))))
 
 
 ;;--------------------------------------------------------------------------------
@@ -1203,19 +1201,10 @@
                               (encodingp b f)
                               (encodingp c f)
                               (natp fpscr))))
-  (let ((fpscr (if (or (is-fz a fpscr f) (is-fz b fpscr f) (is-fz c fpscr f))
-                   (cond-set-flag (idc) fpscr)
-                 fpscr)))
-    (if (or (snanp a f) (snanp b f) (snanp c f))
-        (cond-set-flag (ioc) fpscr)
-      (if (and (or (infp b f) (infp a f))
-               (or (zerp b f) (zerp a f)))
-          (cond-set-flag (ioc) fpscr)
-        (if (or (qnanp a f) (qnanp b f) (qnanp c f))
-            fpscr
-          (if (fma-undefined-p b c a f)
-              (cond-set-flag (ioc) fpscr)
-            fpscr))))))
+  (if (or (snanp a f) (snanp b f) (snanp c f)
+          (fma-undefined-p b c a f))
+      (cond-set-flag (ioc) fpscr)
+    fpscr))
 
 (defun arm-fma-pre-comp-val (a b c fpscr f)
   (declare (xargs :guard (and (encodingp a f)
@@ -1228,8 +1217,7 @@
         (process-nan b fpscr f)
       (if (snanp c f)
           (process-nan c fpscr f)
-        (if (and (or (infp b f) (infp c f))
-                 (or (zerp b f) (zerp c f)))
+        (if (fma-undefined-p b c a f)
             (indef f)
           (if (qnanp a f)
               (process-nan a fpscr f)
@@ -1243,16 +1231,28 @@
   (declare (xargs :guard (and (encodingp a f)
                               (encodingp b f)
                               (encodingp c f)
-                              (natp fpscr))
-                  :guard-hints (("goal" :in-theory (e/d (set-flag) (encodingp encodingp-disjoint-cases formatp member))))))
-  (let* ((fpscr (arm-fma-pre-comp-excp a b c fpscr f))
-         (a (post-fz a fpscr f))
-         (b (post-fz b fpscr f))
-         (c (post-fz c fpscr f))
-         (val (arm-fma-pre-comp-val a b c fpscr f)))
-    (mv a b c val fpscr)))
+                              (natp fpscr))))
+  (mv-let (a b c fpscr)
+          (if (= (bitn fpscr (fz)) 1)
+              (mv (if (denormp a f)
+                      (zencode (sgnf a f) f)
+                    a)
+                  (if (denormp b f)
+                      (zencode (sgnf b f) f)
+                    b)
+                  (if (denormp c f)
+                      (zencode (sgnf c f) f)
+                    c)
+                  (if (and (or (denormp a f) (denormp b f) (denormp c f))
+                           (not (equal f (hp))))
+                      (cond-set-flag (idc) fpscr)
+                    fpscr))
+            (mv a b c fpscr))
+      (mv a b c
+          (arm-fma-pre-comp-val a b c fpscr f)
+          (arm-fma-pre-comp-excp a b c fpscr f))))
 
-(defun arm-fma-post-comp (a b c fpscr f)
+(defun arm-fma-comp (a b c fpscr f)
   (declare (xargs :guard (and (encodingp a f)
                               (encodingp b f)
                               (encodingp c f)
@@ -1265,16 +1265,16 @@
          (cval (decode c f))
          (u (+ aval (* bval cval))))
     (if (or (infp b f) (infp c f))
-        (mv (iencode (logxor bsgn csgn) f) 0)
+        (mv (iencode (logxor bsgn csgn) f) fpscr)
       (if (infp a f)
           (mv a fpscr)
         (if (= u 0)
             (mv (zencode (if (= (logxor bsgn csgn) asgn)
-                             csgn
+                             asgn
                            (if (eql (fpscr-rc fpscr) 'rdn) 1 0))
                          f)
                 fpscr)
-          (arm-round u fpscr f))))))
+          (arm-post-comp u fpscr f))))))
 
 (defun arm-fma-spec (a b c fpscr f)
   (declare (xargs :guard (and (encodingp a f)
@@ -1286,4 +1286,4 @@
   (mv-let (a b c result fpscr) (arm-fma-pre-comp a b c fpscr f)
     (if result
         (mv result fpscr)
-      (arm-fma-post-comp a b c fpscr f))))
+      (arm-fma-comp a b c fpscr f))))

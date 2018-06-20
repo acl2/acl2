@@ -540,9 +540,9 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                      (concatenate 'string "RETURN-TYPE-OF-" (symbol-name fnname)
                                   "." (symbol-name x.name))
                      fnname)
-             ,(sublis body-subst formula)
-             :hints ,(sublis hint-subst x.hints)
-             :rule-classes ,(sublis hint-subst x.rule-classes)
+             ,(returnspec-sublis body-subst formula)
+             :hints ,(returnspec-sublis hint-subst x.hints)
+             :rule-classes ,(returnspec-sublis hint-subst x.rule-classes)
              :flag ,flag)
           (returnspecs-flag-entries (cdr retspecs) flag fnname binds body-subst hint-subst world))))
 

@@ -4944,13 +4944,15 @@
 ; We forcibly expand all calls in term of the fns in fns.  They better
 ; all be non-recursive or this may take a while.
 
+; We assume that fns is a subset of *definition-minimal-theory*.
+
   (cond ((variablep term) term)
         ((fquotep term) term)
         (t (let ((args (expand-some-non-rec-fns-lst fns (fargs term) wrld)))
              (cond ((member-equal (ffn-symb term) fns)
                     (subcor-var (formals (ffn-symb term) wrld)
                                 args
-                                (body (ffn-symb term) t wrld)))
+                                (bbody (ffn-symb term))))
                    (t (cons-term (ffn-symb term) args)))))))
 
 (defun expand-some-non-rec-fns-lst (fns lst wrld)
@@ -4979,7 +4981,9 @@
             (expand-some-non-rec-fns
 
 ; The list of functions expanded is arbitrary, but they must all be
-; non-recursively defined.  Guards are permitted but of course it is the
+; non-recursively defined; indeed, because of the use of bbody in the
+; definition of expand-some-non-rec-fns, these function must all belong to
+; *definition-minimal-theory*.  Guards are permitted but of course it is the
 ; guarded body that we substitute.  The IF tautology checker doesn't know
 ; anything about any function symbol besides IF and NOT (and QUOTEd constants).
 ; The list below pretty obviously has to include IMPLIES and IFF.  It should
@@ -8063,32 +8067,38 @@
        '(get-brr-local 'ancestors state)))
 
 (defun tilde-@-failure-reason-phrase1-backchain-limit (hyp-number
-                                                       pairs
+                                                       info
                                                        state)
-  (msg "a backchain limit was reached while processing :HYP ~x0.  ~@1"
-       hyp-number
-       (cond ((null pairs)
-              (let ((str "  Note that the brr command, :ANCESTORS, will show ~
-                          you the ancestors stack."))
-                (cond ((backchain-limit (w state) :rewrite)
-                       (msg "This appears to be due to the global ~
-                             backchain-limit of ~x0.~@1"
-                            (backchain-limit (w state) :rewrite)
-                            str))
-                      (t
-                       (msg "It is not clear how this could have happened.  ~
-                             Consider emailing a reproducible example to the ~
-                             ACL2 implementors.~@0"
-                            str)))))
-             (t
-              (msg "The ancestors stack is below.  The ~#0~[entry~/entries~] ~
-                    at index ~&0 ~#0~[shows~/each show~] a rune whose ~
-                    ~#0~[~/respective ~]backchain limit of ~v1 has been ~
-                    reached, for backchaining through its indicated ~
-                    hypothesis.~|~%~@2"
-                   (strip-cars pairs)
-                   (strip-cdrs pairs)
-                   (show-ancestors-stack-msg state))))))
+  (msg
+   "a backchain limit was reached while processing :HYP ~x0.  ~@1"
+   hyp-number
+   (cond
+    ((eq info :limit-0) ; see relieve-hyp
+     (msg "Note that the limit is 0 for that :HYP."))
+    (t ; info is a list of ancestors
+     (let ((pairs (backchain-limit-enforcers 0 info (w state))))
+       (cond
+        ((null pairs)
+         (let ((str "  Note that the brr command, :ANCESTORS, will show you ~
+                     the ancestors stack."))
+           (cond ((backchain-limit (w state) :rewrite)
+                  (msg "This appears to be due to the global backchain-limit ~
+                        of ~x0.~@1"
+                       (backchain-limit (w state) :rewrite)
+                       str))
+                 (t
+                  (msg "It is not clear how this could have happened.  ~
+                        Consider emailing a reproducible example to the ACL2 ~
+                        implementors.~@0"
+                       str)))))
+        (t
+         (msg "The ancestors stack is below.  The ~#0~[entry~/entries~] at ~
+               index ~&0 ~#0~[shows~/each show~] a rune whose ~
+               ~#0~[~/respective ~]backchain limit of ~v1 has been reached, ~
+               for backchaining through its indicated hypothesis.~|~%~@2"
+              (strip-cars pairs)
+              (strip-cdrs pairs)
+              (show-ancestors-stack-msg state)))))))))
 
 (mutual-recursion
 
@@ -8221,7 +8231,7 @@
                ((eq (cadr failure-reason) 'backchain-limit)
                 (tilde-@-failure-reason-phrase1-backchain-limit
                  n
-                 (backchain-limit-enforcers 0 (cddr failure-reason) (w state))
+                 (cddr failure-reason)
                  state))
                ((eq (cadr failure-reason) 'rewrote-to)
                 (msg ":HYP ~x0 rewrote to ~X12."
@@ -12183,7 +12193,7 @@
 
                                        (formals 'IMPLIES wrld)
                                        (list rewritten-test rewritten-concl)
-                                       (body 'IMPLIES t wrld))
+                                       (bbody 'IMPLIES))
                                       ttree))))))))
            ((eq (ffn-symb term) 'double-rewrite)
             (sl-let
@@ -13187,7 +13197,14 @@
                                           (if on-ancestorsp
                                               'ancestors
                                             (cons 'backchain-limit
-                                                  ancestors))
+                                                  (or ancestors
+
+; If there are no ancestors, then the failure may be because the rune specifies
+; a backchain-limit of 0.
+
+                                                      (and (eql backchain-limit
+                                                                0)
+                                                           :limit-0))))
                                           unify-subst ttree)))))
                                   (t
                                    (mv-let

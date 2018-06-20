@@ -132,6 +132,8 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 ; - The Segment Limit is 20 bits in the segment descriptor,
 ;   and based on the G (granularity) flag it covers up to 4 GiB,
 ;   so the 32 bits in :LIMIT above can hold it.
+;   IMPORTANT: this means that the cached limit field must be
+;   populated only after G flag is taken into account.
 ; - There are 12 remaining bits in the segment descriptor,
 ;   so the 16 bits in :ATTR above can hold them.
 

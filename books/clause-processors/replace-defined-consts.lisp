@@ -13,6 +13,7 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "tools/flag" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
+(include-book "clause-processors/join-thms" :dir :system)
 
 (defevaluator replace-const-ev replace-const-ev-lst
   ((equal a b) (if a b c) (use-by-hint x) (not x)))

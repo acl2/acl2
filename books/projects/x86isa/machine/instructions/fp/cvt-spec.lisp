@@ -272,7 +272,7 @@
                                (posp exp-width1) (posp frac-width1)
                                (posp exp-width2) (posp frac-width2))
                    :guard-hints (("Goal" :in-theory (e/d* ()
-                                                          (rtl::sse-round
+                                                          (rtl::sse-post-comp
                                                            bitops::logand-with-negated-bitmask
                                                            bitops::loghead-of-loghead-1
                                                            unsigned-byte-p
@@ -310,7 +310,7 @@
             (bias2 (nfix (ec-call (RTL::bias (list nil (1+ frac-width2) exp-width2)))))
             (rat (fp-to-rat sign exp frac bias1 exp-width1 frac-width1))
             ((mv result flags)
-             (ec-call (rtl::sse-round rat mxcsr (list nil (1+ frac-width2) exp-width2))))
+             (ec-call (rtl::sse-post-comp rat mxcsr (list nil (1+ frac-width2) exp-width2))))
             (result (loghead (+ 1 frac-width2 exp-width2) (ifix result)))
             (mxcsr (loghead 32 (logior (ifix flags) mxcsr)))
 
@@ -352,7 +352,7 @@
              1
              (sse-cvt-fp1-to-fp2 op mxcsr exp-width1 frac-width1 exp-width2 frac-width2)))
   :hints (("Goal" :in-theory (e/d* ()
-                                   (rtl::sse-round
+                                   (rtl::sse-post-comp
                                     bitops::loghead-of-loghead-1
                                     unsigned-byte-p
                                     bitops::logtail-of-loghead
@@ -366,7 +366,7 @@
           2
           (sse-cvt-fp1-to-fp2 op mxcsr exp-width1 frac-width1 exp-width2 frac-width2))
   :hints (("Goal" :in-theory (e/d* ()
-                                   (rtl::sse-round
+                                   (rtl::sse-post-comp
                                     bitops::loghead-of-loghead-1
                                     unsigned-byte-p
                                     bitops::logtail-of-loghead

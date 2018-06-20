@@ -535,6 +535,23 @@ For example, @('natp-of-foo').</dd>
 (set-returnspec-default-hints
  ((returnspec-default-default-hint 'fnname acl2::id world)))
 
+
+(defun returnspec-sublis (subst x)
+  "Like sublis, but only substitutes symbols, and looks them up both by value and by name."
+  (if (atom x)
+      (if (symbolp x)
+          (let ((look (assoc-equal x subst)))
+            (if look
+                (cdr look)
+              (let ((look (assoc-equal (symbol-name x) subst)))
+                (if look
+                    (cdr look)
+                  x))))
+        x)
+    (cons-with-hint (returnspec-sublis subst (car x))
+                    (returnspec-sublis subst (cdr x))
+                    x)))
+
 (defun returnspec-single-thm (name name-fn x body-subst hint-subst badname-okp world)
   "Returns EVENTS"
   ;; Only valid to call AFTER the function has been submitted, because we look
@@ -546,14 +563,14 @@ For example, @('natp-of-foo').</dd>
   (b* (((returnspec x) x)
        (formals (look-up-formals name-fn world))
        (binds `(,x.name (,name-fn . ,formals)))
-       (formula (sublis body-subst (returnspec-thm-body name-fn binds x world)))
+       (formula (returnspec-sublis body-subst (returnspec-thm-body name-fn binds x world)))
        ((when (eq formula t)) nil)
-       (hints (if x.hintsp (sublis hint-subst x.hints)
+       (hints (if x.hintsp (returnspec-sublis hint-subst x.hints)
                 (returnspec-default-hints name-fn world))))
     `((defthm ,(returnspec-generate-name name x t badname-okp)
         ,formula
         :hints ,hints
-        :rule-classes ,(sublis hint-subst x.rule-classes)))))
+        :rule-classes ,(returnspec-sublis hint-subst x.rule-classes)))))
 
 (defun returnspec-multi-thm (name name-fn binds x body-subst hint-subst badname-okp world)
   "Returns EVENTS"
@@ -562,15 +579,15 @@ For example, @('natp-of-foo').</dd>
                               (returnspec-p x)
                               (plist-worldp world))))
   (b* (((returnspec x) x)
-       (formula (sublis body-subst (returnspec-thm-body name-fn binds x world)))
+       (formula (returnspec-sublis body-subst (returnspec-thm-body name-fn binds x world)))
        ((when (equal formula t)) nil)
        (hints (if x.hintsp
-                  (sublis hint-subst x.hints)
+                  (returnspec-sublis hint-subst x.hints)
                 (returnspec-default-hints name-fn world))))
     `((defthm ,(returnspec-generate-name name x nil badname-okp)
         ,formula
         :hints ,hints
-        :rule-classes ,(sublis hint-subst x.rule-classes)))))
+        :rule-classes ,(returnspec-sublis hint-subst x.rule-classes)))))
 
 (defun returnspec-multi-thms (name name-fn binds x body-subst hint-subst badname-okp world)
   "Returns EVENTS"
@@ -616,15 +633,23 @@ For example, @('natp-of-foo').</dd>
     (cons (cons (intern$ "<CALL>" (car packages)) call)
           (returnspec-call-sym-pairs (cdr packages) call))))
 
+
+
+
 (defun returnspec-return-value-subst (name name-fn formals names)
   (declare (xargs :guard (and (symbolp name)
                               (symbol-listp names))))
+  ;; NOTE: These are intended for use with returnspec-sublis, which only
+  ;; replaces symbols, but will also look up the name of a symbol.  So a
+  ;; binding whose key is a string affects all symbols with that name, whereas
+  ;; bindings of symbols only affect those exact symbols.
   (b* ((call (cons name-fn formals))
-       (packages (returnspec-symbol-packages (list* name name-fn (append formals names))))
-       (call-pairs (returnspec-call-sym-pairs packages call))
+       (both-subst `(("<CALL>" . ,call)
+                     ("<FN>" . ,name)
+                     ("<FN!>" . ,name-fn)))
        ((when (eql (len names) 1))
-        (mv call-pairs (cons (cons (car names) call) call-pairs))))
-    (mv call-pairs (append call-pairs (returnspec-mv-nth-subst names 0 call)))))
+        (mv both-subst (cons (cons (car names) call) both-subst))))
+    (mv both-subst (append both-subst (returnspec-mv-nth-subst names 0 call)))))
        
 
 (defun returnspec-thms (name name-fn specs world)

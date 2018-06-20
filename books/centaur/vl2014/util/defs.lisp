@@ -45,7 +45,7 @@
 (include-book "centaur/misc/alist-equiv" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "std/strings/top" :dir :system)
-(include-book "std/strings/fast-cat" :dir :system)
+(include-book "std/strings/cat" :dir :system)
 (include-book "misc/assert" :dir :system)
 (include-book "misc/definline" :dir :system) ;; bozo
 (include-book "std/system/non-parallel-book" :dir :system)

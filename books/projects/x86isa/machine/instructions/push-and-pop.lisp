@@ -108,14 +108,9 @@
        (val (rgfi-size operand-size (reg-index reg rex-byte #.*b*) rex-byte
                        x86))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-              temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-              start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
        ((mv flg x86)
@@ -222,11 +217,7 @@
        ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by) ?E-addr x86)
         (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
                                                 operand-size
-                                                ;; inst-ac? is nil here because
-                                                ;; we only need
-                                                ;; increment-RIP-by from this
-                                                ;; function
-                                                nil
+                                                t ; do alignment checking
                                                 nil ;; Not a memory pointer operand
                                                 seg-reg
                                                 p4?
@@ -243,14 +234,9 @@
        ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-              temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-              start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
 
@@ -354,14 +340,9 @@ decoding with the execution in this case.</p>"
                                   temp-rip))))
         (!!fault-fresh :gp 0 :temp-rip-not-canonical temp-rip)) ;; #GP(0)
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-              temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-              start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
        ((mv flg1 x86)
@@ -446,14 +427,9 @@ the execution in this case.</p>"
        ((the (unsigned-byte 16) val)
         (seg-visiblei (if (eql opcode #xA0) *FS* *GS*) x86))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-              temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-              start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
 
@@ -546,14 +522,9 @@ the execution in this case.</p>"
        ;; See "Z" in http://ref.x86asm.net/geek.html#x58.
        (reg (logand opcode #x07))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-              temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-              start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
        ;; (Intel manual, Mar'17, Vol. 2 says, in the specification of POP,
@@ -705,16 +676,9 @@ the execution in this case.</p>"
        ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
 
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-              temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-              start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
        (x86 (write-*sp new-rsp x86))
@@ -1110,16 +1074,8 @@ the execution in this case.</p>"
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
        ((the (integer 2 4) operand-size)
-        (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-             (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-             (cs.d
-              (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-          (if (= cs.d 1)
-              (if p3? 2 4)
-            (if p3? 4 2))))
+        (select-operand-size nil 0 nil prefixes x86))
 
        (rsp (read-*sp x86))
 
@@ -1252,16 +1208,8 @@ the execution in this case.</p>"
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
        ((the (integer 2 4) operand-size)
-        (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-             (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-             (cs.d
-              (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-          (if (= cs.d 1)
-              (if p3? 2 4)
-            (if p3? 4 2))))
+        (select-operand-size nil 0 nil prefixes x86))
 
        (rsp (read-*sp x86))
 

@@ -4,7 +4,7 @@
 (in-package "X86ISA")
 
 (include-book "../../../codewalker/codewalker")
-(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -77,8 +77,8 @@
       ;; The x86 state is well-formed.
       (x86p x86)
       (64-bit-modep x86)
-      ;; The model is operating in the programmer-level mode.
-      (programmer-level-mode x86)
+      ;; The model is operating in the application-level view.
+      (app-view x86)
       (equal (rip x86) 0) ;; Added for codewalker
       ;; The program is located at linear addresses ranging from (rip
       ;; x86) to (+ -1 (len *program*) (rip x86)).

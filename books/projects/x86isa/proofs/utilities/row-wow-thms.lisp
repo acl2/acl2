@@ -96,7 +96,7 @@
                                   ()))))
 
 (defthm read-x86-file-des-wb-1
-  (implies (programmer-level-mode x86)
+  (implies (app-view x86)
            (equal (read-x86-file-des id (mv-nth 1 (wb-1 n addr w value x86)))
                   (read-x86-file-des id x86)))
   :hints (("Goal"
@@ -104,7 +104,7 @@
                             ()))))
 
 (defthm read-x86-file-des-wb
-  (implies (programmer-level-mode x86)
+  (implies (app-view x86)
            (equal (read-x86-file-des id (mv-nth 1 (wb n addr w value x86)))
                   (read-x86-file-des id x86)))
   :hints (("Goal"
@@ -113,7 +113,7 @@
                             (wb wb-1 read-x86-file-des-wb-1)))))
 
 (defthm write-x86-file-des-wb
-  (implies (programmer-level-mode x86)
+  (implies (app-view x86)
            (equal (write-x86-file-des i v (mv-nth 1 (wb n addr w value x86)))
                   (mv-nth 1 (wb n addr w value (write-x86-file-des i v x86)))))
   :hints (("Goal"
@@ -121,7 +121,7 @@
                             ()))))
 
 (defthm read-x86-file-contents-wb-1
-  (implies (programmer-level-mode x86)
+  (implies (app-view x86)
            (equal (read-x86-file-contents id (mv-nth 1 (wb-1 n addr w value x86)))
                   (read-x86-file-contents id x86)))
   :hints (("Goal"
@@ -129,7 +129,7 @@
                             ()))))
 
 (defthm read-x86-file-contents-wb
-  (implies (programmer-level-mode x86)
+  (implies (app-view x86)
            (equal (read-x86-file-contents id (mv-nth 1 (wb n addr w value x86)))
                   (read-x86-file-contents id x86)))
   :hints (("Goal"
@@ -157,9 +157,9 @@
 
 ;; Some rules about flags:
 
-(defthm programmer-level-mode-!flgi
-  (equal (xr :programmer-level-mode 0 (!flgi flg val x86))
-         (xr :programmer-level-mode 0 x86))
+(defthm app-view-!flgi
+  (equal (xr :app-view 0 (!flgi flg val x86))
+         (xr :app-view 0 x86))
   :hints (("Goal" :in-theory (e/d* (!flgi) (force (force))))))
 
 (defthm xr-!flgi-undefined
@@ -169,9 +169,9 @@
                   (xr fld index x86)))
   :hints (("Goal" :in-theory (e/d* (!flgi-undefined) ()))))
 
-(defthm programmer-level-mode-!flgi-undefined
-  (equal (xr :programmer-level-mode 0 (!flgi-undefined flg x86))
-         (xr :programmer-level-mode 0 x86))
+(defthm app-view-!flgi-undefined
+  (equal (xr :app-view 0 (!flgi-undefined flg x86))
+         (xr :app-view 0 x86))
   :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (force (force))))))
 
 (defthm read-x86-file-des-!flgi

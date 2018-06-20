@@ -155,6 +155,7 @@
                          packn
                          pairlis-x1
                          pseudo-event-formp
+                         pseudo-event-form-listp
                          pseudo-lambdap
                          pseudo-termfnp
                          pseudo-tests-and-call-listp
@@ -194,6 +195,7 @@
                          tool2-fn
                          trans-eval-error-triple
                          translate-term-lst
+                         try-event
                          ubody
                          uguard
                          unnormalized-body

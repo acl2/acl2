@@ -680,6 +680,21 @@
 
       ))
 
+#+acl2-loop-only
+(defconst nil 'nil
+
+; We cannot document a NIL symbol.
+
+ " NIL, a symbol, represents in Common Lisp both the false truth value
+ and the empty list.")
+
+#+acl2-loop-only
+(defconst t 't
+
+; We cannot document a NIL symbol.  So, we do not document T either.
+
+  "T, a symbol, represents the true truth value in Common Lisp.")
+
 (defconst *stobj-inline-declare*
 
 ; This constant is being introduced in v2-8.  In this file it is only used in
@@ -1858,21 +1873,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 
 ;                               LOGIC
-
-#+acl2-loop-only
-(defconst nil 'nil
-
-; We cannot document a NIL symbol.
-
- " NIL, a symbol, represents in Common Lisp both the false truth value
- and the empty list.")
-
-#+acl2-loop-only
-(defconst t 't
-
-; We cannot document a NIL symbol.  So, we do not document T either.
-
-  "T, a symbol, represents the true truth value in Common Lisp.")
 
 (defun insist (x)
 
@@ -3354,13 +3354,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (implies (symbol-alistp x)
            (eqlable-alistp x))
   :rule-classes :forward-chaining)
-
-(defun symbol-alistp (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (consp (car x))
-                (symbolp (car (car x)))
-                (symbol-alistp (cdr x))))))
 
 (defthm symbol-alistp-forward-to-eqlable-alistp
   (implies (symbol-alistp x)
@@ -24984,33 +24977,26 @@ Lisp definition."
         ((endp (cdr l)) (car l))
         (t (conjoin2 (car l) (conjoin (cdr l))))))
 
-(defun conjoin2-untranslated-terms (t1 t2)
-
-; See conjoin2.  This function has the analogous spec, but where t1 and t2 need
-; not be translated.
-
-  (declare (xargs :guard t))
-  (cond ((or (equal t1 *nil*) (eq t1 nil))
-         *nil*)
-        ((or (equal t2 *nil*) (eq t2 nil))
-         *nil*)
-        ((or (equal t1 *t*) (eq t1 t))
-         t2)
-        ((or (equal t2 *t*) (eq t2 t))
-         t1)
-        (t (fcons-term* 'if t1 t2 *nil*))))
-
 (defun conjoin-untranslated-terms (l)
 
-; This function is analogous to conjoin, but where t1 and t2 need not be
-; translated.
+; This function is analogous to conjoin, but where the terms need not be
+; translated.  Normally we expect that the result will be translated; but as a
+; courtesy to those who might want to use this utility, we attempt to return a
+; "pretty" untranslated term.
 
   (declare (xargs :guard (true-listp l)))
-  (cond ((endp l) *t*)
-        ((endp (cdr l)) (car l))
-        (t (conjoin2-untranslated-terms
-            (car l)
-            (conjoin-untranslated-terms (cdr l))))))
+  (cond ((or (member nil l :test 'eq)
+             (member *nil* l :test 'equal))
+         nil)
+        (t (let* ((l2 (if (member t l :test 'eq)
+                          (remove t l :test 'eq)
+                        l))
+                  (l3 (if (member *t* l2 :test 'equal)
+                          (remove *t* l2 :test 'equal)
+                        l2)))
+             (cond ((null l3) t)
+                   ((null (cdr l3)) (car l3))
+                   (t (cons 'and l3)))))))
 
 (defun disjoin2 (t1 t2)
 
@@ -27486,6 +27472,92 @@ Lisp definition."
             #-ccl
             (cw "; Note: Set-gc-strategy is a no-op in this host Lisp.~|"))))
   (read-acl2-oracle state))
+
+(defconst *expandable-boot-strap-non-rec-fns*
+  '(not
+    implies eq atom eql = /= null endp zerop
+
+; If we ever make 1+ and 1- functions again, they should go back on this list.
+
+    synp plusp minusp listp return-last mv-list cons-with-hint
+
+; We added the-error for Version_4.0 (replaced by the-check after Version_6.1).
+; Before that change, but after changing constraint-info to avoid calling
+; remove-guard-holders on a definition body (a change in support of
+; canonical-ancestors, for use of the Attachment Restriction Lemma in
+; justifying attachment to metafunctions and clause-processors,
+; cf. chk-evaluator-use-in-rule), the event (defsort :compare< << :prefix <<)
+; failed from community book defsort/uniquep.lisp.
+
+    the-check wormhole-eval force case-split double-rewrite))
+
+(defconst *definition-minimal-theory*
+
+; We include mv-nth because of the call of simplifiable-mv-nthp in the
+; definition of call-stack, which (as noted there) results in a use of the
+; definition of mv-nth without tracking it in a ttree.
+
+  (list* 'mv-nth 'iff *expandable-boot-strap-non-rec-fns*))
+
+(defconst *definition-minimal-theory-alist*
+
+; This alist associates each function in *definition-minimal-theory* with its
+; normalized body.  It is built as follows.  The equality of this constant to
+; that expression is checked at the end of the boot-strap.
+
+;   (merge-sort-lexorder
+;    (loop for f in *definition-minimal-theory* collect
+;          (cons f (body f t (w *the-live-state*)))))
+
+  '((/= if (equal x y) 'nil 't)
+    (= equal x y)
+    (atom if (consp x) 'nil 't)
+    (case-split . x)
+    (cons-with-hint cons x y)
+    (double-rewrite . x)
+    (endp if (consp x) 'nil 't)
+    (eq equal x y)
+    (eql equal x y)
+    (force . x)
+    (iff if p (if q 't 'nil) (if q 'nil 't))
+    (implies if p (if q 't 'nil) 't)
+    (listp if (consp x) 't (equal x 'nil))
+    (minusp < x '0)
+    (mv-list . x)
+    (mv-nth if (consp l)
+            (if (zp n)
+                (car l)
+              (mv-nth (binary-+ '-1 n) (cdr l)))
+            'nil)
+    (not if p 'nil 't)
+    (null equal x 'nil)
+    (plusp < '0 x)
+    (return-last . last-arg)
+    (synp quote t)
+    (the-check . y)
+    (wormhole-eval quote nil)
+    (zerop equal x '0)))
+
+(defun bbody-fn (fn)
+
+; This is just (body fn t wrld), where wrld is the boot-strap world, except
+; that currently it may only be applied to functions in
+; *definition-minimal-theory*.
+
+  (declare (xargs :guard (member-eq fn *definition-minimal-theory*)))
+  (let ((pair (assoc-eq fn *definition-minimal-theory-alist*)))
+    (cond (pair (cdr pair))
+          (t (er hard! 'bbody
+                 "Implementation error: Illegal call of bbody: the symbol ~x0 ~
+                  is not in ~x1."
+                 *definition-minimal-theory-alist*)))))
+
+(defmacro bbody (fn)
+  (cond ((and (consp fn)
+              (consp (cdr fn))
+              (eq (car fn) 'quote))
+         (kwote (bbody-fn (cadr fn))))
+        (t `(bbody-fn ,fn))))
 
 (defun file-length$ (file state)
   (declare (xargs :guard (stringp file)

@@ -277,15 +277,17 @@
                  rationalp stringp symbolp))
 
 (defun boolean-fnp (fn wrld)
-  (if (member-eq fn *boolean-primitives*)
-      t
+  (cond
+   ((not (symbolp fn)) nil)
+   ((member-eq fn *boolean-primitives*) t)
+   (t
     (let ((tp (cert-data-tp-from-runic-type-prescription fn wrld)))
       (and tp
            (null (access type-prescription tp :vars))
            (assert$ (null (access type-prescription tp :hyps))
                     (ts-subsetp
                      (access type-prescription tp :basic-ts)
-                     *ts-boolean*))))))
+                     *ts-boolean*)))))))
 
 (defun directed-untranslate-drop-disjuncts-rec (uterm tterm sterm top
                                                       iff-flg wrld)
@@ -1653,10 +1655,11 @@
                                                         iff-flg lflg exec-p wrld)))
                         (('if x1 x1-alt x2)
                          (and (eq (car uterm) 'or) ; tterm is (if x1' & x2')
-                              (or (equal x1-alt x1)
-                                  (equal x1-alt *t*))
                               (cond
-                               ((cddr uterm) ; tterm is (if x1' & x2')
+                               ((and (or (equal x1-alt x1)
+                                         (and iff-flg
+                                              (equal x1-alt *t*)))
+                                     (cddr uterm)) ; tterm is (if x1' & x2')
                                 (untranslate-or
                                  (directed-untranslate-rec (cadr uterm)
                                                            (fargn tterm 1)
@@ -1666,12 +1669,16 @@
                                                            (fargn tterm 3)
                                                            x2 iff-flg lflg
                                                            exec-p wrld)))
+                               ((cddr uterm) ; uterm is (or x y ...)
+                                (directed-untranslate-rec (or-macro (cdr uterm))
+                                                          tterm sterm iff-flg lflg
+                                                          exec-p wrld))
                                ((cdr uterm) ; uterm is (or x)
                                 (directed-untranslate-rec (cadr uterm)
-                                                          tterm sterm t lflg
+                                                          tterm sterm iff-flg lflg
                                                           exec-p wrld))
                                (t ; uterm is (or)
-                                (directed-untranslate-rec t tterm sterm t lflg
+                                (directed-untranslate-rec t tterm sterm iff-flg lflg
                                                           exec-p wrld)))))
                         (('if x1 x2 *t*)
                          (and (eq (car uterm) 'or)

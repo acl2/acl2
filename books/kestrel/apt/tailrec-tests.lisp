@@ -876,32 +876,20 @@
  (must-succeed (tailrec f :print nil)
                :with-output-off nil)
 
- ;; expansion output only:
- (must-succeed (tailrec f :print :expand)
+ ;; error output:
+ (must-succeed (tailrec f :print :error)
                :with-output-off nil)
 
- ;; submission output only:
- (must-succeed (tailrec f :print :submit)
-               :with-output-off nil)
-
- ;; result output only:
+ ;; result output:
  (must-succeed (tailrec f :print :result)
                :with-output-off nil)
 
- ;; expansion and submission output only:
- (must-succeed (tailrec f :print (:expand :submit))
-               :with-output-off nil)
-
- ;; expansion and result output only:
- (must-succeed (tailrec f :print (:expand :result))
-               :with-output-off nil)
-
- ;; submission and result output only:
- (must-succeed (tailrec f :print (:submit :result))
+ ;; information output:
+ (must-succeed (tailrec f :print :info)
                :with-output-off nil)
 
  ;; all output:
- (must-succeed (tailrec f :print t)
+ (must-succeed (tailrec f :print :all)
                :with-output-off nil)
 
  :with-output-off nil)
@@ -965,39 +953,39 @@
  (must-succeed*
   (tailrec f)
   (must-be-redundant (tailrec f))
-  (must-be-redundant (tailrec f :print t))
+  (must-be-redundant (tailrec f :print :all))
   (must-be-redundant (tailrec f :print nil))
   (must-be-redundant (tailrec f :show-only t))
   (must-be-redundant (tailrec f :show-only nil))
-  (must-be-redundant (tailrec f :print t :show-only t))
+  (must-be-redundant (tailrec f :print :all :show-only t))
   (must-be-redundant (tailrec f :print nil :show-only t))
-  (must-be-redundant (tailrec f :print t :show-only nil))
+  (must-be-redundant (tailrec f :print :all :show-only nil))
   (must-be-redundant (tailrec f :print nil :show-only nil)))
 
- ;; initial call with :PRINT T and without :SHOW-ONLY:
+ ;; initial call with :PRINT :ALL and without :SHOW-ONLY:
  (must-succeed*
-  (tailrec f :print t)
+  (tailrec f :print :all)
   (must-be-redundant (tailrec f))
-  (must-be-redundant (tailrec f :print t))
+  (must-be-redundant (tailrec f :print :all))
   (must-be-redundant (tailrec f :print nil))
   (must-be-redundant (tailrec f :show-only t))
   (must-be-redundant (tailrec f :show-only nil))
-  (must-be-redundant (tailrec f :print t :show-only t))
+  (must-be-redundant (tailrec f :print :all :show-only t))
   (must-be-redundant (tailrec f :print nil :show-only t))
-  (must-be-redundant (tailrec f :print t :show-only nil))
+  (must-be-redundant (tailrec f :print :all :show-only nil))
   (must-be-redundant (tailrec f :print nil :show-only nil)))
 
  ;; initial call with :PRINT NIL and without :SHOW-ONLY:
  (must-succeed*
   (tailrec f :print nil)
   (must-be-redundant (tailrec f))
-  (must-be-redundant (tailrec f :print t))
+  (must-be-redundant (tailrec f :print :all))
   (must-be-redundant (tailrec f :print nil))
   (must-be-redundant (tailrec f :show-only t))
   (must-be-redundant (tailrec f :show-only nil))
-  (must-be-redundant (tailrec f :print t :show-only t))
+  (must-be-redundant (tailrec f :print :all :show-only t))
   (must-be-redundant (tailrec f :print nil :show-only t))
-  (must-be-redundant (tailrec f :print t :show-only nil))
+  (must-be-redundant (tailrec f :print :all :show-only nil))
   (must-be-redundant (tailrec f :print nil :show-only nil)))
 
  ;; initial call without :PRINT and with :SHOW-ONLY T:
@@ -1009,31 +997,31 @@
  (must-succeed*
   (tailrec f :show-only nil)
   (must-be-redundant (tailrec f))
-  (must-be-redundant (tailrec f :print t))
+  (must-be-redundant (tailrec f :print :all))
   (must-be-redundant (tailrec f :print nil))
   (must-be-redundant (tailrec f :show-only t))
   (must-be-redundant (tailrec f :show-only nil))
-  (must-be-redundant (tailrec f :print t :show-only t))
+  (must-be-redundant (tailrec f :print :all :show-only t))
   (must-be-redundant (tailrec f :print nil :show-only t))
-  (must-be-redundant (tailrec f :print t :show-only nil))
+  (must-be-redundant (tailrec f :print :all :show-only nil))
   (must-be-redundant (tailrec f :print nil :show-only nil)))
 
- ;; initial call with :PRINT T and with :SHOW-ONLY T:
+ ;; initial call with :PRINT :ALL and with :SHOW-ONLY T:
  (must-succeed*
-  (tailrec f :print t :show-only t)
+  (tailrec f :print :all :show-only t)
   (must-fail-local (must-be-redundant (tailrec f))))
 
- ;; initial call with :PRINT T and with :SHOW-ONLY NIL:
+ ;; initial call with :PRINT :ALL and with :SHOW-ONLY NIL:
  (must-succeed*
-  (tailrec f :print t :show-only nil)
+  (tailrec f :print :all :show-only nil)
   (must-be-redundant (tailrec f))
-  (must-be-redundant (tailrec f :print t))
+  (must-be-redundant (tailrec f :print :all))
   (must-be-redundant (tailrec f :print nil))
   (must-be-redundant (tailrec f :show-only t))
   (must-be-redundant (tailrec f :show-only nil))
-  (must-be-redundant (tailrec f :print t :show-only t))
+  (must-be-redundant (tailrec f :print :all :show-only t))
   (must-be-redundant (tailrec f :print nil :show-only t))
-  (must-be-redundant (tailrec f :print t :show-only nil))
+  (must-be-redundant (tailrec f :print :all :show-only nil))
   (must-be-redundant (tailrec f :print nil :show-only nil)))
 
  ;; initial call with :PRINT NIL and with :SHOW-ONLY T:
@@ -1045,13 +1033,13 @@
  (must-succeed*
   (tailrec f :print nil :show-only nil)
   (must-be-redundant (tailrec f))
-  (must-be-redundant (tailrec f :print t))
+  (must-be-redundant (tailrec f :print :all))
   (must-be-redundant (tailrec f :print nil))
   (must-be-redundant (tailrec f :show-only t))
   (must-be-redundant (tailrec f :show-only nil))
-  (must-be-redundant (tailrec f :print t :show-only t))
+  (must-be-redundant (tailrec f :print :all :show-only t))
   (must-be-redundant (tailrec f :print nil :show-only t))
-  (must-be-redundant (tailrec f :print t :show-only nil))
+  (must-be-redundant (tailrec f :print :all :show-only nil))
   (must-be-redundant (tailrec f :print nil :show-only nil)))
 
  ;; non-redundant calls:

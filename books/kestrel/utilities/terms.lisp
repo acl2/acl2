@@ -694,7 +694,7 @@
    An untranslated @(see lambda) expression is
    a lambda expression as entered by the user.
    This function checks whether @('x')is
-   a @('nil')-terminated list of exactly three elements,
+   a true list of exactly three elements,
    whose first element is the symbol @('lambda'),
    whose second element is a list of legal variable symbols without duplicates,
    and whose third element is an untranslated term that is valid for evaluation.
@@ -713,7 +713,7 @@
    if @(tsee check-user-term) does not terminate.
    </p>"
   (b* (((unless (true-listp x))
-        (mv (msg "~x0 is not a NIL-terminated list." x) nil))
+        (mv (msg "~x0 is not a true list." x) nil))
        ((unless (= (len x) 3))
         (mv (msg "~x0 does not consist of exactly three elements." x) nil))
        ((unless (eq (first x) 'lambda))
@@ -744,3 +744,32 @@
        (obligation-clauses (cadr val))
        (obligation-formula (termify-clause-set obligation-clauses)))
     obligation-formula))
+
+(define all-vars-in-untranslated-term (x (wrld plist-worldp))
+  :returns (term "A @(tsee pseudo-termp).")
+  :mode :program
+  :parents (term-utilities)
+  :short "The variables free in the given untranslated term."
+  :long
+  "<p>
+   This function returns the variables of the given untranslated term.  They
+   are returned in reverse order of print occurrence, for consistency with the
+   function, @(tsee all-vars).
+   </p>
+   <p>
+   The input is translated for reasoning, so restrictions for executability are
+   not enforced.  There is also no restriction on the input being in
+   @(':')@(tsee logic) mode.
+   </p>
+  "
+  (let ((ctx 'all-vars-in-untranslated-term))
+    (mv-let (erp term)
+      (translate-cmp x
+                     t ; stobjs-out
+                     nil ; logic-modep (not required)
+                     nil ; known-stobjs
+                     ctx
+                     wrld
+                     (default-state-vars nil))
+      (cond (erp (er hard erp "~@0" term))
+            (t (all-vars term))))))

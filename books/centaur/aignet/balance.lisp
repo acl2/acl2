@@ -74,6 +74,9 @@
                  "Search at most this many literals for a match.")
    (supergate-limit posp :default 1000
                     "Build supergates at most this big.")
+   (verbosity-level natp :default 1
+                    "Controls the level of output during balance
+                     transformation. Level 0 will speed things up for larger aignets.")
    (gatesimp gatesimp-p :default (default-gatesimp)
              "Gate simplification parameters.  Warning: This transform will do
               nothing good if hashing is turned off."))
@@ -1742,30 +1745,32 @@
   (b* (((when (mbe :logic (zp (- (num-outs aignet) (nfix n)))
                    :exec (eql n (num-outs aignet))))
         (mv mark copy levels aignet2 strash))
-       (- (b* (((acl2::local-stobjs u32arr)
-                (mv blah u32arr))
-               (u32arr (resize-u32 (+ 1 (max-fanin aignet)) u32arr))
-               ((mv supergate &)
-                (lit-collect-supergate (co-id->fanin (outnum->id n aignet) aignet)
-                                       t nil
-                                       (balance-config->supergate-limit config)
-                                       nil u32arr aignet)))
-            (cw "Input supergate size: ~x0~%" (len supergate))
-            (cw "Gate numbers: ~x0~%" (count-gates-list supergate aignet))
-            (mv nil u32arr)))
+       (- (and (>= (balance-config->verbosity-level config) 1)
+               (b* (((acl2::local-stobjs u32arr)
+                     (mv blah u32arr))
+                    (u32arr (resize-u32 (+ 1 (max-fanin aignet)) u32arr))
+                    ((mv supergate &)
+                     (lit-collect-supergate (co-id->fanin (outnum->id n aignet) aignet)
+                                            t nil
+                                            (balance-config->supergate-limit config)
+                                            nil u32arr aignet)))
+                 (cw "Input supergate size: ~x0~%" (len supergate))
+                 (cw "Gate numbers: ~x0~%" (count-gates-list supergate aignet))
+                 (mv nil u32arr))))
        ((mv ?lit mark copy levels aignet2 strash)
         (aignet-balance-rec (lit-id (co-id->fanin (outnum->id n aignet) aignet))
                             config aignet mark copy refcounts levels aignet2 strash))
-       (- (b* (((acl2::local-stobjs u32arr)
-                (mv blah u32arr))
-               (u32arr (resize-u32 (+ 1 (max-fanin aignet2)) u32arr))
-               ((mv supergate &)
-                (lit-collect-supergate lit t nil
-                                       (balance-config->supergate-limit config)
-                                       nil u32arr aignet2)))
-            (cw "Output supergate size: ~x0~%" (len supergate))
-            (cw "Gate numbers: ~x0~%" (count-gates-list supergate aignet2))
-            (mv nil u32arr))))
+       (- (and (>= (balance-config->verbosity-level config) 1)
+               (b* (((acl2::local-stobjs u32arr)
+                     (mv blah u32arr))
+                    (u32arr (resize-u32 (+ 1 (max-fanin aignet2)) u32arr))
+                    ((mv supergate &)
+                     (lit-collect-supergate lit t nil
+                                            (balance-config->supergate-limit config)
+                                            nil u32arr aignet2)))
+                 (cw "Output supergate size: ~x0~%" (len supergate))
+                 (cw "Gate numbers: ~x0~%" (count-gates-list supergate aignet2))
+                 (mv nil u32arr)))))
     (aignet-balance-outs (1+ (lnfix n)) config aignet mark copy refcounts levels aignet2 strash))
   ///
   (defret aignet-extension-p-of-aignet-balance-outs

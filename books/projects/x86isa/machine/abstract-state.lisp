@@ -332,8 +332,8 @@
           'nil    ;; fault
           'nil    ;; env
           '0      ;; undef
-          't      ;; programmer-level-mode
-          't      ;; page-structure-marking-mode
+          't      ;; app-view
+          't      ;; marking-view
           ':linux ;; os-info
           '0      ;; memi
           ))
@@ -3609,164 +3609,164 @@
              (X86$AP (!UNDEF$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML PROGRAMMER-LEVEL-MODE*{CORRESPONDENCE}
+  (DEFTHML APP-VIEW*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
-             (EQUAL (PROGRAMMER-LEVEL-MODE$C X86$C)
-                    (PROGRAMMER-LEVEL-MODE$A X86)))
-    :hints (("Goal" :in-theory (e/d (programmer-level-mode$c) ())))
+             (EQUAL (APP-VIEW$C X86$C)
+                    (APP-VIEW$A X86)))
+    :hints (("Goal" :in-theory (e/d (app-view$c) ())))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !PROGRAMMER-LEVEL-MODE*{CORRESPONDENCE}
+  (DEFTHML !APP-VIEW*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (BOOLEANP V))
-             (CORR (!PROGRAMMER-LEVEL-MODE$C V X86$C)
-                   (!PROGRAMMER-LEVEL-MODE$A V X86)))
+             (CORR (!APP-VIEW$C V X86$C)
+                   (!APP-VIEW$A V X86)))
     :hints
-    (("Goal" :in-theory (e/d (programmer-level-mode$cp !programmer-level-mode$c
+    (("Goal" :in-theory (e/d (app-view$cp !app-view$c
                                                        x86$cp good-memp x86$cp-pre)
                              ())
       :use ((:instance corr-rgf-update-nth
-                       (n *PROGRAMMER-LEVEL-MODE$C*)
+                       (n *APP-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *rgfi* x86)))
             (:instance corr-seg-visible-update-nth
-                       (n *PROGRAMMER-LEVEL-MODE$C*)
+                       (n *APP-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *seg-visiblei* x86)))
             (:instance corr-seg-hidden-update-nth
-                       (n *PROGRAMMER-LEVEL-MODE$C*)
+                       (n *APP-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *seg-hiddeni* x86)))
             (:instance corr-str-update-nth
-                       (n *PROGRAMMER-LEVEL-MODE$C*)
+                       (n *APP-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *stri* x86)))
             (:instance corr-ssr-visible-update-nth
-                       (n *PROGRAMMER-LEVEL-MODE$C*)
+                       (n *APP-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *ssr-visiblei* x86)))
             (:instance corr-ssr-hidden-update-nth
-                       (n *PROGRAMMER-LEVEL-MODE$C*)
+                       (n *APP-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *ssr-hiddeni* x86)))
             (:instance corr-ctr-update-nth
-                       (n *PROGRAMMER-LEVEL-MODE$C*)
+                       (n *APP-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *ctri* x86)))
             (:instance corr-dbg-update-nth
-                       (n *PROGRAMMER-LEVEL-MODE$C*)
+                       (n *APP-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *dbgi* x86)))
             (:instance corr-msr-update-nth
-                       (n *PROGRAMMER-LEVEL-MODE$C*)
+                       (n *APP-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *msri* x86)))
             (:instance corr-fp-data-update-nth
-                       (n *PROGRAMMER-LEVEL-MODE$C*)
+                       (n *APP-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
             (:instance corr-xmm-update-nth
-                       (n *PROGRAMMER-LEVEL-MODE$C*)
+                       (n *APP-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *xmmi* x86)))
             )))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !PROGRAMMER-LEVEL-MODE*{PRESERVED}
+  (DEFTHML !APP-VIEW*{PRESERVED}
     (IMPLIES (AND (X86$AP X86) (BOOLEANP V))
-             (X86$AP (!PROGRAMMER-LEVEL-MODE$A V X86)))
+             (X86$AP (!APP-VIEW$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML PAGE-STRUCTURE-MARKING-MODE*{CORRESPONDENCE}
+  (DEFTHML MARKING-VIEW*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
-             (EQUAL (PAGE-STRUCTURE-MARKING-MODE$C X86$C)
-                    (PAGE-STRUCTURE-MARKING-MODE$A X86)))
-    :hints (("Goal" :in-theory (e/d (page-structure-marking-mode$c) ())))
+             (EQUAL (MARKING-VIEW$C X86$C)
+                    (MARKING-VIEW$A X86)))
+    :hints (("Goal" :in-theory (e/d (marking-view$c) ())))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !PAGE-STRUCTURE-MARKING-MODE*{CORRESPONDENCE}
+  (DEFTHML !MARKING-VIEW*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (BOOLEANP V))
-             (CORR (!PAGE-STRUCTURE-MARKING-MODE$C V X86$C)
-                   (!PAGE-STRUCTURE-MARKING-MODE$A V X86)))
+             (CORR (!MARKING-VIEW$C V X86$C)
+                   (!MARKING-VIEW$A V X86)))
     :hints
-    (("Goal" :in-theory (e/d (page-structure-marking-mode$cp !page-structure-marking-mode$c
+    (("Goal" :in-theory (e/d (marking-view$cp !marking-view$c
                                                        x86$cp good-memp x86$cp-pre)
                              ())
       :use ((:instance corr-rgf-update-nth
-                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (n *MARKING-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *rgfi* x86)))
             (:instance corr-seg-visible-update-nth
-                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (n *MARKING-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *seg-visiblei* x86)))
             (:instance corr-seg-hidden-update-nth
-                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (n *MARKING-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *seg-hiddeni* x86)))
             (:instance corr-str-update-nth
-                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (n *MARKING-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *stri* x86)))
             (:instance corr-ssr-visible-update-nth
-                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (n *MARKING-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *ssr-visiblei* x86)))
             (:instance corr-ssr-hidden-update-nth
-                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (n *MARKING-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *ssr-hiddeni* x86)))
             (:instance corr-ctr-update-nth
-                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (n *MARKING-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *ctri* x86)))
             (:instance corr-dbg-update-nth
-                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (n *MARKING-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *dbgi* x86)))
             (:instance corr-msr-update-nth
-                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (n *MARKING-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *msri* x86)))
             (:instance corr-fp-data-update-nth
-                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (n *MARKING-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
             (:instance corr-xmm-update-nth
-                       (n *PAGE-STRUCTURE-MARKING-MODE$C*)
+                       (n *MARKING-VIEW$C*)
                        (x v)
                        (x86 X86$C)
                        (field (nth *xmmi* x86)))
             )))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !PAGE-STRUCTURE-MARKING-MODE*{PRESERVED}
+  (DEFTHML !MARKING-VIEW*{PRESERVED}
     (IMPLIES (AND (X86$AP X86) (BOOLEANP V))
-             (X86$AP (!PAGE-STRUCTURE-MARKING-MODE$A V X86)))
+             (X86$AP (!MARKING-VIEW$A V X86)))
     :RULE-CLASSES NIL)
 
   (DEFTHML OS-INFO*{CORRESPONDENCE}
@@ -4190,8 +4190,8 @@
       (:fault                       (fault* x86))
       (:env                         (env* x86))
       (:undef                       (undef* x86))
-      (:programmer-level-mode       (programmer-level-mode* x86))
-      (:page-structure-marking-mode (page-structure-marking-mode* x86))
+      (:app-view       (app-view* x86))
+      (:marking-view (marking-view* x86))
       (:os-info                     (os-info* x86))
       (:mem                         (memi* index x86))
       (otherwise                    nil)))
@@ -4247,10 +4247,10 @@
                   (:env          (and (equal index 0)
                                       (env-alistp value)))
                   (:undef        (equal index 0))
-                  (:programmer-level-mode
+                  (:app-view
                    (and (equal index 0)
                         (booleanp value)))
-                  (:page-structure-marking-mode
+                  (:marking-view
                    (and (equal index 0)
                         (booleanp value)))
                   (:os-info      (and (equal index 0)
@@ -4284,8 +4284,8 @@
       (:fault                       (!fault* value x86))
       (:env                         (!env* value x86))
       (:undef                       (!undef* value x86))
-      (:programmer-level-mode       (!programmer-level-mode* value x86))
-      (:page-structure-marking-mode (!page-structure-marking-mode* value x86))
+      (:app-view       (!app-view* value x86))
+      (:marking-view (!marking-view* value x86))
       (:os-info                     (!os-info* value x86))
       (:mem                         (!memi* index value x86))
       (otherwise                    x86)))

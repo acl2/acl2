@@ -26,6 +26,10 @@
           (nth (- (len v) 2) v)
           (nth (1- (len v)) v)))
 
+(defthm f$fast-zero-of-v-threefix-canceled
+  (equal (f$fast-zero (v-threefix v))
+         (f$fast-zero v)))
+
 (defthm f$fast-zero=tr-or-nor
   (implies (>= (len v) 3)
            (equal (f$fast-zero v)

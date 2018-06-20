@@ -36,8 +36,10 @@
 (include-book "centaur/gl/bfr" :dir :system)
 (include-book "centaur/gl/var-bounds" :dir :system)
 (include-book "std/alists/alist-defuns" :dir :system)
+(include-book "std/util/termhints" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/alists/alist-keys" :dir :system))
+
 
 
 (fty::deflist non-bool-atomlist :elt-type non-bool-atom)

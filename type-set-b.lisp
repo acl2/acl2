@@ -3197,24 +3197,6 @@
          (car lst))
         (t (find-runed-type-prescription rune (cdr lst)))))
 
-(defconst *expandable-boot-strap-non-rec-fns*
-  '(not
-    implies eq atom eql = /= null endp zerop
-
-; If we ever make 1+ and 1- functions again, they should go back on this list.
-
-    synp plusp minusp listp return-last mv-list cons-with-hint
-
-; We added the-error for Version_4.0 (replaced by the-check after Version_6.1).
-; Before that change, but after changing constraint-info to avoid calling
-; remove-guard-holders on a definition body (a change in support of
-; canonical-ancestors, for use of the Attachment Restriction Lemma in
-; justifying attachment to metafunctions and clause-processors,
-; cf. chk-evaluator-use-in-rule), the event (defsort :compare< << :prefix <<)
-; failed from community book defsort/uniquep.lisp.
-
-    the-check wormhole-eval force case-split double-rewrite))
-
 ; Warning: All functions listed above must be defun'd non-recursively
 ; before deftheory definition-minimal-theory!
 
@@ -8086,7 +8068,7 @@
          (mv-let (ts1 ttree1)
                  (type-set-rec (subcor-var (formals fn w)
                                            (fargs x)
-                                           (body fn t w))
+                                           (bbody fn))
                                force-flg
                                nil ; dwp
                                type-alist
@@ -9463,14 +9445,73 @@
                                  (mv-atf not-flg nil t
                                          nil type-alist
                                          xttree x-ts-ttree))
-                                ((ts-disjointp x-ts *ts-nil*)
-                                 (mv (er hard 'assume-true-false-if
-                                         "We did not believe that this could ~
-                                          happen.  Please send the authors of ~
-                                          ACL2 a replayable transcript of ~
-                                          this problem if possible, so that ~
-                                          we can see what went wrong.")
-                                     nil nil nil nil))
+
+; Here, we formerly checked (ts-disjointp x-ts *ts-nil*) and caused a hard
+; error if that was true, suggesting to contact the implementors with an
+; example.  However, the example below shows that this case can occur.  We are
+; in an inconsistent context, and we simply ignore the problematic entry
+; accessed by look-in-type-alist, starting after Version_8.0.
+
+; We have provoked this case, where (ts-disjointp x-ts *ts-nil*), with the
+; following example.  It is derived from an example sent to us by Dave Greve,
+; and the defun below is essentially his, included with his permission.
+; Below we say more about invoking the error in Version_8.0.
+
+;   (include-book "arithmetic-5/top" :dir :system)
+;
+;   (defun find-next (var best list)
+;     (if (not (consp list))
+;         best
+;       (let ((new (car list)))
+;         (let ((best (if (< best var)
+;                         best (if (< new var) new var))))
+;           (if (and (< new var) (<= best new))
+;               (find-next var new (cdr list))
+;             (find-next var best (cdr list)))))))
+;
+;   (thm (implies (and (rationalp (find-next var list1 list2))
+;                      (<= var 0))
+;                 xxx))
+
+; To get a sense of what went wrong, you can do the following in Version 8.0
+; before evaluating the forms (or at least, the THM) above.
+
+;   (value :q)
+;   (setq *hard-error-is-error* t)
+;   (set-debugger-enable t)
+;   (lp)
+
+; When in the CCL debugger, submit these expressions.
+
+;   (:form 2)
+;   (butlast * 5)
+
+; This provides a call of assume-true-false-if that leads to the error.  By
+; eliminating some distracting entries from the type-alist, we obtain this
+; call, which leads to the error even when you start up ACL2 and provide no
+; initial events.
+
+;   (assume-true-false-if
+;    nil
+;    '(if (acl2-numberp var)
+;         (if (acl2-numberp (car list2))
+;             (< (car list2) var)
+;           'nil)
+;       (if (acl2-numberp (car list2))
+;           (< (car list2) '0)
+;         'nil))
+;    nil nil nil
+;    '(((car list2) -128)
+;      ((if (acl2-numberp var)
+;           (if (acl2-numberp (car list2))
+;               (< (car list2) var)
+;             'nil)
+;         (if (acl2-numberp (car list2))
+;             (< (car list2) '0)
+;           'nil))
+;       -129))
+;    nil (ens state) (w state) nil nil nil)
+
                                 (t
                                  (mv-atf not-flg nil t
                                          nil
@@ -9494,14 +9535,14 @@
                                  (mv-atf not-flg t nil
                                          type-alist nil
                                          xttree x-ts-ttree))
-                                ((ts= x-ts *ts-nil*)
-                                 (mv (er hard 'assume-true-false-if
-                                         "We did not believe that this could ~
-                                          happen.  Please send the authors of ~
-                                          ACL2 a replayable transcript of ~
-                                          this problem if possible, so that ~
-                                          we can see what went wrong.")
-                                     nil nil nil nil))
+
+; Here, we formerly checked (ts= x-ts *ts-nil*) and caused a hard error if that
+; was true, suggesting to contact the implementors with an example.  However,
+; we have seen a case like this arise; see the example above, under the
+; preceding call of look-in-type-alist.  We believe that this odd case
+; indicates an inconsistent context, so we simply ignore the problematic entry
+; accessed by look-in-type-alist.
+
                                 (t
                                  (mv-atf not-flg t nil
                                          (extend-type-alist-simple
@@ -10010,7 +10051,7 @@
           (assume-true-false-rec
            (subcor-var (formals (ffn-symb x) w)
                        (fargs x)
-                       (body (ffn-symb x) t w))
+                       (bbody (ffn-symb x)))
            xttree force-flg dwp type-alist ancestors ens w
            pot-lst pt ignore backchain-limit)
           (if xnot-flg
@@ -12351,7 +12392,7 @@
               (normalize
                (subcor-var (formals (ffn-symb term) wrld)
                            (fargs term)
-                           (body (ffn-symb term) t wrld))
+                           (bbody (ffn-symb term)))
                iff-flg type-alist ens wrld ttree ts-backchain-limit))
              (t
 

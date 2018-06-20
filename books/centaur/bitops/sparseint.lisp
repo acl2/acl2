@@ -3416,236 +3416,237 @@ by redefining the constant.</p>")
                   (equal (logxor a b)
                          (b-xor a b)))))
 
-(defsection logext-of-sum
-  (local (defun logext-sum-ind (cin width x y)
-           (declare (xargs :measure (nfix width)))
-           (if (<= (nfix width) 1)
-               (list cin x y)
-             (logext-sum-ind (b-ite cin
-                                    (b-ior (logcar x) (logcar y))
-                                    (b-and (logcar x) (logcar y)))
-                             (1- width)
-                             (logcdr x)
-                             (logcdr y)))))
+(local
+ (defsection logext-of-sum
+   (local (defun logext-sum-ind (cin width x y)
+            (declare (xargs :measure (nfix width)))
+            (if (<= (nfix width) 1)
+                (list cin x y)
+              (logext-sum-ind (b-ite cin
+                                     (b-ior (logcar x) (logcar y))
+                                     (b-and (logcar x) (logcar y)))
+                              (1- width)
+                              (logcdr x)
+                              (logcdr y)))))
 
-  (defthmd logext-of-plus-of-logext-lemma
-    (implies (and (integerp y)
-                  (bitp cin))
-             (equal (logext width (+ cin (logext width x) y))
-                    (logext width (+ cin (ifix x) y))))
-    :hints (("goal" :induct (logext-sum-ind cin width x y)
-             :in-theory (enable equal-logcons-strong)
-             :expand ((:free (x) (logext width x))))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable b-ite)))))
+   (defthmd logext-of-plus-of-logext-lemma
+     (implies (and (integerp y)
+                   (bitp cin))
+              (equal (logext width (+ cin (logext width x) y))
+                     (logext width (+ cin (ifix x) y))))
+     :hints (("goal" :induct (logext-sum-ind cin width x y)
+              :in-theory (enable equal-logcons-strong)
+              :expand ((:free (x) (logext width x))))
+             (and stable-under-simplificationp
+                  '(:in-theory (enable b-ite)))))
 
-  (defthm logext-of-sum-simplify-arg1
-    (implies (and (integerp x)
-                  (integerp y)
-                  (equal xx (logext width x))
-                  (bind-free
-                   (case-match xx
-                     (('logext w xxx)
-                      (if (equal w width)
-                          (if (equal xxx x)
-                              nil
-                            `((xxx . ,xxx)))
-                        (and (not (equal xx x))
-                             `((xxx . ,xx)))))
-                     (& (and (not (equal xx x))
-                             `((xxx . ,xx))))))
-                  (equal (logext width xxx) (logext width xx)))
-             (equal (logext width (+ x y))
-                    (logext width (+ (ifix xxx) y))))
-    :hints (("goal" :use ((:instance logext-of-plus-of-logext-lemma
-                           (cin 0) (x xxx))
-                          (:instance logext-of-plus-of-logext-lemma
-                           (cin 0) (x x))))))
+   (defthm logext-of-sum-simplify-arg1
+     (implies (and (integerp x)
+                   (integerp y)
+                   (equal xx (logext width x))
+                   (bind-free
+                    (case-match xx
+                      (('logext w xxx)
+                       (if (equal w width)
+                           (if (equal xxx x)
+                               nil
+                             `((xxx . ,xxx)))
+                         (and (not (equal xx x))
+                              `((xxx . ,xx)))))
+                      (& (and (not (equal xx x))
+                              `((xxx . ,xx))))))
+                   (equal (logext width xxx) (logext width xx)))
+              (equal (logext width (+ x y))
+                     (logext width (+ (ifix xxx) y))))
+     :hints (("goal" :use ((:instance logext-of-plus-of-logext-lemma
+                            (cin 0) (x xxx))
+                           (:instance logext-of-plus-of-logext-lemma
+                            (cin 0) (x x))))))
 
-  (defthm logext-of-sum-simplify-arg2
-    (implies (and (integerp x)
-                  (integerp y)
-                  (equal xx (logext width x))
-                  (bind-free
-                   (case-match xx
-                     (('logext w xxx)
-                      (if (equal w width)
-                          (if (equal xxx x)
-                              nil
-                            `((xxx . ,xxx)))
-                        (and (not (equal xx x))
-                             `((xxx . ,xx)))))
-                     (& (and (not (equal xx x))
-                             `((xxx . ,xx))))))
-                  (equal (logext width xxx) (logext width xx)))
-             (equal (logext width (+ y x))
-                    (logext width (+ y (ifix xxx)))))
-    :hints (("goal" :use logext-of-sum-simplify-arg1
-             :in-theory (disable logext-of-sum-simplify-arg1))))
+   (defthm logext-of-sum-simplify-arg2
+     (implies (and (integerp x)
+                   (integerp y)
+                   (equal xx (logext width x))
+                   (bind-free
+                    (case-match xx
+                      (('logext w xxx)
+                       (if (equal w width)
+                           (if (equal xxx x)
+                               nil
+                             `((xxx . ,xxx)))
+                         (and (not (equal xx x))
+                              `((xxx . ,xx)))))
+                      (& (and (not (equal xx x))
+                              `((xxx . ,xx))))))
+                   (equal (logext width xxx) (logext width xx)))
+              (equal (logext width (+ y x))
+                     (logext width (+ y (ifix xxx)))))
+     :hints (("goal" :use logext-of-sum-simplify-arg1
+              :in-theory (disable logext-of-sum-simplify-arg1))))
 
-  
-  (defthmd loghead-of-plus-of-loghead-lemma
-    (implies (and (integerp y)
-                  (bitp cin))
-             (equal (loghead width (+ cin (loghead width x) y))
-                    (loghead width (+ cin (ifix x) y))))
-    :hints (("goal" :induct (logext-sum-ind cin width x y)
-             :in-theory (enable equal-logcons-strong)
-             :expand ((:free (x) (loghead width x))))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable b-ite)))))
+   
+   (defthmd loghead-of-plus-of-loghead-lemma
+     (implies (and (integerp y)
+                   (bitp cin))
+              (equal (loghead width (+ cin (loghead width x) y))
+                     (loghead width (+ cin (ifix x) y))))
+     :hints (("goal" :induct (logext-sum-ind cin width x y)
+              :in-theory (enable equal-logcons-strong)
+              :expand ((:free (x) (loghead width x))))
+             (and stable-under-simplificationp
+                  '(:in-theory (enable b-ite)))))
 
-  
-  (defthm loghead-of-sum-simplify-arg1
-    (implies (and (integerp x)
-                  (integerp y)
-                  (equal xx (loghead width x))
-                  (bind-free
-                   (case-match xx
-                     (('acl2::loghead$inline w xxx)
-                      (if (equal w width)
-                          (if (equal xxx x)
-                              nil
-                            `((xxx . ,xxx)))
-                        (and (not (equal xx x))
-                             `((xxx . ,xx)))))
-                     (& (and (not (equal xx x))
-                             `((xxx . ,xx))))))
-                  (equal (loghead width xxx) (loghead width xx)))
-             (equal (loghead width (+ x y))
-                    (loghead width (+ (ifix xxx) y))))
-    :hints (("goal" :use ((:instance loghead-of-plus-of-loghead-lemma
-                           (cin 0) (x xxx))
-                          (:instance loghead-of-plus-of-loghead-lemma
-                           (cin 0) (x x))))))
+   
+   (defthm loghead-of-sum-simplify-arg1
+     (implies (and (integerp x)
+                   (integerp y)
+                   (equal xx (loghead width x))
+                   (bind-free
+                    (case-match xx
+                      (('acl2::loghead$inline w xxx)
+                       (if (equal w width)
+                           (if (equal xxx x)
+                               nil
+                             `((xxx . ,xxx)))
+                         (and (not (equal xx x))
+                              `((xxx . ,xx)))))
+                      (& (and (not (equal xx x))
+                              `((xxx . ,xx))))))
+                   (equal (loghead width xxx) (loghead width xx)))
+              (equal (loghead width (+ x y))
+                     (loghead width (+ (ifix xxx) y))))
+     :hints (("goal" :use ((:instance loghead-of-plus-of-loghead-lemma
+                            (cin 0) (x xxx))
+                           (:instance loghead-of-plus-of-loghead-lemma
+                            (cin 0) (x x))))))
 
-  (defthm loghead-of-sum-simplify-arg2
-    (implies (and (integerp x)
-                  (integerp y)
-                  (equal xx (loghead width x))
-                  (bind-free
-                   (case-match xx
-                     (('acl2::loghead$inline w xxx)
-                      (if (equal w width)
-                          (if (equal xxx x)
-                              nil
-                            `((xxx . ,xxx)))
-                        (and (not (equal xx x))
-                             `((xxx . ,xx)))))
-                     (& (and (not (equal xx x))
-                             `((xxx . ,xx))))))
-                  (equal (loghead width xxx) (loghead width xx)))
-             (equal (loghead width (+ y x))
-                    (loghead width (+ y (ifix xxx)))))
-    :hints (("goal" :use loghead-of-sum-simplify-arg1
-             :in-theory (disable loghead-of-sum-simplify-arg1))))
+   (defthm loghead-of-sum-simplify-arg2
+     (implies (and (integerp x)
+                   (integerp y)
+                   (equal xx (loghead width x))
+                   (bind-free
+                    (case-match xx
+                      (('acl2::loghead$inline w xxx)
+                       (if (equal w width)
+                           (if (equal xxx x)
+                               nil
+                             `((xxx . ,xxx)))
+                         (and (not (equal xx x))
+                              `((xxx . ,xx)))))
+                      (& (and (not (equal xx x))
+                              `((xxx . ,xx))))))
+                   (equal (loghead width xxx) (loghead width xx)))
+              (equal (loghead width (+ y x))
+                     (loghead width (+ y (ifix xxx)))))
+     :hints (("goal" :use loghead-of-sum-simplify-arg1
+              :in-theory (disable loghead-of-sum-simplify-arg1))))
 
-  
-  (defthm logapp-of-sum-simplify-arg1
-    (implies (and (integerp x)
-                  (integerp y)
-                  (equal xx (loghead width x))
-                  (bind-free
-                   (case-match xx
-                     (('acl2::loghead$inline w xxx)
-                      (if (equal w width)
-                          (if (equal xxx x)
-                              nil
-                            `((xxx . ,xxx)))
-                        (and (not (equal xx x))
-                             `((xxx . ,xx)))))
-                     (& (and (not (equal xx x))
-                             `((xxx . ,xx))))))
-                  (equal (loghead width xxx) (loghead width xx)))
-             (equal (logapp width (+ x y) z)
-                    (logapp width (+ (ifix xxx) y) z)))
-    :hints (("goal" :use ((:instance loghead-of-plus-of-loghead-lemma
-                           (cin 0) (x xxx))
-                          (:instance loghead-of-plus-of-loghead-lemma
-                           (cin 0) (x x)))
-             :in-theory (e/d (logapp)
-                             (loghead-of-sum-simplify-arg1
-                              loghead-of-sum-simplify-arg2)))))
+   
+   (defthm logapp-of-sum-simplify-arg1
+     (implies (and (integerp x)
+                   (integerp y)
+                   (equal xx (loghead width x))
+                   (bind-free
+                    (case-match xx
+                      (('acl2::loghead$inline w xxx)
+                       (if (equal w width)
+                           (if (equal xxx x)
+                               nil
+                             `((xxx . ,xxx)))
+                         (and (not (equal xx x))
+                              `((xxx . ,xx)))))
+                      (& (and (not (equal xx x))
+                              `((xxx . ,xx))))))
+                   (equal (loghead width xxx) (loghead width xx)))
+              (equal (logapp width (+ x y) z)
+                     (logapp width (+ (ifix xxx) y) z)))
+     :hints (("goal" :use ((:instance loghead-of-plus-of-loghead-lemma
+                            (cin 0) (x xxx))
+                           (:instance loghead-of-plus-of-loghead-lemma
+                            (cin 0) (x x)))
+              :in-theory (e/d (logapp)
+                              (loghead-of-sum-simplify-arg1
+                               loghead-of-sum-simplify-arg2)))))
 
-  (defthm logapp-of-sum-simplify-arg2
-    (implies (and (integerp x)
-                  (integerp y)
-                  (equal xx (loghead width x))
-                  (bind-free
-                   (case-match xx
-                     (('acl2::loghead$inline w xxx)
-                      (if (equal w width)
-                          (if (equal xxx x)
-                              nil
-                            `((xxx . ,xxx)))
-                        (and (not (equal xx x))
-                             `((xxx . ,xx)))))
-                     (& (and (not (equal xx x))
-                             `((xxx . ,xx))))))
-                  (equal (loghead width xxx) (loghead width xx)))
-             (equal (logapp width (+ y x) z)
-                    (logapp width (+ y (ifix xxx)) z)))
-    :hints (("goal" :use logapp-of-sum-simplify-arg1
-             :in-theory (disable logapp-of-sum-simplify-arg1))))
-  
-  (defthm logbitp-of-sum-simplify-arg1
-    (implies (and (integerp x)
-                  (integerp y)
-                  (equal ww (+ 1 (nfix width)))
-                  (equal xx (loghead ww x))
-                  (bind-free
-                   (case-match xx
-                     (('acl2::loghead$inline w xxx)
-                      (if (equal w ww)
-                          (if (equal xxx x)
-                              nil
-                            `((xxx . ,xxx)))
-                        (and (not (equal xx x))
-                             `((xxx . ,xx)))))
-                     (& (and (not (equal xx x))
-                             `((xxx . ,xx))))))
-                  (equal (loghead ww xxx) (loghead ww xx)))
-             (equal (logbitp width (+ x y))
-                    (logbitp width (+ (ifix xxx) y))))
-    :hints (("goal" :use ((:instance logbitp-of-loghead-in-bounds
-                           (pos width)
-                           (size (+ 1 (nfix width)))
-                           (i (+ (loghead (+ 1 (nfix width)) x) y)))
-                          (:instance logbitp-of-loghead-in-bounds
-                           (pos width)
-                           (size (+ 1 (nfix width)))
-                           (i (+ x y)))
-                          (:instance logbitp-of-loghead-in-bounds
-                           (pos width)
-                           (size (+ 1 (nfix width)))
-                           (i (+ (loghead (+ 1 (nfix width)) xxx) y)))
-                          (:instance logbitp-of-loghead-in-bounds
-                           (pos width)
-                           (size (+ 1 (nfix width)))
-                           (i (+ (ifix xxx) y))))
-             :in-theory (disable logbitp-of-loghead-in-bounds))))
+   (defthm logapp-of-sum-simplify-arg2
+     (implies (and (integerp x)
+                   (integerp y)
+                   (equal xx (loghead width x))
+                   (bind-free
+                    (case-match xx
+                      (('acl2::loghead$inline w xxx)
+                       (if (equal w width)
+                           (if (equal xxx x)
+                               nil
+                             `((xxx . ,xxx)))
+                         (and (not (equal xx x))
+                              `((xxx . ,xx)))))
+                      (& (and (not (equal xx x))
+                              `((xxx . ,xx))))))
+                   (equal (loghead width xxx) (loghead width xx)))
+              (equal (logapp width (+ y x) z)
+                     (logapp width (+ y (ifix xxx)) z)))
+     :hints (("goal" :use logapp-of-sum-simplify-arg1
+              :in-theory (disable logapp-of-sum-simplify-arg1))))
+   
+   (defthm logbitp-of-sum-simplify-arg1
+     (implies (and (integerp x)
+                   (integerp y)
+                   (equal ww (+ 1 (nfix width)))
+                   (equal xx (loghead ww x))
+                   (bind-free
+                    (case-match xx
+                      (('acl2::loghead$inline w xxx)
+                       (if (equal w ww)
+                           (if (equal xxx x)
+                               nil
+                             `((xxx . ,xxx)))
+                         (and (not (equal xx x))
+                              `((xxx . ,xx)))))
+                      (& (and (not (equal xx x))
+                              `((xxx . ,xx))))))
+                   (equal (loghead ww xxx) (loghead ww xx)))
+              (equal (logbitp width (+ x y))
+                     (logbitp width (+ (ifix xxx) y))))
+     :hints (("goal" :use ((:instance logbitp-of-loghead-in-bounds
+                            (pos width)
+                            (size (+ 1 (nfix width)))
+                            (i (+ (loghead (+ 1 (nfix width)) x) y)))
+                           (:instance logbitp-of-loghead-in-bounds
+                            (pos width)
+                            (size (+ 1 (nfix width)))
+                            (i (+ x y)))
+                           (:instance logbitp-of-loghead-in-bounds
+                            (pos width)
+                            (size (+ 1 (nfix width)))
+                            (i (+ (loghead (+ 1 (nfix width)) xxx) y)))
+                           (:instance logbitp-of-loghead-in-bounds
+                            (pos width)
+                            (size (+ 1 (nfix width)))
+                            (i (+ (ifix xxx) y))))
+              :in-theory (disable logbitp-of-loghead-in-bounds))))
 
-  (defthm logbitp-of-sum-simplify-arg2
-    (implies (and (integerp x)
-                  (integerp y)
-                  (equal ww (+ 1 (nfix width)))
-                  (equal xx (loghead ww x))
-                  (bind-free
-                   (case-match xx
-                     (('acl2::loghead$inline w xxx)
-                      (if (equal w ww)
-                          (if (equal xxx x)
-                              nil
-                            `((xxx . ,xxx)))
-                        (and (not (equal xx x))
-                             `((xxx . ,xx)))))
-                     (& (and (not (equal xx x))
-                             `((xxx . ,xx))))))
-                  (equal (loghead ww xxx) (loghead ww xx)))
-             (equal (logbitp width (+ y x))
-                    (logbitp width (+ y (ifix xxx)))))
-    :hints (("goal" :use logbitp-of-sum-simplify-arg1
-             :in-theory (disable logbitp-of-sum-simplify-arg1)))))
+   (defthm logbitp-of-sum-simplify-arg2
+     (implies (and (integerp x)
+                   (integerp y)
+                   (equal ww (+ 1 (nfix width)))
+                   (equal xx (loghead ww x))
+                   (bind-free
+                    (case-match xx
+                      (('acl2::loghead$inline w xxx)
+                       (if (equal w ww)
+                           (if (equal xxx x)
+                               nil
+                             `((xxx . ,xxx)))
+                         (and (not (equal xx x))
+                              `((xxx . ,xx)))))
+                      (& (and (not (equal xx x))
+                              `((xxx . ,xx))))))
+                   (equal (loghead ww xxx) (loghead ww xx)))
+              (equal (logbitp width (+ y x))
+                     (logbitp width (+ y (ifix xxx)))))
+     :hints (("goal" :use logbitp-of-sum-simplify-arg1
+              :in-theory (disable logbitp-of-sum-simplify-arg1))))))
 
 
 (define carry-out-bit ((xbit bitp)

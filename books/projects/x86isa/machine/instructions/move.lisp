@@ -49,26 +49,12 @@
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (the (unsigned-byte 8) (prefixes-slice :group-2-prefix prefixes)))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
+       (byte-operand? (equal opcode #x88))
        ((the (integer 1 8) operand-size)
-        (if (equal opcode #x88)
-            1
-          ;; Intel manual, Mar'17, Volume 1, Table 3-4:
-          (if (64-bit-modep x86)
-              (if (logbitp #.*w* rex-byte)
-                  8
-                (if p3? 2 4))
-            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-                 (cs.d
-                  (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-              (if (= cs.d 1)
-                  (if p3? 2 4)
-                (if p3? 4 2))))))
+        (select-operand-size byte-operand? rex-byte nil prefixes x86))
 
        (register (rgfi-size operand-size (reg-index reg rex-byte #.*r*)
                             rex-byte x86))
@@ -90,16 +76,9 @@
        ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-              temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-              start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
        (inst-ac? t)
@@ -155,26 +134,12 @@
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
+       (byte-operand? (equal opcode #x8A))
        ((the (integer 1 8) operand-size)
-        (if (equal opcode #x8A)
-            1
-          ;; Intel manual, Mar'17, Volume 1, Table 3-4:
-          (if (64-bit-modep x86)
-              (if (logbitp #.*w* rex-byte)
-                  8
-                (if p3? 2 4))
-            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-                 (cs.d
-                  (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-              (if (= cs.d 1)
-                  (if p3? 2 4)
-                (if p3? 4 2))))))
+        (select-operand-size byte-operand? rex-byte nil prefixes x86))
 
        (seg-reg (select-segment-register p2 p4? mod r/m x86))
 
@@ -199,16 +164,9 @@
        ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
        (x86 (!rgfi-size operand-size (reg-index reg rex-byte #.*r*)
@@ -296,24 +254,13 @@
        ((when flg) (!!ms-fresh :riml-size-error flg))
 
        ;; Check if the above memory read caused any problems:
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip offset-size))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip offset-size x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Get the segment base (which is zero for every segment but FS
        ;; and GS in the 64-bit mode):
@@ -416,25 +363,10 @@
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
-
+       (byte-operand? (and (<= #xB0 opcode) ;; B0+rb
+                           (<= opcode #xB7)))
        ((the (integer 1 8) operand-size)
-        (if (and (<= #xB0 opcode) ;; B0+rb
-                 (<= opcode #xB7))
-            1
-          ;; Intel manual, Mar'17, Volume 1, Table 3-4:
-          (if (64-bit-modep x86)
-              (if (logbitp #.*w* rex-byte)
-                  8
-                (if p3? 2 4))
-            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
-                 (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-                 (cs.d
-                  (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-              (if (= cs.d 1)
-                  (if p3? 2 4)
-                (if p3? 4 2))))))
+        (select-operand-size byte-operand? rex-byte nil prefixes x86))
 
        ;; We don't do any alignment check below when fetching the
        ;; immediate operand; reading the immediate operand is done
@@ -445,21 +377,14 @@
        ((mv flg0 imm x86)
         (rme-size operand-size temp-rip *cs* :x nil x86 :mem-ptr? nil))
        ((when flg0)
-        (!!ms-fresh :imm-rml-size-error flg0))
+        (!!ms-fresh :imm-rme-size-error flg0))
 
        ((mv flg temp-rip) (add-to-*ip temp-rip operand-size x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (reg (the (unsigned-byte 3) (logand 7 opcode)))
        ;; Update the x86 state:
@@ -506,6 +431,7 @@
                    (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
+
        ((the (integer 1 8) imm-size)
         (if (equal opcode #xC6)
             1
@@ -566,24 +492,15 @@
         (rml-size imm-size temp-rip :x x86))
        ((when flg2)
         (!!ms-fresh :imm-rml-size-error flg2))
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip imm-size))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip imm-size x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
        (imm (if (equal reg/mem-size 8)
                 ;; Sign-extended
                 (n64 (n32-to-i32 imm))
@@ -606,6 +523,7 @@
 ;; INSTRUCTION: LEA
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-lea
 
   ;; Op/En: RM
@@ -619,92 +537,60 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
+
   :implemented
   (add-to-implemented-opcodes-table 'LEA #x8D '(:nil nil) 'x86-lea)
 
   :body
 
-
   (b* ((ctx 'x86-lea)
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
+       ;; this is the operand size
+       ;; in Intel manual, Mar'17, Vol 2, Tables 3-53 and 3-54:
        ((the (integer 2 8) register-size)
-        (if (logbitp #.*w* rex-byte)
-            8
-          (if p3?
-              2
-            4)))
+        (select-operand-size nil rex-byte nil prefixes x86))
 
-       ((mv ?flg0 (the (signed-byte 64) M) (the (unsigned-byte 3) increment-RIP-by) x86)
-        (if (equal mod #b11)
-            ;; See "M" in http://ref.x86asm.net/#Instruction-Operand-Codes
-            (mv "Source operand is not a memory location" 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
-                              0 ;; No immediate operand
-                              x86)))
-       ((when flg0)
-        (!!ms-fresh :x86-effective-addr-error flg0))
+       ((when (equal mod #b11))
+        ;; See "M" in http://ref.x86asm.net/#Instruction-Operand-Codes
+        (!!fault-fresh :ud nil ;; #UD
+                       :x86-lea "Source operand is not a memory location"))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
+       ((mv ?flg0
+            (the (signed-byte 64) M)
+            (the (unsigned-byte 3) increment-RIP-by)
+            x86)
+        (x86-effective-addr p4?
+                            temp-rip
+                            rex-byte
+                            r/m
+                            mod
+                            sib
+                            0 ;; No immediate operand
+                            x86))
+       ((when flg0) (!!ms-fresh :x86-effective-addr-error flg0))
 
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
+       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
-
-       ((mv flg1 M)
-        (case p2
-          (0 (mv nil M))
-          ;; I don't really need to check whether FS and GS base are
-          ;; canonical or not.  On the real machine, if the MSRs
-          ;; containing these bases are assigned non-canonical
-          ;; addresses, an exception is raised.
-          (#.*fs-override*
-           (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
-                  (fs-base (n64-to-i64 nat-fs-base)))
-             (if (not (canonical-address-p fs-base))
-                 (mv 'Non-Canonical-FS-Base fs-base)
-               (mv nil (+ fs-base M)))))
-          (#.*gs-override*
-           (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
-                  (gs-base (n64-to-i64 nat-gs-base)))
-             (if (not (canonical-address-p gs-base))
-                 (mv 'Non-Canonical-GS-Base gs-base)
-               (mv nil (+ gs-base M)))))
-          (t (mv 'Unidentified-P2 M))))
-       ((when flg1)
-        (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg1))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (M (trunc register-size M))
        ;; Update the x86 state:
-       (x86 (!rgfi-size register-size (reg-index reg rex-byte #.*r*)
-                        M rex-byte x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (!rgfi-size
+             register-size (reg-index reg rex-byte #.*r*) M rex-byte x86))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================
@@ -745,7 +631,7 @@
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size nil rex-byte t prefixes))
+        (select-operand-size nil rex-byte t prefixes x86))
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
@@ -758,24 +644,13 @@
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
-       ;; If the instruction goes beyond 15 bytes, stop. Change
-       ;; to an exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (register-size (if (logbitp #.*w* rex-byte)
                           8
@@ -843,26 +718,15 @@
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
-       (register-size (select-operand-size nil rex-byte nil prefixes))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       (register-size (select-operand-size nil rex-byte nil prefixes x86))
        (reg/mem (case reg/mem-size
                   (1
                    (mbe :logic (part-select (n08-to-i08 reg/mem)
@@ -938,27 +802,16 @@
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
-       ;; If the instruction goes beyond 15 bytes, stop. Change to an
-       ;; exception later.
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((the (integer 1 8) register-size)
-        (select-operand-size nil rex-byte nil prefixes))
+        (select-operand-size nil rex-byte nil prefixes x86))
 
        ;; Update the x86 state:
        (x86 (!rgfi-size register-size (reg-index reg rex-byte #.*r*) reg/mem
@@ -1012,14 +865,9 @@
 
   (b* ((ctx 'x86-mov-control-regs-Op/En-MR)
 
-       ((the (signed-byte #.*max-linear-address-size+1*) addr-diff)
-        (-
-         (the (signed-byte #.*max-linear-address-size*)
-           temp-rip)
-         (the (signed-byte #.*max-linear-address-size*)
-           start-rip)))
-       ((when (< 15 addr-diff))
-        (!!ms-fresh :instruction-length addr-diff))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; The r/m field specifies the GPR (destination).
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))

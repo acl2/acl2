@@ -17,6 +17,8 @@
   :short "Miscellaneous utilities for instruction decoding and for writing
   instruction specification functions" )
 
+(local (xdoc::set-default-parents decoding-and-spec-utils))
+
 ;; ======================================================================
 
 (defsection error-objects
@@ -225,6 +227,12 @@ the @('fault') field instead.</li>
             (rationalp (mv-nth 1 (add-to-*ip *ip delta x86)))
             (<= -140737488355328 (mv-nth 1 (add-to-*ip *ip delta x86)))
             (< (mv-nth 1 (add-to-*ip *ip delta x86)) 140737488355328))))
+
+    (defrule add-to-*ip-rationalp-type
+      (implies (and (rationalp *ip)
+                    (rationalp delta))
+               (rationalp (mv-nth 1 (add-to-*ip *ip delta x86))))
+      :rule-classes :type-prescription)
 
     (defrule mv-nth-0-of-add-to-*ip-when-64-bit-modep
       (implies (64-bit-modep x86)
@@ -475,7 +483,7 @@ the @('fault') field instead.</li>
     :inline t
     ///
 
-    (defthm-sb add-to-*ip-is-i64p
+    (defthm-sb add-to-*sp-is-i64p
       :bound 48
       :concl (mv-nth 1 (add-to-*sp *sp delta x86))
       :gen-type t
@@ -2020,11 +2028,13 @@ reference made from privilege level 3.</blockquote>"
 ;; functions.
 (def-ruleset instruction-decoding-and-spec-rules nil)
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (define select-operand-size
   ((byte-operand? :type (or t nil))
    (rex-byte      :type (unsigned-byte  8))
    (imm?          :type (or t nil))
-   (prefixes      :type (unsigned-byte 44)))
+   (prefixes      :type (unsigned-byte 44))
+   (x86 x86p))
 
   :inline t
   :parents (decoding-and-spec-utils)
@@ -2034,54 +2044,71 @@ reference made from privilege level 3.</blockquote>"
   :long "<p>@('select-operand-size') selects the operand size of the
   instruction.  It is cognizant of the instruction prefixes, the
   @('rex') byte, the operand type (e.g., immediate operand or not),
-  and the default operand size.  Note that this function has been
-  written only for the 64-bit mode.</p>
+  and the default operand size (obtained from the state).</p>
 
- <p>This function was written by referring to the following:
- <ol>
- <li>Intel Manuals, Vol. 1, Section 3.6, Table 3-4</li>
- <li>Intel Manuals, Vol. 2, Section 2.2.1.2</li>
- </ol>
- </p>
+  <p>This function was written by referring to the following:
+  <ol>
+  <li>Intel Manuals, Vol. 1, Section 3.6, Table 3-3</li>
+  <li>Intel Manuals, Vol. 1, Section 3.6, Table 3-4</li>
+  <li>Intel Manuals, Vol. 2, Section 2.2.1.2</li>
+  </ol>
+  </p>
 
- <p><img src='res/images/Vol-1-Table-3-4-small.png' width='8%'
- height='8%' />
+  <p><img src='res/images/Vol-1-Table-3-3-small.png' width='8%'
+  height='8%' />
 
- The image above has been captured from Volume 1: Basic Architecture,
- Intel\(R\) 64 and IA-32 Architectures Software Developer's Manual,
- Combined Volumes: 1, 2A, 2B, 2C, 3A, 3B and 3C, Order Number:
- 325462-054US, April 2015.</p>
+  <p><img src='res/images/Vol-1-Table-3-4-small.png' width='8%'
+  height='8%' />
 
- <i>
- <ul>
- <li>Setting REX.W can be used to determine the operand size but does
- not solely determine operand width. Like the 66H size prefix, 64-bit
- operand size override has no effect on byte-specific operations.</li>
+  The first image above has been captured from Volume 1: Basic Architecture,
+  Intel\(R\) 64 and IA-32 Architectures Software Developer's Manual,
+  Order Number: 253665-062US, March 2017.</p>
 
- <li>For non-byte operations: if a 66H prefix is used with prefix
- \(REX.W = 1\), 66H is ignored.</li>
+  The second image above has been captured from Volume 1: Basic Architecture,
+  Intel\(R\) 64 and IA-32 Architectures Software Developer's Manual,
+  Combined Volumes: 1, 2A, 2B, 2C, 3A, 3B and 3C, Order Number:
+  325462-054US, April 2015.</p>
 
- <li>If a 66H override is used with REX and REX.W = 0, the operand size
- is 16 bits.</li>
- </ul>
- </i>"
+  <i>
+  <ul>
+  <li>Setting REX.W can be used to determine the operand size but does
+  not solely determine operand width. Like the 66H size prefix, 64-bit
+  operand size override has no effect on byte-specific operations.</li>
+
+  <li>For non-byte operations: if a 66H prefix is used with prefix
+  \(REX.W = 1\), 66H is ignored.</li>
+
+  <li>If a 66H override is used with REX and REX.W = 0, the operand size
+  is 16 bits.</li>
+  </ul>
+  </i>"
 
   :enabled t
   :returns (size natp :rule-classes :type-prescription)
 
   (if byte-operand?
       1
-    (if (logbitp #.*w* rex-byte)
-        (if imm?
-            ;; Fetch 4 bytes (sign-extended to 64 bits) if operand is
-            ;; immediate.
-            4
-          8)
-      (if (eql #.*operand-size-override*
-               (prefixes-slice :group-3-prefix prefixes))
-          2 ;; 16-bit operand-size
-        4   ;; Default 32-bit operand size (in 64-bit mode)
-        ))))
+    (if (64-bit-modep x86)
+        (if (logbitp #.*w* rex-byte)
+            (if imm?
+                ;; Fetch 4 bytes (sign-extended to 64 bits) if operand is
+                ;; immediate.
+                4
+              8)
+          (if (eql #.*operand-size-override*
+                   (prefixes-slice :group-3-prefix prefixes))
+              2 ;; 16-bit operand-size
+            4   ;; Default 32-bit operand size (in 64-bit mode)
+            ))
+      ;; 32-bit mode:
+      (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+           (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+           (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
+           (p3? (eql #.*operand-size-override*
+                     (prefixes-slice :group-3-prefix prefixes))))
+        (if (= cs.d 1)
+            (if p3? 2 4)
+          (if p3? 4 2))))))
 
 ;; ======================================================================
 
@@ -2140,3 +2167,48 @@ reference made from privilege level 3.</blockquote>"
              *ds*))))))
 
 ;; ======================================================================
+
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
+
+(define check-instruction-length
+  ((start-rip :type (signed-byte #.*max-linear-address-size*))
+   (temp-rip :type (signed-byte #.*max-linear-address-size*))
+   (delta-rip :type (unsigned-byte 3)))
+  :returns (badlength? acl2::maybe-natp
+                       :hints (("Goal" :in-theory (enable acl2::maybe-natp))))
+  :inline t
+  :parents (decoding-and-spec-utils)
+  :short "Check if the length of an instruction exceeds 15 bytes."
+  :long
+  "<p>
+   The maximum length of an instruction is 15 bytes;
+   a longer instruction causes a #GP(0) exception.
+   See AMD manual, Dec'17, Volume 2, Table 8-6.
+   This function is used to check this condition.
+   </p>
+   <p>
+   The @('start-rip') argument is
+   the instruction pointer at the beginning of the instruction.
+   The @('temp-rip') argument is generally
+   the instruction pointer just past the end of the instruction,
+   in which case the @('delta-rip') argument is 0.
+   In the other cases, @('delta-rip') is a small non-zero number,
+   and @('temp-rip + delta-rip') is
+   the instruction pointer just past the end of the instruction.
+   </p>
+   <p>
+   This function returns @('nil') if the length does not exceed 15 bytes.
+   Otherwise, this function returns the offending length (a number above 15),
+   which is useful for error reporting in the model.
+   </p>"
+  (b* ((start-rip (mbe :logic (ifix start-rip) :exec start-rip))
+       (temp-rip (mbe :logic (ifix temp-rip) :exec temp-rip))
+       (delta-rip (mbe :logic (nfix delta-rip) :exec delta-rip))
+       ((the (signed-byte #.*max-linear-address-size+1*) end-rip)
+        (+ (the (signed-byte #.*max-linear-address-size*) temp-rip)
+           (the (unsigned-byte 3) delta-rip)))
+       ((the (signed-byte #.*max-linear-address-size+2*) length)
+        (- (the (signed-byte #.*max-linear-address-size+1*) end-rip)
+           (the (signed-byte #.*max-linear-address-size*) start-rip))))
+    (and (> length 15)
+         length)))

@@ -1419,9 +1419,9 @@
        ;; Make sure case is not vacuously true or false
        ;;
 
-       (not-thm? ,case)
+       (must-not-prove ,case)
 
-       (not-thm? (not ,case))
+       (must-not-prove (not ,case))
 
        (local
         (defthm base_check

@@ -499,6 +499,72 @@
 
 (in-theory (disable mod))
 
+(defthmd fl-mod-1
+  (implies (and (integerp a)
+                (not (zp m))
+                (not (zp n)))
+	   (equal (mod a (* m n))
+	          (- a (* (fl (/ a (* m n))) (* m n)))))
+  :hints (("Goal" :use ((:instance mod-def (x a) (y (* m n))))
+		  :in-theory (disable fl+int-rewrite fl/int-rewrite fl/int-rewrite-alt))))
+
+(defthmd fl-mod-2
+  (implies (and (integerp a)
+                (not (zp m))
+                (not (zp n)))
+	   (equal (/ (mod a (* m n)) n)
+	          (/ (- a (* (fl (/ a (* m n))) (* m n))) n)))
+  :hints (("Goal" :use (fl-mod-1)
+		  :in-theory (theory 'minimal-theory))))
+
+(defthmd fl-mod-3
+  (implies (and (integerp a)
+                (not (zp m))
+                (not (zp n)))
+	   (equal (/ (mod a (* m n)) n)
+	          (- (/ a n) (* (fl (/ a (* m n))) m))))
+  :hints (("Goal" :use (fl-mod-2)
+		  :in-theory (disable fl+int-rewrite fl/int-rewrite fl/int-rewrite-alt))))
+
+(defthmd fl-mod-4
+  (implies (and (integerp a)
+                (not (zp m))
+                (not (zp n)))
+	   (equal (fl (/ (mod a (* m n)) n))
+	          (fl (- (/ a n) (* (fl (/ a (* m n))) m)))))
+  :hints (("Goal" :use (fl-mod-3)
+		  :in-theory (disable fl+int-rewrite fl/int-rewrite fl/int-rewrite-alt))))
+
+(defthmd fl-mod-5
+  (implies (and (integerp a)
+                (not (zp m))
+                (not (zp n)))
+	   (equal (fl (/ (mod a (* m n)) n))
+	          (- (fl (/ a n)) (* (fl (/ a (* m n))) m))))
+  :hints (("Goal" :use (fl-mod-4
+                        (:instance fl+int-rewrite (x (/ a n)) (n (* (fl (/ a (* m n))) m))))
+		  :in-theory (disable fl+int-rewrite fl/int-rewrite fl/int-rewrite-alt))))
+
+(defthmd fl-mod-6
+  (implies (and (integerp a)
+                (not (zp m))
+                (not (zp n)))
+	   (equal (fl (/ (mod a (* m n)) n))
+	          (- (fl (/ a n)) (* (fl (/ (fl (/ a n)) m)) m))))
+  :hints (("Goal" :use (fl-mod-5
+                        (:instance fl/int-rewrite (x (/ a n)) (n m)))
+		  :in-theory (disable fl+int-rewrite fl/int-rewrite fl/int-rewrite-alt))))
+
+(defthmd fl-mod
+  (implies (and (integerp a)
+                (not (zp m))
+                (not (zp n)))
+	   (equal (fl (/ (mod a (* m n)) n))
+	          (mod (fl (/ a n)) m)))
+  :hints (("Goal" :use (fl-mod-6
+                        (:instance mod-def (x (fl (/ a n))) (y m)))
+		  :in-theory (disable fl+int-rewrite fl/int-rewrite fl/int-rewrite-alt))))
+
 ;;;**********************************************************************
 ;;;                         CHOP-R
 ;;;**********************************************************************

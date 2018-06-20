@@ -1,6 +1,6 @@
 ; XDOC Constructors -- Tests
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,34 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *newline* (coerce (list #\Newline) 'string))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (xdoc::textp ""))
+
+(assert! (xdoc::textp "for now this is a synonym of STRINGP"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (xdoc::text "a string") "a string")
+
+(assert-equal (xdoc::text "just identity for now") "just identity for now")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (xdoc::app) "")
+
+(assert-equal (xdoc::app "one") "one")
+
+(assert-equal (xdoc::app "one" "two" "three") "onetwothree")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (xdoc::topapp) "")
+
+(assert-equal (xdoc::topapp "one") "one")
+
+(assert-equal (xdoc::topapp "one" "two" "three") "onetwothree")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -68,8 +96,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-equal (xdoc::p*)
+              "<p></p>
+
+")
+
+(assert-equal (xdoc::p*
+               (xdoc::p "one")
+               (xdoc::p "two")
+               (xdoc::p "three"))
+              "<p><p>one</p>
+
+<p>two</p>
+
+<p>three</p>
+
+</p>
+
+")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-equal (xdoc::li "some text")
               "<li>some text</li>
+
+")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (xdoc::li*)
+              "<li></li>
+
+")
+
+(assert-equal (xdoc::li*
+               (xdoc::p "one")
+               (xdoc::p "two")
+               (xdoc::p "three"))
+              "<li><p>one</p>
+
+<p>two</p>
+
+<p>three</p>
+
+</li>
 
 ")
 
@@ -156,3 +226,7 @@ line 3
 </blockquote>
 
 ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (xdoc::img "ref/to/image") "<img src=\"ref/to/image\"/>")

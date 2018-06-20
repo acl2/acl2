@@ -64,6 +64,7 @@
 (include-book "practices")
 
 (include-book "xdoc/save" :dir :system)
+(include-book "xdoc/archive" :dir :system)
 
 (include-book "build/doc" :dir :system)
 

@@ -1,0 +1,373 @@
+<ui64, ui8> specialCase(bool signa, ui64 opa, Class classa, ui2 fmt, bool dn, ui8 flags) {
+  ui64 D = 0;
+  ui64 aTrunc, manMSB, defNaN, zero = 0;
+  switch (fmt) {
+  case DP:
+    aTrunc = opa[63:0];
+    zero[63] = signa;
+    defNaN = 0x7FF8000000000000;
+    manMSB = 0x8000000000000;
+    break;
+  case SP:
+    aTrunc = opa[31:0];
+    zero[31] = signa;
+    defNaN = 0x7FC00000;
+    manMSB = 0x400000;
+    break;
+  case HP:
+    aTrunc = opa[15:0];
+    zero[15] = signa;
+    defNaN = 0x7E00;
+    manMSB = 0x200;
+    break;
+  }
+  if (classa == SNAN) {
+    D = dn ? defNaN : aTrunc | manMSB;
+    flags[IOC] = 1;
+  }
+  else if (classa == QNAN) {
+    D = dn ? defNaN : aTrunc;
+  }
+  else if (classa == ZERO) {
+    D = zero;
+  }
+  else if (signa) {
+    D = defNaN;
+    flags[IOC] = 1;
+  }
+  else  {
+    D = aTrunc;
+  }
+  return <D, flags>;
+}
+
+// Normalize denormal operand and compute predicted result exponent:
+
+<ui53, si13, ui11> normalize(si13 expa, ui52 mana, ui2 fmt) {
+  ui53 siga = 0;
+  uint bias;
+  switch (fmt) {
+  case DP:
+    siga = mana;
+    bias = 0x3FF;
+    break;
+  case SP:
+    siga[51:29] = mana;
+    bias = 0x7F;
+    break;
+  case HP:
+    siga[51:42] = mana;
+    bias = 0xF;
+  }
+  if (expa == 0) {
+    ui6 clz = CLZ53(siga);
+    siga <<= clz;
+    expa = 1 - clz;
+  }
+  else  {
+    siga[52] = 1;
+  }
+  ui12 expQ = expa + bias;
+  return <siga, expa, expQ[11:1]>;
+}
+
+// Power of 2:
+
+<ui64, ui8> sqrtPow2(ui11 expQ, bool expOdd, ui2 rmode, ui2 fmt) {
+  ui64 D = 0;
+  ui8 flags = 0;
+  uint manWidth;
+  ui52 manSqrt2;
+  switch (fmt) {
+  case DP:
+    manWidth = 52;
+    manSqrt2 = rmode == rmodeNear || rmode == rmodeUP ? 0x6A09E667F3BCD : 0x6A09E667F3BCC;
+    break;
+  case SP:
+    manWidth = 23;
+    manSqrt2 = rmode == rmodeUP ? 0x3504F4 : 0x3504F3;
+    break;
+  case HP:
+    manWidth = 10;
+    manSqrt2 = rmode == rmodeUP ? 0x5A9 : 0x5A8;
+    break;
+  }
+  if (!expOdd) {
+    D = manSqrt2;
+    flags[IXC] = 1;
+  }
+  D[manWidth + 10:manWidth] = expQ;
+  return <D, flags>;
+}
+
+// First iteration:
+      
+<ui59, ui59, ui54, int, uint> firstIter(ui53 siga, bool expOdd) {
+  ui59 RP = 0, RN = 0;
+  ui54 QN = 0;
+  int q;
+  uint i;
+  if (expOdd) {
+    // x = siga/4 = .01xxx...
+    // R0 = x - 1 = 1111.01xxx...
+    // RP = 4*R0 = 1101.xxx...
+    RP[58:56] = 6;
+    RP[55:3] = siga;
+    if (siga[51]) {
+      // -5/2 <= 4*R0 < -2
+      q = -1;
+      QN[53:52] = 1; // .01000...
+      // R1 = 4*R0 - (-1) * (2*Q0 + (-1)/4) = 4*R0 + 7/4
+      // RN = -7/4 = 1110.0100..
+      RN[58:53] = 0x39;
+      i = 4;
+    }
+    else  {
+      // 4*R0 < -5/2
+      q = -2;
+      QN[53:52] = 2; // .10000...
+      // R1 = 4*R0 - (-2) * (2*Q0 + (-2)/4) = 4*R0 + 3
+      // RN = -3 = 1101.00...
+      RN[58:55] = 0xD; // 1110.0100...
+      i = 0; // Q1 = 0.1000
+    }
+  }
+  else  { // expa even
+    // x = siga/2 = .1xxx...
+    // R0 = x - 1 = 1111.1xxx...
+    // RP = 4*R0 = 111x.xx...
+    RP[58:57] = 3;
+    RP[56:4] = siga;
+    if (siga[51]) {
+      // -1 <= 4*R0 < 0
+      q = 0;
+      // QN = 0
+      // R1 = 4*R0 = RP, RN = 0
+      i = 8; // Q1 = 1.0000
+    }
+    else  {
+      // -2 <= 4*R0 < -1
+      q = -1;
+      QN[53:52] = 1;// .01000...
+      // R1 = 4*R0 - (-1) * (2*Q0 + (-1)/4) = 4*R0 + 7/4
+      // RN = -7/4 = 1110.0100...
+      RN[58:53] = 0x39;
+      i = 4; // Q1 = 0.1100
+    }
+  }
+  return <RP, RN, QN, q, i>;
+}
+
+//   Derive the next quotient digit q_(j+1) from the root interval i and remainder R_j:
+
+int nextDigit(ui59 RP, ui59 RN, uint i, uint j) {
+  ui59 RP4 = RP << 2, RN4 = RN << 2;
+  ui8 RS8 = RP4[58:51] + ~RN4[58:51] + (RP4[50] || !RN4[50]);
+  si7 RS7 = RS8[7:1];
+  si7 mp2, mp1, mz0, mn1;
+  switch (i) {
+  case 0: mp2 = 12; mp1 = 4; mz0 = -4; mn1 = j == 1 ? -11 : -12; break;
+  case 1: mp2 = j == 2 ? 15 : 13; mp1 = 4; mz0 = -4; mn1 = -13; break;
+  case 2: mp2 = 15; mp1 = 4; mz0 = -4; mn1 = -15; break;
+  case 3: mp2 = 16; mp1 = 6; mz0 = -6; mn1 = -16; break;
+  case 4: mp2 = 18; mp1 = 6; mz0 = -6; mn1 = -18; break;
+  case 5: mp2 = 20; mp1 = 8; mz0 = -6; mn1 = -20; break;
+  case 6: mp2 = 20; mp1 = 8; mz0 = -8; mn1 = -20; break;
+  case 7: mp2 = 22; mp1 = 8; mz0 = -8; mn1 = -22; break;
+  case 8: mp2 = 24; mp1 = 8; mz0 = -8; mn1 = -24;
+  }
+  int q;
+  if (RS7 >= mp2) {
+    q = 2;
+  }
+  else if (RS7 >= mp1) {
+    q = 1;
+  }
+  else if (RS7 >= mz0) {
+    q = 0;
+  }
+  else if (RS7 >= mn1) {
+    q = -1;
+  }
+  else  {
+    q = -2;
+  }
+  return q;
+}
+
+// Derive the next remainder R_(j+1) from the remainder R_j and the quotient digit q_(j+1):
+
+<ui59, ui59> nextRem(ui59 RP, ui59 RN, ui54 QP, ui54 QN, int q, uint j, ui2 fmt) {
+
+  // Dcar - Dsum = D = 2 * Q_j + 4^(-(j+1)) * q_(j+1):
+  ui59 Dcar = 0, Dsum = 0;
+  Dcar[56] = 1; // integer bit, implicit in QP
+  Dcar[55:2] = QP;
+  Dsum[55:2] = QN;
+  if (q > 0) {
+    Dcar[53 - 2 * j + 1:53 - 2 * j] = q;
+  }
+  else if (q < 0) {
+    Dsum[53 - 2 * j + 1:53 - 2 * j] = -q;
+  }
+
+  // DQcar - DQsum = -q_(j+1) * D:
+  ui59 DQcar, DQsum;
+  switch (q) {
+  case 1:
+    DQcar = Dsum;
+    DQsum = Dcar;
+    break;
+  case 2:
+    DQcar = Dsum << 1;
+    DQsum = Dcar << 1;
+    break;
+  case -1:
+    DQcar = Dcar;
+    DQsum = Dsum;
+    break;
+  case -2:
+    DQcar = Dcar << 1;
+    DQsum = Dsum << 1;
+  }
+
+  // RP4 - RN4 = 4 * R_j:
+  ui59 RP4 = RP << 2, RN4 = RN << 2;
+
+  // car1 - sum1 = RP4 - RN4 + DQcar = 4 * R + DQcar:
+  ui59 sum1 = RN4 ^ RP4 ^ DQcar;
+  ui59 car1 = (~RN4 & RP4 | (~RN4 | RP4) & DQcar) << 1;
+  if (fmt == HP) {
+    car1[42] = 0;
+  }
+  else if (fmt == SP) {
+    car1[29] = 0;
+  }
+
+  // car2 - sum2 = car1 - sum1 - DQsum
+  //             = 4 * R_j + DQcar - DQsum
+  //             = 4 * R_j - q_(j+1) * D
+  //             = 4 * R_j - q_(j+1) * (2*Q<_j + 4^(-(j+1)) * q_(j+1)):
+  ui59 sum2 = sum1 ^ car1 ^ ~DQsum;
+  ui59 car2 = (~sum1 & car1 | (~sum1 | car1) & ~DQsum) << 1;
+  if (q == 0) {
+    return <RP4, RN4>;
+  }
+  else  {
+    switch (fmt) {
+    case DP:
+      car2[0] = 1;
+      RP = car2;
+      RN = sum2;
+      break;
+    case SP:
+      car2[29] = 1;
+      RP[58:29] = car2[58:29];
+      RN[58:29] = sum2[58:29];
+      break;
+    case HP:
+      car2[42] = 1;
+      RP[58:42] = car2[58:42];
+      RN[58:42] = sum2[58:42];
+    }
+    return <RP, RN>;
+  }
+}
+
+// Update signed-digit quotient with next digit q_(j+1):
+
+<ui54, ui54> nextRoot(ui54 QP, ui54 QN, int q, uint j) {
+  if (q > 0) {
+    QP[52 - 2 * j + 1:52 - 2 * j] = q;
+  }
+  else if (q < 0) {
+    QN[52 - 2 * j + 1:52 - 2 * j] = -q;
+  }
+  return <QP, QN>;
+}
+
+<ui64, ui8> fsqrt64(ui64 opa, ui2 fmt, bool fz, bool dn, ui2 rmode) {
+  bool signa;     // operand signs
+  ui11 expa;      // operand exponents
+  ui52 mana;      // operand mantissas
+  Class classa;   // operand classes
+  ui8 flags = 0;  // exception flags
+  <signa, expa, mana, classa> = analyze(opa, fmt, fz, flags);
+
+  // Detect early exit:
+  if (classa == ZERO || classa == INF || classa == SNAN || classa == QNAN || signa) {
+    return specialCase(signa, opa, classa, fmt, dn, flags);
+  }
+  else  {
+    bool expInc = classa == NORM && rmode == rmodeUP;
+ 
+    // Normalize denormal and compute predicted result exponent:
+    ui53 siga;    // significand
+    si13 expShft; // adjusted exponent
+    ui11 expQ;    // predicted result exponent
+    <siga, expShft, expQ> = normalize(expa, mana, fmt);
+    
+    bool expOdd = expShft[0]; // parity of adjusted exponent
+    
+    if (classa == NORM && mana == 0) { // power of 2
+      return sqrtPow2(expQ, expOdd, rmode, fmt);
+    }
+    else  {
+       ui59 RP, RN;  // redundant remainder
+      ui54 QP, QN;  // redundant root
+      int q;        // root digit;
+      uint i;       // root interval, 0 <= i <= 8
+
+      // First iteration:
+      <RP, RN, QN, q> = firstIter(siga, expOdd);
+      QP = 0;
+      expInc &= QN == 0;
+      
+      ui5 N; // number of iterations
+      switch (fmt) {
+      case DP:
+        N = 27;
+        break;
+      case SP:
+        N = 13;
+        break;
+      case HP:
+        N = 6;
+      }
+      for (uint j = 1; j < N; j++) {
+        q = nextDigit(RP, RN, i, j);
+        if (j == 1) {
+          i = i + q;
+        }
+        <RP, RN> = nextRem(RP, RN, QP, QN, q, j, fmt);
+        <QP, QN> = nextRoot(QP, QN, q, j);
+        expInc &= j < N - 1 ? q == 0 : fmt == SP ? q == -2 : q == -1;
+      }
+      ui11 expRnd = expInc ? expQ + 1 : expQ;
+
+      // Assimilate root:
+      switch (fmt) { // first move to low bits
+      case HP:
+        QP = QP[53:42];
+        QN = QN[53:42];
+        break;
+      case SP:
+        QP = QP[53:28];
+        QN = QN[53:28];
+        break;
+      }
+      ui53 Qtrunc, Qinc; // Non-redundant quotient and incremented quotient
+      bool stk;     // sticky bit
+      <Qtrunc, Qinc, stk> = computeQ(QP, QN, RP, RN, fmt, true);
+ 
+      // Round:
+      ui53 Qrnd, QrndDen;
+      bool inx, inxDen;
+      <Qrnd, inx, QrndDen, inxDen> = rounder(Qtrunc, Qinc, stk, 0, expRnd, rmode, fmt);
+
+      // Compute exceptions and assemble final result:
+      return final(Qrnd, inx, QrndDen, inxDen, 0, expRnd, rmode, fz, fmt, flags);
+    }
+  }
+}
+

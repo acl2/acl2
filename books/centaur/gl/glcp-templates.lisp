@@ -448,7 +448,7 @@
              ((mv ok ans pathcond)
               (run-gified fn actuals pathcond clk config bvar-db state))
              ((when ok) (glcp-value ans))
-             ((when uninterp)
+             ((when (and uninterp (not (eq uninterp :no-concrete))))
               (glcp-value (g-apply fn actuals)))
              ((mv erp body formals obligs1)
               (acl2::interp-function-lookup fn

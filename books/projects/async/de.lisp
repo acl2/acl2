@@ -116,9 +116,9 @@
                                     (caddr ins)))))
     (b-bool      (list (f-bool (car ins))))
     (b-buf       (list (f-buf  (car ins))))
-    (b-equv      (list (f-equv  (car ins) (cadr ins))))
+    (b-equv      (list (f-equv (car ins) (cadr ins))))
     (b-equv3     (list (f-equv3 (car ins) (cadr ins) (caddr ins))))
-    (b-if        (list (f-if   (car ins) (cadr ins) (caddr ins))))
+    (b-if        (list (f-if (car ins) (cadr ins) (caddr ins))))
     (b-nand      (list (f-nand (car ins) (cadr ins))))
     (b-nand3     (list (f-nand3 (car ins) (cadr ins) (caddr ins))))
     (b-nand4     (list (f-nand4 (car ins) (cadr ins)
@@ -302,7 +302,11 @@
   (declare (xargs :guard (true-listp ins))
            (ignore ins sts))
   (case fn
-    ((fd1 fd1s fd1slp latch par-shift-reg32 shift-reg32 link-cntl) 1)
+    ((fd1 fd1s fd1slp
+      latch
+      par-shift-reg32 shift-reg32
+      link-cntl)
+     1)
     (otherwise 0)))
 
 (defthm len-de-primp-apply-lemma
@@ -1587,6 +1591,8 @@
 
 (deftheory de-rules
   '(open-nth
+    get-field
+    len-1-true-listp=>true-listp
     md-name md-ins md-outs md-sts md-occs
     occ-name occ-outs occ-fn occ-ins
     take-of-len-free))
