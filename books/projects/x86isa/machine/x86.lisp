@@ -435,14 +435,8 @@
 
     (#x20
      "(MOV r64, CTR)"
-     (if (64-bit-modep x86)
-         (x86-mov-control-regs-Op/En-MR
-          start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(MOV r64, CTR) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-mov-control-regs-Op/En-MR
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x28
      "66h: (MOVAPD xmm1 xmm2/m128);

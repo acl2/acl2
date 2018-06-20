@@ -778,12 +778,14 @@
 ;; INSTRUCTION: MOV to/from Control Registers
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-control-regs-Op/En-MR
 
   ;; Move control register to GPR
 
   ;; Op/En: MR
   ;; [OP R/M, REG]
+  ;; 0F 20/r:         MOV r32, CR0-CR7
   ;; 0F 20/r:         MOV r64, CR0-CR7
   ;; REX.R + 0F 20/0: MOV r64, CR8
 
@@ -794,10 +796,10 @@
   ;; specifies which of the control registers is loaded or read. The 2
   ;; bits in the mod field are ignored. The r/m field specifies the
   ;; general-purpose register loaded or read. Attempts to reference
-  ;; CR1, CR5, CR6, CR7, and CR9 CR15 result in undefined opcode (#UD)
+  ;; CR1, CR5, CR6, CR7, and CR9-CR15 result in undefined opcode (#UD)
   ;; exceptions.
 
-  ;; In 64-bit mode, the instruction s default operation size
+  ;; In 64-bit mode, the instruction's default operation size
   ;; is 64 bits. The REX.R prefix must be used to access
   ;; CR8. Use of REX.B permits access to additional registers
   ;; (R8-R15). Use of the REX.W prefix or 66H prefix is
@@ -805,7 +807,6 @@
   ;; other than CR8 causes an invalid-opcode exception. See the
   ;; summary chart at the beginning of this section for encoding
   ;; data and limits.
-
 
   :parents (two-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d () ())))
@@ -831,10 +832,11 @@
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (cpl (cpl x86))
        ((when (not (equal 0 cpl)))
-        (!!ms-fresh :cpl!=0 cpl))
+        (!!fault-fresh :gp 0 :cpl!=0 cpl)) ;; #GP(0)
        ;; *operand-size-override* and REX.W are ignored.
 
        ;; Get value from the control register
@@ -853,12 +855,21 @@
         ;; #UD Exception (if an attempt is made to access CR1, CR5,
         ;; CR6, or CR7 or if the REX.R prefix is used to specify a
         ;; register other than CR8)
-        (!!ms-fresh :ctr-index-illegal (cons 'ModR/M.reg reg)))
+        (!!fault-fresh
+         :ud nil :ctr-index-illegal (cons 'ModR/M.reg reg))) ;; #UD
+
+       (operand-size (if (64-bit-modep x86) 8 4))
+
        (ctr-val (the (unsigned-byte 64) (ctri ctr-index x86)))
+       (ctr-val (if (eql operand-size 4) (n32 ctr-val) ctr-val))
 
        ;; Update the x86 state:
        (x86
-        (!rgfi-size 8 (reg-index r/m rex-byte #.*b*) ctr-val rex-byte x86))
+        (!rgfi-size operand-size
+                    (reg-index r/m rex-byte #.*b*)
+                    ctr-val
+                    rex-byte
+                    x86))
        ;; The OF, SF, ZF, AF, PF, and CF flags are undefined.
        (x86 (!flgi-undefined #.*cf* x86))
        (x86 (!flgi-undefined #.*pf* x86))
@@ -866,7 +877,7 @@
        (x86 (!flgi-undefined #.*zf* x86))
        (x86 (!flgi-undefined #.*sf* x86))
        (x86 (!flgi-undefined #.*of* x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================
