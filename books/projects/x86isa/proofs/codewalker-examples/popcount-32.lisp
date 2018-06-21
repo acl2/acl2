@@ -93,7 +93,7 @@
   (b* ((program-rip #x400610))
     (and (x86p x86)
          (64-bit-modep x86)
-         (equal (programmer-level-mode x86) t)
+         (equal (app-view x86) t)
          (program-at program-rip *popcount-32-bytes* x86)
          (n32p (rgfi *rdi* x86))
          (canonical-address-p program-rip)

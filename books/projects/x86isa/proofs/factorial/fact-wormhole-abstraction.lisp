@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
 
 (set-irrelevant-formals-ok t)
 
@@ -154,7 +154,7 @@
        (equal (fault x86) nil)
        (equal n (rgfi *rdi* x86))
        (64-bit-modep x86)
-       (programmer-level-mode x86)
+       (app-view x86)
        (canonical-address-p addr)
        (canonical-address-p (+ addr (len *factorial_recursive*)))
        (program-at addr *factorial_recursive* x86)))
@@ -168,7 +168,7 @@
                 (equal (fault x86) nil)
                 (equal n (rgfi *rdi* x86))
                 (64-bit-modep x86)
-                (programmer-level-mode x86)
+                (app-view x86)
                 (canonical-address-p addr)
                 (canonical-address-p (+ addr (len *factorial_recursive*)))
                 (program-at addr *factorial_recursive* x86)))
@@ -421,8 +421,8 @@
                 (equal (xr :rip    0  (x86-run (fact-preamble-n=0) x86)) (+ #x18 (xr :rip 0 x86)))
                 (equal (xr :ms     0  (x86-run (fact-preamble-n=0) x86)) nil)
                 (equal (xr :fault  0  (x86-run (fact-preamble-n=0) x86)) nil)
-                (equal (xr :programmer-level-mode 0 (x86-run (fact-preamble-n=0) x86))
-                       (xr :programmer-level-mode 0 x86))))
+                (equal (xr :app-view 0 (x86-run (fact-preamble-n=0) x86))
+                       (xr :app-view 0 x86))))
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
@@ -514,8 +514,8 @@
                 (equal (xr :rip    0  (x86-run (fact-preamble-n!=0) x86)) (+ #x10 (xr :rip 0 x86)))
                 (equal (xr :ms     0  (x86-run (fact-preamble-n!=0) x86)) nil)
                 (equal (xr :fault  0  (x86-run (fact-preamble-n!=0) x86)) nil)
-                (equal (xr :programmer-level-mode 0 (x86-run (fact-preamble-n!=0) x86))
-                       (xr :programmer-level-mode 0 x86))))
+                (equal (xr :app-view 0 (x86-run (fact-preamble-n!=0) x86))
+                       (xr :app-view 0 x86))))
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules

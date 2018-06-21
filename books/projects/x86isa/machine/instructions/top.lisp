@@ -134,6 +134,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; INSTRUCTION: CMC/CLC/STC/CLD/STD
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cmc/clc/stc/cld/std
 
   ;; Op/En: NP
@@ -164,9 +165,9 @@ writes the final value of the instruction pointer into RIP.</p>")
   :body
 
   (b* ((ctx 'x86-cmc/clc/stc/cld/std)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (x86 (case opcode
               (#xF5 ;; CMC
@@ -183,13 +184,14 @@ writes the final value of the instruction pointer into RIP.</p>")
               (otherwise ;; #xFD STD
                (!flgi #.*df* 1 x86))))
 
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
       x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: SAHF
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-sahf
 
   ;; Opcode: #x9E
@@ -209,8 +211,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   (b* ((ctx 'x86-sahf)
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        ((the (unsigned-byte 16) ax)
         (mbe :logic (rgfi-size 2 *rax* rex-byte x86)
              :exec (rr16 *rax* x86)))
@@ -220,13 +221,14 @@ writes the final value of the instruction pointer into RIP.</p>")
        ((the (unsigned-byte 8) ah) (logand #b11010111 (logior #b10 ah)))
        ;; Update the x86 state:
        (x86 (!rflags ah x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
       x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: LAHF
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-lahf
 
   ;; Opcode: #x9F
@@ -246,8 +248,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   (b* ((ctx 'x86-lahf)
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        ((the (unsigned-byte 8) ah)
         (logand #xff (the (unsigned-byte 32) (rflags x86))))
        ((the (unsigned-byte 16) ax)
@@ -257,13 +258,14 @@ writes the final value of the instruction pointer into RIP.</p>")
        ;; Update the x86 state:
        (x86 (mbe :logic (!rgfi-size 2 *rax* ax rex-byte x86)
                  :exec (wr16 *rax* ax x86)))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
       x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: RDRAND
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-rdrand
 
   ;; 0F C7:
@@ -283,7 +285,7 @@ writes the final value of the instruction pointer into RIP.</p>")
                                     'x86-rdrand)
 
   :long
-  "<p>Note from the Intel Manual (Sept. 2013, Vol. 1, Section 7.3.17):</p>
+  "<p>Note from the Intel Manual (March 2017, Vol. 1, Section 7.3.17):</p>
 
 <p><em>Under heavy load, with multiple cores executing RDRAND in
 parallel, it is possible, though unlikely, for the demand of random
@@ -302,25 +304,25 @@ Digital Random Number Generator Guide</a> for more details.</p>"
   (b* ((ctx 'x86-rdrand)
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
+       ;; TODO: throw #UD if CPUID.01H:ECX.RDRAND[bit 30] = 0
+       ;; (see Intel manual, Mar'17, Vol 2, RDRAND)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        (rep (prefixes-slice :group-2-prefix prefixes))
        (rep-p (or (equal #.*repe* rep)
                   (equal #.*repne* rep)))
        ((when (or lock? rep-p))
-        (!!ms-fresh :lock-prefix-or-rep-p prefixes))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix-or-rep-p prefixes)) ;; #UD
+
        ((the (integer 1 8) operand-size)
-        (if p3?
-            2
-          (if (logbitp #.*w* rex-byte)
-              8
-            4)))
+        (select-operand-size nil rex-byte nil prefixes x86))
+
        ((mv cf rand x86)
         (HW_RND_GEN operand-size x86))
 
        ;; (- (cw "~%~%HW_RND_GEN: If RDRAND does not return the result you ~
-       ;;         expected (or returned an error), then you might want to check whether these ~
+       ;;         expected (or returned an error), then you might want ~
+       ;;         to check whether these ~
        ;;         books were compiled using x86isa_exec set to t. See ~
        ;;         :doc x86isa-build-instructions.~%~%"))
 
@@ -340,7 +342,7 @@ Digital Random Number Generator Guide</a> for more details.</p>"
                    (x86 (!flgi #.*sf* 0 x86))
                    (x86 (!flgi #.*of* 0 x86)))
               x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
       x86))
 
 ;; ======================================================================

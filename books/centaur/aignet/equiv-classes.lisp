@@ -627,10 +627,20 @@
     (classhash-table-put hash (if lookup (cons (lnfix node) lookup) (lnfix node)) classhash)))
        
 
+(define u32-list-p (x)
+  :enabled t
+  (or (null x) (and (consp x) (unsigned-byte-p 32 (first x)) (u32-list-p (rest x)))))
+
+(define classes-hash-rem-lst ((rem-hash-lst u32-list-p)
+                              (classhash))
+  (if (endp rem-hash-lst) classhash
+    (b* ((classhash (classhash-table-rem (first rem-hash-lst) classhash)))
+      (classes-hash-rem-lst (rest rem-hash-lst) classhash))))
 
 (define classes-refine-class-aux ((prev natp)
                                   (node natp)
                                   (nrefines natp)
+                                  (rem-hash-lst u32-list-p)
                                   (s32v)
                                   (classhash)
                                   (classes)
@@ -639,6 +649,9 @@
   ;; When its next turns out to be part of the same class, we then iterate on next with node as prev.  The
   ;; first node not in the same class as the head becomes head of its own class.
   ;; Its head is updated to the tail of the class as more nodes get added.
+  ;;
+  ;; Added rem-hash-lst parameter to avoid non-tail call which removed
+  ;; hashtable entries after recursive call..
   :guard (and (<= prev node)
               (< node (classes-size classes))
               (equal (classes-size classes) (s32v-nrows s32v))
@@ -653,7 +666,8 @@
        ((unless (mbt (and (< node (classes-size classes))
                           (< prev (classes-size classes))
                           (classes-wellformed classes))))
-        (mv classhash classes nrefines))
+        (b* ((classhash (classes-hash-rem-lst rem-hash-lst classhash)))
+          (mv classhash classes nrefines)))
        (head (node-head node classes))
        (same (s32v-compare head node
                            (id->phase head aignet)
@@ -666,9 +680,10 @@
         (b* ((classes (node-set-next prev node classes)))
           (if (<= next node)
               ;; was the last node in the class, so set head of head to this
-              (b* ((classes (node-set-head head node classes)))
+              (b* ((classes (node-set-head head node classes))
+                   (classhash (classes-hash-rem-lst rem-hash-lst classhash)))
                 (mv classhash classes nrefines))
-            (classes-refine-class-aux node next nrefines s32v classhash classes aignet))))
+            (classes-refine-class-aux node next nrefines rem-hash-lst s32v classhash classes aignet))))
        (nrefines  (+ 1 nrefines))
        (hash (oathash-s32v node (id->phase node aignet) s32v))
        (match (classes-hash-find node hash s32v classhash aignet))
@@ -679,13 +694,12 @@
              (classes (node-set-next node node classes))
              ((when (<= next node))
               (b* ((classes (node-set-head head prev classes))
-                   (classes (node-set-next prev head classes)))
+                   (classes (node-set-next prev head classes))
+                   (classhash (classes-hash-rem-lst rem-hash-lst classhash)))
                 (mv classhash classes nrefines)))
              (classhash (classes-hash-add node hash classhash))
-             ((mv classhash classes nrefines)
-              (classes-refine-class-aux prev next nrefines s32v classhash classes aignet))
-             (classhash (classhash-table-rem hash classhash)))
-          (mv classhash classes nrefines)))
+             (rem-hash-lst (cons hash rem-hash-lst)))
+          (classes-refine-class-aux prev next nrefines rem-hash-lst s32v classhash classes aignet)))
        ;; (- (cw "match ~x0~%" match))
        ;; match is a head node, so its head is the last in its class -- set it to point to node
        (classes (node-set-next (node-head match classes) node classes))
@@ -694,9 +708,10 @@
        (classes (node-set-next node match classes))
        ((when (<= next node))
         (b* ((classes (node-set-head head prev classes))
-             (classes (node-set-next prev head classes)))
+             (classes (node-set-next prev head classes))
+             (classhash (classes-hash-rem-lst rem-hash-lst classhash)))
           (mv classhash classes nrefines))))
-    (classes-refine-class-aux prev next nrefines s32v classhash classes aignet))
+    (classes-refine-class-aux prev next nrefines rem-hash-lst s32v classhash classes aignet))
   ///
   (std::defret classes-size-of-classes-refine-class-aux
     (equal (classes-size new-classes) (classes-size classes)))
@@ -815,7 +830,7 @@
         (classes-refine-aux node nclass-lits-refined nconst-lits-refined nclasses-refined
                             s32v classhash classes aignet))
        ((mv classhash classes nrefines-class) (classes-refine-class-aux node (node-next node classes)
-                                                                        0 s32v classhash classes aignet))
+                                                                        0 nil s32v classhash classes aignet))
        ((mv nclass-lits-refined nconst-lits-refined nclasses-refined)
         (classes-refine-update-stats node nrefines-class nclass-lits-refined nconst-lits-refined nclasses-refined)))
     (classes-refine-aux node nclass-lits-refined nconst-lits-refined nclasses-refined

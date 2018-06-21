@@ -299,7 +299,7 @@
     (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
     (defthm rewrite-write-bytes-to-memory-to-wb
-      (implies (and (programmer-level-mode x86)
+      (implies (and (app-view x86)
                     (canonical-address-p (+ -1 (len bytes) addr))
                     (canonical-address-p addr)
                     (byte-listp bytes))

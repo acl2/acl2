@@ -6899,21 +6899,14 @@
     (cond
      ((null install-body)
       (value nil))
-     ((member-eq fn *definition-minimal-theory*)
 
-; This restriction is to allow us to assume that calls of (body fn t wrld),
-; which occur in several places in the source code, refer to the original
-; normalized body of fn, which excuses us from tracking the corresponding rune.
+; We formerly disallowed the case here of (member-eq fn
+; *definition-minimal-theory*), with non-nil install-body, so that we could
+; assume that calls of (body fn t wrld), which occurred in several places in
+; the source code, refer to the original normalized body of fn, which excuses
+; us from tracking the corresponding rune.  Now we avoid such calls of body in
+; our source code.
 
-      (er soft ctx
-          "~@0 the function symbol being called on the left-hand side, ~x1, ~
-           must not be among the following built-in functions:  ~&2.~@3  ~
-           Please contact the implementors if you feel that this is an ~
-           encumbrance to you."
-          er-preamble
-          fn
-          *definition-minimal-theory*
-          install-body-msg))
      ((not (arglistp args))
       (er soft ctx
           "~@0 the arguments on the left-hand side of the rule must be a list ~
@@ -6946,7 +6939,26 @@
           er-preamble
           (set-difference-eq (all-vars body) args)
           install-body-msg))
-     (t (value nil)))))
+     (t (pprogn (cond ((member-eq fn *definition-minimal-theory*)
+
+; This restriction is to allow us to assume that calls of (body fn t wrld),
+; which occur in several places in the source code, refer to the original
+; normalized body of fn, which excuses us from tracking the corresponding rune.
+
+                       (warning$ ctx "Definition"
+                                 "The proposed :DEFINITION rule might not ~
+                                  always be the one applied when expanding ~
+                                  calls of ~x0 during proofs.  Instead, these ~
+                                  calls and, more generally, calls of any ~
+                                  function symbol that is in the list ~x1, ~
+                                  will often be expanded using the original ~
+                                  definition of the function symbol.  Add ~
+                                  :INSTALL-BODY ~x2 to the proposed ~
+                                  :DEFINITION rule class to avoid this ~
+                                  warning."
+                                 fn '*definition-minimal-theory* nil))
+                      (t state))
+                (value nil))))))
 
 (defun chk-acceptable-definition-rule
   (name clique controller-alist install-body-tail term ctx ens wrld state)

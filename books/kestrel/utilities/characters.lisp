@@ -98,7 +98,21 @@
     (equal (nats=>chars-exec nats nil)
            (nats=>chars nats)))
 
-  (verify-guards nats=>chars))
+  (verify-guards nats=>chars)
+
+  (defrule len-of-nats=>chars
+    (equal (len (nats=>chars nats))
+           (len nats)))
+
+  (defrule nats=>chars-of-cons
+    (equal (nats=>chars (cons nat nats))
+           (cons (code-char nat)
+                 (nats=>chars nats))))
+
+  (defrule nats=>chars-of-append
+    (equal (nats=>chars (append nats1 nats2))
+           (append (nats=>chars nats1)
+                   (nats=>chars nats2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,4 +156,18 @@
     (equal (chars=>nats-exec chars nil)
            (chars=>nats chars)))
 
-  (verify-guards chars=>nats))
+  (verify-guards chars=>nats)
+
+  (defrule len-of-chars=>nats
+    (equal (len (chars=>nats chars))
+           (len chars)))
+
+  (defrule chars=>nats-of-cons
+    (equal (chars=>nats (cons char chars))
+           (cons (char-code char)
+                 (chars=>nats chars))))
+
+  (defrule chars=>nats-of-append
+    (equal (chars=>nats (append chars1 chars2))
+           (append (chars=>nats chars1)
+                   (chars=>nats chars2)))))

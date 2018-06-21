@@ -17,7 +17,7 @@
 (defsection syscalls
   :parents (machine)
   :short "Extending the x86 ISA with the system call model in the
-  programmer-level mode"
+  application-level view"
 
   :long "<p>System calls are non-deterministic --- different runs of a
 program with syscalls can yield different results on the same machine.
@@ -255,7 +255,7 @@ really good thing to do to keep the model simple.</p>"
 (defsection syscalls-logic
   :parents (syscalls)
   :short "Logical definitions for syscalls to be used in the
-  programmer-level mode for reasoning"
+  application-level view for reasoning"
 
   :long "<p>All the <tt>*-logic</tt> functions (like @(see
   syscall-read-logic)) should be untouchable (@(see push-untouchable))
@@ -1127,13 +1127,13 @@ not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
   #+(and (not linux) (not darwin) (not freebsd))
   (declare (ignore l) (ignore d) (ignore f))
   #+(and (not linux) (not darwin) (not freebsd))
-  ;; Unsupported platform: syscall simulation in programmer-level mode
+  ;; Unsupported platform: syscall simulation in application-level view
   ;; unavailable!
   nil)
 
 (defsection syscalls-exec
   :parents (syscalls)
-  :short "Syscall definitions to be used in the programmer-level mode
+  :short "Syscall definitions to be used in the application-level view
   for execution"
 
   :long "<p>The definitions of the following <em>(not inlined)</em>

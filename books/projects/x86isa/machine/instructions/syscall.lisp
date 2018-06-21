@@ -13,7 +13,7 @@
 ;; INSTRUCTION: SYSCALL
 ;; ======================================================================
 
-(def-inst x86-syscall-programmer-level-mode
+(def-inst x86-syscall-app-view
 
   ;; Fast System Call to privilege level 0 system procedures.
   ;; Op/En: NP
@@ -25,7 +25,7 @@
   :parents (two-byte-opcodes)
 
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (programmer-level-mode x86)
+                               (app-view x86)
                                (canonical-address-p temp-rip)))
 
   ;; Since this function does not specify the actual semantics of the
@@ -43,7 +43,7 @@
 
   :body
 
-  (b* ((ctx 'x86-syscall-programmer-level-mode)
+  (b* ((ctx 'x86-syscall-app-view)
        ;; 64-bit mode exceptions
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
@@ -184,7 +184,7 @@
   :parents (two-byte-opcodes)
 
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (not (programmer-level-mode x86))
+                               (not (app-view x86))
                                (canonical-address-p temp-rip)))
   :implemented
   (add-to-implemented-opcodes-table 'SYSCALL #x0F05 '(:nil nil)
@@ -406,7 +406,7 @@ REX.W + 0F 07: SYSRET</p>
   mode.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (not (programmer-level-mode x86))
+                               (not (app-view x86))
                                (canonical-address-p temp-rip)))
   :implemented
   (add-to-implemented-opcodes-table 'SYSRET #x0F07 '(:nil nil)

@@ -5726,7 +5726,7 @@
                                         (subcor-var (formals 'implies wrld)
                                                     (list (fargn atm 1)
                                                           (fargn atm 2))
-                                                    (body 'implies t wrld))
+                                                    (bbody 'implies))
                                         ans1 ttree ttree0 current-clause wrld
                                         (access rewrite-constant rcnst
                                                 :current-enabled-structure)

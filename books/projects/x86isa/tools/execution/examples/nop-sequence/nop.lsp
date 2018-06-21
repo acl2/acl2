@@ -11,7 +11,7 @@
 ;; ======================================================================
 
 ;; Set the OS-Info:
-(!programmer-level-mode t x86)
+(!app-view t x86)
 
 ;; Recommended NOP Sequence:
 

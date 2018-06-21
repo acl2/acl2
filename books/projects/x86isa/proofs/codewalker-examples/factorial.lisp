@@ -28,7 +28,7 @@
          (< n 13)
          (equal (ms x86) nil)
          (equal (fault x86) nil)
-         (programmer-level-mode x86)
+         (app-view x86)
          (canonical-address-p program-rip)
          (canonical-address-p (+ program-rip (len *factorial_recursive*)))
          (program-at program-rip *factorial_recursive* x86))))

@@ -85,7 +85,7 @@
      `(,defxxx ,name ,formals
         (declare (xargs :ruler-extenders ,ruler-extenders))
         ,@rest))
-    (& (er hard 'replace-ruler-extenders
+    (& (er hard 'add-ruler-extenders
            "Unexpected form: ~x0"
            form))))
 
@@ -95,7 +95,7 @@
      `(,defxxx ,name ,formals
         ,@(strip-dcls '(:ruler-extenders) (butlast rest 1))
         ,(car (last rest))))
-    (& (er hard 'replace-ruler-extenders
+    (& (er hard 'strip-ruler-extenders
            "Unexpected form: ~x0"
            form))))
 

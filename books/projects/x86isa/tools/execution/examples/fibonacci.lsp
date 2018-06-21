@@ -1688,9 +1688,9 @@ int main (int argc, char *argv[], char *env[])
 
   ;; The following initializes the system-level mode and sets up the
   ;; page tables at address #x402000.  Comment out the following
-  ;; init-system-level-mode expression if you wish to run the program
+  ;; init-sys-view expression if you wish to run the program
   ;; in programmer-level mode.
-  (init-system-level-mode #x402000 x86)
+  (init-sys-view #x402000 x86)
 
   (init-x86-state
 
@@ -1712,11 +1712,11 @@ int main (int argc, char *argv[], char *env[])
      nil))
 
    ;; Initial values of Control Registers (already initialized in
-   ;; init-system-level-mode)
+   ;; init-sys-view)
    nil
 
    ;; Initial values of Model-Specific Registers (already initialized
-   ;; in init-system-level-mode)
+   ;; in init-sys-view)
    nil
 
    ;; Initial value of the Rflags Register

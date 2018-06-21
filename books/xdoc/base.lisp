@@ -80,19 +80,31 @@
     (or (not err)
         (cw "~s0~%" err))))
 
+(local (defthm state-p1-implies-all-boundp
+         (implies (state-p1 st)
+                  (all-boundp acl2::*initial-global-table* (global-table st)))
+         :hints(("Goal" :in-theory (enable state-p1)))
+         :rule-classes nil))
+
 (defun normalize-bookname (bookname state)
-  (let* ((dir-system (acl2::f-get-global 'acl2::system-books-dir state))
-         (lds        (length dir-system)))
-    ;; Eventually we could do something fancier to support
-    ;; add-include-book-dirs, but this is probably fine for the Community
-    ;; Books, at least.
-    (if (and (stringp dir-system)
-             (stringp bookname)
-             (<= lds (length bookname))
-             (equal dir-system (subseq bookname 0 lds)))
-        (concatenate 'string "[books]/"
-                     (subseq bookname lds nil))
-      bookname)))
+  (declare (xargs :stobjs (state)
+                  :guard-hints (("goal" :use ((:instance state-p1-implies-all-boundp
+                                               (st state)))
+                                 :in-theory (disable all-boundp assoc)
+                                 :expand ((:free (a b x) (all-boundp (cons a b) x)))))
+                  :guard t))  ;; WAHJr. added guard (see original below)
+  (let ((dir-system (acl2::f-get-global 'acl2::system-books-dir state)))
+    (if (not (and (stringp dir-system) (stringp bookname)))
+        bookname
+      (let ((lds (length dir-system)))
+        ;; Eventually we could do something fancier to support
+        ;; add-include-book-dirs, but this is probably fine for the
+        ;; Community Books, at least.
+        (if (and (<= lds (length bookname))
+                 (equal dir-system (subseq bookname 0 lds)))
+            (concatenate 'string "[books]/"
+                         (subseq bookname lds nil))
+          bookname)))))
 
 (defun defxdoc-fn (name parents short long pkg no-override state)
   (declare (xargs :mode :program :stobjs state))
@@ -142,6 +154,7 @@
        probably need to load the defxdoc-raw book."))
 
 (defun defxdoc-raw-after-check (name parents short long pkg)
+  (declare (xargs :guard t))
   (let* ((err (check-defxdoc-args name parents short long pkg)))
     (if err
         (er hard? 'defxdoc-raw

@@ -54,7 +54,7 @@
  )
 
 ;; Setting up the page tables:
-(!programmer-level-mode nil x86)
+(!app-view nil x86)
 (load-qwords-into-physical-memory-list *1-gig-page-tables* x86)
 
 ;; ======================================================================

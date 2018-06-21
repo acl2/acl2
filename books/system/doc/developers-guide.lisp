@@ -165,10 +165,20 @@
  documentation is integrated into ACL2 builds.</p>
 
  <p>By contrast, system-level documentation is in Lisp comments found in the
- ACL2 sources and in this Guide.  Please read the comments in a definition
- carefully before you modify it!  In particular, there are often comments
- warning you to ``keep in sync'' with one or more other definitions, which need
- to be heeded.</p>
+ ACL2 sources and in this Guide.  Those comments are geared towards
+ implementors; so while they are written with care, they sometimes assume
+ implementation-level background.  For example, the word ``primitive'' is
+ sometimes used for any built-in function, while other times it might suggest
+ the more limited notion implemented by the constant
+ @('*primitive-formals-and-guards*'); the context may help in understanding the
+ intended meaning (though perhaps, eventually, someone will use ``built-in''
+ for all uses of the broader notion).  Sometimes an Essay (see above) may
+ provide helpful background; indeed, comments sometimes direct the reader to an
+ Essay.</p>
+
+ <p>Please read the comments in a definition carefully before you modify it!
+ In particular, there are often comments warning you to ``keep in sync'' with
+ one or more other definitions, which need to be heeded.</p>
 
  <p>It is often helpful to read user-level documentation before reading
  system-level documentation when preparing to modify ACL2.  Often the
@@ -176,9 +186,9 @@
  make-event) as described above.  But user-level documentation may also provide
  general background; in particular, the topic @(see programming-with-state) is
  highly recommended for anyone who is considering doing system development.
- However, for documentation that is purely at the system level, it is best to
- put it in this Guide rather than elsewhere in the documentation, to avoid
- confusing or intimidating users.</p>
+ However, for most ACL2 system-level documentation, it is best to put it in the
+ ACL2 sources as Lisp comments or in this Guide, rather than elsewhere in the
+ documentation, to avoid confusing or intimidating typical users.</p>
 
  <p>The topic @(tsee system-utilities) is a borderline case.  These utilities
  were created for developing the ACL2 system.  However, users increasingly do

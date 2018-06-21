@@ -40,6 +40,7 @@
 (local (include-book "std/typed-lists/signed-byte-listp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "std/lists/revappend" :dir :system))

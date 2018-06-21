@@ -725,7 +725,8 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
                 ',binder ,bindings))))
 
 (defun destructor-binding-list (args destructors binding)
-  (if (atom args)
+  (declare (xargs :guard t))
+  (if (or (atom args) (atom destructors)) ;; WAHJr. added (atom destructors)
       nil
     (cons (list (car args) (list (car destructors) binding))
           (destructor-binding-list (cdr args) (cdr destructors) binding))))
@@ -756,6 +757,12 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
 ;; The arg might be a plain variable, an ignored or ignorable variable, or a
 ;; binding expression.
 (defun var-ignore-list-for-patbind-mv (args igcount mv-vars binders ignores ignorables freshvars)
+  (declare (xargs :guard (and (natp igcount)
+                              (true-listp mv-vars)
+                              (true-listp binders)
+                              (true-listp ignores)
+                              (true-listp ignorables)
+                              (true-listp freshvars)))) ;; WAHJr.
   (if (atom args)
       (mv (reverse mv-vars)
           (reverse binders)
@@ -993,7 +1000,25 @@ and @('list*') may be nested inside other bindings.</p>"
       `(patbind ,(car args) ,forms ,rest-expr)
     `(patbind-cons (,(car args) (list* . ,(cdr args))) ,forms ,rest-expr)))
 
+(defun assocs-binder-element-p (ele) ;; WAHJr
+  (declare (xargs :guard t))
+  (if (atom ele)
+      (symbolp ele)
+    ;; sswords -- weakened the condition: second element is an evaluated expression
+    (or (and (consp (cdr ele))
+             (equal (cddr ele) nil))
+        (equal (cdr ele) NIL))))
+
+(defun assocs-binder-listp (lst) ;; WAHJr.
+  (declare (xargs :guard t))
+  (if (atom lst)
+      (null lst)
+    (let ((l (car lst)))
+      (and (assocs-binder-element-p l)
+           (assocs-binder-listp (cdr lst))))))
+
 (defun assigns-for-assocs (getter args alist)
+  (declare (xargs :guard (assocs-binder-listp args))) ;; WAHJr.
   (if (atom args)
       nil
     (cons (if (consp (car args))
@@ -1005,6 +1030,8 @@ and @('list*') may be nested inside other bindings.</p>"
           (assigns-for-assocs getter (cdr args) alist))))
 
 (defun body-for-assocs (getter args forms rest-expr)
+  (declare (xargs :guard (and (consp forms)
+                              (assocs-binder-listp args)))) ;; WAHJr.
   (mv-let (pre-bindings name rest)
     (if (and (consp (car forms))
              (not (eq (caar forms) 'quote)))
@@ -1371,6 +1398,8 @@ The second argument to pattern constructor ~x0 must be a symbol, but is ~x1~%~%"
 
 ;; Find a pair in the alist whose key is a symbol whose name is str.
 (defun b*-assoc-symbol-name (str alist)
+  (declare (xargs :guard (and (stringp str)
+                              (symbol-alistp alist)))) ;; WAHJr.
   (if (atom alist)
       nil
     (if (and (consp (car alist))
@@ -1379,6 +1408,7 @@ The second argument to pattern constructor ~x0 must be a symbol, but is ~x1~%~%"
       (b*-assoc-symbol-name str (cdr alist)))))
 
 (defun b*-decomp-err (arg binder component-alist)
+  (declare (xargs :guard (alistp component-alist))) ;; WAHJr.
   (er hard? 'b*-decomp-bindings
       "Bad ~s0 binding: ~x2.~%For a ~s0 binding you may use the following ~
        kinds of arguments: keyword/value list form :field binder ..., ~
@@ -1390,6 +1420,7 @@ The second argument to pattern constructor ~x0 must be a symbol, but is ~x1~%~%"
 ;; Component-alist binds field names to their accessor functions.
 ;; Accepts a number of forms of bindings:
 (defun b*-decomp-bindings (args binder component-alist var)
+  (declare (xargs :guard (symbol-alistp component-alist))) ;; WAHJr.
   (b* (((when (atom args)) nil)
        ((when (keywordp (car args)))
         (b* ((look (b*-assoc-symbol-name (symbol-name (car args))
@@ -1418,6 +1449,7 @@ The second argument to pattern constructor ~x0 must be a symbol, but is ~x1~%~%"
           (b*-decomp-bindings (cdr args) binder component-alist var))))
 
 (defun b*-decomp-fn (args forms rest-expr binder component-alist)
+  (declare (xargs :guard (symbol-alistp component-alist))) ;; WAHJr.
   (b* (((unless (and (true-listp forms)
                      (= (length forms) 1)))
         (er hard? 'b*-decomp-fn
@@ -1572,9 +1604,27 @@ see @(see flet) for more discussion.</p>"
               ,@decls
               ,rest-expr)))))
 
+(defun access-binder-element-p (x)
+  (declare (xargs :guard t))
+  (or (symbolp x)
+      (and (consp x)
+           (consp (cdr x))
+           (symbolp (car x))
+           (symbolp (cadr x))
+           (not (cddr x)))))
+
+(defun access-binder-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (eq x nil)
+    (and (access-binder-element-p (car x))
+         (access-binder-listp (cdr x)))))
 
 
 (defun access-b*-bindings (recname var pairs)
+  (declare (xargs :guard (and (symbolp recname)
+                              ;; (symbolp var) -- sswords: not always a symboll
+                              (access-binder-listp pairs))))
   (if (atom pairs)
       nil
     (cons

@@ -42,7 +42,9 @@ principal features below.
 
   1.  Out of the 64-bit and Compatibility sub-modes available in the
       IA-32e mode of Intel(R) 64 architecture, we specify only the
-      former, i.e., the 64-bit mode.
+      former, i.e., the 64-bit mode.  However, the model is being
+      extended to also cover 32-bit mode (both the Compatibility
+      sub-mode of the IA-32e mode and the Protected mode).
 
   2.  Our model supports both efficient reasoning and simulation of
       x86 machine-code programs.  The ability to run real, unmodified
@@ -55,9 +57,11 @@ principal features below.
       byte-addressable.  However, it offers sequential consistency as
       opposed to a relaxed memory model like TSO.
 
-  4.  All addressing modes of the 64-bit mode are supported.
+  4.  All addressing modes of the 64-bit and 32-bit modes are
+      supported.
 
-  5.  Our model can operate in the following modes:
+  5.  Our model can operate in the following modes (these modes refer
+      to the model; they are not processor modes):
 
 	a. System-level Mode:
 
@@ -175,7 +179,7 @@ Two ways of building the X86ISA books are:
 
    Users of these books who wish to simulate x86 programs with
    non-deterministic computations like SYSCALL (in
-   programmer-level-mode) and RDRAND should use this Makefile and run
+   app-view) and RDRAND should use this Makefile and run
    make with X86ISA_EXEC set to t (which is the default value).
 
    make JOBS=8 \

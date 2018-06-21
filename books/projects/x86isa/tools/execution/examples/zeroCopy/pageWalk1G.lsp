@@ -15,7 +15,7 @@
 ;; 2. Set CR0.PG  = 1
 ;; 3. Set CR4.PAE = 1
 ;; 4. Set CR3.PDB = (logtail 12 address-of-pml4-table)
-(init-system-level-mode
+(init-sys-view
  ;; Address of PML4 Table
  0
  x86)
@@ -26,7 +26,7 @@
 ;; and the program.
 
 ;; A simple sanity check:
-(assert-event (equal (programmer-level-mode x86) nil))
+(assert-event (equal (app-view x86) nil))
 
 ;; Set CPL = 0 (actually, it's 0 by default, which should change, maybe)
 (!seg-visiblei *cs* (!seg-sel-layout-slice :rpl 0 (seg-visiblei *cs* x86)) x86)

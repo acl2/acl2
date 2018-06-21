@@ -6281,7 +6281,11 @@
 ; Otherwise, return action.lisp if action is a string, else the given filename.
 
   (declare (xargs :guard (and (stringp filename)
-                              (stringp system-books-dir))))
+                              (stringp system-books-dir)
+                              (<= (length system-books-dir) (fixnum-bound))
+                              (or (eq action :make-cons)
+                                  (eq action nil)
+                                  (stringp action)))))
   (cond ((and (stringp filename) ; could already be (:system . fname)
               (string-prefixp system-books-dir filename))
          (let ((relative-pathname
@@ -10033,11 +10037,54 @@
 
 (defconst *non-instantiable-primitives*
 
+; WARNING: Note that there may be an implicit functional substitution applied
+; to a :termination-theorem in translate-lmi.  Although we believe that the
+; termination-theorem for O< is justified logically, that theorem depends on
+; the definition of O< itself, so it is not OK to replace O< in its termination
+; theorem by using a functional substitution (because its termination theorem
+; is not a theorem when O< is viewed as being introduced by a defstub).
+; Therefore we must include O< in this list, to guarantee that instantiablep
+; fails for O<.  Indeed, the following example from Eric Smith exploits the
+; lack of such an instantiablep check on the domain of that implicit functional
+; substitution, starting in Version_7.3 when such implicit functional
+; substitutions were first applied and through Version_8.0 (after which this
+; bug was fixed).
+
+;   (defun bad (x y)
+;      (declare (xargs :measure (acl2-count x)
+;                      ;; The problematic hint:
+;                      :hints (("Goal" :use (:termination-theorem o<)))))
+;      (if (or (o-finp x)
+;              (o-finp y)
+;              (equal (o-first-expt x)
+;                     (o-first-expt y)))
+;          nil
+;        (if (bad (acl2-count (o-first-expt x))
+;                 (acl2-count x))
+;            nil
+;          (+ 1 (bad x y)))))
+;
+;   (defthm bad-1-4
+;      (not (bad 1 4)))
+;
+;   (in-theory (disable bad (:e bad)))
+;
+;   (defthmd bad-lemma
+;      (equal (bad '((1 . 1)) '((2 . 2)))
+;             (+ 1 (bad '((1 . 1)) '((2 . 2)))))
+;      :instructions ((:dv 1) :x :top :s))
+;
+;   (defthm bad-thm
+;      nil
+;      :rule-classes nil
+;      :hints (("Goal" :use (:instance bad-lemma))))
+
 ; We could redefine ENDP in terms of CONS so that ATOM doesn't have to be on
 ; the list below, but this seems unimportant.  If we take ATOM off, we need to
 ; change the definition of MAKE-CHARACTER-LIST.
 
-  '(NOT IMPLIES O<
+  '(NOT IMPLIES
+        O<                  ;;; used in its own termination theorem (see above)
         MEMBER-EQUAL        ;;; perhaps not needed; we are conservative here
         FIX                 ;;; used in DEFAULT-+-2
         BOOLEANP            ;;; used in BOOLEANP-CHARACTERP
@@ -12759,6 +12806,7 @@
         ((eq (cadr (car wrld)) 'formals)
          (and (eql (length (cddr (car wrld)))
                    (length (getpropc (car old-nest) 'formals nil wrld)))
+              (instantiablep (car old-nest) wrld)
               (termination-theorem-fn-subst2 (cdr old-nest)
                                              (cdr wrld)
                                              (acons (car old-nest)
@@ -13340,14 +13388,6 @@
 
   (cons 'iff ; expanded in tautologyp
         *expandable-boot-strap-non-rec-fns*))
-
-(defconst *definition-minimal-theory*
-
-; We include mv-nth because of the call of simplifiable-mv-nthp in the
-; definition of call-stack, which (as noted there) results in a use of the
-; definition of mv-nth without tracking it in a ttree.
-
-  (list* 'mv-nth 'iff *expandable-boot-strap-non-rec-fns*))
 
 (defun new-disables (theory-tail runic-theory ens wrld)
 

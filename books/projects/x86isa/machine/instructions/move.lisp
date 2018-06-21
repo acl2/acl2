@@ -71,7 +71,7 @@
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
 
-       (seg-reg (select-segment-register p2 p4? mod  r/m x86))
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
 
        ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
@@ -174,6 +174,7 @@
        (x86 (write-*ip temp-rip x86)))
     x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-FD
 
   ;; Op/En: FD
@@ -185,6 +186,10 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
+
+  :guard-hints (("Goal" :in-theory (enable select-address-size
+                                           rme-size
+                                           rime-size)))
 
   :implemented
   (progn
@@ -200,10 +205,9 @@
 
        ;; Get prefixes:
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
@@ -217,7 +221,8 @@
        ;; attribute of the instruction determines the size of the
        ;; offset, either 16, 32 or 64 bits.
 
-       ;; Under the "Instruction Column in the Opcode Summary Table":
+       ;; Under the "Instruction Column in the Opcode Summary Table"
+       ;; (Intel manual, Mar'17, Vol. 2, Sec. 3.1.1.3):
 
        ;; moffs8, moffs16, moffs32, moffs64   A simple memory variable
        ;; (memory offset) of type byte, word, or doubleword used by
@@ -227,7 +232,8 @@
        ;; with moffs indicates its size, which is determined by the
        ;; address-size attribute of the instruction.
 
-       ;; Under "Codes for Addressing Method":
+       ;; Under "Codes for Addressing Method"
+       ;; (Intel manual, Mar'17, Vol. 2, App. A.2.1):
 
        ;; O The instruction has no ModR/M byte. The offset of the
        ;; operand is coded as a word or double word (depending on
@@ -235,23 +241,17 @@
        ;; register, index register, or scaling factor can be applied
        ;; (for example, MOV (A0 A3)).
 
+       (byte-operand? (eql opcode #xA0))
        ((the (integer 1 8) operand-size)
-        (if (equal opcode #xA0)
-            1
-          (if (and (equal opcode #xA1)
-                   (logbitp #.*w* rex-byte))
-              8
-            (if p3? ;; See Table 3-4, P. 3-26, Intel Vol. 1.
-                2
-              4))))
+        (select-operand-size byte-operand? rex-byte nil prefixes x86))
+
        ((the (integer 1 8) offset-size)
-        ;; See Table 3-4, P. 3-26, Intel Vol. 1.
-        (if p4? 4 8))
+        (select-address-size p4? x86))
 
        ;; Get the offset:
        ((mv flg offset x86)
-        (riml-size offset-size temp-rip :x x86))
-       ((when flg) (!!ms-fresh :riml-size-error flg))
+        (rime-size offset-size temp-rip *cs* :x nil x86))
+       ((when flg) (!!ms-fresh :rime-size-error flg))
 
        ;; Check if the above memory read caused any problems:
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
@@ -262,46 +262,17 @@
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       ;; Get the segment base (which is zero for every segment but FS
-       ;; and GS in the 64-bit mode):
-       ((mv flg v-addr)
-        (case p2
-          (0 (mv nil offset))
-          ;; I don't really need to check whether FS and GS base are
-          ;; canonical or not.  On the real machine, if the MSRs
-          ;; containing these bases are assigned non-canonical
-          ;; addresses, an exception is raised.
-          (#.*fs-override*
-           (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
-                  (fs-base (n64-to-i64 nat-fs-base)))
-             (if (not (canonical-address-p fs-base))
-                 (mv 'Non-Canonical-FS-Base fs-base)
-               (mv nil (+ fs-base offset)))))
-          (#.*gs-override*
-           (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
-                  (gs-base (n64-to-i64 nat-gs-base)))
-             (if (not (canonical-address-p gs-base))
-                 (mv 'Non-Canonical-GS-Base gs-base)
-               (mv nil (+ gs-base offset)))))
-          (t (mv 'Unidentified-P2 offset))))
-       ((when flg)
-        (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg))
-       ((when (not (canonical-address-p v-addr)))
-        (!!ms-fresh :Non-Canonical-V-Addr v-addr))
-       (inst-ac? (alignment-checking-enabled-p x86))
-       ((when (and inst-ac?
-                   (not (equal (logand v-addr (the (integer 0 15) (- operand-size 1)))
-                               0))))
-        (!!ms-fresh :memory-access-not-aligned v-addr))
+       (seg-reg (select-segment-register p2 p4? 0 0 x86))
 
-       ;; Get data from v-addr:
+       ;; Get data from offset in segment:
+       (inst-ac? (alignment-checking-enabled-p x86))
        ((mv flg data x86)
-        (rml-size operand-size v-addr :r x86))
-       ((when flg) (!!ms-fresh :rml-size-error flg))
+        (rme-size operand-size offset seg-reg :r inst-ac? x86))
+       ((when flg) (!!ms-fresh :rme-size-error flg))
 
        ;; Write the data to rAX:
        (x86 (!rgfi-size operand-size *rax* data rex-byte x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
@@ -394,6 +365,7 @@
        (x86 (write-*ip temp-rip x86)))
       x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-MI
 
   ;; Op/En: MI
@@ -404,7 +376,9 @@
   ;; C7/0: MOV r/m64, imm32
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08
+                                         riml32
+                                         rme-size) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -419,79 +393,54 @@
   :body
 
   (b* ((ctx 'x86-mov-Op/En-MI)
+
        (mod (mrm-mod modr/m))
        (r/m (mrm-r/m modr/m))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
+       (byte-operand? (eql opcode #xC6))
        ((the (integer 1 8) imm-size)
-        (if (equal opcode #xC6)
-            1
-          (if (logbitp #.*w* rex-byte)
-              4
-            (if p3?
-                2
-              4))))
+        (select-operand-size byte-operand? rex-byte t prefixes x86))
+
        ((the (integer 1 8) reg/mem-size)
         (if (and (equal opcode #xC7)
                  (logbitp #.*w* rex-byte))
             8
           imm-size))
 
-       ((mv flg0 (the (signed-byte 64) v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
+       ((mv flg0
+            (the (signed-byte 64) addr)
+            (the (unsigned-byte 3) increment-RIP-by)
+            x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+          (x86-effective-addr p4?
+                              temp-rip
+                              rex-byte
+                              r/m
+                              mod
+                              sib
                               imm-size ;; bytes of immediate data
                               x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
-       ((mv flg1 v-addr)
-        (case p2
-          (0 (mv nil v-addr))
-          ;; I don't really need to check whether FS and GS base are
-          ;; canonical or not.  On the real machine, if the MSRs
-          ;; containing these bases are assigned non-canonical
-          ;; addresses, an exception is raised.
-          (#.*fs-override*
-           (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
-                  (fs-base (n64-to-i64 nat-fs-base)))
-             (if (not (canonical-address-p fs-base))
-                 (mv 'Non-Canonical-FS-Base fs-base)
-               (mv nil (+ fs-base v-addr)))))
-          (#.*gs-override*
-           (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
-                  (gs-base (n64-to-i64 nat-gs-base)))
-             (if (not (canonical-address-p gs-base))
-                 (mv 'Non-Canonical-GS-Base gs-base)
-               (mv nil (+ gs-base v-addr)))))
-          (t (mv 'Unidentified-P2 v-addr))))
-       ((when flg1)
-        (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg1))
-       ((when (not (canonical-address-p v-addr)))
-        (!!ms-fresh :v-addr-not-canonical v-addr))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
+       (seg-reg (select-segment-register p2 p4? 0 0 x86))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        ((mv flg2 imm x86)
-        (rml-size imm-size temp-rip :x x86))
+        (rme-size imm-size temp-rip *cs* :x nil x86))
        ((when flg2)
-        (!!ms-fresh :imm-rml-size-error flg2))
+        (!!ms-fresh :imm-rme-size-error flg2))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
         (add-to-*ip temp-rip imm-size x86))
@@ -509,14 +458,20 @@
        ;; Update the x86 state:
        (inst-ac? t)
        ((mv flg3 x86)
-        (x86-operand-to-reg/mem
-         reg/mem-size inst-ac?
-         nil ;; Not a memory pointer operand
-         imm v-addr rex-byte r/m mod x86))
+        (x86-operand-to-reg/mem$ reg/mem-size
+                                 inst-ac?
+                                 nil ;; Not a memory pointer operand
+                                 imm
+                                 seg-reg
+                                 addr
+                                 rex-byte
+                                 r/m
+                                 mod
+                                 x86))
        ;; Note: If flg2 is non-nil, we bail out without changing the x86 state.
        ((when flg3)
         (!!ms-fresh :x86-operand-to-reg/mem flg3))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================
@@ -823,12 +778,14 @@
 ;; INSTRUCTION: MOV to/from Control Registers
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-control-regs-Op/En-MR
 
   ;; Move control register to GPR
 
   ;; Op/En: MR
   ;; [OP R/M, REG]
+  ;; 0F 20/r:         MOV r32, CR0-CR7
   ;; 0F 20/r:         MOV r64, CR0-CR7
   ;; REX.R + 0F 20/0: MOV r64, CR8
 
@@ -839,10 +796,10 @@
   ;; specifies which of the control registers is loaded or read. The 2
   ;; bits in the mod field are ignored. The r/m field specifies the
   ;; general-purpose register loaded or read. Attempts to reference
-  ;; CR1, CR5, CR6, CR7, and CR9 CR15 result in undefined opcode (#UD)
+  ;; CR1, CR5, CR6, CR7, and CR9-CR15 result in undefined opcode (#UD)
   ;; exceptions.
 
-  ;; In 64-bit mode, the instruction s default operation size
+  ;; In 64-bit mode, the instruction's default operation size
   ;; is 64 bits. The REX.R prefix must be used to access
   ;; CR8. Use of REX.B permits access to additional registers
   ;; (R8-R15). Use of the REX.W prefix or 66H prefix is
@@ -850,7 +807,6 @@
   ;; other than CR8 causes an invalid-opcode exception. See the
   ;; summary chart at the beginning of this section for encoding
   ;; data and limits.
-
 
   :parents (two-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d () ())))
@@ -876,10 +832,11 @@
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (cpl (cpl x86))
        ((when (not (equal 0 cpl)))
-        (!!ms-fresh :cpl!=0 cpl))
+        (!!fault-fresh :gp 0 :cpl!=0 cpl)) ;; #GP(0)
        ;; *operand-size-override* and REX.W are ignored.
 
        ;; Get value from the control register
@@ -898,12 +855,21 @@
         ;; #UD Exception (if an attempt is made to access CR1, CR5,
         ;; CR6, or CR7 or if the REX.R prefix is used to specify a
         ;; register other than CR8)
-        (!!ms-fresh :ctr-index-illegal (cons 'ModR/M.reg reg)))
+        (!!fault-fresh
+         :ud nil :ctr-index-illegal (cons 'ModR/M.reg reg))) ;; #UD
+
+       (operand-size (if (64-bit-modep x86) 8 4))
+
        (ctr-val (the (unsigned-byte 64) (ctri ctr-index x86)))
+       (ctr-val (if (eql operand-size 4) (n32 ctr-val) ctr-val))
 
        ;; Update the x86 state:
        (x86
-        (!rgfi-size 8 (reg-index r/m rex-byte #.*b*) ctr-val rex-byte x86))
+        (!rgfi-size operand-size
+                    (reg-index r/m rex-byte #.*b*)
+                    ctr-val
+                    rex-byte
+                    x86))
        ;; The OF, SF, ZF, AF, PF, and CF flags are undefined.
        (x86 (!flgi-undefined #.*cf* x86))
        (x86 (!flgi-undefined #.*pf* x86))
@@ -911,7 +877,7 @@
        (x86 (!flgi-undefined #.*zf* x86))
        (x86 (!flgi-undefined #.*sf* x86))
        (x86 (!flgi-undefined #.*of* x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================
