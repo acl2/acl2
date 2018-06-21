@@ -422,8 +422,10 @@ post times."
         (strongly-connected-components alst debug-flag)))
     fin-vs))
 
-
-
+(defun approx-topo-sort (G)
+  (declare (xargs :guard t))
+  (ec-call (approximate-topological-sort G nil)))
+(verify-guards approx-topo-sort)
 
 #|
 

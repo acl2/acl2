@@ -249,13 +249,13 @@
 ; be -     ; 8.12 seconds realtime, 8.14 seconds runtime
 ;            (1,902,023,552 bytes allocated).
 ; Investigate this!
-(test? 
- (implies (and ;(triplep x)
-               (trianglep x)
-               (> (third x) 256)
-               (= (third x)
-                  (* (second x) (first x))))
-          (not (equal "isosceles" (shape x)))))
+ (test? 
+  (implies (and ;(triplep x)
+            (trianglep x)
+            (> (third x) 256)
+            (= (third x)
+               (* (second x) (first x))))
+           (not (equal "isosceles" (shape x)))))
 )
 
 
@@ -451,19 +451,19 @@
 
 (set-gag-mode nil)
 (must-fail
-(test?
- (IMPLIES (AND (RATIONALP x)
-               (RATIONALP y)
-               (RATIONALP z)
-               (< x 20) 
-               (> x 17) ;added 
-               (positive-rationalp n1) 
-               (equal y (- (+ 25 x) n1))
-               (positive-rationalp n2)
-               (equal z (- (+ x y) n2)))
-          (< z 62)))
- ;:hints (("Goal" :cases ((> x 18)))))
-)
+ (test?
+  (IMPLIES (AND (RATIONALP x)
+                (RATIONALP y)
+                (RATIONALP z)
+                (< x 20) 
+                (> x 17) ;added 
+                (positive-rationalp n1) 
+                (equal y (- (+ 25 x) n1))
+                (positive-rationalp n2)
+                (equal z (- (+ x y) n2)))
+           (< z 62)))
+;:hints (("Goal" :cases ((> x 18)))))
+ )
 
 (acl2s-defaults :set num-trials 1000)
 
@@ -650,8 +650,7 @@
 ; blindly throws away a simplification that is not smaller
 ; in term-order than the original hyp.
 ; 27th Aug '12, to get rid of the above error, one needs to
-; submit a compound recognizer rul(declare (xargs :guard (pseudo-termp term)
-                   :verify-guards nil))
+; submit a compound recognizer rule.
 ; Additionally I also make sure that I dont break the invariant
 ; that after propagating a X=const assignment, X will not appear
 ; as a free variable in the resulting simplified hyp

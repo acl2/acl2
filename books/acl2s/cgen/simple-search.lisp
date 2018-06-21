@@ -11,7 +11,7 @@
 
 (include-book "type")
 
-(include-book "simple-graph-array")
+;; (include-book "simple-graph-array")
 (include-book "../defdata/random-state")
 
 (include-book "infer-enum-shape")
@@ -632,7 +632,7 @@ where
 ; an ugly hack in place to reorder in the middle of put-var-eq-constraint.
        
     (b* ((wrld (w state))
-         (ord-vs (vars-in-dependency-order hyps concl vl wrld))
+         (ord-vs (vars-in-dependency-order hyps concl wrld))
          ;(- (cw "ord-vs is ~x0 and the freshly computed ord-vs1 is ~x1~%" ord-vs ord-vs1))
          (v-cs%-alst (collect-constraints% (cons (cgen-dumb-negate-lit concl) hyps)
                                            ord-vs

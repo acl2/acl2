@@ -8,7 +8,7 @@
 (in-package "CGEN")
 
 (include-book "basis")
-(include-book "simple-graph-array")
+(include-book "topological-sort")
 (include-book "cgen-state")
 (include-book "type")
 
@@ -290,8 +290,8 @@ processed, the annotation of edges is also returned"
 ;(verify-termination dumb-negate-lit)
 
 
-(def vars-in-dependency-order (hyps concl vl wrld)
-  (decl :sig ((pseudo-term-list pseudo-term fixnum plist-world) -> symbol-list)
+(def vars-in-dependency-order (hyps concl wrld)
+  (decl :sig ((pseudo-term-list pseudo-term plist-world) -> symbol-list)
         :doc "return the free variables ordered according to the notion of
   dependency that treats equality relation specially. See FMCAD paper for
   details, but I have not completely implemented the improvements in the
@@ -303,7 +303,7 @@ processed, the annotation of edges is also returned"
        ((mv Hc Hs Ho) (separate-const/simple-hyps. cterms wrld '() '() '()))
        
        (dgraph (build-variable-dependency-graph Ho vars)) ;TODO rewrite
-       (ord-vs (reverse (approximate-topological-sort dgraph (system-debug-flag vl))))
+       (ord-vs (reverse (topological-sort dgraph)))
        
        (cvars (all-vars-lst Hc))
        (svars (all-vars-lst Hs))
@@ -463,7 +463,7 @@ processed, the annotation of edges is also returned"
        (G (build-variable-dependency-graph terms vars))
 ;TODO: among the variables of a component, we should vary
 ;the order of selection of variables!!
-       (var1 (car (last (approximate-topological-sort G (debug-flag vl)))))
+       (var1 (car (last (topological-sort G))))
        (sinks (dumb-get-all-sinks G))
        (terms/binary-or-more (filter-terms-with-arity-> terms 1)) ;ignore monadic terms
        (dumb-type-alist (dumb-type-alist-infer terms vars vl wrld))

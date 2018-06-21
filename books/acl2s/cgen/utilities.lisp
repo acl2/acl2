@@ -1135,3 +1135,58 @@ Mainly to be used for evaluating enum lists "
        (member-equal (car term) '(EQUAL EQ EQL = INT= STRING-EQUAL ACL2::HONS-EQUAL))
        (or (proper-symbolp (second term))
            (proper-symbolp (third term)))))
+
+
+;;; copied from simple-graph-array.lisp
+(set-verify-guards-eagerness 0)
+(defun adjacency-list1p (v)
+  (if (null v)
+      t
+    (if (atom v)
+        nil
+      (let ((entry (car v)))
+      (and (symbolp (car entry))
+           (symbol-listp (cdr entry))
+           (no-duplicatesp (cdr entry))
+           (adjacency-list1p (cdr v)))))))
+
+(defun adjacency-listp (v)
+  (and (adjacency-list1p v)
+       (no-duplicatesp (strip-cars v))))
+
+(defun make-empty-adj-list (vars)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (no-duplicatesp vars))))
+  ;order important
+  ;order of keys alst created is the same as order of vars
+  (if (endp vars)
+    nil
+    (cons (cons (car vars) nil)
+          (make-empty-adj-list (cdr vars)))))
+
+;fs means Functionaly dependent vars
+;ASSUMPTION: alst has all the variables as keys already
+;this function just updates the entries, doesnt insert
+;new entries.
+(defun union-entry-in-adj-list (var fvars alst)
+  (declare (xargs :guard (and (adjacency-listp alst)
+                              (true-listp fvars))))
+  (if (endp alst)
+      nil
+    (if (eq var (caar alst))
+      (cons (cons var (union-equal fvars
+                                   (cdar alst)))
+            (cdr alst))
+      (cons (car alst)
+            (union-entry-in-adj-list var fvars (cdr alst))))))
+
+
+;recurse above fun over list of indices
+(defun union-entries-in-adj-list (is fis alst)
+ (declare (xargs :guard (and (adjacency-listp alst)
+                             (true-listp is)
+                             (true-listp fis))))
+ (if (endp is)
+    alst
+    (union-entries-in-adj-list
+     (cdr is) fis (union-entry-in-adj-list (car is) fis alst))))
