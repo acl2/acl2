@@ -12,7 +12,7 @@
 (include-book "type")
 
 ;(include-book "acl2s-parameter")
-(include-book "simple-graph-array")
+;; (include-book "simple-graph-array")
 (include-book "cgen-state")
 
 
