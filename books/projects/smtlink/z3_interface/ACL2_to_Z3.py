@@ -1,12 +1,13 @@
 # Copyright (C) 2015, University of British Columbia
 # Written (originally) by Mark Greenstreet (13th March, 2014)
 # Counter-example generation: Carl Kwan (May 2016)
-# Editted by Yan Peng (15th Nov 2016)
+# Edited by Yan Peng (15th Nov 2016)
 #
 # License: A 3-clause BSD license.
 # See the LICENSE file distributed with ACL2
 import re
 from z3 import *
+from functools import reduce # for Python 2/3 compatibility
 
 def sort(x):
     if type(x) == bool:    return BoolSort()
@@ -50,6 +51,7 @@ class ACL22SMT(object):
     # ---------------------------------------------------------
     #                   Basic Functions
     #
+
     # Type declarations
     def IntSort(self): return IntSort()
     def RealSort(self): return RealSort()
@@ -78,8 +80,8 @@ class ACL22SMT(object):
         try:
             return If(condx, thenx, elsex)
         except:
-            print "If failed"
-            print 'If(' + str(condx) + ', ' + str(thenx) + ', ' + str(elsex) + ')'
+            print('If failed')
+            print('If(' + str(condx) + ', ' + str(thenx) + ', ' + str(elsex) + ')')
             raise Exception('giving up')
 
     def hint_okay(self):
@@ -167,14 +169,14 @@ class ACL22SMT(object):
         [model_lst, dontcare_lst] = self.get_model(var_lst)
         [model_acl2, dontcare_acl2] = self.translate_to_acl2(model_lst, dontcare_lst)
 
-        print "'(" + " ".join(model_acl2+dontcare_acl2) + ")"
-        print "Without dontcares: " + "'(" + " ".join(model_acl2) + ")"
+        print('\'(' + ' '.join(model_acl2+dontcare_acl2) + ')')
+        print('Without dontcares: ' + '\'(' + ' '.join(model_acl2) + ')')
 
     def proof_success(self):
-        print "proved"
+        print('proved')
 
     def proof_fail(self):
-        print "failed to prove"
+        print('failed to prove')
 
     # usage prove(claim) or prove(hypotheses, conclusion)
     def prove(self, hypotheses, conclusion=None):
