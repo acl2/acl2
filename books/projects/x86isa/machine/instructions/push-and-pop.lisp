@@ -264,6 +264,7 @@
 
     x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-I
 
   :parents (one-byte-opcodes)
@@ -275,18 +276,20 @@
    <p><tt>68 iw</tt>: PUSH imm16</p>
    <p><tt>68 id</tt>: PUSH imm32</p>
 
-<p>From the description of the PUSH instruction \(Intel Manual,
-Vol. 2, Section 4.2\):</p>
+   <p>From the description of the PUSH instruction \(Intel Manual, Vol. 2,
+   Section 4.2\):</p>
 
-<p><i> If the source operand is an immediate of size less than the
- operand size, a sign-extended value is pushed on the stack.</i></p>
+   <p><i> If the source operand is an immediate of size less than the operand
+   size, a sign-extended value is pushed on the stack.</i></p>
 
-<p>PUSH doesn't have a separate instruction semantic function,
-unlike other opcodes like ADD, SUB, etc. I've just coupled the
-decoding with the execution in this case.</p>"
+   <p>PUSH doesn't have a separate instruction semantic function, unlike other
+   opcodes like ADD, SUB, etc. The decoding is coupled the decoding with the
+   execution in this case.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
+
+  :guard-hints (("Goal" :in-theory (enable rime-size)))
 
   :implemented
   (progn
@@ -298,46 +301,40 @@ decoding with the execution in this case.</p>"
   :body
 
   (b* ((ctx 'x86-push-I)
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock)
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
                  (prefixes-slice :group-3-prefix prefixes)))
 
+       (byte-imm? (eql opcode #x6A))
        ((the (integer 1 8) imm-size)
-        (if (equal opcode #x6A)
-            1
-          (if (logbitp #.*w* rex-byte)
-              4
-            (if p3?
-                2
-              4))))
+        (select-operand-size byte-imm? rex-byte t prefixes x86))
+
        ((the (integer 1 8) operand-size)
-        (if p3?
-            2
-          ;; 4-byte operand size is N.E. in 64-bit mode
-          ;; See http://www.x86-64.org/documentation/assembly.html
-          8))
-       (rsp (rgfi *rsp* x86))
-       (new-rsp (- rsp operand-size))
-       ((when (not (canonical-address-p new-rsp)))
-        (!!fault-fresh :ss 0 :new-rsp-not-canonical new-rsp)) ;; #SS(0)
+        (if (64-bit-modep x86)
+            (if p3? 2 8)
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d
+                (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
+
+       (rsp (read-*sp x86))
+       ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((mv flg0 (the (signed-byte 32) imm) x86)
-        (riml-size imm-size temp-rip :x x86))
+        (rime-size imm-size temp-rip *cs* :x nil x86))
        ((when flg0)
-        (!!ms-fresh :imm-riml-size-error flg0))
+        (!!ms-fresh :imm-rime-size-error flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ imm-size temp-rip))
-
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                                  temp-rip))))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip imm-size x86))
+       ((when flg)
         (!!fault-fresh :gp 0 :temp-rip-not-canonical temp-rip)) ;; #GP(0)
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -346,12 +343,14 @@ decoding with the execution in this case.</p>"
 
        ;; Update the x86 state:
        ((mv flg1 x86)
-        (wme-size operand-size new-rsp
+        (wme-size operand-size
+                  new-rsp
                   *ss*
                   (mbe :logic (loghead (ash operand-size 3) imm)
                        :exec (logand
                               (case operand-size
                                 (2 #.*2^16-1*)
+                                (4 #.*2^32-1*)
                                 (8 #.*2^64-1*))
                               (the (signed-byte 32) imm)))
                   (alignment-checking-enabled-p x86)
@@ -368,8 +367,8 @@ decoding with the execution in this case.</p>"
          (t ;; Unclassified error!
           (!!fault-fresh flg1))))
 
-       (x86 (!rgfi *rsp* new-rsp x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*sp new-rsp x86))
+       (x86 (write-*ip temp-rip x86)))
 
     x86))
 

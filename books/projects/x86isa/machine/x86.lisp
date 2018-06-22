@@ -1906,14 +1906,7 @@
 
     (#x68
      "(PUSH lz)"
-     (if (64-bit-modep x86)
-         (x86-push-I start-rip temp-rip prefixes rex-byte opcode modr/m
-                     sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(PUSH lz) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-push-I start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x69
      "(IMUL Gv Ev iz)"
@@ -1922,14 +1915,7 @@
 
     (#x6A
      "(PUSH lb)"
-     (if (64-bit-modep x86)
-         (x86-push-I start-rip temp-rip prefixes rex-byte opcode modr/m
-                     sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(PUSH lb) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-push-I start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x6B
      "(IMUL Gv Ev ib)"
