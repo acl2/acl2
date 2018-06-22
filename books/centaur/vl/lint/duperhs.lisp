@@ -107,6 +107,13 @@ for odd but innocuous things like @('~ 1'b0') and @('{1'b0}').</p>"
     :vl-concat (and (tuplep 1 rhs.parts)
                     (let ((arg (first rhs.parts)))
                       (vl-expr-case arg :vl-literal)))
+    :vl-multiconcat
+    ;; This recognizes things like {7{1'b0}} or {8{1'b1}}, etc., which are very
+    ;; unlikely to be any kind of problem.
+    (and (vl-expr-resolved-p rhs.reps)
+         (tuplep 1 rhs.parts)
+         (let ((arg (first rhs.parts)))
+           (vl-expr-case arg :vl-literal)))
     :otherwise nil))
 
 

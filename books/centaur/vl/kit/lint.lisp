@@ -1166,6 +1166,7 @@ shown.</p>"
 (defconst *smell-warnings*
   (list :vl-warn-qmark-width
         :vl-warn-qmark-const
+        :vl-warn-qmark-always-true
         :vl-warn-leftright
         :vl-warn-selfassign
         :vl-warn-instances-same
