@@ -452,6 +452,8 @@
         (implies (equal status :failed)
                  (equal new-solver.status :input))))))
 
+(defttag nil)
+
 (defthm symbolp-of-ipasir-solve$a-status
   (symbolp (mv-nth 0 (ipasir-solve$a solver)))
   :rule-classes :type-prescription)
@@ -577,21 +579,35 @@
             (ipasir-callback-count
              :logic ipasir-callback-count$a :exec ipasir-callback-count$c)))
 
-;; We used to make the following functions untouchable, but now we just install
-;; executable definitions that produce errors. I think that's good enough.
-;; Making them untouchable prevented cloning of the ipasir stobj.
-
-;; ;; We need to make these untouchable because we're going to smash their
-;; ;; definitions in raw Lisp.  We won't be able to tell this through the absstobj
-;; ;; interface, but if we were able to run ipasir-get or ipasir-set on an actual
-;; ;; ipasir$c we'd get the wrong answer.
-
-;; (push-untouchable ipasir-get t)
-;; (push-untouchable ipasir-set t)
-;; (push-untouchable ipasir$cp t)
 
 (acl2::defstobj-clone ipasir2 ipasir :suffix "2")
 (acl2::defstobj-clone ipasir3 ipasir :suffix "3")
+
+;; Note: We need these interface functions to be untouchable because they don't
+;; behave consistently with other ipasir$c functions.  For example, the
+;; following function can be proven to return T, but its actual execution
+;; returns NIL once the backend is loaded.  Even if we smash ipasir-get and
+;; prevent its execution, ipasir$c can be cloned, creating a new function
+;; equivalent to ipasir-get, and which we haven't smashed.
+
+;; (make-event
+;;  `(defstobj ipasir$c2
+;;     (ipasir-val-2
+;;      :type (satisfies ipasir$a-p)
+;;      :initially ,(make-ipasir$a :status :undef))
+;;     (ipasir-limit-2)
+;;     :congruent-to ipasir$c))
+
+;; (define ipasir$c-contra (state)
+;;   (with-local-stobj ipasir$c
+;;     (mv-let (ans state ipasir$c)
+;;       (b* (((mv ipasir$c state) (ipasir-init$c ipasir$c state))
+;;            (solver (ipasir-val-2 ipasir$c)))
+;;         (mv (ipasir$a-p solver) state ipasir$c))
+;;       (mv ans state)))
+;;   ///
+;;   (defthm ipasir$c-contra-true
+;;     (mv-nth 0 (ipasir$c-contra state))))
 
 (push-untouchable ipasir-init$c t)
 (push-untouchable ipasir-reinit$c t)
