@@ -22,8 +22,8 @@
 
   ;; current tag . next computed-hint
   (defconst *SMT-computed-hints-table*
-    '((process-hint . smtlink-cp-w/-in-theory)
-      (fix-hint . smtlink-cp-w/-in-theory)
+    '((process-hint . SMT-process-hint)
+      (fix-hint . SMT-process-hint)
       (smt-hint . nil)
       (fixed-hint . nil)
       (main-hint . nil)
@@ -98,6 +98,24 @@
                             )))))
 
   (program)
+  (define treat-expand-hint ((kwd-alist t)
+                             (tag t))
+    (cond (kwd-alist
+           (mv-let (pre post)
+             (split-keyword-alist :expand kwd-alist)
+             (cond
+              (post ; then there was already an :expand hint; splice one in
+               (assert$ (eq (car post) :expand)
+                        `(,@pre
+                          :expand ,(cons `(hint-please ',kwd-alist ',tag)
+                                         (cadr post))
+                          ,@post)))
+              (t ; simply extend kwd-alist
+               `(:expand (hint-please ',kwd-alist ',tag)
+                         ,@kwd-alist)))))
+          (t nil))
+    )
+
   (define extract-hint-wrapper (cl)
     (cond ((endp cl) (mv nil nil nil))
           (t (b* ((lit cl))
@@ -111,26 +129,16 @@
         nil
       `((,next-stage clause))))
 
-  (define smtlink-cp-w/-in-theory (cl)
+  (define SMT-process-hint (cl)
     (b* (((mv & kwd-alist tag) (extract-hint-wrapper cl))
          (next-stage (cdr (assoc tag *SMT-computed-hints-table*)))
          (ch-replace-hint (ch-replace next-stage))
-         (rest-hint (treat-in-theory-hint '(hint-please) kwd-alist)))
+         ;; (rest-hint (treat-expand-hint kwd-alist tag))
+         (rest-hint kwd-alist)
+         )
       `(:computed-hint-replacement
         ,ch-replace-hint
         ,@rest-hint)))
-
-  (define SMT-process-hint (cl
-                            ;;flg
-                            )
-    (b* (((mv & kwd-alist tag) (extract-hint-wrapper cl))
-         (next-stage (cdr (assoc tag *SMT-computed-hints-table*)))
-         ;; ((unless flg) nil)
-         )
-      `(:computed-hint-replacement
-        ,(ch-replace next-stage)
-        ;; :do-not '(preprocess)
-        ,@kwd-alist)))
 
   (logic)
 
