@@ -523,7 +523,7 @@
     (verify-guards SMT-goal-generator)
     )
 
-  (in-theory (disable CONSP-WHEN-MEMBER-EQUAL-OF-SYM-NAT-ALISTP
+  (in-theory (disable consp-when-member-equal-of-sym-nat-alistp
                       pseudo-term-list-of-cdar-of-ex-args->term-lst
                       pseudo-term-listp-of-cdr-of-ex-args->term-lst
                       symbolp-of-car-of-ex-args->term-lst
@@ -536,7 +536,7 @@
                       pseudo-term-listp-of-pseudo-lambdap-of-cdar-ex-args->term-lst
                       pseudo-termp-of-body-of-pseudo-lambdap
                       consp-of-cdr-of-pseudo-lambdap
-                      CONSP-OF-PSEUDO-LAMBDAP
+                      consp-of-pseudo-lambdap
                       consp-of-cddr-of-pseudo-lambdap
                       not-stringp-of-cadr-of-pseudo-lambdap
                       integerp-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p
