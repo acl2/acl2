@@ -640,6 +640,22 @@ the execution in this case.</p>"
 
        (seg-reg (select-segment-register p2 p4? mod r/m x86))
 
+       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Update the x86 state:
+
+       ;; Intel manual, Mar'17, Vol. 2 says, in the specification of POP,
+       ;; that a POP SP/ESP/RSP instruction increments the stack pointer
+       ;; before the popped data is written into the stack pointer.
+       ;; Thus, we must write to the stack pointer before the operand.
+
+       (x86 (write-*sp new-rsp x86))
+
        ((mv flg3 x86)
         (x86-operand-to-reg/mem$ operand-size
                                  check-alignment?
@@ -654,15 +670,6 @@ the execution in this case.</p>"
        ((when flg3)
         (!!ms-fresh :x86-operand-to-reg/mem flg3))
 
-       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
-       ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
-       ;; Update the x86 state:
-       (x86 (write-*sp new-rsp x86))
        (x86 (write-*ip temp-rip x86)))
 
     x86)
