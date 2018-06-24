@@ -2171,22 +2171,16 @@
     (#x8F
      "Group 1A: Opcode-extension: Modr/m.reg
       0:(POP Ev) Otherwise:XOP encoding (unimplemented)"
-     (if (64-bit-modep x86)
-         (case (mrm-reg ModR/M)
-           (#x0
-            (x86-pop-Ev start-rip temp-rip prefixes rex-byte
-                        opcode modr/m sib x86))
-           (otherwise
-            (x86-step-unimplemented
-             (cons (ms x86)
-                   (list "XOP instructions have not been implemented yet."
-                         start-rip temp-rip prefixes rex-byte opcode))
-             x86)))
-       (x86-step-unimplemented
-        (cons (cons "Group 1A is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (case (mrm-reg ModR/M)
+       (#x0
+        (x86-pop-Ev start-rip temp-rip prefixes rex-byte
+                    opcode modr/m sib x86))
+       (otherwise
+        (x86-step-unimplemented
+         (cons (ms x86)
+               (list "XOP instructions have not been implemented yet."
+                     start-rip temp-rip prefixes rex-byte opcode))
+         x86))))
 
     ;; (#x90
     ;;  "#x90:  (XCHG rAX/R8) or (NOP) or (PAUSE)"
