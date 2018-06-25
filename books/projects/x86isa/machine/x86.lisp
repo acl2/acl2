@@ -981,14 +981,8 @@
 
     (#xA0
      "(Push FS)"
-     (if (64-bit-modep x86)
-         (x86-push-segment-register start-rip temp-rip prefixes rex-byte opcode
-                                    modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(PUSH FS) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-push-segment-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xA3
      "(BT Ev Gv)"
@@ -996,14 +990,8 @@
 
     (#xA8
      "(Push GS)"
-     (if (64-bit-modep x86)
-         (x86-push-segment-register start-rip temp-rip prefixes rex-byte opcode
-                                    modr/m sib x86)
-       (x86-step-unimplemented
-        (cons (cons "(PUSH GS) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-push-segment-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xAE
      "(LDMXCSR/STMXCSR m32)"
@@ -1391,9 +1379,8 @@
 
     (#x06
      "(PUSH ES)"
-     (x86-step-unimplemented
-      (cons (ms x86)
-            (list start-rip temp-rip prefixes rex-byte opcode)) x86))
+     (x86-push-segment-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x07
      "(POP ES)"
@@ -1433,10 +1420,8 @@
 
     (#x0E
      "(PUSH CS)"
-     (x86-step-unimplemented
-      (cons (ms x86)
-            (list start-rip temp-rip prefixes rex-byte opcode)) x86))
-
+     (x86-push-segment-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x0F
      "Escape to secondary opcode map."
@@ -1475,9 +1460,8 @@
 
     (#x16
      "(PUSH SS)"
-     (x86-step-unimplemented
-      (cons (ms x86)
-            (list start-rip temp-rip prefixes rex-byte opcode)) x86))
+     (x86-push-segment-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x17
      "(POP SS)"
@@ -1517,17 +1501,14 @@
 
     (#x1E
      "(PUSH DS)"
-     (x86-step-unimplemented
-      (cons (ms x86)
-            (list start-rip temp-rip prefixes rex-byte opcode)) x86))
-
+     (x86-push-segment-register
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x1F
      "(POP DS)"
      (x86-step-unimplemented
       (cons (ms x86)
             (list start-rip temp-rip prefixes rex-byte opcode)) x86))
-
 
     (#x20
      "(AND Eb Gb)"

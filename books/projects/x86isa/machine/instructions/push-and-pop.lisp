@@ -373,31 +373,42 @@
 
     x86))
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-segment-register
-  :parents (two-byte-opcodes)
+  :parents (one-byte-opcodes two-byte-opcodes)
 
   :short "PUSH FS/GS"
-  :long "<p><tt>0F A0</tt>: \[PUSH FS\]</p>
-<p><tt>0F A8</tt>: \[PUSH GS\]</p>
-   <p>Pushing other segment registers in the 64-bit mode is
-   invalid.</p>
+  :long
+  "<p><tt>0E</tt>:    \[PUSH CS\]</p>
+   <p><tt>16</tt>:    \[PUSH SS\]</p>
+   <p><tt>1E</tt>:    \[PUSH DS\]</p>
+   <p><tt>06</tt>:    \[PUSH ES\]</p>
+   <p><tt>0F A0</tt>: \[PUSH FS\]</p>
+   <p><tt>0F A8</tt>: \[PUSH GS\]</p>
 
-<p>If the source operand is a segment register \(16 bits\) and the
- operand size is 64-bits, a zero- extended value is pushed on the
- stack; if the operand size is 32-bits, either a zero-extended value
- is pushed on the stack or the segment selector is written on the
- stack using a 16-bit move. For the last case, all recent Core and
- Atom processors perform a 16-bit move, leaving the upper portion of
- the stack location unmodified.</p>
+   <p>If the source operand is a segment register \(16 bits\) and the operand
+   size is 64-bits, a zero- extended value is pushed on the stack; if the
+   operand size is 32-bits, either a zero-extended value is pushed on the stack
+   or the segment selector is written on the stack using a 16-bit move. For the
+   last case, all recent Core and Atom processors perform a 16-bit move,
+   leaving the upper portion of the stack location unmodified.</p>
 
-<p>PUSH doesn't have a separate instruction semantic function, unlike
-other opcodes like ADD, SUB, etc. I've just coupled the decoding with
-the execution in this case.</p>"
+   <p>PUSH doesn't have a separate instruction semantic function, unlike other
+   opcodes like ADD, SUB, etc. The decoding is coupled with the execution in
+   this case.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
   :implemented
   (progn
+    (add-to-implemented-opcodes-table 'PUSH #x0E '(:nil nil)
+                                      'x86-push-segment-register)
+    (add-to-implemented-opcodes-table 'PUSH #x16 '(:nil nil)
+                                      'x86-push-segment-register)
+    (add-to-implemented-opcodes-table 'PUSH #x1E '(:nil nil)
+                                      'x86-push-segment-register)
+    (add-to-implemented-opcodes-table 'PUSH #x06 '(:nil nil)
+                                      'x86-push-segment-register)
     (add-to-implemented-opcodes-table 'PUSH #x0FA0 '(:nil nil)
                                       'x86-push-segment-register)
     (add-to-implemented-opcodes-table 'PUSH #x0FA8 '(:nil nil)
@@ -406,26 +417,42 @@ the execution in this case.</p>"
   :body
 
   (b* ((ctx 'x86-push-general-register)
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock)
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       ;; PUSH CS/SS/DS/ES are invalid in 64-bit mode:
+       ((when (and (64-bit-modep x86)
+                   (member opcode '(#x0E #x16 #x1E #x06))))
+        (!!fault-fresh :ud nil :push-segment-64-bit-mode opcode)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
                  (prefixes-slice :group-3-prefix prefixes)))
+
        ((the (integer 1 8) operand-size)
-        (if p3?
-            2
-          ;; 4-byte operand size is N.E. in 64-bit mode
-          ;; See http://www.x86-64.org/documentation/assembly.html
-          8))
-       (rsp (rgfi *rsp* x86))
-       (new-rsp (- rsp operand-size))
-       ((when (not (canonical-address-p new-rsp)))
-        (!!fault-fresh :ss 0 :new-rsp-not-canonical new-rsp)) ;; #SS(0)
+        (if (64-bit-modep x86)
+            (if p3? 2 8)
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d
+                (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
+
+       (rsp (read-*sp x86))
+       ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((the (unsigned-byte 16) val)
-        (seg-visiblei (if (eql opcode #xA0) *FS* *GS*) x86))
+        (seg-visiblei (case opcode
+                        (#x0E *CS*)
+                        (#x16 *SS*)
+                        (#x1E *DS*)
+                        (#x06 *ES*)
+                        (#xA0 *FS*)
+                        (t *GS*))
+                      x86))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -454,8 +481,8 @@ the execution in this case.</p>"
          (t ;; Unclassified error!
           (!!fault-fresh flg))))
 
-       (x86 (!rgfi *rsp* (the (signed-byte #.*max-linear-address-size*) new-rsp) x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*sp new-rsp x86))
+       (x86 (write-*ip temp-rip x86)))
 
     x86))
 

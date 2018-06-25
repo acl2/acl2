@@ -305,8 +305,8 @@
  SAL, SAR, SHL, SHR, BT, JMP, Jcc, JCXZ, JECXZ, JRCXZ, CMOVcc, SETcc, LOOP,
  LOOPcc, CALL, RET, CMC, CLC, STC, CLD, STD, SAHF, LAHF, RDRAND, HLT, and NOP
  instructions also work in 32-bit mode now; the 32-bit instructions PUSHA,
- POPA, INC with opcodes 40h-47h, and DEC with opcodes 48h-4Fh are now part of
- the model.</p>
+ POPA, INC with opcodes 40h-47h, DEC with opcodes 48h-4Fh, and PUSH CS/SS/DS/ES
+ are now part of the model.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
