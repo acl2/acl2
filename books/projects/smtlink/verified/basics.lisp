@@ -58,7 +58,7 @@
     (rationalp      . "_SMT_.RealSort()")
     (integerp       . "_SMT_.IntSort()")
     (booleanp       . "_SMT_.BoolSort()")
-    (symbolp        . "Symbol")))
+    (symbolp        . "Sym.z3Sym")))
 
 (defval *SMT-uninterpreted-types*
   :parents (SMT-basics)

@@ -21,6 +21,26 @@ def sort(x):
             raise Exception('unknown sort for expression')
 
 class ACL22SMT(object):
+    class Symbol:
+        # define the Z3Sym type
+        z3Sym = Datatype('Symbol')
+        z3Sym.declare('sym', ('ival', IntSort()))
+        z3Sym = z3Sym.create()
+
+        # operations for creating a dictionary of symbols
+        count = 0
+        dict = {}
+
+        def intern(self, name):
+            try: return(self.dict[name])
+            except:
+                self.dict[name] = self.z3Sym.sym(self.count)
+                self.count = self.count + 1
+                return(self.dict[name])
+
+            def interns(self, namelist):
+                return [ self.intern(name) for name in namelist ]
+
     class status:
         def __init__(self, value):
             self.value = value

@@ -235,7 +235,7 @@
              (translate-bool expr nil))
             ((SMT-numberp expr)
              (translate-number expr))
-            (t (concatenate 'string "Symbol." (translate-symbol expr)))))
+            (t (translate-symbol expr))))
     ///
     (more-returns
      (translated-quote
@@ -829,33 +829,25 @@
                                      ()))))
    )
 
-  (define translate-symbol-declare ((symbol-name stringp)
-                                    (symbols string-listp))
+  (define translate-symbol-declare ((symbols string-listp))
     :returns (translated paragraphp
                          :hints (("Goal" :in-theory (e/d (wordp
                                                           paragraphp translate-type)))))
     :measure (len symbols)
-    (b* ((symbol-name (str-fix symbol-name))
-         (symbols (str::string-list-fix symbols))
+    (b* ((symbols (str::string-list-fix symbols))
          ((unless (consp symbols)) nil)
          ((cons first rest) symbols))
-      (cons `(,symbol-name ".declare('" ,first "')" #\Newline)
-            (translate-symbol-declare symbol-name rest))))
+      (cons `(,first " = Sym.intern('" ,first "')" #\Newline)
+            (translate-symbol-declare rest))))
 
   (define translate-symbol-enumeration ((symbols string-listp))
     :returns (translated paragraphp
                          :hints (("Goal" :in-theory (e/d (paragraphp)
                                                          ()))))
-    (b* ((symbols
-          (if (endp symbols) (list (generate-symbol-enumeration 0)) symbols))
-         (symbol-name (cdr (assoc-equal 'symbolp *SMT-types*)))
-         (datatype-line `(,symbol-name " = z3.Datatype('" ,symbol-name "')"
-                                       #\Newline))
-         (enumerations (translate-symbol-declare symbol-name symbols))
-         (create-line `(,symbol-name " = " ,symbol-name ".create()" #\Newline)))
+    (b* ((datatype-line '("Sym = _SMT_.Symbol()" #\Newline))
+         (declarations (translate-symbol-declare symbols)))
       `(,datatype-line
-        ,@enumerations
-        ,create-line)))
+        ,@declarations)))
 
 (local (defthm remove-duplicates-maintain-string-listp
          (implies (string-listp x)
