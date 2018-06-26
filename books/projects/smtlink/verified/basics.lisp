@@ -19,7 +19,7 @@
   :parents (SMT-basics)
   :short "Basic ACL2 functions supported in Smtlink."
   (append
-   '(magic-fix)
+   '(magic-fix symbol-fix)
    '(rationalp realp booleanp integerp symbolp)
    '(binary-+ binary-* unary-/ unary--
               equal <
