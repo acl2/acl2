@@ -168,7 +168,7 @@ class ACL22SMT(object):
                 translated_v = rt_obj
 
             translated_v = translated_v.replace(",", "")
-            translated_v = re.sub(r"([a-zA-Z0-9]+?)\(", r"\(\1 ", translated_v)
+            translated_v = re.sub(r"([a-zA-Z0-9_]+?)\(", r"\(\1 ", translated_v)
             translated_v = translated_v.replace(".0", "").replace("False", "nil").replace("True","t")
             return translated_v
 
