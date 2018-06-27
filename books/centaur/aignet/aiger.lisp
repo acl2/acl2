@@ -687,7 +687,7 @@
                  :guard (and (stringp fname)
                              (true-listp latch-aigs)
                              (true-listp out-aigs)
-                             (non-bool-atom-listp (alist-keys latch-aigs)))
+                             (acl2::aig-var-listp (alist-keys latch-aigs)))
                  :guard-debug t))
  ; (declare (xargs :mode :program))
  (b* (((local-stobjs aignet) (mv pis state aignet))
