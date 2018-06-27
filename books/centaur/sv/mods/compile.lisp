@@ -506,7 +506,7 @@ svex-assigns-compose)).</li>
        ;; Set the new assignment: outside of bits rsh:rsh+width, same as before;
        ;; in bits rsh:rsh+width, it's override-test ? (rsh offset override-val) : (rsh rsh expr),
        (last (svex-rsh  (+ x.atom.rsh x.w) expr))
-       (mid  (svex-call '? (list (svex-zerox 1 override-test)
+       (mid  (svex-call '?* (list (svex-zerox 1 override-test)
                                  (svex-rsh offset override-val)
                                  (svex-rsh x.atom.rsh expr))))
        (newexpr (svex-concat x.atom.rsh
