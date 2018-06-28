@@ -268,9 +268,13 @@
       (fp-opcode$c :type (unsigned-byte 11)
                    :initially 0)
 
-      ;; XMM 128-bit data registers
-      (xmm$c :type (array (unsigned-byte 128)
-                          (#.*xmm-register-names-len*))
+      ;; ZMM 512-bit data registers The lower 256-bits of the ZMM
+      ;; registers are aliased to the respective 256-bit YMM registers
+      ;; and the lower 128-bit are aliased to the respective 128-bit
+      ;; XMM registers.  Note that registers YMM16/XMM16 to
+      ;; YMM31/XMM31 are available only via the EVEX prefix (AVX-512).
+      (zmm$c :type (array (unsigned-byte 512)
+                          (#.*zmm-register-names-len*))
              :initially 0
              :resizable nil)
 

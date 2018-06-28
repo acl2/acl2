@@ -510,8 +510,13 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
               ("ShftGrp2" 2 (E v) (I b) :1a)
               ((:f64 . ("RET" 1 (I w))))
               ((:f64 . ("RET" 0)))
-              ((:i64 . ("LES" 2 (G z) (M p) :vex)))
-              ((:i64 . ("LDS" 2 (G z) (M p) :vex)))
+              ;; C4 and C5 are first bytes of the vex prefixes, both
+              ;; in 32-bit and IA-32e modes.  However, in the 32-bit
+              ;; and compatibility modes, the second byte determines
+              ;; whether the instruction is LES/LDS or a VEX
+              ;; instruction.
+              ((:vex . (:vex3-byte0))  (:i64 . ("LES" 2 (G z) (M p))))
+              ((:vex . (:vex2-byte0))  (:i64 . ("LDS" 2 (G z) (M p))))
               ("Grp11" 2 (E b) (I b) :1a)
               ("Grp11" 2 (E v) (I z) :1a)
               ("ENTER" 2 (I w) (I b))
@@ -1151,7 +1156,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
          (and (stringp (nth 0 one-opcode-lst)) ;; Opcode
               (natp (nth 1 one-opcode-lst))    ;; Number of Operands
               ;; Number of operands <= addressing info. of all operands
-              ;; (this cannot be strengthen to = because, for example,
+              ;; (this cannot be strengthened to = because, for example,
               ;; opcode FFh in the one-byte opcode map has :1A after (E v)):
               (<= (nth 1 one-opcode-lst) (len (nthcdr 2 one-opcode-lst))))
 
@@ -1160,7 +1165,8 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
          ;; :2-byte-escape, :3-byte-escape, :rex, :prefix-CS,
          ;; :prefix-ES, :prefix-SS, :prefix-DS, :prefix-FS,
          ;; :prefix-GS, :prefix-OpSize, :prefix-AddrSize, :none,
-         ;; :prefix-Lock, :prefix-REPNE, :prefix-REP/REPE
+         ;; :prefix-Lock, :prefix-REPNE, :prefix-REP/REPE,
+         ;; :vex2-byte0, :vex3-byte0.
          ;; Example: one-opcode-lst ==  (:2-byte-escape)
          (and (keywordp (nth 0 one-opcode-lst))
               (equal (len one-opcode-lst) 1))
@@ -1172,7 +1178,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
          ;;           ((:o64  . (:rex))       (:i64 . ("INC"  1 (:eAX))))
          (and (alistp one-opcode-lst)
               (subsetp (strip-cars one-opcode-lst)
-                       '(:i64 :o64 :d64 :f64 :no-prefix :66 :F3 :F2))
+                       '(:i64 :o64 :d64 :f64 :no-prefix :66 :F3 :F2 :vex))
               (opcode-row-recognizer (strip-cdrs one-opcode-lst))))))
      (opcode-row-recognizer (cdr row-lst)))))
 
@@ -1330,7 +1336,8 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
                                            :rex-rx :rex-rxb :rex-w
                                            :rex-wb :rex-wx :rex-wxb
                                            :rex-wr :rex-wrb :rex-wrx
-                                           :rex-wrxb :rex-x))))
+                                           :rex-wrxb :rex-x
+                                           :vex))))
                 (er hard? 'compute-modr/m-for-an-opcode
                     "Disallowed keyword: ~x0 in ~x1"
                     first-elem
@@ -1548,8 +1555,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
                    *two-byte-opcode-map-lst* nil))))
 
 
-;; Prefix byte decoding:
-
+;; Prefix byte decoding (legacy prefixes only):
 (define compute-prefix-byte-group-code-of-one-opcode (opcode-info)
   :guard (true-listp opcode-info)
   :short "Takes in information of a single opcode from an opcode map and
@@ -1596,7 +1602,8 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
                    :rex-wb :rex-wx :rex-wxb
                    :rex-wr :rex-wrb :rex-wrx
                    :rex-wrxb :rex-x
-                   :none :2-byte-escape)
+                   :none :2-byte-escape
+                   :vex :vex2-byte0 :vex3-byte0)
              0)
 
             (t
@@ -1795,7 +1802,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
 
   :parents (decoding-utilities)
 
-  :short "Functions to detect and decode ModR/M and SIB bytes"
+  :short "Functions to decode and collect legacy prefixes"
 
   (defconst *prefixes-layout*
     '((:num-prefixes      0  4) ;; Number of prefixes
@@ -1815,6 +1822,146 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
 
   (defmacro !prefixes-slice (flg val reg)
     (!slice flg val reg 44 *prefixes-layout*))
+
+  )
+
+;; ======================================================================
+
+(defsection vex-prefixes-decoding
+
+  :parents (decoding-utilities)
+
+  :short "Functions to decode and collect VEX prefix bytes"
+
+  ;; From Intel Vol. 2, Section 2.3.5.6: "In 32-bit mode the VEX first
+  ;; byte C4 and C5 alias onto the LES and LDS instructions. To
+  ;; maintain compatibility with existing programs the VEX 2nd byte,
+  ;; bits [7:6] must be 11b."
+
+  ;; So, in 32-bit mode, *vex2-byte1-layout* must have r and MSB of
+  ;; vvvv set to 1, and *vex3-byte1-layout* must have r and x set to 1
+  ;; if VEX is to be used instead of LES/LDS.
+
+  ;; "If an instruction does not use VEX.vvvv then it should be set to
+  ;; 1111b otherwise instruction will #UD.  In 64-bit mode all 4 bits
+  ;; may be used. See Table 2-8 for the encoding of the XMM or YMM
+  ;; registers. In 32-bit and 16-bit modes bit 6 must be 1 (if bit 6
+  ;; is not 1, the 2-byte VEX version will generate LDS instruction
+  ;; and the 3-byte VEX version will ignore this bit)."
+
+  ;; The above is reason why only 8 XMM/YMM registers are available in
+  ;; 32- and 16-bit modes.
+
+  ;; Source for VEX layout constants:
+  ;; Intel Vol. 2 (May 2018), Figure 2-9 (VEX bit fields)
+
+  ;; Note that the 2-byte VEX implies a leading 0F opcode byte, and
+  ;; the 3-byte VEX implies leading 0F, 0F 38, or 0F 3A bytes.
+
+  (defconst *vex2-byte1-layout*
+    '((:pp                0  2) ;; opcode extension providing
+                                ;; equivalent functionality of a SIMD
+                                ;; prefix
+                                ;; #b00: None
+                                ;; #b01: #x66
+                                ;; #b10: #xF3
+                                ;; #b11: #xF2
+
+      (:l                 2  1) ;; Vector Length
+                                ;; 0: scalar or 128-bit vector
+                                ;; 1: 256-bit vector
+
+      (:vvvv              3  4) ;; a register specifier (in 1's
+                                ;; complement form) or 1111 if unused.
+
+      (:r                 7  1) ;; REX.R in 1's complement (inverted) form
+                                ;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
+                                ;; 0: Same as REX.R=1 (64-bit mode only)
+                                ;; In protected and compatibility
+                                ;; modes the bit must be set to '1'
+                                ;; otherwise the instruction is LES or
+                                ;; LDS.
+      ))
+
+  (defthm vex2-byte1-table-ok
+    (layout-constant-alistp *vex2-byte1-layout* 0 8)
+    :rule-classes nil)
+
+  (defmacro vex2-byte1-slice (flg vex2-byte1)
+    (slice flg vex2-byte1 8 *vex2-byte1-layout*))
+
+  (defmacro !vex2-byte1-slice (flg val reg)
+    (!slice flg val reg 8 *vex2-byte1-layout*))
+
+  (defconst *vex3-byte1-layout*
+    '((:m-mmmm            0  5) ;; 00000: Reserved for future use (will #UD)
+                                ;; 00001: implied 0F leading opcode byte
+                                ;; 00010: implied 0F 38 leading opcode bytes
+                                ;; 00011: implied 0F 3A leading opcode bytes
+                                ;; 00100-11111: Reserved for future use (will #UD)
+
+      (:b                 5  1) ;; REX.B in 1's complement (inverted) form
+                                ;; 1: Same as REX.B=0 (Ignored in 32-bit mode).
+                                ;; 0: Same as REX.B=1 (64-bit mode only)
+
+      (:x                 6  1) ;; REX.X in 1's complement (inverted) form
+                                ;; 1: Same as REX.X=0 (must be 1 in 32-bit mode)
+                                ;; 0: Same as REX.X=1 (64-bit mode only)
+                                ;; In 32-bit modes, this bit must be
+                                ;; set to '1', otherwise the
+                                ;; instruction is LES or LDS.
+
+      (:r                 7  1) ;; REX.R in 1's complement (inverted) form
+                                ;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
+                                ;; 0: Same as REX.R=1 (64-bit mode only)
+                                ;; In protected and compatibility
+                                ;; modes the bit must be set to '1'
+                                ;; otherwise the instruction is LES or
+                                ;; LDS.
+
+      ))
+
+  (defthm vex3-byte1-table-ok
+    (layout-constant-alistp *vex3-byte1-layout* 0 8)
+    :rule-classes nil)
+
+  (defmacro vex3-byte1-slice (flg vex3-byte1)
+    (slice flg vex3-byte1 8 *vex3-byte1-layout*))
+
+  (defmacro !vex3-byte1-slice (flg val reg)
+    (!slice flg val reg 8 *vex3-byte1-layout*))
+
+  (defconst *vex3-byte2-layout*
+    '((:pp                0  2) ;; opcode extension providing
+                                ;; equivalent functionality of a SIMD
+                                ;; prefix
+                                ;; #b00: None
+                                ;; #b01: #x66
+                                ;; #b10: #xF3
+                                ;; #b11: #xF2
+
+      (:l                 2  1) ;; Vector Length
+                                ;; 0: scalar or 128-bit vector
+                                ;; 1: 256-bit vector
+
+      (:vvvv              3  4) ;; a register specifier (in 1's
+                                ;; complement form) or 1111 if unused.
+
+      (:w                 7   1) ;; opcode specific (use like REX.W,
+                                 ;; or used for opcode extension, or
+                                 ;; ignored, depending on the opcode
+                                 ;; byte)
+      ))
+
+  (defthm vex3-byte2-table-ok
+    (layout-constant-alistp *vex3-byte2-layout* 0 8)
+    :rule-classes nil)
+
+  (defmacro vex3-byte2-slice (flg vex3-byte2)
+    (slice flg vex3-byte2 8 *vex3-byte2-layout*))
+
+  (defmacro !vex3-byte2-slice (flg val reg)
+    (!slice flg val reg 8 *vex3-byte2-layout*))
 
   )
 

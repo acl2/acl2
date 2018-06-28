@@ -90,9 +90,7 @@ prefix.</p>"
     (defthm reg-indexp-forward
       (implies (reg-indexp reg rex-byte)
                (unsigned-byte-p 4 reg))
-      :rule-classes :forward-chaining))
-
-  )
+      :rule-classes :forward-chaining)))
 
 ;; ======================================================================
 
@@ -280,13 +278,13 @@ are used to write natural numbers into the GPRs.</p>"
                            :low 0 :width 8)
                           :exec
                           (the (unsigned-byte 64)
-                            (logior (the (unsigned-byte 64)
-                                      (logand #xffffffffffffff00 qword))
-                                    byte))))
+                               (logior (the (unsigned-byte 64)
+                                            (logand #xffffffffffffff00 qword))
+                                       byte))))
                     x86)))
           (t ;; no rex and reg is at least 4 -- then write to AH, etc.
            (let* ((index (the (unsigned-byte 4)
-                           (- (the (unsigned-byte 4) reg) 4)))
+                              (- (the (unsigned-byte 4) reg) 4)))
                   (qword (the (signed-byte 64) (rgfi index x86))))
              (!rgfi index
                     (n64-to-i64
@@ -297,9 +295,9 @@ are used to write natural numbers into the GPRs.</p>"
                            :low 8 :width 8)
                           :exec
                           (the (unsigned-byte 64)
-                            (logior (the (unsigned-byte 64)
-                                      (logand #xffffffffffff00ff qword))
-                                    (the (unsigned-byte 16) (ash byte 8))))))
+                               (logior (the (unsigned-byte 64)
+                                            (logand #xffffffffffff00ff qword))
+                                       (the (unsigned-byte 16) (ash byte 8))))))
                     x86))))
 
     ///
@@ -310,18 +308,18 @@ are used to write natural numbers into the GPRs.</p>"
                (x86p (wr08 reg rex byte x86)))))
 
   (encapsulate
-   ()
+    ()
 
-   (local
-    (include-book "arithmetic-5/top" :dir :system))
+    (local
+     (include-book "arithmetic-5/top" :dir :system))
 
-   (defthm loghead-logtail-logext-for-rr08/wr08
-     (implies (integerp x)
-              (equal (loghead 8 (logtail 8 (logext 64 x)))
-                     (loghead 8 (logtail 8 x))))
-     :hints (("Goal" :in-theory
-              (e/d (logtail evenp oddp logbitp logext loghead logapp)
-                   ())))))
+    (defthm loghead-logtail-logext-for-rr08/wr08
+      (implies (integerp x)
+               (equal (loghead 8 (logtail 8 (logext 64 x)))
+                      (loghead 8 (logtail 8 x))))
+      :hints (("Goal" :in-theory
+               (e/d (logtail evenp oddp logbitp logext loghead logapp)
+                    ())))))
 
   (defthm rr08-wr08-same
     (implies (n08p byte)
@@ -393,9 +391,9 @@ are used to write natural numbers into the GPRs.</p>"
                     :low 0 :width 16)
                    :exec
                    (the (unsigned-byte 64)
-                     (logior (the (unsigned-byte 64)
-                               (logand qword #xffffffffffff0000))
-                             val))))
+                        (logior (the (unsigned-byte 64)
+                                     (logand qword #xffffffffffff0000))
+                                val))))
              x86))
 
     ///
@@ -576,253 +574,7 @@ are used to write natural numbers into the GPRs.</p>"
       (otherwise
        ;; The guard says nbytes shouldn't be anything other than 1, 2,
        ;; 4, or 8.
-       x86)))
-
-  )
-
-;; ======================================================================
-
-(defsection XMMs-Reads-and-Writes
-
-  :parents (register-readers-and-writers)
-
-  :short "Functions to read/write 32/64/128 bits into the XMM registers"
-
-  :long "<p>@(see rx32), @(see rx64), and @(see rx128) will read the contents
-of the XMMs as natural numbers.</p>
-
-<p>Similarly, @(see wx32), @(see wx64), and @(see wx128)
-are used to write natural numbers into the XMMs.</p>"
-
-  (local (xdoc::set-default-parents XMMs-Reads-and-Writes))
-
-  (define rx32
-    ((reg :type (unsigned-byte 4))
-     (x86))
-    :inline t
-
-    (n32 (the (unsigned-byte 128) (xmmi reg x86)))
-
-    ///
-
-    (defthm-usb n32p-rx32
-      :hyp t
-      :bound 32
-      :concl (rx32 reg x86)
-      :gen-linear t
-      :gen-type t))
-
-  (define rx64
-    ((reg :type (unsigned-byte 4))
-     (x86))
-    :inline t
-
-    (n64 (the (unsigned-byte 128) (xmmi reg x86)))
-
-    ///
-
-    (defthm-usb n64p-rx64
-      :hyp t
-      :bound 64
-      :concl (rx64 reg x86)
-      :gen-linear t
-      :gen-type t))
-
-  (define rx128
-    ((reg :type (unsigned-byte 4))
-     (x86))
-    :inline t
-
-    (mbe :logic (n128 (xmmi reg x86))
-         :exec  (the (unsigned-byte 128) (xmmi reg x86)))
-
-    ///
-
-    (defthm-usb n128p-rx128
-      :hyp t
-      :bound 128
-      :concl (rx128 reg x86)
-      :hints (("Goal" :in-theory (disable xmmi-is-n128p)))
-      :gen-linear t
-      :gen-type t))
-
-  (define wx32
-    ((reg  :type (unsigned-byte  4))
-     (val  :type (unsigned-byte 32))
-     (x86))
-    :inline t
-    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
-                                           bitops::logsquash)
-                                          (bitops::logand-with-negated-bitmask
-                                           bitops::logand-with-bitmask
-                                           unsigned-byte-p))))
-
-    (let ((oword (the (unsigned-byte 128) (xmmi reg x86))))
-      (!xmmi reg
-             (mbe :logic
-                  (part-install val
-                                (part-select oword :low 0 :width 128)
-                                :low 0 :width 32)
-                  :exec
-                  (the (unsigned-byte 128)
-                       (logior (the (unsigned-byte 128)
-                                    (logand oword #xffffffffffffffffffffffff00000000))
-                               val)))
-             x86))
-
-    ///
-
-    (defthm x86p-wx32
-      (implies (and (x86p x86)
-                    (natp reg))
-               (x86p (wx32 reg val x86)))))
-
-  (defthm rx32-wx32-same
-    (implies (n32p val)
-             (equal (rx32 reg (wx32 reg val x86))
-                    val))
-    :hints (("Goal"
-             :in-theory (e/d (rx32 wx32
-                              )
-                             (xmmi-is-n128p
-                              unsigned-byte-p)))))
-
-  (defthm rx32-wx32-different
-    (implies (not (equal reg1 reg2))
-             (equal (rx32 reg1 (wx32 reg2 val x86))
-                    (rx32 reg1 x86)))
-    :hints (("Goal"
-             :in-theory (e/d (rx32 wx32 )
-                             (xmmi-is-n128p)))))
-
-  (define wx64
-    ((reg  :type (unsigned-byte  4))
-     (val  :type (unsigned-byte 64))
-     (x86))
-    :inline t
-    :guard-hints (("Goal" :in-theory (e/d (
-                                           loghead-to-logand
-                                           bitops::logsquash)
-                                          (bitops::logand-with-negated-bitmask
-                                           bitops::logand-with-bitmask
-                                           unsigned-byte-p))))
-    (let ((oword (the (unsigned-byte 128) (xmmi reg x86))))
-      (!xmmi reg
-             (mbe :logic
-                  (part-install
-                   val
-                   (part-select oword :low 0 :width 128)
-                   :low 0 :width 64)
-                  :exec
-                  (the (unsigned-byte 128)
-                       (logior (the (unsigned-byte 128)
-                                    (logand oword #xffffffffffffffff0000000000000000))
-                               val)))
-             x86))
-
-    ///
-    (defthm x86p-wx64
-      (implies (and (x86p x86)
-                    (natp reg))
-               (x86p (wx64 reg val x86)))))
-
-  (defthm rx64-wx64-same
-    (implies (n64p val)
-             (equal (rx64 reg (wx64 reg val x86))
-                    val))
-    :hints (("Goal"
-             :in-theory (e/d (rx64 wx64
-                              )
-                             (xmmi-is-n128p
-                              unsigned-byte-p)))))
-
-  (defthm rx64-wx64-different
-    (implies (not (equal reg1 reg2))
-             (equal (rx64 reg1 (wx64 reg2 val x86))
-                    (rx64 reg1 x86)))
-    :hints (("Goal"
-             :in-theory (e/d (rx64 wx64 )
-                             (xmmi-is-n128p)))))
-
-  (define wx128
-    ((reg  :type (unsigned-byte 4))
-     (val  :type (unsigned-byte 128))
-     (x86))
-    :inline t
-    :guard-hints (("Goal" :in-theory (e/d (
-                                           loghead-to-logand
-                                           bitops::logsquash)
-                                          (bitops::logand-with-negated-bitmask
-                                           bitops::logand-with-bitmask
-                                           unsigned-byte-p))))
-
-    (!xmmi reg (mbe :logic (n128 val)
-                    :exec  val)
-           x86)
-
-    ///
-
-    (defthm x86p-wx128
-      (implies (and (x86p x86)
-                    (natp reg))
-               (x86p (wx128 reg val x86)))))
-
-  (defthm rx128-wx128-same
-    (implies (n128p val)
-             (equal (rx128 reg (wx128 reg val x86))
-                    val))
-    :hints (("Goal"
-             :in-theory (e/d (rx128 wx128 )
-                             (xmmi-is-n128p
-                              unsigned-byte-p)))))
-
-  (defthm rx128-wx128-different
-    (implies (not (equal reg1 reg2))
-             (equal (rx128 reg1 (wx128 reg2 val x86))
-                    (rx128 reg1 x86)))
-    :hints (("Goal"
-             :in-theory (e/d (rx128 wx128 )
-                             (xmmi-is-n128p)))))
-
-  (define xmmi-size
-    ((nbytes :type (unsigned-byte 5))
-     (index  :type (unsigned-byte 4))
-     x86)
-    :enabled t
-    :guard (member nbytes '(4 8 16))
-    :inline t
-    :returns (val natp :rule-classes :type-prescription)
-    (case nbytes
-      (4  (rx32  index x86))
-      (8  (rx64  index x86))
-      (16 (rx128 index x86))
-      (otherwise
-       ;; This function shouldn't really be used in the case when nbytes
-       ;; != 4, 8, or 16.  Anyway, the guard says nbytes shouldn't be
-       ;; anything else.
-       0)))
-
-  (define !xmmi-size
-    ((nbytes :type (unsigned-byte 5))
-     (index  :type (unsigned-byte 4))
-     (val    :type integer)
-     x86)
-    :enabled t
-    :guard (and (member nbytes '(4 8 16))
-                (unsigned-byte-p (ash nbytes 3) val))
-    :returns (x86 x86p :hyp (and (x86p x86) (natp index)))
-    :inline t
-    (case nbytes
-      (4  (wx32  index val x86))
-      (8  (wx64  index val x86))
-      (16 (wx128 index val x86))
-      (otherwise
-       ;; This function shouldn't really be used in the case when nbytes
-       ;; != 4, 8, or 16.  Anyway, the guard says nbytes shouldn't be
-       ;; anything else.
-       x86)))
-
-  )
+       x86))))
 
 ;; ======================================================================
 
@@ -937,9 +689,583 @@ pointer, or opcode registers\).</em></p>"
 
     (defthm x86p-mmx-instruction-updates
       (implies (x86p x86)
-               (x86p (mmx-instruction-updates x86)))))
+               (x86p (mmx-instruction-updates x86))))))
 
-  )
+;; ======================================================================
+
+(defsection ZMMs-Reads-and-Writes
+
+  :parents (register-readers-and-writers)
+
+  :short "Functions to read/write 32/64/128/256/512 bits into the
+  XMM/YMM/ZMM registers"
+
+  :long "<p>Source: Intel Vol. 1, Section 15.5: ACCESSING XMM, YMM AND ZMM
+ REGISTERS</p>
+
+ <blockquote>The lower 128 bits of a YMM register is aliased to the
+ corresponding XMM register. Legacy SSE instructions (i.e., SIMD
+ instructions operating on XMM state but not using the VEX prefix,
+ also referred to non-VEX encoded SIMD instructions) will not access
+ the upper bits (MAXVL-1:128) of the YMM registers. AVX and FMA
+ instructions with a VEX prefix and vector length of 128-bits zeroes
+ the upper 128 bits of the YMM register.</blockquote>
+
+ <blockquote>Upper bits of YMM registers (255:128) can be read and
+ written to by many instructions with a VEX.256 prefix. XSAVE and
+ XRSTOR may be used to save and restore the upper bits of the YMM
+ registers.</blockquote>
+
+ <blockquote>The lower 256 bits of a ZMM register are aliased to the
+ corresponding YMM register. Legacy SSE instructions (i.e., SIMD
+ instructions operating on XMM state but not using the VEX prefix,
+ also referred to non-VEX encoded SIMD instructions) will not access
+ the upper bits (MAXVL-1:128) of the ZMM registers, where MAXVL is
+ maximum vector length (currently 512 bits). AVX and FMA instructions
+ with a VEX prefix and vector length of 128-bits zero the upper 384
+ bits of the ZMM register, while the VEX prefix and vector length of
+ 256-bits zeroes the upper 256 bits of the ZMM register.  Upper bits
+ of ZMM registers (511:256) can be read and written to by instructions
+ with an EVEX.512 prefix.</blockquote>
+
+ <p>@(see rz32), @(see rz64), @(see rz128), @(see rz256), and @(see
+ rz512) will read the contents of the ZMMs as natural numbers.</p>
+
+ <p>Similarly, @(see wz32), @(see wz64), @(see wz128), @(see wz256),
+ and @(see wz512) are used to write natural numbers into the
+ ZMMs.</p>"
+
+  (local (xdoc::set-default-parents ZMMs-Reads-and-Writes))
+
+  (define rz32
+    ((reg :type (unsigned-byte 5))
+     (x86))
+    :inline t
+
+    (n32 (the (unsigned-byte 512) (zmmi reg x86)))
+
+    ///
+
+    (defthm-usb n32p-rz32
+      :hyp t
+      :bound 32
+      :concl (rz32 reg x86)
+      :gen-linear t
+      :gen-type t))
+
+  (define rz64
+    ((reg :type (unsigned-byte 5))
+     (x86))
+    :inline t
+
+    (n64 (the (unsigned-byte 512) (zmmi reg x86)))
+
+    ///
+
+    (defthm-usb n64p-rz64
+      :hyp t
+      :bound 64
+      :concl (rz64 reg x86)
+      :gen-linear t
+      :gen-type t))
+
+  (define rz128
+    ((reg :type (unsigned-byte 5))
+     (x86))
+    :inline t
+
+    (n128 (the (unsigned-byte 512) (zmmi reg x86)))
+
+    ///
+
+    (defthm-usb n128p-rz128
+      :hyp t
+      :bound 128
+      :concl (rz128 reg x86)
+      :gen-linear t
+      :gen-type t))
+
+  (define rz256
+    ((reg :type (unsigned-byte 5))
+     (x86))
+    :inline t
+
+    (n256 (the (unsigned-byte 512) (zmmi reg x86)))
+
+    ///
+
+    (defthm-usb n256p-rz256
+      :hyp t
+      :bound 256
+      :concl (rz256 reg x86)
+      :gen-linear t
+      :gen-type t))
+
+  (define rz512
+    ((reg :type (unsigned-byte 5))
+     (x86))
+    :inline t
+
+    (n512 (the (unsigned-byte 512) (zmmi reg x86)))
+
+    ///
+
+    (local (in-theory (e/d () (force (force)))))
+
+    (defthm-usb n512p-rz512
+      :hyp t
+      :bound 512
+      :concl (rz512 reg x86)
+      :gen-linear t
+      :gen-type t))
+
+  (define vector-access-type-p (x)
+    :returns (ok? booleanp :rule-classes :type-prescription)
+    :enabled t
+    (or (equal x #.*xmm-access*)
+        (equal x #.*vex-xmm-access*)
+        (equal x #.*ymm-access*)
+        (equal x #.*zmm-access*)))
+
+  (define wz32
+    ((reg  :type (unsigned-byte  5))
+     (val  :type (unsigned-byte 32))
+     (x86)
+     &key
+     ((regtype vector-access-type-p) '*zmm-access*))
+    :short "Write @('val') to low 32 bits of a ZMM register"
+    :long "<p><i>Upper bits</i>: For XMM registers, upper @(`(- 512
+     128)`) bits are preserved if @('regtype') is @('*xmm-access*');
+     for @('*vex-xmm-access*'), these bits are zeroed out.  For
+     @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
+     out. For @('*zmm-access*'), no upper bits are zeroed out."
+    :inline t
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                           bitops::logand-with-bitmask
+                                           unsigned-byte-p))))
+
+    (b* ((data (the (unsigned-byte 512) (zmmi reg x86)))
+         (regtype (the (unsigned-byte 3) regtype))
+         (data (case regtype
+                 (#.*vex-xmm-access*
+                  (loghead 128 data))
+                 (#.*ymm-access*
+                  (loghead 256 data))
+                 (otherwise
+                  ;; Preserve upper bits.
+                  data)))
+         (val  (n32 (the (unsigned-byte 32) val))))
+      (!zmmi reg (part-install val data :low 0 :width 32) x86))
+
+    ///
+
+    (local (in-theory (e/d () (force (force)))))
+
+    (defthm x86p-wz32
+      (implies (and (x86p x86)
+                    (natp reg))
+               (x86p (wz32 reg val x86 :regtype access)))))
+
+  (defthm rz32-wz32-same
+    (implies (n32p val)
+             (equal (rz32 reg (wz32 reg val x86 :regtype access))
+                    val))
+    :hints (("Goal"
+             :in-theory (e/d (rz32 wz32)
+                             (unsigned-byte-p
+                              force (force))))))
+
+  (defthm rz32-wz32-different
+    (implies (not (equal reg1 reg2))
+             (equal (rz32 reg1 (wz32 reg2 val x86 :regtype access))
+                    (rz32 reg1 x86)))
+    :hints (("Goal"
+             :in-theory (e/d (rz32 wz32)
+                             (force (force))))))
+
+  (define wz64
+    ((reg  :type (unsigned-byte  5))
+     (val  :type (unsigned-byte 64))
+     (x86)
+     &key
+     ((regtype vector-access-type-p) '*zmm-access*))
+    :short "Write @('val') to low 64 bits of a ZMM register"
+    :long "<p><i>Upper bits</i>: For XMM registers, upper @(`(- 512
+     128)`) bits are preserved if @('regtype') is @('*xmm-access*');
+     for @('*vex-xmm-access*'), these bits are zeroed out.  For
+     @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
+     out. For @('*zmm-access*'), no upper bits are zeroed out."
+    :inline t
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                           bitops::logand-with-bitmask
+                                           unsigned-byte-p))))
+    (b* ((data (the (unsigned-byte 512) (zmmi reg x86)))
+         (regtype (the (unsigned-byte 3) regtype))
+         (data (case regtype
+                 (#.*vex-xmm-access*
+                  (loghead 128 data))
+                 (#.*ymm-access*
+                  (loghead 256 data))
+                 (otherwise
+                  ;; Preserve upper bits.
+                  data)))
+         (val  (the (unsigned-byte 64) (n64 val))))
+      (!zmmi reg (part-install val data :low 0 :width 64) x86))
+
+    ///
+
+    (local (in-theory (e/d () (force (force)))))
+
+    (defthm x86p-wz64
+      (implies (and (x86p x86)
+                    (natp reg))
+               (x86p (wz64 reg val x86 :regtype access)))))
+
+  (defthm rz64-wz64-same
+    (implies (n64p val)
+             (equal (rz64 reg (wz64 reg val x86 :regtype access))
+                    val))
+    :hints (("Goal"
+             :in-theory (e/d (rz64 wz64)
+                             (unsigned-byte-p
+                              force (force))))))
+
+  (defthm rz64-wz64-different
+    (implies (not (equal reg1 reg2))
+             (equal (rz64 reg1 (wz64 reg2 val x86 :regtype access))
+                    (rz64 reg1 x86)))
+    :hints (("Goal"
+             :in-theory (e/d (rz64 wz64)
+                             (force (force))))))
+
+  (define wz128
+    ((reg  :type (unsigned-byte 5))
+     (val  :type (unsigned-byte 128))
+     (x86)
+     &key
+     ((regtype vector-access-type-p) '*zmm-access*))
+    :short "Write @('val') to low 128 bits of a ZMM register"
+    :long "<p><i>Upper bits</i>: For XMM registers, upper @(`(- 512
+     128)`) bits are preserved if @('regtype') is @('*xmm-access*');
+     for @('*vex-xmm-access*'), these bits are zeroed out.  For
+     @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
+     out. For @('*zmm-access*'), no upper bits are zeroed out."
+    :inline t
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                           bitops::logand-with-bitmask
+                                           unsigned-byte-p))))
+
+    (b* ((data (the (unsigned-byte 512) (zmmi reg x86)))
+         (regtype (the (unsigned-byte 3) regtype))
+         (data (case regtype
+                 (#.*vex-xmm-access*
+                  (loghead 128 data))
+                 (#.*ymm-access*
+                  (loghead 256 data))
+                 (otherwise
+                  ;; Preserve upper bits.
+                  data)))
+         (val (the (unsigned-byte 128) (n128 val))))
+      (!zmmi reg (part-install val data :low 0 :width 128) x86))
+
+    ///
+
+    (local (in-theory (e/d () (force (force)))))
+
+    (defthm x86p-wz128
+      (implies (and (x86p x86)
+                    (natp reg))
+               (x86p (wz128 reg val x86 :regtype access)))))
+
+  (defthm rz128-wz128-same
+    (implies (n128p val)
+             (equal (rz128 reg (wz128 reg val x86 :regtype access))
+                    val))
+    :hints (("Goal"
+             :in-theory (e/d (rz128 wz128)
+                             (unsigned-byte-p
+                              force (force))))))
+
+  (defthm rz128-wz128-different
+    (implies (not (equal reg1 reg2))
+             (equal (rz128 reg1 (wz128 reg2 val x86 :regtype access))
+                    (rz128 reg1 x86)))
+    :hints (("Goal"
+             :in-theory (e/d (rz128 wz128)
+                             (force (force))))))
+
+  (define wz256
+    ((reg  :type (unsigned-byte 5))
+     (val  :type (unsigned-byte 256))
+     (x86)
+     &key
+     ((regtype vector-access-type-p) '*zmm-access*))
+
+    :short "Write @('val') to low 256 bits of a ZMM register."
+    :long "<p><i>Upper bits</i>: For @('*ymm-access*'), upper @(`(-
+     512 256)`) bits are zeroed out. For @('*zmm-access*'), no upper
+     bits are zeroed out."
+    :inline t
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                           bitops::logand-with-bitmask
+                                           unsigned-byte-p))))
+
+    (b* ((data (the (unsigned-byte 512) (zmmi reg x86)))
+         (regtype (the (unsigned-byte 3) regtype))
+         (data (case regtype
+                 (#.*ymm-access*
+                  (loghead 256 data))
+                 (otherwise
+                  ;; Preserve upper bits.
+                  data)))
+         (val (the (unsigned-byte 256) (n256 val))))
+      (!zmmi reg (part-install val data :low 0 :width 256) x86))
+
+    ///
+
+    (local (in-theory (e/d () (force (force)))))
+
+    (defthm x86p-wz256
+      (implies (and (x86p x86)
+                    (natp reg))
+               (x86p (wz256 reg val x86 :regtype access)))))
+
+  (defthm rz256-wz256-same
+    (implies (n256p val)
+             (equal (rz256 reg (wz256 reg val x86 :regtype access))
+                    val))
+    :hints (("Goal"
+             :in-theory (e/d (rz256 wz256)
+                             (unsigned-byte-p
+                              force (force))))))
+
+  (defthm rz256-wz256-different
+    (implies (not (equal reg1 reg2))
+             (equal (rz256 reg1 (wz256 reg2 val x86 :regtype access))
+                    (rz256 reg1 x86)))
+    :hints (("Goal"
+             :in-theory (e/d (rz256 wz256)
+                             (force (force))))))
+
+  (define wz512
+    ((reg  :type (unsigned-byte 5))
+     (val  :type (unsigned-byte 512))
+     (x86))
+    :short "Write @('val') to 512 bits of a ZMM register."
+    :inline t
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                           bitops::logand-with-bitmask
+                                           unsigned-byte-p))))
+
+    (let ((val (the (unsigned-byte 512) (n512 val))))
+      (!zmmi reg val x86))
+
+    ///
+
+    (local (in-theory (e/d () (force (force)))))
+
+    (defthm x86p-wz512
+      (implies (and (x86p x86)
+                    (natp reg))
+               (x86p (wz512 reg val x86)))))
+
+  (defthm rz512-wz512-same
+    (implies (n512p val)
+             (equal (rz512 reg (wz512 reg val x86))
+                    val))
+    :hints (("Goal"
+             :in-theory (e/d (rz512 wz512)
+                             (unsigned-byte-p
+                              force (force))))))
+
+  (defthm rz512-wz512-different
+    (implies (not (equal reg1 reg2))
+             (equal (rz512 reg1 (wz512 reg2 val x86))
+                    (rz512 reg1 x86)))
+    :hints (("Goal"
+             :in-theory (e/d (rz512 wz512)
+                             (force (force))))))
+
+  (define zmmi-size
+    ((nbytes :type (unsigned-byte 5))
+     (index  :type (unsigned-byte 5))
+     x86)
+    :enabled t
+    :guard (member nbytes '(4 8 16 32 64))
+    :inline t
+    :returns (val natp :rule-classes :type-prescription)
+    (case nbytes
+      (4  (rz32  index x86))
+      (8  (rz64  index x86))
+      (16 (rz128 index x86))
+      (32 (rz256 index x86))
+      (64 (rz512 index x86))
+      (otherwise
+       0)))
+
+  (define !zmmi-size
+    ((nbytes :type (unsigned-byte 5))
+     (index  :type (unsigned-byte 5))
+     (val    :type integer)
+     x86
+     &key
+     ((regtype vector-access-type-p) '*zmm-access*))
+    :short "Write @('val') to low @('nbytes') of a ZMM register"
+    :long "<p><i>Upper bits</i>: For XMM registers, upper @(`(- 512
+     128)`) bits are preserved if @('regtype') is @('*xmm-access*');
+     for @('*vex-xmm-access*'), these bits are zeroed out.  For
+     @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
+     out. For @('*zmm-access*'), no upper bits are zeroed out."
+    :enabled t
+    :guard (and (member nbytes '(4 8 16 32 64))
+                (unsigned-byte-p (ash nbytes 3) val))
+    :returns (x86 x86p :hyp (and (x86p x86) (natp index)))
+    :inline t
+    (case nbytes
+      (4  (wz32  index val x86 :regtype regtype))
+      (8  (wz64  index val x86 :regtype regtype))
+      (16 (wz128 index val x86 :regtype regtype))
+      (32 (wz256 index val x86 :regtype regtype))
+      (64 (wz512 index val x86))
+      (otherwise
+       x86))))
+
+(defsection XMMs-Reads-and-Writes
+
+  :parents (ZMMs-Reads-and-Writes register-readers-and-writers)
+
+  :short "Functions to read/write 32/64/128 bits into the XMM
+  registers (to be used by non-VEX encoded 128-bit SIMD instructions)"
+
+  :long " <p>These functions are meant to be used by instructions that
+  do not use a VEX or EVEX prefix --- these functions preserve the
+  upper bits of ZMM registers.  For instructions that use these
+  prefixes and zero out these bits instead, see @(see
+  ZMMs-Reads-and-Writes).
+
+  <p>Note that the index for accessing the XMM registers is 4-bits
+  wide (as opposed to the 5-bit index for ZMM registers --- see @(see
+  ZMMs-Reads-and-Writes)) because only 16 XMM registers were supported
+  initially in the 64-bit mode (and 8 in the 32-bit mode).</p>
+
+ <p>Source: Intel Vol. 2, Section 2.3.10 --- AVX Instructions
+  and Upper 128-bits of YMM registers:</p>
+
+  <blockquote>If an instruction with a destination XMM register is
+  encoded with a VEX prefix, the processor zeroes the upper
+  bits (above bit 128) of the equivalent YMM register. Legacy SSE
+  instructions without VEX preserve the upper bits.</blockquote>
+
+ <p>Functions @(see rx32), @(see rx64), and @(see rx128) will read the
+ contents of the XMMs (i.e., low 128 bits of ZMMs) as natural
+ numbers.</p>
+
+ <p>Similarly, functions @(see wx32), @(see wx64), and @(see wx128)
+ are used to write natural numbers into the XMMs (and preserve the
+ upper bits of ZMMs).</p>"
+
+  (local (xdoc::set-default-parents XMMs-Reads-and-Writes))
+
+  (define rx32
+    ((reg :type (unsigned-byte 4))
+     (x86))
+    :inline t
+    :enabled t
+    (rz32 reg x86))
+
+  (define rx64
+    ((reg :type (unsigned-byte 4))
+     (x86))
+    :inline t
+    :enabled t
+    (rz64 reg x86))
+
+  (define rx128
+    ((reg :type (unsigned-byte 4))
+     (x86))
+    :inline t
+    :enabled t
+    (rz128 reg x86))
+
+  (define wx32
+    ((reg  :type (unsigned-byte  4))
+     (val  :type (unsigned-byte 32))
+     (x86))
+    :short "Write @('val') to low 32 bits of a ZMM register; upper
+    bits are preserved."
+    :inline t
+    :enabled t
+    (wz32 reg val x86 :regtype #.*xmm-access*))
+
+  (define wx64
+    ((reg  :type (unsigned-byte  4))
+     (val  :type (unsigned-byte 64))
+     (x86))
+    :short "Write @('val') to low 64 bits of a ZMM register; upper
+    bits are preserved."
+    :inline t
+    :enabled t
+    (wz64 reg val x86 :regtype #.*xmm-access*))
+
+  (define wx128
+    ((reg  :type (unsigned-byte  4))
+     (val  :type (unsigned-byte 128))
+     (x86))
+    :short "Write @('val') to low 128 bits of a ZMM register; upper
+    bits are preserved."
+    :inline t
+    :enabled t
+    (wz128 reg val x86 :regtype #.*xmm-access*))
+
+  (define xmmi-size
+    ((nbytes :type (unsigned-byte 5))
+     (index  :type (unsigned-byte 4))
+     x86)
+    :enabled t
+    :guard (member nbytes '(4 8 16))
+    :inline t
+    :returns (val natp :rule-classes :type-prescription)
+    (case nbytes
+      (4  (rx32  index x86))
+      (8  (rx64  index x86))
+      (16 (rx128 index x86))
+      (otherwise
+       ;; This function shouldn't really be used in the case when nbytes
+       ;; != 4, 8, or 16.  Anyway, the guard says nbytes shouldn't be
+       ;; anything else.
+       0)))
+
+  (define !xmmi-size
+    ((nbytes :type (unsigned-byte 5))
+     (index  :type (unsigned-byte 4))
+     (val    :type integer)
+     x86)
+    :short "Write @('val') to low @('nbytes') of an XMM register;
+    upper bits of the ZMM register are preserved."
+    :enabled t
+    :guard (and (member nbytes '(4 8 16))
+                (unsigned-byte-p (ash nbytes 3) val))
+    :returns (x86 x86p :hyp (and (x86p x86) (natp index)))
+    :inline t
+    (case nbytes
+      (4  (wx32  index val x86))
+      (8  (wx64  index val x86))
+      (16 (wx128 index val x86))
+      (otherwise
+       ;; This function shouldn't really be used in the case when nbytes
+       ;; != 4, 8, or 16.  Anyway, the guard says nbytes shouldn't be
+       ;; anything else.
+       x86))))
 
 ;; ======================================================================
 

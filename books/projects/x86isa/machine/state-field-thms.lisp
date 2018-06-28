@@ -84,7 +84,7 @@ re-arrange these nests of updates.</p>
     :CTR
     :DBG
     :FP-DATA
-    :XMM
+    :ZMM
     :MSR
     :MEM))
 
@@ -307,8 +307,8 @@ re-arrange these nests of updates.</p>
                            (:fp-last-inst (unsigned-byte-p 48 value))
                            (:fp-last-data (unsigned-byte-p 48 value))
                            (:fp-opcode    (unsigned-byte-p 11 value))
-                           (:xmm          (and (integerp index)
-                                               (unsigned-byte-p 128 value)))
+                           (:zmm          (and (integerp index)
+                                               (unsigned-byte-p 512 value)))
                            (:mxcsr        (unsigned-byte-p 32 value))
                            (:msr          (and (integerp index)
                                                (unsigned-byte-p 64 value)))
@@ -327,7 +327,7 @@ re-arrange these nests of updates.</p>
                                seg-hiddenp strp ssr-visiblep ssr-hiddenp
                                ctrp msrp dbgp fp-datap fp-ctrlp
                                fp-statusp fp-tagp fp-last-instp
-                               fp-last-datap fp-opcodep xmmp mxcsrp msrp
+                               fp-last-datap fp-opcodep zmmp mxcsrp msrp
                                msp faultp env-alistp undefp booleanp
                                memp)
                          ()))))
