@@ -192,6 +192,18 @@
  fapply-terms-same-args) to apply each function in a specified list to a
  specified list of arguments.</p>
 
+ <p>A new event, @(tsee defunt), is a variant of @(tsee defun) that uses
+ termination theorems from a large set of @(see community-books) &mdash;
+ namely, all books included in @('books/doc/top.lisp'), which is the book that
+ creates the ACL2+Books manual &mdash; to generate termination proofs
+ automatically.  Those proofs use @(':')@(tsee termination-theorem) @(see
+ lemma-instance)s that reference @('defun') events in those included books.
+ Several new supporting utilities are documented: @(tsee fms!-lst), which
+ writes a list to a character output channel; @(tsee injections), which lists
+ all maps from a domain to a range; @(tsee strict-merge-sort-<), which sorts without
+ duplicates; and @(tsee subsetp-eq-linear), which is a linear-time subset test
+ for sorted lists of symbols.</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <p>The behavior and code for the expander (see @(see defthm?)) have been
