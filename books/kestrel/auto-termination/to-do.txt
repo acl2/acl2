@@ -3,10 +3,44 @@ including the code that supports it.
 
 ----------
 
+Defunt can attempt to include an uncertified book.  That can be OK
+interactively (provided its inclusion doesn't depend on portcullis
+commands, for example to define packages), but it will cause
+certification to fail.  It might be best to exclude uncertified books
+somehow.
+
+This would (a) require knowing which books are certified, and also (b)
+modifying the implementation of defunt to use that information to skip
+functions that are associated with uncertified books.  Probably (b)
+would be straightforward.
+
+For (a), one possibility is to LD td-cands.acl2 to get all the
+packages, and then read the certificate of every book mentioned in
+td-cands.lisp to get and then check its :BOOK-LENGTH and
+:BOOK-WRITE-DATE, perhaps skipping those that have an old-style
+book-hash.  Every user of defunt would then be required to execute
+such a script to write out a list of acceptable books, which would be
+read in somehow the first time that defunt is used in a session.  If
+defunt is called with no such list, then an error message would
+complain and point to a :doc topic on how to set that up.
+
+When defunt fails to complete, it could try to complete without
+restricting to the acceptable books and then print a message pointing
+to the functions it used -- that could still be useful information for
+someone trying to admit a definition.
+
+----------
+
 Extend defunt to be incremental (kind of in the spirit of
 terminatrix), where the database read in from td-cands.lisp can be
 extended incrementally, perhaps with a table so that the database is
 respected by undoing.
+
+----------
+
+Make it easy for a user to set up defunt to be used based on a given
+set of certified books, smaller than the "everything" suite that
+currently generates td-cands.lisp.
 
 ----------
 
