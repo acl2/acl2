@@ -13,6 +13,7 @@
 (include-book "abnf/top")
 (include-book "abnf/examples") ; they have XDOC topics for the manual
 (include-book "apt/top")
+(include-book "ethereum/top")
 (include-book "soft/top")
 (include-book "utilities/top")
 
