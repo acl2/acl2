@@ -30,6 +30,7 @@
 
 (in-package "SV")
 (include-book "svmods")
+(include-book "../svex/lists")
 (include-book "centaur/misc/numlist" :dir :system)
 (include-book "add-ons/hash-stobjs" :dir :system)
 (include-book "std/stobjs/absstobjs" :dir :system)
@@ -7635,15 +7636,6 @@ checked to see if it is a valid bitselect and returned as a separate value."
 
 
 
-(define binary-append-tr (x y)
-  :enabled t
-  (mbe :logic (append x y)
-       :exec (revappend-without-guard (rev x) y))
-  ///
-  (defmacro append-tr (&rest args)
-    (cond ((null args) nil)
-          ((null (cdr args)) (car args))
-          (t (xxxjoin 'binary-append-tr args)))))
 
 (define constraintlist-add-scope (scope (x constraintlist-p))
   :returns (new-x constraintlist-p)

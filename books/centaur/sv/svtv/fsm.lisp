@@ -499,8 +499,6 @@
 
 
 
-(fty::deflist svarlist-list :elt-type svarlist :true-listp t)
-
 (define svex-envlist-extract ((keys svarlist-list-p)
                               (envs svex-envlist-p))
   :returns (new-envs svex-envlist-p)
@@ -900,17 +898,6 @@
                                       svtv-fsm-run-svex-alists)))))
 
 
-(define sum-of-lengths (x)
-  (if (atom x)
-      0
-    (+ (len (car x))
-       (sum-of-lengths (cdr x))))
-  ///
-  (defthm sum-of-lengths-of-cdr
-    (implies (consp x)
-             (= (sum-of-lengths (cdr x))
-                (- (sum-of-lengths x) (len (car x)))))
-    :rule-classes :linear))
 
 
 (define svtv-fsm-run-symbolic-svexlist->alists ((signals svarlist-list-p)
@@ -977,7 +964,23 @@
                     (svex-alistlist-eval x env)))
     :hints (("goal" :use svtv-fsm-run-symbolic-svexlist->alists-of-append-alist-vals
              :in-theory (disable svtv-fsm-run-symbolic-svexlist->alists-of-append-alist-vals)
-             :do-not-induct t))))
+             :do-not-induct t)))
+  
+  (local (defthmd nthcdr-of-append-less
+           (implies (<= (nfix n) (len x))
+                    (equal (nthcdr n (append x y))
+                           (append (nthcdr n x) y)))
+           :hints(("Goal" :in-theory (enable nthcdr append)))))
+
+  (defthm svtv-fsm-run-symbolic-svexlist->alists-of-append-excess
+    (implies (<= (sum-of-lengths keys) (len x))
+             (equal (svtv-fsm-run-symbolic-svexlist->alists keys (append x y))
+                    (svtv-fsm-run-symbolic-svexlist->alists keys x)))
+    :hints(("Goal" :in-theory (enable svtv-fsm-run-symbolic-svexlist->alists
+                                      sum-of-lengths
+                                      nthcdr-of-append-less)
+            :induct (svtv-fsm-run-symbolic-svexlist->alists keys x)
+            :expand ((:free (x) (svtv-fsm-run-symbolic-svexlist->alists keys x)))))))
 
 (local
  (progn
