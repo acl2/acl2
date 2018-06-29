@@ -2250,14 +2250,8 @@
 
     (#x9D
      "(POPF d64 Fv) or (POPD d64 Fv) or (POPQ d64 Fv)"
-     (if (64-bit-modep x86)
-         (x86-popf start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                   x86)
-       (x86-step-unimplemented
-        (cons (cons "POPF/POPD/POPQ is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-popf
+      start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#x9E
      "(SAHF)"

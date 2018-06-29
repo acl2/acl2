@@ -943,6 +943,7 @@
 ;; INSTRUCTION: POPF/POPFQ
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-popf
 
   ;; #x9D
@@ -952,15 +953,19 @@
   ;; the top of stack to RFLAGS.  POPFQ pops 64-bits from the stack,
   ;; loads the lower 32 bits into rflags, and zero-extends the upper
   ;; bits of eflags."
+  ;; TODO: the text just above does not refer to the latest manual (May 2018),
+  ;; which does not seem to contain that text in the page for POPF/POPFD/POPFQ;
+  ;; should this text be removed?
 
   ;; TO-DO@Shilpi: For the time being, I am going to assume that the
   ;; CPL is 0.
 
-  ;; 64-bit mode operation of x86-popf:
+  ;; 64-bit and 32-bit mode operation of x86-popf:
+  ;; (we do not model real-address, virtual-8086, and VME -- Intel Table 4-15)
 
   ;; if cpl > 0 then
 
-  ;;    if operand-size = 8 then
+  ;;    if operand-size = 8 or operand-size = 4 then
 
   ;;       if cpl > iopl then
   ;;          rflags := 64-bit-pop()
@@ -1008,29 +1013,28 @@
   :body
 
   (b* ((ctx 'x86-popf)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p3? (equal #.*operand-size-override*
                    (prefixes-slice :group-3-prefix prefixes)))
+
        ((the (integer 1 8) operand-size)
-        (if p3?
-            2
-          ;; 4-byte operand size is N.E. in 64-bit mode
-          8))
-       (rsp (rgfi *rsp* x86))
-       ((when (not (canonical-address-p rsp)))
-        (!!fault-fresh :ss 0 :rsp-not-canonical rsp)) ;; #SS(0)
-       ((the (signed-byte #.*max-linear-address-size+1*) new-rsp)
-        (+ (the (signed-byte #.*max-linear-address-size*) rsp) operand-size))
-       ;; Raise a #SS exception.
-       ((when (mbe :logic (not (canonical-address-p new-rsp))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                                  new-rsp))))
-        (!!fault-fresh :ss 0
-                       :ss-exception-new-rsp-not-canonical new-rsp)) ;; #SS(0)
+        (if (64-bit-modep x86)
+            (if p3? 2 8)
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d
+                (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
+
+       (rsp (read-*sp x86))
+
+       ((mv flg new-rsp) (add-to-*sp rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((mv flg0 val x86)
         (rme-size operand-size rsp *ss* :r (alignment-checking-enabled-p x86) x86
@@ -1052,7 +1056,7 @@
         (logior 2 (the (unsigned-byte 32) (logand #x3f7fd7 val))))
 
        ;; Update the x86 state:
-       (x86 (!rgfi *rsp* new-rsp x86))
+       (x86 (write-*sp new-rsp x86))
        (x86
         (case operand-size
           (2
@@ -1077,13 +1081,7 @@
        ;; caught in x86-fetch-decode-execute, that is, before control
        ;; reaches this function.
 
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                                  temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================
