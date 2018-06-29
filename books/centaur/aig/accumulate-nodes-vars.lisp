@@ -31,6 +31,7 @@
 (in-package "ACL2")
 
 (include-book "aig-vars-ext")
+(include-book "aig-vars")
 (include-book "centaur/misc/alist-equiv" :dir :system)
 
 (local (in-theory (disable set::double-containment)))
@@ -42,7 +43,7 @@
 
 ;; First, the straightforward way.
 (defun collect-nodes (a)
-  (b* (((when (atom a)) (if (booleanp a) nil (list a)))
+  (b* (((when (aig-atom-p a)) (if (booleanp a) nil (list a)))
        ((When (eq (cdr a) nil))
         (collect-nodes (car a))))
     (cons a
@@ -52,7 +53,7 @@
 ;; Second, with an accumulator that we cons nodes onto after recurring on their
 ;; subtrees.
 (defun accumulate-nodes-post (a lst)
-  (b* (((when (atom a)) (if (or (booleanp a)
+  (b* (((when (aig-atom-p a)) (if (or (booleanp a)
                                 (member a lst))
                             lst
                           (cons a lst)))
@@ -69,10 +70,10 @@
 ;; Third, with an accumulator that we cons nodes onto before recurring on their
 ;; subtrees.
 (defun accumulate-nodes-pre (a lst)
-  (b* (((when (atom a)) (if (or (booleanp a)
-                                (member a lst))
-                            lst
-                          (cons a lst)))
+  (b* (((when (aig-atom-p a)) (if (or (booleanp a)
+                                      (member a lst))
+                                  lst
+                                (cons a lst)))
        ((when (eq (cdr a) nil))
         (accumulate-nodes-pre (car a) lst))
        ((when (member a lst))
@@ -139,7 +140,7 @@
    ;;                     (member x (collect-nodes a))))))
    (declare (ignorable x)
             (xargs :measure (* 2 (acl2-count a))))
-   (b* (((when (atom a)) lst)
+   (b* (((when (aig-atom-p a)) lst)
         ((when (eq (cdr a) nil))
          (accumulate-nodes-post-member-ind (car a) lst x))
         ((when (member a lst)) lst)
@@ -249,7 +250,7 @@
    ;;                     (member x (collect-nodes a))))))
    (declare (ignorable x)
             (xargs :measure (* 2 (acl2-count a))))
-   (b* (((when (atom a)) lst)
+   (b* (((when (aig-atom-p a)) lst)
         ((when (eq (cdr a) nil))
          (accumulate-nodes-pre-member-ind (car a) lst x))
         ((when (member a lst)) lst)
@@ -273,6 +274,24 @@
 
 (flag::make-flag accumulate-nodes-pre-flg accumulate-nodes-pre-member-ind)
 
+(local (defthmd car-of-aig-atom
+         (implies (aig-atom-p x)
+                  (equal (car x) nil))
+         :hints(("Goal" :in-theory (enable aig-atom-p)))))
+
+;; (local (defthm car-member-of-collect-nodes-when-not-atom
+;;          (implies (and (not (aig-atom-p x))
+;;                        (not (booleanp (car x))))
+;;                   (member (car x) (collect-nodes x)))
+;;          :hints(("Goal" :in-theory (enable collect-nodes aig-atom-p)
+;;                  :expand ((collect-nodes x)
+;;                           (collect-nodes (car x)))
+;;                  :do-not-induct t))))
+
+(defthm subnode-lst-complete-for-subnodes-of-nil
+  (subnode-lst-complete-for-subnodes nil lst)
+  :hints(("Goal" :in-theory (enable subnode-lst-complete-for-subnodes))))
+
 (defthm subnode-lst-complete-for-subnodes-of-car-a
   (implies (subnode-lst-complete-for-subnodes a lst)
            (subnode-lst-complete-for-subnodes (car a) lst))
@@ -283,10 +302,13 @@
                                 (car a) lst)))
                   (y (mv-nth 1 (subnode-lst-complete-for-subnodes-witness
                                 (car a) lst)))))
-           :in-theory (disable subnode-lst-complete-for-subnodes-rewrite))))
+           :cases ((aig-atom-p a))
+           :in-theory (e/d (car-of-aig-atom)
+                           (subnode-lst-complete-for-subnodes-rewrite)))))
 
 (defthm subnode-lst-complete-for-subnodes-of-cdr-a
-  (implies (subnode-lst-complete-for-subnodes a lst)
+  (implies (and (subnode-lst-complete-for-subnodes a lst)
+                (not (aig-atom-p a)))
            (subnode-lst-complete-for-subnodes (cdr a) lst))
   :hints (("goal" :expand ((subnode-lst-complete-for-subnodes (cdr a) lst))
            :use ((:instance
@@ -295,6 +317,7 @@
                                 (cdr a) lst)))
                   (y (mv-nth 1 (subnode-lst-complete-for-subnodes-witness
                                 (cdr a) lst)))))
+           :cases ((aig-atom-p a))
            :in-theory (disable subnode-lst-complete-for-subnodes-rewrite))))
 
 (defthm subnode-lst-complete-for-subnodes-cons-non-subnode
@@ -319,7 +342,8 @@
 
 (defthm subnode-of-and-node-when-in-lst
   (implies (and (subnode-lst-complete-for-subnodes a lst)
-                (consp a) (cdr a)
+                (not (aig-atom-p a))
+                (cdr a)
                 (member a lst)
                 (not (member x lst)))
            (not (member x (collect-nodes a))))
@@ -437,6 +461,10 @@
 
 (in-theory (disable var-lst-complete-for-subnodes-rw))
 
+(defthm var-lst-complete-for-subnodes-of-nil
+  (var-lst-complete-for-subnodes nil nodes vars)
+  :hints(("Goal" :in-theory (enable var-lst-complete-for-subnodes))))
+
 (defthm var-lst-complete-for-subnodes-of-car-a
   (implies (var-lst-complete-for-subnodes a nodes vars)
            (var-lst-complete-for-subnodes (car a) nodes vars))
@@ -446,10 +474,13 @@
                   (v (mv-nth 0 (var-lst-complete-for-subnodes-witness
                                 (car a) nodes vars)))
                   (n (mv-nth 1 (var-lst-complete-for-subnodes-witness
-                                (car a) nodes vars))))))))
+                                (car a) nodes vars)))))
+           :cases ((aig-atom-p a))
+           :in-theory (enable car-of-aig-atom))))
 
 (defthm var-lst-complete-for-subnodes-of-cdr-a
-  (implies (var-lst-complete-for-subnodes a nodes vars)
+  (implies (and (var-lst-complete-for-subnodes a nodes vars)
+                (not (aig-atom-p a)))
            (var-lst-complete-for-subnodes (cdr a) nodes vars))
   :hints (("goal" :expand ((var-lst-complete-for-subnodes (cdr a) nodes vars))
            :use ((:instance
@@ -475,9 +506,7 @@
 
 (defthm var-lst-complete-for-var
   (implies (and (var-lst-complete-for-subnodes a nodes vars)
-                (not (consp a))
-                a
-                (not (equal a t))
+                (aig-var-p a)
                 (member a nodes))
            (member a vars))
   :hints (("goal" :use ((:instance var-lst-complete-for-subnodes-necc
@@ -486,7 +515,7 @@
 
 (defthm var-lst-complete-for-and
   (implies (and (var-lst-complete-for-subnodes a nodes vars)
-                (consp a)
+                (not (aig-atom-p a))
                 (cdr a)
                 (member a nodes)
                 (not (member v vars)))
@@ -505,7 +534,7 @@
  (defun-nx accumulate-aig-vars-member-ind (a nodetable vars x)
    (declare (ignorable x)
             (xargs :measure (* 2 (acl2-count a))))
-   (b* (((when (atom a)) vars)
+   (b* (((when (aig-atom-p a)) vars)
         ((when (eq (cdr a) nil))
          (accumulate-aig-vars-member-ind (car a) nodetable vars x))
         ((when (hons-get a nodetable)) vars)
@@ -580,11 +609,89 @@
                        (append (aig-vars a) vars)))
   :hints ((set-reasoning)))
 
+
 (defthm accumulate-aig-vars-reduces-to-aig-vars
   (set-equiv (mv-nth 1 (accumulate-aig-vars a nil nil))
               (aig-vars a)))
 
 (in-theory (disable accumulate-aig-vars))
+
+(defun-sk var-lst-complete (nodes vars)
+  (forall (v n)
+          (implies (and (member n nodes)
+                        (member v (aig-vars n)))
+                   (member v vars)))
+  :rewrite :direct)
+
+(in-theory (disable var-lst-complete
+                    var-lst-complete-necc))
+
+(defthm var-lst-complete-implies-var-lst-complete-for-subnodes
+  (implies (var-lst-complete nodes vars)
+           (var-lst-complete-for-subnodes a nodes vars))
+  :hints (("goal" :expand ((var-lst-complete-for-subnodes a nodes vars))
+           :in-theory (enable var-lst-complete-necc))))
+
+(defthm var-lst-complete-of-nil
+  (var-lst-complete nil vars)
+  :hints(("Goal" :in-theory (enable var-lst-complete))))
+
+(defthm subnode-lst-complete-implies-subnode-lst-complete-for-subnodes
+  (implies (subnode-lst-complete lst)
+           (subnode-lst-complete-for-subnodes a lst))
+  :hints (("goal" :expand ((subnode-lst-complete-for-subnodes a lst))
+           :in-theory (enable subnode-lst-complete-necc))))
+
+(defthm accumulate-aig-vars-preserves-var-lst-complete
+  (implies (and (var-lst-complete (alist-keys nodetable) vars)
+                (subnode-lst-complete (alist-keys nodetable)))
+           (b* (((mv & vars) (accumulate-aig-vars a nodetable vars))
+                (nodes (accumulate-nodes-pre a (alist-keys nodetable))))
+             (var-lst-complete nodes vars)))
+  :hints (("goal" :do-not-induct t
+           :in-theory (disable accumulate-aig-vars))
+          (and stable-under-simplificationp
+               `(:expand (,(car (last clause)))
+                 :in-theory (enable var-lst-complete-necc)))))
+
+(defthm accumulate-nodes-pre-preserves-subnode-lst-complete
+  (implies (subnode-lst-complete nodetable)
+           (b* ((nodetable (accumulate-nodes-pre a nodetable)))
+             (subnode-lst-complete nodetable)))
+  :hints (("goal" :do-not-induct t
+           :in-theory (disable accumulate-nodes-pre))
+          (and stable-under-simplificationp
+               `(:expand (,(car (last clause)))
+                 :in-theory (enable subnode-lst-complete-necc)))))
+
+(defthm accumulate-aig-vars-list-preserves-subnode-lst-complete
+  (implies (subnode-lst-complete (alist-keys nodetable))
+           (subnode-lst-complete
+            (alist-keys (mv-nth 0 (accumulate-aig-vars-list x nodetable vars)))))
+  :hints(("Goal" :in-theory (enable accumulate-aig-vars-list))))
+
+(defthm accumulate-aig-vars-list-preserves-var-lst-complete
+  (implies (and (var-lst-complete (alist-keys nodetable) vars)
+                (subnode-lst-complete (alist-keys nodetable)))
+           (b* (((mv nodetable vars) (accumulate-aig-vars-list x nodetable vars)))
+             (var-lst-complete (alist-keys nodetable) vars)))
+  :hints(("Goal" :in-theory (enable accumulate-aig-vars-list))))
+
+(defthm setp-of-aiglist-vars
+  (set::setp (aiglist-vars x))
+  :hints(("Goal" :in-theory (enable aiglist-vars))))
+
+(defthm accumulate-aig-vars-list-under-set-equiv
+  (implies (and (var-lst-complete (alist-keys nodetable) vars)
+                (subnode-lst-complete (alist-keys nodetable)))
+           (b* (((mv ?nodetable vars-out) (accumulate-aig-vars-list x nodetable vars)))
+             (set-equiv vars-out (append (aiglist-vars x) vars))))
+  :hints(("Goal" :in-theory (enable accumulate-aig-vars-list aiglist-vars))))
+
+(defthm accumulate-aig-vars-list-reduces-to-aiglist-vars
+  (b* (((mv ?nodetable vars-out) (accumulate-aig-vars-list x nil nil)))
+    (set-equiv vars-out (aiglist-vars x))))
+           
 
 
 ;;---------------------------------------------------------------------------
@@ -593,16 +700,52 @@
 ;; Invariant for this is just that the variables are duplicate-free, and any
 ;; variable present is present in the nodetable.
 
+(local (defthm accumulate-aig-vars-preserves-vars-subset-of-nodetable-lemma
+         (implies (subsetp-equal vars (alist-keys nodetable))
+                  (b* (((mv & vars)
+                        (accumulate-aig-vars a nodetable vars))
+                       (nodes (accumulate-nodes-pre a (alist-keys nodetable))))
+                    (subsetp-equal vars nodes)))
+         :hints(("Goal" :in-theory (enable accumulate-aig-vars)
+                 :induct (accumulate-aig-vars a nodetable vars)
+                 :expand ((accumulate-aig-vars a nodetable vars)
+                          (accumulate-nodes-pre a (alist-keys nodetable))))
+                (set-reasoning))))
+
+(defthm accumulate-aig-vars-preserves-vars-subset-of-nodetable
+  (implies (and (subsetp-equal vars (alist-keys nodetable))
+                (equal keys (alist-keys nodetable)))
+           (b* (((mv & vars)
+                 (accumulate-aig-vars a nodetable vars))
+                (nodes (accumulate-nodes-pre a keys)))
+             (subsetp-equal vars nodes))))
+
 (defthm accumulate-aig-vars-duplicate-free
   (implies (and (no-duplicatesp vars)
                 (subsetp-equal vars (alist-keys nodetable)))
-           (b* (((mv nodetable vars)
+           (b* (((mv ?nodetable vars)
                  (accumulate-aig-vars a nodetable vars)))
-             (and (no-duplicatesp vars)
-                  (subsetp-equal vars (alist-keys nodetable)))))
+             (no-duplicatesp vars)))
   :hints(("Goal" :in-theory (enable accumulate-aig-vars)
-          :induct t)
-         (set-reasoning)))
+          :induct t)))
+
+(defthm accumulate-aig-vars-list-preserves-vars-subset-of-nodetable
+  (implies (subsetp-equal vars (alist-keys nodetable))
+           (b* (((mv nodetable vars)
+                 (accumulate-aig-vars-list a nodetable vars)))
+             (subsetp-equal vars (alist-keys nodetable))))
+  :hints(("Goal" :in-theory (enable accumulate-aig-vars-list)
+          :induct t)))
+
+
+(defthm accumulate-aig-vars-list-duplicate-free
+  (implies (and (no-duplicatesp vars)
+                (subsetp-equal vars (alist-keys nodetable)))
+           (b* (((mv ?nodetable vars)
+                 (accumulate-aig-vars-list a nodetable vars)))
+             (no-duplicatesp vars)))
+  :hints(("Goal" :in-theory (enable accumulate-aig-vars-list)
+          :induct t)))
 
 
 

@@ -94,6 +94,12 @@
     (<= (len bitarr) (len new-bitarr))
     :rule-classes :linear)
 
+  (local (defthmd pairlis$-of-take
+           (implies (equal (len x) (nfix n))
+                    (equal (pairlis$ x (take n y))
+                           (pairlis$ x y)))
+           :hints(("Goal" :in-theory (enable pairlis$)))))
+
   (local (defun-nx aignet-bitarr-to-aig-env-of-aig-env-to-bitarr-ind (n vars vars1 env bitarr)
            (if (atom vars)
                (list n vars1)
@@ -137,7 +143,9 @@
                                             acl2::car-of-take
                                             acl2::take-redefinition))
                    :induct (aignet-bitarr-to-aig-env-of-aig-env-to-bitarr-ind n vars vars1 env bitarr)
-                   :expand ((aig-env-to-bitarr n vars env bitarr))))))
+                   :expand ((aig-env-to-bitarr n vars env bitarr)))
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable pairlis$-of-take))))))
 
   (std::defret aignet-bitarr-to-aig-env-of-aig-env-to-bitarr
     (equal (aignet::aignet-bitarr-to-aig-env vars (aig-env-to-bitarr 0 vars env bitarr))
@@ -146,11 +154,11 @@
                            (vars1 nil) (n 0)))
              :in-theory (disable aignet-bitarr-to-aig-env-of-aig-env-to-bitarr-gen)))))
     
-(local (defthm non-bool-atom-listp-of-keys-when-bfr-updates-p
+(local (defthm aig-var-listp-of-keys-when-bfr-updates-p
          (implies (and (bfr-updates-p x)
                        (bfr-mode))
-                  (aignet::non-bool-atom-listp (alist-keys x)))
-         :hints(("Goal" :in-theory (enable bfr-updates-p alist-keys aignet::non-bool-atom-listp bfr-varname-p)))))
+                  (acl2::aig-var-listp (alist-keys x)))
+         :hints(("Goal" :in-theory (enable bfr-updates-p alist-keys acl2::aig-var-listp bfr-varname-p)))))
 
 
 (local (include-book "std/lists/resize-list" :dir :system))
@@ -221,17 +229,18 @@
     :rule-classes :type-prescription)
 
   (local (defthm aig-vars-of-append-list
-           (implies (true-listp a)
-                    (acl2::set-equiv (acl2::aig-vars (append a b))
-                                     (append (acl2::aig-vars a) (acl2::aig-vars b))))))
+           (acl2::set-equiv (acl2::aiglist-vars (append a b))
+                            (append (acl2::aiglist-vars a) (acl2::aiglist-vars b)))))
 
   (std::defret prop-vars-covered-of-aig-mcheck-to-aignet
     (subsetp (acl2::aig-vars prop) (append (alist-keys updates) invars))
-    :hints ((acl2::set-reasoning)))
+    :hints (("goal" :expand ((:free (x) (acl2::aiglist-vars (list x)))))
+            (acl2::set-reasoning)))
 
   (std::defret updates-vars-covered-of-aig-mcheck-to-aignet
-    (subsetp (acl2::aig-vars (alist-vals updates)) (append (alist-keys updates) invars))
-    :hints ((acl2::set-reasoning))))
+    (subsetp (acl2::aiglist-vars (alist-vals updates)) (append (alist-keys updates) invars))
+    :hints (("goal" :expand ((:free (x) (acl2::aiglist-vars (list x)))))
+            (acl2::set-reasoning))))
 
 
 
@@ -291,7 +300,7 @@
                (mv status nil aignet aignet2 frames))
               (- (if (equal 0 (aignet::aignet-check-ctrex aignet2 frames))
                      (std::raise
-                         "Error: Counterexample from ABC was not confirmed on aignet~%")
+                      "Error: Counterexample from ABC was not confirmed on aignet~%")
                    (cw "Counterexample from ABC confirmed on aignet~%")))
               (ctrex-inputs (aignet::aignet-frames-to-aig-envs frames in-vars)))
            (mv :refuted ctrex-inputs aignet aignet2 frames)))
@@ -345,6 +354,11 @@
                                    aignet)
                      (output-eval-seq k n frames initsts aignet)))
      :hints(("Goal" :in-theory (enable output-eval-seq)))))
+
+  (local (Defthm aiglist-vars-of-singleton
+           (equal (acl2::aiglist-vars (list x))
+                  (acl2::aig-vars x))
+           :hints(("Goal" :in-theory (enable acl2::aiglist-vars)))))
 
   (std::defret aig-fsm-run-when-abc-mcheck-simple
     (implies (and (equal result :proved)
@@ -430,10 +444,10 @@
   (local (defthmd aig-env-extract-when-bfr-env-equiv         
            (implies (and (bfr-mode)
                          (bfr-env-equiv a b)
-                         (aignet::non-bool-atom-listp keys))
+                         (acl2::aig-var-listp keys))
                     (equal (equal (acl2::aig-env-extract keys a) (acl2::aig-env-extract keys b)) t))
            :hints(("Goal" :in-theory (e/d (acl2::aig-env-extract
-                                           aignet::non-bool-atom-listp)
+                                           acl2::aig-var-listp)
                                           (acl2::aig-env-lookup))
                    :induct t)
                   (and stable-under-simplificationp

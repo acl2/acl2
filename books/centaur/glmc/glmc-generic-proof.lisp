@@ -859,7 +859,7 @@
     (local (defthm bfr-varname-fix-when-natp-bfr-varname-fix
              (implies (natp (bfr-varname-fix x))
                       (equal (nfix x) (bfr-varname-fix x)))
-             :hints(("Goal" :in-theory (enable bfr-varname-fix non-bool-atom-fix)))))
+             :hints(("Goal" :in-theory (enable bfr-varname-fix aig-var-fix)))))
 
     (local (in-theory (disable ACL2::INEQUALITY-WITH-NFIX-HYP-1
                                acl2::natp-when-gte-0)))
@@ -2266,7 +2266,7 @@
   (local (defthm alist-vals-of-pairlis$
            (equal (alist-vals (pairlis$ x y))
                   (take (len x) y))
-           :hints(("Goal" :in-theory (enable alist-vals)))))
+           :hints(("Goal" :in-theory (enable alist-vals pairlis$)))))
 
   (local (defthm take-of-same-len
            (implies (equal (nfix n) (len x))
@@ -6526,7 +6526,7 @@
   (local (defthmd nfix-when-natp-bfr-varname-fix
            (implies (natp (bfr-varname-fix x))
                     (equal (nfix x) (bfr-varname-fix x)))
-           :hints(("Goal" :in-theory (enable bfr-varname-fix non-bool-atom-fix non-bool-atom-p)))))
+           :hints(("Goal" :in-theory (enable bfr-varname-fix aig-var-fix acl2::aig-var-p)))))
                        
   ;; (defthm bfr-lookup-in-bvar-db-fix-env-aig-mode-blah
   ;;   (implies (and (natp (bfr-varname-fix k))

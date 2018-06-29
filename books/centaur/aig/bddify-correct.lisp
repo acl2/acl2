@@ -1009,7 +1009,7 @@
 ;;                            (table-alist 'witness-cp-rulesets world)))))
 
 (defthm aig-q-compose-of-and-under-bdd-equiv
-  (implies (and (consp x)
+  (implies (and (not (aig-atom-p x))
                 (cdr x))
            (bdd-equiv (aig-q-compose x al)
                       (q-and (aig-q-compose (car x) al)
@@ -1017,7 +1017,7 @@
   :hints ((simple-bdd-reasoning)))
 
 (defthm aig-q-compose-of-not-under-bdd-equiv
-  (implies (and (consp x)
+  (implies (and (not (aig-atom-p x))
                 (not (cdr x)))
            (bdd-equiv (aig-q-compose x al)
                       (q-not (aig-q-compose (car x) al))))
@@ -1029,9 +1029,7 @@
   :hints((simple-bdd-reasoning)))
 
 (defthm aig-q-compose-of-var
-  (implies (and (not (consp x))
-                (not (equal x t))
-                x)
+  (implies (aig-var-p x)
            (equal (aig-q-compose x al)
                   (aig-alist-lookup x al))))
 
@@ -2659,7 +2657,7 @@
   (local
    (progn
      (defun aig-bddify-var-weakening-induct (x al max-count fmemo memo bdd-al nxtbdd)
-       (if (consp x)
+       (if (not (aig-atom-p x))
            (if (cdr x)
                (if (not (or (hons-get x memo) (hons-get x fmemo)))
                    (list (aig-bddify-var-weakening-induct (car x) al max-count fmemo memo
@@ -3274,4 +3272,4 @@
                            (vars (vars-to-bdd-env (aig-vars x) env))))
              :in-theory (disable aig-q-compose-vars-to-bdd-env
                                  bdd-sat-dfs-correct)
-             :do-not-induct t))))
+             :do-not-induct t)))) 
