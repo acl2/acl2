@@ -3,7 +3,7 @@
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2015-2018, Regents of the University of Texas
+; Copyright (C) 2015, Regents of the University of Texas
 ; Copyright (C) 2018, Kestrel Technology, LLC
 ; All rights reserved.
 
