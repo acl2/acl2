@@ -482,7 +482,11 @@ explicit declarations.</p>")
                 name @('direct-pkg'), i.e., @('import foo::bar').")
    (wildpkgs   string-listp
                "This entry is imported via @('import foo::*') statements from
-                each of packages named in @('wildpkgs').")))
+                each of packages named in @('wildpkgs').")
+   (genblockp booleanp
+              :rule-classes :type-prescription
+              "Non-nil indicates that this is a generate block and therefore
+               may not be present in the scopestack.")))
 
 (fty::defalist vl-lexscope
   :short "Representation of a single, partial, lexical scope."
@@ -559,7 +563,8 @@ explicit declarations.</p>")
 (define vl-lexscopes-declare-name ((name     stringp)
                                    (decl     any-p)
                                    (scopes   vl-lexscopes-p)
-                                   (warnings vl-warninglist-p))
+                                   (warnings vl-warninglist-p)
+                                   &key (genblockp booleanp))
   :returns (mv (scopes   vl-lexscopes-p)
                (warnings vl-warninglist-p))
   :parents (vl-lexscopes)
@@ -581,7 +586,8 @@ explicit declarations.</p>")
         (mv (cons (hons-acons name
                               (make-vl-lexscope-entry :decl       decl
                                                       :direct-pkg nil
-                                                      :wildpkgs   nil)
+                                                      :wildpkgs   nil
+                                                      :genblockp genblockp)
                               scope1)
                   (cdr scopes))
             warnings))
@@ -870,13 +876,15 @@ explicit declarations.</p>")
 (define vl-shadowcheck-declare-name ((name     stringp)
                                      (decl     any-p)
                                      (st       vl-shadowcheck-state-p)
-                                     (warnings vl-warninglist-p))
+                                     (warnings vl-warninglist-p)
+                                     &key
+                                     (genblockp booleanp))
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
   (b* (((vl-shadowcheck-state st))
        (- (vl-shadowcheck-debug "    vl-shadowcheck-declare-name: ~s0 for ~a1.~%" name decl))
        ((mv lexscopes warnings)
-        (vl-lexscopes-declare-name name decl st.lexscopes warnings))
+        (vl-lexscopes-declare-name name decl st.lexscopes warnings :genblockp genblockp))
        ;; I don't think we need to particularly do any cross-checking here.  By
        ;; extending the lexscope we will have checked for import/decl
        ;; conflicts, and we should be checking for redeclaration conflicts
@@ -943,11 +951,15 @@ explicit declarations.</p>")
        ((mv item scopestack-at-import pkg-name)
         (vl-scopestack-find-item/context name st.ss))
        ((unless (or item pkg-name))
-        (mv st
-            (fatal :type :vl-programming-error
-                   :msg "~a0: scopestack can't resolve ~s1 but it is found ~
+        (if entry.genblockp
+            ;; If it's the name of a generate block (in a loop/if/case) then it
+            ;; won't be found in the scopestack.
+            (mv st (ok))
+          (mv st
+              (fatal :type :vl-programming-error
+                     :msg "~a0: scopestack can't resolve ~s1 but it is found ~
                          in the lexical scope, so how could that happen? ~x2."
-                   :args (list ctx name entry))))
+                     :args (list ctx name entry)))))
 
        ((unless pkg-name)
         ;; Scopestack doesn't think this is imported from a package.
@@ -968,13 +980,27 @@ explicit declarations.</p>")
              ;; local scope while lexscope is looking above.  ("Shadowed")
              (ss-level  (vl-scopestack-nesting-level scopestack-at-import))
              (lex-level (len tail))
+             ((when (and entry.genblockp (< ss-level lex-level)))
+              ;; This is OK -- we have a genblock in this scope and the name is
+              ;; also bound in a superior scope.
+              (mv st (ok)))
+
              ((unless (equal ss-level lex-level))
               (mv st
                   (warn :type :vl-tricky-scope
                         :msg "~a0: the name ~s1 has complex scoping that we ~
                                do not support.  Lexical level ~x2, scopestack ~
                                level ~x3."
-                        :args (list ctx name lex-level ss-level)))))
+                        :args (list ctx name lex-level ss-level))))
+
+             ((when entry.genblockp)
+              ;; Scopestack has an entry for this but it's also a generate
+              ;; block.
+              (mv st (warn :type :vl-tricky-scope
+                           :msg "~a0: the name ~s1 is bound to ~a2 but it is ~
+                                 also the name of a generate block in the ~
+                                 same scope."
+                           :args (list ctx name item)))))
 
           ;; Looks like a match.
           (mv st (ok))))
@@ -985,6 +1011,13 @@ explicit declarations.</p>")
        ;;  - we found an import of foo::bar, but either bar isn't defined in
        ;;    that package, or foo doesn't exist.
        ;;  - we found an import of foo::*, but foo doesn't exist.
+       ((when entry.genblockp)
+        (mv st (warn :type :vl-tricky-scope
+                     :msg "~a0: the name ~s1 might be imported from package ~
+                           ~s2 (item: ~a3), but it is also the name of a ~
+                           generate block."
+                     :args (list ctx name pkg-name item))))
+
        ((when entry.decl)
         (mv st (fatal :type :vl-programming-error
                       :msg "~a0: scopestack thinks ~s1 is imported from ~s2 ~
@@ -1767,19 +1800,23 @@ explicit declarations.</p>")
              (body-scope     (vl-genblock->genblob x.body))
              (extended-scope (change-vl-genblob body-scope
                                                 :paramdecls (cons var-paramdecl (vl-genblob->paramdecls body-scope))))
+             ;; Keep generally in sync with vl-shadowcheck-genblock -- we
+             ;; basically want to do that, but there are a few extra things we
+             ;; need to do inside the block scope here.
+
+             ;; If the loop has a name, regard it as declared in the scope
+             ;; where it was defined.
+             (name (vl-genblock->name x.body))
+             ((mv st warnings) (if (stringp name)
+                                   (vl-shadowcheck-declare-name name x st warnings :genblockp t)
+                                 (mv st warnings)))
              ((mv st warnings) (vl-shadowcheck-push-scope extended-scope st warnings))
              ((mv st warnings) (vl-shadowcheck-paramdecl var-paramdecl st warnings))
              ((mv st warnings) (vl-shadowcheck-expr x.initval x st warnings))
              ((mv st warnings) (vl-shadowcheck-expr x.continue x st warnings))
              ((mv st warnings) (vl-shadowcheck-expr x.nextval x st warnings))
              ((mv st warnings) (vl-shadowcheck-genelementlist (vl-genblock->elems x.body) st warnings))
-             (st (vl-shadowcheck-pop-scope st))
-             ;; If the loop has a name, regard it as declared in the scope
-             ;; where it was defined.
-             (name (vl-genblock->name x.body))
-             ((mv st warnings) (if (stringp name)
-                                   (vl-shadowcheck-declare-name name x st warnings)
-                                 (mv st warnings))))
+             (st (vl-shadowcheck-pop-scope st)))
           (mv st warnings))
         :vl-genarray
         (mv st
@@ -1810,6 +1847,14 @@ explicit declarations.</p>")
     (b* (((vl-genblock x) (vl-genblock-fix x))
          (st              (vl-shadowcheck-state-fix st))
          (warnings        (vl-warninglist-fix warnings))
+
+         ;; If the block has a name, regard it as declared in the scope
+         ;; outside, (It could be declared again within the block, see for
+         ;; instance cosims/generate8).
+         ((mv st warnings) (if (stringp x.name)
+                               (vl-shadowcheck-declare-name x.name x st warnings :genblockp t)
+                             (mv st warnings)))
+
          ;; Background: see the discussion of implicit wires of how begin/end
          ;; blocks are handled and also the discussion of condnestp in
          ;; vl-genblock.  Since shadowchecking happens after we've gotten rid
@@ -1822,14 +1867,7 @@ explicit declarations.</p>")
          ((mv st warnings) (vl-shadowcheck-genelementlist x.elems st warnings))
          (st               (if x.condnestp
                                st
-                             (vl-shadowcheck-pop-scope st)))
-
-         ;; If the block has a name, regard it as declared now that we're
-         ;; done processing the block. (It shouldn't be declared within the
-         ;; block, see for instance cosims/generate8).
-         ((mv st warnings) (if (stringp x.name)
-                               (vl-shadowcheck-declare-name x.name x st warnings)
-                             (mv st warnings))))
+                             (vl-shadowcheck-pop-scope st))))
       (mv st warnings)))
 
   (define vl-shadowcheck-gencaselist ((x        vl-gencaselist-p)

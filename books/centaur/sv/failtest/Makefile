@@ -43,8 +43,10 @@ SVOK_FILES := $(patsubst %.v, %.svok, $(SPEC_FILES))
 
 FAILING_TEST_TARGETS := \
   bigwire1.svok \
+  fn1.vok fn1.svok \
   gates2.svok \
   gates5.svok \
+  iface8.svok \
   inc8.svok \
   inc9.svok \
   inst9.svok \
