@@ -33,6 +33,7 @@
 (include-book "misc/hons-help" :dir :system)
 (include-book "centaur/aig/aig-vars-fast" :dir :system)
 (include-book "centaur/aig/aig-base" :dir :system)
+(include-book "centaur/aig/aig-vars" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
@@ -308,8 +309,7 @@
     (if (atom varmap)
         t
       (and (or (atom (car varmap))
-               (and (atom (caar varmap))
-                    (not (booleanp (caar varmap)))
+               (and (acl2::aig-var-p (caar varmap))
                     (litp (cdar varmap))
                     (fanin-litp (cdar varmap) aignet)))
            (good-varmap-p (cdr varmap) aignet))))
@@ -454,6 +454,11 @@
     (iff (hons-assoc-equal
           x (aignet-eval-to-env varmap in-vals reg-vals aignet))
          (hons-assoc-equal x varmap)))
+
+  (defthm not-present-in-aignet-eval-to-env
+    (implies (not (hons-assoc-equal x varmap))
+             (not (hons-assoc-equal
+                   x (aignet-eval-to-env varmap in-vals reg-vals aignet)))))
 
   (defthm lookup-in-aignet-eval-to-env
     (implies (hons-assoc-equal x varmap)
@@ -917,14 +922,6 @@
              (fanin-id-range-p id count new-aignet))
     :hints(("Goal" :in-theory (enable aignet-add-regs)))))
 
-(defun non-bool-atom-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      t
-    (and (atom (car x))
-         (not (booleanp (car x)))
-         (non-bool-atom-listp (cdr x)))))
-
 
 
 (define consecutive-vars-to-varmap ((n natp) vars varmap)
@@ -938,7 +935,7 @@
          (or (member v vars) (hons-assoc-equal v varmap))))
 
   (std::defret lookup-in-consecutive-vars-to-varmap-when-not-var
-    (implies (not (member v vars))
+    (implies (double-rewrite (not (member v vars)))
              (equal (hons-assoc-equal v new-varmap)
                     (hons-assoc-equal v varmap))))
 
@@ -951,7 +948,7 @@
 
   (std::defret good-varmap-p-of-consecutive-vars-to-varmap
     (implies (and (good-varmap-p varmap aignet)
-                  (non-bool-atom-listp vars)
+                  (acl2::aig-var-listp vars)
                   (fanin-id-range-p n (len vars) aignet))
              (good-varmap-p new-varmap aignet))
     :hints(("Goal" :in-theory (enable fanin-id-range-p good-varmap-p)))))
@@ -1014,11 +1011,11 @@
 ;;           t
 ;;         (and (atom (car x))
 ;;              (not (booleanp (car x)))
-;;              (non-bool-atom-listp (cdr x)))))
+;;              (acl2::aig-var-listp (cdr x)))))
 
 ;;     (defthm good-varmap-p-of-make-varmap
 ;;       (implies (and (good-varmap-p acc aignet)
-;;                     (non-bool-atom-listp vars))
+;;                     (acl2::aig-var-listp vars))
 ;;                (mv-let (acc aignet)
 ;;                  (make-varmap vars regp acc aignet)
 ;;                  (good-varmap-p acc aignet)))
@@ -1065,7 +1062,7 @@
 
 ;;     (defthm make-varmap-preserves-inp
 ;;       (implies (and (good-varmap-p varmap aignet)
-;;                     (non-bool-atom-listp vars)
+;;                     (acl2::aig-var-listp vars)
 ;;                     (hons-assoc-equal x varmap)
 ;;                     (equal (id->type (lit-id (cdr (hons-assoc-equal x varmap)))
 ;;                                      aignet)
@@ -1080,7 +1077,7 @@
 
 ;;     (defthm make-varmap-preserves-regp
 ;;       (implies (and (good-varmap-p varmap aignet)
-;;                     (non-bool-atom-listp vars)
+;;                     (acl2::aig-var-listp vars)
 ;;                     (hons-assoc-equal x varmap)
 ;;                     (equal (io-id->regp (lit-id (cdr (hons-assoc-equal x varmap)))
 ;;                                         aignet)
@@ -1095,7 +1092,7 @@
 
 ;;     (defthm make-varmap-preserves-bound-to-regs
 ;;       (implies (and (good-varmap-p varmap aignet)
-;;                     (non-bool-atom-listp vars)
+;;                     (acl2::aig-var-listp vars)
 ;;                     (bound-to-regs-in-varmap names varmap aignet))
 ;;                (mv-let (varmap aignet)
 ;;                  (make-varmap vars t varmap aignet)
@@ -1109,7 +1106,7 @@
 
 ;;     (defthm make-varmap-bound-to-regs
 ;;       (implies (and (good-varmap-p varmap aignet)
-;;                     (non-bool-atom-listp vars))
+;;                     (acl2::aig-var-listp vars))
 ;;                (mv-let (varmap aignet)
 ;;                  (make-varmap vars t varmap aignet)
 ;;                  (bound-to-regs-in-varmap
@@ -1250,7 +1247,7 @@
 
 ;;     (defthm good-varmap-p-of-add-to-varmap
 ;;       (implies (and (good-varmap-p acc aignet)
-;;                     (non-bool-atom-listp vars))
+;;                     (acl2::aig-var-listp vars))
 ;;                (mv-let (acc aignet)
 ;;                  (add-to-varmap vars regp acc aignet)
 ;;                  (good-varmap-p acc aignet)))
@@ -1332,14 +1329,32 @@
 
 
 
+(local (defthm member-implies-natp-index-of-strong
+         (implies (double-rewrite (member k x))
+                  (natp (acl2::index-of k x)))))
+
+(local (defthm member-implies-index-of-less-strong
+         (implies (double-rewrite (member k x))
+                  (< (acl2::index-of k x)
+                     (len x)))
+         :rule-classes (:rewrite :linear)))
+
+
+
 (defsection aig-fsm-prepare-aignet/varmap
   (local (in-theory (enable length)))
 
 
-  (local (defthm aig-vars-of-append-is-aig-vars-of-cons
-           (implies (true-listp x)
-                    (equal (aig-vars (append x y))
-                           (aig-vars (cons x y))))))
+  (defthm aiglist-vars-of-append
+    (equal (acl2::aiglist-vars (append a b))
+           (set::union (acl2::aiglist-vars a)
+                       (acl2::aiglist-vars b)))
+    :hints(("Goal" :in-theory (enable acl2::aiglist-vars))))
+
+  ;; (local (defthm aig-vars-of-append-is-aig-vars-of-cons
+  ;;          (implies (true-listp x)
+  ;;                   (equal (aig-vars (append x y))
+  ;;                          (aig-vars (cons x y))))))
 
   (local (defthm no-duplicatesp-of-set-diff
            (implies (no-duplicatesp x)
@@ -1378,7 +1393,7 @@
     :returns (mv varmap input-vars reg-vars new-aignet)
     (b* ((reg-aigs (alist-vals reg-alist))
          (all-vars (acl2::aig-vars-unordered-list
-                    (cons reg-aigs out-list)))
+                    (append reg-aigs out-list)))
          (reg-vars (alist-keys reg-alist))
          (in-vars (acl2::hons-set-diff all-vars reg-vars))
          (nregs    (len reg-vars))
@@ -1447,11 +1462,11 @@
 
     (std::defret in-vars-of-aig-fsm-prepare-aignet/varmap
       (acl2::set-equiv input-vars
-                       (set-difference$ (aig-vars (append (alist-vals reg-alist) out-list))
+                       (set-difference$ (acl2::aiglist-vars (append (alist-vals reg-alist) out-list))
                                         (alist-keys reg-alist))))
 
     (std::defret aig-fsm-prepare-input-varmap-lookup
-      (implies (and (member v (aig-vars (append (alist-vals reg-alist) out-list)))
+      (implies (and (member v (acl2::aiglist-vars (append (alist-vals reg-alist) out-list)))
                     (not (hons-assoc-equal v reg-alist)))
                (b* ((index (acl2::index-of v input-vars))
                     (input-id (node-count (lookup-stype index :pi new-aignet))))
@@ -1466,7 +1481,7 @@
     ;;              (equal input-id (+ 1 index)))))
 
     (std::defret aig-fsm-prepare-reg-varmap-lookup
-      (implies (and (member v (aig-vars (append (alist-vals reg-alist) out-list)))
+      (implies (and (member v (acl2::aiglist-vars (append (alist-vals reg-alist) out-list)))
                     (hons-assoc-equal v reg-alist)
                     (no-duplicatesp (alist-keys reg-alist)))
                (b* ((index (acl2::index-of v (alist-keys reg-alist)))
@@ -1475,21 +1490,26 @@
                         (cons v (mk-lit reg-id 0))))))
 
 
-    (defthm non-bool-atom-listp-of-accumulate-aig-vars
-      (equal (non-bool-atom-listp
+    (defthm aig-var-listp-of-accumulate-aig-vars
+      (equal (acl2::aig-var-listp
               (mv-nth 1 (acl2::accumulate-aig-vars x nodetable acc)))
-             (non-bool-atom-listp acc))
+             (acl2::aig-var-listp acc))
       :hints(("Goal" :in-theory (enable acl2::accumulate-aig-vars))))
 
 
-    (defthm non-bool-atom-listp-of-set-difference
-      (implies (non-bool-atom-listp x)
-               (non-bool-atom-listp (set-difference$ x y)))
+    (defthm aig-var-listp-of-set-difference
+      (implies (acl2::aig-var-listp x)
+               (acl2::aig-var-listp (set-difference$ x y)))
       :hints(("Goal" :in-theory (enable set-difference$))))
 
 
+    (defthm aig-var-listp-of-accumulate-aig-vars-list
+      (iff (acl2::aig-var-listp (mv-nth 1 (acl2::accumulate-aig-vars-list x nodetable acc)))
+           (acl2::aig-var-listp acc))
+      :hints(("Goal" :in-theory (enable acl2::accumulate-aig-vars-list))))
+
     (std::defret good-varmap-p-of-aig-fsm-prepare-aignet/varmap
-      (implies (non-bool-atom-listp (alist-keys reg-alist))
+      (implies (acl2::aig-var-listp (alist-keys reg-alist))
                (good-varmap-p varmap new-aignet)))
 
     ;; (std::defretd reg-id-of-aig-fsm-prepare-reg-varmap-lookup
@@ -1526,22 +1546,22 @@
 
 
 ;;   (defthm non-bool-atom-listp-of-accumulate-aig-vars
-;;     (equal (non-bool-atom-listp
+;;     (equal (acl2::aig-var-listp
 ;;             (mv-nth 1 (acl2::accumulate-aig-vars x nodetable acc)))
-;;            (non-bool-atom-listp acc)))
+;;            (acl2::aig-var-listp acc)))
 
 ;;   (defthm non-bool-atom-listp-of-aig-vars-unordered
-;;     (non-bool-atom-listp (acl2::aig-vars-unordered x))
+;;     (acl2::aig-var-listp (acl2::aig-vars-unordered x))
 ;;     :hints(("Goal" :in-theory (enable aig-vars-unordered))))
 
 
 ;;   (defthm non-bool-atom-listp-of-set-difference
-;;     (implies (non-bool-atom-listp x)
-;;              (non-bool-atom-listp (set-difference$ x y)))
+;;     (implies (acl2::aig-var-listp x)
+;;              (acl2::aig-var-listp (set-difference$ x y)))
 ;;     :hints(("Goal" :in-theory (enable set-difference$))))
 
 ;;   ;; (defthm good-varmap-p-of-make-varmap
-;;   ;;   (implies (and (non-bool-atom-listp vars)
+;;   ;;   (implies (and (acl2::aig-var-listp vars)
 ;;   ;;                 (<= (+ (nfix start) (len vars))
 ;;   ;;                     (nfix (nth *num-regs* aignet))))
 ;;   ;;            (equal (good-varmap-p (make-varmap start vars (reg-type) acc) aignet)
@@ -1553,7 +1573,7 @@
 
 
 ;;   ;; (defthm good-varmap-p-of-add-to-varmap
-;;   ;;   (implies (and (non-bool-atom-listp vars)
+;;   ;;   (implies (and (acl2::aig-var-listp vars)
 ;;   ;;                 (no-duplicatesp vars)
 ;;   ;;                 (<= (+ (nfix start) (len (set-difference$ vars (alist-keys acc))))
 ;;   ;;                     (nfix (nth *num-inputs* aignet))))
@@ -1588,7 +1608,7 @@
 ;;   ;;            (tmpind (+ 1 (nfix n)) (cdr invars)))))
 
 ;;   ;; (local (defthmd good-varmap-p-of-pairlis-inputs1
-;;   ;;          (implies (and (non-bool-atom-listp invars)
+;;   ;;          (implies (and (acl2::aig-var-listp invars)
 ;;   ;;                        (<= (+ (nfix n) (len invars))
 ;;   ;;                            (nfix (nth *num-inputs* aignet))))
 ;;   ;;                   (good-varmap-p (pairlis$ invars
@@ -1599,7 +1619,7 @@
 ;;   ;;                   :expand ((:free (max type) (lits-of-type n max type)))))))
 
 ;;   ;; (defthm good-varmap-p-of-pairlis-inputs
-;;   ;;   (implies (and (non-bool-atom-listp invars)
+;;   ;;   (implies (and (acl2::aig-var-listp invars)
 ;;   ;;                 (<= (len invars) (nfix (nth *num-inputs* aignet))))
 ;;   ;;            (good-varmap-p
 ;;   ;;             (pairlis$ invars (lits-of-type 0 (len invars) (input-type)))
@@ -1608,7 +1628,7 @@
 ;;   ;;                          (n 0))))))
 
 ;;   ;; (local (defthmd good-varmap-p-of-pairlis-regs1
-;;   ;;          (implies (and (non-bool-atom-listp invars)
+;;   ;;          (implies (and (acl2::aig-var-listp invars)
 ;;   ;;                        (<= (+ (nfix n) (len invars))
 ;;   ;;                            (nfix (nth *num-regs* aignet))))
 ;;   ;;                   (good-varmap-p (pairlis$ invars
@@ -1619,7 +1639,7 @@
 ;;   ;;                   :expand ((:free (max type) (lits-of-type n max type)))))))
 
 ;;   ;; (defthm good-varmap-p-of-pairlis-regs
-;;   ;;   (implies (and (non-bool-atom-listp invars)
+;;   ;;   (implies (and (acl2::aig-var-listp invars)
 ;;   ;;                 (<= (len invars) (nfix (nth *num-regs* aignet))))
 ;;   ;;            (good-varmap-p
 ;;   ;;             (pairlis$ invars (lits-of-type 0 (len invars) (reg-type)))
@@ -1630,7 +1650,7 @@
 ;;   (local (in-theory (disable aignet-init)))
 
 ;;   (defthm good-varmap-p-of-aig-fsm-prepare-aignet/varmap
-;;     (implies (non-bool-atom-listp (alist-keys reg-alist))
+;;     (implies (acl2::aig-var-listp (alist-keys reg-alist))
 ;;              (b* (((mv varmap & & aignet)
 ;;                    (aig-fsm-prepare-aignet/varmap
 ;;                     reg-alist out-lits max-gates aignet)))
@@ -1939,7 +1959,7 @@
 
   ;;   (std::defret lookup-nxst-of-aig-fsm-set-nxsts
   ;;     (implies (and (aignet-lit-listp reg-lits aignet)
-  ;;                   (non-bool-atom-listp (alist-keys reg-alist))
+  ;;                   (acl2::aig-var-listp (alist-keys reg-alist))
   ;;                   (good-varmap-p varmap aignet)
   ;;                   (bound-to-regs-in-varmap
   ;;                    (alist-keys reg-alist) varmap aignet)
@@ -1974,7 +1994,7 @@
 
   ;;   (std::defret lookup-of-aig-fsm-set-nxsts-is-extension
   ;;     (implies (and (alistp reg-alist)
-  ;;                   (non-bool-atom-listp (alist-keys reg-alist))
+  ;;                   (acl2::aig-var-listp (alist-keys reg-alist))
   ;;                   (good-varmap-p varmap aignet)
   ;;                   (bound-to-regs-in-varmap
   ;;                    (alist-keys reg-alist) varmap aignet)
@@ -1986,7 +2006,7 @@
   ;;     :hints(("Goal" :in-theory (enable lookup-stype))))
 
   ;;   (std::defret nxst-count-of-aig-fsm-set-nxsts
-  ;;     (implies (and (non-bool-atom-listp (alist-keys reg-alist))
+  ;;     (implies (and (acl2::aig-var-listp (alist-keys reg-alist))
   ;;                   (good-varmap-p varmap aignet)
   ;;                   (bound-to-regs-in-varmap
   ;;                    (alist-keys reg-alist) varmap aignet))
@@ -1995,7 +2015,7 @@
   ;;                        (stype-count :nxst aignet)))))
 
   ;;   (defret lookup-reg->nxst-of-aig-fsm-set-nxsts
-  ;;     (implies (and (non-bool-atom-listp (alist-keys reg-alist))
+  ;;     (implies (and (acl2::aig-var-listp (alist-keys reg-alist))
   ;;                   (good-varmap-p varmap aignet)
   ;;                   (bound-to-regs-in-varmap
   ;;                    (alist-keys reg-alist) varmap aignet)
@@ -2093,14 +2113,14 @@
   ;; (defthm add-to-varmap-preserves-bound-to-regs
   ;;   (implies (and (bound-to-regs-in-varmap names varmap aignet)
   ;;                 (good-varmap-p varmap aignet)
-  ;;                 (non-bool-atom-listp vars))
+  ;;                 (acl2::aig-var-listp vars))
   ;;            (mv-let (varmap aignet)
   ;;              (add-to-varmap vars f varmap aignet)
   ;;              (bound-to-regs-in-varmap names varmap aignet)))
   ;;   :hints(("Goal" :in-theory (enable add-to-varmap good-varmap-p))))
 
   ;; (defthm bound-to-regs-in-varmap-of-prepare-aignet/varmap
-  ;;   (implies (non-bool-atom-listp (alist-keys reg-alist))
+  ;;   (implies (acl2::aig-var-listp (alist-keys reg-alist))
   ;;            (bound-to-regs-in-varmap
   ;;             (alist-keys reg-alist)
   ;;             (mv-nth 0 (aig-fsm-prepare-aignet/varmap reg-alist out-list max-nodes aignet))
@@ -2116,16 +2136,16 @@
   ;;             (mv-nth 3 (aiglist-to-aignet aigs xmemo varmap gatesimp strash aignet)))))
 
   ;; (defthm non-bool-atom-listp-keys-of-hons-shrink-alist
-  ;;   (implies (and (non-bool-atom-listp (alist-keys acc))
-  ;;                 (non-bool-atom-listp (alist-keys a)))
-  ;;            (non-bool-atom-listp
+  ;;   (implies (and (acl2::aig-var-listp (alist-keys acc))
+  ;;                 (acl2::aig-var-listp (alist-keys a)))
+  ;;            (acl2::aig-var-listp
   ;;             (alist-keys (hons-shrink-alist a acc)))))
 
   (define aig-fsm-to-aignet (reg-alist out-list max-nodes gatesimp aignet)
     (declare (xargs :stobjs aignet
                     :guard (and (posp max-nodes)
                                 (gatesimp-p gatesimp)
-                                (non-bool-atom-listp (alist-keys reg-alist)))
+                                (acl2::aig-var-listp (alist-keys reg-alist)))
                     :verify-guards nil
                     ;;:guard-hints (("goal" :do-not-induct t
                     ;;               :in-theory (e/d (nth-of-aiglist-to-aignet)
@@ -2176,7 +2196,7 @@
       :guard-debug t)
 
     ;; (defthm aignet-nodes-ok-of-aig-fsm-to-aignet
-    ;;   (implies (non-bool-atom-listp (alist-keys regs))
+    ;;   (implies (acl2::aig-var-listp (alist-keys regs))
     ;;            (aignet-nodes-ok
     ;;             (mv-nth 0 (aig-fsm-to-aignet regs outs max-gates gatesimp
     ;;                                          aignet)))))
@@ -2207,7 +2227,7 @@
       (b* (((mv aignet varmap ?invars ?regvars)
             (aig-fsm-to-aignet reg-alist out-list max-gates gatesimp aignet))
            (env (aignet-eval-to-env varmap in-vals reg-vals aignet)))
-        (implies (and (non-bool-atom-listp (alist-keys reg-alist))
+        (implies (and (acl2::aig-var-listp (alist-keys reg-alist))
                       (< (nfix n) (len out-list)))
                  (equal (lit-eval (fanin :co (lookup-stype n (po-stype) aignet))
                                   in-vals reg-vals aignet)
@@ -2221,7 +2241,7 @@
     ;;   (b* (((mv aignet varmap ?invars ?regvars)
     ;;         (aig-fsm-to-aignet reg-alist out-list max-gates gatesimp aignet))
     ;;        (env (aignet-eval-to-env varmap in-vals reg-vals aignet)))
-    ;;     (implies (and (non-bool-atom-listp (alist-keys reg-alist))
+    ;;     (implies (and (acl2::aig-var-listp (alist-keys reg-alist))
     ;;                   (< (nfix n) (len (alist-keys reg-alist))))
     ;;              (equal (lit-eval (node-count (lookup-stype n (nxst-stype) aignet))
     ;;                              in-vals reg-vals aignet)
@@ -2234,7 +2254,7 @@
     ;; (defthm aig-fsm-to-aignet-reg-update-correct
     ;;   (b* (((mv aignet ?varmap ?invars ?regvars)
     ;;         (aig-fsm-to-aignet reg-alist out-list max-gates gatesimp aignet)))
-    ;;     (implies (and (non-bool-atom-listp (alist-keys reg-alist))
+    ;;     (implies (and (acl2::aig-var-listp (alist-keys reg-alist))
     ;;                   (< (nfix n) (len (alist-keys reg-alist))))
     ;;              (equal (node-count (lookup-reg->nxst (node-count (lookup-stype n (reg-stype) aignet)) aignet))
     ;;                     (node-count (lookup-stype n (nxst-stype) aignet)))))
@@ -2244,7 +2264,7 @@
       (b* (((mv aignet varmap ?invars ?regvars)
             (aig-fsm-to-aignet reg-alist out-list max-gates gatesimp aignet))
            (env (aignet-eval-to-env varmap in-vals reg-vals aignet)))
-        (implies (and (non-bool-atom-listp (alist-keys reg-alist))
+        (implies (and (acl2::aig-var-listp (alist-keys reg-alist))
                       (< (nfix n) (len (alist-keys reg-alist))))
                  (equal (lit-eval (fanin-if-co (lookup-regnum->nxst n aignet))
                                   in-vals reg-vals aignet)
@@ -2268,13 +2288,9 @@
                     (append (acl2::rev (acl2::list-fix vars)) (alist-keys varmap)))
              :hints(("Goal" :in-theory (enable consecutive-vars-to-varmap alist-keys)))))
 
-    (local (defthm index-of-type-when-member
-             (implies (member x lst)
-                      (natp (acl2::index-of x lst)))
-             :rule-classes :type-prescription))
 
     (local (defthm acl2-numberp-of-index-of-when-member
-             (implies (member x lst)
+             (implies (double-rewrite (member x lst))
                       (acl2-numberp (acl2::index-of x lst)))))
 
     (local (defthm no-duplicatesp-of-set-diff
@@ -2282,12 +2298,13 @@
                       (no-duplicatesp (set-difference$ a b)))
              :hints(("Goal" :in-theory (enable set-difference$)))))
 
+
     (defthm aignet-eval-to-env-of-varmap-lookup
       (b* (((mv ?aignet varmap invars regvars)
             (aig-fsm-to-aignet reg-alist out-list max-gates gatesimp aignet))
            (env (aignet-eval-to-env varmap in-vals reg-vals aignet)))
         (implies (and (no-duplicatesp (alist-keys reg-alist))
-                      (non-bool-atom-listp (alist-keys reg-alist)))
+                      (acl2::aig-var-listp (alist-keys reg-alist)))
                  (and (iff (hons-assoc-equal var env)
                            (hons-assoc-equal var (append (aignet-bitarr-to-aig-env regvars reg-vals)
                                                          (aignet-bitarr-to-aig-env invars in-vals))))
@@ -2300,6 +2317,7 @@
                                       aignet-idp
                                       acl2::hons-assoc-equal-iff-member-alist-keys)
                                      (acl2::alist-keys-member-hons-assoc-equal))
+              :do-not-induct t
               :expand ((:free (n aignet)
                         (lit-eval (make-lit (+ 1 n) 0) in-vals reg-vals aignet))
                        (:free (n aignet)
@@ -2319,7 +2337,7 @@
             (aig-fsm-to-aignet reg-alist out-list max-gates gatesimp aignet))
            (env (aignet-eval-to-env varmap in-vals reg-vals aignet)))
         (implies (and (no-duplicatesp (alist-keys reg-alist))
-                      (non-bool-atom-listp (alist-keys reg-alist)))
+                      (acl2::aig-var-listp (alist-keys reg-alist)))
                  (acl2::alist-equiv env
                                     (append (aignet-bitarr-to-aig-env regvars reg-vals)
                                             (aignet-bitarr-to-aig-env invars in-vals)))))
@@ -2329,7 +2347,7 @@
 
 
     (defthm good-varmap-p-of-aig-fsm-to-aignet
-      (implies (non-bool-atom-listp (alist-keys regs))
+      (implies (acl2::aig-var-listp (alist-keys regs))
                (good-varmap-p (mv-nth 1 (aig-fsm-to-aignet regs outs max-gates
                                                            gatesimp aignet))
                               (mv-nth 0 (aig-fsm-to-aignet regs outs max-gates
@@ -2360,7 +2378,7 @@
 
     
     (std::defret aig-fsm-to-aignet-input-varmap-lookup
-      (implies (and (member v (aig-vars (append (alist-vals reg-alist) out-list)))
+      (implies (and (member v (acl2::aiglist-vars (append (alist-vals reg-alist) out-list)))
                     (not (hons-assoc-equal v reg-alist)))
                (b* ((index (acl2::index-of v invars))
                     (input-id (node-count (lookup-stype index :pi new-aignet))))
@@ -2368,14 +2386,14 @@
                         (cons v (mk-lit input-id 0))))))
 
     ;; (std::defretd input-id-of-aig-fsm-prepare-input-varmap-lookup
-    ;;   (implies (and (member v (aig-vars (append (alist-vals reg-alist) out-list)))
+    ;;   (implies (and (member v (acl2::aiglist-vars (append (alist-vals reg-alist) out-list)))
     ;;                 (not (hons-assoc-equal v reg-alist)))
     ;;            (b* ((index (acl2::index-of v input-vars))
     ;;                 (input-id (node-count (lookup-stype index :pi new-aignet))))
     ;;              (equal input-id (+ 1 index)))))
 
     (std::defret aig-fsm-to-aignet-reg-varmap-lookup
-      (implies (and (member v (aig-vars (append (alist-vals reg-alist) out-list)))
+      (implies (and (member v (acl2::aiglist-vars (append (alist-vals reg-alist) out-list)))
                     (hons-assoc-equal v reg-alist)
                     (no-duplicatesp (alist-keys reg-alist)))
                (b* ((index (acl2::index-of v (alist-keys reg-alist)))
@@ -2385,7 +2403,7 @@
 
     (std::defret in-vars-of-aig-fsm-to-aignet
       (acl2::set-equiv invars
-                       (set-difference$ (aig-vars (append (alist-vals reg-alist) out-list))
+                       (set-difference$ (acl2::aiglist-vars (append (alist-vals reg-alist) out-list))
                                         (alist-keys reg-alist))))
 
     (std::defret reg-vars-of-aig-fsm-to-aignet
@@ -2555,7 +2573,7 @@
 
 
 ;; (defthm aig-eval-of-extract-vars-removal
-;;   (implies (Subsetp (aig-vars x) vars)
+;;   (implies (Subsetp (acl2::aiglist-vars x) vars)
 ;;            (equal (aig-eval x (acl2::aig-env-extract vars env))
 ;;                   (aig-eval x env)))
 ;;   :hints(("Goal" :in-theory (enable aig-eval))))
@@ -2582,13 +2600,13 @@
 ;;                (acl2::aig-env-extract extract-vars-tmp-vars ,new-env))))
         
 ;; (defthm aig-eval-of-extract-vars-propagate
-;;   (implies (bind-aig-env-extract-env (aig-vars x) env new-env)
+;;   (implies (bind-aig-env-extract-env (acl2::aiglist-vars x) env new-env)
 ;;            (equal (aig-eval x env)
 ;;                   (aig-eval x new-env)))
 ;;   :hints (("goal" :use ((:instance aig-eval-of-extract-vars-removal
-;;                          (vars (aig-vars x)) (env env))
+;;                          (vars (acl2::aiglist-vars x)) (env env))
 ;;                         (:instance aig-eval-of-extract-vars-removal
-;;                          (vars (aig-vars x)) (env new-env)))
+;;                          (vars (acl2::aiglist-vars x)) (env new-env)))
 ;;            :in-theory (disable aig-eval-of-extract-vars-removal))))
 
 
@@ -2672,7 +2690,7 @@
          (b* (((mv aignet ?varmap ?invars ?regvars)
                (aig-fsm-to-aignet regs outs max-gates gatesimp aignet)))
            (implies (and (no-duplicatesp (alist-keys regs))
-                         (member v (aig-vars (append (alist-vals regs) outs))))
+                         (member v (acl2::aiglist-vars (append (alist-vals regs) outs))))
                     (equal (acl2::aig-env-lookup v (aignet-eval-to-env varmap in-vals reg-vals aignet))
                            (if (hons-assoc-equal v regs)
                                (equal 1 (nth (acl2::index-of v regvars) reg-vals))
@@ -2683,7 +2701,7 @@
 (local (defthm aig-eval-of-aignet-eval-to-env-of-aig-fsm-to-aignet
          (b* (((mv aignet ?varmap ?invars ?regvars)
                (aig-fsm-to-aignet regs outs max-gates gatesimp aignet)))
-           (implies (and (subsetp-equal (aig-vars x) (aig-vars (append (alist-vals regs) outs)))
+           (implies (and (subsetp-equal (aig-vars x) (acl2::aiglist-vars (append (alist-vals regs) outs)))
                          (no-duplicatesp (alist-keys regs)))
                     (Equal (aig-eval x (aignet-eval-to-env varmap in-vals reg-vals aignet))
                            (aig-eval x (aig-fsm-frame-env regs
@@ -2723,8 +2741,8 @@
 
   (local (defthm subsetp-vars-of-nth-reg
            (subsetp (aig-vars (nth n regvals))
-                    (aig-vars (append regvals outs)))
-           :hints(("Goal" :in-theory (enable nth aig-vars)))))
+                    (acl2::aiglist-vars (append regvals outs)))
+           :hints(("Goal" :in-theory (enable nth aig-vars acl2::aiglist-vars)))))
 
   (local (in-theory (disable acl2::aig-env-lookup)))
 
@@ -2736,13 +2754,13 @@
 
   (local (defthm subsetp-vars-of-nth
            (subsetp (aig-vars (nth n x))
-                    (aig-vars x))
-           :hints(("Goal" :in-theory (enable aig-vars nth)))))
+                    (acl2::aiglist-vars x))
+           :hints(("Goal" :in-theory (enable aig-vars nth acl2::aiglist-vars)))))
 
   (local (defthm subsetp-vars-of-nth-out
            (subsetp (aig-vars (nth n outs))
-                    (aig-vars (append regvals outs)))
-           :hints(("Goal" :in-theory (enable aig-vars append)))))
+                    (acl2::aiglist-vars (append regvals outs)))
+           :hints(("Goal" :in-theory (enable aig-vars append acl2::aiglist-vars)))))
 
   (local (defthm bits-to-bools-of-take
            (Equal (bits-to-bools (take n x))
@@ -2769,7 +2787,7 @@
            (aig-ins (aignet-frames-to-aig-envs frames invars))
            (aig-initst (aignet-bitarr-to-aig-env (alist-keys regs) initsts)))
         (implies (and (< (nfix k) (len (stobjs::2darr->rows frames)))
-                      (non-bool-atom-listp (alist-keys regs))
+                      (acl2::aig-var-listp (alist-keys regs))
                       (no-duplicatesp (alist-keys regs)))
                  (reg-vals-equivalent regs (frame-regvals k frames initsts aignet)
                                       (if (zp k)
@@ -2787,7 +2805,7 @@
            (aig-initst (aignet-bitarr-to-aig-env (alist-keys regs) initsts)))
         (implies (and (< (nfix n) (len (alist-keys regs)))
                       (< (nfix k) (len (stobjs::2darr->rows frames)))
-                      (non-bool-atom-listp (alist-keys regs))
+                      (acl2::aig-var-listp (alist-keys regs))
                       (no-duplicatesp (alist-keys regs)))
                  (equal (lit-eval-seq k (fanin-if-co (lookup-regnum->nxst n aignet))
                                      frames initsts aignet)
@@ -2807,7 +2825,7 @@
          (aig-initst (aignet-bitarr-to-aig-env (alist-keys regs) initsts)))
       (implies (and (< (nfix n) (len outs))
                     (< (nfix k) (len (stobjs::2darr->rows frames)))
-                    (non-bool-atom-listp (alist-keys regs))
+                    (acl2::aig-var-listp (alist-keys regs))
                     (no-duplicatesp (alist-keys regs)))
                (equal (lit-eval-seq k (fanin :co (lookup-stype n :po aignet))
                                     frames initsts aignet)
@@ -3180,23 +3198,23 @@
   :hints(("Goal" :in-theory (enable aig-fsm-frame-env aig-eval acl2::aig-env-lookup))))
 
 (defthm aig-eval-list-of-aig-fsm-frame-env-of-bitarr-to-aig-env-of-env-to-bitarr
-  (implies (subsetp (aig-vars x) (append vars (alist-keys regs)))
+  (implies (subsetp (acl2::aiglist-vars x) (append vars (alist-keys regs)))
            (equal (acl2::aig-eval-list x (aig-fsm-frame-env regs curr-st
                                                       (aignet-bitarr-to-aig-env vars
                                                                                 (env-to-bitarr vars ins))))
                   (acl2::aig-eval-list x (aig-fsm-frame-env regs curr-st ins))))
-  :hints(("Goal" :in-theory (enable acl2::aig-eval-list))))
+  :hints(("Goal" :in-theory (enable acl2::aig-eval-list acl2::aiglist-vars))))
 
 (defthm aig-eval-alist-of-aig-fsm-frame-env-of-bitarr-to-aig-env-of-env-to-bitarr
-  (implies (subsetp (aig-vars (alist-vals x)) (append vars (alist-keys regs)))
+  (implies (subsetp (acl2::aiglist-vars (alist-vals x)) (append vars (alist-keys regs)))
            (equal (acl2::aig-eval-alist x (aig-fsm-frame-env regs curr-st
                                                       (aignet-bitarr-to-aig-env vars
                                                                                 (env-to-bitarr vars ins))))
                   (acl2::aig-eval-alist x (aig-fsm-frame-env regs curr-st ins))))
-  :hints(("Goal" :in-theory (enable acl2::aig-eval-alist))))
+  :hints(("Goal" :in-theory (enable acl2::aig-eval-alist acl2::aiglist-vars))))
 
 (Defthm aig-fsm-frame-outs-of-bitarr-to-aig-env-of-env-to-bitarr
-  (implies (subsetp (aig-vars outputs) (append vars (Alist-keys regs)))
+  (implies (subsetp (acl2::aiglist-vars outputs) (append vars (Alist-keys regs)))
            (equal (aig-fsm-frame-outs outputs regs curr-st
                                       (aignet-bitarr-to-aig-env vars
                                                                 (env-to-bitarr vars ins)))
@@ -3204,7 +3222,7 @@
   :hints(("Goal" :in-theory (enable aig-fsm-frame-outs))))
 
 (Defthm aig-fsm-frame-nextst-of-bitarr-to-aig-env-of-env-to-bitarr
-  (implies (subsetp (aig-vars (alist-vals regs)) (append vars (Alist-keys regs)))
+  (implies (subsetp (acl2::aiglist-vars (alist-vals regs)) (append vars (Alist-keys regs)))
            (equal (aig-fsm-frame-nextst regs curr-st
                                       (aignet-bitarr-to-aig-env vars
                                                                 (env-to-bitarr vars ins)))
@@ -3217,9 +3235,9 @@
          :hints(("Goal" :in-theory (enable aig-fsm-run)))))
 
 (defthm aig-fsm-run-of-frames-to-envs-of-envs-to-frames
-  (implies (and (subsetp (aig-vars outputs)
+  (implies (and (subsetp (acl2::aiglist-vars outputs)
                          (append vars (alist-keys regs)))
-                (subsetp (aig-vars (alist-vals regs))
+                (subsetp (acl2::aiglist-vars (alist-vals regs))
                          (append vars (alist-keys regs))))
            (equal (aig-fsm-run outputs regs curr-st
                                (aignet-frame-array-to-aig-envs
@@ -3232,7 +3250,7 @@
            :induct (aig-fsm-states regs curr-st ins))))
 
 (defthm aig-fsm-states-of-frames-to-envs-of-envs-to-frames
-  (implies (subsetp (aig-vars (alist-vals regs))
+  (implies (subsetp (acl2::aiglist-vars (alist-vals regs))
                     (append vars (alist-keys regs)))
            (equal (aig-fsm-states regs curr-st
                                (aignet-frame-array-to-aig-envs

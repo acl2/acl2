@@ -38,7 +38,7 @@
 (local (include-book "std/basic/arith-equivs" :dir :system))
 
 (defrefinement bfr-varname-equiv acl2::nat-equiv
-  :hints(("Goal" :in-theory (enable bfr-varname-fix non-bool-atom-fix))))
+  :hints(("Goal" :in-theory (enable bfr-varname-fix aig-var-fix))))
 
 (defsection bfr-vars-bounded
   (defun-sk bfr-vars-bounded (n x)

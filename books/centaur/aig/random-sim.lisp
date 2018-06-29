@@ -137,30 +137,26 @@ optimization.</p>"
           naturals.  If there are any missing or invalid bindings, we
           just @(see 60-bit-fix) them."))
   :verify-guards nil
-  (cond ((atom aig)
-         (cond ((eq aig nil)
-                0)
-               ((eq aig t)
-                -1)           ;; BOZO shouldn't we return *60-bit-mask*???
-               (t
-                (let ((look (hons-get aig alst)))
+  (aig-cases aig
+   :true -1
+   :false 0
+   :var (let ((look (hons-get aig alst)))
                   (if look
                       (60-bit-fix (cdr look))
-                    -1)))))
-        ((not (cdr aig))
-         (the (signed-byte 61)
-           (lognot (the (signed-byte 61)
-                     (aig-vecsim60 (car aig) alst)))))
-        (t
-         (let ((a (aig-vecsim60 (car aig) alst)))
-           (mbe
-            :logic (logand a (aig-vecsim60 (cdr aig) alst))
-            :exec (if (= (the (signed-byte 61) a) 0)
-                      0
-                    (the (signed-byte 61)
-                      (logand (the (signed-byte 61) a)
-                              (the (signed-byte 61)
-                                (aig-vecsim60 (cdr aig) alst)))))))))
+                    -1))
+   :inv
+   (the (signed-byte 61)
+        (lognot (the (signed-byte 61)
+                     (aig-vecsim60 (car aig) alst))))
+   :and (let ((a (aig-vecsim60 (car aig) alst)))
+          (mbe
+           :logic (logand a (aig-vecsim60 (cdr aig) alst))
+           :exec (if (= (the (signed-byte 61) a) 0)
+                     0
+                   (the (signed-byte 61)
+                        (logand (the (signed-byte 61) a)
+                                (the (signed-byte 61)
+                                     (aig-vecsim60 (cdr aig) alst))))))))
   ///
   (defthm aig-vecsim60-60-bits
     (signed-byte-p 61 (aig-vecsim60 aig alst))
@@ -351,24 +347,24 @@ bit of each variable."
   ;; Same as aig-vecsim60, but the vectors in ALST can have any arbitrary
   ;; size.
   (declare (xargs :guard t))
-  (cond ((atom aig)
-         (cond ((eq aig t)
-                -1)
-               ((eq aig nil)
-                0)
-               (t
-                (let ((look (hons-get aig alst)))
-                  (if look
-                      (ifix (cdr look))
-                    -1)))))
-        ((not (cdr aig))
-         (lognot (the integer (aig-vecsim (car aig) alst))))
-        (t (let ((a (the integer (aig-vecsim (car aig) alst))))
-             (mbe :logic (logand a (aig-vecsim (cdr aig) alst))
-                  :exec (if (= a 0)
-                            0
-                          (logand a (the integer
-                                      (aig-vecsim (cdr aig) alst)))))))))
+  (aig-cases
+   aig
+   :true -1
+   :false 0
+   :var
+   (let ((look (hons-get aig alst)))
+     (if look
+         (ifix (cdr look))
+       -1))
+   :inv
+   (lognot (the integer (aig-vecsim (car aig) alst)))
+   :and
+   (let ((a (the integer (aig-vecsim (car aig) alst))))
+     (mbe :logic (logand a (aig-vecsim (cdr aig) alst))
+          :exec (if (= a 0)
+                    0
+                  (logand a (the integer
+                                 (aig-vecsim (cdr aig) alst))))))))
 
 (memoize 'aig-vecsim :condition '(and (consp aig) (cdr aig)))
 
@@ -810,27 +806,26 @@ bit of each variable."
   (defund aig-rsim60 (aig renv)
     (declare (xargs :guard (aig-rsim60-renvp renv)
                     :verify-guards nil))
-    (cond ((atom aig)
-           (cond ((eq aig nil)
-                  0)
-                 ((eq aig t)
-                  -1)
-                 (t
-                  (aig-rsim60-lookup aig renv))))
-          ((not (cdr aig))
-           (the (signed-byte 61)
-                (lognot (the (signed-byte 61)
-                             (aig-rsim60 (car aig) renv)))))
-          (t
-           (let ((a (aig-rsim60 (car aig) renv)))
-             (mbe
-              :logic (logand a (aig-rsim60 (cdr aig) renv))
-              :exec (if (= (the (signed-byte 61) a) 0)
-                        0
-                      (the (signed-byte 61)
-                           (logand (the (signed-byte 61) a)
-                                   (the (signed-byte 61)
-                                        (aig-rsim60 (cdr aig) renv))))))))))
+    (aig-cases
+     aig
+     :true -1
+     :false 0
+     :var
+     (aig-rsim60-lookup aig renv)
+     :inv
+     (the (signed-byte 61)
+          (lognot (the (signed-byte 61)
+                       (aig-rsim60 (car aig) renv))))
+     :and
+     (let ((a (aig-rsim60 (car aig) renv)))
+       (mbe
+        :logic (logand a (aig-rsim60 (cdr aig) renv))
+        :exec (if (= (the (signed-byte 61) a) 0)
+                  0
+                (the (signed-byte 61)
+                     (logand (the (signed-byte 61) a)
+                             (the (signed-byte 61)
+                                  (aig-rsim60 (cdr aig) renv)))))))))
 
   (defthm aig-rsim60-lookup-60-bits
     (unsigned-byte-p 60 (aig-rsim60-lookup var renv))

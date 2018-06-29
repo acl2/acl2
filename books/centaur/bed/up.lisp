@@ -47,8 +47,8 @@
 
 (define up-past-var
   :short "Lift a variable through another (single) variable."
-  ((vlift atom "The variable we are lifting.")
-   (vpast atom "The variable we are lifting it past.")
+  ((vlift "The variable we are lifting.")
+   (vpast "The variable we are lifting it past.")
    (left  "Left branch of vpast, with @('vlift') usually at the top.")
    (right "Right branch of vpast, with @('vlift') usually at the top.")
    ;; NOTE: currently order is irrelevant, but we will probably want it
@@ -83,13 +83,11 @@
         order))
   ///
   (defthm up-past-var-correct
-    (implies (and (force (atom vlift))
-                  (force (atom vpast)))
-             (b* (((mv bed ?order) (up-past-var vlift vpast left right order)))
-               (equal (bed-eval bed env)
-                      (if (bed-env-lookup vpast env)
-                          (bed-eval left env)
-                        (bed-eval right env)))))))
+    (b* (((mv bed ?order) (up-past-var vlift vpast left right order)))
+      (equal (bed-eval bed env)
+             (if (bed-env-lookup vpast env)
+                 (bed-eval left env)
+               (bed-eval right env))))))
 
 (define up-past-op
   :short "Lift a variable through a (single) operator."
@@ -161,7 +159,7 @@
 
        ((cons a b) bed)
 
-       ((when (atom a))
+       ((unless (integerp b))
         (b* (((when (equal a vlift))
               ;; Found the var we were looking for.  The paper mentions that to
               ;; process unrestricted BEDs here, we need to recursively process
@@ -224,7 +222,7 @@
 
   (local (defthm bed-eval-when-not-var
            (implies (and (consp x)
-                         (consp (car x)))
+                         (integerp (cdr x)))
                     (equal (bed-eval x env)
                            (bed-op-eval (cdr x)
                                         (bed-eval (caar x) env)

@@ -53,21 +53,21 @@
 ;; INSTRUCTION: XCHG
 ;; ======================================================================
 
-(local
- (defthm-sb i49p-mv-nth-3-x86-operand-from-modr/m-and-sib-bytes
-   ;; Useful in guard proofs
-   :hyp (forced-and (x86p x86))
-   :bound 49
-   :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes
-                     reg-type operand-size inst-ac? memory-ptr?
-                     p2 p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
-   :hints (("Goal"
-            :use
-            ((:instance i48p-x86-operand-from-modr/m-and-sib-bytes))
-            :in-theory
-            (e/d* () (signed-byte-p
-                      i48p-x86-operand-from-modr/m-and-sib-bytes))))
-   :gen-linear t))
+;; (local
+;;  (defthm-sb i49p-mv-nth-3-x86-operand-from-modr/m-and-sib-bytes
+;;    ;; Useful in guard proofs
+;;    :hyp (forced-and (x86p x86))
+;;    :bound 49
+;;    :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes
+;;                      reg-type operand-size inst-ac? memory-ptr?
+;;                      p2 p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
+;;    :hints (("Goal"
+;;             :use
+;;             ((:instance i48p-x86-operand-from-modr/m-and-sib-bytes))
+;;             :in-theory
+;;             (e/d* () (signed-byte-p
+;;                       i48p-x86-operand-from-modr/m-and-sib-bytes))))
+;;    :gen-linear t))
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-xchg

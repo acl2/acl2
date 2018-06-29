@@ -87,6 +87,8 @@
                aig-ite
                aig-vars
                aig-vars-1pass
+               aig-atom-p
+               aig-var-p
                ))
    '(acl2::union
      acl2::delete

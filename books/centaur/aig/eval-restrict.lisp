@@ -93,6 +93,7 @@
 
 
 
+
 (defsection aig-eval-thms
   :parents (aig-eval)
   :short "Basic theorems about @(see aig-eval)."
@@ -385,6 +386,13 @@
 
 
 
+(defund faig-vars (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      nil
+    (set::union (aig-vars (car x))
+                (aig-vars (cdr x)))))
+
 
 (defsection faig-eval-thms
   :parents (faig-eval)
@@ -397,11 +405,11 @@
     :hints((witness)))
 
   (defthm faig-eval-append-when-not-intersecting-alist-keys
-    (implies (not (intersectp-equal (alist-keys env) (aig-vars x)))
+    (implies (not (intersectp-equal (alist-keys env) (faig-vars x)))
              (equal (faig-eval x (append env rest))
                     (faig-eval x rest)))
     :hints(("Goal"
-            :in-theory (e/d (faig-eval) (aig-eval))))))
+            :in-theory (e/d (faig-eval faig-vars) (aig-eval))))))
 
 
 

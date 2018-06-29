@@ -926,7 +926,7 @@ explicit declarations.</p>")
         ;; quite right if we need to be allowed to refer to things that we
         ;; aren't consider items, like $bits(foo_t) or similar.
         (mv st
-            (fatal :type :vl-warn-undeclared
+            (warn :type :vl-warn-undeclared
                    :msg "~a0: reference to undeclared identifier ~s1.~%"
                    :args (list ctx name))))
        ((vl-lexscope-entry entry))
@@ -953,7 +953,7 @@ explicit declarations.</p>")
         ;; Scopestack doesn't think this is imported from a package.
         (b* (((unless entry.decl)
               ;; Lexscope thinks it's imported from a package.  Wtf.
-              (mv st (fatal :type :vl-tricky-scope
+              (mv st (warn :type :vl-tricky-scope
                             :msg "~a0: the name ~s1 has complex scoping that ~
                                   we do not support.  Lexically it appears to ~
                                   be imported from a package, but there is a ~
@@ -970,11 +970,11 @@ explicit declarations.</p>")
              (lex-level (len tail))
              ((unless (equal ss-level lex-level))
               (mv st
-                  (fatal :type :vl-tricky-scope
-                         :msg "~a0: the name ~s1 has complex scoping that we ~
+                  (warn :type :vl-tricky-scope
+                        :msg "~a0: the name ~s1 has complex scoping that we ~
                                do not support.  Lexical level ~x2, scopestack ~
                                level ~x3."
-                         :args (list ctx name lex-level ss-level)))))
+                        :args (list ctx name lex-level ss-level)))))
 
           ;; Looks like a match.
           (mv st (ok))))
@@ -996,7 +996,7 @@ explicit declarations.</p>")
         ;; Lexically we think it's imported from foo::bar.  Scopestack also
         ;; thinks it comes from a package.
         (b* (((unless (equal entry.direct-pkg pkg-name))
-              (mv st (fatal :type :vl-tricky-scope
+              (mv st (warn :type :vl-tricky-scope
                             :msg "~a0: scopestack thinks ~s1 is imported from ~
                                   ~s2, but lexically it is directly imported from ~s3."
                             :args (list ctx name pkg-name entry.direct-pkg)))))
@@ -1016,13 +1016,38 @@ explicit declarations.</p>")
        (lex-pkg (and (mbt (equal (len entry.wildpkgs) 1)) ;; because we checked above
                      (first entry.wildpkgs)))
        ((unless (equal lex-pkg pkg-name))
-        (mv st (fatal :type :vl-tricky-scope
+        (mv st (warn :type :vl-tricky-scope
                       :msg "~a0: scopestack thinks ~s1 is imported from ~s2, ~
                             but lexically it is wildly imported from ~s3."
                       :args (list ctx name pkg-name lex-pkg)))))
 
     ;; If we get here, all package sanity checks pass.  We're good to go.
     (mv st (ok))))
+
+
+(define vl-shadowcheck-reference-scopeexpr ((x        vl-scopeexpr-p)
+                                            (ctx      any-p)
+                                            (st       vl-shadowcheck-state-p)
+                                            (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* ((st (vl-shadowcheck-state-fix st))
+       (warnings (vl-warninglist-fix warnings)))
+    (vl-scopeexpr-case x
+      :colon (mv st warnings) ;; No warnings about package-scoped stuff
+      :end
+      (vl-hidexpr-case x.hid
+        :end (vl-shadowcheck-reference-name x.hid.name ctx st warnings)
+        :dot
+        (b* ((name (vl-hidindex->name x.hid.first))
+             ((unless (stringp name))
+              ;; don't check $root
+              (mv st warnings))
+             ((vl-shadowcheck-state st))
+             ((when (vl-scopestack-find-definition name st.ss))
+              ;; Might be a hierarchical reference to a top-level definition
+              (mv st warnings)))
+          (vl-shadowcheck-reference-name name ctx st warnings))))))
 
 (define vl-shadowcheck-reference-names ((names    string-listp)
                                         (ctx      any-p)
@@ -1093,9 +1118,7 @@ explicit declarations.</p>")
          ((mv st warnings)
           (vl-expr-case x
             :vl-index
-            (if (vl-idscope-p x.scope)
-                (vl-shadowcheck-reference-name (vl-idscope->name x.scope) ctx st warnings)
-              (mv st warnings))
+            (vl-shadowcheck-reference-scopeexpr x.scope ctx st warnings)
             :otherwise
             (mv st warnings)))
          ((mv st warnings)
