@@ -13,13 +13,72 @@ searching a database for termination schemes.  By default, that
 database is produced by mining existing termination schemes from the
 ACL2 community books.
 
-I.   Infrastructure/flow
-II.  Algorithms
-III. Possible enhancements
+I.   Introduction
+II.  Infrastructure/flow
+III. Algorithms
+IV.  Possible enhancements
 
 ====================
 
-I.   Infrastructure/flow
+I.   Introduction
+
+This file assumes familiarity with :doc defunt.
+
+The main idea is to create a database of termination schemes from the
+community books, and then for a call of defunt to peruse that database
+in order to prove termination automatically.
+
+As of this writing, the database is initialized by including system
+book "doc/top" and then writing a termination database to file
+td-cands.lisp.  That database is what's perused by a call of defunt.
+
+There are heuristics for keeping the database from being too large.
+Some, but not all, of those are discussed further below, but here are
+a few now.  One key idea is to avoid storing termination clause-sets
+that are too large.  Another is to simplify a bit ("normalize"), for
+example by expanding calls of a few simple built-in functions like
+endp, so that termination clause-sets have a better chance of agreeing
+(in some suitable sense of "agree").  Another is to use subsumption to
+eliminate unnecessary clause-sets.  Here is an annotated log
+containing some statistics as of June 29, 2018, after including the
+book "td-cands", which shows 643 distinct termination schemes
+essentially shared by 821 functions, organized into 190 buckets by
+"justification" (measure and other aspects).  Others (perhaps many
+others) aren't included because they have been eliminated by
+subsumption or heuristically-large size.
+
+; First we compute the number of distinct "justifications", which are
+; records that contain information on how a termination clause-set is
+; generated from a definition, in particular the measure, well-founded
+; relation, and ruler-extenders.  Note that *td-candidates* is an
+; alist whose keys are all justifications, where each justification is
+; associated with a record whose justification is essentially an
+; alpha-variant of the key.
+ACL2 !>(length *td-candidates*)
+190
+ACL2 !>:q
+
+Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
+
+; By summing the number of records associated with each justification
+; key, we get the total number of records in the database.
+ACL2 1 > (loop for x in *td-candidates* sum (length (cdr x)))
+643
+
+; Each record contains not only a termination clause-set S, but also a
+; list of pairs (fn . book) such that the termination clause-set for
+; fn is subsumption-equivalent to S (using a normalized version of
+; each, as discussed below).
+ACL2 2 > (loop for x in *td-candidates* sum
+               (loop for c in (cdr x) sum
+                     (length (access td-candidate c :roots-alist))))
+821
+
+ACL2 3 >
+
+====================
+
+II.  Infrastructure/flow
 
 The use of defunt depends on files td-cands.lisp and td-cands.acl2,
 which are generated using the steps below.  These steps are
@@ -65,7 +124,7 @@ After these steps, one is ready to use defunt; see :doc defunt.
 
 ====================
 
-II.  Algorithms
+III. Algorithms
 
 Here I give only a high-level summary of some aspects of the
 algorithms; many details are missing here.  I've attempted to comment
@@ -507,7 +566,7 @@ ACL2 !>
 
 ====================
 
-III. Possible enhancements
+IV.  Possible enhancements
 
 See to-do.txt for a list of ideas that could lead to improvements.
 Some are probably straightforward, but as of this writing it seemed
