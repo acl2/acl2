@@ -2275,14 +2275,7 @@
 
     ((#xA4 #xA5)
      "MOVS; A4: (MOVSB Yb, Xb); A5: (MOVSW/D/Q Yv, Xv)"
-     (if (64-bit-modep x86)
-         (x86-movs start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                   x86)
-       (x86-step-unimplemented
-        (cons (cons "MOVS/MOVSB/MOVSW is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-movs start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     ((#xA6 #xA7)
      " CMPS; A6: (CMPSB Xb, Yb); A7: (CMPSW/D/Q Xv, Yv)"

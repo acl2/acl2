@@ -2170,16 +2170,20 @@ reference made from privilege level 3.</blockquote>"
    </p>
    <p>
    Otherwise, we use the default segment selection rules
-   in Intel manual, Mar'17, Volume 1, Table 3-5.
+   in Intel manual, May'18, Volume 1, Table 3-5.
    Since we only call this function for instruction operands,
    the CS rule does not apply.
-   Since for now we only call this function for non-string instruction,
-   the ES rule does not apply for now.
+   The ES rule applies to string instructions,
+   but our model does not use this function
+   to determine the ES segment for string instructions
+   (which cannot be overridden,
+   at least for the string instructions we currently support),
+   so this function does not take the ES rule into account either.
    So the result is either SS or DS,
-   based on whether the base register is one of *SP *BP or not:
+   based on whether the base register is one of rSP and rBP or not:
    this determination is made based on
-   Intel manual, Mar'17, Volume 2, Table 2-1 if the address size is 16 bits,
-   and Intel manual, Mar'17, Volume 2, Table 2-2 otherwise.
+   Intel manual, May'18, Volume 2, Table 2-1 if the address size is 16 bits,
+   and Intel manual, May'18, Volume 2, Table 2-2 otherwise.
    </p>
    <p>
    Note that here we may recalculate the address size
