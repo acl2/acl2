@@ -2279,14 +2279,7 @@
 
     ((#xA6 #xA7)
      " CMPS; A6: (CMPSB Xb, Yb); A7: (CMPSW/D/Q Xv, Yv)"
-     (if (64-bit-modep x86)
-         (x86-cmps start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                   x86)
-       (x86-step-unimplemented
-        (cons (cons "CMPS/CMPSB/CMPSW is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-cmps start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xA8
      "(TEST AL Ib)"
