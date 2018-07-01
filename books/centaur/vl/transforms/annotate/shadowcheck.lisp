@@ -1525,6 +1525,14 @@ explicit declarations.</p>")
                (st               (vl-shadowcheck-pop-scope st)))
             (mv st warnings)))
 
+         ((when (eq (vl-stmt-kind x) :vl-foreachstmt))
+          (b* (((vl-foreachstmt x))
+               ((mv st warnings) (vl-shadowcheck-push-scope (vl-foreachstmt->blockscope x) st warnings))
+               ((mv st warnings) (vl-shadowcheck-blockitemlist x.vardecls st warnings))
+               ((mv st warnings) (vl-shadowcheck-stmt x.body ctx st warnings))
+               (st               (vl-shadowcheck-pop-scope st)))
+            (mv st warnings)))
+
          ;; No other statement has a scope, but compound statements might have
          ;; block statements inside of them.  See vl-stmt-check-undeclared.  We
          ;; don't use vl-stmt-allexprs here because it grabs exprs from

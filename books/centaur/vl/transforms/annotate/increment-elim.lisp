@@ -726,6 +726,11 @@ these are the only operators we're dealing with.</p>"
              (new-x    (change-vl-forstmt x :body new-body)))
           (mv new-x nil nil))
 
+        :vl-foreachstmt
+        (b* ((new-body (vl-stmt-increwrite-flat x.body))
+             (new-x    (change-vl-foreachstmt x :body new-body)))
+          (mv new-x nil nil))
+
         :vl-blockstmt
         ;; BOZO do we need to be careful about fork/join blocks or anything
         ;; like that?

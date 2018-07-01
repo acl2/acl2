@@ -286,6 +286,13 @@ created when we process their packages, etc.</p>"
           (b* ((blockscope (vl-forstmt->blockscope x))
                (ss         (vl-scopestack-push blockscope ss))
                (db         (vl-scope-luciddb-init blockscope ss db)))
+            (vl-stmtlist-luciddb-init (vl-compoundstmt->stmts x) ss db)))
+         ((when (vl-stmt-case x :vl-foreachstmt))
+          ;; NOTE -- This must be kept in sync with vl-stmt-lucidcheck!!
+          ;; Obeys the One True Way to process a Foreach Statement.
+          (b* ((blockscope (vl-foreachstmt->blockscope x))
+               (ss         (vl-scopestack-push blockscope ss))
+               (db         (vl-scope-luciddb-init blockscope ss db)))
             (vl-stmtlist-luciddb-init (vl-compoundstmt->stmts x) ss db))))
       (vl-stmtlist-luciddb-init (vl-compoundstmt->stmts x) ss db)))
 
@@ -1676,6 +1683,13 @@ created when we process their packages, etc.</p>"
              (st (vl-stmtlist-lucidcheck x.initassigns ss st ctx))
              (st (vl-rhsexpr-lucidcheck x.test ss st ctx))
              (st (vl-stmtlist-lucidcheck x.stepforms ss st ctx))
+             (st (vl-stmt-lucidcheck x.body ss st ctx)))
+          st)
+
+        :vl-foreachstmt
+        ;; NOTE -- this must be kept in sync with vl-stmt-luciddb-init!
+        (b* ((ss (vl-scopestack-push (vl-foreachstmt->blockscope x) ss))
+             (st (vl-vardecllist-lucidcheck x.vardecls ss st))
              (st (vl-stmt-lucidcheck x.body ss st ctx)))
           st)
 

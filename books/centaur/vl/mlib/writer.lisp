@@ -3197,6 +3197,18 @@ expression into a string."
        (ps (vl-print ", ")))
     (vl-pp-forloop-assigns (cdr x))))
 
+(define vl-pp-foreachstmt-loopvars ((loopvars vl-maybe-string-list-p) &key (ps 'ps))
+  :measure (len loopvars)
+  (b* ((loopvars (vl-maybe-string-list-fix loopvars)))
+    (if (atom loopvars)
+        ps
+      (if (atom (car loopvars))
+          (vl-ps-seq (vl-print ", ")
+                     (vl-pp-foreachstmt-loopvars (cdr loopvars)))
+        (vl-ps-seq (vl-ps-span "vl_id" (vl-print-str (vl-maybe-escape-identifier (car loopvars))))
+                   (vl-print ", ")
+                   (vl-pp-foreachstmt-loopvars (cdr loopvars)))))))
+
 
 (defines vl-pp-stmt
   :prepwork ((local (in-theory (disable not)))
@@ -3376,6 +3388,19 @@ expression into a string."
                  (vl-print "; ")
                  (vl-pp-forloop-assigns x.stepforms)
                  (vl-println ")")
+                 (vl-progindent-block (vl-pp-stmt x.body))
+                 ;; no ending semicolon, the body prints one
+                 )
+
+      :vl-foreachstmt
+      (vl-ps-seq (vl-progindent)
+                 (if x.atts (vl-pp-atts x.atts) ps)
+                 (vl-ps-span "vl_key" (vl-print "foreach "))
+                 (vl-print "(")
+                 (vl-pp-scopeexpr x.array)
+                 (vl-print " [")
+                 (vl-pp-foreachstmt-loopvars x.loopvars)
+                 (vl-println " ])")
                  (vl-progindent-block (vl-pp-stmt x.body))
                  ;; no ending semicolon, the body prints one
                  )
@@ -4511,6 +4536,7 @@ module elements and its comments.</p>"
               (:vl-taskdecl   "task")
               (:vl-blockstmt  "block statement")
               (:vl-forstmt    "for statement")
+              (:vl-foreachstmt "foreach statement")
               (:vl-design     "global design")
               (:vl-package    "package")
               (:vl-genblock   "generate block")

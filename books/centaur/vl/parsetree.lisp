@@ -2920,12 +2920,59 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
             exists.  Otherwise, <i>body</i> is executed, the @('for_step') is
             performed, and we loop back to evaluating <i>test</i>.</p>
 
-            <p>The syntaxp for @('for_initialization') is a little tricky since
+            <p>The syntax for @('for_initialization') is a little tricky since
             it can either have declarations or assignments to pre-existing
             variables, but not both.  Our representation contains a @(see
             vl-vardecllist-p) with initial values to cover the declaration case
             and a @(see vl-stmtlist-p) to cover the assignment case; one or the
             other of these will be empty.</p>")
+
+    (:vl-foreachstmt
+     :base-name vl-foreachstmt
+     :layout :tree
+     :short "Representation of @('foreach') statements."
+     ((array    vl-scopeexpr-p)
+      (loopvars vl-maybe-string-list-p)
+      (vardecls vl-vardecllist-p)
+      (body     vl-stmt-p)
+      (atts     vl-atts-p))
+     :long "<h4>General form</h4>
+            @({
+                 foreach( <array> [ <var1>, ..., <varN> ] ) statement
+            })
+
+            <p>See SystemVerilog-2012 section 12.7.3.  The @('<array>') should
+            be a (possibly hierarchical) reference to an array variable, which
+            we just represent with an expression.</p>
+
+            <p>The variable list allows us to introduce name variables
+            corresponding to certain dimensions of the array.  It should not
+            mention more variables than the dimensions of the array.  Variable
+            names may also be omitted to indicate that we don't want to iterate
+            through that particular dimension of the array.  We represent these
+            with a @(see vl-maybe-exprlist) so that you can tell when a
+            variable has been omitted.</p>
+
+            <p>We infer a @(see vl-vardecl) from each loop variable.  These
+            will be @('integer') variables.  This arguably contradicts the
+            standard, which suggests (12.7.3) that each loop variable is
+            ``implicitly declared to be consistent with the type of array
+            index.''  In other words, the standard seems to suggest that code
+            like:</p>
+
+            @({
+                 logic [3:0][7:0][15:0] arr;
+                 foreach (arr [i,j,k]) begin
+                   $display(\"Size of i is %d\", $bits(i));
+                   $display(\"Size of j is %d\", $bits(j));
+                   $display(\"Size of k is %d\", $bits(k));
+                 end
+            })
+
+            <p>should report sizes such as 2, 3, and 4.  But commercial tools
+            seem to report a size of 32 bits for all of these variables, so we
+            think that in practice these are interpreted as
+            @('integer')s.</p>")
 
     (:vl-breakstmt
      :base-name vl-breakstmt

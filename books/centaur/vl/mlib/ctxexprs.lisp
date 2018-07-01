@@ -116,6 +116,10 @@ expression with a @(see vl-context-p) describing its origin.</p>")
          (b* ((ss (vl-scopestack-push (vl-blockstmt->blockscope x) ss)))
            (append (vl-exprlist-ctxexprs (vl-compoundstmt->exprs x) ctx ss)
                    (vl-stmtlist-ctxexprs (vl-compoundstmt->stmts x) ctx ss))))
+        (:vl-foreachstmt
+         (b* ((ss (vl-scopestack-push (vl-foreachstmt->blockscope x) ss)))
+           (append (vl-exprlist-ctxexprs (vl-compoundstmt->exprs x) ctx ss)
+                   (vl-stmtlist-ctxexprs (vl-compoundstmt->stmts x) ctx ss))))
         (:otherwise
          (append (vl-exprlist-ctxexprs (vl-compoundstmt->exprs x) ctx ss)
                  (vl-stmtlist-ctxexprs (vl-compoundstmt->stmts x) ctx ss))))))
@@ -618,8 +622,9 @@ expression with a @(see vl-context-p) describing its origin.</p>")
           :measure (two-nats-measure (vl-stmt-count x) 1)
           :returns (warnings-out vl-warninglist-p)
           (let ((ss (vl-stmt-case x
-                      :vl-forstmt (vl-scopestack-push (vl-forstmt->blockscope x) ss)
-                      :vl-blockstmt (vl-scopestack-push (vl-blockstmt->blockscope x) ss)
+                      :vl-blockstmt   (vl-scopestack-push (vl-blockstmt->blockscope x)   ss)
+                      :vl-forstmt     (vl-scopestack-push (vl-forstmt->blockscope x)     ss)
+                      :vl-foreachstmt (vl-scopestack-push (vl-foreachstmt->blockscope x) ss)
                       :otherwise ss)))
             (vl-stmt-<checkname>-aux x ss warnings)))))
 

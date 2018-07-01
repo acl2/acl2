@@ -544,6 +544,7 @@ e.g. bitselects, partselects, and nonconstant array selects.</p>"
               (:vl-genarray        (mv nil 1))
               (:vl-blockstmt       (mv nil 0))
               (:vl-forstmt         (mv nil 0))
+              (:vl-foreachstmt     (mv nil 0))
 
               ;; bozo -- this was 1 but I think it should be 0 for the same
               ;; reasons as blockstmt/forstmt.

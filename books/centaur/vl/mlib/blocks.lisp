@@ -60,6 +60,7 @@ hassle.</p>
    :vl-taskdecl
    :vl-blockstmt
    :vl-forstmt
+   :vl-foreachstmt
    :vl-design
    :vl-package
    :vl-genblock

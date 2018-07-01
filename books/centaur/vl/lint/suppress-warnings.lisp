@@ -270,7 +270,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
             ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt
               :vl-callstmt :vl-disablestmt :vl-eventtriggerstmt
               :vl-casestmt :vl-ifstmt :vl-foreverstmt :vl-waitstmt
-              :vl-repeatstmt :vl-whilestmt :vl-forstmt
+              :vl-repeatstmt :vl-whilestmt :vl-forstmt :vl-foreachstmt
               :vl-breakstmt :vl-continuestmt :vl-blockstmt
               :vl-timingstmt :vl-returnstmt :vl-assertstmt
               :vl-cassertstmt)

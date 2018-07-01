@@ -793,6 +793,11 @@
                            (vl-pretty-stmt x.body)
                            (and x.atts (list :atts (vl-pretty-atts x.atts))))
       :vl-forstmt (list* :for :bozo-for-loops)
+      :vl-foreachstmt (list* :foreach
+                             (vl-pretty-scopeexpr x.array)
+                             :vars x.loopvars
+                             :body (vl-pretty-stmt x.body)
+                             (and x.atts (list :atts (vl-pretty-atts x.atts))))
       :vl-breakstmt (list* :break
                            (and x.atts (list :atts (vl-pretty-atts x.atts))))
       :vl-continuestmt (list* :continue

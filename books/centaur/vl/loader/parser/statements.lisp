@@ -87,6 +87,7 @@
     :vl-ashleq
     :vl-ashreq))
 
+
 (define vl-assign-op-expr ((var vl-expr-p)
                            (op (member op *vl-assignment-operators*))
                            (rhs vl-expr-p))
@@ -992,6 +993,70 @@
     :otherwise
     (vl-stmt-fix stmt)))
 
+
+(defparser vl-parse-foreach-statement-array-part ()
+
+; This is meant to match the ps_or_hierarchical_array_identifier that occurs
+; in a foreach loop_statement, e.g.,
+;
+; loop_statement ::= ...
+;                  | 'foreach' '(' ps_or_hierarchical_array_identifier '[' loop_variables ']' ')' statement
+;
+; The rules are:
+;
+; ps_or_hierarchical_array_identifier ::= [implicit_class_handle '.' | class_scope | package_scope]
+;                                         hierarchical_array_identifier
+;
+; hierarchical_array_identifier ::= hierarchical_identifier
+
+  :result (vl-scopeexpr-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (scopes := (vl-parse-0+-scope-prefixes))
+       (hid    := (vl-parse-hierarchical-identifier nil))
+       (return (vl-tack-scopes-onto-hid scopes hid))))
+
+(defparser vl-parse-foreach-loop-variables ()
+
+; The loop_variables are just a comma-separated list of identifiers, except
+; that oddly this is allowed to be the empty list and any elements are allowed
+; to have spurious commas.
+;
+; loop_variables ::= [index_variable_identifier] { ',' [index_variable_identifier] }
+;
+; index_variable_identifier ::= identifier
+
+  :result (vl-maybe-string-list-p val)
+  :resultp-of-nil t
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (when (vl-is-token? :vl-idtoken)
+         (first := (vl-match)))
+       (unless (vl-is-token? :vl-comma)
+         (return (list (and first (vl-idtoken->name first)))))
+       (:= (vl-match))
+       (rest := (vl-parse-foreach-loop-variables))
+       (return (cons (and first
+                          (vl-idtoken->name first))
+                     rest))))
+
+(define vl-foreach-vardecls-from-loopvars ((loc      vl-location-p)
+                                           (loopvars vl-maybe-string-list-p))
+  :returns (vardecls vl-vardecllist-p)
+  (cond ((atom loopvars)
+         nil)
+        ((atom (car loopvars))
+         (vl-foreach-vardecls-from-loopvars loc (cdr loopvars)))
+        (t
+         (cons (make-vl-vardecl :name (car loopvars)
+                                :loc loc
+                                :type *vl-plain-old-integer-type*)
+               (vl-foreach-vardecls-from-loopvars loc (cdr loopvars))))))
+
+
 (local (in-theory (disable
 
                    (:t acl2-count)
@@ -1036,7 +1101,6 @@
                    acl2::member-equal-when-all-equalp
                    member-equal-when-member-equal-of-cdr-under-iff
                    )))
-
 
 
 (defparsers vl-parse-statement
@@ -1178,6 +1242,8 @@
 ;  | 'while' '(' expression ')' statement
 ;  | 'for' '(' variable_assignment ';' expression ';' variable_assignment ')'
 ;      statement
+;  | 'foreach' '(' ps_or_hierarchical_array_identifier '[' loop_variables ']' ')' statement
+
 
  (defparser vl-parse-loop-statement (atts)
    ;; Returns a vl-foreverstmt-p, vl-repeatstmt-p, vl-whilestmt-p, or vl-forstmt-p
@@ -1204,6 +1270,21 @@
                      (:vl-kwd-while  (make-vl-whilestmt :condition expr
                                                         :body stmt
                                                         :atts atts)))))
+         (when (vl-is-token? :vl-kwd-foreach)
+           (type := (vl-match))
+           (:= (vl-match-token :vl-lparen))
+           (array := (vl-parse-foreach-statement-array-part))
+           (:= (vl-match-token :vl-lbrack))
+           (loopvars := (vl-parse-foreach-loop-variables))
+           (:= (vl-match-token :vl-rbrack))
+           (:= (vl-match-token :vl-rparen))
+           (stmt :s= (vl-parse-statement))
+           (return (make-vl-foreachstmt :array    array
+                                        :loopvars loopvars
+                                        :vardecls (vl-foreach-vardecls-from-loopvars (vl-token->loc type)
+                                                                                     loopvars)
+                                        :body     stmt
+                                        :atts     atts)))
 
          (:= (vl-match-token :vl-kwd-for))
          (:= (vl-match-token :vl-lparen))
@@ -1741,10 +1822,10 @@
         (vl-parse-event-trigger atts))
 
        ;; -- loop_statement
-       ((:vl-kwd-forever :vl-kwd-repeat :vl-kwd-while :vl-kwd-for)
+       ((:vl-kwd-forever :vl-kwd-repeat :vl-kwd-while :vl-kwd-for :vl-kwd-foreach)
         (vl-parse-loop-statement atts))
-       ((:vl-kwd-do :vl-kwd-foreach)
-        (vl-parse-error "BOZO not yet implemented: do and foreach loops."))
+       ((:vl-kwd-do)
+        (vl-parse-error "BOZO not yet implemented: do loops."))
 
        ;; -- jump_statement ::= 'return' [expression] ';'
        ;;                     | 'break' ';'

@@ -217,6 +217,8 @@
                ;; BOZO this is probably not right.  We probably need to fix up types
                ;; in the initial declarations before pushing the scope.  Think about it.
                (vl-scopestack-push (vl-forstmt->blockscope x) ss)
+               :vl-foreachstmt
+               (vl-scopestack-push (vl-foreachstmt->blockscope x) ss)
                :otherwise ss)))
       (vl-stmt-case x
         :vl-callstmt

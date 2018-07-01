@@ -211,6 +211,43 @@
      (make-stmttest :input "foo(integer);"  ;; no type args for user-defined functions
                     :successp nil)
 
+
+     (make-stmttest :input "foreach ( arr [i] ) return;"
+                    :expect '(:foreach "arr"
+                              :vars ("i")
+                              :body (:return nil)))
+
+     (make-stmttest :input "foreach ( arr [i, j] ) return;"
+                    :expect '(:foreach "arr"
+                              :vars ("i" "j")
+                              :body (:return nil)))
+
+     (make-stmttest :input "foreach ( arr [] ) return;"
+                    :expect '(:foreach "arr"
+                              :vars (nil)
+                              :body (:return nil)))
+
+     (make-stmttest :input "foreach ( arr [i,] ) return;"
+                    :expect '(:foreach "arr"
+                              :vars ("i" nil)
+                              :body (:return nil)))
+
+     (make-stmttest :input "foreach ( arr [,i] ) return;"
+                    :expect '(:foreach "arr"
+                              :vars (nil "i")
+                              :body (:return nil)))
+
+     (make-stmttest :input "foreach ( foo.barr [i] ) return;"
+                    :expect '(:foreach (:dot "foo" "barr")
+                              :vars ("i")
+                              :body (:return nil)))
+
+     (make-stmttest :input "foreach ( arr i ) return;"  ;; forgot brackets
+                    :successp nil)
+
+     (make-stmttest :input "foreach arr [i] return;"  ;; forgot parens
+                    :successp nil)
+
      ))
 
   (make-event (progn$ (run-stmttests *system-verilog-only-stmt-tests*

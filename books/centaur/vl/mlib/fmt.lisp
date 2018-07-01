@@ -191,7 +191,7 @@ formerly the \"location directive\" and printed a location.</p>")
       ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt :vl-callstmt
         :vl-disablestmt :vl-eventtriggerstmt :vl-casestmt :vl-ifstmt
         :vl-foreverstmt :vl-waitstmt :vl-repeatstmt :vl-whilestmt
-        :vl-forstmt :vl-blockstmt :vl-timingstmt :vl-breakstmt
+        :vl-forstmt :vl-foreachstmt :vl-blockstmt :vl-timingstmt :vl-breakstmt
         :vl-continuestmt :vl-returnstmt :vl-assertstmt :vl-cassertstmt)
        (vl-fmt-tilde-a-case vl-stmt-p vl-pp-stmt))
       ((:vl-propcore :vl-propinst :vl-propthen :vl-proprepeat

@@ -1182,7 +1182,7 @@ which could not hold such large values.</p>")
                   :atts      (vl-jp-atts x.atts))
 
        :vl-forstmt
-       (jp-object :tag      (jp-sym kind)
+       (jp-object :tag         (jp-sym kind)
                   :initdecls   (vl-jp-vardecllist x.initdecls)
                   :initassigns (vl-jp-stmtlist x.initassigns)
                   :test        (vl-jp-expr x.test)

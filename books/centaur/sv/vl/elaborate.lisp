@@ -1292,6 +1292,13 @@ expression with @(see vl-expr-to-svex).</p>")
                                  :stepforms stepforms
                                  :body body)
               elabindex))
+        :vl-foreachstmt
+        (mv nil
+            (fatal :type :vl-resolve-constants-fail
+                   :msg "Not yet implemented: elaboration support for foreach statements"
+                   :args (list (vl-stmt-fix x)))
+            (vl-stmt-fix x)
+            elabindex)
         :otherwise
         (vl-stmt-elaborate-aux x elabindex :reclimit reclimit)))
     ///

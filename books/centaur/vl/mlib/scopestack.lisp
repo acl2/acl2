@@ -460,6 +460,14 @@ in it, such as a function, task, or block statement."
     (make-vl-blockscope :vardecls x.initdecls
                         :scopetype :vl-forstmt)))
 
+(define vl-foreachstmt->blockscope ((x vl-stmt-p))
+  :guard (vl-stmt-case x :vl-foreachstmt)
+  :returns (scope vl-blockscope-p)
+  :parents (vl-blockscope vl-scopestack-push)
+  (b* (((vl-foreachstmt x)))
+    (make-vl-blockscope :vardecls x.vardecls
+                        :scopetype :vl-foreachstmt)))
+
 
 ;; Notes on name spaces -- from SV spec 3.13
 ;; SV spec lists 8 namespaces:
