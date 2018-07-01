@@ -10447,7 +10447,7 @@
       (er soft ctx
           "Global variables, such as ~&0, are not allowed. See :DOC ASSIGN ~
            and :DOC @."
-          (non-stobjps vars t wrld))) ;;; known-stobjs = t
+          (reverse (non-stobjps vars t wrld)))) ;;; known-stobjs = t
      (t (ev-for-trans-eval term vars stobjs-out ctx state aok
                            user-stobjs-modified-warning)))))
 
@@ -10616,7 +10616,7 @@
                               (t 2))
                         legal-vars
                         x
-                        vars))
+                        (reverse vars)))
                    (t (mv-let (erp val latches)
                               (ev term
                                   (append alist
@@ -10697,7 +10697,7 @@
                           (t 2))
                     legal-vars
                     x
-                    vars))
+                    (reverse vars)))
            (t (mv-let (erp val)
 
 ; Note that because translate-cmp is called above with parameter stobjs-out =

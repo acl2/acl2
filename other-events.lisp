@@ -17029,7 +17029,8 @@
                             appear in the bound or free variables of the form ~
                             ~x1, even though ~#0~[it appears~/they appear~] ~
                             in its body."
-                           (set-difference-eq body-vars bound-and-free-vars)
+                           (reverse
+                            (set-difference-eq body-vars bound-and-free-vars))
                            event-form))
                       ((and ignored
                             (null ignore-ok))
@@ -21460,7 +21461,7 @@
                         "Global variables, such as ~&0, are not allowed for ~
                          tracing option ~x1, especially without a trust tag.  ~
                          See :DOC trace$."
-                        vars
+                        (reverse vars)
                         kwd))
                    (t (value nil))))))
 
@@ -23202,9 +23203,9 @@
          (let* ((result-and-hyps-vars
                  (union-eq (all-vars result)
                            (all-vars1-lst hyps nil)))
-                (free (set-difference-assoc-eq
-                       result-and-hyps-vars
-                       unify-subst)))
+                (free (reverse (set-difference-assoc-eq
+                                result-and-hyps-vars
+                                unify-subst))))
            (cond
             (pl-p
              (show-rewrite-linear
@@ -23250,9 +23251,9 @@
                  (access linear-lemma lemma :nume))
                show-more subst-hyps subst-hyps-2 unify-subst unify-subst-2
                free
-               (set-difference-assoc-eq
-                result-and-hyps-vars
-                unify-subst-2)
+               (reverse (set-difference-assoc-eq
+                         result-and-hyps-vars
+                         unify-subst-2))
                result abbreviations term-id-iff ens enabled-only-flg
                (and (eq caller 'show-rewrites)
                     (access sar sar :equiv))
@@ -23508,8 +23509,9 @@
         (subst-hyps unify-subst ttree)
         (unrelieved-hyps rune hyps unify-subst type-alist nil wrld state ens nil)
         (declare (ignore ttree))
-        (let ((free (set-difference-assoc-eq (all-vars1-lst hyps nil)
-                                             unify-subst)))
+        (let ((free (reverse
+                     (set-difference-assoc-eq (all-vars1-lst hyps nil)
+                                              unify-subst))))
           (fms fmt-string
                (list (cons #\a (untranslate-subst-abb unify-subst abbreviations
                                                       state))
@@ -23996,7 +23998,7 @@
            allowed-gvars
            nil
            uterm1
-           (set-difference-eq (all-vars term1) allowed-gvars)))
+           (reverse (set-difference-eq (all-vars term1) allowed-gvars))))
       ((not (subsetp-eq (all-vars term2) allowed-cvars))
        (er soft ctx
            "The :checker argument of add-custom-keyword-hint must be a term ~
@@ -24005,7 +24007,7 @@
            allowed-cvars
            nil
            uterm2
-           (set-difference-eq (all-vars term2) allowed-cvars)))
+           (reverse (set-difference-eq (all-vars term2) allowed-cvars))))
       (t
        (state-global-let*
         ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
