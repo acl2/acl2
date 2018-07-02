@@ -9073,7 +9073,7 @@
               contrary to the declaration that ~#2~[it is~/they are~] ~
               IGNOREd."
              loc-str name
-             (intersection-eq (all-vars term) ignores)))
+             (reverse (intersection-eq (all-vars term) ignores))))
         (t (value nil))))
 
 (defun chk-free-and-ignored-vars (name formals guard split-types-term measure
@@ -9423,9 +9423,11 @@
                                "left-hand side"
                              "hypotheses")
                            (if (free-varsp-member rhs lhs-vars)
-                               (set-difference-eq (all-vars rhs) lhs-vars)
-                             (set-difference-eq (all-vars1-lst hyps nil)
-                                                lhs-vars)))
+                               (reverse
+                                (set-difference-eq (all-vars rhs) lhs-vars))
+                             (reverse
+                              (set-difference-eq (all-vars1-lst hyps nil)
+                                                 lhs-vars))))
                       nil nil nil nil nil))
                  (t (mv nil
                         (access rewrite-rule lemma :rune)
@@ -14074,8 +14076,9 @@
             (er@par soft ctx "~@0" err-msg
               (msg "it contains the free variable~#0~[~/s~] ~&0, but the only ~
                     legal variable (not including stobjs) is ~x1"
-                   (set-difference-eq (non-stobjps (all-vars term) t wrld)
-                                      '(clause))
+                   (reverse
+                    (set-difference-eq (non-stobjps (all-vars term) t wrld)
+                                       '(clause)))
                    'clause)))
 
 ; #+ACL2-PAR note: Here, we could check that clause-processors do not modify
@@ -16774,7 +16777,7 @@
                                        "The only variables permitted in the ~
                                         :guard of a table are ~&0, but your ~
                                         guard uses ~&1.  See :DOC table."
-                                       legal-vars vars))
+                                       legal-vars (reverse vars)))
                                   (t (install-event
                                       name
                                       event-form

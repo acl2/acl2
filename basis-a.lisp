@@ -5391,13 +5391,13 @@
                (msg "Free vars problem with ~x0:  Variable~#1~[~/s~] ~&1 ~
                      occur~#1~[s~/~] in ~x2 even though not declared."
                     ',ctx
-                    (set-difference-eq all-vars vars)
+                    (reverse (set-difference-eq all-vars vars))
                     term))
               ((not (subsetp-eq vars all-vars))
                (msg "Free vars problem with ~x0: Variable~#1~[~/s~] ~&1 ~
                      ~#1~[does~/do~] not occur in ~x2 even though declared."
                     ',ctx
-                    (set-difference-eq vars all-vars)
+                    (reverse (set-difference-eq vars all-vars))
                     term))
               (t t))))
     ,form))
