@@ -76,6 +76,16 @@ for the efficient lookup of modr/m-related information from
 
   )
 
+;; Some interesting resources related to x86 ISA instruction encoding:
+
+;; -- https://www.strchr.com/machine_code_redundancy
+
+;; -- http://www.mlsite.net/blog/?p=76
+
+;; -- http://www.mlsite.net/8086/#tbl_map1 --- this corresponds to
+;;    Intel Manuals v24319102, which date back to 1999
+;;    (http://datasheets.chipdb.org/Intel/x86/Intel%20Architecture/24319102.pdf).
+
 ;; ======================================================================
 
 ;; Addressing Info:
@@ -231,6 +241,56 @@ for the efficient lookup of modr/m-related information from
 
    ))
 
+(defconst *opcode-map-superscripts*
+
+  ;; Source: Intel Manuals, Volume 2, Appendix A.2.5
+  ;; Table A-1. Superscripts Utilized in Opcode Tables
+
+  (list
+
+   ;; Bits 5, 4, and 3 of ModR/M byte used as an opcode extension
+   ;; (refer to Section A.4, Opcode Extensions For One-Byte And
+   ;; Two-byte Opcodes)
+   :1a
+
+   ;; Use the 0F0B opcode (UD2 instruction) or the 0FB9H opcode when
+   ;; deliberately trying to generate an invalid opcode exception
+   ;; (#UD).
+   :1b
+
+   ;; Some instructions use the same two-byte opcode. If the
+   ;; instruction has variations, or the opcode represents different
+   ;; instructions, the ModR/M byte will be used to differentiate the
+   ;; instruction. For the value of the ModR/M byte needed to decode
+   ;; the instruction, see Table A-6.
+   :1c
+
+   ;; The instruction is invalid or not encodable in 64-bit mode. 40
+   ;; through 4F (single-byte INC and DEC) are REX prefix combinations
+   ;; when in 64-bit mode (use FE/FF Grp 4 and 5 for INC and DEC).
+   :i64
+
+   ;; Instruction is only available when in 64-bit mode.
+   :o64
+
+   ;; When in 64-bit mode, instruction defaults to 64-bit operand size
+   ;; and cannot encode 32-bit operand size.
+   :d64
+
+   ;; The operand size is forced to a 64-bit operand size when in
+   ;; 64-bit mode (prefixes that change operand size are ignored for
+   ;; this instruction in 64-bit mode).
+   :f64
+
+   ;; VEX form only exists. There is no legacy SSE form of the
+   ;; instruction. For Integer GPR instructions it means VEX prefix
+   ;; required.
+   :v
+
+   ;; VEX128 & SSE forms only exist (no VEX256), when can't be
+   ;; inferred from the data size.
+   :v1
+   ))
 
 #||
 
@@ -286,43 +346,6 @@ y  Doubleword or quadword (in 64-bit mode), depending on operand-size
 
 z  Word for 16-bit operand-size or doubleword for 32 or 64-bit
    operand-size.
-
-See Intel Manuals, Volume 2, Appendix A.2.5
-
-Table A-1. Superscripts Utilized in Opcode Tables
-
-1A: Bits 5, 4, and 3 of ModR/M byte used as an opcode extension (refer
-    to Section A.4,  Opcode Extensions For One-Byte And Two-byte
-    Opcodes ).
-
-1B: Use the 0F0B opcode (UD2 instruction) or the 0FB9H opcode when
-    deliberately trying to generate an invalid opcode exception (#UD).
-
-1C: Some instructions use the same two-byte opcode. If the instruction
-    has variations, or the opcode represents different instructions,
-    the ModR/M byte will be used to differentiate the instruction. For
-    the value of the ModR/M byte needed to decode the instruction, see
-    Table A-6.
-
-i64: The instruction is invalid or not encodable in 64-bit mode. 40
-     through 4F (single-byte INC and DEC) are REX prefix combinations
-     when in 64-bit mode (use FE/FF Grp 4 and 5 for INC and DEC).
-
-o64: Instruction is only available when in 64-bit mode.
-
-d64: When in 64-bit mode, instruction defaults to 64-bit operand size
-     and cannot encode 32-bit operand size.
-
-f64: The operand size is forced to a 64-bit operand size when in
-     64-bit mode (prefixes that change operand size are ignored for
-     this instruction in 64-bit mode).
-
-v:  VEX form only exists. There is no legacy SSE form of the
-    instruction. For Integer GPR instructions it means VEX prefix
-    required.
-
-v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
-    from the data size.
 
 ||#
 
@@ -575,7 +598,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
               ((:i64 . ("AAD" 1 (I b))))
               (:none)
               ("XLAT/XLATB" 0)
-              (:esc) ;; Escape to co-processor instruction set  
+              (:esc) ;; Escape to co-processor instruction set
               (:esc) ;; Escape to co-processor instruction set
               (:esc) ;; Escape to co-processor instruction set
               (:esc) ;; Escape to co-processor instruction set
@@ -1179,6 +1202,1950 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
   #|       -------------------------------        |#
   ))
 
+
+(defconst *0F-38-three-byte-opcode-map-lst*
+  ;; First two bytes are 0x0F 0x38.
+
+  ;; Source: Intel Volume 2, Table A-4
+
+  '(
+    #|       -------------------------------        |#
+
+
+    #| 00 |# (((:no-prefix . ("PSHUFB"          2 (P q) (Q q)))
+               (:66        . ("VPSHUFB"         3 (V x) (H x) (W x))))
+              ((:no-prefix . ("PHADDW"          2 (P q) (Q q)))
+               (:66        . ("VPHADDW"         3 (V x) (H x) (W x))))
+              ((:no-prefix . ("PHADDD"          2 (P q) (Q q)))
+               (:66        . ("VPHADDD"         3 (V x) (H x) (W x))))
+              ((:no-prefix . ("PHADDSW"         2 (P q) (Q q)))
+               (:66        . ("VPHADDSW"        3 (V x) (H x) (W x))))
+              ((:no-prefix . ("PMADDUBSW"       2 (P q) (Q q)))
+               (:66        . ("VPMADDUBSW"      3 (V x) (H x) (W x))))
+              ((:no-prefix . ("PHSUBW"          2 (P q) (Q q)))
+               (:66        . ("VPHSUBW"         3 (V x) (H x) (W x))))
+              ((:no-prefix . ("PHSUBD"          2 (P q) (Q q)))
+               (:66        . ("VPHSUBD"         3 (V x) (H x) (W x))))
+              ((:no-prefix . ("PHSUBSW"         2 (P q) (Q q)))
+               (:66        . ("VPHSUBSW"        3 (V x) (H x) (W x))))
+    #| 08 |#  ((:no-prefix . ("PSIGNB"          2 (P q) (Q q)))
+               (:66        . ("VPSIGNB"         3 (V x) (H x) (W x))))
+              ((:no-prefix . ("PSIGNW"          2 (P q) (Q q)))
+               (:66        . ("VPSIGNW"         3 (V x) (H x) (W x))))
+              ((:no-prefix . ("PSIGND"          2 (P q) (Q q)))
+               (:66        . ("VPSIGND"         3 (V x) (H x) (W x))))
+              ((:no-prefix . ("PMULHRSW"        2 (P q) (Q q)))
+               (:66        . ("VPMULHRSW"       3 (V x) (H x) (W x))))
+              ((:no-prefix . :none)
+               (:66        . ("VPERMILPSV"      3 (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VPERMILPDV"      3 (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VTESTPSV"        2 (V x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VTESTPDV"        2 (V x) (W x) :v))))
+
+    #| 10 |# (((:66        . ("PBLENDVB"        2 (V dq) (W dq))))
+              (:none)
+              (:none)
+              ((:66        . ("VCVTPH2PSV"      3 (V x)  (W x)  (I b) :v)))
+              ((:66        . ("BLENDVPS"        2 (V dq) (W dq))))
+              ((:66        . ("BLENDVPD"        2 (V dq) (W dq))))
+              ((:66        . ("VPERMPSV"        3 (V qq) (H qq) (W qq) :v)))
+              ((:66        . ("VPTEST"          2 (V x)  (W x))))
+    #| 18 |#  ((:no-prefix . :none)
+               (:66        . ("VBROADCASTSSV"   2 (V x)  (W d) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VBROADCASTSDV"   2 (V qq) (W q) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VBROADCASTF128V" 2 (V qq) (M dq) :v)))
+              (:none)
+              ((:no-prefix . ("PABSB"           2 (P q)  (Q q)))
+               (:66        . ("VPABSB"          2 (V x)  (W x))))
+              ((:no-prefix . ("PABSW"           2 (P q)  (Q q)))
+               (:66        . ("VPABSW"          2 (V x)  (W x))))
+              ((:no-prefix . ("PABSD"           2 (P q)  (Q q)))
+               (:66        . ("VPABSD"          2 (V x)  (W x))))
+              (:none))
+
+    #| 20 |# (((:no-prefix . :none)
+               (:66        . (("VPMOVSXBW" 2 (V x) (U x))
+                              ("VPMOVSXBW" 2 (V x) (M q)))))
+              ((:no-prefix . :none)
+               (:66        . (("VPMOVSXBD" 2 (V x) (U x))
+                              ("VPMOVSXBD" 2 (V x) (M d)))))
+              ((:no-prefix . :none)
+               (:66        . (("VPMOVSXBQ" 2 (V x) (U x))
+                              ("VPMOVSXBQ" 2 (V x) (M w)))))
+              ((:no-prefix . :none)
+               (:66        . (("VPMOVSXWD" 2 (V x) (U x))
+                              ("VPMOVSXWD" 2 (V x) (M q)))))
+              ((:no-prefix . :none)
+               (:66        . (("VPMOVSXWQ" 2 (V x) (U x))
+                              ("VPMOVSXWQ" 2 (V x) (M d)))))
+              ((:no-prefix . :none)
+               (:66        . (("VPMOVSXDQ" 2 (V x) (U x))
+                              ("VPMOVSXDQ" 2 (V x) (M q)))))
+              (:none)
+              (:none)
+    #| 28 |#  ((:no-prefix . :none)
+               (:66        . ("VPMULDQ"     3 (V x) (H x) (W x))))
+              ((:no-prefix . :none)
+               (:66        . ("VPCMPEQQ"    3 (V x) (H x) (W x))))
+              ((:no-prefix . :none)
+               (:66        . ("VMOVNTDQA"   2 (V x) (M x))))
+              ((:no-prefix . :none)
+               (:66        . ("VPACKUSDW"   3 (V x) (H x) (W x))))
+              ((:no-prefix . :none)
+               (:66        . ("VMASKMOVPS"  3 (V x) (H x) (M x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VMASKMOVPD"  3 (V x) (H x) (M x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VMASKMOVPS"  3 (M x) (H x) (V x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VMASKMOVPD"  3 (M x) (H x) (V x) :v))))
+
+    #| 30 |# (((:no-prefix . :none)
+               (:66        . (("VPMOVZXBW" 2 (V x)  (U x))
+                              ("VPMOVZXBW" 2 (V x) (Mq)))))
+              ((:no-prefix . :none)
+               (:66        . (("VPMOVZXBD" 2 (V x)  (U x))
+                              ("VPMOVZXBD" 2 (V x) (Md)))))
+              ((:no-prefix . :none)
+               (:66        . (("VPMOVZXBQ" 2 (V x)  (U x))
+                              ("VPMOVZXBQ" 2 (V x) (Mw)))))
+              ((:no-prefix . :none)
+               (:66        . (("VPMOVZXWD" 2 (V x)  (U x))
+                              ("VPMOVZXWD" 2 (V x) (Mq)))))
+              ((:no-prefix . :none)
+               (:66        . (("VPMOVZXWQ" 2 (V x)  (U x))
+                              ("VPMOVZXWQ" 2 (V x) (Md)))))
+              ((:no-prefix . :none)
+               (:66        . (("VPMOVZXDQ" 2 (V x)  (U x))
+                              ("VPMOVZXDQ" 2 (V x) (Mq)))))
+              ((:no-prefix . :none)
+               (:66        . ("VPERMD"     3 (V qq) (H qq) (Wqq) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VPCMPGTQ"   3 (V x) (Hx) (Wx))))
+    #| 38 |#  ((:no-prefix . :none)
+               (:66        . ("VPMINSB"    3 (V x) (H x) (W x))))
+              ((:no-prefix . :none)
+               (:66        . ("VPMINSD"    3 (V x) (H x) (W x))))
+              ((:no-prefix . :none)
+               (:66        . ("VPMINUW"    3 (V x) (H x) (W x))))
+              ((:no-prefix . :none)
+               (:66        . ("VPMINUD"    3 (V x) (H x) (W x))))
+              ((:no-prefix . :none)
+               (:66        . ("VPMAXSB"    3 (V x) (H x) (W x))))
+              ((:no-prefix . :none)
+               (:66        . ("VPMAXSD"    3 (V x) (H x) (W x))))
+              ((:no-prefix . :none)
+               (:66        . ("VPMAXUW"    3 (V x) (H x) (W x))))
+              ((:no-prefix . :none)
+               (:66        . ("VPMAXUD"    3 (V x) (H x) (W x)))))
+
+    #| 40 |# (((:no-prefix . :none)
+               (:66        . ("VPMULLD"     3 (V x)  (H x)    (W x))))
+              ((:no-prefix . :none)
+               (:66        . ("VPHMINPOSUW" 2 (V dq) (W dq))))
+              (:none)
+              (:none)
+              (:none)
+              ((:no-prefix . :none)
+               (:66        . ("VPSRLVD/Q"   3  (V x) (H x)    (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VPSRAVD"     3  (V x) (H x)    (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VPSLLVD/Q"   3  (V x) (H x)    (W x) :v)))
+    #| 48 |#  (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+    #| 50 |# ((:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| 58 |#  ((:no-prefix . :none)
+               (:66        . ("VPBROADCASTD"   2  (V x)  (W x)  :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VPBROADCASTQ"   2  (V x)  (W x)  :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VBROADCASTI128" 2  (V qq) (M dq) :v)))
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+    #| 60 |# ((:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| 68 |#  (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+    #| 70 |# ((:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| 78 |#  ((:no-prefix . :none)
+               (:66        . ("VPBROADCASTB" 2 (V x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VPBROADCASTW" 2 (V x) (W x) :v)))
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+    #| 80 |#  (((:no-prefix . :none)
+                (:66        . ("INVEPT"  2 (G y) (M dq))))
+               ((:no-prefix . :none)
+                (:66        . ("INVVPID" 2 (G y) (M dq))))
+               ((:no-prefix . :none)
+                (:66        . ("INVPCID" 2 (G y) (M dq))))
+               (:none)
+               (:none)
+               (:none)
+               (:none)
+               (:none)
+    #| 88 |#   (:none)
+               (:none)
+               (:none)
+               (:none)
+               ((:no-prefix . :none)
+                (:66        . ("VPMASKMOVD/Q" (V x) (H x) (M x) :v)))
+               (:none)
+               ((:no-prefix . :none)
+                (:66        . ("VPMASKMOVD/Q" (M x) (V x) (H x) :v)))
+               (:none))
+
+    #| 90 |# (((:no-prefix . :none)
+               (:66        . ("VGATHERDD/Q"      3 (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VGATHERQD/Q"      3 (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VGATHERDPS/D"     3 (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VGATHERQPS/D"     3 (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . ("VFMADDSUB132PS/D" 3 (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFMSUBADD132PS/D" 3 (V x) (H x) (W x) :v)))
+    #| 98 |#  ((:no-prefix . :none)
+               (:66        . ("VFMADD132PS/D"    3  (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFMADD132SS/D"    3  (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFMSUB132PS/D"    3  (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFMSUB132SS/D"    3  (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFNMADD132PS/D"   3  (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFNMADD132SS/D"   3  (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFNMSUB132PS/D"   3  (V x) (H x) (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFNMSUB132SS/D"   3  (V x) (H x) (W x) :v))))
+
+    #| a0 |# (((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . ("VFMADDSUB213PS/D" 3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFMSUBADD213PS/D" 3 (V x)  (H x)  (W x) :v)))
+    #| a8 |#  ((:no-prefix . :none)
+               (:66        . ("VFMADD213PS/D"    3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFMADD213SS/D"    3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFMSUB213PS/D"    3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFMSUB213SS/D"    3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFNMADD213PS/D"   3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFNMADD213SS/D"   3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFNMSUB213PS/D"   3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFNMSUB213SS/D"   3 (V x)  (H x)  (W x) :v))))
+
+    #| b0 |# (((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . ("VFMADDSUB231PS/D" 3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFMSUBADD231PS/D" 3 (V x)  (H x)  (W x) :v)))
+    #| b8 |#  ((:no-prefix . :none)
+               (:66        . ("VFMADD231PS/D"    3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFMADD231SS/D"    3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFMSUB231PS/D"    3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFMSUB231SS/D"    3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFNMADD231PS/D"   3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFNMADD231SS/D"   3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFNMSUB231PS/D"   3 (V x)  (H x)  (W x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VFNMSUB231SS/D"   3 (V x)  (H x)  (W x) :v))))
+
+    #| c0 |# ((:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| c8 |#  ("SHA1NEXTE"   2 (V dq) (W dq))
+              ("SHA1MSG1"    2 (V dq) (W dq))
+              ("SHA1MSG2"    2 (V dq) (W dq))
+              ("SHA256RNDS2" 2 (V dq) (W dq))
+              ("SHA256MSG1"  2 (V dq) (W dq))
+              ("SHA256MSG2"  2 (V dq) (W dq))
+              (:none)
+              (:none))
+
+  #| d0 |# ((:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+  #| d8 |#  (:none)
+            (:none)
+            (:none)
+            ((:no-prefix . :none)
+             (:66        . ("VAESIMC"     2 (V dq) (W dq))))
+            ((:no-prefix . :none)
+             (:66        . ("VAESENC"     3 (V dq) (H dq) (W dq))))
+            ((:no-prefix . :none)
+             (:66        . ("VAESENCLAST" 3 (V dq) (H dq) (W dq))))
+            ((:no-prefix . :none)
+             (:66        . ("VAESDEC"     3 (V dq) (H dq) (W dq))))
+            ((:no-prefix . :none)
+             (:66        . ("VAESDECLAST" 3 (V dq) (H dq) (W dq)))))
+
+  #| e0 |# ((:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+  #| e8 |#  (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none))
+
+  #| f0 |# (((:no-prefix    . ("MOVBE" 2 (G y)  (M y)))
+             (:66           . ("MOVBE" 2 (G w)  (M w)))
+             (:F3           . :none)
+             (:F2           . ("CRC32" 2 (G d)  (E b)))
+             ((:66 :F2)     . ("CRC32" 2 (G d)  (E b))))
+            ((:no-prefix    . ("MOVBE" 3 (M y)  (G y)))
+             (:66           . ("MOVBE" 2 (M w)  (G w)))
+             (:F3           . :none)
+             (:F2           . ("CRC32" 2 (G d)  (E y)))
+             ((:66 :F2)     . ("CRC32" 2 (G d)  (E w))))
+            ((:no-prefix    . ("ANDN"  3 (G y)  (B y)  (E y) :v))
+             (:66           . :none)
+             (:F3           . :none)
+             (:F2           . :none)
+             ((:66 :F2)     . :none))
+            ("Grp17" 0 :1a)
+            ((:no-prefix    . :none)
+             (:66           . :none)
+             (:F3           . :none)
+             (:F2           . :none)
+             ((:66 :F2)     . :none))
+            ((:no-prefix    . ("BZHI"  3 (G y)  (E y)  (B y) :v))
+             (:66           . :none)
+             (:F3           . ("PEXT"  3 (G y)  (B y)  (E y) :v))
+             (:F2           . ("PDEP"  3 (G y)  (B y)  (E y) :v))
+             ((:66 :F2)     . :none))
+            ((:no-prefix    . :none)
+             (:66           . ("ADCX"  2 (G y)  (E y)))
+             (:F3           . ("ADOX"  2 (G y)  (E y)))
+             (:F2           . ("MULX"  3 (B y)  (G y)  (:rDX)  (E y) :v))
+             ((:66 :F2)     . :none))
+            ((:no-prefix    . ("BEXTR" 3 (G y)  (E y)  (B y) :v))
+             (:66           . ("SHLX"  3 (G y)  (E y)  (B y) :v))
+             (:F3           . ("SARX"  3 (G y)  (E y)  (B y) :v))
+             (:F2           . ("SHRX"  3 (G y)  (E y)  (B y) :v))
+             ((:66 :F2)     . :none))
+  #| f8 |#  (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none)
+            (:none))
+
+  #|       -------------------------------        |#
+  ))
+
+(defconst *0F-3A-three-byte-opcode-map-lst*
+  ;; First two bytes are 0x0F 0x3A.
+
+  ;; Source: Intel Volume 2, Table A-5
+
+  '(
+    #|       -------------------------------        |#
+
+
+    #| 00 |# (((:no-prefix . :none)
+               (:66        . ("VPERMQ"     3 (V qq)  (W qq)  (I b) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VPERMPD"    3 (V qq)  (W qq)  (I b) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VPBLENDD"   4 (V x)   (H x)   (W x)  (I b) :v)))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . ("VPERMILPS"  3 (V x)  (W x)  (I b) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VPERMILPD"  3 (V x)  (W x)  (I b) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VPERM2F128" 4 (V qq) (H qq) (W qq) (I b) :v)))
+              ((:no-prefix . :none)
+               (:66        . :none))
+    #| 08 |#  ((:no-prefix . :none)
+               (:66        . ("VROUNDPS" 3 (V x)  (W x)  (I b))))
+              ((:no-prefix . :none)
+               (:66        . ("VROUNDPD" 3 (V x)  (W x)  (I b))))
+              ((:no-prefix . :none)
+               (:66        . ("VROUNDSS" 3 (V ss) (W ss) (I b))))
+              ((:no-prefix . :none)
+               (:66        . ("VROUNDSD" 3 (V sd) (W sd) (I b))))
+              ((:no-prefix . :none)
+               (:66        . ("VBLENDPS" 4 (V x)  (H x)  (W x) (I b))))
+              ((:no-prefix . :none)
+               (:66        . ("VBLENDPD" 4 (V x)  (H x)  (W x) (I b))))
+              ((:no-prefix . :none)
+               (:66        . ("VPBLENDW" 4 (V x)  (H x)  (W x) (I b))))
+              ((:no-prefix . ("PALIGNR"  3 (P q)  (Q q)  (I b)))
+               (:66        . ("VPALIGNR" 4 (V x)  (H x)  (W x) (I b)))))
+
+    #| 10 |# (((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . (("VPEXTRB"    3 (R d)  (V dq)  (I b))
+                              ("VPEXTRB"    3 (M b)  (V dq)  (I b)))))
+              ((:no-prefix . :none)
+               (:66        . (("VPEXTRW"    3 (R d)  (V dq)  (I b))
+                              ("VPEXTRW"    3 (M w)  (V dq)  (I b)))))
+              ((:no-prefix . :none)
+               (:66        . ("VPEXTRD/Q"   3 (E y)  (V dq)  (I b))))
+              ((:no-prefix . :none)
+               (:66        . ("VEXTRACTPS"  3 (E d)  (V dq)  (I b))))
+    #| 18 |#  ((:no-prefix . :none)
+               (:66        . ("VINSERTF128"  4 (V qq) (H qq) (W qq) (I b) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VEXTRACTF128" 3 (W dq) (V qq) (I b) :v)))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . ("VCVTPS2PH"    3 (W x)  (V x)  (I b) :v)))
+              ((:no-prefix . :none)
+               (:66        . :none))
+              ((:no-prefix . :none)
+               (:66        . :none)))
+
+    #| 20 |# (((:no-prefix . :none)
+               (:66        . (("VPINSRB"   4 (V dq) (H dq) (R y)  (I b))
+                              ("VPINSRB"   4 (V dq) (H dq) (M b) (I b)))))
+              ((:no-prefix . :none)
+               (:66        . (("VINSERTPS" 4 (V dq) (H dq) (U dq) (I b))
+                              ("VINSERTPS" 4 (V dq) (H dq) (M d) (I b)))))
+              ((:no-prefix . :none)
+               (:66        . ("VPINSRD/Q"  4 (V dq) (H dq) (E y)  (I b))))
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| 28 |#  (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+    #| 30 |# ((:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| 38 |#  ((:no-prefix . :none)
+               (:66        . ("VINSERTI128"  4 (V qq) (H qq) (W qq) (I b) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VEXTRACTI128" 3 (W dq) (V qq) (I b) :v)))
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+    #| 40 |# (((:no-prefix . :none)
+               (:66        . ("VDPPS"      4 (V x)  (H x)  (W x)  (I b))))
+              ((:no-prefix . :none)
+               (:66        . ("VDPPD"      4 (V dq) (H dq) (W dq) (I b))))
+              ((:no-prefix . :none)
+               (:66        . ("VMPSADBW"   4 (V x)  (H x)  (W x)  (I b))))
+              (:none)
+              ((:no-prefix . :none)
+               (:66        . ("VPCLMULQDQ" 4 (V dq) (H dq) (W dq) (I b))))
+              (:none)
+              ((:no-prefix . :none)
+               (:66        . ("VPERM2I128" 4 (V qq) (H qq) (W qq) (I b) :v)))
+              (:none)
+    #| 48 |#  (:none)
+              (:none)
+              ((:no-prefix . :none)
+               (:66        . ("VBLENDVPS"  4 (V x)  (H x)  (W x)  (L x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VBLENDVPD"  4 (V x)  (H x)  (W x)  (L x) :v)))
+              ((:no-prefix . :none)
+               (:66        . ("VPBLENDVB"  4 (V x)  (H x)  (W x)  (L x) :v)))
+              (:none)
+              (:none)
+              (:none))
+
+    #| 50 |# ((:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| 58 |#  (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+    #| 60 |# (((:no-prefix . :none)
+               (:66        . ("VPCMPESTRM" 3 (V dq)  (W dq)  (I b))))
+              ((:no-prefix . :none)
+               (:66        . ("VPCMPESTRI" 3 (V dq)  (W dq)  (I b))))
+              ((:no-prefix . :none)
+               (:66        . ("VPCMPISTRM" 3 (V dq)  (W dq)  (I b))))
+              ((:no-prefix . :none)
+               (:66        . ("VPCMPISTRI" 3 (V dq)  (W dq)  (I b))))
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| 68 |#  (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+    #| 70 |# ((:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| 78 |#  (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+    #| 80 |#  ((:none)
+               (:none)
+               (:none)
+               (:none)
+               (:none)
+               (:none)
+               (:none)
+               (:none)
+    #| 88 |#   (:none)
+               (:none)
+               (:none)
+               (:none)
+               (:none)
+               (:none)
+               (:none)
+               (:none))
+
+    #| 90 |# ((:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| 98 |#  (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+    #| a0 |# ((:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| a8 |#  (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+    #| b0 |# ((:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| b8 |#  (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+    #| c0 |# ((:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| c8 |#  (:none)
+              (:none)
+              (:none)
+              (:none)
+              ("SHA1RNDS4" 3 (V dq) (W dq) (I b))
+              (:none)
+              (:none)
+              (:none))
+
+    #| d0 |# ((:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| d8 |#  (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              ((:no-prefix . :none)
+               (:66        . ("VAESKEYGEN" 3 (V dq)  (W dq)  (I b)))))
+
+    #| e0 |# ((:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| e8 |#  (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+    #| f0 |# (((:no-prefix . :none)
+               (:F2        . ("RORX" 3 (G y)  (E y)  (I b) :v)))
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+    #| f8 |#  (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none)
+              (:none))
+
+  #|       -------------------------------        |#
+  ))
+
+(defconst *opcode-extensions-by-group-number*
+  ;; Source: Intel Volume 2, Table A-6.
+
+  ;; Format:
+
+  ;; (<group name keyword> .
+  ;;         (((<opcode-1> <pfx-1> <mod-1> <reg-1> <r/m-1>) . <instruction-1>)
+  ;;           ;; ...
+  ;;          ((<opcode-n> <pfx-n> <mod-n> <reg-n> <r/m-n>) . <instruction-n>)))
+
+  '(
+
+
+    ;; ---- One-Byte Opcodes ----
+
+    (:Group-1 . ;; Covers opcodes 80-83
+              ((((:opcode . #x80)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b000)
+                 (:r/m    . :any)) .
+                 ("ADD" 2 (E b) (I b) :1a))
+               (((:opcode . #x80)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b001)
+                 (:r/m    . :any)) .
+                 ("OR" 2 (E b) (I b) :1a))
+               (((:opcode . #x80)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b010)
+                 (:r/m    . :any)) .
+                 ("ADC" 2 (E b) (I b) :1a))
+               (((:opcode . #x80)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b011)
+                 (:r/m    . :any)) .
+                 ("SBB" 2 (E b) (I b) :1a))
+               (((:opcode . #x80)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b100)
+                 (:r/m    . :any)) .
+                 ("AND" 2 (E b) (I b) :1a))
+               (((:opcode . #x80)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b101)
+                 (:r/m    . :any)) .
+                 ("SUB" 2 (E b) (I b) :1a))
+               (((:opcode . #x80)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 ("XOR" 2 (E b) (I b) :1a))
+               (((:opcode . #x80)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b111)
+                 (:r/m    . :any)) .
+                 ("CMP" 2 (E b) (I b) :1a))
+
+               (((:opcode . #x81)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b000)
+                 (:r/m    . :any)) .
+                 ("ADD" 2 (E v) (I z) :1a))
+               (((:opcode . #x81)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b001)
+                 (:r/m    . :any)) .
+                 ("OR" 2 (E v) (I z) :1a))
+               (((:opcode . #x81)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b010)
+                 (:r/m    . :any)) .
+                 ("ADC" 2 (E v) (I z) :1a))
+               (((:opcode . #x81)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b011)
+                 (:r/m    . :any)) .
+                 ("SBB" 2 (E v) (I z) :1a))
+               (((:opcode . #x81)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b100)
+                 (:r/m    . :any)) .
+                 ("AND" 2 (E v) (I z) :1a))
+               (((:opcode . #x81)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b101)
+                 (:r/m    . :any)) .
+                 ("SUB" 2 (E v) (I z) :1a))
+               (((:opcode . #x81)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 ("XOR" 2 (E v) (I z) :1a))
+               (((:opcode . #x81)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b111)
+                 (:r/m    . :any)) .
+                 ("CMP" 2 (E v) (I z) :1a))
+
+               (((:opcode . #x82)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b000)
+                 (:r/m    . :any)) .
+                 ((:i64 . ("ADD" 2 (E b) (I b) :1a))))
+               (((:opcode . #x82)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b001)
+                 (:r/m    . :any)) .
+                 ((:i64 . ("OR" 2 (E b) (I b) :1a))))
+               (((:opcode . #x82)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b010)
+                 (:r/m    . :any)) .
+                 ((:i64 . ("ADC" 2 (E b) (I b) :1a))))
+               (((:opcode . #x82)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b011)
+                 (:r/m    . :any)) .
+                 ((:i64 . ("SBB" 2 (E b) (I b) :1a))))
+               (((:opcode . #x82)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b100)
+                 (:r/m    . :any)) .
+                 ((:i64 . ("AND" 2 (E b) (I b) :1a))))
+               (((:opcode . #x82)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b101)
+                 (:r/m    . :any)) .
+                 ((:i64 . ("SUB" 2 (E b) (I b) :1a))))
+               (((:opcode . #x82)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 ((:i64 . ("XOR" 2 (E b) (I b) :1a))))
+               (((:opcode . #x82)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b111)
+                 (:r/m    . :any)) .
+                 ((:i64 . ("CMP" 2 (E b) (I b) :1a))))
+
+               (((:opcode . #x83)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b000)
+                 (:r/m    . :any)) .
+                 ("ADD" 2 (E v) (I b) :1a))
+               (((:opcode . #x83)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b001)
+                 (:r/m    . :any)) .
+                 ("OR" 2 (E v) (I b) :1a))
+               (((:opcode . #x83)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b010)
+                 (:r/m    . :any)) .
+                 ("ADC" 2 (E v) (I b) :1a))
+               (((:opcode . #x83)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b011)
+                 (:r/m    . :any)) .
+                 ("SBB" 2 (E v) (I b) :1a))
+               (((:opcode . #x83)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b100)
+                 (:r/m    . :any)) .
+                 ("AND" 2 (E v) (I b) :1a))
+               (((:opcode . #x83)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b101)
+                 (:r/m    . :any)) .
+                 ("SUB" 2 (E v) (I b) :1a))
+               (((:opcode . #x83)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 ("XOR" 2 (E v) (I b) :1a))
+               (((:opcode . #x83)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b111)
+                 (:r/m    . :any)) .
+                 ("CMP" 2 (E v) (I b) :1a))))
+
+    (:Group-1A . ;; Covers opcode 8F.
+               ((((:opcode . #x8F)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b000)
+                  (:r/m    . :any)) .
+                  ((:d64 . ("POP" 1 (E v) :1a))))
+                (((:opcode . #x8F)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b001)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . #x8F)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b010)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . #x8F)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b011)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . #x8F)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b100)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . #x8F)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b101)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . #x8F)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b110)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . #x8F)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b111)
+                  (:r/m    . :any)) .
+                  (:none))))
+
+    (:Group-2  . ;; Covers opcodes
+               ;; (C0, C1 reg, imm),
+               ;; (D0, D1 reg, 1),
+               ;; and
+               ;; (D2, D3 reg, CL).
+               ((((:opcode . #xC0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b000)
+                  (:r/m    . :any)) .
+                  ("ROL" 2 (E b) (I b) :1a))
+                (((:opcode . #xC0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b001)
+                  (:r/m    . :any)) .
+                  ("ROR" 2 (E b) (I b) :1a))
+                (((:opcode . #xC0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b010)
+                  (:r/m    . :any)) .
+                  ("RCL" 2 (E b) (I b) :1a))
+                (((:opcode . #xC0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b011)
+                  (:r/m    . :any)) .
+                  ("RCR" 2 (E b) (I b) :1a))
+                (((:opcode . #xC0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b100)
+                  (:r/m    . :any)) .
+                  ("SHL/SAL" 2 (E b) (I b) :1a))
+                (((:opcode . #xC0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b101)
+                  (:r/m    . :any)) .
+                  ("SHR" 2 (E b) (I b) :1a))
+                (((:opcode . #xC0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b110)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . #xC0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b111)
+                  (:r/m    . :any)) .
+                  ("SAR" 2 (E b) (I b) :1a))
+
+                (((:opcode . #xC1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b000)
+                  (:r/m    . :any)) .
+                  ("ROL" 2 (E v) (I b) :1a))
+                (((:opcode . #xC1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b001)
+                  (:r/m    . :any)) .
+                  ("ROR" 2 (E v) (I b) :1a))
+                (((:opcode . #xC1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b010)
+                  (:r/m    . :any)) .
+                  ("RCL" 2 (E v) (I b) :1a))
+                (((:opcode . #xC1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b011)
+                  (:r/m    . :any)) .
+                  ("RCR" 2 (E v) (I b) :1a))
+                (((:opcode . #xC1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b100)
+                  (:r/m    . :any)) .
+                  ("SHL/SAL" 2 (E v) (I b) :1a))
+                (((:opcode . #xC1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b101)
+                  (:r/m    . :any)) .
+                  ("SHR" 2 (E v) (I b) :1a))
+                (((:opcode . #xC1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b110)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . #xC1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b111)
+                  (:r/m    . :any)) .
+                  ("SAR" 2 (E v) (I b) :1a))
+
+                (((:opcode . #xD0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b000)
+                  (:r/m    . :any)) .
+                  ("ROL" 2 (E b) (1) :1a))
+                (((:opcode . #xD0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b001)
+                  (:r/m    . :any)) .
+                  ("ROR" 2 (E b) (1) :1a))
+                (((:opcode . #xD0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b010)
+                  (:r/m    . :any)) .
+                  ("RCL" 2 (E b) (1) :1a))
+                (((:opcode . #xD0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b011)
+                  (:r/m    . :any)) .
+                  ("RCR" 2 (E b) (1) :1a))
+                (((:opcode . #xD0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b100)
+                  (:r/m    . :any)) .
+                  ("SHL/SAL" 2 (E b) (1) :1a))
+                (((:opcode . #xD0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b101)
+                  (:r/m    . :any)) .
+                  ("SHR" 2 (E b) (1) :1a))
+                (((:opcode . #xD0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b110)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . #xD0)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b111)
+                  (:r/m    . :any)) .
+                  ("SAR" 2 (E b) (1) :1a))
+
+                (((:opcode . #xD1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b000)
+                  (:r/m    . :any)) .
+                  ("ROL" 2 (E v) (1) :1a))
+                (((:opcode . #xD1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b001)
+                  (:r/m    . :any)) .
+                  ("ROR" 2 (E v) (1) :1a))
+                (((:opcode . #xD1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b010)
+                  (:r/m    . :any)) .
+                  ("RCL" 2 (E v) (1) :1a))
+                (((:opcode . #xD1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b011)
+                  (:r/m    . :any)) .
+                  ("RCR" 2 (E v) (1) :1a))
+                (((:opcode . #xD1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b100)
+                  (:r/m    . :any)) .
+                  ("SHL/SAL" 2 (E v) (1) :1a))
+                (((:opcode . #xD1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b101)
+                  (:r/m    . :any)) .
+                  ("SHR" 2 (E v) (1) :1a))
+                (((:opcode . #xD1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b110)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . #xD1)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b111)
+                  (:r/m    . :any)) .
+                  ("SAR" 2 (E v) (1) :1a))
+
+                (((:opcode . #xD2)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b000)
+                  (:r/m    . :any)) .
+                  ("ROL" 2 (E b) (:CL) :1a))
+                (((:opcode . #xD2)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b001)
+                  (:r/m    . :any)) .
+                  ("ROR" 2 (E b) (:CL) :1a))
+                (((:opcode . #xD2)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b010)
+                  (:r/m    . :any)) .
+                  ("RCL" 2 (E b) (:CL) :1a))
+                (((:opcode . #xD2)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b011)
+                  (:r/m    . :any)) .
+                  ("RCR" 2 (E b) (:CL) :1a))
+                (((:opcode . #xD2)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b100)
+                  (:r/m    . :any)) .
+                  ("SHL/SAL" 2 (E b) (:CL) :1a))
+                (((:opcode . #xD2)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b101)
+                  (:r/m    . :any)) .
+                  ("SHR" 2 (E b) (:CL) :1a))
+                (((:opcode . #xD2)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b110)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . #xD2)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b111)
+                  (:r/m    . :any)) .
+                  ("SAR" 2 (E b) (:CL) :1a))
+
+                (((:opcode . #xD3)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b000)
+                  (:r/m    . :any)) .
+                  ("ROL" 2 (E v) (:CL) :1a))
+                (((:opcode . #xD3)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b001)
+                  (:r/m    . :any)) .
+                  ("ROR" 2 (E v) (:CL) :1a))
+                (((:opcode . #xD3)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b010)
+                  (:r/m    . :any)) .
+                  ("RCL" 2 (E v) (:CL) :1a))
+                (((:opcode . #xD3)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b011)
+                  (:r/m    . :any)) .
+                  ("RCR" 2 (E v) (:CL) :1a))
+                (((:opcode . #xD3)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b100)
+                  (:r/m    . :any)) .
+                  ("SHL/SAL" 2 (E v) (:CL) :1a))
+                (((:opcode . #xD3)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b101)
+                  (:r/m    . :any)) .
+                  ("SHR" 2 (E v) (:CL) :1a))
+                (((:opcode . #xD3)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b110)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . #xD3)
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b111)
+                  (:r/m    . :any)) .
+                  ("SAR" 2 (E v) (:CL) :1a))))
+
+    (:Group-3 . ;; Covers opcodes F6 and F7.
+              ((((:opcode . #xF6)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b000)
+                 (:r/m    . :any)) .
+                 ("TEST" 1 (E b) :1a))
+               (((:opcode . #xF6)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b001)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . #xF6)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b010)
+                 (:r/m    . :any)) .
+                 ("NOT" 1 (E b) :1a))
+               (((:opcode . #xF6)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b011)
+                 (:r/m    . :any)) .
+                 ("NEG" 1 (E b) :1a))
+               (((:opcode . #xF6)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b100)
+                 (:r/m    . :any)) .
+                 ("MUL" 1 (E b) :1a))
+               (((:opcode . #xF6)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b101)
+                 (:r/m    . :any)) .
+                 ("IMUL" 1 (E b) :1a))
+               (((:opcode . #xF6)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 ("DIV" 1 (E b) :1a))
+               (((:opcode . #xF6)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b111)
+                 (:r/m    . :any)) .
+                 ("IDIV" 1 (E b) :1a))))
+
+    (:Group-4 . ;; Covers opcode FE.
+              ((((:opcode . #xFE)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b000)
+                 (:r/m    . :any)) .
+                 ("INC" 1 (E b) :1a))
+               (((:opcode . #xFE)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b001)
+                 (:r/m    . :any)) .
+                 ("DEC" 1 (E b) :1a))
+               (((:opcode . #xFE)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b010)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . #xFE)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b011)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . #xFE)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b100)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . #xFE)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b101)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . #xFE)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . #xFE)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b111)
+                 (:r/m    . :any)) .
+                 (:none))))
+
+    (:Group-5 . ;; Covers opcode FF.
+              ((((:opcode . #xFF)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b000)
+                 (:r/m    . :any)) .
+                 ("INC" 1 (E v) :1a))
+               (((:opcode . #xFF)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b001)
+                 (:r/m    . :any)) .
+                 ("DEC" 1 (E v) :1a))
+               (((:opcode . #xFF)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b010)
+                 (:r/m    . :any)) .
+                 ((:f64 . ("near CALL"  1 (E v) :1a))))
+               (((:opcode . #xFF)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b011)
+                 (:r/m    . :any)) .
+                 ("far CALL"  1 (E p) :1a))
+               (((:opcode . #xFF)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b100)
+                 (:r/m    . :any)) .
+                 ((:f64 . ("near JMP"  1 (E v) :1a))))
+               (((:opcode . #xFF)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b101)
+                 (:r/m    . :any)) .
+                 ("far JMP"  1 (M p) :1a))
+               (((:opcode . #xFF)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 ((:d64 . ("PUSH"  1 (E v) :1a))))
+               (((:opcode . #xFF)
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b111)
+                 (:r/m    . :any)) .
+                 (:none))))
+
+    ;; ---- Two-Byte Opcodes ----
+
+    (:Group-6 . ;; Covers opcode 0F 00.
+              ((((:opcode . (#x0F #x00))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b000)
+                 (:r/m    . :any)) .
+                 (("SLDT" 1 (R v) :1a)
+                  ("SLDT" 1 (M w) :1a)))
+               (((:opcode . (#x0F #x00))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b001)
+                 (:r/m    . :any)) .
+                 (("STR" 1 (R v) :1a)
+                  ("STR" 1 (M w) :1a)))
+               (((:opcode . (#x0F #x00))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b010)
+                 (:r/m    . :any)) .
+                 ("LLDT" 1 (E w) :1a))
+               (((:opcode . (#x0F #x00))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b011)
+                 (:r/m    . :any)) .
+                 ("LTR" 1 (E w) :1a))
+               (((:opcode . (#x0F #x00))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b100)
+                 (:r/m    . :any)) .
+                 ("VERR" 1 (E w) :1a))
+               (((:opcode . (#x0F #x00))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b101)
+                 (:r/m    . :any)) .
+                 ("VERW" 1 (E w) :1a))
+               (((:opcode . (#x0F #x00))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . (#x0F #x00))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b111)
+                 (:r/m    . :any)) .
+                 (:none))))
+
+    (:Group-7 . ;; Covers opcode 0F 01.
+              ((((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . :mem)
+                 (:reg    . #b000)
+                 (:r/m    . :any)) .
+                 ("SGDT" 1 (M s) :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b000)
+                 (:r/m    . #b001)) .
+                 ("VMCALL" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b000)
+                 (:r/m    . #b010)) .
+                 ("VMLAUNCH" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b000)
+                 (:r/m    . #b011)) .
+                 ("VMRESUME" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b000)
+                 (:r/m    . #b100)) .
+                 ("VMXOFF" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . :mem)
+                 (:reg    . #b001)
+                 (:r/m    . :any)) .
+                 ("SIDT" 1 (M s) :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b001)
+                 (:r/m    . #b000)) .
+                 ("MONITOR" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b001)
+                 (:r/m    . #b001)) .
+                 ("MWAIT" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b001)
+                 (:r/m    . #b010)) .
+                 ("CLAC" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b001)
+                 (:r/m    . #b011)) .
+                 ("STAC" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b001)
+                 (:r/m    . #b111)) .
+                 ("ENCLS" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . :mem)
+                 (:reg    . #b010)
+                 (:r/m    . :any)) .
+                 ("LGDT" 1 (M s) :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . :mem)
+                 (:reg    . #b011)
+                 (:r/m    . :any)) .
+                 ("LIDT" 1 (M s) :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b011)
+                 (:r/m    . #b000)) .
+                 ("XGETBV" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b011)
+                 (:r/m    . #b001)) .
+                 ("XSETBV" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b011)
+                 (:r/m    . #b100)) .
+                 ("VMFUNC" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b011)
+                 (:r/m    . #b101)) .
+                 ("XEND" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b011)
+                 (:r/m    . #b110)) .
+                 ("XTEST" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b011)
+                 (:r/m    . #b111)) .
+                 ("ENCLU" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b100)
+                 (:r/m    . :any)) .
+                 (("SMSW" 1 (M w) :1a)
+                  ("SMSW" 1 (R v) :1a)))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b100)
+                 (:r/m    . #b11)) .
+                 (:none))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b101)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 ("LMSW" 1 (E w) :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b111)
+                 (:r/m    . :mem)) .
+                 ("INVLPG" 1 (M b) :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b111)
+                 (:r/m    . #b000)) .
+                 ("SWAPGS" 0 :1a))
+               (((:opcode . (#x0F #x01))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b111)
+                 (:r/m    . #b001)) .
+                 ("RDTSCP" 0 :1a))))
+
+    (:Group-8 . ;; Covers opcode 0F BA.
+              ((((:opcode . (#x0F #xBA))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b000)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . (#x0F #xBA))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b001)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . (#x0F #xBA))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b010)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . (#x0F #xBA))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b011)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . (#x0F #xBA))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b100)
+                 (:r/m    . :any)) .
+                 ("BT" 2 (E v) (I b) :1a))
+               (((:opcode . (#x0F #xBA))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b101)
+                 (:r/m    . :any)) .
+                 ("BTS" 2 (E b) (I b) :1a))
+               (((:opcode . (#x0F #xBA))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 ("BTR" 2 (E b) (I b) :1a))
+               (((:opcode . (#x0F #xBA))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b111)
+                 (:r/m    . :any)) .
+                 ("BTC" 2 (E b) (I b) :1a))))
+
+    (:Group-9 . ;; Covers opcode 0F C7.
+              ((((:opcode . (#x0F #xC7))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b000)
+                 (:r/m    . :any)) .
+                 (:any))
+               (((:opcode . (#x0F #xC7))
+                 (:prefix . :none)
+                 (:mod    . :mem)
+                 (:reg    . #b001)
+                 (:r/m    . :any)) .
+                 (("CMPXCH8B" 1 (M q) :1a)
+                  ("CMPXCHG16B" 1 (M dq) :1a)))
+               (((:opcode . (#x0F #xC7))
+                 (:prefix . :any)
+                 (:mod    . #b11)
+                 (:reg    . #b001)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . (#x0F #xC7))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b010)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . (#x0F #xC7))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b011)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . (#x0F #xC7))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b100)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . (#x0F #xC7))
+                 (:prefix . :any)
+                 (:mod    . :any)
+                 (:reg    . #b101)
+                 (:r/m    . :any)) .
+                 (:none))
+               (((:opcode . (#x0F #xC7))
+                 (:prefix . :none)
+                 (:mod    . :mem)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 ("VMPTRLD" 1 (M q) :1a))
+               (((:opcode . (#x0F #xC7))
+                 (:prefix . :66)
+                 (:mod    . :mem)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 ("VMCLEAR" 1 (M q) :1a))
+               (((:opcode . (#x0F #xC7))
+                 (:prefix . :F3)
+                 (:mod    . :mem)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 ("VMXON" 1 (M q) :1a))
+               (((:opcode . (#x0F #xC7))
+                 (:prefix . :none)
+                 (:mod    . #b11)
+                 (:reg    . #b110)
+                 (:r/m    . :any)) .
+                 ("RDRAND" 1 (R v) :1a))
+               (((:opcode . (#x0F #xC7))
+                 (:prefix . :none)
+                 (:mod    . :any)
+                 (:reg    . #b111)
+                 (:r/m    . :any)) .
+                 ("RDSEED" 1 (R v) :1a))
+               (((:opcode . (#x0F #xC7))
+                 (:prefix . :F3)
+                 (:mod    . :any)
+                 (:reg    . #b111)
+                 (:r/m    . :any)) .
+                 (("RDPID" 1 (R d) :1a)
+                  ("RDPID" 1 (R q) :1a)))))
+
+    ;; TODO: Groups 10 - 17.
+
+
+    ;; ---- Three-Byte Opcodes ----
+
+    (:Group-17 . ;; Covers opcode VEX 0F 38 F3.
+               ((((:opcode . (:vex #x0F #x38 #xF3))
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b000)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . (:vex #x0F #x38 #xF3))
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b001)
+                  (:r/m    . :any)) .
+                  ("BLSR" 2 (B y) (E y) :v))
+                (((:opcode . (:vex #x0F #x38 #xF3))
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b010)
+                  (:r/m    . :any)) .
+                  ("BLSMSK" 2 (B y) (E y) :v))
+                (((:opcode . (:vex #x0F #x38 #xF3))
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b011)
+                  (:r/m    . :any)) .
+                  ("BLSI" 2 (B y) (E y) :v))
+                (((:opcode . (:vex #x0F #x38 #xF3))
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b100)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . (:vex #x0F #x38 #xF3))
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b101)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . (:vex #x0F #x38 #xF3))
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b110)
+                  (:r/m    . :any)) .
+                  (:none))
+                (((:opcode . (:vex #x0F #x38 #xF3))
+                  (:prefix . :any)
+                  (:mod    . :any)
+                  (:reg    . #b111)
+                  (:r/m    . :any)) .
+                  (:none))))
+    ))
+
+;; ----------------------------------------------------------------------
+
+(defconst *group-numbers*
+  (strip-cars *opcode-extensions-by-group-number*))
+
+(local
+ (defun remove-all (elems lst)
+   (if (endp elems)
+       lst
+     (remove-all (cdr elems) (remove-equal (car elems) lst)))))
+
+(make-event
+ `(defconst *opcode-map-true-superscripts*
+    (quote ,(remove-all '(:1a :1b :1c :v :v1) *opcode-map-superscripts*))))
+
+(defconst *opcode-allowed-keys*
+  (append
+
+   (list
+    :none
+    :esc
+    :2-byte-escape
+    :3-byte-escape
+    :rex
+    :prefix-CS
+    :prefix-ES
+    :prefix-SS
+    :prefix-DS
+    :prefix-FS
+    :prefix-GS
+    :prefix-OpSize
+    :prefix-AddrSize
+    :prefix-Lock
+    :prefix-REPNE
+    :prefix-REP/REPE
+
+    ;; The following are valid keys when one-opcode-lst (see
+    ;; opcode-row-recognizer) is an alistp.
+    :vex ;; Why do we need this? Why couldn't we use :v or :v1?
+    :no-prefix
+    :66
+    :F3
+    :F2)
+
+   *group-numbers*
+
+   *opcode-map-true-superscripts*))
+
 ;; Thanks to Dmitry Nadezhin for fixing bugs in opcode-row-recognizer
 ;; and opcode-map-info-recognizer!
 (defn opcode-row-recognizer (row-lst)
@@ -1646,7 +3613,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
                    :rex-wb :rex-wx :rex-wxb
                    :rex-wr :rex-wrb :rex-wrx
                    :rex-wrxb :rex-x
-                   :none :esc :2-byte-escape :3-byte-escape                   
+                   :none :esc :2-byte-escape :3-byte-escape
                    :vex :vex2-byte0 :vex3-byte0)
              0)
 
