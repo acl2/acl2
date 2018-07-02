@@ -207,7 +207,7 @@
              (cons t (pseudoproj (cdr x))))))
 
   (defthm pseudoproj-relation-of-pseudoproj
-    (implies (<= (nfix n) (len x))
+    (implies (< (nfix n) (len x))
              (pseudoproj-relation (nth n x) (nth n (pseudoproj x))))))
 
 (define pseudoproj-relation-list (x y)
@@ -307,9 +307,8 @@
            
 
   (local (defthm projection-of-nthcdr
-           (implies (<= (nfix n) (len x))
-                    (equal (nthcdr n (acl2::elementlist-projection x))
-                           (acl2::elementlist-projection (nthcdr n x))))
+           (equal (nthcdr n (acl2::elementlist-projection x))
+                  (acl2::elementlist-projection (nthcdr n x)))
            :hints(("Goal" :in-theory (enable acl2::elementlist-projection nthcdr)))))
 
   (defret <fn>-of-projection
@@ -366,7 +365,10 @@
   (defequiv lengths-equal)
   (defthm lenths-equal-of-extract-lists
     (lengths-equal (extract-lists x y) x)
-    :hints(("Goal" :in-theory (enable lengths-equal extract-lists)))))
+    :hints(("Goal" :in-theory (enable lengths-equal extract-lists))))
+
+  (defcong lengths-equal equal (sum-of-lengths x) 1
+    :hints(("Goal" :in-theory (enable sum-of-lengths)))))
 
     
 

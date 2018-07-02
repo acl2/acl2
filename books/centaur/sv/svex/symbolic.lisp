@@ -33,6 +33,7 @@
 (include-book "a4vec-ops")
 (include-book "rewrite")
 (include-book "lists")
+(include-book "env-ops")
 (include-book "centaur/gl/gl-mbe" :dir :system)
 (include-book "centaur/gl/def-gl-rewrite" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -3295,7 +3296,7 @@ to the svexes.</p>"
 
 (define svexlist-rewrite-fixpoint-memo ((x svexlist-p))
   :enabled t
-  (time$ (svexlist-rewrite-fixpoint x :verbosep t)
+  (time$ (svexlist-rewrite-fixpoint x :verbosep t :count 2)
          :msg "; svex rewriting: ~st sec, ~sa bytes.~%")
   ///
   (memoize 'svexlist-rewrite-fixpoint-memo))
@@ -3359,7 +3360,153 @@ to the svexes.</p>"
     (subsetp (intersection-equal (svexlist-vars x)
                                  (alist-keys (svex-env-fix env)))
              vars)
-    :hints ((set-reasoning))))
+    :hints ((set-reasoning)))
+
+  (defret member-of-svexlist-vars-for-symbolic-eval
+    (implies (and (member v (svexlist-vars x))
+                  (hons-assoc-equal v (svex-env-fix env)))
+             (member v vars))
+    :hints (("goal" :use svexlist-vars-for-symbolic-eval-sufficient
+             :in-theory (disable svexlist-vars-for-symbolic-eval-sufficient
+                                 svexlist-vars-for-symbolic-eval
+                                 alist-keys-of-svex-env-fix))
+            (set-reasoning))))
+
+
+(defines svex-fastsubst
+  :verify-guards nil
+  (define svex-fastsubst
+    :parents (svex-subst)
+    :short "Substitution for @(see svex)es, identical to @(see svex-subst),
+except that we memoize the results and we use fast alist lookups."
+    ((pat svex-p)
+     (al  svex-alist-p))
+    :returns (x (equal x (svex-subst pat al))
+                :hints ((and stable-under-simplificationp
+                             '(:expand ((svex-subst pat al))))))
+    :measure (svex-count pat)
+    (svex-case pat
+      :var (or (svex-fastlookup pat.name al)
+               (svex-quote (4vec-x)))
+      :quote (svex-fix pat)
+      :call (svex-call pat.fn (svexlist-fastsubst pat.args al))))
+  (define svexlist-fastsubst ((pat svexlist-p) (al svex-alist-p))
+    :returns (x (equal x (svexlist-subst pat al))
+                :hints ((and stable-under-simplificationp
+                             '(:expand ((svexlist-subst pat al))))))
+    :measure (svexlist-count pat)
+    (if (atom pat)
+        nil
+      (cons (svex-fastsubst (car pat) al)
+            (svexlist-fastsubst (cdr pat) al))))
+  ///
+  (verify-guards svex-fastsubst)
+  (memoize 'svex-fastsubst :condition '(eq (svex-kind pat) :call)))
+
+
+(define svexlist-x-out-unused-vars ((x svexlist-p)
+                                    (svars svarlist-p)
+                                    (do-it))
+  :returns (new-x svexlist-p)
+  (if do-it
+      (b* ((subst (make-fast-alist (pairlis$ (svarlist-fix svars) (svarlist-svex-vars svars))))
+           (ans (svexlist-fastsubst x subst)))
+        (clear-memoize-table 'svex-fastsubst)
+        (fast-alist-free subst)
+        ans)
+    (svexlist-fix x))
+  ///
+  (defthm svex-alist-eval-of-svarlist-svex-vars
+    (equal (svex-alist-eval (pairlis$ (svarlist-fix svars)
+                                      (svarlist-svex-vars svars))
+                            env)
+           (svex-env-extract svars env))
+    :hints(("Goal" :in-theory (enable svex-env-extract svex-alist-eval svarlist-fix
+                                      svarlist-svex-vars)
+            :induct (len svars)
+            :expand ((:free (x) (svex-eval (svex-var x) env))))))
+
+
+  (defthm-svex-eval-flag
+    (defthm svex-eval-of-svex-env-extract-when-intersection-subset
+      (implies (subsetp (intersection$ (svex-vars x)
+                                       (alist-keys (svex-env-fix env)))
+                        (svarlist-fix svars))
+               (equal (svex-eval x (svex-env-extract svars env))
+                      (svex-eval x env)))
+      :hints ('(:expand ((:free (env) (svex-eval x env))
+                         (svex-vars x)))
+              (and stable-under-simplificationp
+                   '(:in-theory (enable svex-env-lookup)
+                     :expand ((:free (x y) (subsetp-equal (list x) y))
+                              (:free (x y) (intersection-equal (list x) y))))))
+      :flag expr)
+    (defthm svexlist-eval-of-svex-env-extract-when-intersection-subset
+      (implies (subsetp (intersection$ (svexlist-vars x)
+                                       (alist-keys (svex-env-fix env)))
+                        (svarlist-fix svars))
+               (equal (svexlist-eval x (svex-env-extract svars env))
+                      (svexlist-eval x env)))
+      :hints ('(:expand ((:free (env) (svexlist-eval x env))
+                         (svexlist-vars x))))
+      :flag list))
+
+  (defret svex-eval-of-svexlist-x-out-unused-vars
+    (implies (subsetp (intersection-equal (svexlist-vars x)
+                                          (alist-keys (svex-env-fix env)))
+                      (svarlist-fix svars))
+             (equal (svexlist-eval new-x env)
+                    (svexlist-eval x env))))
+
+
+  (local (defthm hons-assoc-equal-of-pair-svex-vars
+           (equal (hons-assoc-equal v (pairlis$ (svarlist-fix vars1) (svarlist-svex-vars vars1)))
+                  (and (member v (svarlist-fix vars1))
+                       (cons v (svex-var (svar-fix v)))))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal pairlis$ svarlist-svex-vars svarlist-fix)))))
+
+  (local (defthm svex-lookup-of-pair-svex-vars
+           (implies (equal vars (svarlist-fix vars1))
+                    (equal (svex-lookup v (pairlis$ vars (svarlist-svex-vars vars1)))
+                           (and (member (svar-fix v) vars)
+                                (svex-var (svar-fix v)))))
+           :hints(("Goal" :in-theory (enable svex-lookup)))))
+
+  (local (defthm-svex-eval-flag
+           (defthm vars-of-svex-subst-lemma
+             (implies (and (not (member v (svex-vars x)))
+                           (equal vars (svarlist-fix vars1)))
+                      (not (member v (svex-vars (svex-subst x (pairlis$ vars (svarlist-svex-vars vars1)))))))
+             :flag expr
+             :hints ('(:expand ((:free (al) (svex-subst x al))))))
+           (defthm vars-of-svexlist-subst-lemma
+             (implies (and (not (member v (svexlist-vars x)))
+                           (equal vars (svarlist-fix vars1)))
+                      (not (member v (svexlist-vars (svexlist-subst x (pairlis$ vars (svarlist-svex-vars vars1)))))))
+             :flag list
+             :hints ('(:expand ((:free (al) (svexlist-subst x al))))))))
+
+  (defret svex-vars-of-svexlist-x-out-unused-vars
+    (implies (not (member v (svexlist-vars x)))
+             (not (member v (svexlist-vars new-x)))))
+
+  (local (defthm len-of-svexlist-subst
+           (equal (len (svexlist-subst x subst))
+                  (len x))
+           :hints (("goal" :induct (len x)
+                    :in-theory (enable svexlist-subst)))))
+
+  (defret len-of-<fn>
+    (equal (len new-x) (len x))))
+  
+
+(define symbolic-params-x-out-cond ((symbolic-params alistp))
+  ;; Only makes sense to x out unused variables if
+  ;;  - we're simplifying, so they'll get constant propagated, and
+  ;;  - we're not using all vars, so there will be some substitutions.
+  (and (cdr (assoc :simplify symbolic-params))
+       (not (cdr (assoc :all-vars symbolic-params)))))
+
 
 
 (define svexlist-eval-gl
@@ -3450,8 +3597,10 @@ obviously 2-vectors.</p>"
   :guard-hints (("goal" :in-theory (e/d (SET::UNION-WITH-SUBSET-LEFT)
                                         (SUBSET-OF-MERGESORTS-IS-SUBSETP))))
   (b* ((env (make-fast-alist (svex-env-fix env)))
-       (x (maybe-svexlist-rewrite-fixpoint x (cdr (assoc :simplify symbolic-params)))) 
        (svars (svexlist-vars-for-symbolic-eval x env symbolic-params))
+       (x (svexlist-x-out-unused-vars x svars
+                                      (symbolic-params-x-out-cond symbolic-params)))
+       (x (maybe-svexlist-rewrite-fixpoint x (cdr (assoc :simplify symbolic-params))))
        (boolmasks (make-fast-alist
                    (hons-copy
                     (ec-call
@@ -3487,13 +3636,20 @@ obviously 2-vectors.</p>"
                            (boolmasks
                             (svar-boolmasks-fix (cdr (assoc :boolmasks symbolic-params))))
                            (vars (svexlist-vars-for-symbolic-eval
-                                  (maybe-svexlist-rewrite-fixpoint x (cdr (assoc :simplify symbolic-params)))
-                                  env symbolic-params))
-                           (x (maybe-svexlist-rewrite-fixpoint x (cdr (assoc :simplify symbolic-params))))
+                                  x env symbolic-params))
+                           (x (maybe-svexlist-rewrite-fixpoint
+                               (svexlist-x-out-unused-vars
+                                x
+                                (svexlist-vars-for-symbolic-eval x env symbolic-params)
+                                (symbolic-params-x-out-cond symbolic-params))
+                               (cdr (assoc :simplify symbolic-params))))
                            (env (svex-env-fix env))))
              :in-theory (disable svexlist->a4vec-for-varlist-correct
-                                 SVEXLIST->A4VECS-FOR-VARLIST-SVAR-BOOLMASKS-EQUIV-CONGRUENCE-ON-BOOLMASKS))))
-
+                                 SVEXLIST->A4VECS-FOR-VARLIST-SVAR-BOOLMASKS-EQUIV-CONGRUENCE-ON-BOOLMASKS))
+            (set-reasoning)
+            (and stable-under-simplificationp
+                 '(:cases ((member acl2::k0 (svexlist-vars x)))))))
+  
   (gl::def-gl-rewrite svexlist-eval-for-symbolic-redef
     (equal (svexlist-eval-for-symbolic x env symbolic-params)
            (svexlist-eval-gl x env symbolic-params))))
@@ -3824,95 +3980,195 @@ obviously 2-vectors.</p>"
 (defsection svexlist/env-list-eval-of-extract-of-rewrite
   (local (include-book "svex-equivs"))
 
-  ;; This is different from svexlist-eval-equiv because of cases where the two lists differ in length.
-  (local (define svex-eval-equiv-list (x y)
+  (local (define svex-eval-same-on-envs (x y envs)
            :verify-guards nil
-           (if (atom x)
+           (if (atom envs)
                t
-             (and (svex-eval-equiv (car x) (car y))
-                  (svex-eval-equiv-list (cdr x) (cdr y))))
+             (and (equal (svex-eval x (car envs))
+                         (svex-eval y (car envs)))
+                  (svex-eval-same-on-envs x y (cdr envs))))
            ///
-           (defthm svex-eval-equiv-list-when-svexlist-eval-equiv
-             (implies (svexlist-eval-equiv x y)
-                      (svex-eval-equiv-list x y)))
+           (defthm svex-eval-same-on-envs-implies-eval-same-with-member
+             (implies (and (svex-eval-same-on-envs x y envs)
+                           (member env envs))
+                      (equal (svex-eval x env)
+                             (svex-eval y env))))
 
-           (defthm svex-eval-equiv-list-when-equal-len
-             (implies (equal (len x) (len y))
-                      (equal (svex-eval-equiv-list x y)
-                             (svexlist-eval-equiv x y)))
-             :hints (("goal" :induct (svex-eval-equiv-list x y))
-                     (and stable-under-simplificationp
-                          `(:expand (,(car (last clause)))
-                            :in-theory (enable svexlist-eval)))))))
+           (defthm svex-eval-same-on-envs-when-svex-eval-equiv
+             (implies (svex-eval-equiv x y)
+                      (svex-eval-same-on-envs x y envs)))))
 
-  (local (define svex-eval-equiv-listlist (x y)
+  (local (define svexlist-eval-same-on-envs (x y envs)
            :verify-guards nil
            (if (atom x)
                t
-             (and (svex-eval-equiv-list (car x) (car y))
-                  (svex-eval-equiv-listlist (cdr x) (cdr y))))))
+             (and (svex-eval-same-on-envs (car x) (car y) envs)
+                  (svexlist-eval-same-on-envs (cdr x) (cdr y) envs)))
+           ///
+           (defthm svexlist-eval-same-on-envs-implies-svexlist-eval-same-with-member
+             (implies (and (svexlist-eval-same-on-envs x y envs)
+                           (member env envs)
+                           (equal (len x) (len y)))
+                      (equal (svexlist-eval x env)
+                             (svexlist-eval y env))))
+           (local (defun ind (n x y)
+                    (if (zp n)
+                        (list x y)
+                      (ind (1- n) (cdr x) (cdr y)))))
+           
+           (defthm svex-eval-same-on-envs-of-nth-when-svexlist-eval-same-on-envs
+             (implies (and (svexlist-eval-same-on-envs x y envs)
+                           (< (nfix n) (len x)))
+                      (svex-eval-same-on-envs (nth n x) (nth n y) envs))
+             :hints(("Goal" :in-theory (enable nth svex-eval-same-on-envs)
+                     :induct (ind n x y))))
+
+           (local (defthm svexlist-eval-equiv-implies-svex-eval-equiv-car
+                    (implies (and (svexlist-eval-equiv x y)
+                                  (consp x))
+                             (equal (svex-eval-equiv (car x) (car y)) t))
+                    :hints (("goal" :in-theory (enable svex-eval-equiv)))))
+
+           (defthm svexlist-eval-same-on-envs-when-svexlist-eval-equiv
+             (implies (svexlist-eval-equiv x y)
+                      (svexlist-eval-same-on-envs x y envs)))
+
+           (defthm svexlist-eval-same-on-envs-of-atom
+             (implies (atom envs)
+                      (svexlist-eval-same-on-envs x y envs))
+             :hints(("Goal" :in-theory (enable svex-eval-same-on-envs))))
+
+           (defthm svexlist-eval-same-on-envs-of-consp
+             (implies (and (consp envs)
+                           (equal (len x) (len y))
+                           (svexlist-eval-same-on-envs x y (cdr envs)))
+                      (iff (svexlist-eval-same-on-envs x y envs)
+                           (equal (svexlist-eval x (car envs))
+                                  (svexlist-eval y (car envs)))))
+             :hints(("Goal" :in-theory (enable svex-eval-same-on-envs))))))
+
+
+
+  (local (define svexlistlist-eval-same-on-envs (x y envs)
+           :verify-guards nil
+           (if (atom x)
+               t
+             (and (svexlist-eval-same-on-envs (car x) (car y) envs)
+                  (svexlistlist-eval-same-on-envs (cdr x) (cdr y) envs)))
+           ///
+           (local (defun ind (x y envs1)
+                    (if (atom x)
+                        (list y envs1)
+                      (ind (cdr x) (cdr y) (cdr envs1)))))
+
+           ;; (defthm svexlistlist-eval-same-on-envs-implies-svexlist-eval-same-with-member
+           ;;   (implies (and (svexlistlist-eval-same-on-envs x y envs)
+           ;;                 (member env envs)
+           ;;                 (equal (len x) (len y)))
+           ;;            (equal (svexlist-eval x env)
+           ;;                   (svexlist-eval y env))))
+
+           (defthm svexlist/env-list-eval-when-svexlistlist-eval-same-on-envs
+             (implies (and (svexlistlist-eval-same-on-envs x y envs)
+                           (subsetp envs1 envs)
+                           (equal (len x) (len y))
+                           (lengths-equal x y)
+                           (equal (len x) (len envs1)))
+                      (equal (svexlist/env-list-eval x envs1)
+                             (svexlist/env-list-eval y envs1)))
+             :hints(("Goal" :in-theory (enable svexlist/env-list-eval
+                                               subsetp-equal
+                                               lengths-equal)
+                     :induct (ind x y envs1))))))
+
+
   
   (local (defthm svexlist-eval-equiv-of-maybe-svexlist-rewrite-fixpoint
            (svexlist-eval-equiv (maybe-svexlist-rewrite-fixpoint x do-it) x)
            :hints(("Goal" :in-theory (enable svexlist-eval-equiv)))))
-  
-  (local (defthm svexlist/env-list-eval-when-svex-eval-equiv-listlist
-           (implies (and (svex-eval-equiv-listlist x y)
-                         (equal (len x) (len y))
-                         (lengths-equal x y))
-                    (equal (svexlist/env-list-eval x envs)
-                           (svexlist/env-list-eval y envs)))
-           :hints(("Goal" :in-theory (enable lengths-equal svex-eval-equiv-listlist
-                                             svexlist/env-list-eval)))))
 
-  (local (defthmd svex-eval-of-nth2
-           (equal (svex-eval (nth n x) env)
-                  (if (< (nfix n) (len x))
-                      (nth n (svexlist-eval x env))
-                    (4vec-x)))
-           :hints(("Goal" :in-theory (enable svexlist-eval nth)))))
 
-  (local (defcong svexlist-eval-equiv equal (len x) 1
-           :hints (("goal" :use ((:instance len-of-svexlist-eval)
-                                 (:instance len-of-svexlist-eval (x x-equiv))
-                                 (:instance svexlist-eval-equiv-necc (env env)))
-                    :in-theory (disable len-of-svexlist-eval
-                                        svexlist-eval-equiv-necc)))))
+  (local (defthm alist-keys-of-svex-env-fix
+           (equal (alist-keys (svex-env-fix env))
+                  (svarlist-filter (alist-keys env)))
+           :hints(("Goal" :in-theory (enable svex-env-fix svarlist-filter)))))
 
-  (local (defthm svex-eval-equiv-of-nth-when-svexlist-eval-equiv
-           (implies (svexlist-eval-equiv x y)
-                    (svex-eval-equiv (nth n x) (nth n y)))
-           :hints(("Goal" :in-theory (e/d (svex-eval-equiv
-                                           svex-eval-of-nth2)
-                                          (nth-of-svexlist-eval
-                                           svexlist-eval-equiv-necc))
-                   :use ((:instance svexlist-eval-equiv-necc
-                          (env (svex-eval-equiv-witness (nth n x) (nth n y)))))))
-           :rule-classes :congruence))
+  (local (defthm svexlist-eval-equiv-of-svexlist-x-out-unused-vars
+           (implies (subsetp (intersection-equal (svexlist-vars x)
+                                                 (svex-envlist-keyset envs))
+                             (svarlist-fix svars))
+                    (svexlist-eval-same-on-envs
+                     x
+                     (maybe-svexlist-rewrite-fixpoint
+                      (svexlist-x-out-unused-vars x svars do-it)
+                      do-it1)
+                     envs))
+           :hints(("Goal" :in-theory (e/d (svex-envlist-keyset)
+                                          ())
+                   :induct (len envs)))))
+
 
   (local (defthm svex-eval-equiv-listlist-of-extract-lists-of-rewrite
-           (svex-eval-equiv-listlist
-            x
-            (extract-lists x (maybe-svexlist-rewrite-fixpoint
-                              (append-lists x)
-                              do-it)))
+           (implies (subsetp (intersection-equal (svexlist-vars (append-lists x))
+                                                 (svex-envlist-keyset envs))
+                             (svarlist-fix svars))
+                    (svexlistlist-eval-same-on-envs
+                     x
+                     (extract-lists x (maybe-svexlist-rewrite-fixpoint
+                                       (svexlist-x-out-unused-vars
+                                        (append-lists x)
+                                        svars
+                                        do-it1)
+                                       do-it))
+                     envs))
            :hints (("goal" :use ((:functional-instance
                                   extract-lists-of-pseudoproj
-                                  (pseudoproj (lambda (x) (maybe-svexlist-rewrite-fixpoint x do-it)))
-                                  (pseudoproj-relation svex-eval-equiv)
-                                  (pseudoproj-relation-list svex-eval-equiv-list)
-                                  (pseudoproj-relation-listlist svex-eval-equiv-listlist)))
-                    :in-theory (enable svex-eval-equiv-listlist
-                                       svex-eval-equiv-list)))))
+                                  (pseudoproj (lambda (x)
+                                                (if (subsetp (intersection-equal (svexlist-vars x)
+                                                                                 (svex-envlist-keyset envs))
+                                                             (svarlist-fix svars))
+                                                    (maybe-svexlist-rewrite-fixpoint
+                                                     (svexlist-x-out-unused-vars x svars do-it1) do-it)
+                                                  x)))
+                                  (pseudoproj-relation
+                                   (lambda (x y)
+                                     (svex-eval-same-on-envs x y envs)))
+                                  (pseudoproj-relation-list
+                                   (lambda (x y)
+                                     (svexlist-eval-same-on-envs x y envs)))
+                                  (pseudoproj-relation-listlist
+                                   (lambda (x y)
+                                     (svexlistlist-eval-same-on-envs x y envs))))))
+                   (and stable-under-simplificationp
+                        '(:in-theory (enable svexlist-eval-same-on-envs
+                                             svexlistlist-eval-same-on-envs))))))
 
   (defthm svexlist/env-list-eval-of-extract-lists-of-rewrite
-    (equal (svexlist/env-list-eval (extract-lists x (maybe-svexlist-rewrite-fixpoint (append-lists x) do-it)) envs)
-           (svexlist/env-list-eval x envs))
-    :hints (("goal" :use ((:instance svexlist/env-list-eval-when-svex-eval-equiv-listlist
-                           (y (extract-lists x (maybe-svexlist-rewrite-fixpoint (append-lists x) do-it)))))))))
-
+    (implies (and (subsetp (intersection-equal (svexlist-vars (append-lists x))
+                                               (svex-envlist-keyset envs))
+                           (svarlist-fix svars))
+                  (equal (len envs) (len x)))
+             (equal (svexlist/env-list-eval (extract-lists x (maybe-svexlist-rewrite-fixpoint
+                                                              (svexlist-x-out-unused-vars
+                                                               (append-lists x)
+                                                               svars
+                                                               do-it1)
+                                                              do-it))
+                                            envs)
+                    (svexlist/env-list-eval x envs)))
+    :hints (("goal" :use ((:instance svexlist/env-list-eval-when-svexlistlist-eval-same-on-envs
+                           (x x)
+                           (y (extract-lists x (maybe-svexlist-rewrite-fixpoint
+                                                              (svexlist-x-out-unused-vars
+                                                               (append-lists x)
+                                                               svars
+                                                               do-it1)
+                                                              do-it)))
+                           (envs envs)
+                           (envs1 envs)))
+             :in-theory (disable svexlist/env-list-eval-when-svexlistlist-eval-same-on-envs)
+             :do-not-induct t))))
   
-
 
 
 
@@ -3947,8 +4203,10 @@ bound in all environments.</p>"
   (b* ((envs (take (len x) envs))
        (x (svexlistlist-fix x))
        (svexes (append-lists x))
-       (svexes (maybe-svexlist-rewrite-fixpoint svexes (cdr (assoc :simplify symbolic-params)))) 
        (svars (svexlist/env-list-vars-for-symbolic-eval svexes envs symbolic-params))
+       (svexes (svexlist-x-out-unused-vars svexes svars
+                                           (symbolic-params-x-out-cond symbolic-params)))
+       (svexes (maybe-svexlist-rewrite-fixpoint svexes (cdr (assoc :simplify symbolic-params))))
        (boolmasks (make-fast-alist
                    (hons-copy
                     (ec-call
@@ -3988,6 +4246,25 @@ bound in all environments.</p>"
                                   (elementlistlist-projection (lambda (x) (svexlistlist->a4vec x env masks)))))
                     :in-theory (enable svexlistlist->a4vec
                                        svexlist->a4vec)))))
+
+  (local (defthm vars-subset-lemma
+           (b* ((vars (SVEXLIST/ENV-LIST-VARS-FOR-SYMBOLIC-EVAL
+                       svexes
+                       envs
+                       params)))
+             (SUBSETP-EQUAL (INTERSECTION-EQUAL
+                             (SVEXLIST-VARS
+                              (MAYBE-SVEXLIST-REWRITE-FIXPOINT
+                               (SVEXLIST-X-OUT-UNUSED-VARS svexes
+                                                           vars
+                                                           x-out)
+                               simp))
+                             (SVEX-ENVLIST-KEYSET envs))
+                            vars))
+           :hints (("goal" :use ((:instance svexlist/env-list-vars-for-symbolic-eval-sufficient
+                                  (x svexes) (symbolic-params params)))
+                    :in-theory (disable svexlist/env-list-vars-for-symbolic-eval-sufficient))
+                   (set-reasoning))))
                                   
 
   (defthm svexlist/env-list-eval-gl-correct
@@ -3998,4 +4275,6 @@ bound in all environments.</p>"
   (gl::def-gl-rewrite svexlist/env-list-eval-for-symbolic-redef
     (equal (svexlist/env-list-eval x envs)
            (svexlist/env-list-eval-gl x envs nil))))
+
+
 

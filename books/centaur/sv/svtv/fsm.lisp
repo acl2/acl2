@@ -266,6 +266,11 @@
     (equal (svtv-fsm-eval ins (svex-env-extract (svex-alist-keys (svtv->nextstate x)) prev-st) x)
            (svtv-fsm-eval ins prev-st x))
     :hints(("Goal" :in-theory (enable svtv-fsm-eval))))
+
+  (defthm svtv-fsm-eval-of-reduce-states-from-prev-st
+    (equal (svtv-fsm-eval ins (svex-env-reduce (svex-alist-keys (svtv->nextstate x)) prev-st) x)
+           (svtv-fsm-eval ins prev-st x))
+    :hints(("Goal" :in-theory (enable svtv-fsm-eval))))
   
   (defthmd svtv-fsm-eval-is-svex-eval-unroll-multienv
     (implies (< (nfix n) (len ins))
@@ -995,27 +1000,15 @@
      (implies (not (svarlist-has-svex-cycle-var (svex-alist-keys (svtv->nextstate x))))
               (equal (svtv-fsm-eval-states ins (svex-cycle-envs-to-single-env ins2 cyc rest) x)
                      (svtv-fsm-eval-states ins rest x)))
-     :hints(("Goal" :expand ((:free (prev-st) (svtv-fsm-eval-states ins prev-st x))))))
-
-   ;; (defthm svex-env-extract-of-superset
-   ;;   (implies (subsetp (svarlist-fix keys) (svarlist-fix keys2))
-   ;;            (Equal (svex-env-extract keys (svex-env-extract keys2 x))
-   ;;                   (svex-env-extract keys x)))
-   ;;   :hints(("Goal" :in-theory (enable svex-env-extract svarlist-fix))))
-
-   ;; (defthm svtv-fsm-eval-of-extract-states-from-prev-st
-   ;;   (equal (svtv-fsm-eval ins (svex-env-extract (svex-alist-keys (svtv->nextstate x)) prev-st) x)
-   ;;          (svtv-fsm-eval ins prev-st x))
-   ;;   :hints(("Goal" :in-theory (enable svtv-fsm-eval))))
-   ))
+     :hints(("Goal" :expand ((:free (prev-st) (svtv-fsm-eval-states ins prev-st x))))))))
 
 
 (define svtv-fsm-symbolic-env ((ins svex-envlist-p)
                                (statevars svarlist-p)
                                (prev-st svex-env-p))
   :enabled t
-  ;; Make this opaque to GL
-  (make-fast-alist (svex-cycle-envs-to-single-env ins 0 (svex-env-extract statevars prev-st))))
+  ;; Make this opaque to GL, at least when envs are term-level
+  (make-fast-alist (svex-cycle-envs-to-single-env ins 0 (svex-env-reduce statevars prev-st))))
 
 (define svtv-fsm-run-symbolic-svexlist-memo ((signals svarlist-list-p)
                                              (outexprs svex-alist-p)
@@ -1075,6 +1068,13 @@
                            nil))
            :hints(("Goal" :in-theory (enable svex-envlist-extract)))))
   
+
+  (local (defthm svarlist-has-cycle-var-of-env-reduce
+           (implies (not (svarlist-has-svex-cycle-var vars))
+                    (not (svarlist-has-svex-cycle-var
+                          (intersection$ vars keys))))
+           :hints(("Goal" :in-theory (enable svarlist-has-svex-cycle-var
+                                             intersection-equal)))))
 
   (defthm svtv-fsm-run-outs-and-states-symbolic-is-svtv-fsm-run
     (equal (svtv-fsm-run-outs-and-states-symbolic ins prev-st x
