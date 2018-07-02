@@ -331,6 +331,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
 ;; Opcode Maps:
 
 (defconst *one-byte-opcode-map-lst*
+  ;; Source: Intel Volume 2, Table A-2
 
   '(
     #|       -------------------------------        |#
@@ -574,14 +575,15 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
               ((:i64 . ("AAD" 1 (I b))))
               (:none)
               ("XLAT/XLATB" 0)
-              (:none)
-              (:none)
-              (:none)
-              (:none)
-              (:none)
-              (:none)
-              (:none)
-              (:none))
+              (:esc) ;; Escape to co-processor instruction set  
+              (:esc) ;; Escape to co-processor instruction set
+              (:esc) ;; Escape to co-processor instruction set
+              (:esc) ;; Escape to co-processor instruction set
+              (:esc) ;; Escape to co-processor instruction set
+              (:esc) ;; Escape to co-processor instruction set
+              (:esc) ;; Escape to co-processor instruction set
+              (:esc) ;; Escape to co-processor instruction set
+              )
 
     #| e0 |# (((:f64 . ("LOOPNE/LOOPNZ" 1 (J b))))
               ((:f64 . ("LOOPE/LOOPZ" 1 (J b))))
@@ -622,6 +624,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
 
 (defconst *two-byte-opcode-map-lst*
   ;; First byte is 0x0F.
+    ;; Source: Intel Volume 2, Table A-3
 
   '(
     #|       -------------------------------        |#
@@ -668,13 +671,13 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
               ((:no-prefix . ("VUNPCKHPS"  3 (V x)  (H x)  (W x)))
                (:66        . ("VUNPCKHPD"  3 (V x)  (H x)  (W x))))
 
-              ((:no-prefix . ("VMOVHPS"    3 (V dq)  (H q)  (M q)))
+              ((:no-prefix . ("VMOVHPS"    3 (V dq)  (H q)  (M q) :v1))
                (:no-prefix . ("VMOVLHPS"   3 (V dq)  (H q)  (U q)))
-               (:66        . ("VMOVHPD"    3 (V dq)  (H q)  (M q)))
+               (:66        . ("VMOVHPD"    3 (V dq)  (H q)  (M q) :v1))
                (:F3        . ("VMOVSHDUP"  2 (V x)   (W x))))
 
-              ((:no-prefix . ("VMOVHPS"    2 (M q)  (V q)))
-               (:66        . ("VMOVHPD"    2 (M q)  (V q))))
+              ((:no-prefix . ("VMOVHPS"    2 (M q)  (V q) :v1))
+               (:66        . ("VMOVHPD"    2 (M q)  (V q) :v1)))
 
     #| 18 |#  ("Grp 16" 0 :1a)
 
@@ -891,7 +894,9 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
               ((:no-prefix . ("PCMPEQD"     2 (P q)   (Q q)))
                (:66        . ("VPCMPEQD"    3 (V x)   (H x)  (W x))))
 
-              ("EMMS/VZEROUPPER/VZEROALL" 0)
+              ((:no-prefix . ("EMMS"        0))
+               (:no-prefix . ("VZEROUPPER"  0 :v))
+               (:no-prefix . ("VZEROALL"    0 :v)))
 
     #| 78 |#  ("VMREAD" 2  (E y)  (G y))
 
@@ -1202,7 +1207,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
          ;; The following keywords are supported:
          ;; :2-byte-escape, :3-byte-escape, :rex, :prefix-CS,
          ;; :prefix-ES, :prefix-SS, :prefix-DS, :prefix-FS,
-         ;; :prefix-GS, :prefix-OpSize, :prefix-AddrSize, :none,
+         ;; :prefix-GS, :prefix-OpSize, :prefix-AddrSize, :none, :esc,
          ;; :prefix-Lock, :prefix-REPNE, :prefix-REP/REPE,
          ;; :vex2-byte0, :vex3-byte0.
          ;; Example: one-opcode-lst ==  (:2-byte-escape)
@@ -1362,20 +1367,21 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
          ((keywordp first-elem)
           (b* ( ;; (- (cw "~%keywordp~%"))
                ((when (not (member first-elem
-                                   '(:none :unimplemented
-                                           :3-byte-escape
-                                           :2-byte-escape :prefix-ES
-                                           :prefix-CS :prefix-SS :prefix-DS
-                                           :prefix-FS :prefix-GS :prefix-OpSize
-                                           :prefix-AddrSize
-                                           :prefix-Lock :prefix-REPNE
-                                           :prefix-REP/REPE :rex :rex-b
-                                           :rex-xb :rex-r :rex-rb
-                                           :rex-rx :rex-rxb :rex-w
-                                           :rex-wb :rex-wx :rex-wxb
-                                           :rex-wr :rex-wrb :rex-wrx
-                                           :rex-wrxb :rex-x
-                                           :vex))))
+                                   '(:none
+                                     :esc :unimplemented
+                                     :3-byte-escape
+                                     :2-byte-escape :prefix-ES
+                                     :prefix-CS :prefix-SS :prefix-DS
+                                     :prefix-FS :prefix-GS :prefix-OpSize
+                                     :prefix-AddrSize
+                                     :prefix-Lock :prefix-REPNE
+                                     :prefix-REP/REPE :rex :rex-b
+                                     :rex-xb :rex-r :rex-rb
+                                     :rex-rx :rex-rxb :rex-w
+                                     :rex-wb :rex-wx :rex-wxb
+                                     :rex-wr :rex-wrb :rex-wrx
+                                     :rex-wrxb :rex-x
+                                     :vex))))
                 (er hard? 'compute-modr/m-for-an-opcode
                     "Disallowed keyword: ~x0 in ~x1"
                     first-elem
@@ -1640,7 +1646,7 @@ v1: VEX128 & SSE forms only exist (no VEX256), when can't be inferred
                    :rex-wb :rex-wx :rex-wxb
                    :rex-wr :rex-wrb :rex-wrx
                    :rex-wrxb :rex-x
-                   :none :2-byte-escape
+                   :none :esc :2-byte-escape :3-byte-escape                   
                    :vex :vex2-byte0 :vex3-byte0)
              0)
 
