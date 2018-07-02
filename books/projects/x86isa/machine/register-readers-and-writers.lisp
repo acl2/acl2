@@ -873,7 +873,7 @@ pointer, or opcode registers\).</em></p>"
      128)`) bits are preserved if @('regtype') is @('*xmm-access*');
      for @('*vex-xmm-access*'), these bits are zeroed out.  For
      @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
-     out. For @('*zmm-access*'), no upper bits are zeroed out."
+     out. For @('*zmm-access*'), no upper bits are zeroed out.</p>"
     :inline t
     :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
                                            bitops::logsquash)
@@ -931,7 +931,7 @@ pointer, or opcode registers\).</em></p>"
      128)`) bits are preserved if @('regtype') is @('*xmm-access*');
      for @('*vex-xmm-access*'), these bits are zeroed out.  For
      @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
-     out. For @('*zmm-access*'), no upper bits are zeroed out."
+     out. For @('*zmm-access*'), no upper bits are zeroed out.</p>"
     :inline t
     :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
                                            bitops::logsquash)
@@ -988,7 +988,7 @@ pointer, or opcode registers\).</em></p>"
      128)`) bits are preserved if @('regtype') is @('*xmm-access*');
      for @('*vex-xmm-access*'), these bits are zeroed out.  For
      @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
-     out. For @('*zmm-access*'), no upper bits are zeroed out."
+     out. For @('*zmm-access*'), no upper bits are zeroed out.</p>"
     :inline t
     :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
                                            bitops::logsquash)
@@ -1045,7 +1045,7 @@ pointer, or opcode registers\).</em></p>"
     :short "Write @('val') to low 256 bits of a ZMM register."
     :long "<p><i>Upper bits</i>: For @('*ymm-access*'), upper @(`(-
      512 256)`) bits are zeroed out. For @('*zmm-access*'), no upper
-     bits are zeroed out."
+     bits are zeroed out.</p>"
     :inline t
     :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
                                            bitops::logsquash)
@@ -1160,7 +1160,7 @@ pointer, or opcode registers\).</em></p>"
      128)`) bits are preserved if @('regtype') is @('*xmm-access*');
      for @('*vex-xmm-access*'), these bits are zeroed out.  For
      @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
-     out. For @('*zmm-access*'), no upper bits are zeroed out."
+     out. For @('*zmm-access*'), no upper bits are zeroed out.</p>"
     :enabled t
     :guard (and (member nbytes '(4 8 16 32 64))
                 (unsigned-byte-p (ash nbytes 3) val))
@@ -1186,7 +1186,7 @@ pointer, or opcode registers\).</em></p>"
   do not use a VEX or EVEX prefix --- these functions preserve the
   upper bits of ZMM registers.  For instructions that use these
   prefixes and zero out these bits instead, see @(see
-  ZMMs-Reads-and-Writes).
+  ZMMs-Reads-and-Writes).</p>
 
   <p>Note that the index for accessing the XMM registers is 4-bits
   wide (as opposed to the 5-bit index for ZMM registers --- see @(see
