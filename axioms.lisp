@@ -7012,6 +7012,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (list 'cons (car chars) (car forms))
                  (make-fmt-bindings (cdr chars) (cdr forms))))))
 
+(defconst *base-10-chars*
+
+; This constant is inlined in the definition of
+; *base-10-array*.
+
+  '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
+
 (defmacro warning$ (ctx summary str+ &rest fmt-args)
 
 ; Warning: Keep this in sync with warning$-cw1.
@@ -7041,9 +7048,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (kwote summary)
           summary)
         str+
-        (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                             #\5 #\6 #\7 #\8 #\9)
-                           fmt-args)
+        (make-fmt-bindings *base-10-chars* fmt-args)
         'state))
 
 (defmacro msg (str &rest args)
@@ -7054,7 +7059,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (xargs :guard (<= (length args) 10)))
 
-  `(cons ,str ,(make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) args)))
+  `(cons ,str ,(make-fmt-bindings *base-10-chars* args)))
 
 (defun check-vars-not-free-test (vars term)
   (declare (xargs :guard (and (symbol-listp vars)
@@ -8776,9 +8781,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; implementation uses the former to force a hard error even in contexts where
 ; we would normally return nil.
 
-  (let ((alist (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                                    #\5 #\6 #\7 #\8 #\9)
-                                  str-args))
+  (let ((alist (make-fmt-bindings *base-10-chars* str-args))
         (severity-name (symbol-name severity)))
     (cond ((equal severity-name "SOFT")
            (list 'error1 context str alist 'state))
@@ -8814,9 +8817,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                   '(hard hard? hard! hard?!
                                                          soft very-soft))
                               (<= (length str-args) 10))))
-  (let ((alist (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                                    #\5 #\6 #\7 #\8 #\9)
-                                  str-args))
+  (let ((alist (make-fmt-bindings *base-10-chars* str-args))
         (severity-name (symbol-name severity)))
     (cond ((equal severity-name "SOFT")
            (list 'error1@par context str alist 'state))
@@ -17446,9 +17447,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; logically returning (mv a b c).
 
   `(fmt-to-comment-window ,str
-                          (pairlis2 '(#\0 #\1 #\2 #\3 #\4
-                                      #\5 #\6 #\7 #\8 #\9)
-                                    (list ,@args))
+                          (pairlis2 *base-10-chars* (list ,@args))
                           0 nil))
 
 (defmacro cw! (str &rest args)
@@ -17456,9 +17455,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; WARNING: Keep this in sync with cw.
 
   `(fmt-to-comment-window! ,str
-                           (pairlis2 '(#\0 #\1 #\2 #\3 #\4
-                                       #\5 #\6 #\7 #\8 #\9)
-                                     (list ,@args))
+                           (pairlis2 *base-10-chars* (list ,@args))
                            0 nil))
 
 (defun subseq-list (lst start end)
@@ -18064,13 +18061,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     #\A #\B #\C #\D #\E #\F
     #\a #\b #\c #\d #\e #\f
     #\+ #\- #\. #\^ #\_))
-
-(defconst *base-10-chars*
-
-; This constant is inlined in the definition of
-; *base-10-array*.
-
-  '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
 
 (defconst *hex-chars*
 
@@ -25707,6 +25697,9 @@ Lisp definition."
                    (mintime '0 mintime-p)
                    (real-mintime 'nil real-mintime-p)
                    run-mintime minalloc msg args)
+
+; Warning: Keep this in sync with the generation of time$ calls by untranslate1.
+
   (declare (xargs :guard t))
   (cond
    ((and real-mintime-p mintime-p)
