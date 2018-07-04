@@ -223,10 +223,11 @@
                  (if (or (equal counter 0)
                          (equal (the (unsigned-byte 1) (flgi #.*zf* x86)) 0))
                      (let* ((x86 (!rgfi-size
-                                  counter/addr-size *rcx* counter rex-byte x86))
-                            (x86 (write-*ip temp-rip x86)))
+                                  counter/addr-size *rcx* counter rex-byte x86)))
                        x86)
-                   (let* ((x86 (write-*ip temp-rip x86)))
+                   (let* ((x86 (!rgfi-size
+                                counter/addr-size *rcx* counter rex-byte x86))
+                          (x86 (write-*ip temp-rip x86)))
                      x86))))
               (#.*repne*
                (let* ((counter (rgfi-size counter/addr-size *rcx* rex-byte x86))
@@ -237,7 +238,8 @@
                                   counter/addr-size *rcx* counter rex-byte x86))
                             (x86 (write-*ip temp-rip x86)))
                        x86)
-                   (let* ((x86 (write-*ip temp-rip x86)))
+                   (let* ((x86 (!rgfi-size
+                                counter/addr-size *rcx* counter rex-byte x86)))
                      x86))))
               (otherwise ;; no rep prefix present
                (write-*ip temp-rip x86))))
@@ -459,10 +461,11 @@
                  (if (or (equal counter 0)
                          (equal (the (unsigned-byte 1) (flgi #.*zf* x86)) 0))
                      (let* ((x86 (!rgfi-size
-                                  counter/addr-size *rcx* counter rex-byte x86))
-                            (x86 (write-*ip temp-rip x86)))
+                                  counter/addr-size *rcx* counter rex-byte x86)))
                        x86)
-                   (let* ((x86 (write-*ip temp-rip x86)))
+                   (let* ((x86 (!rgfi-size
+                                counter/addr-size *rcx* counter rex-byte x86))
+                          (x86 (write-*ip temp-rip x86)))
                      x86))))
               (#.*repne*
                (let* ((counter (rgfi-size counter/addr-size *rcx* rex-byte x86))
@@ -473,7 +476,8 @@
                                   counter/addr-size *rcx* counter rex-byte x86))
                             (x86 (write-*ip temp-rip x86)))
                        x86)
-                   (let* ((x86 (write-*ip temp-rip x86)))
+                   (let* ((x86 (!rgfi-size
+                                counter/addr-size *rcx* counter rex-byte x86)))
                      x86))))
               (otherwise ;; no rep prefix present
                (write-*ip temp-rip x86))))
@@ -629,14 +633,14 @@
                                              *rcx*
                                              counter
                                              rex-byte
-                                             x86))
-                            (x86 (write-*ip temp-rip x86)))
+                                             x86)))
                        x86)
                    (let* ((x86 (!rgfi-size counter/addr-size
                                            *rcx*
                                            counter
                                            rex-byte
-                                           x86)))
+                                           x86))
+                          (x86 (write-*ip temp-rip x86)))
                      x86))))
               (#.*repne*
                (let* ((counter (rgfi-size counter/addr-size *rcx* rex-byte x86))
