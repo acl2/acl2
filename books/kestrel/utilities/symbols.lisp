@@ -1,16 +1,19 @@
 ; Symbol Utilities
 ;
 ; Copyright (C) 2017 Regents of the University of Texas
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Matt Kaufmann (kaufmann@cs.utexas.edu)
+; Authors:
+;   Matt Kaufmann (kaufmann@cs.utexas.edu)
+;   Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
 
-(include-book "std/util/define" :dir :system)
+(include-book "kestrel/utilities/xdoc-constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -48,3 +51,16 @@
     (if (equal pkg *main-lisp-package-name*)
         "ACL2"
       pkg)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define symbol-package-name-lst ((syms symbol-listp))
+  :returns (pkgs string-listp)
+  :parents (symbol-utilities)
+  :short "Lift @(tsee symbol-package-name) to lists."
+  :long
+  (xdoc::p
+   "This function is named similarly to the built-in @('symbol-name-lst').")
+  (cond ((endp syms) nil)
+        (t (cons (symbol-package-name (car syms))
+                 (symbol-package-name-lst (cdr syms))))))
