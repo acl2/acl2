@@ -3693,11 +3693,31 @@
 ; untranslate is called, and for the remaining cases it is probably infrequent
 ; to have calls of time$ with keyword arguments.
 
-                          (if (and (eq key 'time$1-raw)
-                                   (equal (car args)
-                                          '(LIST 0 NIL NIL NIL NIL)))
-                              (list 'time$ (cadr args))
-                            (cons fn args)))
+                          (or (and (eq key 'time$1-raw)
+                                   (let ((car-args (car args))
+                                         (cadr-args (cadr args)))
+                                     (case-match car-args
+                                       (('LIST ; already untranslated
+                                         real-mintime
+                                         run-mintime
+                                         minalloc
+                                         msg
+                                         args)
+                                        `(time$ ,cadr-args
+                                                ,@(and (not (eql real-mintime
+                                                                 0))
+                                                       `(:real-mintime
+                                                         ,real-mintime))
+                                                ,@(and run-mintime
+                                                       `(:run-mintime
+                                                         ,run-mintime))
+                                                ,@(and minalloc
+                                                       `(:minalloc ,minalloc))
+                                                ,@(and msg
+                                                       `(:msg ,msg))
+                                                ,@(and args
+                                                       `(:args ,args)))))))
+                              (cons fn args)))
                          (otherwise (cons fn args)))))))
           (t (or (case-match term
                    (('fmt-to-comment-window ('quote str)

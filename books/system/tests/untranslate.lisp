@@ -156,3 +156,31 @@
                  (CONS X Y))
    nil (w state))
   '(time$ (cons x y))))
+
+(assert!
+ (equal
+  (untranslate
+   '(RETURN-LAST 'TIME$1-RAW
+                 (CONS '0
+                       (CONS 'NIL
+                             (CONS 'NIL
+                                   (CONS '"Hello ~s0, ~s1 World."
+                                         (CONS (CONS '"Moon" (CONS '"Goodbye" 'NIL))
+                                               'NIL)))))
+                 (CONS X '17))
+   nil (w state))
+  '(time$ (cons x 17)
+          :msg "Hello ~s0, ~s1 World."
+          :args (list "Moon" "Goodbye"))))
+
+(assert!
+ (equal
+  (untranslate
+   '(RETURN-LAST 'TIME$1-RAW
+                 (CONS '23
+                       (CONS 'NIL
+                             (CONS 'NIL
+                                   (CONS 'NIL (CONS 'NIL 'NIL)))))
+                 (CONS X Y))
+   nil (w state))
+  '(time$ (cons x y) :real-mintime 23)))
