@@ -197,15 +197,14 @@
                    (+ -4 (the (signed-byte #.*max-linear-address-size*)
                               dst-addr)))))
 
-          ;; TODO: should the following add/subtract 8 instead of 2?
           (otherwise (if (equal df 0)
-                         (mv (+ 2 (the (signed-byte #.*max-linear-address-size*)
+                         (mv (+ 8 (the (signed-byte #.*max-linear-address-size*)
                                     src-addr))
-                             (+ 2 (the (signed-byte #.*max-linear-address-size*)
+                             (+ 8 (the (signed-byte #.*max-linear-address-size*)
                                     dst-addr)))
-                       (mv (+ -2 (the (signed-byte #.*max-linear-address-size*)
+                       (mv (+ -8 (the (signed-byte #.*max-linear-address-size*)
                                    src-addr))
-                           (+ -2 (the (signed-byte #.*max-linear-address-size*)
+                           (+ -8 (the (signed-byte #.*max-linear-address-size*)
                                    dst-addr)))))))
 
        ;; Update the x86 state:
@@ -441,16 +440,15 @@
                             #.*max-linear-address-size*) src-addr) 4)
                    (- (the (signed-byte
                             #.*max-linear-address-size*) dst-addr) 4))))
-          ;; TODO: should the following add/subtract 8 instead of 2?
           (otherwise (if (equal df 0)
                          (mv (+ (the (signed-byte
-                                      #.*max-linear-address-size*) src-addr) 2)
+                                      #.*max-linear-address-size*) src-addr) 8)
                              (+ (the (signed-byte
-                                      #.*max-linear-address-size*) dst-addr) 2))
+                                      #.*max-linear-address-size*) dst-addr) 8))
                        (mv (- (the (signed-byte
-                                    #.*max-linear-address-size*) src-addr) 2)
+                                    #.*max-linear-address-size*) src-addr) 8)
                            (- (the (signed-byte
-                                    #.*max-linear-address-size*) dst-addr) 2))))))
+                                    #.*max-linear-address-size*) dst-addr) 8))))))
 
        ;; REP prefix: Updating rCX and RIP:
 
