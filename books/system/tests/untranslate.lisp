@@ -148,6 +148,16 @@
 (assert!
  (equal
   (untranslate
+   '(FMT-TO-COMMENT-WINDOW '"hello ~x0 ~x1~%"
+                           '((#\0 . X) (#\1 . Y))
+                           '0
+                           'NIL)
+   nil (w state))
+  '(CW "hello ~x0 ~x1~%" 'X 'Y)))
+
+(assert!
+ (equal
+  (untranslate
    '(RETURN-LAST 'TIME$1-RAW
                  (CONS '0
                        (CONS 'NIL
@@ -184,3 +194,4 @@
                  (CONS X Y))
    nil (w state))
   '(time$ (cons x y) :real-mintime 23)))
+

@@ -3639,20 +3639,32 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defmacro ec-call1-raw (ign x)
   (declare (ignore ign))
-  (assert (and (consp x) (symbolp (car x)))) ; checked by translate11
-  (let ((*1*fn (*1*-symbol (car x)))
-        (*1*fn$inline (add-suffix (*1*-symbol (car x)) *inline-suffix*)))
-    `(cond
-      (*safe-mode-verified-p* ; see below for discussion of this case
-       ,x)
-      (t
-       (funcall
-        (cond
-         ((fboundp ',*1*fn) ',*1*fn)
-         ((fboundp ',*1*fn$inline)
-          (assert$ (macro-function ',(car x)) ; sanity check; could be omitted
-                   ',*1*fn$inline))
-         (t
+  (cond
+   ((not (and (consp x) (symbolp (car x))))
+
+; This case is normally impossible, as enforced by translate.  However, it can
+; happen if we are not translating for execution; an example is (non-exec
+; (ec-call x)).  In that case we simply cause an error at execution time, as a
+; precaution, while fully expecting that we never actually hit this case.
+
+    `(error "Implementation error: It is unexpected to be executing a call~%~
+             of ec-call on other than the application of a symbol to~%~
+             arguments, but we are executing it on the form,~%~s."
+            x))
+   (t
+    (let ((*1*fn (*1*-symbol (car x)))
+          (*1*fn$inline (add-suffix (*1*-symbol (car x)) *inline-suffix*)))
+      `(cond
+        (*safe-mode-verified-p* ; see below for discussion of this case
+         ,x)
+        (t
+         (funcall
+          (cond
+           ((fboundp ',*1*fn) ',*1*fn)
+           ((fboundp ',*1*fn$inline)
+            (assert$ (macro-function ',(car x)) ; sanity check; could be omitted
+                     ',*1*fn$inline))
+           (t
 
 ; We should never hit this case, unless the user is employing trust tags or raw
 ; Lisp.  For ACL2 events that might hit this case, such as a defconst using
@@ -3673,10 +3685,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; avoid the *1* function calls entirely when loading the expansion file (or its
 ; compilation).
 
-          (error "Undefined function, ~s.  Please contact the ACL2 ~
+            (error "Undefined function, ~s.  Please contact the ACL2 ~
                   implementors."
-                 ',*1*fn)))
-        ,@(cdr x))))))
+                   ',*1*fn)))
+          ,@(cdr x))))))))
 
 (defmacro ec-call1 (ign x)
 
