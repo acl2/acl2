@@ -1,14 +1,14 @@
 ; Term Utilities
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Authors:
 ;   Alessandro Coglio (coglio@kestrel.edu)
 ;   Eric Smith (eric.smith@kestrel.edu)
-;
-; Contributor: Matt Kaufmann (kaufmann@cs.utexas.edu)
+;   Matt Kaufmann (kaufmann@cs.utexas.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -760,8 +760,7 @@
    The input is translated for reasoning, so restrictions for executability are
    not enforced.  There is also no restriction on the input being in
    @(':')@(tsee logic) mode.
-   </p>
-  "
+   </p>"
   (let ((ctx 'all-vars-in-untranslated-term))
     (mv-let (erp term)
       (translate-cmp x
