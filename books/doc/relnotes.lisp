@@ -311,6 +311,10 @@
  <p>Extended the <see topic='@(url symbol-utilities)'>symbol utilities</see>
  with a utility that lifts @(tsee symbol-package-name) to lists.</p>
 
+ <p>Moved @(tsee maybe-msgp) under newly created <see topic='@(url
+ message-utilities)'>message utilities</see>.  Extended these utilities with a
+ recognizer of true lists of messages.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>

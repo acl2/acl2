@@ -1,4 +1,4 @@
-; Structured Messages
+; Messages
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,20 +11,22 @@
 (in-package "ACL2")
 
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "system/kestrel" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc message-utilities
+  :parents (kestrel-utilities)
+  :short "Utilities for <see topic='@(url msgp)'>messages</see>.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define maybe-msgp (x)
   :returns (yes/no booleanp)
-  :parents (kestrel-utilities)
-  :short "Recognize @('nil') and structured messages."
-  :long
-  "<p>
-   Structured messages are
-   constructed by @(tsee msg) and recognized by @(tsee msgp).
-   </p>"
+  :parents (message-utilities)
+  :short "Recognize @('nil') and messages."
   (or (msgp x)
       (null x))
   ///
@@ -35,3 +37,12 @@
 
   (defrule maybe-msgp-of-nil
     (maybe-msgp nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist msg-listp (x)
+  (msgp x)
+  :parents (message-utilities)
+  :short "Recognize true lists of messages."
+  :true-listp t
+  :elementp-of-nil nil)

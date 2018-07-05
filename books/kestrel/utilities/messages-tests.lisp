@@ -1,4 +1,4 @@
-; Structured Messages -- Tests
+; Messages -- Tests
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -22,3 +22,19 @@
 (assert! (maybe-msgp (msg "xy")))
 
 (assert! (maybe-msgp (msg "~x0 and ~x1" #\a '(1 2 3))))
+
+(assert! (not (maybe-msgp 33)))
+
+(assert! (not (maybe-msgp '(#\c "a"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (msg-listp nil))
+
+(assert! (msg-listp '("abc" "xy")))
+
+(assert! (msg-listp (list "qqq" (msg "~x0 and ~x1" #\a '(1 2 3)))))
+
+(assert! (not (msg-listp 7/4)))
+
+(assert! (not (msg-listp '("ABU" :no))))
