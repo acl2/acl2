@@ -265,7 +265,7 @@
  subsumed by the built-in @(tsee evens) utility.</p>
 
  <p>Extended the <see topic='@(url error-checking)'>error-checking
- functions</see> with some new ones.</p>
+ functions</see> with several new ones.</p>
 
  <p>Extended the <see topic='@(url term-function-recognizers)'>term function
  recognizers</see> with recognizers for true lists of
