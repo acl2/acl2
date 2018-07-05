@@ -303,7 +303,9 @@
  fcons-term) and @(tsee cons-term).  Added a utility @(tsee all-lambdas) to
  collect all the lambda expressions in a term.  Added utilities @(tsee
  apply-terms-same-args) and @(tsee fapply-terms-same-args) to apply each
- function in a specified list to a specified list of arguments.</p>
+ function in a specified list to a specified list of arguments.  Added a
+ utility @(tsee all-pkg-names) to collect all the package names of all the
+ symbols in a term.</p>
 
  <p>Added @(tsee symbol-package-name-lst) to the <see topic='@(url
  symbol-utilities)'>symbol utilities</see>, which lifts @(tsee
