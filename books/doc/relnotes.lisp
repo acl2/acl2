@@ -285,6 +285,9 @@
  <p>Added some <see topic='@(url theorems-about-nat-lists)'>theorems about
  lists of natural numbers</see>.</p>
 
+ <p>Added a <see topic='@(url theorems-about-string-lists)'>theorem about lists
+ of strings</see>.</p>
+
  <p>Added some theorems to the <see topic='@(url
  character-utilities)'>character utilities</see>.</p>
 

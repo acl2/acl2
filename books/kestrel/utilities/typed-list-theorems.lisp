@@ -57,3 +57,15 @@
     (equal (unsigned-byte-listp n (rev bytes))
            (unsigned-byte-listp n (list-fix bytes)))
     :enable rev))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection theorems-about-string-lists
+
+  :parents (theorems-about-non-kestrel-books unsigned-byte-listp)
+
+  :short "Theorems about lists of strings."
+
+  (defrule string-listp-of-remove-duplicates-equal
+    (implies (string-listp x)
+             (string-listp (remove-duplicates-equal x)))))
