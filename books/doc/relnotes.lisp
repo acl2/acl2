@@ -315,6 +315,10 @@
  message-utilities)'>message utilities</see>.  Extended these utilities with a
  recognizer of true lists of messages.</p>
 
+ <p>Moved @(tsee msg-downcase-first) and @(tsee msg-upcase-first) from the <see
+ topic='@(url string-utilities)'>string utilities</see> to the <see
+ topic='@(url message-utilities)'>message utilities</see>.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>

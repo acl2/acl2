@@ -13,8 +13,8 @@
 (include-book "enumerations")
 (include-book "er-soft-plus")
 (include-book "event-forms")
+(include-book "messages")
 (include-book "numbered-names")
-(include-book "strings")
 (include-book "symbol-true-list-alists")
 (include-book "terms")
 
