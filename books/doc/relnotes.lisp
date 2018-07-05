@@ -275,7 +275,7 @@
  recognizers</see> with recognizers for true lists of
  (pseudo-)lambda-expressions and (pseudo-)term-functions.</p>
 
- <p>Extended the <see topic='@(url term-utilities')>term utilities</see> with
+ <p>Extended the <see topic='@(url term-utilities)'>term utilities</see> with
  operations to substitute function symbols without performing simplification,
  to construct terms that are functions applications of certain forms, to
  collect all the lambda expressions in terms, and to collect all the package
