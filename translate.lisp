@@ -3700,27 +3700,52 @@
                           (or (and (eq key 'time$1-raw)
                                    (let ((car-args (car args))
                                          (cadr-args (cadr args)))
-                                     (case-match car-args
-                                       (('LIST ; already untranslated
-                                         real-mintime
-                                         run-mintime
-                                         minalloc
-                                         msg
-                                         args)
-                                        `(time$ ,cadr-args
-                                                ,@(and (not (eql real-mintime
-                                                                 0))
-                                                       `(:real-mintime
-                                                         ,real-mintime))
-                                                ,@(and run-mintime
-                                                       `(:run-mintime
-                                                         ,run-mintime))
-                                                ,@(and minalloc
-                                                       `(:minalloc ,minalloc))
-                                                ,@(and msg
-                                                       `(:msg ,msg))
-                                                ,@(and args
-                                                       `(:args ,args)))))))
+                                     (mv-let (real-mintime
+                                              run-mintime
+                                              minalloc
+                                              msg
+                                              msg-args)
+                                       (case-match car-args
+                                         (('LIST ; already untranslated
+                                           real-mintime
+                                           run-mintime
+                                           minalloc
+                                           msg
+                                           msg-args)
+                                          (mv real-mintime
+                                              run-mintime
+                                              minalloc
+                                              msg
+                                              msg-args))
+                                         (('quote (real-mintime
+                                                   run-mintime
+                                                   minalloc
+                                                   msg
+                                                   msg-args))
+                                          (mv real-mintime
+                                              run-mintime
+                                              minalloc
+                                              msg
+                                              msg-args))
+                                         (& (mv :fail nil nil nil nil)))
+                                       (cond
+                                        ((eq real-mintime :fail)
+                                         (cons fn args))
+                                        (t
+                                         `(time$ ,cadr-args
+                                                 ,@(and (not (eql real-mintime
+                                                                  0))
+                                                        `(:real-mintime
+                                                          ,real-mintime))
+                                                 ,@(and run-mintime
+                                                        `(:run-mintime
+                                                          ,run-mintime))
+                                                 ,@(and minalloc
+                                                        `(:minalloc ,minalloc))
+                                                 ,@(and msg
+                                                        `(:msg ,msg))
+                                                 ,@(and msg-args
+                                                        `(:args ,msg-args))))))))
                               (cons fn args)))
                          (otherwise (cons fn args)))))))
           (t (or (case-match term

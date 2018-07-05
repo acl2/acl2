@@ -187,6 +187,15 @@
  (equal
   (untranslate
    '(RETURN-LAST 'TIME$1-RAW
+                 '(0 NIL NIL NIL NIL)
+                 (CONS X '17))
+   nil (w state))
+  '(time$ (cons x 17))))
+
+(assert!
+ (equal
+  (untranslate
+   '(RETURN-LAST 'TIME$1-RAW
                  (CONS '23
                        (CONS 'NIL
                              (CONS 'NIL
