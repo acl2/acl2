@@ -267,6 +267,9 @@
  <p>Extended the <see topic='@(url error-checking)'>error-checking
  functions</see> with several new ones.</p>
 
+ <p>Added @(tsee all-pkgs-in-world) to the <see topic='@(url
+ world-queries)'>world query utilities</see>.</p>
+
  <p>Extended the <see topic='@(url term-function-recognizers)'>term function
  recognizers</see> with recognizers for true lists of
  (pseudo-)lambda-expressions and (pseudo-)term-functions.</p>
