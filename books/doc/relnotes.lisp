@@ -303,6 +303,11 @@
  apply-terms-same-args) and @(tsee fapply-terms-same-args) to apply each
  function in a specified list to a specified list of arguments.</p>
 
+ <p>Added @(tsee symbol-package-name-lst) to the <see topic='@(url
+ symbol-utilities)'>symbol utilities</see>, which lifts @(tsee
+ symbol-package-name) to lists, analogously to how @(tsee symbol-name-lst)
+ lifts @(tsee symbol-name) to lists.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
