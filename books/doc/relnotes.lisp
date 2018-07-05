@@ -274,6 +274,19 @@
  recognizers</see> with recognizers for true lists of
  (pseudo-)lambda-expressions and (pseudo-)term-functions.</p>
 
+ <p>Extended the <see topic='@(url term-utilities')>term utilities</see>.
+ Added utilities @(tsee fsublis-fn-rec), @(tsee fsublis-fn), and @(tsee
+ fsublis-fn-simple), which are variants of the built-in system utilities that
+ have the same names minus the initial @('f'): these variants do not perform
+ simplification; the relationship between these variants and the corresponding
+ built-in system utilities is analogous to the relationship between @(tsee
+ fcons-term) and @(tsee cons-term).  Added a utility @(tsee all-lambdas) to
+ collect all the lambda expressions in a term.  Added utilities @(tsee
+ apply-terms-same-args) and @(tsee fapply-terms-same-args) to apply each
+ function in a specified list to a specified list of arguments.  Added a
+ utility @(tsee all-pkg-names) to collect all the package names of all the
+ symbols in a term.</p>
+
  <p>The utility @(tsee install-not-norm-event) now includes option @(':allp
  nil') in the generated @(tsee install-not-normalized) event.  The new utility,
  @(tsee install-not-norm-event-lst), can thus handle @(tsee mutual-recursion)
@@ -296,19 +309,6 @@
 
  <p>Added some theorems to the <see topic='@(url
  string-utilities)'>string utilities</see>.</p>
-
- <p>Extended the <see topic='@(url term-utilities')>term utilities</see>.
- Added utilities @(tsee fsublis-fn-rec), @(tsee fsublis-fn), and @(tsee
- fsublis-fn-simple), which are variants of the built-in system utilities that
- have the same names minus the initial @('f'): these variants do not perform
- simplification; the relationship between these variants and the corresponding
- built-in system utilities is analogous to the relationship between @(tsee
- fcons-term) and @(tsee cons-term).  Added a utility @(tsee all-lambdas) to
- collect all the lambda expressions in a term.  Added utilities @(tsee
- apply-terms-same-args) and @(tsee fapply-terms-same-args) to apply each
- function in a specified list to a specified list of arguments.  Added a
- utility @(tsee all-pkg-names) to collect all the package names of all the
- symbols in a term.</p>
 
  <p>Added @(tsee symbol-package-name-lst) to the <see topic='@(url
  symbol-utilities)'>symbol utilities</see>, which lifts @(tsee
