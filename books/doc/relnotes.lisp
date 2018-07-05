@@ -300,11 +300,13 @@
  <p>Extended the <see topic='@(url character-utilities)'>character
  utilities</see> with some theorems about the pre-existing functions, and with
  some new functions to check if (lists of) characters are all of specified
- kinds and to convert a list of 8-bit bytes to a corresponding list of hex
- digit characters.</p>
+ kinds and to convert a list of unsigned 8-bit bytes to a corresponding list of
+ hex digit characters.</p>
 
  <p>Extended the <see topic='@(url string-utilities)'>string utilities</see>
- with some theorems.</p>
+ with some theorems about the pre-existing functions, and with a new function
+ to convert a list of unsigned 8-bit bytes to a corresponding string of hex
+ digit characters.</p>
 
  <p>Extended the <see topic='@(url symbol-utilities)'>symbol utilities</see>
  with a utility that lifts @(tsee symbol-package-name) to lists.</p>
