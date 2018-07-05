@@ -16,11 +16,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection theorems-about-nat-list-fix
+(defsection theorems-about-nat-lists
 
   :parents (theorems-about-non-kestrel-books)
 
-  :short "Theorems about @(tsee nat-list-fix)."
+  :short "Theorems about lists of natural numbers."
 
   (defrule cdr-of-nat-list-fix
     (equal (cdr (nat-list-fix x))
@@ -47,11 +47,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection theorems-about-unsigned-byte-listp
+(defsection theorems-about-unsigned-byte-lists
 
   :parents (theorems-about-non-kestrel-books unsigned-byte-listp)
 
-  :short "A theorem about @(tsee unsigned-byte-listp)."
+  :short "Theorems about lists of unsigned bytes."
 
   (defrule unsigned-byte-listp-of-rev
     (equal (unsigned-byte-listp n (rev bytes))

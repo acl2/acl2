@@ -282,9 +282,8 @@
  set::std/osets)'>osets</see> to the <see topic='@(url
  set::oset-utilities)'>oset utilities</see>.</p>
 
- <p>Added some <see topic='@(url theorems-about-nat-list-fix)'>theorems</see>
- about @(tsee nat-list-fix) to
- @('kestrel/utilities/typed-list-theorems.lisp').</p>
+ <p>Added some <see topic='@(url theorems-about-nat-lists)'>theorems about
+ lists of natural numbers</see>.</p>
 
  <p>Added some theorems to the <see topic='@(url
  character-utilities)'>character utilities</see>.</p>
