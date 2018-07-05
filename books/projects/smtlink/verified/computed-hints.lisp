@@ -20,15 +20,6 @@
   :parents (verified)
   :short "Define Smtlink computed-hints"
 
-  ;; current tag . next computed-hint
-  (defconst *SMT-computed-hints-table*
-    '((process-hint . SMT-process-hint)
-      (fix-hint . SMT-process-hint)
-      (smt-hint . nil)
-      (fixed-hint . nil)
-      (main-hint . nil)
-      (A-hint . nil)))
-
   ;; verified version of split-kwd-alist
   (define my-split-kwd-alist ((key symbolp)
                               (kwd-alist true-listp))
@@ -98,8 +89,7 @@
                             )))))
 
   (program)
-  (define treat-expand-hint ((kwd-alist t)
-                             (tag t))
+  (define treat-expand-hint ((kwd-alist t))
     (cond (kwd-alist
            (mv-let (pre post)
              (split-keyword-alist :expand kwd-alist)
@@ -107,43 +97,33 @@
               (post ; then there was already an :expand hint; splice one in
                (assert$ (eq (car post) :expand)
                         `(,@pre
-                          :expand ,(cons `(hint-please ',kwd-alist ',tag)
+                          :expand ,(cons `(hint-please ',kwd-alist)
                                          (cadr post))
                           ,@post)))
               (t ; simply extend kwd-alist
-               `(:expand (hint-please ',kwd-alist ',tag)
+               `(:expand (hint-please ',kwd-alist)
                          ,@kwd-alist)))))
           (t nil))
     )
 
   (define extract-hint-wrapper (cl)
-    (cond ((endp cl) (mv nil nil nil))
+    (cond ((endp cl) (mv nil nil))
           (t (b* ((lit cl))
                (case-match lit
-                 ((('hint-please ('quote kwd-alist) ('quote tag)) . term)
-                  (mv term kwd-alist tag))
+                 ((('hint-please ('quote kwd-alist)) . term)
+                  (mv term kwd-alist))
                  (& (extract-hint-wrapper (cdr cl))))))))
 
-  (define ch-replace (next-stage)
-    (if (equal next-stage nil)
-        nil
-      `((,next-stage clause))))
-
   (define SMT-process-hint (cl)
-    (b* (((mv & kwd-alist tag) (extract-hint-wrapper cl))
-         (next-stage (cdr (assoc tag *SMT-computed-hints-table*)))
-         (ch-replace-hint (ch-replace next-stage))
-         ;; (rest-hint (treat-expand-hint kwd-alist tag))
-         (rest-hint kwd-alist)
-         )
+    (b* (((mv & kwd-alist) (extract-hint-wrapper cl)))
       `(:computed-hint-replacement
-        ,ch-replace-hint
-        ,@rest-hint)))
+        ((SMT-process-hint clause))
+        ,@kwd-alist)))
 
   (logic)
 
   )
 ;; Add this line to your code to add a default hint of Smtlink
-;; (add-default-hints '((SMT-computed-hint clause stable-under-simplificationp)))
+;; (add-default-hints '((SMT-computed-hint clause)))
 ;; Remove hint:
-;; (remove-default-hints '((SMT-computed-hint clause stable-under-simplificationp)))
+;; (remove-default-hints '((SMT-computed-hint clause)))

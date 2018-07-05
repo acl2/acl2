@@ -1410,8 +1410,10 @@
                   (list cl)))
          (combined-hint (combine-hints user-hint (smt-hint)))
          ;; (- (cw "combined-hint: ~q0" combined-hint))
-         (cp-hint `(:clause-processor (smt-verified-cp clause ',combined-hint)))
-         (subgoal-lst (cons `(hint-please ',cp-hint 'process-hint) cl)))
+         (next-cp (cdr (assoc-equal 'process-hint *SMT-architecture*)))
+         ((if (null next-cp)) (list cl))
+         (cp-hint `(:clause-processor (,next-cp clause ',combined-hint)))
+         (subgoal-lst (cons `(hint-please ',cp-hint) cl)))
         (list subgoal-lst)))
   )
 
@@ -1438,7 +1440,7 @@
                                (w state) (acl2::default-state-vars t)))
          ((when err)
           (er hard? 'Smtlink-process-user-hint->trans-hypothesis "Error ~
-    translating form: ~@0" (car val))))
+    translating form: ~q0" (car val))))
         `(,term ,@(cdr val))))
 
   (define trans-guard ((val t) (state))
@@ -1562,7 +1564,7 @@
   :parents (Smtlink-process-user-hint)
 
   (defevaluator ev-process-hint ev-lst-process-hint
-    ((not x) (if x y z) (hint-please hint tag)))
+    ((not x) (if x y z) (hint-please hint)))
 
   (def-join-thms ev-process-hint)
 

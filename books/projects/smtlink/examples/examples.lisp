@@ -284,6 +284,25 @@ than a type declaration. When ACL2 tried to translate it as a constraint, it
 finds out @('integerp') is not a supported function.</p>
 ")
 
+(define foo ((x real/rationalp))
+  :returns (rx real/rationalp)
+  (b* ((x (realfix x)))
+    (+ (* x x) 1)))
+
+(in-theory (disable (:type-prescription foo)))
+
+(defthm poly-ineq-example-functions
+  (implies (and (real/rationalp x))
+           (< 0 (* 2 (foo x))))
+  :hints(("Goal"
+          :smtlink
+          (:functions ((foo :formals ((x real/rationalp))
+                            :returns ((rx real/rationalp))
+                            :level 0))
+           :hypotheses (((<= 1 (foo x))
+                         :hints (:in-theory (enable foo))))
+          ))))
+
 (defthm fty-deflist-theorem
   (implies (and (integer-listp l)
                 (consp (acl2::integer-list-fix l))
@@ -365,8 +384,8 @@ finds out @('integerp') is not a supported function.</p>
   (implies (and (sandwich-p s1)
                 (sandwich-p s2))
            (>= (x^2+y^2
-                (sandwich->bread (sandwich-fix s1))
-                (sandwich->bread (sandwich-fix s2)))
+                (sandwich->bread s1)
+                (sandwich->bread s2))
                0))
   :hints(("Goal"
           :smtlink
@@ -429,4 +448,41 @@ finds out @('integerp') is not a supported function.</p>
           :smtlink
           (:fty (maybe-integer))))
   :rule-classes nil)
+)
+
+(acl2::must-fail
+(defthm bogus-revised
+  (implies (and (symbolp symx) (symbolp symy))
+           (or (eq (symbol-fix symx) 'sym1) (eq (symbol-fix symx) 'sym2)
+               (eq (symbol-fix symx) 'sym3)
+               (eq (symbol-fix symy) 'sym1) (eq (symbol-fix symy) 'sym2)
+               (eq (symbol-fix symy) 'sym3)
+               (eq (symbol-fix symx)
+                   (symbol-fix symy))))
+  :hints (("Goal" :smtlink nil)))
+)
+
+(acl2::must-fail
+(defthm bogus-revised-still-bogus
+  (implies (and (symbolp symx) (symbolp symy))
+           (or (eq symx 'sym1) (eq symx 'sym2)
+               (eq symx 'sym3)
+               (eq symy 'sym1) (eq symy 'sym2)
+               (eq symy 'sym3)
+               (eq symx symy)))
+  :hints (("Goal" :smtlink nil)))
+)
+
+(defprod sym-prod
+  ((sym symbolp)))
+
+(acl2::must-fail
+(defthm bogus-revised-still-bogus-prod
+  (implies (and (sym-prod-p x) (sym-prod-p y))
+           (or (eq (sym-prod->sym x) 'sym1) (eq (sym-prod->sym x) 'sym2)
+               (eq (sym-prod->sym x) 'sym3)
+               (eq (sym-prod->sym y) 'sym1) (eq (sym-prod->sym y) 'sym2)
+               (eq (sym-prod->sym y) 'sym3)
+               (eq (sym-prod->sym x) (sym-prod->sym y))))
+  :hints (("Goal" :smtlink (:fty (sym-prod)))))
 )

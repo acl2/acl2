@@ -19,12 +19,12 @@
   :parents (SMT-basics)
   :short "Basic ACL2 functions supported in Smtlink."
   (append
-   '(magic-fix symbol-fix)
+   '(magic-fix)
    '(rationalp realp booleanp integerp symbolp)
    '(binary-+ binary-* unary-/ unary--
               equal <
               implies if not
-              lambda )))
+              lambda)))
 
 (defval *SMT-functions*
   :parents (SMT-functions)
@@ -70,6 +70,17 @@
     (integerp       . "_SMT_.IntSort()")
     (booleanp       . "_SMT_.BoolSort()")
     (symbolp        . "Symbol")))
+
+;; current tag . next computed-hint
+(defval *SMT-architecture*
+  '((process-hint    . smt-verified-cp)
+    (fix-hint        . smt-fixing-cp)
+    (smt-hint        . smt-trusted-cp)
+    (smt-hint-custom . smt-trusted-cp-custom)
+    (fixed-hint      . nil)
+    (main-hint       . nil)
+    (A-hint          . nil)))
+
 
 ;;----------------------------------------------------------------
 

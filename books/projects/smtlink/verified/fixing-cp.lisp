@@ -16,7 +16,7 @@
 (include-book "fixing-clause")
 
 (defevaluator ev-fixing-clause-processor ev-lst-fixing-clause-processor
-  ((not x) (if x y z) (hint-please hint tag)))
+  ((not x) (if x y z) (hint-please hint)))
 
 (def-join-thms ev-fixing-clause-processor)
 
@@ -34,12 +34,14 @@
        ((smtlink-hint h) smtlink-hint)
        (fixed-clause (hint-pair->thm h.fixed-clause))
        (fix-hint (hint-pair->hints h.fixed-clause))
+       (next-cp (if h.custom-p
+                    (cdr (assoc-equal 'smt-hint-custom *SMT-architecture*))
+                  (cdr (assoc-equal 'smt-hint *SMT-architecture*))))
+       ((if (null next-cp)) (list (remove-hint-please cl)))
        (smt-hint
-        (if h.custom-p
-            `(:clause-processor (SMT-trusted-cp-custom clause ',smtlink-hint state))
-          `(:clause-processor (SMT-trusted-cp clause ',smtlink-hint state))))
-       (smt-goal `((hint-please ',smt-hint 'smt-hint) ,fixed-clause))
-       (acl2-goal `((hint-please ',fix-hint 'fixed-hint)
+        `(:clause-processor (,next-cp clause ',smtlink-hint state)))
+       (smt-goal `((hint-please ',smt-hint) ,fixed-clause))
+       (acl2-goal `((hint-please ',fix-hint)
                     (not ,fixed-clause) ,(disjoin cl))))
     `(,smt-goal ,acl2-goal))
   ///

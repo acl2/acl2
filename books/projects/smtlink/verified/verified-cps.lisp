@@ -40,7 +40,7 @@
   ;;       Define evaluators
 
   (defevaluator ev-Smtlink-subgoals ev-lst-Smtlink-subgoals
-    ((not x) (if x y z) (hint-please hint tag)))
+    ((not x) (if x y z) (hint-please hint)))
 
   (def-join-thms ev-Smtlink-subgoals)
 
@@ -70,7 +70,7 @@
          ((cons first-hinted-A rest-hinted-As) hinted-As)
          (A (hint-pair->thm first-hinted-A))
          (A-hint (hint-pair->hints first-hinted-A))
-         (first-A-thm `((hint-please ',A-hint 'A-hint) ,A ,G))
+         (first-A-thm `((hint-please ',A-hint) ,A ,G))
          (first-not-A-clause `(not ,A))
          ((mv rest-A-thms rest-not-A-clauses)
           (preprocess-auxes rest-hinted-As G)))
@@ -101,7 +101,7 @@
          ((cons first-hinted-A rest-hinted-As) hinted-As-returns)
          (A (hint-pair->thm first-hinted-A))
          (A-hint (hint-pair->hints first-hinted-A))
-         (first-A-thm `((hint-please ',A-hint 'A-hint) ,A ,G)))
+         (first-A-thm `((hint-please ',A-hint) ,A ,G)))
       (cons first-A-thm (generate-returns-auxes rest-hinted-As G))))
 
   (define generate-types-auxes ((hinted-As-types decl-listp) (G pseudo-termp))
@@ -116,7 +116,7 @@
          (A-type (hint-pair->thm A-hint-pair))
          (A `(,A-type ,A-name))
          (A-hint (hint-pair->hints A-hint-pair))
-         (first-A-thm `((hint-please ',A-hint 'A-hint) ,A ,G)))
+         (first-A-thm `((hint-please ',A-hint) ,A ,G)))
       (cons first-A-thm (generate-types-auxes rest-hinted-As G))))
 
   (local
@@ -163,8 +163,8 @@
          (aux-clauses-types (generate-types-auxes hinted-As-types G))
          (G-prim (hint-pair->thm hinted-G-prim))
          (main-hint (hint-pair->hints hinted-G-prim))
-         (cl0 `((hint-please ',fix-hint 'fix-hint) ,@list-of-not-As ,G-prim))
-         (cl1 `((hint-please ',main-hint 'main-hint) ,@list-of-not-As (not ,G-prim) ,G))
+         (cl0 `((hint-please ',fix-hint) ,@list-of-not-As ,G-prim))
+         (cl1 `((hint-please ',main-hint) ,@list-of-not-As (not ,G-prim) ,G))
          )
       `(,cl0 ,cl1 ,@aux-clauses ,@aux-clauses-types ,@aux-clauses-returns))
     ///
@@ -220,8 +220,10 @@
          (hinted-As-returns (smtlink-hint->aux-thm-list smtlink-hint))
          (hinted-As-types (smtlink-hint->type-decl-list smtlink-hint))
          (hinted-G-prim (smtlink-hint->expanded-clause-w/-hint smtlink-hint))
+         (next-cp (cdr (assoc-equal 'fix-hint *SMT-architecture*)))
+         ((if (null next-cp)) (list (remove-hint-please cl)))
          (fix-hint
-          `(:clause-processor (smt-fixing-cp clause ',smtlink-hint)))
+          `(:clause-processor (,next-cp clause ',smtlink-hint)))
          (full (construct-smtlink-subgoals hinted-As
                                            hinted-As-returns hinted-As-types
                                            hinted-G-prim fix-hint
