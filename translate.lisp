@@ -3722,11 +3722,11 @@
                                                    minalloc
                                                    msg
                                                    msg-args))
-                                          (mv real-mintime
-                                              run-mintime
-                                              minalloc
-                                              msg
-                                              msg-args))
+                                          (mv (maybe-kwote real-mintime)
+                                              (maybe-kwote run-mintime)
+                                              (maybe-kwote minalloc)
+                                              (maybe-kwote msg)
+                                              (maybe-kwote msg-args)))
                                          (& (mv :fail nil nil nil nil)))
                                        (cond
                                         ((eq real-mintime :fail)
