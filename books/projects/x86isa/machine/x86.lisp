@@ -2713,10 +2713,12 @@
    (cnt       :type (integer 0 15))
    x86)
 
-  :guard-hints (("Goal" :in-theory
-                 (e/d ()
-                      (negative-logand-to-positive-logand-with-integerp-x
-                       signed-byte-p))))
+  :guard-hints
+  (("Goal" :in-theory
+    (e/d ()
+         (negative-logand-to-positive-logand-with-integerp-x
+          signed-byte-p))))
+
   :measure (nfix cnt)
 
   :parents (x86-decoder)
@@ -2828,7 +2830,7 @@
                        (get-prefixes next-rip
                                      (the (unsigned-byte 44)
                                           (!prefixes-slice :group-1-prefix
-                                            byte prefixes))
+                                                           byte prefixes))
                                      (the (integer 0 15) (1- cnt)) x86)))
                  ;; We do not tolerate more than one prefix from a prefix group.
                  (mv t prefixes x86))))
@@ -2846,7 +2848,7 @@
                        ;; Storing the group 2 prefix and going on...
                        (get-prefixes next-rip
                                      (!prefixes-slice :group-2-prefix
-                                       byte prefixes)
+                                                      byte prefixes)
                                      (the (integer 0 15) (1- cnt)) x86)))
                  ;; We do not tolerate more than one prefix from a prefix group.
                  (mv t prefixes x86))))
@@ -2864,7 +2866,7 @@
                        ;; Storing the group 3 prefix and going on...
                        (get-prefixes next-rip
                                      (!prefixes-slice :group-3-prefix
-                                       byte prefixes)
+                                                      byte prefixes)
                                      (the (integer 0 15) (1- cnt)) x86)))
                  ;; We do not tolerate more than one prefix from a prefix group.
                  (mv t prefixes x86))))
@@ -2882,7 +2884,7 @@
                        ;; Storing the group 4 prefix and going on...
                        (get-prefixes next-rip
                                      (!prefixes-slice :group-4-prefix
-                                       byte prefixes)
+                                                      byte prefixes)
                                      (the (integer 0 15) (1- cnt)) x86)))
                  ;; We do not tolerate more than one prefix from a prefix group.
                  (mv t prefixes x86))))
@@ -2936,7 +2938,8 @@
                                      bitops::basic-signed-byte-p-of-+
                                      default-<-1
                                      force (force)))))
-    :gen-linear t)
+    :gen-linear t
+    :hints-l (("Goal" :in-theory (e/d () (get-prefixes)))))
 
   (defthm x86p-get-prefixes
     (implies (forced-and (x86p x86)
@@ -3169,9 +3172,50 @@
                                       negative-logand-to-positive-logand-with-n44p-x
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
+  (local
+   (defthm xr-msr-and-seg-hidden-of-get-prefixes-in-app-view
+     (implies (app-view x86)
+              (and
+               (equal (xr :msr idx (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+                      (xr :msr idx x86))
+               (equal (xr :seg-hidden idx (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+                      (xr :seg-hidden idx x86))))
+     :hints (("Goal"
+              :in-theory (e/d () (las-to-pas rb rme08 rml08))))))
+
+  (local
+   (defthm xr-msr-of-get-prefixes-in-sys-view
+     (implies (not (app-view x86))
+              (and
+               (equal (xr :msr idx (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+                      (xr :msr idx x86))
+               (equal (xr :seg-hidden idx (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+                      (xr :seg-hidden idx x86))))
+     :hints (("Goal"
+              :induct (get-prefixes start-rip prefixes cnt x86)
+              :in-theory (e/d ()
+                              (unsigned-byte-p
+                               (:linear <=-logior)
+                               negative-logand-to-positive-logand-with-n44p-x
+                               las-to-pas rb rme08 rml08))))))
+
+  (local
+   (defthm xr-msr-of-get-prefixes
+     (and
+      (equal (xr :msr idx (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+             (xr :msr idx x86))
+      (equal (xr :seg-hidden idx (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+             (xr :seg-hidden idx x86)))
+     :hints (("Goal"
+              :cases ((app-view x86))
+              :do-not-induct t
+              :in-theory (e/d () (get-prefixes las-to-pas rb rme08 rml08))))))
+
   (defrule 64-bit-modep-of-get-prefixes
     (equal (64-bit-modep (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
-           (64-bit-modep x86))))
+           (64-bit-modep x86))
+    :in-theory (e/d (64-bit-modep) ())
+    :do-not-induct t))
 
 ;; ======================================================================
 
@@ -3324,7 +3368,7 @@ semantic function.</p>"
   (defrule x86p-x86-fetch-decode-execute
     (implies (x86p x86)
              (x86p (x86-fetch-decode-execute x86)))
-    :enable add-to-*ip-is-i48p-rewrite-rule)  
+    :enable add-to-*ip-is-i48p-rewrite-rule)
 
   (defthm x86-fetch-decode-execute-opener
     (implies
