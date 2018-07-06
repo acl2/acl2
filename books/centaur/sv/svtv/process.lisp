@@ -676,15 +676,6 @@
     (mv simp-outs simp-states)))
 
 
-(define svarlist-svex-vars ((x svarlist-p))
-  :returns (vars svexlist-p)
-  (if (atom x)
-      nil
-    (cons (svex-var (car x))
-          (svarlist-svex-vars (cdr x))))
-  ///
-  (defret len-of-svarlist-svex-vars
-    (equal (len vars) (len x))))
 
 (define defsvtv-main ((name symbolp)
                       (ins true-list-listp)

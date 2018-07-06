@@ -183,14 +183,16 @@
           :msg "Hello ~s0, ~s1 World."
           :args (list "Moon" "Goodbye"))))
 
-(assert!
+(assert! ; Example from Eric Smith
  (equal
   (untranslate
    '(RETURN-LAST 'TIME$1-RAW
-                 '(0 NIL NIL NIL NIL)
-                 (CONS X '17))
+                 '(0 NIL NIL "~t0 seconds" (38))
+                 (LEN X))
    nil (w state))
-  '(time$ (cons x 17))))
+  '(time$ (len x)
+          :msg "~t0 seconds"
+          :args '(38))))
 
 (assert!
  (equal

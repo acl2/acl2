@@ -6807,6 +6807,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              ((eql x -1) *-1*)
              (t (list 'quote x)))))
 
+(defun maybe-kwote (x)
+
+; Return an untranslated term that represents (quote x).
+
+  (declare (xargs :guard t))
+  (cond ((or (acl2-numberp x)
+             (stringp x)
+             (characterp x)
+             (eq x nil)
+             (eq x t)
+             (keywordp x))
+         x)
+        (t (kwote x))))
+
 (defun kwote-lst (lst)
   (declare (xargs :guard (true-listp lst)))
   (cond ((endp lst) nil)

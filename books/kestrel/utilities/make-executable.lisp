@@ -113,19 +113,6 @@
                  (make-executable-lst (cdr lst) wrld)))))
 )
 
-(defun maybe-kwote (x)
-
-; We return an untranslated term that represents (quote x).
-
-  (declare (xargs :guard t))
-  (cond ((or (acl2-numberp x)
-             (booleanp x)
-             (keywordp x)
-             (stringp x)
-             (characterp x))
-         x)
-        (t (kwote x))))
-
 (defun maybe-kwote-lst (x)
   (declare (xargs :guard (true-listp x)))
   (cond ((endp x) nil)

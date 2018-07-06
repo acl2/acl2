@@ -3219,16 +3219,18 @@
 
 ;; ======================================================================
 
+(i-am-here)
+
 (define x86-fetch-decode-execute (x86)
 
   :parents (x86-decoder)
   :short "Top-level step function"
 
   :long "<p>@('x86-fetch-decode-execute') is the step function of our
-x86 interpreter.  It fetches one instruction by looking up the memory
-address indicated by the instruction pointer @('rip'), decodes that
-instruction, and dispatches control to the appropriate instruction
-semantic function.</p>"
+ x86 interpreter.  It fetches one instruction by looking up the memory
+ address indicated by the instruction pointer @('rip'), decodes that
+ instruction, and dispatches control to the appropriate instruction
+ semantic function.</p>"
 
   :prepwork
   ((local (in-theory (e/d* () (unsigned-byte-p not)))))
@@ -3306,24 +3308,28 @@ semantic function.</p>"
        ;;    "top-level-opcode-execute" either calls the one-byte POP
        ;;    instruction or escapes to the XOP opcode map.
 
-       ;; 4. #xC4, #xC5: Escape to the VEX opcode map.  Note that in this case,
-       ;;    the ModR/M and SIB bytes will be prefetched by this function, and
-       ;;    TEMP-RIP will be incremented accordingly.
+       ;; 4. #xC4, #xC5: Escape to the VEX opcode map (in 64-bit
+       ;;    mode).  Note that in this case, the ModR/M and SIB bytes
+       ;;    will be prefetched by this function, and TEMP-RIP will be
+       ;;    incremented accordingly.
 
        ;; The opcode/escape-byte should not contain any of the prefix bytes --
        ;; by this point, all prefix bytes are processed.
 
-       ;; Note that modr/m? will be nil for #x0F (see *onebyte-has-modrm-lst*
-       ;; in constants.lisp) and temp-rip will not be incremented beyond this
-       ;; point in this function for two-byte opcodes.
+       ;; Note that modr/m? will be nil for #x0F (see
+       ;; *64-bit-mode-one-byte-has-modr/m-ar* and
+       ;; *32-bit-mode-one-byte-has-modr/m-ar*) and temp-rip will not
+       ;; be incremented beyond this point in this function for
+       ;; two-byte opcodes.
 
-       ;; The modr/m and sib byte prefetching in this function is "biased"
-       ;; towards the primary opcode map.  two-byte-opcode-decode-and-execute
-       ;; does its own prefetching.  We made this choice to take advantage of
-       ;; the fact that the most frequently encountered instructions are from
-       ;; the primary opcode map.  Another reason is that the instruction
-       ;; encoding syntax is clearer to understand; this is a nice way of
-       ;; seeing how one opcode map escapes into the other.
+       ;; The modr/m and sib byte prefetching in this function is
+       ;; biased towards the primary opcode map.
+       ;; two-byte-opcode-decode-and-execute does its own prefetching.
+       ;; We made this choice to take advantage of the fact that the
+       ;; most frequently encountered instructions are from the
+       ;; primary opcode map.  Another reason is that the instruction
+       ;; encoding syntax is clearer to understand; this is a nice way
+       ;; of seeing how one opcode map escapes into the other.
 
        (modr/m? (if (64-bit-modep x86)
                     (64-bit-mode-one-byte-opcode-ModR/M-p opcode/escape-byte)
