@@ -2293,25 +2293,11 @@
 
     (#xAA
      "(STOSB Yb AL)"
-     (if (64-bit-modep x86)
-         (x86-stos start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                   x86)
-       (x86-step-unimplemented
-        (cons (cons "(STOSB Yb AL) is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-stos start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xAB
      "(STOSW Yv rAX) or (STOSD Yv rAX) or (STOSQ Yv rAX)"
-     (if (64-bit-modep x86)
-         (x86-stos start-rip temp-rip prefixes rex-byte opcode modr/m sib
-                   x86)
-       (x86-step-unimplemented
-        (cons (cons "STOSW/STOSD/STOSQ is not implemented in 32-bit mode."
-                    (ms x86))
-              (list start-rip temp-rip prefixes rex-byte opcode))
-        x86)))
+     (x86-stos start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
 
     (#xAC
      "(LODSB AL, Xb)"

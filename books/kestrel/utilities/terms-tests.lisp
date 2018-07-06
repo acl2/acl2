@@ -1,6 +1,6 @@
 ; Term Utilities -- Tests
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -335,6 +335,26 @@
  (defun g (x) (declare (xargs :verify-guards t)) (cons (ec-call (f x)) (len x)))
  (assert-equal (all-non-gv-exec-ffn-symbs (ubody 'g (w state)) (w state))
                nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (all-pkg-names '(quote 4))
+              nil)
+
+(assert-equal (all-pkg-names 'x)
+              '("ACL2"))
+
+(assert-equal (all-pkg-names '(binary-+ '5 'x))
+              '("ACL2"))
+
+(assert! (set-equiv (all-pkg-names '(car (binary-/ 'x)))
+                    (list "ACL2" *main-lisp-package-name*)))
+
+(assert! (set-equiv (all-pkg-names '(f std::abcde))
+                    (list "ACL2" "STD")))
+
+(assert-equal (all-pkg-names '(std::deflist '8))
+              '("STD"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
