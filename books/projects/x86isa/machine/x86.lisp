@@ -3338,7 +3338,7 @@ semantic function.</p>"
   (defrule x86p-x86-fetch-decode-execute
     (implies (x86p x86)
              (x86p (x86-fetch-decode-execute x86)))
-    :enable add-to-*ip-is-i48p-rewrite-rule)
+    :enable add-to-*ip-is-i48p-rewrite-rule)  
 
   (defthm x86-fetch-decode-execute-opener
     (implies
