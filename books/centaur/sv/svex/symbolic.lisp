@@ -4180,7 +4180,7 @@ obviously 2-vectors.</p>"
   :short "Equivalent of svexlist/env-list-eval intended to work well under GL symbolic execution."
   :long "
 
-<p>This function is provably equivalent to @(see svexlist/env-list-eval), but is
+<p>This function is provably equivalent to @('svexlist/env-list-eval'), but is
 tailored to perform well under symbolic execution.  For symbolic execution, we
 assume that the inputs to this function other than @('envs') are fully concrete,
 and that each @('envs') are symbolic only in its values, not its keys or its shape.</p>

@@ -39,7 +39,7 @@
 
 ;; redundant with ../svex/lists
 (deffixtype true-list :pred true-listp :fix list-fix :equiv list-equiv :forward t)
-(fty::deflist true-list-list :elt-type true-list :true-listp t :pred true-list-listp)
+(fty::deflist true-list-list :elt-type true-list :true-listp t :pred true-list-listp :elementp-of-nil t)
 
 
 (define svtv-dontcare-p (x)
