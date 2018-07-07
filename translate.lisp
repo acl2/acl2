@@ -3755,7 +3755,11 @@
                                             ('quote 'nil))
                     (let ((y (unmake-formal-pairlis2 x *base-10-chars*)))
                       (cond ((eq y :fail) nil)
-                            (t (list* 'cw str y)))))
+                            (t (list* 'cw
+                                      str
+                                      (untranslate1-lst y nil untrans-tbl
+                                                        preprocess-fn
+                                                        wrld))))))
                    (& nil))
                  (let* ((pair (cdr (assoc-eq (ffn-symb term)
                                              untrans-tbl)))
@@ -8783,6 +8787,11 @@
                        (length (cdr x))
                        formals
                        nil))
+            ((eq stobjs-out t)
+             (trans-er-let*
+              ((args (translate11-lst (cdr x) t bindings known-stobjs
+                                      nil flet-alist x ctx wrld state-vars)))
+              (trans-value (fcons-term lambda-fn args))))
             (t
              (translate11-call x lambda-fn (cdr x) stobjs-out stobjs-out2
                                bindings known-stobjs
