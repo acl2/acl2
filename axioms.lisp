@@ -6409,6 +6409,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(cond ((and ,(not on-skip-proofs)
                (f-get-global 'ld-skip-proofsp state))
           (value :skipped))
+         ((and (eq ,on-skip-proofs :interactive)
+               (eq (f-get-global 'ld-skip-proofsp state)
+                   'include-book))
+          (value :skipped))
          (t ,(let ((form
                     `(let ((check ,check)
                            (ctx ,ctx))
