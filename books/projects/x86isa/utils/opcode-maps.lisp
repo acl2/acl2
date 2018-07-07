@@ -48,6 +48,13 @@
 ; Lisp representation of Intel's opcode maps (See Intel Manuals,
 ; Vol. 2, Appendix A)
 
+(defsection opcode-maps
+  :parents (decoding-utilities)
+  :short "<b>ACL2 representation of x86 Opcode Maps</b>"
+  )
+
+(local (xdoc::set-default-parents 'opcode-maps))
+
 ;; ----------------------------------------------------------------------
 
 (defconst *opcode-map-superscripts*
