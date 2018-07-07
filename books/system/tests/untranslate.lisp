@@ -206,3 +206,22 @@
    nil (w state))
   '(time$ (cons x y) :real-mintime 23)))
 
+(assert!
+ (equal
+  (untranslate '(FMT-TO-COMMENT-WINDOW
+                 '"   ~x0 pairs~%"
+                 (PAIRLIS2
+                  '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                  (CONS
+                   (LEN (RETURN-LAST 'TIME$1-RAW
+                                     '(0 NIL NIL
+                                         "Value is: ~x0"
+                                         (100))
+                                     (cons x y)))
+                   'NIL))
+                 '0
+                 'NIL) nil (w state))
+  '(cw "   ~x0 pairs~%"
+       (len (time$ (cons x y)
+                   :msg "Value is: ~x0"
+                   :args '(100))))))
