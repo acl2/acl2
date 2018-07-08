@@ -560,24 +560,46 @@ minor warning for assignments where the rhs is a constant.</p>"
 ;; cast means no compatibility is required.  Assign means we check for
 ;; assignment compatibility, equiv means check for equivalence.
 
+(define vl-dimension-compare-sizes ((a vl-dimension-p)
+                                    (b vl-dimension-p))
+  (vl-dimension-case a
+    :unsized (vl-dimension-case b :unsized)
+    :range   (vl-dimension-case b
+               :range (and (vl-range-resolved-p a.range)
+                           (vl-range-resolved-p b.range)
+                           (equal (vl-range-size a.range) (vl-range-size b.range)))
+               :otherwise nil)
+    ;; BOZO for now, don't regard any of these as type compatible.
+    ;; They don't have fixed sizes anyway.  If this is the right behavior,
+    ;; is it not also the right behavior for unsized dimensions?  If it
+    ;; is not the right behavior, then the right behavior might be
+    ;; something like the commented out code below.
+    :datatype nil
+    :star nil
+    :queue nil
 
-(define vl-packeddimension-compare-sizes ((a vl-packeddimension-p)
-                                          (b vl-packeddimension-p))
-  (vl-packeddimension-case a
-    :unsized (vl-packeddimension-case b :unsized)
-    :range (vl-packeddimension-case b
-             :range (and (vl-range-resolved-p a.range)
-                         (vl-range-resolved-p b.range)
-                         (equal (vl-range-size a.range) (vl-range-size b.range)))
-             :otherwise nil)))
+    ;; Possibly instead we should do something like...
+    ;; :datatype nil ;; bozo??
+    ;; :star     (vl-dimension-case b :star)
+    ;; :queue    (vl-dimension-case b
+    ;;             :queue (or (and (not a.maxsize)
+    ;;                             (not b.maxsize))
+    ;;                        (and a.maxsize
+    ;;                             b.maxsize
+    ;;                             (vl-expr-resolved-p a.maxsize)
+    ;;                             (vl-expr-resolved-p b.maxsize)
+    ;;                             (equal (vl-resolved->val a.maxsize)
+    ;;                                    (vl-resolved->val b.maxsize))))
+    ;;             :otherwise nil)
+    ))
 
-(define vl-packeddimensionlist-compare-sizes ((a vl-packeddimensionlist-p)
-                                              (b vl-packeddimensionlist-p))
+(define vl-dimensionlist-compare-sizes ((a vl-dimensionlist-p)
+                                        (b vl-dimensionlist-p))
   (if (atom a)
       (atom b)
     (and (consp b)
-         (vl-packeddimension-compare-sizes (car a) (car b))
-         (vl-packeddimensionlist-compare-sizes (cdr a) (cdr b)))))
+         (vl-dimension-compare-sizes (car a) (car b))
+         (vl-dimensionlist-compare-sizes (cdr a) (cdr b)))))
 
 
 (define vl-check-datatype-equivalence ((a vl-datatype-p)
@@ -591,9 +613,8 @@ minor warning for assignments where the rhs is a constant.</p>"
                       :hints(("Goal" :in-theory (enable vl-maybe-exprsign-p
                                                         vl-exprsign-p))))))
   :returns (msg (iff (vl-msg-p msg) msg))
-  (b* ((udims-compatible (vl-packeddimensionlist-compare-sizes
-                          (vl-datatype->udims a)
-                          (vl-datatype->udims b)))
+  (b* ((udims-compatible (vl-dimensionlist-compare-sizes (vl-datatype->udims a)
+                                                         (vl-datatype->udims b)))
        ((unless udims-compatible)
         (vmsg "Unpacked dimensions mismatch"))
        (a-core (vl-maybe-usertype-resolve (vl-datatype-update-udims nil a)))

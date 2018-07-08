@@ -159,9 +159,9 @@
           (make-vl-structmember
            :name x.instname
            :type (if x.range
-                     (vl-datatype-update-udims (list (vl-range->packeddimension x.range)) type)
+                     (vl-datatype-update-udims (list (vl-range->dimension x.range)) type)
                    type)))))
-    
+
   (define vl-modinstlist-interface-mockmembers ((x vl-modinstlist-p)
                                                 (ss vl-scopestack-p)
                                                 &key ((reclimit natp) 'reclimit))

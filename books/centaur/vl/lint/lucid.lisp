@@ -961,8 +961,12 @@ created when we process their packages, etc.</p>"
         st)
        (iface (vl-find-interface ifname (vl-design->interfaces design)))
        ((unless iface)
-        (vl-cw-ps-seq (vl-cw "Error: ~a0: interface ~s1 not found.~%" ctx ifname))
-        (vl-lucidstate-fix st))
+        (b* ((w (make-vl-warning :type :vl-lucid-error
+                                 :msg "While marking modport in ~s0, interface port ~s1 not found."
+                                 :args (list (with-local-ps (vl-pp-lucidctx ctx))
+                                             (string-fix ifname)))))
+          (change-vl-lucidstate st
+                                :warnings (cons w (vl-lucidstate->warnings st)))))
        ;; This is a little tricky because we need a normalized scopestack that
        ;; puts us into the right interface, but that's easy enough...
        (temp-ss (vl-scopestack-init design))
@@ -1364,23 +1368,6 @@ created when we process their packages, etc.</p>"
           (st (vl-rhsexprlist-lucidcheck x.args ss st ctx)))
        st))))
 
-(def-vl-lucidcheck packeddimension
-  :takes-ctx t
-  :body
-  (vl-packeddimension-case x
-    :unsized st
-    :range (vl-range-lucidcheck x.range ss st ctx)))
-
-(def-vl-lucidcheck-list packeddimensionlist :element packeddimension :takes-ctx t)
-
-(def-vl-lucidcheck maybe-packeddimension
-  :takes-ctx t
-  :body
-  (if x
-      (vl-packeddimension-lucidcheck x ss st ctx)
-    st))
-
-
 (def-vl-lucidcheck enumitem
   :takes-ctx t
   :body
@@ -1406,31 +1393,31 @@ created when we process their packages, etc.</p>"
     (b* ((st (vl-lucidstate-fix st)))
       (vl-datatype-case x
         :vl-coretype
-        (b* ((st (vl-packeddimensionlist-lucidcheck x.pdims ss st ctx))
-             (st (vl-packeddimensionlist-lucidcheck x.udims ss st ctx)))
+        (b* ((st (vl-dimensionlist-lucidcheck x.pdims ss st ctx))
+             (st (vl-dimensionlist-lucidcheck x.udims ss st ctx)))
           st)
 
         :vl-struct
-        (b* ((st (vl-packeddimensionlist-lucidcheck x.pdims ss st ctx))
-             (st (vl-packeddimensionlist-lucidcheck x.udims ss st ctx)))
+        (b* ((st (vl-dimensionlist-lucidcheck x.pdims ss st ctx))
+             (st (vl-dimensionlist-lucidcheck x.udims ss st ctx)))
           (vl-structmemberlist-lucidcheck x.members ss st ctx))
 
         :vl-union
-        (b* ((st (vl-packeddimensionlist-lucidcheck x.pdims ss st ctx))
-             (st (vl-packeddimensionlist-lucidcheck x.udims ss st ctx)))
+        (b* ((st (vl-dimensionlist-lucidcheck x.pdims ss st ctx))
+             (st (vl-dimensionlist-lucidcheck x.udims ss st ctx)))
           (vl-structmemberlist-lucidcheck x.members ss st ctx))
 
         :vl-enum
         (b* ((st (vl-datatype-lucidcheck x.basetype ss st ctx))
              (st (vl-enumitemlist-lucidcheck x.items ss st ctx))
-             (st (vl-packeddimensionlist-lucidcheck x.pdims ss st ctx))
-             (st (vl-packeddimensionlist-lucidcheck x.udims ss st ctx)))
+             (st (vl-dimensionlist-lucidcheck x.pdims ss st ctx))
+             (st (vl-dimensionlist-lucidcheck x.udims ss st ctx)))
           st)
 
         :vl-usertype
         (b* ((st (vl-hidsolo-mark :used nil x.name ss st ctx))
-             (st (vl-packeddimensionlist-lucidcheck x.pdims ss st ctx))
-             (st (vl-packeddimensionlist-lucidcheck x.udims ss st ctx)))
+             (st (vl-dimensionlist-lucidcheck x.pdims ss st ctx))
+             (st (vl-dimensionlist-lucidcheck x.udims ss st ctx)))
           st))))
 
   (define vl-structmember-lucidcheck ((x   vl-structmember-p)
@@ -1455,6 +1442,31 @@ created when we process their packages, etc.</p>"
           (vl-lucidstate-fix st))
          (st (vl-structmember-lucidcheck (car x) ss st ctx)))
       (vl-structmemberlist-lucidcheck (cdr x) ss st ctx)))
+
+  (define vl-dimension-lucidcheck ((x   vl-dimension-p)
+                                   (ss  vl-scopestack-p)
+                                   (st  vl-lucidstate-p)
+                                   (ctx vl-lucidctx-p))
+    :returns (st vl-lucidstate-p)
+    :measure (vl-dimension-count x)
+    (b* ((st (vl-lucidstate-fix st)))
+      (vl-dimension-case x
+        :unsized  st
+        :star     st
+        :range    (vl-range-lucidcheck x.range ss st ctx)
+        :queue    (vl-maybe-rhsexpr-lucidcheck x.maxsize ss st ctx)
+        :datatype (vl-datatype-lucidcheck x.type ss st ctx))))
+
+  (define vl-dimensionlist-lucidcheck ((x vl-dimensionlist-p)
+                                       (ss  vl-scopestack-p)
+                                       (st  vl-lucidstate-p)
+                                       (ctx vl-lucidctx-p))
+    :returns (st vl-lucidstate-p)
+    :measure (vl-dimensionlist-count x)
+    (b* (((when (atom x))
+          (vl-lucidstate-fix st))
+         (st (vl-dimension-lucidcheck (car x) ss st ctx)))
+      (vl-dimensionlist-lucidcheck (cdr x) ss st ctx)))
 
   ///
   (verify-guards vl-datatype-lucidcheck)
@@ -1829,7 +1841,7 @@ created when we process their packages, etc.</p>"
   :body
   (b* (((vl-interfaceport x))
        (ctx (vl-basic-lucidctx ss x))
-       (st  (vl-packeddimensionlist-lucidcheck x.udims ss st ctx))
+       (st  (vl-dimensionlist-lucidcheck x.udims ss st ctx))
        ((unless x.modport)
         st))
     (vl-lucidst-mark-modport x.ifname x.modport ss st ctx)))
@@ -2689,12 +2701,12 @@ created when we process their packages, etc.</p>"
                 (mv t '(0)))
                ((unless (and (atom (cdr x.pdims))
                              (b* ((dim (first x.pdims)))
-                               (vl-packeddimension-case dim :range))
+                               (vl-dimension-case dim :range))
                              (vl-range-resolved-p
-                              (vl-packeddimension->range (first x.pdims)))))
+                              (vl-dimension->range (first x.pdims)))))
                 ;; Too many or unresolved dimensions -- too hard.
                 (mv nil nil)))
-            (mv t (vl-lucid-range->bits (vl-packeddimension->range (first x.pdims))
+            (mv t (vl-lucid-range->bits (vl-dimension->range (first x.pdims))
                                         ctx))))
 
          ((:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer :vl-time)

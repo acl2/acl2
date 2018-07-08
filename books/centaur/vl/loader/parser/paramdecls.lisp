@@ -132,7 +132,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
 
 ; Value Parameters ------------------------------------------------------------
 
-(define vl-update-paramtype-udims ((udims vl-packeddimensionlist-p)
+(define vl-update-paramtype-udims ((udims vl-dimensionlist-p)
                                    (x     vl-paramtype-p))
   :guard (and (consp udims)
               (member (vl-paramtype-kind x)
@@ -153,7 +153,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
                         ((vl-exprsign-equiv x.sign :vl-signed) t)
                         (t nil)))
          (pdims (and x.range
-                     (list (vl-range->packeddimension x.range))))
+                     (list (vl-range->dimension x.range))))
          (datatype (make-vl-coretype :name :vl-logic
                                      :pdims pdims
                                      :signedp signedp
@@ -192,6 +192,8 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
                                 (vl-idtoken->name id)))))
 
         (when (not (eq (vl-loadconfig->edition config) :verilog-2005))
+          ;; Per the SystemVerilog-2012 grammar, only unpacked_dimensions, not
+          ;; variable_dimensions, are allowed here.
           (udims := (vl-parse-0+-unpacked-dimensions)))
 
         ;; For SystemVerilog-2012, the right hand side is optional but only for
@@ -455,7 +457,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
                      (eq (vl-token->type start) :vl-kwd-localparam)
                      (if (or (atom dims)
                              (and (atom (cdr dims))
-                                  (vl-packeddimension-case (car dims) :range)))
+                                  (vl-dimension-case (car dims) :range)))
                          ;; If any dimensions are provided, there is only one
                          ;; of them and it is an ordinary sized dimension, so
                          ;; this is something like parameter [3:0] foo.  This
@@ -463,7 +465,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
                          ;; like the Verilog-2005 version does.
                          (make-vl-implicitvalueparam :range (if (atom dims)
                                                                 nil
-                                                              (vl-packeddimension->range (car dims)))
+                                                              (vl-dimension->range (car dims)))
                                                      :sign (and signing
                                                                 (case (vl-token->type signing)
                                                                   (:vl-kwd-signed   :vl-signed)

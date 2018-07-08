@@ -783,13 +783,13 @@ constructed separately.)</p>"
        (warnings nil)
        ((unless (or (atom x.udims)
                     (and (atom (cdr x.udims))
-                         (vl-packeddimension-case (car x.udims) :range)
-                         (vl-range-resolved-p (Vl-packeddimension->range (car x.udims))))))
+                         (vl-dimension-case (car x.udims) :range)
+                         (vl-range-resolved-p (Vl-dimension->range (car x.udims))))))
         (mv (fatal :type :vl-bad-interfaceport-array
                    :msg "Unresolved or unsized dimensions on interfaceport array: ~a0"
                    :args (list x))
             nil nil nil nil 0))
-       (range (and (consp x.udims)  (vl-packeddimension->range (car x.udims))))
+       (range (and (consp x.udims)  (vl-dimension->range (car x.udims))))
        (arraysize (and range (vl-range-size range)))
        ((wmv warnings wires aliases arrwidth singlewidth)
         (vl-interfaceinst->svex x.name x.ifname x ss self-lsb arraysize))
@@ -910,11 +910,11 @@ constructed separately.)</p>"
         (mv (vmsg "Incompatible type for connection to instancearray port ~s0"
                   (string-fix portname))
             nil nil nil))
-       ((when (vl-packeddimension-case dim :unsized))
+       ((unless (vl-dimension-case dim :range))
         (mv (vmsg "Incompatible type for connection to instancearray port ~s0 ~
-                   (unsized dimension)" (string-fix portname))
+                   (unsupported dimension)" (string-fix portname))
             nil nil nil))
-       (range (vl-packeddimension->range dim))
+       (range (vl-dimension->range dim))
        ((when (or (not (vl-range-resolved-p range))
                   (not (eql (vl-range-size range) arraysize))))
         (mv (vmsg "Incompatible type for connection to instancearray port ~s0 ~
@@ -1184,7 +1184,7 @@ constructed separately.)</p>"
              ((when (and (consp y.udims)
                          (or (consp (cdr y.udims))
                              (b* ((dim (car y.udims)))
-                               (vl-packeddimension-case dim
+                               (vl-dimension-case dim
                                  :range
                                  (not (vl-range-resolved-p dim.range))
                                  :otherwise t)))))
@@ -1212,7 +1212,7 @@ constructed separately.)</p>"
              (y-expr (make-vl-index :scope (vl-idscope y.name)
                                     :part (if (consp y.udims)
                                               (vl-range->partselect
-                                               (vl-packeddimension->range (car y.udims)))
+                                               (vl-dimension->range (car y.udims)))
                                             (vl-partselect-none))))
 
              ((mv type-err multi x-size y-size)
@@ -1264,7 +1264,7 @@ constructed separately.)</p>"
           ;;                  :args (list y.name x.expr))))
           ;;    (x-array-resolved (or (atom x-udims)
           ;;                          (b* ((dim (car x-udims)))
-          ;;                            (vl-packeddimension-case dim
+          ;;                            (vl-dimension-case dim
           ;;                              :range
           ;;                              (vl-range-resolved-p dim.range)
           ;;                              :otherwise nil))))
@@ -1278,7 +1278,7 @@ constructed separately.)</p>"
           ;;                               :type x-type)))))
 
           ;;    (x-range-size (and (consp x-udims)
-          ;;                       (vl-range->size (vl-packeddimension->range (car x-udims)))))
+          ;;                       (vl-range->size (vl-dimension->range (car x-udims)))))
 
           ;;    ;; At this point we have:
           ;;    ;;   arraysize -- number of modinsts
@@ -3215,7 +3215,7 @@ ourstruct, above.)</p>"
 
 
 (define vl-datatype->all-dims ((x vl-datatype-p))
-  :returns (dims vl-packeddimensionlist-p)
+  :returns (dims vl-dimensionlist-p)
   (append-without-guard (vl-datatype->udims x)
                         (vl-datatype->pdims x)))
 
@@ -3260,11 +3260,11 @@ ourstruct, above.)</p>"
                       (equal (vl-datatype-count
                               (vl-datatype-update-dims pdims udims x))
                              (+ (vl-datatype-count x)
-                                (vl-packeddimensionlist-count pdims)
-                                (vl-packeddimensionlist-count udims)
-                                (- (vl-packeddimensionlist-count
+                                (vl-dimensionlist-count pdims)
+                                (vl-dimensionlist-count udims)
+                                (- (vl-dimensionlist-count
                                     (vl-datatype->pdims x)))
-                                (- (vl-packeddimensionlist-count
+                                (- (vl-dimensionlist-count
                                     (vl-datatype->udims x)))))
                       :hints(("Goal" :expand ((vl-datatype-count x)
                                               (vl-datatype-count
@@ -3274,12 +3274,12 @@ ourstruct, above.)</p>"
                                   '(:in-theory (enable
                                                 vl-datatype-update-dims))))))
 
-             (local (defthm vl-packeddimensionlist-count-of-append
-                      (equal (vl-packeddimensionlist-count (append a b))
-                             (+ -1 (vl-packeddimensionlist-count a)
-                                (vl-packeddimensionlist-count b)))
+             (local (defthm vl-dimensionlist-count-of-append
+                      (equal (vl-dimensionlist-count (append a b))
+                             (+ -1 (vl-dimensionlist-count a)
+                                (vl-dimensionlist-count b)))
                       :hints(("Goal" :in-theory (enable
-                                                 vl-packeddimensionlist-count
+                                                 vl-dimensionlist-count
                                                  append)
                               :induct (append a b)))))
 
@@ -3289,13 +3289,13 @@ ourstruct, above.)</p>"
                                       (< x y)))
                       :hints(("Goal" :in-theory (enable o<)))))
 
-             (local (defthm vl-packeddimensionlist-count-of-cdr1
-                      (equal (vl-packeddimensionlist-count (cdr a))
+             (local (defthm vl-dimensionlist-count-of-cdr1
+                      (equal (vl-dimensionlist-count (cdr a))
                              (if (consp a)
-                                 (+ -1 (- (vl-packeddimension-count (car a)))
-                                    (vl-packeddimensionlist-count a))
-                               (vl-packeddimensionlist-count a)))
-                      :hints(("Goal" :expand ((vl-packeddimensionlist-count
+                                 (+ -1 (- (vl-dimension-count (car a)))
+                                    (vl-dimensionlist-count a))
+                               (vl-dimensionlist-count a)))
+                      :hints(("Goal" :expand ((vl-dimensionlist-count
                                                a))))))
 
              (local (in-theory (disable vl-datatype-udims-when-vl-coretype
@@ -3468,15 +3468,15 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                    (atom (cdr dims)))))
          ((when (and (consp dims)
                      (b* ((dim (car dims)))
-                       (or (vl-packeddimension-case dim :unsized)
-                           (not (vl-range-resolved-p (vl-packeddimension->range dim)))))))
+                       (or (not (vl-dimension-case dim :range))
+                           (not (vl-range-resolved-p (vl-dimension->range dim)))))))
           (mv (vmsg "Bad dimension on datatype ~a0" x) nil nil modalist))
          ((unless (or (atom dims)
                       simple-vector-type-p))
           (b* ((new-type (vl-datatype-update-dims
                           ;; we don't distinguish between udims/pdims here
                           (cdr dims) nil x))
-               (range (vl-packeddimension->range (car dims)))
+               (range (vl-dimension->range (car dims)))
                ((mv err subwire submod-name modalist)
                 (vl-datatype->mods new-type modalist))
                ((when err) (mv err nil nil modalist))
@@ -3513,7 +3513,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
              ((mv width low-bit revp)
               (b* (((when (eql xinfo.size 1))
                     (if (consp dims)
-                        (b* ((range (vl-packeddimension->range (car dims))))
+                        (b* ((range (vl-dimension->range (car dims))))
                           (mv (vl-range-size range)
                               (vl-range-low-idx range)
                               (vl-range-revp range)))
@@ -3666,6 +3666,8 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
                       (vl-enum-basetype-signedp x.res))
     :otherwise nil))
 
+(local (in-theory (enable vl-dimension-size)))
+
 (defines vl-datatype-constraint
   (define vl-datatype-constraint ((x vl-datatype-p)
                                   (var sv::svar-p)
@@ -3690,7 +3692,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
            :exec
            (vl-datatype-dims-constraint dims x var shift))))
 
-  (define vl-datatype-dims-constraint ((dims vl-packeddimensionlist-p)
+  (define vl-datatype-dims-constraint ((dims vl-dimensionlist-p)
                                        (x vl-datatype-p)
                                        (var sv::svar-p)
                                        (shift natp))
@@ -3698,26 +3700,26 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
     :guard (and (vl-datatype-resolved-p x)
                 (b* (((mv err size) (vl-datatype-size x)))
                   (and (not err) size))
-                (vl-packeddimensionlist-resolved-p dims)
-                (vl-packeddimensionlist-total-size dims))
+                (vl-dimensionlist-resolved-p dims)
+                (vl-dimensionlist-total-size dims))
     :returns (mv (constraint sv::svex-p)
                  (size (equal size (* (mv-nth 1 (vl-datatype-size (vl-datatype-update-dims nil nil x)))
-                                      (vl-packeddimensionlist-total-size dims)))))
+                                      (vl-dimensionlist-total-size dims)))))
     :measure (list (vl-datatype-count x) 9 (len dims) 0)
     (b* (((when (atom dims))
           (mbe :logic (b* (((mv constraint &) (vl-datatype-nodims-constraint x var shift))
                            ((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x)))
-                           (dim-size (vl-packeddimensionlist-total-size dims)))
+                           (dim-size (vl-dimensionlist-total-size dims)))
                         (mv constraint (* size dim-size)))
                :exec (vl-datatype-nodims-constraint x var shift)))
          (dim1 (car dims))
-         ((vl-range range) (vl-packeddimension->range dim1)))
+         ((vl-range range) (vl-dimension->range dim1)))
       (mbe :logic (b* (((mv constraint &)
                         (vl-datatype-dim-constraint (vl-resolved->val range.msb)
                                   (vl-resolved->val range.lsb)
                                   (cdr dims) x var shift))
                        ((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x)))
-                       (dim-size (vl-packeddimensionlist-total-size dims)))
+                       (dim-size (vl-dimensionlist-total-size dims)))
                     (mv constraint (* size dim-size)))
            :exec
            (vl-datatype-dim-constraint (vl-resolved->val range.msb)
@@ -3726,18 +3728,18 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
   (define vl-datatype-dim-constraint ((range-msb integerp)
                                       (range-lsb integerp)
-                                      (dims vl-packeddimensionlist-p)
+                                      (dims vl-dimensionlist-p)
                                       (x vl-datatype-p)
                                       (var sv::svar-p)
                                       (shift natp))
     :guard (and (vl-datatype-resolved-p x)
                 (b* (((mv err size) (vl-datatype-size x)))
                   (and (not err) size))
-                (vl-packeddimensionlist-resolved-p dims)
-                (vl-packeddimensionlist-total-size dims))
+                (vl-dimensionlist-resolved-p dims)
+                (vl-dimensionlist-total-size dims))
     :returns (mv (constraint sv::svex-p)
                  (size (equal size (* (mv-nth 1 (vl-datatype-size (vl-datatype-update-dims nil nil x)))
-                                      (vl-packeddimensionlist-total-size dims)
+                                      (vl-dimensionlist-total-size dims)
                                       (+ 1 (abs (- (ifix range-msb) (ifix range-lsb))))))
                        ))
     :measure (list (vl-datatype-count x) 9 (len dims)
@@ -3748,7 +3750,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
          ((mv constr1 size1) (vl-datatype-dims-constraint dims x var shift))
          ((when (eql range-msb range-lsb))
           (mbe :logic (b* (((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x)))
-                           (dims-size (vl-packeddimensionlist-total-size dims))
+                           (dims-size (vl-dimensionlist-total-size dims))
                            (dim1-size (+ 1 (abs (- (ifix range-msb) (ifix range-lsb))))))
                         (mv constr1 (* size dims-size dim1-size)))
                :exec (mv constr1 size1)))
@@ -3757,7 +3759,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
           (vl-datatype-dim-constraint range-msb new-range-lsb dims x var (+ (lnfix shift) size1))))
       (mv (sv::svcall sv::bitand constr1 constr2)
           (mbe :logic (b* (((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x)))
-                           (dims-size (vl-packeddimensionlist-total-size dims))
+                           (dims-size (vl-dimensionlist-total-size dims))
                            (dim1-size (+ 1 (abs (- (ifix range-msb) (ifix range-lsb))))))
                         (* size dims-size dim1-size))
                :exec (+ size1 size2)))))
@@ -3843,36 +3845,36 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
   (local (in-theory (disable vl-datatype-dim-constraint)))
 
   (local (defthm dimensionlist-size-of-append
-           (iff (vl-packeddimensionlist-total-size (append a b))
-                (and (vl-packeddimensionlist-total-size a)
-                     (vl-packeddimensionlist-total-size b)))
-           :hints(("Goal" :in-theory (enable vl-packeddimensionlist-total-size)))))
+           (iff (vl-dimensionlist-total-size (append a b))
+                (and (vl-dimensionlist-total-size a)
+                     (vl-dimensionlist-total-size b)))
+           :hints(("Goal" :in-theory (enable vl-dimensionlist-total-size)))))
 
   (local (defthm dimensionlist-resolved-p-of-append
-           (iff (vl-packeddimensionlist-resolved-p (append a b))
-                (and (vl-packeddimensionlist-resolved-p a)
-                     (vl-packeddimensionlist-resolved-p b)))
-           :hints(("Goal" :in-theory (enable vl-packeddimensionlist-resolved-p)))))
+           (iff (vl-dimensionlist-resolved-p (append a b))
+                (and (vl-dimensionlist-resolved-p a)
+                     (vl-dimensionlist-resolved-p b)))
+           :hints(("Goal" :in-theory (enable vl-dimensionlist-resolved-p)))))
 
   (local (defthm udims-size-when-datatype-size
            (implies (mv-nth 1 (vl-datatype-size x))
-                    (vl-packeddimensionlist-total-size (vl-datatype->udims x)))
+                    (vl-dimensionlist-total-size (vl-datatype->udims x)))
            :hints(("Goal" :expand ((vl-datatype-size x))))))
 
   (local (defthm pdims-size-when-datatype-size
            (implies (mv-nth 1 (vl-datatype-size x))
-                    (vl-packeddimensionlist-total-size (vl-datatype->pdims x)))
+                    (vl-dimensionlist-total-size (vl-datatype->pdims x)))
            :hints(("Goal" :expand ((vl-datatype-size x))))))
 
   
   (local (defthm udims-resolved-p-when-datatype-resolved-p
            (implies (mv-nth 1 (vl-datatype-size x))
-                    (vl-packeddimensionlist-resolved-p (vl-datatype->udims x)))
+                    (vl-dimensionlist-resolved-p (vl-datatype->udims x)))
            :hints(("Goal" :expand ((vl-datatype-size x))))))
 
   (local (defthm pdims-resolved-p-when-datatype-resolved-p
            (implies (mv-nth 1 (vl-datatype-size x))
-                    (vl-packeddimensionlist-resolved-p (vl-datatype->pdims x)))
+                    (vl-dimensionlist-resolved-p (vl-datatype->pdims x)))
            :hints(("Goal" :expand ((vl-datatype-size x))))))
 
   (local (defthm vl-datatype-dims-constraint-equal-list
@@ -3908,15 +3910,6 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
            :hints(("Goal" :expand ((vl-datatype-dim-constraint msb lsb dims x var shift))
                    :in-theory (enable equal-of-cons)))))
 
-  (local (defthm vl-packeddimensionlist-total-size-of-append
-           (implies (and (vl-packeddimensionlist-total-size a)
-                         (vl-packeddimensionlist-total-size b))
-                    (equal (vl-packeddimensionlist-total-size (append a b))
-                           (* (vl-packeddimensionlist-total-size a)
-                              (vl-packeddimensionlist-total-size b))))
-           :hints(("Goal" :in-theory (enable vl-packeddimensionlist-total-size)))))
-
-
   (local (defthm props-of-vl-datatype-update-dims
            (b* ((y (vl-datatype-update-dims pdims udims x)))
              (and (equal (vl-datatype-kind y) (vl-datatype-kind x))
@@ -3948,8 +3941,8 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
   (local (defthm size-of-remove-dims-times-dim-size
            (implies (mv-nth 1 (vl-datatype-size x))
-                    (equal (* (vl-packeddimensionlist-total-size (vl-datatype->pdims x))
-                              (vl-packeddimensionlist-total-size (vl-datatype->udims x))
+                    (equal (* (vl-dimensionlist-total-size (vl-datatype->pdims x))
+                              (vl-dimensionlist-total-size (vl-datatype->udims x))
                               (mv-nth 1 (vl-datatype-size (vl-datatype-update-dims nil nil x))))
                            (mv-nth 1 (vl-datatype-size x))))
            :hints (("goal" :expand ((vl-datatype-size x)
@@ -3991,8 +3984,8 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
   (verify-guards vl-datatype-constraint
     :hints ((and stable-under-simplificationp
                  '(:expand ((vl-structmemberlist-sizes x)
-                            (vl-packeddimensionlist-resolved-p dims)
-                            (vl-packeddimensionlist-total-size dims)
+                            (vl-dimensionlist-resolved-p dims)
+                            (vl-dimensionlist-total-size dims)
                             ;; (vl-datatype-resolved-p x)
                             ;; (vl-structmemberlist-resolved-p x)
                             ;; (vl-datatype-update-dims nil nil x)
@@ -4062,7 +4055,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
            :exec
            (vl-datatype-dims-fixup dims x var shift))))
 
-  (define vl-datatype-dims-fixup ((dims vl-packeddimensionlist-p)
+  (define vl-datatype-dims-fixup ((dims vl-dimensionlist-p)
                                        (x vl-datatype-p)
                                        (var sv::svar-p)
                                        (shift natp))
@@ -4070,26 +4063,26 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
     :guard (and (vl-datatype-resolved-p x)
                 (b* (((mv err size) (vl-datatype-size x)))
                   (and (not err) size))
-                (vl-packeddimensionlist-resolved-p dims)
-                (vl-packeddimensionlist-total-size dims))
+                (vl-dimensionlist-resolved-p dims)
+                (vl-dimensionlist-total-size dims))
     :returns (mv (fixups sv::assigns-p)
                  (size (equal size (* (mv-nth 1 (vl-datatype-size (vl-datatype-update-dims nil nil x)))
-                                      (vl-packeddimensionlist-total-size dims)))))
+                                      (vl-dimensionlist-total-size dims)))))
     :measure (list (vl-datatype-count x) 9 (len dims) 0)
     (b* (((when (atom dims))
           (mbe :logic (b* (((mv fixups &) (vl-datatype-nodims-fixup x var shift))
                            ((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x)))
-                           (dim-size (vl-packeddimensionlist-total-size dims)))
+                           (dim-size (vl-dimensionlist-total-size dims)))
                         (mv fixups (* size dim-size)))
                :exec (vl-datatype-nodims-fixup x var shift)))
          (dim1 (car dims))
-         ((vl-range range) (vl-packeddimension->range dim1)))
+         ((vl-range range) (vl-dimension->range dim1)))
       (mbe :logic (b* (((mv fixups &)
                         (vl-datatype-dim-fixup (vl-resolved->val range.msb)
                                   (vl-resolved->val range.lsb)
                                   (cdr dims) x var shift))
                        ((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x)))
-                       (dim-size (vl-packeddimensionlist-total-size dims)))
+                       (dim-size (vl-dimensionlist-total-size dims)))
                     (mv fixups (* size dim-size)))
            :exec
            (vl-datatype-dim-fixup (vl-resolved->val range.msb)
@@ -4098,18 +4091,18 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
   (define vl-datatype-dim-fixup ((range-msb integerp)
                                       (range-lsb integerp)
-                                      (dims vl-packeddimensionlist-p)
+                                      (dims vl-dimensionlist-p)
                                       (x vl-datatype-p)
                                       (var sv::svar-p)
                                       (shift natp))
     :guard (and (vl-datatype-resolved-p x)
                 (b* (((mv err size) (vl-datatype-size x)))
                   (and (not err) size))
-                (vl-packeddimensionlist-resolved-p dims)
-                (vl-packeddimensionlist-total-size dims))
+                (vl-dimensionlist-resolved-p dims)
+                (vl-dimensionlist-total-size dims))
     :returns (mv (fixups sv::assigns-p)
                  (size (equal size (* (mv-nth 1 (vl-datatype-size (vl-datatype-update-dims nil nil x)))
-                                      (vl-packeddimensionlist-total-size dims)
+                                      (vl-dimensionlist-total-size dims)
                                       (+ 1 (abs (- (ifix range-msb) (ifix range-lsb))))))
                        ))
     :measure (list (vl-datatype-count x) 9 (len dims)
@@ -4120,7 +4113,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
          ((mv fix1 size1) (vl-datatype-dims-fixup dims x var shift))
          ((when (eql range-msb range-lsb))
           (mbe :logic (b* (((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x)))
-                           (dims-size (vl-packeddimensionlist-total-size dims))
+                           (dims-size (vl-dimensionlist-total-size dims))
                            (dim1-size (+ 1 (abs (- (ifix range-msb) (ifix range-lsb))))))
                         (mv fix1 (* size dims-size dim1-size)))
                :exec (mv fix1 size1)))
@@ -4129,7 +4122,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
           (vl-datatype-dim-fixup range-msb new-range-lsb dims x var (+ (lnfix shift) size1))))
       (mv (append-without-guard fix1 fix2)
           (mbe :logic (b* (((mv & size) (vl-datatype-size (vl-datatype-update-dims nil nil x)))
-                           (dims-size (vl-packeddimensionlist-total-size dims))
+                           (dims-size (vl-dimensionlist-total-size dims))
                            (dim1-size (+ 1 (abs (- (ifix range-msb) (ifix range-lsb))))))
                         (* size dims-size dim1-size))
                :exec (+ size1 size2)))))
@@ -4226,36 +4219,36 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
   (local (in-theory (disable vl-datatype-dim-fixup)))
 
   (local (defthm dimensionlist-size-of-append
-           (iff (vl-packeddimensionlist-total-size (append a b))
-                (and (vl-packeddimensionlist-total-size a)
-                     (vl-packeddimensionlist-total-size b)))
-           :hints(("Goal" :in-theory (enable vl-packeddimensionlist-total-size)))))
+           (iff (vl-dimensionlist-total-size (append a b))
+                (and (vl-dimensionlist-total-size a)
+                     (vl-dimensionlist-total-size b)))
+           :hints(("Goal" :in-theory (enable vl-dimensionlist-total-size)))))
 
   (local (defthm dimensionlist-resolved-p-of-append
-           (iff (vl-packeddimensionlist-resolved-p (append a b))
-                (and (vl-packeddimensionlist-resolved-p a)
-                     (vl-packeddimensionlist-resolved-p b)))
-           :hints(("Goal" :in-theory (enable vl-packeddimensionlist-resolved-p)))))
+           (iff (vl-dimensionlist-resolved-p (append a b))
+                (and (vl-dimensionlist-resolved-p a)
+                     (vl-dimensionlist-resolved-p b)))
+           :hints(("Goal" :in-theory (enable vl-dimensionlist-resolved-p)))))
 
   (local (defthm udims-size-when-datatype-size
            (implies (mv-nth 1 (vl-datatype-size x))
-                    (vl-packeddimensionlist-total-size (vl-datatype->udims x)))
+                    (vl-dimensionlist-total-size (vl-datatype->udims x)))
            :hints(("Goal" :expand ((vl-datatype-size x))))))
 
   (local (defthm pdims-size-when-datatype-size
            (implies (mv-nth 1 (vl-datatype-size x))
-                    (vl-packeddimensionlist-total-size (vl-datatype->pdims x)))
+                    (vl-dimensionlist-total-size (vl-datatype->pdims x)))
            :hints(("Goal" :expand ((vl-datatype-size x))))))
 
   
   (local (defthm udims-resolved-p-when-datatype-resolved-p
            (implies (mv-nth 1 (vl-datatype-size x))
-                    (vl-packeddimensionlist-resolved-p (vl-datatype->udims x)))
+                    (vl-dimensionlist-resolved-p (vl-datatype->udims x)))
            :hints(("Goal" :expand ((vl-datatype-size x))))))
 
   (local (defthm pdims-resolved-p-when-datatype-resolved-p
            (implies (mv-nth 1 (vl-datatype-size x))
-                    (vl-packeddimensionlist-resolved-p (vl-datatype->pdims x)))
+                    (vl-dimensionlist-resolved-p (vl-datatype->pdims x)))
            :hints(("Goal" :expand ((vl-datatype-size x))))))
 
   (local (defthm vl-datatype-dims-fixup-equal-list
@@ -4291,15 +4284,6 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
            :hints(("Goal" :expand ((vl-datatype-dim-fixup msb lsb dims x var shift))
                    :in-theory (enable equal-of-cons)))))
 
-  (local (defthm vl-packeddimensionlist-total-size-of-append
-           (implies (and (vl-packeddimensionlist-total-size a)
-                         (vl-packeddimensionlist-total-size b))
-                    (equal (vl-packeddimensionlist-total-size (append a b))
-                           (* (vl-packeddimensionlist-total-size a)
-                              (vl-packeddimensionlist-total-size b))))
-           :hints(("Goal" :in-theory (enable vl-packeddimensionlist-total-size)))))
-
-
   (local (defthm props-of-vl-datatype-update-dims
            (b* ((y (vl-datatype-update-dims pdims udims x)))
              (and (equal (vl-datatype-kind y) (vl-datatype-kind x))
@@ -4331,8 +4315,8 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
   (local (defthm size-of-remove-dims-times-dim-size
            (implies (mv-nth 1 (vl-datatype-size x))
-                    (equal (* (vl-packeddimensionlist-total-size (vl-datatype->pdims x))
-                              (vl-packeddimensionlist-total-size (vl-datatype->udims x))
+                    (equal (* (vl-dimensionlist-total-size (vl-datatype->pdims x))
+                              (vl-dimensionlist-total-size (vl-datatype->udims x))
                               (mv-nth 1 (vl-datatype-size (vl-datatype-update-dims nil nil x))))
                            (mv-nth 1 (vl-datatype-size x))))
            :hints (("goal" :expand ((vl-datatype-size x)
@@ -4374,8 +4358,8 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
   (verify-guards vl-datatype-fixup
     :hints ((and stable-under-simplificationp
                  '(:expand ((vl-structmemberlist-sizes x)
-                            (vl-packeddimensionlist-resolved-p dims)
-                            (vl-packeddimensionlist-total-size dims)
+                            (vl-dimensionlist-resolved-p dims)
+                            (vl-dimensionlist-total-size dims)
                             ;; (vl-datatype-resolved-p x)
                             ;; (vl-structmemberlist-resolved-p x)
                             ;; (vl-datatype-update-dims nil nil x)

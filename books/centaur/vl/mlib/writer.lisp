@@ -1360,7 +1360,7 @@ displays.  The module browser's web pages are responsible for defining the
                                  ps)))
                   (if (consp x.pdims)
                       (vl-ps-seq (vl-print " ")
-                                 (vl-pp-packeddimensionlist x.pdims))
+                                 (vl-pp-dimensionlist x.pdims))
                     ps)))
 
       (:vl-struct
@@ -1378,7 +1378,7 @@ displays.  The module browser's web pages are responsible for defining the
                   (vl-print "}")
                   (if (consp x.pdims)
                       (vl-ps-seq (vl-print " ")
-                                 (vl-pp-packeddimensionlist x.pdims))
+                                 (vl-pp-dimensionlist x.pdims))
                     ps)))
 
       (:vl-union
@@ -1397,7 +1397,7 @@ displays.  The module browser's web pages are responsible for defining the
                   (vl-progindent-block (vl-pp-structmemberlist x.members))
                   (vl-progindent)
                   (vl-print "} ")
-                  (vl-pp-packeddimensionlist x.pdims)))
+                  (vl-pp-dimensionlist x.pdims)))
 
       (:vl-enum
        (vl-ps-seq (vl-ps-span "vl_key" (vl-print "enum "))
@@ -1408,7 +1408,7 @@ displays.  The module browser's web pages are responsible for defining the
                   (vl-print "}")
                   (if (consp x.pdims)
                       (vl-ps-seq (vl-print " ")
-                                 (vl-pp-packeddimensionlist x.pdims))
+                                 (vl-pp-dimensionlist x.pdims))
                     ps)))
 
       (:vl-usertype
@@ -1418,7 +1418,7 @@ displays.  The module browser's web pages are responsible for defining the
                   ;;   ps)
                   (if (consp x.pdims)
                       (vl-ps-seq (vl-print " ")
-                                 (vl-pp-packeddimensionlist x.pdims))
+                                 (vl-pp-dimensionlist x.pdims))
                     ps)))))
 
   (define vl-pp-structmemberlist ((x vl-structmemberlist-p) &key (ps 'ps))
@@ -1445,7 +1445,7 @@ displays.  The module browser's web pages are responsible for defining the
                  (vl-print-wirename x.name)
                  (if (consp udims)
                      (vl-ps-seq (vl-print " ")
-                                (vl-pp-packeddimensionlist udims))
+                                (vl-pp-dimensionlist udims))
                    ps)
                  (if x.rhs
                      (vl-ps-seq (vl-print " = ")
@@ -1453,18 +1453,28 @@ displays.  The module browser's web pages are responsible for defining the
                    ps)
                  (vl-println " ;"))))
 
-  (define vl-pp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
-    :measure (two-nats-measure (vl-packeddimension-count x) 10)
-    (vl-packeddimension-case x
-      :unsized (vl-print "[]")
-      :range (vl-pp-range x.range)))
+  (define vl-pp-dimension ((x vl-dimension-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-dimension-count x) 10)
+    (vl-dimension-case x
+      :unsized  (vl-print "[]")
+      :star     (vl-print "[*]")
+      :range    (vl-pp-range x.range)
+      :datatype (vl-ps-seq (vl-print "[")
+                           (vl-pp-datatype x.type)
+                           (vl-print "]"))
+      :queue    (vl-ps-seq (vl-print "[$")
+                           (if x.maxsize
+                               (vl-ps-seq (vl-print " : ")
+                                          (vl-pp-expr x.maxsize))
+                             ps)
+                           (vl-print "]"))))
 
-  (define vl-pp-packeddimensionlist ((x vl-packeddimensionlist-p) &key (ps 'ps))
-    :measure (two-nats-measure (vl-packeddimensionlist-count x) 10)
+  (define vl-pp-dimensionlist ((x vl-dimensionlist-p) &key (ps 'ps))
+    :measure (two-nats-measure (vl-dimensionlist-count x) 10)
     (if (atom x)
         ps
-      (vl-ps-seq (vl-pp-packeddimension (car x))
-                 (vl-pp-packeddimensionlist (cdr x)))))
+      (vl-ps-seq (vl-pp-dimension (car x))
+                 (vl-pp-dimensionlist (cdr x)))))
 
   (define vl-pp-enumitem ((x vl-enumitem-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-enumitem-count x) 10)
@@ -1608,7 +1618,7 @@ expression into a string."
                (vl-ps-span "vl_id" (vl-print-str (vl-maybe-escape-identifier x.name)))
                (if (consp x.udims)
                    (vl-ps-seq (vl-print " ")
-                              (vl-pp-packeddimensionlist x.udims))
+                              (vl-pp-dimensionlist x.udims))
                  ps))))
 
 (define vl-pp-regularport ((x vl-regularport-p) &key (ps 'ps))
@@ -1698,7 +1708,7 @@ expression into a string."
                    (vl-ps-seq (if (vl-coretype->signedp x.type)
                                   (vl-ps-span "vl_key" (vl-print-str "signed "))
                                 ps)
-                              (vl-pp-packeddimensionlist (vl-coretype->pdims x.type))
+                              (vl-pp-dimensionlist (vl-coretype->pdims x.type))
                               (if (consp (vl-coretype->pdims x.type))
                                   (vl-print " ")
                                 ps))
@@ -1708,7 +1718,7 @@ expression into a string."
                (let ((udims (vl-datatype->udims x.type)))
                  (if (consp udims)
                      (vl-ps-seq (vl-print " ")
-                                (vl-pp-packeddimensionlist udims))
+                                (vl-pp-dimensionlist udims))
                    ps))
                (if x.default
                    (vl-ps-seq (vl-print " = ")
@@ -1755,13 +1765,13 @@ expression into a string."
                      (vl-print "unsigned "))
                  ps)
                (if x.pdims
-                   (vl-ps-seq (vl-pp-packeddimensionlist x.pdims)
+                   (vl-ps-seq (vl-pp-dimensionlist x.pdims)
                               (vl-print " "))
                  ps)
                (vl-print-wirename x.name)
                (if x.udims
                    (vl-ps-seq (vl-print " ")
-                              (vl-pp-packeddimensionlist x.pdims))
+                              (vl-pp-dimensionlist x.pdims))
                  ps))))
 
 
@@ -1804,7 +1814,7 @@ expression into a string."
                              (let ((udims (vl-datatype->udims x.type.type)))
                                (if (consp udims)
                                    (vl-ps-seq (vl-print " ")
-                                              (vl-pp-packeddimensionlist udims))
+                                              (vl-pp-dimensionlist udims))
                                  ps))
                              (if x.type.default
                                  (vl-ps-seq (vl-print " = ")
@@ -2064,7 +2074,7 @@ expression into a string."
          (vl-ps-seq (if (vl-coretype->signedp x.type)
                         (vl-ps-span "vl_key" (vl-print-str " signed "))
                       ps)
-                    (vl-pp-packeddimensionlist (vl-coretype->pdims x.type)))
+                    (vl-pp-dimensionlist (vl-coretype->pdims x.type)))
        (vl-pp-datatype x.type))
      (if (not x.delay)
          ps
@@ -2076,7 +2086,7 @@ expression into a string."
        (if (not udims)
            ps
          (vl-ps-seq (vl-print " ")
-                    (vl-pp-packeddimensionlist udims))))
+                    (vl-pp-dimensionlist udims))))
      (if x.initval
          (vl-ps-seq (vl-print " = ")
                     (vl-pp-rhs x.initval))
@@ -2195,7 +2205,7 @@ expression into a string."
                (let ((udims (vl-datatype->udims x.type)))
                  (if (consp udims)
                      (vl-ps-seq (vl-print " ")
-                                (vl-pp-packeddimensionlist udims))
+                                (vl-pp-dimensionlist udims))
                    ps))
                ;; BOZO add dimensions
                (vl-println " ;"))))
@@ -3792,7 +3802,7 @@ expression into a string."
                (if (not x.type.udims)
                    ps
                  (vl-ps-seq (vl-print " ")
-                            (vl-pp-packeddimensionlist x.type.udims)))
+                            (vl-pp-dimensionlist x.type.udims)))
                (vl-propactual-case x.arg
                  (:blank ps)
                  (:event

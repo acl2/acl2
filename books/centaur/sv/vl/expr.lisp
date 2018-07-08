@@ -778,7 +778,7 @@ ignored.</p>"
 (trace$ #!vl (vl-datatype-field-shift-amount
               :entry (list 'vl-datatype-field-shift-amount
                            (with-local-ps (vl-pp-datatype x))
-                           (with-local-ps (vl-pp-packeddimensionlist
+                           (with-local-ps (vl-pp-dimensionlist
                                            (vl-datatype->udims x)))
                            field)
               :exit (list 'vl-datatype-field-shift-amount
@@ -823,7 +823,7 @@ ignored.</p>"
               :entry (list 'vl-datatype-index-shift-amount
 
                            (with-local-ps (vl-pp-datatype x))
-                           (with-local-ps (vl-pp-packeddimensionlist
+                           (with-local-ps (vl-pp-dimensionlist
                                            (vl-datatype->udims x)))
                            idx)
               :exit (list 'vl-datatype-index-shift-amount
@@ -844,15 +844,14 @@ ignored.</p>"
        ((mv err size) (vl-datatype-size slottype))
        ((when err) (mv err 0 0 0))
        ((unless size) (mv (vmsg "Couldn't size array slot type ~a0" slottype) 0 0 0))
-       ((when (vl-packeddimension-case dim :unsized))
-        (mv (vmsg "unsized packed dimension on array type ~a0" x) 0 0 0))
-       ((vl-range range) (vl-packeddimension->range dim))
+       ((unless (vl-dimension-case dim :range))
+        (mv (vmsg "unsupported dimension on ~a0" x) 0 0 0))
+       ((vl-range range) (vl-dimension->range dim))
        ((unless (vl-range-resolved-p range))
-        (mv (vmsg "unresolved packed dimension on array type ~a0" x) 0 0 0))
+        (mv (vmsg "unresolved dimension on array type ~a0" x) 0 0 0))
        (msb (vl-resolved->val range.msb))
        (lsb (vl-resolved->val range.lsb)))
     (mv nil size msb lsb)))
-  
 
 (define vl-index-shift-amount ((size natp)
                                (msb integerp)
@@ -1685,7 +1684,7 @@ the way.</li>
                                          (type vl-datatype-p))
   :guard (vl-datatype-resolved-p type)
   :returns (mv (err (iff (vl-msg-p err) err))
-               (final-dim (implies (not err) (vl-packeddimension-p final-dim))))
+               (final-dim (implies (not err) (vl-dimension-p final-dim))))
   :measure (nfix n)
   (b* (((mv err ?caveat new-type dim)
         (vl-datatype-remove-dim type))
@@ -1747,15 +1746,15 @@ the way.</li>
            (b* (((mv err dim)
                  (vl-datatype-syscall-remove-dims (if index (1- index) 0) type))
                 ((when (or err
-                           ;; BOZO some of these might work for unsized dimensions
-                           (vl-packeddimension-case dim :unsized)
-                           (not (vl-range-resolved-p (vl-packeddimension->range dim)))))
+                           ;; BOZO some of these might work for more exotic kinds of dimensions
+                           (not (vl-dimension-case dim :range))
+                           (not (vl-range-resolved-p (vl-dimension->range dim)))))
                  (mv (fatal :type :vl-expr-to-svex-fail
                             :msg "Couldn't resolve outermost dimension for ~a0: ~@1"
                             :args (list orig-x
                                         (or err "unresolved dimension")))
                      (svex-x)))
-                (dim.range (vl-packeddimension->range dim))
+                (dim.range (vl-dimension->range dim))
                 ((vl-range dim) dim.range))
              (cond ((equal fn "$left")  (mv nil (svex-int (vl-resolved->val dim.msb))))
                    ((equal fn "$right") (mv nil (svex-int (vl-resolved->val dim.lsb))))
@@ -2494,7 +2493,7 @@ the way.</li>
 (define vl-size-to-unsigned-logic ((x posp))
   :returns (type vl-datatype-p)
   (hons-copy (make-vl-coretype :name :vl-logic
-                               :pdims (list (vl-range->packeddimension
+                               :pdims (list (vl-range->dimension
                                              (make-vl-range
                                               :msb (vl-make-index (1- (pos-fix x)))
                                               :lsb (vl-make-index 0))))))
@@ -4669,13 +4668,13 @@ functions can assume all bits of it are good.</p>"
           (b* (((mv ?err ?caveat slottype dim)
                 (vl-datatype-remove-dim type))
                ;; Never an error because we have dims.
-               ((when (vl-packeddimension-case dim :unsized))
+               ((unless (vl-dimension-case dim :range))
                 (mv (vfatal :type :vl-expr-to-svex-fail
-                            :msg "unsized dimension in type of assignment pattern ~a0"
+                            :msg "unsupported dimension in type of assignment pattern ~a0"
                             :args (list orig-x))
                     nil
                     (svex-x)))
-               (range (vl-packeddimension->range dim))
+               (range (vl-dimension->range dim))
                ((unless (vl-range-resolved-p range))
                 (mv (vfatal :type :vl-expr-to-svex-fail
                             :msg "unresolved dimension in type of assignment pattern ~a0"

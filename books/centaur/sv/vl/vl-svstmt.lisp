@@ -1295,7 +1295,7 @@ because... (BOZO)</p>
         (if (vl-range-resolved-p x.range)
             (mv warnings nil
                 (make-vl-coretype :name :vl-logic
-                                  :pdims (list (vl-range->packeddimension x.range))
+                                  :pdims (list (vl-range->dimension x.range))
                                   :signedp (eq x.sign :vl-signed)))
           (mv warnings (vmsg "Unresolved range") nil)))
        ((wmv warnings size) (vl-expr-selfsize override ss scopes))
@@ -1303,7 +1303,7 @@ because... (BOZO)</p>
         (mv warnings
             (vmsg "Unsized or zero-size parameter override: ~a0" override)
             nil))
-       (dims (list (vl-range->packeddimension
+       (dims (list (vl-range->dimension
                     (make-vl-range :msb (vl-make-index (1- size)) :lsb (vl-make-index 0)))))
        ((when x.sign)
         (mv warnings nil

@@ -767,7 +767,7 @@ these.</p>")
              For plain interfaces like @('simplebus foo') or non-interface
              ports, this is just @('nil').")
 
-   (udims   vl-packeddimensionlist-p
+   (udims   vl-dimensionlist-p
             "For interface ports only: the unpacked dimensions for this port.")))
 
 
@@ -4731,9 +4731,9 @@ the type information between the variable and port declarations.</p>"
               the interface, to be determined.")
    (type    vl-maybe-datatype-p
             "The datatype, if it was explicit")
-   (pdims      vl-packeddimensionlist-p
+   (pdims      vl-dimensionlist-p
                "Dimensions, if given and no explicit datatype")
-   (udims      vl-packeddimensionlist-p
+   (udims      vl-dimensionlist-p
                "Dimensions from after the name")
    (nettype vl-maybe-nettypename-p
             "Nettype, if present")

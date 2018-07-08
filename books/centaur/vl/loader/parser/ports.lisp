@@ -38,10 +38,16 @@
   :parents (parser)
   :short "Functions for parsing Verilog and SystemVerilog ports.")
 
-(local (defthm packeddimensionlist-p-when-vl-rangelist-p
+(local (defthm dimension-p-when-vl-range-p
+         (implies (vl-range-p x)
+                  (vl-dimension-p x))
+         :hints(("Goal" :in-theory (enable vl-range-p vl-dimension-p)
+                 :expand ((vl-dimension-p x))))))
+
+(local (defthm dimensionlist-p-when-vl-rangelist-p
          (implies (vl-rangelist-p x)
-                  (vl-packeddimensionlist-p x))
-         :hints(("Goal" :in-theory (enable vl-rangelist-p vl-packeddimension-p)))))
+                  (vl-dimensionlist-p x))
+         :hints(("Goal" :in-theory (enable vl-rangelist-p vl-dimension-p)))))
 
 
 ;; This file is organized as follows:
@@ -817,7 +823,7 @@ portdecl-sign).</p>")
   :layout :fulltree
   ((name  vl-idtoken-p
           "Identifier for the port being declared.")
-   (udims vl-packeddimensionlist-p
+   (udims vl-dimensionlist-p
           "Unpacked dimensions for this port, if any.")))
 
 (deflist vl-parsed-port-identifier-list-p (x)
@@ -1519,7 +1525,7 @@ seen.</p>"
                "Exists if we found an explicit datatype.")
    (signing    vl-maybe-exprsign-p
                "Exists if we had a signedness keyword without an explicit datatype.")
-   (dims       vl-packeddimensionlist-p
+   (dims       vl-dimensionlist-p
                "Nonempty only if we had packed dimensions without an explicit datatype.")))
 
 (local (defthm crock-idtoken-of-car

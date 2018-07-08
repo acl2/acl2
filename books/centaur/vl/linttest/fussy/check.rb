@@ -175,6 +175,17 @@ normal("supp_normal1")
 normal("supp_normal2")
 normal("supp_normal3")
 
+
+normal("shift_mask_normal1")
+normal("shift_mask_normal2")
+normal("shift_mask_normal3")
+normal("shift_mask_normal4")
+
+fuss("shift_xor_warn1")
+fuss("shift_xor_warn2")
+normal("shift_xor_normal1")
+normal("shift_xor_normal2")
+
 test_passed()
 
 

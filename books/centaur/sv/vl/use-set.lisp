@@ -1565,18 +1565,18 @@
     (implies (vl-datatype-size-noerr x)
              (equal (vl-datatype-size-noerr (vl-datatype-update-dims nil nil x))
                     (/ (vl-datatype-size-noerr x)
-                       (* (vl-packeddimensionlist-total-size (vl-datatype->udims x))
-                          (vl-packeddimensionlist-total-size (vl-datatype->pdims x))))))
+                       (* (vl-dimensionlist-total-size (vl-datatype->udims x))
+                          (vl-dimensionlist-total-size (vl-datatype->pdims x))))))
     :hints(("Goal" :in-theory (e/d (vl-datatype-size
                                       vl-datatype-update-dims)
                                    (ACL2::EQUAL-*-/-1))
             :expand ((vl-datatype-size x)))))
   (defret vl-datatype-size-noerr-implies-packeddims
     (implies (vl-datatype-size-noerr x)
-             (and (vl-packeddimensionlist-resolved-p (vl-datatype->udims x))
-                  (vl-packeddimensionlist-resolved-p (vl-datatype->pdims x))
-                  (vl-packeddimensionlist-total-size (vl-datatype->udims x))
-                  (vl-packeddimensionlist-total-size (vl-datatype->pdims x))))
+             (and (vl-dimensionlist-resolved-p (vl-datatype->udims x))
+                  (vl-dimensionlist-resolved-p (vl-datatype->pdims x))
+                  (vl-dimensionlist-total-size (vl-datatype->udims x))
+                  (vl-dimensionlist-total-size (vl-datatype->pdims x))))
     :hints(("Goal" :expand ((vl-datatype-size x)))))
 
   (defret vl-datatype-size-noerr-implies-enum-basetype
@@ -1754,21 +1754,6 @@
            (vl-structmemberlist-resolved-p (rev x)))
   :hints(("Goal" :in-theory (enable vl-structmemberlist-resolved-p rev))))
 
-#!vl
-(defthm vl-packeddimensionlist-total-size-of-append
-  (Equal (vl-packeddimensionlist-total-size (append x y))
-         (and (vl-packeddimensionlist-total-size x)
-              (vl-packeddimensionlist-total-size y)
-              (* (vl-packeddimensionlist-total-size x)
-                 (vl-packeddimensionlist-total-size y))))
-  :hints(("Goal" :in-theory (enable vl-packeddimensionlist-total-size))))
-
-#!vl
-(defthm vl-packeddimensionlist-resolved-p-of-append
-  (Equal (vl-packeddimensionlist-resolved-p (append x y))
-         (and (vl-packeddimensionlist-resolved-p x)
-              (vl-packeddimensionlist-resolved-p y)))
-  :hints(("Goal" :in-theory (enable vl-packeddimensionlist-resolved-p))))
 
 (local (include-book "clause-processors/just-expand" :dir :system))
 
@@ -1776,20 +1761,6 @@
          (implies (and (string-listp x)
                        (string-listp y))
                   (string-listp (append x y)))))
-
-#!vl
-(local (defthm vl-packeddimensionlist-resolved-p-of-cdr
-         (implies (vl-packeddimensionlist-resolved-p x)
-                  (vl-packeddimensionlist-resolved-p (cdr x)))
-         :hints(("Goal" :in-theory (enable vl-packeddimensionlist-resolved-p)))))
-
-#!vl
-(local (defthm vl-packeddimensionlist-total-size-of-cdr
-         (implies (vl-packeddimensionlist-total-size x)
-                  (vl-packeddimensionlist-total-size (cdr x)))
-         :hints(("Goal" :in-theory (enable vl-packeddimensionlist-total-size)))
-         :rule-classes (:rewrite :type-prescription)))
-                  
 
 (local
  (encapsulate nil
@@ -1846,16 +1817,16 @@
       ;;      :exec
       (sv-range-to-vl-chunks-dims dims (vl-datatype-update-dims nil nil x) name lsb width)))
   
-  (define sv-range-to-vl-chunks-dims ((dims vl-packeddimensionlist-p)
+  (define sv-range-to-vl-chunks-dims ((dims vl-dimensionlist-p)
                                       (x vl-datatype-p)
                                       (name vl-printedtree-p)
                                       (lsb natp)
                                       (width posp))
     
     :guard (and (vl-datatype-resolved-p x)
-                (vl-packeddimensionlist-resolved-p dims)
+                (vl-dimensionlist-resolved-p dims)
                 (vl-datatype-size-noerr x)
-                (vl-packeddimensionlist-total-size dims)
+                (vl-dimensionlist-total-size dims)
                 (not (vl-datatype->pdims x))
                 (not (vl-datatype->udims x)))
     :returns (res string-listp)
@@ -1864,12 +1835,12 @@
           (sv-range-to-vl-chunks-nodims x name lsb width))
          (name (vl-printedtree-fix name))
          (base-size (vl-datatype-size-noerr x))
-         (rest-dims-size (vl-packeddimensionlist-total-size (cdr dims)))
+         (rest-dims-size (vl-dimensionlist-total-size (cdr dims)))
          (entry-size (* base-size rest-dims-size))
          (lsb (lnfix lsb))
          (width (lposfix width))
          (dim1 (car dims))
-         ((vl-range range) (vl-packeddimension->range dim1))
+         ((vl-range range) (vl-dimension->range dim1))
          (n-entries (vl-range-size range))
          (full-size (* n-entries entry-size))
          ((when (eql entry-size 0)) nil)
@@ -2045,11 +2016,17 @@
                     (vl-printedtree-p x))
            :hints(("Goal" :in-theory (enable vl-printedtree-p)))))
   
+  (local (defthm x0
+           (implies (mv-nth 1 (vl-dimension-size x))
+                    (and (equal (vl-dimension-kind x) :range)
+                         (vl-range-resolved-p (vl-dimension->range x))))
+           :hints(("Goal" :in-theory (enable vl-dimension-size)))))
+
   (verify-guards sv-range-to-vl-chunks-datatype
     :hints (("goal" :do-not-induct t)
             (and stable-under-simplificationp
-                 '(:expand ((vl-packeddimensionlist-total-size dims)
-                            (vl-packeddimensionlist-resolved-p dims))))))
+                 '(:expand ((vl-dimensionlist-total-size dims)
+                            (vl-dimensionlist-resolved-p dims))))))
 
   (fty::deffixcong vl-printedlist-equiv equal (vl-printedlist->chars x acc) x
     :hints(("Goal" :in-theory (e/d (vl-printedlist->chars)
@@ -2777,7 +2754,7 @@
             (scopetree-collect-use/set-warnings-scopes (cdr x) ss hier-prefix uses sets warnings)))
          ((when (eq (tag item) :vl-modinst))
           (b* (((vl-modinst item))
-               (dims    (and item.range (list (vl-range->packeddimension item.range))))
+               (dims    (and item.range (list (vl-range->dimension item.range))))
                ((mv mod mod-ss) (vl-scopestack-find-definition/ss item.modname item-ss))
                ((unless (and mod
                              (or (eq (tag mod) :vl-module)
