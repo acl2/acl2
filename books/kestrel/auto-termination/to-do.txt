@@ -397,3 +397,9 @@ NIL
 ACL2 !>
 
 ----------
+
+As suggested by Eric McCarthy, try to apply defunt to functions in
+existing community books, especially books not already included in
+system book doc/top.
+
+----------
