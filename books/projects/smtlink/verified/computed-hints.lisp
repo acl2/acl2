@@ -88,24 +88,30 @@
                             ,@kwd-alist
                             )))))
 
-  (program)
-  (define treat-expand-hint ((kwd-alist t))
-    (cond (kwd-alist
-           (mv-let (pre post)
-             (split-keyword-alist :expand kwd-alist)
-             (cond
-              (post ; then there was already an :expand hint; splice one in
-               (assert$ (eq (car post) :expand)
-                        `(,@pre
-                          :expand ,(cons `(hint-please ',kwd-alist)
-                                         (cadr post))
-                          ,@post)))
-              (t ; simply extend kwd-alist
-               `(:expand (hint-please ',kwd-alist)
-                         ,@kwd-alist)))))
-          (t nil))
-    )
+  (define treat-expand-hint ((expand-lst true-listp) (kwd-alist true-listp))
+    :returns (new-kwd-alist
+              true-listp
+              :hints (("Goal"
+                       :in-theory (disable
+                                   true-listp-of-my-split-kwd-alist.post)
+                       :use ((:instance
+                              true-listp-of-my-split-kwd-alist.post
+                              (key :expand)
+                              (kwd-alist (true-list-fix kwd-alist)))))))
+    (b* ((kwd-alist (true-list-fix kwd-alist))
+         ((mv pre post)
+          (my-split-kwd-alist :expand kwd-alist)))
+      (cond ((and (consp post)
+                  (consp (cdr post)))
+             `(,@pre
+               :expand (,@expand-lst
+                        ,@(cadr post))
+               ,@post))
+            (t ; simply extend kwd-alist
+             `(:expand ,@expand-lst
+                       ,@kwd-alist)))))
 
+  (program)
   (define extract-hint-wrapper (cl)
     (cond ((endp cl) (mv nil nil))
           (t (b* ((lit cl))

@@ -12,6 +12,7 @@
 (include-book "pseudo-lambda-lemmas")
 (include-book "hint-please")
 (include-book "hint-interface")
+(include-book "computed-hints")
 
 ;; -----------------------------------------------------------------
 ;;       Define evaluators
@@ -443,9 +444,10 @@
        ((cons first-hinted-H rest-hinted-Hs) hint-pair-lst)
        (H (hint-pair->thm first-hinted-H))
        (H-hint (hint-pair->hints first-hinted-H))
-       (first-H-thm `((hint-please '(:in-theory (enable type-hyp)
-                                     :expand ((:free (x) (hide x)))
-                                     ,@H-hint))
+       (merged-in-theory (treat-in-theory-hint '(type-hyp) H-hint))
+       (merged-expand (treat-expand-hint '((:free (x) (hide x)))
+                                         merged-in-theory))
+       (first-H-thm `((hint-please ',merged-expand)
                       (type-hyp (hide (cons ,H 'nil)) ',tag)
                       ,G))
        (first-not-H-clause `(not (type-hyp (hide (cons ,H 'nil)) ',tag)))
