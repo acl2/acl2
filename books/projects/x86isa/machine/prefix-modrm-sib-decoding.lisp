@@ -41,32 +41,23 @@
 
 (in-package "X86ISA")
 
-(include-book "utilities")
+(include-book "../utils/constants")
 (include-book "opcode-maps")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ----------------------------------------------------------------------
 
-(defsection decoding-utilities
-  :parents (utils)
-  :short "<b>@('x86')-specific decoding constants and utilities</b>"
-  :long "<p>The constant @('*Z-addressing-method-info*') contains
-  interpretation of codes for addressing method, as described in Intel
-  Manual, Volume 2, Appendix A.2.1.</p>
+(defsection prefix-modrm-sib-decoding
+  :parents (decoding-and-spec-utils)
+  :short "<b>Decoding utilities for the prefixes, ModR/M, and SIB bytes</b>"
 
- <p>The constants @('*one-byte-opcode-map-lst*'),
- @('*two-byte-opcode-map-lst*'),
- @('*0F-38-three-byte-opcode-map-lst*'),
- @('*0F-3A-three-byte-opcode-map-lst*'), and
- @('*opcode-extensions-by-group-number*') contain information presented
- in the opcode maps, as described in Intel Manual, Volume 2, Appendix
- A.</p>
+  :long "<h3>Legacy Prefix Decoding</h3>
+ <p>Array @('*one-byte-prefixes-group-code-info-ar*') is created by the
+ function @(tsee compute-prefix-byte-group-code) for the efficient lookup of
+ prefix group code information from @('*one-byte-opcode-map-lst*'); see @(see
+ opcode-maps).</p>
 
- <p>Array @('*one-byte-prefixes-group-code-info-ar*') is created by
- the function @(tsee compute-prefix-byte-group-code) for the efficient
- lookup of prefix group code information from
- @('*one-byte-opcode-map-lst*').</p>
-
+ <h3>ModR/M Decoding</h3>
  <p>Arrays are created by the function @(tsee compute-modr/m-for-an-opcode-map)
  for the efficient lookup of modr/m-related information from the opcode maps
  --- see functions @(tsee 64-bit-mode-one-byte-opcode-ModR/M-p) and @(tsee
@@ -78,61 +69,23 @@
  64-bit-mode-0F-3A-three-byte-opcode-ModR/M-p), and @(tsee
  32-bit-mode-0F-3A-three-byte-opcode-ModR/M-p) for both the three-byte opcode
  maps.  Note that all these functions, except those for the one-byte opcode
- map, take the prefixes into account.</p>")
+ map, take the prefixes into account.</p>
 
-(local (xdoc::set-default-parents 'decoding-utilities))
+ <h3>SIB Decoding</h3>
+
+ <p>The function @(tsee x86-decode-SIB-p) determines whether a SIB byte ought
+ to follow a ModR/M byte or not.</p>")
+
+(local (xdoc::set-default-parents 'prefix-modrm-sib-decoding))
 
 ;; ----------------------------------------------------------------------
 
-(defsection prefixes-decoding
+(defsection legacy-prefixes-decoding
 
-  :parents (decoding-utilities)
-
-  :short "Functions to decode and collect legacy prefixes"
-
-  (defconst *prefixes-layout*
-    '((:num-prefixes      0  4) ;; Number of prefixes
-      (:group-1-prefix    4  8) ;; Lock, Repeat prefix
-      (:group-2-prefix   12  8) ;; Segment Override prefix
-      (:group-3-prefix   20  8) ;; Operand-Size Override prefix
-      (:group-4-prefix   28  8) ;; Address-Size Override prefix
-      (:next-byte        36  8) ;; Byte following the prefixes
-      (:last-prefix      44  8) ;; Last prefix byte
-      ))
-
-  ;; Comment about why we need the :last-prefix field:
-
-  ;; The :last-prefix field stores the last prefix byte (if any) that comes
-  ;; immediately before the escape/opcode/rex byte (or, the last prefix to
-  ;; appear in the instruction stream).  That the position of prefix bytes is
-  ;; irrelevant is a myth; case in point: mandatory prefixes.  Here's an
-  ;; example: if both 66 and F2 are present, then the byte which is present
-  ;; later in the instruction stream is the mandatory prefix and the earlier
-  ;; byte is simply a modifier prefix.  Also see
-  ;; http://lists.llvm.org/pipermail/llvm-dev/2010-December/037102.html
-
-  ;; More accurately, :last-prefix helps in distinguishing between instructions
-  ;; with the same opcode bytes but different mandatory prefixes in the two-
-  ;; and three-byte opcode maps: if, for certain opcodes (see function
-  ;; compute-compound-cell-for-an-opcode-map), the last prefix is 0x66, 0xF2,
-  ;; or 0xF3, then it is a mandatory prefix, otherwise, it is a usual modifier.
-  ;; All prefixes before a mandatory prefix also act as the usual modifiers or
-  ;; cause errors when appropriate.
-
-  (defthm prefixes-table-ok
-    (layout-constant-alistp *prefixes-layout* 0 52)
-    :rule-classes nil)
-
-  (defmacro prefixes-slice (flg prefixes)
-    (slice flg prefixes 52 *prefixes-layout*))
-
-  (defmacro !prefixes-slice (flg val reg)
-    (!slice flg val reg 52 *prefixes-layout*))
+  :short "Functions to decode legacy prefixes"
 
   ;; Legacy Prefix Byte Decoding (present only in the one-byte opcode map):
   (define compute-prefix-byte-group-code-of-one-opcode ((cell opcode-cell-p))
-
-    :parents (prefixes-decoding)
 
     :short "Takes in information of a single opcode from an opcode map and
   figures out if it is a prefix byte; if so, the prefix group number
@@ -177,8 +130,6 @@
     :short "Takes in a single opcode row from an opcode map and returns
   prefix byte info for each of the opcodes in that row"
 
-    :parents (prefixes-decoding)
-
     ;; The output list is reversed w.r.t. the input list,
     ;; but the results of all the rows are appended together
     ;; (in compute-prefix-byte-group-code-1),
@@ -200,7 +151,6 @@
 
   (define compute-prefix-byte-group-code-1 ((row-number natp)
                                             (map opcode-map-p))
-    :parents (prefixes-decoding)
     (if (mbt (and (natp row-number)
                   (opcode-map-p map)))
 
@@ -224,7 +174,6 @@
   @('2'), @('3') and @('4') correspond to the prefix group of
   byte.</p>"
 
-    :parents (prefixes-decoding)
     (reverse (compute-prefix-byte-group-code-1 (len map) map)))
 
   (make-event
@@ -264,145 +213,6 @@
     ///
     (defthm upper-bound-get-one-byte-prefix-array-code
       (<= (get-one-byte-prefix-array-code x) 4))))
-
-;; ----------------------------------------------------------------------
-
-(defsection vex-prefixes-decoding
-
-  :parents (decoding-utilities)
-
-  :short "Functions to decode and collect VEX prefix bytes"
-
-  ;; From Intel Vol. 2, Section 2.3.5.6: "In 32-bit mode the VEX first
-  ;; byte C4 and C5 alias onto the LES and LDS instructions. To
-  ;; maintain compatibility with existing programs the VEX 2nd byte,
-  ;; bits [7:6] must be 11b."
-
-  ;; So, in 32-bit mode, *vex2-byte1-layout* must have r and MSB of
-  ;; vvvv set to 1, and *vex3-byte1-layout* must have r and x set to 1
-  ;; if VEX is to be used instead of LES/LDS.
-
-  ;; "If an instruction does not use VEX.vvvv then it should be set to
-  ;; 1111b otherwise instruction will #UD.  In 64-bit mode all 4 bits
-  ;; may be used. See Table 2-8 for the encoding of the XMM or YMM
-  ;; registers. In 32-bit and 16-bit modes bit 6 must be 1 (if bit 6
-  ;; is not 1, the 2-byte VEX version will generate LDS instruction
-  ;; and the 3-byte VEX version will ignore this bit)."
-
-  ;; The above is reason why only 8 XMM/YMM registers are available in
-  ;; 32- and 16-bit modes.
-
-  ;; Source for VEX layout constants:
-  ;; Intel Vol. 2 (May 2018), Figure 2-9 (VEX bit fields)
-
-  ;; Note that the 2-byte VEX implies a leading 0F opcode byte, and
-  ;; the 3-byte VEX implies leading 0F, 0F 38, or 0F 3A bytes.
-
-  (defconst *vex2-byte1-layout*
-    '((:pp                0  2) ;; opcode extension providing
-                                ;; equivalent functionality of a SIMD
-                                ;; prefix
-                                ;; #b00: None
-                                ;; #b01: #x66
-                                ;; #b10: #xF3
-                                ;; #b11: #xF2
-
-      (:l                 2  1) ;; Vector Length
-                                ;; 0: scalar or 128-bit vector
-                                ;; 1: 256-bit vector
-
-      (:vvvv              3  4) ;; a register specifier (in 1's
-                                ;; complement form) or 1111 if unused.
-
-      (:r                 7  1) ;; REX.R in 1's complement (inverted) form
-                                ;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
-                                ;; 0: Same as REX.R=1 (64-bit mode only)
-                                ;; In protected and compatibility
-                                ;; modes the bit must be set to '1'
-                                ;; otherwise the instruction is LES or
-                                ;; LDS.
-      ))
-
-  (defthm vex2-byte1-table-ok
-    (layout-constant-alistp *vex2-byte1-layout* 0 8)
-    :rule-classes nil)
-
-  (defmacro vex2-byte1-slice (flg vex2-byte1)
-    (slice flg vex2-byte1 8 *vex2-byte1-layout*))
-
-  (defmacro !vex2-byte1-slice (flg val reg)
-    (!slice flg val reg 8 *vex2-byte1-layout*))
-
-  (defconst *vex3-byte1-layout*
-    '((:m-mmmm            0  5) ;; 00000: Reserved for future use (will #UD)
-                                ;; 00001: implied 0F leading opcode byte
-                                ;; 00010: implied 0F 38 leading opcode bytes
-                                ;; 00011: implied 0F 3A leading opcode bytes
-                                ;; 00100-11111: Reserved for future use (will #UD)
-
-      (:b                 5  1) ;; REX.B in 1's complement (inverted) form
-                                ;; 1: Same as REX.B=0 (Ignored in 32-bit mode).
-                                ;; 0: Same as REX.B=1 (64-bit mode only)
-
-      (:x                 6  1) ;; REX.X in 1's complement (inverted) form
-                                ;; 1: Same as REX.X=0 (must be 1 in 32-bit mode)
-                                ;; 0: Same as REX.X=1 (64-bit mode only)
-                                ;; In 32-bit modes, this bit must be
-                                ;; set to '1', otherwise the
-                                ;; instruction is LES or LDS.
-
-      (:r                 7  1) ;; REX.R in 1's complement (inverted) form
-                                ;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
-                                ;; 0: Same as REX.R=1 (64-bit mode only)
-                                ;; In protected and compatibility
-                                ;; modes the bit must be set to '1'
-                                ;; otherwise the instruction is LES or
-                                ;; LDS.
-
-      ))
-
-  (defthm vex3-byte1-table-ok
-    (layout-constant-alistp *vex3-byte1-layout* 0 8)
-    :rule-classes nil)
-
-  (defmacro vex3-byte1-slice (flg vex3-byte1)
-    (slice flg vex3-byte1 8 *vex3-byte1-layout*))
-
-  (defmacro !vex3-byte1-slice (flg val reg)
-    (!slice flg val reg 8 *vex3-byte1-layout*))
-
-  (defconst *vex3-byte2-layout*
-    '((:pp                0  2) ;; opcode extension providing
-                                ;; equivalent functionality of a SIMD
-                                ;; prefix
-                                ;; #b00: None
-                                ;; #b01: #x66
-                                ;; #b10: #xF3
-                                ;; #b11: #xF2
-
-      (:l                 2  1) ;; Vector Length
-                                ;; 0: scalar or 128-bit vector
-                                ;; 1: 256-bit vector
-
-      (:vvvv              3  4) ;; a register specifier (in 1's
-                                ;; complement form) or 1111 if unused.
-
-      (:w                 7   1) ;; opcode specific (use like REX.W,
-                                 ;; or used for opcode extension, or
-                                 ;; ignored, depending on the opcode
-                                 ;; byte)
-      ))
-
-  (defthm vex3-byte2-table-ok
-    (layout-constant-alistp *vex3-byte2-layout* 0 8)
-    :rule-classes nil)
-
-  (defmacro vex3-byte2-slice (flg vex3-byte2)
-    (slice flg vex3-byte2 8 *vex3-byte2-layout*))
-
-  (defmacro !vex3-byte2-slice (flg val reg)
-    (!slice flg val reg 8 *vex3-byte2-layout*)))
-
 
 ;; ----------------------------------------------------------------------
 
@@ -562,8 +372,6 @@
 ;; ----------------------------------------------------------------------
 
 (defsection ModRM-and-SIB-decoding
-
-  :parents (decoding-utilities)
 
   :short "Functions to detect and decode ModR/M and SIB bytes"
 

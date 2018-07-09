@@ -49,9 +49,13 @@
 ; Vol. 2, Appendix A)
 
 (defsection opcode-maps
-  :parents (decoding-utilities)
+  :parents (x86isa decoding-and-spec-utils)
   :short "<b>ACL2 representation of x86 Opcode Maps</b>"
-  )
+  :long "<p>The constants @('*one-byte-opcode-map-lst*'),
+ @('*two-byte-opcode-map-lst*'), @('*0F-38-three-byte-opcode-map-lst*'),
+ @('*0F-3A-three-byte-opcode-map-lst*'), and
+ @('*opcode-extensions-by-group-number*') contain information presented in the
+ opcode maps, as described in Intel Manual, Volume 2, Appendix A.</p>")
 
 (local (xdoc::set-default-parents 'opcode-maps))
 

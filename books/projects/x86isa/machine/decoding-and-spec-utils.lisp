@@ -45,6 +45,8 @@
 
 (include-book "other-non-det"
               :ttags (:include-raw :undef-flg :syscall-exec :other-non-det))
+(include-book "prefix-modrm-sib-decoding")
+(include-book "opcode-maps")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (in-theory (e/d () (mv-nth)))
@@ -54,7 +56,7 @@
 (defsection decoding-and-spec-utils
   :parents (machine)
   :short "Miscellaneous utilities for instruction decoding and for writing
-  instruction specification functions" )
+  instruction specification functions")
 
 (local (xdoc::set-default-parents decoding-and-spec-utils))
 

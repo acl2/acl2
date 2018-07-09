@@ -69,11 +69,6 @@
 </tr>
 
 <tr>
-<td> decoding-utilities.lisp </td>
-<td> @(see decoding-utilities) </td>
-</tr>
-
-<tr>
 <td> constants.lisp </td>
 <td> @(see x86-constants) </td>
 </tr>
