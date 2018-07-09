@@ -444,7 +444,7 @@
        ((cons first-hinted-H rest-hinted-Hs) hint-pair-lst)
        (H (hint-pair->thm first-hinted-H))
        (H-hint (hint-pair->hints first-hinted-H))
-       (merged-in-theory (treat-in-theory-hint '(type-hyp) H-hint))
+       (merged-in-theory (treat-in-theory-hint '(hint-please type-hyp) H-hint))
        (merged-expand (treat-expand-hint '((:free (x) (hide x)))
                                          merged-in-theory))
        (first-H-thm `((hint-please ',merged-expand)

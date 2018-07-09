@@ -11,6 +11,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "hint-please")
 (include-book "hint-interface")
+(include-book "computed-hints")
 
 ;; -----------------------------------------------------------------
 ;;       Define evaluators
@@ -39,7 +40,8 @@
        ((cons first-hinted-H rest-hinted-Hs) hinted-hypos)
        (H (hint-pair->thm first-hinted-H))
        (H-hint (hint-pair->hints first-hinted-H))
-       (first-H-thm `((hint-please ',H-hint) ,H ,G))
+       (merged-in-theory (treat-in-theory-hint '(hint-please) H-hint))
+       (first-H-thm `((hint-please ',merged-in-theory) ,H ,G))
        (first-not-H-clause `(not ,H))
        ((mv rest-H-thms rest-not-H-clauses)
         (add-hypo-subgoals rest-hinted-Hs G)))
