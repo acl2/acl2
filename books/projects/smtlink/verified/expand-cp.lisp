@@ -723,8 +723,6 @@
        (wrld-fn-len h.wrld-fn-len)
        (G (disjoin cl))
        ;; Do function expansion
-       (- (cw "h.fty: ~q0" h.fty))
-       (- (cw "h.fty-info: ~q0" h.fty-info))
        (expand-result
         (with-fast-alist fn-lst (expand (make-ex-args
                                          :term-lst (list G)

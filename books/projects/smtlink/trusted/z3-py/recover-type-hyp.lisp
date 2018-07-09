@@ -51,13 +51,11 @@
   :mode :program ;; because of untranslate
   (b* ((decl-list (pseudo-term-list-fix decl-list))
        ((unless (consp decl-list)) (mv fn-decl-acc nil))
-       (- (cw "decl-list: ~q0" decl-list))
        ((cons first rest) decl-list))
     (case-match first
       (('type-hyp ('hide hyp-lst) tag)
        (cond ((equal tag '':type)
-              (b* ((- (cw "hyp-lst: ~q0" hyp-lst))
-                   (untranslated-hyp-lst
+              (b* ((untranslated-hyp-lst
                     (untranslate hyp-lst nil (w state)))
                    ((unless (and (consp untranslated-hyp-lst)
                                  (equal (car untranslated-hyp-lst) 'list)))
