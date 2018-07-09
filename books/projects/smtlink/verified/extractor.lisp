@@ -18,10 +18,19 @@
   :parents (verified)
   :short "SMT-extract extracts type hypotheses from the clause. The SMT solver requires knowing type declarations."
 
-  ;; TODO: can alistp and eqlable-listp be proved?
+  (define is-type-hyp-decl ((expr pseudo-termp))
+    :returns (is-type-hyp? booleanp)
+    (b* (((unless (equal (len expr) 3))
+          nil)
+         (fn-name (car expr))
+         ((unless (equal fn-name 'type-hyp)) nil))
+      t))
+
   (define extract-is-decl ((expr pseudo-termp) (fty-info fty-info-alist-p))
     :returns (is-decl? booleanp)
-    (b* (((unless (equal (len expr) 2)) nil)
+    (b* (((if (is-type-hyp-decl expr)) t)
+         ((unless (equal (len expr) 2))
+          nil)
          (fn-name (car expr))
          ((unless (symbolp fn-name)) nil)
          ((unless
@@ -51,7 +60,8 @@
       :verify-guards nil
       :guard-debug t
       ;; looking for (typep var) where var *not* satisfying typep make term trivially true
-      (b* ((term (pseudo-term-fix term)))
+      (b* ((term (pseudo-term-fix term))
+           (- (cw "term disjunct: ~q0" term)))
         (cond ((not (consp term)) (mv nil term))
               ((and (equal (car term) 'if) (equal (caddr term) ''t))
                (b* (((mv decl1 term1) (extract-disjunct (cadr term) fty-info))
@@ -82,7 +92,8 @@
       :verify-guards nil
       :guard-debug t
       ;; looking for (typep var) where var *not* satisfying typep make term trivially false
-      (b* ((term (pseudo-term-fix term)))
+      (b* ((term (pseudo-term-fix term))
+           (- (cw "term conjunct: ~q0" term)))
         (cond ((not (consp term)) (mv nil term))
               ((and (equal (car term) 'if) (equal (cadddr term) ''nil))
                (b* (((mv decl1 term1) (extract-conjunct (cadr term) fty-info))

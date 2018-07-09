@@ -1170,6 +1170,7 @@
 
     )
 
+(local
   (defthm crock1-1
     (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
                   (SYMBOLP (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
@@ -1183,7 +1184,9 @@
     :hints (("Goal" :induct (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
                                                            (CDR FLEXLST)))
                                          FTY-INFO))))
+  )
 
+(local
   (defthm crock1-2
     (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
                   (SYMBOLP (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
@@ -1194,7 +1197,9 @@
              (FTY-INFO-P (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
                                                              (CDR FLEXLST)))
                                            FTY-INFO)))))
+  )
 
+(local
   (defthm crock2-1
     (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
                   (SYMBOLP (CDR (ASSOC-EQUAL 'TYPE
@@ -1212,7 +1217,9 @@
                                                            (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
                                                                                    (CDR OPTION))))))
                                          FTY-INFO))))
+  )
 
+(local
   (defthm crock2-2
     (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
                   (symbolp (CDR (ASSOC-EQUAL 'TYPE
@@ -1228,7 +1235,9 @@
                                               (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
                                                                       (CDR OPTION))))))
                             FTY-INFO)))))
+  )
 
+(local
   (defthm crock3-1
     (IMPLIES
      (AND (FTY-INFO-ALIST-P FTY-INFO)
@@ -1240,7 +1249,9 @@
      (FTY-INFO-P (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
                                                      (CDR FLEXALST)))
                                    FTY-INFO)))))
+  )
 
+(local
   (defthm crock3-2
     (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
                   (SYMBOLP (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
@@ -1254,7 +1265,9 @@
     :hints (("Goal" :induct (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
                                                            (CDR FLEXALST)))
                                          FTY-INFO))))
+  )
 
+(local
   (defthm crock4-1
     (IMPLIES
      (AND (FTY-INFO-ALIST-P FTY-INFO)
@@ -1266,7 +1279,9 @@
      (FTY-INFO-P (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
                                                      (CDR FLEXALST)))
                                    FTY-INFO)))))
+  )
 
+(local
   (defthm crock4-2
     (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
                   (SYMBOLP (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
@@ -1280,7 +1295,9 @@
     :hints (("Goal" :induct (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
                                                            (CDR FLEXALST)))
                                          FTY-INFO))))
+  )
 
+(local
   (defthm crock5-lemma
     (cond
      ((equal flag 'generate-fty-type)
@@ -1526,7 +1543,9 @@
                         (fty::flexprod->fields prod)
                         fty-info)))))))
             ))
+  )
 
+(local
   (defthm crock5
     (implies
      (and
@@ -1544,7 +1563,9 @@
              :use ((:instance crock5-lemma
                               (flag 'generate-fty-type)
                               (name (car name-lst)))))))
+  )
 
+(local
   (defthm crock6
     (implies
      (and (fty-types-p acc)
@@ -1623,6 +1644,7 @@
                                                                                           (cdr flexalst)))
                                                                         fty-info)))))
                                     acc)))))))
+  )
 
   (verify-guards generate-fty-type-list
     :guard-debug t

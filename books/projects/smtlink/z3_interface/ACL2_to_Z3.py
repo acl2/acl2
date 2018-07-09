@@ -104,8 +104,8 @@ class ACL22SMT(object):
             print('If(' + str(condx) + ', ' + str(thenx) + ', ' + str(elsex) + ')')
             raise Exception('giving up')
 
-    def hint_okay(self):
-        return False
+    # def hint_okay(self):
+    #     return False
 
     # -------------------------------------------------------------
     #       Proof functions and counter-example generation

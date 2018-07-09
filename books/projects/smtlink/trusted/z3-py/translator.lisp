@@ -13,7 +13,9 @@
 (include-book "kestrel/utilities/terms" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
 
+(include-book "../../verified/extractor")
 (include-book "translate-fty")
+(include-book "recover-type-hyp")
 (include-book "pretty-printer")
 
 ;; (defsection SMT-translator
@@ -64,7 +66,6 @@
   (defprod te-args
     ((expr-lst pseudo-term-listp :default nil)
      (fn-lst func-alistp :default nil)
-     (uninterpreted-lst symbol-listp :default nil)
      (fty-info fty-info-alist-p)
      (symbol-index natp) ;; how many random symbols there are
      (symbol-list string-listp) ;; translated symbols in the symbol enumeration
@@ -229,7 +230,7 @@
     (b* (((unless (or (symbolp expr)
                       (SMT-numberp expr)
                       (booleanp expr)))
-          (er hard? 'SMT-translator=>translate-expression "Atom not ~
+          (er hard? 'SMT-translator=>translate-quote "Atom not ~
                        supported: ~q0" expr)))
       (cond ((booleanp expr)
              (translate-bool expr nil))
@@ -247,7 +248,6 @@
     :returns (mv (translated paragraphp
                              :hints (("Goal" :in-theory (enable paragraphp
                                                                 wordp))))
-                 (uninterpreted symbol-listp)
                  (symbols string-listp)
                  (symbol-index natp))
     :measure (acl2-count (te-args->expr-lst args))
@@ -256,22 +256,20 @@
     (b* ((args (te-args-fix args))
          ((te-args a) args)
          ((unless (consp a.expr-lst))
-          (mv nil a.uninterpreted-lst a.symbol-list a.symbol-index))
+          (mv nil a.symbol-list a.symbol-index))
          ((cons expr rest) a.expr-lst)
-         ((mv translated-rest uninterpreted-rest symbols-rest symbol-index-rest)
+         ((mv translated-rest symbols-rest symbol-index-rest)
           (translate-expression (change-te-args a :expr-lst rest)))
          ;; If first term is an symbolp, should be a variable name
          ;; translate the variable then recurse on the rest of the list
          ((if (symbolp expr))
           (mv (cons (translate-symbol expr) translated-rest)
-              uninterpreted-rest
               symbols-rest
               symbol-index-rest))
          ;; If car of term is 'quote, some constants
          ((if (equal (car expr) 'quote))
           (b* ((translated-quote (translate-quote (cadr expr))))
             (mv (cons translated-quote translated-rest)
-                uninterpreted-rest
                 (if (and (symbolp (cadr expr))
                          (not (booleanp (cadr expr))))
                     (cons (translate-symbol (cadr expr)) symbols-rest)
@@ -288,16 +286,14 @@
                (lambda-sym (car fn-call))
                ((mv translated-lambda &) (translate-function lambda-sym))
                (translated-formals (translate-symbol-lst formals))
-               ((mv translated-body uninterpreted-1 symbol-list-1 symbol-index-1)
+               ((mv translated-body symbol-list-1 symbol-index-1)
                 (translate-expression
                  (change-te-args a :expr-lst (list body)
-                                 :uninterpreted-lst uninterpreted-rest
                                  :symbol-list symbols-rest
                                  :symbol-index symbol-index-rest)))
-               ((mv translated-actuals uninterpreted-2 symbol-list-2 symbol-index-2)
+               ((mv translated-actuals symbol-list-2 symbol-index-2)
                 (translate-expression
                  (change-te-args a :expr-lst fn-actuals
-                                 :uninterpreted-lst uninterpreted-1
                                  :symbol-list symbol-list-1
                                  :symbol-index symbol-index-1)))
                (translated-lambda-whole
@@ -305,21 +301,18 @@
                   ,translated-body #\)
                   #\( ,(map-translated-actuals translated-actuals) #\))))
             (mv (cons translated-lambda-whole translated-rest)
-                uninterpreted-2
                 symbol-list-2
                 symbol-index-2)))
 
          ;; if the fixing function is symbol-fix, invent a new symbol
          ;; enumeration and increase the symbol-index by 1
          ((if (equal fn-call 'SYMBOL-FIX))
-          (b* (((mv translated-actuals uninterpreted-1 symbol-list-1 symbol-index-1)
+          (b* (((mv translated-actuals symbol-list-1 symbol-index-1)
                 (translate-expression
                  (change-te-args a :expr-lst fn-actuals
-                                 :uninterpreted-lst uninterpreted-rest
                                  :symbol-list symbols-rest
                                  :symbol-index symbol-index-rest))))
             (mv (cons translated-actuals translated-rest)
-                uninterpreted-1
                 (cons (generate-symbol-enumeration symbol-index-1)
                       symbol-list-1)
                 (1+ symbol-index-1))))
@@ -332,7 +325,7 @@
                              (null (cddr fn-actuals))))
                 (mv (er hard? 'SMT-translator=>translate-expression "Wrong ~
          number of arguments for magic-fix function: ~q0" expr)
-                    nil nil 0))
+                    nil 0))
                ;; special case when it's a fixing on nil
                (the-type (car fn-actuals))
                (the-nil (cadr fn-actuals))
@@ -347,18 +340,15 @@
                          (symbolp (cadr the-type))))
                 (mv (cons (translate-bool nil (cadr the-type))
                           translated-rest)
-                    uninterpreted-rest
                     symbols-rest
                     symbol-index-rest))
-               ((mv translated-actuals uninterpreted-1 symbol-list-1 symbol-index-1)
+               ((mv translated-actuals symbol-list-1 symbol-index-1)
                 (translate-expression
                  (change-te-args a
                                  :expr-lst (cdr fn-actuals)
-                                 :uninterpreted-lst uninterpreted-rest
                                  :symbol-list symbols-rest
                                  :symbol-index symbol-index-rest))))
             (mv (cons translated-actuals translated-rest)
-                uninterpreted-1
                 symbol-list-1
                 symbol-index-1)))
 
@@ -368,7 +358,7 @@
           (b* (((unless (and (consp fn-actuals) (null (cdr fn-actuals))))
                 (mv (er hard? 'SMT-translator=>translate-expression "Wrong ~
          number of arguments for a fixing function: ~q0" expr)
-                    nil nil 0))
+                    nil 0))
                (fixed (car fn-actuals))
                ;; special case when it's a fixing on nil
                ((if (and (consp fixed)
@@ -377,18 +367,15 @@
                          (equal (cadr fixed) nil)))
                 (mv (cons (translate-bool nil fixing?)
                           translated-rest)
-                    uninterpreted-rest
                     symbols-rest
                     symbol-index-rest))
-               ((mv translated-actuals uninterpreted-1 symbol-list-1 symbol-index-1)
+               ((mv translated-actuals symbol-list-1 symbol-index-1)
                 (translate-expression
                  (change-te-args a
                                  :expr-lst fn-actuals
-                                 :uninterpreted-lst uninterpreted-rest
                                  :symbol-list symbols-rest
                                  :symbol-index symbol-index-rest))))
             (mv (cons translated-actuals translated-rest)
-                uninterpreted-1
                 symbol-list-1
                 symbol-index-1)))
 
@@ -397,40 +384,36 @@
          ((if fty?)
           (b* ((translated-fn-call
                 (translate-fty fn-call fn-actuals a.fty-info))
-               ((mv translated-actuals uninterpreted-1 symbol-list-1 symbol-index-1)
+               ((mv translated-actuals symbol-list-1 symbol-index-1)
                 (translate-expression
                  (change-te-args a
                                  :expr-lst fn-actuals
-                                 :uninterpreted-lst uninterpreted-rest
                                  :symbol-list symbols-rest
                                  :symbol-index symbol-index-rest)))
                (translated-expr
                 `(,@translated-fn-call
                   #\( ,(map-translated-actuals translated-actuals) #\) )))
             (mv (cons translated-expr translated-rest)
-                uninterpreted-1
                 symbol-list-1
                 symbol-index-1)))
 
          ;; If fn-call is neither a lambda expression nor a function call
-         ((unless (mbt (symbolp fn-call))) (mv nil nil nil 0))
+         ((unless (mbt (symbolp fn-call))) (mv nil nil 0))
          ;; Now, fn-call should be treated as an uninterpreted function
          (fn (hons-get fn-call a.fn-lst))
          ((if fn)
           (b* (;; ((func f) (cdr fn))
                ;; ((if (not f.uninterpreted))
                ;;  (mv (er hard? 'SMT-translator=>translate-expression "Not a basic SMT function: ~q0" fn-call) nil))
-               ((mv translated-actuals uninterpreted-1 symbol-list-1 symbol-index-1)
+               ((mv translated-actuals symbol-list-1 symbol-index-1)
                 (translate-expression
                  (change-te-args a :expr-lst fn-actuals
-                                 :uninterpreted-lst uninterpreted-rest
                                  :symbol-list symbols-rest
                                  :symbol-index symbol-index-rest)))
                (translated-fn-call
                 `(,(translate-symbol fn-call)
                   #\( ,(map-translated-actuals translated-actuals) #\) )))
             (mv (cons translated-fn-call translated-rest)
-                (cons fn-call uninterpreted-1)
                 symbol-list-1
                 symbol-index-1)))
          ;; If fn-call is not an uninterpreted function, then it has to be a
@@ -438,18 +421,15 @@
          ((mv fn nargs) (translate-function fn-call))
          ((if (zp nargs))
           (mv (cons `( ,fn #\( #\) ) translated-rest)
-              uninterpreted-rest
               symbols-rest
               symbol-index-rest))
-         ((mv translated-actuals uninterpreted-1 symbol-list-1 symbol-index-1)
+         ((mv translated-actuals symbol-list-1 symbol-index-1)
           (translate-expression
            (change-te-args a :expr-lst fn-actuals
-                           :uninterpreted-lst uninterpreted-rest
                            :symbol-list symbols-rest
                            :symbol-index symbol-index-rest))))
       (mv (cons `( ,fn #\( ,(map-translated-actuals translated-actuals) #\) )
                 translated-rest)
-          uninterpreted-1
           symbol-list-1
           symbol-index-1)))
 
@@ -723,28 +703,19 @@
                     paragraphp
                     :hints (("Goal"
                              :in-theory (enable translate-expression))))
-                   (uninterpreted symbol-listp
-                                  :hints
-                                  (("Goal"
-                                    :in-theory (disable symbol-listp)
-                                    :use ((:instance
-                                           symbol-listp-of-translate-expression.uninterpreted)))))
                    (symbols string-listp))
       (b* ((theorem (pseudo-term-fix theorem))
-           (uninterpreted-lst nil)
-           ((mv translated-theorem-body uninterpreted symbols &)
-            (with-fast-alists (fn-lst uninterpreted-lst)
+           ((mv translated-theorem-body symbols &)
+            (with-fast-alists (fn-lst)
               (translate-expression
                (make-te-args :expr-lst (list theorem)
                              :fn-lst fn-lst
-                             :uninterpreted-lst uninterpreted-lst
                              :fty-info fty-info
                              :symbol-index 0
                              :symbol-list nil))))
-           (short-uninterpreted (remove-duplicates-equal uninterpreted))
            (theorem-assign `("theorem = " ,translated-theorem-body #\Newline))
            (prove-theorem `("_SMT_.prove(theorem)" #\Newline)))
-        (mv `(,theorem-assign ,prove-theorem) short-uninterpreted symbols))))
+        (mv `(,theorem-assign ,prove-theorem) symbols))))
 
   (define translate-uninterpreted-arguments ((type symbolp)
                                              (args decl-listp)
@@ -799,25 +770,20 @@
   ;;   expr = Function('expr', RealSort(), IntSort(), RealSort())
   (encapsulate ()
     (local (in-theory (enable paragraph-fix paragraphp)))
-    (define translate-uninterpreted-decl-lst ((uninterpreted symbol-listp)
-                                              (fn-lst func-alistp)
+    (define translate-uninterpreted-decl-lst ((fn-lst func-alistp)
                                               (fty-info fty-info-alist-p)
                                               (acc paragraphp)
                                               (int-to-rat booleanp))
-      :measure (len uninterpreted)
+      :measure (len (func-alist-fix fn-lst))
       :returns (translated paragraphp)
       :guard-debug t
-      (b* ((uninterpreted (symbol-list-fix uninterpreted))
-           (fn-lst (func-alist-fix fn-lst))
+      (b* ((fn-lst (func-alist-fix fn-lst))
            (acc (paragraph-fix acc))
-           ((unless (consp uninterpreted)) acc)
-           ((cons first rest) uninterpreted)
-           (fn (hons-get first fn-lst))
-           ;; ((unless (mbt fn)) acc)
-           ((unless fn) acc)
+           ((unless (consp fn-lst)) acc)
+           ((cons first rest) fn-lst)
            (first-decl
-            (translate-uninterpreted-decl (cdr fn) fty-info int-to-rat)))
-        (translate-uninterpreted-decl-lst rest fn-lst fty-info
+            (translate-uninterpreted-decl (cdr first) fty-info int-to-rat)))
+        (translate-uninterpreted-decl-lst rest fty-info
                                           (cons first-decl acc) int-to-rat)))
     )
 
@@ -858,23 +824,36 @@
 (local (defthm string-listp-is-true-listp
          (implies (string-listp x) (true-listp x))))
 
-  (define SMT-translation ((term pseudo-termp) (smtlink-hint smtlink-hint-p))
-    :returns (py-term paragraphp)
+  (define SMT-translation ((term pseudo-termp) (smtlink-hint smtlink-hint-p) state)
+    ;; :returns (py-term paragraphp)
+    :mode :program
     (b* ((term (pseudo-term-fix term))
          (smtlink-hint (smtlink-hint-fix smtlink-hint))
          ((smtlink-hint h) smtlink-hint)
          ;; Make an alist version of fn-lst
-         (fn-lst (make-alist-fn-lst h.functions))
-         ((mv translated-theorem uninterpreted symbols)
-          (translate-theorem term fn-lst h.fty-info))
+         (fn-alst (make-alist-fn-lst h.functions))
+         ((mv decl-list theorem) (smt-extract term h.fty-info))
+         ((mv fn-decl-list type-decl-list)
+          (recover-type-hyp decl-list fn-alst h.fty-info nil state))
+         (- (cw "decl-list: ~q0" decl-list))
+         (- (cw "fn-decl-list: ~q0" fn-decl-list))
+         (- (cw "type-decl-list: ~q0" type-decl-list))
+         (- (cw "theorem: ~q0" theorem))
+         ((unless (and (func-alistp fn-decl-list)
+                       (decl-listp type-decl-list)))
+          (er hard? 'translator=>SMT-translation "returned values from ~
+    recover-type-hyp is not of the right type!~%"))
+         ((mv translated-theorem symbols)
+          (translate-theorem theorem fn-decl-list h.fty-info))
          (pretty-translated-theorem (pretty-print-theorem translated-theorem 160))
          (symbols (remove-duplicates-equal symbols))
          (translated-uninterpreted-decls
-          (with-fast-alist fn-lst
-            (translate-uninterpreted-decl-lst uninterpreted fn-lst h.fty-info
-                                              pretty-translated-theorem h.int-to-rat)))
+          (with-fast-alist fn-decl-list
+            (translate-uninterpreted-decl-lst fn-decl-list h.fty-info
+                                              pretty-translated-theorem
+                                              h.int-to-rat)))
          (translated-theorem-with-type-decls
-          (translate-type-decl-list h.type-decl-list
+          (translate-type-decl-list type-decl-list
                                     h.fty-info
                                     translated-uninterpreted-decls
                                     h.int-to-rat))

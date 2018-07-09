@@ -40,7 +40,7 @@
     (not               . ("_SMT_.notx"       . 1))
     (lambda            . ("lambda"           . 2))
     (implies           . ("_SMT_.implies"    . 2))
-    (hint-please       . ("_SMT_.hint_okay"  . 0))
+    ;; (hint-please       . ("_SMT_.hint_okay"  . 0))
     ;; This doesn't work right now because Z3's definition is different from ACL2
     ;; when using types as hypotheses. If X is rationalp in Z3, then it can not
     ;; be an integerp. We need to first grab a definition in Z3 that can fully
@@ -73,13 +73,12 @@
 
 ;; current tag . next computed-hint
 (defval *SMT-architecture*
-  '((process-hint    . smt-verified-cp)
-    (fix-hint        . smt-fixing-cp)
-    (smt-hint        . smt-trusted-cp)
-    (smt-hint-custom . smt-trusted-cp-custom)
-    (fixed-hint      . nil)
-    (main-hint       . nil)
-    (A-hint          . nil)))
+  '((process-hint          . add-hypo-cp)
+    (add-hypo              . expand-cp)
+    (expand                . type-extract-cp)
+    (type-extract          . uninterpreted-fn-cp)
+    (uninterpreted         . smt-trusted-cp)
+    (uninterpreted-custom  . smt-trusted-cp-custom)))
 
 
 ;;----------------------------------------------------------------

@@ -247,33 +247,32 @@
   ;; 4. let-binding: binds expressions to variables, generalization.
   ;; 5. fty: a list of fty types used in the theorem. Will be treated as
   ;; algebraic datatypes in SMT solver.
-  ;; 6. fix-hint: hints to the fixed(cl) -> cl theorem.
-  ;; 7. int-to-rat: converts all integers to rationals.
-  ;; 8. smt-dir: where to put the generated python files. Default /tmp/z3_files
-  ;; 9. rm-file: configuration for whether to remove generated files.
-  ;; 10. smt-fname: configure the name of generated SMT theorem file.
-  ;; 11. smt-params: hints for parameter tuning of the SMT solver.
+  ;; 6. int-to-rat: converts all integers to rationals.
+  ;; 7. smt-dir: where to put the generated python files. Default /tmp/z3_files
+  ;; 8. rm-file: configuration for whether to remove generated files.
+  ;; 9. smt-fname: configure the name of generated SMT theorem file.
+  ;; 10. smt-params: hints for parameter tuning of the SMT solver.
   ;;
   ;; Internal fields:
-  ;; 12. fty-info: an alist from fty functions to fty-info-p
-  ;; 13. fty-types: contains all fty type definitions for translation
-  ;; 14. fast-functions: internal field for storing a fast version of function
+  ;; 11. fty-info: an alist from fty functions to fty-info-p
+  ;; 12. fty-types: contains all fty type definitions for translation
+  ;; 13. fast-functions: internal field for storing a fast version of function
   ;; definitions. Might be able to make the functions field a fast one after
   ;; changing the user interface.
-  ;; 15. aux-hint-list: internal field for making a list of auxiliary hints.
-  ;; 16. type-decl-list: internal field for making a list of auxiliary type
+  ;; 14. aux-hint-list: internal field for making a list of auxiliary hints.
+  ;; 15. type-decl-list: internal field for making a list of auxiliary type
   ;; hints.
-  ;; 17. expanded-clause-w/-hint: internal field for storing the SMT theorem.
+  ;; 16. expanded-clause-w/-hint: internal field for storing the SMT theorem.
+  ;; 17. expanded-G/type: clause without type
   ;; 18. smt-cnf: configuration for connection to the SMT solver.
-  ;; 19. fixed-clause: fixed clause
-  ;; 20. wrld-fn-len: a number specifying the upper bound of the length of the
+  ;; 19. wrld-fn-len: a number specifying the upper bound of the length of the
   ;; current world. It sets a limit to the expansion depth to take care of
   ;; recursive function expansion. This will only ensure termination proof of
   ;; the expand function, but it doesn't guarantee performance since the world
   ;; length can be extremely large, and expansion is exponential. Performance
   ;; is replied upon user who will specify which functions are recursive and
   ;; therefore will be expanded only by a given number of levels.
-  ;; 21. custom-p: Used custom version of Smtlink or not. Default nil.
+  ;; 20. custom-p: Used custom version of Smtlink or not. Default nil.
   ;;
   (defprod smtlink-hint
     :parents (SMT-hint-interface)
@@ -285,18 +284,15 @@
      (fty symbol-listp :default nil)
      (fty-info fty-info-alist-p :default nil)
      (fty-types fty-types-p :default nil)
-     (fix-hint true-listp :default nil)
      (int-to-rat booleanp :default nil)
      (smt-dir stringp :default "")
      (rm-file booleanp :default t)
      (smt-fname stringp :default "")
      (smt-params true-listp :default nil)
      (fast-functions func-alistp :default nil)
-     (aux-hint-list hint-pair-listp :default nil)
-     (aux-thm-list hint-pair-listp :default nil)
-     (type-decl-list decl-listp :default nil)
+     (type-decl-list pseudo-termp :default nil)
      (expanded-clause-w/-hint hint-pair-p :default (make-hint-pair))
-     (fixed-clause hint-pair-p :default (make-hint-pair))
+     (expanded-G/type pseudo-termp :default nil)
      (smt-cnf smtlink-config-p :default (make-smtlink-config))
      (wrld-fn-len natp :default 0)
      (custom-p booleanp :default nil)))

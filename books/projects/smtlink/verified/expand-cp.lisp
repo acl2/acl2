@@ -9,17 +9,17 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
-;; for lambda expression
-(include-book "kestrel/utilities/terms" :dir :system)
 ;; for symbol-fix
 (include-book "centaur/fty/basetypes" :dir :system)
 ;; for symbol-list-fix
 (include-book "centaur/fty/baselists" :dir :system)
 
 ;; Include SMT books
+(include-book "pseudo-lambda-lemmas")
 (include-book "hint-interface")
 (include-book "extractor")
 (include-book "basics")
+(include-book "hint-please")
 (include-book "computed-hints")
 
 ;; To be compatible with Arithmetic books
@@ -651,3 +651,144 @@
                    (:instance symbolp-of-caar-of-ex-args->term-lst)))))
 
   )
+
+(define initialize-fn-lvls ((fn-lst func-alistp))
+  :returns (fn-lvls sym-nat-alistp)
+  :measure (len fn-lst)
+  :hints (("Goal" :in-theory (enable func-alist-fix)))
+  (b* ((fn-lst (func-alist-fix fn-lst))
+       ((unless (consp fn-lst)) nil)
+       ((cons first rest) fn-lst)
+       ((func f) (cdr first)))
+    (cons (cons f.name f.expansion-depth) (initialize-fn-lvls rest))))
+
+(define generate-fty-info-alist ((hints smtlink-hint-p)
+                                 (flextypes-table alistp))
+  :returns (updated-hints smtlink-hint-p)
+  (b* ((hints (smtlink-hint-fix hints))
+       ((smtlink-hint h) hints)
+       ((unless (alistp flextypes-table)) h)
+       (fty-info (generate-fty-info-alist-rec h.fty nil flextypes-table)))
+    (change-smtlink-hint h :fty-info fty-info)))
+
+(local
+ (defthm crock-for-generate-fty-types-top
+   (implies (fty-types-p x)
+            (fty-types-p (reverse x)))))
+
+(define generate-fty-types-top ((hints smtlink-hint-p)
+                                (flextypes-table alistp))
+  :returns (updated-hints smtlink-hint-p)
+  :guard-debug t
+  (b* ((hints (smtlink-hint-fix hints))
+       ((smtlink-hint h) hints)
+       ((unless (alistp flextypes-table)) h)
+       ((mv & ordered-acc)
+        (generate-fty-type-list h.fty flextypes-table
+                                h.fty-info nil nil))
+       (fty-types (reverse ordered-acc)))
+    (change-smtlink-hint h :fty-types fty-types)))
+
+
+;; -----------------------------------------------------------------
+;;       Define evaluators
+
+(defevaluator ev-expand-cp ev-lst-expand-cp
+  ((not x) (if x y z) (hint-please hint)))
+
+(def-join-thms ev-expand-cp)
+
+;; -----------------------------------------------------------------
+
+;; Define the function expansion clause processor
+;; Expanded-G
+;; Expanded-G => G
+
+(define expand-cp-helper ((cl pseudo-term-listp)
+                          (smtlink-hint smtlink-hint-p)
+                          state)
+  :returns (new-hint smtlink-hint-p)
+  :guard-debug t
+  (b* ((cl (pseudo-term-list-fix cl))
+       (smtlink-hint (smtlink-hint-fix smtlink-hint))
+       ;; generate all fty related stuff
+       (flextypes-table (table-alist 'fty::flextypes-table (w state)))
+       ((unless (alistp flextypes-table)) smtlink-hint)
+       (h1 (generate-fty-info-alist smtlink-hint flextypes-table))
+       (h2 (generate-fty-types-top h1 flextypes-table))
+       ((smtlink-hint h) h2)
+       ;; Make an alist version of fn-lst
+       (fn-lst (make-alist-fn-lst h.functions))
+       (fn-lvls (initialize-fn-lvls fn-lst))
+       (wrld-fn-len h.wrld-fn-len)
+       (G (disjoin cl))
+       ;; Do function expansion
+       (- (cw "h.fty: ~q0" h.fty))
+       (- (cw "h.fty-info: ~q0" h.fty-info))
+       (expand-result
+        (with-fast-alist fn-lst (expand (make-ex-args
+                                         :term-lst (list G)
+                                         :fn-lst fn-lst
+                                         :fn-lvls fn-lvls
+                                         :wrld-fn-len wrld-fn-len)
+                                        h.fty-info state)))
+       ((ex-outs e) expand-result)
+       (expanded-G (car e.expanded-term-lst))
+       ;; generate expand hint
+       (fncall-lst (strip-cars e.expanded-fn-lst))
+       ((unless (alistp fncall-lst))
+        (prog2$
+         (er hard? 'expand=>expand-cp "Function call list should be an alistp: ~
+                   ~q0" fncall-lst)
+         h))
+       (expand-hint (remove-duplicates-equal (strip-cars fncall-lst)))
+       (hint-with-fn-expand (treat-in-theory-hint expand-hint h.main-hint))
+       (expanded-clause-w/-hint (make-hint-pair :thm expanded-G
+                                                :hints hint-with-fn-expand)))
+    (change-smtlink-hint h
+                         :expanded-clause-w/-hint expanded-clause-w/-hint)))
+
+(define expand-cp-fn ((cl pseudo-term-listp)
+                      (smtlink-hint t))
+  :returns (subgoal-lst pseudo-term-list-listp)
+  (b* (((unless (pseudo-term-listp cl)) nil)
+       ((unless (smtlink-hint-p smtlink-hint))
+        (list (remove-hint-please cl)))
+       (G (disjoin cl))
+       (hinted-expanded-G
+        (smtlink-hint->expanded-clause-w/-hint smtlink-hint))
+       (expanded-G (hint-pair->thm hinted-expanded-G))
+       (main-hint (hint-pair->hints hinted-expanded-G))
+       ;; generate first clause
+       (next-cp (cdr (assoc-equal 'expand *SMT-architecture*)))
+       ((if (null next-cp)) (list (remove-hint-please cl)))
+       (the-hint
+        `(:clause-processor (,next-cp clause ',smtlink-hint)))
+       (cl0 `((hint-please ',the-hint) ,expanded-G))
+       ;; generate-second clause
+       (cl1 `((hint-please ',main-hint) (not ,expanded-G) ,G))
+       )
+    `(,cl0 ,cl1)))
+
+(defmacro expand-cp (clause hint)
+  `(expand-cp-fn clause (expand-cp-helper (remove-hint-please ,clause) ,hint state)))
+
+;; proving correctness of the expansion clause processor
+(local (in-theory (enable expand-cp-fn)))
+
+(defthm correctness-of-remove-hint-please-with-ev-expand-cp
+  (implies (and (pseudo-term-listp cl)
+                (alistp b))
+           (iff (ev-expand-cp (disjoin (remove-hint-please cl)) b)
+                (ev-expand-cp (disjoin cl) b)))
+  :hints (("Goal"
+           :in-theory (enable hint-please remove-hint-please) )))
+
+(defthm correctness-of-expand-cp
+  (implies (and (pseudo-term-listp cl)
+                (alistp b)
+                (ev-expand-cp
+                 (conjoin-clauses (expand-cp-fn cl smtlink-hint))
+                 b))
+           (ev-expand-cp (disjoin cl) b))
+  :rule-classes :clause-processor)

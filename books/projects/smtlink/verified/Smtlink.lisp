@@ -13,7 +13,7 @@
 (include-book "centaur/fty/baselists" :dir :system)
 
 (include-book "hint-interface")
-(include-book "verified-cps")
+(include-book "hint-please")
 (include-book "../config")
 
 (defsection Smtlink-process-user-hint
