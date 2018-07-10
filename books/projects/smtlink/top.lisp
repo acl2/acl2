@@ -59,4 +59,5 @@
                     symbolp-of-caar-of-fhg-args->term-lst
                     len-equal-of-formals-of-pseudo-lambdap-and-actuals
                     lemma-8
-                    lemma-10))
+                    lemma-10
+                    symbol-string-alistp-is-true-listp))

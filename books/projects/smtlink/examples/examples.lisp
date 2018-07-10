@@ -464,9 +464,9 @@ finds out @('integerp') is not a supported function.</p>
 (acl2::must-fail
 (defthm bogus-revised-still-bogus
   (implies (and (symbolp symx) (symbolp symy))
-           (or (eq symx 'sym1) (eq symx 'sym2)
+           (or (eq symx 'symx) (eq symx 'sym2)
                (eq symx 'sym3)
-               (eq symy 'sym1) (eq symy 'sym2)
+               (eq symy 'symx) (eq symy 'sym2)
                (eq symy 'sym3)
                (eq symx symy)))
   :hints (("Goal" :smtlink nil)))
