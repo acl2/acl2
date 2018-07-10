@@ -656,6 +656,8 @@
    (sib              :type (unsigned-byte 8))
    x86)
 
+  ;; #x0F #x38 are the first two opcode bytes.
+
   :parents (x86-decoder)
   ;; The following arg will avoid binding __function__ to
   ;; first-three-byte-opcode-execute. The automatic __function__ binding that
@@ -686,94 +688,6 @@
                start-rip temp-rip prefixes mandatory-prefix rex-byte opcode
                modr/m sib x86)))))
 
-
-(define first-three-byte-opcode-decode-and-execute
-  ;; #x0F #x38 are the first two opcode bytes.
-  ((start-rip          :type (signed-byte #.*max-linear-address-size*))
-   (temp-rip           :type (signed-byte #.*max-linear-address-size*))
-   (prefixes           :type (unsigned-byte 52))
-   (rex-byte           :type (unsigned-byte 8))
-   (second-escape-byte :type (unsigned-byte 8))
-   x86)
-
-  :ignore-ok t
-  :guard (equal second-escape-byte #x38)
-  :guard-hints (("Goal" :do-not '(preprocess)
-                 :in-theory (e/d*
-                             (add-to-*ip-is-i48p-rewrite-rule)
-                             (unsigned-byte-p
-                              (:type-prescription bitops::logand-natp-type-2)
-                              (:type-prescription bitops::ash-natp-type)
-                              acl2::loghead-identity
-                              tau-system
-                              (tau-system)))))
-  :parents (x86-decoder)
-  :short "Decoder and dispatch function for three-byte opcodes, where @('0x0F
-  0x38') are the first two opcode bytes"
-  :long "<p>Source: Intel Manual, Volume 2, Appendix A-2</p>"
-
-  (b* ((ctx 'first-three-byte-opcode-decode-and-execute)
-       ((mv flg0 (the (unsigned-byte 8) opcode) x86)
-        (rme08 temp-rip *cs* :x x86))
-       ((when flg0)
-        (!!ms-fresh :opcode-byte-access-error flg0))
-
-       ;; Possible values of opcode: all values denote opcodes of the first
-       ;; three-byte map.  The function first-three-byte-opcode-execute
-       ;; case-splits on this opcode byte and calls the appropriate instruction
-       ;; semantic function.
-
-       ((mv flg temp-rip) (add-to-*ip temp-rip 1 x86))
-       ((when flg) (!!ms-fresh :increment-error flg))
-
-       (mandatory-prefix (the (unsigned-byte 8)
-                           (prefixes-slice :last-prefix prefixes)))
-
-       (modr/m? (if (64-bit-modep x86)
-                    (64-bit-mode-0F-38-three-byte-opcode-ModR/M-p
-                     mandatory-prefix opcode)
-                  (32-bit-mode-0F-38-three-byte-opcode-ModR/M-p
-                   mandatory-prefix opcode)))
-       ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
-        (if modr/m?
-            (rme08 temp-rip *cs* :x x86)
-          (mv nil 0 x86)))
-       ((when flg1) (!!ms-fresh :modr/m-byte-read-error flg1))
-
-       ((mv flg temp-rip) (if modr/m?
-                              (add-to-*ip temp-rip 1 x86)
-                            (mv nil temp-rip)))
-       ((when flg) (!!ms-fresh :increment-error flg))
-
-       (sib? (and modr/m?
-                  (b* ((p4? (eql #.*addr-size-override*
-                                 (prefixes-slice :group-4-prefix prefixes)))
-                       (16-bit-addressp (eql 2 (select-address-size p4? x86))))
-                    (x86-decode-SIB-p modr/m 16-bit-addressp))))
-       ((mv flg2 (the (unsigned-byte 8) sib) x86)
-        (if sib?
-            (rme08 temp-rip *cs* :x x86)
-          (mv nil 0 x86)))
-       ((when flg2)
-        (!!ms-fresh :sib-byte-read-error flg2))
-
-       ((mv flg temp-rip) (if sib?
-                              (add-to-*ip temp-rip 1 x86)
-                            (mv nil temp-rip)))
-       ((when flg) (!!ms-fresh :increment-error flg)))
-
-    (first-three-byte-opcode-execute
-     start-rip temp-rip prefixes rex-byte mandatory-prefix opcode modr/m sib x86))
-
-  ///
-
-  (defrule x86p-first-three-byte-opcode-decode-and-execute
-    (implies (and (canonical-address-p temp-rip)
-                  (x86p x86))
-             (x86p (first-three-byte-opcode-decode-and-execute
-                    start-rip temp-rip prefixes rex-byte escape-byte x86)))
-    :enable add-to-*ip-is-i48p-rewrite-rule))
-
 (define second-three-byte-opcode-execute
   ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
    (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
@@ -784,6 +698,8 @@
    (modr/m           :type (unsigned-byte 8))
    (sib              :type (unsigned-byte 8))
    x86)
+
+  ;; #x0F #x3A are the first two opcode bytes.
 
   :parents (x86-decoder)
   ;; The following arg will avoid binding __function__ to
@@ -814,8 +730,8 @@
                     start-rip temp-rip prefixes mandatory-prefix
                     rex-byte opcode modr/m sib x86)))))
 
-(define second-three-byte-opcode-decode-and-execute
-  ;; #x0F #x3A are the first two opcode bytes.
+
+(define three-byte-opcode-decode-and-execute
   ((start-rip          :type (signed-byte #.*max-linear-address-size*))
    (temp-rip           :type (signed-byte #.*max-linear-address-size*))
    (prefixes           :type (unsigned-byte 52))
@@ -824,7 +740,8 @@
    x86)
 
   :ignore-ok t
-  :guard (equal second-escape-byte #x3A)
+  :guard (or (equal second-escape-byte #x38)
+             (equal second-escape-byte #x3A))
   :guard-hints (("Goal" :do-not '(preprocess)
                  :in-theory (e/d*
                              (add-to-*ip-is-i48p-rewrite-rule)
@@ -836,19 +753,20 @@
                               (tau-system)))))
   :parents (x86-decoder)
   :short "Decoder and dispatch function for three-byte opcodes, where @('0x0F
-  0x3A') are the first two opcode bytes"
+  0x38') are the first two opcode bytes"
   :long "<p>Source: Intel Manual, Volume 2, Appendix A-2</p>"
 
-  (b* ((ctx 'second-three-byte-opcode-decode-and-execute)
+  (b* ((ctx 'three-byte-opcode-decode-and-execute)
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
         (rme08 temp-rip *cs* :x x86))
        ((when flg0)
         (!!ms-fresh :opcode-byte-access-error flg0))
 
-       ;; Possible values of opcode: all values denote opcodes of the second
-       ;; three-byte map.  The function second-three-byte-opcode-execute
-       ;; case-splits on this opcode byte and calls the appropriate instruction
-       ;; semantic function.
+       ;; Possible values of opcode: all values denote opcodes of the first or
+       ;; second three-byte map, depending on the value of second-escape-byte.
+       ;; The function first-three-byte-opcode-execute or
+       ;; second-three-byte-opcode-execute case-splits on this opcode byte and
+       ;; calls the appropriate instruction semantic function.
 
        ((mv flg temp-rip) (add-to-*ip temp-rip 1 x86))
        ((when flg) (!!ms-fresh :increment-error flg))
@@ -856,11 +774,20 @@
        (mandatory-prefix (the (unsigned-byte 8)
                            (prefixes-slice :last-prefix prefixes)))
 
-       (modr/m? (if (64-bit-modep x86)
-                    (64-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
-                     mandatory-prefix opcode)
-                  (32-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
-                   mandatory-prefix opcode)))
+       (modr/m?
+        (case second-escape-byte
+          (#x38
+           (if (64-bit-modep x86)
+               (64-bit-mode-0F-38-three-byte-opcode-ModR/M-p
+                mandatory-prefix opcode)
+             (32-bit-mode-0F-38-three-byte-opcode-ModR/M-p
+              mandatory-prefix opcode)))
+          (#x3A
+           (if (64-bit-modep x86)
+               (64-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
+                mandatory-prefix opcode)
+             (32-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
+              mandatory-prefix opcode)))))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
             (rme08 temp-rip *cs* :x x86)
@@ -889,15 +816,25 @@
                             (mv nil temp-rip)))
        ((when flg) (!!ms-fresh :increment-error flg)))
 
-    (second-three-byte-opcode-execute
-     start-rip temp-rip prefixes mandatory-prefix rex-byte opcode modr/m sib x86))
+    (case second-escape-byte
+      (#x38
+       (first-three-byte-opcode-execute
+        start-rip temp-rip prefixes rex-byte mandatory-prefix
+        opcode modr/m sib x86))
+      (#x3A
+       (second-three-byte-opcode-execute
+        start-rip temp-rip prefixes rex-byte mandatory-prefix
+        opcode modr/m sib x86))
+      (otherwise
+       ;; Unreachable.
+       x86)))
 
   ///
 
-  (defrule x86p-second-three-byte-opcode-decode-and-execute
+  (defrule x86p-three-byte-opcode-decode-and-execute
     (implies (and (canonical-address-p temp-rip)
                   (x86p x86))
-             (x86p (second-three-byte-opcode-decode-and-execute
+             (x86p (three-byte-opcode-decode-and-execute
                     start-rip temp-rip prefixes rex-byte escape-byte x86)))
     :enable add-to-*ip-is-i48p-rewrite-rule))
 
@@ -1322,16 +1259,10 @@
               (list start-rip temp-rip prefixes rex-byte opcode))
         x86)))
 
-    (#x38
-     "Escape to the first three-byte opcode map."
-     ;; opcode is really the escape byte here: #x38.
-     (first-three-byte-opcode-decode-and-execute
-      start-rip temp-rip prefixes rex-byte opcode x86))
-
-    (#x3A
-     "Escape to the second three-byte opcode map."
-     ;; opcode is really the escape byte here: #x3A.
-     (second-three-byte-opcode-decode-and-execute
+    ((#x38 #x3A)
+     "Escape to the three-byte opcode maps."
+     ;; opcode is really the escape byte here: #x38 or #x3A.
+     (three-byte-opcode-decode-and-execute
       start-rip temp-rip prefixes rex-byte opcode x86))
 
     ((#x40 #x41 #x42 #x43 #x44 #x45 #x46 #x47 #x48 #x49 #x4A
@@ -1994,7 +1925,8 @@
      either @('#x38') or @('#x3A').</p>"
      :guard-hints (("Goal"
                     :do-not '(preprocess)
-                    :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
+                    :in-theory (e/d (member-equal)
+                                    (unsigned-byte-p signed-byte-p))))
 
      ,(create-case-stmt *two-byte-op-list*)
 
@@ -2041,11 +1973,9 @@
        ;; Possible values of opcode:
 
        ;; 1. #x38 and #x3A: These are escapes to the two three-byte opcode
-       ;;    maps.  Functions first-three-byte-opcode-decode-and-execute and
-       ;;    second-three-byte-opcode-decode-and-execute are called here.  No
-       ;;    ModR/M and SIB bytes are prefetched by this function for these
-       ;;    opcode maps --- that's done in the three-byte decode and execute
-       ;;    functions.
+       ;;    maps.  Function three-byte-opcode-decode-and-execute is called
+       ;;    here, which also fetches the ModR/M and SIB bytes for these
+       ;;    opcodes.
 
        ;; 2. All other values denote opcodes of the two-byte map.  The function
        ;;    two-byte-opcode-execute case-splits on this opcode byte and calls
@@ -3175,12 +3105,20 @@
 
     ((#xC4 #xC5)
      "VEX Prefixes"
-     (x86-step-unimplemented
-      (list* (ms x86)
-             (list
-              "Instructions that take VEX prefixes have not been implemented yet."
-              start-rip temp-rip prefixes rex-byte opcode))
-      x86))
+     (if (64-bit-modep x86)
+         (x86-step-unimplemented
+          (list* (ms x86)
+                 (list
+                  "VEX prefixes"
+                  start-rip temp-rip prefixes rex-byte opcode))
+          x86)
+       (x86-step-unimplemented
+        (list* (ms x86)
+               (list
+                "LES/LDS instructions in the 32-bit mode have not been
+                implemented yet."
+                start-rip temp-rip prefixes rex-byte opcode))
+        x86)))
 
     (#xC6
      "Group 11 - MOV: Opcode-extension: Modr/m.reg
@@ -3443,6 +3381,44 @@
 
 (make-event (create-top-level-opcode-execute-fn))
 
+;; VEX-encoded instructions:
+
+(define vex-decode-and-execute
+  ((64-bit-modep           booleanp)
+   (temp-rip               :type (signed-byte   #.*max-linear-address-size*))
+   (prefixes               :type (unsigned-byte 52))
+   (rex-byte               :type (unsigned-byte 8))
+   (vex-prefixes           :type (unsigned-byte 32))
+   x86)
+
+  ;; temp-rip points to the byte following the first two VEX prefixes that were
+  ;; already read in x86-fetch-decode-execute.
+
+  :guard-hints
+  (("Goal" :in-theory
+    (e/d ()
+         (negative-logand-to-positive-logand-with-integerp-x
+          signed-byte-p))))
+
+  :parents (x86-decoder)
+
+  :long "<p>@('vex-decode-and-execute') dispatches control to VEX-encoded
+  instructions.</p>"
+
+  (x86-step-unimplemented
+   (cons "VEX-encoded instructions unimplemented."
+         (list 64-bit-modep temp-rip prefixes rex-byte vex-prefixes))
+   x86)
+
+  ///
+
+  (defthm x86p-vex-decode-and-execute
+    (implies (and (x86p x86)
+                  (canonical-address-p temp-rip))
+             (x86p
+              (vex-decode-and-execute
+               64-bit-modep temp-rip prefixes rex-byte vex-prefixes x86)))))
+
 ;; ----------------------------------------------------------------------
 
 (define x86-fetch-decode-execute (x86)
@@ -3450,20 +3426,34 @@
   :parents (x86-decoder)
   :short "Top-level step function"
 
-  :long "<p>@('x86-fetch-decode-execute') is the step function of our
- x86 interpreter.  It fetches one instruction by looking up the memory
- address indicated by the instruction pointer @('rip'), decodes that
- instruction, and dispatches control to the appropriate instruction
- semantic function.</p>"
+  :long "<p>@('x86-fetch-decode-execute') is the step function of our x86
+ interpreter.  It fetches one instruction by looking up the memory address
+ indicated by the instruction pointer @('rip'), decodes that instruction, and
+ dispatches control to the appropriate instruction semantic function.</p>"
 
   :prepwork
-  ((local (in-theory (e/d* () (unsigned-byte-p not)))))
+  ((local
+    (defthm dumb-integerp-of-mv-nth-1-rme080-rule
+      (implies (x86p x86)
+               (integerp (mv-nth 1 (rme08 eff-addr seg-reg r-x x86))))))
+
+   (local
+    (defthm unsigned-byte-p-32-of-vex-prefixes-rule
+      (implies
+       (unsigned-byte-p 8 byte)
+       (and (unsigned-byte-p 32 (logior #xC400 (ash byte 16)))
+            (unsigned-byte-p 32 (logior #xC500 (ash byte 16)))))))
+
+   (local (in-theory (e/d* () (unsigned-byte-p not)))))
+
+  :guard-hints
+  (("Goal" :in-theory (e/d (add-to-*ip-is-i48p-rewrite-rule) ())))
 
   (b* ((ctx 'x86-fetch-decode-execute)
-       ;; We don't want our interpreter to take a step if the machine
-       ;; is in a bad state.  Such checks are made in x86-run but I am
-       ;; duplicating them here in case this function is being used at
-       ;; the top-level.
+       (64-bit-modep (64-bit-modep x86))
+       ;; We don't want our interpreter to take a step if the machine is in a
+       ;; bad state.  Such checks are made in x86-run but I am duplicating them
+       ;; here in case this function is being used at the top-level.
        ((when (or (ms x86) (fault x86))) x86)
 
        (start-rip (the (signed-byte #.*max-linear-address-size*)
@@ -3471,15 +3461,14 @@
 
        ((mv flg0 (the (unsigned-byte 52) prefixes) x86)
         (get-prefixes start-rip 0 15 x86))
-       ;; Among other errors (including if there are 15 prefix bytes,
-       ;; which leaves no room for an opcode byte in a legal
-       ;; instruction), if get-prefixes detects a non-canonical
-       ;; address while attempting to fetch prefixes, flg0 will be
-       ;; non-nil.
+       ;; Among other errors (including if there are 15 prefix bytes, which
+       ;; leaves no room for an opcode byte in a legal instruction), if
+       ;; get-prefixes detects a non-canonical address while attempting to
+       ;; fetch prefixes, flg0 will be non-nil.
        ((when flg0)
         (!!ms-fresh :error-in-reading-prefixes flg0))
 
-       ((the (unsigned-byte 8) opcode/rex/escape-byte)
+       ((the (unsigned-byte 8) opcode/escape/rex/vex-byte)
         (prefixes-slice :next-byte prefixes))
 
        ((the (unsigned-byte 4) prefix-length)
@@ -3490,24 +3479,24 @@
                             (add-to-*ip start-rip (1+ prefix-length) x86)))
        ((when flg) (!!ms-fresh :increment-error flg))
 
-       ;; If opcode/rex/escape-byte is a rex byte, it is filed away in
+       ;; If opcode/escape/rex/vex-byte is a rex byte, it is filed away in
        ;; "rex-byte". A REX byte has the form 4xh, but this applies only to
        ;; 64-bit mode; in 32-bit mode, 4xh is an opcode for INC or DEC, so in
        ;; 32-bit mode, there is no REX byte "by construction".
        ((the (unsigned-byte 8) rex-byte)
-        (if (and (64-bit-modep x86)
+        (if (and 64-bit-modep
                  (equal (the (unsigned-byte 4)
-                          (ash opcode/rex/escape-byte -4))
+                          (ash opcode/escape/rex/vex-byte -4))
                         4))
-            opcode/rex/escape-byte
+            opcode/escape/rex/vex-byte
           0))
 
-       ((mv flg1 (the (unsigned-byte 8) opcode/escape-byte) x86)
+       ((mv flg1 (the (unsigned-byte 8) opcode/escape/vex-byte) x86)
         (if (equal 0 rex-byte)
-            (mv nil opcode/rex/escape-byte x86)
+            (mv nil opcode/escape/rex/vex-byte x86)
           (rme08 temp-rip *cs* :x x86)))
        ((when flg1)
-        (!!ms-fresh :opcode/escape-byte-read-error flg1))
+        (!!ms-fresh :opcode/escape/vex-byte-read-error flg1))
 
        ((mv flg2 temp-rip)
         (if (equal rex-byte 0)
@@ -3515,11 +3504,53 @@
           (add-to-*ip temp-rip 1 x86)))
        ((when flg2) (!!ms-fresh :increment-error flg2))
 
+       (vex2-byte0? (equal opcode/escape/vex-byte #.*vex2-byte0*))
+       (vex3-byte0? (equal opcode/escape/vex-byte #.*vex3-byte0*))
+       ;; If opcode/escape/vex-byte is either 0xC4 (*vex3-byte0*) or 0xC5
+       ;; (*vex2-byte0*), then we always have a VEX-encoded instruction in the
+       ;; 64-bit mode.  But in the 32-bit mode, these bytes may not signal the
+       ;; start of the VEX prefixes.  0xC4 and 0xC5 map to LES and LDS
+       ;; instructions (respectively) in the 32-bit mode if bits[7:6] of the
+       ;; next byte, which we call les/lds-distinguishing-byte below, are *not*
+       ;; 11b.  Otherwise, they signal the start of VEX prefixes in the 32-bit
+       ;; mode too.
+       ((mv flg3 les/lds-distinguishing-byte x86)
+        (if (and (not 64-bit-modep) (or vex2-byte0? vex3-byte0?))
+            (rme08 temp-rip *cs* :x x86)
+          (mv nil 0 x86)))
+       ((when flg3)
+        (!!ms-fresh :les/lds-distinguishing-byte-read-error flg3))
+       ;; If the instruction is indeed LDS or LES in the 32-bit mode, temp-rip
+       ;; is incremented after the ModR/M is fetched (see below).
+       ((when (and (or vex2-byte0? vex3-byte0?)
+                   (or 64-bit-modep
+                       (and (not 64-bit-modep)
+                            (equal (part-select
+                                    les/lds-distinguishing-byte
+                                    :low 6 :high 7)
+                                   #b11)))))
+        ;; Handle VEX-encoded instructions separately.
+        (b* (((mv flg1-vex temp-rip)
+              (add-to-*ip temp-rip 1 x86))
+             ((when flg1-vex)
+              (!!ms-fresh :vex-byte1-increment-error flg1-vex))
+             (vex-prefixes
+              (!vex-prefixes-slice
+               :byte0 opcode/escape/vex-byte 0))
+             (vex-prefixes
+              (!vex-prefixes-slice
+               :byte1 les/lds-distinguishing-byte vex-prefixes)))
+          (vex-decode-and-execute
+           64-bit-modep temp-rip prefixes rex-byte vex-prefixes x86)))
+
+       (opcode/escape-byte opcode/escape/vex-byte)
+
        ;; Possible values of opcode/escape-byte:
 
-       ;; The opcode/escape-byte should not contain any of the (legacy) prefix
-       ;; bytes -- by this point, all prefix bytes should have been processed.
-       ;; So, here are the four kinds of values opcode/escape-byte can have:
+       ;; The opcode/escape-byte should not contain any of the (legacy)
+       ;; prefixes, REX bytes, and VEX prefixes -- by this point, all these
+       ;; prefix bytes should have been processed.  So, here are the kinds of
+       ;; values opcode/escape-byte can have:
 
        ;; 1. An opcode of the one-byte opcode map: this function prefetches the
        ;;    ModR/M and SIB bytes for these opcodes.  The function
@@ -3533,18 +3564,11 @@
        ;;    opcode maps.  In top-level-opcode-execute, we call
        ;;    two-byte-opcode-decode-and-execute, where we fetch the ModR/M and
        ;;    SIB bytes for the two-byte opcodes or dispatch control to
-       ;;    first-three-byte-opcode-decode-and-execute or
-       ;;    second-three-byte-opcode-decode-and-execute when appropriate
-       ;;    (i.e., when the byte following #x0F is either #x38 or #x3A).  Note
-       ;;    that in this function, temp-rip will not be incremented beyond
-       ;;    this point for these opcodes --- i.e., it points at the byte
-       ;;    *following* #x0F.
-
-       ;; 3. #xC4, #xC5: Vex prefixes (in 64-bit mode).
-
-       ;; 4. #x8F: Depending on the value of ModR/M.reg,
-       ;;    top-level-opcode-execute either calls the one-byte POP instruction
-       ;;    (for reg = 0) or x86-step-unimplemented (for other values of reg).
+       ;;    three-byte-opcode-decode-and-execute when appropriate (i.e., when
+       ;;    the byte following #x0F is either #x38 or #x3A).  Note that in
+       ;;    this function, temp-rip will not be incremented beyond this point
+       ;;    for these opcodes --- i.e., it points at the byte *following*
+       ;;    #x0F.
 
        ;; The modr/m and sib byte prefetching in this function is biased
        ;; towards the one-byte opcode map.  The functions
@@ -3556,21 +3580,25 @@
        ;; understand this way; this is a nice way of seeing how one opcode map
        ;; "escapes" into another.
 
-       (modr/m? (if (64-bit-modep x86)
+       (modr/m? (if 64-bit-modep
                     (64-bit-mode-one-byte-opcode-ModR/M-p opcode/escape-byte)
                   (32-bit-mode-one-byte-opcode-ModR/M-p opcode/escape-byte)))
-       ((mv flg3 (the (unsigned-byte 8) modr/m) x86)
+       ((mv flg4 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
-            (rme08 temp-rip *cs* :x x86)
+            (if (or vex2-byte0? vex3-byte0?)
+                ;; The above will be true if the instruction is LES or LDS in
+                ;; the 32-bit mode.
+                (mv nil les/lds-distinguishing-byte x86)
+              (rme08 temp-rip *cs* :x x86))
           (mv nil 0 x86)))
-       ((when flg3)
-        (!!ms-fresh :modr/m-byte-read-error flg2))
+       ((when flg4)
+        (!!ms-fresh :modr/m-byte-read-error flg4))
 
-       ((mv flg4 temp-rip)
+       ((mv flg5 temp-rip)
         (if modr/m?
             (add-to-*ip temp-rip 1 x86)
           (mv nil temp-rip)))
-       ((when flg4) (!!ms-fresh :increment-error flg2))
+       ((when flg5) (!!ms-fresh :increment-error flg5))
 
        (sib? (and modr/m?
                   (b* ((p4? (eql #.*addr-size-override*
@@ -3578,22 +3606,21 @@
                        (16-bit-addressp (eql 2 (select-address-size p4? x86))))
                     (x86-decode-SIB-p modr/m 16-bit-addressp))))
 
-       ((mv flg5 (the (unsigned-byte 8) sib) x86)
+       ((mv flg6 (the (unsigned-byte 8) sib) x86)
         (if sib?
             (rme08 temp-rip *cs* :x x86)
           (mv nil 0 x86)))
-       ((when flg5)
-        (!!ms-fresh :sib-byte-read-error flg3))
+       ((when flg6)
+        (!!ms-fresh :sib-byte-read-error flg6))
 
-       ((mv flg6 temp-rip)
+       ((mv flg7 temp-rip)
         (if sib?
             (add-to-*ip temp-rip 1 x86)
           (mv nil temp-rip)))
-       ((when flg6) (!!ms-fresh :increment-error flg6)))
+       ((when flg7) (!!ms-fresh :increment-error flg7)))
+
     (top-level-opcode-execute
      start-rip temp-rip prefixes rex-byte opcode/escape-byte modr/m sib x86))
-
-  :guard-hints (("Goal" :in-theory (enable add-to-*ip-is-i48p-rewrite-rule)))
 
   ///
 
@@ -3602,34 +3629,47 @@
              (x86p (x86-fetch-decode-execute x86)))
     :enable add-to-*ip-is-i48p-rewrite-rule)
 
+  (defthmd ms-fault-and-x86-fetch-decode-and-execute
+    (implies (and (x86p x86)
+                  (or (ms x86) (fault x86)))
+             (equal (x86-fetch-decode-execute x86) x86)))
+
   (defthm x86-fetch-decode-execute-opener
+    ;; TODO: Extend to VEX prefixes when necessary.
     (implies
      (and
       (not (ms x86))
       (not (fault x86))
       (equal start-rip (read-*ip x86))
+      (equal 64-bit-modep (64-bit-modep x86))
       (not (mv-nth 0 (get-prefixes start-rip 0 15 x86)))
       (equal prefixes (mv-nth 1 (get-prefixes start-rip 0 15 x86)))
-      (equal opcode/rex/escape-byte
+      (equal opcode/escape/rex/vex-byte
              (prefixes-slice :next-byte prefixes))
       (equal prefix-length (prefixes-slice :num-prefixes prefixes))
       (equal temp-rip0
              (if (equal prefix-length 0)
                  (mv-nth 1 (add-to-*ip start-rip 1 x86))
                (mv-nth 1 (add-to-*ip start-rip (1+ prefix-length) x86))))
-      (equal rex-byte (if (and (64-bit-modep x86)
-                               (equal (ash opcode/rex/escape-byte -4) 4))
-                          opcode/rex/escape-byte
+      (equal rex-byte (if (and 64-bit-modep
+                               (equal (ash opcode/escape/rex/vex-byte -4) 4))
+                          opcode/escape/rex/vex-byte
                         0)) ; rex-byte is 0 in 32-bit mode
-      (equal opcode/escape-byte (if (equal rex-byte 0)
-                                    opcode/rex/escape-byte
-                                  (mv-nth 1 (rme08 temp-rip0 *cs* :x x86))))
+      (equal opcode/escape/vex-byte (if (equal rex-byte 0)
+                                        opcode/escape/rex/vex-byte
+                                      (mv-nth 1 (rme08 temp-rip0 *cs* :x x86))))
       (equal temp-rip1 (if (equal rex-byte 0)
                            temp-rip0
                          (mv-nth 1 (add-to-*ip temp-rip0 1 x86))))
-      (equal modr/m? (if (64-bit-modep x86)
-                         (64-bit-mode-one-byte-opcode-ModR/M-p opcode/escape-byte)
-                       (32-bit-mode-one-byte-opcode-ModR/M-p opcode/escape-byte)))
+
+      ;; *** No VEX prefixes ***
+      (not (equal opcode/escape/vex-byte #.*vex3-byte0*))
+      (not (equal opcode/escape/vex-byte #.*vex2-byte0*))
+
+      (equal modr/m?
+             (if 64-bit-modep
+                 (64-bit-mode-one-byte-opcode-ModR/M-p opcode/escape/vex-byte)
+               (32-bit-mode-one-byte-opcode-ModR/M-p opcode/escape/vex-byte)))
       (equal modr/m (if modr/m?
                         (mv-nth 1 (rme08 temp-rip1 *cs* :x x86))
                       0))
@@ -3674,26 +3714,24 @@
       ;; Print the rip and the first opcode byte of the instruction
       ;; under consideration after all the non-trivial hyps (above) of
       ;; this rule have been relieved:
-      (syntaxp (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
-                    (not (cw "              op0: ~s0 ] ~%"
-                             (str::hexify (unquote opcode/escape-byte)))))))
-     (equal (x86-fetch-decode-execute x86)
-            (top-level-opcode-execute start-rip temp-rip3 prefixes rex-byte
-                                      opcode/escape-byte modr/m sib x86)))
+      (syntaxp
+       (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
+            (not (cw "              op0: ~s0 ] ~%"
+                     (str::hexify (unquote opcode/escape/vex-byte)))))))
+     (equal
+      (x86-fetch-decode-execute x86)
+      (top-level-opcode-execute start-rip temp-rip3 prefixes rex-byte
+                                opcode/escape/vex-byte modr/m sib x86)))
     :hints (("Goal"
              :cases ((app-view x86))
              :in-theory (e/d ()
                              (top-level-opcode-execute
                               signed-byte-p
                               not
-                              member-equal)))))
+                              member-equal))))))
 
-  (defthmd ms-fault-and-x86-fetch-decode-and-execute
-    (implies (and (x86p x86)
-                  (or (ms x86) (fault x86)))
-             (equal (x86-fetch-decode-execute x86) x86))))
-
-(in-theory (e/d (top-level-opcode-execute
+(in-theory (e/d (vex-decode-and-execute
+                 top-level-opcode-execute
                  two-byte-opcode-execute
                  first-three-byte-opcode-execute
                  second-three-byte-opcode-execute)

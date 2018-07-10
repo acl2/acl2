@@ -1536,7 +1536,7 @@
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt)
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt
                               (start-rip (1+ start-rip))
-                              (prefixes 
+                              (prefixes
                                (!prefixes-slice
                                 :group-1-prefix
                                 (mv-nth 1 (rb-alt 1 start-rip :x x86))
@@ -1583,10 +1583,10 @@
       (not (mv-nth 0 (las-to-pas cnt start-rip :x x86))))
      (equal (get-prefixes-alt start-rip prefixes cnt x86)
             (get-prefixes-alt (+ 1 start-rip)
-                              (!prefixes-slice 
+                              (!prefixes-slice
                                :group-2-prefix
                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                               (!prefixes-slice 
+                               (!prefixes-slice
                                 :last-prefix
                                 (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                 prefixes))
@@ -1602,7 +1602,7 @@
                               (prefixes (!prefixes-slice
                                          :group-2-prefix
                                          (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                         (!prefixes-slice 
+                                         (!prefixes-slice
                                           :last-prefix
                                           (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                           prefixes)))
@@ -1647,7 +1647,7 @@
                               (!prefixes-slice
                                :group-3-prefix
                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                               (!prefixes-slice 
+                               (!prefixes-slice
                                 :last-prefix
                                 (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                 prefixes))
@@ -1663,7 +1663,7 @@
                               (prefixes (!prefixes-slice
                                          :group-3-prefix
                                          (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                         (!prefixes-slice 
+                                         (!prefixes-slice
                                           :last-prefix
                                           (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                           prefixes)))
@@ -1705,10 +1705,10 @@
       (not (mv-nth 0 (las-to-pas cnt start-rip :x x86))))
      (equal (get-prefixes-alt start-rip prefixes cnt x86)
             (get-prefixes-alt (+ 1 start-rip)
-                              (!prefixes-slice 
+                              (!prefixes-slice
                                :group-4-prefix
                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                               (!prefixes-slice 
+                               (!prefixes-slice
                                 :last-prefix
                                 (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                 prefixes))
@@ -1725,7 +1725,7 @@
                                (!prefixes-slice
                                 :group-4-prefix
                                 (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                (!prefixes-slice 
+                                (!prefixes-slice
                                  :last-prefix
                                  (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                  prefixes)))
@@ -2544,130 +2544,142 @@
 
 (defthm x86-fetch-decode-execute-opener-in-marking-view
   ;; Note that we use get-prefixes-alt here instead of get-prefixes.
-  (implies (and
-            ;; Start: binding hypotheses.
-            (equal start-rip (rip x86))
-            ;; get-prefixes-alt:
-            (equal three-vals-of-get-prefixes (get-prefixes-alt start-rip 0 15 x86))
-            (equal flg-get-prefixes (mv-nth 0 three-vals-of-get-prefixes))
-            (equal prefixes (mv-nth 1 three-vals-of-get-prefixes))
-            (equal x86-1 (mv-nth 2 three-vals-of-get-prefixes))
+  ;; TODO: Extend to VEX prefixes when necessary.
+  (implies
+   (and
+    ;; Start: binding hypotheses.
+    (equal start-rip (rip x86))
+    ;; get-prefixes-alt:
+    (equal three-vals-of-get-prefixes (get-prefixes-alt start-rip 0 15 x86))
+    (equal flg-get-prefixes (mv-nth 0 three-vals-of-get-prefixes))
+    (equal prefixes (mv-nth 1 three-vals-of-get-prefixes))
+    (equal x86-1 (mv-nth 2 three-vals-of-get-prefixes))
 
-            (equal opcode/rex/escape-byte (prefixes-slice :next-byte prefixes))
-            (equal prefix-length (prefixes-slice :num-prefixes prefixes))
-            (equal temp-rip0 (if (equal prefix-length 0)
-                                 (+ 1 start-rip)
-                               (+ prefix-length start-rip 1)))
-            (equal rex-byte (if (equal (ash opcode/rex/escape-byte -4) 4)
-                                opcode/rex/escape-byte
-                              0))
+    (equal opcode/escape/rex/vex-byte (prefixes-slice :next-byte prefixes))
+    (equal prefix-length (prefixes-slice :num-prefixes prefixes))
+    (equal temp-rip0 (if (equal prefix-length 0)
+                         (+ 1 start-rip)
+                       (+ prefix-length start-rip 1)))
+    (equal rex-byte (if (equal (ash opcode/escape/rex/vex-byte -4) 4)
+                        opcode/escape/rex/vex-byte
+                      0))
 
-            ;; opcode/escape-byte:
-            (equal three-vals-of-opcode/escape-byte
-                   (if (equal rex-byte 0)
-                       (mv nil opcode/rex/escape-byte x86-1)
-                     (rml08 temp-rip0 :x x86-1)))
-            (equal flg-opcode/escape-byte (mv-nth 0 three-vals-of-opcode/escape-byte))
-            (equal opcode/escape-byte (mv-nth 1 three-vals-of-opcode/escape-byte))
-            (equal x86-2 (mv-nth 2 three-vals-of-opcode/escape-byte))
+    ;; opcode/escape/vex-byte:
+    (equal three-vals-of-opcode/escape/vex-byte
+           (if (equal rex-byte 0)
+               (mv nil opcode/escape/rex/vex-byte x86-1)
+             (rml08 temp-rip0 :x x86-1)))
+    (equal flg-opcode/escape/vex-byte
+           (mv-nth 0 three-vals-of-opcode/escape/vex-byte))
+    (equal opcode/escape/vex-byte
+           (mv-nth 1 three-vals-of-opcode/escape/vex-byte))
+    (equal x86-2 (mv-nth 2 three-vals-of-opcode/escape/vex-byte))
 
-            (equal temp-rip1 (if (equal rex-byte 0) temp-rip0 (1+ temp-rip0)))
-            (equal modr/m? (64-bit-mode-one-byte-opcode-modr/m-p opcode/escape-byte))
+    (equal temp-rip1 (if (equal rex-byte 0) temp-rip0 (1+ temp-rip0)))
 
-            ;; modr/m byte:
-            (equal three-vals-of-modr/m
-                   (if modr/m? (rml08 temp-rip1 :x x86-2) (mv nil 0 x86-2)))
-            (equal flg-modr/m (mv-nth 0 three-vals-of-modr/m))
-            (equal modr/m (mv-nth 1 three-vals-of-modr/m))
-            (equal x86-3 (mv-nth 2 three-vals-of-modr/m))
+    ;; *** No VEX prefixes ***
+    (not (equal opcode/escape/vex-byte #.*vex3-byte0*))
+    (not (equal opcode/escape/vex-byte #.*vex2-byte0*))
 
-            (equal temp-rip2 (if modr/m? (1+ temp-rip1) temp-rip1))
-            (equal sib? (and modr/m? (x86-decode-sib-p modr/m nil)))
+    (equal modr/m? (64-bit-mode-one-byte-opcode-modr/m-p opcode/escape/vex-byte))
 
-            ;; sib byte:
-            (equal three-vals-of-sib
-                   (if sib? (rml08 temp-rip2 :x x86-3) (mv nil 0 x86-3)))
-            (equal flg-sib (mv-nth 0 three-vals-of-sib))
-            (equal sib (mv-nth 1 three-vals-of-sib))
-            (equal x86-4 (mv-nth 2 three-vals-of-sib))
+    ;; modr/m byte:
+    (equal three-vals-of-modr/m
+           (if modr/m? (rml08 temp-rip1 :x x86-2) (mv nil 0 x86-2)))
+    (equal flg-modr/m (mv-nth 0 three-vals-of-modr/m))
+    (equal modr/m (mv-nth 1 three-vals-of-modr/m))
+    (equal x86-3 (mv-nth 2 three-vals-of-modr/m))
 
-            (equal temp-rip3 (if sib? (1+ temp-rip2) temp-rip2))
-            ;; End: binding hypotheses.
+    (equal temp-rip2 (if modr/m? (1+ temp-rip1) temp-rip1))
+    (equal sib? (and modr/m? (x86-decode-sib-p modr/m nil)))
 
-            (marking-view x86)
-            (64-bit-modep x86) ; added
-            (64-bit-modep x86-3) ; added
-            (not (app-view x86))
-            (not (ms x86))
-            (not (fault x86))
-            (x86p x86)
-            (not flg-get-prefixes)
-            (canonical-address-p temp-rip0)
-            (if (and (equal prefix-length 0)
-                     (equal rex-byte 0)
-                     (not modr/m?))
-                ;; One byte instruction --- all we need to know is that
-                ;; the new RIP is canonical, not that there's no error
-                ;; in reading a value from that address.
-                t
-              (not flg-opcode/escape-byte))
-            (if (equal rex-byte 0)
-                t
-              (canonical-address-p temp-rip1))
-            (if  modr/m?
-                (and (canonical-address-p temp-rip2)
-                     (not flg-modr/m))
-              t)
-            (if sib?
-                (and (canonical-address-p temp-rip3)
-                     (not flg-sib))
-              t)
+    ;; sib byte:
+    (equal three-vals-of-sib
+           (if sib? (rml08 temp-rip2 :x x86-3) (mv nil 0 x86-3)))
+    (equal flg-sib (mv-nth 0 three-vals-of-sib))
+    (equal sib (mv-nth 1 three-vals-of-sib))
+    (equal x86-4 (mv-nth 2 three-vals-of-sib))
 
-            ;; For get-prefixes-alt (we wouldn't need these hyps if we
-            ;; used get-prefixes):
+    (equal temp-rip3 (if sib? (1+ temp-rip2) temp-rip2))
+    ;; End: binding hypotheses.
 
-            (disjoint-p
-             (mv-nth 1 (las-to-pas 15 (xr :rip 0 x86) :x x86))
-             (open-qword-paddr-list
-              (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-            (not (mv-nth 0 (las-to-pas 15 (xr :rip 0 x86) :x x86)))
+    (marking-view x86)
+    (64-bit-modep x86)   ; added
+    (64-bit-modep x86-3) ; added
+    (not (app-view x86))
+    (not (ms x86))
+    (not (fault x86))
+    (x86p x86)
+    (not flg-get-prefixes)
+    (canonical-address-p temp-rip0)
+    (if (and (equal prefix-length 0)
+             (equal rex-byte 0)
+             (not modr/m?))
+        ;; One byte instruction --- all we need to know is that
+        ;; the new RIP is canonical, not that there's no error
+        ;; in reading a value from that address.
+        t
+      (not flg-opcode/escape/vex-byte))
+    (if (equal rex-byte 0)
+        t
+      (canonical-address-p temp-rip1))
+    (if  modr/m?
+        (and (canonical-address-p temp-rip2)
+             (not flg-modr/m))
+      t)
+    (if sib?
+        (and (canonical-address-p temp-rip3)
+             (not flg-sib))
+      t)
+
+    ;; For get-prefixes-alt (we wouldn't need these hyps if we
+    ;; used get-prefixes):
+
+    (disjoint-p
+     (mv-nth 1 (las-to-pas 15 (xr :rip 0 x86) :x x86))
+     (open-qword-paddr-list
+      (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+    (not (mv-nth 0 (las-to-pas 15 (xr :rip 0 x86) :x x86)))
 
 
-            ;; Print the rip and the first opcode byte of the instruction
-            ;; under consideration after all the non-trivial hyps (above) of
-            ;; this rule have been relieved:
-            (syntaxp (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
-                          (not (cw "              op0: ~s0 ] ~%"
-                                   (str::hexify (unquote opcode/escape-byte)))))))
-           (equal (x86-fetch-decode-execute x86)
-                  (top-level-opcode-execute
-                   start-rip temp-rip3 prefixes rex-byte opcode/escape-byte modr/m sib x86-4)))
-  :hints (("Goal"
-           :do-not '(preprocess)
-           :in-theory (e/d (x86-fetch-decode-execute
-                            get-prefixes-alt)
-                           (rewrite-get-prefixes-to-get-prefixes-alt
-                            top-level-opcode-execute
-                            xlate-equiv-memory-and-mv-nth-0-rml08-cong
-                            xlate-equiv-memory-and-two-mv-nth-2-rml08-cong
-                            xlate-equiv-memory-and-mv-nth-2-rml08
-                            signed-byte-p
-                            not
-                            member-equal
-                            mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
-                            remove-duplicates-equal
-                            combine-bytes
-                            byte-listp
-                            acl2::ash-0
-                            open-qword-paddr-list
-                            unsigned-byte-p-of-combine-bytes
-                            get-prefixes-opener-lemma-no-prefix-byte
-                            get-prefixes-opener-lemma-group-1-prefix-in-marking-view
-                            get-prefixes-opener-lemma-group-2-prefix-in-marking-view
-                            get-prefixes-opener-lemma-group-3-prefix-in-marking-view
-                            get-prefixes-opener-lemma-group-4-prefix-in-marking-view
-                            mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-sys-view
-                            mv-nth-2-rb-in-system-level-marking-view
-                            (force) force)))))
+    ;; Print the rip and the first opcode byte of the instruction
+    ;; under consideration after all the non-trivial hyps (above) of
+    ;; this rule have been relieved:
+    (syntaxp (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
+                  (not (cw "              op0: ~s0 ] ~%"
+                           (str::hexify (unquote opcode/escape/vex-byte)))))))
+   (equal (x86-fetch-decode-execute x86)
+          (top-level-opcode-execute
+           start-rip temp-rip3 prefixes rex-byte
+           opcode/escape/vex-byte modr/m sib x86-4)))
+  :hints
+  (("Goal"
+    :do-not '(preprocess)
+    :in-theory
+    (e/d (x86-fetch-decode-execute
+          get-prefixes-alt)
+         (rewrite-get-prefixes-to-get-prefixes-alt
+          top-level-opcode-execute
+          xlate-equiv-memory-and-mv-nth-0-rml08-cong
+          xlate-equiv-memory-and-two-mv-nth-2-rml08-cong
+          xlate-equiv-memory-and-mv-nth-2-rml08
+          signed-byte-p
+          not
+          member-equal
+          mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+          remove-duplicates-equal
+          combine-bytes
+          byte-listp
+          acl2::ash-0
+          open-qword-paddr-list
+          unsigned-byte-p-of-combine-bytes
+          get-prefixes-opener-lemma-no-prefix-byte
+          get-prefixes-opener-lemma-group-1-prefix-in-marking-view
+          get-prefixes-opener-lemma-group-2-prefix-in-marking-view
+          get-prefixes-opener-lemma-group-3-prefix-in-marking-view
+          get-prefixes-opener-lemma-group-4-prefix-in-marking-view
+          mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-sys-view
+          mv-nth-2-rb-in-system-level-marking-view
+          (force) force)))))
 
 ;; ======================================================================
