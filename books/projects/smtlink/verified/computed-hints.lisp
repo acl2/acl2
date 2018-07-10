@@ -120,10 +120,10 @@
                   (mv term kwd-alist))
                  (& (extract-hint-wrapper (cdr cl))))))))
 
-  (define SMT-process-hint (cl)
+  (define SMT-computed-hint (cl)
     (b* (((mv & kwd-alist) (extract-hint-wrapper cl)))
       `(:computed-hint-replacement
-        ((SMT-process-hint clause))
+        ((SMT-computed-hint clause))
         ,@kwd-alist)))
 
   (logic)

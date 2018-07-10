@@ -126,17 +126,19 @@ where the system books are."))
        ((cons first rest) config-alist)
        ((cons option value) first)
        (new-cnf (cond
-                 ;; if value is "", use the default-cnf
-                 ;; default-cnf is $ACL2_SYSTEM_BOOKS/projects/smtlink/z3_interface
-                 ((and (equal option "interface-dir") (not (equal value "default")))
-                  (change-smtlink-config default-cnf :interface-dir value))
-                 ((equal option "smt-module")
-                  (change-smtlink-config default-cnf :SMT-module value))
-                 ((equal option "smt-class")
-                  (change-smtlink-config default-cnf :SMT-class value))
+                 ;; ;; if value is "", use the default-cnf
+                 ;; ;; default-cnf is $ACL2_SYSTEM_BOOKS/projects/smtlink/z3_interface
+                 ;; ((and (equal option "interface-dir") (not (equal value "default")))
+                 ;;  (change-smtlink-config default-cnf :interface-dir value))
+                 ;; ((equal option "smt-module")
+                 ;;  (change-smtlink-config default-cnf :SMT-module value))
+                 ;; ((equal option "smt-class")
+                 ;;  (change-smtlink-config default-cnf :SMT-class value))
                  ((equal option "smt-cmd")
                   (change-smtlink-config default-cnf :SMT-cmd value))
-                 (t (change-smtlink-config default-cnf :PYTHONPATH value)))))
+                 ;; (t (change-smtlink-config default-cnf :PYTHONPATH value))
+                 (t default-cnf)
+                 )))
     (change-smt-cnf rest new-cnf)))
 
 (define file-exists ((smtconfig stringp) (dir stringp))
