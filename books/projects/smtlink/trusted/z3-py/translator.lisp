@@ -315,9 +315,9 @@
               (if exist-sym?
                   (1+ symbol-index-rest)
                 symbol-index-rest)
-              (if exist-sym?
-                  (acons the-sym gen-sym symbol-map-rest)
-                symbol-map-rest))))
+              (if exist-map?
+                  symbol-map-rest
+                (acons the-sym gen-sym symbol-map-rest)))))
        ;; The first term is now a function call:
        ;; Either a lambda or a symbol
        ((cons fn-call fn-actuals) expr)
@@ -871,14 +871,14 @@
   (b* ((symbols (str::string-list-fix symbols))
        ((unless (consp symbols)) nil)
        ((cons first rest) symbols))
-    (cons `(,first " = Sym.intern('" ,first "')" #\Newline)
+    (cons `(,first " = Symbol_z3.intern('" ,first "')" #\Newline)
           (translate-symbol-declare rest))))
 
 (define translate-symbol-enumeration ((symbols string-listp))
   :returns (translated paragraphp
                        :hints (("Goal" :in-theory (e/d (paragraphp)
                                                        ()))))
-  (b* ((datatype-line '("Sym = _SMT_.Symbol()" #\Newline))
+  (b* ((datatype-line '("Symbol_z3 = _SMT_.Symbol()" #\Newline))
        (declarations (translate-symbol-declare symbols)))
     `(,datatype-line
       ,@declarations)))

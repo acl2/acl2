@@ -58,7 +58,7 @@
     (rationalp      . "_SMT_.RealSort()")
     (integerp       . "_SMT_.IntSort()")
     (booleanp       . "_SMT_.BoolSort()")
-    (symbolp        . "Sym.z3Sym")))
+    (symbolp        . "Symbol_z3.z3Sym")))
 
 (defval *SMT-uninterpreted-types*
   :parents (SMT-basics)
@@ -69,7 +69,7 @@
     (real/rationalp . "_SMT_.RealSort()")
     (integerp       . "_SMT_.IntSort()")
     (booleanp       . "_SMT_.BoolSort()")
-    (symbolp        . "Symbol")))
+    (symbolp        . "Symbol_z3.z3Sym")))
 
 ;; current tag . next computed-hint
 (defval *SMT-architecture*
