@@ -2020,7 +2020,7 @@ reference made from privilege level 3.</blockquote>"
           ,@(and trunc     `((trunc     booleanp)))
           (start-rip :type (signed-byte   #.*max-linear-address-size*))
           (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
-          (prefixes  :type (unsigned-byte 44))
+          (prefixes  :type (unsigned-byte 52))
           (rex-byte  :type (unsigned-byte 8))
           (opcode    :type (unsigned-byte 8))
           (modr/m    :type (unsigned-byte 8))
@@ -2072,7 +2072,7 @@ reference made from privilege level 3.</blockquote>"
   ((byte-operand? :type (or t nil))
    (rex-byte      :type (unsigned-byte  8))
    (imm?          :type (or t nil))
-   (prefixes      :type (unsigned-byte 44))
+   (prefixes      :type (unsigned-byte 52))
    (x86 x86p))
 
   :inline t
