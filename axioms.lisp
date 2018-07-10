@@ -17399,48 +17399,90 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(and (mbt* ,test)
         ,form))
 
-(defun fmt-to-comment-window (str alist col evisc-tuple)
+(defun fmt-to-comment-window (str alist col evisc-tuple print-base-radix)
 
 ; WARNING: Keep this in sync with fmt-to-comment-window!.
 
-; Logically, this is the constant function returning nil.  However, it
-; has a side-effect on the "comment window" which is imagined to be a
-; separate window on the user's screen that cannot possibly be
-; confused with the normal ACL2 display of the files in STATE.  Using
-; this function it is possible for an ACL2 expression to cause
-; characters to appear in the comment window.  Nothing whatsoever can
-; be proved about these characters.  If you want to prove something
-; about ACL2 output, it must be directed to the channels and files in
+; Logically, this is the constant function returning nil.  However, it has a
+; side-effect on the "comment window" which is imagined to be a separate window
+; on the user's screen that cannot possibly be confused with the normal ACL2
+; display of the files in STATE.  Using this function it is possible for an
+; ACL2 expression to cause characters to appear in the comment window.  Nothing
+; whatsoever can be proved about these characters.  If you want to prove
+; something about ACL2 output, it must be directed to the channels and files in
 ; STATE.
 
   (declare (xargs :guard t))
   #+acl2-loop-only
-  (declare (ignore str alist col evisc-tuple))
+  (declare (ignore str alist col evisc-tuple print-base-radix))
   #+acl2-loop-only
   nil
 
-; Note:  One might wish to bind *wormholep* to nil around this fmt1 expression,
+; Note: One might wish to bind *wormholep* to nil around this fmt1 expression,
 ; to avoid provoking an error if this fn is called while *wormholep* is t.
-; However, the fact that we're printing to *standard-co* accomplishes the
-; same thing.  See the comment on synonym streams in princ$.
+; However, the fact that we're printing to *standard-co* accomplishes the same
+; thing.  See the comment on synonym streams in princ$.
 
   #-acl2-loop-only
-  (progn (fmt1 str alist col *standard-co* *the-live-state* evisc-tuple)
-         nil))
+  (progn
+    (cond
+     ((null print-base-radix) ; common case
+      (fmt1 str alist col *standard-co* *the-live-state* evisc-tuple))
+     (t
+      (mv-let (new-print-base new-print-radix state)
+        (cond ((consp print-base-radix)
+               (mv (car print-base-radix)
+                   (cdr print-base-radix)
+                   *the-live-state*))
+              (t (mv print-base-radix
+                     (if (eql print-base-radix 10)
+                         nil
+                       t)
+                     *the-live-state*)))
+        (state-global-let*
+         ((print-base (f-get-global 'print-base state))
+          (print-radix new-print-radix))
+         (pprogn
+          (set-print-base new-print-base state)
+          (mv-let (col state)
+            (fmt1 str alist col *standard-co* *the-live-state* evisc-tuple)
+            (value col)))))))
+    nil))
 
-(defun fmt-to-comment-window! (str alist col evisc-tuple)
+(defun fmt-to-comment-window! (str alist col evisc-tuple print-base-radix)
 
 ; WARNING: Keep this in sync with fmt-to-comment-window.
 
   (declare (xargs :guard t))
   #+acl2-loop-only
-  (declare (ignore str alist col evisc-tuple))
+  (declare (ignore str alist col evisc-tuple print-base-radix))
   #+acl2-loop-only
   nil
   #-acl2-loop-only
-  (progn (fmt1! str alist col *standard-co* *the-live-state*
-                evisc-tuple)
-         nil))
+  (progn
+    (cond
+     ((null print-base-radix) ; common case
+      (fmt1! str alist col *standard-co* *the-live-state* evisc-tuple))
+     (t
+      (mv-let (new-print-base new-print-radix state)
+        (cond ((consp print-base-radix)
+               (mv (car print-base-radix)
+                   (cdr print-base-radix)
+                   *the-live-state*))
+              (t (mv print-base-radix
+                     (if (eql print-base-radix 10)
+                         nil
+                       t)
+                     *the-live-state*)))
+        (state-global-let*
+         ((print-base (f-get-global 'print-base state))
+          (print-radix new-print-radix))
+         (pprogn
+          (set-print-base new-print-base state)
+          (mv-let (col state)
+            (fmt1! str alist col *standard-co* *the-live-state* evisc-tuple)
+            (value col)))))))
+    nil))
 
 (defun pairlis2 (x y)
 ; Like pairlis$ except is controlled by y rather than x.
@@ -17478,7 +17520,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   `(fmt-to-comment-window ,str
                           (pairlis2 *base-10-chars* (list ,@args))
-                          0 nil))
+                          0 nil nil))
 
 (defmacro cw! (str &rest args)
 
@@ -17486,7 +17528,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   `(fmt-to-comment-window! ,str
                            (pairlis2 *base-10-chars* (list ,@args))
-                           0 nil))
+                           0 nil nil))
+
+(defmacro cw-print-base-radix (print-base-radix str &rest args)
+
+; WARNING: Keep this in sync with cw.
+
+  `(fmt-to-comment-window ,str
+                          (pairlis2 *base-10-chars* (list ,@args))
+                          0 nil
+                          ,print-base-radix))
+
+(defmacro cw-print-base-radix! (print-base-radix str &rest args)
+
+; WARNING: Keep this in sync with cw.
+
+  `(fmt-to-comment-window! ,str
+                           (pairlis2 *base-10-chars* (list ,@args))
+                           0 nil
+                           ,print-base-radix))
 
 (defun subseq-list (lst start end)
   (declare (xargs :guard (and (true-listp lst)
@@ -25906,7 +25966,8 @@ Lisp definition."
                        (fmt-soft-right-margin 100000))
                       (fmt-to-comment-window
                        ,g-msg alist 0
-                       (abbrev-evisc-tuple *the-live-state*))))))))))))))
+                       (abbrev-evisc-tuple *the-live-state*)
+                       nil)))))))))))))
 
 (encapsulate
  ()

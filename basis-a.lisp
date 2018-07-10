@@ -3552,7 +3552,7 @@
 
 ; The guard on this function is quite incomplete.  Some runtime checks can
 ; result in hard errors even when the guard is met.  We have attempted to
-; eliminate raw Lisp errors, 
+; eliminate raw Lisp errors,
 
                   (and (stringp s)
                        (character-alistp alist)
@@ -3921,7 +3921,7 @@
                            (t (mv (er-hard-val
                                    0 'fmt0 "~@0"
                                    (illegal-fmt-msg
-                                    bad-tilde-c-arg 
+                                    bad-tilde-c-arg
                                     i pair s))
                                   state))))))
              ((#\f #\F)
@@ -3977,7 +3977,7 @@
                                  (er-hard-val
                                   0 'fmt0 "~@0"
                                   (illegal-fmt-msg
-                                   bad-tilde-_-arg 
+                                   bad-tilde-_-arg
                                    i n0 (floor (fixnum-bound) 2) s)))))
                        (declare (type (unsigned-byte 29) n))
                        (let ((new-col (+f col n)))
@@ -4451,7 +4451,7 @@
                                (fmx-cw-msg-1 s alist i+3 maximum clk-1))
                               (t
                                (illegal-fmt-msg
-                                bad-tilde-c-arg 
+                                bad-tilde-c-arg
                                 i pair s)))))
                           ((#\f #\F)
                            (fmx-cw-msg-1 s alist i+3 maximum clk-1))
@@ -4475,7 +4475,7 @@
                              (fmx-cw-msg-1 s alist i+3 maximum clk-1))
                             (t
                              (illegal-fmt-msg
-                              bad-tilde-_-arg 
+                              bad-tilde-_-arg
                               i c2 (floor (fixnum-bound) 2) s))))
                           ((#\Newline #\| #\% #\~ #\-)
                            (fmx-cw-msg-1 s alist i+2 maximum clk-1))
@@ -4514,11 +4514,11 @@
 
 (defun fmx-cw-fn (str alist)
   (declare (xargs :guard (fmx-cw-fn-guard str alist)))
-  (fmt-to-comment-window str alist 0 nil))
+  (fmt-to-comment-window str alist 0 nil nil))
 
 (defun fmx!-cw-fn (str alist)
   (declare (xargs :guard (fmx-cw-fn-guard str alist)))
-  (fmt-to-comment-window! str alist 0 nil))
+  (fmt-to-comment-window! str alist 0 nil nil))
 
 (defmacro fmx-cw (str &rest args)
 

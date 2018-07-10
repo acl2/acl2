@@ -6,6 +6,8 @@
 
 (include-book "misc/assert" :dir :system)
 
+;;; cw
+
 (assert!
  (equal
   (untranslate
@@ -14,6 +16,7 @@
      (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                (CONS A (CONS B 'NIL)))
      '0
+     'NIL
      'NIL)
    nil (w state))
   '(CW "Hello ~x0 ~x1" A B)))
@@ -25,11 +28,12 @@
                            (PAIRLIS2 '(#\0 #\1 #\2 #\3)
                                      (CONS A (CONS B 'NIL)))
                            '0
+                           'NIL
                            'NIL)
    nil (w state))
   '(FMT-TO-COMMENT-WINDOW "Hello ~x0 ~x1"
                           (PAIRLIS2 '(#\0 #\1 #\2 #\3) (LIST A B))
-                          0 NIL)))
+                          0 NIL NIL)))
 
 (assert!
  (equal
@@ -39,6 +43,7 @@
      (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                (CONS A (CONS 'B 'NIL)))
      '0
+     'NIL
      'NIL)
    nil (w state))
   '(CW "Hello ~x0 ~x1" A 'B)))
@@ -51,6 +56,7 @@
      (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                (CONS A (CONS 'B 'NIL)))
      '0
+     'NIL
      'NIL)
    nil (w state))
   '(CW "Hello ~x0 ~x1" A 'B)))
@@ -62,6 +68,7 @@
                            (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                                      (CONS 'A '(b)))
                            '0
+                           'NIL
                            'NIL)
    nil (w state))
   '(CW "Hello ~x0 ~x1" 'A 'B)))
@@ -74,6 +81,7 @@
      (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                '(a b))
      '0
+     'NIL
      'NIL)
    nil (w state))
   '(CW "Hello ~x0 ~x1" 'A 'B)))
@@ -86,6 +94,7 @@
      (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                '(a b c))
      '0
+     'NIL
      'NIL)
    nil (w state))
   '(CW "Hello ~x0 ~x1" 'A 'B 'C)))
@@ -98,6 +107,7 @@
      (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                `(a b ,c))
      '0
+     'NIL
      'NIL)
    nil (w state))
   '(CW "Hello ~x0 ~x1" 'A 'B C)))
@@ -110,6 +120,7 @@
      (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                (CONS 'A (CONS 'B 'NIL)))
      '0
+     'NIL
      'NIL)
    nil (w state))
   '(CW "Hello ~x0 ~x1" 'A 'B)))
@@ -123,6 +134,7 @@
            (PAIRLIS2 '(#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                      `(b ,c)))
      '0
+     'NIL
      'NIL)
    nil (w state))
   '(CW "Hello ~x0 ~x1" 'A 'B C)))
@@ -135,6 +147,7 @@
                                  (PAIRLIS2 '(#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                                            `(b ,c)))
                            '0
+                           'NIL
                            'NIL)
    nil (w state))
   '(FMT-TO-COMMENT-WINDOW
@@ -142,8 +155,7 @@
     (cons '(#\7 . a)
           (PAIRLIS2 '(#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                     (list 'b c)))
-    0
-    NIL)))
+    0 NIL NIL)))
 
 (assert!
  (equal
@@ -151,9 +163,77 @@
    '(FMT-TO-COMMENT-WINDOW '"hello ~x0 ~x1~%"
                            '((#\0 . X) (#\1 . Y))
                            '0
+                           'NIL
                            'NIL)
    nil (w state))
   '(CW "hello ~x0 ~x1~%" 'X 'Y)))
+
+;;; cw!
+
+(assert!
+ (equal
+  (untranslate
+   '(FMT-TO-COMMENT-WINDOW!
+     '"Hello ~x0 ~x1"
+     (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+               (CONS A (CONS B 'NIL)))
+     '0
+     'NIL
+     'NIL)
+   nil (w state))
+  '(CW! "Hello ~x0 ~x1" A B)))
+
+;;; cw-print-base-radix
+
+(assert!
+ (equal
+  (untranslate
+   '(FMT-TO-COMMENT-WINDOW '"~x0~%"
+                           (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                     (CONS '(3 12 16 17) 'NIL))
+                           '0
+                           'NIL
+                           '16)
+   nil (w state))
+  '(cw-print-base-radix 16 "~x0~%" '(3 12 16 17))))
+
+(assert!
+ (equal
+  (untranslate
+   '(FMT-TO-COMMENT-WINDOW '"~x0~%"
+                           '((#\0 . (3 12 16 17)))
+                           '0
+                           'NIL
+                           '16)
+   nil (w state))
+  '(cw-print-base-radix 16 "~x0~%" '(3 12 16 17))))
+
+;;; cw-print-base-radix!
+
+(assert!
+ (equal
+  (untranslate
+   '(FMT-TO-COMMENT-WINDOW! '"~x0~%"
+                            (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                      (CONS '(3 12 16 17) 'NIL))
+                            '0
+                            'NIL
+                            '16)
+   nil (w state))
+  '(cw-print-base-radix! 16 "~x0~%" '(3 12 16 17))))
+
+(assert!
+ (equal
+  (untranslate
+   '(FMT-TO-COMMENT-WINDOW! '"~x0~%"
+                            '((#\0 . (3 12 16 17)))
+                            '0
+                            'NIL
+                            '16)
+   nil (w state))
+  '(cw-print-base-radix! 16 "~x0~%" '(3 12 16 17))))
+
+;;; time$
 
 (assert!
  (equal
@@ -219,8 +299,8 @@
                                          (100))
                                      (cons x y)))
                    'NIL))
-                 '0
-                 'NIL) nil (w state))
+                 '0 'NIL 'NIL)
+               nil (w state))
   '(cw "   ~x0 pairs~%"
        (len (time$ (cons x y)
                    :msg "Value is: ~x0"

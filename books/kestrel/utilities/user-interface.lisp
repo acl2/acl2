@@ -121,10 +121,14 @@
   "<p>
    When this macro is processed as an event,
    its arguments are passed to @(tsee cw).
+   Exception: No printing is done while including
+   a book or during the second pass of an
+   @(tsee encapsulate) event.
    </p>
    @(def cw-event)"
   (defmacro cw-event (str &rest args)
-    `(value-triple (cw ,str ,@args))))
+    `(value-triple (cw ,str ,@args)
+                   :on-skip-proofs :interactive)))
 
 (defsection make-event-terse
   :parents (user-interface make-event)

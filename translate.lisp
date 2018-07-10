@@ -3749,17 +3749,37 @@
                               (cons fn args)))
                          (otherwise (cons fn args)))))))
           (t (or (case-match term
-                   (('fmt-to-comment-window ('quote str)
-                                            x
-                                            ('quote '0)
-                                            ('quote 'nil))
-                    (let ((y (unmake-formal-pairlis2 x *base-10-chars*)))
-                      (cond ((eq y :fail) nil)
-                            (t (list* 'cw
-                                      str
-                                      (untranslate1-lst y nil untrans-tbl
-                                                        preprocess-fn
-                                                        wrld))))))
+                   ((fmt-to-comment-window ('quote str)
+                                           x
+                                           ('quote '0)
+                                           ('quote 'nil)
+                                           base/radix)
+                    (and (member-eq fmt-to-comment-window
+                                    '(fmt-to-comment-window
+                                      fmt-to-comment-window!))
+                         (let ((y (unmake-formal-pairlis2 x *base-10-chars*)))
+                           (cond ((eq y :fail) nil)
+                                 ((equal base/radix *nil*)
+                                  (list* (if (eq fmt-to-comment-window
+                                                 'fmt-to-comment-window)
+                                             'cw
+                                           'cw!)
+                                         str
+                                         (untranslate1-lst y nil untrans-tbl
+                                                           preprocess-fn
+                                                           wrld)))
+                                 (t
+                                  (list* (if (eq fmt-to-comment-window
+                                                 'fmt-to-comment-window)
+                                             'cw-print-base-radix
+                                           'cw-print-base-radix!)
+                                         (untranslate1 base/radix nil untrans-tbl
+                                                       preprocess-fn
+                                                       wrld)
+                                         str
+                                         (untranslate1-lst y nil untrans-tbl
+                                                           preprocess-fn
+                                                           wrld)))))))
                    (& nil))
                  (let* ((pair (cdr (assoc-eq (ffn-symb term)
                                              untrans-tbl)))
@@ -5301,10 +5321,11 @@
        stringp symbolp
 
 ; We want fmt-to-comment-window (which will arise upon macroexpanding calls of
-; cw) to be executed always in raw Lisp, so we add it to this list in order to
-; bypass its *1* function.
+; cw and cw-print-base-radix) to be executed always in raw Lisp, so we add it
+; to this list in order to bypass its *1* function.
 
        fmt-to-comment-window
+       fmt-to-comment-window!
 
 ; When we oneify, we sometimes do so on code that was laid down for constrained
 ; functions.  Therefore, we put throw on the list.
@@ -5316,6 +5337,7 @@
        makunbound-global
        trans-eval ev ev-lst ev-fncall
 ;      fmt-to-comment-window ; already included above
+;      fmt-to-comment-window! ; already included above
        sys-call-status
 ;      pstack-fn
        untranslate
