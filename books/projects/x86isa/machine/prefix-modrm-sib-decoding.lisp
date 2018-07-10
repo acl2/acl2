@@ -1583,8 +1583,7 @@
                *32-bit-mode-one-byte-has-modr/m-ar* opcode))
 
       (define 64-bit-mode-two-byte-opcode-ModR/M-p
-        ((prefixes :type (unsigned-byte 52)
-                   "Legacy prefixes; see @('*prefixes-layout*')")
+        ((mandatory-prefix :type (unsigned-byte 8))
          (opcode   :type (unsigned-byte 8)
                    "Second byte of the two-byte opcode"))
         :short "Returns a boolean saying whether, in 64-bit mode,
@@ -1598,7 +1597,7 @@
               (aref1 '64-bit-mode-two-byte-no-prefix-has-modr/m
                      *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode)))
 
-          (case (prefixes-slice :last-prefix prefixes)
+          (case mandatory-prefix
 
             (#.*mandatory-66h*
              (aref1 '64-bit-mode-two-byte-66-has-modr/m
@@ -1618,8 +1617,7 @@
 
       ;; added by Alessandro Coglio (coglio@kestrel.edu):
       (define 32-bit-mode-two-byte-opcode-ModR/M-p
-        ((prefixes :type (unsigned-byte 52)
-                   "Legacy prefixes; see @('*prefixes-layout*')")
+        ((mandatory-prefix :type (unsigned-byte 8))
          (opcode   :type (unsigned-byte 8)
                    "Second byte of the two-byte opcode"))
         :short "Returns a boolean saying whether, in 32-bit mode,
@@ -1633,7 +1631,7 @@
               (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
                      *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode)))
 
-          (case (prefixes-slice :last-prefix prefixes)
+          (case mandatory-prefix
 
             (#.*mandatory-66h*
              (aref1 '32-bit-mode-two-byte-66-has-modr/m
@@ -1654,8 +1652,7 @@
       ;; TODO: What about the (:66 :F2) mandatory prefixes for opcodes 0F 38 F0
       ;; and 0F 38 F1?
       (define 64-bit-mode-0F-38-three-byte-opcode-ModR/M-p
-        ((prefixes :type (unsigned-byte 52)
-                   "Legacy prefixes; see @('*prefixes-layout*')")
+        ((mandatory-prefix :type (unsigned-byte 8))
          (opcode   :type (unsigned-byte 8)
                    "Third byte of the 38 three-byte opcode"))
         :short "Returns a boolean saying whether, in 64-bit mode, the given
@@ -1671,7 +1668,7 @@
                      *64-bit-mode-0F-38-three-byte-no-prefix-has-modr/m-ar*
                      opcode)))
 
-          (case (prefixes-slice :last-prefix prefixes)
+          (case mandatory-prefix
 
             (#.*mandatory-66h*
              (aref1 '64-bit-mode-0F-38-three-byte-66-has-modr/m
@@ -1694,8 +1691,7 @@
                     opcode)))))
 
       (define 32-bit-mode-0F-38-three-byte-opcode-ModR/M-p
-        ((prefixes :type (unsigned-byte 52)
-                   "Legacy prefixes; see @('*prefixes-layout*')")
+        ((mandatory-prefix :type (unsigned-byte 8))
          (opcode   :type (unsigned-byte 8)
                    "Third byte of the 38 three-byte opcode"))
         :short "Returns a boolean saying whether, in 32-bit mode, the given
@@ -1711,7 +1707,7 @@
                      *32-bit-mode-0F-38-three-byte-no-prefix-has-modr/m-ar*
                      opcode)))
 
-          (case (prefixes-slice :last-prefix prefixes)
+          (case mandatory-prefix
 
             (#.*mandatory-66h*
              (aref1 '32-bit-mode-0F-38-three-byte-66-has-modr/m
@@ -1734,8 +1730,7 @@
                     opcode)))))
 
       (define 64-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
-        ((prefixes :type (unsigned-byte 52)
-                   "Legacy prefixes; see @('*prefixes-layout*')")
+        ((mandatory-prefix :type (unsigned-byte 8))
          (opcode   :type (unsigned-byte 8)
                    "Third byte of the 3A three-byte opcode"))
         :short "Returns a boolean saying whether, in 64-bit mode, the given
@@ -1751,7 +1746,7 @@
                      *64-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m-ar*
                      opcode)))
 
-          (case (prefixes-slice :last-prefix prefixes)
+          (case mandatory-prefix
 
             (#.*mandatory-66h*
              (aref1 '64-bit-mode-0F-3A-three-byte-66-has-modr/m
@@ -1774,8 +1769,7 @@
                     opcode)))))
 
       (define 32-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
-        ((prefixes :type (unsigned-byte 52)
-                   "Legacy prefixes; see @('*prefixes-layout*')")
+        ((mandatory-prefix :type (unsigned-byte 8))
          (opcode   :type (unsigned-byte 8)
                    "Third byte of the 3A three-byte opcode"))
         :short "Returns a boolean saying whether, in 32-bit mode, the given
@@ -1791,7 +1785,7 @@
                      *32-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m-ar*
                      opcode)))
 
-          (case (prefixes-slice :last-prefix prefixes)
+          (case mandatory-prefix
 
             (#.*mandatory-66h*
              (aref1 '32-bit-mode-0F-3A-three-byte-66-has-modr/m

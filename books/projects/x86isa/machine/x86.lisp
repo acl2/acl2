@@ -65,16 +65,6 @@
 
 ;; ----------------------------------------------------------------------
 
-(define x86-step-unimplemented (message x86)
-  :parents (x86-decoder)
-  ;; "Message" can contain some specific error message and the
-  ;; opcode(s).
-  :returns (x86 x86p :hyp :guard)
-  (b* ((ctx 'x86-step-unimplemented))
-    (!!ms-fresh :message message)))
-
-;; ----------------------------------------------------------------------
-
 (define get-prefixes
   ((start-rip :type (signed-byte   #.*max-linear-address-size*))
    (prefixes  :type (unsigned-byte 52))
@@ -463,7 +453,7 @@
                              :next-byte
                              (mv-nth 1 (rme08 start-rip *cs* :x x86))
                              prefixes)))
-                       (!prefixes-slice :num-prefixes (- 15 cnt) prefixes))))))  
+                       (!prefixes-slice :num-prefixes (- 15 cnt) prefixes))))))
 
   (defthm get-prefixes-opener-lemma-group-1-prefix
     (implies (and (or (app-view x86)
@@ -629,6 +619,14 @@
 
 ;; Opcode dispatch functions:
 
+(define x86-step-unimplemented (message x86)
+  :parents (x86-decoder)
+  ;; "Message" can contain some specific error message and the
+  ;; opcode(s).
+  :returns (x86 x86p :hyp :guard)
+  (b* ((ctx 'x86-step-unimplemented))
+    (!!ms-fresh :message message)))
+
 (defun create-case-stmt-1 (top-level-op-list acc)
   (cond ((endp top-level-op-list)
          acc)
@@ -644,6 +642,266 @@
 (defun create-case-stmt (top-level-op-list)
   (append (list 'case 'opcode)
           (reverse (create-case-stmt-1 top-level-op-list nil))))
+
+;; Three-byte Opcode Maps:
+
+(define first-three-byte-opcode-execute
+  ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
+   (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
+   (prefixes         :type (unsigned-byte 52))
+   (mandatory-prefix :type (unsigned-byte 8))
+   (rex-byte         :type (unsigned-byte 8))
+   (opcode           :type (unsigned-byte 8))
+   (modr/m           :type (unsigned-byte 8))
+   (sib              :type (unsigned-byte 8))
+   x86)
+
+  :parents (x86-decoder)
+  ;; The following arg will avoid binding __function__ to
+  ;; first-three-byte-opcode-execute. The automatic __function__ binding that
+  ;; comes with define causes stack overflows during the guard proof of this
+  ;; function.
+  :no-function t
+  :short "First three-byte opcode dispatch function."
+  :long "<p>@('first-three-byte-opcode-execute) is the doorway to the first
+     three-byte opcode map, i.e., to all three-byte opcodes whose first two
+     opcode bytes are @('0F 38').</p>"
+  :guard-hints (("Goal"
+                 :do-not '(preprocess)
+                 :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
+
+  (x86-step-unimplemented
+   (cons "0F 38 opcodes currently unimplemented!"
+         (list start-rip temp-rip prefixes mandatory-prefix rex-byte opcode
+               modr/m sib))
+   x86)
+
+  ///
+
+  (defthm x86p-first-three-byte-opcode-execute
+    (implies (and (x86p x86)
+                  (canonical-address-p temp-rip))
+             (x86p
+              (first-three-byte-opcode-execute
+               start-rip temp-rip prefixes mandatory-prefix rex-byte opcode
+               modr/m sib x86)))))
+
+
+(define first-three-byte-opcode-decode-and-execute
+  ;; #x0F #x38 are the first two opcode bytes.
+  ((start-rip          :type (signed-byte #.*max-linear-address-size*))
+   (temp-rip           :type (signed-byte #.*max-linear-address-size*))
+   (prefixes           :type (unsigned-byte 52))
+   (rex-byte           :type (unsigned-byte 8))
+   (second-escape-byte :type (unsigned-byte 8))
+   x86)
+
+  :ignore-ok t
+  :guard (equal second-escape-byte #x38)
+  :guard-hints (("Goal" :do-not '(preprocess)
+                 :in-theory (e/d*
+                             (add-to-*ip-is-i48p-rewrite-rule)
+                             (unsigned-byte-p
+                              (:type-prescription bitops::logand-natp-type-2)
+                              (:type-prescription bitops::ash-natp-type)
+                              acl2::loghead-identity
+                              tau-system
+                              (tau-system)))))
+  :parents (x86-decoder)
+  :short "Decoder and dispatch function for three-byte opcodes, where @('0x0F
+  0x38') are the first two opcode bytes"
+  :long "<p>Source: Intel Manual, Volume 2, Appendix A-2</p>"
+
+  (b* ((ctx 'first-three-byte-opcode-decode-and-execute)
+       ((mv flg0 (the (unsigned-byte 8) opcode) x86)
+        (rme08 temp-rip *cs* :x x86))
+       ((when flg0)
+        (!!ms-fresh :opcode-byte-access-error flg0))
+
+       ;; Possible values of opcode: all values denote opcodes of the first
+       ;; three-byte map.  The function first-three-byte-opcode-execute
+       ;; case-splits on this opcode byte and calls the appropriate instruction
+       ;; semantic function.
+
+       ((mv flg temp-rip) (add-to-*ip temp-rip 1 x86))
+       ((when flg) (!!ms-fresh :increment-error flg))
+
+       (mandatory-prefix (the (unsigned-byte 8)
+                           (prefixes-slice :last-prefix prefixes)))
+
+       (modr/m? (if (64-bit-modep x86)
+                    (64-bit-mode-0F-38-three-byte-opcode-ModR/M-p
+                     mandatory-prefix opcode)
+                  (32-bit-mode-0F-38-three-byte-opcode-ModR/M-p
+                   mandatory-prefix opcode)))
+       ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
+        (if modr/m?
+            (rme08 temp-rip *cs* :x x86)
+          (mv nil 0 x86)))
+       ((when flg1) (!!ms-fresh :modr/m-byte-read-error flg1))
+
+       ((mv flg temp-rip) (if modr/m?
+                              (add-to-*ip temp-rip 1 x86)
+                            (mv nil temp-rip)))
+       ((when flg) (!!ms-fresh :increment-error flg))
+
+       (sib? (and modr/m?
+                  (b* ((p4? (eql #.*addr-size-override*
+                                 (prefixes-slice :group-4-prefix prefixes)))
+                       (16-bit-addressp (eql 2 (select-address-size p4? x86))))
+                    (x86-decode-SIB-p modr/m 16-bit-addressp))))
+       ((mv flg2 (the (unsigned-byte 8) sib) x86)
+        (if sib?
+            (rme08 temp-rip *cs* :x x86)
+          (mv nil 0 x86)))
+       ((when flg2)
+        (!!ms-fresh :sib-byte-read-error flg2))
+
+       ((mv flg temp-rip) (if sib?
+                              (add-to-*ip temp-rip 1 x86)
+                            (mv nil temp-rip)))
+       ((when flg) (!!ms-fresh :increment-error flg)))
+
+    (first-three-byte-opcode-execute
+     start-rip temp-rip prefixes rex-byte mandatory-prefix opcode modr/m sib x86))
+
+  ///
+
+  (defrule x86p-first-three-byte-opcode-decode-and-execute
+    (implies (and (canonical-address-p temp-rip)
+                  (x86p x86))
+             (x86p (first-three-byte-opcode-decode-and-execute
+                    start-rip temp-rip prefixes rex-byte escape-byte x86)))
+    :enable add-to-*ip-is-i48p-rewrite-rule))
+
+(define second-three-byte-opcode-execute
+  ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
+   (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
+   (prefixes         :type (unsigned-byte 52))
+   (mandatory-prefix :type (unsigned-byte 8))
+   (rex-byte         :type (unsigned-byte 8))
+   (opcode           :type (unsigned-byte 8))
+   (modr/m           :type (unsigned-byte 8))
+   (sib              :type (unsigned-byte 8))
+   x86)
+
+  :parents (x86-decoder)
+  ;; The following arg will avoid binding __function__ to
+  ;; second-three-byte-opcode-execute. The automatic __function__ binding that
+  ;; comes with define causes stack overflows during the guard proof of this
+  ;; function.
+  :no-function t
+  :short "Second three-byte opcode dispatch function."
+  :long "<p>@('second-three-byte-opcode-execute) is the doorway to the second
+     three-byte opcode map, i.e., to all three-byte opcodes whose second two
+     opcode bytes are @('0F 3A').</p>"
+  :guard-hints (("Goal"
+                 :do-not '(preprocess)
+                 :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
+
+  (x86-step-unimplemented
+   (cons "0F 3A opcodes currently unimplemented!"
+         (list start-rip temp-rip prefixes mandatory-prefix rex-byte opcode
+               modr/m sib))
+   x86)
+
+  ///
+
+  (defthm x86p-second-three-byte-opcode-execute
+    (implies (and (x86p x86)
+                  (canonical-address-p temp-rip))
+             (x86p (second-three-byte-opcode-execute
+                    start-rip temp-rip prefixes mandatory-prefix
+                    rex-byte opcode modr/m sib x86)))))
+
+(define second-three-byte-opcode-decode-and-execute
+  ;; #x0F #x3A are the first two opcode bytes.
+  ((start-rip          :type (signed-byte #.*max-linear-address-size*))
+   (temp-rip           :type (signed-byte #.*max-linear-address-size*))
+   (prefixes           :type (unsigned-byte 52))
+   (rex-byte           :type (unsigned-byte 8))
+   (second-escape-byte :type (unsigned-byte 8))
+   x86)
+
+  :ignore-ok t
+  :guard (equal second-escape-byte #x3A)
+  :guard-hints (("Goal" :do-not '(preprocess)
+                 :in-theory (e/d*
+                             (add-to-*ip-is-i48p-rewrite-rule)
+                             (unsigned-byte-p
+                              (:type-prescription bitops::logand-natp-type-2)
+                              (:type-prescription bitops::ash-natp-type)
+                              acl2::loghead-identity
+                              tau-system
+                              (tau-system)))))
+  :parents (x86-decoder)
+  :short "Decoder and dispatch function for three-byte opcodes, where @('0x0F
+  0x3A') are the first two opcode bytes"
+  :long "<p>Source: Intel Manual, Volume 2, Appendix A-2</p>"
+
+  (b* ((ctx 'second-three-byte-opcode-decode-and-execute)
+       ((mv flg0 (the (unsigned-byte 8) opcode) x86)
+        (rme08 temp-rip *cs* :x x86))
+       ((when flg0)
+        (!!ms-fresh :opcode-byte-access-error flg0))
+
+       ;; Possible values of opcode: all values denote opcodes of the second
+       ;; three-byte map.  The function second-three-byte-opcode-execute
+       ;; case-splits on this opcode byte and calls the appropriate instruction
+       ;; semantic function.
+
+       ((mv flg temp-rip) (add-to-*ip temp-rip 1 x86))
+       ((when flg) (!!ms-fresh :increment-error flg))
+
+       (mandatory-prefix (the (unsigned-byte 8)
+                           (prefixes-slice :last-prefix prefixes)))
+
+       (modr/m? (if (64-bit-modep x86)
+                    (64-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
+                     mandatory-prefix opcode)
+                  (32-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
+                   mandatory-prefix opcode)))
+       ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
+        (if modr/m?
+            (rme08 temp-rip *cs* :x x86)
+          (mv nil 0 x86)))
+       ((when flg1) (!!ms-fresh :modr/m-byte-read-error flg1))
+
+       ((mv flg temp-rip) (if modr/m?
+                              (add-to-*ip temp-rip 1 x86)
+                            (mv nil temp-rip)))
+       ((when flg) (!!ms-fresh :increment-error flg))
+
+       (sib? (and modr/m?
+                  (b* ((p4? (eql #.*addr-size-override*
+                                 (prefixes-slice :group-4-prefix prefixes)))
+                       (16-bit-addressp (eql 2 (select-address-size p4? x86))))
+                    (x86-decode-SIB-p modr/m 16-bit-addressp))))
+       ((mv flg2 (the (unsigned-byte 8) sib) x86)
+        (if sib?
+            (rme08 temp-rip *cs* :x x86)
+          (mv nil 0 x86)))
+       ((when flg2)
+        (!!ms-fresh :sib-byte-read-error flg2))
+
+       ((mv flg temp-rip) (if sib?
+                              (add-to-*ip temp-rip 1 x86)
+                            (mv nil temp-rip)))
+       ((when flg) (!!ms-fresh :increment-error flg)))
+
+    (second-three-byte-opcode-execute
+     start-rip temp-rip prefixes mandatory-prefix rex-byte opcode modr/m sib x86))
+
+  ///
+
+  (defrule x86p-second-three-byte-opcode-decode-and-execute
+    (implies (and (canonical-address-p temp-rip)
+                  (x86p x86))
+             (x86p (second-three-byte-opcode-decode-and-execute
+                    start-rip temp-rip prefixes rex-byte escape-byte x86)))
+    :enable add-to-*ip-is-i48p-rewrite-rule))
+
+;; Two-Byte Opcode Map:
 
 (defconst *two-byte-op-list*
 
@@ -751,15 +1009,15 @@
          : (MOVUPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-movss/movsd-Op/En-RM
             #.*OP-DP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-movss/movsd-Op/En-RM
             #.*OP-SP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-movups/movupd/movdqu-Op/En-RM
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -779,15 +1037,15 @@
          : (MOVUPS xmm2/m128 xmm1)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-movss/movsd-Op/En-MR
             #.*OP-DP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-movss/movsd-Op/En-MR
             #.*OP-SP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-movups/movupd/movdqu-Op/En-MR
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -805,7 +1063,7 @@
          : (MOVLPS xmm m64)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-movlps/movlpd-Op/En-RM
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -822,7 +1080,7 @@
          : (MOVLPS m64 xmm)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-movlps/movlpd-Op/En-MR
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -839,7 +1097,7 @@
          : (UNPCKLPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-unpck?pd-Op/En-RM
             #.*LOW-PACK*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -859,7 +1117,7 @@
          : (UNPCKHPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-unpck?pd-Op/En-RM
             #.*HIGH-PACK*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -879,7 +1137,7 @@
          : (MOVHPS xmm m64)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-movhps/movhpd-Op/En-RM
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -896,7 +1154,7 @@
          : (MOVHPS m64 xmm)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-movhps/movhpd-Op/En-MR
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -918,7 +1176,7 @@
          : (MOVAPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-movaps/movapd-Op/En-RM
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -936,7 +1194,7 @@
          : (MOVAPS xmm2/m128 xmm1)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-movaps/movapd-Op/En-MR
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -954,11 +1212,11 @@
       F3h: (CVTSI2SS xmm r/m)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-cvtsi2s?-Op/En-RM
             #.*OP-DP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-cvtsi2s?-Op/En-RM
             #.*OP-SP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -979,11 +1237,11 @@
       F3h: (CVTTSS2SI reg xmm2/m32)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-cvts?2si/cvtts?2si-Op/En-RM
             #.*OP-DP*
             t start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-cvts?2si/cvtts?2si-Op/En-RM
             #.*OP-SP*
             t start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -1004,11 +1262,11 @@
       F3h: (CVTSS2SI reg xmm2/m32)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-cvts?2si/cvtts?2si-Op/En-RM
             #.*OP-DP*
             nil start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-cvts?2si/cvtts?2si-Op/En-RM
             #.*OP-SP*
             nil start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -1029,7 +1287,7 @@
          : (UCOMISS xmm1 xmm2/m32)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-comis?/ucomis?-Op/En-RM
             #.*OP-UCOMI* #.*OP-DP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -1048,7 +1306,7 @@
          : (COMISS xmm1 xmm2/m32)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-comis?/ucomis?-Op/En-RM
             #.*OP-COMI* #.*OP-DP*
             start-rip temp-rip prefixes rex-byte opcode modr/m
@@ -1064,17 +1322,17 @@
               (list start-rip temp-rip prefixes rex-byte opcode))
         x86)))
 
-    ;; (#x38
-    ;;  "Escape to the first three-byte opcode map."
-    ;;   ;; opcode is really the escape byte here: #x38.
-    ;;  (first-three-byte-opcode-decode-and-execute
-    ;;   start-rip temp-rip prefixes rex-byte opcode x86))
+    (#x38
+     "Escape to the first three-byte opcode map."
+     ;; opcode is really the escape byte here: #x38.
+     (first-three-byte-opcode-decode-and-execute
+      start-rip temp-rip prefixes rex-byte opcode x86))
 
-    ;; (#x3A
-    ;;  "Escape to the second three-byte opcode map."
-    ;;   ;; opcode is really the escape byte here: #x3A.
-    ;;  (second-three-byte-opcode-decode-and-execute
-    ;;   start-rip temp-rip prefixes rex-byte opcode x86))
+    (#x3A
+     "Escape to the second three-byte opcode map."
+     ;; opcode is really the escape byte here: #x3A.
+     (second-three-byte-opcode-decode-and-execute
+      start-rip temp-rip prefixes rex-byte opcode x86))
 
     ((#x40 #x41 #x42 #x43 #x44 #x45 #x46 #x47 #x48 #x49 #x4A
            #x4B #x4C #x4D #x4E #x4F)
@@ -1088,15 +1346,15 @@
          : (SQRTPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-sqrts?-Op/En-RM
             #.*OP-DP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-sqrts?-Op/En-RM
             #.*OP-SP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-sqrtpd-Op/En-RM
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -1114,7 +1372,7 @@
          : (ANDPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
             #.*OP-AND*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -1133,7 +1391,7 @@
          : (ANDNPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
             #.*OP-ANDN*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -1152,7 +1410,7 @@
          : (ORPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
             #.*OP-OR*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -1171,7 +1429,7 @@
          : (XORPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
             #.*OP-XOR*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -1192,15 +1450,15 @@
          : (ADDPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
             #.*OP-ADD* #.*OP-DP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
             #.*OP-ADD* #.*OP-SP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
             #.*OP-ADD*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -1221,15 +1479,15 @@
          : (MULPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
             #.*OP-MUL* #.*OP-DP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
             #.*OP-MUL* #.*OP-SP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
             #.*OP-MUL*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -1250,15 +1508,15 @@
          : (CVTPS2PD xmm1 xmm2/m64)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-cvts?2s?-Op/En-RM
             #.*DP-TO-SP* start-rip temp-rip prefixes rex-byte opcode modr/m
             sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-cvts?2s?-Op/En-RM
             #.*SP-TO-DP* start-rip temp-rip prefixes rex-byte opcode modr/m
             sib x86))
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-cvtpd2ps-Op/En-RM
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -1278,15 +1536,15 @@
          : (SUBPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
             #.*OP-SUB* #.*OP-DP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
             #.*OP-SUB* #.*OP-SP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
             #.*OP-SUB*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -1307,15 +1565,15 @@
          : (MINPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
             #.*OP-MIN* #.*OP-DP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
             #.*OP-MIN* #.*OP-SP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
             #.*OP-MIN*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -1336,15 +1594,15 @@
          : (DIVPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
             #.*OP-DIV* #.*OP-DP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
             #.*OP-DIV* #.*OP-SP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
             #.*OP-DIV*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -1365,15 +1623,15 @@
          : (MAXPS xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
             #.*OP-MAX* #.*OP-DP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
             #.*OP-MAX* #.*OP-SP*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
             #.*OP-MAX*
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
@@ -1391,7 +1649,7 @@
      "F3h: (MOVDQU xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-movups/movupd/movdqu-Op/En-RM
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -1408,7 +1666,7 @@
      "66h: (PCMPEQB xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-pcmpeqb-Op/En-RM
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -1427,7 +1685,7 @@
      "F3h: (MOVDQU xmm2/m128 xmm1)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-movups/movupd/movdqu-Op/En-MR start-rip temp-rip
                                               prefixes rex-byte
                                               opcode modr/m sib x86))
@@ -1563,13 +1821,13 @@
          : (CMPPS xmm1 xmm2/m128 imm8)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f2h* mandatory-prefix)
            (x86-cmpss/cmpsd-Op/En-RMI
             #.*OP-DP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
+          ((eql #.*mandatory-f3h* mandatory-prefix)
            (x86-cmpss/cmpsd-Op/En-RMI
             #.*OP-SP* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-cmppd-Op/En-RMI
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -1586,7 +1844,7 @@
          : (SHUFPS xmm1 xmm2/m128 imm8)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-shufpd-Op/En-RMI
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -1622,7 +1880,7 @@
      "66h: (PMOVMSKB reg xmm)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-pmovmskb-Op/En-RM
             start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -1641,7 +1899,7 @@
      "66h: (PAND xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
             #.*OP-AND* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -1658,7 +1916,7 @@
      "66h: (PANDN xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
             #.*OP-ANDN* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -1675,7 +1933,7 @@
      "66h: (POR xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
             #.*OP-OR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -1692,7 +1950,7 @@
      "66h: (PXOR xmm1 xmm2/m128)"
      (if (64-bit-modep x86)
          (cond
-          ((eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes))
+          ((eql #.*mandatory-66h* mandatory-prefix)
            (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
             #.*OP-XOR* start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
           (t
@@ -1714,13 +1972,14 @@
 
   `(define two-byte-opcode-execute
 
-     ((start-rip :type (signed-byte   #.*max-linear-address-size*))
-      (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
-      (prefixes  :type (unsigned-byte 52))
-      (rex-byte  :type (unsigned-byte 8))
-      (opcode    :type (unsigned-byte 8))
-      (modr/m    :type (unsigned-byte 8))
-      (sib       :type (unsigned-byte 8))
+     ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
+      (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
+      (prefixes         :type (unsigned-byte 52))
+      (mandatory-prefix :type (unsigned-byte 8))
+      (rex-byte         :type (unsigned-byte 8))
+      (opcode           :type (unsigned-byte 8))
+      (modr/m           :type (unsigned-byte 8))
+      (sib              :type (unsigned-byte 8))
       x86)
 
      :parents (x86-decoder)
@@ -1729,7 +1988,7 @@
      ;; with define causes stack overflows during the guard proof of this
      ;; function.
      :no-function t
-     :short "Top-byte opcode dispatch function."
+     :short "Two-byte opcode dispatch function."
      :long "<p>@('two-byte-opcode-execute') is the doorway to the two-byte
      opcode map, and will lead to the three-byte opcode map if @('opcode') is
      either @('#x38') or @('#x3A').</p>"
@@ -1745,8 +2004,8 @@
        (implies (and (x86p x86)
                      (canonical-address-p temp-rip))
                 (x86p (two-byte-opcode-execute
-                       start-rip temp-rip prefixes rex-byte opcode
-                       modr/m sib x86))))))
+                       start-rip temp-rip prefixes mandatory-prefix
+                       rex-byte opcode modr/m sib x86))))))
 
 (make-event (create-two-byte-opcode-execute-fn))
 
@@ -1795,9 +2054,14 @@
        ((mv flg temp-rip) (add-to-*ip temp-rip 1 x86))
        ((when flg) (!!ms-fresh :increment-error flg))
 
+       (mandatory-prefix (the (unsigned-byte 8)
+                           (prefixes-slice :last-prefix prefixes)))
+
        (modr/m? (if (64-bit-modep x86)
-                    (64-bit-mode-two-byte-opcode-ModR/M-p prefixes opcode)
-                  (32-bit-mode-two-byte-opcode-ModR/M-p prefixes opcode)))
+                    (64-bit-mode-two-byte-opcode-ModR/M-p
+                     mandatory-prefix opcode)
+                  (32-bit-mode-two-byte-opcode-ModR/M-p
+                   mandatory-prefix opcode)))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
             (rme08 temp-rip *cs* :x x86)
@@ -1827,7 +2091,8 @@
        ((when flg) (!!ms-fresh :increment-error flg)))
 
     (two-byte-opcode-execute
-     start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))
+     start-rip temp-rip prefixes mandatory-prefix
+     rex-byte opcode modr/m sib x86))
 
   ///
 
@@ -1837,6 +2102,8 @@
              (x86p (two-byte-opcode-decode-and-execute
                     start-rip temp-rip prefixes rex-byte escape-byte x86)))
     :enable add-to-*ip-is-i48p-rewrite-rule))
+
+;; One-byte Opcode Map:
 
 (defconst *top-level-op-list*
 
@@ -3426,7 +3693,11 @@
                   (or (ms x86) (fault x86)))
              (equal (x86-fetch-decode-execute x86) x86))))
 
-(in-theory (e/d (top-level-opcode-execute two-byte-opcode-execute) ()))
+(in-theory (e/d (top-level-opcode-execute
+                 two-byte-opcode-execute
+                 first-three-byte-opcode-execute
+                 second-three-byte-opcode-execute)
+                ()))
 
 ;; ----------------------------------------------------------------------
 
