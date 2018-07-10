@@ -841,6 +841,8 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
              ;; which is one past temp-rip to take the rel8 byte into account:
              ((mv flg next-rip) (add-to-*ip temp-rip (1+ rel8) x86))
              ((when flg) (!!ms-fresh :rip-increment-error flg))
+             ;; update counter:
+             (x86 (!rgfi-size counter-size *rcx* counter rex-byte x86))
              ;; set instruction pointer to new value:
              (x86 (write-*ip next-rip x86)))
           x86)
@@ -850,6 +852,9 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
            ;; which starts just after the rel8 byte:
            ((mv flg next-rip) (add-to-*ip temp-rip 1 x86))
            ((when flg) (!!ms-fresh :rip-increment-error flg))
+           ;; update counter:
+           (x86 (!rgfi-size counter-size *rcx* counter rex-byte x86))
+           ;; set instruction pointer to new value:
            (x86 (write-*ip next-rip x86)))
         x86))))
 

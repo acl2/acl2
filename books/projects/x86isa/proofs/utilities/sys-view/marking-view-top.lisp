@@ -1245,7 +1245,7 @@
 
 (define get-prefixes-alt
   ((start-rip :type (signed-byte   #.*max-linear-address-size*))
-   (prefixes  :type (unsigned-byte 44))
+   (prefixes  :type (unsigned-byte 52))
    (cnt       :type (integer 0 15))
    x86)
   :non-executable t
@@ -1323,14 +1323,14 @@
              (natp (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86))))
     :rule-classes :type-prescription)
 
-  (defthm-usb n44p-get-prefixes-alt
-    :hyp (and (n44p prefixes)
+  (defthm-usb n52p-get-prefixes-alt
+    :hyp (and (n52p prefixes)
               (x86p x86))
-    :bound 44
+    :bound 52
     :concl (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86))
     :hints (("Goal"
-             :use ((:instance n44p-get-prefixes))
-             :in-theory (e/d () (n44p-get-prefixes))))
+             :use ((:instance n52p-get-prefixes))
+             :in-theory (e/d () (n52p-get-prefixes))))
     :gen-linear t)
 
   (defthm x86p-get-prefixes-alt
@@ -1503,7 +1503,6 @@
       (not (zp cnt))
       (equal (prefixes-slice :group-1-prefix prefixes) 0)
       (b* (((mv flg prefix-byte &)
-            ;; (rml08 start-rip :x x86)
             (rb-alt 1 start-rip :x x86))
            (prefix-byte-group-code
             (get-one-byte-prefix-array-code prefix-byte)))
@@ -1519,14 +1518,17 @@
         (gather-all-paging-structure-qword-addresses x86)))
       (not (mv-nth 0 (las-to-pas cnt start-rip :x x86))))
      (equal (get-prefixes-alt start-rip prefixes cnt x86)
-            (get-prefixes-alt (+ 1 start-rip)
-                              (!prefixes-slice :group-1-prefix
-                                               ;; (mv-nth 1 (rml08 start-rip :x x86))
-                                               (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                               prefixes)
-                              (+ -1 cnt)
-                              ;; (mv-nth 2 (rml08 start-rip :x x86))
-                              (mv-nth 2 (rb-alt 1 start-rip :x x86)))))
+            (get-prefixes-alt
+             (+ 1 start-rip)
+             (!prefixes-slice
+              :group-1-prefix
+              (mv-nth 1 (rb-alt 1 start-rip :x x86))
+              (!prefixes-slice
+               :last-prefix
+               (mv-nth 1 (rb-alt 1 start-rip :x x86))
+               prefixes))
+             (+ -1 cnt)
+             (mv-nth 2 (rb-alt 1 start-rip :x x86)))))
     :hints (("Goal"
              :use ((:instance get-prefixes-opener-lemma-group-1-prefix-in-marking-view)
                    (:instance rewrite-rb-to-rb-alt
@@ -1534,9 +1536,14 @@
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt)
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt
                               (start-rip (1+ start-rip))
-                              (prefixes (!prefixes-slice :group-1-prefix
-                                                         (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                                         prefixes))
+                              (prefixes 
+                               (!prefixes-slice
+                                :group-1-prefix
+                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                (!prefixes-slice
+                                 :last-prefix
+                                 (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                 prefixes)))
                               (cnt (1- cnt))
                               (x86 (mv-nth 2 (rb-alt 1 start-rip :x x86))))
                    (:instance mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
@@ -1576,12 +1583,14 @@
       (not (mv-nth 0 (las-to-pas cnt start-rip :x x86))))
      (equal (get-prefixes-alt start-rip prefixes cnt x86)
             (get-prefixes-alt (+ 1 start-rip)
-                              (!prefixes-slice :group-2-prefix
-                                               ;; (mv-nth 1 (rml08 start-rip :x x86))
-                                               (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                               prefixes)
+                              (!prefixes-slice 
+                               :group-2-prefix
+                               (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                               (!prefixes-slice 
+                                :last-prefix
+                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                prefixes))
                               (+ -1 cnt)
-                              ;; (mv-nth 2 (rml08 start-rip :x x86))
                               (mv-nth 2 (rb-alt 1 start-rip :x x86)))))
     :hints (("Goal"
              :use ((:instance get-prefixes-opener-lemma-group-2-prefix-in-marking-view)
@@ -1590,9 +1599,13 @@
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt)
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt
                               (start-rip (1+ start-rip))
-                              (prefixes (!prefixes-slice :group-2-prefix
-                                                         (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                                         prefixes))
+                              (prefixes (!prefixes-slice
+                                         :group-2-prefix
+                                         (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                         (!prefixes-slice 
+                                          :last-prefix
+                                          (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                          prefixes)))
                               (cnt (1- cnt))
                               (x86 (mv-nth 2 (rb-alt 1 start-rip :x x86))))
                    (:instance mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
@@ -1615,7 +1628,6 @@
       (not (zp cnt))
       (equal (prefixes-slice :group-3-prefix prefixes) 0)
       (b* (((mv flg prefix-byte &)
-            ;; (rml08 start-rip :x x86)
             (rb-alt 1 start-rip :x x86))
            (prefix-byte-group-code
             (get-one-byte-prefix-array-code prefix-byte)))
@@ -1632,12 +1644,14 @@
       (not (mv-nth 0 (las-to-pas cnt start-rip :x x86))))
      (equal (get-prefixes-alt start-rip prefixes cnt x86)
             (get-prefixes-alt (+ 1 start-rip)
-                              (!prefixes-slice :group-3-prefix
-                                               ;; (mv-nth 1 (rml08 start-rip :x x86))
-                                               (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                               prefixes)
+                              (!prefixes-slice
+                               :group-3-prefix
+                               (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                               (!prefixes-slice 
+                                :last-prefix
+                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                prefixes))
                               (+ -1 cnt)
-                              ;; (mv-nth 2 (rml08 start-rip :x x86))
                               (mv-nth 2 (rb-alt 1 start-rip :x x86)))))
     :hints (("Goal"
              :use ((:instance get-prefixes-opener-lemma-group-3-prefix-in-marking-view)
@@ -1646,9 +1660,13 @@
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt)
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt
                               (start-rip (1+ start-rip))
-                              (prefixes (!prefixes-slice :group-3-prefix
-                                                         (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                                         prefixes))
+                              (prefixes (!prefixes-slice
+                                         :group-3-prefix
+                                         (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                         (!prefixes-slice 
+                                          :last-prefix
+                                          (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                          prefixes)))
                               (cnt (1- cnt))
                               (x86 (mv-nth 2 (rb-alt 1 start-rip :x x86))))
                    (:instance mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
@@ -1671,7 +1689,6 @@
       (not (zp cnt))
       (equal (prefixes-slice :group-4-prefix prefixes) 0)
       (b* (((mv flg prefix-byte &)
-            ;; (rml08 start-rip :x x86)
             (rb-alt 1 start-rip :x x86))
            (prefix-byte-group-code
             (get-one-byte-prefix-array-code prefix-byte)))
@@ -1688,12 +1705,14 @@
       (not (mv-nth 0 (las-to-pas cnt start-rip :x x86))))
      (equal (get-prefixes-alt start-rip prefixes cnt x86)
             (get-prefixes-alt (+ 1 start-rip)
-                              (!prefixes-slice :group-4-prefix
-                                               ;; (mv-nth 1 (rml08 start-rip :x x86))
-                                               (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                               prefixes)
+                              (!prefixes-slice 
+                               :group-4-prefix
+                               (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                               (!prefixes-slice 
+                                :last-prefix
+                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                prefixes))
                               (+ -1 cnt)
-                              ;; (mv-nth 2 (rml08 start-rip :x x86))
                               (mv-nth 2 (rb-alt 1 start-rip :x x86)))))
     :hints (("Goal"
              :use ((:instance get-prefixes-opener-lemma-group-4-prefix-in-marking-view)
@@ -1702,9 +1721,14 @@
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt)
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt
                               (start-rip (1+ start-rip))
-                              (prefixes (!prefixes-slice :group-4-prefix
-                                                         (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                                         prefixes))
+                              (prefixes
+                               (!prefixes-slice
+                                :group-4-prefix
+                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                (!prefixes-slice 
+                                 :last-prefix
+                                 (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                 prefixes)))
                               (cnt (1- cnt))
                               (x86 (mv-nth 2 (rb-alt 1 start-rip :x x86))))
                    (:instance mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
@@ -1770,15 +1794,6 @@
                               (rewrite-get-prefixes-to-get-prefixes-alt
                                force (force))))))
 
-  ;; (defthm member-p-start-rip-of-create-canonical-address-list
-  ;;   ;; This is useful during proofs involving unwinding of
-  ;;   ;; get-prefixes-alt.
-  ;;   (implies (and (not (zp cnt))
-  ;;                 (canonical-address-p start-rip))
-  ;;            (member-p start-rip (create-canonical-address-list cnt start-rip)))
-  ;;   :hints (("Goal" :in-theory (e/d* (canonical-address-p member-p) ()))))
-
-
   (defthm mv-nth-2-get-prefixes-alt-no-prefix-byte
     ;; Rewrite (mv-nth 2 (get-prefixes-alt ...)) to (mv-nth 2
     ;; (las-to-pas ...)) when no prefix bytes are present and no
@@ -1813,7 +1828,8 @@
                        (rewrite-rb-to-rb-alt
                         rewrite-get-prefixes-to-get-prefixes-alt)))))
 
-  ;; Interaction between get-prefixes-alt and wb: Proof of
+  ;; Interaction between get-prefixes-alt and wb:
+  ;; Proof of
   ;; get-prefixes-alt-and-wb-in-system-level-marking-view-disjoint-from-paging-structures
   ;; and get-prefixes-alt-and-wb-to-paging-structures follows.
 
@@ -2116,14 +2132,14 @@
                (:rewrite subset-p-cdr-x)
                (:type-prescription n52p-mv-nth-1-ia32e-la-to-pa)
                (:linear <=-logior)
-               (:linear n44p-get-prefixes)
+               (:linear n52p-get-prefixes)
                (:rewrite get-prefixes-opener-lemma-group-4-prefix)
                (:rewrite get-prefixes-opener-lemma-group-3-prefix)
                (:rewrite get-prefixes-opener-lemma-group-2-prefix)
                (:rewrite get-prefixes-opener-lemma-group-1-prefix)
                (:rewrite unsigned-byte-p-of-ash)
                (:linear bitops::logior->=-0-linear)
-               (:definition n44p$inline)
+               (:definition n52p$inline)
                (:rewrite bitops::logtail-of-logtail)
                (:rewrite mv-nth-2-las-to-pas-system-level-non-marking-view)
                (:rewrite mv-nth-1-las-to-pas-when-error)
@@ -2153,7 +2169,7 @@
                (:type-prescription all-xlation-governing-entries-paddrs)
                (:rewrite acl2::unsigned-byte-p-loghead)
                (:rewrite bitops::loghead-of-ash-same)
-               (:type-prescription n44p$inline)
+               (:type-prescription n52p$inline)
                (:type-prescription ash)
                (:rewrite bitops::loghead-of-0-i)
                (:rewrite acl2::equal-constant-+)
@@ -2172,7 +2188,37 @@
                (:rewrite acl2::natp-when-integerp)
                (:rewrite acl2::natp-rw)
                (:type-prescription bitops::part-install-width-low$inline)
-               (:type-prescription bitops::natp-part-install-width-low)))))
+               (:type-prescription bitops::natp-part-install-width-low)
+               (:rewrite rewrite-rb-to-rb-alt)
+               (:rewrite
+                no-errors-when-translating-program-bytes-in-marking-view-using-program-at-alt)
+               (:definition open-qword-paddr-list)
+               (:definition addr-range)
+               (:rewrite acl2::integerp-of-car-when-integer-listp)
+               (:definition integer-listp)
+               (:rewrite gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint)
+               (:rewrite 64-bit-modep-of-rb)
+               (:type-prescription gather-all-paging-structure-qword-addresses)
+               (:type-prescription integer-listp)
+               (:type-prescription open-qword-paddr-list)
+               (:rewrite neg-addr-range=nil)
+               (:rewrite acl2::integer-listp-when-not-consp)
+               (:rewrite acl2::integer-listp-of-cdr-when-integer-listp)
+               (:rewrite
+                infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$)
+               (:definition rme08$inline)
+               (:rewrite car-cons)
+               (:rewrite cdr-cons)
+               (:rewrite disjointness-of-program-bytes-from-paging-structures)
+               (:rewrite mv-nth-1-las-to-pas-and-xw-mem-not-member)
+               (:rewrite subset-p-cons-2)
+               (:rewrite canonical-address-p-limits-thm-4)
+               (:definition ea-to-la$inline)
+               (:type-prescription acl2::expt-type-prescription-nonzero)
+               (:type-prescription acl2::expt-type-prescription-positive)
+               (:rewrite
+                gather-all-paging-structure-qword-addresses-mv-nth-2-ia32e-la-to-pa)
+               (tau-system)))))
 
       (defthm get-prefixes-xw-mem-in-sys-view
         (implies
@@ -2266,15 +2312,16 @@
                                  (write-to-physical-memory p-addrs value x86)))
          (write-to-physical-memory p-addrs value
                                    (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))))))
-      :hints (("Goal"
-               :induct (write-to-physical-memory p-addrs value x86)
-               :in-theory (e/d* (gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint
-                                 disjoint-p
-                                 byte-listp
-                                 n08p)
-                                (rewrite-get-prefixes-to-get-prefixes-alt
-                                 las-to-pas-values-and-write-to-physical-memory-disjoint
-                                 xlate-equiv-memory-and-two-get-prefixes-values)))))
+      :hints
+      (("Goal"
+        :induct (write-to-physical-memory p-addrs value x86)
+        :in-theory (e/d* (gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint
+                          disjoint-p
+                          byte-listp
+                          n08p)
+                         (rewrite-get-prefixes-to-get-prefixes-alt
+                          las-to-pas-values-and-write-to-physical-memory-disjoint
+                          xlate-equiv-memory-and-two-get-prefixes-values)))))
 
     (defthm get-prefixes-alt-and-write-to-physical-memory-disjoint-from-paging-structures
       (implies

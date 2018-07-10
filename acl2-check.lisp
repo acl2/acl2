@@ -65,10 +65,10 @@ is using two characters to indicate a new line?"))
 ; Essay on Fixnum Declarations
 
 ; To the best of our knowledge, the values of most-positive-fixnum in various
-; lisps are as follows, so we feel safe in using (signed-byte 30) and hence
-; (unsigned-byte 29) to represent fixnums.  At worst, if a lisp is used for
-; which (signed-byte 30) is not a subtype of fixnum, a compiler may simply fail
-; to create efficient code.  Note:
+; 32-bit lisps are as follows, so we feel safe in using (signed-byte 30) and
+; hence (unsigned-byte 29) to represent fixnums.  At worst, if a lisp is used
+; for which (signed-byte 30) is not a subtype of fixnum, a compiler may simply
+; fail to create efficient code.  Note:
 
 ; (the (signed-byte 30) 536870911) ; succeeds
 ; (the (signed-byte 30) 536870912) ; fails
@@ -79,7 +79,7 @@ is using two characters to indicate a new line?"))
 ; AKCL, GCL: 2147483647
 ; Allegro:    536870911
 ; Lucid:      536870911
-; cmulisp:    536870911
+; CMUCL:      536870911
 ; SBCL:       536870911
 ; CCL:        536870911
 ; MCL:        268435455 ; not supported after ACL2 Version_3.1
@@ -97,6 +97,19 @@ is using two characters to indicate a new line?"))
 ; that "this is an architectural limit on this platform and the LispWorks fixnum
 ; size cannot be reconfigured."  But Lispworks 6 is back to supporting larger
 ; fixnums.
+
+; As of July 2018, 64-bit computers have been available for many years, and it
+; may be appropriate soon to make changes based on that fact since ACL2 is only
+; rarely run on 32-bit Lisps these days.  Below are values of the largest
+; fixnums in 64-bit Lisps.
+
+; Values of most-positive-fixnum in 64-bit Lisps:
+; GCL:       9223372036854775807 ; (1- (expt 2 63))
+; Allegro:   1152921504606846975 ; (1- (expt 2 60))
+; CMUCL:     [apparently available only in 32-bit Lisp]
+; SBCL:      4611686018427387903 ; (1- (expt 2 62))
+; CCL:       1152921504606846975 ; (1- (expt 2 60))
+; Lispworks: 1152921504606846975 ; (1- (expt 2 60))
 
 #-(or clisp (and lispworks (not lispworks-64bit)))
 (or (and (<= (1- (ash 1 29)) most-positive-fixnum)
