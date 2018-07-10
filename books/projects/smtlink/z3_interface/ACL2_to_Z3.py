@@ -38,8 +38,8 @@ class ACL22SMT(object):
                 self.count = self.count + 1
                 return(self.dict[name])
 
-            def interns(self, namelist):
-                return [ self.intern(name) for name in namelist ]
+        def interns(self, namelist):
+            return [ self.intern(name) for name in namelist ]
 
     class status:
         def __init__(self, value):
