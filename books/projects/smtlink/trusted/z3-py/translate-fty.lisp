@@ -169,14 +169,18 @@
       ,create-line
       ,@consp-fn)))
 
-(define translate-fty-alist-acons ((name symbolp))
+(define translate-fty-alist-acons ((name symbolp)
+                                   (maybe-val symbolp))
   :returns (translated paragraphp
                        :hints (("Goal"
                                 :in-theory (enable paragraphp wordp))))
   (b* ((name (symbol-fix name))
+       (maybe-val (symbol-fix maybe-val))
+       (maybe-val (translate-symbol maybe-val))
        (name (translate-symbol name))
        (fn-name `(,name "_acons")))
-    `("def " ,fn-name "(key, value, alist): return Store(alist, key, value)"
+    `("def " ,fn-name "(key, value, alist): return Store(alist, key, "
+      ,maybe-val ".some(value))"
       #\Newline)))
 
 (define translate-fty-alist-assoc ((name symbolp)
@@ -249,7 +253,7 @@
                                           int-to-rat))
        (alist-equality
         (translate-fty-alist-type name key-type maybe-val int-to-rat))
-       (acons-fn (translate-fty-alist-acons name))
+       (acons-fn (translate-fty-alist-acons name maybe-val))
        (assoc-fn
         (translate-fty-alist-assoc name maybe-val assoc-return))
        )

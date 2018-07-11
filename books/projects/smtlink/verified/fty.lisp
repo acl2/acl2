@@ -33,13 +33,15 @@
   (verify-termination fty::flexlist-p)
   (verify-termination fty::flexlist->fix$inline)
   (verify-termination fty::flexlist->pred$inline)
-  (verify-termination fty::flexlist->name$inline)
+(verify-termination fty::flexlist->name$inline)
+(verify-termination fty::flexlist->true-listp$inline)
   (verify-termination fty::flexlist->elt-type$inline)
   (verify-termination fty::flexlist->true-listp$inline)
   (verify-termination fty::flexalist-p)
   (verify-termination fty::flexalist->fix$inline)
   (verify-termination fty::flexalist->pred$inline)
-  (verify-termination fty::flexalist->name$inline)
+(verify-termination fty::flexalist->name$inline)
+(verify-termination fty::flexalist->true-listp$inline)
   (verify-termination fty::flexalist->key-type$inline)
   (verify-termination fty::flexalist->val-type$inline)
   (verify-termination fty::flexprod->fields$inline)
@@ -282,6 +284,12 @@
     :returns (alst fty-info-alist-p)
     (b* ((acc (fty-info-alist-fix acc))
          ((unless (fty::flexlist-p flexlst)) acc)
+         ((unless (fty::flexlist->true-listp flexlst))
+          (prog2$ (er hard? 'fty=>generate-flexlist "Smtlink only supports ~
+                             deflist that are true-listp. This one is not a ~
+                             true-listp : ~q0"
+                      flexlst)
+                  acc))
          (name (fty::flexlist->name flexlst))
          ((unless (symbolp name))
           (prog2$ (er hard? 'fty=>generate-flexlist "Should be a symbolp: ~q0"
@@ -318,6 +326,12 @@
     :returns (alst fty-info-alist-p)
     (b* ((acc (fty-info-alist-fix acc))
          ((unless (fty::flexalist-p flexalst)) acc)
+         ((unless (fty::flexalist->true-listp flexalst))
+          (prog2$ (er hard? 'fty=>generate-flexalist "Smtlink only supports ~
+                             deflist that are true-listp. This one is not a ~
+                             true-listp : ~q0"
+                      flexalst)
+                  acc))
          (name (fty::flexalist->name flexalst))
          ((unless (symbolp name))
           (prog2$ (er hard? 'fty=>generate-flexalist "Should be a symbolp: ~q0"

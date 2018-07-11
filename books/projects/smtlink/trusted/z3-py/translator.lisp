@@ -132,7 +132,7 @@
                  (cadr fn-actuals)))
               ((equal fn-call 'ACONS)
                (b* (((unless (and (caddr fn-actuals)
-                                  (null (cddr fn-actuals))))
+                                  (null (cdddr fn-actuals))))
                      (er hard? 'SMT-translator=>translate-fty-special "Wrong ~
          number of arguments for ~p0: ~p1~%" fn-call fn-actuals)))
                  (caddr fn-actuals)))

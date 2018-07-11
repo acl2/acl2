@@ -354,6 +354,30 @@ finds out @('integerp') is not a supported function.</p>
           (:fty (symbol-integer-alist))))
   :rule-classes nil)
 
+(defthm fty-defalist-theorem-acons
+  (implies (and (symbol-integer-alist-p l)
+                (symbolp s1)
+                (symbolp s2)
+                (not (equal (assoc-equal s1 (symbol-integer-alist-fix
+                                             (acons 'x 1
+                                                    (symbol-integer-alist-fix l))))
+                            (smt::magic-fix 'symbolp_integerp nil)))
+                (not (equal (assoc-equal s2 (symbol-integer-alist-fix l))
+                            (smt::magic-fix 'symbolp_integerp nil))))
+           (>= (x^2+y^2
+                (cdr (smt::magic-fix
+                      'symbolp_integerp
+                      (assoc-equal s1 (symbol-integer-alist-fix
+                                       (acons 'x 1
+                                              (symbol-integer-alist-fix l))))))
+                (cdr (smt::magic-fix 'symbolp_integerp
+                                     (assoc-equal s2 (symbol-integer-alist-fix l)))))
+               0))
+  :hints(("Goal"
+          :smtlink
+          (:fty (symbol-integer-alist))))
+  :rule-classes nil)
+
 (acl2::must-fail
 (defthm fty-defalist-theorem-fail
   (implies (and (symbol-integer-alist-p l)
