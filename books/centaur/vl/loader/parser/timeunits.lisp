@@ -76,7 +76,7 @@
                                      :denominator denominator))))
 
 (defparser vl-parse-timeprecisiondecl ()
-  :short "Matches @(' 'timeprecision' time_literal ';'"
+  :short "Matches @(' 'timeprecision' time_literal ';' ')."
   :result (vl-timeprecisiondecl-p val)
   :resultp-of-nil nil
   :fails gracefully

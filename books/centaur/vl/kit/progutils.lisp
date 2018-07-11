@@ -149,6 +149,7 @@
     (split-plusargs-exec rest acc plusacc)))
 
 (define split-plusargs ((args string-listp))
+  :parents (kit)
   :short "Split command line arguments into plusargs and non-plusargs."
   :returns
   (mv (normal string-listp "Non-plusargs, in order.")

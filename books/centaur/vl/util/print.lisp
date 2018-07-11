@@ -767,6 +767,7 @@ the indicated file.</p>"
                                      (vl-print-to-file-and-clear-aux x channel state)))))
 
 (define vl-print-to-file-and-clear ((filename stringp) &key (ps 'ps) (state 'state))
+  :parents (vl-print-to-file)
   :returns (mv (ps)
                (state state-p1 :hyp (force (state-p1 state))))
   :short "Write the printed characters to a file and clear out the @('ps')."

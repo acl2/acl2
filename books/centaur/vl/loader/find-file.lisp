@@ -270,7 +270,7 @@
 
 (define vl-make-dirxcache-aux
   ((files      string-listp "Files in the directory.")
-   (extensions string-listp "Extensions we care about, e.g., @('\"v\" \"sv\"), no dots.")
+   (extensions string-listp "Extensions we care about, e.g., @('\"v\" \"sv\"'), no dots.")
    (cache      vl-dirxcache-p "Cache we are building."))
   :returns (cache vl-dirxcache-p)
   :parents (vl-make-dirxcache)
@@ -293,7 +293,7 @@
   :parents (vl-dirxcache)
   :short "Make a @(see vl-dirxcache) for a directory."
   ((dir        stringp          "Directory to list.")
-   (extensions string-listp     "Extensions we care about, e.g., @('\"v\" \"sv\"), no dots.")
+   (extensions string-listp     "Extensions we care about, e.g., @('\"v\" \"sv\"'), no dots.")
    (warnings   vl-warninglist-p "Warnings to extend in case of file errors.")
    state)
   :returns (mv (cache    vl-dirxcache-p)
@@ -317,7 +317,7 @@
   :parents (vl-dirxlist-cache)
   :short "Make a @(see vl-dirxlist-cache) for a list of directories."
   ((dirs       string-listp     "Directories to list.")
-   (extensions string-listp     "Extensions we care about, e.g., @('\"v\" \"sv\"), no dots.")
+   (extensions string-listp     "Extensions we care about, e.g., @('\"v\" \"sv\"'), no dots.")
    (warnings   vl-warninglist-p "Warnings to extend in case of file errors.")
    state)
   :returns (mv (cache vl-dirxlist-cache-p)

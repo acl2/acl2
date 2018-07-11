@@ -226,7 +226,7 @@ warning that maybe something is amiss with file loading.</p>")
               "The current set of @('`define')s at any point in time.")
 
    (iskips    vl-includeskips-p
-              "Supports multiple-include optimization in the @(see ~
+              "Supports multiple-include optimization in the @(see
                preprocessor).")
 
    (idcache    vl-dirlist-cache-p

@@ -2024,7 +2024,7 @@ sub-terms.  Typically the result of @('eviscerate') is then given to, e.g.,
 elisions have been made.</p>
 
 <p>ACL2 has its own, built-in evisceration functions that support fancy
-features such as @(see iprinting).  However, much like ACL2's pretty printer
+features such as @(see acl2::iprinting).  However, much like ACL2's pretty printer
 itself, these functions are in program mode and take @(see state), which is
 sometimes inconvenient.  So, here, we (re)implement a simple evisceration
 function that provides fewer features but avoids state.</p>
