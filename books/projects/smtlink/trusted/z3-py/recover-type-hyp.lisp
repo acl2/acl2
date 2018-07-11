@@ -116,8 +116,6 @@
                                ":return type predicate ill-formed: ~q0"
                                hyp-lst)
                            (mv fn-decl-acc nil)))))
-             ((equal tag '':more-return)
-              (recover-type-hyp rest fn-alst fty-info fn-decl-acc state))
              (t (prog2$ (er hard? 'recover-type-hyp=>recover-type-hyp "tag ~
                           isn't recognized: ~q0" tag)
                         (mv fn-decl-acc nil)))))
