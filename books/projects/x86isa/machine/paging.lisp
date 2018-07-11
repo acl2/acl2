@@ -1,6 +1,41 @@
-;; AUTHORS:
-;; Robert Krug <rkrug@cs.utexas.edu>
-;; Shilpi Goel <shigoel@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Robert Krug         <rkrug@cs.utexas.edu>
+; Shilpi Goel         <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
 (include-book "physical-memory" :ttags (:undef-flg))
@@ -711,7 +746,7 @@ accesses.</p>
                             weed-out-irrelevant-logand-when-first-operand-constant
                             negative-logand-to-positive-logand-with-integerp-x)))))
 
-  :guard (not (programmer-level-mode x86))
+  :guard (not (app-view x86))
   :returns (mv flg val (x86 x86p :hyp (x86p x86)))
 
   (b* ((entry (mbe :logic (loghead 64 entry)
@@ -1149,7 +1184,7 @@ accesses.</p>
 
   :parents (ia32e-paging)
 
-  :guard (and (not (programmer-level-mode x86))
+  :guard (and (not (app-view x86))
               (canonical-address-p lin-addr)
               ;; 4K-aligned --- the base address is
               ;; the 40 bits wide address obtained
@@ -1165,7 +1200,7 @@ accesses.</p>
   ;; Reference: Vol. 3A, Section 4.5 (Pg. 4-22) of the Feb'14 Intel
   ;; Manual.
 
-  (if (mbt (not (programmer-level-mode x86)))
+  (if (mbt (not (app-view x86)))
 
       (b* (
            ;; Fix the inputs of this function without incurring execution
@@ -1206,7 +1241,7 @@ accesses.</p>
            ;; No errors, so we proceed with the address translation.
 
            (x86
-            (if (page-structure-marking-mode x86)
+            (if (marking-view x86)
                 ;; Mark A and D bits, as the x86 machine does.
                 (b* (
                      ;; Get accessed and dirty bits:
@@ -1319,8 +1354,8 @@ accesses.</p>
                                       (:definition not)
                                       (:meta acl2::mv-nth-cons-meta))))))
 
-  (defthm xr-ia32e-la-to-pa-page-table-in-non-marking-mode
-    (implies (and (not (page-structure-marking-mode x86))
+  (defthm xr-ia32e-la-to-pa-page-table-in-non-marking-view
+    (implies (and (not (marking-view x86))
                   (not (equal fld :fault)))
              (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-table
                                              lin-addr
@@ -1334,7 +1369,7 @@ accesses.</p>
   (defthm ia32e-la-to-pa-page-table-xw-values
     (implies (and (not (equal fld :mem))
                   (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (and (equal (mv-nth 0
                                  (ia32e-la-to-pa-page-table
                                   lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -1359,8 +1394,8 @@ accesses.</p>
   (defthm ia32e-la-to-pa-page-table-xw-state
     (implies (and (not (equal fld :mem))
                   (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
+                  (not (equal fld :app-view))
+                  (not (equal fld :marking-view)))
              (equal (mv-nth 2
                             (ia32e-la-to-pa-page-table
                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -1373,8 +1408,8 @@ accesses.</p>
                                  wp smep smap ac nxe r-w-x cpl
                                  x86))))))
 
-  (defthm mv-nth-2-ia32e-la-to-pa-page-table-system-level-non-marking-mode
-    (implies (and (not (page-structure-marking-mode x86))
+  (defthm mv-nth-2-ia32e-la-to-pa-page-table-system-level-non-marking-view
+    (implies (and (not (marking-view x86))
                   (not (mv-nth 0 (ia32e-la-to-pa-page-table
                                   lin-addr
                                   base-addr u/s-acc r/w-acc x/d-acc
@@ -1413,7 +1448,7 @@ accesses.</p>
 
   :parents (ia32e-paging)
 
-  :guard (and (not (programmer-level-mode x86))
+  :guard (and (not (app-view x86))
               (canonical-address-p lin-addr)
               ;; 4K-aligned --- the base address is
               ;; the 40 bits wide address obtained
@@ -1429,7 +1464,7 @@ accesses.</p>
   ;; Reference: Vol. 3A, Section 4.5 (Pg. 4-22) of the Feb'14 Intel
   ;; Manual.
 
-  (if (mbt (not (programmer-level-mode x86)))
+  (if (mbt (not (app-view x86)))
 
       (b* (
            ;; Fix the inputs of this function without incurring execution
@@ -1486,7 +1521,7 @@ accesses.</p>
             ;; 2MB page
 
             (let ((x86
-                   (if (page-structure-marking-mode x86)
+                   (if (marking-view x86)
                        ;; Mark A and D bits.
                        (b* (
                             ;; Get accessed and dirty bits:
@@ -1557,7 +1592,7 @@ accesses.</p>
                 (mv flag 0 x86))
 
                (x86
-                (if (page-structure-marking-mode x86)
+                (if (marking-view x86)
                     ;; Mark A bit.
                     (b* (
                          ;; Get possibly updated entry --- note that
@@ -1640,8 +1675,8 @@ accesses.</p>
                                       (:definition not)
                                       (:meta acl2::mv-nth-cons-meta))))))
 
-  (defthm xr-and-ia32e-la-to-pa-page-directory-in-non-marking-mode
-    (implies (and (not (page-structure-marking-mode x86))
+  (defthm xr-and-ia32e-la-to-pa-page-directory-in-non-marking-view
+    (implies (and (not (marking-view x86))
                   (not (equal fld :fault)))
              (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-directory
                                              lin-addr
@@ -1655,7 +1690,7 @@ accesses.</p>
   (defthm ia32e-la-to-pa-page-directory-xw-values
     (implies (and (not (equal fld :mem))
                   (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (and (equal (mv-nth 0
                                  (ia32e-la-to-pa-page-directory
                                   lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -1680,8 +1715,8 @@ accesses.</p>
   (defthm ia32e-la-to-pa-page-directory-xw-state
     (implies (and (not (equal fld :mem))
                   (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
+                  (not (equal fld :app-view))
+                  (not (equal fld :marking-view)))
              (equal (mv-nth 2
                             (ia32e-la-to-pa-page-directory
                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -1694,8 +1729,8 @@ accesses.</p>
                                  wp smep smap ac nxe r-w-x cpl
                                  x86))))))
 
-  (defthm mv-nth-2-ia32e-la-to-pa-page-directory-system-level-non-marking-mode
-    (implies (and (not (page-structure-marking-mode x86))
+  (defthm mv-nth-2-ia32e-la-to-pa-page-directory-system-level-non-marking-view
+    (implies (and (not (marking-view x86))
                   (not (mv-nth 0 (ia32e-la-to-pa-page-directory
                                   lin-addr
                                   base-addr u/s-acc r/w-acc x/d-acc
@@ -1734,7 +1769,7 @@ accesses.</p>
 
   :parents (ia32e-paging)
 
-  :guard (and (not (programmer-level-mode x86))
+  :guard (and (not (app-view x86))
               (canonical-address-p lin-addr)
               ;; 4K-aligned --- the base address is
               ;; the 40 bits wide address obtained
@@ -1751,7 +1786,7 @@ accesses.</p>
   ;; Reference: Vol. 3A, Section 4.5 (Pg. 4-22) of the Feb'14 Intel
   ;; Manual.
 
-  (if (mbt (not (programmer-level-mode x86)))
+  (if (mbt (not (app-view x86)))
 
       (b* (
            ;; Fix the inputs of this function without incurring execution
@@ -1809,7 +1844,7 @@ accesses.</p>
                  :exec (equal (ia32e-page-tables-slice :ps entry) 1))
 
             (let ((x86
-                   (if (page-structure-marking-mode x86)
+                   (if (marking-view x86)
                        ;; Mark A and D bits.
                        ;; 1GB page
                        (b* (
@@ -1879,7 +1914,7 @@ accesses.</p>
                 (mv flag 0 x86))
 
                (x86
-                (if (page-structure-marking-mode x86)
+                (if (marking-view x86)
                     ;; Mark A bit.
                     (b* (
                          ;; Get possibly updated entry --- note that
@@ -1963,8 +1998,8 @@ accesses.</p>
                                       (:definition not)
                                       (:meta acl2::mv-nth-cons-meta))))))
 
-  (defthm xr-and-ia32e-la-to-pa-page-dir-ptr-table-in-non-marking-mode
-    (implies (and (not (page-structure-marking-mode x86))
+  (defthm xr-and-ia32e-la-to-pa-page-dir-ptr-table-in-non-marking-view
+    (implies (and (not (marking-view x86))
                   (not (equal fld :fault)))
              (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                                              lin-addr
@@ -1978,7 +2013,7 @@ accesses.</p>
   (defthm ia32e-la-to-pa-page-dir-ptr-table-xw-values
     (implies (and (not (equal fld :mem))
                   (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (and (equal (mv-nth 0
                                  (ia32e-la-to-pa-page-dir-ptr-table
                                   lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -2003,8 +2038,8 @@ accesses.</p>
   (defthm ia32e-la-to-pa-page-dir-ptr-table-xw-state
     (implies (and (not (equal fld :mem))
                   (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
+                  (not (equal fld :app-view))
+                  (not (equal fld :marking-view)))
              (equal (mv-nth 2
                             (ia32e-la-to-pa-page-dir-ptr-table
                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
@@ -2017,8 +2052,8 @@ accesses.</p>
                                  wp smep smap ac nxe r-w-x cpl
                                  x86))))))
 
-  (defthm mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table-system-level-non-marking-mode
-    (implies (and (not (page-structure-marking-mode x86))
+  (defthm mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table-system-level-non-marking-view
+    (implies (and (not (marking-view x86))
                   (not (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
                                   lin-addr
                                   base-addr u/s-acc r/w-acc x/d-acc
@@ -2054,7 +2089,7 @@ accesses.</p>
 
   :parents (ia32e-paging)
 
-  :guard (and (not (programmer-level-mode x86))
+  :guard (and (not (app-view x86))
               (canonical-address-p lin-addr)
               ;; 4K-aligned --- the base address is
               ;; the 40 bits wide address obtained
@@ -2071,7 +2106,7 @@ accesses.</p>
   ;; Reference: Vol. 3A, Section 4.5 (Pg. 4-22) of the Feb'14 Intel
   ;; Manual.
 
-  (if (mbt (not (programmer-level-mode x86)))
+  (if (mbt (not (app-view x86)))
 
       (b* (
 
@@ -2130,7 +2165,7 @@ accesses.</p>
             (mv flag 0 x86))
 
            (x86
-            (if (page-structure-marking-mode x86)
+            (if (marking-view x86)
                 ;; Mark A bit.
                 (b* (
                      ;; Get possibly updated entry --- note that if
@@ -2212,8 +2247,8 @@ accesses.</p>
                                       (:definition not)
                                       (:meta acl2::mv-nth-cons-meta))))))
 
-  (defthm xr-and-ia32e-la-to-pa-pml4-table-in-non-marking-mode
-    (implies (and (not (page-structure-marking-mode x86))
+  (defthm xr-and-ia32e-la-to-pa-pml4-table-in-non-marking-view
+    (implies (and (not (marking-view x86))
                   (not (equal fld :fault)))
              (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-pml4-table
                                              lin-addr base-addr
@@ -2226,7 +2261,7 @@ accesses.</p>
   (defthm ia32e-la-to-pa-pml4-table-xw-values
     (implies (and (not (equal fld :mem))
                   (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (and (equal (mv-nth 0
                                  (ia32e-la-to-pa-pml4-table
                                   lin-addr base-addr
@@ -2251,8 +2286,8 @@ accesses.</p>
   (defthm ia32e-la-to-pa-pml4-table-xw-state
     (implies (and (not (equal fld :mem))
                   (not (equal fld :fault))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
+                  (not (equal fld :app-view))
+                  (not (equal fld :marking-view)))
              (equal (mv-nth 2
                             (ia32e-la-to-pa-pml4-table
                              lin-addr base-addr
@@ -2265,8 +2300,8 @@ accesses.</p>
                                  wp smep smap ac nxe r-w-x cpl
                                  x86))))))
 
-  (defthm mv-nth-2-ia32e-la-to-pa-pml4-table-system-level-non-marking-mode
-    (implies (and (not (page-structure-marking-mode x86))
+  (defthm mv-nth-2-ia32e-la-to-pa-pml4-table-system-level-non-marking-view
+    (implies (and (not (marking-view x86))
                   (not (mv-nth 0 (ia32e-la-to-pa-pml4-table
                                   lin-addr base-addr
                                   wp smep smap ac nxe r-w-x cpl x86))))
@@ -2299,7 +2334,7 @@ accesses.</p>
 
   :parents (ia32e-paging)
 
-  :guard (and (not (programmer-level-mode x86))
+  :guard (and (not (app-view x86))
               (canonical-address-p lin-addr))
 
   :guard-hints (("Goal" :in-theory (e/d (acl2::bool->bit)
@@ -2313,7 +2348,7 @@ accesses.</p>
   ;; protection exception (#GP(0)).  (Or a stack fault (#SS) as
   ;; appropriate?)
 
-  (if (mbt (not (programmer-level-mode x86)))
+  (if (mbt (not (app-view x86)))
 
       (b* ((lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
                           :exec lin-addr))
@@ -2380,8 +2415,8 @@ accesses.</p>
                                       (:definition not)
                                       (:meta acl2::mv-nth-cons-meta))))))
 
-  (defthm xr-and-ia32e-la-to-pa-in-non-marking-mode
-    (implies (and (not (page-structure-marking-mode x86))
+  (defthm xr-and-ia32e-la-to-pa-in-non-marking-view
+    (implies (and (not (marking-view x86))
                   (not (equal fld :fault)))
              (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
                     (xr fld index x86)))
@@ -2394,7 +2429,7 @@ accesses.</p>
                   (not (equal fld :ctr))
                   (not (equal fld :msr))
                   (not (equal fld :seg-visible))
-                  (not (equal fld :programmer-level-mode)))
+                  (not (equal fld :app-view)))
              (and (equal (mv-nth 0
                                  (ia32e-la-to-pa lin-addr r-w-x
                                                  (xw fld index value x86)))
@@ -2427,8 +2462,8 @@ accesses.</p>
                   (not (equal fld :ctr))
                   (not (equal fld :msr))
                   (not (equal fld :seg-visible))
-                  (not (equal fld :programmer-level-mode))
-                  (not (equal fld :page-structure-marking-mode)))
+                  (not (equal fld :app-view))
+                  (not (equal fld :marking-view)))
              (equal (mv-nth 2
                             (ia32e-la-to-pa lin-addr r-w-x
                                             (xw fld index value x86)))
@@ -2448,8 +2483,8 @@ accesses.</p>
                         (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-  (defthm mv-nth-2-ia32e-la-to-pa-system-level-non-marking-mode
-    (implies (and (not (page-structure-marking-mode x86))
+  (defthm mv-nth-2-ia32e-la-to-pa-system-level-non-marking-view
+    (implies (and (not (marking-view x86))
                   (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))))
              (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
                     x86))
@@ -3110,15 +3145,15 @@ accesses.</p>
   :inline t
   :enabled t
 
-  :guard (not (programmer-level-mode x86))
+  :guard (not (app-view x86))
   :parents (ia32e-paging)
 
   :short "Top-level page translation function"
 
   (if (mbt (and (canonical-address-p lin-addr)
-                (not (programmer-level-mode x86))))
+                (not (app-view x86))))
       (ia32e-la-to-pa lin-addr r-w-x x86)
-    (mv (list :ia32e-paging-invalid-linear-address-or-not-in-programmer-level-mode
+    (mv (list :ia32e-paging-invalid-linear-address-or-not-in-app-view
               lin-addr)
         0 x86)))
 

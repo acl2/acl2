@@ -214,35 +214,80 @@
            (t (mv nil eqv2 lhs2 rhs2 ttree2)))))
         (t (mv nil eqv lhs rhs ttree)))))))
 
-; We inspect the lhs and some hypotheses with the following function
-; to determine if non-recursive defuns will present a problem to the
-; user.
+; We inspect the lhs and some hypotheses with the following functions to
+; determine if non-recursive defuns will present a problem to the user.
 
 (mutual-recursion
 
-(defun non-recursive-fnnames (term ens wrld)
-  (cond ((variablep term) nil)
-        ((fquotep term) nil)
-        ((flambda-applicationp term)
-         (add-to-set-equal (ffn-symb term)
-                           (non-recursive-fnnames-lst (fargs term) ens wrld)))
-        ((let ((def-body (def-body (ffn-symb term) wrld)))
-           (and def-body
-                (enabled-numep (access def-body def-body :nume)
-                               ens)
-                (not (access def-body def-body :recursivep))))
-         (add-to-set-eq (ffn-symb term)
-                        (non-recursive-fnnames-lst (fargs term) ens wrld)))
-        (t (non-recursive-fnnames-lst (fargs term) ens wrld))))
+(defun non-recursive-fnnames-alist-rec (term ens wrld acc)
 
-(defun non-recursive-fnnames-lst (lst ens wrld)
-  (cond ((null lst) nil)
-        (t (union-equal (non-recursive-fnnames (car lst) ens wrld)
-                        (non-recursive-fnnames-lst (cdr lst) ens wrld)))))
+; Accumulate, into acc, an alist that associates each enabled non-recursive
+; function symbol fn of term either with the base-symbol of its most recent
+; definition rune or with nil.  Our meaning of "enabled" and "non-recursive" is
+; with respect to that rune (which exists except for lambdas).  We associate to
+; a value of nil for two cases of the key: a lambda, and when that rune is the
+; rune of the original definition.  We do not dive into lambda bodies.
 
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (enabled-structure-p ens)
+                              (plist-worldp wrld)
+                              (alistp acc))))
+  (cond
+   ((variablep term) acc)
+   ((fquotep term) acc)
+   ((flambda-applicationp term)
+    (non-recursive-fnnames-alist-rec-lst
+     (fargs term) ens wrld
+     (if (assoc-equal (ffn-symb term) acc)
+         acc
+       (acons (ffn-symb term) nil acc))))
+   (t (non-recursive-fnnames-alist-rec-lst
+       (fargs term) ens wrld
+       (cond
+        ((assoc-eq (ffn-symb term) acc)
+         acc)
+        (t (let ((def-body (def-body (ffn-symb term) wrld)))
+             (cond
+              ((and def-body
+                    (enabled-numep (access def-body def-body :nume)
+                                   ens)
+                    (not (access def-body def-body :recursivep)))
+               (let ((sym (base-symbol (access def-body def-body :rune))))
+                 (acons (ffn-symb term)
+                        (if (eq sym (ffn-symb term))
+                            nil
+                          sym)
+                        acc)))
+              (t acc)))))))))
+
+(defun non-recursive-fnnames-alist-rec-lst (lst ens wrld acc)
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (enabled-structure-p ens)
+                              (plist-worldp wrld)
+                              (alistp acc))))
+  (cond ((endp lst) acc)
+        (t (non-recursive-fnnames-alist-rec-lst
+            (cdr lst) ens wrld
+            (non-recursive-fnnames-alist-rec (car lst) ens wrld acc)))))
 )
 
-; The list just constructed is odd because it may contain some lambda
+(defun non-recursive-fnnames-alist (term ens wrld)
+
+; See non-recursive-fnnames-alist-rec.  (The present function reverses the
+; result, to respect the original order of appearance of function symbols.)
+
+  (reverse (non-recursive-fnnames-alist-rec term ens wrld nil)))
+
+
+(defun non-recursive-fnnames-alist-lst (lst ens wrld)
+
+; See non-recursive-fnnames-alist-rec.  (The present function takes a list of
+; terms; it also reverses the result, to respect the original order of
+; appearance of function symbols.)
+
+  (reverse (non-recursive-fnnames-alist-rec-lst lst ens wrld nil)))
+
+; The alist just constructed is odd because it may contain some lambda
 ; expressions posing as function symbols.  We use the following function
 ; to transform those into let's just for printing purposes...
 
@@ -1312,6 +1357,27 @@
               (irrelevant-loop-stopper-pairs (cdr pairs) vars)))
     nil))
 
+(defun non-rec-def-rules-msg-1 (alist)
+  (cond ((endp alist) nil)
+        ((null (cdar alist))
+         (non-rec-def-rules-msg-1 (cdr alist)))
+        (t (cons (msg "~x0 is defined with ~x1"
+                      (caar alist)
+                      (cdar alist))
+                 (non-rec-def-rules-msg-1 (cdr alist))))))
+
+(defun non-rec-def-rules-msg (alist)
+  (let ((lst (non-rec-def-rules-msg-1 alist)))
+    (cond
+     ((null lst) "")
+     (t (msg "  (Note that ~*0"
+             (list
+              "impossible" ; unreachable case (when there's nothing to print)
+              "~@*.)"       ; how to print the last element
+              "~@* and "   ; how to print the 2nd to last element
+              "~@*, "      ; how to print all other elements
+              lst))))))
+
 (defun chk-rewrite-rule-warnings (name match-free loop-stopper rule ctx ens
                                        wrld state)
   (let* ((token (if (eq (access rewrite-rule rule :subclass)
@@ -1320,7 +1386,10 @@
                   :rewrite))
          (hyps (access rewrite-rule rule :hyps))
          (lhs (access rewrite-rule rule :lhs))
-         (non-rec-fns-lhs (non-recursive-fnnames lhs ens wrld))
+         (warn-non-rec (not (warning-disabled-p "Non-rec")))
+         (non-rec-fns-lhs-alist
+          (and warn-non-rec
+               (non-recursive-fnnames-alist lhs ens wrld)))
          (lhs-vars (all-vars lhs))
          (rhs-vars (all-vars (access rewrite-rule rule :rhs)))
          (free-vars (free-vars-in-hyps-considering-bind-free
@@ -1328,9 +1397,10 @@
                      lhs-vars
                      wrld))
          (inst-hyps (hyps-that-instantiate-free-vars free-vars hyps))
-         (non-rec-fns-inst-hyps
-          (non-recursive-fnnames-lst
-           (strip-top-level-nots-and-forces inst-hyps) ens wrld))
+         (non-rec-fns-inst-hyps-alist
+          (and warn-non-rec
+               (non-recursive-fnnames-alist-lst
+                (strip-top-level-nots-and-forces inst-hyps) ens wrld)))
          (subsume-check-enabled (not (warning-disabled-p "Subsume")))
          (subsumed-rule-names
           (and subsume-check-enabled
@@ -1360,17 +1430,22 @@
                                                token name "" ctx state))
            (t state))
      (cond
-      (non-rec-fns-lhs
+      (non-rec-fns-lhs-alist
        (warning$ ctx "Non-rec"
                  `("A ~x0 rule generated from ~x1 will be triggered only by ~
-                    terms containing the non-recursive function symbol~#2~[ ~
-                    ~&2.  Unless this function is~/s ~&2.  Unless these ~
-                    functions are~] disabled, this rule is unlikely ever to ~
-                    be used."
-                   (:non-recursive-fns-lhs ,(hide-lambdas non-rec-fns-lhs))
+                    terms containing the function symbol~#2~[ ~&2, which has ~
+                    a non-recursive definition.~@3  Unless this definition ~
+                    is~/s ~&2, which have non-recursive definitions.~@3  ~
+                    Unless these definitions are~] disabled, this rule is ~
+                    unlikely ever to be used."
+                   (:non-recursive-fns-lhs
+                    ,(hide-lambdas (strip-cars non-rec-fns-lhs-alist)))
                    (:name ,name)
                    (:rule-class ,token))
-                 token name (hide-lambdas non-rec-fns-lhs)))
+                 token
+                 name
+                 (hide-lambdas (strip-cars non-rec-fns-lhs-alist))
+                 (non-rec-def-rules-msg non-rec-fns-lhs-alist)))
       (t state))
      (er-progn
       (cond
@@ -1446,26 +1521,30 @@
           (t state)))
         (t state))
        (cond
-        (non-rec-fns-inst-hyps
+        (non-rec-fns-inst-hyps-alist
          (warning$ ctx "Non-rec"
                    `("As noted, we will instantiate the free ~
                       variable~#0~[~/s~], ~&0, of a ~x1 rule generated from ~
                       ~x2, by searching for the ~#3~[hypothesis~/set of ~
                       hypotheses~] shown above.  However, ~#3~[this ~
                       hypothesis mentions~/these hypotheses mention~] the ~
-                      function symbol~#4~[ ~&4, which is~/s ~&4, which are~] ~
-                      defun'd non-recursively.  Unless disabled, ~#4~[this ~
-                      function symbol is~/these function symbols are~] ~
-                      unlikely to occur in the conjecture being proved and ~
-                      hence the search for the required ~
-                      ~#3~[hypothesis~/hypotheses~] will likely fail."
+                      function symbol~#4~[ ~&4, which has a non-recursive ~
+                      definition.~@5  Unless this definition is disabled, ~
+                      that function symbol is~/s ~&4, which have ~
+                      non-recursive definitions.~@5  Unless these definitions ~
+                      are disabled, those function symbols are~] unlikely to ~
+                      occur in the conjecture being proved and hence the ~
+                      search for the required ~#3~[hypothesis~/hypotheses~] ~
+                      will likely fail."
                      (:free-variables ,free-vars)
                      (:instantiated-hyps ,inst-hyps)
-                     (:non-recursive-fns-lhs ,(hide-lambdas non-rec-fns-lhs))
+                     (:non-rec-fns-inst-hyps
+                      ,(hide-lambdas (strip-cars non-rec-fns-inst-hyps-alist)))
                      (:name ,name)
                      (:rule-class ,token))
                    free-vars token name inst-hyps
-                   (hide-lambdas non-rec-fns-inst-hyps)))
+                   (hide-lambdas (strip-cars non-rec-fns-inst-hyps-alist))
+                   (non-rec-def-rules-msg non-rec-fns-inst-hyps-alist)))
         (t state))
        (cond
         (subsumed-rule-names
@@ -1971,8 +2050,8 @@
                     hyps (cdr max-terms) final-term name ctx ens wrld
                     state)))))
 
-(defun chk-acceptable-linear-rule2
-  (name match-free trigger-terms hyps concl ctx ens wrld state)
+(defun chk-acceptable-linear-rule2 (name match-free trigger-terms hyps concl
+                                         ctx ens wrld state)
 
 ; This is the basic function for checking that (implies (AND . hyps)
 ; concl) generates a useful :LINEAR rule.  If it does not, we cause an
@@ -2000,132 +2079,140 @@
                 linear."
                name
                (untranslate xconcl t wrld)))
-          (t (let* ((all-vars-hyps (all-vars-in-hyps hyps))
-                    (potential-free-vars
-                     (free-vars-in-hyps-considering-bind-free hyps nil wrld))
-                    (all-vars-in-poly-lst
-                     (all-vars-in-poly-lst (car lst)))
-                    (max-terms
-                     (or trigger-terms
-                         (maximal-terms all-vars-in-poly-lst
-                                        all-vars-hyps
-                                        (all-vars concl))))
-                    (non-rec-fns (non-recursive-fnnames-lst
-                                  max-terms ens wrld))
-                    (bad-max-terms (collect-when-ffnnamesp
-                                    non-rec-fns
-                                    max-terms))
-                    (free-max-terms-msg
-                     (make-free-max-terms-msg name
-                                              max-terms
-                                              potential-free-vars
-                                              hyps)))
+          (t
+           (let* ((all-vars-hyps (all-vars-in-hyps hyps))
+                  (potential-free-vars
+                   (free-vars-in-hyps-considering-bind-free hyps nil wrld))
+                  (all-vars-in-poly-lst
+                   (all-vars-in-poly-lst (car lst)))
+                  (max-terms
+                   (or trigger-terms
+                       (maximal-terms all-vars-in-poly-lst
+                                      all-vars-hyps
+                                      (all-vars concl))))
+                  (warn-non-rec (not (warning-disabled-p "Non-rec")))
+                  (non-rec-fns-alist
+                   (and warn-non-rec
+                        (non-recursive-fnnames-alist-lst max-terms ens wrld)))
+                  (non-rec-fns (strip-cars non-rec-fns-alist))
+                  (bad-max-terms (collect-when-ffnnamesp
+                                  non-rec-fns
+                                  max-terms))
+                  (free-max-terms-msg
+                   (make-free-max-terms-msg name
+                                            max-terms
+                                            potential-free-vars
+                                            hyps)))
+             (cond
+              ((null max-terms)
                (cond
-                ((null max-terms)
-                 (cond
-                  ((null all-vars-in-poly-lst)
-                   (er soft ctx
-                       "No :LINEAR rule can be generated from ~x0 because ~
-                        there are no ``maximal terms'' in the inequality ~
-                        produced from its conclusion.  In fact, the inequality ~
-                        has simplified to one that has no variables."
-                       name))
-                  (t
-                   (er soft ctx
-                       "No :LINEAR rule can be generated from ~x0 because ~
-                        there are no ``maximal terms'' in the inequality ~
-                        produced from its conclusion.  The inequality produced ~
-                        from its conclusion involves a linear polynomial in ~
-                        the unknown~#1~[~/s~] ~&1.  No unknown above has the ~
-                        three properties of a maximal term (see :DOC linear).  ~
-                        What can you do?  The most direct solution is to make ~
-                        this a :REWRITE rule rather than a :LINEAR rule.  Of ~
-                        course, you then have to make sure your intended ~
-                        application can suffer it being a :REWRITE rule!  A ~
-                        more challenging (and sometimes more rewarding) ~
-                        alternative is to package up some of your functions ~
-                        into a new non-recursive function (either in the ~
-                        unknowns or the hypotheses) so as to create a maximal ~
-                        term.  Of course, if you do that, you have to arrange ~
-                        to use that non-recursive function in the intended ~
-                        applications of this rule."
-                       name all-vars-in-poly-lst))))
+                ((null all-vars-in-poly-lst)
+                 (er soft ctx
+                     "No :LINEAR rule can be generated from ~x0 because there ~
+                      are no ``maximal terms'' in the inequality produced ~
+                      from its conclusion.  In fact, the inequality has ~
+                      simplified to one that has no variables."
+                     name))
                 (t
-                 (mv-let (bad-synp-hyp-msg bad-max-term)
-                   (bad-synp-hyp-msg-for-linear max-terms hyps wrld)
-                   (cond
-                    (bad-synp-hyp-msg
-                     (er soft ctx
-                         "While checking the hypotheses of ~x0 and using ~
-                          the trigger term ~x1, the following error message ~
-                          was generated: ~% ~%~
-                          ~@2"
-                         name
-                         bad-max-term
-                         bad-synp-hyp-msg))
-                    (t
-                     (pprogn
-                      (if (warning-disabled-p "Double-rewrite")
-                          state
-                        (show-double-rewrite-opportunities-linear
-                         hyps max-terms concl name ctx ens wrld state))
-                      (cond
-                       ((equal max-terms bad-max-terms)
-                        (warning$ ctx "Non-rec"
-                                  `("A :LINEAR rule generated from ~x0 will ~
-                                     be triggered only by terms containing ~
-                                     the non-recursive function symbol~#1~[ ~
-                                     ~&1.  Unless this function is~/s ~&1.  ~
-                                     Unless these functions are~] disabled, ~
-                                     such triggering terms are unlikely to ~
-                                     arise and so ~x0 is unlikely to ever be ~
-                                     used."
-                                    (:name ,name)
-                                    (:non-recursive-fns
-                                     ,(hide-lambdas non-rec-fns))
-                                    (:rule-class :linear))
-                                  name (hide-lambdas non-rec-fns)))
-                       (bad-max-terms
-                        (warning$ ctx "Non-rec"
-                                  "A :LINEAR rule generated from ~x0 will be ~
-                                   triggered by the terms ~&1. ~N2 of these ~
-                                   terms, namely ~&3, contain~#3~[s~/~] the ~
-                                   non-recursive function symbol~#4~[ ~&4.  ~
-                                   Unless this function is~/s ~&4.  Unless ~
-                                   these functions are~] disabled, ~x0 is ~
-                                   unlikely to be triggered via ~#3~[this ~
-                                   term~/these terms~]."
-                                  name
-                                  max-terms
-                                  (length bad-max-terms)
-                                  bad-max-terms
-                                  (hide-lambdas non-rec-fns)))
-                       (t state))
-                      (cond
-                       ((and (nth 4 free-max-terms-msg)
-                             (null match-free))
-                        (pprogn
-                         (warning$ ctx "Free"
-                                   "A :LINEAR rule generated from ~x0 will be ~
-                                    triggered by the term~#1~[~/s~] ~&1.  ~
-                                    ~*2This is generally a severe restriction ~
-                                    on the applicability of the :LINEAR ~
-                                    rule~@3."
-                                   name
-                                   max-terms
-                                   free-max-terms-msg
-                                   (let ((len-max-terms (length max-terms))
-                                         (len-bad-max-terms
-                                          (length (nth 4 free-max-terms-msg))))
-                                     (cond ((eql len-bad-max-terms
-                                                 len-max-terms)
-                                            "")
-                                           ((eql len-bad-max-terms 1)
-                                            " for this trigger")
-                                           (t (msg " for these ~n0 triggers"
-                                                   len-bad-max-terms)))))
-                         (free-variable-error? :linear name ctx wrld state)))
-                       (t (value nil))))))))))))))
+                 (er soft ctx
+                     "No :LINEAR rule can be generated from ~x0 because there ~
+                      are no ``maximal terms'' in the inequality produced ~
+                      from its conclusion.  The inequality produced from its ~
+                      conclusion involves a linear polynomial in the ~
+                      unknown~#1~[~/s~] ~&1.  No unknown above has the three ~
+                      properties of a maximal term (see :DOC linear).  What ~
+                      can you do?  The most direct solution is to make this a ~
+                      :REWRITE rule rather than a :LINEAR rule.  Of course, ~
+                      you then have to make sure your intended application ~
+                      can suffer it being a :REWRITE rule!  A more ~
+                      challenging (and sometimes more rewarding) alternative ~
+                      is to package up some of your functions into a new ~
+                      non-recursive function (either in the unknowns or the ~
+                      hypotheses) so as to create a maximal term.  Of course, ~
+                      if you do that, you have to arrange to use that ~
+                      non-recursive function in the intended applications of ~
+                      this rule."
+                     name all-vars-in-poly-lst))))
+              (t
+               (mv-let (bad-synp-hyp-msg bad-max-term)
+                 (bad-synp-hyp-msg-for-linear max-terms hyps wrld)
+                 (cond
+                  (bad-synp-hyp-msg
+                   (er soft ctx
+                       "While checking the hypotheses of ~x0 and using the ~
+                        trigger term ~x1, the following error message was ~
+                        generated:~%~%~@2"
+                       name
+                       bad-max-term
+                       bad-synp-hyp-msg))
+                  (t
+                   (pprogn
+                    (if (warning-disabled-p "Double-rewrite")
+                        state
+                      (show-double-rewrite-opportunities-linear
+                       hyps max-terms concl name ctx ens wrld state))
+                    (cond
+                     ((equal max-terms bad-max-terms)
+                      (warning$ ctx "Non-rec"
+                                `("A :LINEAR rule generated from ~x0 will be ~
+                                   triggered only by terms containing the ~
+                                   function symbol~#1~[ ~&1, which has a ~
+                                   non-recursive definition.~@2  Unless this ~
+                                   definition is~/s ~&1, which have ~
+                                   non-recursive definitions.~@2  Unless ~
+                                   these definitions are~] disabled, such ~
+                                   triggering terms are unlikely to arise and ~
+                                   so ~x0 is unlikely to ever be used."
+                                  (:name ,name)
+                                  (:non-recursive-fns
+                                   ,(hide-lambdas non-rec-fns))
+                                  (:rule-class :linear))
+                                name
+                                (hide-lambdas non-rec-fns)
+                                (non-rec-def-rules-msg non-rec-fns-alist)))
+                     (bad-max-terms
+                      (warning$ ctx "Non-rec"
+                                "A :LINEAR rule generated from ~x0 will be ~
+                                 triggered by the terms ~&1. ~N2 of these ~
+                                 terms, namely ~&3, contain~#3~[s~/~] the ~
+                                 function symbol~#4~[ ~&4, which has a ~
+                                 non-recursive definition.~@5  Unless this ~
+                                 definition is~/s ~&4, which have ~
+                                 non-recursive definitions.~@5  Unless these ~
+                                 definitions are~] disabled, ~x0 is unlikely ~
+                                 to be triggered via ~#3~[this term~/these ~
+                                 terms~]."
+                                name
+                                max-terms
+                                (length bad-max-terms)
+                                bad-max-terms
+                                (hide-lambdas non-rec-fns)
+                                (non-rec-def-rules-msg non-rec-fns-alist)))
+                     (t state))
+                    (cond
+                     ((and (nth 4 free-max-terms-msg)
+                           (null match-free))
+                      (pprogn
+                       (warning$ ctx "Free"
+                                 "A :LINEAR rule generated from ~x0 will be ~
+                                  triggered by the term~#1~[~/s~] ~&1.  ~
+                                  ~*2This is generally a severe restriction ~
+                                  on the applicability of the :LINEAR rule~@3."
+                                 name
+                                 max-terms
+                                 free-max-terms-msg
+                                 (let ((len-max-terms (length max-terms))
+                                       (len-bad-max-terms
+                                        (length (nth 4 free-max-terms-msg))))
+                                   (cond ((eql len-bad-max-terms
+                                               len-max-terms)
+                                          "")
+                                         ((eql len-bad-max-terms 1)
+                                          " for this trigger")
+                                         (t (msg " for these ~n0 triggers"
+                                                 len-bad-max-terms)))))
+                       (free-variable-error? :linear name ctx wrld state)))
+                     (t (value nil))))))))))))))
 
 (defun chk-acceptable-linear-rule1 (name match-free trigger-terms lst ctx ens
                                          wrld state)
@@ -2993,12 +3080,16 @@
                 (free-vars (free-vars-in-hyps hyps (all-vars (car terms)) wrld))
                 (inst-hyps (hyps-that-instantiate-free-vars free-vars hyps))
                 (forced-hyps (forced-hyps inst-hyps))
-                (non-rec-fns (and warn-non-rec
-                                  (non-recursive-fnnames (car terms) ens wrld)))
-                (non-rec-fns-inst-hyps
+                (non-rec-fns-alist
                  (and warn-non-rec
-                      (non-recursive-fnnames-lst
-                       (strip-top-level-nots-and-forces inst-hyps) ens wrld))))
+                      (non-recursive-fnnames-alist (car terms) ens wrld)))
+                (non-rec-fns (strip-cars non-rec-fns-alist))
+                (non-rec-fns-inst-hyps-alist
+                 (and warn-non-rec
+                      (non-recursive-fnnames-alist-lst
+                       (strip-top-level-nots-and-forces inst-hyps) ens wrld)))
+                (non-rec-fns-inst-hyps
+                 (strip-cars non-rec-fns-inst-hyps-alist)))
            (er-progn
             (cond
              ((and free-vars (null match-free))
@@ -3058,15 +3149,18 @@
              (cond
               (non-rec-fns
                (warning$ ctx ("Non-rec")
-                         `("The term ~x0 contains the non-recursive function ~
-                            symbol~#1~[ ~&1.  Unless this function is~/s ~&1. ~
-                            ~ Unless these functions are~] disabled, ~x0 is ~
-                            unlikely ever to occur as a trigger for ~x2."
+                         `("The term ~x0 contains the function symbol~#1~[ ~
+                            ~&1, which has a non-recursive definition.~@2  ~
+                            Unless this definition is~/s ~&1, which have ~
+                            non-recursive definitions.~@2  Unless these ~
+                            definitions are~] disabled, ~x0 is unlikely ever ~
+                            to occur as a trigger for ~x3."
                            (:name ,name)
                            (:non-recursive-fns ,(hide-lambdas non-rec-fns))
                            (:trigger-term ,(car terms)))
                          (car terms)
                          (hide-lambdas non-rec-fns)
+                         (non-rec-def-rules-msg non-rec-fns-alist)
                          name))
               (t state))
              (cond
@@ -3078,11 +3172,13 @@
                             ~#3~[hypothesis~/set of hypotheses~] shown above. ~
                             ~ However, ~#3~[this hypothesis mentions~/these ~
                             hypotheses mention~] the function symbol~#4~[ ~
-                            ~&4, which is~/s ~&4, which are~] defun'd ~
-                            non-recursively. Unless disabled, ~#4~[this ~
-                            function symbol is~/these function symbols are~] ~
-                            unlikely to occur in the conjecture being proved ~
-                            and hence the search for the required ~
+                            ~&4, which has a non-recursive definition.~@5  ~
+                            Unless this definition is disabled, that function ~
+                            symbol is~/s ~&4, which have non-recursive ~
+                            definitions.~@5  Unless these definitions are ~
+                            disabled, those function symbols are~] unlikely ~
+                            to occur in the conjecture being proved and hence ~
+                            the search for the required ~
                             ~#3~[hypothesis~/hypotheses~] will likely fail."
                            (:free-variables ,free-vars)
                            (:instantiated-hyps ,inst-hyps)
@@ -3091,7 +3187,8 @@
                             ,(hide-lambdas non-rec-fns-inst-hyps))
                            (:trigger-term ,(car terms)))
                          (car terms) free-vars name inst-hyps
-                         (hide-lambdas non-rec-fns-inst-hyps)))
+                         (hide-lambdas non-rec-fns-inst-hyps)
+                         (non-rec-def-rules-msg non-rec-fns-inst-hyps-alist)))
               (t state))
              (chk-triggers match-free name hyps (cdr terms)
                            hyps-vars concls-vars ctx ens wrld state)))))))
@@ -5266,7 +5363,8 @@
                      conclusion.  See :DOC type-prescription."
                     name
                     typed-term
-                    (set-difference-eq all-vars-concl all-vars-typed-term))
+                    (reverse
+                     (set-difference-eq all-vars-concl all-vars-typed-term)))
                nil nil nil nil nil))
           (t (let* ((new-var (genvar (find-pkg-witness typed-term)
                                      "TYPED-TERM" nil all-vars-typed-term))
@@ -5440,28 +5538,30 @@
          t)
         (t (strong-compound-recognizer-p fn (cdr recognizer-alist) ens))))
 
-(defun warned-non-rec-fns-for-tp (term recognizer-alist ens wrld)
+(defun warned-non-rec-fns-alist-for-tp (term recognizer-alist ens wrld)
   (cond ((or (variablep term)
              (fquotep term))
          nil)
         ((flambdap (ffn-symb term))
-         (cons (ffn-symb term)
-               (non-recursive-fnnames-lst (fargs term) ens wrld)))
+         (put-assoc-equal
+          (ffn-symb term)
+          nil
+          (non-recursive-fnnames-alist-lst (fargs term) ens wrld)))
         ((eq (ffn-symb term) 'if)
 
 ; Type-set and assume-true-false explore the top-level IF structure in such a
 ; way that NOT and strong compound recognizers aren't problems.
 
          (union-equal
-          (warned-non-rec-fns-for-tp
+          (warned-non-rec-fns-alist-for-tp
            (fargn term 1) recognizer-alist ens wrld)
           (union-equal
-           (warned-non-rec-fns-for-tp
+           (warned-non-rec-fns-alist-for-tp
             (fargn term 2) recognizer-alist ens wrld)
-           (warned-non-rec-fns-for-tp
+           (warned-non-rec-fns-alist-for-tp
             (fargn term 3) recognizer-alist ens wrld))))
         ((eq (ffn-symb term) 'not)
-         (warned-non-rec-fns-for-tp (fargn term 1) recognizer-alist ens wrld))
+         (warned-non-rec-fns-alist-for-tp (fargn term 1) recognizer-alist ens wrld))
         ((strong-compound-recognizer-p (ffn-symb term) recognizer-alist ens)
 
 ; We noticed in August 2014 that only the most-recent-enabled-recog-tuple is
@@ -5469,12 +5569,12 @@
 ; for a long time, and it's not terribly unreasonable, since enabled status can
 ; change.
 
-         (non-recursive-fnnames-lst (fargs term) ens wrld))
-        (t (non-recursive-fnnames term ens wrld))))
+         (non-recursive-fnnames-alist-lst (fargs term) ens wrld))
+        (t (non-recursive-fnnames-alist term ens wrld))))
 
-(defun warned-non-rec-fns-tp-hyps1 (hyps recognizer-alist ens wrld acc)
+(defun warned-non-rec-fns-alist-tp-hyps1 (hyps recognizer-alist ens wrld acc)
   (cond ((endp hyps) acc)
-        (t (warned-non-rec-fns-tp-hyps1
+        (t (warned-non-rec-fns-alist-tp-hyps1
             (cdr hyps)
             recognizer-alist ens wrld
             (let ((hyp (if (and (nvariablep (car hyps))
@@ -5483,16 +5583,16 @@
                                            '(force case-split)))
                            (fargn (car hyps) 1)
                          (car hyps))))
-              (cond (acc (union-equal (warned-non-rec-fns-for-tp
+              (cond (acc (union-equal (warned-non-rec-fns-alist-for-tp
                                        hyp recognizer-alist ens wrld)
                                       acc))
-                    (t (warned-non-rec-fns-for-tp
+                    (t (warned-non-rec-fns-alist-for-tp
                         hyp recognizer-alist ens wrld))))))))
 
-(defun warned-non-rec-fns-tp-hyps (hyps ens wrld)
-  (warned-non-rec-fns-tp-hyps1 hyps
-                               (global-val 'recognizer-alist wrld)
-                               ens wrld nil))
+(defun warned-non-rec-fns-alist-tp-hyps (hyps ens wrld)
+  (warned-non-rec-fns-alist-tp-hyps1 hyps
+                                     (global-val 'recognizer-alist wrld)
+                                     ens wrld nil))
 
 (defun chk-acceptable-type-prescription-rule (name typed-term term
                                                    backchain-limit-lst
@@ -5508,9 +5608,10 @@
    (declare (ignore ts concl vars))
    (cond
     (erp (er soft ctx "~@0" erp))
-    (t (let* ((warned-non-rec-fns
+    (t (let* ((warned-non-rec-fns-alist
                (and (not (warning-disabled-p "Non-rec"))
-                    (warned-non-rec-fns-tp-hyps hyps ens wrld)))
+                    (warned-non-rec-fns-alist-tp-hyps hyps ens wrld)))
+              (warned-non-rec-fns (strip-cars warned-non-rec-fns-alist))
               (warned-free-vars
                (and (not (warning-disabled-p "Free"))
                     (free-vars-in-hyps hyps
@@ -5521,21 +5622,25 @@
                                warned-free-vars hyps))))
          (pprogn
           (cond
-           (warned-non-rec-fns
+           (warned-non-rec-fns-alist
             (warning$ ctx ("Non-rec")
                       `("The hypothesis of the :type-prescription rule ~
-                         generated from ~x0 contains the non-recursive ~
-                         function symbol~#1~[~/s~] ~&1.  Since the hypotheses ~
-                         of :type-prescription rules are relieved by type ~
-                         reasoning alone (and not rewriting) ~#1~[this ~
-                         function is~/these functions are~] liable to make ~
-                         the rule inapplicable.  See :DOC type-prescription."
+                         generated from ~x0 contains the function symbol~#1~[ ~
+                         ~&1, which has a non-recursive definition~/s ~&1, ~
+                         which have non-recursive definitions~].~@2  Since ~
+                         the hypotheses of :type-prescription rules are ~
+                         relieved by type reasoning alone (and not rewriting) ~
+                         ~#1~[this function is~/these functions are~] liable ~
+                         to make the rule inapplicable.  See :DOC ~
+                         type-prescription."
                         (:doc type-prescription)
                         (:name ,name)
                         (:non-recursive-fns
                          ,(hide-lambdas warned-non-rec-fns))
                         (:rule-class :type-prescription))
-                      name (hide-lambdas warned-non-rec-fns)))
+                      name
+                      (hide-lambdas warned-non-rec-fns)
+                      (non-rec-def-rules-msg warned-non-rec-fns-alist)))
            (t state))
           (cond
            (warned-free-vars
@@ -6795,21 +6900,14 @@
     (cond
      ((null install-body)
       (value nil))
-     ((member-eq fn *definition-minimal-theory*)
 
-; This restriction is to allow us to assume that calls of (body fn t wrld),
-; which occur in several places in the source code, refer to the original
-; normalized body of fn, which excuses us from tracking the corresponding rune.
+; We formerly disallowed the case here of (member-eq fn
+; *definition-minimal-theory*), with non-nil install-body, so that we could
+; assume that calls of (body fn t wrld), which occurred in several places in
+; the source code, refer to the original normalized body of fn, which excuses
+; us from tracking the corresponding rune.  Now we avoid such calls of body in
+; our source code.
 
-      (er soft ctx
-          "~@0 the function symbol being called on the left-hand side, ~x1, ~
-           must not be among the following built-in functions:  ~&2.~@3  ~
-           Please contact the implementors if you feel that this is an ~
-           encumbrance to you."
-          er-preamble
-          fn
-          *definition-minimal-theory*
-          install-body-msg))
      ((not (arglistp args))
       (er soft ctx
           "~@0 the arguments on the left-hand side of the rule must be a list ~
@@ -6831,7 +6929,7 @@
            violates~/variables ~&1 violate~] this requirement.~@2  See :DOC ~
            definition."
           er-preamble
-          (set-difference-eq (all-vars1-lst hyps nil) args)
+          (reverse (set-difference-eq (all-vars1-lst hyps nil) args))
           install-body-msg))
      ((free-varsp-member body args)
       (er soft ctx
@@ -6840,9 +6938,28 @@
            The ~#1~[variable ~&1 violates~/variables ~&1 violate~] this ~
            requirement.~@2  See :DOC definition."
           er-preamble
-          (set-difference-eq (all-vars body) args)
+          (reverse (set-difference-eq (all-vars body) args))
           install-body-msg))
-     (t (value nil)))))
+     (t (pprogn (cond ((member-eq fn *definition-minimal-theory*)
+
+; This restriction is to allow us to assume that calls of (body fn t wrld),
+; which occur in several places in the source code, refer to the original
+; normalized body of fn, which excuses us from tracking the corresponding rune.
+
+                       (warning$ ctx "Definition"
+                                 "The proposed :DEFINITION rule might not ~
+                                  always be the one applied when expanding ~
+                                  calls of ~x0 during proofs.  Instead, these ~
+                                  calls and, more generally, calls of any ~
+                                  function symbol that is in the list ~x1, ~
+                                  will often be expanded using the original ~
+                                  definition of the function symbol.  Add ~
+                                  :INSTALL-BODY ~x2 to the proposed ~
+                                  :DEFINITION rule class to avoid this ~
+                                  warning."
+                                 fn '*definition-minimal-theory* nil))
+                      (t state))
+                (value nil))))))
 
 (defun chk-acceptable-definition-rule
   (name clique controller-alist install-body-tail term ctx ens wrld state)
@@ -8431,7 +8548,7 @@
                         not occur in the pattern term ~x2.  Thus the ~
                         :INDUCTION rule class specified for ~x3 is illegal."
                        cond-term
-                       (set-difference-eq cond-vars pat-vars)
+                       (reverse (set-difference-eq cond-vars pat-vars))
                        pat-term
                        name))
                   ((not (subsetp-eq scheme-vars pat-vars))
@@ -8443,7 +8560,7 @@
                         not occur in the pattern term ~x2.  Thus the ~
                         :INDUCTION rule class specified for ~x3 is illegal."
                        scheme-term
-                       (set-difference-eq scheme-vars pat-vars)
+                       (reverse (set-difference-eq scheme-vars pat-vars))
                        pat-term
                        name))
                   ((assoc-eq :condition seen)

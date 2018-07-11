@@ -2972,7 +2972,7 @@
          (expand-and-or-simple
           (subcor-var (formals 'implies wrld)
                       (fargs term)
-                      (body 'implies t wrld))
+                      (bbody 'implies))
           bool fns-to-be-ignored-by-rewrite wrld
           (push-lemma (fn-rune-nume 'implies nil nil wrld)
                       ttree)))

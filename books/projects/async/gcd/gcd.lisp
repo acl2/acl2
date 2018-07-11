@@ -66,8 +66,6 @@
  (list* 'in-act 'out-act
         (sis 'data-out 0 data-width))
  ;; INTERNAL STATE
- ;; Each link have two state-holding devices: one stores the link's full/empty
- ;; status and one stores the link data.
  '(s l0 l1 l2)
  ;; OCCURRENCES
  ;; Our DE description of a self-timed module allows links and joints to appear

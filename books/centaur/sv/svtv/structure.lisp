@@ -37,23 +37,9 @@
 
 (local (std::add-default-post-define-hook :fix))
 
+;; redundant with ../svex/lists
 (deffixtype true-list :pred true-listp :fix list-fix :equiv list-equiv :forward t)
-
-(define true-list-list-fix ((x true-list-listp))
-  :returns (xx true-list-listp)
-  :hooks nil
-  (mbe :logic (if (atom x)
-                  nil
-                (cons (list-fix (car x))
-                      (true-list-list-fix (cdr x))))
-       :exec x)
-  ///
-  (defthm true-list-list-fix-when-true-list-listp
-    (implies (true-list-listp x)
-             (equal (true-list-list-fix x) x)))
-
-  (deffixtype true-list-list :pred true-list-listp :fix true-list-list-fix
-    :equiv true-list-list-equiv :define t :forward t))
+(fty::deflist true-list-list :elt-type true-list :true-listp t :pred true-list-listp :elementp-of-nil t)
 
 
 (define svtv-dontcare-p (x)

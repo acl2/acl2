@@ -1,7 +1,42 @@
-;; AUTHORS:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
-;; Soumava Ghosh <soumava@cs.utexas.edu>
-;; Matt Kaufmann <kaufmann@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Soumava Ghosh       <soumava@cs.utexas.edu>
+; Matt Kaufmann       <kaufmann@cs.utexas.edu>
 
 (in-package "X86ISA")
 
@@ -17,7 +52,7 @@
 (defsection syscalls
   :parents (machine)
   :short "Extending the x86 ISA with the system call model in the
-  programmer-level mode"
+  application-level view"
 
   :long "<p>System calls are non-deterministic --- different runs of a
 program with syscalls can yield different results on the same machine.
@@ -255,7 +290,7 @@ really good thing to do to keep the model simple.</p>"
 (defsection syscalls-logic
   :parents (syscalls)
   :short "Logical definitions for syscalls to be used in the
-  programmer-level mode for reasoning"
+  application-level view for reasoning"
 
   :long "<p>All the <tt>*-logic</tt> functions (like @(see
   syscall-read-logic)) should be untouchable (@(see push-untouchable))
@@ -1127,13 +1162,13 @@ not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
   #+(and (not linux) (not darwin) (not freebsd))
   (declare (ignore l) (ignore d) (ignore f))
   #+(and (not linux) (not darwin) (not freebsd))
-  ;; Unsupported platform: syscall simulation in programmer-level mode
+  ;; Unsupported platform: syscall simulation in application-level view
   ;; unavailable!
   nil)
 
 (defsection syscalls-exec
   :parents (syscalls)
-  :short "Syscall definitions to be used in the programmer-level mode
+  :short "Syscall definitions to be used in the application-level view
   for execution"
 
   :long "<p>The definitions of the following <em>(not inlined)</em>

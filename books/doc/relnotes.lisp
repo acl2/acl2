@@ -89,6 +89,12 @@
 
 ; See also comments in (defxdoc note-8-0-books ...).
 
+; Too trivial to mention in the xdoc string below:
+
+; - Added a check in defopener -- actually, in supporting function
+;   simplify-with-prover in books/misc/bash.lisp -- that :hints is indeed an
+;   alist, to avoid an ugly raw Lisp error when that's not the case.
+
   :parents (note-8-1 release-notes-books)
   :short "Release notes for the ACL2 Community Books for ACL2 8.1"
 
@@ -119,43 +125,123 @@
  well as an extensive discussion of the differences between PLTP and PLTP(A),
  and an OCaml version of PLTP, named PLTA(O), by Grant Passmore.</p>
 
-<p>A new directory, @('books/projects/arm/'), contains proofs of correctness of 
-the Floating-point operations of addition, multiplication, fused multiply-add, 
-division, and square root, as implemented in the FPU of an Arm Cortex-A class
-high-end processor.</p>
-
- <h3>Changes to Existing Libraries</h3>
-
- <p>A bug has been fixed in the expander (see @(see defthm?)), which had
- prevented @(see hints) from being passed to the forcing round (if any).  An
- example may be found in the new book, @('misc/expander-tests.lisp').</p>
-
- <p>Updated the ACL2+books manual to accommodate the replacement of David
- Russinoff's online rtl manual by his upcoming Springer book.</p>
-
- <p>The @('misc/assert.lisp') book no longer includes @('misc/eval.lisp'),
- since tests about the @('misc/assert.lisp') utilities are now in a separate
- book @('misc/assert-tests.lisp').</p>
-
-<p>The old directory @('books/projects/masc/') has been replaced by the bew
-directory@('books/projects/rac/').  The reason is that our RTL modeling
-language now uses the register class templates of Algorithm C instead of those
-of SystemC, so the name <i>Modeling Algorithms in SystemC</i> now makes even
-less sense than it did; the best we could come up with as a replacement is
-<i>Restricted Algorithmic C</i>. </p>
-
- <h4><see topic='@(url kestrel-utilities)'>Kestrel Utilities</see></h4>
+ <p>A new directory, @('books/projects/arm/'), contains proofs of correctness
+ of the Floating-point operations of addition, multiplication, fused
+ multiply-add, division, and square root, as implemented in the FPU of an Arm
+ Cortex-A class high-end processor.</p>
 
  <p>Added utility @(see include-book-paths) to list paths via @(tsee
  include-book) down to a given book, which may be useful for reducing book
  dependencies.</p>
 
- <p>Added a <see topic='@(url fty)'>fixtype</see> for <see topic='@(url
- set::std/osets)'>finite sets</see>.</p>
+ <p>Added utility @(see apply-fn-if-known) to apply a function that might not
+ exist; even the package for the function symbol might not exist.</p>
+
+ <p>Added a fixer @(tsee integer-range-fix) for @(tsee integer-range-p), as
+ well as a recognizer @(tsee integer-range-listp) and and a fixer @(tsee
+ integer-range-list-fix) for true lists of @(tsee integer-range-p), all with
+ accompanying theorems.</p>
+
+ <p>Added a <see topic='@(url digits-any-base)'>library</see> to convert
+ between natural numbers and their representations as lists of digits in
+ arbitrary bases in big-endian and little-endian order.  Digits are natural
+ numbers below the base.  There are variants for minimum-length,
+ non-zero-minimum-length, and specified-length lists of digits.  The library
+ includes, among others, theorems stating that the number-to-digits and
+ digits-to-number conversions are mutual inverses in a suitable sense.</p>
+
+ <p>Added a new utility, @(tsee skip-in-book), that wraps around a form to
+ prevent its evaluation during book certification or inclusion.</p>
+
+ <p>The new utility @(tsee defthm<w) will attempt to prove a theorem directly
+ from previously-proved theorems.  It does this by generating suitable @(see
+ hints) using the new utility, @(see previous-subsumer-hints).</p>
+
+ <p>A new book, @('kestrel/utilities/proof-builder-macros.lisp'), is a place to
+ define @(see proof-builder) macros.  This book currently defines a simple
+ macro, @('when-not-proved') (see @(tsee acl2-pc::when-not-proved)), for
+ skipping instructions when all goals have been proved.  It also defines two
+ (more complex) macros, @('prove-guard') (see @(tsee acl2-pc::prove-guard)) and
+ @('prove-termination') (see @(tsee acl2-pc::prove-termination)), for
+ (respectively) using previously-proved @(see guard) or termination theorems
+ efficiently, as well as a more general macro, @(tsee acl2-pc::fancy-use), for
+ using lemma instances (via @(':use')) efficiently.</p>
+
+ <p>Added <see topic='@(url xdoc::xdoc-constructors)'>the XDOC
+ constructors</see>, which are utilities to construct well-tagged XDOC strings
+ via ACL2 function calls whose nesting structure mirrors the nesting of the
+ XML.</p>
+
+ <p>A new event, @(tsee defunt), is a variant of @(tsee defun) that uses
+ termination theorems from a large set of @(see community-books) &mdash;
+ namely, all books included in @('books/doc/top.lisp'), which is the book that
+ creates the ACL2+Books manual &mdash; to generate termination proofs
+ automatically.  Those proofs use @(':')@(tsee termination-theorem) @(see
+ lemma-instance)s that reference @('defun') events in those included books.
+ Several new supporting utilities are documented: @(tsee fms!-lst), which
+ writes a list to a character output channel; @(tsee injections), which lists
+ all maps from a domain to a range; @(tsee strict-merge-sort-<), which sorts without
+ duplicates; and @(tsee subsetp-eq-linear), which is a linear-time subset test
+ for sorted lists of symbols.</p>
+
+ <h3>Changes to Existing Libraries</h3>
+
+ <p>The behavior and code for the expander (see @(see defthm?)) have been
+ improved in a few ways (some of them technical), as follows.</p>
+
+ <ul>
+
+ <li>A bug has been fixed that was preventing @(see hints) from being passed to
+ the forcing round (if any).  An example may be found in the new book,
+ @('misc/expander-tests.lisp').</li>
+
+ <li>The deprecated @(tsee fmt) directives @('~p') and @('~q') have been
+ replaced by @('~x') and @('~y'), respectively.</li>
+
+ <li>Error messages have been improved for the function @('simplify-hyps') when
+ there is a contradiction.</li>
+
+ <li>The @(see state) globals @('tool2-result') and @('tool2-error') are no
+ longer set.  (They appear to have been unused.)</li>
+
+ <li>The functions @('tool2-fn'), @('tool2-fn-lst'), and @('simplify-hyps') now
+ have a new final argument, @('ctx').  Also, the macro @('tool2') now has a
+ @(':ctx') keyword argument.</li>
+
+ </ul>
+
+ <p>Updated the ACL2+books manual to accommodate the replacement of David
+ Russinoff's online rtl manual by his upcoming Springer book.</p>
+
+ <p>Improved @(tsee install-not-normalized) to handle cases in which
+ recursively-defined functions have non-recursive normalized definitions.</p>
+
+ <p>The @('misc/assert.lisp') book no longer includes @('misc/eval.lisp'),
+ since tests about the @('misc/assert.lisp') utilities are now in a separate
+ book @('misc/assert-tests.lisp').</p>
+
+ <p>The @('misc/eval.lisp') utilities @(tsee ensure-error), @(tsee
+ ensure-soft-error), @(tsee ensure-hard-error), @(tsee thm?), and @(tsee
+ not-thm?)  have been renamed to @(tsee must-fail-with-error), @(tsee
+ must-fail-with-soft-error), @(tsee must-fail-with-hard-error), @(tsee
+ must-prove), and @(tsee must-not-prove).  The old names are still available as
+ deprecated synonyms, which will be removed in one of the next releases.</p>
+
+ <p>The old directory @('books/projects/masc/') has been replaced by the bew
+ directory@('books/projects/rac/').  The reason is that our RTL modeling
+ language now uses the register class templates of Algorithm C instead of those
+ of SystemC, so the name <i>Modeling Algorithms in SystemC</i> now makes even
+ less sense than it did; the best we could come up with as a replacement is
+ <i>Restricted Algorithmic C</i>. </p>
+
+ <p>The utility @(tsee make-flag) has a new keyword argument, @(':last-body'),
+ to specify using the most recent @(see definition) rule for a function symbol
+ instead of its original definition.</p>
 
  <p>Improved the @('copy-def') utility (community book
  @('kestrel/utilities/copy-def.lisp')) by adding an @(':expand') hint in the
- recursive case, as is sometimes necessary.</p>
+ recursive case, as is sometimes necessary.  Also improved it to work better
+ with @(tsee mutual-recursion).</p>
 
  <p>Extended and simplified the <see topic='@(url
  defun-sk-queries)'>@('defun-sk') query utilities</see>.  The utilities now
@@ -168,23 +254,6 @@ less sense than it did; the best we could come up with as a replacement is
  utilities</see> with a recognizer for symbols that name @(tsee defchoose)
  functions.</p>
 
- <p>Added utility @(see apply-fn-if-known) to apply a function that might not
- exist; even the package for the function symbol might not exist.</p>
-
- <p>Added utilities @(tsee fsublis-fn-rec), @(tsee fsublis-fn), and @(tsee
- fsublis-fn-simple), which are variants of the built-in system utilities that
- have the same names minus the initial @('f').  These variants do not perform
- simplification.  The relationship between these variants and the corresponding
- built-in system utilities is analogous to the relationship between @(tsee
- fcons-term) and @(tsee cons-term).</p>
-
- <p>Added a utility @(tsee all-lambdas) to collect all the lambda expressions
- in a term.</p>
-
- <p>Added utilities @(tsee apply-terms-same-args) and @(tsee
- fapply-terms-same-args) to apply each function in a specified list to a
- specified list of arguments.</p>
-
  <p>Made several improvements to @(tsee directed-untranslate), including: one
  to avoid assertion errors that could occur when using @(tsee declare) forms
  with @(tsee let), @(tsee let*), or @(tsee mv-let) expressions: one to enhance
@@ -195,28 +264,60 @@ less sense than it did; the best we could come up with as a replacement is
  <p>Removed the @('keywords-of-keyword-value-list') utility, because it is
  subsumed by the built-in @(tsee evens) utility.</p>
 
- <p>Added utilities to fix values to @(tsee integer-range-p), as well as to
- recognize and to fix to true lists of @(tsee integer-range-p) values.</p>
+ <p>Extended the <see topic='@(url error-checking)'>error-checking
+ utilities</see> with several error-checking functions.</p>
 
- <p>Added some theorems about @(tsee nat-list-fix).</p>
-
- <p>Added a <see topic='@(url digits-any-base)'>library</see> to convert
- between natural numbers and their representations as lists of digits in
- arbitrary bases in big-endian and little-endian order.  Digits are natural
- numbers below the base.  There are variants for minimum-length,
- non-zero-minimum-length, and specified-length lists of digits.  The library
- includes, among others, theorems stating that the number-to-digits and
- digits-to-number conversions are mutual inverses in a suitable sense.</p>
-
- <p>Added some <see topic='@(url error-checking)'>error-checking
- functions</see>.</p>
+ <p>Extended the <see topic='@(url world-queries)'>world query utilities</see>
+ with a function to collect the names of all the packages in the ACL2 @(see
+ world).</p>
 
  <p>Extended the <see topic='@(url term-function-recognizers)'>term function
  recognizers</see> with recognizers for true lists of
  (pseudo-)lambda-expressions and (pseudo-)term-functions.</p>
 
- <p>Added a new utility, @(tsee skip-in-book), that wraps around a form to
- prevent its evaluation during book certification or inclusion.</p>
+ <p>Extended the <see topic='@(url term-utilities)'>term utilities</see> with
+ operations to substitute function symbols without performing simplification,
+ to construct terms that are functions applications of certain forms, to
+ collect all the lambda expressions in terms, and to collect all the package
+ names in (symbols in) terms.</p>
+
+ <p>The utility @(tsee install-not-norm-event) now includes option @(':allp
+ nil') in the generated @(tsee install-not-normalized) event.  The new utility,
+ @(tsee install-not-norm-event-lst), can thus handle @(tsee mutual-recursion)
+ nicely, e.g.: @('(install-not-norm-event-lst (getpropc 'f1 'recursivep nil)
+ nil nil (w state))').  Also, added new utility @(tsee install-not-norm) to
+ submit the event generated by @(tsee install-not-norm-event).</p>
+
+ <p>Extended the <see topic='@(url set::oset-utilities)'>oset utilities</see>
+ with a <see topic='@(url fty)'>fixtype</see> for osets.</p>
+
+ <p>Added some <see topic='@(url theorems-about-nat-lists)'>theorems about
+ lists of natural numbers</see>.</p>
+
+ <p>Added a <see topic='@(url theorems-about-string-lists)'>theorem about lists
+ of strings</see>.</p>
+
+ <p>Extended the <see topic='@(url character-utilities)'>character
+ utilities</see> with some theorems about the pre-existing functions, and with
+ some new functions to check if (lists of) characters are all of specified
+ kinds and to convert a list of unsigned 8-bit bytes to a corresponding list of
+ hex digit characters.</p>
+
+ <p>Extended the <see topic='@(url string-utilities)'>string utilities</see>
+ with some theorems about the pre-existing functions, and with a new function
+ to convert a list of unsigned 8-bit bytes to a corresponding string of hex
+ digit characters.</p>
+
+ <p>Extended the <see topic='@(url symbol-utilities)'>symbol utilities</see>
+ with a utility that lifts @(tsee symbol-package-name) to lists.</p>
+
+ <p>Moved @(tsee maybe-msgp) under newly created <see topic='@(url
+ message-utilities)'>message utilities</see>.  Extended these utilities with a
+ recognizer of true lists of messages.</p>
+
+ <p>Moved @(tsee msg-downcase-first) and @(tsee msg-upcase-first) from the <see
+ topic='@(url string-utilities)'>string utilities</see> to the <see
+ topic='@(url message-utilities)'>message utilities</see>.</p>
 
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
@@ -230,18 +331,33 @@ less sense than it did; the best we could come up with as a replacement is
 
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
- <p>The model includes more support for 32-bit mode.  In particular: some
- variants of the PUSH, POP, MOV, LEA, ADD, ADC, SUB, SBB, OR, AND, XOR, CMP,
- TEST, ROL, ROR, RCL, RCR, SAL, SAR, SHL, SHR, JMP, Jcc, and RET instructions
- also work in 32-bit mode now; the 32-bit instructions PUSHA, POPA, INC with
- opcodes 40h-47h, and DEC with opcodes 48h-4Fh are now part of the model.</p>
+ <p>The model includes more support for 32-bit mode.  In particular: (some
+ variants of) the PUSH, PUSHF, POP, POPF, MOV, LEA, XCHG, CMPXCHG, ADD, ADC,
+ SUB, SBB, OR, AND, XOR, NEG, NOT, CMP, TEST, MUL, IMUL, DIV, IDIV, INC with
+ opcodes FEh-FFh, DEC with opcodes FEh-FFh, CBW, CWDE, CDQE, CWD, CDQ, CQO,
+ ROL, ROR, RCL, RCR, SAL, SAR, SHL, SHR, BT, JMP, Jcc, JCXZ, JECXZ, JRCXZ,
+ CMOVcc, SETcc, MOVS, CMPS, STOS, LOOP, LOOPcc, CALL, RET, CMC, CLC, STC, CLD,
+ STD, SAHF, LAHF, RDRAND, HLT, and NOP instructions also work in 32-bit mode
+ now; the 32-bit instructions PUSHA, POPA, INC with opcodes 40h-47h, DEC with
+ opcodes 48h-4Fh, and PUSH CS/SS/DS/ES are now part of the model.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
 
+ <p>The notion of programmer-level mode and system-level mode have been renamed
+ to `application-level view' and `system-level view', to avoid overloading the
+ word `mode', which in the x86 has a more specific meaning.  Similarly, the
+ notion of page structure marking mode has been renamed `marking view'.  This
+ involved renaming the @('programmer-level-mode') and
+ @('page-structure-marking-mode') field of the state stobj to the shorter
+ @('app-view') and @('marking-view'), and also renaming some functions and
+ theorems acccordingly.</p>
+
  <h4><see topic='@(url apt::apt)'>APT</see></h4>
 
  <p>Improved documentation.</p>
+
+ <p>Improved options to control the screen output.</p>
 
  <p>Improved @(tsee apt::tailrec) transformation with an option to attempt to
  automatically infer the domain for some of the transformation's applicability
@@ -269,6 +385,12 @@ less sense than it did; the best we could come up with as a replacement is
  generated by a series of local events, partially preprocessing it to avoid
  references to definitions that might only be locally available.</p>
 
+ <p>The @('std/typed-lists/unsigned-byte-listp.lisp') book now includes
+  @('std/lists/take') locally. As a result,
+  @('projects/x86isa/tools/execution/exec-loaders/mach-o/mach-o-reader.lisp'),
+  @('std/io/take-bytes.lisp'), @('unicode/read-utf8.lisp'), and
+  @('unicode/utf8-decode.lisp') also include this book locally.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
@@ -293,6 +415,11 @@ less sense than it did; the best we could come up with as a replacement is
  <p>A Developer's Guide (see @(see developers-guide)) has been added, to assist
  those who may wish to become ACL2 Developers.  It replaces the much smaller
  ``system-development'' topic.</p>
+
+ <p>The @(tsee defpointer) utility for @(see xdoc) now accepts names that have
+ special characters such as @('<').</p>
+
+ <p>The download button now works in the web-based manual.</p>
 
  ")
 
@@ -478,10 +605,10 @@ less sense than it did; the best we could come up with as a replacement is
  messages. These utilities include a macro @(tsee def-error-checker) to
  concisely define error-checking functions.</p>
 
- <p>New macros @(tsee defubyte) and @(tsee defsbyte) have been added that
- introduce <see topic='@(url fty)'>fixtypes</see> for unsigned and signed bytes
- of specified sizes. A number of applications of these macros for common sizes
- is also provided.</p>
+ <p>A new macro @(tsee defbyte) has been added that introduces <see
+ topic='@(url fty)'>fixtypes</see> for signed or unsigned bytes of specified
+ sizes. Several instances of applications of this macro for common sizes of
+ both signed and unsigned bytes is also provided.</p>
 
  <p>Utilities @(tsee doublets-to-alist) and @(tsee keyword-value-list-to-alist)
  have been added that convert lists of doublets and keyword-value lists to

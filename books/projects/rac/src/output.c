@@ -1,9 +1,12 @@
 #include "parser.h"
 
-// If RAC is set to true by Program::display, the program is displayed in RAC
-// syntax rather than SystemC syntax:
-
-bool RAC;
+// 6/27/18
+// I just eliminated two features that are no longer used: (1) CtoS mode, in which a 
+// program was printed in a form acceptable to CtoS, and (2) SystemC registers, which
+// have been replaced by those of Algorithmic C, hence the change in the name of the
+// entire system from MASC (Modeling Algorithms in SystemC) to RAC (Restricted
+// Algorithmic C).  This simplified the parser considerably, and I suspect I've left
+// a bunch of dead or useless code lying around, to be dealt with later.
 
 //***********************************************************************************
 // S-expressions
@@ -98,9 +101,9 @@ Cons::Cons(Sexpression *a, Sexpression *d) {car = a; cdr = d;}
 void Cons::display(ostream& os) {
    os << "(";
    car->display(os);
-   os << " . "; 
+   os << " . ";
    cdr->display(os);
-   os << ")"; 
+   os << ")";
 }
 
 // class Symbol : public Sexpression
@@ -117,7 +120,7 @@ Symbol::Symbol(int n) {
   ostringstream ostr;
   ostr << n;
 /*
-The following line gave me big problems because it creates a pointer 
+The following line gave me big problems because it creates a pointer
 that outlives the object to which it points:
   const char *s = ostr.str().c_str();
 */
@@ -130,7 +133,7 @@ that outlives the object to which it points:
 Symbol::~Symbol() {delete[] name;}
 
 char *Symbol::getname() {return name;}
-  
+
 void Symbol::display(ostream& os) {os << name;}
 
 // Symbol constants used in translation:
@@ -187,7 +190,6 @@ Symbol s_setbits("setbits");
 Symbol s_si("si");
 Symbol s_switch("switch");
 Symbol s_temp[4] = {Symbol("temp-0"), Symbol("temp-1"), Symbol("temp-2"), Symbol("temp-3")};
-Symbol s_wait("wait");
 
 
 // class SymDec (symbol declaration)
@@ -235,11 +237,9 @@ Sexpression *SymDec::ACL2SymExpr() {// Sexpression for a reference to this symbo
 
 //   PrimType           (primitive type: uintTYpe, intType, boolType)
 //   DefinedType        (introduced by typedef)
-//   RegType            (SystemC register type)
+//   RegType            (Algorithmic C register type)
 //     UintType         (unsigned limited integer register)
-//     BigUintType      (unsigned finite integer register)
 //     IntType          (signed limited integer register)
-//     BigIntType       (signed finite integer register)
 //     FPType           (fixed-point register
 //       UfixedType     (unsigned fixed-point register
 //       FixedType      (signed fixed-point register
@@ -267,8 +267,6 @@ bool Type::isNumericalType() {return isPrimType() || isRegType() || isEnumType()
 
 bool Type::isIntegerType() {return false;} // virtual (overridden by integer types)
 
-bool Type::isLimitedType() {return false;} // virtual (overridden by integer types)
-
 Type *Type::derefType() {return this;} // virtual (overridden by DefinedType)
 
 void Type::display(ostream& os) {assert("!Undefined method: display");}
@@ -290,7 +288,7 @@ void Type::makeDef(const char *name, ostream& os) { // virtual (overridden by Ar
   os << " " << name << ";";
 }
 
-uint Type::ACL2ValWidth() { // virtual (overridden by UintType and BigUintType)
+uint Type::ACL2ValWidth() { // virtual (overridden by UintType)
   // Boundary on the width of the value of an object of this type.
   // 0 indicates unknown or unbounded width.
   // Used to avoid unnecessary call to bits.
@@ -321,12 +319,10 @@ PrimType::PrimType(const char *s, const char *m) : Symbol(s) {
 
 bool PrimType::isPrimType() {return true;}
 
-bool PrimType::isLimitedType() {return true;}
-
 bool PrimType::isIntegerType() {return true;}
 
 void PrimType::display(ostream& os) {
-  if (RAC && RACname) {
+  if (RACname) {
     os << RACname;
   }
   else {
@@ -352,13 +348,13 @@ Type *DefinedType::derefType() {return def->derefType();}
 void DefinedType::display(ostream& os) {Symbol::display(os);}
 
 void DefinedType::displayDef(ostream& os) {
-  if (!(RAC && def->isRegType())) {
+  if (!(def->isRegType())) {
     def->makeDef(name, os);
   }
 }
 
 
-// class RegType : public Type (SystemC register type)
+// class RegType : public Type (Algorithmic C register type)
 // ---------------------------------------------------
 
 // Data member:  Expression *width
@@ -368,8 +364,6 @@ RegType::RegType(Expression *w) {width = w;}
 bool RegType::isRegType() {return true;}
 
 bool RegType::isSigned() {return false;} // virtual
-
-bool RegType::isBig() {return false;} // virtual
 
 Sexpression *RegType::ACL2Assign(Expression *rval) { // overridden by FPType
   Type *t = rval->exprType();
@@ -390,8 +384,6 @@ Sexpression *RegType::ACL2Assign(Expression *rval) { // overridden by FPType
 
 UintType::UintType(Expression *w) : RegType(w) {}
 
-bool UintType::isLimitedType() {return true;}
-
 bool UintType::isIntegerType() {return true;}
 
 void UintType::display(ostream& os) {
@@ -403,34 +395,12 @@ void UintType::display(ostream& os) {
 uint UintType::ACL2ValWidth() {return width->evalConst();}
 
 
-// class BigUintType : public RegType
-// ----------------------------------
-
-bool BigUintType::isBig() {return true;}
-
-BigUintType::BigUintType(Expression *w) : RegType (w) {}
-
-bool BigUintType::isLimitedType() {return false;}
-
-bool BigUintType::isIntegerType() {return true;}
-
-void BigUintType::display(ostream& os) {
-  os << "sc_biguint<";
-  width->displayNoParens(os);
-  os << ">";
-}
-
-uint BigUintType::ACL2ValWidth() {return width->evalConst();}
-
-
 // class IntType : public RegType
 // ------------------------------
 
 bool IntType::isSigned() {return true;}
 
 IntType::IntType(Expression *w) : RegType (w) {}
-
-bool IntType::isLimitedType() {return true;}
 
 bool IntType::isIntegerType() {return true;}
 
@@ -444,30 +414,6 @@ Sexpression *IntType::ACL2Eval(Sexpression *s) {
   return new Plist(&s_si, s, new Integer(width->evalConst()));
 }
 
-  
-// class BigIntType : public RegType
-// ---------------------------------
-
-bool BigIntType::isSigned() {return true;}
-
-bool BigIntType::isBig() {return true;}
-
-BigIntType::BigIntType(Expression *w) : RegType (w) {}
-
-bool BigIntType::isLimitedType() {return false;}
-
-bool BigIntType::isIntegerType() {return true;}
-
-void BigIntType::display(ostream& os) {
-  os << "sc_bigint<";
-  width->displayNoParens(os);
-  os << ">";
-}
-
-Sexpression *BigIntType::ACL2Eval(Sexpression *s) {
-  return new Plist(&s_si, s, new Integer(width->evalConst()));
-}
-
 
 // class FPType :public RegType
 // ----------------------------
@@ -476,11 +422,7 @@ Sexpression *BigIntType::ACL2Eval(Sexpression *s) {
 
 FPType::FPType(Expression *w, Expression *iw) : RegType (w) {iwidth = iw;}
 
-bool FPType::isBig() {return true;}
-
 bool FPType::isFPType() {return true;}
-
-bool FPType::isLimitedType() {return false;}
 
 bool FPType::isIntegerType() {return false;}
 
@@ -516,7 +458,7 @@ void UfixedType::display(ostream& os) {
 Sexpression *UfixedType::ACL2Eval(Sexpression *s) {
   return new Plist(&s_divide, s, new Plist(&s_expt, &i_2, new Integer(width->evalConst() - iwidth->evalConst())));
 }
-    
+
 // class FixedType : public RegType
 // --------------------------------
 
@@ -543,7 +485,7 @@ Sexpression *FixedType::ACL2Eval(Sexpression *s) {
 
 // Data members: Type *baseType; Expresion *dim;
 
-    
+
 ArrayType::ArrayType(Expression *d, Type *t) {
   baseType = t;
   dim = d;
@@ -558,7 +500,7 @@ void ArrayType::display(ostream& os) {
   os << "[";
   dim->displayNoParens(os);
   os << "]";
-} 
+}
 
 void ArrayType::displayVarType(ostream& os) {
   baseType->display(os);
@@ -595,45 +537,21 @@ void ArrayType::makeDef(const char *name, ostream& os) {
 ArrayParamType::ArrayParamType(Expression *d, Type *t) : ArrayType(d, t) {}
 
 void ArrayParamType::display(ostream& os) {
-  if (RAC) {
-    ArrayType::display(os);
-  }
-  else {
-    os << "array<";
-    dim->displayNoParens(os);
-    os << ", ";
-    baseType->display(os);
-    os << ">";
-  }
+  ArrayType::display(os);
 }
 
 bool ArrayParamType::isArrayParamType() {return true;}
 
 void ArrayParamType::displayVarType(ostream& os) {
-  if (RAC) {
-    ArrayType::displayVarType(os);
-  }
-  else {
-    Type::displayVarType(os);
-  }
+  ArrayType::displayVarType(os);
 }
 
 void ArrayParamType::displayVarName(const char *name, ostream& os) {
-  if (RAC) {
-    ArrayType::displayVarName(name, os);
-  }
-  else {
-    Type::displayVarName(name, os);
-  }
+  ArrayType::displayVarName(name, os);
 }
 
 void ArrayParamType::makeDef(const char *name, ostream& os) {
-  if (RAC) {
-    ArrayType::makeDef(name, os);
-  }
-  else {
-    Type::makeDef(name, os);
-  }
+  ArrayType::makeDef(name, os);
 }
 
 
@@ -734,8 +652,6 @@ Sexpression *EnumType::ACL2Expr() {
   return result;
 }
 
-bool EnumType::isLimitedType() {return true;}
-
 bool EnumType::isIntegerType() {return true;}
 
 bool EnumType::isEnumType() {return true;}
@@ -799,7 +715,7 @@ MvType::MvType(uint n, Type *t0, Type *t1, Type *t2, Type *t3, Type *t4, Type *t
 }
 
 void MvType::display(ostream& os) {
-  os << (RAC ? "<" : "mv<");
+  os << "<";
   type[0]->display(os);
   os << ", ";
   type[1]->display(os);
@@ -840,14 +756,10 @@ void MvType::display(ostream& os) {
 //   Funcall             (function call)
 //   Initializer         (initial value of array, a list of constants)
 //   ArrayRef            (array reference)
-//     ArrayParamRef     
+//     ArrayParamRef
 //   StructRef           (struct field reference)
 //   BitRef              (bit extraction)
 //   Subrange            (subrange extraction)
-//     FullRange         (generated only for CtoS)
-//     SubrangeTemplate  (generated only for CtoS)
-//   ToUintExpr          (call to to_uint method)
-//   ToUint64Expr        (call to to_uint64 method)
 //   PrefixExpr          (application of unary operator)
 //   CastExpr
 //   BinaryExpr          (application of binary operator)
@@ -879,21 +791,15 @@ bool Expression::isNumber() {return !isArray() && !isStruct();}
 
 bool Expression::isSubrange() {return false;} // virtual
 
-bool Expression::isLimited() { // virtual
-  return false;
-}
-
 bool Expression::isInteger() { // virtual
   return false;
 }
 
-bool Expression::isBigInt() {return isInteger() & !isLimited();}
-
 bool Expression::isFP() {return isNumber() && !isInteger();}
 
-// The following expressions have associated types: variable, array, and struct references; 
-// function calls; cast expressions; applications of "~" to typed expressions; and applications 
-// of "&", "|", and "^" to typed expressions of the same type.  For all other expressions, 
+// The following expressions have associated types: variable, array, and struct references;
+// function calls; cast expressions; applications of "~" to typed expressions; and applications
+// of "&", "|", and "^" to typed expressions of the same type.  For all other expressions,
 // exprType is undefined:
 
 Type* Expression::exprType() { // virtual (overridden by SymRef, Funcall, ArrayRef, StructRef, PrefixExpr, and BinaryExpr)
@@ -912,28 +818,15 @@ void Expression::display(ostream& os) {
   if (needsParens) os << ")";
 }
 
-// The following method (used by the CtoS methods) substitutes each occurrence of a givewn 
-// variable with a given value:
+// The following method substitutes each occurrence of a given variable with a given value:
 
 Expression *Expression::subst(SymRef *var, Expression *val) { // virtual
   return this;
-} 
-
-// Convert to a form suitable for CtoS:
-
-Expression *Expression::CtoSExpr() { // virtual
-  return this;
-}
-
-// Construct an assignment (with this lvalue) suitable for CtoS:
-
-Statement *Expression::CtoSAssign(const char *op, Expression *rvalue) { // virtual (overridden by BitRef and Subrange)
-  return new Assignment(this, op, rvalue);
 }
 
 // The following method converts an expression to an S-expression.  The argument isBV is relevant
 // only for a typed expression of a register type (see exprType above).  In this case, if isBV is
-// true, then the resulting S-expression should represent the value of the bit vector contents  
+// true, then the resulting S-expression should represent the value of the bit vector contents
 // of the register, and otherwise it should represent the value of that bit vector as interpreted
 // according to the type. The argument isBV is set the following cases:
 // (1) The expression is being assigned to a register of the same type;
@@ -1024,8 +917,6 @@ Constant::Constant(const char *n) : Expression(), Symbol(n) {}
 Constant::Constant(int n) : Expression(), Symbol(n) {}
 
 bool Constant::isConst() {return true;}
-
-bool Constant::isLimited() {return true;}
 
 bool Constant::isInteger() {return true;}
 
@@ -1132,8 +1023,6 @@ bool SymRef::isArrayParam() {return exprType()->isArrayParamType();}
 
 bool SymRef::isStruct() {return exprType()->isStructType();}
 
-bool SymRef::isLimited() {return exprType()->isLimitedType();}
-
 bool SymRef::isInteger() {return exprType()->isIntegerType();}
 
 void SymRef::displayNoParens(ostream& os) {symDec->sym->display(os);}
@@ -1152,7 +1041,7 @@ Sexpression *SymRef::ACL2Assign(Sexpression *rval) {
 }
 
 bool SymRef::isEqual(Expression *e) {
-  return e->isEqualSymRef(symDec);  
+  return e->isEqualSymRef(symDec);
 }
 
 bool SymRef::isEqualSymRef(SymDec *s) {
@@ -1174,8 +1063,6 @@ bool FunCall::isArray() {return exprType()->isArrayType();}
 bool FunCall::isArrayParam() {return exprType()->isArrayParamType();}
 
 bool FunCall::isStruct() {return exprType()->isStructType();}
-
-bool FunCall::isLimited() {return exprType()->isLimitedType();}
 
 bool FunCall::isInteger() {return exprType()->isIntegerType();}
 
@@ -1205,24 +1092,6 @@ Expression *FunCall::subst(SymRef *var, Expression *val) {
    }
    return new FunCall(func, newArgs);
 }
-
-Expression *FunCall::CtoSExpr() {
-     List<Expression> *ptr = args;
-     List<Expression> *newArgs = NULL;
-     bool changed = false;
-     while (ptr) {
-       Expression *expr = ptr->value->CtoSExpr();
-       if (newArgs) {
-         newArgs->add(expr);
-       }
-       else {
-         newArgs = new List<Expression>(expr);
-       }
-       if (expr != ptr->value) changed = true;
-       ptr = ptr->next;
-     }
-     return changed ? new FunCall(func, newArgs) : this;
-  }
 
 Sexpression *FunCall::ACL2Expr(bool isBV) {
   Plist *result = new Plist(new Symbol(func->getname()));
@@ -1276,24 +1145,6 @@ Expression *TempCall::subst(SymRef *var, Expression *val) {
   List<Expression> *newParams = NULL;
   while (ptr) {
     Expression *expr = ptr->value->subst(var, val);
-    if (newParams) {
-      newParams->add(expr);
-    }
-    else {
-      newParams = new List<Expression>(expr);
-    }
-    ptr = ptr->next;
-  }
-  result->params = newParams;
-  return result;
-}
-
-Expression *TempCall::CtoSExpr() {
-  TempCall *result = (TempCall*)FunCall::CtoSExpr();
-  List<Expression> *ptr = params;
-  List<Expression> *newParams = NULL;
-  while (ptr) {
-    Expression *expr = ptr->value->CtoSExpr();
     if (newParams) {
       newParams->add(expr);
     }
@@ -1373,8 +1224,6 @@ bool ArrayRef::isArray() {return exprType()->isArrayType();}
 
 bool ArrayRef::isArrayParam() {return exprType()->isArrayParamType();}
 
-bool ArrayRef::isLimited() {return exprType()->isLimitedType();}
-
 bool ArrayRef::isInteger() {return exprType()->isIntegerType();}
 
 void ArrayRef::displayNoParens(ostream& os) {
@@ -1386,11 +1235,6 @@ void ArrayRef::displayNoParens(ostream& os) {
 
 Expression *ArrayRef::subst(SymRef *var, Expression *val) {
   Expression *newIndex = index->subst(var, val);
-  return (newIndex == index) ? this : new ArrayRef(array, newIndex);
-}
-
-Expression *ArrayRef::CtoSExpr() {
-  Expression *newIndex = index->CtoSExpr();
   return (newIndex == index) ? this : new ArrayRef(array, newIndex);
 }
 
@@ -1425,14 +1269,9 @@ Expression *ArrayParamRef::subst(SymRef *var, Expression *val) {
 
 void ArrayParamRef::displayNoParens(ostream& os) {
   array->display(os);
-  os << (RAC ? "[" : ".elt[");
+  os << "[";
   index->display(os);
   os << "]";
-}
-
-Expression *ArrayParamRef::CtoSExpr() {
-  Expression *newIndex = index->CtoSExpr();
-  return (newIndex == index) ? this : new ArrayParamRef(array, newIndex);
 }
 
 
@@ -1448,8 +1287,6 @@ Type* StructRef::exprType() {return ((StructType*)(base->exprType()))->fields->f
 bool StructRef::isArray() {return exprType()->isArrayType();}
 
 bool StructRef::isArrayParam() {return exprType()->isArrayParamType();}
-
-bool StructRef::isLimited() {return exprType()->isLimitedType();}
 
 bool StructRef::isInteger() {return exprType()->isIntegerType();}
 
@@ -1476,8 +1313,6 @@ Sexpression *StructRef::ACL2Assign(Sexpression *rval) {
 
 BitRef::BitRef(Expression *b, Expression *i) : Expression() {base = b; index = i;}
 
-bool BitRef::isLimited() {return true;}
-
 bool BitRef::isInteger() {return true;}
 
 void BitRef::displayNoParens(ostream& os) {
@@ -1492,24 +1327,6 @@ Expression *BitRef::subst(SymRef *var, Expression *val) {
   Expression *newIndex = index->subst(var, val);
   return (newBase == base && newIndex == index) ? this : new BitRef(newBase, newIndex);
 }
-
-Expression *BitRef::CtoSExpr() {
-  Expression *newBase = base->CtoSExpr();
-  Expression *newIndex = index->CtoSExpr();
-  return (newBase == base && newIndex == index) ? this : new BitRef(newBase, newIndex);
-}
-
-Statement *BitRef::CtoSAssign(const char *op, Expression *rvalue) {
-  Expression *newBase = base->CtoSExpr();
-  Expression *newIndex = index->CtoSExpr();
-  if (base->exprType()->isFPType()) {
-    assert(!strcmp(op, "="));
-    return new AssignBit(newBase, newIndex, rvalue);
-  }
-  else {
-    return new Assignment(this, op, rvalue);
-  }
-}    
 
 Sexpression *BitRef::ACL2Expr(bool isBV) {
   Sexpression *b = base->ACL2Expr(true);
@@ -1543,95 +1360,30 @@ Subrange::Subrange(Expression *b, Expression *h, Expression *l, uint w) : Expres
 
 bool Subrange::isSubrange() {return true;}
 
-bool Subrange::isLimited() {return base->isLimited();}
-
 bool Subrange::isInteger() {return true;}
 
 void Subrange::displayNoParens(ostream& os) {
   base->display(os);
-  os << (RAC ? "[" : ".range(");
+  os << "[";
   high->display(os);
-  os << (RAC ? ":" : ", ");
-   low->display(os);
-  os << (RAC ? "]" : ")");
+  os << ":";
+  low->display(os);
+  os << "]";
 }
 
 Expression *Subrange::subst(SymRef *var, Expression *val) {
   Expression *newBase = base->subst(var, val);
   Expression *newHigh = high->subst(var, val);
   Expression *newLow = low->subst(var, val);
-  return (newBase == base && newHigh == high && newLow == low) 
+  return (newBase == base && newHigh == high && newLow == low)
            ? this : new Subrange(newBase, newHigh, newLow);
 }
-
-Expression *Subrange::CtoSExpr() {
-  if (base->isFP()) {
-    if (high->isConst() && low->isConst()) {
-      return new SubrangeTemplate(base->CtoSExpr(), high, low);
-    }
-    else {
-      return convertToBigUint();
-    }
-  }
-  Expression *newBase = base->CtoSExpr();
-  Expression *newHigh = high->CtoSExpr();
-  Expression *newLow = low->CtoSExpr();
-  if (newBase == base && newHigh == high && newLow == low) {
-    return this;
-  }
-  else {
-    return new Subrange(newBase, newHigh, newLow);
-  }
-}
-
-Expression *Subrange::convertToBigUint() {
-  Expression *newBase = base->CtoSExpr();
-  Expression *newHigh = high->CtoSExpr();
-  Expression *newLow = low->CtoSExpr();
-  FullRange *expr = new FullRange(newBase);
-  expr->needsParens = true;
-  Expression *w = ((RegType*)(newBase->exprType()))->width;
-  RegType *t = (w->evalConst() > 64) ? (RegType*)(new BigUintType(w)) : (RegType*)(new UintType(w));
-  CastExpr* c = new CastExpr(expr, t);
-  c->needsParens = true;
-  return new Subrange(c, newHigh, newLow);
-} 
 
 char *newstr(const char *str) {
   char *result = new char[strlen(str)+1];
   strcpy(result, str);
   return result;
 }
-
-Statement *Subrange::CtoSAssign(const char *op, Expression *rvalue) {
-  Expression *newBase = base->CtoSExpr();
-  Expression *newHigh = high->CtoSExpr();
-  Expression *newLow = low->CtoSExpr();
-  if (base->exprType()->isFPType()) {
-    assert(!strcmp(op, "="));
-    if (newHigh->isConst() && newLow->isConst()) {
-      if (rvalue->isLimited()) {
-        return new AssignRange(newBase, newHigh, newLow, NULL, rvalue);
-      }
-      else {
-        Expression *width = new BinaryExpr(new BinaryExpr(newHigh, newLow, newstr("-")), &i_1, newstr("+"));
-        return new AssignRange(newBase, newHigh, newLow, width, rvalue);
-      }
-    }
-    else {
-      Expression *w = ((RegType*)(base->exprType()))->width;
-      RegType *t = new BigUintType(w);
-      VarDec *d = new VarDec(newstr("_temp"), t, new FullRange(newBase));
-      SymRef *v = new SymRef(d);
-      Assignment *a = new Assignment(new Subrange(v, newHigh, newLow), newstr("="), rvalue);
-      AssignFull *f = new AssignFull(newBase, w->evalConst(), v);
-      return new Block(d, a, f);
-    }
-  }
-  else {
-    return new Assignment(this, op, rvalue);
-  }
-}    
 
 Sexpression *Subrange::ACL2Expr(bool isBV) {
   Sexpression *b = base->ACL2Expr(true);
@@ -1661,105 +1413,6 @@ uint Subrange::ACL2ValWidth() {
   }
 }
 
-// class FullRange : public Subrange (generated only by CtoS)
-// ----------------------------------------------------------
-
-FullRange::FullRange(Expression *b) : Subrange(b, NULL, NULL) {}
-
-void FullRange::displayNoParens(ostream& os) {
-  base->display(os);
-  os << ".range()";
-}
-
-// class SubrangeTemplate : public Subrange (generated only by CtoS)
-// -----------------------------------------------------------------
-
-SubrangeTemplate::SubrangeTemplate(Expression *b, Expression *h, Expression *l) : Subrange(b, h, l) {}
-
-void SubrangeTemplate::displayNoParens(ostream& os) {
-  base->display(os);
-  os << ".range<";
-  high->display(os);
-  os << ", ";
-  low->display(os);
-  os << ">()";
-}
-
-
-// class ToUintExpr : public Expression (call to to_uint method)
-// -------------------------------------------------------------
-
-// Data member:  Expression *expr;
-
-ToUintExpr::ToUintExpr(Expression *e) : Expression() {expr = e;}
-
-bool ToUintExpr::isLimited() {return true;}
-
-bool ToUintExpr::isInteger() {return true;}
-
-void ToUintExpr::displayNoParens(ostream& os) {
-  expr->display(os);
-  if (!RAC) {
-    os << ".to_uint()";
-  }
-}
-
-Sexpression *ToUintExpr::ACL2Expr(bool isBV) {return expr->ACL2Expr();}
-
-Expression *ToUintExpr::subst(SymRef *var, Expression *val) {
-  Expression *newExpr = expr->subst(var, val);
-  return (newExpr == expr) ? this : new ToUintExpr(newExpr);
-}
-
-Expression *ToUintExpr::CtoSExpr() {
-  Expression *newExpr;
-  if (expr->isSubrange() && ((Subrange*)expr)->base->isFP()) {
-    newExpr = ((Subrange*)expr)->convertToBigUint();
-  }
-  else {
-    newExpr = expr->CtoSExpr();
-  }
-  return (newExpr == expr) ? this : new ToUintExpr(newExpr);
-}
-
-
-// class ToUint64Expr : public Expression (call to to_uint64 method)
-// -------------------------------------------------------------
-
-// Data member:  Expression *expr;
-
-ToUint64Expr::ToUint64Expr(Expression *e) : Expression() {expr = e;}
-
-bool ToUint64Expr::isLimited() {return true;}
-
-bool ToUint64Expr::isInteger() {return true;}
-
-void ToUint64Expr::displayNoParens(ostream& os) {
-  expr->display(os);
-  if (!RAC) {
-    os << ".to_uint64()";
-  }
-}
-
-Sexpression *ToUint64Expr::ACL2Expr(bool isBV) {return expr->ACL2Expr();}
-
-Expression *ToUint64Expr::subst(SymRef *var, Expression *val) {
-  Expression *newExpr = expr->subst(var, val);
-  return (newExpr == expr) ? this : new ToUint64Expr(newExpr);
-}
-
-Expression *ToUint64Expr::CtoSExpr() {
-  Expression *newExpr;
-  if (expr->isSubrange() && ((Subrange*)expr)->base->isFP()) {
-    newExpr = ((Subrange*)expr)->convertToBigUint();
-  }
-  else {
-    newExpr = expr->CtoSExpr();
-  }
-  return (newExpr == expr) ? this : new ToUint64Expr(newExpr);
-}
-
-
 // class PrefixExpr : public Expression
 // ------------------------------------
 
@@ -1785,9 +1438,7 @@ int PrefixExpr::evalConst() {
     return val ? 1 : 0;
   }
   else assert(false);
-}  
-
-bool PrefixExpr::isLimited() {return expr->isLimited();}
+}
 
 bool PrefixExpr::isInteger() {return expr->isInteger();}
 
@@ -1798,11 +1449,6 @@ void PrefixExpr::displayNoParens(ostream& os) {
 
 Expression *PrefixExpr::subst(SymRef *var, Expression *val) {
   Expression *newExpr = expr->subst(var, val);
-  return (newExpr == expr) ? this : new PrefixExpr(newExpr, op);
-}
-
-Expression *PrefixExpr::CtoSExpr() {
-  Expression *newExpr = expr->CtoSExpr();
   return (newExpr == expr) ? this : new PrefixExpr(newExpr, op);
 }
 
@@ -1868,26 +1514,14 @@ bool CastExpr::isConst() {return expr->isConst();}
 
 int CastExpr::evalConst() {return expr->evalConst();}
 
-bool CastExpr::isLimited() {return expr->isLimited();}
-
 bool CastExpr::isInteger() {return expr->isInteger();}
 
 void CastExpr::displayNoParens(ostream& os) {
-  if (!RAC) {
-    os << "(";
-    type->display(os);
-    os << ")";
-  }
   expr->display(os);
 }
 
 Expression *CastExpr::subst(SymRef *var, Expression *val) {
   Expression *newExpr = expr->subst(var, val);
-  return (newExpr == expr) ? this : new CastExpr(newExpr, type);
-}
-
-Expression *CastExpr::CtoSExpr() {
-  Expression *newExpr = expr->CtoSExpr();
   return (newExpr == expr) ? this : new CastExpr(newExpr, type);
 }
 
@@ -1929,8 +1563,6 @@ int BinaryExpr::evalConst() {
   assert(false);
 }
 
-bool BinaryExpr::isLimited() {return expr1->isLimited() && expr2->isLimited();}
-
 bool BinaryExpr::isInteger() {return expr1->isInteger() && expr2->isInteger();}
 
 void BinaryExpr::displayNoParens(ostream& os) {
@@ -1942,12 +1574,6 @@ void BinaryExpr::displayNoParens(ostream& os) {
 Expression *BinaryExpr::subst(SymRef *var, Expression *val) {
   Expression *newExpr1 = expr1->subst(var, val);
   Expression *newExpr2 = expr2->subst(var, val);
-  return (newExpr1 == expr1 && newExpr2 == expr2) ? this : new BinaryExpr(newExpr1, newExpr2, op);
-}
-
-Expression *BinaryExpr::CtoSExpr() {
-  Expression *newExpr1 = expr1->CtoSExpr();
-  Expression *newExpr2 = expr2->CtoSExpr();
   return (newExpr1 == expr1 && newExpr2 == expr2) ? this : new BinaryExpr(newExpr1, newExpr2, op);
 }
 
@@ -2027,8 +1653,6 @@ CondExpr::CondExpr(Expression *e1, Expression *e2, Expression *t) : Expression()
   expr1 = e1; expr2 = e2; test = t;
 }
 
-bool CondExpr::isLimited() {return expr1->isLimited() && expr2->isLimited();}
-
 bool CondExpr::isInteger() {return expr1->isInteger() && expr2->isInteger();}
 
 void CondExpr::displayNoParens(ostream& os) {
@@ -2043,15 +1667,7 @@ Expression *CondExpr::subst(SymRef *var, Expression *val) {
   Expression *newExpr1 = expr1->subst(var, val);
   Expression *newExpr2 = expr2->subst(var, val);
   Expression *newTest = test->subst(var, val);
-  return (newExpr1 == expr1 && newExpr2 == expr2 && newTest == test) 
-           ? this : new CondExpr(newExpr1, newExpr2, newTest);
-}
-
-Expression *CondExpr::CtoSExpr() {
-  Expression *newExpr1 = expr1->CtoSExpr();
-  Expression *newExpr2 = expr2->CtoSExpr();
-  Expression *newTest = test->CtoSExpr();
-  return (newExpr1 == expr1 && newExpr2 == expr2 && newTest == test) 
+  return (newExpr1 == expr1 && newExpr2 == expr2 && newTest == test)
            ? this : new CondExpr(newExpr1, newExpr2, newTest);
 }
 
@@ -2084,13 +1700,7 @@ MultipleValue::MultipleValue(MvType *t, List<Expression> *e) : Expression() {
 }
 
 void MultipleValue::displayNoParens(ostream& os) {
-  if (RAC) {
-    os << "<";
-  }
-  else {
-    type->display(os);
-    os << "(";
-  }
+  os << "<";
   expr[0]->display(os);
   os << ", ";
   expr[1]->display(os);
@@ -2114,7 +1724,7 @@ void MultipleValue::displayNoParens(ostream& os) {
       }
     }
   }
-  os << (RAC ? ">" : ")");
+  os << ">";
 }
 
 Expression *MultipleValue::subst(SymRef *var, Expression *val) {
@@ -2122,16 +1732,6 @@ Expression *MultipleValue::subst(SymRef *var, Expression *val) {
   bool isNew = false;
   for (uint i=0; i<7; i++) {
     newExpr[i] = expr[i] ? expr[i]->subst(var, val) : NULL;
-    if (newExpr[i] != expr[i]) {isNew = true;}
-  }
-  return isNew ? new MultipleValue(type, newExpr) : this;
-}
-
-Expression *MultipleValue::CtoSExpr() {
-  Expression *newExpr[7];
-  bool isNew = false;
-  for (uint i=0; i<7; i++) {
-    newExpr[i] = expr[i] ? expr[i]->CtoSExpr() : NULL;
     if (newExpr[i] != expr[i]) {isNew = true;}
   }
   return isNew ? new MultipleValue(type, newExpr) : this;
@@ -2157,30 +1757,18 @@ Sexpression *MultipleValue::ACL2Expr(bool isBV) {
 //       ConstDec          (constant declaration)
 //     MulVarDec           (multiple variable declaration)
 //     MulConstDec         (multiple constant declaration)
-//     ContStmt            (continue)
-//     BreakStmt           (break)
+//     BreakStmt           (break -- may occur only within a switch)
 //     ReturnStmt          (return)
-//     WaitStmt            (SystemC wait)
 //     Assertion           (assert)
-//     Assignment          (=, ++, --, +=, etc.) 
-//     AssignBit           (generated only for CtoS)
-//     AssignRange         (generated only for CtoS)
-//     AssignFull          (generated only for CtoS)
+//     Assignment          (=, ++, --, +=, etc.)
 //     MultipleAssignment  (assignment of multiple function value)
 //     NullStmt            (null statement)
 //   Block                 (list of statements)
 //   IfStmt                (if or if ... else)
 //   ForStmt               (for)
-//   WhileStmt             (while)
-//   DoStmt                (do ... while)
 //   SwitchStmt            (switch)
 
-// Data members:
-//   Expression *iterBound; (Bound on number of iterations of for, while, or do statement, used for CtoS)
-//   SymRef *var; (variable to be replaced by vals in generating switch for CtoS)
-//   List<Constant> *vals; (valid only when var != NULL)
-
-Statement::Statement() {iterBound = NULL; var = NULL;}
+Statement::Statement() {}
 
 // This method is designed to handle if ... else if ... :
 
@@ -2206,66 +1794,10 @@ Block *Statement::blockify(Statement *s) { // virtual (overridden by Block)
   return new Block(this, s);
 }
 
-// Substitute expr for each ocurrence of var in statement; var is assumed not to occur in the left 
+// Substitute expr for each ocurrence of var in statement; var is assumed not to occur in the left
 // side of any declaration or assignment:
 
 Statement* Statement::subst(SymRef *var, Expression *expr) { // virtual
-  return this;
-}
-
-// Convert to as form acceptable to CtoS. The transformation is performed in two passes:
-
-Statement* Statement::CtoS() {
-  return CtoS1stPass()->CtoS2ndPass();
-}
-
-// First pass consists of three stages:
-
-Statement* Statement::CtoS1stPass() {
-  return CtoS1stPassSubstatements()->BoundIter()->CtoSSwitch(var, vals);
-}
-
-// In the first stage of first pass, CtoS1stPass is applied recursively to each substatement:
-
-Statement* Statement::CtoS1stPassSubstatements() { // virtual
-  return this;
-}
-
-// If iterBound is provided, transform into ForStmt acceptable to CtoS:
-
-Statement* Statement::BoundIter() { // virtual (overridden by ForStmt, WhileStmt, and DoStmt)
-  return this;
-}
-
-// If var is provided, generate required SwitchStmt:
-
-Statement* Statement::CtoSSwitch(SymRef *var, List<Constant> *vals) {
-  if (var) {
-    List<Constant> *ptr = vals;
-    List<Case> *cases = NULL;
-    while (ptr) {
-      Case *c = new Case(ptr->value, new List<Statement>(subst(var, ptr->value)));
-      c->action->add(new BreakStmt);
-      if (cases) {
-        cases->add(c);
-      }
-      else {
-        cases = new List<Case>(c);
-      }
-      ptr = ptr->next;
-    }
-    cases->add(new Case(NULL, new List<Statement>(new Assertion(new Boolean("false")))));
-    return new SwitchStmt(var, cases);
-  }
-  else {
-    return this;
-  }
-}
-
-// Apply CtoSExpr to each expression occurring in statement.
-// In case of Assignment, apply CtoSAssign:
-
-Statement* Statement::CtoS2ndPass() { // virtual
   return this;
 }
 
@@ -2273,7 +1805,7 @@ Statement* Statement::CtoS2ndPass() { // virtual
 
 Sexpression *Statement::ACL2Expr() { // virtual
   display(cout); cout << endl;
-  assert(!"Statement is not intended to be converted to an S-expression"); 
+  assert(!"Statement is not intended to be converted to an S-expression");
   return NULL;
 }
 
@@ -2307,16 +1839,6 @@ Statement* VarDec::subst(SymRef *var, Expression *val) {
   assert(var->symDec != this);
   if (init) {
     Expression *newInit = init->subst(var, val);
-    return (init == newInit) ? this : new VarDec(getname(), type, newInit);
-  }
-  else {
-    return this;
-  }
-}
-
-Statement *VarDec::CtoS2ndPass() {
-  if (init) {
-    Expression *newInit = init->CtoSExpr();
     return (init == newInit) ? this : new VarDec(getname(), type, newInit);
   }
   else {
@@ -2380,29 +1902,6 @@ bool ConstDec::isROM() {
   return isGlobal() && type->isArrayType() && !type->isArrayParamType();
 }
 
-void ConstDec::CtoSDisplayDec(ostream& os) {
-  os << "\nstatic const ";
-  type->displayVarType(os);
-  os << " ";
-  type->displayVarName(getname(), os);
-  os << ";";
-}
-
-void ConstDec::CtoSDisplayDef(ostream& os, const char *prefix) {
-  char buf[80];
-  strcpy(buf, prefix);
-  strcat(buf, getname());
-  os << "\nconst ";
-  type->displayVarType(os);
-  os << " ";
-  type->displayVarName(buf, os);
-  os << " = ";
-  init->display(os);
-  os << ";";
-}
-
-Statement *ConstDec::CtoS2ndPass() {return this;}
-
 Sexpression *ConstDec::ACL2SymExpr() {
   if (isGlobal()) {
     return new Plist(sym);
@@ -2428,16 +1927,6 @@ Statement *MulVarDec::subst(SymRef *var, Expression *val) {
   List<VarDec> *d = decs->next;
   while (d) {
     newDecs->add((VarDec*)(d->value->subst(var, val)));
-    d = d->next;
-  }
-  return new MulVarDec(newDecs);
-}
-
-Statement *MulVarDec::CtoS2ndPass() {
-  List<VarDec> *newDecs = new List<VarDec>((VarDec*)(decs->value->CtoS2ndPass()));
-  List<VarDec> *d = decs->next;
-  while (d) {
-    newDecs->add((VarDec*)(d->value->CtoS2ndPass()));
     d = d->next;
   }
   return new MulVarDec(newDecs);
@@ -2493,16 +1982,6 @@ Statement *MulConstDec::subst(SymRef *var, Expression *val) {
   return new MulConstDec(newDecs);
 }
 
-Statement *MulConstDec::CtoS2ndPass() {
-  List<ConstDec> *newDecs = new List<ConstDec>((ConstDec*)(decs->value->CtoS2ndPass()));
-  List<ConstDec> *d = decs->next;
-  while (d) {
-    newDecs->add((ConstDec*)(d->value->CtoS2ndPass()));
-    d = d->next;
-  }
-  return new MulConstDec(newDecs);
-}
-
 Sexpression *MulConstDec::ACL2Expr() {
   Plist *result = new Plist(&s_list);
   List<ConstDec> *ptr = decs;
@@ -2544,18 +2023,6 @@ Sexpression *TempParamDec::ACL2SymExpr() {
 }
 
 
-
-// class ContStmt : public SimpleStatement (continue)
-// --------------------------------------------------
-
-ContStmt::ContStmt() : SimpleStatement() {}
-
-void ContStmt::displaySimple(ostream& os) {
-  os << "continue";
-}
-
-ContStmt contStmt;
-
 // class BreakStmt : public SimpleStatement
 // ----------------------------------------
 
@@ -2589,31 +2056,12 @@ Statement *ReturnStmt::subst(SymRef *var, Expression *val) {
   return (value == newValue) ? this : new ReturnStmt(newValue);
 }
 
-Statement *ReturnStmt::CtoS2ndPass(){
-  Expression *newValue = value->CtoSExpr();
-  return (value == newValue) ? this : new ReturnStmt(newValue);
-}
-
 Sexpression *ReturnStmt::ACL2Expr() {
   return new Plist(&s_return, returnType->derefType()->ACL2Assign(value));
 }
 
 void ReturnStmt::noteReturnType(Type *t) {
   returnType = t;
-}
-
-
-// class WaitStmt : public SimpleStatement
-// ---------------------------------------
-
-WaitStmt::WaitStmt() : SimpleStatement() {}
-
-void WaitStmt::displaySimple(ostream& os) {
-  os << "wait()";
-}
-
-Sexpression *WaitStmt::ACL2Expr() {
-  return new Plist(&s_wait);
 }
 
 
@@ -2632,11 +2080,6 @@ void Assertion::displaySimple(ostream& os) {
 
 Statement *Assertion::subst(SymRef *var, Expression *val) {
   Expression *newExpr = expr->subst(var, val);
-  return (expr == newExpr) ? this : new Assertion(newExpr);
-}
-
-Statement *Assertion::CtoS2ndPass() {
-  Expression *newExpr = expr->CtoSExpr();
   return (expr == newExpr) ? this : new Assertion(newExpr);
 }
 
@@ -2673,17 +2116,12 @@ Statement *Assignment::subst(SymRef *var, Expression *val) {
   return (lval == newL) && (rval == newR) ? this : new Assignment(newL, op, newR);
 }
 
-Statement *Assignment::CtoS2ndPass() {
-  Expression *newR = rval ? rval->CtoSExpr() : NULL;
-  return lval->CtoSAssign(op, newR);
-}
-
 Sexpression *Assignment::ACL2Expr() {
   Expression *expr = rval;
   if (!strcmp(op, "=")) {
     expr = rval;
-  } 
-  else if (!strcmp(op, "++")) { 
+  }
+  else if (!strcmp(op, "++")) {
     expr = new BinaryExpr(lval, &i_1, "+");
   }
   else if (!strcmp(op, "--")) {
@@ -2695,7 +2133,7 @@ Sexpression *Assignment::ACL2Expr() {
   else if (!strcmp(op, "<<=")) {
     expr = new BinaryExpr(lval, rval, "<<");
   }
-  else if (!strcmp(op, "+=")) { 
+  else if (!strcmp(op, "+=")) {
     expr = new BinaryExpr(lval, rval, "+");
   }
   else if (!strcmp(op, "-=")) {
@@ -2737,7 +2175,7 @@ void AssignBit::displaySimple(ostream& os) {
   base->display(os);
   os << ".assign_bit(";
   index->display(os);
-  os << ", ";  
+  os << ", ";
   val->display(os);
   os << ")";
 }
@@ -2754,32 +2192,16 @@ void AssignRange::displaySimple(ostream& os) {
   base->display(os);
   os << ".assign_range<";
   high->display(os);
-  os << ", ";  
+  os << ", ";
   low->display(os);
   if (width) {
-    os << ", ";  
+    os << ", ";
     width->display(os);
   }
   os << ">(";
   val->displayNoParens(os);
   os << ")";
 }
-
-// class AssignFull : public SimpleStatement (generated only by CtoS)
-// ------------------------------------------------------------------
-
-// Data members: Expression *base; uint width; Expression *val;
-
-AssignFull::AssignFull(Expression *b, uint w, Expression *v)
- : SimpleStatement() {base = b, width = w; val = v;}
-
-void AssignFull::displaySimple(ostream& os) {
-  base->display(os);
-  os << ".assign_full_range<" << width << ">(";
-  val->display(os);
-  os << ")";
-}
-
 
 // class MultipleAssignment : public SimpleStatement
 // -------------------------------------------------
@@ -2800,12 +2222,7 @@ MultipleAssignment::MultipleAssignment(FunCall *r, List<Expression> *e) : Simple
 }
 
 void MultipleAssignment::displaySimple(ostream& os) {
-  if (RAC) {
-    os << "<";
-  }
-  else {
-    os << "tie (";
-  }
+  os << "<";
   lval[0]->display(os);
   os << ", ";
   lval[1]->display(os);
@@ -2817,12 +2234,7 @@ void MultipleAssignment::displaySimple(ostream& os) {
       lval[3]->display(os);
     }
   }
-  if (RAC) {
-    os << "> = ";
-  }
-  else {
-    os << ") =";
-  }
+  os << "> = ";
   rval->display(os);
 }
 
@@ -2843,35 +2255,18 @@ Statement *MultipleAssignment::subst(SymRef *var, Expression *val) {
   return changed ? new MultipleAssignment((FunCall*)newR, newL) : this;
 }
 
-Statement *MultipleAssignment::CtoS2ndPAss() {
-  Expression *newR = rval->CtoSExpr();
-  bool changed = (newR != rval);
-  List<Expression> *newL;
-  for (uint i=0; i<7 && lval[i]; i++) {
-    Expression *temp = lval[i]->CtoSExpr();
-    if (temp != lval[i]) changed = true;
-    if (i == 0) {
-      newL = new List<Expression>(temp);
-    }
-    else {
-      newL->add(temp);
-    }
-  }
-  return changed ? new MultipleAssignment((FunCall*)newR, newL) : this;
-}
-
 // In the event that each target of a multiple assignment is a simple variable,
 // the corrersponding S-expression  has the form
 
 //   (MV-ASSIGN (var1 ... vark) fncall).
 
 // Otherwise, for each target that is not a simple variable (i.e., a reference to an array
-// entry, a struct field, a subrange, or a bit), a temporary variable and an additional 
+// entry, a struct field, a subrange, or a bit), a temporary variable and an additional
 // assignment are introduced, and the S-expression has the form
 
 //   (BLOCK (MV-ASSIGN (var1 ... vark) fncall) (ASSIGN ...) ... (ASSIGN ...)).
 
-// For example, the statement 
+// For example, the statement
 
 //   foo(...).assign(x, y[i], z.range(j, k))
 
@@ -2986,47 +2381,7 @@ Statement *Block::subst(SymRef *var, Expression *val) {
     }
   }
   return changed ? new Block(newList) : this;
-}    
-
-Statement *Block::CtoS2ndPass() {
-  List<Statement> *newList = NULL;
-  bool changed = false;
-  for (int i=stmtList->length()-1; i>=0; i--) {
-    List<Statement> *subList = stmtList->nthl(i);
-    Statement *s = subList->value;
-    Statement *sNew = s->CtoS2ndPass();
-    if (sNew != s) {
-      changed = true;
-    }
-    if (changed) {
-      newList = new List<Statement>(sNew, newList);
-    }
-    else {
-      newList = subList;
-    }
-  }
-  return changed ? new Block(newList) : this;
-}    
-
-Statement* Block::CtoS1stPassSubstatements() {
-  List<Statement> *newList = NULL;
-  bool changed = false;
-  for (int i=stmtList->length()-1; i>=0; i--) {
-    List<Statement> *subList = stmtList->nthl(i);
-    Statement *s = subList->value;
-    Statement *sNew = s->CtoS1stPass();
-    if (sNew != s) {
-      changed = true;
-    }
-    if (changed) {
-      newList = new List<Statement>(sNew, newList);
-    }
-    else {
-      newList = subList;
-    }
-  }
-  return changed ? new Block(newList) : this;
-}      
+}
 
 Sexpression *Block::ACL2Expr() {
   Plist *result = new Plist(&s_block);
@@ -3088,24 +2443,6 @@ Statement *IfStmt::subst(SymRef *var, Expression *val) {
   return (t == test && l == left && r == right) ? this : new IfStmt(t, l, r);
 }
 
-Statement *IfStmt::CtoS2ndPass() {
-  Expression *t = test->CtoSExpr();
-  Statement *l = left->CtoS2ndPass();
-  Statement *r = right ? right->CtoS2ndPass() : NULL;
-  return (t == test && l == left && r == right) ? this : new IfStmt(t, l, r);
-}
-
-Statement* IfStmt::CtoS1stPassSubstatements() {
-  Statement *l = left->CtoS1stPass();
-  Statement *r = right ? right->CtoS1stPass() : NULL;
-  if (l == left && r == right) {
-    return this;
-  }
-  else {
-    return new IfStmt(test, l, r);
-  }
-}
-
 Sexpression *IfStmt::ACL2Expr() {
   return new Plist(&s_if, test->ACL2Expr(), left->blockify()->ACL2Expr(), right ? right->blockify()->ACL2Expr() : new Plist());
 }
@@ -3151,34 +2488,6 @@ Statement *ForStmt::subst(SymRef *var, Expression *val) {
   return (v == init && t == test && u == update && b == body) ? this : new ForStmt(v, t, u, b);
 }
 
-Statement *ForStmt::CtoS2ndPass() {
-  SimpleStatement *v = (SimpleStatement*)init->CtoS2ndPass();
-  Expression *t = test->CtoSExpr();
-  Assignment *u = (Assignment*)update->CtoS2ndPass();
-  Statement *b = body->CtoS2ndPass();
-  return (v == init && t == test && u == update && b == body) ? this : new ForStmt(v, t, u, b);
-}
-
-Statement* ForStmt::CtoS1stPassSubstatements() {
-  Statement *newBody = body->CtoS1stPass();
-  return (body == newBody) ? this : new ForStmt(init, test, update, newBody);
-}
-
-Statement* ForStmt::BoundIter() {
-  if (iterBound) {
-    VarDec *d = new VarDec(newstr("_i"), &uintType, &i_0);
-    SymRef *v = new SymRef(d);
-    Expression *t = new BinaryExpr(v, iterBound, newstr("<"));
-    Assignment *u = new Assignment(v, newstr("++"));
-    Statement *ifStmt = new IfStmt(test, body, new Block(&breakStmt));
-    Statement *b = new Block(ifStmt, update);
-    return new Block(init, new ForStmt(d, t, u, b));
-  }
-  else {
-    return this;
-  }
-}
-
 Sexpression *ForStmt::ACL2Expr() {
   Sexpression *sinit = init->ACL2Expr();
   Sexpression *stest = test->ACL2Expr();
@@ -3187,118 +2496,6 @@ Sexpression *ForStmt::ACL2Expr() {
 }
 
 void ForStmt::markAssertions(FunDef *f) {
-  body->markAssertions(f);
-}
-
-
-// class WhileStmt : public Statement
-// ----------------------------------
-
-// Data members: Expression *test; Statement *body;
-
-WhileStmt::WhileStmt(Expression *t, Statement *b) : Statement() {
-  test = t;
-  body = b;
-}
-
-void WhileStmt::display(ostream& os, uint indent) {
-  os << "\n" << setw(indent) << " " << "while (";
-  test->display(os);
-  os << ")";
-  body->display(os, indent+2);
-}
-
-Statement *WhileStmt::subst(SymRef *var, Expression *val) {
-  Expression *t = test->subst(var, val);
-  Statement *b = body->subst(var, val);
-  return (t == test && b == body) ? this : new WhileStmt(t, b);
-}
-
-Statement *WhileStmt::CtoS2ndPass() {
-  Expression *t = test->CtoSExpr();
-  Statement *b = body->CtoS2ndPass();
-  return (t == test && b == body) ? this : new WhileStmt(t, b);
-}
-
-Statement* WhileStmt::CtoS1stPassSubstatements() {
-  Statement *newBody = body->CtoS1stPass();
-  return (newBody == body) ? this : new WhileStmt(test, newBody);
-}
-
-Statement* WhileStmt::BoundIter() {
-  if (iterBound) {
-    VarDec *d = new VarDec(newstr("_i"), &uintType, &i_0);
-    SymRef *v = new SymRef(d);
-    Expression *t = new BinaryExpr(v, iterBound, newstr("<"));
-    Assignment *u = new Assignment(v, newstr("++"));
-    Statement *b = new Block(new IfStmt(test, body, new Block(new BreakStmt())));
-    return new ForStmt(d, t, u, b);
-  }
-  else {
-    return this;
-  }
-}
-
-Sexpression *WhileStmt::ACL2Expr() {
-  assert(iterBound);
-  return BoundIter()->ACL2Expr();
-}
-
-void WhileStmt::markAssertions(FunDef *f) {
-  body->markAssertions(f);
-}
-
-
-// class DoStmt : public Statement
-// -------------------------------
-
-// Data members: Statement *body; Expression *test;
-
-DoStmt::DoStmt(Statement *b, Expression *t) : Statement() {
-  body = b; test = t;
-}
-
-void DoStmt::display(ostream& os, uint indent) {
-  os << "\n" << setw(indent) << " " << "do";
-  body->display(os, indent+2);
-  os << "\n" << setw(indent) << " " << "while(";
-  test->display(os);
-  os << ");";
-}
-
-Statement *DoStmt::subst(SymRef *var, Expression *val) {
-  Statement *b = body->subst(var, val);
-  Expression *t = test->subst(var, val);
-  return (t == test && b == body) ? this : new DoStmt(b, t);
-}
-
-Statement *DoStmt::CtoS2ndPass() {
-  Statement *b = body->CtoS2ndPass();
-  Expression *t = test->CtoSExpr();
-  return (t == test && b == body) ? this : new DoStmt(b, t);
-}
-
-Statement* DoStmt::CtoS1stPassSubstatements() {
-  Statement *newBody = body->CtoS1stPass();
-  return (body == newBody) ? this : new DoStmt(newBody, test);
-}
-
-Statement* DoStmt::BoundIter() {
-  if (iterBound) {
-    VarDec *d = new VarDec(newstr("_i"), &uintType, &i_0);
-    SymRef *v = new SymRef(d);
-    Expression *t = new BinaryExpr(v, iterBound, newstr("<"));
-    Assignment *u = new Assignment(v, newstr("++"));
-    IfStmt *ifs = new IfStmt(test, new Block(new ContStmt), new Block(new BreakStmt));
-    Statement *b = body->blockify(ifs);
-    return new ForStmt(d, t, u, b);
-  }
-  else {
-    return this;
-  }
-}
-
-void DoStmt::markAssertions(FunDef *f) {
   body->markAssertions(f);
 }
 
@@ -3324,7 +2521,7 @@ void Case::display(ostream& os, uint indent) {
     ptr->value->displayWithinBlock(os, indent+2);
     ptr = ptr->next;
   }
-}     
+}
 
 Case* Case::subst(SymRef *var, Expression *val) {
   List<Statement> *newAction = NULL;
@@ -3333,46 +2530,6 @@ Case* Case::subst(SymRef *var, Expression *val) {
     List<Statement> *subList = action->nthl(i);
     Statement *s = subList->value;
     Statement *sNew = s->subst(var, val);
-    if (sNew != s) {
-      changed = true;
-    }
-    if (changed) {
-      newAction = new List<Statement>(sNew, newAction);
-    }
-    else {
-      newAction = subList;
-    }
-  }
-  return changed ? new Case(label, newAction) : this;
-}      
-
-Case* Case::CtoS2ndPass() {
-  List<Statement> *newAction = NULL;
-  bool changed = false;
-  for (int i=action->length()-1; i>=0; i--) {
-    List<Statement> *subList = action->nthl(i);
-    Statement *s = subList->value;
-    Statement *sNew = s->CtoS2ndPass();
-    if (sNew != s) {
-      changed = true;
-    }
-    if (changed) {
-      newAction = new List<Statement>(sNew, newAction);
-    }
-    else {
-      newAction = subList;
-    }
-  }
-  return changed ? new Case(label, newAction) : this;
-}      
-
-Case* Case::CtoS1stPassSubstatements() {
-  List<Statement> *newAction = NULL;
-  bool changed = false;
-  for (int i=action->length()-1; i>=0; i--) {
-    List<Statement> *subList = action->nthl(i);
-    Statement *s = subList->value;
-    Statement *sNew = s->CtoS1stPass();
     if (sNew != s) {
       changed = true;
     }
@@ -3431,47 +2588,7 @@ Statement* SwitchStmt::subst(SymRef *var, Expression *val) {
     }
   }
   return changed ? new SwitchStmt(test, newCases) : this;
-}      
-
-Statement* SwitchStmt::CtoS2ndPass() {
-  List<Case> *newCases = NULL;
-  bool changed = false;
-  for (int i=cases->length()-1; i>=0; i--) {
-    List<Case> *subList = cases->nthl(i);
-    Case *c = subList->value;
-    Case *cNew = c->CtoS2ndPass();
-    if (cNew != c) {
-      changed = true;
-    }
-    if (changed) {
-      newCases = new List<Case>(cNew, newCases);
-    }
-    else {
-      newCases = subList;
-    }
-  }
-  return changed ? new SwitchStmt(test, newCases) : this;
-}      
-
-Statement* SwitchStmt::CtoS1stPassSubstatements() {
-  List<Case> *newCases = NULL;
-  bool changed = false;
-  for (int i=cases->length()-1; i>=0; i--) {
-    List<Case> *subList = cases->nthl(i);
-    Case *c = subList->value;
-    Case *cNew = c->CtoS1stPassSubstatements();
-    if (cNew != c) {
-      changed = true;
-    }
-    if (changed) {
-      newCases = new List<Case>(cNew, newCases);
-    }
-    else {
-      newCases = subList;
-    }
-  }
-  return changed ? new SwitchStmt(test, newCases) : this;
-}      
+}
 
 Sexpression *SwitchStmt::ACL2Expr() {
   List<Sexpression> *result = new List<Sexpression>(&s_switch, test->ACL2Expr());
@@ -3513,8 +2630,8 @@ void SwitchStmt::markAssertions(FunDef *f) {
     c = c->next;
   }
 }
-            
-       
+
+
 //***********************************************************************************
 // class FunDef
 //***********************************************************************************
@@ -3531,12 +2648,6 @@ FunDef::FunDef(const char *n, Type *t, List<VarDec> *p, Block *b) {
 uint FunDef::arity() {return params->length();}
 
 char *FunDef::getname() {return sym->name;}
-
-FunDef *FunDef::CtoS() {
-  // Convert to a form acceptable to CtoS.
-  Block *newBody = (Block*)(body->CtoS());
-  return (newBody == body) ? this : new FunDef(getname(), returnType, params, newBody);
-}
 
 void FunDef::displayDec(ostream& os, uint indent) {
   os << "\n";
@@ -3618,7 +2729,7 @@ void Template::display(ostream& os, const char *prefix, uint indent) {
   os << ">";
   FunDef::display(os, prefix, indent);
 }
-  
+
 void Template::addCall(TempCall *c) {
   if (calls) {
     calls->add(c);
@@ -3658,13 +2769,6 @@ void Template::displayACL2Expr(ostream& os) {
   sym = saveSym;
 }
 
-Template *Template::CtoS() {
-  // Convert to a form acceptable to CtoS.
-  Block *newBody = (Block*)(body->CtoS());
-  return (newBody == body) ? this : new Template(getname(), returnType, params, newBody, tempParams);
-}
-
-
 //***********************************************************************************
 // class Program
 //***********************************************************************************
@@ -3680,11 +2784,9 @@ Program::Program() {
   templates = NULL;
 }
 
-// A program may be displayed in any of three modes:
-
-//   rac: Simply recreate original SystemC code.
-//   ctos: Convert to a form acceptable to CtoS.
-//   acl2: Represent as an S-expression, to be processed by the ACL2 translator.
+// A program may be displayed in either of two modes:
+//   rac: Pseudocode representation.
+//   acl2: S-expression representation, to be processed by the ACL2 translator.
 
 void Program::displayTypeDefs(ostream& os, DispMode mode) {
   // Note that type definitions are used in generating S-expressions for constant declarations
@@ -3692,7 +2794,7 @@ void Program::displayTypeDefs(ostream& os, DispMode mode) {
   List<DefinedType> *ptr = typeDefs;
   while (ptr) {
     switch (mode) {
-    case rac: case ctos:
+    case rac:
       ptr->value->displayDef(os);
       break;
     case acl2:
@@ -3706,9 +2808,6 @@ void Program::displayConstDecs(ostream& os, DispMode mode) {
   List<ConstDec> *ptr = constDecs;
   while (ptr) {
     switch (mode) {
-    case ctos:
-      ptr->value->CtoSDisplayDec(os);
-      break;
     case rac:
       ptr->value->display(os);
       break;
@@ -3719,35 +2818,13 @@ void Program::displayConstDecs(ostream& os, DispMode mode) {
   }
 }
 
-void Program::CtoSDisplayConstDefs(ostream& os, const char *prefix) {
-  List<ConstDec> *ptr = constDecs;
-  while (ptr) {
-    ptr->value->CtoSDisplayDef(os, prefix);
-    ptr = ptr->next;
-  }
-}
-
 void Program::displayFunDefs(ostream& os, DispMode mode, const char *prefix) {
   List<FunDef> *ptr = funDefs;
   while (ptr) {
     FunDef *def =  ptr->value;
-    FunDef *CtoSdef;
     switch (mode) {
-    case rac: 
+    case rac:
       def->display(os);
-      break;
-    case ctos:
-      CtoSdef =  def->CtoS();
-      if (CtoSdef == def) {
-        def->display(os, prefix);
-      }
-      else {
-        os << "\n#ifndef __CTOS__\n";
-        def->display(os);
-        os << "\n#else\n";
-        CtoSdef->display(os, prefix);
-        os << "\n#endif\n";
-      }
       break;
     case acl2:
       def->displayACL2Expr(os);
@@ -3767,7 +2844,6 @@ void Program::displayFunDecs(ostream& os) {
 }
 
 void Program::display(ostream& os, DispMode mode) {
-  RAC = mode == rac;
   displayTypeDefs(os, mode);
   os << "\n";
   displayConstDecs(os, mode);

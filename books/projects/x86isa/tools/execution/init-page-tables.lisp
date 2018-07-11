@@ -1,6 +1,41 @@
-;; AUTHOR:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
-;; Robert Krug <rkrug@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Robert Krug         <rkrug@cs.utexas.edu>
 
 (in-package "X86ISA")
 
@@ -16,12 +51,11 @@
 (defsection Setting-up-Page-Tables
   :parents (Program-Execution)
   :short "Setting up the page tables for a user-level program's run"
-  :long "<p>Recall that when the value of the field
-  @('programmer-level-mode') is <tt>nil</tt>, the x86 model is in its
-  supervisor-level mode.  It's only in this mode that memory read and
-  write functions like @(see rml08) and @(see wml08) will do a
-  page-table walk.  See section @(see programmer-level-mode) for
-  details.</p>" )
+  :long "<p>Recall that when the value of the field @('app-view') is
+  <tt>nil</tt>, the x86 model offers the system-level view of x86
+  machines.  It's only in this view that memory read and write
+  functions like @(see rml08) and @(see wml08) will do a page-table
+  walk.  See section @(see app-view) for details.</p>" )
 
 ;; ======================================================================
 
@@ -50,7 +84,7 @@
   ((addr-qword-lst "Required to be a @(see physical-addr-qword-alistp)")
    x86)
 
-  :guard (and (not (programmer-level-mode x86))
+  :guard (and (not (app-view x86))
               (physical-addr-qword-alistp addr-qword-lst))
 
   :parents (Setting-up-Page-Tables)
@@ -65,9 +99,9 @@
               (cdr addr-qword-lst) x86))))
 
   ///
-  (defthm programmer-level-mode-unchanged-after-load-qwords-into-physical-memory
-    (equal (xr :programmer-level-mode 0 (load-qwords-into-physical-memory addr-qword-lst x86))
-           (xr :programmer-level-mode 0 x86))))
+  (defthm app-view-unchanged-after-load-qwords-into-physical-memory
+    (equal (xr :app-view 0 (load-qwords-into-physical-memory addr-qword-lst x86))
+           (xr :app-view 0 x86))))
 
 (define physical-addr-qword-alist-listp (list)
   :parents (Setting-up-Page-Tables)
@@ -85,7 +119,7 @@
   :short "Load lists of @(see physical-addr-qword-alistp) into the
   physical memory"
   :long "This function can be used to initialize the page tables."
-  :guard (and (not (programmer-level-mode x86))
+  :guard (and (not (app-view x86))
               (physical-addr-qword-alist-listp addr-qword-list-list))
   :returns (x86 x86p :hyp :guard)
   (if (endp addr-qword-list-list)
@@ -93,9 +127,9 @@
     (b* ((x86 (load-qwords-into-physical-memory (car addr-qword-list-list) x86)))
       (load-qwords-into-physical-memory-list (cdr addr-qword-list-list) x86)))
   ///
-  (defthm programmer-level-mode-unchanged-after-load-qwords-into-physical-memory-list
-    (equal (xr :programmer-level-mode 0 (load-qwords-into-physical-memory-list addr-qword-lst-lst x86))
-           (xr :programmer-level-mode 0 x86))))
+  (defthm app-view-unchanged-after-load-qwords-into-physical-memory-list
+    (equal (xr :app-view 0 (load-qwords-into-physical-memory-list addr-qword-lst-lst x86))
+           (xr :app-view 0 x86))))
 
 ;; ======================================================================
 
@@ -528,7 +562,7 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
     x86
     (mv-let
       (result x86)
-      (b* ((x86 (xw :programmer-level-mode 0 nil x86))
+      (b* ((x86 (xw :app-view 0 nil x86))
            (x86
             (load-qwords-into-physical-memory-list *1-gig-page-tables* x86))
 

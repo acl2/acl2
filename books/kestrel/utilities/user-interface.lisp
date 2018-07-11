@@ -1,6 +1,6 @@
 ; User Interface
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2017 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
@@ -121,10 +121,14 @@
   "<p>
    When this macro is processed as an event,
    its arguments are passed to @(tsee cw).
+   Exception: No printing is done while including
+   a book or during the second pass of an
+   @(tsee encapsulate) event.
    </p>
    @(def cw-event)"
   (defmacro cw-event (str &rest args)
-    `(value-triple (cw ,str ,@args))))
+    `(value-triple (cw ,str ,@args)
+                   :on-skip-proofs :interactive)))
 
 (defsection make-event-terse
   :parents (user-interface make-event)
@@ -134,20 +138,26 @@
    We wrap a normal @(tsee make-event)
    in a @(tsee with-output) that removes all the screen output
    except possibly errors.
-   We also suppress the concluding error message of @(tsee make-event),
+   We also suppress the concluding error message of @(tsee make-event)
+   (when an error occurs),
    via @(':on-behalf-of :quiet!').
    </p>
    <p>
-   The rationale for not suppressing error output is that, otherwise,
-   @('make-event-terse') will fail silently in case of an error.
-   However, if errors were already suppressed,
-   this form does not enable them.
+   The @(':suppress-output') argument
+   determines whether errors should be also suppressed or not.
+   If this argument is @('nil') (the default),
+   errors are not suppressed,
+   but they are not enabled either;
+   that is, they retain the suppression status they had before.
+   If this argument is non-@('nil'), errors are suppressed;
+   @('make-event-terse') will fail silently in case of an error,
+   so errors should not be suppressed in normal circumstances.
    </p>
    <p>
-   We save, via @(':stack :push'), the current state of the outputs,
+   We save, via @(':stack :push'), the current status of the outputs,
    so that, inside the form passed to @('make-event-terse'),
-   that output state can be selectively restored for some sub-forms.
-   That output state can be restored via @('(with-output :stack :pop ...)'),
+   that output status can be selectively restored for some sub-forms.
+   That output status can be restored via @('(with-output :stack :pop ...)'),
    or by using the @(tsee restore-output) or @(tsee restore-output?) utilities.
    </p>
    <p>
@@ -159,10 +169,12 @@
    @('make-event-terse') may be useful in event-generating macros.
    </p>
    @(def make-event-terse)"
-  (defmacro make-event-terse (form)
+  (defmacro make-event-terse (form &key (suppress-errors 'nil))
     `(with-output
        :gag-mode nil
-       :off ,(remove-eq 'error *valid-output-names*)
+       :off ,(if suppress-errors
+                 :all
+               (remove-eq 'error *valid-output-names*))
        :stack :push
        (make-event ,form :on-behalf-of :quiet!))))
 

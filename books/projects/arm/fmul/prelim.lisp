@@ -64,7 +64,7 @@
 ;; variables of fmul64, culminating in the constants (d) and (flags), corresponding to
 ;; the outputs.
 
-;; The constant definitions will be derived from that of fsqrt64 in such a way that 
+;; The constant definitions will be derived from the definition of fmul64 in such a way that 
 ;; the proof of the following will be trivial:
 
 ;; (defthmd fmul64-lemma
@@ -99,7 +99,7 @@
 ;; The desired theorem can then be derived by functional instantiation.
 
 ;; For the multiplication in support of FMA, we define a separate specification
-;; predicate, fmul64-fused-spec.
+;; predicate, fmul64-fused-spec, as follows.
 
 ;; An operand is forced to 0:
 
@@ -233,7 +233,7 @@
 ;; and prove fmul64-lemma.
 
 ;;*******************************************************************************
-;; fmul64
+;; fmul64-lemma
 ;;*******************************************************************************
 
 (defund signa () (mv-nth 0 (mv-list 5 (analyze (opa) 2 (fzp) (bits 0 7 0)))))

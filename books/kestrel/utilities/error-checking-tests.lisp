@@ -58,6 +58,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
+ (b* (((er x) (ensure-string-or-nil "string" "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-string-or-nil nil "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-string-or-nil "abc" "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-fail
+ (ensure-string-or-nil #\c "This" t nil 'test state))
+
+(must-fail
+ (ensure-string-or-nil '("a") "This" t nil 'test state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-eval-to-t
  (b* (((er x) (ensure-symbol-list nil "This" t nil 'test state)))
    (value (equal x nil))))
 
@@ -529,6 +549,60 @@
 (must-fail
  (ensure-function-name 'car-cdr-elim "This" t nil 'test state)
  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-eval-to-t
+ (b* (((er x) (ensure-function-name-list nil "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-function-name-list '(cons) "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-function-name-list '(cons len) "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-succeed*
+ (defun g (x) x)
+ (must-eval-to-t
+  (b* (((er x)
+        (ensure-function-name-list '(binary-+ g) "This" t nil 'test state)))
+    (value (equal x nil)))))
+
+(must-fail
+ (ensure-function-name-list 55 "This" t nil 'test state))
+
+(must-fail
+ (ensure-function-name-list '(binary-+ car-cdr-elim) "This" t nil 'test state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-eval-to-t
+ (b* (((er x) (ensure-list-functions nil "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-list-functions '(cons) "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-list-functions '(cons len) "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-succeed*
+ (defun g (x) x)
+ (must-eval-to-t
+  (b* (((er x)
+        (ensure-list-functions '(binary-+ g) "This" t nil 'test state)))
+    (value (equal x nil)))))
+
+(must-fail
+ (ensure-list-functions '(1 2 3) "This" t nil 'test state))
+
+(must-fail
+ (ensure-list-functions '(binary-+ car-cdr-elim) "This" t nil 'test state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

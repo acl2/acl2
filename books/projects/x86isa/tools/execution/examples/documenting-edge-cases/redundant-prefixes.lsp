@@ -3,7 +3,7 @@
 
 (in-package "X86ISA")
 (include-book "std/util/defrule" :dir :system)
-(include-book "projects/x86isa/proofs/utilities/programmer-level-mode/top" :dir :system)
+(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)
 
 ;; ======================================================================
 
@@ -11,7 +11,7 @@
   '(#xf0 #xf0 #xf0 #xf0 #xf0 #x00 #x00))
 
 (defrule get-prefixes-opener-lemma-group-1-prefix-redundant
-  (implies (and (programmer-level-mode x86)
+  (implies (and (app-view x86)
                 (let* ((flg (mv-nth 0 (rm08 start-rip :x x86)))
                        (prefix-byte-group-code
                         (get-one-byte-prefix-array-code
@@ -36,7 +36,7 @@
    (and (x86p x86)
         (equal (ms x86) nil)
         (equal (fault x86) nil)
-        (programmer-level-mode x86)
+        (app-view x86)
         (canonical-address-p (rip x86))
         (canonical-address-p (+ (rip x86) (len *test_code*)))
         (program-at (create-canonical-address-list
@@ -60,7 +60,7 @@
     ((start-rip 0)
      (x86 (!ms nil x86))
      (x86 (!fault nil x86))
-     (x86 (!programmer-level-mode t x86))
+     (x86 (!app-view t x86))
      (x86 (!rip start-rip x86))
      ((mv flg0 x86)
       (wm64      start-rip  (combine-bytes '(#xF0 #xF0 #xF0 #xF0 #xF0 #xF0 #xF0 #xF0)) x86))
@@ -78,7 +78,7 @@
     ((start-rip 0)
      (x86 (!ms nil x86))
      (x86 (!fault nil x86))
-     (x86 (!programmer-level-mode t x86))
+     (x86 (!app-view t x86))
      (x86 (!rip start-rip x86))
      ((mv flg0 x86)
       (wm64      start-rip  (combine-bytes '(#xF0 #xF0 #xF0 #xF0 #xF0 #xF0 #xF0 #xF0)) x86))
@@ -96,7 +96,7 @@
     ((start-rip 0)
      (x86 (!ms nil x86))
      (x86 (!fault nil x86))
-     (x86 (!programmer-level-mode t x86))
+     (x86 (!app-view t x86))
      (x86 (!rip start-rip x86))
      ((mv flg0 x86)
       (wm64      start-rip  (combine-bytes '(#xF0 #xF3)) x86))

@@ -680,6 +680,21 @@
 
       ))
 
+#+acl2-loop-only
+(defconst nil 'nil
+
+; We cannot document a NIL symbol.
+
+ " NIL, a symbol, represents in Common Lisp both the false truth value
+ and the empty list.")
+
+#+acl2-loop-only
+(defconst t 't
+
+; We cannot document a NIL symbol.  So, we do not document T either.
+
+  "T, a symbol, represents the true truth value in Common Lisp.")
+
 (defconst *stobj-inline-declare*
 
 ; This constant is being introduced in v2-8.  In this file it is only used in
@@ -1858,21 +1873,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 
 ;                               LOGIC
-
-#+acl2-loop-only
-(defconst nil 'nil
-
-; We cannot document a NIL symbol.
-
- " NIL, a symbol, represents in Common Lisp both the false truth value
- and the empty list.")
-
-#+acl2-loop-only
-(defconst t 't
-
-; We cannot document a NIL symbol.  So, we do not document T either.
-
-  "T, a symbol, represents the true truth value in Common Lisp.")
 
 (defun insist (x)
 
@@ -3639,20 +3639,32 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defmacro ec-call1-raw (ign x)
   (declare (ignore ign))
-  (assert (and (consp x) (symbolp (car x)))) ; checked by translate11
-  (let ((*1*fn (*1*-symbol (car x)))
-        (*1*fn$inline (add-suffix (*1*-symbol (car x)) *inline-suffix*)))
-    `(cond
-      (*safe-mode-verified-p* ; see below for discussion of this case
-       ,x)
-      (t
-       (funcall
-        (cond
-         ((fboundp ',*1*fn) ',*1*fn)
-         ((fboundp ',*1*fn$inline)
-          (assert$ (macro-function ',(car x)) ; sanity check; could be omitted
-                   ',*1*fn$inline))
-         (t
+  (cond
+   ((not (and (consp x) (symbolp (car x))))
+
+; This case is normally impossible, as enforced by translate.  However, it can
+; happen if we are not translating for execution; an example is (non-exec
+; (ec-call x)).  In that case we simply cause an error at execution time, as a
+; precaution, while fully expecting that we never actually hit this case.
+
+    `(error "Implementation error: It is unexpected to be executing a call~%~
+             of ec-call on other than the application of a symbol to~%~
+             arguments, but we are executing it on the form,~%~s."
+            x))
+   (t
+    (let ((*1*fn (*1*-symbol (car x)))
+          (*1*fn$inline (add-suffix (*1*-symbol (car x)) *inline-suffix*)))
+      `(cond
+        (*safe-mode-verified-p* ; see below for discussion of this case
+         ,x)
+        (t
+         (funcall
+          (cond
+           ((fboundp ',*1*fn) ',*1*fn)
+           ((fboundp ',*1*fn$inline)
+            (assert$ (macro-function ',(car x)) ; sanity check; could be omitted
+                     ',*1*fn$inline))
+           (t
 
 ; We should never hit this case, unless the user is employing trust tags or raw
 ; Lisp.  For ACL2 events that might hit this case, such as a defconst using
@@ -3673,10 +3685,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; avoid the *1* function calls entirely when loading the expansion file (or its
 ; compilation).
 
-          (error "Undefined function, ~s.  Please contact the ACL2 ~
+            (error "Undefined function, ~s.  Please contact the ACL2 ~
                   implementors."
-                 ',*1*fn)))
-        ,@(cdr x))))))
+                   ',*1*fn)))
+          ,@(cdr x))))))))
 
 (defmacro ec-call1 (ign x)
 
@@ -6397,6 +6409,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(cond ((and ,(not on-skip-proofs)
                (f-get-global 'ld-skip-proofsp state))
           (value :skipped))
+         ((and (eq ,on-skip-proofs :interactive)
+               (eq (f-get-global 'ld-skip-proofsp state)
+                   'include-book))
+          (value :skipped))
          (t ,(let ((form
                     `(let ((check ,check)
                            (ctx ,ctx))
@@ -6795,6 +6811,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              ((eql x -1) *-1*)
              (t (list 'quote x)))))
 
+(defun maybe-kwote (x)
+
+; Return an untranslated term that represents (quote x).
+
+  (declare (xargs :guard t))
+  (cond ((or (acl2-numberp x)
+             (stringp x)
+             (characterp x)
+             (eq x nil)
+             (eq x t)
+             (keywordp x))
+         x)
+        (t (kwote x))))
+
 (defun kwote-lst (lst)
   (declare (xargs :guard (true-listp lst)))
   (cond ((endp lst) nil)
@@ -7012,6 +7042,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (list 'cons (car chars) (car forms))
                  (make-fmt-bindings (cdr chars) (cdr forms))))))
 
+(defconst *base-10-chars*
+
+; This constant is inlined in the definition of
+; *base-10-array*.
+
+  '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
+
 (defmacro warning$ (ctx summary str+ &rest fmt-args)
 
 ; Warning: Keep this in sync with warning$-cw1.
@@ -7041,9 +7078,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (kwote summary)
           summary)
         str+
-        (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                             #\5 #\6 #\7 #\8 #\9)
-                           fmt-args)
+        (make-fmt-bindings *base-10-chars* fmt-args)
         'state))
 
 (defmacro msg (str &rest args)
@@ -7054,7 +7089,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (xargs :guard (<= (length args) 10)))
 
-  `(cons ,str ,(make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) args)))
+  `(cons ,str ,(make-fmt-bindings *base-10-chars* args)))
 
 (defun check-vars-not-free-test (vars term)
   (declare (xargs :guard (and (symbol-listp vars)
@@ -8776,9 +8811,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; implementation uses the former to force a hard error even in contexts where
 ; we would normally return nil.
 
-  (let ((alist (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                                    #\5 #\6 #\7 #\8 #\9)
-                                  str-args))
+  (let ((alist (make-fmt-bindings *base-10-chars* str-args))
         (severity-name (symbol-name severity)))
     (cond ((equal severity-name "SOFT")
            (list 'error1 context str alist 'state))
@@ -8814,9 +8847,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                   '(hard hard? hard! hard?!
                                                          soft very-soft))
                               (<= (length str-args) 10))))
-  (let ((alist (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                                    #\5 #\6 #\7 #\8 #\9)
-                                  str-args))
+  (let ((alist (make-fmt-bindings *base-10-chars* str-args))
         (severity-name (symbol-name severity)))
     (cond ((equal severity-name "SOFT")
            (list 'error1@par context str alist 'state))
@@ -17368,48 +17399,90 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(and (mbt* ,test)
         ,form))
 
-(defun fmt-to-comment-window (str alist col evisc-tuple)
+(defun fmt-to-comment-window (str alist col evisc-tuple print-base-radix)
 
 ; WARNING: Keep this in sync with fmt-to-comment-window!.
 
-; Logically, this is the constant function returning nil.  However, it
-; has a side-effect on the "comment window" which is imagined to be a
-; separate window on the user's screen that cannot possibly be
-; confused with the normal ACL2 display of the files in STATE.  Using
-; this function it is possible for an ACL2 expression to cause
-; characters to appear in the comment window.  Nothing whatsoever can
-; be proved about these characters.  If you want to prove something
-; about ACL2 output, it must be directed to the channels and files in
+; Logically, this is the constant function returning nil.  However, it has a
+; side-effect on the "comment window" which is imagined to be a separate window
+; on the user's screen that cannot possibly be confused with the normal ACL2
+; display of the files in STATE.  Using this function it is possible for an
+; ACL2 expression to cause characters to appear in the comment window.  Nothing
+; whatsoever can be proved about these characters.  If you want to prove
+; something about ACL2 output, it must be directed to the channels and files in
 ; STATE.
 
   (declare (xargs :guard t))
   #+acl2-loop-only
-  (declare (ignore str alist col evisc-tuple))
+  (declare (ignore str alist col evisc-tuple print-base-radix))
   #+acl2-loop-only
   nil
 
-; Note:  One might wish to bind *wormholep* to nil around this fmt1 expression,
+; Note: One might wish to bind *wormholep* to nil around this fmt1 expression,
 ; to avoid provoking an error if this fn is called while *wormholep* is t.
-; However, the fact that we're printing to *standard-co* accomplishes the
-; same thing.  See the comment on synonym streams in princ$.
+; However, the fact that we're printing to *standard-co* accomplishes the same
+; thing.  See the comment on synonym streams in princ$.
 
   #-acl2-loop-only
-  (progn (fmt1 str alist col *standard-co* *the-live-state* evisc-tuple)
-         nil))
+  (progn
+    (cond
+     ((null print-base-radix) ; common case
+      (fmt1 str alist col *standard-co* *the-live-state* evisc-tuple))
+     (t
+      (mv-let (new-print-base new-print-radix state)
+        (cond ((consp print-base-radix)
+               (mv (car print-base-radix)
+                   (cdr print-base-radix)
+                   *the-live-state*))
+              (t (mv print-base-radix
+                     (if (eql print-base-radix 10)
+                         nil
+                       t)
+                     *the-live-state*)))
+        (state-global-let*
+         ((print-base (f-get-global 'print-base state))
+          (print-radix new-print-radix))
+         (pprogn
+          (set-print-base new-print-base state)
+          (mv-let (col state)
+            (fmt1 str alist col *standard-co* *the-live-state* evisc-tuple)
+            (value col)))))))
+    nil))
 
-(defun fmt-to-comment-window! (str alist col evisc-tuple)
+(defun fmt-to-comment-window! (str alist col evisc-tuple print-base-radix)
 
 ; WARNING: Keep this in sync with fmt-to-comment-window.
 
   (declare (xargs :guard t))
   #+acl2-loop-only
-  (declare (ignore str alist col evisc-tuple))
+  (declare (ignore str alist col evisc-tuple print-base-radix))
   #+acl2-loop-only
   nil
   #-acl2-loop-only
-  (progn (fmt1! str alist col *standard-co* *the-live-state*
-                evisc-tuple)
-         nil))
+  (progn
+    (cond
+     ((null print-base-radix) ; common case
+      (fmt1! str alist col *standard-co* *the-live-state* evisc-tuple))
+     (t
+      (mv-let (new-print-base new-print-radix state)
+        (cond ((consp print-base-radix)
+               (mv (car print-base-radix)
+                   (cdr print-base-radix)
+                   *the-live-state*))
+              (t (mv print-base-radix
+                     (if (eql print-base-radix 10)
+                         nil
+                       t)
+                     *the-live-state*)))
+        (state-global-let*
+         ((print-base (f-get-global 'print-base state))
+          (print-radix new-print-radix))
+         (pprogn
+          (set-print-base new-print-base state)
+          (mv-let (col state)
+            (fmt1! str alist col *standard-co* *the-live-state* evisc-tuple)
+            (value col)))))))
+    nil))
 
 (defun pairlis2 (x y)
 ; Like pairlis$ except is controlled by y rather than x.
@@ -17446,20 +17519,34 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; logically returning (mv a b c).
 
   `(fmt-to-comment-window ,str
-                          (pairlis2 '(#\0 #\1 #\2 #\3 #\4
-                                      #\5 #\6 #\7 #\8 #\9)
-                                    (list ,@args))
-                          0 nil))
+                          (pairlis2 *base-10-chars* (list ,@args))
+                          0 nil nil))
 
 (defmacro cw! (str &rest args)
 
 ; WARNING: Keep this in sync with cw.
 
   `(fmt-to-comment-window! ,str
-                           (pairlis2 '(#\0 #\1 #\2 #\3 #\4
-                                       #\5 #\6 #\7 #\8 #\9)
-                                     (list ,@args))
-                           0 nil))
+                           (pairlis2 *base-10-chars* (list ,@args))
+                           0 nil nil))
+
+(defmacro cw-print-base-radix (print-base-radix str &rest args)
+
+; WARNING: Keep this in sync with cw.
+
+  `(fmt-to-comment-window ,str
+                          (pairlis2 *base-10-chars* (list ,@args))
+                          0 nil
+                          ,print-base-radix))
+
+(defmacro cw-print-base-radix! (print-base-radix str &rest args)
+
+; WARNING: Keep this in sync with cw.
+
+  `(fmt-to-comment-window! ,str
+                           (pairlis2 *base-10-chars* (list ,@args))
+                           0 nil
+                           ,print-base-radix))
 
 (defun subseq-list (lst start end)
   (declare (xargs :guard (and (true-listp lst)
@@ -18064,13 +18151,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     #\A #\B #\C #\D #\E #\F
     #\a #\b #\c #\d #\e #\f
     #\+ #\- #\. #\^ #\_))
-
-(defconst *base-10-chars*
-
-; This constant is inlined in the definition of
-; *base-10-array*.
-
-  '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
 
 (defconst *hex-chars*
 
@@ -24977,33 +25057,26 @@ Lisp definition."
         ((endp (cdr l)) (car l))
         (t (conjoin2 (car l) (conjoin (cdr l))))))
 
-(defun conjoin2-untranslated-terms (t1 t2)
-
-; See conjoin2.  This function has the analogous spec, but where t1 and t2 need
-; not be translated.
-
-  (declare (xargs :guard t))
-  (cond ((or (equal t1 *nil*) (eq t1 nil))
-         *nil*)
-        ((or (equal t2 *nil*) (eq t2 nil))
-         *nil*)
-        ((or (equal t1 *t*) (eq t1 t))
-         t2)
-        ((or (equal t2 *t*) (eq t2 t))
-         t1)
-        (t (fcons-term* 'if t1 t2 *nil*))))
-
 (defun conjoin-untranslated-terms (l)
 
-; This function is analogous to conjoin, but where t1 and t2 need not be
-; translated.
+; This function is analogous to conjoin, but where the terms need not be
+; translated.  Normally we expect that the result will be translated; but as a
+; courtesy to those who might want to use this utility, we attempt to return a
+; "pretty" untranslated term.
 
   (declare (xargs :guard (true-listp l)))
-  (cond ((endp l) *t*)
-        ((endp (cdr l)) (car l))
-        (t (conjoin2-untranslated-terms
-            (car l)
-            (conjoin-untranslated-terms (cdr l))))))
+  (cond ((or (member nil l :test 'eq)
+             (member *nil* l :test 'equal))
+         nil)
+        (t (let* ((l2 (if (member t l :test 'eq)
+                          (remove t l :test 'eq)
+                        l))
+                  (l3 (if (member *t* l2 :test 'equal)
+                          (remove *t* l2 :test 'equal)
+                        l2)))
+             (cond ((null l3) t)
+                   ((null (cdr l3)) (car l3))
+                   (t (cons 'and l3)))))))
 
 (defun disjoin2 (t1 t2)
 
@@ -25714,6 +25787,9 @@ Lisp definition."
                    (mintime '0 mintime-p)
                    (real-mintime 'nil real-mintime-p)
                    run-mintime minalloc msg args)
+
+; Warning: Keep this in sync with the generation of time$ calls by untranslate1.
+
   (declare (xargs :guard t))
   (cond
    ((and real-mintime-p mintime-p)
@@ -25890,7 +25966,8 @@ Lisp definition."
                        (fmt-soft-right-margin 100000))
                       (fmt-to-comment-window
                        ,g-msg alist 0
-                       (abbrev-evisc-tuple *the-live-state*))))))))))))))
+                       (abbrev-evisc-tuple *the-live-state*)
+                       nil)))))))))))))
 
 (encapsulate
  ()
@@ -27479,6 +27556,92 @@ Lisp definition."
             #-ccl
             (cw "; Note: Set-gc-strategy is a no-op in this host Lisp.~|"))))
   (read-acl2-oracle state))
+
+(defconst *expandable-boot-strap-non-rec-fns*
+  '(not
+    implies eq atom eql = /= null endp zerop
+
+; If we ever make 1+ and 1- functions again, they should go back on this list.
+
+    synp plusp minusp listp return-last mv-list cons-with-hint
+
+; We added the-error for Version_4.0 (replaced by the-check after Version_6.1).
+; Before that change, but after changing constraint-info to avoid calling
+; remove-guard-holders on a definition body (a change in support of
+; canonical-ancestors, for use of the Attachment Restriction Lemma in
+; justifying attachment to metafunctions and clause-processors,
+; cf. chk-evaluator-use-in-rule), the event (defsort :compare< << :prefix <<)
+; failed from community book defsort/uniquep.lisp.
+
+    the-check wormhole-eval force case-split double-rewrite))
+
+(defconst *definition-minimal-theory*
+
+; We include mv-nth because of the call of simplifiable-mv-nthp in the
+; definition of call-stack, which (as noted there) results in a use of the
+; definition of mv-nth without tracking it in a ttree.
+
+  (list* 'mv-nth 'iff *expandable-boot-strap-non-rec-fns*))
+
+(defconst *definition-minimal-theory-alist*
+
+; This alist associates each function in *definition-minimal-theory* with its
+; normalized body.  It is built as follows.  The equality of this constant to
+; that expression is checked at the end of the boot-strap.
+
+;   (merge-sort-lexorder
+;    (loop for f in *definition-minimal-theory* collect
+;          (cons f (body f t (w *the-live-state*)))))
+
+  '((/= if (equal x y) 'nil 't)
+    (= equal x y)
+    (atom if (consp x) 'nil 't)
+    (case-split . x)
+    (cons-with-hint cons x y)
+    (double-rewrite . x)
+    (endp if (consp x) 'nil 't)
+    (eq equal x y)
+    (eql equal x y)
+    (force . x)
+    (iff if p (if q 't 'nil) (if q 'nil 't))
+    (implies if p (if q 't 'nil) 't)
+    (listp if (consp x) 't (equal x 'nil))
+    (minusp < x '0)
+    (mv-list . x)
+    (mv-nth if (consp l)
+            (if (zp n)
+                (car l)
+              (mv-nth (binary-+ '-1 n) (cdr l)))
+            'nil)
+    (not if p 'nil 't)
+    (null equal x 'nil)
+    (plusp < '0 x)
+    (return-last . last-arg)
+    (synp quote t)
+    (the-check . y)
+    (wormhole-eval quote nil)
+    (zerop equal x '0)))
+
+(defun bbody-fn (fn)
+
+; This is just (body fn t wrld), where wrld is the boot-strap world, except
+; that currently it may only be applied to functions in
+; *definition-minimal-theory*.
+
+  (declare (xargs :guard (member-eq fn *definition-minimal-theory*)))
+  (let ((pair (assoc-eq fn *definition-minimal-theory-alist*)))
+    (cond (pair (cdr pair))
+          (t (er hard! 'bbody
+                 "Implementation error: Illegal call of bbody: the symbol ~x0 ~
+                  is not in ~x1."
+                 *definition-minimal-theory-alist*)))))
+
+(defmacro bbody (fn)
+  (cond ((and (consp fn)
+              (consp (cdr fn))
+              (eq (car fn) 'quote))
+         (kwote (bbody-fn (cadr fn))))
+        (t `(bbody-fn ,fn))))
 
 (defun file-length$ (file state)
   (declare (xargs :guard (stringp file)

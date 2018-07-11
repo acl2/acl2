@@ -1,6 +1,45 @@
-;; AUTHORS:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
-;; Matt Kaufmann <kaufmann@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2018, Kestrel Technology, LLC
+
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Matt Kaufmann       <kaufmann@cs.utexas.edu>
+; Contributing Author(s):
+; Alessandro Coglio   <coglio@kestrel.edu>
 
 (in-package "X86ISA")
 
@@ -16,6 +55,8 @@
   :parents (machine)
   :short "Miscellaneous utilities for instruction decoding and for writing
   instruction specification functions" )
+
+(local (xdoc::set-default-parents decoding-and-spec-utils))
 
 ;; ======================================================================
 
@@ -1979,7 +2020,7 @@ reference made from privilege level 3.</blockquote>"
           ,@(and trunc     `((trunc     booleanp)))
           (start-rip :type (signed-byte   #.*max-linear-address-size*))
           (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
-          (prefixes  :type (unsigned-byte 44))
+          (prefixes  :type (unsigned-byte 52))
           (rex-byte  :type (unsigned-byte 8))
           (opcode    :type (unsigned-byte 8))
           (modr/m    :type (unsigned-byte 8))
@@ -2031,7 +2072,7 @@ reference made from privilege level 3.</blockquote>"
   ((byte-operand? :type (or t nil))
    (rex-byte      :type (unsigned-byte  8))
    (imm?          :type (or t nil))
-   (prefixes      :type (unsigned-byte 44))
+   (prefixes      :type (unsigned-byte 52))
    (x86 x86p))
 
   :inline t
@@ -2129,16 +2170,20 @@ reference made from privilege level 3.</blockquote>"
    </p>
    <p>
    Otherwise, we use the default segment selection rules
-   in Intel manual, Mar'17, Volume 1, Table 3-5.
+   in Intel manual, May'18, Volume 1, Table 3-5.
    Since we only call this function for instruction operands,
    the CS rule does not apply.
-   Since for now we only call this function for non-string instruction,
-   the ES rule does not apply for now.
+   The ES rule applies to string instructions,
+   but our model does not use this function
+   to determine the ES segment for string instructions
+   (which cannot be overridden,
+   at least for the string instructions we currently support),
+   so this function does not take the ES rule into account either.
    So the result is either SS or DS,
-   based on whether the base register is one of *SP *BP or not:
+   based on whether the base register is one of rSP and rBP or not:
    this determination is made based on
-   Intel manual, Mar'17, Volume 2, Table 2-1 if the address size is 16 bits,
-   and Intel manual, Mar'17, Volume 2, Table 2-2 otherwise.
+   Intel manual, May'18, Volume 2, Table 2-1 if the address size is 16 bits,
+   and Intel manual, May'18, Volume 2, Table 2-2 otherwise.
    </p>
    <p>
    Note that here we may recalculate the address size
@@ -2163,5 +2208,52 @@ reference made from privilege level 3.</blockquote>"
                     (= r/m 5))
                *ss*
              *ds*))))))
+
+;; ======================================================================
+
+;; Added by Alessandro Coglio <coglio@kestrel.edu>
+
+(define check-instruction-length
+  ((start-rip :type (signed-byte #.*max-linear-address-size*))
+   (temp-rip :type (signed-byte #.*max-linear-address-size*))
+   (delta-rip :type (unsigned-byte 3)))
+  :returns (badlength? acl2::maybe-natp
+                       :hints (("Goal" :in-theory (enable acl2::maybe-natp))))
+  :inline t
+  :parents (decoding-and-spec-utils)
+  :short "Check if the length of an instruction exceeds 15 bytes."
+  :long
+  "<p>
+   The maximum length of an instruction is 15 bytes;
+   a longer instruction causes a #GP(0) exception.
+   See AMD manual, Dec'17, Volume 2, Table 8-6.
+   This function is used to check this condition.
+   </p>
+   <p>
+   The @('start-rip') argument is
+   the instruction pointer at the beginning of the instruction.
+   The @('temp-rip') argument is generally
+   the instruction pointer just past the end of the instruction,
+   in which case the @('delta-rip') argument is 0.
+   In the other cases, @('delta-rip') is a small non-zero number,
+   and @('temp-rip + delta-rip') is
+   the instruction pointer just past the end of the instruction.
+   </p>
+   <p>
+   This function returns @('nil') if the length does not exceed 15 bytes.
+   Otherwise, this function returns the offending length (a number above 15),
+   which is useful for error reporting in the model.
+   </p>"
+  (b* ((start-rip (mbe :logic (ifix start-rip) :exec start-rip))
+       (temp-rip (mbe :logic (ifix temp-rip) :exec temp-rip))
+       (delta-rip (mbe :logic (nfix delta-rip) :exec delta-rip))
+       ((the (signed-byte #.*max-linear-address-size+1*) end-rip)
+        (+ (the (signed-byte #.*max-linear-address-size*) temp-rip)
+           (the (unsigned-byte 3) delta-rip)))
+       ((the (signed-byte #.*max-linear-address-size+2*) length)
+        (- (the (signed-byte #.*max-linear-address-size+1*) end-rip)
+           (the (signed-byte #.*max-linear-address-size*) start-rip))))
+    (and (> length 15)
+         length)))
 
 ;; ======================================================================

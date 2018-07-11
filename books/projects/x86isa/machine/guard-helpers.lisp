@@ -1,5 +1,40 @@
-;; AUTHOR:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
 
 ;; We will always include this book locally.
 
@@ -141,7 +176,7 @@
    (:mix (:nat a 64) (:nat b 64) (:nat c 64)))
   :rule-classes :linear)
 
-(def-gl-export rml80-in-system-level-mode-guard-proof-helper
+(def-gl-export rml80-in-sys-view-guard-proof-helper
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d) (n08p e)
             (n08p f) (n08p g) (n08p h) (n08p i) (n08p j))
   :concl (<
@@ -186,9 +221,9 @@
                  rml32-guard-proof-helper
                  rb-and-rvm64-helper
                  rml64-guard-proof-helper
-                 rml80-in-system-level-mode-guard-proof-helper)))
+                 rml80-in-sys-view-guard-proof-helper)))
 
-(def-gl-export rml32-rb-system-level-mode-proof-helper
+(def-gl-export rml32-rb-sys-view-proof-helper
   :hyp (and (n08p a)
             (n08p b)
             (n08p c)
@@ -199,7 +234,7 @@
   (gl::auto-bindings
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8))))
 
-;; (def-gl-export rml64-in-system-level-mode-guard-proof-helper
+;; (def-gl-export rml64-in-sys-view-guard-proof-helper
 ;;   :hyp (and (n08p a)
 ;;             (n08p b)
 ;;             (n08p c)
@@ -225,7 +260,7 @@
 ;;                      (:nat g 8)
 ;;                      (:nat h 8))))
 
-(def-gl-export rml64-to-rb-in-system-level-mode-helper
+(def-gl-export rml64-to-rb-in-sys-view-helper
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f) (n08p g) (n08p h))
   :concl (equal
@@ -249,7 +284,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-(def-gl-export rml64-in-system-level-mode-guard-proof-helper
+(def-gl-export rml64-in-sys-view-guard-proof-helper
   :hyp (and (n08p a)
             (n08p b)
             (n08p c)

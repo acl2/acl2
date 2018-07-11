@@ -1,5 +1,40 @@
-;; AUTHOR:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
 
@@ -40,8 +75,7 @@
   debugging-code-proofs
   Contributors
   Publications
-  TO-DO
-  LICENSE))
+  TO-DO))
 
 (defsection Introduction
   :parents (x86isa)
@@ -175,44 +209,45 @@
  system data structures.</p>
 
  <p>In light of the above, the x86 ISA model provides the option to
- deactivate some features of the ISA, enabling the user to do two kinds
- of analysis, depending on the kind of programs being considered for
- verification.  Specifically, the x86 model has the following modes of
- operation:</p>
+ deactivate some features of the ISA, enabling the user to do two
+ kinds of analysis, depending on the kind of programs being considered
+ for verification.  Specifically, the model offers the following views
+ of x86 machines:</p>
 
  <ol>
 
- <li><b>Programmer-level Mode:</b> <p>This mode of the model attempts
- to provide the same environment for reasoning as is provided by an OS
- for programming.  It allows the verification of an application program
- while assuming that memory management, I/O operations, and services
- offered via system calls are provided reliably by the underlying OS.
- The memory model in this mode supports 64-bit linear addresses
- specified for IA-32e machines.  A specification of system calls like
- @('read'), @('write'), @('open'), and @('close') is also included in
- the programmer-level mode.</p></li>
+ <li><b>Application-Level View:</b> <p>In this view, the model
+ attempts to provide the same environment for reasoning as is provided
+ by an OS for programming.  It allows the verification of an
+ application program while assuming that memory management, I/O
+ operations, and services offered via system calls are provided
+ reliably by the underlying OS.  The memory model here supports 64-bit
+ linear addresses specified for IA-32e machines.  A specification of
+ system calls like @('read'), @('write'), @('open'), and @('close') is
+ also included in this view.</p></li>
 
- <li><b>System-level Mode:</b> <p>This mode includes the specification for
- IA-32e paging and segmentation; in particular, ISA-prescribed data structures
- for memory management and (partial) specifications of system-mode instructions
- like LLDT and LGDT are available in this mode.  The memory model in this mode
- characterizes a 52-bit physical address space, which is the largest physical
- address space provided by modern x86 implementations.  This mode is intended
- to be used to simulate and verify software that has supervisor privileges and
- interacts with I/O devices.</p> </li>
+ <li><b>System-level View:</b> <p>This view includes the specification
+ for IA-32e paging and segmentation; in particular, ISA-prescribed
+ data structures for memory management and (partial) specifications of
+ system-mode instructions like LLDT and LGDT are available in this
+ mode.  The memory model here characterizes a 52-bit physical address
+ space, which is the largest physical address space provided by modern
+ x86 implementations.  This view is intended to be used to simulate
+ and verify software that has supervisor privileges and interacts with
+ I/O devices.</p> </li>
 
  </ol>
 
- <p>An added benefit of having two separate modes of operation is the
- increased execution speed of programs in the programmer-level mode;
- this is because executing these programs in this mode does not require
- simulating both the physical address space \(and hence,
- accesses/updates to the paging data structures\) and
- the linear address space.</p>
+ <p>An added benefit of having these two separate views is the
+ increased execution speed of programs in the application-level view;
+ this is because executing these programs in this view does not
+ require simulating both the physical address space \(and hence,
+ accesses/updates to the paging data structures\) and the linear
+ address space.</p>
 
  <p>It would be beneficial, not to mention interesting, to verify
- whether the programmer-level mode is an abstraction of the
- system-level mode, given that the system data structures have been set
+ whether the application-level view is an abstraction of the
+ system-level view, given that the system data structures have been set
  up correctly.  As of now, establishing this relationship between the
  two modes is out of the scope of this project.</p>")
 
@@ -228,7 +263,7 @@
  <li>
  <p>Using the Makefile provided with the @('x86isa') books: Users of
  these books who wish to simulate x86 programs with non-deterministic
- computations like @('SYSCALL') \(in @(see programmer-level-mode)\)
+ computations like @('SYSCALL') \(in @(see app-view)\)
  should use this Makefile and run make with @('X86ISA_EXEC') set to
  @('t') \(which is the default value\).</p>
 
@@ -242,7 +277,7 @@
 
  <p>When @('X86ISA_EXEC') is @('t'), some dynamic C libraries that are
  used in the model for supporting the execution of @('SYSCALL') in the
- programmer-level mode will be built.  <b>Since we rely on the foreign
+ application-level view will be built.  <b>Since we rely on the foreign
  function interface of <a href='http://ccl.clozure.com/'>Clozure
  CL</a> (CCL), full execution support is available only if you use
  CCL.</b></p>
@@ -435,52 +470,6 @@
 
  </ul>")
 
-(defxdoc LICENSE
-  :parents (x86isa)
-
-  :short "Copyright Information for the @('X86ISA') Library"
-
-  :long "<p>Authors: Shilpi Goel, Warren A. Hunt, Jr., and Matt Kaufmann</p>
-
- <p>Note: The license below is based on the template at:
- <tt>http://opensource.org/licenses/BSD-3-Clause</tt></p>
-
- <p>Copyright (C) 2015, Regents of the University of Texas<br/>
- All rights reserved.</p>
-
- <p>Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are
- met:</p>
-
- <ul>
-
- <li> Redistributions of source code must retain the above copyright
- notice, this list of conditions and the following disclaimer. </li>
-
- <li> Redistributions in binary form must reproduce the above
-   copyright notice, this list of conditions and the following
-   disclaimer in the documentation and/or other materials provided
-   with the distribution.</li>
-
- <li> Neither the name of the University of Texas, Austin nor the
-   names of its contributors may be used to endorse or promote
-   products derived from this software without specific prior written
-   permission. </li>
-
- </ul>
-
- <tt>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</tt>"
-  )
 
 (defun implemented-opcodes-table-entry-p (e)
   (declare (xargs :guard t))
@@ -597,7 +586,7 @@
   concrete-memory
   abstract-state
   state-field-theorems
-  programmer-level-mode
+  app-view
   rflag-specifications
   register-readers-and-writers
   characterizing-undefined-behavior

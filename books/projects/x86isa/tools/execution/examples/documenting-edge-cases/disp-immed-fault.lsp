@@ -2,7 +2,7 @@
 
 (in-package "X86ISA")
 (include-book "std/util/defrule" :dir :system)
-(include-book "projects/x86isa/proofs/utilities/programmer-level-mode/top" :dir :system)
+(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)
 
 (include-book "tools/with-arith5-help" :dir :system)
 (local (acl2::allow-arith5-help))
@@ -36,7 +36,7 @@
     (and (x86p x86)
          (equal (ms x86) nil)
          (equal (fault x86) nil)
-         (programmer-level-mode x86)
+         (app-view x86)
          (canonical-address-p rip)
          (canonical-address-p (+ -1 rip (len *test_code*)))
          (not (canonical-address-p (+ rip (len *test_code*))))

@@ -2666,8 +2666,10 @@
   (print-clause-ids nil)
   (gag-mode nil)
   (inhibit-output-lst
-   (union-eq '(prove proof-builder proof-tree warning observation)
-             (f-get-global 'inhibit-output-lst state))))
+   (if (member-eq 'error (f-get-global 'inhibit-output-lst state))
+       *valid-output-names*
+     (set-difference-eq *valid-output-names*
+                        '(error)))))
 
 (define-pc-bind* noise
   (gag-mode nil)

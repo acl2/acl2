@@ -114,7 +114,7 @@
          (generic-list-iterator v (generic-list-iterator u a))))
 
 
-(thm?
+(must-prove
  (equal (bumper1 (append a b) i j)
         (append (bumper1 a i j)
                 (bumper1 b i j)))
@@ -122,7 +122,7 @@
  (("Goal"
    :consider (map-h-append :target (bumper1 (append a b) i j) ))))
 
-(thm?
+(must-prove
  (equal (bumper1 (append a b) i j)
         (append (bumper1 a i j)
                 (bumper1 b i j)))
@@ -130,7 +130,7 @@
  (("Goal"
    :consider map-h-append)))
 
-(thm?
+(must-prove
  (equal (bumper2 (append a b) i j)
         (append (bumper2 a i j)
                 (bumper2 b i j)))
@@ -138,7 +138,7 @@
  (("Goal"
    :consider map-h-append)))
 
-(thm?
+(must-prove
  (equal (bumper3 (append a b) i j)
         (append (bumper3 a i j)
                 (bumper3 b i j)))
@@ -146,7 +146,7 @@
  (("Goal"
    :consider map-h-append)))
 
-(thm?
+(must-prove
  (equal (bumper1 (append a b) i j)
         (append (bumper1 a i j)
                 (bumper1 b i j)))
@@ -154,7 +154,7 @@
  (("Goal"
    :consider filter-map-h-append)))
 
-(thm?
+(must-prove
  (equal (bumper2 (append a b) i j)
         (append (bumper2 a i j)
                 (bumper2 b i j)))
@@ -162,7 +162,7 @@
  (("Goal"
    :consider filter-map-h-append)))
 
-(thm?
+(must-prove
  (equal (bumper3 (append a b) i j)
         (append (bumper3 a i j)
                 (bumper3 b i j)))
@@ -170,7 +170,7 @@
  (("Goal"
    :consider filter-map-h-append)))
 
-(thm?
+(must-prove
  (equal (bumper4 (append a b) i)
         (append (bumper4 a i)
                 (bumper4 b i)))
@@ -178,7 +178,7 @@
  (("Goal"
    :consider filter-map-h-append)))
 
-(thm?
+(must-prove
  (implies (and (integerp i)
                (<= 0 i)
                (integerp j)
@@ -188,13 +188,13 @@
  :hints (("Goal"
           :consider generic-run-sum)))
 
-(thm?
+(must-prove
  (equal (get-integers (append x y) z)
         (get-integers y (get-integers x z)))
  :hints (("Goal"
           :consider generic-list-iterator-append)))
 
-(thm?
+(must-prove
  (equal (get-big-integers (append x y) u z)
         (get-big-integers y u (get-big-integers x u z)))
  :hints (("Goal"
@@ -204,7 +204,7 @@
  (defthm g-thm (g x y) :rule-classes nil))
 
 
-(thm?
+(must-prove
  (equal a b)
 
                   ;;; ************************************************
@@ -214,7 +214,7 @@
  :hints (("Goal"
           :consider g-thm)))
 
-(not-thm?
+(must-not-prove
  (equal a b)
                   ;;; ***************************
                   ;;; THIS IS SUPPOSED TO FAIL!!!
@@ -223,7 +223,7 @@
  :hints (("Goal"
           :consider (g-thm :instance ((X c))))))
 
-(thm?
+(must-prove
  (equal a b)
 
                   ;;; ***************************
@@ -244,7 +244,7 @@
 ; This is a test of first-order matching of the lhs of assoc-append, sweeping
 ; through the goal for the first match.
 
-(thm?
+(must-prove
  (equal (append xxx (append a (append a a)))
         (append xxx (append (append a a) a)))
  :hints (("Goal" :consider assoc-append)))
@@ -277,7 +277,7 @@
 
 (in-theory (disable rev-rev true-listp-rev))
 
-(thm?
+(must-prove
  (equal (app (app (rev (rev (rev a)))
                   b)
              c)
@@ -307,7 +307,7 @@
                                keyword-alist))
                            (value nil)))
 
-(not-thm?
+(must-not-prove
  (equal (append a b) (append b a))
  :hints
  (("Subgoal *1/1"
@@ -326,14 +326,14 @@
              (defthm fff-constraint
                (<= u (fff u v))))
 
-(thm?
+(must-prove
  (<= a (+ a (nfix b)))
  :hints (("Goal" ;
           :consider fff-constraint)))
 
 ; By specifying a seed substitution we can select the correct one.
 
-(thm?
+(must-prove
  (<= a (+ a (nfix b)))
  :hints (("Goal"
           :consider (fff-constraint :instance ((v b)) ))))
@@ -420,7 +420,7 @@
 ; make them go away, one way or the other!  Then you can see what
 ; happens.
 
-(not-thm?
+(must-not-prove
  (and (true-listp (app a b))
       (propertyp (app (rev (rev (rev (rev b)))) (rev (rev (rev a))))))
  :hints (("Subgoal 1"
@@ -444,7 +444,7 @@
 
  :otf-flg t)
 
-(not-thm?
+(must-not-prove
  (and (true-listp (app a b))
       (propertyp (app (rev (rev (rev (rev b)))) (rev (rev (rev a))))))
  :hints (("Subgoal 1"

@@ -323,97 +323,21 @@
 
 (defsection-rtl |Leading One Prediction| |Addition|
 
-(defund lop (a b d k)
-  (let ((c (- (bitn a (1- k)) (bitn b (1- k)))))
-    (if (and (integerp k) (>= k 0))
-	(if (= k 0)
-	    0
-	  (if (= d 0)
-	      (lop a b c (1- k))
-	    (if (= d (- c))
-		(lop a b (- c) (1- k))
-	      k)))
-      0)))
+(defund p0 (a b) (logxor a b))
 
-(defthm lop-bnds
-  (implies (and (integerp a)
-                (integerp b)
-                (integerp n)
-                (>= a 0)
-                (>= b 0)
-                (>= n 0)
-                (not (= a b))
-                (< a (expt 2 n))
-                (< b (expt 2 n)))
-           (or (= (lop a b 0 n) (expo (- a b)))
-               (= (lop a b 0 n) (1+ (expo (- a b))))))
-  :rule-classes ())
+(defund k0 (a b n) (logand (bits (lognot a) (1- n) 0) (bits (lognot b) (1- n) 0)))
 
-(defthm lop-thm-1
-    (implies (and (integerp a)
-		  (> a 0)
-		  (integerp b)
-		  (> b 0)
-		  (= e (expo a))
-		  (< (expo b) e)
-		  (= lambda
-		     (logior (* 2 (mod a (expt 2 e)))
-			     (bits (lognot (* 2 b)) e 0))))
-	     (or (= (expo (- a b)) (expo lambda))
-		 (= (expo (- a b)) (1- (expo lambda)))))
-  :rule-classes ())
+(defund w0 (a b n)
+  (bits (lognot (logxor (p0 a b) (* 2 (k0 a b n)))) (1- n) 0))
 
-(defun lamt (a b e)
-  (logxor a (bits (lognot b) e 0)))
-
-(defun lamg (a b e)
-  (logand a (bits (lognot b) e 0)))
-
-(defun lamz (a b e)
-  (bits (lognot (logior a (bits (lognot b) e 0))) e 0))
-
-(defun lam1 (a b e)
-  (logand (bits (lamt a b e) e 2)
-	  (logand (bits (lamg a b e) (1- e) 1)
-		  (bits (lognot (lamz a b e)) (- e 2) 0))))
-
-(defun lam2 (a b e)
-  (logand (bits (lognot (lamt a b e)) e 2)
-	  (logand (bits (lamz a b e) (1- e) 1)
-		  (bits (lognot (lamz a b e)) (- e 2) 0))))
-
-(defun lam3 (a b e)
-  (logand (bits (lamt a b e) e 2)
-	  (logand (bits (lamz a b e) (1- e) 1)
-		  (bits (lognot (lamg a b e)) (- e 2) 0))))
-
-(defun lam4 (a b e)
-  (logand (bits (lognot (lamt a b e)) e 2)
-	  (logand (bits (lamg a b e) (1- e) 1)
-		  (bits (lognot (lamg a b e)) (- e 2) 0))))
-
-(defun lam0 (a b e)
-  (logior (lam1 a b e)
-	  (logior (lam2 a b e)
-		  (logior (lam3 a b e)
-			  (lam4 a b e)))))
-
-(defun lamb (a b e)
-  (+ (* 2 (lam0 a b e))
-     (bitn (lognot(lamt a b e)) 0)))
-
-(defthm lop-thm-2
-    (implies (and (integerp a)
-		  (> a 0)
-		  (integerp b)
-		  (> b 0)
-		  (not (= a b))
-		  (= e (expo a))
-		  (= e (expo b))
-		  (> e 1))
-	     (and (not (= (lamb a b e) 0))
-		  (or (= (expo (- a b)) (expo (lamb a b e)))
-		      (= (expo (- a b)) (1- (expo (lamb a b e)))))))
+(defthm lza-thm
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+                (> (+ a b) (expt 2 n)))
+           (and (>= (w0 a b n) 2)
+                (or (= (expo (bits (+ a b) (1- n) 0)) (expo (w0 a b n)))
+                    (= (expo (bits (+ a b) (1- n) 0)) (1- (expo (w0 a b n)))))))
   :rule-classes ())
 )
 

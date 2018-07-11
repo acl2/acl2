@@ -403,7 +403,7 @@
                (fn-rune-nume fn nil nil wrld)
                ((the (signed-byte 30) step-limit) term ttree)
                t
-               (expand-abbreviations (body fn t wrld)
+               (expand-abbreviations (bbody fn)
                                      (pairlis$ (formals fn wrld) expanded-args)
                                      geneqv pequiv-info
                                      fns-to-be-ignored-by-rewrite
@@ -844,7 +844,7 @@
               ((eq fn 'IMPLIES)
                (subcor-var (formals 'implies wrld)
                            expanded-args
-                           (body 'implies t wrld)))
+                           (bbody 'implies)))
               (t term)))))))
 
 (defun expand-any-final-implies1-lst (term-lst wrld)
@@ -2771,7 +2771,7 @@
                          which denotes the formula ~p2 (when converted to a ~
                          set of clauses and then printed as a formula).  This ~
                          formula was not found to subsume the goal clause, ~
-                         ~p3.~|~%Consider a :use hint instead ; see :DOC ~
+                         ~p3.~|~%Consider a :use hint instead; see :DOC ~
                          hints."
                         (car lmi-lst)
 

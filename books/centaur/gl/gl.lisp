@@ -687,6 +687,7 @@ simulation.</p>"
                                     `((#\0 . ,(car acl2::arglist))
                                       (#\1 . ,(cadr acl2::arglist)))
                                     0
-                                    (acl2::evisc-tuple 3 6 nil nil))
+                                    (acl2::evisc-tuple 3 6 nil nil)
+                                    nil)
                                    (break$)))))
 

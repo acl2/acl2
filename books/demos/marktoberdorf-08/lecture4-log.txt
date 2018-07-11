@@ -1238,8 +1238,8 @@ M1 >>>(DEFTHM
 
 ACL2 Warning [Non-rec] in ( DEFTHM G-INV-DEF ...):  A :DEFINITION rule
 generated from G-INV-DEF will be triggered only by terms containing
-the non-recursive function symbol G-INV.  Unless this function is disabled,
-this rule is unlikely ever to be used.
+the function symbol G-INV, which has a non-recursive definition.  Unless
+this definition is disabled, this rule is unlikely ever to be used.
 
 
 ACL2 Warning [Subsume] in ( DEFTHM G-INV-DEF ...):  A newly proposed
@@ -3470,8 +3470,8 @@ M1 >>>(DEFTHM
 
 ACL2 Warning [Non-rec] in ( DEFTHM H-INV-DEF ...):  A :DEFINITION rule
 generated from H-INV-DEF will be triggered only by terms containing
-the non-recursive function symbol H-INV.  Unless this function is disabled,
-this rule is unlikely ever to be used.
+the function symbol H-INV, which has a non-recursive definition.  Unless
+this definition is disabled, this rule is unlikely ever to be used.
 
 
 ACL2 Warning [Subsume] in ( DEFTHM H-INV-DEF ...):  A newly proposed
@@ -4498,8 +4498,9 @@ M1 >>(DEFTHM H-COROLLARY
 
 ACL2 Warning [Non-rec] in ( DEFTHM H-COROLLARY ...):  A :REWRITE rule
 generated from H-COROLLARY will be triggered only by terms containing
-the non-recursive function symbols EVENP and N.  Unless these functions
-are disabled, this rule is unlikely ever to be used.
+the function symbols EVENP and N, which have non-recursive definitions.
+Unless these definitions are disabled, this rule is unlikely ever to
+be used.
 
 
 ACL2 Warning [Free] in ( DEFTHM H-COROLLARY ...):  A :REWRITE rule
@@ -4529,9 +4530,10 @@ ACL2 Warning [Non-rec] in ( DEFTHM H-COROLLARY ...):  As noted, we
 will instantiate the free variables, S0 and SCHED, of a :REWRITE rule
 generated from H-COROLLARY, by searching for the set of hypotheses
 shown above.  However, these hypotheses mention the function symbol
-N, which is defun'd non-recursively.  Unless disabled, this function
-symbol is unlikely to occur in the conjecture being proved and hence
-the search for the required hypotheses will likely fail.
+N, which has a non-recursive definition.  Unless this definition is
+disabled, that function symbol is unlikely to occur in the conjecture
+being proved and hence the search for the required hypotheses will
+likely fail.
 
 
 [Note:  A hint was supplied for our processing of the goal above. 

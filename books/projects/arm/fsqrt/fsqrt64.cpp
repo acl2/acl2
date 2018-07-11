@@ -734,9 +734,18 @@ tuple<ui54, ui54> nextRoot(ui54 QP, ui54 QN, int q, uint j) {
   return tuple<ui54, ui54>(QP, QN);
 }
 
-// Compute the non-redundant quotient and incremented quotient and sticky bit:
+// Inputs of fsqrt64:
+//   opa[63:0]: Encoding of radicand (for SP and HP, operand is low bits)
+//   fmt: 2-bit encoding of FP format (DP = 2, SP = 1, HP = 0)
+//   fz: force denormals to 0
+//   dn: replace NaN operand with default
+//   mode[1:0]: encoding of rounding mode
 
-tuple<ui64, ui8> execute(ui64 opa, ui2 fmt, bool fz, bool dn, ui2 rmode) {
+// Outputs of fsqrt64:
+//   D[63:0]: Data result (in low bits)
+//   flags[7:0]: exception flags
+
+tuple<ui64, ui8> fsqrt64(ui64 opa, ui2 fmt, bool fz, bool dn, ui2 rmode) {
 
   // Analyze operand:
 
@@ -875,7 +884,7 @@ SC_MODULE(fsqrt64) {
 
     ui64 data;
     ui8 excps;
-    tie(data, excps) = execute(opa, fmt, fz, dn, rmode);
+    tie(data, excps) = fsqrt64(opa, fmt, fz, dn, rmode);
 
     // Contract excps to 6 bits to match RTL:
     ui6 excps6 = excps;
@@ -904,7 +913,7 @@ ui2 fmt = HP;
 
 ui64 D;
 ui8 flags;
-tie(D, flags) = execute(opa, fmt, fz, dn, rmode);
+tie(D, flags) = fsqrt64(opa, fmt, fz, dn, rmode);
 
 printf("opa = %s\n", opa.to_string(AC_HEX, false).c_str());
 printf("D = %s\n", D.to_string(AC_HEX, false).c_str());

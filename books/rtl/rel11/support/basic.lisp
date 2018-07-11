@@ -372,6 +372,9 @@
                (= a b)))
   :rule-classes ())
 
+(defund congruent (a b n)
+  (equal (mod a n) (mod b n)))
+
 (defthmd mod-mult
     (implies (and (integerp a)
                   (real/rationalp m)

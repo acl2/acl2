@@ -2,7 +2,7 @@
 
 (include-book "final")
 
-;; We impose the following constraints on the inputs of execute:
+;; We impose the following constraints on the inputs of fsqrt64:
 
 (defund input-constraints (opa fnum rin)
   (and (bvecp opa 64)
@@ -20,7 +20,7 @@
                   (dnp (bitn rin 25))
                   (fzp (bitn rin 24))
                   (rmode (bits rin 23 22)))
-             (mv-let (data flags) (execute opa fnum fzp dnp rmode)
+             (mv-let (data flags) (fsqrt64 opa fnum fzp dnp rmode)
                (let ((r (logior rin flags)))         
                  (mv-let (data-spec r-spec)
                          (arm-sqrt-spec (bits opa (1- fmtw) 0) rin f)
@@ -41,7 +41,7 @@
     (input-constraints (opa) (fnum) (rin))
     :rule-classes ()))
 
-;; The following inputs of execute are derived from the above:
+;; The following inputs of fsqrt64 are derived from the above:
 
 (defund dnp () (bitn (rin) 25))
 (defund fzp () (bitn (rin) 24))
@@ -49,7 +49,7 @@
 (defund f () (case (fnum) (0 (hp)) (1 (sp)) (2 (dp))))
 
 ;; In terms of these constants, we define constants corresponding to the local 
-;; variables of the top-level function, execute, culminating in the constants
+;; variables of the top-level function, fsqrt64, culminating in the constants
 ;; (data) and (flags) corresponding to the outputs.
 
 ;; Operand components and updated flags computed by analyze:
@@ -110,12 +110,12 @@
 
 ;; Results of final iteration (outputs of the loop):
 
-(defund q-n () (mv-nth 0 (mv-list 7 (execute-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
-(defund rp-n () (mv-nth 2 (mv-list 7 (execute-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
-(defund rn-n () (mv-nth 3 (mv-list 7 (execute-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
-(defund qp-n () (mv-nth 4 (mv-list 7 (execute-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
-(defund qn-n () (mv-nth 5 (mv-list 7 (execute-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
-(defund expinc-n () (mv-nth 6 (mv-list 7 (execute-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
+(defund q-n () (mv-nth 0 (mv-list 7 (fsqrt64-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
+(defund rp-n () (mv-nth 2 (mv-list 7 (fsqrt64-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
+(defund rn-n () (mv-nth 3 (mv-list 7 (fsqrt64-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
+(defund qp-n () (mv-nth 4 (mv-list 7 (fsqrt64-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
+(defund qn-n () (mv-nth 5 (mv-list 7 (fsqrt64-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
+(defund expinc-n () (mv-nth 6 (mv-list 7 (fsqrt64-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
 
 ;; Exponent of rounded result:
 
@@ -175,11 +175,11 @@
             (flags-sqrtpow2)
             (flags-final))))
 
-;; The above constant definitions are based closely on the definition of execute so that
+;; The above constant definitions are based closely on the definition of fsqrt64 so that
 ;; the proof of the following is trivial:
 
-(defthmd execute-lemma
-  (mv-let (data flags) (execute (opa) (fnum) (fzp) (dnp) (rmode))
+(defthmd fsqrt64-lemma
+  (mv-let (data flags) (fsqrt64 (opa) (fnum) (fzp) (dnp) (rmode))
     (and (equal (data) data)
          (equal (flags) flags))))
 
@@ -199,7 +199,7 @@
          (dnp (bitn (rin) 25))
          (fzp (bitn (rin) 24))
          (rmode (bits (rin) 23 22)))
-    (mv-let (data flags) (execute (opa) (fnum) fzp dnp rmode)
+    (mv-let (data flags) (fsqrt64 (opa) (fnum) fzp dnp rmode)
       (mv-let (data-spec r-spec) (arm-sqrt-spec (bits (opa) (1- fmtw) 0) (rin) f)
         (and (equal data data-spec)
              (equal (logior (rin) flags) r-spec))))))
@@ -210,7 +210,7 @@
 
 ;; We also define sequences of values (q j), (rp j), (rn j), (qp j), and (qn j),
 ;; representing the root digits, partial remainders, and partial roots,
-;; as a set of mutually recursive functions, as they are computed by execute-loop-0:
+;; as a set of mutually recursive functions, as they are computed by fsqrt64-loop-0:
 
 (mutual-recursion
 
@@ -747,7 +747,7 @@
          (dnp (bitn (rin) 25))
          (fzp (bitn (rin) 24))
          (rmode (bits (rin) 23 22)))
-    (mv-let (data flags) (execute (opa) (fnum) fzp dnp rmode)
+    (mv-let (data flags) (fsqrt64 (opa) (fnum) fzp dnp rmode)
       (mv-let (data-spec r-spec) (arm-sqrt-spec (bits (opa) (1- fmtw) 0) (rin) f)
         (and (equal data data-spec)
              (equal (logior (rin) flags) r-spec))))))
@@ -759,7 +759,7 @@
                   (dnp (bitn rin 25))
                   (fzp (bitn rin 24))
                   (rmode (bits rin 23 22)))
-             (mv-let (data flags) (execute opa fnum fzp dnp rmode)
+             (mv-let (data flags) (fsqrt64 opa fnum fzp dnp rmode)
                (let ((r (logior rin flags)))         
                  (mv-let (data-spec r-spec)
                          (arm-sqrt-spec (bits opa (1- fmtw) 0) rin f)

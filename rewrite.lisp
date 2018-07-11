@@ -4944,13 +4944,15 @@
 ; We forcibly expand all calls in term of the fns in fns.  They better
 ; all be non-recursive or this may take a while.
 
+; We assume that fns is a subset of *definition-minimal-theory*.
+
   (cond ((variablep term) term)
         ((fquotep term) term)
         (t (let ((args (expand-some-non-rec-fns-lst fns (fargs term) wrld)))
              (cond ((member-equal (ffn-symb term) fns)
                     (subcor-var (formals (ffn-symb term) wrld)
                                 args
-                                (body (ffn-symb term) t wrld)))
+                                (bbody (ffn-symb term))))
                    (t (cons-term (ffn-symb term) args)))))))
 
 (defun expand-some-non-rec-fns-lst (fns lst wrld)
@@ -4979,7 +4981,9 @@
             (expand-some-non-rec-fns
 
 ; The list of functions expanded is arbitrary, but they must all be
-; non-recursively defined.  Guards are permitted but of course it is the
+; non-recursively defined; indeed, because of the use of bbody in the
+; definition of expand-some-non-rec-fns, these function must all belong to
+; *definition-minimal-theory*.  Guards are permitted but of course it is the
 ; guarded body that we substitute.  The IF tautology checker doesn't know
 ; anything about any function symbol besides IF and NOT (and QUOTEd constants).
 ; The list below pretty obviously has to include IMPLIES and IFF.  It should
@@ -7277,7 +7281,7 @@
                    "The only variable allowed in a break condition ~
                     is STATE.  Your form, ~x0, contains the ~
                     variable~#1~[~/s~] ~&2."
-                   xterm (if (cdr bad-vars) 1 0) bad-vars))
+                   xterm (if (cdr bad-vars) 1 0) (reverse bad-vars)))
               (t (value term))))))
 
 (defun eval-break-condition (rune term ctx state)
@@ -9786,7 +9790,7 @@
                                  (cons #\2
                                        (if all-vars-bound-p
                                            '<all_variables>
-                                           bound-vars))))
+                                           (reverse bound-vars)))))
                           bound-vars all-vars-bound-p))
                      ((and (not all-vars-bound-p)
                            (not (subsetp-eq (set-difference-eq vars
@@ -9799,7 +9803,7 @@
                             bound.  This does not appear to be the case ~
                             in ~x0.  The vars already bound are ~x1."
                            (list (cons #\0 (untranslate hyp t wrld))
-                                 (cons #\1 bound-vars)
+                                 (cons #\1 (reverse bound-vars))
                                  (cons #\2 'mfc)
                                  (cons #\3 'state)))
                           bound-vars all-vars-bound-p))
@@ -9824,7 +9828,7 @@
                                   (list (cons #\0 (untranslate hyp nil wrld))
                                         (cons #\1 (if all-vars-bound-p
                                                       '<all_variables>
-                                                    bound-vars))))
+                                                    (reverse bound-vars)))))
                                  bound-vars all-vars-bound-p))
                             ((or (not (eq 'state (car vars)))
                                  (member-eq 'state (cdr vars))
@@ -9844,7 +9848,7 @@
                                   (list (cons #\0 (untranslate hyp nil wrld))
                                         (cons #\1 (if all-vars-bound-p
                                                       '<all_variables>
-                                                    bound-vars))))
+                                                    (reverse bound-vars)))))
                                  bound-vars all-vars-bound-p))
                             (t
                              (mv nil
@@ -11594,7 +11598,7 @@
      ((set-difference-eq vars formals)
       (er hard? 'make-lambda-application
           "Unexpected unbound vars ~x0"
-          (set-difference-eq vars formals)))
+          (set-difference-eq (reverse vars) formals)))
      (t
 
 ; The slightly tricky thing here is to avoid using all the formals,
@@ -12189,7 +12193,7 @@
 
                                        (formals 'IMPLIES wrld)
                                        (list rewritten-test rewritten-concl)
-                                       (body 'IMPLIES t wrld))
+                                       (bbody 'IMPLIES))
                                       ttree))))))))
            ((eq (ffn-symb term) 'double-rewrite)
             (sl-let

@@ -91,7 +91,7 @@
 ;              (acl2::set-raw-mode t)
 ;              (defun coi-debug::fail-fn (value message parameters)
 ;                (acl2::prog2$
-;                  (acl2::fmt-to-comment-window message parameters 0 nil)
+;                  (acl2::fmt-to-comment-window message parameters 0 nil nil)
 ;                  (acl2::break)))))
 ;
 ; "))
@@ -116,7 +116,7 @@
  <p>FOO !&gt; (acl2::progn (acl2::defttag t) (acl2::progn!  (acl2::set-raw-mode
             t) (defun coi-debug::fail-fn (value message parameters)
             (acl2::prog2$ (acl2::fmt-to-comment-window message parameters 0
-            nil) (acl2::break)))))</p>")
+            nil nil) (acl2::break)))))</p>")
 ;; -------------------------------------------------------------------
 
 

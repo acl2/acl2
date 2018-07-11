@@ -1185,19 +1185,20 @@
                                  :world wrld
                                  :bad-lambdas nil))
                         (t (make-cl-cache size)))))
-          (prog1
-              (cond
-               ((tame-compliant-unrestricted-lambdap fn nil)
-                (let ((c (compile nil fn))
-                      (cl-alist (access cl-cache cl-cache :alist)))
-                  (setf (car cl-alist)
-                        (cons fn c))
-                  c))
-               (t (update-cl-cache-bad-lambdas
-                   cl-cache
-                   (list fn))
+          (let ((bad-lambdas (access cl-cache cl-cache :bad-lambdas)))
+            (prog1
+                (cond
+                 ((tame-compliant-unrestricted-lambdap fn bad-lambdas)
+                  (let ((c (compile nil fn))
+                        (cl-alist (access cl-cache cl-cache :alist)))
+                    (setf (car cl-alist)
+                          (cons fn c))
+                    c))
+                 (t
+                  (update-cl-cache-bad-lambdas cl-cache
+                                               (add-to-set-eq fn bad-lambdas))
                   nil))
-            (setq *cl-cache* cl-cache)))))))
+              (setq *cl-cache* cl-cache))))))))
 
 ; Historical Essay on the Performance of APPLY$
 

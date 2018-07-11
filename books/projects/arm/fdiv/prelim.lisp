@@ -10,7 +10,7 @@
 
 (include-book "fdiv64")
 
-;; We impose the following constraints on the inputs of execute:
+;; We impose the following constraints on the inputs of fdiv64:
 
 (defund input-constraints (opa opb fnum rin)
   (and (bvecp opa 64)
@@ -29,7 +29,7 @@
 ;;                   (dnp (bitn rin 25))
 ;;                   (fzp (bitn rin 24))
 ;;                   (rmode (bits rin 23 22)))
-;;              (mv-let (data flags) (execute  opa opb fmt fz dn rmode)
+;;              (mv-let (data flags) (fdiv64  opa opb fmt fz dn rmode)
 ;;                (let ((r (logior rin flags)))         
 ;;                  (mv-let (data-spec r-spec)
 ;;                          (arm-binary-spec 'div (bits opa (1- fmtw) 0) (bits opb (1- fmtw) 0) rin f)
@@ -62,8 +62,8 @@
 ;; The constant definitions will be derived from that of fdiv64 in such a way that 
 ;; the proof of the following will be trivial:
 
-;; (defthm execute-lemma
-;;   (mv-let (data flags) (execute (opa) (opb) (fnum) (fz) (dn) (rmode))
+;; (defthm fdiv64-lemma
+;;   (mv-let (data flags) (fdiv64 (opa) (opb) (fnum) (fz) (dn) (rmode))
 ;;     (and (equal (data) data)
 ;;          (equal (flags) flags))))
 
@@ -85,7 +85,7 @@
 ;;          (dnp (bitn (rin) 25))
 ;;          (fzp (bitn (rin) 24))
 ;;          (rmode (bits (rin) 23 22)))
-;;     (mv-let (data flags) (execute (opa) (opb) (fnum) fzp dnp rmode)
+;;     (mv-let (data flags) (fdiv64 (opa) (opb) (fnum) fzp dnp rmode)
 ;;       (let ((r (logior (rin) flags)))         
 ;;         (mv-let (data-spec r-spec)
 ;;                 (arm-binary-spec 'div (bits (opa) (1- fmtw) 0) (bits (opb) (1- fmtw) 0) (rin) (f))
@@ -94,11 +94,11 @@
 
 ;; The desired theorem can then be derived by functional instantiation.
 
-;; In this book, we'll define the constants and prove the above execute-lemma.  We'll also 
+;; In this book, we'll define the constants and prove the above fdiv64-lemma.  We'll also 
 ;; define analogous constants and prove analogous lemmas about the auxiliary functions.
 
 ;;*******************************************************************************
-;; execute
+;; fdiv64
 ;;*******************************************************************************
 
 (defund signa () (mv-nth 0 (mv-list 5 (analyze (opa) (fnum) (fzp) (bits 0 7 0)))))
@@ -140,10 +140,10 @@
                       (0 (bits 2 4 0))
                       (t 0))))
 
-(defund rp-3n1 () (mv-nth 1 (mv-list 5 (execute-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
-(defund rn-3n1 () (mv-nth 2 (mv-list 5 (execute-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
-(defund qp-3n1 () (mv-nth 3 (mv-list 5 (execute-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
-(defund qn-3n1 () (mv-nth 4 (mv-list 5 (execute-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
+(defund rp-3n1 () (mv-nth 1 (mv-list 5 (fdiv64-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
+(defund rn-3n1 () (mv-nth 2 (mv-list 5 (fdiv64-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
+(defund qp-3n1 () (mv-nth 3 (mv-list 5 (fdiv64-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
+(defund qn-3n1 () (mv-nth 4 (mv-list 5 (fdiv64-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
 
 (defund qinc ()
   (if1 (divpow2)
@@ -192,14 +192,14 @@
        (flags-special)
      (flags-final)))
 
-(defthmd execute-lemma
-  (mv-let (data flags) (execute (opa) (opb) (fnum) (fzp) (dnp) (rmode))
+(defthmd fdiv64-lemma
+  (mv-let (data flags) (fdiv64 (opa) (opb) (fnum) (fzp) (dnp) (rmode))
     (and (equal (data) data)
          (equal (flags) flags)))
   :hints (("Goal" :do-not '(preprocess) :expand :lambdas
            :in-theory '(signa expa mana classa flags-a signb expb manb classb flags-b data-special flags-special divpow2 siga sigb
 	                expdiff div rp-1 rn-1 expq q-1 n rp-3n1 rn-3n1 qp-3n1 qn-3n1 qinc qtrunc stk sign qrnd inx qrndden inxden
-			data-final flags-final data flags execute))))
+			data-final flags-final data flags fdiv64))))
 
 ;; It's usually a good idea to disable the executable counterpart of any function that depends
 ;; on a constrained function:
@@ -212,18 +212,18 @@
 ;; Let's also disable all the functions defined by the model and enable them only as needed:
 
 (in-theory (disable analyze clz53-loop-0 clz53-loop-1 clz53-loop-2 clz53 computeq rshft64 rounder final specialcase
-                    normalize prescale nextdigit nextrem nextquot iter1 iter2 iter3 execute-loop-0 execute
+                    normalize prescale nextdigit nextrem nextquot iter1 iter2 iter3 fdiv64-loop-0 fdiv64
                     (analyze) (clz53-loop-0) (clz53-loop-1) (clz53-loop-2) (clz53) (computeq) (rshft64) (rounder) (final)
-		    (specialcase) (normalize) (prescale) (nextdigit) (nextrem) (nextquot) (iter1) (iter2) (iter3) (execute-loop-0)
-		    (execute)))
+		    (specialcase) (normalize) (prescale) (nextdigit) (nextrem) (nextquot) (iter1) (iter2) (iter3) (fdiv64-loop-0)
+		    (fdiv64)))
 
 
 ;;*******************************************************************************
-;; execute-loop-0
+;; fdiv64-loop-0
 ;;*******************************************************************************
 
 ;; We define the sequences of values (q j), (rp j), (rn j), (qp j), and (qn j),
-;; as a set of mutually recursive functions, as they are computed by execute-loop-0,
+;; as a set of mutually recursive functions, as they are computed by fdiv64-loop-0,
 ;; and prove that the constants (rp-3n1), etc., defined above are related to these
 ;; functions as follows:
 ;;   (equal (rp-3n1) (rp (1+ (* 3 (n)))
@@ -299,15 +299,15 @@
 
 (in-theory (disable (q) (rp) (rn) (rs6) (rs7) (rs9) (qp) (qn)))
 
-(defthmd execute-loop-0-sublemma
+(defthmd fdiv64-loop-0-sublemma
   (implies (and (natp i)
                 (natp j)
                 (natp n)
 		(< i n)
 		(= (mod j 3) 1))
-	   (equal (execute-loop-0 i n (div) (fnum) (q j) (rp j) (rn j) (qp j) (qn j))
-	          (execute-loop-0 (1+ i) n (div) (fnum) (q (+ 3 j)) (rp (+ 3 j)) (rn (+ 3 j)) (qp (+ 3 j)) (qn (+ 3 j)))))
-  :hints (("Goal" :expand ((execute-loop-0 i n (div) (fnum) (q j) (rp j) (rn j) (qp j) (qn j))
+	   (equal (fdiv64-loop-0 i n (div) (fnum) (q j) (rp j) (rn j) (qp j) (qn j))
+	          (fdiv64-loop-0 (1+ i) n (div) (fnum) (q (+ 3 j)) (rp (+ 3 j)) (rn (+ 3 j)) (qp (+ 3 j)) (qn (+ 3 j)))))
+  :hints (("Goal" :expand ((fdiv64-loop-0 i n (div) (fnum) (q j) (rp j) (rn j) (qp j) (qn j))
                            (:free (k) (q (+ k j)))
 			   (:free (k) (rp (+ k j)))
 			   (:free (k) (rn (+ k j)))
@@ -320,13 +320,13 @@
 		        (:instance mod-sum (a 2) (b j) (n 3))
 		        (:instance mod-sum (a 3) (b j) (n 3))))))
 
-(defthmd execute-loop-0-lemma
+(defthmd fdiv64-loop-0-lemma
   (implies (and (natp i) (<= i (n)))
-           (equal (execute-loop-0 i (n) (div) (fnum) (q (1+ (* 3 i)))
+           (equal (fdiv64-loop-0 i (n) (div) (fnum) (q (1+ (* 3 i)))
 	                          (rp (1+ (* 3 i))) (rn (1+ (* 3 i))) (qp (1+ (* 3 i))) (qn (1+ (* 3 i))))
                   (list (q (1+ (* 3 (n)))) (rp (1+ (* 3 (n)))) (rn (1+ (* 3 (n))))
 		        (qp (1+ (* 3 (n)))) (qn (1+ (* 3 (n)))))))
-  :hints (("Goal" :in-theory (enable execute-loop-0-sublemma execute-loop-0))))
+  :hints (("Goal" :in-theory (enable fdiv64-loop-0-sublemma fdiv64-loop-0))))
 
 (defthmd fnum-vals
   (member (fnum) '(0 1 2))
@@ -335,22 +335,22 @@
 
 (defthm rp-3n1-rewrite
   (equal (rp-3n1) (rp (1+ (* 3 (n)))))
-  :hints (("Goal" :use (fnum-vals (:instance execute-loop-0-lemma (i 0)))
+  :hints (("Goal" :use (fnum-vals (:instance fdiv64-loop-0-lemma (i 0)))
                   :in-theory (enable n rp-3n1 q rp rn qp qn))))
 
 (defthm rn-3n1-rewrite
   (equal (rn-3n1) (rn (1+ (* 3 (n)))))
-  :hints (("Goal" :use (fnum-vals (:instance execute-loop-0-lemma (i 0)))
+  :hints (("Goal" :use (fnum-vals (:instance fdiv64-loop-0-lemma (i 0)))
                   :in-theory (enable n rn-3n1 q rp rn qp qn))))
 
 (defthm qp-3n1-rewrite
   (equal (qp-3n1) (qp (1+ (* 3 (n)))))
-  :hints (("Goal" :use (fnum-vals (:instance execute-loop-0-lemma (i 0)))
+  :hints (("Goal" :use (fnum-vals (:instance fdiv64-loop-0-lemma (i 0)))
                   :in-theory (enable n qp-3n1 q rp rn qp qn))))
 
 (defthm qn-3n1-rewrite
   (equal (qn-3n1) (qn (1+ (* 3 (n)))))
-  :hints (("Goal" :use (fnum-vals (:instance execute-loop-0-lemma (i 0)))
+  :hints (("Goal" :use (fnum-vals (:instance fdiv64-loop-0-lemma (i 0)))
                   :in-theory (enable n qn-3n1 q rp rn qp qn))))
 
 

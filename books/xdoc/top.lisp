@@ -472,21 +472,16 @@
 
 (defmacro defpointer (from to &optional keyword-p)
   (declare (xargs :guard (and (symbolp from) (symbolp to))))
-  (let ((from-pkg  (acl2::string-downcase (symbol-package-name from)))
-        (from-name (acl2::string-downcase (symbol-name         from)))
+  (let ((from-name (acl2::string-downcase (symbol-name         from)))
         (to-pkg    (acl2::string-downcase (symbol-package-name to)))
         (to-name   (acl2::string-downcase (symbol-name         to))))
     `(defxdoc ,from
        :parents (pointers)
        :short ,(concatenate
                 'string
-                "See <see topic='@(url "
+                "See @(see "
                 to-pkg "::" to-name
-                ")'>"
-                (if (equal to-pkg from-pkg)
-                    to-name
-                  (concatenate 'string to-pkg "::" to-name))
-                "</see>"
+                ")"
                 (if keyword-p
                     (concatenate
                      'string

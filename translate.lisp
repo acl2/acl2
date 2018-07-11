@@ -2194,6 +2194,64 @@
                        nil
                        wrld))
 
+(defun unmake-true-list-cons-nest (formal-args)
+
+; Formal-args is a term.  We return a list of term t1, ..., tn such that
+; formal-args is the translation of (list t1 ... tn), unless that is impossible
+; in which case we return :fail.
+
+  (cond ((equal formal-args *nil*) nil)
+        ((quotep formal-args)
+         (let ((lst (unquote formal-args)))
+           (if (true-listp lst)
+               (kwote-lst lst)
+             :fail)))
+        ((ffn-symb-p formal-args 'cons)
+         (let ((rest (unmake-true-list-cons-nest (fargn formal-args 2))))
+           (if (eq rest :fail)
+               :fail
+             (cons (fargn formal-args 1)
+                   rest))))
+        (t :fail)))
+
+(defun unmake-formal-pairlis2 (term digits)
+
+; Term is the second argument, possibly simplified, of a call of
+; fmt-to-comment-window that arises from expanding a call of cw.  Thus, term
+; can be of the form (pairlis2 (quote alist) formal-args), or a quoted list, or
+; even a formal cons.  We return the list of terms corresponding to the cw
+; call.
+
+  (case-match term
+    (('pairlis2 ('quote !digits)
+                formal-args)
+     (unmake-true-list-cons-nest formal-args))
+    (('quote args-alist)
+     (let ((len (length args-alist)))
+       (if (and (<= len (length digits))
+                (alistp args-alist)
+                (equal (strip-cars args-alist)
+                       (take len digits)))
+           (kwote-lst (strip-cdrs args-alist))
+         :fail)))
+    (('cons ('quote (digit . x)) rest)
+     (if (and (consp digits)
+              (eql digit (car digits)))
+         (let ((y (unmake-formal-pairlis2 rest (cdr digits))))
+           (if (eq y :fail)
+               :fail
+             (cons (kwote x) y)))
+       :fail))
+    (('cons ('cons ('quote digit) x) rest)
+     (if (and (consp digits)
+              (eql digit (car digits)))
+         (let ((y (unmake-formal-pairlis2 rest (cdr digits))))
+           (if (eq y :fail)
+               :fail
+             (cons x y)))
+       :fail))
+    (& :fail)))
+
 (mutual-recursion
 
 ; These functions assume that the input world is "close to" the installed
@@ -3628,63 +3686,157 @@
                           (cond ((eq (car args) nil)
                                  `(ec-call ,(cadr args)))
                                 (t (cons fn args))))
+                         (time$1
+
+; Warning: Keep this in sync with time$.
+
+; Here we handle the most common case, where we are untranslating the
+; translation of (time$ ...).  With some effort we could also handle supplied
+; keyword arguments for time$ calls.  It should be reasonable rare to hit this
+; case, since remove-guard-holders often eliminates calls of return-last before
+; untranslate is called, and for the remaining cases it is probably infrequent
+; to have calls of time$ with keyword arguments.
+
+                          (or (and (eq key 'time$1-raw)
+                                   (let ((car-args (car args))
+                                         (cadr-args (cadr args)))
+                                     (mv-let (real-mintime
+                                              run-mintime
+                                              minalloc
+                                              msg
+                                              msg-args)
+                                       (case-match car-args
+                                         (('LIST ; already untranslated
+                                           real-mintime
+                                           run-mintime
+                                           minalloc
+                                           msg
+                                           msg-args)
+                                          (mv real-mintime
+                                              run-mintime
+                                              minalloc
+                                              msg
+                                              msg-args))
+                                         (('quote (real-mintime
+                                                   run-mintime
+                                                   minalloc
+                                                   msg
+                                                   msg-args))
+                                          (mv (maybe-kwote real-mintime)
+                                              (maybe-kwote run-mintime)
+                                              (maybe-kwote minalloc)
+                                              (maybe-kwote msg)
+                                              (maybe-kwote msg-args)))
+                                         (& (mv :fail nil nil nil nil)))
+                                       (cond
+                                        ((eq real-mintime :fail)
+                                         (cons fn args))
+                                        (t
+                                         `(time$ ,cadr-args
+                                                 ,@(and (not (eql real-mintime
+                                                                  0))
+                                                        `(:real-mintime
+                                                          ,real-mintime))
+                                                 ,@(and run-mintime
+                                                        `(:run-mintime
+                                                          ,run-mintime))
+                                                 ,@(and minalloc
+                                                        `(:minalloc ,minalloc))
+                                                 ,@(and msg
+                                                        `(:msg ,msg))
+                                                 ,@(and msg-args
+                                                        `(:args ,msg-args))))))))
+                              (cons fn args)))
                          (otherwise (cons fn args)))))))
-          (t (let* ((pair (cdr (assoc-eq (ffn-symb term)
-                                         untrans-tbl)))
-                    (op (car pair))
-                    (flg (cdr pair))
+          (t (or (case-match term
+                   ((fmt-to-comment-window ('quote str)
+                                           x
+                                           ('quote '0)
+                                           ('quote 'nil)
+                                           base/radix)
+                    (and (member-eq fmt-to-comment-window
+                                    '(fmt-to-comment-window
+                                      fmt-to-comment-window!))
+                         (let ((y (unmake-formal-pairlis2 x *base-10-chars*)))
+                           (cond ((eq y :fail) nil)
+                                 ((equal base/radix *nil*)
+                                  (list* (if (eq fmt-to-comment-window
+                                                 'fmt-to-comment-window)
+                                             'cw
+                                           'cw!)
+                                         str
+                                         (untranslate1-lst y nil untrans-tbl
+                                                           preprocess-fn
+                                                           wrld)))
+                                 (t
+                                  (list* (if (eq fmt-to-comment-window
+                                                 'fmt-to-comment-window)
+                                             'cw-print-base-radix
+                                           'cw-print-base-radix!)
+                                         (untranslate1 base/radix nil untrans-tbl
+                                                       preprocess-fn
+                                                       wrld)
+                                         str
+                                         (untranslate1-lst y nil untrans-tbl
+                                                           preprocess-fn
+                                                           wrld)))))))
+                   (& nil))
+                 (let* ((pair (cdr (assoc-eq (ffn-symb term)
+                                             untrans-tbl)))
+                        (op (car pair))
+                        (flg (cdr pair))
+                        (const
+                         (and (member-eq (ffn-symb term)
+                                         '(nth update-nth update-nth-array))
+                              (quotep (fargn term 1))
+                              (integerp (cadr (fargn term 1)))
+                              (<= 0 (cadr (fargn term 1)))
+                              (accessor-root (cadr (fargn term 1))
+                                             (case (ffn-symb term)
+                                               (nth (fargn term 2))
+                                               (update-nth (fargn term 3))
+                                               (t ; update-nth-array
+                                                (fargn term 4)))
+                                             wrld))))
+                   (cond
+                    (op (cons op
+                              (cond
+                               (const ; ignoring flg, which is presumably nil
+                                (cons const
+                                      (untranslate1-lst
+                                       (cdr (fargs term))
+                                       nil untrans-tbl preprocess-fn wrld)))
+                               (t
+                                (untranslate1-lst
+                                 (cond
+                                  ((and flg
+                                        (cdr (fargs term))
+                                        (null (cddr (fargs term))))
+                                   (right-associated-args (ffn-symb term)
+                                                          term))
+                                  (t (fargs term)))
+                                 nil untrans-tbl preprocess-fn wrld)))))
                     (const
-                     (and (member-eq (ffn-symb term)
-                                     '(nth update-nth update-nth-array))
-                          (quotep (fargn term 1))
-                          (integerp (cadr (fargn term 1)))
-                          (<= 0 (cadr (fargn term 1)))
-                          (accessor-root (cadr (fargn term 1))
-                                         (case (ffn-symb term)
-                                           (nth (fargn term 2))
-                                           (update-nth (fargn term 3))
-                                           (t ; update-nth-array
-                                            (fargn term 4)))
-                                         wrld))))
-               (cond
-                (op (cons op
-                          (cond
-                           (const ; ignoring flg, which is presumably nil
-                            (cons const
-                                  (untranslate1-lst
-                                   (cdr (fargs term))
-                                   nil untrans-tbl preprocess-fn wrld)))
-                           (t
-                            (untranslate1-lst
-                             (cond
-                              ((and flg
-                                    (cdr (fargs term))
-                                    (null (cddr (fargs term))))
-                               (right-associated-args (ffn-symb term)
-                                                      term))
-                              (t (fargs term)))
-                             nil untrans-tbl preprocess-fn wrld)))))
-                (const
-                 (list* (ffn-symb term)
-                        const
-                        (untranslate1-lst (cdr (fargs term)) nil
-                                          untrans-tbl
-                                          preprocess-fn
-                                          wrld)))
-                (t
-                 (mv-let
-                  (ad-list base)
-                  (make-reversed-ad-list term nil)
-                  (cond (ad-list
-                         (pretty-parse-ad-list
-                          ad-list '(#\R) 1
-                          (untranslate1 base nil untrans-tbl preprocess-fn
-                                        wrld)))
-                        (t (cons (ffn-symb term)
-                                 (untranslate1-lst (fargs term) nil
-                                                   untrans-tbl
-                                                   preprocess-fn
-                                                   wrld))))))))))))
+                     (list* (ffn-symb term)
+                            const
+                            (untranslate1-lst (cdr (fargs term)) nil
+                                              untrans-tbl
+                                              preprocess-fn
+                                              wrld)))
+                    (t
+                     (mv-let
+                       (ad-list base)
+                       (make-reversed-ad-list term nil)
+                       (cond (ad-list
+                              (pretty-parse-ad-list
+                               ad-list '(#\R) 1
+                               (untranslate1 base nil untrans-tbl preprocess-fn
+                                             wrld)))
+                             (t (cons (ffn-symb term)
+                                      (untranslate1-lst (fargs term) nil
+                                                        untrans-tbl
+                                                        preprocess-fn
+                                                        wrld)))))))))))))
 
 (defun untranslate-cons1 (term untrans-tbl preprocess-fn wrld)
 
@@ -5169,10 +5321,11 @@
        stringp symbolp
 
 ; We want fmt-to-comment-window (which will arise upon macroexpanding calls of
-; cw) to be executed always in raw Lisp, so we add it to this list in order to
-; bypass its *1* function.
+; cw and cw-print-base-radix) to be executed always in raw Lisp, so we add it
+; to this list in order to bypass its *1* function.
 
        fmt-to-comment-window
+       fmt-to-comment-window!
 
 ; When we oneify, we sometimes do so on code that was laid down for constrained
 ; functions.  Therefore, we put throw on the list.
@@ -5184,6 +5337,7 @@
        makunbound-global
        trans-eval ev ev-lst ev-fncall
 ;      fmt-to-comment-window ; already included above
+;      fmt-to-comment-window! ; already included above
        sys-call-status
 ;      pstack-fn
        untranslate
@@ -8655,6 +8809,11 @@
                        (length (cdr x))
                        formals
                        nil))
+            ((eq stobjs-out t)
+             (trans-er-let*
+              ((args (translate11-lst (cdr x) t bindings known-stobjs
+                                      nil flet-alist x ctx wrld state-vars)))
+              (trans-value (fcons-term lambda-fn args))))
             (t
              (translate11-call x lambda-fn (cdr x) stobjs-out stobjs-out2
                                bindings known-stobjs
@@ -9986,8 +10145,11 @@
 ; function names occurring in the :exec part of an mbe.  Keep this in sync with
 ; all-fnnames1-exec.
 
+  (declare (xargs :guard (and (true-listp acc)
+                              (cond (flg (pseudo-term-listp x))
+                                    (t (pseudo-termp x))))))
   (cond (flg ; x is a list of terms
-         (cond ((null x) acc)
+         (cond ((endp x) acc)
                (t (all-fnnames1 nil (car x)
                                 (all-fnnames1 t (cdr x) acc)))))
         ((variablep x) acc)
@@ -10444,7 +10606,7 @@
       (er soft ctx
           "Global variables, such as ~&0, are not allowed. See :DOC ASSIGN ~
            and :DOC @."
-          (non-stobjps vars t wrld))) ;;; known-stobjs = t
+          (reverse (non-stobjps vars t wrld)))) ;;; known-stobjs = t
      (t (ev-for-trans-eval term vars stobjs-out ctx state aok
                            user-stobjs-modified-warning)))))
 
@@ -10613,7 +10775,7 @@
                               (t 2))
                         legal-vars
                         x
-                        vars))
+                        (reverse vars)))
                    (t (mv-let (erp val latches)
                               (ev term
                                   (append alist
@@ -10694,7 +10856,7 @@
                           (t 2))
                     legal-vars
                     x
-                    vars))
+                    (reverse vars)))
            (t (mv-let (erp val)
 
 ; Note that because translate-cmp is called above with parameter stobjs-out =

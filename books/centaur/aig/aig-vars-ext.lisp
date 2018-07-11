@@ -62,11 +62,11 @@
 ;; nodetable.
 (defun accumulate-aig-vars (x nodetable acc)
   (declare (xargs :guard t))
-  (b* (((when (atom x)) (if (or (booleanp x)
-                                (hons-get x nodetable))
-                            (mv nodetable acc)
-                          (mv (hons-acons x t nodetable)
-                              (cons x acc))))
+  (b* (((when (aig-atom-p x)) (if (or (booleanp x)
+                                      (hons-get x nodetable))
+                                  (mv nodetable acc)
+                                (mv (hons-acons x t nodetable)
+                                    (cons x acc))))
        ((when (eq (cdr x) nil))
         (accumulate-aig-vars (car x) nodetable acc))
        ((when (hons-get x nodetable))
@@ -75,6 +75,12 @@
        ((mv nodetable acc)
         (accumulate-aig-vars (car x) nodetable acc)))
     (accumulate-aig-vars (cdr x) nodetable acc)))
+
+(defun accumulate-aig-vars-list (x nodetable acc)
+  (declare (xargs :guard t))
+  (b* (((when (atom x)) (mv nodetable acc))
+       ((mv nodetable acc) (accumulate-aig-vars (car x) nodetable acc)))
+    (accumulate-aig-vars-list (cdr x) nodetable acc)))
 
 (defun aig-vars-unordered (x)
   (declare (xargs :guard t))
@@ -85,7 +91,10 @@
 
 (defun aig-vars-unordered-list (x)
   (declare (xargs :guard t))
-  (aig-vars-unordered x))
+  (b* (((mv nodetable acc)
+        (accumulate-aig-vars-list x nil nil)))
+    (fast-alist-free nodetable)
+    acc))
 
 
 ;; Does a search through the AIG table, accumulating seen variables.  Each

@@ -674,7 +674,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             :stack :pop
             (value-triple
              (progn$
-              (fmt-to-comment-window "~%~%FAILED EVENTS: ~x0" (list (cons #\0 (list* 'ACL2::PROGN ',',events-seen))) 0 nil)
+              (fmt-to-comment-window "~%~%FAILED EVENTS: ~x0" (list (cons #\0 (list* 'ACL2::PROGN ',',events-seen))) 0 nil nil)
               (cw "~%~s0" ,blame-msg)
               (er hard? 'defunc "~|Submit the events shown above to replicate the failure.")))))))))
 

@@ -37,6 +37,7 @@
 (local (include-book "tools/mv-nth" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
 (set-state-ok t)
 
 (local (in-theory (disable signed-byte-p)))

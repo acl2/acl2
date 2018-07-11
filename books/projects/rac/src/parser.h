@@ -1,5 +1,5 @@
 #ifndef PARSER_H
-#define PARSER_H 
+#define PARSER_H
 #include <stdio.h>
 #include <assert.h>
 #include <iostream>
@@ -38,7 +38,7 @@ public:
   List<T>* copy();
   void displayList(ostream& os, uint indent=0);
   void displayDefs(ostream& os);
-}; 
+};
 
 // Length of a list;
 
@@ -124,7 +124,7 @@ List<T>* List<T>::pop() {
   List<T>* result = this->next;
   delete this;
   return result;
-}  
+}
 
 // Create a copy of a list:
 
@@ -137,7 +137,7 @@ List<T>* List<T>::copy() {
     ptr = ptr->next;
   }
   return result;
-}  
+}
 
 // Call "display" on each element of a list:
 
@@ -170,7 +170,7 @@ public:
   List<T> *front;
   List<T> *back;
   BigList<T>(T *v) {
-    front = new List<T>(v); 
+    front = new List<T>(v);
     back = front;
   }
   BigList<T> *add(T *v) {
@@ -178,7 +178,7 @@ public:
     back = back->next;
     return this;
   }
-}; 
+};
 
 
 // Stacks:
@@ -299,7 +299,6 @@ public:
   virtual bool isArrayParamType();
   virtual bool isStructType();
   bool isNumericalType();
-  virtual bool isLimitedType();
   virtual bool isIntegerType();
   virtual bool isFPType();
   virtual bool isEnumType();
@@ -318,7 +317,6 @@ public:
   char *RACname;
   PrimType(const char *s, const char *m=NULL);
   virtual bool isPrimType();
-  bool isLimitedType();
   bool isIntegerType();
   void display(ostream& os);
 };
@@ -344,24 +342,12 @@ public:
   Expression *width;
   bool isRegType();
   virtual bool isSigned();
-  virtual bool isBig();
   Sexpression *ACL2Assign(Expression *rval);
 };
 
 class UintType : public RegType {
 public:
   UintType(Expression *w);
-  bool isLimitedType();
-  bool isIntegerType();
-  void display(ostream& os=cout);
-  uint ACL2ValWidth();
-};
-
-class BigUintType : public RegType {
-public:
-  bool isBig();
-  BigUintType(Expression *w);
-  bool isLimitedType();
   bool isIntegerType();
   void display(ostream& os=cout);
   uint ACL2ValWidth();
@@ -371,18 +357,6 @@ class IntType : public RegType {
 public:
   bool isSigned();
   IntType(Expression *w);
-  bool isLimitedType();
-  bool isIntegerType();
-  void display(ostream& os=cout);
-  Sexpression *ACL2Eval(Sexpression *s);
-};
-  
-class BigIntType : public RegType {
-public:
-  bool isSigned();
-  bool isBig();
-  BigIntType(Expression *w);
-  bool isLimitedType();
   bool isIntegerType();
   void display(ostream& os=cout);
   Sexpression *ACL2Eval(Sexpression *s);
@@ -392,28 +366,26 @@ class FPType :public RegType {
 public:
   Expression *iwidth;
   FPType(Expression *w, Expression *iw);
-  bool isBig();
   bool isFPType();
-  bool isLimitedType();
   bool isIntegerType();
   Sexpression *ACL2Assign(Expression *rval);
-};  
-    
+};
+
 class UfixedType :public FPType {
 public:
   UfixedType(Expression *w, Expression *iw);
   void display(ostream& os=cout);
   Sexpression *ACL2Eval(Sexpression *s);
-};  
-    
+};
+
 class FixedType :public FPType {
 public:
   bool isSigned();
   FixedType(Expression *w, Expression *iw);
   void display(ostream& os=cout);
   Sexpression *ACL2Eval(Sexpression *s);
-};  
-    
+};
+
 class ArrayType : public Type {
 public:
   Type *baseType;
@@ -487,7 +459,6 @@ public:
   List<EnumConstDec> *vals;
   EnumType(List<EnumConstDec> *v);
   bool isEnumType();
-  bool isLimitedType();
   bool isIntegerType();
   void displayConsts(ostream& os);
   void display(ostream& os);
@@ -525,16 +496,12 @@ public:
   bool isNumber();
   virtual bool isSubrange();
   virtual bool isSymRef();
-  virtual bool isLimited();
   virtual bool isInteger();
-  bool isBigInt();
   bool isFP();
   virtual Type* exprType();
   void display(ostream& os);
   virtual void displayNoParens(ostream& os) = 0;
   virtual Expression *subst(SymRef *var, Expression *val);
-  virtual Expression *CtoSExpr();
-  virtual Statement *CtoSAssign(const char *op, Expression *rvalue);
   virtual Sexpression *ACL2Expr(bool isBV = false);
   virtual Sexpression *ACL2ArrayExpr();
   virtual Sexpression *ACL2Assign(Sexpression *rval);
@@ -553,7 +520,6 @@ public:
   Constant(const char *n);
   Constant(int n);
   bool isConst();
-  bool isLimited();
   bool isInteger();
   void displayNoParens(ostream& os);
   Sexpression *ACL2Expr(bool isBV = false);
@@ -590,11 +556,10 @@ public:
   bool isSymRef();
   Type* exprType();
   virtual bool isConst();
-  virtual int evalConst(); 
+  virtual int evalConst();
   bool isArray();
   bool isArrayParam();
   bool isStruct();
-  bool isLimited();
   bool isInteger();
   void displayNoParens(ostream& os);
   Expression *subst(SymRef *var, Expression *val);
@@ -614,12 +579,10 @@ public:
   bool isArray();
   bool isArrayParam();
   bool isStruct();
-  bool isLimited();
   bool isInteger();
   Type* exprType();
   void displayNoParens(ostream& os);
   Expression *subst(SymRef *var, Expression *val);
-  Expression *CtoSExpr();
   Sexpression *ACL2Expr(bool isBV = false);
 };
 
@@ -632,7 +595,6 @@ public:
   TempCall(Template *f, List<Expression> *a, List<Expression> *p);
   void displayNoParens(ostream& os);
   Expression *subst(SymRef *var, Expression *val);
-  Expression *CtoSExpr();
   Sexpression *ACL2Expr(bool isBV = false);
 };
 
@@ -652,12 +614,10 @@ public:
   ArrayRef(Expression *a, Expression *i);
   bool isArray();
   bool isArrayParam();
-  bool isLimited();
   bool isInteger();
   Type* exprType();
   void displayNoParens(ostream& os);
   Expression *subst(SymRef *var, Expression *val);
-  Expression *CtoSExpr();
   Sexpression *ACL2Expr(bool isBV = false);
   Sexpression *ACL2Assign(Sexpression *rval);
 };
@@ -667,7 +627,6 @@ public:
   ArrayParamRef(Expression *a, Expression *i);
   void displayNoParens(ostream& os);
   Expression *subst(SymRef *var, Expression *val);
-  Expression *CtoSExpr();
 };
 
 class StructRef : public Expression {
@@ -677,7 +636,6 @@ public:
   StructRef(Expression *s, char *f);
   bool isArray();
   bool isArrayParam();
-  bool isLimited();
   bool isInteger();
   Type* exprType();
   void displayNoParens(ostream& os);
@@ -690,12 +648,9 @@ public:
   Expression *base;
   Expression *index;
   BitRef(Expression *b, Expression *i);
-  bool isLimited();
   bool isInteger();
   void displayNoParens(ostream& os);
   Expression *subst(SymRef *var, Expression *val);
-  Expression *CtoSExpr();
-  Statement *CtoSAssign(const char *op, Expression *rvalue);
   Sexpression *ACL2Expr(bool isBV = false);
   Sexpression *ACL2Assign(Sexpression *rval);
   uint ACL2ValWidth();
@@ -710,52 +665,12 @@ public:
   Subrange(Expression *b, Expression *h, Expression *l);
   Subrange(Expression *b, Expression *h, Expression *l, uint w);
   bool isSubrange();
-  bool isLimited();
   bool isInteger();
-  Expression *convertToBigUint();
   void displayNoParens(ostream& os);
   Expression *subst(SymRef *var, Expression *val);
-  Expression *CtoSExpr();
-  Statement *CtoSAssign(const char *op, Expression *rvalue);
   Sexpression *ACL2Expr(bool isBV = false);
   Sexpression *ACL2Assign(Sexpression *rval);
   uint ACL2ValWidth();
-};
-
-class FullRange : public Subrange {
-public:
-  FullRange(Expression *b);
-  void displayNoParens(ostream& os);
-};
-
-class SubrangeTemplate : public Subrange {
-public:
-  SubrangeTemplate(Expression *b, Expression *h, Expression *l);
-  void displayNoParens(ostream& os);
-};
-
-class ToUintExpr : public Expression {
-public:
-  Expression *expr;
-  ToUintExpr(Expression *e);
-  bool isLimited();
-  bool isInteger();
-  void displayNoParens(ostream& os);
-  Expression *subst(SymRef *var, Expression *val);
-  Expression *CtoSExpr();
-  Sexpression *ACL2Expr(bool isBV = false);
-};
-
-class ToUint64Expr : public Expression {
-public:
-  Expression *expr;
-  ToUint64Expr(Expression *e);
-  bool isLimited();
-  bool isInteger();
-  void displayNoParens(ostream& os);
-  Expression *subst(SymRef *var, Expression *val);
-  Expression *CtoSExpr();
-  Sexpression *ACL2Expr(bool isBV = false);
 };
 
 class PrefixExpr : public Expression {
@@ -765,11 +680,9 @@ public:
   PrefixExpr(Expression *e, const char *o);
   bool isConst();
   int evalConst();
-  bool isLimited();
   bool isInteger();
   void displayNoParens(ostream& os);
   Expression *subst(SymRef *var, Expression *val);
-  Expression *CtoSExpr();
   Type *exprType();
   Sexpression *ACL2Expr(bool isBV = false);
   virtual bool isEqual(Expression *e);
@@ -784,11 +697,9 @@ public:
   Type* exprType();
   bool isConst();
   int evalConst();
-  bool isLimited();
   bool isInteger();
   void displayNoParens(ostream& os);
   Expression *subst(SymRef *var, Expression *val);
-  Expression *CtoSExpr();
   Sexpression *ACL2Expr(bool isBV = false);
 };
 
@@ -801,11 +712,9 @@ public:
   BinaryExpr(Expression *e1, Expression *e2, const char *o);
   bool isConst();
   int evalConst();
-  bool isLimited();
   bool isInteger();
   void displayNoParens(ostream& os);
   Expression *subst(SymRef *var, Expression *val);
-  Expression *CtoSExpr();
   Type *exprType();
   Sexpression *ACL2Expr(bool isBV = false);
   virtual bool isEqual(Expression *e);
@@ -820,11 +729,9 @@ public:
   Expression *expr2;
   Expression *test;
   CondExpr(Expression *e1, Expression *e2, Expression *t);
-  bool isLimited();
   bool isInteger();
   void displayNoParens(ostream& os);
   Expression *subst(SymRef *var, Expression *val);
-  Expression *CtoSExpr();
   Sexpression *ACL2Expr(bool isBV = false);
 };
 
@@ -836,7 +743,6 @@ public:
   MultipleValue(MvType *t, List<Expression> *e);
   void displayNoParens(ostream& os);
   Expression *subst(SymRef *var, Expression *val);
-  Expression *CtoSExpr();
   Sexpression *ACL2Expr(bool isBV = false);
 };
 
@@ -848,21 +754,12 @@ class Block;
 
 class Statement {
 public:
-  Expression *iterBound;
-  SymRef *var;
-  List<Constant> *vals;
   Statement();
   virtual void display(ostream& os, uint indent=0) = 0;
   virtual void displayAsRightBranch(ostream& os, uint indent=0);
   virtual void displayWithinBlock(ostream& os, uint indent=0);
   virtual Block *blockify();
   virtual Block *blockify(Statement *s);
-  Statement* CtoS();
-  Statement* CtoS1stPass();
-  virtual Statement* CtoS2ndPass();
-  virtual Statement* CtoS1stPassSubstatements();
-  virtual Statement* BoundIter();
-  Statement* CtoSSwitch(SymRef *var, List<Constant> *vals);
   virtual Statement* subst(SymRef *var, Expression *expr);
   virtual Sexpression *ACL2Expr();
   virtual void noteReturnType(Type *t);
@@ -881,7 +778,6 @@ public:
   VarDec(const char *n, Type *t, Expression *i = NULL);
   void displaySimple(ostream& os);
   Statement *subst(SymRef *var, Expression *val);
-  Statement *CtoS2ndPass();
   Sexpression *ACL2Expr();
   Sexpression *ACL2SymExpr();
 };
@@ -892,9 +788,6 @@ public:
   void displaySimple(ostream& os);
   Statement *subst(SymRef *var, Expression *val);
   bool isConst();
-  void CtoSDisplayDec(ostream& os);
-  void CtoSDisplayDef(ostream& os, const char *prefix);
-  Statement *CtoS2ndPass();
   bool isGlobal();
   bool isROM();
   Sexpression *ACL2SymExpr();
@@ -906,7 +799,6 @@ public:
   MulVarDec(VarDec *dec1, VarDec *dec2);
   MulVarDec(List<VarDec> *decs);
   Statement *subst(SymRef *var, Expression *val);
-  Statement *CtoS2ndPass();
   Sexpression *ACL2Expr();
   void displaySimple(ostream& os);
 };
@@ -917,7 +809,6 @@ public:
   MulConstDec(ConstDec *dec1, ConstDec *dec2);
   MulConstDec(List<ConstDec> *decs);
   Statement *subst(SymRef *var, Expression *val);
-  Statement *CtoS2ndPass();
   Sexpression *ACL2Expr();
   void displaySimple(ostream& os);
 };
@@ -927,12 +818,6 @@ public:
   TempParamDec(const char *n, Type *t);
   bool isConst();
   Sexpression *ACL2SymExpr();
-};
-
-class ContStmt : public SimpleStatement {
-public:
-  ContStmt();
-  void displaySimple(ostream& os);
 };
 
 class BreakStmt : public SimpleStatement {
@@ -949,16 +834,8 @@ public:
   ReturnStmt(Expression *v);
   void displaySimple(ostream& os);
   Statement *subst(SymRef *var, Expression *val);
-  Statement *CtoS2ndPass();
   Sexpression *ACL2Expr();
   void noteReturnType(Type *t);
-};
-
-class WaitStmt : public SimpleStatement {
-public:
-  WaitStmt();
-  void displaySimple(ostream& os);
-  Sexpression *ACL2Expr();
 };
 
 class NullStmt : public SimpleStatement {
@@ -975,7 +852,6 @@ public:
   Assertion(Expression *e);
   void displaySimple(ostream& os);
   Statement *subst(SymRef *var, Expression *val);
-  Statement *CtoS2ndPass();
   Sexpression *ACL2Expr();
   void markAssertions(FunDef *f);
 };
@@ -988,7 +864,6 @@ public:
   Assignment(Expression *l, const char *o, Expression *r=NULL);
   void displaySimple(ostream& os);
   Statement *subst(SymRef *var, Expression *val);
-  Statement *CtoS2ndPass();
   Sexpression *ACL2Expr();
 };
 
@@ -1028,7 +903,6 @@ public:
   MultipleAssignment(FunCall *r, List<Expression> *e);
   void displaySimple(ostream& os);
   Statement *subst(SymRef *var, Expression *val);
-  Statement *CtoS2ndPAss();
   Sexpression *ACL2Expr();
 };
 
@@ -1044,8 +918,6 @@ public:
   void display(ostream& os, uint indent=0);
   void displayWithinBlock(ostream& os, uint indent=0);
   Statement *subst(SymRef *var, Expression *val);
-  Statement *CtoS2ndPass();
-  Statement* CtoS1stPassSubstatements();
   Sexpression *ACL2Expr();
   void noteReturnType(Type *t);
   void markAssertions(FunDef *f);
@@ -1060,8 +932,6 @@ public:
   void display(ostream& os, uint indent=0);
   void displayAsRightBranch(ostream& os, uint indent=0);
   Statement *subst(SymRef *var, Expression *val);
-  Statement *CtoS2ndPass();
-  Statement* CtoS1stPassSubstatements();
   Sexpression *ACL2Expr();
   void markAssertions(FunDef *f);
   void noteReturnType(Type *t);
@@ -1076,37 +946,7 @@ public:
   ForStmt(SimpleStatement *v, Expression *t, Assignment *u, Statement *b);
   void display(ostream& os, uint indent=0);
   Statement *subst(SymRef *var, Expression *val);
-  Statement *CtoS2ndPass();
-  Statement* CtoS1stPassSubstatements();
-  Statement* BoundIter();
   Sexpression *ACL2Expr();
-  void markAssertions(FunDef *f);
-};
-
-class WhileStmt : public Statement {
-public:
-  Expression *test;
-  Statement *body;
-  WhileStmt(Expression *t, Statement *b);
-  void display(ostream& os, uint indent);
-  Statement *subst(SymRef *var, Expression *val);
-  Statement *CtoS2ndPass();
-  Statement* CtoS1stPassSubstatements();
-  Statement* BoundIter();
-  Sexpression *ACL2Expr();
-  void markAssertions(FunDef *f);
-};
-
-class DoStmt : public Statement {
-public:
-  Statement *body;
-  Expression *test;
-  DoStmt(Statement *b, Expression *t);
-  void display(ostream& os, uint indent=0);
-  Statement *subst(SymRef *var, Expression *val);
-  Statement *CtoS2ndPass();
-  Statement* CtoS1stPassSubstatements();
-  Statement* BoundIter();
   void markAssertions(FunDef *f);
 };
 
@@ -1117,8 +957,6 @@ public:
   Case(Expression *l, List<Statement> *a);
   void display(ostream& os, uint indent=0);
   Case* subst(SymRef *var, Expression *val);
-  Case* CtoS2ndPass();
-  Case* CtoS1stPassSubstatements();
   void markAssertions(FunDef *f);
 };
 
@@ -1129,8 +967,6 @@ public:
   SwitchStmt(Expression *t, List<Case> *c);
   void display(ostream& os, uint indent=0);
   Statement* subst(SymRef *var, Expression *val);
-  Statement* CtoS2ndPass();
-  Statement* CtoS1stPassSubstatements();
   Sexpression *ACL2Expr();
   void markAssertions(FunDef *f);
 };
@@ -1150,7 +986,6 @@ public:
   char *getname();
   void displayDec(ostream& os, uint indent=0);
   virtual void display(ostream& os, const char *prefix = "", uint indent=0);
-  FunDef *CtoS();
   virtual void displayACL2Expr(ostream& os);
 };
 
@@ -1166,7 +1001,6 @@ public:
   Template(const char *n, Type *t, List<VarDec> *p, Block *b, List<TempParamDec> *tp);
   void display(ostream& os, const char *prefix = "", uint indent=0);
   void addCall(TempCall *c);
-  Template *CtoS();
   void bindParams(List<Expression> *a);
   void displayACL2Expr(ostream& os);
 };
@@ -1175,7 +1009,7 @@ public:
 // Programs
 //***********************************************************************************
 
-enum DispMode {rac, ctos, acl2};
+enum DispMode {rac, acl2};
 
 class Program {
 public:
@@ -1186,12 +1020,11 @@ public:
   Program();
   void displayTypeDefs(ostream& os, DispMode mode);
   void displayConstDecs(ostream& os, DispMode mode);
-  void CtoSDisplayConstDefs(ostream& os, const char *prefix="");
   void displayTemplates(ostream& os, DispMode mode, const char *prefix="");
   void displayFunDefs(ostream& os, DispMode mode, const char *prefix="");
   void displayFunDecs(ostream& os);
   void display(ostream& os, DispMode mode=rac);
-};    
+};
 
 extern Program prog;
 

@@ -273,6 +273,17 @@
          (r1 (rne (- a (* b q1)) 24)))
     (rnd (+ q1 (* r1 y1)) mode 24)))
 
+(defthm divsp-small-cases
+  (implies (and (not (zp k))
+                (<= k 7))
+           (let* ((b (- 2 (* (expt 2 -23) k)))
+                  (y0 (rcp24 b))
+                  (e0 (rne (- 1 (* b y0)) 24))
+                  (y1 (rne (+ y0 (* e0 y0)) 24)))
+             (< (abs (- 1 (* b y1)))
+                (expt 2 -24))))
+  :rule-classes ())
+
 (defthm divsp-correct
   (implies (and (rationalp a)
                 (rationalp b)
@@ -305,6 +316,20 @@
          (y3 (rne (+ y1 (* e1 y2)) 53))
          (r1 (rne (- a (* b q1)) 53)))
     (rnd (+ q1 (* r1 y3)) mode 53)))
+
+(defthm divdp-small-cases
+  (implies (and (not (zp k))
+                (<= k 1027))
+           (let* ((b (- 2 (* (expt 2 -52) k)))
+                  (y0 (rcp24 (rtz b 24)))
+                  (e0 (rne (- 1 (* b y0)) 53))
+                  (y1 (rne (+ y0 (* e0 y0)) 53))
+                  (e1 (rne (- 1 (* b y1)) 53))
+                  (y2 (rne (+ y0 (* e0 y1)) 53))
+                  (y3 (rne (+ y1 (* e1 y2)) 53)))
+             (< (abs (- 1 (* b y3)))
+                (expt 2 -53))))
+  :rule-classes ())
 
 (defthm divdp-correct
   (implies (and (rationalp a)

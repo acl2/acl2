@@ -1,5 +1,40 @@
-;; AUTHOR:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
 
@@ -96,7 +131,7 @@
                                   ()))))
 
 (defthm read-x86-file-des-wb-1
-  (implies (programmer-level-mode x86)
+  (implies (app-view x86)
            (equal (read-x86-file-des id (mv-nth 1 (wb-1 n addr w value x86)))
                   (read-x86-file-des id x86)))
   :hints (("Goal"
@@ -104,7 +139,7 @@
                             ()))))
 
 (defthm read-x86-file-des-wb
-  (implies (programmer-level-mode x86)
+  (implies (app-view x86)
            (equal (read-x86-file-des id (mv-nth 1 (wb n addr w value x86)))
                   (read-x86-file-des id x86)))
   :hints (("Goal"
@@ -113,7 +148,7 @@
                             (wb wb-1 read-x86-file-des-wb-1)))))
 
 (defthm write-x86-file-des-wb
-  (implies (programmer-level-mode x86)
+  (implies (app-view x86)
            (equal (write-x86-file-des i v (mv-nth 1 (wb n addr w value x86)))
                   (mv-nth 1 (wb n addr w value (write-x86-file-des i v x86)))))
   :hints (("Goal"
@@ -121,7 +156,7 @@
                             ()))))
 
 (defthm read-x86-file-contents-wb-1
-  (implies (programmer-level-mode x86)
+  (implies (app-view x86)
            (equal (read-x86-file-contents id (mv-nth 1 (wb-1 n addr w value x86)))
                   (read-x86-file-contents id x86)))
   :hints (("Goal"
@@ -129,7 +164,7 @@
                             ()))))
 
 (defthm read-x86-file-contents-wb
-  (implies (programmer-level-mode x86)
+  (implies (app-view x86)
            (equal (read-x86-file-contents id (mv-nth 1 (wb n addr w value x86)))
                   (read-x86-file-contents id x86)))
   :hints (("Goal"
@@ -157,9 +192,9 @@
 
 ;; Some rules about flags:
 
-(defthm programmer-level-mode-!flgi
-  (equal (xr :programmer-level-mode 0 (!flgi flg val x86))
-         (xr :programmer-level-mode 0 x86))
+(defthm app-view-!flgi
+  (equal (xr :app-view 0 (!flgi flg val x86))
+         (xr :app-view 0 x86))
   :hints (("Goal" :in-theory (e/d* (!flgi) (force (force))))))
 
 (defthm xr-!flgi-undefined
@@ -169,9 +204,9 @@
                   (xr fld index x86)))
   :hints (("Goal" :in-theory (e/d* (!flgi-undefined) ()))))
 
-(defthm programmer-level-mode-!flgi-undefined
-  (equal (xr :programmer-level-mode 0 (!flgi-undefined flg x86))
-         (xr :programmer-level-mode 0 x86))
+(defthm app-view-!flgi-undefined
+  (equal (xr :app-view 0 (!flgi-undefined flg x86))
+         (xr :app-view 0 x86))
   :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (force (force))))))
 
 (defthm read-x86-file-des-!flgi
