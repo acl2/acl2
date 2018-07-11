@@ -2,7 +2,7 @@
 
 %s ACTIVE
 
-Rac (rac|RAC|)
+Rac (rac|RAC|Rac)
 lineba ^"#"\ [0-9]+\ \"[^\"]*\".*\n
 %{
 #include <stdio.h>
@@ -26,8 +26,8 @@ char yyfilenm[1024];
 <INITIAL>.*\n               {}
 
 "/*"                        {comment();}
-\/\/{Rac}\:?.*             {yyless(7); return RAC;}
-\/\/\ {Rac}\:?.*           {yyless(8); return RAC;}
+\/\/{Rac}\:?.*             {yyless(6); return RAC;}
+\/\/\ {Rac}\:?.*           {yyless(7); return RAC;}
 "//".*                      {}
 "Hector::".*                {}
 "#pragma".*                 {}
@@ -44,7 +44,6 @@ char yyfilenm[1024];
 "int64"	                    {return INT64;}
 "uint64"	            {return UINT64;}
 "bool"	                    {return BOOL;}
-"wait"	                    {return WAIT;}
 "for"	                    {return FOR;}
 "if"	                    {return IF;}
 "else"	                    {return ELSE;}
@@ -54,12 +53,8 @@ char yyfilenm[1024];
 "case"	                    {return CASE;}
 "default"                   {return DEFAULT;}
 "break"	                    {return BREAK;}
-"continue"                  {return CONTINUE;}
 "return"                    {return RETURN;}
 "assert"                    {return ASSERT;}
-"to_uint"                   {return TO_UINT;}
-"to_uint64"                 {return TO_UINT64;}
-"range"                     {return RANGE;}
 "slc"                       {return SLC;}
 "set_slc"                   {return SET_SLC;}
 
@@ -67,14 +62,8 @@ char yyfilenm[1024];
 "array"                     {return ARRAY;}
 "tie"                       {return TIE;}
 
-"sc_int"                    {return SC_INT;}
-"sc_bigint"                 {return SC_BIGINT;}
-"sc_fixed"                  {return SC_FIXED;}
-"sc_uint"                   {return SC_UINT;}
-"sc_biguint"                {return SC_BIGUINT;}
-"sc_ufixed"                 {return SC_UFIXED;}
-
 "ac_int"                    {return AC_INT;}
+"ac_fixed"                  {return AC_FIXED;}
 
 "true"                      {yylval.s = tokstr(); return TRUE;}
 "false"                     {yylval.s = tokstr(); return FALSE;}

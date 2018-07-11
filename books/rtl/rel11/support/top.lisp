@@ -16,6 +16,8 @@
 
 (include-book "../rel9-rtl-pkg/lib/add")
 
+(include-book "./lza")
+
 (include-book "./mult")
 
 (include-book "./util")

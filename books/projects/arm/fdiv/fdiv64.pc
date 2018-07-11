@@ -1,5 +1,125 @@
+// Formats:
 
-// Compute Q, incremented Q, and sticky bit: 
+enum Format {HP, SP, DP};
+
+// Data classes:
+
+enum Class {ZERO, INF, SNAN, QNAN, NORM, DENORM};
+
+// Rounding modes:
+
+const ui2 rmodeNear = 0;
+const ui2 rmodeUP = 1;
+const ui2 rmodeDN = 2;
+const ui2 rmodeZero = 3;
+
+// Flags:
+
+const uint IDC = 7; // denormal exxception
+const uint IXC = 4; // inexact exception
+const uint UFC = 3; // underflow
+const uint OFC = 2; // overflow
+const uint DZC = 1; // divide-by-zero exception
+const uint IOC = 0; // invalid operand exception
+
+// Extract operand components, apply FZ, identify data class, and record denormal exception:
+
+<bool, ui11, ui52, Class, ui8> analyze(ui64 op, Format fmt, bool fz, ui8 flags) {
+
+  // Extract fields:
+
+  bool sign;
+  ui11 exp;
+  ui52 man, manMSB;
+  bool expIsMax;
+  switch (fmt) {
+  case DP:
+    sign = op[63];
+    exp = op[62:52];
+    expIsMax = exp == 0x7FF;
+    man = op[51:0];
+    manMSB = 0x8000000000000;
+    break;
+  case SP:
+    sign = op[31];
+    exp = op[30:23];
+    expIsMax = exp == 0xFF;
+    man = op[22:0];
+    manMSB = 0x400000;
+    break;
+  case HP:
+    sign = op[15];
+    exp = op[14:10];
+    expIsMax = exp == 0x1F;
+    man = op[9:0];
+    manMSB = 0x200;
+  }
+
+  // Classify:
+
+  Class c;
+  if (expIsMax) { // NaN or infinity
+    if (man == 0) {
+      c = INF;
+    }
+    else if (man & manMSB) {
+      c = QNAN;
+    }
+    else  {
+      c = SNAN;
+    }
+  }
+  else if (exp == 0) { // zero or denormal
+    if (man == 0) {
+      c = ZERO;
+    }
+    else if (fz) {
+      c = ZERO;
+      if (fmt != HP) {
+        flags[IDC] = 1; // denormal exception
+      }
+    }
+    else  {
+      c = DENORM;
+    }
+  }
+  else  { // normal
+    c = NORM;
+  }
+  return <sign, exp, man, c, flags>;
+}
+
+// Count leading zeroes of a nonzero 53-bit vector.
+// After k iterations of the loop, where 0 <= k <= 6, the value of n is 2^(6-k)
+// and the low n entries of z and c are as follows:
+// Consider the partition of x into n bit slices of width 2^k.  For 0 <= i < n, 
+// the i^th slice is x[2^k*(i+1)-1:2^k*i]. Let L(i) be the number of leading 
+// zeroes of this slice.  Then
+//   z[i] = 1 <=> L(i) = 2^k;
+//   L(i) < 2^k => c[i] = L(i).
+
+ui6 CLZ53(ui53 m) {
+  ui64 x = 0;
+  x[63:11] = m;
+  bool z[64];
+  ui6 c[64];
+  for (uint i = 0; i < 64; i++) {
+    z[i] = !x[i];
+    c[i] = 0;
+  }
+  uint n = 64;
+  for (uint k = 0; k < 6; k++) {
+    n = n / 2; // n = 2^(5-k)
+    for (uint i = 0; i < n; i++) {
+      c[i] = z[2 * i + 1] ? c[2 * i] : c[2 * i + 1];
+      c[i][k] = z[2 * i + 1];
+      z[i] = z[2 * i + 1] && z[2 * i];
+    }
+  }
+  return c[0];
+}
+
+// Compute Q, incremented Q, and sticky bit (shared with fsqrt64):
 
 <ui53, ui53, bool> computeQ(ui54 QP, ui54 QN, ui59 RP, ui59 RN, ui2 fmt, bool isSqrt) {
 
@@ -13,7 +133,7 @@
   bool cin = !remSign;
 
   // If the sum is to be rounded up, then a rounding increment is added.  Note that
-  // the position of the increment is the lsb of the result.  For fdiv, this is bit 1 
+  // the position of the increment is the lsb of the result.  For fdiv, this is bit 1
   // for SP and bit 2 for DP and HP; for fsqrt, it is the opposite:
   bool lsbIs2 = isSqrt == (fmt == SP);
   ui3 inc = lsbIs2 ? 4 : 2;
@@ -54,7 +174,7 @@
     Q0inc[53:3] = Q0[53:3];
   }
  
-  // When cin is finally available, the following selections are made: 
+  // When cin is finally available, the following selections are made:
   ui54 Q01 = cin ? Q1 : Q0;
   ui54 Q01inc = cin ? Q1inc : Q0inc;
 
@@ -72,7 +192,7 @@
   return <xs, stk>;
 }
 
-// Compute rounded result for both normal and denormal cases:
+// Compute rounded result for both normal and denormal cases (shared with fsqrt64):
 
 <ui53, bool, ui53, bool>
 rounder(ui53 Qtrunc, ui53 Qinc, bool stk, bool sign, si13 expQ, ui2 rmode, ui2 fmt) {
@@ -126,7 +246,7 @@ rounder(ui53 Qtrunc, ui53 Qinc, bool stk, bool sign, si13 expQ, ui2 rmode, ui2 f
   return <Qrnd, inx, QrndDen, inxDen>;
 }
 
-// Final result:
+// Final result (shared with fsqrt64):
 
 <ui64, ui8>
 final(ui53 Qrnd, bool inx, ui53 QrndDen, bool inxDen, bool sign,
@@ -150,7 +270,7 @@ final(ui53 Qrnd, bool inx, ui53 QrndDen, bool inxDen, bool sign,
         D[51:0] = 0;
       }
       flags[OFC] = 1; // overflow
-      flags[IXC] = 1; // inexact  
+      flags[IXC] = 1; // inexact
     }
     else if (expQ <= 0) { // subnormal
       if (fz) {
@@ -182,7 +302,7 @@ final(ui53 Qrnd, bool inx, ui53 QrndDen, bool inxDen, bool sign,
         D[22:0] = 0;
       }
       flags[OFC] = 1; // overflow
-      flags[IXC] = 1; // inexact    
+      flags[IXC] = 1; // inexact
     }
     else if (expQ <= 0) { // subnormal
       if (fz) {
@@ -214,7 +334,7 @@ final(ui53 Qrnd, bool inx, ui53 QrndDen, bool inxDen, bool sign,
         D[9:0] = 0;
       }
       flags[OFC] = 1; // overflow
-      flags[IXC] = 1; // inexact    
+      flags[IXC] = 1; // inexact
     }
     else if (expQ <= 0) { // subnormal
       if (fz) {
@@ -237,6 +357,8 @@ final(ui53 Qrnd, bool inx, ui53 QrndDen, bool inxDen, bool sign,
   }
   return <D, flags>;
 }
+
+// Zero, infinity, or NaN:
 
 <ui64, ui8>
 specialCase(bool sign, ui64 opa, ui64 opb, Class classa, Class classb,
@@ -467,7 +589,8 @@ iint nextDigit(ui6 remS6) {
   }
 
   // remS6 >= -3
-  else if (!remS6[5] || remS6[5] && remS6[4] && remS6[3] && remS6[2] && (remS6[1] || remS6[0])) {
+  else if (!remS6[5] ||
+           remS6[5] && remS6[4] && remS6[3] && remS6[2] && (remS6[1] || remS6[0])) {
     return 0;
   }
 
@@ -541,13 +664,13 @@ iint nextDigit(ui6 remS6) {
 
 // In each of the three iterations of a cycle, the next quotient digit and remainder
 // (in redundant form) are computed.  The remainder upon entering the cycle is Ri.
-// The quotient digits and remainders computed in the cycle are qi1, qi2, qi3, and Ri1, Ri2, Ri3.
+// The quotient digits and remainders computed in the cycle are qi1, qi2, qi3, Ri1, Ri2, Ri3.
 // The remainders are redundantly represented by RPi* and RNi*.
 
-// In the first iteration, two non-redundant approximations of Ri1 are returned along with qi1, RPi1, and RNi1:
+// In the first iteration, two approximations of Ri1 are returned along with qi1, RPi1, and RNi1:
 // (1) a 6-bit sum Ri1S6, which is used in the second iteration to compute qi2;
 // (2) a 9-bit sum Ri1S9, which is used in the second iteration in combination with the divisor
-//     to compute a 7-bit approximation of Ri2, which is used in the third iteration to compute qi3.
+//     to compute a 7-bit approximation of Ri2, used in the third iteration to compute qi3.
 
 <int, ui59, ui59, ui6, ui9> iter1(ui59 RPi, ui59 RNi, ui57 div, ui2 fmt) {
   ui6 RiS6 = RPi[56:51] + ~RNi[56:51] + 1;
@@ -559,10 +682,11 @@ iint nextDigit(ui6 remS6) {
   return <qi1, RPi1, RNi1, Ri1S6, Ri1S9>;
 }
 
-// In the second iteration, a 7-bit non-redundant approximation of Ri2 is returned along with
-// qi2, RPi2, and RNi2:
+// In the second iteration, a 7-bit non-redundant approximation of Ri2 is returned
+// along with qi2, RPi2, and RNi2:
 
-<int, ui59, ui59, ui7> iter2(ui59 RPi1, ui59 RNi1, ui6 Ri1S6, ui9 Ri1S9, ui57 div, ui2 fmt) {
+<int, ui59, ui59, ui7>
+iter2(ui59 RPi1, ui59 RNi1, ui6 Ri1S6, ui9 Ri1S9, ui57 div, ui2 fmt) {
   int qi2 = nextDigit(Ri1S6);
   ui59 RPi2, RNi2;
   <RPi2, RNi2> = nextRem(RPi1, RNi1, div, qi2, fmt);
@@ -595,6 +719,17 @@ iint nextDigit(ui6 remS6) {
   <RPi3, RNi3> = nextRem(RPi2, RNi2, div, qi3, fmt);
   return <qi3, RPi3, RNi3>;
 }
+
+// Inputs of fdiv64:
+//   opa[63:0], opb[63:0]: Encodings of dividend and divisor (for SP and HP, operands are low bits)
+//   fmt: 2-bit encoding of FP format (DP = 2, SP = 1, HP = 0)
+//   fz: force denormals to 0
+//   dn: replace NaN operand with default
+//   mode[1:0]: encoding of rounding mode
+
+// Outputs of fdiv64:
+//   D[63:0]: Data result (in low bits)
+//   flags[7:0]: exception flags
 
 <ui64, ui8> fdiv64(ui64 opa, ui64 opb, ui2 fmt, bool fz, bool dn, ui2 rmode) {
 
@@ -666,7 +801,7 @@ iint nextDigit(ui6 remS6) {
     }
  
    // Assimilate quotient:
-   ui53 Qtrunc, Qinc; // Non-redundant quotient and incrementded quotient
+   ui53 Qtrunc, Qinc; // Non-redundant quotient and incremented quotient
     bool stk;     // sticky bit
     if (divPow2) {
       Qtrunc = mana << 1;
@@ -685,4 +820,3 @@ iint nextDigit(ui6 remS6) {
    return final(Qrnd, inx, QrndDen, inxDen, sign, expQ, rmode, fz, fmt, flags);
   }
 }
-

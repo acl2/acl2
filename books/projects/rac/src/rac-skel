@@ -16,7 +16,7 @@ usage() {
     cat <<USAGEEOF
 Usage:
 
-  rac srcfile [options]
+  rac [options] srcfile
 
 rac parses the given srcfile, checks that it satisfies the RAC
 subset restrictions, and optionally generates various outputs.
@@ -24,28 +24,21 @@ subset restrictions, and optionally generates various outputs.
 Options are:
 
   -a                 Generate lisp output for ACL2.
-  --acl2
 
-  -c                 Generate C++ output for Cadence CtoS.
-  --ctos
-
-  -m                 Extract only the RAC code.
-  --rac
+  -r                 Extract only the RAC code.
 
   -I dir             Look for include files in directory 'dir'
 
   -h                 Print this message.
-  --help
 USAGEEOF
 }
 
 srcfile=
 acl2=
-ctos=
 rac=
-incdirs=""
+incdirs="-I $RAC/include"
 
-OPTS=`getopt -l help -l acl2 -l ctos -l rac hacmI: $@`
+OPTS=`getopt hacrI: $@`
 if [ $? != 0 ]
 then
     usage;
@@ -55,15 +48,11 @@ fi
 eval set -- "$OPTS"
 while true; do
     case $1 in
-    -a | --acl2) 
+    -a | --acl2)
         acl2=1;
         shift 1;
         ;;
-    -c | --ctos) 
-        ctos=1;
-        shift 1;
-        ;;
-    -m | --rac) 
+    -r | --rac)
         rac=1;
         shift 1;
         ;;
@@ -96,7 +85,7 @@ else
     fi
 fi
 
-if [[ "$acl2" && "$ctos" || "$acl2" && "$rac" || "$ctos" && "$rac" ]]
+if [[ "$acl2" && "$rac" ]]
 then
     usage;
     exit 1
@@ -110,20 +99,13 @@ fi
 set -e
 
 basename=${srcfile%.*}
-cppopts="-D__RAC__ -C -std=c++11"
+cppopts="-D__RAC__ -C -std=c++14"
 
-#/usr/intel/pkgs/gcc/4.8.1/bin/cpp $cppopts $incdirs $basename.cpp $basename.i;
-#/usr/intel/bin/cpp $cppopts $incdirs $basename.cpp $basename.i;
-#/usr/bin/cpp $cppopts $incdirs $basename.cpp $basename.i;
+g++ $cppopts $incdirs $basename.cpp -E -o $basename.i;
 
-if [[ -z "$ctos" && -z "$acl2" && -z "$rac" ]]
+if [[ -z "$acl2" && -z "$rac" ]]
 then
     $parseBin $basename
-fi
-
-if [[ "$ctos" ]]
-then
-    $parseBin $basename -ctos
 fi
 
 if [[ "$rac" ]]
@@ -134,12 +116,15 @@ fi
 if [[ "$acl2" ]]
 then
 
-    $parseBin $basename -acl2 $basename.ast.lisp
+     # Use suffix ".ast.lsp" instead of ".ast.lisp" so that ACL2's 
+     # cert.pl program won't try to certify it.
+
+    $parseBin $basename -acl2 $basename.ast.lsp
 
     $acl2Bin > $basename.acl2.log <<EOF
       (include-book "$translateBook")
       (set-inhibit-output-lst '(prove event proof-tree))
-      (translate-program "$basename.ast.lisp" "$basename.lisp" state)
+      (translate-program "$basename.ast.lsp" "$basename.lisp" state)
       :u
       (include-book "rtl/rel11/lib/rac" :dir :system)
       (certify-book "$basename" 1)

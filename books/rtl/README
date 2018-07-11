@@ -1,3 +1,8 @@
+Copyright (C) 2018, ARM Holdings
+Written by David Russinoff
+License: A 3-clause BSD license.  See the LICENSE file distributed with
+ACL2.
+
 This directory contains an ACL2 library of register-transfer logic,
 developed at AMD from 1995 to 2011, at Intel from 2012 to 2016, and at
 Arm from 2016 to the present, in support of the mechanical
@@ -41,10 +46,10 @@ libraries that may severely affect efficiency.  These may be
   |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 The library files contain virtually no documentation, but are
-documented in a forthcoming book:
+documented in a this book:
 
 Russinoff, David M., "Formal Verification of Floating-Point Hardware
-Design: A Mathematical Approach", Springer. 2018.
+Design: A Mathematical Approach", Springer, August 2018.
 
 The books of the "lib" directory correspond to the chapters of the
 book as follows:
@@ -66,11 +71,450 @@ book as follows:
  15 The Modeling Language              rac
 
 Chapters 16-19 document the correctness proofs of an Arm FPU.  The proof
-scripts reside in the directory "books/projects/arm" os this repository.
+scripts reside in the directory "books/projects/arm" of this repository.
+
+Every definition, lemma, corollary, and theorem listed in the Springer
+book corresponds to one or more events in either "books/rtl/rel11/lib"
+or "books/projects/arm".  For the benefit of users of the former, this
+correspondence is listed below for chapters 1--11.
+
+Chapter 1        basic.lisp
+---------        ----------
+Definition 1.1   fl-def
+Lemma 1.1        fl-integerp, fl-monotone-linear, n<=fl-linear, fl+int-rewrite
+Lemma 1.2        fl/int-rewrite
+Lemma 1.3        fl-half-int
+Lemma 1.4        minus-fl
+Lemma 1.5        fl-m-n
+Definition 1.2   cg
+Lemma 1.6        cg-def
+Lemma 1.7        cg-integerp, cg-monotone-linear, n>=cg-linear, cg_int-rewrite
+Lemma 1.8        cg/int-rewrite
+Lemma 1.9        fl-cg
+Definition 1.3   mod-def
+Lemma 1.10       integerp-mod, natp-mod-2
+Lemma 1.11       mod-bnd-1, mod-bnd-1, mod-does-nothing
+Lemma 1.12       mod-0-int
+Lemma 1.13       mod-equal-int
+Definition 1.4
+Corollary 1.14   mod-force-equal
+Lemma 1.15       mod-mult
+Corollary 1.16   mod-force, mod-bnd-3
+Lemma 1.17       mod-0-0
+Lemma 1.18       mod-prod
+Lemma 1.19       mod-of-mod
+Corollary 1.20   mod-of-mod-cor
+Lemma 1.21       fl-mod
+Lemma 1.22       mod-sum
+Lemma 1.23       mod-diff
+Lemma 1.24       mod-mod-times
+Lemma 1.25       mod-plus.mod, mod-times-mod
+Definition 1.5   chop
+Lemma 1.26       chop-chop
+Lemma 1.27       chop-shift
+Lemma 1.28       chop-bound
+Lemma 1.29       chop-small
+Lemma 1.30       chop-int-bounds
+Lemma 1.31       chop-int-neg
+
+Chapter 2        bits.lisp
+---------        ----------
+Definition 2.1   bvecp
+Definition 2.2   bits, bitn   
+Lemma 2.1        bits-bvecp
+Lemma 2.2        mod-bits-equal
+Lemma 2.3        bits-mod
+Lemma 2.4        bits-tail-gen
+Lemma 2.5        neg-bits-1
+Corollary 2.6    bits-minus-1
+Lemma 2.7        bits-bits-sum, bits-bits-diff, bits-bits-prod
+Lemma 2.8        bits-fl-diff
+Lemma 2.9        bits-neg-indices
+Lemma 2.10       bvecp-bits-0
+Corollary 2.11   bits-0
+Lemma 2.12       bits-shift-down-1
+Lemma 2.13       bits-shift-down-2
+Lemma 2.14       bits-shift-up-1
+Lemma 2.15       bits-shift-up-2
+Lemma 2.16       bits-plus-mult-1
+Lemma 2.17       bits-plus-mult-2
+Lemma 2.18       bits-plus-bits
+Lemma 2.19       bits-bits
+Lemma 2.20       bitn-def
+Corollary 2.21   bitn-bvecp-forward
+Lemma 2.22       bitn-rec-0, bitn-rec-pos
+Lemma 2.23       bitn-neg
+Lemma 2.24       bitn-0
+Lemma 2.25       bitn-mod
+Lemma 2.26       bvecp-bitn-0
+Lemma 2.27       neg-bitn-1
+Corollary 2.28   bitn-minus-1
+Lemma 2.29       bitn-shift-up
+Lemma 2.30       bitn-shift-down
+Lemma 2.31       bitn-bits
+Lemma 2.32       bitn-plus-bits
+Lemma 2.33       bits-plus-bitn
+Lemma 2.34       bvecp-bitn-2
+Corollary 2.35   bvecp-bitn-1
+Lemma 2.36       bitn-expt
+Lemma 2.37       sumbits-bits
+Corollary 2.38   sumbits-thm
+Lemma 2.39       sum-bitn
+Lemma 2.40       bit-diff-diff
+Definition 2.3   binary-cat
+Lemma 2.41       cat-associative
+Lemma 2.42       cat-bvecp
+Lemma 2.43       cat-with-n-0, cat-with-m-0, cat-0
+Lemma 2.44       cat-bits-bits
+Corollary 2.45   cat-bitn-bits
+Lemma 2.46       cat-equal-constant
+Corollary 2.47   cat-equal-rewrite
+Lemma 2.48       bits-cat
+Corollary 2.49   bitn-cat
+Definition 2.4   ui
+Definition 2.5   si
+Lemma 2.50       si-bits
+Lemma 2.51       bits-si
+Lemma 2.52       si-shift
+Definition 2.6   sextend
+Lemma 2.53       si-extend
+Lemma 2.54       si-approx
+Definition 2.7   uf, sf
+Lemma 2.55       bits-uf, bits-sf
+Corollary 2.56   chop-uf, chop-sf
+Lemma 2.56       sf-val
+
+Chapter 3        log.lisp
+---------        --------
+Definition 3.1   logand-def, logior-def, logxor-def
+Lemma 3.1        logand-bnd
+Corollary 3.2    logand-bvecp
+Lemma 3.3        logior-bvecp, logxor-bvecp
+Lemma 3.4        logand-mod,logior-mod,logxor-mod
+Lemma 3.5        fl-logand,fl-logior,fl-logxor
+Lemma 3.6        bits-logand,bits-logior,bits-logxor
+Corollary 3.7    bitn-logand,bitn-logior,bitn-logxor
+Lemma 3.8        logand-cat,logior-cat,logxor-cat
+Lemma 3.9        logand-shift,logior-shift,logxor-shift
+Lemma 3.10       logand-expt,logior-expt,logxor-expt
+Corollary 3.11   logior-expt-cor
+Lemma 3.12       logior-2**n
+Lemma 3.13       logand-bits
+Corollary 3.14   logand-bit
+Definition 3.2   lognot-def
+Lemma 3.15       lognot-lognot
+Lemma 3.16       lognot-shift
+Lemma 3.17       lognot-fl
+Lemma 3.18       mod-lognot
+Lemma 3.19       bits-lognot
+Corollary 3.20   bitn-lognot
+Lemma 3.21       bits-lognot-bits
+Lemma 3.22       logand-bits-lognot
+Lemma 3.23       bits-lognot-bits-lognot
+Lemma 3.24       logand-x-0,logior-x-0,logxor-x-0
+Lemma 3.25       logand-self,logior-self,logxor-self
+Lemma 3.26       logand-x-m1,logior-x-m1,logxor-x-m1
+Lemma 3.27       logior-not-0,logxor-not-0
+Lemma 3.28       logand-commutative,logior-commutative,logxor-commutative
+Lemma 3.29       logand-associative,logior-associative,logxor-associative
+Lemma 3.30       logior-logand,logand-logior,log3
+Lemma 3.31       logxor-rewrite,lognot-logxor
+
+Chapter 4        float.lisp
+---------        ----------
+Definition 4.1   sgn, expo, sig
+Lemma 4.1        fp-rep, fp-abs
+Lemma 4.2        expo<=, expo>=, expo-monotone, expo-2**n
+Lemma 4.3        sig-lower-bound, sig-upper-bound, sig-self, sig-sig
+Lemma 4.4        fp-rep-unique
+Lemma 4.5        sgn-minus, expo-minus, sig-minus
+Lemma 4.6        sgn-shift, expo-shift, sig-shift
+Lemma 4.7        sgn-prod, expo-prod, sig-prod
+Definition 4.2   exactp
+Lemma 4.8        minus-exactp, exactp-sig, exactp-shift, exactp2
+Lemma 4.9        exactp-<=
+Lemma 4.10       exactp-2**n
+Lemma 4.11       bvecp-exactp
+Lemma 4.12       exactp-prod
+Lemma 4.13       exactp-x2
+Lemma 4.14       exactp-factors
+Lemma 4.15       exact-bits-1, exact-bits-2, exact-bits-3
+Corollary 4.16   exact-k+1
+Lemma 4.17       exactp-diff
+Corollary 4.18   exactp-diff-cor
+Definition 4.3   fp+
+Lemma 4.19       fp+1
+Lemma 4.20       fp+2
+Corollary 4.21   fp+expo
+Corollary 4.22   expo-diff-min
+Definition 4.4   fp-
+Lemma 4.23       exactp-fp-
+Lemma 4.24       fp+-, fp-+
+Lemma 4.25       fp-2
+
+Chapter 5        reps.lisp
+---------        ---------
+Definition 5.1   formatp, prec, expw, sigw
+Definition 5.2   encodingp
+Definition 5.3   hp, sp, dp, hp
+Definition 5.4   sgnf, expf, sigf, manf
+Definition 5.5   normp
+Definition 5.6   unsupp
+Definition 5.7   bias
+Definition 5.8   ndecode
+Lemma 5.1        sgn-ndecode, expo-ndecode, sig-ndecode
+Definition 5.9   nrepp
+Definition 5.10  nencode
+Lemma 5.2        nrepp-ndecode, nencode-ndecode
+Lemma 5.3        normp-nencode, ndecode-nencode
+Definition 5.11  spn
+Lemma 5.4        positive-spn, nrepp-spn, spn-smallest
+Definition 5.12  lpn
+Lemma 5.5        positive-lpn, nrepp-lpn, lpn-largest
+Definition 5.13  zerp, denormp, pseudop
+Definition 5.14  zencode
+Definition 5.15  ddecode
+Definition 5.16  decode
+Lemma 5.6        sgn-ddecode, expo-ddecode, sig-ddecode
+Definition 5.17  drepp
+Definition 5.18  dencode
+Lemma 5.7        drepp-ddecode, dencode-ddecode
+Lemma 5.8        denormp-dencode, ddecode-dencode
+Definition 5.19  spd
+Lemma 5.9        positive-spd, drepp-spd, spd-smallest
+Lemma 5.10       spd-mult
+Definition 5.20  infp, nanp, snanp, qnanp
+Definition 5.21  iencode
+Definition 5.22  qnanize
+Definition 5.23  indef
+
+Chapter 6        round.lisp
+---------        ----------
+Definition 6.1   rtz
+Lemma 6.1        rtz-neg-bits
+Lemma 6.2        expo-rtz
+Lemma 6.3        rtz-upper-bound
+Lemma 6.4        rtz-lower-bound, rtz-lower-2
+Corollary 6.5    rtz-diff
+Lemma 6.6        rtz-minus
+Lemma 6.7        rtz-exactp-a
+Lemma 6.8        rtz-exactp-b
+Lemma 6.9        rtz-exactp-c
+Lemma 6.10       rtz-monotone
+Lemma 6.11       rtz-shift
+Lemma 6.12       rtz-rtz
+Lemma 6.13       rtz-midpoint
+Lemma 6.14       plus-rtz
+Lemma 6.15       minus-rtz
+Lemma 6.16       bits-rtz
+Corollary 6.17   bits-rtz-bits
+Corollary 6.18   rtz-split
+Corollary 6.19   rtz-logand
+Definition 6.2   raz
+Lemma 6.20       raz-neg-bits
+Lemma 6.21       raz-lower-bound
+Lemma 6.22       raz-upper-bound, raz-upper-2
+Corollary 6.23   raz-diff
+Lemma 6.24       expo-raz
+Lemma 6.25       raz-minus
+Lemma 6.26       raz-exactp-a
+Lemma 6.27       raz-exactp-b
+Lemma 6.28       raz-exactp-c
+Corollary 6.29   raz-squeeze
+Lemma 6.30       raz-up
+Lemma 6.31       raz-monotone
+Lemma 6.32       raz-shift
+Lemma 6.33       raz-raz
+Lemma 6.34       raz-midpoint
+Lemma 6.35       plus-raz
+Lemma 6.36       minus-rtz-raz
+Corollary 6.37   rtz-plus-minus
+Lemma 6.38       raz-imp
+Definition 6.3   rne
+Lemma 6.39       rne-exactp-a     
+Lemma 6.40       rne-exactp-b
+Lemma 6.41       rne-exactp-c, rne-exactp-d
+Lemma 6.42       expo-rne
+Lemma 6.43       rne-shift
+Lemma 6.44       rne-minus
+Lemma 6.45       rne-rtz
+Lemma 6.46       rne-nearest
+Lemma 6.47       rne-diff
+Corollary 6.48   rne-force
+Lemma 6.49       rne-monotone
+Lemma 6.50       rne-up-2
+Lemma 6.51       rne-rne-lemma
+Lemma 6.52       rne-rne
+Lemma 6.53       rne-boundary
+Lemma 6.54       rne-midpoint
+Definition 6.4   unbiased
+Lemma 6.55       rne-unbiased
+Definition 6.5   rna
+Lemma 6.56       rna-exactp-a
+Lemma 6.57       rna-exactp-b
+Lemma 6.58       rna-exactp-c
+Lemma 6.59       rna-monotone
+Lemma 6.60       rna-shift
+Lemma 6.61       expo-rna
+Lemma 6.62       rna-minus
+Lemma 6.63       rna-rtz, rna-raz
+Lemma 6.64       rna-up-2
+Lemma 6.65       rna-nearest
+Lemma 6.66       rna-diff
+Lemma 6.67       rna-rna-lemma
+Lemma 6.68       rna-rna
+Lemma 6.69       rna-midpoint
+Lemma 6.70       rne-power-2, rtz-power-2, rna-power-2
+Lemma 6.71       plus-rne, plus-rna
+Lemma 6.72       rne-imp, rna-imp
+Lemma 6.73       rna-imp-cor
+Definition 6.6   rto
+Lemma 6.74       rto-exactp-b
+Lemma 6.75       rto-minus
+Lemma 6.76       rto-unbiased
+Lemma 6.77       expo-rto
+Lemma 6.78       rto-exactp-a
+Lemma 6.79       rto-monotone
+Lemma 6.80       rto-shift
+Lemma 6.81       rto-rto
+Lemma 6.82       rto-exactp-c
+Lemma 6.83       rtz-rto, raz-rto
+Lemma 6.84       rne-rto, rna-rto
+Lemma 6.85       rto-plus
+Definition 6.7   rup
+Definition 6.8   rdn
+Lemma 6.86       rup-lower-bound, rdn-lower-bound
+Definition 6.9   common-mode-p
+Lemma 6.87       rnd-minus
+Lemma 6.88       rnd-choise
+Lemma 6.89       rnd-exactp-a
+Lemma 6.90       rnd-exactp-b
+Lemma 6.91       rnd-exactp-c, rnd-exactp-d
+Lemma 6.92       sgn-rnd
+Lemma 6.93       rnd-diff
+Lemma 6.94       expo-rnd
+Lemma 6.95       rnd-monotone
+Lemma 6.96       rnd-shift
+Lemma 6.97       plus-rnd
+Lemma 6.98       rnd<=raz, rnd>=rtz
+Lemma 6.99       rnd<equal, rnd>equal
+Corollary 6.100  rnd-near-equal
+Lemma 6.101      rnd-rto
+Lemma 6.102      rnd-up
+Lemma 6.103      rnd-const-thm
+Lemma 6.104      roundup-pos-thm
+Lemma 6.105      roundup-neg-thm
+Definition 6.10  drnd
+Lemma 6.106      drnd-minus
+Lemma 6.107      drnd-rewrite
+Lemma 6.108      drnd-tiny-a, drnd-tiny-b, drnd-tiny-c
+Corollary 6.109  drnd-tiny-equal
+Lemma 6.110      drnd-exactp-a
+Lemma 6.111      drnd-exactp-b
+Lemma 6.112      drnd-exactp-c
+Lemma 6.113      drnd-exactp-d, drnd-exactp-e
+Lemma 6.114      drnd-rtz, drnd-raz, drnd-rup, drnd-rdn
+Lemma 6.115      drnd-diff
+Lemma 6.116      drnd-rne-diff, drnd-rna-diff
+Lemma 6.117      rnd-drnd-up
+Lemma 6.118      rnd-drnd-exactp
+
+Chapter 7        sqrt.lisp
+---------        ---------
+Definition 7.1   rtz-sqrt
+Lemma 7.1        rtz-sqrt-bounds
+Corollary 7.2    expo-rtz-sqrt
+Lemma 7.3        exactp-rtz-sqrt
+Lemma 7.4        rtz-sqrt-square-bounds
+Lemma 7.5        rtz-sqrt-unique
+Lemma 7.6        rtz-rtz-sqrt
+Definition 7.3   rto-sqrt
+Lemma 7.7        rto-sqrt-bounds
+Corollary 7.8    expo-rto-sqrt
+Lemma 7.9        exactp-rto-sqrt
+Lemma 7.10       rto-rto-sqrt
+Lemma 7.11       rnd-rto-sqrt
+Lemma 7.12       exactp-cmp-rto-sqrt
+Definition 7.4   qsqrt
+Lemma 7.13       qsqrt-expo
+Lemma 7.14       qsqrt-rto-sqrt
+Lemma 7.15       qsqrt-shift
+Lemma 7.16       rnd-qsqrt-equal
+Lemma 7.17       qsqrt-lower, qsqrt-upper
+Lemma 7.18       exactp-cmp-qsqrt
+Corollary 7.19   qsqrt-sqrt
+Corollary 7.20   qsqrt-exactp-equal
+
+Chapter 8        add.lisp
+---------        --------
+Lemma 8.1        half-adder
+Lemma 8.2        add2
+Lemma 8.3        full-adder
+Lemma 8.4        add-3
+Lemma 8.5        ripple-carry
+Lemma 8.6        lza-thm
+Lemma 8.7        top-thm-1
+Lemma 8.8        top-thm-2
+
+Chapter 9        mult.lisp
+---------        ---------
+Definition 9.1   theta
+Lemma 9.1        sum-theta-lemma
+Lemma 9.2        booth4-corollary-1
+Lemma 9.3        booth4-corollary-2
+Lemma 9.4        booth4-corollary-3
+Definition 9.2   gamma, delta, psi
+Lemma 9.5        sum-psi-lemma
+Lemma 9.6        psi-bnd
+Lemma 9.7        psi-m-1
+Lemma 9.8        redundant-booth
+Definition 9.3   mu, chi, phi
+Lemma 9.9        chi-m
+Corollary 9.10   phi-m-1
+Lemma 9.11       sum-phi-lemma
+Lemma 9.12       static-booth
+Definition 9.4   eta
+Lemma 9.13       sum-eta-lemma
+Lemma 9.14       booth8-corollary
+
+Chapter 9        srt.lisp
+---------        --------
+Lemma 10.1       remd-recurrence
+Lemma 10.2       remd0-bound
+Lemma 10.3       remd-bnd-next
+Lemma 10.4       select-overlap
+Lemma 10.5       div-containment
+Lemma 10.6       rem-div-bnd-next
+Lemma 10.7       srt-div-rad-4
+Lemma 10.8       srt-div-rad-8
+Lemma 10.9       rems-recurrence
+Lemma 10.10      blohi
+Lemma 10.11      r0-bounds
+Lemma 10.12      rems-bnds-next
+Lemma 10.13      sqrt-containment
+Lemma 10.14      rem-sqrt-bnds-next
+Lemma 10.15      srt-sqrt-rad-4
+
+Chapter 9        div.lisp
+---------        --------
+Definition 11.1  rcp24
+Lemma 11.1       rcp24-spec
+Lemma 11.2       init-approx
+Lemma 11.3       r-exactp, markstein
+Lemma 11.4       quotient-refinement-1, quotient-refinement-2
+Lemma 11.5       recip-refinement-1, recip-refinement-2
+Lemma 11.6       harrison-lemma
+Definition 11.1  divsp
+Lemma 11.7       divsp-small-cases
+Theorem 11.1     divsp-correct
+Definition 11.2  divdp
+Lemma 11.8       rcp24-rtz-error
+Lemma 11.9       divdp-small-cases
+Theorem 11.2     divdp-correct
 
 
 =======================================================================
-How to Create a New Release of "books/rtl"
+Note to self: How to create a new release of "books/rtl"
 =======================================================================
 
 Any significant revision of the library should result in a new release.  We 

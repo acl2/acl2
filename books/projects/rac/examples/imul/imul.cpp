@@ -1,22 +1,28 @@
-// Simple Rac example: integer multiplication
+// Simple RAC example: integer multiplication
 
-#include <systemc.h>
+//#define DEBUG   // uncomment to print intermediate vaules
+//#define SLEC    // uncomment to run SLEC
+//#define HECTOR  // uncomment to run Hector
+
+#include <iostream>
+#include <ac_int.h>
 #include <rac.h>
-
 using namespace std;
 
-// Rac begin
+typedef unsigned long uint64; // Just used to facilitate printing
 
-// This Rac code describes a 32x32 -> 64 unsigned integer multiplier
+// RAC begin
+
+// This RAC code describes a 32x32 -> 64 unsigned integer multiplier
 // Adapted from significand_multiplier_r4_param in Warren Ferguson's
 // library of Verilog reference models.
 
-typedef sc_uint<32> ui32;
-typedef sc_uint<64> ui64;
-typedef sc_uint<35> ui35;
-typedef sc_uint<3>  ui3; 
-typedef sc_biguint<33> ui33;
-typedef sc_biguint<67> ui67;
+typedef ac_int<3,false>  ui3; 
+typedef ac_int<32,false> ui32;
+typedef ac_int<33,false> ui33;
+typedef ac_int<35,false> ui35;
+typedef ac_int<64,false> ui64;
+typedef ac_int<67,false> ui67;
 
 // Step 1: construct an array of radix-4 digits for a source multiplier.
 
@@ -47,7 +53,7 @@ ui3 Encode(ui3 slice) {
   return enc;
 }
 
-array<ui3, 17> Booth (ui32 x) {
+array<ui3, 17> Booth (ui35 x) {
 
   // Pad the multiplier with 2 leading zeroes and 1 trailing zero:
   ui35 x35 = x << 1;
@@ -55,19 +61,19 @@ array<ui3, 17> Booth (ui32 x) {
   // Compute the booth encodings:
   array<ui3, 17> a;
   for (int k=0; k<17; k++) {
-    a[k] = Encode(x35.range(2*k+2, 2*k));
+    a[k] = Encode(x35.slc<3>(2*k));
   }
   return a;
 }
 
 // Step 2: Form the partial products.
 
-array<ui33, 17> PartialProducts (array<ui3, 17> m21, ui32 y) {
+array<ui33, 17> PartialProducts (array<ui3, 17> m21, ui33 y) {
   array<ui33, 17> pp;
 
   for (int k=0; k<17; k++) {
     ui33 row;
-    switch (m21[k].range(1,0).to_uint()) {
+    switch (m21[k].slc<2>(0)) {
     case 2:
       row = y << 1;
       break;
@@ -99,7 +105,7 @@ array<ui64, 17> Align(array<ui3, 17> bds, array<ui33, 17> pps) {
   array<ui64, 17> tble;
   for (int k=0; k<17; k++) {
     ui67 tmp = 0;
-    tmp.range(2*k+32, 2*k) = pps[k];
+    tmp.set_slc(2*k, pps[k]);
     if (k == 0) {
       tmp[33] =  sb[k];
       tmp[34] =  sb[k];
@@ -111,7 +117,7 @@ array<ui64, 17> Align(array<ui3, 17> bds, array<ui33, 17> pps) {
       tmp[2*k+34] = 1;
     }
 
-    tble[k] = tmp.range(63, 0);
+    tble[k] = tmp;
   }
 
   return tble;
@@ -166,23 +172,9 @@ ui64 Sum(array<ui64, 17> in) {
 
 ui64 Imul(ui32 s1, ui32 s2) {
 
-//   cout << "Operands: << endl;
-//   cout << hex << s1 << endl;
-//   cout << hex << s1 << endl;
-
   array<ui3, 17> bd = Booth(s1);
 
-//   cout << "Booth digits:" << endl;
-//   for (int i=0; i<17; i++) {
-//     cout << i << ": " << bds[i][2] << bds[i][1] << bds[i][0] << endl;
-//   }
-
   array<ui33, 17> pp = PartialProducts(bd, s2);
-
-//   cout << "Partial products:" << endl;
-//   for (int i=0; i<17; i++) {
-//     cout << i << ": " << hex << pps[i] << endl;
-//   }
 
   array<ui64, 17> tble = Align (bd, pp);
 
@@ -190,15 +182,27 @@ ui64 Imul(ui32 s1, ui32 s2) {
   Hector::cutpoint("tble", tble);
 #endif
 
-//   cout << "Aligned partial products:" << endl;
-//   for (int i=0; i<17; i++) {
-//     cout << i << ": " << hex << tble[i] << endl;
-//   }
-
   ui64 prod = Sum(tble);
 
-//   cout << "Product: << endl;
-//   cout << hex << prod << endl;
+#ifdef DEBUG
+   cout << "Operands:" << endl;
+   cout << hex << uint(s1) << endl;
+   cout << hex << uint(s2) << endl;
+   cout << endl << "Booth digits:" << endl;
+   for (int i=0; i<17; i++) {
+     cout << i << ": " << bd[i][2] << bd[i][1] << bd[i][0] << endl;
+   }
+   cout << endl << "Partial products:" << endl;
+   for (int i=0; i<17; i++) {
+     cout << i << ": " << hex << uint64(pp[i]) << endl;
+   }
+   cout << endl << "Aligned partial products:" << endl;
+   for (int i=0; i<17; i++) {
+     cout << i << ": " << hex << uint64(tble[i]) << endl;
+   }
+   cout << endl << "Product:" << endl;
+   cout << hex << uint64(prod) << endl << endl;
+#endif
 
   return prod;
 
@@ -210,7 +214,7 @@ tuple<bool, ui64, ui64>ImulTest(ui32 s1, ui32 s2) {
   return tuple<bool, ui64, ui64>(spec_result == imul_result, spec_result, imul_result);
 }  
 
-// Rac end
+// RAC end
 
 #ifdef HECTOR
 
@@ -232,31 +236,62 @@ void hectorWrapper() {
 }
 
 #else
+#ifdef SLEC
 
-int sc_main (int argc, char *argv[]) {
+SC_MODULE(imul) {
 
-  ui32 src1;
-  ui32 src2;
-  ui64 spec_result;
-  ui64 imul_result;
+  sc_in<ui32> x;
+  sc_in<ui32>y;
+
+  sc_out<ui64> prod;
+
+  void doit() {
+
+    x.read();
+    y.read();
+    
+    ui32 xval = x, yval = y;
+    ui64 prodval = Imul(xval, yval);
+
+    prod.write(prodval);
+  }
+
+  SC_CTOR(imul) {
+    SC_METHOD(doit);  
+  }
+
+};
+
+#else
+
+int main (int argc, char *argv[]) {
+
+  ui32 src1, src2;
+  ui64 spec, res;
   bool passed;
-
+  
   while (! cin.eof()) {
 
-    cin >> src1;
-    cin >> src2;
+    // On each iteration of this loop, two 32-bit integers are read in and passed to Imul. 
 
-    tie(passed, spec_result, imul_result) = ImulTest(src1, src2);
+    uint in1, in2; // operands are read in as uints
+    cin >> hex >> in1;
+    cin >> hex >> in2;
+    src1 = in1;
+    src2 = in2;
 
-    cout << src1.to_uint() << " " << src2.to_uint() << " " << imul_result.to_uint() << " ";
+    tie(passed, spec, res) = ImulTest(src1, src2);
+
+    cout << hex << in1 << " " << in2 << " " << uint64(res) << " ";
     if (passed) {
-      cout << "passed";
-    } else {
-      cout << "failed (spec: " << spec_result.to_uint() << "; imul: " << imul_result.to_uint() << ")";
+      cout << "passed" << endl;
     }
-    cout << endl;
+    else {
+      cout << hex << "failed (spec: " << uint64(spec) << "; imul: " << uint64(res) << ")" << endl;
+    }
   }
 
 }
 
+#endif
 #endif

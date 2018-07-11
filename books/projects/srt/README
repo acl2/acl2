@@ -1,0 +1,11 @@
+Copyright (C) 2018, ARM Holdings
+Written by David Russinoff
+License: A 3-clause BSD license.  See the LICENSE file distributed with
+ACL2.
+
+This directory contains a formalization of the theory of SRT division and
+square root, which is documented in this paper:
+
+Russinoff, D.M., Computation and Formal Verification of {SRT} Quotient and
+Square Root Digit Selection Tables, IEEE Transactions on Computers 62(5),
+pp. 900--913 (2013). Available at www.russinoff.com/papers/srt8.html

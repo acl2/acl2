@@ -96,7 +96,7 @@
 
 (DEFUN CLZ53-LOOP-1 (K N C Z)
        (DECLARE (XARGS :MEASURE (NFIX (- 6 K))))
-       (IF (AND (INTEGERP K) (INTEGERP 6) (< K 6))
+       (IF (AND (INTEGERP K) (< K 6))
            (LET ((N (FLOOR N 2)))
                 (MV-LET (C Z)
                         (CLZ53-LOOP-0 0 N K C Z)
@@ -105,9 +105,7 @@
 
 (DEFUN CLZ53-LOOP-2 (I X Z C)
        (DECLARE (XARGS :MEASURE (NFIX (- 64 I))))
-       (IF (AND (INTEGERP I)
-                (INTEGERP 64)
-                (< I 64))
+       (IF (AND (INTEGERP I) (< I 64))
            (LET ((Z (AS I (LOGNOT1 (BITN X I)) Z))
                  (C (AS I (BITS 0 5 0) C)))
                 (CLZ53-LOOP-2 (+ I 1) X Z C))
@@ -584,7 +582,7 @@
                (MV QP QN)))
 
 (DEFUN
- EXECUTE-LOOP-0
+ FSQRT64-LOOP-0
  (J N FMT Q I RP RN QP QN EXPINC)
  (DECLARE (XARGS :MEASURE (NFIX (- N J))))
  (IF
@@ -601,12 +599,12 @@
                                                      (IF1 (LOG= FMT 1)
                                                           (LOG= Q -2)
                                                           (LOG= Q -1))))))
-                               (EXECUTE-LOOP-0 (+ J 1)
+                               (FSQRT64-LOOP-0 (+ J 1)
                                                N FMT Q I RP RN QP QN EXPINC)))))
     (MV Q I RP RN QP QN EXPINC)))
 
 (DEFUN
- EXECUTE (OPA FMT FZ DN RMODE)
+ FSQRT64 (OPA FMT FZ DN RMODE)
  (LET
   ((SIGNA 0)
    (EXPA 0)
@@ -657,7 +655,7 @@
                      (T N))))
            (MV-LET
             (Q I RP RN QP QN EXPINC)
-            (EXECUTE-LOOP-0 1 N FMT Q I RP RN QP QN EXPINC)
+            (FSQRT64-LOOP-0 1 N FMT Q I RP RN QP QN EXPINC)
             (LET
              ((EXPRND (BITS (IF1 EXPINC (+ EXPQ 1) EXPQ)
                             10 0)))

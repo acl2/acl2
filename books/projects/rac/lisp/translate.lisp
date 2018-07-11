@@ -7,13 +7,13 @@
 #|
 The translation of a RAC model to ACL2 is performed in two phases:
 
-(1) The RAC parser generates a file containing an S-expression representation of 
+(1) The RAC parser generates a file containing an S-expression representation of
 each global constant and each function of the model.
 
 (2) The ACL2 program contained in this file converts these S-expressions into ACL2
 functions.
 
-The S-expression for  a constant declaration is (DECLARE var term).  This is converted 
+The S-expression for  a constant declaration is (DECLARE var term).  This is converted
 to an ACL2 function as follows:
 |#
 
@@ -37,7 +37,7 @@ a statement block.  The parser generates an S-expression for each statement as f
 
 * Variable or constant declaration:  (DECLARE var term) or (ARRAY var term-list)
 
-* Multiple variable or constant declaration:  (LIST . decs), where decs is a list of 
+* Multiple variable or constant declaration:  (LIST . decs), where decs is a list of
   variable or constant declarations
 
 * Conditional branch:  (IF term left right), where left is a block and right is either
@@ -45,11 +45,11 @@ a statement block.  The parser generates an S-expression for each statement as f
 
 * Return:  (RETURN term)
 
-* For loop:  (FOR (init test update) body), where 
+* For loop:  (FOR (init test update) body), where
 
   (1) init is either (DECLARE var val) or (ASSIGN var val)
 
-  (2) test is either (op var limit) or (logand1 (op var limit) term), where op is log<, 
+  (2) test is either (op var limit) or (logand1 (op var limit) term), where op is log<,
       log<=, log>, or log>=, and var is the same variable that appears in init
 
   (3) update is a term, the value of which is assigned to var before each iteration
@@ -68,22 +68,22 @@ precisely, we assume that every function body is admissible, where a statement b
 is said to be an admissible function body if (a) no return statement occurs in any
 statement of the block other than the final one and (b) the final statement is either
 a return statement or an if statement with non-trivial right branch such that both
-branches are admissible function bodies. 
+branches are admissible function bodies.
 
-The overall strategy in the translation of a RAC function to ACL2 is to construct a nest 
-of LET, LET*, and MV-LET terms.  Each statement in the function body except the last 
-corresponds to one or more variables that are bound in this nest.  For each of these 
-statements, the translator generates a triple (ins outs term), which we shall call a binding, 
+The overall strategy in the translation of a RAC function to ACL2 is to construct a nest
+of LET, LET*, and MV-LET terms.  Each statement in the function body except the last
+corresponds to one or more variables that are bound in this nest.  For each of these
+statements, the translator generates a triple (ins outs term), which we shall call a binding,
 with the following components:
 
   (1) ins: a list of the variables whose previous values are read by the statement.
 
   (2) outs: a list of the variables that are written by the statement;
 
-  (3) term: evaluation of this expression returns a multiple value consisting of the 
+  (3) term: evaluation of this expression returns a multiple value consisting of the
       updated values of the variables of outs, or a single value if outs is a singleton.
 
-The bindings of the nest are derived from these triples.  The body of the nest is 
+The bindings of the nest are derived from these triples.  The body of the nest is
 generated from the final statement of the function body.
 
 Assertions are handled specially because they are statements that do not affect any
@@ -91,21 +91,21 @@ program variables.  An assertion (ASSERT fn term) results in a binding of the du
 ASSERT to the value (IN-FUNCTION fn term), where IN-FUNCTION is a macro that throws an
 error if term is false, with a message indicating the function in which the error occurred.
 
-In addition to the top-level ACL2 function corrrsponding to a RAC function, a separate 
+In addition to the top-level ACL2 function corrrsponding to a RAC function, a separate
 recursive function is generated for each for loop.  Its returned values are the variables
-that are assigned values within the loop.  Its arguments include these variables, along 
-with any variables that are required in the execution of the loop, as well as any variables 
-that occur in the loop initialization or test.  This function is constructed in a manner 
-similar to that of the top-level function, but the final statement of the body is not 
-treated specially.  Instead, the body of the nest of bindings is a recursive call in which 
-the loop variable is replaced by its updated value.  The resulting term becomes the left 
-branch of an IF expression, of which the right branch is simply the returned variable 
-(if there is only one) or a multiple value consisting of the returned variables (if there 
+that are assigned values within the loop.  Its arguments include these variables, along
+with any variables that are required in the execution of the loop, as well as any variables
+that occur in the loop initialization or test.  This function is constructed in a manner
+similar to that of the top-level function, but the final statement of the body is not
+treated specially.  Instead, the body of the nest of bindings is a recursive call in which
+the loop variable is replaced by its updated value.  The resulting term becomes the left
+branch of an IF expression, of which the right branch is simply the returned variable
+(if there is only one) or a multiple value consisting of the returned variables (if there
 are more than one).  The test of the IF is simply the test of the loop.
 |#
 
 ;; In the S-expression for an array declaration, the initial value (if provided) is
-;; represented as a simple list of constant values.  For a local declaration, this is 
+;; represented as a simple list of constant values.  For a local declaration, this is
 ;;converted to an ACL2 array as follows:
 
 (defun array-init (l n)
@@ -162,7 +162,7 @@ are more than one).  The test of the IF is simply the test of the loop.
 
 (defun get-ins (binds)
   (if (consp binds)
-      (union-eq (caar binds) 
+      (union-eq (caar binds)
                 (set-difference-eq (get-ins (cdr binds))
                                    (cadar binds)))
     ()))
@@ -200,7 +200,7 @@ are more than one).  The test of the IF is simply the test of the loop.
           (used-in-binds-p var (cdr binds)))
     ()))
 
-;;As an optimization, when possible, the final element of a list of binds is eliminated 
+;;As an optimization, when possible, the final element of a list of binds is eliminated
 ;; by replacing its out with its term in body:
 
 (defun reduce-single-binds (binds body)
@@ -217,15 +217,15 @@ are more than one).  The test of the IF is simply the test of the loop.
 ;; The first argument of let-or-let* is a list of binds each of which has the
 ;; property that its outs list is a singleton. In every non-recursive call,
 ;; result and let*p are NIL.  It converts binds into result, which is suitable
-;; as a first argument of let or let*. 
+;; as a first argument of let or let*.
 
 (defun let-or-let* (binds body result let*p)
   (if binds
       (let* ((bind (car binds))
              (out (caadr bind))
              (term (caddr bind)))
-        (let-or-let* (cdr binds) 
-                     body 
+        (let-or-let* (cdr binds)
+                     body
                      (append result (list (list out term)))
                      (or let*p (used-in-binds-p out (cdr binds)))))
    (if result
@@ -262,7 +262,7 @@ are more than one).  The test of the IF is simply the test of the loop.
 
 )
 
-;; The following converts a boolean expression to a term that fails with a value of NIL 
+;; The following converts a boolean expression to a term that fails with a value of NIL
 ;; rather than 0:
 
 (defun lispify-boolean (test)
@@ -314,18 +314,20 @@ are more than one).  The test of the IF is simply the test of the loop.
   (let* ((comp (if (eql (car test) 'and) (cadr test) test))
          (var (cadr comp))
          (limit (caddr comp)))
-    `(and (integerp ,var) (integerp ,limit) ,test)))
+    (if (integerp limit)
+        `(and (integerp ,var) ,test)
+      `(and (integerp ,var) (integerp ,limit) ,test))))
 
-;; Each of the main functions that generate ACL2 representations of statements or lists of 
-;; statements takes two additional arguments, which are used in the naming of any auxiliary 
-;; functions (corresponding to embedded for loops): fname is the name of the top-level function, 
-;; and loops is the number of auxiliary functions that have been created for that function so 
+;; Each of the main functions that generate ACL2 representations of statements or lists of
+;; statements takes two additional arguments, which are used in the naming of any auxiliary
+;; functions (corresponding to embedded for loops): fname is the name of the top-level function,
+;; and loops is the number of auxiliary functions that have been created for that function so
 ;; far. Among the values returned by each of these functions is defs, a list of definitions of
 ;; the auxiliary functions that are created during its execution.
 
 (mutual-recursion
 
-;; This function is applied to each statement of a top-level function except the last, and each 
+;; This function is applied to each statement of a top-level function except the last, and each
 ;; statement in the body of a for loop, and produces a binding.
 
 (defun translate-statement (stmt fname loops)
@@ -374,7 +376,7 @@ are more than one).  The test of the IF is simply the test of the loop.
               outs
               (let ((val (if (cdr outs) `(mv ,@outs) (if outs (car outs) ()))))
                 `(case ,test ,@(switch-second-pass labels binds val)))
-              defs)))) 
+              defs))))
     (for
       (let* ((info (cadr stmt))
              (init (car info))
@@ -419,7 +421,7 @@ are more than one).  The test of the IF is simply the test of the loop.
             (switch-second-pass (cdr labels) (cdr binds) val))
     ()))
 
-;; This function calls translate-statement on each statement in a list.  For each of these 
+;; This function calls translate-statement on each statement in a list.  For each of these
 ;; calls, it forms the list (ins out term).  It returns a list of these triples.
 
 (defun translate-list (stmts fname loops)
@@ -429,10 +431,10 @@ are more than one).  The test of the IF is simply the test of the loop.
                    (null (get-locals (cdar stmts)))))
           (translate-list (append (cdar stmts) (cdr stmts)) fname loops)
         (mv-let (binds defs1) (translate-list (cdr stmts) fname loops)
-          (mv-let (ins outs term defs2) 
+          (mv-let (ins outs term defs2)
                   (translate-statement (car stmts) fname (+ loops (length defs1)))
             (if outs
-                (mv (cons (list ins outs term) binds) 
+                (mv (cons (list ins outs term) binds)
                     (append defs1 defs2))
               (mv binds defs1)))))
     (mv () ())))
@@ -442,9 +444,9 @@ are more than one).  The test of the IF is simply the test of the loop.
 (mutual-recursion
 
 ;; This function translates the statements forming the body of a top-level function
-;; order, calling translate-final-statement on the final statement and translate-list on 
-;; the others.  It then calls bind-vars to convert the resulting term and bindings into 
-;; a LET/LET*/MV-LET nest.  The same function is also called on each branch of any IF 
+;; order, calling translate-final-statement on the final statement and translate-list on
+;; the others.  It then calls bind-vars to convert the resulting term and bindings into
+;; a LET/LET*/MV-LET nest.  The same function is also called on each branch of any IF
 ;; statement that is encountered during the execution of translate-final-statement.
 
 (defun translate-function-block (stmts fname loops)
@@ -454,13 +456,13 @@ are more than one).  The test of the IF is simply the test of the loop.
           (mv (bind-vars binds term) (append defs1 defs2))))
     (mv () ())))
 
-;; The final statement in the body of a top-level function is handled specially by this 
+;; The final statement in the body of a top-level function is handled specially by this
 ;; function.  It returns a term, the evaluation of which corresponds to execution of
 ;; the statement, preserving the if-structure of the statement.
 
 (defun translate-final-statement (stmt fname loops)
   (case (car stmt)
-    (return 
+    (return
       (mv (cadr stmt) ()))
     (if
       (let ((test (cadr stmt))
@@ -491,14 +493,15 @@ are more than one).  The test of the IF is simply the test of the loop.
 (set-state-ok t)
 
 (defun translate-program (infile outfile state)
-  (mv-let (foo lst state) 
+  (mv-let (foo lst state)
           (read-list infile () state)
-          (declare (ignore foo)) 
-          (write-list (append '((in-package "RTL") 
-                                (include-book "rtl/rel11/lib/rac" :dir :system)
+          (declare (ignore foo))
+          (write-list (append '((in-package "RTL")
+                                "(INCLUDE-BOOK \"rtl/rel11/lib/rac\" :DIR :SYSTEM)"
                                 (set-ignore-ok t)
                                 (set-irrelevant-formals-ok t))
                               (translate-program-list lst) )
-                      outfile 
+                      outfile
                       ()
                       state)))
+
