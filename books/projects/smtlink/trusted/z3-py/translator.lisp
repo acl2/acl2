@@ -149,6 +149,8 @@
     ;; acons and assoc are treated differently because they are not class
     ;; methods in Z3 either
     (if (or (equal fn-call 'ACONS)
+            (equal fn-call 'CONS)
+            (equal fn-call 'CAR)
             (equal fn-call 'ASSOC-EQUAL)
             (equal fn-call 'CONSP))
         (list (str::downcase-string
