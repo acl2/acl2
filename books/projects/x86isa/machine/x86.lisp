@@ -736,6 +736,7 @@
    (temp-rip           :type (signed-byte #.*max-linear-address-size*))
    (prefixes           :type (unsigned-byte 52))
    (rex-byte           :type (unsigned-byte 8))
+   (vex-prefixes       :type (unsigned-byte 32))
    (second-escape-byte :type (unsigned-byte 8))
    x86)
 
@@ -757,6 +758,10 @@
   :long "<p>Source: Intel Manual, Volume 2, Appendix A-2</p>"
 
   (b* ((ctx 'three-byte-opcode-decode-and-execute)
+
+       ((when (not (equal vex-prefixes 0)))
+        (!!ms-fresh :VEX-encoded-instructions-unsupported))
+
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
         (rme08 temp-rip *cs* :x x86))
        ((when flg0)
@@ -827,7 +832,7 @@
         opcode modr/m sib x86))
       (otherwise
        ;; Unreachable.
-       x86)))
+       (!!ms-fresh :illegal-value-of-second-escape-byte second-escape-byte))))
 
   ///
 
@@ -835,7 +840,8 @@
     (implies (and (canonical-address-p temp-rip)
                   (x86p x86))
              (x86p (three-byte-opcode-decode-and-execute
-                    start-rip temp-rip prefixes rex-byte escape-byte x86)))
+                    start-rip temp-rip prefixes rex-byte
+                    vex-prefixes escape-byte x86)))
     :enable add-to-*ip-is-i48p-rewrite-rule))
 
 ;; Two-Byte Opcode Map:
@@ -1263,7 +1269,7 @@
      "Escape to the three-byte opcode maps."
      ;; opcode is really the escape byte here: #x38 or #x3A.
      (three-byte-opcode-decode-and-execute
-      start-rip temp-rip prefixes rex-byte opcode x86))
+      start-rip temp-rip prefixes rex-byte vex-prefixes opcode x86))
 
     ((#x40 #x41 #x42 #x43 #x44 #x45 #x46 #x47 #x48 #x49 #x4A
            #x4B #x4C #x4D #x4E #x4F)
@@ -1908,6 +1914,7 @@
       (prefixes         :type (unsigned-byte 52))
       (mandatory-prefix :type (unsigned-byte 8))
       (rex-byte         :type (unsigned-byte 8))
+      (vex-prefixes     :type (unsigned-byte 32))
       (opcode           :type (unsigned-byte 8))
       (modr/m           :type (unsigned-byte 8))
       (sib              :type (unsigned-byte 8))
@@ -1937,16 +1944,17 @@
                      (canonical-address-p temp-rip))
                 (x86p (two-byte-opcode-execute
                        start-rip temp-rip prefixes mandatory-prefix
-                       rex-byte opcode modr/m sib x86))))))
+                       rex-byte vex-prefixes opcode modr/m sib x86))))))
 
 (make-event (create-two-byte-opcode-execute-fn))
 
 (define two-byte-opcode-decode-and-execute
-  ((start-rip   :type (signed-byte #.*max-linear-address-size*))
-   (temp-rip    :type (signed-byte #.*max-linear-address-size*))
-   (prefixes    :type (unsigned-byte 52))
-   (rex-byte    :type (unsigned-byte 8))
-   (escape-byte :type (unsigned-byte 8))
+  ((start-rip    :type (signed-byte #.*max-linear-address-size*))
+   (temp-rip     :type (signed-byte #.*max-linear-address-size*))
+   (prefixes     :type (unsigned-byte 52))
+   (rex-byte     :type (unsigned-byte 8))
+   (vex-prefixes :type (unsigned-byte 32))
+   (escape-byte  :type (unsigned-byte 8))
    x86)
 
   :ignore-ok t
@@ -1965,6 +1973,10 @@
   :long "<p>Source: Intel Manual, Volume 2, Appendix A-2</p>"
 
   (b* ((ctx 'two-byte-opcode-decode-and-execute)
+
+       ((when (not (equal vex-prefixes 0)))
+        (!!ms-fresh :VEX-encoded-instructions-unsupported))
+
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
         (rme08 temp-rip *cs* :x x86))
        ((when flg0)
@@ -2022,7 +2034,7 @@
 
     (two-byte-opcode-execute
      start-rip temp-rip prefixes mandatory-prefix
-     rex-byte opcode modr/m sib x86))
+     rex-byte vex-prefixes opcode modr/m sib x86))
 
   ///
 
@@ -2030,7 +2042,8 @@
     (implies (and (canonical-address-p temp-rip)
                   (x86p x86))
              (x86p (two-byte-opcode-decode-and-execute
-                    start-rip temp-rip prefixes rex-byte escape-byte x86)))
+                    start-rip temp-rip prefixes rex-byte vex-prefixes
+                    escape-byte x86)))
     :enable add-to-*ip-is-i48p-rewrite-rule))
 
 ;; One-byte Opcode Map:
@@ -2124,8 +2137,10 @@
 
     (#x0F
      "Escape to secondary opcode map."
-     (two-byte-opcode-decode-and-execute start-rip temp-rip prefixes rex-byte
-                                         opcode x86))
+     (two-byte-opcode-decode-and-execute
+      ;; Note that vex-prefixes is 0 here --- we won't ever be in this case
+      ;; statement in case we encounter VEX prefixes.
+      start-rip temp-rip prefixes rex-byte 0 opcode x86))
 
     (#x10
      "(ADC Eb Gb)"
@@ -3383,41 +3398,172 @@
 
 ;; VEX-encoded instructions:
 
+(local
+ (defthm dumb-integerp-of-mv-nth-1-rme080-rule
+   (implies (force (x86p x86))
+            (integerp (mv-nth 1 (rme08 eff-addr seg-reg r-x x86))))
+   :rule-classes (:rewrite :type-prescription)))
+
+(local
+ (defthm unsigned-byte-p-32-of-vex-prefixes-rule
+   (implies
+    (unsigned-byte-p 8 byte)
+    (and (unsigned-byte-p 32 (logior #xC400 (ash byte 16)))
+         (unsigned-byte-p 32 (logior #xC500 (ash byte 16)))))))
+
 (define vex-decode-and-execute
-  ((64-bit-modep           booleanp)
-   (temp-rip               :type (signed-byte   #.*max-linear-address-size*))
+  ((start-rip              :type (signed-byte   #.*max-linear-address-size*))
+   (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
+                           "@('temp-rip') points to the byte following the
+                            first two VEX prefixes that were already read and
+                            placed in the @('vex-prefixes') structure in @(tsee
+                            x86-fetch-decode-execute).")
    (prefixes               :type (unsigned-byte 52))
    (rex-byte               :type (unsigned-byte 8))
-   (vex-prefixes           :type (unsigned-byte 32))
+   (vex-prefixes           :type (unsigned-byte 32)
+                           "Only @('byte0') and @('byte1') fields are populated
+                            when this function is called.")
    x86)
 
-  ;; temp-rip points to the byte following the first two VEX prefixes that were
-  ;; already read in x86-fetch-decode-execute.
-
   :guard-hints
-  (("Goal" :in-theory
-    (e/d ()
-         (negative-logand-to-positive-logand-with-integerp-x
-          signed-byte-p))))
+  (("Goal"
+    :in-theory
+    (e/d (add-to-*ip-is-i48p-rewrite-rule)
+         (bitops::logand-with-negated-bitmask))))
+  :prepwork
+  ((local
+    (defthm vex-decode-and-execute-guard-helper
+      (implies (and (unsigned-byte-p 8 byte-1)
+                    (unsigned-byte-p 8 byte-2))
+               (<
+                (logior
+                 (logand #xffffff00
+                         (logior (logand #xffffffff00ffffff vex-prefixes)
+                                 (ash byte-1
+                                      24)))
+                 byte-2)
+                4294967296)))))
 
   :parents (x86-decoder)
 
   :long "<p>@('vex-decode-and-execute') dispatches control to VEX-encoded
-  instructions.</p>"
+  instructions.</p>
 
-  (x86-step-unimplemented
-   (cons "VEX-encoded instructions unimplemented."
-         (list 64-bit-modep temp-rip prefixes rex-byte vex-prefixes))
-   x86)
+  <p><i>Reference: Intel Vol. 2A, Section 2.3: Intel Advanced Vector
+   Extensions (Intel AVX)</i></p>"
+
+  (b* ((ctx 'vex-decode-and-execute)
+       ;; Reference for the following checks that lead to #UD:
+       ;; Intel Vol. 2,
+       ;; Section 2.3.2 - VEX and the LOCK prefix
+       ;; Section 2.3.3 - VEX and the 66H, F2H, and F3H prefixes
+       ;; Section 2.3.4 - VEX and the REX prefix
+
+       ;; Any VEX-encoded instruction with mandatory (SIMD) prefixes, lock
+       ;; prefix, and REX prefixes (i.e., 66, F2, F3, F0, and 40-4F) preceding
+       ;; VEX will #UD.  Therefore, we fetch VEX prefixes after the legacy
+       ;; prefixes (function get-prefixes) and the REX prefix have been
+       ;; detected and fetched in x86-fetch-decode-execute.
+
+       ((when (not (equal rex-byte 0)))
+        (!!fault-fresh :ud :vex-prefixes vex-prefixes :rex rex-byte))
+       ;; TODO: Intel Vol. 2A Sections 2.3.2 and 2.3.3 say "Any VEX-encoded
+       ;; instruction with a LOCK/66H/F2H/F3H prefix preceding VEX will #UD."
+       ;; So, should I check :last-byte or :group-1-prefix/:group-3-prefix
+       ;; fields here?
+       ((when (equal (prefixes-slice :group-1-prefix prefixes) #.*lock*))
+        (!!fault-fresh :ud :vex-prefixes vex-prefixes :lock-prefix))
+       ((when (equal (prefixes-slice :group-1-prefix prefixes) #.*mandatory-f2h*))
+        (!!fault-fresh :ud :vex-prefixes vex-prefixes :F2-prefix))
+       ((when (equal (prefixes-slice :group-1-prefix prefixes) #.*mandatory-f3h*))
+        (!!fault-fresh :ud :vex-prefixes vex-prefixes :F3-prefix))
+       ((when (equal (prefixes-slice :group-3-prefix prefixes) #.*mandatory-66h*))
+        (!!fault-fresh :ud :vex-prefixes vex-prefixes :66-prefix))
+
+       (vex3-prefix?
+        (equal (vex-prefixes-slice :byte0 vex-prefixes) #.*vex3-byte0*))
+       (vex-byte1 (vex-prefixes-slice :byte1 vex-prefixes))
+       ;; VEX3 Byte 1 #UD Checks for M-MMMM field:
+       ;; References: Intel Vol. 2, Figure 2-9 and Section 2.3.6.1
+       ((mv vex3-0F-map? vex3-0F38-map? vex3-0F3A-map?)
+        (if vex3-prefix?
+            (mv (equal (vex3-byte1-slice :m-mmmm vex-byte1) #b00001)
+                (equal (vex3-byte1-slice :m-mmmm vex-byte1) #b00010)
+                (equal (vex3-byte1-slice :m-mmmm vex-byte1) #b00011))
+          (mv nil nil nil)))
+       ((when (and vex3-prefix?
+                   (not (or vex3-0F-map? vex3-0F38-map? vex3-0F3A-map?))))
+        (!!fault-fresh :ud :vex-prefixes vex-prefixes :m-mmmm vex-byte1))
+
+       ;; Completely populating the vex-prefixes structure --- filling out only
+       ;; next-byte for vex2-prefixes and both byte2 and next-byte for
+       ;; vex3-prefix:
+       ((mv flg0 (the (unsigned-byte 8) byte2/next-byte) x86)
+        (rme08 temp-rip *cs* :x x86))
+       ((when flg0)
+        (!!ms-fresh :vex-byte2/next-byte-read-error flg0))
+       ((mv flg1 temp-rip)
+        (add-to-*ip temp-rip 1 x86))
+       ((when flg1)
+        (!!ms-fresh :increment-error flg1))
+       (vex-prefixes
+        (if vex3-prefix?
+            (!vex-prefixes-slice :byte2 byte2/next-byte vex-prefixes)
+          (!vex-prefixes-slice :next-byte byte2/next-byte vex-prefixes)))
+       ((mv flg2 (the (unsigned-byte 8) next-byte) x86)
+        (if vex3-prefix?
+            (rme08 temp-rip *cs* :x x86)
+          (mv nil 0 x86)))
+       ((when flg2)
+        (!!ms-fresh :next-byte-read-error flg2))
+       ((mv flg3 temp-rip)
+        (if vex3-prefix?
+            (add-to-*ip temp-rip 1 x86)
+          (mv nil temp-rip)))
+       ((when flg3)
+        (!!ms-fresh :increment-error flg3))
+       (vex-prefixes
+        (if vex3-prefix?
+            (!vex-prefixes-slice :next-byte next-byte vex-prefixes)
+          vex-prefixes)))
+
+    ;; Dispatching control to opcode-execute functions:
+    ;; Note that the 2-byte VEX (C5) implies a leading 0F opcode byte, and
+    ;; the 3-byte VEX (C4) can imply a leading 0F, 0F 38, or 0F 3A bytes,
+    ;; depending on the value of VEX.m-mmmm.
+    ;; Reference: Intel Vol. 2, Section 2.3.6.1 (3-byte VEX byte 1,
+    ;; bits[4:0] - "m-mmmm".
+
+    (if vex3-prefix?
+        (cond (vex3-0F-map?
+               (two-byte-opcode-decode-and-execute
+                start-rip temp-rip prefixes rex-byte vex-prefixes #x0F x86))
+              (vex3-0F38-map?
+               (three-byte-opcode-decode-and-execute
+                start-rip temp-rip prefixes rex-byte vex-prefixes #x38 x86))
+              (vex3-0F3A-map?
+               (three-byte-opcode-decode-and-execute
+                start-rip temp-rip prefixes rex-byte vex-prefixes #x3A x86))
+              (t
+               ;; Unreachable.
+               (!!ms-fresh :illegal-value-of-VEX-m-mmmm)))
+
+      ;; vex2: 0F Map:
+      (two-byte-opcode-decode-and-execute
+       start-rip temp-rip prefixes rex-byte vex-prefixes #x0F x86)))
 
   ///
+
+  ;; TODO: If VEX prefixes are added to instructions in the one-byte opcode map
+  ;; (or any other instruction that does not use VEX), will they be ignored or
+  ;; will it #UD?
 
   (defthm x86p-vex-decode-and-execute
     (implies (and (x86p x86)
                   (canonical-address-p temp-rip))
              (x86p
               (vex-decode-and-execute
-               64-bit-modep temp-rip prefixes rex-byte vex-prefixes x86)))))
+               start-rip temp-rip prefixes rex-byte vex-prefixes x86)))))
 
 ;; ----------------------------------------------------------------------
 
@@ -3432,19 +3578,7 @@
  dispatches control to the appropriate instruction semantic function.</p>"
 
   :prepwork
-  ((local
-    (defthm dumb-integerp-of-mv-nth-1-rme080-rule
-      (implies (x86p x86)
-               (integerp (mv-nth 1 (rme08 eff-addr seg-reg r-x x86))))))
-
-   (local
-    (defthm unsigned-byte-p-32-of-vex-prefixes-rule
-      (implies
-       (unsigned-byte-p 8 byte)
-       (and (unsigned-byte-p 32 (logior #xC400 (ash byte 16)))
-            (unsigned-byte-p 32 (logior #xC500 (ash byte 16)))))))
-
-   (local (in-theory (e/d* () (unsigned-byte-p not)))))
+  ((local (in-theory (e/d* () (unsigned-byte-p not)))))
 
   :guard-hints
   (("Goal" :in-theory (e/d (add-to-*ip-is-i48p-rewrite-rule) ())))
@@ -3541,7 +3675,7 @@
               (!vex-prefixes-slice
                :byte1 les/lds-distinguishing-byte vex-prefixes)))
           (vex-decode-and-execute
-           64-bit-modep temp-rip prefixes rex-byte vex-prefixes x86)))
+           start-rip temp-rip prefixes rex-byte vex-prefixes x86)))
 
        (opcode/escape-byte opcode/escape/vex-byte)
 
