@@ -244,7 +244,7 @@
 
 (DEFUN CLZ-LOOP-1 (K N C Z)
        (DECLARE (XARGS :MEASURE (NFIX (- 7 K))))
-       (IF (AND (INTEGERP K) (INTEGERP 7) (< K 7))
+       (IF (AND (INTEGERP K) (< K 7))
            (LET ((N (FLOOR N 2)))
                 (MV-LET (C Z)
                         (CLZ-LOOP-0 0 N K C Z)
@@ -253,9 +253,7 @@
 
 (DEFUN CLZ-LOOP-2 (I X Z C)
        (DECLARE (XARGS :MEASURE (NFIX (- 128 I))))
-       (IF (AND (INTEGERP I)
-                (INTEGERP 128)
-                (< I 128))
+       (IF (AND (INTEGERP I) (< I 128))
            (LET ((Z (AS I (LOGNOT1 (BITN X I)) Z))
                  (C (AS I (BITS 0 6 0) C)))
                 (CLZ-LOOP-2 (+ I 1) X Z C))

@@ -767,7 +767,31 @@
 		  (exactp x (1+ n))
 		  (not (exactp x n)))
 	     (exactp (rne x n) (1- n)))
-  :rule-classes ())
+    :rule-classes ())
+
+(defund xfp (k m x0)
+  (+ x0 (* (expt 2 (- (1+ (expo x0)) m)) k)))
+
+(defund err-rne (k m n x0)
+  (- (rne (xfp k m x0) n) (xfp k m x0)))
+
+(defund sum-err-rne (i j m n x0)
+  (declare (xargs :measure (nfix (1+ (- j i)))))
+  (if (and (natp i) (natp j) (<= i j))
+      (+ (sum-err-rne i (1- j) m n x0)
+         (err-rne j m n x0))
+    0))
+
+(defthmd rne-unbiased
+  (implies (and (natp m)
+                (natp n)
+                (< 1 n)
+                (< n m)
+                (rationalp x0)
+                (> x0 0)
+                (exactp x0 (1- n)))
+           (equal (sum-err-rne 0 (1- (expt 2 (- (1+ m) n))) m n x0)
+	          0)))
 
 (defund rna (x n)
   (declare (xargs :guard (and (real/rationalp x)
@@ -1110,7 +1134,28 @@
 		  (integerp k))
 	     (= (rto (* (expt 2 k) x) n)
 		(* (expt 2 k) (rto x n))))
-  :rule-classes ())
+    :rule-classes ())
+
+(defund err-rto (k m n x0)
+  (- (rto (xfp k m x0) n) (xfp k m x0)))
+
+(defund sum-err-rto (i j m n x0)
+  (declare (xargs :measure (nfix (1+ (- j i)))))
+  (if (and (natp i) (natp j) (<= i j))
+      (+ (sum-err-rto i (1- j) m n x0)
+         (err-rto j m n x0))
+    0))
+
+(defthm rto-unbiased
+  (implies (and (natp m)
+                (natp n)
+                (< 1 n)
+                (< n m)
+                (rationalp x0)
+                (> x0 0)
+                (exactp x0 (1- n)))
+           (equal (sum-err-rto 0 (1- (expt 2 (- (1+ m) n))) m n x0)
+                  0)))
 
 (defthm expo-rto
     (implies (and (rationalp x) ;; (> x 0)

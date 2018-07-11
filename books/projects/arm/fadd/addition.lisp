@@ -707,21 +707,21 @@
 
 
 
-(local-defund x () (* (expt 2 (+ 104 (expt 2 10))) (abs (b))))
+(local-defund x0 () (* (expt 2 (+ 104 (expt 2 10))) (abs (b))))
 
-(local-defthm rat-x
-  (rationalp (x))
+(local-defthm rat-x0
+  (rationalp (x0))
   :rule-classes (:type-prescription :rewrite)
-  :hints (("Goal" :in-theory (enable x))))
+  :hints (("Goal" :in-theory (enable x0))))
 
 (local-defthmd sum-a-16
-  (equal (absval 0 (x)) (abs (b)))
-  :hints (("Goal" :in-theory (e/d (absval x) (abs)))))
+  (equal (absval 0 (x0)) (abs (b)))
+  :hints (("Goal" :in-theory (e/d (absval x0) (abs)))))
 
 (local-defund n ()
   (if (> (expa) 1) (- (expa) 2) 0))
 
-(local-in-theory (disable (x) (n)))
+(local-in-theory (disable (x0) (n)))
 
 (local-defthmd sum-a-17
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
@@ -733,23 +733,23 @@
 (local-defthmd sum-a-18
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1))
-	   (equal (absval (explp) (* (expt 2 (- (n))) (x)))
-	          (absval 0 (x))))
+	   (equal (absval (explp) (* (expt 2 (- (n))) (x0)))
+	          (absval 0 (x0))))
   :hints (("Goal" :in-theory (enable absval n far-rewrite expdiff-rewrite opbgeopa explp expl-rewrite))))
 
 (local-defthmd sum-a-19
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1))
-	   (and (< (absval 0 (chop (sigb) -53)) (absval 0 (x)))
-	        (< (absval 0 (x)) (absval 0 (+ (chop (sigb) -53) (expt 2 53))))))
+	   (and (< (absval 0 (chop (sigb) -53)) (absval 0 (x0)))
+	        (< (absval 0 (x0)) (absval 0 (+ (chop (sigb) -53) (expt 2 53))))))
   :hints (("Goal" :in-theory (enable sum-a-16)
                   :use (expb-0-b))))
 
 (local-defthmd sum-a-20
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1))
-	   (and (< (chop (sigb) -53) (x))
-	        (< (x) (+ (chop (sigb) -53) (expt 2 53)))))
+	   (and (< (chop (sigb) -53) (x0))
+	        (< (x0) (+ (chop (sigb) -53) (expt 2 53)))))
   :hints (("Goal" :in-theory (enable absval)
                   :use (sum-a-19)
 		  :nonlinearp t)))
@@ -757,8 +757,8 @@
 (local-defthmd sum-a-21
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (Opbgeopa) 0) (= (usa) 1))
-	   (and (< (fl (/ (sigb) (expt 2 53))) (/ (x) (expt 2 53)))
-	        (< (/ (x) (expt 2 53)) (1+ (fl (/ (sigb) (expt 2 53)))))))
+	   (and (< (fl (/ (sigb) (expt 2 53))) (/ (x0) (expt 2 53)))
+	        (< (/ (x0) (expt 2 53)) (1+ (fl (/ (sigb) (expt 2 53)))))))
   :hints (("Goal" :in-theory (enable chop)
                   :use (sum-a-20)
 		  :nonlinearp t)))
@@ -766,8 +766,8 @@
 (local-defthmd sum-a-22
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1))
-	   (and (not (integerp (/ (x) (expt 2 53))))
-	        (= (fl (/ (x) (expt 2 53)))
+	   (and (not (integerp (/ (x0) (expt 2 53))))
+	        (= (fl (/ (x0) (expt 2 53)))
 		   (fl (/ (sigb) (expt 2 53))))))
   :hints (("Goal" :use (sum-a-21))))
 
@@ -795,8 +795,8 @@
 (local-defthmd sum-a-cin-4
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1))
-           (not (integerp (/ (x) (expt 2 (+ (n) 53))))))
-  :hints (("Goal" :use (sum-a-22 (:instance sum-a-cin-3 (k 53) (n (n)) (x (x)))))))
+           (not (integerp (/ (x0) (expt 2 (+ (n) 53))))))
+  :hints (("Goal" :use (sum-a-22 (:instance sum-a-cin-3 (k 53) (n (n)) (x (x0)))))))
 
 (local-defthmd sum-a-cin-5
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
@@ -808,18 +808,18 @@
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1) (= (shiftout) 0) (= (mulstk) 0))
            (equal (fl (- (/ (sigb) (expt 2 (+ (n) 53)))))
-	          (fl (- (/ (x) (expt 2 (+ (n) 53)))))))
+	          (fl (- (/ (x0) (expt 2 (+ (n) 53)))))))
   :hints (("Goal" :use (sum-a-cin-1 sum-a-22 sum-a-cin-4 sum-a-cin-5
                         (:instance fl/int-rewrite (x (/ (sigb) (expt 2 53))) (n (expt 2 (n))))
-                        (:instance fl/int-rewrite (x (/ (x) (expt 2 53))) (n (expt 2 (n))))
-			(:instance minus-fl (x (/ (x) (expt 2 (+ (n) 53)))))
+                        (:instance fl/int-rewrite (x (/ (x0) (expt 2 53))) (n (expt 2 (n))))
+			(:instance minus-fl (x (/ (x0) (expt 2 (+ (n) 53)))))
 			(:instance minus-fl (x (/ (sigb) (expt 2 (+ (n) 53)))))))))
 
 (local-defthmd sum-a-cin-7
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1) (= (shiftout) 0) (= (mulstk) 0))
            (equal (chop (- (/ (sigb) (expt 2 (n)))) -53)
-	          (chop (- (/ (x) (expt 2 (n)))) -53)))
+	          (chop (- (/ (x0) (expt 2 (n)))) -53)))
   :hints (("Goal" :use (sum-a-cin-6) :in-theory (enable chop))))
 
 (local-defthmd sum-a-cin-8
@@ -858,10 +858,10 @@
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1) (= (shiftout) 0) (= (mulstk) 0))
            (equal (chop (sum) -53)
-                  (chop (- (sigaprime) (* (expt 2 (- (n))) (x))) -53)))
+                  (chop (- (sigaprime) (* (expt 2 (- (n))) (x0))) -53)))
   :hints (("Goal" :use (sum-a-cin-7 sum-a-34
                         (:instance sum-1-6 (a (sigaprime)) (b (- (* (expt 2 (- (n))) (sigb)))) (k -53))
-                        (:instance sum-1-6 (a (sigaprime)) (b (- (* (expt 2 (- (n))) (x)))) (k -53)))
+                        (:instance sum-1-6 (a (sigaprime)) (b (- (* (expt 2 (- (n))) (x0)))) (k -53)))
                   :in-theory (enable sum-a-cin-11))))
 
 (local-defthmd sum-a-27
@@ -929,66 +929,66 @@
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1) (not (and (= (shiftout) 0) (= (mulstk) 0))))
            (equal (chop (- (1+ (fl (* (expt 2 (- (n))) (sigb))))) -53)
-	          (chop (- (* (expt 2 (- (n))) (x))) -53)))
-  :hints (("Goal" :use (sum-a-22 (:instance chop-int-neg (x (x)) (n (n)) (k 53) (y (sigb)))))))
+	          (chop (- (* (expt 2 (- (n))) (x0))) -53)))
+  :hints (("Goal" :use (sum-a-22 (:instance chop-int-neg (x (x0)) (n (n)) (k 53) (y (sigb)))))))
 
 (local-defthmd sum-a-37-a
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1) (not (and (= (shiftout) 0) (= (mulstk) 0))))
            (equal (chop (sum) -53)
-	          (+ (sigaprime) (chop (- (* (expt 2 (- (n))) (x))) -53))))
+	          (+ (sigaprime) (chop (- (* (expt 2 (- (n))) (x0))) -53))))
   :hints (("Goal" :use (sum-a-35 sum-a-36))))
 
 (local-defthmd sum-a-37
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1) (not (and (= (shiftout) 0) (= (mulstk) 0))))
            (equal (chop (sum) -53)
-	          (chop (- (sigaprime) (* (expt 2 (- (n))) (x))) -53)))
+	          (chop (- (sigaprime) (* (expt 2 (- (n))) (x0))) -53)))
   :hints (("Goal" :use (sum-a-34 sum-a-37-a
-                        (:instance sum-1-6 (k -53) (a (sigaprime)) (b (- (* (expt 2 (- (n))) (x)))))))))
+                        (:instance sum-1-6 (k -53) (a (sigaprime)) (b (- (* (expt 2 (- (n))) (x0)))))))))
 
  (local-defthmd sum-a-38
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1))
            (equal (chop (sum) -53)
-	          (chop (- (sigaprime) (* (expt 2 (- (n))) (x))) -53)))
+	          (chop (- (sigaprime) (* (expt 2 (- (n))) (x0))) -53)))
   :hints (("Goal" :use (sum-a-37 sum-a-cin-12) :in-theory (theory 'minimal-theory))))
 
 (local-defthmd sum-a-39
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1))
            (and (<= (chop (sum) -53)
-	            (- (sigaprime) (* (expt 2 (- (n))) (x))))
-	        (< (- (sigaprime) (* (expt 2 (- (n))) (x)))
+	            (- (sigaprime) (* (expt 2 (- (n))) (x0))))
+	        (< (- (sigaprime) (* (expt 2 (- (n))) (x0)))
 		   (+ (chop (sum) -53) (expt 2 53)))))
   :hints (("Goal" :nonlinearp t :use (sum-a-38) :in-theory (enable chop))))
 
 (local-defthmd sum-a-40
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1))
-           (not (integerp (* (expt 2 -53) (- (sigaprime) (* (expt 2 (- (n))) (x)))))))
+           (not (integerp (* (expt 2 -53) (- (sigaprime) (* (expt 2 (- (n))) (x0)))))))
   :hints (("Goal" :use (sum-a-cin-4 sum-a-34))))
 
 (local-defthmd sum-a-41
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1))
            (not (= (* (expt 2 -53) (chop (sum) -53))
-	           (* (expt 2 -53) (- (sigaprime) (* (expt 2 (- (n))) (x)))))))
+	           (* (expt 2 -53) (- (sigaprime) (* (expt 2 (- (n))) (x0)))))))
   :hints (("Goal" :use (sum-a-40) :in-theory (enable chop))))
 
 (local-defthmd sum-a-42
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1))
            (not (= (chop (sum) -53)
-	           (- (sigaprime) (* (expt 2 (- (n))) (x))))))
+	           (- (sigaprime) (* (expt 2 (- (n))) (x0))))))
   :hints (("Goal" :use (sum-a-41) :in-theory (theory 'minimal-theory))))
 
 (local-defthmd sum-a-43
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1))
            (and (< (chop (sum) -53)
-	           (- (sigaprime) (* (expt 2 (- (n))) (x))))
-	        (< (- (sigaprime) (* (expt 2 (- (n))) (x)))
+	           (- (sigaprime) (* (expt 2 (- (n))) (x0))))
+	        (< (- (sigaprime) (* (expt 2 (- (n))) (x0)))
 		   (+ (chop (sum) -53) (expt 2 53)))))
   :hints (("Goal" :in-theory (enable chop) :use (sum-a-42 sum-a-39))))
 
@@ -996,8 +996,9 @@
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
                 (= (opbgeopa) 0) (= (usa) 1))
            (and (< (absval (explp) (chop (sum) -53))
-	           (- (absval (explp) (sigaprime)) (absval (explp) (* (expt 2 (- (n))) (x)))))
-	        (< (- (absval (explp) (sigaprime)) (absval (explp) (* (expt 2 (- (n))) (x))))
+	           (- (absval (explp) (sigaprime)) (absval (explp) (* (expt 2 (- (n))) (x0)))))
+	        (< (- (absval (explp) (sigaprime)) (absval (explp) (* (expt 2
+  (- (n))) (x0))))
 		   (absval (explp) (+ (chop (sum) -53) (expt 2 53))))))
   :hints (("Goal" :use (sum-a-43) :in-theory (enable absval) :nonlinearp t)))
 

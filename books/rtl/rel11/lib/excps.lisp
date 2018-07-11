@@ -993,4 +993,52 @@
         (mv result fpscr)
       (arm-fma-comp a b c fpscr f))))
 
+;;--------------------------------------------------------------------------------
+
+;; The operands of FSCALE are a floating-point encoding A and a signed integer
+;; encoding B.  The exponent of A is incremented by the value of B.
+;; The arguments of ARM-FSCALE-SPEC are these two operands, the initial FPSCR
+;; register, and a floating-point format. It returns a data result and the updated
+;; FPSCR.
+
+(defun arm-fscale-pre-comp (a fpscr f)
+  (declare (xargs :guard (and (encodingp a f)
+                              (natp fpscr))))
+  (mv-let (a fpscr)
+          (if (and (= (bitn fpscr (fz)) 1)
+                   (denormp a f))
+              (mv (zencode (sgnf a f) f)
+                  (cond-set-flag (idc) fpscr))
+            (mv a fpscr))
+    (mv a 
+        (if (nanp a f)
+            (process-nan a fpscr f)
+          ())
+        (if (snanp a f)
+            (cond-set-flag (ioc) fpscr)
+          fpscr))))
+    
+(defun arm-fscale-comp (a b fpscr f)
+  (declare (xargs :guard (and (encodingp a f)
+                              (natp b)
+                              (natp fpscr))
+                  :guard-hints (("Goal" :in-theory (enable decode-0)))))
+  (if (or (zerp a f) (infp a f))
+      (mv a fpscr)
+    (let* ((fwidth (+ 1 (expw f) (sigw f)))
+           (aval (decode a f))
+           (bval (si b fwidth))
+           (u (* aval (expt 2 bval))))
+      (arm-post-comp u fpscr f))))
+
+(defun arm-fscale-spec (a b fpscr f)
+  (declare (xargs :guard (and (encodingp a f)
+                              (natp b)
+                              (natp fpscr))))
+  (mv-let (a result fpscr) (arm-fscale-pre-comp a fpscr f)
+    (if result
+        (mv result fpscr)
+      (arm-fscale-comp a b fpscr f))))
+
 )
+

@@ -14,18 +14,18 @@
   (logand (bits (lognot (in1lzap)) 127 0)
           (bits (lognot (in2lza)) 127 0)))
 
-(defund w0p () (bits (lognot (logxor (pp) (ash (kp) 1))) 127 0))
+(defund w1p () (bits (lognot (logxor (pp) (ash (kp) 1))) 127 0))
 
-(local-defthmd bvecp-w0p
-  (bvecp (w0p) 128)
-  :hints (("Goal" :in-theory (enable w0p))))
+(local-defthmd bvecp-w1p
+  (bvecp (w1p) 128)
+  :hints (("Goal" :in-theory (enable w1p))))
 
 (defthmd lzap128-lemma
-  (equal (lzap) (clz (bits (ash (w0p) (- 1)) 127 0)))
+  (equal (lzap) (clz (bits (ash (w1p) (- 1)) 127 0)))
   :hints (("Goal" :do-not '(preprocess) :expand :lambdas
-           :in-theory '(lza128 lzap pp kp w0p))))
+           :in-theory '(lza128 lzap pp kp w1p))))
 
-(local-in-theory (disable (in1lzap) (lzap) (pp) (kp) (w0p)))
+(local-in-theory (disable (in1lzap) (lzap) (pp) (kp) (w1p)))
 
 (local-defthmd pp-rewrite
   (implies (and (natp j) (< j 128))
@@ -49,12 +49,12 @@
 			(:instance bitn-lognot (n j) (x (in1lzap)))
 			(:instance bitn-lognot (n j) (x (in2lza)))))))
 
-(local-defthmd w0p-rewrite
+(local-defthmd w1p-rewrite
   (implies (and (not (zp j)) (< j 128))
-           (equal (bitn (w0p) j)
+           (equal (bitn (w1p) j)
 	          (if (= (bitn (pp) j) (bitn (kp) (1- j)))
                       1 0)))
-  :hints (("Goal" :in-theory (enable w0p bitn-bits bitn-logxor bitn-logand)
+  :hints (("Goal" :in-theory (enable w1p bitn-bits bitn-logxor bitn-logand)
                   :use ((:instance bitn-0-1 (n j) (x (pp)))
 			(:instance bitn-0-1 (n (1- j)) (x (kp)))
 			(:instance bitn-0-1 (n j) (x (lognot (LOGXOR (PP) (* 2 (KP))))))
@@ -64,286 +64,16 @@
 
 (defund s0p () (+ (in1lzap) (in2lza)))
 
-(local-defund assumps ()
-  (and (bvecp (in1lzap) 128)
-       (bvecp (in2lza) 128)
-       (> (s0p) (expt 2 128))))
-
-(local-defund conds (j)
-  (and (= (bits (w0p) 127 (1+ j)) 0)
-       (= (bits (s0p) 127 (1+ j)) 0)
-       (or (>= (+ (bits (in1lzap) j 0) (bits (in2lza) j 0)) (expt 2 (1+ j)))
-           (= (bitn (kp) j) 1))))
-
-(local-defund goal ()
-  (and (>= (w0p) 2)
-       (or (= (expo (bits (s0p) 127 0)) (expo (w0p)))
-           (= (expo (bits (s0p) 127 0)) (1- (expo (w0p)))))))
-
-(local-in-theory (disable (s0p) (assumps) (conds) (goal)))
-
-(local-defthm conds-127
-  (implies (assumps) (conds 127))
-  :hints (("Goal" :in-theory (enable assumps conds s0p))))
-
-(local-defthmd s-127-0
-  (implies (assumps)
-           (not (equal (bits (s0p) 127 0) 0)))
-  :hints (("Goal" :in-theory (enable s0p assumps bvecp)
-                  :use ((:instance bitn-plus-bits (x (s0p)) (n 128) (m 0))))))
-
-(local-defthmd conds-0-1
-  (implies (and (assumps) (conds 0))
-           (equal (bitn (s0p) 0) 1))
-  :hints (("Goal" :in-theory (enable assumps conds s0p)
-                 :use (s-127-0
-		       (:instance bitn-0-1 (x (s0p)) (n 0))
-                       (:instance bits-plus-bitn (x (s0p)) (n 127) (m 0))))))
-
-(local-defthmd conds-0-2
-  (implies (and (assumps) (conds 0))
-           (equal (bitn (s0p) 0)
-	          (mod (+ (bitn (in1lzap) 0) (bitn (in2lza) 0)) 2)))
-  :hints (("Goal" :in-theory (enable s0p bitn-rec-0)
-                  :use ((:instance mod-sum (n 2) (a (in1lzap)) (b (in2lza)))
-		        (:instance mod-sum (n 2) (b (in1lzap)) (a (mod (in2lza) 2)))))))
-
-(local-defthm conds-0
-  (implies (assumps) (not (conds 0)))
-  :hints (("Goal" :in-theory (enable conds kp-rewrite)
-                  :use (conds-0-1 conds-0-2
-                        (:instance bitn-0-1 (n 0) (x (in1lzap)))
-			(:instance bitn-0-1 (n 0) (x (in2lza)))))))
-
-(local-defthmd w0p-1-1
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 1))
-           (equal (expo (w0p)) j))
-  :hints (("Goal" :in-theory (enable conds bvecp)
-                  :nonlinearp t
-                  :use (bvecp-w0p
-                        (:instance expo>= (x (w0p)) (n j))
-			(:instance expo<= (x (w0p)) (n j))
-			(:instance bitn-plus-bits (x (w0p)) (n j) (m 0))
-			(:instance bits-plus-bits (x (w0p)) (n 127) (p (1+ j)) (m 0))
-			(:instance bits-bounds (x (w0p)) (i (1- j)) (j 0))))))
-
-(local-defthmd w0p-1-2
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 1))
-           (equal (bitn (pp) j) (bitn (kp) (1- j))))
-  :hints (("Goal" :in-theory (enable w0p-rewrite))))
-
-(local-defthmd w0p-1-3
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 1))
-           (not (= (bitn (pp) j) 1)))
-  :hints (("Goal" :use (w0p-1-2
-                        (:instance bitn-0-1 (x (in1lzap)) (n j))
-                        (:instance bitn-0-1 (x (in2lza)) (n j))
-                        (:instance bitn-0-1 (x (in1lzap)) (n (1- j)))
-                        (:instance bitn-0-1 (x (in2lza)) (n (1- j)))
-			(:instance bitn-plus-bits (x (in1lzap)) (n j) (m 0))
-			(:instance bitn-plus-bits (x (in2lza)) (n j) (m 0))
-			(:instance bitn-plus-bits (x (in1lzap)) (n (1- j)) (m 0))
-			(:instance bitn-plus-bits (x (in2lza)) (n (1- j)) (m 0))
-			(:instance bits-bounds (x (in1lzap)) (i (- j 2)) (j 0))
-			(:instance bits-bounds (x (in2lza)) (i (- j 2)) (j 0)))
-                  :in-theory (enable conds pp-rewrite kp-rewrite)
-		  :nonlinearp t)))
-
-(local-defthmd w0p-1-4
-  (implies (natp j)
-           (equal (bits (s0p) j 0)
-                  (mod (+ (bits (in1lzap) j 0) (bits (in2lza) j 0)) (expt 2 (1+ j)))))
-  :hints (("Goal" :in-theory (enable s0p bits-mod)
-                  :use ((:instance mod-sum (n (expt 2 (1+ j))) (a (in1lzap)) (b (in2lza)))
-		        (:instance mod-sum (n (expt 2 (1+ j))) (b (in1lzap)) (a (mod (in2lza) (expt 2 (1+ j)))))))))
-   
-(local-defthmd w0p-1-5
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 1) (= (bitn (pp) j) 0))
-           (equal (bits (s0p) j 0)
-	          (+ (bits (in1lzap) (1- j) 0) (bits (in2lza) (1- j) 0))))
-  :hints (("Goal" :use ((:instance bitn-0-1 (x (in1lzap)) (n j))
-                        (:instance bitn-0-1 (x (in2lza)) (n j))
-			(:instance bitn-plus-bits (x (in1lzap)) (n j) (m 0))
-			(:instance bitn-plus-bits (x (in2lza)) (n j) (m 0))
-			(:instance bits-bounds (x (in1lzap)) (i (1- j)) (j 0))
-			(:instance bits-bounds (x (in2lza)) (i (1- j)) (j 0)))
-                  :in-theory (enable w0p-1-4 pp-rewrite)
-		  :nonlinearp t)))
-
-(local-defthmd w0p-1-6
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 1) (= (bitn (pp) j) 0))
-           (equal (bits (s0p) 127 0)
-	          (+ (bits (in1lzap) (1- j) 0) (bits (in2lza) (1- j) 0))))
-  :hints (("Goal" :use ((:instance bits-plus-bits (x (s0p)) (n 127) (p (1+ j)) (m 0)))
-                  :in-theory (enable w0p-1-5 conds))))
-
-(local-defthmd w0p-1-7
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 1) (= (bitn (pp) j) 0))
-           (and (>= (expo (bits (s0p) 127 0)) (1- j))
-	        (<= (expo (bits (s0p) 127 0)) j)))
-  :hints (("Goal" :use ((:instance bitn-0-1 (x (in1lzap)) (n j))
-                        (:instance bitn-0-1 (x (in2lza)) (n j))
-			(:instance bitn-0-1 (x (in1lzap)) (n (1- j)))
-                        (:instance bitn-0-1 (x (in2lza)) (n (1- j)))
-			(:instance bitn-plus-bits (x (in1lzap)) (n (1- j)) (m 0))
-			(:instance bitn-plus-bits (x (in2lza)) (n (1- j)) (m 0))
-			(:instance bits-bounds (x (in1lzap)) (i (- j 2)) (j 0))
-			(:instance bits-bounds (x (in2lza)) (i (- j 2)) (j 0))
-			(:instance expo>= (x (bits (s0p) 127 0)) (n (1- j)))
-			(:instance expo<= (x (bits (s0p) 127 0)) (n j)))
-		  :nonlinearp t
-                  :in-theory (enable w0p-1-6 w0p-rewrite pp-rewrite kp-rewrite))))
-
-(local-defthmd w0p-1
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 1))
-           (goal))
-  :hints (("Goal" :use (w0p-1-3 w0p-1-7
-                        (:instance bvecp-bitn-0 (x (w0p)) (n j))
-                        (:instance bitn-0-1 (x (pp)) (n j)))
-		  :nonlinearp t
-                  :in-theory (e/d (bvecp goal w0p-1-1) (bvecp-bitn-0)))))
-
-(local-defthmd w0p-0-1
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 0))
-           (equal (bits (w0p) 127 j) 0))
-  :hints (("Goal" :use ((:instance bits-plus-bitn (x (w0p)) (n 127) (m j)))
-                  :in-theory (enable conds))))
-
-(local-defthmd w0p-0-2
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 0) (= (bitn (pp) j) 1))
-           (>= (+ (bits (in1lzap) (1- j) 0) (bits (in2lza) (1- j) 0))
-	       (expt 2 j)))
-  :hints (("Goal" :use ((:instance bits-plus-bitn (x (w0p)) (n 127) (m j))
-                        (:instance bitn-plus-bits (x (in1lzap)) (n j) (m 0))
-                        (:instance bitn-plus-bits (x (in2lza)) (n j) (m 0))
-			(:instance bitn-0-1 (x (in1lzap)) (n j))
-			(:instance bitn-0-1 (x (in2lza)) (n j)))
-		  :nonlinearp t
-                  :in-theory (enable conds pp-rewrite kp-rewrite))))
-
-(local-defthm w0p-0-3
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 0))
-           (or (= (bitn (kp) (1- j)) 1)
-	       (>= (+ (bits (in1lzap) (1- j) 0) (bits (in2lza) (1- j) 0))
-                   (expt 2 j))))
+(local-defthm lza-lemma
+  (implies (and (bvecp (in1lzap) 128)
+                (bvecp (in2lza) 128)
+                (> (s0p) (expt 2 128)))
+           (and (>= (w1p) 2)
+                (or (= (expo (bits (s0p) 127 0)) (expo (w1p)))
+                    (= (expo (bits (s0p) 127 0)) (1- (expo (w1p)))))))
   :rule-classes ()
-  :hints (("Goal" :use (w0p-0-2)
-                  :in-theory (enable conds pp-rewrite kp-rewrite w0p-rewrite))))
-
-(local-defthm w0p-0-4
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 0))
-           (or (= (bitn (kp) (1- j)) 1)
-	       (>= (+ (bits (in1lzap) (1- j) 0) (bits (in2lza) (1- j) 0))
-                   (expt 2 j))))
-  :rule-classes ()
-  :hints (("Goal" :use (w0p-0-2)
-                  :in-theory (enable conds pp-rewrite kp-rewrite w0p-rewrite))))
-
-(in-theory (disable ACL2::|(mod (+ x y) z) where (<= 0 z)|))
-
-(local-defthmd w0p-0-5
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 0) (= (bitn (pp) j) 1))
-           (equal (bits (s0p) j 0)
-	          (mod (+ (expt 2 j) (bits (in1lzap) (1- j) 0) (bits (in2lza) (1- j) 0))
-		       (expt 2 (1+ j)))))
-  :hints (("Goal" :use (w0p-0-2
-                        (:instance bitn-plus-bits (x (in1lzap)) (n j) (m 0))
-                        (:instance bitn-plus-bits (x (in2lza)) (n j) (m 0))
-                        (:instance bitn-0-1 (x (in1lzap)) (n j))
-                        (:instance bitn-0-1 (x (in2lza)) (n j)))
-                  :in-theory (enable w0p-1-4 pp-rewrite))))
-
-(local-defthmd w0p-0-6
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 0) (= (bitn (pp) j) 1))
-           (equal (bits (s0p) j 0)
-                  (mod (- (+ (bits (in1lzap) (1- j) 0) (bits (in2lza) (1- j) 0)) (expt 2 j)) (expt 2 (1+ j)))))
-  :hints (("Goal" :use ((:instance mod-mult (m (- (+ (bits (in1lzap) (1- j) 0) (bits (in2lza) (1- j) 0)) (expt 2 j)))
-			                    (n (expt 2 (1+ j)))
-					    (a 1)))
-		  ;:nonlinearp t
-                  :in-theory (enable w0p-0-5 w0p-rewrite pp-rewrite kp-rewrite))))
-
-(local-defthm w0p-0-7
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 0) (= (bitn (pp) j) 1))
-           (< (bits (s0p) j 0) (expt 2 j)))
-  :rule-classes ()
-  :hints (("Goal" :use (w0p-0-2
-			(:instance bits-bounds (x (in1lzap)) (i (1- j)) (j 0))
-			(:instance bits-bounds (x (in2lza)) (i (1- j)) (j 0)))
-		  :nonlinearp t
-                  :in-theory (enable w0p-0-6))))
-
-(local-defthm w0p-0-8
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 0) (= (bitn (pp) j) 0) (= (bitn (kp) j) 1))
-           (< (bits (s0p) j 0) (expt 2 j)))
-  :rule-classes ()
-  :hints (("Goal" :use ((:instance bitn-0-1 (x (in1lzap)) (n j))
-                        (:instance bitn-0-1 (x (in2lza)) (n j))
-			(:instance bitn-0-1 (x (in1lzap)) (n (1- j)))
-                        (:instance bitn-0-1 (x (in2lza)) (n (1- j)))
-                        (:instance bitn-plus-bits (x (in1lzap)) (n j) (m 0))
-                        (:instance bitn-plus-bits (x (in2lza)) (n j) (m 0))
-                        (:instance bitn-plus-bits (x (in1lzap)) (n (1- j)) (m 0))
-                        (:instance bitn-plus-bits (x (in2lza)) (n (1- j)) (m 0))
-			(:instance bits-bounds (x (in1lzap)) (i (- j 2)) (j 0))
-			(:instance bits-bounds (x (in2lza)) (i (- j 2)) (j 0)))
-		  :nonlinearp t
-                  :in-theory (enable w0p-1-4 w0p-rewrite pp-rewrite kp-rewrite))))
-
-(local-defthm w0p-0-9
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 0) (= (bitn (pp) j) 0) (= (bitn (kp) j) 0))
-           (< (bits (s0p) j 0) (expt 2 j)))
-  :rule-classes ()
-  :hints (("Goal" :use ((:instance bitn-0-1 (x (in1lzap)) (n j))
-                        (:instance bitn-0-1 (x (in2lza)) (n j))
-			(:instance bitn-0-1 (x (in1lzap)) (n (1- j)))
-                        (:instance bitn-0-1 (x (in2lza)) (n (1- j)))
-                        (:instance bitn-plus-bits (x (in1lzap)) (n j) (m 0))
-                        (:instance bitn-plus-bits (x (in2lza)) (n j) (m 0))
-                        (:instance bitn-plus-bits (x (in1lzap)) (n (1- j)) (m 0))
-                        (:instance bitn-plus-bits (x (in2lza)) (n (1- j)) (m 0))
-			(:instance bits-bounds (x (in1lzap)) (i (- j 2)) (j 0))
-			(:instance bits-bounds (x (in2lza)) (i (- j 2)) (j 0)))
-		  :nonlinearp t
-                  :in-theory (enable w0p-1-4 w0p-rewrite pp-rewrite kp-rewrite))))
-
-(local-defthm w0p-0-10
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 0))
-           (< (bits (s0p) j 0) (expt 2 j)))
-  :rule-classes ()
-  :hints (("Goal" :use (w0p-0-7 w0p-0-8 w0p-0-9)
-                  :in-theory (enable pp-rewrite kp-rewrite))))
-
-(local-defthm w0p-0-11
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 0))
-           (equal (bitn (s0p) j) 0))
-  :hints (("Goal" :use (w0p-0-10
-                        (:instance bitn-0-1 (x (s0p)) (n j))
-                        (:instance bitn-plus-bits (x (s0p)) (n j) (m 0))))))
-
-(local-defthm w0p-0-12
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 0))
-           (equal (bits (s0p) 127 j) 0))
-  :hints (("Goal" :use ((:instance bits-plus-bitn (x (s0p)) (n 127) (m j)))
-                  :in-theory (enable conds w0p-0-11))))
-
-(local-defthmd w0p-0
-  (implies (and (not (zp j)) (< j 128) (conds j) (= (bitn (w0p) j) 0))
-           (conds (1- j)))
-  :hints (("Goal" :use (w0p-0-1 w0p-0-4 w0p-0-12)
-                  :in-theory (enable conds))))
-
-(local-defthm conds-goal
-  (implies (and (natp j) (< j 128) (conds j) (assumps))
-           (goal))	   
-  :rule-classes ()
-  :hints (("Goal" :induct (nats j))
-          ("Subgoal *1/2" :use (w0p-1 w0p-0 (:instance bitn-0-1 (x (w0p)) (n j))))))
-
-(local-defthm assumps-goal
-  (implies (assumps) (goal))	   
-  :rule-classes ()
-  :hints (("Goal" :use ((:instance conds-goal (j 127))))))
+  :hints (("Goal" :in-theory (enable p0 k0 w0 w1p kp pp s0p)
+                  :use ((:instance lza-thm (a (in1lzap)) (b (in2lza)) (n 128))))))
 
 (local-defthm expo-s0p-1
   (implies (and (rationalp x) (>= x 2))
@@ -372,31 +102,31 @@
   :hints (("Goal" :use (expo-s0p-2 (:instance expo-unique (x (fl (* 1/2 x))) (n (1- (expo x))))))))
 
 (local-defthm expo-s0p-4
-  (implies (>= (w0p) 2)
-           (equal (expo (w0p))
-                  (1+ (expo (bits (ash (w0p) (- 1)) 127 0)))))
+  (implies (>= (w1p) 2)
+           (equal (expo (w1p))
+                  (1+ (expo (bits (ash (w1p) (- 1)) 127 0)))))
   :hints (("Goal" :nonlinearp t
                   :use ((:instance bits-bounds (x (LOGNOT (LOGXOR (PP) (* 2 (KP))))) (i 127) (j 0)))
-                  :in-theory (enable w0p bvecp))))
+                  :in-theory (enable w1p bvecp))))
 
 (local-defthm expo-s0p-5
-  (implies (>= (w0p) 2)
-           (>= (bits (ash (w0p) (- 1)) 127 0) 1))
+  (implies (>= (w1p) 2)
+           (>= (bits (ash (w1p) (- 1)) 127 0) 1))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable w0p bvecp)
+  :hints (("Goal" :in-theory (enable w1p bvecp)
                   :use ((:instance expo-s0p-2 (x (BITS (LOGNOT (LOGXOR (PP) (* 2 (KP)))) 127 0)))
 		        (:instance bits-bounds (x (LOGNOT (LOGXOR (PP) (* 2 (KP))))) (i 127) (j 0))))))
 
 (local-defthm expo-s0p-6
-  (<= (expo (w0p)) 127)
+  (<= (expo (w1p)) 127)
   :rule-classes ()
   :hints (("Goal" :use ((:instance bits-bounds (x (lognot (logxor (pp) (ash (kp) 1)))) (i 127) (j 0))
-                        (:instance expo<= (x (w0p)) (n 127)))
-	          :in-theory (enable w0p))))
+                        (:instance expo<= (x (w1p)) (n 127)))
+	          :in-theory (enable w1p))))
 
 (local-defthm expo-s0p-7
-  (implies (>= (w0p) 2)
-           (<= (expo (bits (ash (w0p) (- 1)) 127 0))
+  (implies (>= (w1p) 2)
+           (<= (expo (bits (ash (w1p) (- 1)) 127 0))
                126))
   :rule-classes ()
   :hints (("Goal" :use (expo-s0p-6))))
@@ -409,8 +139,8 @@
                    (or (= (expo (bits (s0p) 127 0)) (- 127 (lzap)))
                        (= (expo (bits (s0p) 127 0)) (- 128 (lzap))))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable lzap128-lemma assumps goal lzcnt-expo clz-expo)
-                  :use (expo-s0p-5 expo-s0p-7 assumps-goal))))
+  :hints (("Goal" :in-theory (enable lzap128-lemma lzcnt-expo clz-expo)
+                  :use (expo-s0p-5 expo-s0p-7 lza-lemma))))
 
 (local-defthmd expo-sum-lzap-1
   (implies (and (= (mulovfl) 0) (= (far) 0) (> (exps) 0))
@@ -493,6 +223,8 @@
                   :use ((:instance bits-bounds (x (fracs)) (i 104) (j 0))
 		        (:instance bits-bounds (x (fracl)) (i 104) (j 0))))))
 
+(local-in-theory (disable (s0p)))
+
 (local-defthm expo-sum-lzap-15
   (implies (and (= (mulovfl) 0) (= (far) 0) (> (exps) 0))
            (and (> (lzap) 0)
@@ -541,21 +273,21 @@
                         (:instance bitn-rec-pos (x (in1lza)) (n k))
 			(:instance bitn-rec-pos (x (in1lzap)) (n k))))))
 
-(local-defthmd p-rewrite
+(local-defthmd p1-rewrite
   (implies (and (natp j) (< j 128))
-           (equal (bitn (p) j)
+           (equal (bitn (p1) j)
 	          (if (= (bitn (in1lza) j) (bitn (in2lza) j))
                       0 1)))
-  :hints (("Goal" :in-theory (enable p bitn-logxor)
+  :hints (("Goal" :in-theory (enable p1 bitn-logxor)
                   :use ((:instance bitn-0-1 (n j) (x (in1lza)))
 			(:instance bitn-0-1 (n j) (x (in2lza)))))))
 
-(local-defthmd k-rewrite
+(local-defthmd k1-rewrite
   (implies (and (natp j) (< j 128))
-           (equal (bitn (k) j)
+           (equal (bitn (k1) j)
 	          (if (and (= (bitn (in1lza) j) 0) (= (bitn (in2lza) j) 0))
                       1 0)))
-  :hints (("Goal" :in-theory (enable k bitn-bits bitn-logand)
+  :hints (("Goal" :in-theory (enable k1 bitn-bits bitn-logand)
                   :use ((:instance bitn-0-1 (n j) (x (in1lza)))
 			(:instance bitn-0-1 (n j) (x (in2lza)))
 			(:instance bitn-0-1 (n j) (x (lognot (in1lza))))
@@ -563,44 +295,44 @@
 			(:instance bitn-lognot (n j) (x (in1lza)))
 			(:instance bitn-lognot (n j) (x (in2lza)))))))
 
-(local-defthmd w0-rewrite
+(local-defthmd w1-rewrite
   (implies (and (not (zp j)) (< j 128))
-           (equal (bitn (w0) j)
-	          (if (= (bitn (p) j) (bitn (k) (1- j)))
+           (equal (bitn (w1) j)
+	          (if (= (bitn (p1) j) (bitn (k1) (1- j)))
                       1 0)))
-  :hints (("Goal" :in-theory (enable w0 bitn-bits bitn-logxor bitn-logand)
-                  :use ((:instance bitn-0-1 (n j) (x (p)))
-			(:instance bitn-0-1 (n (1- j)) (x (k)))
-			(:instance bitn-0-1 (n j) (x (lognot (LOGXOR (P) (* 2 (K))))))
-			(:instance bitn-lognot (x (LOGXOR (P) (* 2 (K)))) (n j))
-			(:instance bitn-shift-up (x (k)) (k 1) (n (1- j)))))))
+  :hints (("Goal" :in-theory (enable w1 bitn-bits bitn-logxor bitn-logand)
+                  :use ((:instance bitn-0-1 (n j) (x (p1)))
+			(:instance bitn-0-1 (n (1- j)) (x (k1)))
+			(:instance bitn-0-1 (n j) (x (lognot (LOGXOR (P1) (* 2 (K1))))))
+			(:instance bitn-lognot (x (LOGXOR (P1) (* 2 (K1)))) (n j))
+			(:instance bitn-shift-up (x (k1)) (k 1) (n (1- j)))))))
 
-(defthmd bitn-w0-w0p-low
+(defthmd bitn-w1-w1p-low
   (implies (and (natp k) (>= k 2) (< k 128))
-           (equal (bitn (w0p) k)
-	          (bitn (w0) k)))
-  :hints (("Goal" :in-theory (enable w0-rewrite w0p-rewrite p-rewrite pp-rewrite k-rewrite kp-rewrite))))
+           (equal (bitn (w1p) k)
+	          (bitn (w1) k)))
+  :hints (("Goal" :in-theory (enable w1-rewrite w1p-rewrite p1-rewrite pp-rewrite k1-rewrite kp-rewrite))))
 
-(defthmd bitn-w0-0
+(defthmd bitn-w1-0
   (implies (and (natp k) (>= k 128))
-           (equal (bitn (w0) k) 0))
-  :hints (("Goal" :in-theory (enable w0 bvecp))))
+           (equal (bitn (w1) k) 0))
+  :hints (("Goal" :in-theory (enable w1 bvecp))))
 
-(defthmd bitn-w0p-0
+(defthmd bitn-w1p-0
   (implies (and (natp k) (>= k 128))
-           (equal (bitn (w0p) k) 0))
-  :hints (("Goal" :in-theory (enable w0p bvecp))))
+           (equal (bitn (w1p) k) 0))
+  :hints (("Goal" :in-theory (enable w1p bvecp))))
 
-(local-defthmd bitn-w0-w0p
+(local-defthmd bitn-w1-w1p
   (implies (and (natp k) (>= k 2))
-           (equal (bitn (w0p) k)
-	          (bitn (w0) k)))
-  :hints (("Goal" :in-theory (enable bitn-w0-0 bitn-w0p-0 bitn-w0-w0p-low)
+           (equal (bitn (w1p) k)
+	          (bitn (w1) k)))
+  :hints (("Goal" :in-theory (enable bitn-w1-0 bitn-w1p-0 bitn-w1-w1p-low)
                   :cases ((< k 128)))))
 
-(local-defund fw () (bits (ash (w0) (- 1)) 127 0))
+(local-defund fw () (bits (ash (w1) (- 1)) 127 0))
 
-(local-defund fwp () (bits (ash (w0p) (- 1)) 127 0))
+(local-defund fwp () (bits (ash (w1p) (- 1)) 127 0))
 
 (local-in-theory (disable (fw) (fwp)))
 
@@ -617,9 +349,9 @@
 (local-defthm bitn-fw-fwp-low
   (implies (and (not (zp k)) (< k 128))
            (equal (bitn (fwp) k) (bitn (fw) k)))
-  :hints (("Goal" :in-theory (enable fw fwp bitn-w0-w0p bitn-bits)
-                  :use ((:instance bitn-rec-pos (x (w0)) (n (1+ k)))
-		        (:instance bitn-rec-pos (x (w0p)) (n (1+ k)))))))
+  :hints (("Goal" :in-theory (enable fw fwp bitn-w1-w1p bitn-bits)
+                  :use ((:instance bitn-rec-pos (x (w1)) (n (1+ k)))
+		        (:instance bitn-rec-pos (x (w1p)) (n (1+ k)))))))
 
 (local-defthm bitn-fw-fwp
   (implies (not (zp k))
@@ -651,64 +383,64 @@
   :hints (("Goal" :in-theory (enable bvecp):nonlinearp t
                   :use (expo-upper-bound))))
 
-(local-defthm w0p>=4
+(local-defthm w1p>=4
   (implies (and (= (mulovfl) 0) (= (far) 0) (> (exps) 0))
-           (>= (w0p) 4))
+           (>= (w1p) 4))
   :rule-classes ()
   :hints (("Goal" :use (expo-fwp-bound (:instance expo-lower-bound (x (fwp))))
                   :in-theory (enable fwp))))
 
 
-(local-defthm expo-w0-1
+(local-defthm expo-w1-1
   (implies (and (= (mulovfl) 0) (= (far) 0) (> (exps) 0))
-           (and (= (bitn (w0) (expo (w0p))) 1)
-	        (>= (expo (w0p)) 2)))
+           (and (= (bitn (w1) (expo (w1p))) 1)
+	        (>= (expo (w1p)) 2)))
   :rule-classes ()
   :hints (("Goal" :in-theory (e/d (bitn-expo) (expo-s0p-4))
-                  :use (w0p>=4  (:instance bitn-w0-w0p (k (expo (w0p)))) (:instance expo>= (x (w0p)) (n 2))))))
+                  :use (w1p>=4  (:instance bitn-w1-w1p (k (expo (w1p)))) (:instance expo>= (x (w1p)) (n 2))))))
 
-(local-defthm w0-bound
+(local-defthm w1-bound
   (implies (and (= (mulovfl) 0) (= (far) 0) (> (exps) 0))
-           (>= (w0) 4))
+           (>= (w1) 4))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable bvecp)
-                  :use (expo-w0-1 (:instance bitn-plus-bits (x (w0)) (n (expo (w0p))) (m 0))))))
+                  :use (expo-w1-1 (:instance bitn-plus-bits (x (w1)) (n (expo (w1p))) (m 0))))))
 
-(local-defthm expo-w0-2
+(local-defthm expo-w1-2
   (implies (and (= (mulovfl) 0) (= (far) 0) (> (exps) 0))
-           (>= (w0) (expt 2 (expo (w0p)))))
+           (>= (w1) (expt 2 (expo (w1p)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable bvecp):nonlinearp t
-                  :use (expo-w0-1
-		        (:instance bitn-plus-bits (x (w0)) (n (expo (w0p))) (m 0))))))
+                  :use (expo-w1-1
+		        (:instance bitn-plus-bits (x (w1)) (n (expo (w1p))) (m 0))))))
 
-(local-defthm expo-w0-3
+(local-defthm expo-w1-3
   (implies (and (= (mulovfl) 0) (= (far) 0) (> (exps) 0))
-           (>= (expo (w0)) (expo (w0p))))
+           (>= (expo (w1)) (expo (w1p))))
   :rule-classes ()
-  :hints (("Goal" :use (expo-w0-2
-		        (:instance expo>= (x (w0)) (n (expo (w0p))))))))
+  :hints (("Goal" :use (expo-w1-2
+		        (:instance expo>= (x (w1)) (n (expo (w1p))))))))
 
-(local-defthmd expo-w0-4
+(local-defthmd expo-w1-4
   (implies (and (= (mulovfl) 0) (= (far) 0) (> (exps) 0))
-           (equal (expo (w0)) (expo (w0p))))
-  :hints (("Goal" :use (expo-w0-1 expo-w0-3
-                        (:instance bitn>expo (x (w0p)) (n (expo (w0))))
-                        (:instance bitn-expo (x (w0))))
-		  :in-theory (enable bitn-w0-w0p))))
+           (equal (expo (w1)) (expo (w1p))))
+  :hints (("Goal" :use (expo-w1-1 expo-w1-3
+                        (:instance bitn>expo (x (w1p)) (n (expo (w1))))
+                        (:instance bitn-expo (x (w1))))
+		  :in-theory (enable bitn-w1-w1p))))
 
-(local-defthm expo-w0-5
+(local-defthm expo-w1-5
   (implies (and (= (mulovfl) 0) (= (far) 0) (> (exps) 0))
-           (equal (expo (w0))
-                  (1+ (expo (bits (ash (w0) (- 1)) 127 0)))))
+           (equal (expo (w1))
+                  (1+ (expo (bits (ash (w1) (- 1)) 127 0)))))
   :hints (("Goal" :nonlinearp t
-                  :use (w0-bound (:instance bits-bounds (x (LOGNOT (LOGXOR (P) (* 2 (K))))) (i 127) (j 0)))
-                  :in-theory (enable w0 bvecp))))
+                  :use (w1-bound (:instance bits-bounds (x (LOGNOT (LOGXOR (P1) (* 2 (K1))))) (i 127) (j 0)))
+                  :in-theory (enable w1 bvecp))))
 
 (local-defthmd expo-fw-fwp
   (implies (and (= (mulovfl) 0) (= (far) 0) (> (exps) 0))
            (equal (expo (fw)) (expo (fwp))))
-  :hints (("Goal" :use (w0p>=4 expo-w0-4) :in-theory (enable fw fwp))))
+  :hints (("Goal" :use (w1p>=4 expo-w1-4) :in-theory (enable fw fwp))))
 
 (local-defthmd expo-fw
   (equal (expo (fw)) (- 127 (lza)))
@@ -716,15 +448,15 @@
 
 (local-defthmd expo-fw-bound
    (<= (expo (fw)) 126)
-  :hints (("Goal" :in-theory (enable fw w0)
-                  :use ((:instance bits-bounds (x (w0)) (i 127) (j 0))
+  :hints (("Goal" :in-theory (enable fw w1)
+                  :use ((:instance bits-bounds (x (w1)) (i 127) (j 0))
 		        (:instance expo<= (x (fw)) (n 126))))))
 
 (local-defthmd expo-fw-bounds
   (implies (and (= (mulovfl) 0) (= (far) 0) (> (exps) 0))
            (and (<= (expo (fw)) 127) (>= (expo (fw)) 0)))
   :hints (("Goal" :in-theory (enable fw)
-                  :use ((:instance bits-bounds (x (ash (w0) (- 1))) (i 127) (j 0))
+                  :use ((:instance bits-bounds (x (ash (w1) (- 1))) (i 127) (j 0))
 		        (:instance expo>= (x (fw)) (n 0))
 		        (:instance expo<= (x (fw)) (n 127))))))
 

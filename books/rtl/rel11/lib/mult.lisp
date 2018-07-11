@@ -53,48 +53,6 @@
 
 (defun neg (x) (if (< x 0) 1 0))
 
-(encapsulate ((zeta (i) t))
- (local (defun zeta (i) (declare (ignore i)) 0))
- (defthm zeta-bnd
-     (and (integerp (zeta i))
-	  (<= (zeta i) 2)
-	  (>= (zeta i) -2))))
-
-(defun pp4 (i x n)
-  (if (zerop i)
-      (cat 1 1
-	   (bitn (lognot (neg (zeta i))) 0) 1
-	   (bmux4 (zeta i) x n) n)
-    (cat 1 1
-	 (bitn (lognot (neg (zeta i))) 0) 1
-	 (bmux4 (zeta i) x n) n
-	 0 1
-	 (neg (zeta (1- i))) 1
-	 0 (* 2 (1- i)))))
-
-(defun sum-zeta (m)
-  (if (zp m)
-      0
-    (+ (* (expt 2 (* 2 (1- m))) (zeta (1- m)))
-       (sum-zeta (1- m)))))
-
-(defun sum-pp4 (x m n)
-  (if (zp m)
-      0
-    (+ (pp4 (1- m) x n)
-       (sum-pp4 x (1- m) n))))
-
-(defthm booth4-thm
-    (implies (and (not (zp n))
-		  (not (zp m))
-		  (bvecp x (1- n)))
-	     (= (+ (expt 2 n)
-		   (sum-pp4 x m n))
-		(+ (expt 2 (+ n (* 2 m)))
-		   (* x (sum-zeta m))
-		   (- (* (expt 2 (* 2 (1- m))) (neg (zeta (1- m))))))))
-  :rule-classes ())
-
 (defun pp4-theta (i x y n)
    (if (zerop i)
        (cat 1 1
@@ -122,7 +80,9 @@
 		   (sum-pp4-theta x y m n))
 		(+ (expt 2 (+ n (* 2 m)))
 		   (* x y))))
-  :rule-classes ())
+    :rule-classes ())
+
+;;------------------------------------------------------------------------------------------------
 
 (defun pp4p-theta (i x y n)
    (if (zerop i)
@@ -152,7 +112,7 @@
                 (* x y)))
   :rule-classes ())
 
-
+;;------------------------------------------------------------------------------------------------
 
 (defund mag (i y)
   (if (member (bits y (1+ (* 2 i)) (1- (* 2 i))) '(3 4))
@@ -161,23 +121,15 @@
         1
       0)))
 
-(defthm mag-0-1-2
-  (member (mag i y) '(0 1 2))
-  :rule-classes ())
-
 (defund nbit (i y)
   (bitn y (1+ (* 2 i))))
-
-(defthm nbit-0-1
-  (member (nbit i y) '(0 1))
-  :rule-classes ())
 
 (defthmd theta-rewrite
   (implies (and (natp y) (natp i))
            (equal (theta i y)
                   (if  (= (nbit i y) 1)
                        (- (mag i y))
-                       (mag i y)))))
+                    (mag i y)))))
 
 (defund bmux4p (i x y n)
   (if  (= (nbit i y) 1)

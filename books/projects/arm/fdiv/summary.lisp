@@ -2,7 +2,7 @@
 
 (include-book "final")
 
-;; We impose the following constraints on the inputs of execute:
+;; We impose the following constraints on the inputs of fdiv64:
 
 (defund input-constraints (opa opb fnum rin)
   (and (bvecp opa 64)
@@ -21,7 +21,7 @@
                   (dnp (bitn rin 25))
                   (fzp (bitn rin 24))
                   (rmode (bits rin 23 22)))
-             (mv-let (data flags) (execute opa opb fnum fzp dnp rmode)
+             (mv-let (data flags) (fdiv64 opa opb fnum fzp dnp rmode)
                (let ((r (logior rin flags)))         
                  (mv-let (data-spec r-spec)
                          (arm-binary-spec 'div (bits opa (1- fmtw) 0) (bits opb (1- fmtw) 0) rin f)
@@ -43,7 +43,7 @@
     (input-constraints (opa) (opb) (fnum) (rin))
     :rule-classes ()))
 
-;; The following inputs of execute are derived from the above:
+;; The following inputs of fdiv64 are derived from the above:
 
 (defund dnp () (bitn (rin) 25))
 (defund fzp () (bitn (rin) 24))
@@ -51,7 +51,7 @@
 (defund f () (case (fnum) (0 (hp)) (1 (sp)) (2 (dp))))
 
 ;; In terms of these constants, we define constants corresponding to the local 
-;; variables of the top-level function, execute, culminating in the constants
+;; variables of the top-level function, fdiv64, culminating in the constants
 ;; (data) and (flags) corresponding to the outputs.
 
 ;; Operand components and updated flags computed by analyze:
@@ -111,13 +111,13 @@
 ;; Final signed-digit remainder and quotient computed by the loop:
 
 (defund rp-3n1 ()
-  (mv-nth 1 (mv-list 5 (execute-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
+  (mv-nth 1 (mv-list 5 (fdiv64-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
 (defund rn-3n1 ()
-  (mv-nth 2 (mv-list 5 (execute-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
+  (mv-nth 2 (mv-list 5 (fdiv64-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
 (defund qp-3n1 ()
-  (mv-nth 3 (mv-list 5 (execute-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
+  (mv-nth 3 (mv-list 5 (fdiv64-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
 (defund qn-3n1 ()
-  (mv-nth 4 (mv-list 5 (execute-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
+  (mv-nth 4 (mv-list 5 (fdiv64-loop-0 0 (n) (div) (fnum) (q-1) (rp-1) (rn-1) (bits 0 53 0) (bits 0 53 0)))))
 
 ;; Assimilated quotient, incremented quotient, and sticky bit, computed by computeQ:
 
@@ -176,11 +176,11 @@
        (flags-special)
      (flags-final)))
 
-;; The aqbove constant definitions are based closely on the definition of execute so that
+;; The aqbove constant definitions are based closely on the definition of fdiv64 so that
 ;; the proof of the following is trivial:
 
-(defthmd execute-lemma
-  (mv-let (data flags) (execute (opa) (opb) (fnum) (fzp) (dnp) (rmode))
+(defthmd fdiv64-lemma
+  (mv-let (data flags) (fdiv64 (opa) (opb) (fnum) (fzp) (dnp) (rmode))
     (and (equal (data) data)
          (equal (flags) flags))))
 
@@ -201,7 +201,7 @@
          (dnp (bitn (rin) 25))
          (fzp (bitn (rin) 24))
          (rmode (bits (rin) 23 22)))
-    (mv-let (data flags) (execute (opa) (opb) (fnum) fzp dnp rmode)
+    (mv-let (data flags) (fdiv64 (opa) (opb) (fnum) fzp dnp rmode)
       (mv-let (data-spec r-spec)
               (arm-binary-spec 'div (bits (opa) (1- fmtw) 0) (bits (opb) (1- fmtw) 0) (rin) f)
         (and (equal data data-spec)
@@ -213,7 +213,7 @@
 
 ;; We also define sequences of values (q j), (rp j), (rn j), (qp j), and (qn j),
 ;; representing the quotient digits, partial remainders, and partial quotients,
-;; as a set of mutually recursive functions, as they are computed by execute-loop-0:
+;; as a set of mutually recursive functions, as they are computed by fdiv64-loop-0:
 
 (mutual-recursion
 
@@ -643,7 +643,7 @@
          (dnp (bitn (rin) 25))
          (fzp (bitn (rin) 24))
          (rmode (bits (rin) 23 22)))
-    (mv-let (data flags) (execute (opa) (opb) (fnum) fzp dnp rmode)
+    (mv-let (data flags) (fdiv64 (opa) (opb) (fnum) fzp dnp rmode)
       (mv-let (data-spec r-spec)
               (arm-binary-spec 'div (bits (opa) (1- fmtw) 0) (bits (opb) (1- fmtw) 0) (rin) f)
         (and (equal data data-spec)
@@ -656,7 +656,7 @@
                   (dnp (bitn rin 25))
                   (fzp (bitn rin 24))
                   (rmode (bits rin 23 22)))
-             (mv-let (data flags) (execute opa opb fnum fzp dnp rmode)
+             (mv-let (data flags) (fdiv64 opa opb fnum fzp dnp rmode)
                (let ((r (logior rin flags)))         
                  (mv-let (data-spec r-spec)
                          (arm-binary-spec 'div (bits opa (1- fmtw) 0) (bits opb (1- fmtw) 0) rin f)
