@@ -50,7 +50,7 @@
 
 (defsection opcode-maps
   :parents (x86isa decoding-and-spec-utils)
-  :short "<b>ACL2 representation of x86 Opcode Maps</b>"
+  :short "<b>ACL2 representation of Intel's x86 Opcode Maps</b>"
   :long "<p>The constants @('*one-byte-opcode-map-lst*'),
  @('*two-byte-opcode-map-lst*'), @('*0F-38-three-byte-opcode-map-lst*'),
  @('*0F-3A-three-byte-opcode-map-lst*'), and
@@ -112,223 +112,587 @@
    :v1
    ))
 
+;; ----------------------------------------------------------------------
+
+;; A note about our annotations of the opcode maps:
+
+;; We annotate each opcode in our representation of the opcode maps with the
+;; instruction semantic function that implements that opcode.  We use these
+;; annotations to generate code that dispatches control to the appropriate
+;; instruction semantic function once the instruction has been "sufficiently"
+;; decoded (see x86-fetch-decode-execute), and to generate coverage reports
+;; (i.e., which opcodes, in which modes, have been implemented in x86isa,
+;; etc.).
+
+;; <annotation> should always be a true-listp.
+
+;; 1. <annotation> can be 'nil, which means unimplemented.  Semantic function
+;;    x86-step-unimplemented should be called here, and this byte should be
+;;    marked as "todo" in x86isa.
+
+;;    General format: 'nil
+
+;; In the rest of the list below, <annotation> takes the form:
+;; (:fn . <name>), where <name> should always be a true-listp.
+
+;; 2. <name> can be (:no-instruction), which means that there is no Intel
+;;    instruction corresponding to this opcode (e.g., 0x26 is a legacy prefix
+;;    or 0xD6 is blank in the one-byte opcode map).  Semantic function
+;;    x86-illegal-instruction should be called here, in case this byte has been
+;;    filed away by the x86isa decoder as an opcode byte --- if this happens,
+;;    it'll indicate an error in the x86isa decoder.  However, unlike the
+;;    previous case when x86-step-unimplemented is called, this byte should be
+;;    marked as "implemented" in x86isa.
+
+;; 3. If <name> has one element, then it is the name of the instruction
+;;    semantic function that deals with all the currently implemented modes of
+;;    operation.
+
+;;    General format: (:fn . (instruction-semantic-fn))
+
+;; 4. If <name> has more than one element, then the first one is the name of
+;;    the instruction semantic function, and the rest are pairs whose keys are
+;;    the formals of the function and values are the explicit values they
+;;    should be assigned when creating the opcode dispatch function.  E.g., for
+;;    opcode #x00:
+
+;;    (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+;;             (operation . #.*OP-ADD*)))
+
+;;    General format: (:fn . (instruction-semantic-fn (formal-1 . value-1)
+;;                                                     ...
+;;                                                    (formal-n . value-n)))
+
+;; Note that for opcode cells with :i64 and :o64:
+;;     ((:i64 . foo) (:o64 . bar))
+;; the following code will be generated:
+;;    (if (64-bit-modep x86)
+;;        <appropriate call for bar>
+;;        <appropriate call for foo>)
+
+
 (defconst *one-byte-opcode-map-lst*
   ;; Source: Intel Volume 2, Table A-2.
 
   '(
     #|       -------------------------------        |#
 
-    #| 00 |# (("ADD" 2 (E b)  (G b))
-              ("ADD" 2 (E v)  (G v))
-              ("ADD" 2 (G b)  (E b))
-              ("ADD" 2 (G v)  (E v))
-              ("ADD" 2 (:AL)  (I b))
-              ("ADD" 2 (:rAX) (I z))
-              ((:i64 . ("PUSH ES" 0)))
-              ((:i64 . ("POP ES"  0)))
-              ("OR" 2 (E b)  (G b))
-              ("OR" 2 (E v)  (G v))
-              ("OR" 2 (G b)  (E b))
-              ("OR" 2 (G v)  (E v))
-              ("OR" 2 (:AL)  (I b))
-              ("OR" 2 (:rAX) (I z))
-              ((:i64 . ("PUSH CS" 0)))
-              (:2-byte-escape))
+    #| 00 |# (("ADD" 2 (E b)  (G b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-ADD*))))
+              ("ADD" 2 (E v)  (G v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-ADD*))))
+              ("ADD" 2 (G b)  (E b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-ADD*))))
+              ("ADD" 2 (G v)  (E v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-ADD*))))
+              ("ADD" 2 (:AL)  (I b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-ADD*))))
+              ("ADD" 2 (:rAX) (I z)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-ADD*))))
+              ((:i64 . ("PUSH ES" 0
+                        (:fn . (x86-push-segment-register))))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "PUSH ES is illegal in the 64-bit mode!"))))))
+              ((:i64 . ("POP ES"  0))
+               (:o64 . ("#UD"  0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "POP ES is illegal in the 64-bit mode!"))))))
+              ("OR" 2 (E b)  (G b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-OR*))))
+              ("OR" 2 (E v)  (G v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-OR*))))
+              ("OR" 2 (G b)  (E b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-OR*))))
+              ("OR" 2 (G v)  (E v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-OR*))))
+              ("OR" 2 (:AL)  (I b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-OR*))))
+              ("OR" 2 (:rAX) (I z)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-OR*))))
+              ((:i64 . ("PUSH CS" 0
+                        (:fn . (x86-push-segment-register))))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "PUSH CS is illegal in the 64-bit mode!"))))))
+              (:2-byte-escape
+               (:fn . (two-byte-opcode-decode-and-execute
+                       ;; vex-prefixes is 0 here because we won't ever transfer
+                       ;; to the two- or three-byte opcode maps from the
+                       ;; one-byte opcode map in the presence of vex prefixes.
+                       ;; See x86-fetch-decode-execute and
+                       ;; vex-decode-and-execute for details.
+                       (vex-prefixes . 0)))))
 
-    #| 10 |# (("ADC" 2 (E b) (G b))
-              ("ADC" 2 (E v) (G v))
-              ("ADC" 2 (G b) (E b))
-              ("ADC" 2 (G v) (E v))
-              ("ADC" 2 (:AL) (I b))
-              ("ADC" 2 (:rAX) (I z))
-              ((:i64 . ("PUSH SS" 0)))
-              ((:i64 . ("POP SS" 0)))
-              ("SBB" 2 (E b) (G b))
-              ("SBB" 2 (E v) (G v))
-              ("SBB" 2 (G b) (E b))
-              ("SBB" 2 (G v) (E v))
-              ("SBB" 2 (:AL) (I b))
-              ("SBB" 2 (:rAX) (I z))
-              ((:i64 . ("PUSH DS" 0)))
-              ((:i64 . ("POP DS" 0))))
+    #| 10 |# (("ADC" 2 (E b) (G b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-ADC*))))
+              ("ADC" 2 (E v) (G v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-ADC*))))
+              ("ADC" 2 (G b) (E b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-ADC*))))
+              ("ADC" 2 (G v) (E v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-ADC*))))
+              ("ADC" 2 (:AL) (I b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-ADC*))))
+              ("ADC" 2 (:rAX) (I z)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-ADC*))))
+              ((:i64 . ("PUSH SS" 0
+                        (:fn . (x86-push-segment-register))))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "PUSH SS is illegal in the 64-bit mode!"))))))
+              ((:i64 . ("POP SS" 0))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "POP SS is illegal in the 64-bit mode!"))))))
+              ("SBB" 2 (E b) (G b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-SBB*))))
+              ("SBB" 2 (E v) (G v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-SBB*))))
+              ("SBB" 2 (G b) (E b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-SBB*))))
+              ("SBB" 2 (G v) (E v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-SBB*))))
+              ("SBB" 2 (:AL) (I b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-SBB*))))
+              ("SBB" 2 (:rAX) (I z)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-SBB*))))
+              ((:i64 . ("PUSH DS" 0
+                        (:fn . (x86-push-segment-register))))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "PUSH DS is illegal in the 64-bit mode!"))))))
+              ((:i64 . ("POP DS" 0))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "POP DS is illegal in the 64-bit mode!")))))))
 
-    #| 20 |# (("AND" 2 (E b) (G b))
-              ("AND" 2 (E v) (G v))
-              ("AND" 2 (G b) (E b))
-              ("AND" 2 (G v) (E v))
-              ("AND" 2 (:AL) (I b))
-              ("AND" 2 (:rAX) (I z))
-              (:prefix-ES)
-              ((:i64 . ("DAA" 0)))
-              ("SUB" 2 (E b) (G b))
-              ("SUB" 2 (E v) (G v))
-              ("SUB" 2 (G b) (E b))
-              ("SUB" 2 (G v) (E v))
-              ("SUB" 2 (:AL) (I b))
-              ("SUB" 2 (:rAX) (I z))
-              (:prefix-CS)
-              ((:i64 . ("DAS" 0))))
+    #| 20 |# (("AND" 2 (E b) (G b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-AND*))))
+              ("AND" 2 (E v) (G v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-AND*))))
+              ("AND" 2 (G b) (E b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-AND*))))
+              ("AND" 2 (G v) (E v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-AND*))))
+              ("AND" 2 (:AL) (I b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-AND*))))
+              ("AND" 2 (:rAX) (I z)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-AND*))))
+              (:prefix-ES
+               (:fn . (:no-instruction)))
+              ((:i64 . ("DAA" 0))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "DAA is illegal in the 64-bit mode!"))))))
+              ("SUB" 2 (E b) (G b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-SUB*))))
+              ("SUB" 2 (E v) (G v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-SUB*))))
+              ("SUB" 2 (G b) (E b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-SUB*))))
+              ("SUB" 2 (G v) (E v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-SUB*))))
+              ("SUB" 2 (:AL) (I b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-SUB*))))
+              ("SUB" 2 (:rAX) (I z)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-SUB*))))
+              (:prefix-CS
+               (:fn . (:no-instruction)))
+              ((:i64 . ("DAS" 0))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "DAS is illegal in the 64-bit mode!")))))))
 
-    #| 30 |# (("XOR" 2 (E b) (G b))
-              ("XOR" 2 (E v) (G v))
-              ("XOR" 2 (G b) (E b))
-              ("XOR" 2 (G v) (E v))
-              ("XOR" 2 (:AL) (I b))
-              ("XOR" 2 (:rAX) (I z))
-              (:prefix-SS)
-              ((:i64 . ("AAA" 0)))
-              ("CMP" 2 (E b) (G b))
-              ("CMP" 2 (E v) (G v))
-              ("CMP" 2 (G b) (E b))
-              ("CMP" 2 (G v) (E v))
-              ("CMP" 2 (:AL) (I b))
-              ("CMP" 2 (:rAX) (I z))
-              (:prefix-DS)
-              ((:i64 . ("AAS" 0))))
+    #| 30 |# (("XOR" 2 (E b) (G b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-XOR*))))
+              ("XOR" 2 (E v) (G v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-XOR*))))
+              ("XOR" 2 (G b) (E b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-XOR*))))
+              ("XOR" 2 (G v) (E v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-XOR*))))
+              ("XOR" 2 (:AL) (I b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-XOR*))))
+              ("XOR" 2 (:rAX) (I z)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-XOR*))))
+              (:prefix-SS
+               (:fn . (:no-instruction)))
+              ((:i64 . ("AAA" 0))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "AAA is illegal in the 64-bit mode!"))))))
+              ("CMP" 2 (E b) (G b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-CMP*))))
+              ("CMP" 2 (E v) (G v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                       (operation . #.*OP-CMP*))))
+              ("CMP" 2 (G b) (E b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-CMP*))))
+              ("CMP" 2 (G v) (E v)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
+                       (operation . #.*OP-CMP*))))
+              ("CMP" 2 (:AL) (I b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-CMP*))))
+              ("CMP" 2 (:rAX) (I z)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-CMP*))))
+              (:prefix-DS
+               (:fn . (:no-instruction)))
+              ((:i64 . ("AAS" 0))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "AAS is illegal in the 64-bit mode!")))))))
 
-    #| 40 |# (((:o64  . (:rex))       (:i64 . ("INC"  1 (:eAX))))
-              ((:o64  . (:rex-b))     (:i64 . ("INC"  1 (:eCX))))
-              ((:o64  . (:rex-x))     (:i64 . ("INC"  1 (:eDX))))
-              ((:o64  . (:rex-xb))    (:i64 . ("INC"  1 (:eBX))))
-              ((:o64  . (:rex-r))     (:i64 . ("INC"  1 (:eSP))))
-              ((:o64  . (:rex-rb))    (:i64 . ("INC"  1 (:eBP))))
-              ((:o64  . (:rex-rx))    (:i64 . ("INC"  1 (:eSI))))
-              ((:o64  . (:rex-rxb))   (:i64 . ("INC"  1 (:eDI))))
-              ((:o64  . (:rex-w))     (:i64 . ("DEC"  1 (:eAX))))
-              ((:o64  . (:rex-wb))    (:i64 . ("DEC"  1 (:eCX))))
-              ((:o64  . (:rex-wx))    (:i64 . ("DEC"  1 (:eDX))))
-              ((:o64  . (:rex-wxb))   (:i64 . ("DEC"  1 (:eBX))))
-              ((:o64  . (:rex-wr))    (:i64 . ("DEC"  1 (:eSP))))
-              ((:o64  . (:rex-wrb))   (:i64 . ("DEC"  1 (:eBP))))
-              ((:o64  . (:rex-wrx))   (:i64 . ("DEC"  1 (:eSI))))
-              ((:o64  . (:rex-wrxb))  (:i64 . ("DEC"  1 (:eDI)))))
+    #| 40 |# (((:o64  . (:rex (:fn . (:no-instruction))))
+               (:i64 . ("INC"  1 (:eAX)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-b (:fn . (:no-instruction))))
+               (:i64 . ("INC"  1 (:eCX)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-x (:fn . (:no-instruction))))
+               (:i64 . ("INC"  1 (:eDX)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-xb (:fn . (:no-instruction))))
+               (:i64 . ("INC"  1 (:eBX)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-r (:fn . (:no-instruction))))
+               (:i64 . ("INC"  1 (:eSP)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-rb (:fn . (:no-instruction))))
+               (:i64 . ("INC"  1 (:eBP)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-rx (:fn . (:no-instruction))))
+               (:i64 . ("INC"  1 (:eSI)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-rxb (:fn . (:no-instruction))))
+               (:i64 . ("INC"  1 (:eDI)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-w (:fn . (:no-instruction))))
+               (:i64 . ("DEC"  1 (:eAX)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-wb (:fn . (:no-instruction))))
+               (:i64 . ("DEC"  1 (:eCX)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-wx (:fn . (:no-instruction))))
+               (:i64 . ("DEC"  1 (:eDX)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-wxb (:fn . (:no-instruction))))
+               (:i64 . ("DEC"  1 (:eBX)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-wr (:fn . (:no-instruction))))
+               (:i64 . ("DEC"  1 (:eSP)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-wrb (:fn . (:no-instruction))))
+               (:i64 . ("DEC"  1 (:eBP)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-wrx (:fn . (:no-instruction))))
+               (:i64 . ("DEC"  1 (:eSI)
+                        (:fn . (x86-inc/dec-4x)))))
+              ((:o64  . (:rex-wrxb (:fn . (:no-instruction))))
+               (:i64 . ("DEC"  1 (:eDI)
+                        (:fn . (x86-inc/dec-4x))))))
 
-    #| 50 |# (("PUSH" 1 (:rAX/r8)   :d64)
-              ("PUSH" 1 (:rCX/r9)   :d64)
-              ("PUSH" 1 (:rDX/r10)  :d64)
-              ("PUSH" 1 (:rBX/r11)  :d64)
-              ("PUSH" 1 (:rSP/r11)  :d64)
-              ("PUSH" 1 (:rBP/r13)  :d64)
-              ("PUSH" 1 (:rSI/r14)  :d64)
-              ("PUSH" 1 (:rDI/r15)  :d64)
-              ("POP"  1 (:rAX/r8)   :d64)
-              ("POP"  1 (:rCX/r9)   :d64)
-              ("POP"  1 (:rDX/r10)  :d64)
-              ("POP"  1 (:rBX/r11)  :d64)
-              ("POP"  1 (:rSP/r11)  :d64)
-              ("POP"  1 (:rBP/r13)  :d64)
-              ("POP"  1 (:rSI/r14)  :d64)
-              ("POP"  1 (:rDI/r15)  :d64))
+    #| 50 |# (("PUSH" 1 (:rAX/r8)   :d64
+               (:fn . (x86-push-general-register)))
+              ("PUSH" 1 (:rCX/r9)   :d64
+               (:fn . (x86-push-general-register)))
+              ("PUSH" 1 (:rDX/r10)  :d64
+               (:fn . (x86-push-general-register)))
+              ("PUSH" 1 (:rBX/r11)  :d64
+               (:fn . (x86-push-general-register)))
+              ("PUSH" 1 (:rSP/r11)  :d64
+               (:fn . (x86-push-general-register)))
+              ("PUSH" 1 (:rBP/r13)  :d64
+               (:fn . (x86-push-general-register)))
+              ("PUSH" 1 (:rSI/r14)  :d64
+               (:fn . (x86-push-general-register)))
+              ("PUSH" 1 (:rDI/r15)  :d64
+               (:fn . (x86-push-general-register)))
+              ("POP"  1 (:rAX/r8)   :d64
+               (:fn . (x86-pop-general-register)))
+              ("POP"  1 (:rCX/r9)   :d64
+               (:fn . (x86-pop-general-register)))
+              ("POP"  1 (:rDX/r10)  :d64
+               (:fn . (x86-pop-general-register)))
+              ("POP"  1 (:rBX/r11)  :d64
+               (:fn . (x86-pop-general-register)))
+              ("POP"  1 (:rSP/r11)  :d64
+               (:fn . (x86-pop-general-register)))
+              ("POP"  1 (:rBP/r13)  :d64
+               (:fn . (x86-pop-general-register)))
+              ("POP"  1 (:rSI/r14)  :d64
+               (:fn . (x86-pop-general-register)))
+              ("POP"  1 (:rDI/r15)  :d64
+               (:fn . (x86-pop-general-register))))
 
-    #| 60 |# (((:i64 . ("PUSHA/PUSHAD" 0)))
-              ((:i64 . ("POPA/POPAD"   0)))
-              ((:i64 . ("BOUND"  2 (G v) (M a))))
-              ((:o64 . ("MOVSXD" 2 (G v) (E v)))
+    #| 60 |# (((:i64 . ("PUSHA/PUSHAD" 0
+                        (:fn . (x86-pusha))))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "PUSHA is illegal in the 64-bit mode!"))))))
+              ((:i64 . ("POPA/POPAD"   0
+                        (:fn . (x86-popa))))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "POPA is illegal in the 64-bit mode!"))))))
+              ((:i64 . ("BOUND"  2 (G v) (M a)))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "BOUND is illegal in the 64-bit mode!"))))))
+              ((:o64 . ("MOVSXD" 2 (G v) (E v)
+                        (:fn . (x86-one-byte-movsxd))))
                (:i64 . ("ARPL"   2 (E w) (G w))))
-              (:prefix-FS)
-              (:prefix-GS)
-              (:prefix-OpSize)
-              (:prefix-AddrSize)
-              ("PUSH" 1 (I z) :d64)
-              ("IMUL"  3 (G v) (E v) (I z))
-              ("PUSH" 1 (I b) :d64)
-              ("IMUL"  3 (G v) (E v) (I b))
+              (:prefix-FS
+               (:fn . (:no-instruction)))
+              (:prefix-GS
+               (:fn . (:no-instruction)))
+              (:prefix-OpSize
+               (:fn . (:no-instruction)))
+              (:prefix-AddrSize
+               (:fn . (:no-instruction)))
+              ("PUSH" 1 (I z) :d64
+               (:fn . (x86-push-I)))
+              ("IMUL"  3 (G v) (E v) (I z)
+               (:fn . (x86-imul-Op/En-RMI)))
+              ("PUSH" 1 (I b) :d64
+               (:fn . (x86-push-I)))
+              ("IMUL"  3 (G v) (E v) (I b)
+               (:fn . (x86-imul-Op/En-RMI)))
               ("INS/INSB" 2 (Y b) (D x))
               ("INS/INSW/INSD" 2 (Y z) (D x))
               ("OUTS/OUTSB" 2 (Y b) (D x))
               ("OUTS/OUTSW/OUTSD" 2 (Y z) (D x)))
 
-    #| 70 |# (("JO" 1 (J b) :f64)
-              ("JNO" 1 (J b) :f64)
-              ("JB/NAE/C" 1 (J b) :f64)
-              ("JNB/AE/NC" 1 (J b) :f64)
-              ("JZ/E" 1 (J b) :f64)
-              ("JNZ/NE" 1 (J b) :f64)
-              ("JBE/NA" 1 (J b) :f64)
-              ("JNBE/A" 1 (J b) :f64)
-              ("JS" 1 (J b) :f64)
-              ("JNS" 1 (J b) :f64)
-              ("JP/PE" 1 (J b) :f64)
-              ("JNP/PO" 1 (J b) :f64)
-              ("JL/NGE" 1 (J b) :f64)
-              ("JNL/GE" 1 (J b) :f64)
-              ("JLE/NG" 1 (J b) :f64)
-              ("JNLE/G" 1 (J b) :f64))
+    #| 70 |# (("JO" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JNO" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JB/NAE/C" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JNB/AE/NC" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JZ/E" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JNZ/NE" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JBE/NA" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JNBE/A" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JS" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JNS" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JP/PE" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JNP/PO" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JL/NGE" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JNL/GE" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JLE/NG" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc)))
+              ("JNLE/G" 1 (J b) :f64
+               (:fn . (x86-one-byte-jcc))))
 
     #| 80 |#  ((:Group-1 2 (E b) (I b) :1a)
                (:Group-1 2 (E v) (I z) :1a)
-               ((:i64 . (:Group-1 2 (E b) (I b) :1a)))
+               ((:i64 . (:Group-1 2 (E b) (I b) :1a))
+                (:o64 . ("#UD" 0
+                         (:fn . (x86-illegal-instruction
+                                 (message .
+                                          "Opcode 0x82 is illegal in the 64-bit mode!"))))))
                (:Group-1 2 (E v) (I b) :1a)
-               ("TEST" 2 (E b) (G b))
-               ("TEST" 2 (E v) (G v))
-               ("XCHG" 2 (E b) (G b))
-               ("XCHG" 2 (E v) (G v))
-               ("MOV" 2 (E b) (G b))
-               ("MOV" 2 (E v) (G v))
-               ("MOV" 2 (G b) (E b))
-               ("MOV" 2 (G v) (E v))
+               ("TEST" 2 (E b) (G b)
+                (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                        (operation .  #.*OP-TEST*))))
+               ("TEST" 2 (E v) (G v)
+                (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+                        (operation .  #.*OP-TEST*))))
+               ("XCHG" 2 (E b) (G b)
+                (:fn . (x86-xchg)))
+               ("XCHG" 2 (E v) (G v)
+                (:fn . (x86-xchg)))
+               ("MOV" 2 (E b) (G b)
+                (:fn . (x86-mov-Op/En-MR)))
+               ("MOV" 2 (E v) (G v)
+                (:fn . (x86-mov-Op/En-MR)))
+               ("MOV" 2 (G b) (E b)
+                (:fn . (x86-mov-Op/En-RM)))
+               ("MOV" 2 (G v) (E v)
+                (:fn . (x86-mov-Op/En-RM)))
                ("MOV" 2 (E v) (S w))
-               ("LEA" 2 (G v) (M))
+               ("LEA" 2 (G v) (M)
+                (:fn . (x86-lea)))
                ("MOV" 2 (S w) (E w))
                ;; in Table A-6, Grp 1A only contains POP,
                ;; so we leave the latter implicit here:
                (:Group-1A 1 (E v) :1a :d64))
 
-    #| 90 |# (("XCHG" 1 (:r8))
-              ("XCHG" 2 (:rCX/r9)  (:rAX))
-              ("XCHG" 2 (:rDX/r10) (:rAX))
-              ("XCHG" 2 (:rBX/r11) (:rAX))
-              ("XCHG" 2 (:rSP/r12) (:rAX))
-              ("XCHG" 2 (:rBP/r13) (:rAX))
-              ("XCHG" 2 (:rSI/r14) (:rAX))
-              ("XCHG" 2 (:rDI/r15) (:rAX))
-              ("CBW/CWDE/CDQE" 0)
-              ("CWD/CDQ/CQO" 0)
-              ((:i64 . ("CALL" 1 (A p))))
+    #| 90 |# (("XCHG" 1 (:r8)
+               (:fn . (x86-xchg)))
+              ("XCHG" 2 (:rCX/r9)  (:rAX)
+               (:fn . (x86-xchg)))
+              ("XCHG" 2 (:rDX/r10) (:rAX)
+               (:fn . (x86-xchg)))
+              ("XCHG" 2 (:rBX/r11) (:rAX)
+               (:fn . (x86-xchg)))
+              ("XCHG" 2 (:rSP/r12) (:rAX)
+               (:fn . (x86-xchg)))
+              ("XCHG" 2 (:rBP/r13) (:rAX)
+               (:fn . (x86-xchg)))
+              ("XCHG" 2 (:rSI/r14) (:rAX)
+               (:fn . (x86-xchg)))
+              ("XCHG" 2 (:rDI/r15) (:rAX)
+               (:fn . (x86-xchg)))
+              ("CBW/CWDE/CDQE" 0
+               (:fn . (x86-cbw/cwd/cdqe)))
+              ("CWD/CDQ/CQO" 0
+               (:fn . (x86-cwd/cdq/cqo)))
+              ((:i64 . ("CALL" 1 (A p)))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "far CALL is illegal in the 64-bit mode!"))))))
               ("FWAIT/WAIT" 0)
-              ("PUSHF/D/Q"  1 (F v) :d64)
-              ("POPF/D/Q"   1 (F v) :d64)
-              ("SAHF" 0)
-              ("LAHF" 0))
+              ("PUSHF/D/Q"  1 (F v) :d64
+               (:fn . (x86-pushf)))
+              ("POPF/D/Q"   1 (F v) :d64
+               (:fn . (x86-popf)))
+              ("SAHF" 0
+               (:fn . (x86-sahf)))
+              ("LAHF" 0
+               (:fn . (x86-lahf))))
 
-    #| a0 |# (("MOV" 2 (:AL) (O b))
-              ("MOV" 2 (:rAX) (O v))
+    #| a0 |# (("MOV" 2 (:AL) (O b)
+               (:fn . (x86-mov-Op/En-FD)))
+              ("MOV" 2 (:rAX) (O v)
+               (:fn . (x86-mov-Op/En-FD)))
               ("MOV" 2 (O b) (:AL))
               ("MOV" 2 (O v) (:rAX))
-              ("MOVS/B" 2 (Y b) (X b))
-              ("MOVS/W/D/Q" 2 (Y v) (X v))
-              ("CMPS/B"   2 (X b) (Y b))
-              ("CMPS/W/D" 2 (X v) (Y v))
-              ("TEST" 2 (:AL) (I b))
-              ("TEST" 2 (:rAX) (I z))
-              ("STOS/B" 2 (Y b) (:AL))
-              ("STOS/W/D/Q" 2 (Y v) (:rAX))
+              ("MOVS/B" 2 (Y b) (X b)
+               (:fn . (x86-movs)))
+              ("MOVS/W/D/Q" 2 (Y v) (X v)
+               (:fn . (x86-movs)))
+              ("CMPS/B"   2 (X b) (Y b)
+               (:fn . (x86-cmps)))
+              ("CMPS/W/D" 2 (X v) (Y v)
+               (:fn . (x86-cmps)))
+              ("TEST" 2 (:AL) (I b)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-TEST*))))
+              ("TEST" 2 (:rAX) (I z)
+               (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+                       (operation . #.*OP-TEST*))))
+              ("STOS/B" 2 (Y b) (:AL)
+               (:fn . (x86-stos)))
+              ("STOS/W/D/Q" 2 (Y v) (:rAX)
+               (:fn . (x86-stos)))
               ("LODS/B" 2 (:AL) (X b))
               ("LODS/W/D/Q" 2 (:rAX) (X v))
               ("SCAS/B" 2 (:AL) (Y b))
               ("SCAS/W/D/Q" 2 (:rAX) (Y v)))
 
-    #| b0 |# (("MOV" 2  (:AL/r8L)  (I b))
-              ("MOV" 2  (:CL/r9L)  (I b))
-              ("MOV" 2  (:DL/r10L) (I b))
-              ("MOV" 2  (:BL/r11L) (I b))
-              ("MOV" 2  (:AH/r12L) (I b))
-              ("MOV" 2  (:CH/r13L) (I b))
-              ("MOV" 2  (:DH/r14L) (I b))
-              ("MOV" 2  (:BH/r15L) (I b))
-              ("MOV" 2  (:rAX/r8)  (I v))
-              ("MOV" 2  (:rCX/r9)  (I v))
-              ("MOV" 2  (:rDX/r10) (I v))
-              ("MOV" 2  (:rBX/r11) (I v))
-              ("MOV" 2  (:rSP/r12) (I v))
-              ("MOV" 2  (:rBP/r13) (I v))
-              ("MOV" 2  (:rSI/r14) (I v))
-              ("MOV" 2  (:rDI/r15) (I v)))
+    #| b0 |# (("MOV" 2  (:AL/r8L)  (I b)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:CL/r9L)  (I b)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:DL/r10L) (I b)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:BL/r11L) (I b)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:AH/r12L) (I b)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:CH/r13L) (I b)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:DH/r14L) (I b)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:BH/r15L) (I b)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:rAX/r8)  (I v)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:rCX/r9)  (I v)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:rDX/r10) (I v)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:rBX/r11) (I v)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:rSP/r12) (I v)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:rBP/r13) (I v)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:rSI/r14) (I v)
+               (:fn . (x86-mov-Op/En-OI)))
+              ("MOV" 2  (:rDI/r15) (I v)
+               (:fn . (x86-mov-Op/En-OI))))
 
     #| c0 |# ((:Group-2 2 (E b) (I b) :1a)
               (:Group-2 2 (E v) (I b) :1a)
-              ("RET" 1 (I w) :f64)
-              ("RET" 0 :f64)
+              ("RET" 1 (I w) :f64
+               (:fn . (x86-ret)))
+              ("RET" 0 :f64
+               (:fn . (x86-ret)))
               ;; C4 and C5 are first bytes of the vex prefixes, both
               ;; in 32-bit and IA-32e modes.  However, in the 32-bit
               ;; and compatibility modes, the second byte determines
@@ -338,26 +702,42 @@
               ;; not have a modr/m corresponding to it --- basically,
               ;; we shouldn't be looking up modr/m info. for these
               ;; opcodes in the 64-bit mode.
-              ((:o64 . (:vex3-byte0))  (:i64 . ("LES" 2 (G z) (M p))))
-              ((:o64 . (:vex2-byte0))  (:i64 . ("LDS" 2 (G z) (M p))))
+              ((:o64 . (:vex3-byte0 (:fn . (:no-instruction))))
+               (:i64 . ("LES" 2 (G z) (M p))))
+              ((:o64 . (:vex2-byte0 (:fn . (:no-instruction))))
+               (:i64 . ("LDS" 2 (G z) (M p))))
               (:Group-11 2 (E b) (I b) :1a)
               (:Group-11 2 (E v) (I z) :1a)
               ("ENTER" 2 (I w) (I b))
-              ("LEAVE" 0 :d64)
+              ("LEAVE" 0 :d64
+               (:fn . (x86-leave)))
               ("RET" 1 (I w))
               ("RET" 0)
               ("INT 3" 0)
               ("INT" 1 (I b))
-              ((:i64 . ("INTO" 0)))
+              ((:i64 . ("INTO" 0))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "INTO is illegal in the 64-bit mode!"))))))
               ("IRET/D/Q" 0))
 
     #| d0 |# ((:Group-2 2 (E b) (1) :1a)
               (:Group-2 2 (E v) (1) :1a)
               (:Group-2 2 (E b) (:CL) :1a)
               (:Group-2 2 (E v) (:CL) :1a)
-              ((:i64 . ("AAM" 1 (I b))))
-              ((:i64 . ("AAD" 1 (I b))))
-              (:none)
+              ((:i64 . ("AAM" 1 (I b)))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "AAM is illegal in the 64-bit mode!"))))))
+              ((:i64 . ("AAD" 1 (I b)))
+               (:o64 . ("#UD" 0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "AAD is illegal in the 64-bit mode!"))))))
+              (:none
+               (:fn . (:no-instruction)))
               ("XLAT/XLATB" 0)
               (:esc) ;; Escape to co-processor instruction set
               (:esc) ;; Escape to co-processor instruction set
@@ -369,37 +749,58 @@
               (:esc) ;; Escape to co-processor instruction set
               )
 
-    #| e0 |# (("LOOPNE/LOOPNZ" 1 (J b) :f64)
-              ("LOOPE/LOOPZ" 1 (J b) :f64)
-              ("LOOP" 1 (J b) :f64)
-              ("JrCXZ" 1 (J b) :f64)
+    #| e0 |# (("LOOPNE/LOOPNZ" 1 (J b) :f64
+               (:fn . (x86-loop)))
+              ("LOOPE/LOOPZ" 1 (J b) :f64
+               (:fn . (x86-loop)))
+              ("LOOP" 1 (J b) :f64
+               (:fn . (x86-loop)))
+              ("JrCXZ" 1 (J b) :f64
+               (:fn . (x86-jrcxz)))
               ("IN" 2 (:AL) (I b))
               ("IN" 2 (:eAX) (I b))
               ("OUT" 2 (I b) (:AL))
               ("OUT" 2 (I b) (:eAX))
-              ("CALL" 1 (J z) :f64)
-              ("JMP"  1 (J z) :f64)
-              ((:i64 . ("JMP"  1 (A p))))
-              ("JMP"  1 (J b) :f64)
+              ("CALL" 1 (J z) :f64
+               (:fn . (x86-call-E8-Op/En-M)))
+              ("JMP"  1 (J z) :f64
+               (:fn . (x86-near-jmp-Op/En-D)))
+              ((:i64 . ("JMP"  1 (A p)))
+               (:o64 . ("#UD"  0
+                        (:fn . (x86-illegal-instruction
+                                (message .
+                                         "JMP is illegal in the 64-bit mode!"))))))
+              ("JMP"  1 (J b) :f64
+               (:fn . (x86-near-jmp-Op/En-D)))
               ("IN" 2  (:AL) (:DX))
               ("IN" 2  (:eAX) (:DX))
               ("OUT" 2 (:DX) (:AL))
               ("OUT" 2 (:DX) (:eAX)))
 
-    #| f0 |# ((:prefix-Lock)
-              (:none)
-              (:prefix-REPNE)
-              (:prefix-REP/REPE)
-              ("HLT" 0)
-              ("CMC" 0)
+    #| f0 |# ((:prefix-Lock
+               (:fn . (:no-instruction)))
+              (:none
+               (:fn . (:no-instruction)))
+              (:prefix-REPNE
+               (:fn . (:no-instruction)))
+              (:prefix-REP/REPE
+               (:fn . (:no-instruction)))
+              ("HLT" 0
+               (:fn . (x86-hlt)))
+              ("CMC" 0
+               (:fn . (x86-cmc/clc/stc/cld/std)))
               (:Group-3 1 (E b) :1a)
               (:Group-3 1 (E v) :1a)
-              ("CLC" 0)
-              ("STC" 0)
+              ("CLC" 0
+               (:fn . (x86-cmc/clc/stc/cld/std)))
+              ("STC" 0
+               (:fn . (x86-cmc/clc/stc/cld/std)))
               ("CLI" 0)
               ("STI" 0)
-              ("CLD" 0)
-              ("STD" 0)
+              ("CLD" 0
+               (:fn . (x86-cmc/clc/stc/cld/std)))
+              ("STD" 0
+               (:fn . (x86-cmc/clc/stc/cld/std)))
               (:Group-4 1 (E b) :1a)
               (:Group-5 1 (E v) :1a))
 
@@ -1749,250 +2150,220 @@
 
   '((:Group-1 . ;; Covers opcodes 80-83
               ((((:opcode . #x80)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b000)
-                 (:r/m    . :any)) .
-                 ("ADD" 2 (E b) (I b) :1a))
+                 (:reg    . #b000)) .
+                 ("ADD" 2 (E b) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-ADD*)))))
                (((:opcode . #x80)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b001)
-                 (:r/m    . :any)) .
-                 ("OR" 2 (E b) (I b) :1a))
+                 (:reg    . #b001)) .
+                 ("OR" 2 (E b) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-OR*)))))
                (((:opcode . #x80)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b010)
-                 (:r/m    . :any)) .
-                 ("ADC" 2 (E b) (I b) :1a))
+                 (:reg    . #b010)) .
+                 ("ADC" 2 (E b) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-ADC*)))))
                (((:opcode . #x80)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b011)
-                 (:r/m    . :any)) .
-                 ("SBB" 2 (E b) (I b) :1a))
+                 (:reg    . #b011)) .
+                 ("SBB" 2 (E b) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-SBB*)))))
                (((:opcode . #x80)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b100)
-                 (:r/m    . :any)) .
-                 ("AND" 2 (E b) (I b) :1a))
+                 (:reg    . #b100)) .
+                 ("AND" 2 (E b) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-AND*)))))
                (((:opcode . #x80)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b101)
-                 (:r/m    . :any)) .
-                 ("SUB" 2 (E b) (I b) :1a))
+                 (:reg    . #b101)) .
+                 ("SUB" 2 (E b) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-SUB*)))))
                (((:opcode . #x80)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
-                 ("XOR" 2 (E b) (I b) :1a))
+                 (:reg    . #b110)) .
+                 ("XOR" 2 (E b) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-XOR*)))))
                (((:opcode . #x80)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b111)
-                 (:r/m    . :any)) .
-                 ("CMP" 2 (E b) (I b) :1a))
+                 (:reg    . #b111)) .
+                 ("CMP" 2 (E b) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-CMP*)))))
 
                (((:opcode . #x81)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b000)
-                 (:r/m    . :any)) .
-                 ("ADD" 2 (E v) (I z) :1a))
+                 (:reg    . #b000)) .
+                 ("ADD" 2 (E v) (I z) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-ADD*)))))
                (((:opcode . #x81)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b001)
-                 (:r/m    . :any)) .
-                 ("OR" 2 (E v) (I z) :1a))
+                 (:reg    . #b001)) .
+                 ("OR" 2 (E v) (I z) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-OR*)))))
                (((:opcode . #x81)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b010)
-                 (:r/m    . :any)) .
-                 ("ADC" 2 (E v) (I z) :1a))
+                 (:reg    . #b010)) .
+                 ("ADC" 2 (E v) (I z) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-ADC*)))))
                (((:opcode . #x81)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b011)
-                 (:r/m    . :any)) .
-                 ("SBB" 2 (E v) (I z) :1a))
+                 (:reg    . #b011)) .
+                 ("SBB" 2 (E v) (I z) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-SBB*)))))
                (((:opcode . #x81)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b100)
-                 (:r/m    . :any)) .
-                 ("AND" 2 (E v) (I z) :1a))
+                 (:reg    . #b100)) .
+                 ("AND" 2 (E v) (I z) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-AND*)))))
                (((:opcode . #x81)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b101)
-                 (:r/m    . :any)) .
-                 ("SUB" 2 (E v) (I z) :1a))
+                 (:reg    . #b101)) .
+                 ("SUB" 2 (E v) (I z) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-SUB*)))))
                (((:opcode . #x81)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
-                 ("XOR" 2 (E v) (I z) :1a))
+                 (:reg    . #b110)) .
+                 ("XOR" 2 (E v) (I z) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-XOR*)))))
                (((:opcode . #x81)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b111)
-                 (:r/m    . :any)) .
-                 ("CMP" 2 (E v) (I z) :1a))
+                 (:reg    . #b111)) .
+                 ("CMP" 2 (E v) (I z) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-CMP*)))))
 
                (((:opcode . #x82)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b000)
-                 (:r/m    . :any)) .
-                 ((:i64 . ("ADD" 2 (E b) (I b) :1a))))
+                 (:reg    . #b000)) .
+                 ((:i64 . ("ADD" 2 (E b) (I b) :1a
+                           (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                                   (operation . #.*OP-ADD*)))))
+                  (:o64 . ("#UD" 0
+                           (:fn . (x86-illegal-instruction
+                                   (message .
+                                            "ADD (0x82) is illegal in the 64-bit mode!")))))))
                (((:opcode . #x82)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b001)
-                 (:r/m    . :any)) .
-                 ((:i64 . ("OR" 2 (E b) (I b) :1a))))
+                 (:reg    . #b001)) .
+                 ((:i64 . ("OR" 2 (E b) (I b) :1a))
+                  (:o64 . ("#UD" 0
+                           (:fn . (x86-illegal-instruction
+                                   (message .
+                                            "OR (0x82) is illegal in the 64-bit mode!")))))))
                (((:opcode . #x82)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b010)
-                 (:r/m    . :any)) .
-                 ((:i64 . ("ADC" 2 (E b) (I b) :1a))))
+                 (:reg    . #b010)) .
+                 ((:i64 . ("ADC" 2 (E b) (I b) :1a))
+                  (:o64 . ("#UD" 0
+                           (:fn . (x86-illegal-instruction
+                                   (message .
+                                            "ADC (0x82) is illegal in the 64-bit mode!")))))))
                (((:opcode . #x82)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b011)
-                 (:r/m    . :any)) .
-                 ((:i64 . ("SBB" 2 (E b) (I b) :1a))))
+                 (:reg    . #b011)) .
+                 ((:i64 . ("SBB" 2 (E b) (I b) :1a))
+                  (:o64 . ("#UD" 0
+                           (:fn . (x86-illegal-instruction
+                                   (message .
+                                            "SBB (0x82) is illegal in the 64-bit mode!")))))))
                (((:opcode . #x82)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b100)
-                 (:r/m    . :any)) .
-                 ((:i64 . ("AND" 2 (E b) (I b) :1a))))
+                 (:reg    . #b100)) .
+                 ((:i64 . ("AND" 2 (E b) (I b) :1a))
+                  (:o64 . ("#UD" 0
+                           (:fn . (x86-illegal-instruction
+                                   (message .
+                                            "AND (0x82) is illegal in the 64-bit mode!")))))))
                (((:opcode . #x82)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b101)
-                 (:r/m    . :any)) .
-                 ((:i64 . ("SUB" 2 (E b) (I b) :1a))))
+                 (:reg    . #b101)) .
+                 ((:i64 . ("SUB" 2 (E b) (I b) :1a))
+                  (:o64 . ("#UD" 0
+                           (:fn . (x86-illegal-instruction
+                                   (message .
+                                            "SUB (0x82) is illegal in the 64-bit mode!")))))))
                (((:opcode . #x82)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
-                 ((:i64 . ("XOR" 2 (E b) (I b) :1a))))
+                 (:reg    . #b110)) .
+                 ((:i64 . ("XOR" 2 (E b) (I b) :1a))
+                  (:o64 . ("#UD" 0
+                           (:fn . (x86-illegal-instruction
+                                   (message .
+                                            "XOR (0x82) is illegal in the 64-bit mode!")))))))
                (((:opcode . #x82)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b111)
-                 (:r/m    . :any)) .
-                 ((:i64 . ("CMP" 2 (E b) (I b) :1a))))
+                 (:reg    . #b111)) .
+                 ((:i64 . ("CMP" 2 (E b) (I b) :1a))
+                  (:o64 . ("#UD" 0
+                           (:fn . (x86-illegal-instruction
+                                   (message .
+                                            "CMP (0x82) is illegal in the 64-bit mode!")))))))
 
                (((:opcode . #x83)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b000)
-                 (:r/m    . :any)) .
-                 ("ADD" 2 (E v) (I b) :1a))
+                 (:reg    . #b000)) .
+                 ("ADD" 2 (E v) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-ADD*)))))
                (((:opcode . #x83)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b001)
-                 (:r/m    . :any)) .
-                 ("OR" 2 (E v) (I b) :1a))
+                 (:reg    . #b001)) .
+                 ("OR" 2 (E v) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-OR*)))))
                (((:opcode . #x83)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b010)
-                 (:r/m    . :any)) .
-                 ("ADC" 2 (E v) (I b) :1a))
+                 (:reg    . #b010)) .
+                 ("ADC" 2 (E v) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-ADC*)))))
                (((:opcode . #x83)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b011)
-                 (:r/m    . :any)) .
-                 ("SBB" 2 (E v) (I b) :1a))
+                 (:reg    . #b011)) .
+                 ("SBB" 2 (E v) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-SBB*)))))
                (((:opcode . #x83)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b100)
-                 (:r/m    . :any)) .
-                 ("AND" 2 (E v) (I b) :1a))
+                 (:reg    . #b100)) .
+                 ("AND" 2 (E v) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-AND*)))))
                (((:opcode . #x83)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b101)
-                 (:r/m    . :any)) .
-                 ("SUB" 2 (E v) (I b) :1a))
+                 (:reg    . #b101)) .
+                 ("SUB" 2 (E v) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-SUB*)))))
                (((:opcode . #x83)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
-                 ("XOR" 2 (E v) (I b) :1a))
+                 (:reg    . #b110)) .
+                 ("XOR" 2 (E v) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-XOR*)))))
                (((:opcode . #x83)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b111)
-                 (:r/m    . :any)) .
-                 ("CMP" 2 (E v) (I b) :1a))))
+                 (:reg    . #b111)) .
+                 ("CMP" 2 (E v) (I b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-CMP*)))))))
 
     (:Group-1A . ;; Covers opcode 8F.
                ((((:opcode . #x8F)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
-                  ("POP" 1 (E v) :1a :d64))
+                  (:reg    . #b000)) .
+                  ("POP" 1 (E v) :1a :d64
+                   (:fn . (x86-pop-Ev))))
                 (((:opcode . #x8F)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b001)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #x8F)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b010)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #x8F)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b011)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #x8F)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b100)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #x8F)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b101)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #x8F)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b110)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #x8F)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
-                  (:none))))
+                  (:reg    . #b111)) .
+                  (:none
+                   (:fn . (:no-instruction))))))
 
     (:Group-2  . ;; Covers opcodes
                ;; (C0, C1 reg, imm),
@@ -2000,656 +2371,487 @@
                ;; and
                ;; (D2, D3 reg, CL).
                ((((:opcode . #xC0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
-                  ("ROL" 2 (E b) (I b) :1a))
+                  (:reg    . #b000)) .
+                  ("ROL" 2 (E b) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xC0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
-                  ("ROR" 2 (E b) (I b) :1a))
+                  (:reg    . #b001)) .
+                  ("ROR" 2 (E b) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xC0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
-                  ("RCL" 2 (E b) (I b) :1a))
+                  (:reg    . #b010)) .
+                  ("RCL" 2 (E b) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xC0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
-                  ("RCR" 2 (E b) (I b) :1a))
+                  (:reg    . #b011)) .
+                  ("RCR" 2 (E b) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xC0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
-                  ("SHL/SAL" 2 (E b) (I b) :1a))
+                  (:reg    . #b100)) .
+                  ("SHL/SAL" 2 (E b) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xC0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
-                  ("SHR" 2 (E b) (I b) :1a))
+                  (:reg    . #b101)) .
+                  ("SHR" 2 (E b) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xC0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b110)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
-                  ("SAR" 2 (E b) (I b) :1a))
+                  (:reg    . #b111)) .
+                  ("SAR" 2 (E b) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
 
                 (((:opcode . #xC1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
-                  ("ROL" 2 (E v) (I b) :1a))
+                  (:reg    . #b000)) .
+                  ("ROL" 2 (E v) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xC1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
-                  ("ROR" 2 (E v) (I b) :1a))
+                  (:reg    . #b001)) .
+                  ("ROR" 2 (E v) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xC1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
-                  ("RCL" 2 (E v) (I b) :1a))
+                  (:reg    . #b010)) .
+                  ("RCL" 2 (E v) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xC1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
-                  ("RCR" 2 (E v) (I b) :1a))
+                  (:reg    . #b011)) .
+                  ("RCR" 2 (E v) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xC1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
-                  ("SHL/SAL" 2 (E v) (I b) :1a))
+                  (:reg    . #b100)) .
+                  ("SHL/SAL" 2 (E v) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xC1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
-                  ("SHR" 2 (E v) (I b) :1a))
+                  (:reg    . #b101)) .
+                  ("SHR" 2 (E v) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xC1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b110)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
-                  ("SAR" 2 (E v) (I b) :1a))
+                  (:reg    . #b111)) .
+                  ("SAR" 2 (E v) (I b) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
 
                 (((:opcode . #xD0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
-                  ("ROL" 2 (E b) (1) :1a))
+                  (:reg    . #b000)) .
+                  ("ROL" 2 (E b) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
-                  ("ROR" 2 (E b) (1) :1a))
+                  (:reg    . #b001)) .
+                  ("ROR" 2 (E b) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
-                  ("RCL" 2 (E b) (1) :1a))
+                  (:reg    . #b010)) .
+                  ("RCL" 2 (E b) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
-                  ("RCR" 2 (E b) (1) :1a))
+                  (:reg    . #b011)) .
+                  ("RCR" 2 (E b) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
-                  ("SHL/SAL" 2 (E b) (1) :1a))
+                  (:reg    . #b100)) .
+                  ("SHL/SAL" 2 (E b) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
-                  ("SHR" 2 (E b) (1) :1a))
+                  (:reg    . #b101)) .
+                  ("SHR" 2 (E b) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b110)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xD0)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
-                  ("SAR" 2 (E b) (1) :1a))
+                  (:reg    . #b111)) .
+                  ("SAR" 2 (E b) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
 
                 (((:opcode . #xD1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
-                  ("ROL" 2 (E v) (1) :1a))
+                  (:reg    . #b000)) .
+                  ("ROL" 2 (E v) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
-                  ("ROR" 2 (E v) (1) :1a))
+                  (:reg    . #b001)) .
+                  ("ROR" 2 (E v) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
-                  ("RCL" 2 (E v) (1) :1a))
+                  (:reg    . #b010)) .
+                  ("RCL" 2 (E v) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
-                  ("RCR" 2 (E v) (1) :1a))
+                  (:reg    . #b011)) .
+                  ("RCR" 2 (E v) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
-                  ("SHL/SAL" 2 (E v) (1) :1a))
+                  (:reg    . #b100)) .
+                  ("SHL/SAL" 2 (E v) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
-                  ("SHR" 2 (E v) (1) :1a))
+                  (:reg    . #b101)) .
+                  ("SHR" 2 (E v) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b110)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xD1)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
-                  ("SAR" 2 (E v) (1) :1a))
+                  (:reg    . #b111)) .
+                  ("SAR" 2 (E v) (1) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
 
                 (((:opcode . #xD2)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
-                  ("ROL" 2 (E b) (:CL) :1a))
+                  (:reg    . #b000)) .
+                  ("ROL" 2 (E b) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD2)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
-                  ("ROR" 2 (E b) (:CL) :1a))
+                  (:reg    . #b001)) .
+                  ("ROR" 2 (E b) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD2)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
-                  ("RCL" 2 (E b) (:CL) :1a))
+                  (:reg    . #b010)) .
+                  ("RCL" 2 (E b) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD2)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
-                  ("RCR" 2 (E b) (:CL) :1a))
+                  (:reg    . #b011)) .
+                  ("RCR" 2 (E b) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD2)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
-                  ("SHL/SAL" 2 (E b) (:CL) :1a))
+                  (:reg    . #b100)) .
+                  ("SHL/SAL" 2 (E b) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD2)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
-                  ("SHR" 2 (E b) (:CL) :1a))
+                  (:reg    . #b101)) .
+                  ("SHR" 2 (E b) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD2)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b110)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xD2)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
-                  ("SAR" 2 (E b) (:CL) :1a))
+                  (:reg    . #b111)) .
+                  ("SAR" 2 (E b) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
 
                 (((:opcode . #xD3)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
-                  ("ROL" 2 (E v) (:CL) :1a))
+                  (:reg    . #b000)) .
+                  ("ROL" 2 (E v) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD3)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
-                  ("ROR" 2 (E v) (:CL) :1a))
+                  (:reg    . #b001)) .
+                  ("ROR" 2 (E v) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD3)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
-                  ("RCL" 2 (E v) (:CL) :1a))
+                  (:reg    . #b010)) .
+                  ("RCL" 2 (E v) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD3)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
-                  ("RCR" 2 (E v) (:CL) :1a))
+                  (:reg    . #b011)) .
+                  ("RCR" 2 (E v) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD3)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
-                  ("SHL/SAL" 2 (E v) (:CL) :1a))
+                  (:reg    . #b100)) .
+                  ("SHL/SAL" 2 (E v) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD3)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
-                  ("SHR" 2 (E v) (:CL) :1a))
+                  (:reg    . #b101)) .
+                  ("SHR" 2 (E v) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
                 (((:opcode . #xD3)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b110)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xD3)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
-                  ("SAR" 2 (E v) (:CL) :1a))))
+                  (:reg    . #b111)) .
+                  ("SAR" 2 (E v) (:CL) :1a
+                   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))))
 
     (:Group-3 . ;; Covers opcodes F6 and F7.
               ((((:opcode . #xF6)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b000)
-                 (:r/m    . :any)) .
-                 ("TEST" 1 (E b) :1a))
+                 (:reg    . #b000)) .
+                 ("TEST" 1 (E b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-TEST*)))))
                (((:opcode . #xF6)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b001)
-                 (:r/m    . :any)) .
-                 (:none))
+                 (:reg    . #b001)) .
+                 (:none
+                  (:fn . (:no-instruction))))
                (((:opcode . #xF6)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b010)
-                 (:r/m    . :any)) .
-                 ("NOT" 1 (E b) :1a))
+                 (:reg    . #b010)) .
+                 ("NOT" 1 (E b) :1a
+                  (:fn . (x86-not/neg-F6-F7))))
                (((:opcode . #xF6)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b011)
-                 (:r/m    . :any)) .
-                 ("NEG" 1 (E b) :1a))
+                 (:reg    . #b011)) .
+                 ("NEG" 1 (E b) :1a
+                  (:fn . (x86-not/neg-F6-F7))))
                (((:opcode . #xF6)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b100)
-                 (:r/m    . :any)) .
-                 ("MUL" 1 (E b) :1a))
+                 (:reg    . #b100)) .
+                 ("MUL" 1 (E b) :1a
+                  (:fn . (x86-mul))))
                (((:opcode . #xF6)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b101)
-                 (:r/m    . :any)) .
-                 ("IMUL" 1 (E b) :1a))
+                 (:reg    . #b101)) .
+                 ("IMUL" 1 (E b) :1a
+                  (:fn . (x86-imul-Op/En-M))))
                (((:opcode . #xF6)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
-                 ("DIV" 1 (E b) :1a))
+                 (:reg    . #b110)) .
+                 ("DIV" 1 (E b) :1a
+                  (:fn . (x86-div))))
                (((:opcode . #xF6)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b111)
-                 (:r/m    . :any)) .
-                 ("IDIV" 1 (E b) :1a))))
+                 (:reg    . #b111)) .
+                 ("IDIV" 1 (E b) :1a
+                  (:fn . (x86-idiv))))
+
+               (((:opcode . #xF7)
+                 (:reg    . #b000)) .
+                 ("TEST" 1 (E b) :1a
+                  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
+                          (operation . #.*OP-TEST*)))))
+               (((:opcode . #xF7)
+                 (:reg    . #b001)) .
+                 (:none
+                  (:fn . (:no-instruction))))
+               (((:opcode . #xF7)
+                 (:reg    . #b010)) .
+                 ("NOT" 1 (E b) :1a
+                  (:fn . (x86-not/neg-F6-F7))))
+               (((:opcode . #xF7)
+                 (:reg    . #b011)) .
+                 ("NEG" 1 (E b) :1a
+                  (:fn . (x86-not/neg-F6-F7))))
+               (((:opcode . #xF7)
+                 (:reg    . #b100)) .
+                 ("MUL" 1 (E b) :1a
+                  (:fn . (x86-mul))))
+               (((:opcode . #xF7)
+                 (:reg    . #b101)) .
+                 ("IMUL" 1 (E b) :1a
+                  (:fn . (x86-imul-Op/En-M))))
+               (((:opcode . #xF7)
+                 (:reg    . #b110)) .
+                 ("DIV" 1 (E b) :1a
+                  (:fn . (x86-div))))
+               (((:opcode . #xF7)
+                 (:reg    . #b111)) .
+                 ("IDIV" 1 (E b) :1a
+                  (:fn . (x86-idiv))))))
 
     (:Group-4 . ;; Covers opcode FE.
               ((((:opcode . #xFE)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b000)
-                 (:r/m    . :any)) .
-                 ("INC" 1 (E b) :1a))
+                 (:reg    . #b000)) .
+                 ("INC" 1 (E b) :1a
+                  (:fn . (x86-inc/dec-FE-FF))))
                (((:opcode . #xFE)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b001)
-                 (:r/m    . :any)) .
-                 ("DEC" 1 (E b) :1a))
+                 (:reg    . #b001)) .
+                 ("DEC" 1 (E b) :1a
+                  (:fn . (x86-inc/dec-FE-FF))))
                (((:opcode . #xFE)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b010)
-                 (:r/m    . :any)) .
-                 (:none))
+                 (:reg    . #b010)) .
+                 (:none
+                  (:fn . (:no-instruction))))
                (((:opcode . #xFE)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b011)
-                 (:r/m    . :any)) .
-                 (:none))
+                 (:reg    . #b011)) .
+                 (:none
+                  (:fn . (:no-instruction))))
                (((:opcode . #xFE)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b100)
-                 (:r/m    . :any)) .
-                 (:none))
+                 (:reg    . #b100)) .
+                 (:none
+                  (:fn . (:no-instruction))))
                (((:opcode . #xFE)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b101)
-                 (:r/m    . :any)) .
-                 (:none))
+                 (:reg    . #b101)) .
+                 (:none
+                  (:fn . (:no-instruction))))
                (((:opcode . #xFE)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
-                 (:none))
+                 (:reg    . #b110)) .
+                 (:none
+                  (:fn . (:no-instruction))))
                (((:opcode . #xFE)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b111)
-                 (:r/m    . :any)) .
-                 (:none))))
+                 (:reg    . #b111)) .
+                 (:none
+                  (:fn . (:no-instruction))))))
 
     (:Group-5 . ;; Covers opcode FF.
               ((((:opcode . #xFF)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b000)
-                 (:r/m    . :any)) .
-                 ("INC" 1 (E v) :1a))
+                 (:reg    . #b000)) .
+                 ("INC" 1 (E v) :1a
+                  (:fn . (x86-inc/dec-FE-FF))))
                (((:opcode . #xFF)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b001)
-                 (:r/m    . :any)) .
-                 ("DEC" 1 (E v) :1a))
+                 (:reg    . #b001)) .
+                 ("DEC" 1 (E v) :1a
+                  (:fn . (x86-inc/dec-FE-FF))))
                (((:opcode . #xFF)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b010)
-                 (:r/m    . :any)) .
-                 ("near CALL"  1 (E v) :1a :f64))
+                 (:reg    . #b010)) .
+                 ("near CALL"  1 (E v) :1a :f64
+                  (:fn . (x86-call-FF/2-Op/En-M))))
                (((:opcode . #xFF)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b011)
-                 (:r/m    . :any)) .
+                 (:reg    . #b011)) .
                  ("far CALL"  1 (E p) :1a))
                (((:opcode . #xFF)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b100)
-                 (:r/m    . :any)) .
-                 ("near JMP"  1 (E v) :1a :f64))
+                 (:reg    . #b100)) .
+                 ("near JMP"  1 (E v) :1a :f64
+                  (:fn . (x86-near-jmp-Op/En-M))))
                (((:opcode . #xFF)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b101)
-                 (:r/m    . :any)) .
-                 ("far JMP"  1 (M p) :1a))
+                 (:reg    . #b101)) .
+                 ("far JMP"  1 (M p) :1a
+                  (:fn . (x86-far-jmp-Op/En-D))))
                (((:opcode . #xFF)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
-                 ("PUSH"  1 (E v) :1a :d64))
+                 (:reg    . #b110)) .
+                 ("PUSH"  1 (E v) :1a :d64
+                  (:fn . (x86-push-Ev))))
                (((:opcode . #xFF)
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b111)
-                 (:r/m    . :any)) .
-                 (:none))))
+                 (:reg    . #b111)) .
+                 (:none
+                  (:fn . (:no-instruction))))))
 
 
     (:Group-6 . ;; Covers opcode 0F 00.
               ((((:opcode . (#x0F #x00))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b000)
-                 (:r/m    . :any)) .
-                 (("SLDT" 1 (R v) :1a)
-                  ("SLDT" 1 (M w) :1a)))
+                 (:reg    . #b000)) .
+                 (:ALT .
+                       (("SLDT" 1 (R v) :1a)
+                        ("SLDT" 1 (M w) :1a))))
                (((:opcode . (#x0F #x00))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b001)
-                 (:r/m    . :any)) .
-                 (("STR" 1 (R v) :1a)
-                  ("STR" 1 (M w) :1a)))
+                 (:reg    . #b001)) .
+                 (:ALT .
+                       (("STR" 1 (R v) :1a)
+                        ("STR" 1 (M w) :1a))))
                (((:opcode . (#x0F #x00))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b010)
-                 (:r/m    . :any)) .
+                 (:reg    . #b010)) .
                  ("LLDT" 1 (E w) :1a))
                (((:opcode . (#x0F #x00))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b011)
-                 (:r/m    . :any)) .
+                 (:reg    . #b011)) .
                  ("LTR" 1 (E w) :1a))
                (((:opcode . (#x0F #x00))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b100)
-                 (:r/m    . :any)) .
+                 (:reg    . #b100)) .
                  ("VERR" 1 (E w) :1a))
                (((:opcode . (#x0F #x00))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b101)
-                 (:r/m    . :any)) .
+                 (:reg    . #b101)) .
                  ("VERW" 1 (E w) :1a))
                (((:opcode . (#x0F #x00))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
+                 (:reg    . #b110)) .
                  (:none))
                (((:opcode . (#x0F #x00))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b111)
-                 (:r/m    . :any)) .
+                 (:reg    . #b111)) .
                  (:none))))
 
     (:Group-7 . ;; Covers opcode 0F 01.
               ((((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . :mem)
-                 (:reg    . #b000)
-                 (:r/m    . :any)) .
+                 (:reg    . #b000)) .
                  ("SGDT" 1 (M s) :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b000)
                  (:r/m    . #b001)) .
                  ("VMCALL" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b000)
                  (:r/m    . #b010)) .
                  ("VMLAUNCH" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b000)
                  (:r/m    . #b011)) .
                  ("VMRESUME" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b000)
                  (:r/m    . #b100)) .
                  ("VMXOFF" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . :mem)
-                 (:reg    . #b001)
-                 (:r/m    . :any)) .
+                 (:reg    . #b001)) .
                  ("SIDT" 1 (M s) :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b001)
                  (:r/m    . #b000)) .
                  ("MONITOR" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b001)
                  (:r/m    . #b001)) .
                  ("MWAIT" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b001)
                  (:r/m    . #b010)) .
                  ("CLAC" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b001)
                  (:r/m    . #b011)) .
                  ("STAC" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b001)
                  (:r/m    . #b111)) .
                  ("ENCLS" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . :mem)
-                 (:reg    . #b010)
-                 (:r/m    . :any)) .
+                 (:reg    . #b010)) .
                  ("LGDT" 1 (M s) :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . :mem)
-                 (:reg    . #b011)
-                 (:r/m    . :any)) .
+                 (:reg    . #b011)) .
                  ("LIDT" 1 (M s) :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b011)
                  (:r/m    . #b000)) .
                  ("XGETBV" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b011)
                  (:r/m    . #b001)) .
                  ("XSETBV" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b011)
                  (:r/m    . #b100)) .
                  ("VMFUNC" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b011)
                  (:r/m    . #b101)) .
                  ("XEND" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b011)
                  (:r/m    . #b110)) .
                  ("XTEST" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b011)
                  (:r/m    . #b111)) .
                  ("ENCLU" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b100)
-                 (:r/m    . :any)) .
-                 (("SMSW" 1 (M w) :1a)
-                  ("SMSW" 1 (R v) :1a)))
+                 (:reg    . #b100)) .
+                 (:ALT .
+                       (("SMSW" 1 (M w) :1a)
+                        ("SMSW" 1 (R v) :1a))))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
-                 (:mod    . :any)
                  (:reg    . #b100)
                  (:r/m    . #b11)) .
                  (:none))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b101)
-                 (:r/m    . :any)) .
+                 (:reg    . #b101)) .
                  (:none))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
+                 (:reg    . #b110)) .
                  ("LMSW" 1 (E w) :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
-                 (:mod    . :any)
                  (:reg    . #b111)
                  (:r/m    . :mem)) .
                  ("INVLPG" 1 (M b) :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b111)
                  (:r/m    . #b000)) .
                  ("SWAPGS" 0 :1a))
                (((:opcode . (#x0F #x01))
-                 (:prefix . :any)
                  (:mod    . #b11)
                  (:reg    . #b111)
                  (:r/m    . #b001)) .
@@ -2657,250 +2859,166 @@
 
     (:Group-8 . ;; Covers opcode 0F BA.
               ((((:opcode . (#x0F #xBA))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b000)
-                 (:r/m    . :any)) .
+                 (:reg    . #b000)) .
                  (:none))
                (((:opcode . (#x0F #xBA))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b001)
-                 (:r/m    . :any)) .
+                 (:reg    . #b001)) .
                  (:none))
                (((:opcode . (#x0F #xBA))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b010)
-                 (:r/m    . :any)) .
+                 (:reg    . #b010)) .
                  (:none))
                (((:opcode . (#x0F #xBA))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b011)
-                 (:r/m    . :any)) .
+                 (:reg    . #b011)) .
                  (:none))
                (((:opcode . (#x0F #xBA))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b100)
-                 (:r/m    . :any)) .
+                 (:reg    . #b100)) .
                  ("BT" 2 (E v) (I b) :1a))
                (((:opcode . (#x0F #xBA))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b101)
-                 (:r/m    . :any)) .
+                 (:reg    . #b101)) .
                  ("BTS" 2 (E b) (I b) :1a))
                (((:opcode . (#x0F #xBA))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
+                 (:reg    . #b110)) .
                  ("BTR" 2 (E b) (I b) :1a))
                (((:opcode . (#x0F #xBA))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b111)
-                 (:r/m    . :any)) .
+                 (:reg    . #b111)) .
                  ("BTC" 2 (E b) (I b) :1a))))
 
     (:Group-9 . ;; Covers opcode 0F C7.
               ((((:opcode . (#x0F #xC7))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b000)
-                 (:r/m    . :any)) .
-                 (:any))
+                 (:reg    . #b000)) .
+                 (:none))
                (((:opcode . (#x0F #xC7))
                  (:prefix . :none)
                  (:mod    . :mem)
-                 (:reg    . #b001)
-                 (:r/m    . :any)) .
-                 (("CMPXCH8B" 1 (M q) :1a)
-                  ("CMPXCHG16B" 1 (M dq) :1a)))
+                 (:reg    . #b001)) .
+                 (:ALT .
+                       (("CMPXCH8B" 1 (M q) :1a)
+                        ("CMPXCHG16B" 1 (M dq) :1a))))
                (((:opcode . (#x0F #xC7))
-                 (:prefix . :any)
                  (:mod    . #b11)
-                 (:reg    . #b001)
-                 (:r/m    . :any)) .
+                 (:reg    . #b001)) .
                  (:none))
                (((:opcode . (#x0F #xC7))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b010)
-                 (:r/m    . :any)) .
+                 (:reg    . #b010)) .
                  (:none))
                (((:opcode . (#x0F #xC7))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b011)
-                 (:r/m    . :any)) .
+                 (:reg    . #b011)) .
                  (:none))
                (((:opcode . (#x0F #xC7))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b100)
-                 (:r/m    . :any)) .
+                 (:reg    . #b100)) .
                  (:none))
                (((:opcode . (#x0F #xC7))
-                 (:prefix . :any)
-                 (:mod    . :any)
-                 (:reg    . #b101)
-                 (:r/m    . :any)) .
+                 (:reg    . #b101)) .
                  (:none))
                (((:opcode . (#x0F #xC7))
                  (:prefix . :none)
                  (:mod    . :mem)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
+                 (:reg    . #b110)) .
                  ("VMPTRLD" 1 (M q) :1a))
                (((:opcode . (#x0F #xC7))
                  (:prefix . :66)
                  (:mod    . :mem)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
+                 (:reg    . #b110)) .
                  ("VMCLEAR" 1 (M q) :1a))
                (((:opcode . (#x0F #xC7))
                  (:prefix . :F3)
                  (:mod    . :mem)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
+                 (:reg    . #b110)) .
                  ("VMXON" 1 (M q) :1a))
                (((:opcode . (#x0F #xC7))
                  (:prefix . :none)
                  (:mod    . #b11)
-                 (:reg    . #b110)
-                 (:r/m    . :any)) .
+                 (:reg    . #b110)) .
                  ("RDRAND" 1 (R v) :1a))
                (((:opcode . (#x0F #xC7))
                  (:prefix . :none)
-                 (:mod    . :any)
-                 (:reg    . #b111)
-                 (:r/m    . :any)) .
+                 (:reg    . #b111)) .
                  ("RDSEED" 1 (R v) :1a))
                (((:opcode . (#x0F #xC7))
                  (:prefix . :F3)
-                 (:mod    . :any)
-                 (:reg    . #b111)
-                 (:r/m    . :any)) .
-                 (("RDPID" 1 (R d) :1a)
-                  ("RDPID" 1 (R q) :1a)))))
+                 (:reg    . #b111)) .
+                 (:ALT .
+                       (("RDPID" 1 (R d) :1a)
+                        ("RDPID" 1 (R q) :1a))))))
 
     (:Group-10 . ;; Covers opcode 0F B9.
-               ((((:opcode . (#x0F #xB9))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . :any)
-                  (:r/m    . :any)) .
-                  ("UD1" 0 :1a))))
+               ((((:opcode . (#x0F #xB9))) .
+                 ("UD1" 0 :1a))))
 
     (:Group-11 . ;; Covers opcodes C6 and C7.
                ((((:opcode . #xC6)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
-                  ("MOV" 2 (E b) (I b) :1a))
+                  (:reg    . #b000)) .
+                  ("MOV" 2 (E b) (I b) :1a
+                   (:fn . (x86-mov-Op/En-MI))))
                 (((:opcode . #xC6)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b001)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC6)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b010)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC6)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b011)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC6)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b100)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC6)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b101)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC6)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b110)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC6)
-                  (:prefix . :any)
                   (:mod    . :mem)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b111)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC6)
-                  (:prefix . :any)
                   (:mod    . #b11)
                   (:reg    . #b111)
                   (:r/m    . #b000)) .
                   ("XABORT" 1 (I b) :1a))
 
                 (((:opcode . #xC7)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
-                  ("MOV" 2 (E v) (I z) :1a))
+                  (:reg    . #b000)) .
+                  ("MOV" 2 (E v) (I z) :1a
+                   (:fn . (x86-mov-Op/En-MI))))
                 (((:opcode . #xC7)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b001)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC7)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b010)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC7)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b011)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC7)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b100)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC7)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b101)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC7)
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b110)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC7)
-                  (:prefix . :any)
                   (:mod    . :mem)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
-                  (:none))
+                  (:reg    . #b111)) .
+                  (:none
+                   (:fn . (:no-instruction))))
                 (((:opcode . #xC7)
-                  (:prefix . :any)
                   (:mod    . #b11)
                   (:reg    . #b111)
                   (:r/m    . #b000)) .
@@ -2908,383 +3026,268 @@
 
     (:Group-12 . ;; Covers opcode 0F 71.
                ((((:opcode . (#x0F #x71))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
+                  (:reg    . #b000)) .
                   (:none))
                 (((:opcode . (#x0F #x71))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
+                  (:reg    . #b001)) .
                   (:none))
                 (((:opcode . (#x0F #x71))
                   (:prefix . :none)
                   (:mod    . #b11)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
+                  (:reg    . #b010)) .
                   ("PSRLW" 2 (N q) (I b) :1a))
                 (((:opcode . (#x0F #x71))
                   (:prefix . :66)
                   (:mod    . #b11)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
+                  (:reg    . #b010)) .
                   ("VPSRLW" 3 (H x) (U x) (I b) :1a))
                 (((:opcode . (#x0F #x71))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
+                  (:reg    . #b011)) .
                   (:none))
                 (((:opcode . (#x0F #x71))
                   (:prefix . :none)
                   (:mod    . #b11)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
+                  (:reg    . #b100)) .
                   ("PSRAW" 2 (N q) (I b) :1a))
                 (((:opcode . (#x0F #x71))
                   (:prefix . :66)
                   (:mod    . #b11)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
+                  (:reg    . #b100)) .
                   ("VPSRAW" 3 (H x) (U x) (I b) :1a))
                 (((:opcode . (#x0F #x71))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
+                  (:reg    . #b101)) .
                   (:none))
                 (((:opcode . (#x0F #x71))
                   (:prefix . :none)
                   (:mod    . #b11)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
+                  (:reg    . #b110)) .
                   ("PSLLW" 2 (N q) (I b) :1a))
                 (((:opcode . (#x0F #x71))
                   (:prefix . :66)
                   (:mod    . #b11)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
+                  (:reg    . #b110)) .
                   ("VPSLLW" 3 (H x) (U x) (I b) :1a))
                 (((:opcode . (#x0F #x71))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
+                  (:reg    . #b111)) .
                   (:none))))
 
     (:Group-13 . ;; Covers opcode 0F 72.
                ((((:opcode . (#x0F #x72))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
+                  (:reg    . #b000)) .
                   (:none))
                 (((:opcode . (#x0F #x72))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
+                  (:reg    . #b001)) .
                   (:none))
                 (((:opcode . (#x0F #x72))
                   (:prefix . :none)
                   (:mod    . #b11)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
+                  (:reg    . #b010)) .
                   ("PSRLD" 2 (N q) (I b) :1a))
                 (((:opcode . (#x0F #x72))
                   (:prefix . :66)
                   (:mod    . #b11)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
+                  (:reg    . #b010)) .
                   ("VPSRLD" 3 (H x) (U x) (I b) :1a))
                 (((:opcode . (#x0F #x72))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
+                  (:reg    . #b011)) .
                   (:none))
                 (((:opcode . (#x0F #x72))
                   (:prefix . :none)
                   (:mod    . #b11)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
+                  (:reg    . #b100)) .
                   ("PSRAD" 2 (N q) (I b) :1a))
                 (((:opcode . (#x0F #x72))
                   (:prefix . :66)
                   (:mod    . #b11)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
+                  (:reg    . #b100)) .
                   ("VPSRAD" 3 (H x) (U x) (I b) :1a))
                 (((:opcode . (#x0F #x72))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
+                  (:reg    . #b101)) .
                   (:none))
                 (((:opcode . (#x0F #x72))
                   (:prefix . :none)
                   (:mod    . #b11)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
+                  (:reg    . #b110)) .
                   ("PSLLD" 2 (N q) (I b) :1a))
                 (((:opcode . (#x0F #x72))
                   (:prefix . :66)
                   (:mod    . #b11)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
+                  (:reg    . #b110)) .
                   ("VPSLLD" 3 (H x) (U x) (I b) :1a))
                 (((:opcode . (#x0F #x72))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
+                  (:reg    . #b111)) .
                   (:none))))
 
     (:Group-14 . ;; Covers opcode 0F 73.
                ((((:opcode . (#x0F #x73))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
+                  (:reg    . #b000)) .
                   (:none))
                 (((:opcode . (#x0F #x73))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
+                  (:reg    . #b001)) .
                   (:none))
                 (((:opcode . (#x0F #x73))
                   (:prefix . :none)
                   (:mod    . #b11)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
+                  (:reg    . #b010)) .
                   ("PSRLQ" 2 (N q) (I b) :1a))
                 (((:opcode . (#x0F #x73))
                   (:prefix . :66)
                   (:mod    . #b11)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
+                  (:reg    . #b010)) .
                   ("VPSRLQ" 3 (H x) (U x) (I b) :1a))
                 (((:opcode . (#x0F #x73))
                   (:prefix . :66)
                   (:mod    . #b11)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
+                  (:reg    . #b011)) .
                   ("VPSRLDQ" 3 (H x) (U x) (I b) :1a))
                 (((:opcode . (#x0F #x73))
                   (:prefix . :none)
-                  (:mod    . :any)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
+                  (:reg    . #b100)) .
                   (:none))
                 (((:opcode . (#x0F #x73))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
+                  (:reg    . #b101)) .
                   (:none))
                 (((:opcode . (#x0F #x73))
                   (:prefix . :none)
                   (:mod    . #b11)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
+                  (:reg    . #b110)) .
                   ("PSLLQ" 2 (N q) (I b) :1a))
                 (((:opcode . (#x0F #x73))
                   (:prefix . :66)
                   (:mod    . #b11)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
+                  (:reg    . #b110)) .
                   ("VPSLLQ" 3 (H x) (U x) (I b) :1a))
                 (((:opcode . (#x0F #x73))
                   (:prefix . :66)
                   (:mod    . #b11)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
+                  (:reg    . #b111)) .
                   ("VPSLLDQ" 3 (H x) (U x) (I b) :1a))))
 
     (:Group-15 . ;; Covers opcode 0F AE.
                ((((:opcode . (#x0F #xAE))
                   (:prefix . :none)
                   (:mod    . :mem)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
+                  (:reg    . #b000)) .
                   ("FXSAVE" 0 :1a))
                 (((:opcode . (#x0F #xAE))
                   (:prefix . :F3)
                   (:mod    . #b11)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
+                  (:reg    . #b000)) .
                   ("RDFSBASE" 1 (R y) :1a))
                 (((:opcode . (#x0F #xAE))
                   (:prefix . :none)
                   (:mod    . :mem)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
+                  (:reg    . #b001)) .
                   ("FXRSTOR" 0 :1a))
                 (((:opcode . (#x0F #xAE))
                   (:prefix . :F3)
                   (:mod    . #b11)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
+                  (:reg    . #b001)) .
                   ("RDGSBASE" 1 (R y) :1a))
                 (((:opcode . (#x0F #xAE))
                   (:prefix . :none)
                   (:mod    . :mem)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
+                  (:reg    . #b010)) .
                   ("LDMXCSR" 0 :1a))
                 (((:opcode . (#x0F #xAE))
                   (:prefix . :F3)
                   (:mod    . #b11)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
+                  (:reg    . #b010)) .
                   ("WRFSBASE" 1 (R y) :1a))
                 (((:opcode . (#x0F #xAE))
                   (:prefix . :none)
                   (:mod    . :mem)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
+                  (:reg    . #b011)) .
                   ("STMXCSR" 0 :1a))
                 (((:opcode . (#x0F #xAE))
                   (:prefix . :F3)
                   (:mod    . #b11)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
+                  (:reg    . #b011)) .
                   ("WRGSBASE" 1 (R y) :1a))
                 (((:opcode . (#x0F #xAE))
                   (:prefix . :none)
                   (:mod    . :mem)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
+                  (:reg    . #b100)) .
                   ("XSAVE" 0 :1a))
                 (((:opcode . (#x0F #xAE))
                   (:prefix . :none)
                   (:mod    . #b11)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
-                  (("XRSTOR" 0 :1a)
-                   ("LFENCE" 0 :1a)))
+                  (:reg    . #b101)) .
+                  (:ALT .
+                        (("XRSTOR" 0 :1a)
+                         ("LFENCE" 0 :1a))))
                 (((:opcode . (#x0F #xAE))
                   (:prefix . :none)
                   (:mod    . #b11)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
-                  (("XSAVEOPT" 0 :1a)
-                   ("MFENCE" 0 :1a)))
+                  (:reg    . #b110)) .
+                  (:ALT .
+                        (("XSAVEOPT" 0 :1a)
+                         ("MFENCE" 0 :1a))))
                 (((:opcode . (#x0F #xAE))
                   (:prefix . :none)
                   (:mod    . #b11)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
-                  (("CLFLUSH" 0 :1a)
-                   ("SFENCE"  0 :1a)))))
+                  (:reg    . #b111)) .
+                  (:ALT .
+                        (("CLFLUSH" 0 :1a)
+                         ("SFENCE"  0 :1a))))))
 
     (:Group-16 . ;; Covers opcode 0F 18.
                ((((:opcode . (#x0F #x18))
-                  (:prefix . :any)
                   (:mod    . :mem)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
+                  (:reg    . #b000)) .
                   ("PREFETCHNTA" 0 :1a))
                 (((:opcode . (#x0F #x18))
-                  (:prefix . :any)
                   (:mod    . :mem)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
+                  (:reg    . #b001)) .
                   ("PREFETCHT0" 0 :v))
                 (((:opcode . (#x0F #x18))
-                  (:prefix . :any)
                   (:mod    . :mem)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
+                  (:reg    . #b010)) .
                   ("PREFETCHT1" 0 :1a))
                 (((:opcode . (#x0F #x18))
-                  (:prefix . :any)
                   (:mod    . :mem)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
+                  (:reg    . #b011)) .
                   ("PREFETCHT2" 0 :1a))
                 (((:opcode . (#x0F #x18))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
+                  (:reg    . #b100)) .
                   ("RESERVEDNOP" 0))
                 (((:opcode . (#x0F #x18))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
+                  (:reg    . #b101)) .
                   ("RESERVEDNOP" 0))
                 (((:opcode . (#x0F #x18))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
+                  (:reg    . #b110)) .
                   ("RESERVEDNOP" 0))
                 (((:opcode . (#x0F #x18))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
+                  (:reg    . #b111)) .
                   ("RESERVEDNOP" 0))
                 (((:opcode . (#x0F #x18))
-                  (:prefix . :any)
-                  (:mod    . #b11)
-                  (:reg    . :any)
-                  (:r/m    . :any)) .
+                  (:mod    . #b11)) .
                   ("RESERVEDNOP" 0))))
 
     (:Group-17 . ;; Covers opcode VEX 0F 38 F3.
                ((((:opcode . (:vex #x0F #x38 #xF3))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b000)
-                  (:r/m    . :any)) .
+                  (:reg    . #b000)) .
                   (:none))
                 (((:opcode . (:vex #x0F #x38 #xF3))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b001)
-                  (:r/m    . :any)) .
+                  (:reg    . #b001)) .
                   ("BLSR" 2 (B y) (E y) :v))
                 (((:opcode . (:vex #x0F #x38 #xF3))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b010)
-                  (:r/m    . :any)) .
+                  (:reg    . #b010)) .
                   ("BLSMSK" 2 (B y) (E y) :v))
                 (((:opcode . (:vex #x0F #x38 #xF3))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b011)
-                  (:r/m    . :any)) .
+                  (:reg    . #b011)) .
                   ("BLSI" 2 (B y) (E y) :v))
                 (((:opcode . (:vex #x0F #x38 #xF3))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b100)
-                  (:r/m    . :any)) .
+                  (:reg    . #b100)) .
                   (:none))
                 (((:opcode . (:vex #x0F #x38 #xF3))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b101)
-                  (:r/m    . :any)) .
+                  (:reg    . #b101)) .
                   (:none))
                 (((:opcode . (:vex #x0F #x38 #xF3))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b110)
-                  (:r/m    . :any)) .
+                  (:reg    . #b110)) .
                   (:none))
                 (((:opcode . (:vex #x0F #x38 #xF3))
-                  (:prefix . :any)
-                  (:mod    . :any)
-                  (:reg    . #b111)
-                  (:r/m    . :any)) .
+                  (:reg    . #b111)) .
                   (:none))))
     ))
 
@@ -3408,6 +3411,53 @@
 (define simple-cells-legal-keyword-p (k)
   (member-equal k *simple-cells-legal-keywords*))
 
+(define semantic-function-info-p (info)
+  :short "Used to generate code that dispatches control to the appropriate
+  instruction semantic function"
+  (or
+   ;; Either no info. is present...
+   (equal info nil)
+   ;; ... but if it is, it is well-formed.
+   (and (consp info)
+        (equal (car info) :FN)
+        (true-listp (cdr info))
+        (<= 1 (len (cdr info)))
+        ;; Name of instruction semantic function
+        (symbolp (car (cdr info)))
+        ;; Alist binding formals to actuals
+        (alistp (cdr (cdr info))))))
+
+(define remove-semantic-function-info-p ((info true-listp))
+  (if (endp info)
+      nil
+    (b* ((elem (car info))
+         (rest (cdr info)))
+      (if (and (consp elem)
+               (equal (car elem) :FN))
+          rest
+        (cons elem (remove-semantic-function-info-p rest)))))
+
+  ///
+
+  (defthm true-listp-remove-semantic-function-info-p
+    (implies (true-listp info)
+             (true-listp (remove-semantic-function-info-p info)))))
+
+(define get-semantic-function-info-p ((info true-listp))
+  (if (endp info)
+      nil
+    (b* ((elem (car info))
+         (rest (cdr info)))
+      (if (semantic-function-info-p elem)
+          elem
+        (get-semantic-function-info-p rest))))
+  ///
+
+  (defthm semantic-function-info-p-of-get-semantic-function-info-p
+    (implies (true-listp info)
+             (semantic-function-info-p (get-semantic-function-info-p info)))
+    :hints (("Goal" :in-theory (e/d (semantic-function-info-p) ())))))
+
 (define simple-cell-addressing-info-p ((info true-listp))
   (and
    ;; Number of operands
@@ -3421,10 +3471,18 @@
 (define basic-simple-cell-p (cell)
   (b* (((unless (true-listp cell)) nil)
        (first (car cell))
-       (rest (cdr cell)))
-    (and (or (stringp first)
-             (member-equal first *group-numbers*))
-         (simple-cell-addressing-info-p rest)))
+       (rest (cdr cell))
+       (new-rest (remove-semantic-function-info-p rest))
+       (semantic-info (get-semantic-function-info-p rest)))
+    (and
+     (semantic-function-info-p semantic-info)
+     (or
+      (and (or (stringp first)
+               (member-equal first *group-numbers*))
+           (simple-cell-addressing-info-p new-rest))
+      (and
+       (member-equal first *simple-cells-standalone-legal-keywords*)
+       (equal new-rest nil)))))
   ///
   (defthm basic-simple-cell-p-implies-true-listp
     (implies (basic-simple-cell-p cell)
@@ -3450,8 +3508,6 @@
            (rest (cdr cell)))
         (cond ((equal first :ALT)
                (basic-simple-cells-p rest))
-              ((member-equal first *simple-cells-standalone-legal-keywords*)
-               (equal rest nil))
               (t nil))))
   ///
   (defthm simple-cell-p-implies-true-listp
@@ -3592,6 +3648,49 @@
    (and (opcode-map-p *0F-3A-three-byte-opcode-map-lst*)
         (equal (len *0F-3A-three-byte-opcode-map-lst*) 16)
         (len-of-each-row-okay-p *0F-3A-three-byte-opcode-map-lst*))))
+
+
+(define opcode-extensions-group-list-p (group-list)
+  (if (atom group-list)
+      (equal group-list nil)
+    (b* ((elem (car group-list))
+         ((unless (consp elem))
+          (cw "~%Elem ~p0 not a consp!~%" elem)
+          nil)
+         (opcode-descriptor (car elem))
+         ((unless (alistp opcode-descriptor))
+          (cw "~%Opcode-descriptor ~p0 not an alistp!~%" opcode-descriptor)
+          nil)
+         (keys (strip-cars opcode-descriptor))
+         ((unless (subsetp-equal keys '(:opcode :reg :prefix :mod :r/m)))
+          (cw "~%Keys ~p0 ill-formed!~%" keys)
+          nil)
+         (opcode-info (cdr elem))
+         ((unless (opcode-cell-p opcode-info))
+          (cw "~%Cell ~p0 ill-formed!~%" opcode-info)
+          nil))
+      (opcode-extensions-group-list-p (cdr group-list)))))
+
+(define opcode-extensions-map-p (map)
+  (if (atom map)
+      (equal map nil)
+    (b* ((group (car map))
+         ((unless (consp group))
+          (cw "~%Group ~p0 not a consp!~%" group)
+          nil)
+         (group-name (car group))
+         ((unless (keywordp group-name))
+          (cw "~%Group-name ~p0 not a keywordp!~%" group-name)
+          nil)
+         (group-list (cdr group))
+         ((unless (opcode-extensions-group-list-p group-list))
+          (cw "~%Group-list ~p0 ill-formed!~%" group-list)
+          nil))
+      (opcode-extensions-map-p (cdr map)))))
+
+(local
+ (defthm opcode-extensions-map-is-well-formed
+   (opcode-extensions-map-p *opcode-extensions-by-group-number*)))
 
 ;; ----------------------------------------------------------------------
 

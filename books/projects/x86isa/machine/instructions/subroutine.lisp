@@ -470,9 +470,12 @@
   :body
 
   (b* ((ctx 'x86-leave)
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :leave-unimplemented-in-32-bit-mode))
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        (p3 (equal #.*operand-size-override*
                   (prefixes-slice :group-3-prefix prefixes)))
        ((the (integer 2 8) pop-bytes)

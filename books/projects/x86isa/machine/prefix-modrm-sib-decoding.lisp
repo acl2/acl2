@@ -572,6 +572,9 @@
           (er hard? 'any-operand-with-prop?
               "Cell expected to be a basic-simple-cell-p: ~x0."
               cell))
+         ((when (member-equal (car cell)
+                              *simple-cells-standalone-legal-keywords*))
+          0)
          ((when (< (len cell) 2))
           (er hard? 'any-operand-with-prop?
               "Len of column info field is < 2: ~x0."
@@ -633,8 +636,6 @@
            ;; See comment in *simple-cells-legal-keywords* for a
            ;; description of :ALT.
            (any-operand-with-prop-for-simple-cells? prop (cdr cell)))
-          ((member-equal (car cell) *simple-cells-standalone-legal-keywords*)
-           0)
           (t
            ;; We shouldn't reach here.
            (er hard? 'compute-prop-for-a-simple-cell

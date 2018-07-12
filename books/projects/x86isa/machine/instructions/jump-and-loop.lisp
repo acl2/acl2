@@ -318,6 +318,8 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
   :body
 
   (b* ((ctx 'x86-far-jmp-Op/En-M)
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :far-jmp-unimplemented-in-32-bit-mode))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD

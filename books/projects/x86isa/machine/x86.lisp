@@ -627,6 +627,14 @@
   (b* ((ctx 'x86-step-unimplemented))
     (!!ms-fresh :message message)))
 
+(define x86-illegal-instruction (message x86)
+  :parents (x86-decoder)
+  ;; "Message" can contain some specific error message and the
+  ;; opcode(s).
+  :returns (x86 x86p :hyp :guard)
+  (b* ((ctx 'x86-illegal-instruction))
+    (!!fault-fresh :ud message)))
+
 (defun create-case-stmt-1 (top-level-op-list acc)
   (cond ((endp top-level-op-list)
          acc)
