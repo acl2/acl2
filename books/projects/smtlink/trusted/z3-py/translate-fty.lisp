@@ -125,37 +125,21 @@
                                 :in-theory (enable paragraphp wordp))))
   (b* ((name (symbol-fix name))
        (name (translate-symbol name))
-       (elt-type (symbol-fix elt-type))
-       (elt-type-pkg (symbol-package-name elt-type))
-       (elt-type-str (translate-type elt-type int-to-rat nil))
-       (maybe-elt-str (concatenate 'string "maybe_" elt-type-str))
-       (maybe-elt (intern$ maybe-elt-str elt-type-pkg))
-       (maybe-elt-type
-        (translate-fty-option maybe-elt elt-type int-to-rat))
        (datatype-line
         `(,name "= z3.Datatype" #\( #\' ,name #\' #\) #\Newline))
-       (translated-elt-type (translate-symbol maybe-elt))
+       (translated-elt-type (translate-type elt-type int-to-rat nil))
        (declare-line1
         `(,name ".declare('cons', ('car', " ,translated-elt-type "), "
                 "('cdr', " ,name "))" #\Newline))
        (declare-line2
         `(,name ".declare('nil')" #\Newline))
-       (create-line `(,name " = " ,name ".create()" #\Newline))
-       (cons-fn
-        `("def " ,name "_cons(e,l): return " ,name ".cons("
-          ,translated-elt-type ".some(e),l)" #\Newline))
-       (car-fn
-        `("def " ,name "_car(l): return " ,translated-elt-type ".val(" ,name
-          ".car(l))" #\Newline))
        (consp-fn `("def " ,name "_consp(l): return Not(l == " ,name ".nil)"
-                   #\Newline)))
-    `(,maybe-elt-type
-      ,datatype-line
+                   #\Newline))
+       (create-line `(,name " = " ,name ".create()" #\Newline)))
+    `(,datatype-line
       ,declare-line1
       ,declare-line2
       ,create-line
-      ,cons-fn
-      ,car-fn
       ,consp-fn)))
 
 (define translate-fty-alist-assoc-return ((key-type symbolp)
