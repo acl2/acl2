@@ -509,3 +509,24 @@ finds out @('integerp') is not a supported function.</p>
                (eq (sym-prod->sym x) (sym-prod->sym y))))
   :hints (("Goal" :smtlink (:fty (sym-prod)))))
 )
+
+(acl2::must-fail
+ (defthm check-guard
+   (implies (acl2::integer-listp x)
+            (equal (1+ (1- (car (acl2::integer-list-fix x))))
+                   (car (acl2::integer-list-fix x))))
+   :hints (("Goal" :smtlink (:fty (acl2::integer-list)))))
+)
+
+(acl2::must-fail
+ (defthm check-guard-2
+   (implies (and (symbol-integer-alist-p l)
+                 (symbolp x))
+            (equal (1+ (1- (cdr
+                            (magic-fix 'symbolp_integerp
+                                       (assoc-equal x (symbol-integer-alist-fix
+                                                       l))))))
+                   (cdr (magic-fix 'symbolp_integerp
+                                   (assoc-equal x (symbol-integer-alist-fix l))))))
+   :hints (("Goal" :smtlink (:fty (symbol-integer-alist)))))
+ )

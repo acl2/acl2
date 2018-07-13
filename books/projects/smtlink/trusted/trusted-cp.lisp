@@ -14,7 +14,7 @@
   :parents (trusted)
   :short "The trusted clause processor"
 
-  (defstub SMT-prove-stub (term smtlink-hint state) (mv t state))
+  (defstub SMT-prove-stub (term smtlink-hint state) (mv t nil state))
 
   (program)
   (defttag :Smtlink)
@@ -40,9 +40,18 @@
       :mode :program
       (b* ((smt-cnf (if custom-p (custom-smt-cnf) (default-smt-cnf)))
            (smtlink-hint (change-smtlink-hint smtlink-hint :smt-cnf smt-cnf))
-           ((mv res state) (SMT-prove-stub (disjoin cl) smtlink-hint state)))
+           ((mv res smt-precond state)
+            (SMT-prove-stub (disjoin cl) smtlink-hint state))
+           (subgoal-lst `(((hint-please
+                            '(:in-theory (enable magic-fix
+                                                 hint-please
+                                                 type-hyp)
+                              :expand ((:free (x) (hide x)))))
+                           ,smt-precond
+                           ,(disjoin cl))))
+           (- (cw "subgoal-lst: ~q0" subgoal-lst)))
         (if res
-            (prog2$ (cw "Proved!~%") (mv nil nil state))
+            (prog2$ (cw "Proved!~%") (mv nil subgoal-lst state))
           (mv (cons "NOTE: Unable to prove goal with ~
                       SMT-trusted-cp and indicated hint." nil)
               (list cl) state))))
