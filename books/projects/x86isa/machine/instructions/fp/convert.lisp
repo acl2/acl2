@@ -82,6 +82,8 @@
 
   :body
   (b* ((ctx 'x86-cvts?2si/cvtts?2si-Op/En-RM)
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
@@ -208,6 +210,8 @@
 
   :body
   (b* ((ctx 'x86-cvtsi2s?-Op/En-RM)
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
@@ -320,6 +324,8 @@
 
   :body
   (b* ((ctx 'x86-cvts?2s?-Op/En-RM)
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
@@ -412,6 +418,8 @@
 
   :body
   (b* ((ctx 'x86-cvtps2pd-Op/En-RM)
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
@@ -521,6 +529,8 @@
 
   :body
   (b* ((ctx 'x86-cvtpd2ps-Op/En-RM)
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))

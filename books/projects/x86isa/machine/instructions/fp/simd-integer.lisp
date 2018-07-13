@@ -120,6 +120,8 @@
 
   :body
   (b* ((ctx 'x86-pcmpeqb-Op/En-RM)
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
@@ -282,6 +284,8 @@
 
   :body
   (b* ((ctx 'x86-pmovmskb-Op/En-RM)
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))

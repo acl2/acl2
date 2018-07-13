@@ -623,7 +623,7 @@
     ;; Example invocations:
     ;; (compute-prop-for-a-simple-cell :modr/m? '("ADD" 2 (E b)  (G b)))
     ;; (compute-prop-for-a-simple-cell :modr/m? '(:2-byte-escape))
-    ;; (compute-prop-for-a-simple-cell :modr/m? '(:ALT .
+    ;; (compute-prop-for-a-simple-cell :modr/m? '(:ALT
     ;;                                            (("VPMOVZXBW" 2 (V x)  (U x))
     ;;                                             ("VPMOVZXBW" 2 (V x)  (M q)))))
 
@@ -632,10 +632,12 @@
                "Use this function for a simple cell only.~%~x0 is not simple!~%" cell))
           ((basic-simple-cell-p cell)
            (any-operand-with-prop? prop cell))
-          ((equal (car cell) :ALT)
+          ((and (equal (car cell) :ALT)
+                (true-listp (cdr cell))
+                (true-list-listp (car (cdr cell))))
            ;; See comment in *simple-cells-legal-keywords* for a
            ;; description of :ALT.
-           (any-operand-with-prop-for-simple-cells? prop (cdr cell)))
+           (any-operand-with-prop-for-simple-cells? prop (car (cdr cell))))
           (t
            ;; We shouldn't reach here.
            (er hard? 'compute-prop-for-a-simple-cell
@@ -1199,38 +1201,6 @@
                         (quote ,computed-table))))))
 
   (make-event
-   ;; For 64-bit mode: (:66 :F2)
-   ;; These two prefixes are only in the first three-byte map so far
-   ;; (as of Intel Manuals, May 2018).
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-38-three-byte-opcode-map-lst* t :k '(:66 :F2)))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-0f-38-three-byte-66-F2-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-0f-38-three-byte-66-F2-has-modr/m-ar*
-        (list-to-array '64-bit-mode-0f-38-three-byte-66-F2-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
    ;; For 32-bit mode: (:NO-PREFIX)
    (b* ((precomputed-table
          '(1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0
@@ -1347,38 +1317,6 @@
              "Error: Incorrect ModR/M info computed!")))
      `(defconst *32-bit-mode-0f-38-three-byte-F3-has-modr/m-ar*
         (list-to-array '32-bit-mode-0f-38-three-byte-F3-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit mode: (:66 :F2)
-   ;; These two prefixes are only in the first three-byte map so far
-   ;; (as of Intel Manuals, May 2018).
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-38-three-byte-opcode-map-lst* nil :k '(:66 :F2)))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-0f-38-three-byte-66-F2-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-0f-38-three-byte-66-F2-has-modr/m-ar*
-        (list-to-array '32-bit-mode-0f-38-three-byte-66-F2-has-modr/m
                        (ints-to-booleans
                         (quote ,computed-table))))))
 
@@ -1718,8 +1656,6 @@
              (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
                     *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode)))))
 
-      ;; TODO: What about the (:66 :F2) mandatory prefixes for opcodes 0F 38 F0
-      ;; and 0F 38 F1?
       (define 64-bit-mode-0F-38-three-byte-opcode-ModR/M-p
         ((mandatory-prefix :type (unsigned-byte 8))
          (opcode   :type (unsigned-byte 8)
@@ -2828,8 +2764,6 @@
              (aref1 '32-bit-mode-two-byte-no-prefix-has-vex
                     *32-bit-mode-two-byte-no-prefix-has-vex-ar* opcode)))))
 
-      ;; TODO: What about the (:66 :F2) mandatory prefixes for opcodes 0F 38 F0
-      ;; and 0F 38 F1?
       (define 64-bit-mode-0F-38-three-byte-opcode-Vex-p
         ((mandatory-prefix :type (unsigned-byte 8))
          (opcode   :type (unsigned-byte 8)

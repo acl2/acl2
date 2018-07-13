@@ -473,7 +473,8 @@
 (local (in-theory (e/d* (rime-size
                          rme-size
                          wime-size
-                         wme-size)
+                         wme-size
+                         x86-syscall-both-views)
                         (env-assumptions
                          i64p))))
 

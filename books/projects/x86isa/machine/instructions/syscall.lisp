@@ -422,6 +422,34 @@
 
     x86))
 
+(define x86-syscall-both-views
+  ((start-rip :type (signed-byte 48))
+   (temp-rip :type (signed-byte 48))
+   (prefixes :type (unsigned-byte 52))
+   (rex-byte :type (unsigned-byte 8))
+   (opcode :type (unsigned-byte 8))
+   (modr/m :type (unsigned-byte 8))
+   (sib :type (unsigned-byte 8))
+   x86)
+  (declare (ignorable start-rip temp-rip prefixes rex-byte opcode modr/m sib))
+  :parents (two-byte-opcodes)
+  :guard-hints
+  (("goal" :in-theory (e/d nil (msri-is-n64p))
+    :use ((:instance msri-is-n64p (i 0)))))
+  :returns
+  (x86 x86p
+       :hyp (and (x86p x86)
+                 (canonical-address-p temp-rip)))
+
+  (b* ((ctx 'x86-syscall-both-views)
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :syscall-unimplemented-in-32-bit-mode)))
+    (if (app-view x86)
+        (x86-syscall-app-view
+         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
+      (x86-syscall
+       start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
+
 ;; ======================================================================
 ;; INSTRUCTION: SYSRET
 ;; ======================================================================
@@ -440,8 +468,7 @@ REX.W + 0F 07: SYSRET</p>
   opposed to REX.W + 0F 07\) returns to compatibility mode, not 64-bit
   mode.</p>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (not (app-view x86))
+  :returns (x86 x86p :hyp (and (x86p x86)                               
                                (canonical-address-p temp-rip)))
   :implemented
   (add-to-implemented-opcodes-table 'SYSRET #x0F07 '(:nil nil)
@@ -462,6 +489,10 @@ REX.W + 0F 07: SYSRET</p>
   :body
 
   (b* ((ctx 'x86-sysret)
+
+       ((when (or (not (64-bit-modep x86))
+                  (app-view x86)))
+        (!!ms-fresh :sysret-unimplemented))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)

@@ -383,6 +383,24 @@ Digital Random Number Generator Guide</a> for more details.</p>"
        (x86 (write-*ip temp-rip x86)))
       x86))
 
+;; ----------------------------------------------------------------------
+
+(define x86-step-unimplemented (message x86)
+  :parents (instructions)
+  ;; "Message" can contain some specific error message and the
+  ;; opcode(s).
+  :returns (x86 x86p :hyp :guard)
+  (b* ((ctx 'x86-step-unimplemented))
+    (!!ms-fresh :message message)))
+
+(define x86-illegal-instruction (message x86)
+  :parents (instructions)
+  ;; "Message" can contain some specific error message and the
+  ;; opcode(s).
+  :returns (x86 x86p :hyp :guard)
+  (b* ((ctx 'x86-illegal-instruction))
+    (!!fault-fresh :ud message)))
+
 ;; ======================================================================
 
 ;; To see the rules in the instruction-decoding-and-spec-rules

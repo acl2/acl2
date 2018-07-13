@@ -80,6 +80,11 @@
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* ((ctx 'x86-lgdt)
+
+       ((when (or (app-view x86)
+                  (not (64-bit-modep x86))))
+        (!!ms-fresh :lgdt-unimplemented))
+
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
        ;; If the current privilege level is not 0, the #GP exception
@@ -173,6 +178,11 @@
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* ((ctx 'x86-lidt)
+
+       ((when (or (app-view x86)
+                  (not (64-bit-modep x86))))
+        (!!ms-fresh :lidt-unimplemented))
+
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
        ;; If the current privilege level is not 0, the #GP exception
@@ -275,6 +285,11 @@ a non-canonical form, raise the SS exception.</p>"
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* ((ctx 'x86-lldt)
+       
+       ((when (or (app-view x86)
+                  (not (64-bit-modep x86))))
+        (!!ms-fresh :lldt-unimplemented))
+       
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
        ;; If the current privilege level is not 0, the #GP exception

@@ -375,11 +375,15 @@
 
   (b* ((ctx 'x86-two-byte-nop)
 
+       (reg (mrm-reg modr/m))
+       ((when (not (equal reg 0)))
+        (!!fault-fresh :ud nil :illegal-reg modr/m))
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
+       
        (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
+       (mod (mrm-mod modr/m))       
 
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))

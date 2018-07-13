@@ -91,6 +91,10 @@
 
   :body
   (b* ((ctx 'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
@@ -228,6 +232,10 @@
 
   :body
   (b* ((ctx 'x86-cmpss/cmpsd-Op/En-RMI)
+
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
@@ -332,6 +340,10 @@
 
   :body
   (b* ((ctx 'x86-cmpps-Op/En-RMI)
+
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
@@ -495,6 +507,10 @@
 
   :body
   (b* ((ctx 'x86-cmppd-Op/En-RMI)
+
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
@@ -637,6 +653,10 @@
 
   :body
   (b* ((ctx 'x86-comis?/ucomis?-Op/En-RM)
+
+       ((when (not (64-bit-modep x86)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
