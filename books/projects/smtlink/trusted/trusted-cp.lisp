@@ -48,8 +48,7 @@
                                                  type-hyp)
                               :expand ((:free (x) (hide x)))))
                            ,smt-precond
-                           ,(disjoin cl))))
-           (- (cw "subgoal-lst: ~q0" subgoal-lst)))
+                           ,(disjoin cl)))))
         (if res
             (prog2$ (cw "Proved!~%") (mv nil subgoal-lst state))
           (mv (cons "NOTE: Unable to prove goal with ~
