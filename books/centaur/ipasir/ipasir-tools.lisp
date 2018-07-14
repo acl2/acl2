@@ -58,7 +58,7 @@
 at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
 @('(not (ipasir$a->new-clause ipasir))') in
 @('ipasir-add-binary-formula').</p>"
-  :guard (non-exec (not (ipasir$a->new-clause ipasir)))
+  :guard (ipasir-empty-new-clause ipasir)
   :inline t
   :returns (new-ipasir)
   (mbe :logic (non-exec (change-ipasir$a ipasir :new-clause nil))
@@ -90,7 +90,7 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
 at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
 @('(not (ipasir$a->assumption ipasir))') in
 @('ipasir-add-binary-formula').</p>"
-  :guard (non-exec (not (ipasir$a->assumption ipasir)))
+  :guard (not (ipasir-get-assumption ipasir))
   :inline t
   :returns (new-ipasir)
   (mbe :logic (non-exec (change-ipasir$a ipasir :assumption nil))
@@ -114,8 +114,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
   (in-theory (disable (ipasir-cancel-assumption))))
 
 (define ipasir-add-empty (ipasir)
-  :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                        (not (ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
   :returns (new-ipasir)
   :parents (ipasir-formula)
   :short "Add an empty clause.  Likely useless because the solver is then unsat forever."
@@ -141,8 +141,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
            (ipasir$a->assumption ipasir))))
 
 (define ipasir-add-unary (ipasir (a litp))
-  :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                        (not (ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
   :returns (new-ipasir)
   :parents (ipasir-formula)
   :short "Add a unary clause to the formula, permanently restricting the given literal to be true."
@@ -171,8 +171,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
 
 
 (define ipasir-add-binary (ipasir (a litp) (b litp))
-  :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                        (not (ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
   :returns (new-ipasir)
   :parents (ipasir-formula)
   :short "Add a binary clause to the formula"
@@ -203,8 +203,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
            (ipasir$a->assumption ipasir))))
 
 (define ipasir-add-ternary (ipasir (a litp) (b litp) (c litp))
-  :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                        (not (ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
   :returns (new-ipasir)
   :parents (ipasir-formula)
   :short "Add a ternary clause to the formula"
@@ -240,8 +240,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
 ;; already do this for us so we'll just use the non-checking versions for now.
 
 ;; (define ipasir-add-4ary (ipasir (a litp) (b litp) (c litp) (d litp))
-;;   :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-;;                         (not (ipasir$a->new-clause ipasir))))
+;;   :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+;;               (ipasir-empty-new-clause ipasir))
 ;;   :returns (new-ipasir)
 ;;   :parents (ipasir-formula)
 ;;   (b* ((a (lit-fix a))
@@ -291,8 +291,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
 ;;            (ipasir$a->assumption ipasir))))
 
 (define ipasir-add-4ary (ipasir (a litp) (b litp) (c litp) (d litp))
-  :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                        (not (ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
   :returns (new-ipasir)
   :parents (ipasir-formula)
   :short "Add a 4-literal clause to the formula"
@@ -326,7 +326,7 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
 
 
 (define ipasir-add-list-aux (ipasir (clause lit-listp))
-  :guard (non-exec (not (eq (ipasir$a->status ipasir) :undef)))
+  :guard (not (eq (ipasir-get-status ipasir) :undef))
   :returns (new-ipasir)
   (if (atom clause)
       (ipasir-finalize-clause ipasir)
@@ -355,8 +355,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
            (ipasir$a->assumption ipasir))))
 
 (define ipasir-add-list (ipasir (clause lit-listp))
-  :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                        (not (ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
   :returns (new-ipasir)
   :parents (ipasir-formula)
   :short "Add a clause (given as a list of literals) to the formula"
@@ -391,8 +391,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
           (rev-each (cdr x)))))
 
 (define ipasir-add-clauses (ipasir (clauses lit-list-listp))
-  :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                        (not (ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
   :returns (new-ipasir)
   :parents (ipasir-formula)
   :short "Add a list of clauses to the formula"
@@ -427,8 +427,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
 
 
 (define ipasir-set-buf (ipasir (out litp) (in litp))
-  :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                        (not (ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
   :returns (new-ipasir)
   :parents (ipasir-formula)
   :short "Add clauses restricting @('out') to have the same value as @('in')."
@@ -461,8 +461,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
            (ipasir$a->assumption ipasir))))
 
 (define ipasir-set-and (ipasir (out litp) (in1 litp) (in2 litp))
-  :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                        (not (ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
   :returns (new-ipasir)
   :parents (ipasir-formula)
   :short "Add clauses restricting @('out') to be the AND of @('in1') and @('in2')."
@@ -501,8 +501,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
            (ipasir$a->assumption ipasir))))
 
 (define ipasir-set-or (ipasir (out litp) (in1 litp) (in2 litp))
-  :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                        (not (ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
   :returns (new-ipasir)
   :parents (ipasir-formula)
   :inline t
@@ -533,8 +533,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
            (ipasir$a->assumption ipasir))))
 
 (define ipasir-set-mux (ipasir (out litp) (test litp) (then litp) (else litp))
-  :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                        (not (ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
   :returns (new-ipasir)
   :parents (ipasir-formula)
   :short "Add clauses restricting @('out') to be @('(if test then else)')."
@@ -581,8 +581,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
        
 
 (define ipasir-set-xor (ipasir (out litp) (in1 litp) (in2 litp))
-  :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                        (not (ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
   :returns (new-ipasir)
   :parents (ipasir-formula)
   :short "Add clauses restricting @('out') to be the XOR of @('in1') and @('in2')."
@@ -622,8 +622,8 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
            (ipasir$a->assumption ipasir))))
 
 (define ipasir-set-iff (ipasir (out litp) (in1 litp) (in2 litp))
-  :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                        (not (ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
   :returns (new-ipasir)
   :parents (ipasir-formula)
   :inline t
@@ -696,9 +696,9 @@ stobj must be empty, and they preserve this property unconditionally.</p>")
                            (equal status :sat))
                        :rule-classes ((:forward-chaining :trigger-terms (status))))
                new-ipasir)
-  :guard (non-exec (and (not (eq (ipasir::ipasir$a->status ipasir) :undef))
-                        (not (ipasir::ipasir$a->assumption ipasir))
-                        (not (ipasir::ipasir$a->new-clause ipasir))))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (not (ipasir-get-assumption ipasir))
+              (ipasir-empty-new-clause ipasir))
   (b* ((ipasir (ipasir-cancel-assumption ipasir))
        (ipasir (ipasir-assume ipasir lit1))
        (ipasir (ipasir-assume ipasir (lit-negate lit2)))

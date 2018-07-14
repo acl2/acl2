@@ -29,6 +29,9 @@
 ; Original authors: Sol Swords <sswords@centtech.com>
 (defpackage :ipasir-raw (:use :common-lisp :cffi))
 
+;; BOZO -- for Sol, should we explicitly disallow or check for add-lit being
+;; passed 0, since this would finalize the clause, but the logic model will not
+;; necessarily match?
 
 (in-package :ipasir-raw)
 
@@ -214,25 +217,99 @@
 (in-package "IPASIR")
 
 (defun ipasir-get (ipasir$c)
-  (er hard? 'ipasir-get "This function can't be executed once the ipasir execution environment is installed."))
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-get
+      "This function can't be executed once the ipasir execution environment is installed."))
 
 (defun ipasir-set (ipasir$c)
-  (er hard? 'ipasir-set "This function can't be executed once the ipasir execution environment is installed."))
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-set
+      "This function can't be executed once the ipasir execution environment is installed."))
 
 (defun ipasir-limit-get (ipasir$c)
-  (er hard? 'ipasir-get-limit "This function can't be executed once the ipasir execution environment is installed."))
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-limit-get
+      "This function can't be executed once the ipasir execution environment is installed."))
 
 (defun ipasir-limit-set (ipasir$c)
-  (er hard? 'ipasir-set-limit "This function can't be executed once the ipasir execution environment is installed."))
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-limit-set
+      "This function can't be executed once the ipasir execution environment is installed."))
+
+(defun ipasir-status-get (ipasir$c)
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-status-get
+      "This function can't be executed once the ipasir execution environment is installed."))
+
+(defun ipasir-status-set (ipasir$c)
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-status-set
+      "This function can't be executed once the ipasir execution environment is installed."))
+
+(defun ipasir-assumption-get (ipasir$c)
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-assumption-get
+      "This function can't be executed once the ipasir execution environment is installed."))
+
+(defun ipasir-assumption-set (ipasir$c)
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-assumption-set
+      "This function can't be executed once the ipasir execution environment is installed."))
+
+(defun ipasir-some-history-get (ipasir$c)
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-some-history-get
+      "This function can't be executed once the ipasir execution environment is installed."))
+
+(defun ipasir-some-history-set (ipasir$c)
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-some-history-set
+      "This function can't be executed once the ipasir execution environment is installed."))
+
+(defun ipasir-empty-new-clause-get (ipasir$c)
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-empty-new-clause-get
+      "This function can't be executed once the ipasir execution environment is installed."))
+
+(defun ipasir-empty-new-clause-set (ipasir$c)
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-empty-new-clause-set
+      "This function can't be executed once the ipasir execution environment is installed."))
+
+(defun ipasir-solved-assumption-get (ipasir$c)
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-solved-assumption-get
+      "This function can't be executed once the ipasir execution environment is installed."))
+
+(defun ipasir-solved-assumption-set (ipasir$c)
+  (declare (ignore ipasir$c))
+  (er hard? 'ipasir-solved-assumption-set
+      "This function can't be executed once the ipasir execution environment is installed."))
 
 (defun ipasir$cp (ipasir$c)
+  (declare (ignore ipasir$c))
   (er hard? 'ipasir$cp "This function can't be executed once the ipasir execution environment is installed."))
 
 (defmacro ipasir-get-raw (ipasir)
-  `(svref (the (simple-array t (2)) ,ipasir) 0))
+  `(svref (the (simple-array t (7)) ,ipasir) 0))
 
 (defmacro ipasir-get-limit-raw (ipasir)
-  `(svref (the (simple-array t (2)) ,ipasir) 1))
+  `(svref (the (simple-array t (7)) ,ipasir) 1))
+
+(defmacro ipasir-get-status-raw (ipasir)
+  `(svref (the (simple-array t (7)) ,ipasir) 2))
+
+(defmacro ipasir-get-empty-new-clause-raw (ipasir)
+  `(svref (the (simple-array t (7)) ,ipasir) 3))
+
+(defmacro ipasir-get-some-history-raw (ipasir)
+  `(svref (the (simple-array t (7)) ,ipasir) 4))
+
+(defmacro ipasir-get-assumption-raw (ipasir)
+  `(svref (the (simple-array t (7)) ,ipasir) 5))
+
+(defmacro ipasir-get-solved-assumption-raw (ipasir)
+  `(svref (the (simple-array t (7)) ,ipasir) 6))
 
 ;; need to define both the regular function name and *1* for attachment to work
 (defun acl2_*1*_ipasir::ipasir-signature-real ()
@@ -247,14 +324,28 @@
 
 (defattach ipasir-signature ipasir-signature-real)
 
+(defun ipasir-get-status$c (ipasir)        (ipasir-get-status-raw ipasir))
+(defun ipasir-some-history$c (ipasir)      (ipasir-get-some-history-raw ipasir))
+(defun ipasir-empty-new-clause$c (ipasir)  (ipasir-get-empty-new-clause-raw ipasir))
+(defun ipasir-get-assumption$c (ipasir)    (ipasir-get-assumption-raw ipasir))
+(defun ipasir-solved-assumption$c (ipasir) (ipasir-get-solved-assumption-raw ipasir))
+
 (defun ipasir-reinit$c (ipasir)
   ;; Note: This function will throw if it is run before an ipasir library is
   ;; loaded.
-  (handler-case (setf (ipasir-get-raw ipasir) (ipasir-raw::ipasir-init))
-    (error () (er hard? 'ipasir-init "Ipasir-init failed: no ipasir shared library loaded?")))
+  (handler-case
+   (setf (ipasir-get-raw ipasir) (ipasir-raw::ipasir-init))
+   (t (c)
+      (format t "Got an exception:~a~%" c)
+      (er hard? 'ipasir-init "Ipasir-init failed: no ipasir shared library loaded?")))
   (setf (ipasir-get-limit-raw ipasir) (ipasir-raw::ipasir-set-limit (ipasir-get-raw ipasir)
-                                                                      (ipasir-get-limit-raw ipasir)
-                                                                      nil))
+                                                                    (ipasir-get-limit-raw ipasir)
+                                                                    nil))
+  (setf (ipasir-get-status-raw ipasir) :input)
+  (setf (ipasir-get-empty-new-clause-raw ipasir) t)
+  (setf (ipasir-get-some-history-raw ipasir) t)
+  (setf (ipasir-get-assumption-raw ipasir) nil)
+  (setf (ipasir-get-solved-assumption-raw ipasir) nil)
   ipasir)
 
 (defun ipasir-init$c (ipasir state)
@@ -262,32 +353,55 @@
 
 (defun ipasir-release$c (ipasir)
   (ipasir-raw::ipasir-release (ipasir-get-raw ipasir))
+  (setf (ipasir-get-status-raw ipasir) :undef)
+  (setf (ipasir-get-some-history-raw ipasir) t)
   ipasir)
 
 (defun ipasir-input$c (ipasir)
+  (setf (ipasir-get-status-raw ipasir) :input)
   ipasir)
 
 (defun ipasir-add-lit$c (ipasir lit)
   (ipasir-raw::ipasir-add (ipasir-get-raw ipasir)
                           (satlink::satlink-to-dimacs-lit lit))
+  (setf (ipasir-get-status-raw ipasir) :input)
+  (setf (ipasir-get-empty-new-clause-raw ipasir) nil)
+  (setf (ipasir-get-some-history-raw ipasir) t)
   ipasir)
 
 (defun ipasir-finalize-clause$c (ipasir)
   (ipasir-raw::ipasir-add (ipasir-get-raw ipasir) 0)
+  (setf (ipasir-get-status-raw ipasir) :input)
+  (setf (ipasir-get-empty-new-clause-raw ipasir) t)
+  (setf (ipasir-get-some-history-raw ipasir) t)
   ipasir)
 
 (defun ipasir-assume$c (ipasir lit)
   (ipasir-raw::ipasir-assume (ipasir-get-raw ipasir)
                              (satlink::satlink-to-dimacs-lit lit))
+  (setf (ipasir-get-status-raw ipasir) :input)
+  (setf (ipasir-get-some-history-raw ipasir) t)
+  (setf (ipasir-get-assumption-raw ipasir) (cons lit (ipasir-get-assumption-raw ipasir)))
   ipasir)
 
 (defun ipasir-solve$c (ipasir)
-  (ipasir-raw::ipasir-reset-limit (ipasir-get-limit-raw ipasir))
-  (let ((res (ipasir-raw::ipasir-solve (ipasir-get-raw ipasir))))
-    (case res
-      (10 (mv :sat ipasir))
-      (20 (mv :unsat ipasir))
-      (otherwise (mv :failed ipasir)))))
+  (let ((prev-assumption (ipasir-get-assumption-raw ipasir)))
+    (ipasir-raw::ipasir-reset-limit (ipasir-get-limit-raw ipasir))
+    (setf (ipasir-get-empty-new-clause-raw ipasir) t)
+    (setf (ipasir-get-some-history-raw ipasir) t)
+    (setf (ipasir-get-assumption-raw ipasir) nil)
+    (let ((res (ipasir-raw::ipasir-solve (ipasir-get-raw ipasir))))
+      (case res
+        (10 (progn (setf (ipasir-get-status-raw ipasir) :sat)
+                   (setf (ipasir-get-solved-assumption-raw ipasir) nil)
+                   (mv :sat ipasir)))
+        (20 (progn (setf (ipasir-get-status-raw ipasir) :unsat)
+                   (setf (ipasir-get-solved-assumption-raw ipasir) prev-assumption)
+                   (mv :unsat ipasir)))
+        (otherwise
+         (progn (setf (ipasir-get-status-raw ipasir) :input)
+                (setf (ipasir-get-solved-assumption-raw ipasir) nil)
+                (mv :failed ipasir)))))))
 
 (defun ipasir-val$c (ipasir lit)
   (let* ((dimacs-lit (satlink::satlink-to-dimacs-lit lit))
@@ -295,8 +409,8 @@
     (cond ((int= result-lit 0) nil) ;; dont-care
           ((int= result-lit (- dimacs-lit)) 0)
           ((int= result-lit dimacs-lit) 1)
-          (otherwise (er hard? 'ipasir-val
-                         "Ipasir-val produced an unexpected result -- noncompliant implementation?~%")))))
+          (t (er hard? 'ipasir-val
+                 "Ipasir-val produced an unexpected result -- noncompliant implementation?~%")))))
 
 (defun ipasir-failed$c (ipasir lit)
   (ipasir-raw::ipasir-failed (ipasir-get-raw ipasir)
@@ -307,6 +421,7 @@
         (ipasir-raw::ipasir-set-limit (ipasir-get-raw ipasir)
                                       (ipasir-get-limit-raw ipasir)
                                       limit))
+  (setf (ipasir-get-some-history-raw ipasir) t)
   ipasir)
 
 (defun ipasir-callback-count$c (ipasir)
@@ -315,3 +430,18 @@
 ;; (defun def-ipasir-ipasir-raw (template)
 ;;   (eval (acl2::template-subst-top *ipasir-raw-template* template)))
 
+(defun ipasir-bump-activity-vars$c (ipasir vars num-bumps)
+  ;; this default version of bump-activity-vars$c just returns ipasir structure.
+  ;; if one includes ipasir-extra-backend, an alternative definition is loaded
+  ;; which will call bump-var-activity (can be defined for MINISAT based incremental sat
+  ;; libraries) on each var in vars.
+  (declare (ignore vars num-bumps))
+  ipasir)
+
+(defun ipasir-get-curr-stats$c (ipasir)
+  ;; this default version of get-curr-stats$c just returns all 0's..
+  ;; if one includes ipasir-extra-backend, an alternative definition is loaded
+  ;; which will collect the relevant stats and return them (can be defined for MINISAT
+  ;; based incremental sat libraries).
+  (declare (ignore ipasir))
+  (mv 0 0 0 0 0))
