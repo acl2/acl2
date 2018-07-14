@@ -1000,24 +1000,25 @@ and @('list*') may be nested inside other bindings.</p>"
       `(patbind ,(car args) ,forms ,rest-expr)
     `(patbind-cons (,(car args) (list* . ,(cdr args))) ,forms ,rest-expr)))
 
-(defun sym-pairs-element (ele) ;; WAHJr.
+(defun assocs-binder-element-p (ele) ;; WAHJr
   (declare (xargs :guard t))
   (if (atom ele)
       (symbolp ele)
-    (if (not (consp (cdr ele)))
-        (equal (cdr ele) NIL)
-      (symbolp (cadr ele)))))
+    ;; sswords -- weakened the condition: second element is an evaluated expression
+    (or (and (consp (cdr ele))
+             (equal (cddr ele) nil))
+        (equal (cdr ele) NIL))))
 
-(defun symbol-pairs-listp (lst) ;; WAHJr.
+(defun assocs-binder-listp (lst) ;; WAHJr.
   (declare (xargs :guard t))
   (if (atom lst)
       (null lst)
     (let ((l (car lst)))
-      (and (sym-pairs-element l)
-           (symbol-pairs-listp (cdr lst))))))
+      (and (assocs-binder-element-p l)
+           (assocs-binder-listp (cdr lst))))))
 
 (defun assigns-for-assocs (getter args alist)
-  (declare (xargs :guard (symbol-pairs-listp args))) ;; WAHJr.
+  (declare (xargs :guard (assocs-binder-listp args))) ;; WAHJr.
   (if (atom args)
       nil
     (cons (if (consp (car args))
@@ -1030,7 +1031,7 @@ and @('list*') may be nested inside other bindings.</p>"
 
 (defun body-for-assocs (getter args forms rest-expr)
   (declare (xargs :guard (and (consp forms)
-                              (symbol-pairs-listp args)))) ;; WAHJr.
+                              (assocs-binder-listp args)))) ;; WAHJr.
   (mv-let (pre-bindings name rest)
     (if (and (consp (car forms))
              (not (eq (caar forms) 'quote)))
@@ -1603,12 +1604,27 @@ see @(see flet) for more discussion.</p>"
               ,@decls
               ,rest-expr)))))
 
+(defun access-binder-element-p (x)
+  (declare (xargs :guard t))
+  (or (symbolp x)
+      (and (consp x)
+           (consp (cdr x))
+           (symbolp (car x))
+           (symbolp (cadr x))
+           (not (cddr x)))))
+
+(defun access-binder-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (eq x nil)
+    (and (access-binder-element-p (car x))
+         (access-binder-listp (cdr x)))))
 
 
 (defun access-b*-bindings (recname var pairs)
   (declare (xargs :guard (and (symbolp recname)
                               ;; (symbolp var) -- sswords: not always a symboll
-                              (symbol-pairs-listp pairs)))) ;; WAHJr.
+                              (access-binder-listp pairs))))
   (if (atom pairs)
       nil
     (cons

@@ -189,7 +189,7 @@
 ; This function should probably be memoized.  We might want to memoize hons<
 ; too, but early experiments seem to suggest that it's not necessary to do so.
 
-  (cond ((atom x) x)
+  (cond ((aig-atom-p x) x)
         ((null (cdr x))
          (aig-not (aig-norm (car x))))
         (t (let ((a (aig-norm (car x)))
@@ -203,9 +203,9 @@
 ; We handle cases (a) and (b) described in zzchk-root.
 
   (declare (xargs :guard t))
-  (and (consp not-and-x-y)
+  (and (not (aig-atom-p not-and-x-y))
        (null (cdr not-and-x-y)) ; NOT node
-       (consp (car not-and-x-y)) ; AND node (under the NOT)
+       (not (aig-atom-p (car not-and-x-y))) ; AND node (under the NOT)
 
 ; The following is part of (car not-and-x-y) being an AND node, but originally
 ; I forgot it.  I discovered my error when proving zzchk-run-proof-correct-root
@@ -220,7 +220,7 @@
 ; We handle case (c) described in zzchk-root.
 
   (declare (xargs :guard t))
-  (and (consp and-notx-noty)
+  (and (not (aig-atom-p and-notx-noty))
        (cdr and-notx-noty) ; AND node
        (let ((x1 (aig-not x))
              (y1 (aig-not y)))
@@ -231,7 +231,7 @@
 
 (defun zzchk-root2 (a not-a)
   (declare (xargs :guard t))
-  (and (consp not-a)
+  (and (not (aig-atom-p not-a))
        (null (cdr not-a))
        (hons-equal (car not-a) a)))
        

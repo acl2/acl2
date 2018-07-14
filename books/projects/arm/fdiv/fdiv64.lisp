@@ -96,7 +96,7 @@
 
 (DEFUN CLZ53-LOOP-1 (K N C Z)
        (DECLARE (XARGS :MEASURE (NFIX (- 6 K))))
-       (IF (AND (INTEGERP K) (INTEGERP 6) (< K 6))
+       (IF (AND (INTEGERP K) (< K 6))
            (LET ((N (FLOOR N 2)))
                 (MV-LET (C Z)
                         (CLZ53-LOOP-0 0 N K C Z)
@@ -105,9 +105,7 @@
 
 (DEFUN CLZ53-LOOP-2 (I X Z C)
        (DECLARE (XARGS :MEASURE (NFIX (- 64 I))))
-       (IF (AND (INTEGERP I)
-                (INTEGERP 64)
-                (< I 64))
+       (IF (AND (INTEGERP I) (< I 64))
            (LET ((Z (AS I (LOGNOT1 (BITN X I)) Z))
                  (C (AS I (BITS 0 5 0) C)))
                 (CLZ53-LOOP-2 (+ I 1) X Z C))
@@ -562,17 +560,16 @@
               (RP4 (BITS (ASH RP 2) 58 0))
               (RN4 (BITS (ASH RN 2) 58 0))
               (SUM (LOGXOR (LOGXOR RN4 RP4) DIVMULT))
-              (CARRY (LOGIOR (LOGAND (BITS (LOGNOT RN4) 58 0) RP4)
-                             (LOGAND (LOGIOR (BITS (LOGNOT RN4) 58 0) RP4)
-                                     DIVMULT)))
-              (CARRY (BITS (ASH CARRY 1) 58 0)))
+              (CAR (LOGIOR (LOGAND (BITS (LOGNOT RN4) 58 0) RP4)
+                           (LOGAND (LOGIOR (BITS (LOGNOT RN4) 58 0) RP4)
+                                   DIVMULT)))
+              (CAR2 (BITS (ASH CAR 1) 58 0)))
              (CASE FMT
-                   (2 (MV (SETBITN CARRY 59 0 (LOG> Q 0))
-                          SUM))
-                   (1 (MV (SETBITN (SETBITS RP 59 58 29 (BITS CARRY 58 29))
+                   (2 (MV (SETBITN CAR2 59 0 (LOG> Q 0)) SUM))
+                   (1 (MV (SETBITN (SETBITS RP 59 58 29 (BITS CAR2 58 29))
                                    59 29 (LOG> Q 0))
                           (SETBITS RN 59 58 29 (BITS SUM 58 29))))
-                   (0 (MV (SETBITN (SETBITS RP 59 58 42 (BITS CARRY 58 42))
+                   (0 (MV (SETBITN (SETBITS RP 59 58 42 (BITS CAR2 58 42))
                                    59 42 (LOG> Q 0))
                           (SETBITS RN 59 58 42 (BITS SUM 58 42))))
                    (T (MV RP RN)))))
@@ -634,7 +631,7 @@
                     (MV QI3 RPI3 RNI3))))
 
 (DEFUN
- EXECUTE-LOOP-0
+ FDIV64-LOOP-0
  (I N DIV FMT Q RP RN QP QN)
  (DECLARE (XARGS :MEASURE (NFIX (- N I))))
  (IF
@@ -658,12 +655,12 @@
                         (ITER3 RP RN RS7 DIV FMT)
                         (MV-LET (QP QN)
                                 (NEXTQUOT QP QN Q)
-                                (EXECUTE-LOOP-0 (+ I 1)
+                                (FDIV64-LOOP-0 (+ I 1)
                                                 N DIV FMT Q RP RN QP QN)))))))))
   (MV Q RP RN QP QN)))
 
 (DEFUN
- EXECUTE (OPA OPB FMT FZ DN RMODE)
+ FDIV64 (OPA OPB FMT FZ DN RMODE)
  (LET
   ((SIGNA 0)
    (SIGNB 0)
@@ -723,7 +720,7 @@
                           (T N)))))
            (MV-LET
             (Q RP RN QP QN)
-            (EXECUTE-LOOP-0 0 N DIV FMT Q RP RN QP QN)
+            (FDIV64-LOOP-0 0 N DIV FMT Q RP RN QP QN)
             (LET
                ((QTRUNC 0) (QINC 0) (STK 0))
                (MV-LET

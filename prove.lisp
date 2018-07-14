@@ -2771,7 +2771,7 @@
                          which denotes the formula ~p2 (when converted to a ~
                          set of clauses and then printed as a formula).  This ~
                          formula was not found to subsume the goal clause, ~
-                         ~p3.~|~%Consider a :use hint instead ; see :DOC ~
+                         ~p3.~|~%Consider a :use hint instead; see :DOC ~
                          hints."
                         (car lmi-lst)
 

@@ -41,6 +41,92 @@
 
 ; BOZO consider using defprojection throughout?
 
+(define aig-var-p (x)
+  :inline t
+  (if (atom x)
+      (and (not (eq x t))
+           (not (eq x nil)))
+    (and (eq (car x) nil)
+         (cdr x)
+         t))
+  ///
+  (defthm aig-var-p-of-aig-var
+    (implies x
+             (aig-var-p (cons nil x))))
+
+  (defthm aig-var-p-of-atom
+    (implies (not (aig-var-p x))
+             (not (and (atom x)
+                       (not (booleanp x)))))
+    :rule-classes :compound-recognizer))
+
+(define aig-var-listp (x)
+  (if (atom x)
+      (eq x nil)
+    (and (aig-var-p (car x))
+         (aig-var-listp (cdr x))))
+  ///
+  (defthmd aig-var-p-when-member-of-aig-var-listp
+    (implies (and (aig-var-listp x)
+                  (member k x))
+             (aig-var-p k)))
+
+  (defthm aig-var-listp-of-cons
+    (equal (aig-var-listp (cons x y))
+           (and (aig-var-p x)
+                (aig-var-listp y))))
+
+  (defthm aig-var-listp-of-nil
+    (aig-var-listp nil))
+
+  (defthm aig-var-listp-of-insert
+    (implies (and (aig-var-p x)
+                  (aig-var-listp y))
+             (aig-var-listp (set::insert x y)))
+    :hints(("Goal" :in-theory (enable set::insert set::head set::tail set::sfix))))
+
+  (defthm aig-var-listp-of-union
+    (implies (and (aig-var-listp x)
+                  (aig-var-listp y))
+             (aig-var-listp (set::union x y)))
+    :hints(("Goal" :in-theory (enable set::union set::head set::tail set::sfix)))))
+
+(define aig-atom-p (x)
+  :inline t
+  (or (atom x)
+      (and (eq (car x) nil)
+           (cdr x)
+           t))
+  ///
+  (defthm not-aig-atom-implies-consp
+    (implies (not (aig-atom-p x))
+             (consp x))
+    :rule-classes :compound-recognizer)
+
+  (defthm aig-var-p-when-aig-atom-p
+    (implies (and (aig-atom-p x)
+                  (not (booleanp x)))
+             (aig-var-p x))
+    :hints(("Goal" :in-theory (enable aig-var-p))))
+
+  (defthm aig-atom-p-when-aig-var-p
+    (implies (aig-var-p x)
+             (aig-atom-p x))
+    :hints(("Goal" :in-theory (enable aig-var-p))))
+
+  (defthm not-aig-atom-p-of-negation
+    (not (aig-atom-p (cons x nil))))
+
+  (defthm not-aig-atom-p-of-cons
+    (implies x
+             (not (aig-atom-p (cons x y)))))
+
+  (defthmd aig-atom-p-of-cons-strong
+    (iff (aig-atom-p (cons x y))
+         (and (not x) y))
+    :hints(("Goal" :in-theory (enable aig-atom-p)))))
+  
+
 (defsection aig-cases
   :parents (aig-other)
   :short "Control-flow macro to split into cases on what kind of AIG you have
@@ -50,12 +136,14 @@ encountered."
   (defmacro aig-cases (x &key true false var inv and)
     `(let ((aig-cases-var ,x))
        (cond
-        ((atom aig-cases-var)
+        ((aig-atom-p aig-cases-var)
          (cond ((eq aig-cases-var t) ,true)
                ((eq aig-cases-var nil) ,false)
                (t ,var)))
         ((eq (cdr aig-cases-var) nil) ,inv)
         (t ,and)))))
+
+
 
 
 ; -----------------------------------------------------------------------------
@@ -323,18 +411,16 @@ aig-vars-1pass) are often much more practical.</p>"
   :verify-guards nil
   :enabled t
   (aig-cases x
-    :true  nil
-    :false nil
-    :var   (mbe :logic (set::insert x nil)
-                :exec (hons x nil))
-    :inv   (aig-vars (car x))
-    :and   (mbe :logic (set::union (aig-vars (car x))
-                                    (aig-vars (cdr x)))
-                :exec (hons-alphorder-merge (aig-vars (car x))
-                                            (aig-vars (cdr x)))))
+             :true  nil
+             :false nil
+             :var   (mbe :logic (set::insert x nil)
+                         :exec (hons x nil))
+             :inv   (aig-vars (car x))
+             :and   (set::union (aig-vars (car x))
+                                (aig-vars (cdr x))))
   ///
-  (defthm atom-listp-aig-vars
-    (atom-listp (aig-vars x)))
+  (defthm aig-var-listp-aig-vars
+    (aig-var-listp (aig-vars x)))
 
   (defthm true-listp-aig-vars
     (true-listp (aig-vars x))
@@ -366,7 +452,8 @@ take care to fold constants and avoid creating double negatives.</p>"
   :returns aig
   (cond ((eq x nil) t)
         ((eq x t) nil)
-        ((and (consp x) (eq (cdr x) nil))
+        ((and (not (aig-atom-p x))
+              (eq (cdr x) nil))
          (car x))
         (t
          (hons x nil)))
@@ -376,27 +463,27 @@ take care to fold constants and avoid creating double negatives.</p>"
            (not (aig-eval x env)))))
 
 
-(define and-count (x)
+(define aig-and-count (x)
   :parents (aig)
   :short "Counts how many ANDs are in an AIG."
   :returns (count natp :rule-classes :type-prescription)
-  (cond ((atom x)
+  (cond ((aig-atom-p x)
          0)
         ((eq (cdr x) nil)
-         (and-count (car x)))
+         (aig-and-count (car x)))
         (t
          (+ 1
-            (and-count (car x))
-            (and-count (cdr x)))))
+            (aig-and-count (car x))
+            (aig-and-count (cdr x)))))
   ///
-  (defthm and-count-when-atom
-    (implies (atom x)
-             (equal (and-count x)
+  (defthm aig-and-count-when-atom
+    (implies (aig-atom-p x)
+             (equal (aig-and-count x)
                     0)))
 
-  (defthm and-count-of-aig-not
-    (equal (and-count (aig-not x))
-           (and-count x))
+  (defthm aig-and-count-of-aig-not
+    (equal (aig-and-count (aig-not x))
+           (aig-and-count x))
     :hints(("Goal" :in-theory (enable aig-not)))))
 
 
@@ -489,7 +576,7 @@ succeded or not.</p>"
 (define aig-and-pass2a (x y)
   :returns (mv status arg1 arg2)
   :short "Level 2 Contradiction Rule 1 and Idempotence Rule, Single Direction."
-  (b* (((unless (and (consp x)
+  (b* (((unless (and (not (aig-atom-p x))
                      (not (eq (cdr x) nil))))
         (mv :fail x y))
        (a (car x))
@@ -564,10 +651,10 @@ succeded or not.</p>"
   :returns (mv status arg1 arg2)
   :short "Level 2 Contradiction Rule 2 and all Level 4 Rules."
   :inline t
-  (b* (((unless (and (consp x)
+  (b* (((unless (and (not (aig-atom-p x))
                      (not (eq (cdr x) nil))))
         (mv :fail x y))
-       ((unless (and (consp y)
+       ((unless (and (not (aig-atom-p y))
                      (not (eq (cdr y) nil))))
         (mv :fail x y))
        (a (car x))
@@ -626,12 +713,12 @@ succeded or not.</p>"
 
   (defret aig-and-pass3-reduces-count
     (implies (eq status :reduced)
-             (< (+ (and-count arg1)
-                   (and-count arg2))
-                (+ (and-count x)
-                   (and-count y))))
+             (< (+ (aig-and-count arg1)
+                   (aig-and-count arg2))
+                (+ (aig-and-count x)
+                   (aig-and-count y))))
     :rule-classes nil
-    :hints(("Goal" :in-theory (enable and-count))))
+    :hints(("Goal" :in-theory (enable aig-and-count))))
 
   (defret aig-and-pass3-subterm-convention
     (implies (equal status :subterm)
@@ -648,11 +735,11 @@ succeded or not.</p>"
 (define aig-and-pass4a (x y)
   :returns (mv status arg1 arg2)
   :short "Level 2, Subsumption Rules 1 and 2, Single Direction."
-  (b* (((unless (and (consp x)
+  (b* (((unless (and (not (aig-atom-p x))
                      (eq (cdr x) nil)))
         (mv :fail x y))
        (~x (car x))
-       ((unless (and (consp ~x)
+       ((unless (and (not (aig-atom-p ~x))
                      (not (eq (cdr ~x) nil))))
         (mv :fail x y))
        ;; X is ~(A & B)
@@ -663,7 +750,7 @@ succeded or not.</p>"
         ;; Subsumption Rule 1.
         (mv :subterm y y))
 
-       ((when (and (consp y)
+       ((when (and (not (aig-atom-p y))
                    (not (eq (cdr y) nil))))
         ;; Y is an AND.  The only thing we can match is Subsumption Rule 2.
         (b* ((c (car y))
@@ -742,14 +829,14 @@ succeded or not.</p>"
   :short "Level 2, Resolution Rule."
   :returns (mv status arg1 arg2)
   :inline t
-  (b* (((unless (and (consp x)
+  (b* (((unless (and (not (aig-atom-p x))
                      (eq (cdr x) nil)
-                     (consp (car x))
+                     (not (aig-atom-p (car x)))
                      (not (eq (cdar x) nil))))
         (mv :fail x y))
-       ((unless (and (consp y)
+       ((unless (and (not (aig-atom-p y))
                      (eq (cdr y) nil)
-                     (consp (car y))
+                     (not (aig-atom-p (car y)))
                      (not (eq (cdar y) nil))))
         (mv :fail x y))
        ;; X is ~(A & B), Y is ~(C & D).
@@ -802,9 +889,9 @@ succeded or not.</p>"
 (define aig-and-pass6a (x y)
   :short "Level 3 Substitution Rules, Single Direction."
   :returns (mv status arg1 arg2)
-  (b* (((unless (and (consp x)
+  (b* (((unless (and (not (aig-atom-p x))
                      (eq (cdr x) nil)
-                     (consp (car x))
+                     (not (aig-atom-p (car x)))
                      (not (eq (cdar x) nil))))
         (mv :fail x y))
        ;; X is ~(A & B)
@@ -819,7 +906,7 @@ succeded or not.</p>"
         ;; ~(A & B) & B --> B & ~A
         (mv :reduced b (aig-not a)))
 
-       ((unless (and (consp y)
+       ((unless (and (not (aig-atom-p y))
                      (not (eq (cdr y) nil))))
         (mv :fail x y))
 
@@ -847,12 +934,12 @@ succeded or not.</p>"
 
   (defret aig-and-pass6a-reduces-count
     (implies (eq status :reduced)
-             (< (+ (and-count arg1)
-                   (and-count arg2))
-                (+ (and-count x)
-                   (and-count y))))
+             (< (+ (aig-and-count arg1)
+                   (aig-and-count arg2))
+                (+ (aig-and-count x)
+                   (aig-and-count y))))
     :rule-classes nil
-    :hints(("Goal" :in-theory (enable and-count))))
+    :hints(("Goal" :in-theory (enable aig-and-count))))
 
   (defret aig-and-pass6a-subterm-convention
     (implies (equal status :subterm)
@@ -892,10 +979,10 @@ succeded or not.</p>"
 
   (defret aig-and-pass6-reduces-count
     (implies (eq status :reduced)
-             (< (+ (and-count arg1)
-                   (and-count arg2))
-                (+ (and-count x)
-                   (and-count y))))
+             (< (+ (aig-and-count arg1)
+                   (aig-and-count arg2))
+                (+ (aig-and-count x)
+                   (aig-and-count y))))
     :rule-classes nil
     :hints(("Goal" :use ((:instance aig-and-pass6a-reduces-count)
                          (:instance aig-and-pass6a-reduces-count (x y) (y x))))))
@@ -964,10 +1051,10 @@ succeded or not.</p>"
 
   (defret aig-and-main-reduces-count
     (implies (eq status :reduced)
-             (< (+ (and-count arg1)
-                   (and-count arg2))
-                (+ (and-count x)
-                   (and-count y))))
+             (< (+ (aig-and-count arg1)
+                   (aig-and-count arg2))
+                (+ (aig-and-count x)
+                   (aig-and-count y))))
     :rule-classes nil
     :hints(("Goal" :use ((:instance aig-and-pass3-reduces-count)
                          (:instance aig-and-pass6-reduces-count)
@@ -998,7 +1085,7 @@ succeded or not.</p>"
 
 (define aig-binary-and (x y)
   :short "@(call aig-binary-and) constructs an AIG representing @('(and x y)')."
-  :measure (+ (and-count x) (and-count y))
+  :measure (+ (aig-and-count x) (aig-and-count y))
   (b* (((mv status arg1 arg2) (aig-and-main x y))
        ((when (eq status :subterm))
         arg1)
@@ -1016,6 +1103,9 @@ succeded or not.</p>"
          (equal (aig-binary-and x nil) nil)
          (equal (aig-binary-and x t) x)
          (equal (aig-binary-and t x) x)))
+
+  (local (in-theory (enable aig-atom-p-of-cons-strong)))
+           
 
   (defthm aig-eval-and
     (equal (aig-eval (aig-binary-and x y) env)

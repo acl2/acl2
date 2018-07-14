@@ -76,7 +76,7 @@
           ((eq ent 'acl2::x) (svex-quote (4vec-x)))
           ((eq ent :ones)    (svex-quote -1))
           (t (svex-var ent)))))
-  
+
 
 (define svtv-inputs->assigns ((x svtv-lines-p) (phase natp))
   :verbosep t
@@ -465,16 +465,16 @@
     (clear-memoize-table 'svex-compose)
     (clear-memoize-table 'svex-compose-svtv-phases-call)
     (mv outalist final-state)))
-       
-    
-       
 
 
-    
-  
 
-  
-  
+
+
+
+
+
+
+
 
 
 
@@ -676,15 +676,6 @@
     (mv simp-outs simp-states)))
 
 
-(define svarlist-svex-vars ((x svarlist-p))
-  :returns (vars svexlist-p)
-  (if (atom x)
-      nil
-    (cons (svex-var (car x))
-          (svarlist-svex-vars (cdr x))))
-  ///
-  (defret len-of-svarlist-svex-vars
-    (equal (len vars) (len x))))
 
 (define defsvtv-main ((name symbolp)
                       (ins true-list-listp)
@@ -813,7 +804,7 @@
     (fast-alist-free updates-for-outs)
     (mv (make-svtv :name           name
                    :outexprs       outexprs
-                   :nextstate     final-state     
+                   :nextstate     final-state
                    :inmasks        (append inmasks override-inmasks)
                    :outmasks       outmasks
                    :orig-ins       orig-ins
@@ -1443,7 +1434,7 @@ decomposition proof.</li>
                             #\5 #\6 #\7 #\8 #\9)
                           (list (caar al) 23
                                 (str::hexify (2vec->val (cdar al)))))
-                3 nil)
+                3 nil nil)
                (cw! back)))
              (t
               (let* ((upper (str::hexify (4vec->upper (cdar al))))
@@ -1463,7 +1454,7 @@ decomposition proof.</li>
                   (pairlis2 '(#\0 #\1 #\2 #\3 #\4
                               #\5 #\6 #\7 #\8 #\9)
                             (list (caar al) 23 pad-u upper))
-                  3 nil)
+                  3 nil nil)
                  (cw! "~t0. ~_1~s2" 23 pad-l lower)
                  (cw! back)
                  (cw! ";;;    non-Boolean mask: ~_0~s1~%" pad-m mask)))))))
@@ -1870,8 +1861,8 @@ irrelevant inputs are removed.</p>"
        ((list params auto-bindings ?arrange-keyword arrange) case1))
     (cons (list params (svtv-flex-bindings svtv auto-bindings :arrange arrange))
           (svtv-flex-param-bindings svtv (cdr in-alist)))))
-       
-       
+
+
 
 
 

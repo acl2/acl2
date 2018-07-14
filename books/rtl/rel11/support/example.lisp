@@ -497,7 +497,8 @@
     :hints (("Goal" :use ((:instance member-open-1-lemma
                                      (n *mem-open-len*)
                                      (lst lst)
-                                     (acc nil))))))))
+                                     (acc nil))))))
+))
 
 (local-defthm member-open-2
   (implies (syntaxp (and (quotep lst)
@@ -516,7 +517,33 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (enable h-excps))))
 
+(local-defthm divdp-small-cases-1
+  (implies (and (not (zp k))
+                (<= k 1027))
+           (let ((b (- 2 (* (expt 2 -52) k))))
+             (member b (h-excps (d) 53))))
+  :rule-classes ()
+  :hints (("Goal" :in-theory (enable bvecp h-excps d)
+                  :use ((:instance bvecp-member (x k) (n 11))))))
+
 (local-in-theory (disable (h-excps)))
+
+(defthm divdp-small-cases
+  (implies (and (not (zp k))
+                (<= k 1027))
+           (let* ((b (- 2 (* (expt 2 -52) k)))
+                  (y0 (rcp24 (rtz b 24)))
+                  (e0 (rne (- 1 (* b y0)) 53))
+                  (y1 (rne (+ y0 (* e0 y0)) 53))
+                  (e1 (rne (- 1 (* b y1)) 53))
+                  (y2 (rne (+ y0 (* e0 y1)) 53))
+                  (y3 (rne (+ y1 (* e1 y2)) 53)))
+             (< (abs (- 1 (* b y3)))
+                (expt 2 -53))))
+  :rule-classes ()
+  :hints (("Goal" :in-theory (enable y0 e0 y1 e1 y2 y3)
+           :use (divdp-small-cases-1
+                 (:instance excp-cases (b (- 2 (* (expt 2 -52) k))))))))
 
 (local-defthm dp-5
   (implies (and (rationalp b)

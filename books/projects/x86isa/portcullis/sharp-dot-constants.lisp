@@ -1,4 +1,40 @@
-;; Shilpi Goel
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
 (include-book "std/util/defconsts" :dir :system)
@@ -82,6 +118,8 @@
 (defconst *2^64-1*    (- *2^64* 1))
 (defconst *2^127*     (expt 2 127))
 (defconst *2^128*     (expt 2 128))
+(defconst *2^256*     (expt 2 256))
+(defconst *2^512*     (expt 2 512))
 (defconst *2^32-1*    (- *2^32*  1))
 (defconst *2^32-2*    (- *2^32*  2))
 (defconst *2^32-3*    (- *2^32*  3))
@@ -121,9 +159,14 @@
 ;; Group 4:
 (defconst *addr-size-override*    #x67)
 
+;; SIMD Prefixes:
 (defconst *mandatory-66h*         #x66)
 (defconst *mandatory-f2h*         #xF2)
 (defconst *mandatory-f3h*         #xF3)
+
+;; VEX Prefix:
+(defconst *vex2-byte0*            #xC5) ;; First byte of the 2-byte VEX prefix
+(defconst *vex3-byte0*            #xC4) ;; First byte of the 3-byte VEX prefix
 
 ;; ======================================================================
 
@@ -287,10 +330,13 @@
         *mxcsr-reserved*))
 
 
-;; Access GPR or XMM:
+;; Access GPR, XMM, YMM, or ZMM:
 
-(defconst *gpr-access* 0)
-(defconst *xmm-access* 1)
+(defconst *gpr-access*     0)
+(defconst *xmm-access*     1) ;; Non-VEX Encoded SIMD Instructions
+(defconst *vex-xmm-access* 2)
+(defconst *ymm-access*     3)
+(defconst *zmm-access*     4)
 
 ;; Rounding Control bit definitions (Intel manual, Mar'17, Vol. 1, Table 4-8):
 
@@ -598,7 +644,38 @@
 
      ,(b* ((lst (gl-int 0 1 16))
            (len  (len lst)))
-          (cons 'mv (append lst (list len))))))
+        (cons 'mv (append lst (list len))))))
+
+(defun define-ymm-registers ()
+  ;; 256-bit registers
+
+  `(defconsts (*YMM0* *YMM1* *YMM2* *YMM3* *YMM4* *YMM5* *YMM6* *YMM7*
+                      *YMM8* *YMM9* *YMM10* *YMM11*
+                      *YMM12* *YMM13* *YMM14* *YMM15*
+                      *ymm-register-names-len*)
+
+     ,(b* ((lst (gl-int 0 1 16))
+           (len  (len lst)))
+        (cons 'mv (append lst (list len))))))
+
+(defun define-zmm-registers ()
+  ;; 512-bit registers
+
+  `(progn
+     ;; mv can't be given more than 32 arguments, so I've had to
+     ;; separately define *zmm-register-names-len*.
+     (defconst *zmm-register-names-len* 32)
+     (defconsts (*ZMM0* *ZMM1* *ZMM2* *ZMM3* *ZMM4* *ZMM5* *ZMM6* *ZMM7*
+                        *ZMM8* *ZMM9* *ZMM10* *ZMM11*
+                        *ZMM12* *ZMM13* *ZMM14* *ZMM15*
+                        *ZMM16* *ZMM17* *ZMM18* *ZMM19* *ZMM20*
+                        *ZMM21* *ZMM22* *ZMM23* *ZMM24* *ZMM25*
+                        *ZMM26* *ZMM27* *ZMM28* *ZMM29* *ZMM30*
+                        *ZMM31*)
+
+       ,(b* ((lst (gl-int 0 1 31))
+             (len  (len lst)))
+          (cons 'mv (append lst (list len)))))))
 
 (defun define-model-specific-registers ()
   ;; At this point, we only model the MSRs that we need.  Remember,
@@ -675,6 +752,8 @@
 (make-event (define-fp-registers))
 (make-event (define-mmx-registers))
 (make-event (define-xmm-registers))
+(make-event (define-ymm-registers))
+(make-event (define-zmm-registers))
 (make-event (define-model-specific-registers))
 
 ;; ======================================================================

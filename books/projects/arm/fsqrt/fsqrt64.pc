@@ -1,3 +1,365 @@
+// Formats:
+
+enum Format {HP, SP, DP};
+
+// Data classes:
+
+enum Class {ZERO, INF, SNAN, QNAN, NORM, DENORM};
+
+// Rounding modes:
+
+const ui2 rmodeNear = 0;
+const ui2 rmodeUP = 1;
+const ui2 rmodeDN = 2;
+const ui2 rmodeZero = 3;
+
+// Flags:
+
+const uint IDC = 7; // denormal exxception
+const uint IXC = 4; // inexact exception
+const uint UFC = 3; // underflow
+const uint OFC = 2; // overflow
+const uint DZC = 1; // divide-by-zero exception
+const uint IOC = 0; // invalid operand exception
+
+// Extract operand components, apply FZ, identify data class, and record denormal exception:
+
+<bool, ui11, ui52, Class, ui8> analyze(ui64 op, Format fmt, bool fz, ui8 flags) {
+
+  // Extract fields:
+
+  bool sign;
+  ui11 exp;
+  ui52 man, manMSB;
+  bool expIsMax;
+  switch (fmt) {
+  case DP:
+    sign = op[63];
+    exp = op[62:52];
+    expIsMax = exp == 0x7FF;
+    man = op[51:0];
+    manMSB = 0x8000000000000;
+    break;
+  case SP:
+    sign = op[31];
+    exp = op[30:23];
+    expIsMax = exp == 0xFF;
+    man = op[22:0];
+    manMSB = 0x400000;
+    break;
+  case HP:
+    sign = op[15];
+    exp = op[14:10];
+    expIsMax = exp == 0x1F;
+    man = op[9:0];
+    manMSB = 0x200;
+  }
+
+  // Classify:
+
+  Class c;
+  if (expIsMax) { // NaN or infinity
+    if (man == 0) {
+      c = INF;
+    }
+    else if (man & manMSB) {
+      c = QNAN;
+    }
+    else  {
+      c = SNAN;
+    }
+  }
+  else if (exp == 0) { // zero or denormal
+    if (man == 0) {
+      c = ZERO;
+    }
+    else if (fz) {
+      c = ZERO;
+      if (fmt != HP) {
+        flags[IDC] = 1; // denormal exception
+      }
+    }
+    else  {
+      c = DENORM;
+    }
+  }
+  else  { // normal
+    c = NORM;
+  }
+  return <sign, exp, man, c, flags>;
+}
+
+// Count leading zeroes of a nonzero 53-bit vector.
+// After k iterations of the loop, where 0 <= k <= 6, the value of n is 2^(6-k)
+// and the low n entries of z and c are as follows:
+// Consider the partition of x into n bit slices of width 2^k.  For 0 <= i < n, 
+// the i^th slice is x[2^k*(i+1)-1:2^k*i]. Let L(i) be the number of leading 
+// zeroes of this slice.  Then
+//   z[i] = 1 <=> L(i) = 2^k;
+//   L(i) < 2^k => c[i] = L(i).
+
+ui6 CLZ53(ui53 m) {
+  ui64 x = 0;
+  x[63:11] = m;
+  bool z[64];
+  ui6 c[64];
+  for (uint i = 0; i < 64; i++) {
+    z[i] = !x[i];
+    c[i] = 0;
+  }
+  uint n = 64;
+  for (uint k = 0; k < 6; k++) {
+    n = n / 2; // n = 2^(5-k)
+    for (uint i = 0; i < n; i++) {
+      c[i] = z[2 * i + 1] ? c[2 * i] : c[2 * i + 1];
+      c[i][k] = z[2 * i + 1];
+      z[i] = z[2 * i + 1] && z[2 * i];
+    }
+  }
+  return c[0];
+}
+
+// Compute Q, incremented Q, and sticky bit (shared with fdiv64):
+
+<ui53, ui53, bool> computeQ(ui54 QP, ui54 QN, ui59 RP, ui59 RN, ui2 fmt, bool isSqrt) {
+
+  // Sign of remainder:
+  ui59 rem = RP + ~RN + 1;
+  bool remSign = rem[58];
+  bool remZero = (RP ^ RN) == 0;
+
+  // If the remainder is negative, then the quotient must be decremented.  This is
+  // achieved by eliminating the carry-in bit:
+  bool cin = !remSign;
+
+  // If the sum is to be rounded up, then a rounding increment is added.  Note that
+  // the position of the increment is the lsb of the result.  For fdiv, this is bit 1
+  // for SP and bit 2 for DP and HP; for fsqrt, it is the opposite:
+  bool lsbIs2 = isSqrt == (fmt == SP);
+  ui3 inc = lsbIs2 ? 4 : 2;
+
+  // RTL computes 4 sums in parallel with the rounding increment:
+  //   Q0     cin = 0, inc = 0
+  //   Q0inc  cin = 0, inc > 0
+  //   Q1     cin = 1, inc = 0
+  //   Q1inc  cin = 1, inc > 0
+
+  // Two adders are used to compute Q0 and Q1inc; the other sums are derived from these.
+  // The simplest sum is Q0:
+
+  ui54 Q0 = QP + ~QN;
+
+  // In order to compute Q1inc, inc is added in via a 3-2 compressor.
+  ui54 QN1inc = QP ^ ~QN ^ inc;
+  ui54 QP1inc = (QP & ~QN | (QP | ~QN) & inc) << 1;
+  ui54 Q1inc = QP1inc + QN1inc + 1;
+
+  // For the other two sums, first we compute the bottom 3 bits:
+  ui3 Q1Low = QP[2:0] + ~QN[2:0] + 1;
+  ui3 Q0incLow = QP1inc[2:0] + QN1inc[2:0];
+  ui54 Q1 = Q1Low;
+  ui54 Q0inc = Q0incLow;
+
+  // The upper bits are just copied (note the difference between fdiv and fsqrt):
+  if (Q1 == 0) {
+    Q1[53:3] = Q1inc[53:3];
+  }
+  else  {
+    Q1[53:3] = Q0[53:3];
+  }
+  if (Q0inc <= 1 || Q0inc <= 3 && lsbIs2) {
+    Q0inc[53:3] = Q1inc[53:3];
+  }
+  else  {
+    Q0inc[53:3] = Q0[53:3];
+  }
+ 
+  // When cin is finally available, the following selections are made:
+  ui54 Q01 = cin ? Q1 : Q0;
+  ui54 Q01inc = cin ? Q1inc : Q0inc;
+
+  // Discard the extra bit if present:
+  ui53 Qtrunc = lsbIs2 ? Q01 >> 1 : Q01;
+  ui53 Qinc = lsbIs2 ? Q01inc >> 1 : Q01inc;
+  return <Qtrunc, Qinc, !remZero>;
+}
+
+// Right-shift a 64-bit vector:
+
+<ui64, bool> rShft64(ui64 x, ui6 s) {
+  ui64 xs = x >> s;
+  bool stk = x != (xs << s);
+  return <xs, stk>;
+}
+
+// Compute rounded result for both normal and denormal cases (shared with fdiv64):
+
+<ui53, bool, ui53, bool>
+rounder(ui53 Qtrunc, ui53 Qinc, bool stk, bool sign, si13 expQ, ui2 rmode, ui2 fmt) {
+
+  // Rounding decision for normal case:
+  bool lsb = Qtrunc[1], grd = Qtrunc[0];
+  ui53 Qrnd;
+  if ((rmode == rmodeNear) && grd && (lsb || stk) ||
+      (rmode == rmodeUP) && !sign && (grd || stk) ||
+      (rmode == rmodeDN) && sign && (grd || stk)) {
+    Qrnd = Qinc[53:1];
+  }
+  else  {
+    Qrnd = Qtrunc[53:1];
+  }
+  bool inx = grd || stk;
+
+  // Right-shifted quotient and rounding decision for subnormal case:
+  ui64 QDen = 0; // Insert integer bit
+  switch (fmt) {
+  case DP:
+    QDen[53] = 1;
+    QDen[52:0] = Qtrunc[52:0];
+    break;
+  case SP:
+    QDen[24] = 1;
+    QDen[23:0] = Qtrunc[23:0];
+    break;
+  case HP:
+    QDen[11] = 1;
+    QDen[10:0] = Qtrunc[10:0];
+  }
+  ui12 shft12 = 1 - expQ; // shift is at most 63
+  ui6 shft = shft12 >= 64 ? 63 : shft12;
+  bool lsbDen, grdDen, stkDen;
+  ui64 Qshft;
+  <Qshft, stkDen> = rShft64(QDen, shft);
+  lsbDen = Qshft[1];
+  grdDen = Qshft[0];
+  stkDen = stkDen || stk;
+  ui54 QrndDen;
+  if ((rmode == rmodeNear) && grdDen && (lsbDen || stkDen) ||
+      (rmode == rmodeUP) && !sign && (grdDen || stkDen) ||
+      (rmode == rmodeDN) && sign && (grdDen || stkDen)) {
+    QrndDen = Qshft[53:1] + 1;
+  }
+  else  {
+    QrndDen = Qshft[53:1];
+  }
+  bool inxDen = grdDen || stkDen;
+  return <Qrnd, inx, QrndDen, inxDen>;
+}
+
+// Final result (shared with fdiv64):
+
+<ui64, ui8>
+final(ui53 Qrnd, bool inx, ui53 QrndDen, bool inxDen, bool sign,
+      si13 expQ, ui2 rmode, bool fz, ui2 fmt, ui8 flags) {
+
+  // Selection of infinity or max normal for overflow case:
+  bool selMaxNorm = rmode == rmodeDN && !sign ||
+                    rmode == rmodeUP && sign ||
+                    rmode == rmodeZero;
+  ui64 D = 0;  // data result
+  switch (fmt) {
+  case DP:
+    D[63] = sign;
+    if (expQ >= 0x7FF) { // overflow
+      if (selMaxNorm) {
+        D[62:52] = 0x7FE;
+        D[51:0] = 0xFFFFFFFFFFFFF;
+      }
+      else  {
+        D[62:52] = 0x7FF;
+        D[51:0] = 0;
+      }
+      flags[OFC] = 1; // overflow
+      flags[IXC] = 1; // inexact
+    }
+    else if (expQ <= 0) { // subnormal
+      if (fz) {
+        flags[UFC] = 1; // underflow but not inexact
+      }
+      else  {
+        ui11 exp = QrndDen[52];
+        D[62:52] = exp;
+        D[51:0] = QrndDen[51:0];
+        flags[IXC] = flags[IXC] || inxDen;
+        flags[UFC] = flags[UFC] || inxDen;
+      }
+    }
+    else  { // normal
+      D[62:52] = expQ;
+      D[51:0] = Qrnd[51:0];
+      flags[IXC] = flags[IXC] || inx;
+    }
+    break;
+  case SP:
+    D[31] = sign;
+    if (expQ >= 0xFF) { // overflow
+      if (selMaxNorm) {
+        D[30:23] = 0xFE;
+        D[22:0] = 0x7FFFFF;
+      }
+      else  {
+        D[30:23] = 0xFF;
+        D[22:0] = 0;
+      }
+      flags[OFC] = 1; // overflow
+      flags[IXC] = 1; // inexact
+    }
+    else if (expQ <= 0) { // subnormal
+      if (fz) {
+        flags[UFC] = 1; // underflow but not inexact
+      }
+      else  {
+        ui8 exp = QrndDen[23];
+        D[30:23] = exp;
+        D[22:0] = QrndDen[22:0];
+        flags[IXC] = flags[IXC] || inxDen;
+        flags[UFC] = flags[UFC] || inxDen;
+      }
+    }
+    else  { // normal
+      D[30:23] = expQ;
+      D[22:0] = Qrnd[22:0];
+      flags[IXC] = flags[IXC] || inx;
+    }
+    break;
+  case HP:
+    D[15] = sign;
+    if (expQ >= 0x1F) { // overflow
+      if (selMaxNorm) {
+        D[14:10] = 0x1E;
+        D[9:0] = 0x3FF;
+      }
+      else  {
+        D[14:10] = 0x1F;
+        D[9:0] = 0;
+      }
+      flags[OFC] = 1; // overflow
+      flags[IXC] = 1; // inexact
+    }
+    else if (expQ <= 0) { // subnormal
+      if (fz) {
+        flags[UFC] = 1; // underflow but not inexact
+      }
+      else  {
+        ui5 exp = QrndDen[10];
+        D[14:10] = exp;
+        D[9:0] = QrndDen[9:0];
+        flags[IXC] = flags[IXC] || inxDen;
+        flags[UFC] = flags[UFC] || inxDen;
+      }
+    }
+    else  {
+      D[14:10] = expQ;
+      D[9:0] = Qrnd[9:0];
+      flags[IXC] = flags[IXC] || inx;
+    }
+    break;
+  }
+  return <D, flags>;
+}
+
+// Zero, infinity, NaN, or negative operand:
+
 <ui64, ui8> specialCase(bool signa, ui64 opa, Class classa, ui2 fmt, bool dn, ui8 flags) {
   ui64 D = 0;
   ui64 aTrunc, manMSB, defNaN, zero = 0;
@@ -286,6 +648,17 @@ int nextDigit(ui59 RP, ui59 RN, uint i, uint j) {
   return <QP, QN>;
 }
 
+// Inputs of fsqrt64:
+//   opa[63:0]: Encoding of radicand (for SP and HP, operand is low bits)
+//   fmt: 2-bit encoding of FP format (DP = 2, SP = 1, HP = 0)
+//   fz: force denormals to 0
+//   dn: replace NaN operand with default
+//   mode[1:0]: encoding of rounding mode
+
+// Outputs of fsqrt64:
+//   D[63:0]: Data result (in low bits)
+//   flags[7:0]: exception flags
+
 <ui64, ui8> fsqrt64(ui64 opa, ui2 fmt, bool fz, bool dn, ui2 rmode) {
   bool signa;     // operand signs
   ui11 expa;      // operand exponents
@@ -370,4 +743,3 @@ int nextDigit(ui59 RP, ui59 RN, uint i, uint j) {
     }
   }
 }
-

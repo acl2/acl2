@@ -179,7 +179,7 @@
     :rule-classes :linear))
 
 (define aig-fast-biteval-seq-body (updates outs init-st input-seq aignet vals)
-  :guard (non-bool-atom-listp (alist-keys updates))
+  :guard (acl2::aig-var-listp (alist-keys updates))
   (b* (((mv aignet varmap & &)
         (cwtime
          (aig-fsm-to-aignet
@@ -200,7 +200,7 @@
     (mv res aignet vals)))
 
 (define aig-fast-biteval-seq (updates outs init-st input-seq)
-  :guard (non-bool-atom-listp (alist-keys updates))
+  :guard (acl2::aig-var-listp (alist-keys updates))
   (b* (((local-stobjs aignet vals)
         (mv res aignet vals)))
     (aig-fast-biteval-seq-body
@@ -231,7 +231,7 @@
 
 
 (define aig-fast-biteval-seq-outs/state-body (updates outs init-st input-seq aignet vals)
-  :guard (non-bool-atom-listp (alist-keys updates))
+  :guard (acl2::aig-var-listp (alist-keys updates))
   (b* (((mv aignet varmap & regvars)
         (cwtime
          (aig-fsm-to-aignet
@@ -251,7 +251,7 @@
     (mv outs st-alist aignet vals)))
 
 (define aig-fast-biteval-seq-outs/state (updates outs init-st input-seq)
-  :guard (non-bool-atom-listp (alist-keys updates))
+  :guard (acl2::aig-var-listp (alist-keys updates))
   (b* (((local-stobjs aignet vals)
         (mv res st aignet vals)))
     (cw "~x0 frames~%" (len input-seq))

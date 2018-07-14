@@ -1,5 +1,43 @@
-;; AUTHOR:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2018, Kestrel Technology, LLC
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author(s):
+; Alessandro Coglio   <coglio@kestrel.edu>
 
 (in-package "X86ISA")
 
@@ -803,6 +841,8 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
              ;; which is one past temp-rip to take the rel8 byte into account:
              ((mv flg next-rip) (add-to-*ip temp-rip (1+ rel8) x86))
              ((when flg) (!!ms-fresh :rip-increment-error flg))
+             ;; update counter:
+             (x86 (!rgfi-size counter-size *rcx* counter rex-byte x86))
              ;; set instruction pointer to new value:
              (x86 (write-*ip next-rip x86)))
           x86)
@@ -812,6 +852,9 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
            ;; which starts just after the rel8 byte:
            ((mv flg next-rip) (add-to-*ip temp-rip 1 x86))
            ((when flg) (!!ms-fresh :rip-increment-error flg))
+           ;; update counter:
+           (x86 (!rgfi-size counter-size *rcx* counter rex-byte x86))
+           ;; set instruction pointer to new value:
            (x86 (write-*ip next-rip x86)))
         x86))))
 

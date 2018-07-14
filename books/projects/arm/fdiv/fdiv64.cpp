@@ -812,7 +812,18 @@ tuple<int, ui59, ui59> iter3(ui59 RPi2, ui59 RNi2, ui7 Ri2S7, ui57 div, ui2 fmt)
   return tuple<int, ui59, ui59>(qi3, RPi3, RNi3);
 }
 
-tuple<ui64, ui8> execute(ui64 opa, ui64 opb, ui2 fmt, bool fz, bool dn, ui2 rmode) {
+// Inputs of fdiv64:
+//   opa[63:0], opb[63:0]: Encodings of dividend and divisor (for SP and HP, operands are low bits)
+//   fmt: 2-bit encoding of FP format (DP = 2, SP = 1, HP = 0)
+//   fz: force denormals to 0
+//   dn: replace NaN operand with default
+//   mode[1:0]: encoding of rounding mode
+
+// Outputs of fdiv64:
+//   D[63:0]: Data result (in low bits)
+//   flags[7:0]: exception flags
+
+tuple<ui64, ui8> fdiv64(ui64 opa, ui64 opb, ui2 fmt, bool fz, bool dn, ui2 rmode) {
 
   // Analyze operands and process special cases:
 
@@ -955,7 +966,7 @@ SC_MODULE(fdiv64) {
 
     ui64 data;
     ui8 excps;
-    tie(data, excps) = execute(opa, opb, fmt, fz, dn, rmode);
+    tie(data, excps) = fdiv64(opa, opb, fmt, fz, dn, rmode);
 
     // Contract excps to 6 bits to match RTL:
     ui6 excps6 = excps;
@@ -985,7 +996,7 @@ ui2 fmt = HP;
 
 ui64 D;
 ui6 flags;
-tie(D, flags) = execute(opa, opb, fmt, fz, dn, rmode);
+tie(D, flags) = fdiv64(opa, opb, fmt, fz, dn, rmode);
 
 printf("opa = %s\n", opa.to_string(AC_HEX, false).c_str());
 printf("opb = %s\n", opb.to_string(AC_HEX, false).c_str());

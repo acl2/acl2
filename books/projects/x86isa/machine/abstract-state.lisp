@@ -1,6 +1,41 @@
-;; Authors:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
-;; Matt Kaufmann <kaufmann@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Matt Kaufmann       <kaufmann@cs.utexas.edu>
 
 (in-package "X86ISA")
 
@@ -209,7 +244,7 @@
                       (:executable-counterpart msrp)
                       (:executable-counterpart dbgp)
                       (:executable-counterpart fp-datap)
-                      (:executable-counterpart xmmp)
+                      (:executable-counterpart zmmp)
                       (:executable-counterpart memp)))
 
   )
@@ -325,7 +360,7 @@
           '0      ;; fp-last-inst
           '0      ;; fp-last-data
           '0      ;; fp-opcode
-          '0      ;; xmmi
+          '0      ;; zmmi
           '8064   ;; mxcsr
           '0      ;; msri
           'nil    ;; ms
@@ -668,7 +703,7 @@
                       corr-ctr
                       corr-dbg
                       corr-fp-data
-                      corr-xmm
+                      corr-zmm
                       corr-msr
                       corr-mem))
 
@@ -978,7 +1013,7 @@
                    corr-msr-init
                    corr-mem-init
                    corr-fp-data-init
-                   corr-xmm-init)))
+                   corr-zmm-init)))
     :RULE-CLASSES NIL)
 
   (DEFTHML CREATE-X86{PRESERVED}
@@ -995,7 +1030,7 @@
                       ssr-hiddenp-aux
                       ctrp-aux     dbgp-aux
                       msrp-aux     fp-datap-aux
-                      xmmp-aux     memp-aux))
+                      zmmp-aux     memp-aux))
 
   ;; Lemmas needed for the accessor correspondence theorems:
 
@@ -1532,11 +1567,11 @@
                               (x (UPDATE-NTH I V (CAR X86$C)))
                               (x86 X86$C)
                               (field (nth *fp-datai* x86)))
-                   (:instance corr-xmm-update-nth
+                   (:instance corr-zmm-update-nth
                               (n *RGF$CI*)
                               (x (UPDATE-NTH I V (CAR X86$C)))
                               (x86 X86$C)
-                              (field (nth *xmmi* x86)))
+                              (field (nth *zmmi* x86)))
                    )))
     :RULE-CLASSES NIL)
 
@@ -1625,11 +1660,11 @@
                               (x v)
                               (x86 X86$C)
                               (field (nth *fp-datai* x86)))
-                   (:instance corr-xmm-update-nth
+                   (:instance corr-zmm-update-nth
                               (n *RIP$C*)
                               (x v)
                               (x86 X86$C)
-                              (field (nth *xmmi* x86)))
+                              (field (nth *zmmi* x86)))
                    )))
     :RULE-CLASSES NIL)
 
@@ -1702,11 +1737,11 @@
                               (x v)
                               (x86 X86$C)
                               (field (nth *fp-datai* x86)))
-                   (:instance corr-xmm-update-nth
+                   (:instance corr-zmm-update-nth
                               (n *RFLAGS$C*)
                               (x v)
                               (x86 X86$C)
-                              (field (nth *xmmi* x86)))
+                              (field (nth *zmmi* x86)))
                    )))
     :RULE-CLASSES NIL)
 
@@ -1787,10 +1822,10 @@
                        (x (update-nth i v (nth *seg-visible$ci* x86$c)))
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth (n *seg-visible$ci*)
+            (:instance corr-zmm-update-nth (n *seg-visible$ci*)
                        (x (update-nth i v (nth *seg-visible$ci* x86$c)))
                        (x86 x86$c)
-                       (field (nth *xmmi* x86))))))
+                       (field (nth *zmmi* x86))))))
     :rule-classes nil)
 
   (local (in-theory (e/d () (corr-seg-visible-update-seg-visible))))
@@ -1886,10 +1921,10 @@
                        (x (update-nth i v (nth *seg-hidden$ci* x86$c)))
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth (n *seg-hidden$ci*)
+            (:instance corr-zmm-update-nth (n *seg-hidden$ci*)
                        (x (update-nth i v (nth *seg-hidden$ci* x86$c)))
                        (x86 x86$c)
-                       (field (nth *xmmi* x86))))))
+                       (field (nth *zmmi* x86))))))
     :rule-classes nil)
 
   (local (in-theory (e/d () (corr-seg-hidden-update-seg-hidden))))
@@ -1987,10 +2022,10 @@
                        (x (update-nth i v (nth *str$ci* x86$c)))
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth (n *str$ci*)
+            (:instance corr-zmm-update-nth (n *str$ci*)
                        (x (update-nth i v (nth *str$ci* x86$c)))
                        (x86 x86$c)
-                       (field (nth *xmmi* x86))))))
+                       (field (nth *zmmi* x86))))))
     :RULE-CLASSES NIL)
 
   (local (in-theory (e/d () (corr-str-update-str))))
@@ -2087,10 +2122,10 @@
                        (x (update-nth i v (nth *ssr-VISIBLE$ci* x86$c)))
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth (n *ssr-VISIBLE$ci*)
+            (:instance corr-zmm-update-nth (n *ssr-VISIBLE$ci*)
                        (x (update-nth i v (nth *ssr-VISIBLE$ci* x86$c)))
                        (x86 x86$c)
-                       (field (nth *xmmi* x86))))))
+                       (field (nth *zmmi* x86))))))
     :RULE-CLASSES NIL)
 
   (local (in-theory (e/d () (corr-ssr-VISIBLE-update-ssr-VISIBLE))))
@@ -2187,10 +2222,10 @@
                        (x (update-nth i v (nth *ssr-HIDDEN$ci* x86$c)))
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth (n *ssr-HIDDEN$ci*)
+            (:instance corr-zmm-update-nth (n *ssr-HIDDEN$ci*)
                        (x (update-nth i v (nth *ssr-HIDDEN$ci* x86$c)))
                        (x86 x86$c)
-                       (field (nth *xmmi* x86))))))
+                       (field (nth *zmmi* x86))))))
     :RULE-CLASSES NIL)
 
   (local (in-theory (e/d () (corr-ssr-HIDDEN-update-ssr-HIDDEN))))
@@ -2290,10 +2325,10 @@
                        (x (update-nth i v (nth *ctr$ci* x86$c)))
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth (n *ctr$ci*)
+            (:instance corr-zmm-update-nth (n *ctr$ci*)
                        (x (update-nth i v (nth *ctr$ci* x86$c)))
                        (x86 x86$c)
-                       (field (nth *xmmi* x86))))))
+                       (field (nth *zmmi* x86))))))
     :RULE-CLASSES NIL)
 
   (local (in-theory (e/d () (corr-ctr-update-ctr))))
@@ -2391,10 +2426,10 @@
                        (x (update-nth i v (nth *dbg$ci* x86$c)))
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth (n *dbg$ci*)
+            (:instance corr-zmm-update-nth (n *dbg$ci*)
                        (x (update-nth i v (nth *dbg$ci* x86$c)))
                        (x86 x86$c)
-                       (field (nth *xmmi* x86))))))
+                       (field (nth *zmmi* x86))))))
     :RULE-CLASSES NIL)
 
   (local (in-theory (e/d () (corr-dbg-update-dbg))))
@@ -2496,10 +2531,10 @@
                        (x (update-nth i v (nth *fp-data$ci* x86$c)))
                        (x86 X86$C)
                        (field (nth *ctri* x86)))
-            (:instance corr-xmm-update-nth (n *fp-data$ci*)
+            (:instance corr-zmm-update-nth (n *fp-data$ci*)
                        (x (update-nth i v (nth *fp-data$ci* x86$c)))
                        (x86 x86$c)
-                       (field (nth *xmmi* x86))))))
+                       (field (nth *zmmi* x86))))))
     :RULE-CLASSES NIL)
 
   (local (in-theory (e/d () (corr-fp-data-update-fp-data))))
@@ -2592,11 +2627,11 @@
                               (x v)
                               (x86 X86$C)
                               (field (nth *fp-datai* x86)))
-                   (:instance corr-xmm-update-nth
+                   (:instance corr-zmm-update-nth
                               (n *FP-CTRL$C*)
                               (x v)
                               (x86 x86$c)
-                              (field (nth *xmmi* x86))))))
+                              (field (nth *zmmi* x86))))))
     :RULE-CLASSES NIL)
 
   (DEFTHML !FP-CTRL*{PRESERVED}
@@ -2673,11 +2708,11 @@
                               (x v)
                               (x86 X86$C)
                               (field (nth *fp-datai* x86)))
-                   (:instance corr-xmm-update-nth
+                   (:instance corr-zmm-update-nth
                               (n *FP-STATUS$C*)
                               (x v)
                               (x86 x86$c)
-                              (field (nth *xmmi* x86)))
+                              (field (nth *zmmi* x86)))
                    )))
     :RULE-CLASSES NIL)
 
@@ -2753,11 +2788,11 @@
                               (x v)
                               (x86 X86$C)
                               (field (nth *fp-datai* x86)))
-                   (:instance corr-xmm-update-nth
+                   (:instance corr-zmm-update-nth
                               (n *FP-TAG$C*)
                               (x v)
                               (x86 x86$c)
-                              (field (nth *xmmi* x86)))
+                              (field (nth *zmmi* x86)))
                    )))
     :RULE-CLASSES NIL)
 
@@ -2835,11 +2870,11 @@
                               (x v)
                               (x86 X86$C)
                               (field (nth *fp-datai* x86)))
-                   (:instance corr-xmm-update-nth
+                   (:instance corr-zmm-update-nth
                               (n *FP-LAST-INST$C*)
                               (x v)
                               (x86 x86$c)
-                              (field (nth *xmmi* x86)))
+                              (field (nth *zmmi* x86)))
                    )))
     :RULE-CLASSES NIL)
 
@@ -2917,11 +2952,11 @@
                               (x v)
                               (x86 X86$C)
                               (field (nth *fp-datai* x86)))
-                   (:instance corr-xmm-update-nth
+                   (:instance corr-zmm-update-nth
                               (n *FP-LAST-DATA$C*)
                               (x v)
                               (x86 x86$c)
-                              (field (nth *xmmi* x86)))
+                              (field (nth *zmmi* x86)))
                    )))
     :RULE-CLASSES NIL)
 
@@ -2999,11 +3034,11 @@
                               (x v)
                               (x86 X86$C)
                               (field (nth *fp-datai* x86)))
-                   (:instance corr-xmm-update-nth
+                   (:instance corr-zmm-update-nth
                               (n *FP-OPCODE$C*)
                               (x v)
                               (x86 x86$c)
-                              (field (nth *xmmi* x86)))
+                              (field (nth *zmmi* x86)))
                    )))
     :RULE-CLASSES NIL)
 
@@ -3013,111 +3048,111 @@
              (X86$AP (!FP-OPCODE$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML XMMI*{CORRESPONDENCE}
+  (DEFTHML ZMMI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
-                  (< I 16))
-             (EQUAL (XMM$CI I X86$C) (XMM$AI I X86)))
-    :hints (("Goal" :use ((:instance XMMI{CORRESPONDENCE}-helper-2 (j 15)))
-             :in-theory (e/d (corr-xmm) (x86$ap))))
+                  (< I 32))
+             (EQUAL (ZMM$CI I X86$C) (ZMM$AI I X86)))
+    :hints (("Goal" :use ((:instance ZMMI{CORRESPONDENCE}-helper-2 (j 31)))
+             :in-theory (e/d (corr-zmm) (x86$ap))))
     :RULE-CLASSES NIL)
 
-  (DEFTHML XMMI*{GUARD-THM}
+  (DEFTHML ZMMI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
-                  (< I 16))
+                  (< I 32))
              (AND (INTEGERP I)
                   (<= 0 I)
-                  (< I (XMM$C-LENGTH X86$C))))
+                  (< I (ZMM$C-LENGTH X86$C))))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !XMMI*{CORRESPONDENCE}
+  (DEFTHML !ZMMI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
-                  (< I 16)
-                  (UNSIGNED-BYTE-P 128 V))
-             (CORR (!XMM$CI I V X86$C)
-                   (!XMM$AI I V X86)))
-    :hints (("Goal" :in-theory (e/d (!xmm$ci x86$cp good-memp x86$cp-pre)
+                  (< I 32)
+                  (UNSIGNED-BYTE-P 512 V))
+             (CORR (!ZMM$CI I V X86$C)
+                   (!ZMM$AI I V X86)))
+    :hints (("Goal" :in-theory (e/d (!zmm$ci x86$cp good-memp x86$cp-pre)
                                     ())
-             :expand (CORR (!XMM$CI I V X86$C)
-                           (!XMM$AI I V X86))
-             :use ((:instance corr-xmm-update-xmm)
+             :expand (CORR (!ZMM$CI I V X86$C)
+                           (!ZMM$AI I V X86))
+             :use ((:instance corr-zmm-update-zmm)
                    (:instance corr-rgf-update-nth
-                              (n *xmm$ci*)
-                              (x (update-nth i v (nth *xmm$ci* x86$c)))
+                              (n *zmm$ci*)
+                              (x (update-nth i v (nth *zmm$ci* x86$c)))
                               (x86 x86$c)
                               (field (nth *rgfi* x86)))
                    (:instance corr-seg-visible-update-nth
-                              (n *xmm$ci*)
-                              (x (update-nth i v (nth *xmm$ci* x86$c)))
+                              (n *zmm$ci*)
+                              (x (update-nth i v (nth *zmm$ci* x86$c)))
                               (x86 X86$C)
                               (field (nth *seg-visiblei* x86)))
                    (:instance corr-seg-hidden-update-nth
-                              (n *xmm$ci*)
-                              (x (update-nth i v (nth *xmm$ci* x86$c)))
+                              (n *zmm$ci*)
+                              (x (update-nth i v (nth *zmm$ci* x86$c)))
                               (x86 X86$C)
                               (field (nth *seg-hiddeni* x86)))
                    (:instance corr-str-update-nth
-                              (n *xmm$ci*)
-                              (x (update-nth i v (nth *xmm$ci* x86$c)))
+                              (n *zmm$ci*)
+                              (x (update-nth i v (nth *zmm$ci* x86$c)))
                               (x86 X86$C)
                               (field (nth *stri* x86)))
                    (:instance corr-ssr-visible-update-nth
-                              (n *xmm$ci*)
-                              (x (update-nth i v (nth *xmm$ci* x86$c)))
+                              (n *zmm$ci*)
+                              (x (update-nth i v (nth *zmm$ci* x86$c)))
                               (x86 X86$C)
                               (field (nth *ssr-visiblei* x86)))
                    (:instance corr-ssr-hidden-update-nth
-                              (n *xmm$ci*)
-                              (x (update-nth i v (nth *xmm$ci* x86$c)))
+                              (n *zmm$ci*)
+                              (x (update-nth i v (nth *zmm$ci* x86$c)))
                               (x86 X86$C)
                               (field (nth *ssr-hiddeni* x86)))
                    (:instance corr-ctr-update-nth
-                              (n *xmm$ci*)
-                              (x (update-nth i v (nth *xmm$ci* x86$c)))
+                              (n *zmm$ci*)
+                              (x (update-nth i v (nth *zmm$ci* x86$c)))
                               (x86 X86$C)
                               (field (nth *ctri* x86)))
                    (:instance corr-dbg-update-nth
-                              (n *xmm$ci*)
-                              (x (update-nth i v (nth *xmm$ci* x86$c)))
+                              (n *zmm$ci*)
+                              (x (update-nth i v (nth *zmm$ci* x86$c)))
                               (x86 X86$C)
                               (field (nth *dbgi* x86)))
                    (:instance corr-msr-update-nth
-                              (n *xmm$ci*)
-                              (x (update-nth i v (nth *xmm$ci* x86$c)))
+                              (n *zmm$ci*)
+                              (x (update-nth i v (nth *zmm$ci* x86$c)))
                               (x86 X86$C)
                               (field (nth *msri* x86)))
                    (:instance corr-fp-data-update-nth
-                              (n *xmm$ci*)
-                              (x (update-nth i v (nth *xmm$ci* x86$c)))
+                              (n *zmm$ci*)
+                              (x (update-nth i v (nth *zmm$ci* x86$c)))
                               (x86 X86$C)
                               (field (nth *fp-datai* x86))))))
     :RULE-CLASSES NIL)
 
-  (local (in-theory (e/d () (corr-xmm-update-xmm))))
+  (local (in-theory (e/d () (corr-zmm-update-zmm))))
 
-  (DEFTHML !XMMI*{GUARD-THM}
+  (DEFTHML !ZMMI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
-                  (< I 16)
-                  (UNSIGNED-BYTE-P 128 V))
+                  (< I 32)
+                  (UNSIGNED-BYTE-P 512 V))
              (AND (INTEGERP I)
                   (<= 0 I)
-                  (< I (XMM$C-LENGTH X86$C))
-                  (UNSIGNED-BYTE-P 128 V)))
+                  (< I (ZMM$C-LENGTH X86$C))
+                  (UNSIGNED-BYTE-P 512 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !XMMI*{PRESERVED}
+  (DEFTHML !ZMMI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
-                  (< I 16)
-                  (UNSIGNED-BYTE-P 128 V))
-             (X86$AP (!XMM$AI I V X86)))
+                  (< I 32)
+                  (UNSIGNED-BYTE-P 512 V))
+             (X86$AP (!ZMM$AI I V X86)))
     :RULE-CLASSES NIL)
 
   (DEFTHML MXCSR*{CORRESPONDENCE}
@@ -3187,11 +3222,11 @@
                               (x v)
                               (x86 X86$C)
                               (field (nth *fp-datai* x86)))
-                   (:instance corr-xmm-update-nth
+                   (:instance corr-zmm-update-nth
                               (n *MXCSR$C*)
                               (x v)
                               (x86 X86$c)
-                              (field (nth *xmmi* x86)))
+                              (field (nth *zmmi* x86)))
                    )))
     :RULE-CLASSES NIL)
 
@@ -3274,10 +3309,10 @@
                        (x (update-nth i v (nth *msr$ci* x86$c)))
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth (n *msr$ci*)
+            (:instance corr-zmm-update-nth (n *msr$ci*)
                        (x (update-nth i v (nth *msr$ci* x86$c)))
                        (x86 x86$c)
-                       (field (nth *xmmi* x86))))))
+                       (field (nth *zmmi* x86))))))
     :RULE-CLASSES NIL)
 
   (local (in-theory (e/d () (corr-msr-update-msr))))
@@ -3366,11 +3401,11 @@
                        (x v)
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth
+            (:instance corr-zmm-update-nth
                        (n *MS$C*)
                        (x v)
                        (x86 X86$C)
-                       (field (nth *xmmi* x86)))
+                       (field (nth *zmmi* x86)))
             )))
     :RULE-CLASSES NIL)
 
@@ -3442,11 +3477,11 @@
                        (x v)
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth
+            (:instance corr-zmm-update-nth
                        (n *FAULT$C*)
                        (x v)
                        (x86 X86$C)
-                       (field (nth *xmmi* x86)))
+                       (field (nth *zmmi* x86)))
             )))
     :RULE-CLASSES NIL)
 
@@ -3521,11 +3556,11 @@
                        (x v)
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth
+            (:instance corr-zmm-update-nth
                        (n *ENV$C*)
                        (x v)
                        (x86 X86$C)
-                       (field (nth *xmmi* x86))))))
+                       (field (nth *zmmi* x86))))))
     :RULE-CLASSES NIL)
 
   (DEFTHML !ENV*{PRESERVED}
@@ -3597,11 +3632,11 @@
                        (x v)
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth
+            (:instance corr-zmm-update-nth
                        (n *UNDEF$C*)
                        (x v)
                        (x86 X86$C)
-                       (field (nth *xmmi* x86))))))
+                       (field (nth *zmmi* x86))))))
     :RULE-CLASSES NIL)
 
   (DEFTHML !UNDEF*{PRESERVED}
@@ -3676,11 +3711,11 @@
                        (x v)
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth
+            (:instance corr-zmm-update-nth
                        (n *APP-VIEW$C*)
                        (x v)
                        (x86 X86$C)
-                       (field (nth *xmmi* x86)))
+                       (field (nth *zmmi* x86)))
             )))
     :RULE-CLASSES NIL)
 
@@ -3756,11 +3791,11 @@
                        (x v)
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth
+            (:instance corr-zmm-update-nth
                        (n *MARKING-VIEW$C*)
                        (x v)
                        (x86 X86$C)
-                       (field (nth *xmmi* x86)))
+                       (field (nth *zmmi* x86)))
             )))
     :RULE-CLASSES NIL)
 
@@ -3836,11 +3871,11 @@
                        (x v)
                        (x86 X86$C)
                        (field (nth *fp-datai* x86)))
-            (:instance corr-xmm-update-nth
+            (:instance corr-zmm-update-nth
                        (n *OS-INFO$C*)
                        (x v)
                        (x86 X86$C)
-                       (field (nth *xmmi* x86)))
+                       (field (nth *zmmi* x86)))
             )))
     :RULE-CLASSES NIL)
 
@@ -4160,7 +4195,7 @@
                   (:ctr         (< index *control-register-names-len*))
                   (:dbg         (< index *debug-register-names-len*))
                   (:fp-data     (< index *fp-data-register-names-len*))
-                  (:xmm         (< index *xmm-register-names-len*))
+                  (:zmm         (< index *zmm-register-names-len*))
                   (:msr         (< index *model-specific-register-names-len*))
                   (:mem         (< index *mem-size-in-bytes*))
                   (otherwise    (equal index 0))))
@@ -4183,7 +4218,7 @@
       (:fp-last-inst                (fp-last-inst* x86))
       (:fp-last-data                (fp-last-data* x86))
       (:fp-opcode                   (fp-opcode* x86))
-      (:xmm                         (xmmi* index x86))
+      (:zmm                         (zmmi* index x86))
       (:mxcsr                       (mxcsr* x86))
       (:msr                         (msri* index x86))
       (:ms                          (ms* x86))
@@ -4236,8 +4271,8 @@
                                       (unsigned-byte-p 48 value)))
                   (:fp-opcode    (and (equal index 0)
                                       (unsigned-byte-p 11 value)))
-                  (:xmm          (and (< index *xmm-register-names-len*)
-                                      (unsigned-byte-p 128 value)))
+                  (:zmm          (and (< index *zmm-register-names-len*)
+                                      (unsigned-byte-p 512 value)))
                   (:mxcsr        (and (equal index 0)
                                       (unsigned-byte-p 32 value)))
                   (:msr          (and (< index *model-specific-register-names-len*)
@@ -4277,7 +4312,7 @@
       (:fp-last-inst                (!fp-last-inst* value x86))
       (:fp-last-data                (!fp-last-data* value x86))
       (:fp-opcode                   (!fp-opcode* value x86))
-      (:xmm                         (!xmmi* index value x86))
+      (:zmm                         (!zmmi* index value x86))
       (:mxcsr                       (!mxcsr* value x86))
       (:msr                         (!msri* index value x86))
       (:ms                          (!ms* value x86))

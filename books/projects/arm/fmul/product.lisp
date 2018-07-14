@@ -114,7 +114,7 @@
                   (ag i (update-pp i ()))))
   :hints (("Goal" :in-theory (enable pprod loop-rewrite))))
 
-(defthmd ash-rewrite
+(defthm ash-rewrite
   (equal (ash i c)
          (fl (* (ifix i) (expt 2 c))))
   :hints (("goal" :in-theory (enable floor fl ash))))
@@ -149,13 +149,13 @@
   (implies (and (not (specialp)) (natp j) (<= j 54))
            (equal (bitn (multiplier) j)
 	          (bitn (manb) (1- j))))
-  :hints (("Goal" :in-theory (enable ash-rewrite bitn-bits multiplier)
+  :hints (("Goal" :in-theory (enable bitn-bits multiplier)
                   :use ((:instance bitn-shift-up (x (manb)) (k 1) (n (1- j)))))))
 
 (local-defthm mux-bmux4p
   (implies (and (not (specialp)) (natp i) (< i 27))
            (equal (mux i) (bmux4p i (mana) (manb) 53)))
-  :hints (("Goal" :in-theory (enable ash-rewrite bvecp bitn-bits mux enc slc bmux4p mag nbit)
+  :hints (("Goal" :in-theory (enable bvecp bitn-bits mux enc slc bmux4p mag nbit)
                   :use (bvecp-mana
 		        (:instance bitn-plus-bits (x (manb)) (n (1+ (* 2 i))) (m (1- (* 2 i))))
 		        (:instance bitn-plus-bits (x (manb)) (n (* 2 i)) (m (1- (* 2 i))))))))
@@ -519,7 +519,7 @@
            :in-theory '(t2pp0s t1pp0c t2pp1s t1pp1c t2pp2s t1pp2c t2pp3s t1pp3c t2pp4s t1pp4c t2pp5s t1pp5c t2pp6s t1pp6c
 	                t2pp7s t1pp7c t2pp8s t1pp8c t3pp0s t2pp0c t3pp1s t2pp1c t3pp2s t2pp2c t4pp0s t3pp0c t4pp1s t3pp1c t4pp2s
 			t3pp2c t4pp3s t3pp3c t5pp0s t4pp0c t5pp1s t4pp1c t4pp4s t4pp2c t6pp0s t5pp0c t6pp1s t5pp1c t7pp0s t6pp0c
-			t6pp2s t6pp1c t8pp0s t7pp0c t9pp0s t7pp1c t9pp1s t9pp0c ppa* ppb* compress ppa ppb))))
+			t6pp2s t6pp1c t8pp0s t7pp0c t9pp0s t7pp1c t9pp1s t9pp0c ppa* ppb* compress compress3to2 ppa ppb))))
 
 (local-in-theory (disable (t2pp0s) (t1pp0c) (t2pp1s) (t1pp1c) (t2pp2s) (t1pp2c) (t2pp3s) (t1pp3c) (t2pp4s) (t1pp4c) (t2pp5s) (t1pp5c)
                     (t2pp6s) (t1pp6c) (t2pp7s) (t1pp7c) (t2pp8s) (t1pp8c) (t3pp0s) (t2pp0c) (t3pp1s) (t2pp1c) (t3pp2s) (t2pp2c)
@@ -580,321 +580,6 @@
            (integerp (sb)))
   :rule-classes (:type-prescription :rewrite)
   :hints (("Goal" :in-theory (enable sb) :use (bvecp-manb))))
-
-(local-defthmd comp-2
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (t2pp0s)
-		     (* 2 (t1pp0c))
-		     (* (expt 4 2) (ag 3 (pprod)))
-		     (* (expt 4 3) (ag 4 (pprod)))
-		     (* (expt 4 4) (ag 5 (pprod)))
-		     (* (expt 4 5) (ag 6 (pprod)))
-		     (* (expt 4 6) (ag 7 (pprod)))
-		     (* (expt 4 7) (ag 8 (pprod)))
-		     (* (expt 4 8) (ag 9 (pprod)))
-		     (* (expt 4 9) (ag 10 (pprod)))
-		     (* (expt 4 10) (ag 11 (pprod)))
-		     (* (expt 4 11) (ag 12 (pprod)))
-		     (* (expt 4 12) (ag 13 (pprod)))
-		     (* (expt 4 13) (ag 14 (pprod)))
-		     (* (expt 4 14) (ag 15 (pprod)))
-		     (* (expt 4 15) (ag 16 (pprod)))
-		     (* (expt 4 16) (ag 17 (pprod)))
-		     (* (expt 4 17) (ag 18 (pprod)))
-		     (* (expt 4 18) (ag 19 (pprod)))
-		     (* (expt 4 19) (ag 20 (pprod)))
-		     (* (expt 4 20) (ag 21 (pprod)))
-		     (* (expt 4 21) (ag 22 (pprod)))
-		     (* (expt 4 22) (ag 23 (pprod)))
-		     (* (expt 4 23) (ag 24 (pprod)))
-		     (* (expt 4 24) (ag 25 (pprod)))
-		     (* (expt 4 25) (ag 26 (pprod)))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-1
-                        (:instance bvecp-pprod (i 0))
-                        (:instance bvecp-pprod (i 1))
-                        (:instance bvecp-pprod (i 2))
-                        (:instance add-3 (x (ag 0 (pprod)))
-			                 (y (ag 1 (pprod)))
-					 (z (* 4 (ag 2 (pprod))))))
-		  :in-theory (enable bvecp ash-rewrite t2pp0s t1pp0c))))
-
-(local-defthmd comp-3
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (t2pp0s)
-		     (* 2 (t1pp0c))
-		     (* 16 (t2pp1s))
-		     (* 32 (t1pp1c))
-		     (* (expt 4 5) (ag 6 (pprod)))
-		     (* (expt 4 6) (ag 7 (pprod)))
-		     (* (expt 4 7) (ag 8 (pprod)))
-		     (* (expt 4 8) (ag 9 (pprod)))
-		     (* (expt 4 9) (ag 10 (pprod)))
-		     (* (expt 4 10) (ag 11 (pprod)))
-		     (* (expt 4 11) (ag 12 (pprod)))
-		     (* (expt 4 12) (ag 13 (pprod)))
-		     (* (expt 4 13) (ag 14 (pprod)))
-		     (* (expt 4 14) (ag 15 (pprod)))
-		     (* (expt 4 15) (ag 16 (pprod)))
-		     (* (expt 4 16) (ag 17 (pprod)))
-		     (* (expt 4 17) (ag 18 (pprod)))
-		     (* (expt 4 18) (ag 19 (pprod)))
-		     (* (expt 4 19) (ag 20 (pprod)))
-		     (* (expt 4 20) (ag 21 (pprod)))
-		     (* (expt 4 21) (ag 22 (pprod)))
-		     (* (expt 4 22) (ag 23 (pprod)))
-		     (* (expt 4 23) (ag 24 (pprod)))
-		     (* (expt 4 24) (ag 25 (pprod)))
-		     (* (expt 4 25) (ag 26 (pprod)))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-2
-                        (:instance bvecp-pprod (i 3))
-                        (:instance bvecp-pprod (i 4))
-                        (:instance bvecp-pprod (i 5))
-                        (:instance add-3 (x (ag 3 (pprod)))
-			                 (y (* 4 (ag 4 (pprod))))
-					 (z (* 16 (ag 5 (pprod))))))
-		  :in-theory (enable bvecp ash-rewrite t2pp1s t1pp1c))))
-
-(local-defthmd comp-4
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (t2pp0s)
-		     (* 2 (t1pp0c))
-		     (* 16 (t2pp1s))
-		     (* 32 (t1pp1c))
-		     (* (expt 2 10) (t2pp2s))
-		     (* (expt 2 11) (t1pp2c))
-		     (* (expt 4 8) (ag 9 (pprod)))
-		     (* (expt 4 9) (ag 10 (pprod)))
-		     (* (expt 4 10) (ag 11 (pprod)))
-		     (* (expt 4 11) (ag 12 (pprod)))
-		     (* (expt 4 12) (ag 13 (pprod)))
-		     (* (expt 4 13) (ag 14 (pprod)))
-		     (* (expt 4 14) (ag 15 (pprod)))
-		     (* (expt 4 15) (ag 16 (pprod)))
-		     (* (expt 4 16) (ag 17 (pprod)))
-		     (* (expt 4 17) (ag 18 (pprod)))
-		     (* (expt 4 18) (ag 19 (pprod)))
-		     (* (expt 4 19) (ag 20 (pprod)))
-		     (* (expt 4 20) (ag 21 (pprod)))
-		     (* (expt 4 21) (ag 22 (pprod)))
-		     (* (expt 4 22) (ag 23 (pprod)))
-		     (* (expt 4 23) (ag 24 (pprod)))
-		     (* (expt 4 24) (ag 25 (pprod)))
-		     (* (expt 4 25) (ag 26 (pprod)))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-3
-                        (:instance bvecp-pprod (i 6))
-                        (:instance bvecp-pprod (i 7))
-                        (:instance bvecp-pprod (i 8))
-                        (:instance add-3 (x (ag 6 (pprod)))
-			                 (y (* 4 (ag 7 (pprod))))
-					 (z (* 16 (ag 8 (pprod))))))
-		  :in-theory (enable bvecp ash-rewrite t2pp2s t1pp2c))))
-
-(local-defthmd comp-5
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (t2pp0s)
-		     (* 2 (t1pp0c))
-		     (* (expt 2 4) (t2pp1s))
-		     (* (expt 2 5) (t1pp1c))
-		     (* (expt 2 10) (t2pp2s))
-		     (* (expt 2 11) (t1pp2c))
-		     (* (expt 2 16) (t2pp3s))
-		     (* (expt 2 17) (t1pp3c))
-		     (* (expt 4 11) (ag 12 (pprod)))
-		     (* (expt 4 12) (ag 13 (pprod)))
-		     (* (expt 4 13) (ag 14 (pprod)))
-		     (* (expt 4 14) (ag 15 (pprod)))
-		     (* (expt 4 15) (ag 16 (pprod)))
-		     (* (expt 4 16) (ag 17 (pprod)))
-		     (* (expt 4 17) (ag 18 (pprod)))
-		     (* (expt 4 18) (ag 19 (pprod)))
-		     (* (expt 4 19) (ag 20 (pprod)))
-		     (* (expt 4 20) (ag 21 (pprod)))
-		     (* (expt 4 21) (ag 22 (pprod)))
-		     (* (expt 4 22) (ag 23 (pprod)))
-		     (* (expt 4 23) (ag 24 (pprod)))
-		     (* (expt 4 24) (ag 25 (pprod)))
-		     (* (expt 4 25) (ag 26 (pprod)))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-4
-                        (:instance bvecp-pprod (i 9))
-                        (:instance bvecp-pprod (i 10))
-                        (:instance bvecp-pprod (i 11))
-                        (:instance add-3 (x (ag 9 (pprod)))
-			                 (y (* 4 (ag 10 (pprod))))
-					 (z (* 16 (ag 11 (pprod))))))
-		  :in-theory (enable bvecp ash-rewrite t2pp3s t1pp3c))))
-
-(local-defthmd comp-6
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (t2pp0s)
-		     (* 2 (t1pp0c))
-		     (* (expt 2 4) (t2pp1s))
-		     (* (expt 2 5) (t1pp1c))
-		     (* (expt 2 10) (t2pp2s))
-		     (* (expt 2 11) (t1pp2c))
-		     (* (expt 2 16) (t2pp3s))
-		     (* (expt 2 17) (t1pp3c))
-		     (* (expt 2 22) (t2pp4s))
-		     (* (expt 2 23) (t1pp4c))
-		     (* (expt 4 14) (ag 15 (pprod)))
-		     (* (expt 4 15) (ag 16 (pprod)))
-		     (* (expt 4 16) (ag 17 (pprod)))
-		     (* (expt 4 17) (ag 18 (pprod)))
-		     (* (expt 4 18) (ag 19 (pprod)))
-		     (* (expt 4 19) (ag 20 (pprod)))
-		     (* (expt 4 20) (ag 21 (pprod)))
-		     (* (expt 4 21) (ag 22 (pprod)))
-		     (* (expt 4 22) (ag 23 (pprod)))
-		     (* (expt 4 23) (ag 24 (pprod)))
-		     (* (expt 4 24) (ag 25 (pprod)))
-		     (* (expt 4 25) (ag 26 (pprod)))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-5
-                        (:instance bvecp-pprod (i 12))
-                        (:instance bvecp-pprod (i 13))
-                        (:instance bvecp-pprod (i 14))
-                        (:instance add-3 (x (ag 12 (pprod)))
-			                 (y (* 4 (ag 13 (pprod))))
-					 (z (* 16 (ag 14 (pprod))))))
-		  :in-theory (enable bvecp ash-rewrite t2pp4s t1pp4c))))
-
-(local-defthmd comp-7
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (t2pp0s)
-		     (* 2 (t1pp0c))
-		     (* (expt 2 4) (t2pp1s))
-		     (* (expt 2 5) (t1pp1c))
-		     (* (expt 2 10) (t2pp2s))
-		     (* (expt 2 11) (t1pp2c))
-		     (* (expt 2 16) (t2pp3s))
-		     (* (expt 2 17) (t1pp3c))
-		     (* (expt 2 22) (t2pp4s))
-		     (* (expt 2 23) (t1pp4c))
-		     (* (expt 2 28) (t2pp5s))
-		     (* (expt 2 29) (t1pp5c))
-		     (* (expt 4 17) (ag 18 (pprod)))
-		     (* (expt 4 18) (ag 19 (pprod)))
-		     (* (expt 4 19) (ag 20 (pprod)))
-		     (* (expt 4 20) (ag 21 (pprod)))
-		     (* (expt 4 21) (ag 22 (pprod)))
-		     (* (expt 4 22) (ag 23 (pprod)))
-		     (* (expt 4 23) (ag 24 (pprod)))
-		     (* (expt 4 24) (ag 25 (pprod)))
-		     (* (expt 4 25) (ag 26 (pprod)))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-6
-                        (:instance bvecp-pprod (i 15))
-                        (:instance bvecp-pprod (i 16))
-                        (:instance bvecp-pprod (i 17))
-                        (:instance add-3 (x (ag 15 (pprod)))
-			                 (y (* 4 (ag 16 (pprod))))
-					 (z (* 16 (ag 17 (pprod))))))
-		  :in-theory (enable bvecp ash-rewrite t2pp5s t1pp5c))))
-
-(local-defthmd comp-8
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (t2pp0s)
-		     (* 2 (t1pp0c))
-		     (* (expt 2 4) (t2pp1s))
-		     (* (expt 2 5) (t1pp1c))
-		     (* (expt 2 10) (t2pp2s))
-		     (* (expt 2 11) (t1pp2c))
-		     (* (expt 2 16) (t2pp3s))
-		     (* (expt 2 17) (t1pp3c))
-		     (* (expt 2 22) (t2pp4s))
-		     (* (expt 2 23) (t1pp4c))
-		     (* (expt 2 28) (t2pp5s))
-		     (* (expt 2 29) (t1pp5c))
-		     (* (expt 2 34) (t2pp6s))
-		     (* (expt 2 35) (t1pp6c))
-		     (* (expt 4 20) (ag 21 (pprod)))
-		     (* (expt 4 21) (ag 22 (pprod)))
-		     (* (expt 4 22) (ag 23 (pprod)))
-		     (* (expt 4 23) (ag 24 (pprod)))
-		     (* (expt 4 24) (ag 25 (pprod)))
-		     (* (expt 4 25) (ag 26 (pprod)))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-7
-                        (:instance bvecp-pprod (i 18))
-                        (:instance bvecp-pprod (i 19))
-                        (:instance bvecp-pprod (i 20))
-                        (:instance add-3 (x (ag 18 (pprod)))
-			                 (y (* 4 (ag 19 (pprod))))
-					 (z (* 16 (ag 20 (pprod))))))
-		  :in-theory (enable bvecp ash-rewrite t2pp6s t1pp6c))))
-
-(local-defthmd comp-9
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (t2pp0s)
-		     (* 2 (t1pp0c))
-		     (* (expt 2 4) (t2pp1s))
-		     (* (expt 2 5) (t1pp1c))
-		     (* (expt 2 10) (t2pp2s))
-		     (* (expt 2 11) (t1pp2c))
-		     (* (expt 2 16) (t2pp3s))
-		     (* (expt 2 17) (t1pp3c))
-		     (* (expt 2 22) (t2pp4s))
-		     (* (expt 2 23) (t1pp4c))
-		     (* (expt 2 28) (t2pp5s))
-		     (* (expt 2 29) (t1pp5c))
-		     (* (expt 2 34) (t2pp6s))
-		     (* (expt 2 35) (t1pp6c))
-		     (* (expt 2 40) (t2pp7s))
-		     (* (expt 2 41) (t1pp7c))
-		     (* (expt 4 23) (ag 24 (pprod)))
-		     (* (expt 4 24) (ag 25 (pprod)))
-		     (* (expt 4 25) (ag 26 (pprod)))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-8
-                        (:instance bvecp-pprod (i 21))
-                        (:instance bvecp-pprod (i 22))
-                        (:instance bvecp-pprod (i 23))
-                        (:instance add-3 (x (ag 21 (pprod)))
-			                 (y (* 4 (ag 22 (pprod))))
-					 (z (* 16 (ag 23 (pprod))))))
-		  :in-theory (enable bvecp ash-rewrite t2pp7s t1pp7c))))
-
-(local-defthmd comp-10
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (t2pp0s)
-		     (* 2 (t1pp0c))
-		     (* (expt 2 4) (t2pp1s))
-		     (* (expt 2 5) (t1pp1c))
-		     (* (expt 2 10) (t2pp2s))
-		     (* (expt 2 11) (t1pp2c))
-		     (* (expt 2 16) (t2pp3s))
-		     (* (expt 2 17) (t1pp3c))
-		     (* (expt 2 22) (t2pp4s))
-		     (* (expt 2 23) (t1pp4c))
-		     (* (expt 2 28) (t2pp5s))
-		     (* (expt 2 29) (t1pp5c))
-		     (* (expt 2 34) (t2pp6s))
-		     (* (expt 2 35) (t1pp6c))
-		     (* (expt 2 40) (t2pp7s))
-		     (* (expt 2 41) (t1pp7c))
-		     (* (expt 2 46) (t2pp8s))
-		     (* (expt 2 47) (t1pp8c))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-9
-                        (:instance bvecp-pprod (i 24))
-                        (:instance bvecp-pprod (i 25))
-                        (:instance bvecp-pprod (i 26))
-                        (:instance add-3 (x (ag 24 (pprod)))
-			                 (y (* 4 (ag 25 (pprod))))
-					 (z (* 16 (ag 26 (pprod))))))
-		  :in-theory (enable bvecp ash-rewrite t2pp8s t1pp8c))))
 
 (local-defthmd bvecp-t2pp0s
   (bvecp (t2pp0s) 59)
@@ -1013,92 +698,14 @@
   :hints (("Goal" :use (bvecp-pprod-26
                         (:instance bvecp-pprod (i 24))
                         (:instance bvecp-pprod (i 25)))
-		  :in-theory (enable ash-rewrite t2pp8s bvecp))))
+		  :in-theory (enable t2pp8s bvecp))))
 
 (local-defthmd bvecp-t1pp8c
   (bvecp (t1pp8c) 60)
   :hints (("Goal" :use (bvecp-pprod-26
                         (:instance bvecp-pprod (i 24))
                         (:instance bvecp-pprod (i 25)))
-		  :in-theory (enable t1pp8c ash-rewrite bvecp))))
-
-(local-defthmd comp-11
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (* (expt 2 1) (t3pp0s))
-		     (* (expt 2 2) (t2pp0c))
-                     (t2pp0s)
-		     (* (expt 2 4) (t2pp1s))
-		     (* (expt 2 10) (t2pp2s))
-		     (* (expt 2 16) (t2pp3s))
-		     (* (expt 2 17) (t1pp3c))
-		     (* (expt 2 22) (t2pp4s))
-		     (* (expt 2 23) (t1pp4c))
-		     (* (expt 2 28) (t2pp5s))
-		     (* (expt 2 29) (t1pp5c))
-		     (* (expt 2 34) (t2pp6s))
-		     (* (expt 2 35) (t1pp6c))
-		     (* (expt 2 40) (t2pp7s))
-		     (* (expt 2 41) (t1pp7c))
-		     (* (expt 2 46) (t2pp8s))
-		     (* (expt 2 47) (t1pp8c))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-10 bvecp-t1pp0c bvecp-t1pp1c bvecp-t1pp2c
-                        (:instance add-3 (x (t1pp0c))
-			                 (y (* (expt 2 4) (t1pp1c)))
-					 (z (* (expt 2 10) (t1pp2c)))))
-		  :in-theory (enable bvecp ash-rewrite t3pp0s t2pp0c))))
-
-(local-defthmd comp-12
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (* (expt 2 1) (t3pp0s))
-		     (* (expt 2 2) (t2pp0c))
-		     (* (expt 2 17) (t3pp1s))
-		     (* (expt 2 18) (t2pp1c))
-                     (t2pp0s)
-		     (* (expt 2 4) (t2pp1s))
-		     (* (expt 2 10) (t2pp2s))
-		     (* (expt 2 16) (t2pp3s))
-		     (* (expt 2 22) (t2pp4s))
-		     (* (expt 2 28) (t2pp5s))
-		     (* (expt 2 34) (t2pp6s))
-		     (* (expt 2 35) (t1pp6c))
-		     (* (expt 2 40) (t2pp7s))
-		     (* (expt 2 41) (t1pp7c))
-		     (* (expt 2 46) (t2pp8s))
-		     (* (expt 2 47) (t1pp8c))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-11 bvecp-t1pp4c bvecp-t1pp5c bvecp-t1pp3c
-                        (:instance add-3 (x (t1pp3c))
-			                 (y (* (expt 2 6) (t1pp4c)))
-					 (z (* (expt 2 12) (t1pp5c)))))
-		  :in-theory (enable bvecp ash-rewrite t3pp1s t2pp1c))))
-
-(local-defthmd comp-13
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (* (expt 2 1) (t3pp0s))
-		     (* (expt 2 2) (t2pp0c))
-		     (* (expt 2 17) (t3pp1s))
-		     (* (expt 2 18) (t2pp1c))
-		     (* (expt 2 35) (t3pp2s))
-		     (* (expt 2 36) (t2pp2c))
-                     (t2pp0s)
-		     (* (expt 2 4) (t2pp1s))
-		     (* (expt 2 10) (t2pp2s))
-		     (* (expt 2 16) (t2pp3s))
-		     (* (expt 2 22) (t2pp4s))
-		     (* (expt 2 28) (t2pp5s))
-		     (* (expt 2 34) (t2pp6s))
-		     (* (expt 2 40) (t2pp7s))
-		     (* (expt 2 46) (t2pp8s))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-12 bvecp-t1pp6c bvecp-t1pp7c bvecp-t1pp8c
-                        (:instance add-3 (x (t1pp6c))
-			                 (y (* (expt 2 6) (t1pp7c)))
-					 (z (* (expt 2 12) (t1pp8c)))))
-		  :in-theory (enable bvecp ash-rewrite t3pp2s t2pp2c))))
+		  :in-theory (enable t1pp8c bvecp))))
 
 (local-defthmd bvecp-t3pp0s
   (bvecp (t3pp0s) 71)
@@ -1128,196 +735,67 @@
 (local-defthmd bvecp-t2pp2c
   (bvecp (t2pp2c) 72)
   :hints (("Goal" :use (bvecp-t1pp6c bvecp-t1pp7c bvecp-t1pp8c)
-		  :in-theory (enable t2pp2c ash-rewrite bvecp))))
-
-(local-defthmd comp-14
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (* (expt 2 1) (t3pp0s))
-		     (* (expt 2 2) (t2pp0c))
-		     (* (expt 2 17) (t3pp1s))
-		     (* (expt 2 18) (t2pp1c))
-		     (* (expt 2 35) (t3pp2s))
-		     (* (expt 2 36) (t2pp2c))
-		     (t4pp0s)
-		     (* 2 (t3pp0c))
-		     (* (expt 2 16) (t2pp3s))
-		     (* (expt 2 22) (t2pp4s))
-		     (* (expt 2 28) (t2pp5s))
-		     (* (expt 2 34) (t2pp6s))
-		     (* (expt 2 40) (t2pp7s))
-		     (* (expt 2 46) (t2pp8s))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-13 bvecp-t2pp0s bvecp-t2pp1s bvecp-t2pp2s
-                        (:instance add-3 (x (t2pp0s))
-			                 (y (* (expt 2 4) (t2pp1s)))
-					 (z (* (expt 2 10) (t2pp2s)))))
-		  :in-theory (enable bvecp ash-rewrite t4pp0s t3pp0c))))
-
-(local-defthmd comp-15
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (* (expt 2 1) (t3pp0s))
-		     (* (expt 2 2) (t2pp0c))
-		     (* (expt 2 17) (t3pp1s))
-		     (* (expt 2 18) (t2pp1c))
-		     (* (expt 2 35) (t3pp2s))
-		     (* (expt 2 36) (t2pp2c))
-		     (t4pp0s)
-		     (* 2 (t3pp0c))
-		     (* (expt 2 16) (t4pp1s))
-		     (* (expt 2 17) (t3pp1c))
-		     (* (expt 2 34) (t2pp6s))
-		     (* (expt 2 40) (t2pp7s))
-		     (* (expt 2 46) (t2pp8s))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-14 bvecp-t2pp3s bvecp-t2pp4s bvecp-t2pp5s
-                        (:instance add-3 (x (t2pp3s))
-			                 (y (* (expt 2 6) (t2pp4s)))
-					 (z (* (expt 2 12) (t2pp5s)))))
-		  :in-theory (enable bvecp ash-rewrite t4pp1s t3pp1c))))
-
-(local-defthmd comp-16
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (* (expt 2 1) (t3pp0s))
-		     (* (expt 2 2) (t2pp0c))
-		     (* (expt 2 17) (t3pp1s))
-		     (* (expt 2 18) (t2pp1c))
-		     (* (expt 2 35) (t3pp2s))
-		     (* (expt 2 36) (t2pp2c))
-		     (t4pp0s)
-		     (* 2 (t3pp0c))
-		     (* (expt 2 16) (t4pp1s))
-		     (* (expt 2 17) (t3pp1c))
-		     (* (expt 2 34) (t4pp2s))
-		     (* (expt 2 35) (t3pp2c))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-15 bvecp-t2pp6s bvecp-t2pp7s bvecp-t2pp8s
-                        (:instance add-3 (x (t2pp6s))
-			                 (y (* (expt 2 6) (t2pp7s)))
-					 (z (* (expt 2 12) (t2pp8s)))))
-		  :in-theory (enable bvecp ash-rewrite t4pp2s t3pp2c))))
-
-(local-defthmd comp-17
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (* (expt 2 1) (t3pp0s))
-		     (* (expt 2 17) (t3pp1s))
-		     (* (expt 2 35) (t3pp2s))
-		     (t4pp0s)
-		     (* 2 (t3pp0c))
-		     (* (expt 2 16) (t4pp1s))
-		     (* (expt 2 17) (t3pp1c))
-		     (* (expt 2 34) (t4pp2s))
-		     (* (expt 2 35) (t3pp2c))
-		     (* (expt 2 2) (t4pp3s))
-		     (* (expt 2 3) (t3pp3c))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-16 bvecp-t2pp0c bvecp-t2pp1c bvecp-t2pp2c
-                        (:instance add-3 (x (t2pp0c))
-			                 (y (* (expt 2 16) (t2pp1c)))
-					 (z (* (expt 2 34) (t2pp2c)))))
-		  :in-theory (enable bvecp ash-rewrite t4pp3s t3pp3c))))
+		  :in-theory (enable t2pp2c bvecp))))
 
 (local-defthmd bvecp-t4pp0s
   (bvecp (t4pp0s) 73)
   :hints (("Goal" :use (bvecp-t2pp0s bvecp-t2pp1s bvecp-t2pp2s)
-		  :in-theory (enable t4pp0s ash-rewrite bvecp))))
+		  :in-theory (enable t4pp0s bvecp))))
 
 (local-defthmd bvecp-t3pp0c
   (bvecp (t3pp0c) 73)
   :hints (("Goal" :use (bvecp-t2pp0s bvecp-t2pp1s bvecp-t2pp2s)
-                  :in-theory (enable t3pp0c ash-rewrite bvecp))))
+                  :in-theory (enable t3pp0c bvecp))))
 
 (local-defthmd bvecp-t4pp1s
   (bvecp (t4pp1s) 73)
   :hints (("Goal" :use (bvecp-t2pp3s bvecp-t2pp4s bvecp-t2pp5s)
-		  :in-theory (enable t4pp1s ash-rewrite bvecp))))
+		  :in-theory (enable t4pp1s bvecp))))
 
 (local-defthmd bvecp-t3pp1c
   (bvecp (t3pp1c) 73)
   :hints (("Goal" :use (bvecp-t2pp3s bvecp-t2pp4s bvecp-t2pp5s)
-                  :in-theory (enable t3pp1c ash-rewrite bvecp))))
+                  :in-theory (enable t3pp1c bvecp))))
 
 (local-defthmd bvecp-t4pp2s
   (bvecp (t4pp2s) 73)
   :hints (("Goal" :use (bvecp-t2pp6s bvecp-t2pp7s bvecp-t2pp8s)
-		  :in-theory (enable t4pp2s ash-rewrite bvecp))))
+		  :in-theory (enable t4pp2s bvecp))))
 
 (local-defthmd bvecp-t3pp2c
   (bvecp (t3pp2c) 73)
   :hints (("Goal" :use (bvecp-t2pp6s bvecp-t2pp7s bvecp-t2pp8s)
-		  :in-theory (enable t3pp2c ash-rewrite bvecp))))
+		  :in-theory (enable t3pp2c bvecp))))
 
 (local-defthmd bvecp-t4pp3s
   (bvecp (t4pp3s) 107)
   :hints (("Goal" :use (bvecp-t2pp0c bvecp-t2pp1c bvecp-t2pp2c)
-		  :in-theory (enable t4pp3s ash-rewrite bvecp))))
+		  :in-theory (enable t4pp3s bvecp))))
 
 (local-defthmd bvecp-t3pp3c
   (bvecp (t3pp3c) 107)
   :hints (("Goal" :use (bvecp-t2pp0c bvecp-t2pp1c bvecp-t2pp2c)
-		  :in-theory (enable t3pp3c ash-rewrite bvecp))))
-
-(local-defthmd comp-18
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (* (expt 2 1) (t5pp0s))
-		     (* (expt 2 2) (t4pp0c))
-		     (t4pp0s)
-		     (* 2 (t3pp0c))
-		     (* (expt 2 16) (t4pp1s))
-		     (* (expt 2 17) (t3pp1c))
-		     (* (expt 2 34) (t4pp2s))
-		     (* (expt 2 35) (t3pp2c))
-		     (* (expt 2 2) (t4pp3s))
-		     (* (expt 2 3) (t3pp3c))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-17 bvecp-t3pp0s bvecp-t3pp1s bvecp-t3pp2s
-                        (:instance add-3 (x (t3pp0s))
-			                 (y (* (expt 2 16) (t3pp1s)))
-					 (z (* (expt 2 34) (t3pp2s)))))
-                  :in-theory (enable bvecp ash-rewrite t5pp0s t4pp0c))))
+		  :in-theory (enable t3pp3c bvecp))))
 
 (local-defthmd bvecp-t5pp0s
   (bvecp (t5pp0s) 107)
   :hints (("Goal" :use (bvecp-t3pp0s bvecp-t3pp1s bvecp-t3pp2s)
-                  :in-theory (enable t5pp0s ash-rewrite bvecp))))
+                  :in-theory (enable t5pp0s bvecp))))
 
 (local-defthmd bvecp-t4pp0c
   (bvecp (t4pp0c) 107)
   :hints (("Goal" :use (bvecp-t3pp0s bvecp-t3pp1s bvecp-t3pp2s)
-		  :in-theory (enable t4pp0c ash-rewrite bvecp))))
-
-(local-defthmd comp-19
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (* (expt 2 1) (t5pp0s))
-		     (* (expt 2 2) (t4pp0c))
-		     (* (expt 2 1) (t5pp1s))
-		     (* (expt 2 2) (t4pp1c))
-		     (t4pp0s)
-		     (* (expt 2 16) (t4pp1s))
-		     (* (expt 2 34) (t4pp2s))
-		     (* (expt 2 2) (t4pp3s))
-		     (* (expt 2 3) (t3pp3c))
-		     (* (expt 2 52) (+ (ia) (ib))))))	          
-  :hints (("Goal" :use (comp-18 bvecp-t3pp0c bvecp-t3pp1c bvecp-t3pp2c
-                        (:instance add-3 (x (t3pp0c))
-			                 (y (* (expt 2 16) (t3pp1c)))
-					 (z (* (expt 2 34) (t3pp2c)))))
-                  :in-theory (enable bvecp ash-rewrite t5pp1s t4pp1c))))
+		  :in-theory (enable t4pp0c bvecp))))
 
 (local-defthmd bvecp-t5pp1s
   (bvecp (t5pp1s) 107)
   :hints (("Goal" :use (bvecp-t3pp0c bvecp-t3pp1c bvecp-t3pp2c)
-                  :in-theory (enable t5pp1s ash-rewrite bvecp))))
+                  :in-theory (enable t5pp1s bvecp))))
 
 (local-defthmd bvecp-t4pp1c
   (bvecp (t4pp1c) 107)
   :hints (("Goal" :use (bvecp-t3pp0c bvecp-t3pp1c bvecp-t3pp2c)
-                  :in-theory (enable t4pp1c ash-rewrite bvecp))))
+                  :in-theory (enable t4pp1c bvecp))))
 
 (local-defthmd bvecp-ia
   (bvecp (ia) 52)
@@ -1327,7 +805,238 @@
   (bvecp (ib) 53)
   :hints (("Goal" :in-theory (enable ib))))
 
-(local-defthmd comp-20
+(local-defthmd bvecp-t4pp4s
+  (bvecp (t4pp4s) 107)
+  :hints (("Goal" :use (bvecp-ia bvecp-ib bvecp-t3pp3c)
+                  :in-theory (enable t4pp4s bvecp))))
+
+(local-defthmd bvecp-t4pp2c
+  (bvecp (t4pp2c) 107)
+  :hints (("Goal" :use (bvecp-ia bvecp-ib bvecp-t3pp3c)
+                  :in-theory (enable t4pp2c bvecp))))
+
+(local-defthmd bvecp-t6pp0s
+  (bvecp (t6pp0s) 109)
+  :hints (("Goal" :use (bvecp-t4pp2c bvecp-t4pp1c bvecp-t4pp0c)
+                  :in-theory (enable t6pp0s bvecp))))
+
+(local-defthmd bvecp-t5pp0c
+  (bvecp (t5pp0c) 109)
+  :hints (("Goal" :use (bvecp-t4pp2c bvecp-t4pp1c bvecp-t4pp0c)
+                  :in-theory (enable t5pp0c bvecp))))
+
+(local-defthmd bvecp-t6pp1s
+  (bvecp (t6pp1s) 110)
+  :hints (("Goal" :use (bvecp-t4pp0s bvecp-t4pp1s bvecp-t4pp4s)
+                  :in-theory (enable t6pp1s bvecp))))
+
+(local-defthmd bvecp-t5pp1c
+  (bvecp (t5pp1c) 110)
+  :hints (("Goal" :use (bvecp-t4pp0s bvecp-t4pp1s bvecp-t4pp4s)
+                  :in-theory (enable t5pp1c bvecp))))
+
+(local-defthmd bvecp-t7pp0s
+  (bvecp (t7pp0s) 111)
+  :hints (("Goal" :use (bvecp-t5pp0s bvecp-t5pp1s bvecp-t5pp0c)
+                  :in-theory (enable t7pp0s bvecp))))
+
+(local-defthmd bvecp-t6pp0c
+  (bvecp (t6pp0c) 111)
+  :hints (("Goal" :use (bvecp-t5pp0s bvecp-t5pp1s bvecp-t5pp0c)
+                  :in-theory (enable t6pp0c bvecp))))
+
+(local-defthmd bvecp-t6pp2s
+  (bvecp (t6pp2s) 110)
+  :hints (("Goal" :use (bvecp-t5pp1c bvecp-t4pp2s bvecp-t4pp3s)
+                  :in-theory (enable t6pp2s bvecp))))
+
+(local-defthmd bvecp-t6pp1c
+  (bvecp (t6pp1c) 110)
+  :hints (("Goal" :use (bvecp-t5pp1c bvecp-t4pp2s bvecp-t4pp3s)
+                  :in-theory (enable t6pp1c bvecp))))
+
+(local-defthmd bvecp-t8pp0s
+  (bvecp (t8pp0s) 111)
+  :hints (("Goal" :use (bvecp-t6pp0s bvecp-t6pp1s bvecp-t6pp2s)
+                  :in-theory (enable t8pp0s bvecp))))
+
+(local-defthmd bvecp-t7pp0c
+  (bvecp (t7pp0c) 111)
+  :hints (("Goal" :use (bvecp-t6pp0s bvecp-t6pp1s bvecp-t6pp2s)
+                  :in-theory (enable t7pp0c bvecp))))
+
+(local-defthmd bvecp-t9pp0s
+  (bvecp (t9pp0s) 112)
+  :hints (("Goal" :use (bvecp-t6pp0c bvecp-t7pp0c bvecp-t7pp0s)
+                  :in-theory (enable t9pp0s bvecp))))
+
+(local-defthmd bvecp-t7pp1c
+  (bvecp (t7pp1c) 112)
+  :hints (("Goal" :use (bvecp-t6pp0c bvecp-t7pp0c bvecp-t7pp0s)
+                  :in-theory (enable t7pp1c bvecp))))
+
+(local-defthmd bvecp-t9pp1s
+  (bvecp (t9pp1s) 114)
+  :hints (("Goal" :use (bvecp-t6pp1c bvecp-t7pp1c bvecp-t8pp0s)
+                  :in-theory (enable t9pp1s bvecp))))
+
+(local-defthmd bvecp-t9pp0c
+  (bvecp (t9pp0c) 114)
+  :hints (("Goal" :use (bvecp-t6pp1c bvecp-t7pp1c bvecp-t8pp0s)
+                  :in-theory (enable t9pp0c bvecp))))
+
+;; Time 0:
+
+(local-defthmd comp-t0
+  (implies (not (specialp))
+           (equal (+ (expt 2 106) (* (sa) (sb)))
+	          (+ (t2pp0s)
+		     (* 2 (t1pp0c))
+		     (* (expt 2 4) (t2pp1s))
+		     (* (expt 2 5) (t1pp1c))
+		     (* (expt 2 10) (t2pp2s))
+		     (* (expt 2 11) (t1pp2c))
+		     (* (expt 2 16) (t2pp3s))
+		     (* (expt 2 17) (t1pp3c))
+		     (* (expt 2 22) (t2pp4s))
+		     (* (expt 2 23) (t1pp4c))
+		     (* (expt 2 28) (t2pp5s))
+		     (* (expt 2 29) (t1pp5c))
+		     (* (expt 2 34) (t2pp6s))
+		     (* (expt 2 35) (t1pp6c))
+		     (* (expt 2 40) (t2pp7s))
+		     (* (expt 2 41) (t1pp7c))
+		     (* (expt 2 46) (t2pp8s))
+		     (* (expt 2 47) (t1pp8c))
+		     (* (expt 2 52) (+ (ia) (ib))))))	          
+  :hints (("Goal" :use (comp-1
+                        (:instance bvecp-pprod (i 0))
+                        (:instance bvecp-pprod (i 1))
+                        (:instance bvecp-pprod (i 2))
+                        (:instance bvecp-pprod (i 3))
+                        (:instance bvecp-pprod (i 4))
+                        (:instance bvecp-pprod (i 5))
+                        (:instance bvecp-pprod (i 6))
+                        (:instance bvecp-pprod (i 7))
+                        (:instance bvecp-pprod (i 8))
+                        (:instance bvecp-pprod (i 9))
+                        (:instance bvecp-pprod (i 10))
+                        (:instance bvecp-pprod (i 11))
+                        (:instance bvecp-pprod (i 12))
+                        (:instance bvecp-pprod (i 13))
+                        (:instance bvecp-pprod (i 14))
+                        (:instance bvecp-pprod (i 15))
+                        (:instance bvecp-pprod (i 16))
+                        (:instance bvecp-pprod (i 17))
+                        (:instance bvecp-pprod (i 18))
+                        (:instance bvecp-pprod (i 19))
+                        (:instance bvecp-pprod (i 20))
+                        (:instance bvecp-pprod (i 21))
+                        (:instance bvecp-pprod (i 22))
+                        (:instance bvecp-pprod (i 23))
+                        (:instance bvecp-pprod (i 24))
+                        (:instance bvecp-pprod (i 25))
+                        (:instance bvecp-pprod (i 26))
+                        (:instance add-3 (x (ag 0 (pprod)))
+			                 (y (ag 1 (pprod)))
+					 (z (* 4 (ag 2 (pprod)))))
+                        (:instance add-3 (x (ag 3 (pprod)))
+			                 (y (* 4 (ag 4 (pprod))))
+					 (z (* 16 (ag 5 (pprod)))))
+                        (:instance add-3 (x (ag 6 (pprod)))
+			                 (y (* 4 (ag 7 (pprod))))
+					 (z (* 16 (ag 8 (pprod)))))
+                        (:instance add-3 (x (ag 9 (pprod)))
+			                 (y (* 4 (ag 10 (pprod))))
+					 (z (* 16 (ag 11 (pprod)))))
+                        (:instance add-3 (x (ag 12 (pprod)))
+			                 (y (* 4 (ag 13 (pprod))))
+					 (z (* 16 (ag 14 (pprod)))))
+                        (:instance add-3 (x (ag 15 (pprod)))
+			                 (y (* 4 (ag 16 (pprod))))
+					 (z (* 16 (ag 17 (pprod)))))
+                        (:instance add-3 (x (ag 18 (pprod)))
+			                 (y (* 4 (ag 19 (pprod))))
+					 (z (* 16 (ag 20 (pprod)))))
+                        (:instance add-3 (x (ag 21 (pprod)))
+			                 (y (* 4 (ag 22 (pprod))))
+					 (z (* 16 (ag 23 (pprod)))))
+                        (:instance add-3 (x (ag 24 (pprod)))
+			                 (y (* 4 (ag 25 (pprod))))
+					 (z (* 16 (ag 26 (pprod))))))
+		  :in-theory (enable bvecp t2pp0s t1pp0c t2pp1s t1pp1c t2pp2s t1pp2c t2pp3s t1pp3c t2pp4s
+		                     t1pp4c t2pp5s t1pp5c t2pp6s t1pp6c t2pp7s t1pp7c t2pp8s t1pp8c))))
+
+;; Time 1:
+
+(local-defthmd comp-t1
+  (implies (not (specialp))
+           (equal (+ (expt 2 106) (* (sa) (sb)))
+	          (+ (* (expt 2 1) (t3pp0s))
+		     (* (expt 2 2) (t2pp0c))
+		     (* (expt 2 17) (t3pp1s))
+		     (* (expt 2 18) (t2pp1c))
+		     (* (expt 2 35) (t3pp2s))
+		     (* (expt 2 36) (t2pp2c))
+                     (t2pp0s)
+		     (* (expt 2 4) (t2pp1s))
+		     (* (expt 2 10) (t2pp2s))
+		     (* (expt 2 16) (t2pp3s))
+		     (* (expt 2 22) (t2pp4s))
+		     (* (expt 2 28) (t2pp5s))
+		     (* (expt 2 34) (t2pp6s))
+		     (* (expt 2 40) (t2pp7s))
+		     (* (expt 2 46) (t2pp8s))
+		     (* (expt 2 52) (+ (ia) (ib))))))	          
+  :hints (("Goal" :use (comp-t0 bvecp-t1pp0c bvecp-t1pp1c bvecp-t1pp2c bvecp-t1pp4c bvecp-t1pp5c bvecp-t1pp3c bvecp-t1pp6c
+                        bvecp-t1pp7c bvecp-t1pp8c
+                        (:instance add-3 (x (t1pp0c))
+			                 (y (* (expt 2 4) (t1pp1c)))
+					 (z (* (expt 2 10) (t1pp2c))))
+                        (:instance add-3 (x (t1pp3c))
+			                 (y (* (expt 2 6) (t1pp4c)))
+					 (z (* (expt 2 12) (t1pp5c))))
+                        (:instance add-3 (x (t1pp6c))
+			                 (y (* (expt 2 6) (t1pp7c)))
+					 (z (* (expt 2 12) (t1pp8c)))))
+		  :in-theory (enable bvecp ash-rewrite t3pp0s t2pp0c t3pp1s t2pp1c t3pp2s t2pp2c))))
+
+;; Time 2:
+
+(local-defthmd comp-t2
+  (implies (not (specialp))
+           (equal (+ (expt 2 106) (* (sa) (sb)))
+	          (+ (* (expt 2 1) (t3pp0s))
+		     (* (expt 2 17) (t3pp1s))
+		     (* (expt 2 35) (t3pp2s))
+		     (t4pp0s)
+		     (* 2 (t3pp0c))
+		     (* (expt 2 16) (t4pp1s))
+		     (* (expt 2 17) (t3pp1c))
+		     (* (expt 2 34) (t4pp2s))
+		     (* (expt 2 35) (t3pp2c))
+		     (* (expt 2 2) (t4pp3s))
+		     (* (expt 2 3) (t3pp3c))
+		     (* (expt 2 52) (+ (ia) (ib))))))	          
+  :hints (("Goal" :use (comp-t1 bvecp-t2pp0s bvecp-t2pp1s bvecp-t2pp2s bvecp-t2pp3s bvecp-t2pp4s bvecp-t2pp5s bvecp-t2pp6s
+                        bvecp-t2pp7s bvecp-t2pp8s bvecp-t2pp0c bvecp-t2pp1c bvecp-t2pp2c
+                        (:instance add-3 (x (t2pp0s))
+			                 (y (* (expt 2 4) (t2pp1s)))
+					 (z (* (expt 2 10) (t2pp2s))))
+                        (:instance add-3 (x (t2pp3s))
+			                 (y (* (expt 2 6) (t2pp4s)))
+					 (z (* (expt 2 12) (t2pp5s))))
+                        (:instance add-3 (x (t2pp6s))
+			                 (y (* (expt 2 6) (t2pp7s)))
+					 (z (* (expt 2 12) (t2pp8s))))
+                        (:instance add-3 (x (t2pp0c))
+			                 (y (* (expt 2 16) (t2pp1c)))
+					 (z (* (expt 2 34) (t2pp2c)))))
+		  :in-theory (enable bvecp t4pp0s t3pp0c t4pp1s t3pp1c t4pp2s t3pp2c t4pp3s t3pp3c))))
+
+;; Time 3:
+
+(local-defthmd comp-t3
   (implies (not (specialp))
            (equal (+ (expt 2 106) (* (sa) (sb)))
 	          (+ (* (expt 2 1) (t5pp0s))
@@ -1340,51 +1049,22 @@
 		     (* (expt 2 2) (t4pp3s))
 		     (* (expt 2 3) (t4pp4s))
 		     (* (expt 2 4) (t4pp2c)))))
-  :hints (("Goal" :use (comp-19 bvecp-ia bvecp-ib bvecp-t3pp3c
+  :hints (("Goal" :use (comp-t2 bvecp-t3pp0s bvecp-t3pp1s bvecp-t3pp2s bvecp-t3pp0c bvecp-t3pp1c bvecp-t3pp2c bvecp-ia
+                        bvecp-ib bvecp-t3pp3c
+                        (:instance add-3 (x (t3pp0s))
+			                 (y (* (expt 2 16) (t3pp1s)))
+					 (z (* (expt 2 34) (t3pp2s))))
+                        (:instance add-3 (x (t3pp0c))
+			                 (y (* (expt 2 16) (t3pp1c)))
+					 (z (* (expt 2 34) (t3pp2c))))
                         (:instance add-3 (x (* (expt 2 49) (ia)))
 			                 (y (* (expt 2 49) (ib)))
 					 (z (t3pp3c))))
-                  :in-theory (enable bvecp ash-rewrite t4pp4s t4pp2c))))
+                :in-theory (enable bvecp t5pp0s t4pp0c t5pp1s t4pp1c t4pp4s t4pp2c))))
 
-(local-defthmd bvecp-t4pp4s
-  (bvecp (t4pp4s) 107)
-  :hints (("Goal" :use (bvecp-ia bvecp-ib bvecp-t3pp3c)
-                  :in-theory (enable t4pp4s ash-rewrite bvecp))))
+;; Time 4:
 
-(local-defthmd bvecp-t4pp2c
-  (bvecp (t4pp2c) 107)
-  :hints (("Goal" :use (bvecp-ia bvecp-ib bvecp-t3pp3c)
-                  :in-theory (enable t4pp2c ash-rewrite bvecp))))
-
-(local-defthmd comp-21
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (* (expt 2 1) (t5pp0s))
-		     (* (expt 2 2) (t6pp0s))
-		     (* (expt 2 3) (t5pp0c))
-		     (* (expt 2 1) (t5pp1s))
-		     (t4pp0s)
-		     (* (expt 2 16) (t4pp1s))
-		     (* (expt 2 34) (t4pp2s))
-		     (* (expt 2 2) (t4pp3s))
-		     (* (expt 2 3) (t4pp4s)))))
-  :hints (("Goal" :use (comp-20 bvecp-t4pp2c bvecp-t4pp1c bvecp-t4pp0c
-                        (:instance add-3 (x (* (expt 2 2) (t4pp2c)))
-			                 (y (t4pp1c))
-					 (z (t4pp0c))))
-                  :in-theory (enable bvecp ash-rewrite t6pp0s t5pp0c))))
-
-(local-defthmd bvecp-t6pp0s
-  (bvecp (t6pp0s) 109)
-  :hints (("Goal" :use (bvecp-t4pp2c bvecp-t4pp1c bvecp-t4pp0c)
-                  :in-theory (enable t6pp0s ash-rewrite bvecp))))
-
-(local-defthmd bvecp-t5pp0c
-  (bvecp (t5pp0c) 109)
-  :hints (("Goal" :use (bvecp-t4pp2c bvecp-t4pp1c bvecp-t4pp0c)
-                  :in-theory (enable t5pp0c ash-rewrite bvecp))))
-
-(local-defthmd comp-22
+(local-defthmd comp-t4
   (implies (not (specialp))
            (equal (+ (expt 2 106) (* (sa) (sb)))
 	          (+ (* (expt 2 1) (t5pp0s))
@@ -1395,49 +1075,18 @@
 		     (* (expt 2 1) (t5pp1c))
 		     (* (expt 2 34) (t4pp2s))
 		     (* (expt 2 2) (t4pp3s)))))
-  :hints (("Goal" :use (comp-21 bvecp-t4pp0s bvecp-t4pp1s bvecp-t4pp4s
+  :hints (("Goal" :use (comp-t3 bvecp-t4pp2c bvecp-t4pp1c bvecp-t4pp0c bvecp-t4pp0s bvecp-t4pp1s bvecp-t4pp4s
+                        (:instance add-3 (x (* (expt 2 2) (t4pp2c)))
+			                 (y (t4pp1c))
+					 (z (t4pp0c)))
                         (:instance add-3 (x (* (expt 2 3) (t4pp4s)))
 			                 (y (t4pp0s))
 					 (z (* (expt 2 16) (t4pp1s)))))
-                  :in-theory (enable bvecp ash-rewrite t6pp1s t5pp1c))))
+                  :in-theory (enable bvecp t6pp0s t5pp0c t6pp1s t5pp1c))))
 
-(local-defthmd bvecp-t6pp1s
-  (bvecp (t6pp1s) 110)
-  :hints (("Goal" :use (bvecp-t4pp0s bvecp-t4pp1s bvecp-t4pp4s)
-                  :in-theory (enable t6pp1s ash-rewrite bvecp))))
+;; Time 5:
 
-(local-defthmd bvecp-t5pp1c
-  (bvecp (t5pp1c) 110)
-  :hints (("Goal" :use (bvecp-t4pp0s bvecp-t4pp1s bvecp-t4pp4s)
-                  :in-theory (enable t5pp1c ash-rewrite bvecp))))
-
-(local-defthmd comp-23
-  (implies (not (specialp))
-           (equal (+ (expt 2 106) (* (sa) (sb)))
-	          (+ (* (expt 2 1) (t7pp0s))
-		     (* (expt 2 2) (t6pp0c))
-		     (* (expt 2 2) (t6pp0s))
-		     (t6pp1s)
-		     (* (expt 2 1) (t5pp1c))
-		     (* (expt 2 34) (t4pp2s))
-		     (* (expt 2 2) (t4pp3s)))))
-  :hints (("Goal" :use (comp-22 bvecp-t5pp0s bvecp-t5pp1s bvecp-t5pp0c
-                        (:instance add-3 (x (t5pp0s))
-			                 (y (t5pp1s))
-					 (z (* (expt 2 2) (t5pp0c)))))
-                  :in-theory (enable bvecp ash-rewrite t7pp0s t6pp0c))))
-
-(local-defthmd bvecp-t7pp0s
-  (bvecp (t7pp0s) 111)
-  :hints (("Goal" :use (bvecp-t5pp0s bvecp-t5pp1s bvecp-t5pp0c)
-                  :in-theory (enable t7pp0s ash-rewrite bvecp))))
-
-(local-defthmd bvecp-t6pp0c
-  (bvecp (t6pp0c) 111)
-  :hints (("Goal" :use (bvecp-t5pp0s bvecp-t5pp1s bvecp-t5pp0c)
-                  :in-theory (enable t6pp0c ash-rewrite bvecp))))
-
-(local-defthmd comp-24
+(local-defthmd comp-t5
   (implies (not (specialp))
            (equal (+ (expt 2 106) (* (sa) (sb)))
 	          (+ (* (expt 2 1) (t7pp0s))
@@ -1446,23 +1095,18 @@
 		     (t6pp1s)
 		     (* (expt 2 1) (t6pp2s))
 		     (* (expt 2 2) (t6pp1c)))))
-  :hints (("Goal" :use (comp-23 bvecp-t5pp1c bvecp-t4pp2s bvecp-t4pp3s
+  :hints (("Goal" :use (comp-t4 bvecp-t5pp0s bvecp-t5pp1s bvecp-t5pp0c bvecp-t5pp1c bvecp-t4pp2s bvecp-t4pp3s
+                        (:instance add-3 (x (t5pp0s))
+			                 (y (t5pp1s))
+					 (z (* (expt 2 2) (t5pp0c))))
                         (:instance add-3 (x (* (expt 2 33) (t4pp2s)))
 			                 (y (* (expt 2 1) (t4pp3s)))
 					 (z (t5pp1c))))
-                  :in-theory (enable bvecp ash-rewrite t6pp2s t6pp1c))))
+                  :in-theory (enable bvecp t7pp0s t6pp0c t6pp2s t6pp1c))))
 
-(local-defthmd bvecp-t6pp2s
-  (bvecp (t6pp2s) 110)
-  :hints (("Goal" :use (bvecp-t5pp1c bvecp-t4pp2s bvecp-t4pp3s)
-                  :in-theory (enable t6pp2s ash-rewrite bvecp))))
+;; Time 6:
 
-(local-defthmd bvecp-t6pp1c
-  (bvecp (t6pp1c) 110)
-  :hints (("Goal" :use (bvecp-t5pp1c bvecp-t4pp2s bvecp-t4pp3s)
-                  :in-theory (enable t6pp1c ash-rewrite bvecp))))
-
-(local-defthmd comp-25
+(local-defthmd comp-t6
   (implies (not (specialp))
            (equal (+ (expt 2 106) (* (sa) (sb)))
 	          (+ (* (expt 2 1) (t7pp0s))
@@ -1470,68 +1114,44 @@
 		     (t8pp0s)
 		     (* (expt 2 1) (t7pp0c))
 		     (* (expt 2 2) (t6pp1c)))))
-  :hints (("Goal" :use (comp-24 bvecp-t6pp0s bvecp-t6pp1s bvecp-t6pp2s
+  :hints (("Goal" :use (comp-t5 bvecp-t6pp0s bvecp-t6pp1s bvecp-t6pp2s
                         (:instance add-3 (x (* (expt 2 2) (t6pp0s)))
 			                 (y (t6pp1s))
 					 (z (* (expt 2 1) (t6pp2s)))))
-                  :in-theory (enable bvecp ash-rewrite t8pp0s t7pp0c))))
+                  :in-theory (enable bvecp t8pp0s t7pp0c))))
 
-(local-defthmd bvecp-t8pp0s
-  (bvecp (t8pp0s) 111)
-  :hints (("Goal" :use (bvecp-t6pp0s bvecp-t6pp1s bvecp-t6pp2s)
-                  :in-theory (enable t8pp0s ash-rewrite bvecp))))
+;; Time 7:
 
-(local-defthmd bvecp-t7pp0c
-  (bvecp (t7pp0c) 111)
-  :hints (("Goal" :use (bvecp-t6pp0s bvecp-t6pp1s bvecp-t6pp2s)
-                  :in-theory (enable t7pp0c ash-rewrite bvecp))))
-
-(local-defthmd comp-26
+(local-defthmd comp-t7
   (implies (not (specialp))
            (equal (+ (expt 2 106) (* (sa) (sb)))
 		  (+ (t8pp0s)
 		     (* (expt 2 1) (t9pp0s))
 		     (* (expt 2 2) (t7pp1c))
 		     (* (expt 2 2) (t6pp1c)))))
-  :hints (("Goal" :use (comp-25 bvecp-t6pp0c bvecp-t7pp0c bvecp-t7pp0s
+  :hints (("Goal" :use (comp-t6 bvecp-t6pp0c bvecp-t7pp0c bvecp-t7pp0s
                         (:instance add-3 (x (t7pp0s))
 			                 (y (t7pp0c))
 					 (z (* (expt 2 1) (t6pp0c)))))
-                  :in-theory (enable bvecp ash-rewrite t9pp0s t7pp1c))))
+                  :in-theory (enable bvecp t9pp0s t7pp1c))))
 
-(local-defthmd bvecp-t9pp0s
-  (bvecp (t9pp0s) 112)
-  :hints (("Goal" :use (bvecp-t6pp0c bvecp-t7pp0c bvecp-t7pp0s)
-                  :in-theory (enable t9pp0s ash-rewrite bvecp))))
+;; Time 8:
 
-(local-defthmd bvecp-t7pp1c
-  (bvecp (t7pp1c) 112)
-  :hints (("Goal" :use (bvecp-t6pp0c bvecp-t7pp0c bvecp-t7pp0s)
-                  :in-theory (enable t7pp1c ash-rewrite bvecp))))
-
-(local-defthmd comp-27
+(local-defthmd comp-t8
   (implies (not (specialp))
            (equal (+ (expt 2 106) (* (sa) (sb)))
 		  (+ (t9pp1s)
 		     (* (expt 2 1) (t9pp0c))
 		     (* (expt 2 1) (t9pp0s)))))
-  :hints (("Goal" :use (comp-26 bvecp-t6pp1c bvecp-t7pp1c bvecp-t8pp0s
+  :hints (("Goal" :use (comp-t7 bvecp-t6pp1c bvecp-t7pp1c bvecp-t8pp0s
                         (:instance add-3 (x (* (expt 2 2) (t7pp1c)))
 			                 (y (* (expt 2 2) (t6pp1c)))
 					 (z (t8pp0s))))
-                  :in-theory (enable bvecp ash-rewrite t9pp1s t9pp0c))))
+                  :in-theory (enable bvecp t9pp1s t9pp0c))))
 
-(local-defthmd bvecp-t9pp1s
-  (bvecp (t9pp1s) 114)
-  :hints (("Goal" :use (bvecp-t6pp1c bvecp-t7pp1c bvecp-t8pp0s)
-                  :in-theory (enable t9pp1s ash-rewrite bvecp))))
+;; Time 9:
 
-(local-defthmd bvecp-t9pp0c
-  (bvecp (t9pp0c) 114)
-  :hints (("Goal" :use (bvecp-t6pp1c bvecp-t7pp1c bvecp-t8pp0s)
-                  :in-theory (enable t9pp0c ash-rewrite bvecp))))
-
-(local-defthmd comp-28
+(local-defthmd comp-t9
   (implies (not (specialp))
            (equal (+ (expt 2 106) (* (sa) (sb)))
 		  (+ (logxor (logxor (bits (ash (t9pp0s) 1) 114 0) (t9pp1s))
@@ -1540,11 +1160,12 @@
                                           (logand (bits (ash (t9pp0s) 1) 114 0) (bits (ash (t9pp0c) 1) 114 0)))
                                   (logand (t9pp1s) (bits (ash (t9pp0c) 1) 114 0)))
                           1))))
-  :hints (("Goal" :use (comp-27 bvecp-t9pp0c bvecp-t9pp1s bvecp-t9pp0s
+  :hints (("Goal" :use (comp-t8 bvecp-t9pp0c bvecp-t9pp1s bvecp-t9pp0s
                         (:instance add-3 (x (* (expt 2 1) (t9pp0s)))
 			                 (y (t9pp1s))
 					 (z (* (expt 2 1) (t9pp0c)))))
-                  :in-theory (enable bvecp ash-rewrite))))
+                  :in-theory (enable bvecp))))
+
 
 (local-defthmd comp-29
   (implies (not (specialp))
@@ -1556,9 +1177,9 @@
                                        (logand (t9pp1s) (bits (ash (t9pp0c) 1) 114 0)))
                                1))
 		       (expt 2 106))))
-  :hints (("Goal" :use (comp-28 bvecp-t9pp0c bvecp-t9pp1s bvecp-t9pp0s bvecp-mana bvecp-manb)
+  :hints (("Goal" :use (comp-t9 bvecp-t9pp0c bvecp-t9pp1s bvecp-t9pp0s bvecp-mana bvecp-manb)
                   :nonlinearp t
-                  :in-theory (enable bvecp ash-rewrite sa sb))))
+                  :in-theory (enable bvecp sa sb))))
 
 (local-defthmd comp-30
   (implies (not (specialp))

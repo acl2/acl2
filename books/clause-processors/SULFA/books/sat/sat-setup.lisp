@@ -1039,7 +1039,7 @@
   (declare (xargs :stobjs $sat))
   (if (> verbosity (verbosity $sat))
       nil
-    (fmt-to-comment-window (car msg) (cdr msg) 0 nil)))
+    (fmt-to-comment-window (car msg) (cdr msg) 0 nil nil)))
 
 
 

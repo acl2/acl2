@@ -34,6 +34,7 @@
 (in-package "SV")
 (include-book "rsh-concat")
 (include-book "env-ops")
+(include-book "lists")
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "tools/templates" :dir :system)
 (local (include-book "std/alists/hons-assoc-equal" :dir :system))
@@ -196,8 +197,6 @@
                 (svex-var (svex-cycle-var v cycle))))
     :hints(("Goal" :in-theory (enable svex-lookup)))))
 
-(fty::deflist svex-envlist :elt-type svex-env :true-listp t :elementp-of-nil t)
-(fty::deflist svex-alistlist :elt-type svex-alist :true-listp t :elementp-of-nil t)
 
 
 
@@ -1076,24 +1075,4 @@
 
 
 
-(define svex-alistlist-eval ((x svex-alistlist-p)
-                             (env svex-env-p))
-  :returns (envs svex-envlist-p)
-  (if (atom x)
-      nil
-    (cons (svex-alist-eval (car x) env)
-          (svex-alistlist-eval (cdr x) env)))
-  ///
-  (defthm nth-of-svex-alistlist-eval
-    (equal (nth n (svex-alistlist-eval x env))
-           (svex-alist-eval (nth n x) env))
-    :hints (("goal" :induct t
-             :expand ((svex-alist-eval nil env)))))
 
-  (defthm svex-alistlist-eval-of-cons
-    (equal (svex-alistlist-eval (cons a b) env)
-           (cons (svex-alist-eval a env)
-                 (svex-alistlist-eval b env))))
-
-  (defthm svex-alistlist-eval-of-nil
-    (equal (svex-alistlist-eval nil env) nil)))

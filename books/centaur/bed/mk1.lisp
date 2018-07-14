@@ -43,12 +43,11 @@
   :short "Pattern match a variable ITE node."
   ((x "The BED to pattern match against."))
   :returns (mv (okp "Whether or not we matched a variable.")
-               (var "On success, the variable we matched."
-                    atom :rule-classes :type-prescription)
+               (var "On success, the variable we matched.")
                (left "On success, the true branch for this variable.")
                (right "On success, the false branch for this variable."))
   (if (and (consp x)
-           (atom (car x)))
+           (not (integerp (cdr x))))
       (mv t
           (car x)
           (car$ (cdr x))
@@ -64,7 +63,7 @@
                         (bed-eval right env)))))))
 
 
-(define mk-var-raw ((var atom "Variable that controls the decision.")
+(define mk-var-raw ((var  "Variable that controls the decision.")
                     (left     "True branch (a bed).")
                     (right    "False branch (a bed)."))
   :returns bed
@@ -73,11 +72,10 @@
   (hons var (hons left right))
   ///
   (defthm bed-eval-of-mk-var-raw
-    (implies (force (atom var))
-             (equal (bed-eval (mk-var-raw var left right) env)
-                    (if (bed-env-lookup var env)
-                        (bed-eval left env)
-                      (bed-eval right env))))
+    (equal (bed-eval (mk-var-raw var left right) env)
+           (if (bed-env-lookup var env)
+               (bed-eval left env)
+             (bed-eval right env)))
     :hints(("Goal" :in-theory (enable bed-eval)))))
 
 (define mk-op-raw ((op bed-op-p "Operator being applied to these operands.")
@@ -86,7 +84,8 @@
   :returns bed
   :short "Raw construct for an binary operator node."
   :inline t
-  (hons (hons left right) op)
+  (hons (hons left right)
+        (mbe :logic (bed-op-fix op) :exec op))
   ///
   (local (in-theory (enable bed-eval)))
   (defthm bed-eval-of-mk-op-raw
@@ -124,7 +123,7 @@ writing @('not(x)').  This particular choice always keeps the arguments in
   (b* (((when (atom x))
         (not x))
        ((cons a b) x)
-       ((when (atom a))
+       ((unless (integerp b))
         ;; Push the NOT through a variable, into its branches
         (mk-var-raw a
                     (mk-not (car$ b))
@@ -536,7 +535,7 @@ whole point of BEDs is to embrace having a lot of operators.</p>"
                           (bed-eval right env))))))
 
 (define mk-var1
-  ((var   atom)
+  ((var   )
    (left  "True branch for this variable ITE node")
    (right "False branch for this variable ITE node"))
   :returns (bed "A bed for var(left, right)")
@@ -555,9 +554,8 @@ whole point of BEDs is to embrace having a lot of operators.</p>"
     (mk-var-raw var left right))
   ///
   (defthm bed-eval-of-mk-var1
-    (implies (force (atom var))
-             (equal (bed-eval (mk-var1 var left right) env)
-                    (if (bed-env-lookup var env)
-                        (bed-eval left env)
-                      (bed-eval right env))))))
+    (equal (bed-eval (mk-var1 var left right) env)
+           (if (bed-env-lookup var env)
+               (bed-eval left env)
+             (bed-eval right env)))))
 

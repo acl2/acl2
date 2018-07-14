@@ -65,7 +65,8 @@
                      (t ctx)))
               (cons #\1 (cons str alist)))
         0
-        (abbrev-evisc-tuple state))))
+        (abbrev-evisc-tuple state)
+        nil)))
 
 (defun error1-logic (ctx str alist state)
 

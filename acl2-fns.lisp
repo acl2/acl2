@@ -1230,13 +1230,16 @@ notation causes an error and (b) the use of ,. is not permitted."
                       (if (fboundp 'interface-er)
                           'interface-er
                         'error)
-                      "When the ACL2 reader tries to read #\\x, then ~
-                       x must either be a single character followed ~
-                       by a character in the list ~x0, ~
-                       or else x must be one of Space, Tab, Newline, ~
-                       Page, Rubout, or Return (where case is ignored). ~
-                       However, ~s1 is none of these."
+
+                      "When the ACL2 reader tries to read #\\x, then x must ~
+                       either be a single character or one of Space, Tab, ~
+                       Newline, Page, Rubout, or Return (where case is ~
+                       ignored).  What follows x must be a character in the ~
+                       list:~|~X01.~|However, ~s2 is neither a single ~
+                       character nor one of Space, Tab, Newline, Page, ~
+                       Rubout, or Return (where case is ignored)."
                       *acl2-read-character-terminators*
+                      nil
                       x)))))))
           (t (acl2-read-character-string s (cons ch acc))))))
 

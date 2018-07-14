@@ -37,25 +37,26 @@
 (include-book "centaur/gl/var-bounds" :dir :system)
 (include-book "std/alists/alist-defuns" :dir :system)
 (include-book "std/util/termhints" :dir :system)
+(include-book "centaur/aig/aig-vars" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/alists/alist-keys" :dir :system))
 
 
 
-(fty::deflist non-bool-atomlist :elt-type non-bool-atom)
+(fty::deflist aig-varlist :elt-type aig-var)
 
-(defthm non-bool-atomlist-p-of-aig-vars
-  (non-bool-atomlist-p (acl2::aig-vars x))
+(defthm aig-varlist-p-of-aig-vars
+  (aig-varlist-p (acl2::aig-vars x))
   :hints(("Goal" :in-theory (enable acl2::aig-vars)
           :induct (acl2::aig-vars x))
          (and stable-under-simplificationp
-              '(:in-theory (enable non-bool-atom-p)))))
+              '(:in-theory (enable acl2::aig-var-p)))))
 
 (fty::deflist bfr-varnamelist :elt-type bfr-varname)
 
-(defthm bfr-varnamelist-p-when-non-bool-atomlist
+(defthm bfr-varnamelist-p-when-aig-varlist
   (implies (and (bfr-mode)
-                (non-bool-atomlist-p x))
+                (aig-varlist-p x))
            (bfr-varnamelist-p x))
   :hints(("Goal" :in-theory (enable bfr-varnamelist-p bfr-varname-p))))
 
@@ -494,7 +495,7 @@
              (if (bfr-mode) t nil)))
     :hints (("Goal" :induct t)
             (and stable-under-simplificationp
-                 '(:in-theory (enable bfr-lookup)))))
+                 '(:in-theory (enable bfr-lookup hons-assoc-equal)))))
 
   (fty::deffixcong bfr-updates-equiv equal (bfr-eval-updates updates env) updates
     :hints(("Goal" :in-theory (enable bfr-updates-fix))))
@@ -1225,8 +1226,8 @@ to @('bfr-mcheck').</p>
 
   (local (defthm aig-vars-of-assign-var-list
            (implies (booleanp val)
-                    (equal (aig-vars (alist-vals (assign-var-list x val))) nil))
-           :hints(("Goal" :in-theory (enable assign-var-list alist-vals)))))
+                    (equal (acl2::aiglist-vars (alist-vals (assign-var-list x val))) nil))
+           :hints(("Goal" :in-theory (enable assign-var-list alist-vals acl2::aiglist-vars)))))
 
 
   
@@ -1236,13 +1237,17 @@ to @('bfr-mcheck').</p>
   ;;                 (append (alist-vals a) (alist-vals b)))
   ;;          :hints(("Goal" :in-theory (enable alist-vals)))))
 
+  (defthm setp-of-aiglist-vars
+    (set::setp (acl2::aiglist-vars x))
+    :hints(("Goal" :in-theory (enable acl2::aiglist-vars))))
+
   (local (defthm aig-vars-of-append
-           (implies (true-listp a)
-                    (equal (aig-vars (append a b))
-                           (set::union (aig-vars a) (aig-vars b))))))
+           (equal (acl2::aiglist-vars (append a b))
+                  (set::union (acl2::aiglist-vars a) (acl2::aiglist-vars b)))
+           :hints(("Goal" :in-theory (enable acl2::aiglist-vars)))))
 
   (local (defthm aig-vars-of-aig-extract-assigns-alist-vals
-           (equal (aig-vars (alist-vals (aig-extract-assigns-alist x))) nil)
+           (equal (acl2::aiglist-vars (alist-vals (aig-extract-assigns-alist x))) nil)
            :hints(("Goal" :in-theory (enable aig-extract-assigns-alist)))))
 
   ;; (local (defthm member-aig-vars-of-aig-and
@@ -1252,7 +1257,7 @@ to @('bfr-mcheck').</p>
   ;;          :hints (("goal" :cases ((set::in v (aig-vars (aig-and x y))))))))
 
   (local (defthm aig-vars-of-restrict
-           (implies (and (not (member v (aig-vars (alist-vals a))))
+           (implies (and (not (member v (acl2::aiglist-vars (alist-vals a))))
                          (not (and (member v (aig-vars x))
                                    (not (hons-assoc-equal v a)))))
                     (not (member v (aig-vars (aig-restrict x a)))))
@@ -1897,10 +1902,14 @@ to @('bfr-mcheck').</p>
   (local (defthm pbfr-list-depends-on-in-aig-mode
            (implies (bfr-mode)
                     (iff (pbfr-list-depends-on k t x)
-                         (member (bfr-varname-fix k) (acl2::aig-vars (list-fix x)))))
+                         (member (bfr-varname-fix k) (acl2::aiglist-vars x))))
            :hints(("Goal" :in-theory (enable pbfr-list-depends-on pbfr-depends-on bfr-depends-on
                                              bfr-from-param-space list-fix
-                                             set::in-to-member)))))
+                                             set::in-to-member
+                                             bfr-varname-fix
+                                             acl2::aiglist-vars)
+                   :induct (pbfr-list-depends-on k t x)
+                   :expand ((pbfr-list-depends-on k t x))))))
 
   (local (defthm pbfr-depends-on-of-aig-restrict
            (implies (and (not (pbfr-depends-on k t x))
@@ -2027,7 +2036,7 @@ to @('bfr-mcheck').</p>
   (local (defthm bfr-varname-fix-when-integerp
            (implies (natp (bfr-varname-fix x))
                     (equal (nfix x) (bfr-varname-fix x)))
-           :hints(("Goal" :in-theory (enable bfr-varname-fix non-bool-atom-fix)))))
+           :hints(("Goal" :in-theory (enable bfr-varname-fix aig-var-fix)))))
 
   (std::defret lookup-in-bfr-ins-from-initst
     (equal (bfr-lookup var ins)
