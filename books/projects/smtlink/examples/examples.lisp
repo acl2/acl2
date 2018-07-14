@@ -548,3 +548,42 @@ finds out @('integerp') is not a supported function.</p>
    :hints (("Goal" :smtlink (:fty (maybe-integer))))
    )
  )
+
+(acl2::must-fail
+(defthm check-rational-cex
+  (implies (rationalp x)
+           (not (equal x 1/4)))
+  :hints (("Goal" :smtlink (:fty (maybe-integer))))
+  )
+)
+
+(acl2::must-fail
+ (defthm check-boolean-cex
+   (implies (booleanp x)
+            (not (equal x nil)))
+   :hints (("Goal" :smtlink (:fty (maybe-integer))))
+   )
+ )
+
+(acl2::must-fail
+ (defthm check-symbol-cex
+   (implies (symbolp x)
+            (not (equal x 'arbitrary-sym)))
+   :hints (("Goal" :smtlink (:fty (maybe-integer))))
+   )
+ )
+
+;; algebraic counter-example example by Carl Kwan
+(acl2::must-fail
+(defthm poly-sat-7
+  (implies (and (real/rationalp x)
+                (equal (* (+ x -1) (+ x 1) (+ x 2)) 0)
+                (< x 0)
+                (real/rationalp y)
+                (equal (* y y) 2))
+           (and (equal x -1)
+                (< y 0)))
+  :rule-classes nil
+  :hints (("Goal"
+		       :smtlink nil)))
+)
