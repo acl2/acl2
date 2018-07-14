@@ -48,20 +48,4 @@
       (case-match cl
         ((('hint-please &) . term) term)
         (& cl))))
-
-  ;; ;; -----------------------------------------------------------------
-  ;; ;;       Define evaluators
-
-  ;; (defevaluator ev-remove-hint-please ev-lst-remove-hint-please
-  ;;   ((not x) (if x y z) (hint-please hint)))
-
-  ;; (def-join-thms ev-remove-hint-please)
-
-  ;; (defthm correctness-of-remove-hint-please
-  ;;   (implies (and (pseudo-term-listp cl)
-  ;;                 (alistp b))
-  ;;            (iff (ev-remove-hint-please (disjoin (remove-hint-please cl)) b)
-  ;;                 (ev-remove-hint-please (disjoin cl) b)))
-  ;;   :hints (("Goal"
-  ;;            :in-theory (enable hint-please remove-hint-please) )))
 )

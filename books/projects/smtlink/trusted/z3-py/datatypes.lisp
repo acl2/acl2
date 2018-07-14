@@ -11,40 +11,44 @@
 
 (include-book "./names")
 
-(define wordp ((atom))
-  (declare (xargs :guard t))
-  :returns (word? booleanp)
-  (if (or (acl2-numberp atom)
-          (symbolp atom)
-          (characterp atom)
-          (stringp atom))
-      t
-    nil))
+(defsection Translation-datatypes
+  :parents (trusted)
+  :short "Datatypes for the translation in trusted clause-processor"
 
-(define word-fix ((atom wordp))
-  :returns (fixed wordp)
-  (mbe :logic (if (wordp atom) atom nil)
-       :exec atom)
-  ///
-  (more-returns
-   (fixed (equal (word-fix fixed) fixed)
-          :name equal-word-fixed)))
+  (define wordp ((atom))
+    (declare (xargs :guard t))
+    :returns (word? booleanp)
+    (if (or (acl2-numberp atom)
+            (symbolp atom)
+            (characterp atom)
+            (stringp atom))
+        t
+      nil))
 
-(local (in-theory (enable word-fix)))
-(deffixtype word
-  :fix word-fix
-  :pred wordp
-  :equiv word-equiv
-  :define t)
+  (define word-fix ((atom wordp))
+    :returns (fixed wordp)
+    (mbe :logic (if (wordp atom) atom nil)
+         :exec atom)
+    ///
+    (more-returns
+     (fixed (equal (word-fix fixed) fixed)
+            :name equal-word-fixed)))
 
-(defthm wordp-of-lisp-to-python-names
-  (wordp (lisp-to-python-names x))
-  :hints (("Goal" :in-theory (enable wordp))))
+  (local (in-theory (enable word-fix)))
+  (deffixtype word
+    :fix word-fix
+    :pred wordp
+    :equiv word-equiv
+    :define t)
 
-(deflist word-list
-  :elt-type wordp
-  :pred word-listp
-  :true-listp t)
+  (defthm wordp-of-lisp-to-python-names
+    (wordp (lisp-to-python-names x))
+    :hints (("Goal" :in-theory (enable wordp))))
+
+  (deflist word-list
+    :elt-type wordp
+    :pred word-listp
+    :true-listp t)
 
   (define paragraphp ((par))
     :parents (SMT-translator)
@@ -69,9 +73,9 @@
                   (paragraphp (cdr x))))
     :hints (("Goal" :in-theory (enable paragraphp))))
 
-(defthm paragraphp-corollary-4
-  (implies (and (paragraphp a) (paragraphp b))
-           (paragraphp (append a b))))
+  (defthm paragraphp-corollary-4
+    (implies (and (paragraphp a) (paragraphp b))
+             (paragraphp (append a b))))
 
   (encapsulate ()
     (local (in-theory (enable paragraphp)))
@@ -108,7 +112,9 @@
       :define t)
     )
 
-(defthm word-listp-is-paragraphp
-  (implies (word-listp x)
-           (paragraphp x))
-  :hints (("Goal" :in-theory (enable word-listp paragraphp))))
+  (defthm word-listp-is-paragraphp
+    (implies (word-listp x)
+             (paragraphp x))
+    :hints (("Goal" :in-theory (enable word-listp paragraphp))))
+
+  )

@@ -15,8 +15,7 @@
 (include-book "xdoc/save" :dir :system)  ;; load xdoc::save
 
 (defxdoc Smtlink
-  ;;:parents (ACL2::projects)
-  :parents (acl2::top)
+  :parents (ACL2::projects)
   :short "Tutorial and documentation for the ACL2 book, Smtlink."
   :long "<h3>Introduction</h3>
 <p>A framework for integrating external SMT solvers into ACL2 based on the
@@ -342,8 +341,8 @@ fourth is a list of examples for @('FTY') types.</p>"
 <p>Currently @('Smtlink') supports:</p>
 
 <ul>
-<li><b>Basic types:</b> @(tsee booleanp), @(tsee integerp), @(realp),
-@(rationalp), @(tsee real/rationalp) and @(tsee symbolp)</li>
+<li><b>Basic types:</b> @(tsee booleanp), @(tsee integerp), @(tsee realp),
+@(tsee rationalp), @(tsee real/rationalp) and @(tsee symbolp)</li>
 <li><b>FTY types generated using:</b> @(tsee defprod), @(tsee deflist),
 @(tsee defalist) and @(tsee defoption)</li>
 <li><b>Basic functions:</b> @(tsee binary-+), @(tsee binary-*), @(tsee
@@ -458,4 +457,4 @@ result.</p>
 </ul>
 ")
 
-(xdoc::save "./manual" :redef-okp t)  ;; write the manual
+;; (xdoc::save "./manual" :redef-okp t)  ;; write the manual

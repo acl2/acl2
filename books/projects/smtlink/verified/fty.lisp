@@ -14,9 +14,9 @@
 
 (include-book "basics")
 
-;; (defsection fty-support
-;;   :parents (verified)
-;;   :short "Supports for ftytypes"
+(defsection fty-support
+  :parents (verified)
+  :short "Supports for ftytypes"
 
   (verify-termination fty::flexprod-field-p)
   (verify-termination fty::flexprod-field->acc-name$inline)
@@ -33,15 +33,15 @@
   (verify-termination fty::flexlist-p)
   (verify-termination fty::flexlist->fix$inline)
   (verify-termination fty::flexlist->pred$inline)
-(verify-termination fty::flexlist->name$inline)
-(verify-termination fty::flexlist->true-listp$inline)
+  (verify-termination fty::flexlist->name$inline)
+  (verify-termination fty::flexlist->true-listp$inline)
   (verify-termination fty::flexlist->elt-type$inline)
   (verify-termination fty::flexlist->true-listp$inline)
   (verify-termination fty::flexalist-p)
   (verify-termination fty::flexalist->fix$inline)
   (verify-termination fty::flexalist->pred$inline)
-(verify-termination fty::flexalist->name$inline)
-(verify-termination fty::flexalist->true-listp$inline)
+  (verify-termination fty::flexalist->name$inline)
+  (verify-termination fty::flexalist->true-listp$inline)
   (verify-termination fty::flexalist->key-type$inline)
   (verify-termination fty::flexalist->val-type$inline)
   (verify-termination fty::flexprod->fields$inline)
@@ -513,15 +513,15 @@
          ((unless (equal type :fix)) nil))
       (equal (fty-info->category info) :option)))
 
-(define fncall-of-flextype-option ((fn-name symbolp)
-                                   (fty-info fty-info-alist-p))
-  :returns (option? booleanp)
-  (b* ((fn-name (symbol-fix fn-name))
-       (fty-info (fty-info-alist-fix fty-info))
-       (item (assoc-equal fn-name fty-info))
-       ((unless item) nil)
-       (info (cdr item)))
-    (equal (fty-info->category info) :option)))
+  (define fncall-of-flextype-option ((fn-name symbolp)
+                                     (fty-info fty-info-alist-p))
+    :returns (option? booleanp)
+    (b* ((fn-name (symbol-fix fn-name))
+         (fty-info (fty-info-alist-fix fty-info))
+         (item (assoc-equal fn-name fty-info))
+         ((unless item) nil)
+         (info (cdr item)))
+      (equal (fty-info->category info) :option)))
 
 
   ;;----------------------------------------------------------
@@ -1186,483 +1186,483 @@
 
     )
 
-(local
-  (defthm crock1-1
-    (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
-                  (SYMBOLP (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
-                                             (CDR FLEXLST))))
-                  (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
-                                                 (CDR FLEXLST)))
-                               FTY-INFO))
-             (CONSP (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
-                                                   (CDR FLEXLST)))
-                                 FTY-INFO)))
-    :hints (("Goal" :induct (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
-                                                           (CDR FLEXLST)))
-                                         FTY-INFO))))
-  )
+  (local
+   (defthm crock1-1
+     (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
+                   (SYMBOLP (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
+                                              (CDR FLEXLST))))
+                   (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
+                                                  (CDR FLEXLST)))
+                                FTY-INFO))
+              (CONSP (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
+                                                    (CDR FLEXLST)))
+                                  FTY-INFO)))
+     :hints (("Goal" :induct (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
+                                                            (CDR FLEXLST)))
+                                          FTY-INFO))))
+   )
 
-(local
-  (defthm crock1-2
-    (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
-                  (SYMBOLP (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
-                                             (CDR FLEXLST))))
-                  (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
-                                                 (CDR FLEXLST)))
-                               FTY-INFO))
-             (FTY-INFO-P (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
-                                                             (CDR FLEXLST)))
-                                           FTY-INFO)))))
-  )
+  (local
+   (defthm crock1-2
+     (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
+                   (SYMBOLP (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
+                                              (CDR FLEXLST))))
+                   (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
+                                                  (CDR FLEXLST)))
+                                FTY-INFO))
+              (FTY-INFO-P (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
+                                                              (CDR FLEXLST)))
+                                            FTY-INFO)))))
+   )
 
-(local
-  (defthm crock2-1
-    (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
-                  (SYMBOLP (CDR (ASSOC-EQUAL 'TYPE
-                                             (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
-                                                                     (CDR OPTION)))))))
-                  (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'TYPE
-                                                 (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
-                                                                         (CDR OPTION))))))
-                               FTY-INFO))
-             (CONSP (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'TYPE
-                                                   (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
-                                                                           (CDR OPTION))))))
-                                 FTY-INFO)))
-    :hints (("Goal" :induct (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'TYPE
-                                                           (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
-                                                                                   (CDR OPTION))))))
-                                         FTY-INFO))))
-  )
-
-(local
-  (defthm crock2-2
-    (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
-                  (symbolp (CDR (ASSOC-EQUAL 'TYPE
-                                             (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
-                                                                     (CDR OPTION)))))))
-                  (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'TYPE
-                                                 (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
-                                                                         (CDR OPTION))))))
-                               FTY-INFO))
-             (FTY-INFO-P
-              (CDR
-               (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'TYPE
+  (local
+   (defthm crock2-1
+     (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
+                   (SYMBOLP (CDR (ASSOC-EQUAL 'TYPE
                                               (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
-                                                                      (CDR OPTION))))))
-                            FTY-INFO)))))
-  )
+                                                                      (CDR OPTION)))))))
+                   (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'TYPE
+                                                  (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
+                                                                          (CDR OPTION))))))
+                                FTY-INFO))
+              (CONSP (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'TYPE
+                                                    (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
+                                                                            (CDR OPTION))))))
+                                  FTY-INFO)))
+     :hints (("Goal" :induct (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'TYPE
+                                                            (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
+                                                                                    (CDR OPTION))))))
+                                          FTY-INFO))))
+   )
 
-(local
-  (defthm crock3-1
-    (IMPLIES
-     (AND (FTY-INFO-ALIST-P FTY-INFO)
-          (symbolp (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
-                                     (CDR FLEXALST))))
-          (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
-                                         (CDR FLEXALST)))
-                       FTY-INFO))
-     (FTY-INFO-P (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
-                                                     (CDR FLEXALST)))
-                                   FTY-INFO)))))
-  )
-
-(local
-  (defthm crock3-2
-    (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
-                  (SYMBOLP (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
-                                             (CDR FLEXALST))))
-                  (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
-                                                 (CDR FLEXALST)))
-                               FTY-INFO))
-             (CONSP (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
-                                                   (CDR FLEXALST)))
-                                 FTY-INFO)))
-    :hints (("Goal" :induct (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
-                                                           (CDR FLEXALST)))
-                                         FTY-INFO))))
-  )
-
-(local
-  (defthm crock4-1
-    (IMPLIES
-     (AND (FTY-INFO-ALIST-P FTY-INFO)
-          (symbolp (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
-                                     (CDR FLEXALST))))
-          (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
-                                         (CDR FLEXALST)))
-                       FTY-INFO))
-     (FTY-INFO-P (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
-                                                     (CDR FLEXALST)))
-                                   FTY-INFO)))))
-  )
-
-(local
-  (defthm crock4-2
-    (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
-                  (SYMBOLP (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
-                                             (CDR FLEXALST))))
-                  (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
-                                                 (CDR FLEXALST)))
-                               FTY-INFO))
-             (CONSP (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
-                                                   (CDR FLEXALST)))
-                                 FTY-INFO)))
-    :hints (("Goal" :induct (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
-                                                           (CDR FLEXALST)))
-                                         FTY-INFO))))
-  )
-
-(local
-  (defthm crock5-lemma
-    (cond
-     ((equal flag 'generate-fty-type)
-      (implies
-       (and
-        (fty-types-p acc)
-        (fty-info-alist-p fty-info)
-        (alistp flextypes-table)
-        (symbolp name))
-       (<= (generate-type-measure fty-info
-                                  (mv-nth 0 (generate-fty-type name
-                                                               flextypes-table fty-info acc ordered-acc)))
-           (generate-type-measure fty-info acc))))
-     ((equal flag 'generate-fty-type-list)
-      (implies
-       (and
-        (fty-types-p acc)
-        (fty-info-alist-p fty-info)
-        (alistp flextypes-table)
-        (symbol-listp name-lst))
-       (<= (generate-type-measure fty-info
-                                  (mv-nth 0 (generate-fty-type-list name-lst flextypes-table
-                                                                    fty-info acc ordered-acc)))
-           (generate-type-measure fty-info acc))))
-     ((equal flag 'generate-flexlist-type)
-      (implies
-       (and
-        (fty::flexlist-p flexlst)
-        (alistp flextypes-table)
-        (fty-info-alist-p fty-info)
-        (fty-types-p acc))
-       (<= (generate-type-measure fty-info
-                                  (mv-nth 0 (generate-flexlist-type flexlst
-                                                                    flextypes-table fty-info
-                                                                    acc ordered-acc)))
-           (generate-type-measure fty-info acc))))
-     ((equal flag 'generate-flexalist-type)
-      (implies
-       (and
-        (fty::flexalist-p flexalst)
-        (alistp flextypes-table)
-        (fty-info-alist-p fty-info)
-        (fty-types-p acc))
-       (<= (generate-type-measure fty-info
-                                  (mv-nth 0 (generate-flexalist-type flexalst
-                                                                     flextypes-table fty-info
-                                                                     acc ordered-acc)))
-           (generate-type-measure fty-info acc))))
-     ((equal flag 'generate-flexsum-type)
-      (implies
-       (and
-        (fty::flexsum-p flexsum)
-        (alistp flextypes-table)
-        (fty-info-alist-p fty-info)
-        (fty-types-p acc))
-       (<= (generate-type-measure fty-info
-                                  (mv-nth 0 (generate-flexsum-type flexsum
-                                                                   flextypes-table fty-info
-                                                                   acc ordered-acc)))
-           (generate-type-measure fty-info acc))))
-     ((equal flag 'generate-flexprod-type)
-      (implies
-       (and
-        (symbolp name)
-        (fty::flexprod-p prod)
-        (alistp flextypes-table)
-        (fty-info-alist-p fty-info)
-        (fty-types-p acc))
-       (<= (generate-type-measure fty-info
-                                  (mv-nth 0 (generate-flexprod-type name prod
-                                                                    flextypes-table fty-info
-                                                                    acc ordered-acc)))
-           (generate-type-measure fty-info acc))))
-     ((equal flag 'generate-flexoption-type)
-      (implies
-       (and
-        (symbolp name)
-        (fty::flexprod-p option)
-        (alistp flextypes-table)
-        (fty-info-alist-p fty-info)
-        (fty-types-p acc))
-       (<= (generate-type-measure fty-info
-                                  (mv-nth 0 (generate-flexoption-type name option
-                                                                      flextypes-table fty-info
-                                                                      acc ordered-acc)))
-           (generate-type-measure fty-info acc))))
-     (t t))
-    :hints (("Goal"
-             :in-theory (e/d (generate-flexoption-type
-                              generate-flexprod-type
-                              generate-flexsum-type
-                              generate-flexlist-type
-                              generate-flexalist-type
-                              generate-fty-type
-                              generate-fty-type-list)
-                             (generate-type-measure-increase-list
-                              (SMT-types)))
-             :induct (GENERATE-FTY-TYPES-MUTUAL-FLAG
-                      FLAG PROD
-                      OPTION FLEXSUM FLEXALST FLEXLST NAME
-                      NAME-LST FLEXTYPES-TABLE FTY-INFO ACC
-                      ORDERED-ACC))
-            ("Subgoal *1/42"
-             :in-theory (e/d (generate-flexlist-type)
-                             (generate-type-measure-increase-list
-                              (SMT-types)))
-             :use ((:instance
-                    generate-type-measure-increase-list
-                    (acc acc)
-                    (fty-info fty-info)
-                    (name (fty::flexlist->name flexlst))
-                    (list
-                     (FTY-TYPE-LIST
-                      (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
-                                                                          (CDR FLEXLST)))
-                                                        FTY-INFO))))))))
-            ("Subgoal *1/41"
-             :in-theory (e/d (generate-flexlist-type)
-                             (generate-type-measure-increase-list
-                              (SMT-types)))
-             :use ((:instance
-                    generate-type-measure-increase-list
-                    (acc acc)
-                    (fty-info fty-info)
-                    (name (fty::flexlist->name flexlst))
-                    (list
-                     (FTY-TYPE-LIST (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
-                                                      (CDR FLEXLST))))))))
-            ("Subgoal *1/33"
-             :in-theory (e/d (generate-flexalist-type)
-                             (generate-type-measure-increase-alist
-                              (SMT-types)))
-             :use ((:instance
-                    generate-type-measure-increase-alist
-                    (acc acc)
-                    (fty-info fty-info)
-                    (name (fty::flexlist->name flexalst))
-                    (alist
-                     (FTY-TYPE-ALIST
-                      (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
-                                                                          (CDR FLEXALST)))
-                                                        FTY-INFO)))
-                      (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
-                                                                          (CDR FLEXALST)))
-                                                        FTY-INFO))))))))
-            ("Subgoal *1/32"
-             :in-theory (e/d (generate-flexalist-type)
-                             (generate-type-measure-increase-alist))
-             :use ((:instance
-                    generate-type-measure-increase-alist
-                    (acc acc)
-                    (fty-info fty-info)
-                    (name (fty::flexlist->name flexalst))
-                    (alist
-                     (FTY-TYPE-ALIST
-                      (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
-                                                                          (CDR FLEXALST)))
-                                                        FTY-INFO)))
-                      (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
-                                                                          (CDR FLEXALST)))
-                                                        FTY-INFO))))))))
-            ("Subgoal *1/30"
-             :in-theory (e/d (generate-flexalist-type)
-                             (generate-type-measure-increase-alist))
-             :use ((:instance
-                    generate-type-measure-increase-alist
-                    (acc acc)
-                    (fty-info fty-info)
-                    (name (fty::flexlist->name flexalst))
-                    (alist
-                     (FTY-TYPE-ALIST
-                      (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
-                                                                          (CDR FLEXALST)))
-                                                        FTY-INFO)))
-                      (fty::flexalist->val-type flexalst))))))
-            ("Subgoal *1/28"
-             :in-theory (e/d (generate-flexalist-type)
-                             (generate-type-measure-increase-alist))
-             :use ((:instance
-                    generate-type-measure-increase-alist
-                    (acc acc)
-                    (fty-info fty-info)
-                    (name (fty::flexlist->name flexalst))
-                    (alist
-                     (FTY-TYPE-ALIST
-                      (fty::flexalist->key-type flexalst)
-                      (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
-                                                                          (CDR FLEXALST)))
-                                                        FTY-INFO))))))))
-            ("Subgoal *1/27"
-             :in-theory (e/d (generate-flexalist-type)
-                             (generate-type-measure-increase-alist))
-             :use ((:instance
-                    generate-type-measure-increase-alist
-                    (acc acc)
-                    (fty-info fty-info)
-                    (name (fty::flexlist->name flexalst))
-                    (alist
-                     (FTY-TYPE-ALIST
-                      (fty::flexalist->key-type flexalst)
-                      (fty::flexalist->val-type flexalst))))))
-            ("Subgoal *1/7"
-             :in-theory (e/d (generate-flexoption-type)
-                             (generate-type-measure-increase-option))
-             :use ((:instance
-                    generate-type-measure-increase-option
-                    (acc acc)
-                    (fty-info fty-info)
-                    (name name)
-                    (option
-                     (FTY-TYPE-OPTION
-                      (FTY-INFO->NAME
-                       (CDR (ASSOC-EQUAL
-                             (CDR (ASSOC-EQUAL 'TYPE
+  (local
+   (defthm crock2-2
+     (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
+                   (symbolp (CDR (ASSOC-EQUAL 'TYPE
+                                              (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
+                                                                      (CDR OPTION)))))))
+                   (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'TYPE
+                                                  (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
+                                                                          (CDR OPTION))))))
+                                FTY-INFO))
+              (FTY-INFO-P
+               (CDR
+                (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'TYPE
                                                (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
                                                                        (CDR OPTION))))))
-                             FTY-INFO))))))))
-            ("Subgoal *1/6"
-             :in-theory (e/d (generate-flexoption-type)
-                             (generate-type-measure-increase-option))
-             :use ((:instance
-                    generate-type-measure-increase-option
-                    (acc acc)
-                    (fty-info fty-info)
-                    (name name)
-                    (option
-                     (fty-type-option
-                      (fty::flexprod-field->type
-                       (car (fty::flexprod->fields option))))))))
-            ("Subgoal *1/3"
-             :in-theory (e/d (generate-flexprod-type)
-                             (generate-type-measure-increase-prod))
-             :use ((:instance
-                    generate-type-measure-increase-prod
-                    (acc acc)
-                    (fty-info fty-info)
-                    (name (symbol-fix name))
-                    (prod
-                     (fty-type-prod
-                      (mv-nth
-                       1
-                       (generate-fty-field-alist
-                        (fty::flexprod->fields prod)
-                        fty-info)))))))
-            ))
-  )
+                             FTY-INFO)))))
+   )
 
-(local
-  (defthm crock5
-    (implies
-     (and
-      (fty-types-p acc)
-      (fty-info-alist-p fty-info)
-      (alistp flextypes-table)
-      (symbol-listp name-lst)
-      (consp name-lst))
-     (<= (generate-type-measure fty-info
-                                (mv-nth 0 (generate-fty-type (car name-lst)
-                                                             flextypes-table
-                                                             fty-info acc ordered-acc)))
-         (generate-type-measure fty-info acc)))
-    :hints (("goal"
-             :use ((:instance crock5-lemma
-                              (flag 'generate-fty-type)
-                              (name (car name-lst)))))))
-  )
+  (local
+   (defthm crock3-1
+     (IMPLIES
+      (AND (FTY-INFO-ALIST-P FTY-INFO)
+           (symbolp (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
+                                      (CDR FLEXALST))))
+           (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
+                                          (CDR FLEXALST)))
+                        FTY-INFO))
+      (FTY-INFO-P (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
+                                                      (CDR FLEXALST)))
+                                    FTY-INFO)))))
+   )
 
-(local
-  (defthm crock6
-    (implies
-     (and (fty-types-p acc)
-          (fty-info-alist-p fty-info)
-          (alistp flextypes-table)
-          (consp flexalst)
-          (equal (car flexalst) :alist)
-          (alistp (cdr flexalst))
-          (consp (cdr flexalst))
-          (not (equal (generate-type-measure fty-info acc)
-                      0))
-          (symbolp (cdr (assoc-equal 'fty::name
-                                     (cdr flexalst))))
-          (not (assoc-equal (cdr (assoc-equal 'fty::name (cdr flexalst)))
-                            acc))
-          (symbolp (cdr (assoc-equal 'fty::key-type
-                                     (cdr flexalst))))
-          (symbolp (cdr (assoc-equal 'fty::val-type
-                                     (cdr flexalst))))
-          (assoc-equal (cdr (assoc-equal 'fty::key-type
-                                         (cdr flexalst)))
-                       fty-info)
-          (assoc-equal (cdr (assoc-equal 'fty::val-type
-                                         (cdr flexalst)))
-                       fty-info))
-     (>=
-      (generate-type-measure
-       fty-info
-       (cons
+  (local
+   (defthm crock3-2
+     (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
+                   (SYMBOLP (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
+                                              (CDR FLEXALST))))
+                   (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
+                                                  (CDR FLEXALST)))
+                                FTY-INFO))
+              (CONSP (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
+                                                    (CDR FLEXALST)))
+                                  FTY-INFO)))
+     :hints (("Goal" :induct (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
+                                                            (CDR FLEXALST)))
+                                          FTY-INFO))))
+   )
+
+  (local
+   (defthm crock4-1
+     (IMPLIES
+      (AND (FTY-INFO-ALIST-P FTY-INFO)
+           (symbolp (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
+                                      (CDR FLEXALST))))
+           (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
+                                          (CDR FLEXALST)))
+                        FTY-INFO))
+      (FTY-INFO-P (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
+                                                      (CDR FLEXALST)))
+                                    FTY-INFO)))))
+   )
+
+  (local
+   (defthm crock4-2
+     (IMPLIES (AND (FTY-INFO-ALIST-P FTY-INFO)
+                   (SYMBOLP (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
+                                              (CDR FLEXALST))))
+                   (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
+                                                  (CDR FLEXALST)))
+                                FTY-INFO))
+              (CONSP (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
+                                                    (CDR FLEXALST)))
+                                  FTY-INFO)))
+     :hints (("Goal" :induct (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
+                                                            (CDR FLEXALST)))
+                                          FTY-INFO))))
+   )
+
+  (local
+   (defthm crock5-lemma
+     (cond
+      ((equal flag 'generate-fty-type)
+       (implies
+        (and
+         (fty-types-p acc)
+         (fty-info-alist-p fty-info)
+         (alistp flextypes-table)
+         (symbolp name))
+        (<= (generate-type-measure fty-info
+                                   (mv-nth 0 (generate-fty-type name
+                                                                flextypes-table fty-info acc ordered-acc)))
+            (generate-type-measure fty-info acc))))
+      ((equal flag 'generate-fty-type-list)
+       (implies
+        (and
+         (fty-types-p acc)
+         (fty-info-alist-p fty-info)
+         (alistp flextypes-table)
+         (symbol-listp name-lst))
+        (<= (generate-type-measure fty-info
+                                   (mv-nth 0 (generate-fty-type-list name-lst flextypes-table
+                                                                     fty-info acc ordered-acc)))
+            (generate-type-measure fty-info acc))))
+      ((equal flag 'generate-flexlist-type)
+       (implies
+        (and
+         (fty::flexlist-p flexlst)
+         (alistp flextypes-table)
+         (fty-info-alist-p fty-info)
+         (fty-types-p acc))
+        (<= (generate-type-measure fty-info
+                                   (mv-nth 0 (generate-flexlist-type flexlst
+                                                                     flextypes-table fty-info
+                                                                     acc ordered-acc)))
+            (generate-type-measure fty-info acc))))
+      ((equal flag 'generate-flexalist-type)
+       (implies
+        (and
+         (fty::flexalist-p flexalst)
+         (alistp flextypes-table)
+         (fty-info-alist-p fty-info)
+         (fty-types-p acc))
+        (<= (generate-type-measure fty-info
+                                   (mv-nth 0 (generate-flexalist-type flexalst
+                                                                      flextypes-table fty-info
+                                                                      acc ordered-acc)))
+            (generate-type-measure fty-info acc))))
+      ((equal flag 'generate-flexsum-type)
+       (implies
+        (and
+         (fty::flexsum-p flexsum)
+         (alistp flextypes-table)
+         (fty-info-alist-p fty-info)
+         (fty-types-p acc))
+        (<= (generate-type-measure fty-info
+                                   (mv-nth 0 (generate-flexsum-type flexsum
+                                                                    flextypes-table fty-info
+                                                                    acc ordered-acc)))
+            (generate-type-measure fty-info acc))))
+      ((equal flag 'generate-flexprod-type)
+       (implies
+        (and
+         (symbolp name)
+         (fty::flexprod-p prod)
+         (alistp flextypes-table)
+         (fty-info-alist-p fty-info)
+         (fty-types-p acc))
+        (<= (generate-type-measure fty-info
+                                   (mv-nth 0 (generate-flexprod-type name prod
+                                                                     flextypes-table fty-info
+                                                                     acc ordered-acc)))
+            (generate-type-measure fty-info acc))))
+      ((equal flag 'generate-flexoption-type)
+       (implies
+        (and
+         (symbolp name)
+         (fty::flexprod-p option)
+         (alistp flextypes-table)
+         (fty-info-alist-p fty-info)
+         (fty-types-p acc))
+        (<= (generate-type-measure fty-info
+                                   (mv-nth 0 (generate-flexoption-type name option
+                                                                       flextypes-table fty-info
+                                                                       acc ordered-acc)))
+            (generate-type-measure fty-info acc))))
+      (t t))
+     :hints (("Goal"
+              :in-theory (e/d (generate-flexoption-type
+                               generate-flexprod-type
+                               generate-flexsum-type
+                               generate-flexlist-type
+                               generate-flexalist-type
+                               generate-fty-type
+                               generate-fty-type-list)
+                              (generate-type-measure-increase-list
+                               (SMT-types)))
+              :induct (GENERATE-FTY-TYPES-MUTUAL-FLAG
+                       FLAG PROD
+                       OPTION FLEXSUM FLEXALST FLEXLST NAME
+                       NAME-LST FLEXTYPES-TABLE FTY-INFO ACC
+                       ORDERED-ACC))
+             ("Subgoal *1/42"
+              :in-theory (e/d (generate-flexlist-type)
+                              (generate-type-measure-increase-list
+                               (SMT-types)))
+              :use ((:instance
+                     generate-type-measure-increase-list
+                     (acc acc)
+                     (fty-info fty-info)
+                     (name (fty::flexlist->name flexlst))
+                     (list
+                      (FTY-TYPE-LIST
+                       (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
+                                                                           (CDR FLEXLST)))
+                                                         FTY-INFO))))))))
+             ("Subgoal *1/41"
+              :in-theory (e/d (generate-flexlist-type)
+                              (generate-type-measure-increase-list
+                               (SMT-types)))
+              :use ((:instance
+                     generate-type-measure-increase-list
+                     (acc acc)
+                     (fty-info fty-info)
+                     (name (fty::flexlist->name flexlst))
+                     (list
+                      (FTY-TYPE-LIST (CDR (ASSOC-EQUAL 'FTY::ELT-TYPE
+                                                       (CDR FLEXLST))))))))
+             ("Subgoal *1/33"
+              :in-theory (e/d (generate-flexalist-type)
+                              (generate-type-measure-increase-alist
+                               (SMT-types)))
+              :use ((:instance
+                     generate-type-measure-increase-alist
+                     (acc acc)
+                     (fty-info fty-info)
+                     (name (fty::flexlist->name flexalst))
+                     (alist
+                      (FTY-TYPE-ALIST
+                       (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
+                                                                           (CDR FLEXALST)))
+                                                         FTY-INFO)))
+                       (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
+                                                                           (CDR FLEXALST)))
+                                                         FTY-INFO))))))))
+             ("Subgoal *1/32"
+              :in-theory (e/d (generate-flexalist-type)
+                              (generate-type-measure-increase-alist))
+              :use ((:instance
+                     generate-type-measure-increase-alist
+                     (acc acc)
+                     (fty-info fty-info)
+                     (name (fty::flexlist->name flexalst))
+                     (alist
+                      (FTY-TYPE-ALIST
+                       (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
+                                                                           (CDR FLEXALST)))
+                                                         FTY-INFO)))
+                       (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
+                                                                           (CDR FLEXALST)))
+                                                         FTY-INFO))))))))
+             ("Subgoal *1/30"
+              :in-theory (e/d (generate-flexalist-type)
+                              (generate-type-measure-increase-alist))
+              :use ((:instance
+                     generate-type-measure-increase-alist
+                     (acc acc)
+                     (fty-info fty-info)
+                     (name (fty::flexlist->name flexalst))
+                     (alist
+                      (FTY-TYPE-ALIST
+                       (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::KEY-TYPE
+                                                                           (CDR FLEXALST)))
+                                                         FTY-INFO)))
+                       (fty::flexalist->val-type flexalst))))))
+             ("Subgoal *1/28"
+              :in-theory (e/d (generate-flexalist-type)
+                              (generate-type-measure-increase-alist))
+              :use ((:instance
+                     generate-type-measure-increase-alist
+                     (acc acc)
+                     (fty-info fty-info)
+                     (name (fty::flexlist->name flexalst))
+                     (alist
+                      (FTY-TYPE-ALIST
+                       (fty::flexalist->key-type flexalst)
+                       (FTY-INFO->NAME (CDR (ASSOC-EQUAL (CDR (ASSOC-EQUAL 'FTY::VAL-TYPE
+                                                                           (CDR FLEXALST)))
+                                                         FTY-INFO))))))))
+             ("Subgoal *1/27"
+              :in-theory (e/d (generate-flexalist-type)
+                              (generate-type-measure-increase-alist))
+              :use ((:instance
+                     generate-type-measure-increase-alist
+                     (acc acc)
+                     (fty-info fty-info)
+                     (name (fty::flexlist->name flexalst))
+                     (alist
+                      (FTY-TYPE-ALIST
+                       (fty::flexalist->key-type flexalst)
+                       (fty::flexalist->val-type flexalst))))))
+             ("Subgoal *1/7"
+              :in-theory (e/d (generate-flexoption-type)
+                              (generate-type-measure-increase-option))
+              :use ((:instance
+                     generate-type-measure-increase-option
+                     (acc acc)
+                     (fty-info fty-info)
+                     (name name)
+                     (option
+                      (FTY-TYPE-OPTION
+                       (FTY-INFO->NAME
+                        (CDR (ASSOC-EQUAL
+                              (CDR (ASSOC-EQUAL 'TYPE
+                                                (CDR (CADR (ASSOC-EQUAL 'FTY::FIELDS
+                                                                        (CDR OPTION))))))
+                              FTY-INFO))))))))
+             ("Subgoal *1/6"
+              :in-theory (e/d (generate-flexoption-type)
+                              (generate-type-measure-increase-option))
+              :use ((:instance
+                     generate-type-measure-increase-option
+                     (acc acc)
+                     (fty-info fty-info)
+                     (name name)
+                     (option
+                      (fty-type-option
+                       (fty::flexprod-field->type
+                        (car (fty::flexprod->fields option))))))))
+             ("Subgoal *1/3"
+              :in-theory (e/d (generate-flexprod-type)
+                              (generate-type-measure-increase-prod))
+              :use ((:instance
+                     generate-type-measure-increase-prod
+                     (acc acc)
+                     (fty-info fty-info)
+                     (name (symbol-fix name))
+                     (prod
+                      (fty-type-prod
+                       (mv-nth
+                        1
+                        (generate-fty-field-alist
+                         (fty::flexprod->fields prod)
+                         fty-info)))))))
+             ))
+   )
+
+  (local
+   (defthm crock5
+     (implies
+      (and
+       (fty-types-p acc)
+       (fty-info-alist-p fty-info)
+       (alistp flextypes-table)
+       (symbol-listp name-lst)
+       (consp name-lst))
+      (<= (generate-type-measure fty-info
+                                 (mv-nth 0 (generate-fty-type (car name-lst)
+                                                              flextypes-table
+                                                              fty-info acc ordered-acc)))
+          (generate-type-measure fty-info acc)))
+     :hints (("goal"
+              :use ((:instance crock5-lemma
+                               (flag 'generate-fty-type)
+                               (name (car name-lst)))))))
+   )
+
+  (local
+   (defthm crock6
+     (implies
+      (and (fty-types-p acc)
+           (fty-info-alist-p fty-info)
+           (alistp flextypes-table)
+           (consp flexalst)
+           (equal (car flexalst) :alist)
+           (alistp (cdr flexalst))
+           (consp (cdr flexalst))
+           (not (equal (generate-type-measure fty-info acc)
+                       0))
+           (symbolp (cdr (assoc-equal 'fty::name
+                                      (cdr flexalst))))
+           (not (assoc-equal (cdr (assoc-equal 'fty::name (cdr flexalst)))
+                             acc))
+           (symbolp (cdr (assoc-equal 'fty::key-type
+                                      (cdr flexalst))))
+           (symbolp (cdr (assoc-equal 'fty::val-type
+                                      (cdr flexalst))))
+           (assoc-equal (cdr (assoc-equal 'fty::key-type
+                                          (cdr flexalst)))
+                        fty-info)
+           (assoc-equal (cdr (assoc-equal 'fty::val-type
+                                          (cdr flexalst)))
+                        fty-info))
+      (>=
+       (generate-type-measure
+        fty-info
         (cons
-         (cdr (assoc-equal 'fty::name (cdr flexalst)))
-         (fty-type-alist
-          (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::key-type
-                                                              (cdr flexalst)))
-                                            fty-info)))
-          (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::val-type
-                                                              (cdr flexalst)))
-                                            fty-info)))))
-        acc))
-      (generate-type-measure
-       fty-info
-       (mv-nth 0
-               (generate-fty-type
-                (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::key-type
-                                                                    (cdr flexalst)))
-                                                  fty-info)))
-                flextypes-table fty-info
-                (cons
+         (cons
+          (cdr (assoc-equal 'fty::name (cdr flexalst)))
+          (fty-type-alist
+           (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::key-type
+                                                               (cdr flexalst)))
+                                             fty-info)))
+           (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::val-type
+                                                               (cdr flexalst)))
+                                             fty-info)))))
+         acc))
+       (generate-type-measure
+        fty-info
+        (mv-nth 0
+                (generate-fty-type
+                 (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::key-type
+                                                                     (cdr flexalst)))
+                                                   fty-info)))
+                 flextypes-table fty-info
                  (cons
-                  (cdr (assoc-equal 'fty::name (cdr flexalst)))
-                  (fty-type-alist
-                   (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::key-type
-                                                                       (cdr flexalst)))
-                                                     fty-info)))
-                   (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::val-type
-                                                                       (cdr flexalst)))
-                                                     fty-info)))))
-                 acc)
-                ordered-acc)))))
-    :hints (("goal"
-             :use ((:instance crock5-lemma
-                              (flag 'generate-fty-type)
-                              (name (fty-info->name
-                                     (cdr (assoc-equal
-                                           (cdr (assoc-equal 'fty::key-type
-                                                             (cdr flexalst)))
-                                           fty-info))))
-                              (acc (cons
-                                    (cons
-                                     (cdr (assoc-equal 'fty::name (cdr flexalst)))
-                                     (fty-type-alist
-                                      (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::key-type
-                                                                                          (cdr flexalst)))
-                                                                        fty-info)))
-                                      (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::val-type
-                                                                                          (cdr flexalst)))
-                                                                        fty-info)))))
-                                    acc)))))))
-  )
+                  (cons
+                   (cdr (assoc-equal 'fty::name (cdr flexalst)))
+                   (fty-type-alist
+                    (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::key-type
+                                                                        (cdr flexalst)))
+                                                      fty-info)))
+                    (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::val-type
+                                                                        (cdr flexalst)))
+                                                      fty-info)))))
+                  acc)
+                 ordered-acc)))))
+     :hints (("goal"
+              :use ((:instance crock5-lemma
+                               (flag 'generate-fty-type)
+                               (name (fty-info->name
+                                      (cdr (assoc-equal
+                                            (cdr (assoc-equal 'fty::key-type
+                                                              (cdr flexalst)))
+                                            fty-info))))
+                               (acc (cons
+                                     (cons
+                                      (cdr (assoc-equal 'fty::name (cdr flexalst)))
+                                      (fty-type-alist
+                                       (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::key-type
+                                                                                           (cdr flexalst)))
+                                                                         fty-info)))
+                                       (fty-info->name (cdr (assoc-equal (cdr (assoc-equal 'fty::val-type
+                                                                                           (cdr flexalst)))
+                                                                         fty-info)))))
+                                     acc)))))))
+   )
 
   (verify-guards generate-fty-type-list
     :guard-debug t
     :hints nil)
-;;  )
+  )

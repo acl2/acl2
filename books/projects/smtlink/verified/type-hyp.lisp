@@ -14,6 +14,11 @@
 
 (include-book "hint-interface")
 
+(defsection SMT-type-hyp
+  :parents (verified)
+  :short "The function type-hyp passes type related information onto the
+  trusted clause processor."
+
 ;; -----------------------------------------------------------------
 ;;
 
@@ -27,4 +32,4 @@
 (in-theory (disable (:d type-hyp)
                     (:e type-hyp)
                     (:t type-hyp)))
-
+)

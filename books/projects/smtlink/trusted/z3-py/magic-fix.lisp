@@ -8,10 +8,15 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
 
-(define magic-fix ((type symbolp)
-                   (x t))
-  (declare (ignore type))
-  x)
+(defsection SMT-magic-fix
+  :parents (verified)
+  :short ""
 
-(in-theory (enable magic-fix))
-(in-theory (disable (:type-prescription magic-fix)))
+  (define magic-fix ((type symbolp)
+                     (x t))
+    (declare (ignore type))
+    x)
+
+  (in-theory (enable magic-fix))
+  (in-theory (disable (:type-prescription magic-fix)))
+  )

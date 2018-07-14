@@ -14,6 +14,11 @@
 (include-book "hint-interface")
 (include-book "computed-hints")
 
+(defsection uninterpreted-fn-cp
+  :parents (verified)
+  :short "Verified clause-processor for proving return types of uninterpreted
+  functions."
+
 ;; -----------------------------------------------------------------
 ;;       Define evaluators
 
@@ -557,3 +562,4 @@
                             (tag :more-return)
                             (b b)))))
   :rule-classes :clause-processor)
+)
