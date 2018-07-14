@@ -621,7 +621,7 @@ finds out @('integerp') is not a supported function.</p>
   :short "A list of FTY examples"
   :long "<h3>FTY examples</h3>
 <p>Prerequisite read for this tutorial example is @(tsee tutorial).</p>
-<p>Smtlink supports types defined by @(tsee FTY) macros @(tsee defprod), @(tsee
+<p>Smtlink supports types defined by @(tsee acl2::FTY) macros @(tsee defprod), @(tsee
   deflist), @(tsee defalist) and @(tsee defoption). We show here an example for
   each type.</p>
 

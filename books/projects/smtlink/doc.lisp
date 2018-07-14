@@ -341,7 +341,7 @@ fourth is a list of examples for @('FTY') types.</p>"
 <p>Currently @('Smtlink') supports:</p>
 
 <ul>
-<li><b>Basic types:</b> @(tsee booleanp), @(tsee integerp), @(tsee realp),
+<li><b>Basic types:</b> @(tsee booleanp), @(tsee integerp), @(tsee real),
 @(tsee rationalp), @(tsee real/rationalp) and @(tsee symbolp)</li>
 <li><b>FTY types generated using:</b> @(tsee defprod), @(tsee deflist),
 @(tsee defalist) and @(tsee defoption)</li>
