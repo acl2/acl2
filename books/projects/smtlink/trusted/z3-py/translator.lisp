@@ -627,25 +627,11 @@
               (mv (er hard? 'SMT-translator=>translate-expression "pseudo-termp
        ensured: ~q0" fn-actuals)
                   nil nil 0 nil))
-             (smt-precond `(if (if (if ,smt-precond-if
-                                       (if ,(car fn-actuals)
-                                           ,smt-precond-then
-                                         'nil)
-                                     'nil)
-                                   ''t
-                                 (if ,smt-precond-if
-                                     (if (not ,(car fn-actuals))
-                                         ,smt-precond-else
-                                       'nil)
-                                   'nil))
-                               ''t
-                             (if ,smt-precond-then
-                                 (if ,smt-precond-else
-                                     (equal ,(cadr fn-actuals)
-                                            ,(caddr
-                                              fn-actuals))
-                                   'nil)
-                               'nil))))
+             (smt-precond `(if ,smt-precond-if
+                               (if ,(car fn-actuals)
+                                   ,smt-precond-then
+                                 ,smt-precond-else)
+                             'nil)))
           (mv (cons `( ,fn #\(
                            ,(map-translated-actuals translated-actuals) #\))
                     translated-rest)

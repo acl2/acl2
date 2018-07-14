@@ -530,3 +530,21 @@ finds out @('integerp') is not a supported function.</p>
                                    (assoc-equal x (symbol-integer-alist-fix l))))))
    :hints (("Goal" :smtlink (:fty (symbol-integer-alist)))))
  )
+
+(defthm check-guard-3
+  (implies (maybe-integer-p x)
+           (equal (1+ (1- (maybe-integer-some->val
+                           (maybe-integer-fix x))))
+                  (maybe-integer-some->val
+                   (maybe-integer-fix x))))
+  :hints (("Goal" :smtlink (:fty (maybe-integer))))
+  )
+
+(acl2::must-fail
+ (defthm check-guard-3-fail
+   (implies (maybe-integer-p x)
+            (equal (1+ (1- (maybe-integer-fix x)))
+                   (maybe-integer-fix x)))
+   :hints (("Goal" :smtlink (:fty (maybe-integer))))
+   )
+ )
