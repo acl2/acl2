@@ -33,13 +33,13 @@
 
 (include-book "../symbol-fns/symbol-fns")
 
-(defun deffix-fixed-p-fn (prefix equiv fix)
-  (let ((equiv-reduction           (symbol-fns::suffix prefix equiv '_ fix '_reduction))
-	(fixed-p                   (symbol-fns::suffix prefix fix 'ed-p))
-	(fixed-p-fix               (symbol-fns::suffix prefix fix 'ed-p_ fix))
-	(equal-fix-to-equiv        (symbol-fns::suffix prefix 'equal_ fix '_to_ equiv))
-        (fixed-p-fix-reduction     (symbol-fns::suffix prefix fix 'ed-p_ fix '_reduction))
-        )
+(defun deffix-fixed-p-fn (prefix fix fixed-p equiv)
+  (let* ((equiv-reduction           (symbol-fns::suffix prefix equiv '_ fix '_reduction))
+         (fixed-p                   (or fixed-p (symbol-fns::suffix fix 'ed-p)))
+         (fixed-p-fix               (symbol-fns::suffix prefix fixed-p '_ fix))
+         (equal-fix-to-equiv        (symbol-fns::suffix prefix 'equal_ fix '_to_ equiv))
+         (fixed-p-fix-reduction     (symbol-fns::suffix prefix fixed-p '_ fix '_reduction))
+         )
     `(encapsulate
          ()
 
@@ -73,7 +73,7 @@
        )))
        
 
-(defun deffix-raw-fn (prefix fix equiv in-theory)
+(defun deffix-raw-fn (prefix fix fixed-p equiv in-theory)
   (let ((fix-fixes                 (symbol-fns::suffix prefix fix '_fixes))
 	(equal-fix-implies-equiv   (symbol-fns::suffix prefix 'equal_ fix '_implies_ equiv))
 	(equiv-reduction           (symbol-fns::suffix prefix equiv '_ fix '_reduction))
@@ -120,11 +120,11 @@
 		(equal (,fix x) (,fix y)))
 	 :hints (("Goal" :in-theory (enable ,equal-fix-implies-equiv))))
 
-       ,(deffix-fixed-p-fn prefix equiv fix)
+       ,(deffix-fixed-p-fn prefix fix fixed-p equiv)
        
        ))))
 
-(defun deffix-type-fn (prefix fix equiv type type-fix in-theory)
+(defun deffix-type-fn (prefix fix fixed-p equiv type type-fix in-theory)
   (let* ((type-equiv         (symbol-fns::suffix prefix type '_equiv))
          (fix-preserves-type (symbol-fns::suffix prefix fix '_preserves_ type))
          (define-refinement  type-fix)
@@ -168,7 +168,7 @@
        ;; ------------------------------------------------
 
        ;; The workhorse
-       ,(deffix-raw-fn prefix fix refined-equiv nil)
+       ,(deffix-raw-fn prefix fix fixed-p refined-equiv nil)
        
        (local
         ;; We get this for free via the refined-equiv congruence theorem .. so we don't export it.
@@ -178,12 +178,14 @@
        
        )))
 
-(defun deffix-fix-fn (prefix fix equiv type type-fix in-theory)
+(defun deffix-fix-fn (prefix fix fixed-p equiv type type-fix in-theory)
   (let* ((type-fix-equiv               (symbol-fns::suffix prefix type-fix '_equiv))
          (type-fix-equiv-type-fix      (symbol-fns::suffix prefix type-fix '_equiv_of_ type-fix))
          (equiv-type-fix               (symbol-fns::suffix prefix equiv '_ type-fix))
          (type-fix-equiv-refines-equiv (symbol-fns::suffix prefix type-fix '_equiv_refines_ equiv))
          (refined-fix                  (symbol-fns::suffix prefix 'refined_ fix))
+         (refined-fixed-p              (if fixed-p (symbol-fns::suffix prefix 'refined_ fixed-p)
+                                         (symbol-fns::suffix prefix 'refined_ fix 'ed-p)))
          (type-equiv                   (symbol-fns::suffix prefix type '_equiv))
          (refined-equiv                (symbol-fns::suffix prefix 'refined_ equiv))
          (fix-is-type                  (symbol-fns::suffix prefix fix '_is_ type))
@@ -228,7 +230,7 @@
        
        (in-theory (disable ,type-fix-equiv))
        
-       ,(deffix-type-fn prefix refined-fix equiv type type-fix in-theory)
+       ,(deffix-type-fn prefix refined-fix refined-fixed-p equiv type type-fix in-theory)
 
        (defun ,fix (x)
          (declare (type t x))
@@ -256,22 +258,22 @@
        
        (in-theory (disable ,fix))
        
-       ,(deffix-fixed-p-fn prefix equiv fix)
+       ,(deffix-fixed-p-fn prefix fix fixed-p equiv)
 
        )))
 
-(defun deffix-fn (fix equiv type type-fix in-theory)
+(defun deffix-fn (fix fixed-p equiv type type-fix in-theory)
   (let ((prefix (symbol-fns::suffix (symbol-fns::prefix 'deffix_ equiv) '_)))
-    (if (not type) (deffix-raw-fn prefix fix equiv in-theory)
+    (if (not type) (deffix-raw-fn prefix fix fixed-p equiv in-theory)
       ;; If you provide a type but no fixing function, equiv
       ;; must satisfy (defcong equiv equal (type x) 1)
-      (if (not type-fix) (deffix-type-fn prefix fix equiv type type-fix in-theory)
+      (if (not type-fix) (deffix-type-fn prefix fix fixed-p equiv type type-fix in-theory)
         ;; If you provide a type-fix function, equiv must be
         ;; a refinement of (equal (fix x) (fix y))
-        (deffix-fix-fn prefix fix equiv type type-fix in-theory)))))
+        (deffix-fix-fn prefix fix fixed-p equiv type type-fix in-theory)))))
 
-(defmacro def::fix (fix equiv &key (type 'nil) (type-fix 'nil) (in-theory 'nil))
-  (deffix-fn fix equiv type type-fix in-theory))
+(defmacro def::fix (fix equiv &key (fixed-p 'nil) (type 'nil) (type-fix 'nil) (in-theory 'nil))
+  (deffix-fn fix fixed-p equiv type type-fix in-theory))
 
 (local
  (encapsulate
