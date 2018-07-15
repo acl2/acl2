@@ -38,6 +38,25 @@
 ;;
 ;; Given a list of bases, construct a new set of symbols
 ;;
+(defun non-nil-symbol-listp (list)
+  (if (atom list) (null list)
+    (and (non-nil-symbolp (car list))
+         (non-nil-symbol-listp (cdr list)))))
+
+(defthm non-nil-symbol-listp-implies-symbol-listp
+  (implies
+   (non-nil-symbol-listp list)
+   (and (true-listp list)
+        (symbol-listp list)))
+  :rule-classes (:forward-chaining))
+
+(defthm non-nil-symbol-list-member
+  (implies
+   (and
+    (list::memberp a list)
+    (non-nil-symbol-listp list))
+   (non-nil-symbolp a))
+  :rule-classes :forward-chaining)
 
 (defun gensym::gensym-list (list omit)
   (declare (type (satisfies true-listp) omit))
@@ -76,8 +95,8 @@
 		 (:forward-chaining
 		  :trigger-terms ((gensym::gensym-list list omit)))))
 
-(defthm gensym::symbol-listp-gensym-list
-  (symbol-listp (gensym::gensym-list list omit))
+(defthm gensym::non-nil-symbol-listp-gensym-list
+  (non-nil-symbol-listp (gensym::gensym-list list omit))
   :rule-classes (:rewrite
 		 (:forward-chaining
 		  :trigger-terms ((gensym::gensym-list list omit)))))
@@ -125,7 +144,7 @@
 		  :trigger-terms ((gensym::gensym-n n base omit)))))
 
 (defthm gensym::symbol-listp-gensym-n
-  (symbol-listp (gensym::gensym-n n base omit))
+  (non-nil-symbol-listp (gensym::gensym-n n base omit))
   :rule-classes (:rewrite
 		 (:forward-chaining
 		  :trigger-terms ((gensym::gensym-n n base omit)))))

@@ -2852,14 +2852,16 @@
 		 ,cond
 		 (equal (,fn-total-induction ,@args)
 			(,fn-domain ,@args)))
-		:hints (("Goal" :induct (,fn-total-induction ,@args))))
+		:hints (("Goal" :do-not-induct t
+                         :induct (,fn-total-induction ,@args))))
 
 	      ))
 
 	   (defthm ,totality-theorem
 	     (implies ,cond
 		      (,fn-domain ,@args))
-	     :hints (("Goal" :induct (,fn-total-induction ,@args))))
+	     :hints (("Goal" :do-not-induct t
+                      :induct (,fn-total-induction ,@args))))
 
 	   )))))
 

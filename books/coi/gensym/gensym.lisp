@@ -587,17 +587,31 @@
 	(gensym::genvar2 base vars)
       base)))
 
-(defthm gensym::symbolp-gensym
-  (symbolp (gensym::gensym base vars))
+(defun non-nil-symbolp (x)
+  (declare (type t x))
+  (and (symbolp x)
+       x))
+
+(defthm implies-non-nil-symbolp
+  (implies
+   (and (symbolp x) x)
+   (non-nil-symbolp x))
+  :rule-classes (:rewrite :type-prescription))
+
+(defthm non-nil-symbolp-implication
+  (implies
+   (non-nil-symbolp x)
+   (and (symbolp x)
+        x))
+  :rule-classes (:forward-chaining))
+
+(defthm gensym::non-nil-symbolp-gensym
+  (non-nil-symbolp (gensym::gensym base vars))
   :rule-classes (:rewrite
 		 (:forward-chaining
 		  :trigger-terms ((gensym::gensym base vars)))))
 
-(defthm gensym::gensym-iff
-  (gensym::gensym base vars)
-  :rule-classes (:rewrite
-		 (:forward-chaining
-		  :trigger-terms ((gensym::gensym base vars)))))
+(in-theory (disable non-nil-symbolp))
 
 (defthm gensym::gensym-non-memberp
   (not (list::memberp (gensym::gensym base vars) vars))
@@ -606,3 +620,4 @@
 		  :trigger-terms ((gensym::gensym base vars)))))
 
 (in-theory (disable gensym::gensym))
+  

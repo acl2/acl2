@@ -1741,7 +1741,7 @@
                 (t (1+ (badguy (cdr x) (cdr y)))))))
 
  (local (defthm badguy-witness
-          (equal (equiv x y)
+          (equal (acl2::list-equiv x y)
 		 (and (equal (len x) (len y))
 		      (equal (nth (badguy x y) x)
 			     (nth (badguy x y) y))))
@@ -1749,7 +1749,7 @@
 
  (defthm equiv-by-multiplicity-driver
    (implies (equiv-hyps)
-            (equiv (equiv-lhs) (equiv-rhs)))
+            (acl2::list-equiv (equiv-lhs) (equiv-rhs)))
    :rule-classes nil
    :hints(("Goal"
            :use ((:instance
@@ -1758,7 +1758,7 @@
 
  (ADVISER::defadvice equiv-by-multiplicity
    (implies (equiv-hyps)
-            (equiv (equiv-lhs) (equiv-rhs)))
+            (acl2::list-equiv (equiv-lhs) (equiv-rhs)))
    :rule-classes (:pick-a-point :driver equiv-by-multiplicity-driver))
 
  )
