@@ -1,12 +1,13 @@
 # Copyright (C) 2015, University of British Columbia
 # Written (originally) by Mark Greenstreet (13th March, 2014)
 # Counter-example generation: Carl Kwan (May 2016)
-# Editted by Yan Peng (15th Nov 2016)
+# Edited by Yan Peng (15th Nov 2016)
 #
 # License: A 3-clause BSD license.
 # See the LICENSE file distributed with ACL2
-
+import re
 from z3 import *
+from functools import reduce # for Python 2/3 compatibility
 
 def sort(x):
     if type(x) == bool:    return BoolSort()
@@ -20,6 +21,26 @@ def sort(x):
             raise Exception('unknown sort for expression')
 
 class ACL22SMT(object):
+    class Symbol:
+        # define the Z3Sym type
+        z3Sym = Datatype('Symbol')
+        z3Sym.declare('sym', ('ival', IntSort()))
+        z3Sym = z3Sym.create()
+
+        # operations for creating a dictionary of symbols
+        count = 0
+        dict = {}
+
+        def intern(self, name):
+            try: return(self.dict[name])
+            except:
+                self.dict[name] = self.z3Sym.sym(self.count)
+                self.count = self.count + 1
+                return(self.dict[name])
+
+        def interns(self, namelist):
+            return [ self.intern(name) for name in namelist ]
+
     class status:
         def __init__(self, value):
             self.value = value
@@ -50,10 +71,15 @@ class ACL22SMT(object):
     # ---------------------------------------------------------
     #                   Basic Functions
     #
+
     # Type declarations
-    def isBool(self, who): return Bool(who)
-    def isInt(self, who): return Int(who)
-    def isReal(self, who): return Real(who)
+    def IntSort(self): return IntSort()
+    def RealSort(self): return RealSort()
+    def BoolSort(self): return BoolSort()
+    # type related functions
+    def integerp(self, x): return sort(x) == IntSort()
+    def rationalp(self, x): return sort(x) == RealSort()
+    def booleanp(self, x): return sort(x) == BoolSort()
 
     def plus(self, *args): return reduce(lambda x, y: x+y, args)
     def times(self, *args): return reduce(lambda x, y: x*y, args)
@@ -70,20 +96,16 @@ class ACL22SMT(object):
     def implies(self, x, y): return Implies(x,y)
     def Qx(self, x, y): return Q(x,y)
 
-    # type related functions
-    def integerp(self, x): return sort(x) == IntSort()
-    def rationalp(self, x): return sort(x) == RealSort()
-    def booleanp(self, x): return sort(x) == BoolSort()
-    # Uninterpreted function types
-    def Z(self): return IntSort()
-    def R(self): return RealSort()
-    def B(self): return BoolSort()
-
     def ifx(self, condx, thenx, elsex):
-        return If(condx, thenx, elsex)
+        try:
+            return If(condx, thenx, elsex)
+        except:
+            print('If failed')
+            print('If(' + str(condx) + ', ' + str(thenx) + ', ' + str(elsex) + ')')
+            raise Exception('giving up')
 
-    def hint_okay(self):
-        return False
+    # def hint_okay(self):
+    #     return False
 
     # -------------------------------------------------------------
     #       Proof functions and counter-example generation
@@ -101,7 +123,8 @@ class ACL22SMT(object):
                 if v.children() == []:
                     if not(is_int_value(v) or \
                            is_rational_value(v) or \
-                           is_true(v) or is_false(v)):
+                           is_true(v) or is_false(v) or \
+                           v.sexpr() == 'nil'):
                         return [v]
                     else:
                         return []
@@ -138,13 +161,15 @@ class ACL22SMT(object):
         dontcare_acl2 = []
 
         def translate_value(n, v):
+            translated_v = str(v)
             if (is_algebraic_value(v)):
                 rt_obj = str(v.sexpr())
-                rt_obj = rt_obj.replace("root-obj", "cex-root-obj " + "'" + n + " state")
-                rt_obj = rt_obj.replace("(+", "'(+")
+                rt_obj = rt_obj.replace("root-obj", "cex-root-obj " + n + " state")
                 translated_v = rt_obj
-            else:
-                translated_v = str(v).replace(".0", "").replace("False", "nil").replace("True","t")
+
+            translated_v = translated_v.replace(",", "")
+            translated_v = re.sub(r"([a-zA-Z0-9_]+?)\(", r"\(\1 ", translated_v)
+            translated_v = translated_v.replace(".0", "").replace("False", "nil").replace("True","t")
             return translated_v
 
         def translate_model(model):
@@ -164,14 +189,14 @@ class ACL22SMT(object):
         [model_lst, dontcare_lst] = self.get_model(var_lst)
         [model_acl2, dontcare_acl2] = self.translate_to_acl2(model_lst, dontcare_lst)
 
-        print "'(" + " ".join(model_acl2+dontcare_acl2) + ")"
-        print "Without dontcares: " + "'(" + " ".join(model_acl2) + ")"
+        print('\'(' + ' '.join(model_acl2+dontcare_acl2) + ')')
+        print('Without dontcares: ' + '\'(' + ' '.join(model_acl2) + ')')
 
     def proof_success(self):
-        print "proved"
+        print('proved')
 
     def proof_fail(self):
-        print "failed to prove"
+        print('failed to prove')
 
     # usage prove(claim) or prove(hypotheses, conclusion)
     def prove(self, hypotheses, conclusion=None):

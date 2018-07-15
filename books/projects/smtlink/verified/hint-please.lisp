@@ -23,14 +23,13 @@
   ;;
 
   ;; hint-please for SMT solver
-  (define hint-please ((hint listp) (tag symbolp))
+  (define hint-please ((hint listp))
     (declare (ignore hint)
-             (ignore tag)
              (xargs :guard t))
     nil)
 
   (defthm hint-please-forward
-    (implies (hint-please hint tag)
+    (implies (hint-please hint)
              nil)
     :rule-classes :forward-chaining)
 
@@ -47,22 +46,6 @@
     (b* ((cl (pseudo-term-list-fix cl))
          ((unless (consp cl)) cl))
       (case-match cl
-        ((('hint-please & &) . term) term)
+        ((('hint-please &) . term) term)
         (& cl))))
-
-  ;; -----------------------------------------------------------------
-  ;;       Define evaluators
-
-  (defevaluator ev-remove-hint-please ev-lst-remove-hint-please
-    ((not x) (if x y z) (hint-please hint tag)))
-
-  (def-join-thms ev-remove-hint-please)
-
-  (defthm correctness-of-remove-hint-please
-    (implies (and (pseudo-term-listp cl)
-                  (alistp b))
-             (iff (ev-remove-hint-please (disjoin (remove-hint-please cl)) b)
-                  (ev-remove-hint-please (disjoin cl) b)))
-    :hints (("Goal"
-             :in-theory (enable hint-please remove-hint-please) )))
 )

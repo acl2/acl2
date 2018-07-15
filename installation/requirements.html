@@ -200,7 +200,7 @@ SBCL.
 <p>
 
 If you try to run large jobs using ACL2 build on SBCL, such as
-building the ACL2+books combined manual, you may fail with and error,
+building the ACL2+books combined manual, you may fail with an error,
 "Immobile space exhausted".  We have avoided this error by building
 SBCL from source rather than obtaining a binary, using options as
 follows:
@@ -210,6 +210,18 @@ sh make.sh --without-immobile-space --without-immobile-code --without-compact-in
 </pre>
 
 <p>
+
+Rather comparable test runs produced a significant speed-up when
+building with the options above, as shown by the following results
+when using the "time" command for such runs.
+
+<pre>
+;;; before using the options above in the build
+85597.939u 1357.892s 3:27:15.73 699.2%  0+0k 1677680+7635408io 607pf+0w
+
+;;; after using the options above in the build
+72693.740u 1565.148s 2:58:36.10 692.9%  0+0k 3778176+7630768io 1250pf+0w
+</pre>
 
 <b><font size="+2">[<a href="installation.html">Back to Installation Guide.</a>]</font></b>
 

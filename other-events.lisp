@@ -30167,13 +30167,13 @@
 ; If the following conjunct is false, then raw Lisp would cause an error; so
 ; there is no harm in adding it (and, it helps with guard verification).
 
-                  (<= start (len val))
+                  (<= start (length val))
                   (subseq val
                           start
                           (if bytes
                               (min (+ start bytes)
-                                   (len val))
-                            (len val)))))))
+                                   (length val))
+                            (length val)))))))
       (declare (ignore erp))
       val)))
 )
