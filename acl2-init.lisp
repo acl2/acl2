@@ -2102,12 +2102,25 @@ implementations.")
   (let* ((ccl-program0
           (or (car ccl::*command-line-argument-list*) ; Gary Byers suggestion
               (error "Unable to determine CCL program pathname!")))
+         (os (get-os))
          (ccl-program (qfuncall pathname-os-to-unix
                                 ccl-program0
-                                (get-os)
+                                os
                                 *the-live-state*))
+         (use-thisscriptdir-p
+          (and (equal sysout-name core-name)
+               (not (position (symbol-value '*directory-separator*)
+                              core-name))))
+         (core-name-given core-name)
          (core-name (unix-full-pathname core-name
-                                        (pathname-name ccl-program))))
+                                        (pathname-name ccl-program)))
+         (core-name-string (if use-thisscriptdir-p
+                               (concatenate 'string
+                                            "$THISSCRIPTDIR/"
+                                            core-name-given
+                                            "."
+                                            (pathname-name ccl-program))
+                             core-name)))
     (when (probe-file sysout-name)
 
 ; At one point we supplied :if-exists :overwrite in the first argument to
@@ -2135,7 +2148,13 @@ implementations.")
 ; So we make an effort to set CCL_DEFAULT_DIRECTORY correctly so that the above
 ; truename will be correct.
 
-                      ("~a~%"
+                      ("~a~%~a~%"
+                       (if use-thisscriptdir-p
+
+; Thanks to Eric Smith for supplying the following command.
+
+                           "THISSCRIPTDIR=\"$( cd \"$( dirname \"$0\" )\" && pwd -P )\""
+                         "")
                        (let ((default-dir
                                (or (ccl::getenv "CCL_DEFAULT_DIRECTORY")
                                    (let ((path (our-truename "ccl:")))
@@ -2162,7 +2181,7 @@ implementations.")
                       "~s -I ~s~a -K ISO-8859-1 -e ~
                        \"(acl2::acl2-default-restart)\"~a ~a~%"
                       ccl-program
-                      core-name
+                      core-name-string
                       (if save-exec-p
 
 ; For an ACL2 built from sources, the saved script will include "-Z 64M"; see

@@ -2067,7 +2067,7 @@
     (implies (not (bvar-in-range k bvar-db))
              (not (equal (bfr-varname-fix k) (get-term->bvar$a term bvar-db))))
     :hints (("goal" :cases ((get-term->bvar$a term bvar-db))
-             :in-theory (enable bvar-in-range))))
+             :in-theory (enable bvar-in-range bfr-varname-fix))))
 
   (defun find-good-add-term-bvar$a-term (bvar-db calls)
     (if (atom calls)

@@ -10,7 +10,7 @@
 
 (include-book "fsqrt64")
 
-;; We impose the following constraints on the inputs of execute:
+;; We impose the following constraints on the inputs of fsqrt64:
 
 (defund input-constraints (opa fnum rin)
   (and (bvecp opa 64)
@@ -28,7 +28,7 @@
 ;;                   (dnp (bitn rin 25))
 ;;                   (fzp (bitn rin 24))
 ;;                   (rmode (bits rin 23 22)))
-;;              (mv-let (data flags) (execute opa fnum fzp dnp rmode)
+;;              (mv-let (data flags) (fsqrt64 opa fnum fzp dnp rmode)
 ;;                (let ((r (logior rin flags)))         
 ;;                  (mv-let (data-spec r-spec)
 ;;                          (arm-fsqrt-spec (bits opa (1- fmtw) 0) rin f)
@@ -61,8 +61,8 @@
 ;; The constant definitions will be derived from that of fsqrt64 in such a way that 
 ;; the proof of the following will be trivial:
 
-;; (defthm execute-lemma
-;;   (mv-let (d flags) (execute (opa) (fnum) (fzp) (dnp) (rmode))
+;; (defthm fsqrt64-lemma
+;;   (mv-let (d flags) (fsqrt64 (opa) (fnum) (fzp) (dnp) (rmode))
 ;;     (and (equal (d) d)
 ;;          (equal (flags) flags))))
 
@@ -82,17 +82,17 @@
 ;;          (dnp (bitn (rin) 25))
 ;;          (fzp (bitn (rin) 24))
 ;;          (rmode (bits (rin) 23 22)))
-;;     (mv-let (data flags) (execute (opa) (fnum) fzp dnp rmode)
+;;     (mv-let (data flags) (fsqrt64 (opa) (fnum) fzp dnp rmode)
 ;;       (mv-let (data-spec r-spec) (arm-sqrt-spec (bits (opa) (1- fmtw) 0) (rin) f)
 ;;         (and (equal data data-spec)
 ;;              (equal (logior (rin) flags) r-spec))))))
 
 ;; The desired theorem can then be derived by functional instantiation.
 
-;; In this book, we'll define the constants and prove execute-lemma.
+;; In this book, we'll define the constants and prove fsqrt64-lemma.
 
 ;;*******************************************************************************
-;; execute
+;; fsqrt64
 ;;*******************************************************************************
 
 (defund signa () (mv-nth 0 (mv-list 5 (analyze (opa) (fnum) (fzp) (bits 0 7 0)))))
@@ -134,12 +134,12 @@
     (0 (bits 6 4 0))
     (t 0)))
 
-(defund q-n () (mv-nth 0 (mv-list 7 (execute-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
-(defund rp-n () (mv-nth 2 (mv-list 7 (execute-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
-(defund rn-n () (mv-nth 3 (mv-list 7 (execute-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
-(defund qp-n () (mv-nth 4 (mv-list 7 (execute-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
-(defund qn-n () (mv-nth 5 (mv-list 7 (execute-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
-(defund expinc-n () (mv-nth 6 (mv-list 7 (execute-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
+(defund q-n () (mv-nth 0 (mv-list 7 (fsqrt64-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
+(defund rp-n () (mv-nth 2 (mv-list 7 (fsqrt64-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
+(defund rn-n () (mv-nth 3 (mv-list 7 (fsqrt64-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
+(defund qp-n () (mv-nth 4 (mv-list 7 (fsqrt64-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
+(defund qn-n () (mv-nth 5 (mv-list 7 (fsqrt64-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
+(defund expinc-n () (mv-nth 6 (mv-list 7 (fsqrt64-loop-0 1 (n) (fnum) (q-1) (i-1) (rp-1) (rn-1) (qp-1) (qn-1) (expinc-1)))))
 
 (defund exprnd () (bits (if1 (expinc-n) (+ (expq) 1) (expq)) 10 0))
 
@@ -186,14 +186,14 @@
             (flags-sqrtpow2)
             (flags-final))))
                                           
-(defthmd execute-lemma
-  (mv-let (data flags) (execute (opa) (fnum) (fzp) (dnp) (rmode))
+(defthmd fsqrt64-lemma
+  (mv-let (data flags) (fsqrt64 (opa) (fnum) (fzp) (dnp) (rmode))
     (and (equal (data) data)
          (equal (flags) flags)))
   :hints (("Goal" :do-not '(preprocess) :expand :lambdas
            :in-theory '(signa expa mana classa flags-a data-special flags-special expinc-0 siga expshft expq expodd d-sqrtpow2
 	                flags-sqrtpow2 rp-1 rn-1 qn-1 q-1 i-1 qp-1 expinc-1 n q-n rp-n rn-n qp-n qn-n expinc-n exprnd qp-shft
-			qn-shft qtrunc qinc stk qrnd inx qrndden inxden data-final flags-final data flags execute))))
+			qn-shft qtrunc qinc stk qrnd inx qrndden inxden data-final flags-final data flags fsqrt64))))
 
 ;; It's usually a good idea to disable the executable counterpart of any function that depends
 ;; on a constrained function:
@@ -206,18 +206,18 @@
 ;; let's also disable all the functions defined by the model and enable them only as needed:
 
 (in-theory (disable analyze clz53-loop-0 clz53-loop-1 clz53-loop-2 clz53 computeq rshft64 rounder final specialcase
-                    normalize sqrtpow2 firstiter nextdigit nextrem nextroot execute-loop-0 execute
+                    normalize sqrtpow2 firstiter nextdigit nextrem nextroot fsqrt64-loop-0 fsqrt64
                     (analyze) (clz53-loop-0) (clz53-loop-1) (clz53-loop-2) (clz53) (computeq) (rshft64) (rounder) (final)
-		    (specialcase) (normalize) (sqrtpow2) (firstiter) (nextdigit) (nextrem) (nextroot) (execute-loop-0) (execute)))
+		    (specialcase) (normalize) (sqrtpow2) (firstiter) (nextdigit) (nextrem) (nextroot) (fsqrt64-loop-0) (fsqrt64)))
 
 
 ;;*******************************************************************************
-;; execute-loop-0
+;; fsqrt64-loop-0
 ;;*******************************************************************************
 
 ;; We define the sequences of values (q j), (i j), (rp j), (rn j), (qp j), (qn j),
 ;; and (expinc j) as a set of mutually recursive functions, as they are computed by 
-;; execute-loop-0, and prove that the constants (rp-n), etc., defined above are 
+;; fsqrt64-loop-0, and prove that the constants (rp-n), etc., defined above are 
 ;; related to these functions as follows:
 ;;   (equal (rp-n) (rp (n)))
 ;;   (equal (rn-n) (rn (n))) 
@@ -280,11 +280,11 @@
 
 (in-theory (disable (q) (i) (rp) (rn) (qp) (qn) (expinc)))
 
-(defthmd execute-loop-0-lemma
+(defthmd fsqrt64-loop-0-lemma
   (implies (and (not (zp j)) (<= j (n)))
-           (equal (execute-loop-0 j (n) (fnum) (q j) (i j) (rp j) (rn j) (qp j) (qn j) (expinc j))
+           (equal (fsqrt64-loop-0 j (n) (fnum) (q j) (i j) (rp j) (rn j) (qp j) (qn j) (expinc j))
                   (list (q (n)) (i (n)) (rp (n)) (rn (n)) (qp (n)) (qn (n)) (expinc (n)))))
-  :hints (("Goal" :in-theory (enable execute-loop-0 q i rp rn qp qn expinc))))
+  :hints (("Goal" :in-theory (enable fsqrt64-loop-0 q i rp rn qp qn expinc))))
 
 (defthmd fnum-vals
   (member (fnum) '(0 1 2))
@@ -293,32 +293,32 @@
 
 (defthm q-n-rewrite
   (equal (q-n) (q (n)))
-  :hints (("Goal" :use (fnum-vals (:instance execute-loop-0-lemma (j 1)))
+  :hints (("Goal" :use (fnum-vals (:instance fsqrt64-loop-0-lemma (j 1)))
                   :in-theory (enable n q-n q i rp rn qp qn expinc))))
 
 (defthm qp-n-rewrite
   (equal (qp-n) (qp (n)))
-  :hints (("Goal" :use (fnum-vals (:instance execute-loop-0-lemma (j 1)))
+  :hints (("Goal" :use (fnum-vals (:instance fsqrt64-loop-0-lemma (j 1)))
                   :in-theory (enable n qp-n q i rp rn qp qn expinc))))
 
 (defthm qn-n-rewrite
   (equal (qn-n) (qn (n)))
-  :hints (("Goal" :use (fnum-vals (:instance execute-loop-0-lemma (j 1)))
+  :hints (("Goal" :use (fnum-vals (:instance fsqrt64-loop-0-lemma (j 1)))
                   :in-theory (enable n qn-n q i rp rn qp qn expinc))))
 
 (defthm rp-n-rewrite
   (equal (rp-n) (rp (n)))
-  :hints (("Goal" :use (fnum-vals (:instance execute-loop-0-lemma (j 1)))
+  :hints (("Goal" :use (fnum-vals (:instance fsqrt64-loop-0-lemma (j 1)))
                   :in-theory (enable n rp-n q i rp rn qp qn expinc))))
 
 (defthm rn-n-rewrite
   (equal (rn-n) (rn (n)))
-  :hints (("Goal" :use (fnum-vals (:instance execute-loop-0-lemma (j 1)))
+  :hints (("Goal" :use (fnum-vals (:instance fsqrt64-loop-0-lemma (j 1)))
                   :in-theory (enable n rn-n q i rp rn qp qn expinc))))
 
 (defthm expinc-n-rewrite
   (equal (expinc-n) (expinc (n)))
-  :hints (("Goal" :use (fnum-vals (:instance execute-loop-0-lemma (j 1)))
+  :hints (("Goal" :use (fnum-vals (:instance fsqrt64-loop-0-lemma (j 1)))
                   :in-theory (enable n expinc-n q i rp rn qp qn expinc))))
 
 

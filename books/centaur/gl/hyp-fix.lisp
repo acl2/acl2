@@ -551,7 +551,7 @@
       nil
     (if (consp (car x))
         (if (cdar x)
-            (or (set::in (non-bool-atom-fix v) (acl2::aig-vars (caar x)))
+            (or (set::in (aig-var-fix v) (acl2::aig-vars (caar x)))
                 (constr-alist-depends-on
                  v (calist-remassocs (cdr x)
                                      (list (caar x)))))
@@ -561,7 +561,7 @@
       (constr-alist-depends-on v (cdr x))))
   ///
 
-  (defcong non-bool-atom-equiv equal (constr-alist-depends-on v x) 1)
+  (defcong aig-var-equiv equal (constr-alist-depends-on v x) 1)
 
   (local (defthm set-equiv-of-cons-redundant
            (implies (member k x)
@@ -592,7 +592,7 @@
 
   (defthm constr-alist-depends-on-correct
     (implies (and (not (constr-alist-depends-on (double-rewrite v) x))
-                  (non-bool-atom-p v))
+                  (acl2::aig-var-p v))
              (equal (eval-constraint-alist x (cons (cons v val) env))
                     (eval-constraint-alist x env)))
     :hints(("Goal" :in-theory (enable eval-constraint-alist))))
@@ -606,7 +606,7 @@
 
   (defthm dependencies-of-constraint-alist->aig
     (implies (and (not (constr-alist-depends-on (double-rewrite v) x))
-                  (non-bool-atom-p v))
+                  (acl2::aig-var-p v))
              (not (set::in v
                             (acl2::aig-vars
                              (constraint-alist->aig x)))))
@@ -622,14 +622,14 @@
 (define aig-under-constraint-alist (x calist)
   (b* (((when (booleanp x)) x)
        ((mv negp xabs)
-        (if (and (consp x) (eq (cdr x) nil))
+        (if (and (not (acl2::aig-atom-p x)) (eq (cdr x) nil))
             ;; negation
             (mv t (car x))
           (mv nil x)))
        (look (calist-lookup xabs calist))
        ((when look)
         (xor (eql 1 look) negp))
-       ((when (atom xabs)) x)
+       ((when (acl2::aig-atom-p xabs)) x)
        ((when negp) x)
        (car (aig-under-constraint-alist (car xabs) calist))
        ((when (eq car nil)) nil)
@@ -780,7 +780,7 @@
   :returns (mv contradictionp calist num-aconses)
   (b* (((when (booleanp x)) (mv (not x) calist keys-acc))
        ((mv negp xabs)
-        (if (and (consp x) (eq (cdr x) nil))
+        (if (and (not (acl2::aig-atom-p x)) (eq (cdr x) nil))
             ;; negation
             (mv t (car x))
           (mv nil x)))
@@ -789,7 +789,7 @@
         (if (xor (eql 1 look) negp)
             (mv nil calist keys-acc)
           (mv t calist keys-acc)))
-       ((when (atom xabs))
+       ((when (acl2::aig-atom-p xabs))
         (mv nil (hons-acons xabs (if negp 0 1) calist) (cons xabs keys-acc)))
        ((when negp) (mv nil (hons-acons xabs 0 calist) (cons xabs keys-acc)))
        ((mv contradictionp1 calist keys-acc) (constraint-alist-assume-aig (car xabs) calist keys-acc))
@@ -801,13 +801,13 @@
    (defun shrink-ind (x calist keys-acc)
      (b* (((when (booleanp x)) keys-acc)
           ((mv negp xabs)
-           (if (and (consp x) (eq (cdr x) nil))
+           (if (and (not (acl2::aig-atom-p x)) (eq (cdr x) nil))
                ;; negation
                (mv t (car x))
              (mv nil x)))
           (look (calist-lookup xabs calist))
           ((when look) keys-acc)
-          ((when (atom xabs)) keys-acc)
+          ((when (acl2::aig-atom-p xabs)) keys-acc)
           ((when negp) keys-acc)
           (?ign (shrink-ind (car xabs) calist keys-acc))
           ((mv ?contradictionp1 scalist skeys-acc) (constraint-alist-assume-aig (car xabs) (shrink-constraint-alist calist) keys-acc))
@@ -913,7 +913,7 @@
   (defthm dependencies-of-constraint-alist-assume-aig
     (b* (((mv ?contradictionp ?new-calist ?keys-out)
           (constraint-alist-assume-aig x calist keys-in)))
-      (implies (and (not (set::in (non-bool-atom-fix k) (acl2::aig-vars x)))
+      (implies (and (not (set::in (aig-var-fix k) (acl2::aig-vars x)))
                     (not (constr-alist-depends-on k calist)))
                (not (constr-alist-depends-on k new-calist))))
     :hints(("Goal" :in-theory (e/d ()
@@ -924,6 +924,7 @@
             :induct (constraint-alist-assume-aig x calist keys-in)
             :expand ((:free (a b)
                       (constr-alist-depends-on k (cons a b)))
+                     (acl2::aig-vars x)
                      (constraint-alist-assume-aig x calist keys-in))))))
 
 

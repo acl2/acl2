@@ -1,7 +1,7 @@
 ; Event-Level Evaluation
 ;
-; Copyright (C) 2017 Regents of the University of Texas
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Regents of the University of Texas
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -23,18 +23,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc must-eval-to
+  :parents (testing-utilities errors)
+  :short "A top-level @(tsee assert$)-like command to ensure that
+          a form evaluates to a non-erroneous error triple
+          with the value of a specified expression."
+  :long
+  "@({
+     (must-eval-to form
+                   expr
+                   :ld-skip-proofsp ...
+                   :with-output-off ...
+                   :check-expansion ....)
+   })
+   <p>
+   @('Form') should evaluate to an error triple @('(mv erp val state)').
+   If @('erp') is @('nil') and @('val') is the value of @('expr')
+   then @('(must-eval-to form expr)') expands to @('(value-triple \'val)');
+   otherwise expansion causes an appropriate soft error.
+   Note that both @('form') and @('expr') are evaluated.
+   </p>
+   <p>
+   The @(':ld-skip-proofsp') option sets the value of @(tsee ld-skip-proofsp)
+   to use for evaluating @('form'),
+   unless it is @(':default'), which is the default,
+   in which case @(tsee ld-skip-proofsp) retains its current value.
+   </p>
+   <p>
+   The @(':with-output-off') option serves to suppress output from @('form'):
+   when not @('nil'), it is used as the @(':off') argument of @(tsee with-output).
+   The default is @(':all'), i.e., all output is suppressed.
+   </p>
+   <p>
+   The @(':check-expansion') option determines whether @('form')
+   is re-run and re-checked at @(tsee include-book) time;
+   see @(tsee make-event).
+   By default, it is not.
+   </p>
+   @(def must-eval-to)")
+
 (defmacro must-eval-to (&whole must-eval-to-form
                                form expr
                                &key
                                (ld-skip-proofsp ':default)
                                (with-output-off ':all)
                                (check-expansion 'nil check-expansion-p))
-
-; Form should evaluate to an error triple (mv erp form-val state).  If erp is
-; nil and expr-val is the value of expr then (must-eval-to form expr) expands
-; to (value-triple 'expr-val); otherwise expansion causes an appropriate soft
-; error.  Note that both form and expr are evaluated.
-
   (declare (xargs :guard (booleanp check-expansion)))
   (let* ((body
           `(er-let* ((form-val-use-nowhere-else ,form))
@@ -66,15 +99,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc must-eval-to-t
+  :parents (testing-utilities errors must-eval-to)
+  :short "A specialization of @(tsee must-eval-to) to ensure that
+          a form evaluates to a non-erroneous error triple with value @('t')."
+  :long
+  "<p>
+   This calls @(tsee must-eval-to) with @('t') as the @('expr') argument.
+   @('Form') should evaluate to an error triple @('(mv erp val state)').
+   If @('erp') is @('nil') and @('val') is @('t')
+   then @('(must-eval-to form expr)') expands to @('(value-triple t)');
+   otherwise expansion causes an appropriate soft error.
+   </p>
+   <p>
+   The keyword arguments have the same meaning as in @(tsee must-eval-to).
+   </p>
+   @(def must-eval-to-t)")
+
 (defmacro must-eval-to-t (form &key
                                (ld-skip-proofsp ':default)
                                (with-output-off ':all)
                                (check-expansion 'nil check-expansion-p))
-
-; Form should evaluate to an error triple (mv erp val state).  If erp is nil
-; and val is t then (must-eval-to-t form) expands to (value-triple t);
-; otherwise expansion causes an appropriate soft error.
-
   (declare (xargs :guard (booleanp check-expansion)))
   `(must-eval-to ,form t
                  :with-output-off ,with-output-off
@@ -267,9 +312,10 @@ expected to fail instead of succeed.  The option @(':expected') is described
 below; for everything else, please see the documentation for @('must-succeed')
 for syntax, options, and additional discussion.</p>
 
-<p>Also see @(see ensure-error), @(see ensure-soft-error), and @(see
-ensure-hard-error), which are essentially aliases for @('must-fail') with
-different values for the option, @(':expected'), which we now describe.</p>
+<p>Also see @(see must-fail-with-error), @(see must-fail-with-soft-error), and
+@(see must-fail-with-hard-error), which are essentially aliases for
+@('must-fail') with different values for the option, @(':expected'), which we
+now describe.</p>
 
 <p>When the value of keyword @(':expected') is @(':any'), then @('must-fail')
 succeeds if and only if ACL2 causes an error during evaluation of the supplied
@@ -375,68 +421,137 @@ including a book (because of the way that @('must-fail') is implemented using
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc ensure-error
-  :parents (testing-utilities errors)
-  :short "Ensure that an error occurs"
+(defsection must-fail-with-error
+  :parents (testing-utilities errors must-fail)
+  :short "A specialization of @(tsee must-fail) to ensure that an error occurs."
 
-  :long "<p>Evaluation of @('(ensure-error <form>)') returns without error
- exactly when evaluation of @('<form>') causes an error.</p>
+  :long "<p>Evaluation of @('(must-fail-with-error <form>)') returns without
+ error exactly when evaluation of @('<form>') causes an error.</p>
 
- <p>See @(see must-fail) for more details, as @('ensure-error') abbreviates
- @('must-fail') as follows.</p>
-
- @(def ensure-error)
-
- <p>Also see @(see ensure-soft-error) and @(see ensure-hard-error).</p>")
-
-(defmacro ensure-error (form &rest args)
-  (list* 'must-fail form :expected :any args))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc ensure-soft-error
-  :parents (testing-utilities errors)
-  :short "Ensure that a soft error occurs"
-
-  :long "<p>Evaluation of @('(ensure-soft-error <form>)') returns without error
- exactly when evaluation of @('<form>') causes a soft error.</p>
-
- <p>See @(see must-fail) for more details, as @('ensure-soft-error')
+ <p>See @(see must-fail) for more details, as @('must-fail-with-error')
  abbreviates @('must-fail') as follows.</p>
 
- @(def ensure-soft-error)
+ @(def must-fail-with-error)
 
- <p>Also see @(see ensure-error) and @(see ensure-hard-error).</p>")
+ <p>Also see @(see must-fail-with-soft-error) and
+ @(see must-fail-with-hard-error).</p>"
 
-(defmacro ensure-soft-error (form &rest args)
-  (list* 'must-fail form :expected :soft args))
+  (defmacro must-fail-with-error (form &rest args)
+    (list* 'must-fail form :expected :any args)))
+
+;; deprecated:
+
+(defsection ensure-error
+  :parents (must-fail-with-error)
+  :short "Deprecated synonym of @(tsee must-fail-with-error)"
+  (defmacro ensure-error (&rest args)
+    `(must-fail-with-error ,@args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc ensure-hard-error
-  :parents (testing-utilities errors)
-  :short "Ensure that a hard error occurs"
+(defsection must-fail-with-soft-error
+  :parents (testing-utilities errors must-fail)
+  :short "A specialization of @(tsee must-fail) to ensure that
+          a soft error occurs."
 
-  :long "<p>Evaluation of @('(ensure-hard-error <form>)') returns without error
- exactly when evaluation of @('<form>') causes a hard error.</p>
+  :long "<p>Evaluation of @('(must-fail-with-soft-error <form>)') returns
+ without error exactly when evaluation of @('<form>') causes a soft error.</p>
 
- <p>See @(see must-fail) for more details, as @('ensure-hard-error')
+ <p>See @(see must-fail) for more details, as @('must-fail-with-soft-error')
  abbreviates @('must-fail') as follows.</p>
 
- @(def ensure-hard-error)
+ @(def must-fail-with-soft-error)
 
- <p>Also see @(see ensure-error) and @(see ensure-soft-error).</p>")
+ <p>Also see @(see must-fail-with-error) and
+ @(see must-fail-with-hard-error).</p>"
 
-(defmacro ensure-hard-error (form &rest args)
-  (list* 'must-fail form :expected :hard args))
+  (defmacro must-fail-with-soft-error (form &rest args)
+    (list* 'must-fail form :expected :soft args)))
+
+;; deprecated:
+
+(defsection ensure-soft-error
+  :parents (must-fail-with-soft-error)
+  :short "Deprecated synonym of @(tsee must-fail-with-soft-error)"
+  (defmacro ensure-soft-error (&rest args)
+    `(must-fail-with-soft-error ,@args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro thm? (&rest args)
-  `(must-succeed (thm ,@args)))
+(defsection must-fail-with-hard-error
+  :parents (testing-utilities errors must-fail)
+  :short "A specialization of @(tsee must-fail) to ensure that
+          a hard error occurs."
 
-(defmacro not-thm? (&rest args)
-  `(must-fail (thm ,@args)))
+  :long "<p>Evaluation of @('(must-fail-with-hard-error <form>)') returns
+ without error exactly when evaluation of @('<form>') causes a hard error.</p>
+
+ <p>See @(see must-fail) for more details, as @('must-fail-with-hard-error')
+ abbreviates @('must-fail') as follows.</p>
+
+ @(def must-fail-with-hard-error)
+
+ <p>Also see @(see must-fail-with-error) and
+ @(see must-fail-with-soft-error).</p>"
+
+  (defmacro must-fail-with-hard-error (form &rest args)
+    (list* 'must-fail form :expected :hard args)))
+
+;; deprecated:
+
+(defsection ensure-hard-error
+  :parents (must-fail-with-hard-error)
+  :short "Deprecated synonym of @(tsee must-fail-with-hard-error)"
+  (defmacro ensure-hard-error (&rest args)
+    `(must-fail-with-hard-error ,@args)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection must-prove
+  :parents (testing-utilities errors)
+  :short "A top-level @(tsee assert$)-like command to ensure that
+          a formula gets proved."
+  :long
+  "<p>
+   This takes the same arguments as @(tsee thm).
+   It wraps the @(tsee thm) into a @(tsee must-succeed).
+   </p>
+   @(def must-prove)"
+
+  (defmacro must-prove (&rest args)
+    `(must-succeed (thm ,@args))))
+
+;; deprecated:
+
+(defsection thm?
+  :parents (must-prove)
+  :short "Deprecated synonym of @(tsee must-prove)."
+  (defmacro thm? (&rest args)
+    `(must-prove ,@args)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection must-not-prove
+  :parents (testing-utilities errors)
+  :short "A top-level @(tsee assert$)-like command to ensure that
+          a formula does not get proved."
+  :long
+  "<p>
+   This takes the same arguments as @(tsee thm).
+   It wraps the @(tsee thm) into a @(tsee must-fail).
+   </p>
+   @(def must-not-prove)"
+
+  (defmacro must-not-prove (&rest args)
+    `(must-fail (thm ,@args))))
+
+;; deprecated:
+
+(defsection not-thm?
+  :parents (must-not-prove)
+  :short "Deprecated synonym of @(tsee must-not-prove)."
+  (defmacro not-thm? (&rest args)
+    `(must-not-prove ,@args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

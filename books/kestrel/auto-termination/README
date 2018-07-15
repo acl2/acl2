@@ -1,0 +1,576 @@
+Copyright (C) 2018, Regents of the University of Texas
+Written by Matt Kaufmann
+License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+This is the README file for books/kestrel/auto-termination/.
+See also :doc auto-termination.
+
+TABLE OF CONTENTS
+
+This directory contains files that implement a macro, defunt (or
+defunT: "defun with automatic Termination"), which extends defun by
+searching a database for termination schemes.  By default, that
+database is produced by mining existing termination schemes from the
+ACL2 community books.
+
+I.   Introduction
+II.  Infrastructure/flow
+III. Algorithms
+IV.  Possible enhancements
+
+====================
+
+I.   Introduction
+
+This file assumes familiarity with :doc defunt.
+
+The main idea is to create a database of termination schemes from the
+community books, and then for a call of defunt to peruse that database
+in order to prove termination automatically.
+
+As of this writing, the database is initialized by including system
+book "doc/top" and then writing a termination database to file
+td-cands.lisp.  That database is what's perused by a call of defunt.
+
+There are heuristics for keeping the database from being too large.
+Some, but not all, of those are discussed further below, but here are
+a few now.  One key idea is to avoid storing termination clause-sets
+that are too large.  Another is to simplify a bit ("normalize"), for
+example by expanding calls of a few simple built-in functions like
+endp, so that termination clause-sets have a better chance of agreeing
+(in some suitable sense of "agree").  Another is to use subsumption to
+eliminate unnecessary clause-sets.  Here is an annotated log
+containing some statistics as of June 29, 2018, after including the
+book "td-cands", which shows 643 distinct termination schemes
+essentially shared by 821 functions, organized into 190 buckets by
+"justification" (measure and other aspects).  Others (perhaps many
+others) aren't included because they have been eliminated by
+subsumption or heuristically-large size.
+
+; First we compute the number of distinct "justifications", which are
+; records that contain information on how a termination clause-set is
+; generated from a definition, in particular the measure, well-founded
+; relation, and ruler-extenders.  Note that *td-candidates* is an
+; alist whose keys are all justifications, where each justification is
+; associated with a record whose justification is essentially an
+; alpha-variant of the key.
+ACL2 !>(length *td-candidates*)
+190
+ACL2 !>:q
+
+Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
+
+; By summing the number of records associated with each justification
+; key, we get the total number of records in the database.
+ACL2 1 > (loop for x in *td-candidates* sum (length (cdr x)))
+643
+
+; Each record contains not only a termination clause-set S, but also a
+; list of pairs (fn . book) such that the termination clause-set for
+; fn is subsumption-equivalent to S (using a normalized version of
+; each, as discussed below).
+ACL2 2 > (loop for x in *td-candidates* sum
+               (loop for c in (cdr x) sum
+                     (length (access td-candidate c :roots-alist))))
+821
+
+ACL2 3 >
+
+====================
+
+II.  Infrastructure/flow
+
+The use of defunt depends on files td-cands.lisp and td-cands.acl2,
+which are generated using the steps below.  These steps are
+implemented by write-td-cands.lsp, which in turn is executed by the
+script write-td-cands.sh.
+
+IMPORTANT: Files td-cands.lisp and td-cands.acl2 come with ACL2 books
+distributions and are in the github repository.  It should be rare to
+regenerate them.  Really, until failures start occurring with defunt
+because td-cands.{lisp,acl2} haven't been updated in a long time,
+there is probably no need to update.  Thus, this update procedure is
+_not_ incorporated into any makefile or overall build procedure.  To
+force an update, execute this at the shell:
+
+./write-td-cands.sh
+
+Here are the main steps to regenerating td-cands.lisp and
+td-cands.acl2.  The complete steps are implemented by the call of LD
+in write-td-cands.lsp that is made by the script write-td-cands.sh,
+starting with the following:
+
+PREREQUISITE.  Certify doc/top.lisp and all books in the current
+directory (possibly excepting td-cands.lisp and the two books that
+depend on it, defunt-top.lisp and defunt-tests.lisp).
+
+(1) Include many of the community books together, as follows (this can
+take quite a few minutes): (include-book "doc/top" :dir :system).
+
+(2) Create a "termination database" stobj, td, from all
+singly-recursive logic-mode functions in the resulting world.
+
+(3) Write out a book that contains "td candidates" (termination
+database candidates), which are records with useful information from
+the termination database stobj.  By default this book is named
+td-cands.lisp.  It has an associated file of portcullis commands,
+td-cands.acl2, which include many small books so that all packages are
+defined that are used in td-cands.lisp.
+
+(4) Certify the generated book td-cands.lisp, followed by
+defunt-top.lisp and defunt-tests.lisp.
+
+After these steps, one is ready to use defunt; see :doc defunt.
+
+====================
+
+III. Algorithms
+
+Here I give only a high-level summary of some aspects of the
+algorithms; many details are missing here.  I've attempted to comment
+the code, which should be helpful to anyone interested in diving
+deeper.  Here are just some examples of topics not discussed further
+(or much) below.
+
+- For portability, system books are represented as sysfile-p pairs
+  (:system . filename), where filename is relative to the community
+  books directory.
+
+- In the second algorithm below, we use a special subsumption
+  algorithm suitable for termination theorem clause-sets.  (See
+  clause-set-subsumes-t-top in defunt.lisp.)
+
+- The measure for an existing function can be a call of :?, which
+  makes its termination-theorem unusable.  But :? can be our friend:
+  When we generate an encapsulate with a local include-book that
+  defines a function, f, where we want to use the :termination-theorem
+  of f, we do so in a local defun and follow that with a redundant
+  defun that uses a :? measure.  (An example appears below.)
+
+There are two main algorithms.  First we build the termination
+database, culminating in creation of files td-cands.{acl2,lisp}, which
+define a list of "termination candidates".  Then each call of defunt
+walks through that list, in an attempt to build an event that uses
+:termination-theorem lemma instances to prove termination.
+
+A. Building the termination database
+
+The acronym "td" stands for "termination database" and also refers to
+the stobj, td, defined in termination-database.lisp.  A key field in
+that stobj is td-entry-ar, which is an array each of whose values is
+either nil or else is a td-entry record.  Each such record corresponds
+to one or more function symbols.  Key fields in the td-entry record
+are its :root field, which is a function symbol, and its :clause-list
+field, which is the "normalized" termination theorem for that function
+symbol (see :doc tthm).  That theorem is represented as a list of
+clauses (disjunctions), typically called a clause-set or a
+clause-list.
+
+Clause-set normalization is performed by function td-cl-lst in
+termination-database-utilities.lisp.  First, the termination
+clause-set for a function f with arity N is modified by replacing f
+with a function td-stub-N that has no constraints.  Next, all lambdas
+are removed by beta-reduction.  Next, the function norm-clause-lst is
+applied to do various simplifications such as expanding calls of EQ to
+calls of EQUAL, and similarly expanding calls of many other primitives
+(ENDP, ZP, and so on).  Finally, unnecessary ("subsumed") clauses are
+removed.  By doing those and other simplifications, we obtain a sort
+of normal form that is helpful to subsumption of one clause-set by
+another.
+
+Each value in the array td-entry-ar is initially nil.  Every
+singly-recursive function symbol, f, with a known measure can generate
+a td-entry to place into the first unused index in that array.  There
+are two possibilities:
+
+- The normalized termination clause-set for f is subsumed by the
+  clause-set of an existing entry, E, in td-entry-ar.  Then no change
+  is made to td-entry-ar unless subsumption also goes in the other
+  direction.  In that case, we may extend the :alt-alist field of E by
+  associating f with the book in which f is defined (or nil, if f is
+  built-in).  There are optimizations: for example, we do not make
+  that extension if that book is already represented in E for some
+  other function, g, the idea being that if we ultimately include a
+  book that defines f, then g is defined too and we don't need them
+  both.
+
+- Otherwise, we add a new entry for f in td-entry-ar, and we delete
+  any existing entries whose :clause-set field is subsumed by the
+  normalized termination clause-set for f.
+
+Finally, this initialized termination database is used to create
+so-called "termination candidates"; see the defrec for td-candidate in
+termination-database-utilities.lisp.  These candidates correspond to
+the entries in the td-entry-ar field of the stobj, td.  They are
+organized by justification record into an alist: each key is a
+justification record, and the associated value is a list of those
+candidates whose justification is alpha-equivalent to that key (in a
+suitable sense; see alpha-variant-p-justification in
+termination-database-utilities.lisp).  This alist is the value of
+*td-candidates*, defined in td-cands.lisp.
+
+So given a defunt call, what do we do?  We can't build its termination
+clause-set because we don't yet have a measure or well-founded
+relation.  But we can try all of the *td-candidates*!  Let's say that
+a td-candidate record is "known" if some root in its :roots-alist is a
+known function symbol in the current world.  (Every root in its
+:roots-alist was of course known when td was built; but we are
+probably in a much smaller world now.)
+
+The following computation is done on behalf of a make-event call, to
+produce an admissible defun event corresponding to the defun call.
+
+- First only for known candidates, then (if that fails) for all
+  candidates (including known ones):
+  - Loop: For each key (a justification), get its :subset and
+    :measure, then:
+    - Get all injections (towards getting all new measures) from the
+      :subset into the new formals.
+    - For each injection, map the :measure to a new measure, m-new.
+      Then:
+      - Build the termination-clauses TC for the new function based on
+        m-new and the well-founded relation of the key.
+      - Loop: For each tc-candidate record associated with the current
+        key, reduce TC by attempting to subsume each clause of TC by
+        some clause in the :clause-list of the record.
+      - If subsumption reduces TC to nil, then create a suitable event
+        that takes advantage of each :termination-theorem of the :root
+        of each tc-candidate record that participated in reducing TC.
+
+The "suitable event" referenced above can be seen by using :trans1 on
+examples in defunt-tests.lisp, as shown in the following edited log,
+which illustrates the "suitable event".
+
+ACL2 !>:trans1 (defunt f0 (x y)
+                 (if (endp x)
+                     y
+                   (list (f0 (cddr x) (cons 23 y)) 100)))
+ (WITH-OUTPUT
+  :OFF :ALL :ON ERROR :GAG-MODE NIL :STACK
+  :PUSH (MAKE-EVENT
+             (CREATE-DEFUNT '(F0 (X Y)
+                                 (IF (ENDP X)
+                                     Y (LIST (F0 (CDDR X) (CONS 23 Y)) 100)))
+                            T '(DEFUNT . F0)
+                            STATE)
+             :ON-BEHALF-OF :QUIET!))
+ACL2 !>(CREATE-DEFUNT '(F0 (X Y)
+                           (IF (ENDP X)
+                               Y (LIST (F0 (CDDR X) (CONS 23 Y)) 100)))
+                       T '(DEFUNT . F0)
+                       STATE)
+ (PROGN
+  (ENCAPSULATE
+   NIL
+
+; Progress messages can be very helpful.
+
+   (DEFUNT-NOTE (MSG "Using termination theorem~#0~[~/s~] for ~&0."
+                     '(EVENS)))
+
+; The normalized termination clause-set for the built-in function,
+; EVENS, subsumes all clauses in the normalized termination clause-set
+; for the proposed function, when using the measure and well-founded
+; relation from EVENS.  We orchestrate the proof with a sequence of
+; lemmas, as discussed below.
+
+; First, prove the normalized termination-theorem for EVENS from its
+; basic, unnormalized termination-theorem.
+
+   (LOCAL
+    (DEFTHM
+      F0-TERMINATION-LEMMA-1-EVENS
+      (IF (O-P (ACL2-COUNT L))
+          (IF (NOT (CONSP L))
+              'T
+              (O< (ACL2-COUNT (CDR (CDR L)))
+                  (ACL2-COUNT L)))
+          'NIL)
+      :HINTS (("Goal" :USE ((:TERMINATION-THEOREM EVENS ((EVENS TD-STUB-1))))
+                      :IN-THEORY (THEORY 'AUTO-TERMINATION-FNS)))))
+
+; Next, prove the proposed normalized termination-theorem with a :by
+; hint, which should succeed since it uses essentially the same
+; subsumption that we used.
+
+   (LOCAL (DEFTHM F0-TERMINATION-LEMMA-2-EVENS
+                  (IF (O-P (ACL2-COUNT X))
+                      (IF (NOT (CONSP X))
+                          'T
+                          (O< (ACL2-COUNT (CDR (CDR X)))
+                              (ACL2-COUNT X)))
+                      'NIL)
+                  :HINTS (("Goal" :BY F0-TERMINATION-LEMMA-1-EVENS))))
+
+; Prove the proposed unnormalized termination-theorem from its
+; normalized version.
+
+   (LOCAL
+        (DEFTHM F0-TERMINATION-LEMMA-3
+                (IF (O-P (ACL2-COUNT X))
+                    (IF (ENDP X)
+                        'T
+                        (O< (ACL2-COUNT (CDR (CDR X)))
+                            (ACL2-COUNT X)))
+                    'NIL)
+                :HINTS (("Goal" :USE (F0-TERMINATION-LEMMA-2-EVENS)
+                                :IN-THEORY (THEORY 'AUTO-TERMINATION-FNS)))))
+
+; Finally, admit the definition with a :by hint, since its termination
+; theorem is the one that we just proved.  In this case, the td-stub
+; function plays no role.
+
+   (DEFUN
+    F0 (X Y)
+    (DECLARE
+      (XARGS :MEASURE (ACL2-COUNT X)
+             :HINTS (("Goal" :BY (:FUNCTIONAL-INSTANCE F0-TERMINATION-LEMMA-3
+                                                       (TD-STUB-2 F0))))))
+    (IF (ENDP X)
+        Y
+        (LIST (F0 (CDDR X) (CONS 23 Y)) 100))))
+
+; Conclude with a newline and the value-triple with value F0, as would
+; be returned by defun.
+
+  (DEFUNT-NOTE "" T)
+  (VALUE-TRIPLE 'F0))
+ACL2 !>:trans1 (defunt my-merge (x y)
+                 (cond ((endp x) y)
+                       ((endp y) x)
+                       ((< (car x) (car y))
+                        (cons (car x)
+                              (my-merge (cdr x) y)))
+                       (t (cons (car y)
+                                (my-merge x (cdr y))))))
+ (WITH-OUTPUT
+  :OFF :ALL :ON ERROR :GAG-MODE NIL :STACK
+  :PUSH
+  (MAKE-EVENT
+    (CREATE-DEFUNT '(MY-MERGE (X Y)
+                              (COND ((ENDP X) Y)
+                                    ((ENDP Y) X)
+                                    ((< (CAR X) (CAR Y))
+                                     (CONS (CAR X) (MY-MERGE (CDR X) Y)))
+                                    (T (CONS (CAR Y) (MY-MERGE X (CDR Y))))))
+                   T '(DEFUNT . MY-MERGE)
+                   STATE)
+    :ON-BEHALF-OF :QUIET!))
+ACL2 !>(CREATE-DEFUNT '(MY-MERGE (X Y)
+				 (COND ((ENDP X) Y)
+				       ((ENDP Y) X)
+				       ((< (CAR X) (CAR Y))
+					(CONS (CAR X) (MY-MERGE (CDR X) Y)))
+				       (T (CONS (CAR Y) (MY-MERGE X (CDR Y))))))
+		       T '(DEFUNT . MY-MERGE)
+		       STATE)
+ (PROGN
+  (ENCAPSULATE
+   NIL
+   (DEFUNT-NOTE (MSG "Using termination theorem~#0~[~/s~] for ~&0."
+                     '(X86ISA::MERGE-<-INTO->)))
+
+; This time, we need to include a book, because we couldn't subsume
+; the new normalized termination clause-set with only functions that
+; are currently defined.
+
+   (DEFUNT-NOTE
+        (MSG "Evaluating ~x0~|to define function ~x1."
+             '(LOCAL (INCLUDE-BOOK "projects/x86isa/machine/concrete-state"
+                                   :DIR :SYSTEM))
+             'X86ISA::MERGE-<-INTO->))
+   (LOCAL (INCLUDE-BOOK "projects/x86isa/machine/concrete-state"
+                        :DIR :SYSTEM))
+
+; In this case, a single book suffices.
+
+   (DEFUNT-NOTE (MSG "Concluded local include-books."))
+
+; The lemmas below are analogous to those in the preceding example.
+
+   (LOCAL
+    (DEFTHM
+     MY-MERGE-TERMINATION-LEMMA-1-MERGE-<-INTO->
+     [[ normalized termination-theorem for the old function ]]
+     :HINTS
+     (("Goal"
+           :USE ((:TERMINATION-THEOREM X86ISA::MERGE-<-INTO->
+                                       ((X86ISA::MERGE-<-INTO-> TD-STUB-3))))
+           :IN-THEORY (THEORY 'AUTO-TERMINATION-FNS)))))
+   (LOCAL
+     (DEFTHM
+          MY-MERGE-TERMINATION-LEMMA-2-MERGE-<-INTO->
+          [[ normalized termination-theorem for the new function ]]
+          :HINTS (("Goal" :BY MY-MERGE-TERMINATION-LEMMA-1-MERGE-<-INTO->))))
+   (LOCAL
+      (DEFTHM
+           MY-MERGE-TERMINATION-LEMMA-3
+           [[ unnormalized termination-theorem for the new function ]]
+           :HINTS (("Goal" :USE (MY-MERGE-TERMINATION-LEMMA-2-MERGE-<-INTO->)
+                           :IN-THEORY (THEORY 'AUTO-TERMINATION-FNS)))))
+   (DEFUN
+    MY-MERGE (X Y)
+    (DECLARE
+     (XARGS
+       :MEASURE (BINARY-+ (LEN X) (LEN Y))
+       :HINTS (("Goal" :BY (:FUNCTIONAL-INSTANCE MY-MERGE-TERMINATION-LEMMA-3
+                                                 (TD-STUB-2 MY-MERGE))))))
+    (COND ((ENDP X) Y)
+          ((ENDP Y) X)
+          ((< (CAR X) (CAR Y))
+           (CONS (CAR X) (MY-MERGE (CDR X) Y)))
+          (T (CONS (CAR Y) (MY-MERGE X (CDR Y)))))))
+  (DEFUNT-NOTE "" T)
+  (VALUE-TRIPLE 'MY-MERGE))
+ACL2 !>(include-book "centaur/misc/suffixp" :dir :system) ; for suffixp call below
+
+Summary
+Form:  ( INCLUDE-BOOK "centaur/misc/suffixp" ...)
+Rules: NIL
+Time:  0.02 seconds (prove: 0.00, print: 0.00, other: 0.02)
+ "/v/filer4b/v11q002/acl2space/acl2/acl2/books/centaur/misc/suffixp.lisp"
+ACL2 !>:trans1 (DEFUNt DFS-COLLECT-new (NODES EDGES STACK)
+                 (B* (((WHEN (ATOM NODES)) STACK)
+                      (NODE (CAR NODES))
+                      ((WHEN (HONS-GET NODE STACK))
+                       (DFS-COLLECT-new (CDR NODES) EDGES STACK))
+                      (SUCCS (CDR (HONS-GET NODE EDGES)))
+                      (STACK1 (HONS-ACONS NODE T STACK))
+                      (STACK1 (DFS-COLLECT-new SUCCS EDGES STACK1))
+                      ((UNLESS (MBT (SUFFIXP STACK STACK1)))
+                       STACK1))
+                   (DFS-COLLECT-new (CDR NODES) EDGES STACK1)))
+ (WITH-OUTPUT
+  :OFF :ALL :ON ERROR :GAG-MODE NIL :STACK
+  :PUSH
+  (MAKE-EVENT
+    (CREATE-DEFUNT
+         '(DFS-COLLECT-NEW (NODES EDGES STACK)
+                           (B* (((WHEN (ATOM NODES)) STACK)
+                                (NODE (CAR NODES))
+                                ((WHEN (HONS-GET NODE STACK))
+                                 (DFS-COLLECT-NEW (CDR NODES)
+                                                  EDGES STACK))
+                                (SUCCS (CDR (HONS-GET NODE EDGES)))
+                                (STACK1 (HONS-ACONS NODE T STACK))
+                                (STACK1 (DFS-COLLECT-NEW SUCCS EDGES STACK1))
+                                ((UNLESS (MBT (SUFFIXP STACK STACK1)))
+                                 STACK1))
+                               (DFS-COLLECT-NEW (CDR NODES)
+                                                EDGES STACK1)))
+         T '(DEFUNT . DFS-COLLECT-NEW)
+         STATE)
+    :ON-BEHALF-OF :QUIET!))
+ACL2 !>(CREATE-DEFUNT
+        '(DFS-COLLECT-NEW (NODES EDGES STACK)
+                          (B* (((WHEN (ATOM NODES)) STACK)
+                               (NODE (CAR NODES))
+                               ((WHEN (HONS-GET NODE STACK))
+                                (DFS-COLLECT-NEW (CDR NODES)
+                                                 EDGES STACK))
+                               (SUCCS (CDR (HONS-GET NODE EDGES)))
+                               (STACK1 (HONS-ACONS NODE T STACK))
+                               (STACK1 (DFS-COLLECT-NEW SUCCS EDGES STACK1))
+                               ((UNLESS (MBT (SUFFIXP STACK STACK1)))
+                                STACK1))
+                            (DFS-COLLECT-NEW (CDR NODES)
+                                             EDGES STACK1)))
+        T '(DEFUNT . DFS-COLLECT-NEW)
+        STATE)
+ (PROGN
+  (DEFUNT-NOTE
+
+; The search succeeds in finding sufficient termination-theorems, but
+; this time the well-founded relation, NAT-LIST-<, is not defined in
+; the current world.  The first step for dealing with this is to
+; include a book, "std/basic/two-nats-measure", that defines that
+; well-founded relation.  Note that we are inside a progn, not an
+; encapsulate, because the well-founded relation must be non-local for
+; our admission of the new defun.
+
+   (MSG
+    "Executing the following form in order to ~
+                                 define the well-founded relation, ~x0:~|~x1"
+    'NAT-LIST-<
+    '(INCLUDE-BOOK "std/basic/two-nats-measure"
+                   :DIR :SYSTEM)))
+  (INCLUDE-BOOK "std/basic/two-nats-measure"
+                :DIR :SYSTEM)
+
+; Now we lay down the sort of encapsulate that we laid down above.
+; Notice that since the measure isn't defined in the current world, we
+; an include-book form is generated for a book that defines the
+; measure.
+
+  (ENCAPSULATE
+   NIL
+   (DEFUNT-NOTE (MSG "Using termination theorem~#0~[~/s~] for ~&0."
+                     '(DFS-COLLECT)))
+   (DEFUNT-NOTE (MSG "Evaluating ~x0~|to define function ~x1."
+                     '(LOCAL (INCLUDE-BOOK "centaur/misc/dfs-measure"
+                                           :DIR :SYSTEM))
+                     'DFS-COLLECT))
+   (LOCAL (INCLUDE-BOOK "centaur/misc/dfs-measure"
+                        :DIR :SYSTEM))
+   (DEFUNT-NOTE (MSG "Concluded local include-books."))
+   (LOCAL
+    (DEFTHM
+     DFS-COLLECT-NEW-TERMINATION-LEMMA-1-DFS-COLLECT
+     [[ normalized termination-theorem for the old function ]]
+     :HINTS
+     (("Goal"
+          :USE ((:TERMINATION-THEOREM DFS-COLLECT ((DFS-COLLECT TD-STUB-3))))
+          :IN-THEORY (THEORY 'AUTO-TERMINATION-FNS)))))
+   (LOCAL
+    (DEFTHM
+     DFS-COLLECT-NEW-TERMINATION-LEMMA-2-DFS-COLLECT
+     [[ normalized termination-theorem for the new function ]]
+     :HINTS (("Goal" :BY DFS-COLLECT-NEW-TERMINATION-LEMMA-1-DFS-COLLECT))))
+   (LOCAL
+    (DEFTHM
+     DFS-COLLECT-NEW-TERMINATION-LEMMA-3
+     [[ unnormalized termination-theorem for the new function ]]
+     :HINTS (("Goal" :USE (DFS-COLLECT-NEW-TERMINATION-LEMMA-2-DFS-COLLECT)
+                     :IN-THEORY (THEORY 'AUTO-TERMINATION-FNS)))))
+
+; The following definition is local, as explained below regarding the
+  use of :? .
+
+   (LOCAL
+    (DEFUN
+     DFS-COLLECT-NEW (NODES EDGES STACK)
+     (DECLARE
+      (XARGS
+
+; Since the well-founded relation is not the default for the current
+  world, we must specify it explicitly.
+
+       :WELL-FOUNDED-RELATION NAT-LIST-<
+       :MEASURE (DFS-MEASURE NODES EDGES STACK)
+       :HINTS
+       (("Goal" :BY (:FUNCTIONAL-INSTANCE DFS-COLLECT-NEW-TERMINATION-LEMMA-3
+                                          (TD-STUB-3 DFS-COLLECT-NEW))))))
+     [[ body from the defunt form ]]))
+
+; The following is non-local, and is redundant on the first pass of
+; the encapsulate.  Since we needed to include a book for the measure,
+; we use :? here.
+
+   (DEFUN DFS-COLLECT-NEW (NODES EDGES STACK)
+          (DECLARE (XARGS :WELL-FOUNDED-RELATION NAT-LIST-<
+                          :MEASURE (:? STACK EDGES NODES)))
+          [[ body from the defunt form ]]))))
+  (DEFUNT-NOTE "" T)
+  (VALUE-TRIPLE 'DFS-COLLECT-NEW))
+ACL2 !>
+
+====================
+
+IV.  Possible enhancements
+
+See to-do.txt for a list of ideas that could lead to improvements.
+Some are probably straightforward, but as of this writing it seemed
+more important to document the current state of things (which seems
+solid) than to tweak the code.
+
+====================

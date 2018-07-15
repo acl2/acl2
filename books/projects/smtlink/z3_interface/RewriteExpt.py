@@ -1,6 +1,6 @@
 # Copyright (C) 2015, University of British Columbia
 # Written (originally) by Mark Greenstreet (13th March, 2014)
-# Editted by Yan Peng (11th Nov. 2016)
+# Edited by Yan Peng (11th Nov. 2016)
 #
 # License: A 3-clause BSD license.
 # See the LICENSE file distributed with ACL2
@@ -8,6 +8,7 @@
 import collections
 import ACL2_to_Z3
 import z3
+from functools import reduce # for Python 2/3 compatibility
 
 def prod(stuff):
     """ prod(stuff):
@@ -18,11 +19,11 @@ def prod(stuff):
 def longVal(x):
     """ longVal(x):
           if 'x' is a z3 constant (i.e. function of arity 0) whose value is an integer,
-            then return that integer as an python long
+            then return that integer as a python long
             else return 'None'"""
     if(hasattr(x, 'as_long')): return x.as_long()
     elif(hasattr(x, 'numerator_as_long')):
-        if(x.denominator_as_long() == 1L): return x.numerator_as_long()
+        if(x.denominator_as_long() == 1): return x.numerator_as_long()
     return None
 # end longVal
 
@@ -46,7 +47,7 @@ class to_smt_w_expt(ACL2_to_Z3.ACL22SMT):
 
     def reportFun(self, report=None):
         def print_msg(*args):
-            print ''.join([str(a) for a in args])
+            print(''.join([str(a) for a in args]))
             return None
         def dont_print_msg(*args):
             return None

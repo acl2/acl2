@@ -33,6 +33,7 @@
 
 (include-book "world-queries") ; for measure
 (include-book "tools/remove-hyps" :dir :system) ; for event-steps
+(include-book "../auto-termination/injections")
 (include-book "xdoc/top" :dir :system)
 
 (program)
@@ -434,40 +435,6 @@
                                             (cdr unify-subst-lst)))
                    (t unify-subst))))))
 
-(defun extend-injections-1 (x range injection)
-  (cond ((endp range) nil)
-        ((rassoc-eq (car range) injection)
-         (extend-injections-1 x (cdr range) injection))
-        (t (cons (acons x (car range) injection)
-                 (extend-injections-1 x (cdr range) injection)))))
-
-(defun extend-injections (x range injections)
-  (cond ((endp injections) nil)
-        (t (append (extend-injections-1 x range (car injections))
-                   (extend-injections x range (cdr injections))))))
-
-(defun injections (domain range)
-
-; Return a list of all one-to-one maps from domain to range (each represented
-; as an alist).
-
-  (cond ((endp domain) (list nil))
-        (t (extend-injections (car domain)
-                              range
-                              (injections (cdr domain) range)))))
-
-(defun injection-count (from to acc)
-
-; This is (at least approximately) a theorem:
-
-;   (implies (natp acc)
-;            (equal (injection-count (len dom) (len ran) acc)
-;                   (* acc (len (injections dom ran)))))
-
-  (declare (type (signed-byte 30) from to))
-  (cond ((zp from) acc)
-        (t (injection-count (1- from) (1- to) (* to acc)))))
-
 (defun too-many-injections (domain range)
 
 ; The value 1000, below, is highly arbitrary.
@@ -753,7 +720,10 @@
 (defxdoc with-auto-termination
   :parents (kestrel-utilities)
   :short "Re-use an existing termination proof automatically."
-  :long "<p>The following (admittedly, contrived) example shows how to use this
+  :long "<p><b>NOTE</b>: THIS UTILITY HAS BEEN LARGELY SUPERSEDED BY
+ @('defunt').  See @(see defunt).</p>
+
+ <p>The following (admittedly, contrived) example shows how to use this
  utility.  First define:</p>
 
  @({
@@ -870,4 +840,3 @@
  <p>See community book @('kestrel/utilities/auto-termination-tests.lisp') for more
  examples.</p>")
 
-(defpointer auto-termination with-auto-termination)

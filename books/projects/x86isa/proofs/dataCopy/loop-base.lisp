@@ -1,9 +1,44 @@
-;; AUTHOR:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
 (include-book "init" :ttags :all)
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 
@@ -19,8 +54,8 @@
                          las-to-pas
                          las-to-pas-values-and-!flgi
                          mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
-                         xr-fault-wb-in-system-level-marking-mode
-                         xr-fault-wb-in-system-level-mode))))
+                         xr-fault-wb-in-system-level-marking-view
+                         xr-fault-wb-in-sys-view))))
 
 ;; ======================================================================
 
@@ -165,7 +200,7 @@
            :in-theory (e/d* ()
                             (separate-smaller-regions
                              rb-rb-split-reads
-                             split-rb-in-programmer-level-mode
+                             split-rb-in-app-view
                              loop-clk-base
                              effects-copyData-loop-base-destination-address-projection-copied
                              effects-copyData-loop-base-destination-address-projection-original
@@ -259,11 +294,11 @@
                              (loop-clk-base)
                              force (force))))))
 
-(defthm effects-copyData-loop-base-programmer-level-mode-projection
+(defthm effects-copyData-loop-base-app-view-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (<= m 4))
-           (equal (xr :programmer-level-mode 0 (x86-run (loop-clk-base) x86))
-                  (xr :programmer-level-mode 0 x86)))
+           (equal (xr :app-view 0 (x86-run (loop-clk-base) x86))
+                  (xr :app-view 0 x86)))
   :hints (("Goal"
            :use ((:instance effects-copydata-loop-base))
            :in-theory (e/d* ()

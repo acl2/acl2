@@ -19,11 +19,12 @@
   :parents (SMT-basics)
   :short "Basic ACL2 functions supported in Smtlink."
   (append
-   '(rationalp realp booleanp integerp)
+   '(magic-fix)
+   '(rationalp realp booleanp integerp symbolp)
    '(binary-+ binary-* unary-/ unary--
               equal <
               implies if not
-              lambda )))
+              lambda)))
 
 (defval *SMT-functions*
   :parents (SMT-functions)
@@ -39,7 +40,7 @@
     (not               . ("_SMT_.notx"       . 1))
     (lambda            . ("lambda"           . 2))
     (implies           . ("_SMT_.implies"    . 2))
-    (hint-please       . ("_SMT_.hint_okay"  . 0))
+    ;; (hint-please       . ("_SMT_.hint_okay"  . 0))
     ;; This doesn't work right now because Z3's definition is different from ACL2
     ;; when using types as hypotheses. If X is rationalp in Z3, then it can not
     ;; be an integerp. We need to first grab a definition in Z3 that can fully
@@ -53,21 +54,34 @@
   :parents (SMT-basics)
   :short "ACL2 type functions and their corresponding Z3 type declarations."
   ;;(ACL2 type      .  SMT type)
-  `((realp          . "_SMT_.isReal")
-    (rationalp      . "_SMT_.isReal")
-    (integerp       . "_SMT_.isInt")
-    (booleanp       . "_SMT_.isBool")))
+  `((realp          . "_SMT_.RealSort()")
+    (rationalp      . "_SMT_.RealSort()")
+    (integerp       . "_SMT_.IntSort()")
+    (booleanp       . "_SMT_.BoolSort()")
+    (symbolp        . "Symbol_z3.z3Sym")))
 
 (defval *SMT-uninterpreted-types*
   :parents (SMT-basics)
   :short "ACL2 type functions and their corresponding Z3 uninterpreted function
     type declarations."
-  `((realp          . "_SMT_.R")
-    (rationalp      . "_SMT_.R")
-    (real/rationalp . "_SMT_.R")
-    (integerp       . "_SMT_.Z")
-    (booleanp       . "_SMT_.B")))
+  `((realp          . "_SMT_.RealSort()")
+    (rationalp      . "_SMT_.RealSort()")
+    (real/rationalp . "_SMT_.RealSort()")
+    (integerp       . "_SMT_.IntSort()")
+    (booleanp       . "_SMT_.BoolSort()")
+    (symbolp        . "Symbol_z3.z3Sym")))
 
+;; current tag . next computed-hint
+(defval *SMT-architecture*
+  '((process-hint          . add-hypo-cp)
+    (add-hypo              . expand-cp)
+    (expand                . type-extract-cp)
+    (type-extract          . uninterpreted-fn-cp)
+    (uninterpreted         . smt-trusted-cp)
+    (uninterpreted-custom  . smt-trusted-cp-custom)))
+
+
+;;----------------------------------------------------------------
 
 (encapsulate ()
   (local (defun falist-to-xdoc-aux (falist acc)

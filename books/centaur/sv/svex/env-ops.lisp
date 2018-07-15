@@ -46,7 +46,7 @@
 
 (define svex-env-extract
   :parents (svex-env)
-  :short "Restrict an @(see svex-env) to only particular variables."
+  :short "Restrict an @(see svex-env) to only particular variables.  Variables that are present in keys but not env will be bound to X."
   ((keys svarlist-p "Variables to keep.")
    (env  svex-env-p "Original environment to filter.  Need not be fast."))
   :returns
@@ -141,6 +141,142 @@
 
   ;; for :fix hook
   (local (in-theory (enable svex-env-extract))))
+
+
+(define svex-env-reduce-aux ((keys svarlist-p) (env svex-env-p))
+  :parents (svex-env-reduce)
+  :prepwork ((local (in-theory (enable svarlist-p svarlist-fix))))
+  :returns (env1 svex-env-p)
+  (if (atom keys)
+      nil
+    (b* ((key (svar-fix (car keys)))
+         (look (hons-get key (svex-env-fix env))))
+      (if look
+          (cons (cons key (cdr look))
+                (svex-env-reduce-aux (cdr keys) env))
+        (svex-env-reduce-aux (cdr keys) env)))))
+
+(define svex-env-reduce
+  :parents (svex-env)
+  :short "Restrict an @(see svex-env) to only particular variables.  
+Variables that are present in keys but not env will be left unbound."
+  ((keys svarlist-p "Variables to keep.")
+   (env  svex-env-p "Original environment to filter.  Need not be fast."))
+  :returns
+  (sub-env svex-env-p "Restriction of @('env') to @('keys').  Slow alist.")
+  :prepwork ((local (in-theory (enable svex-env-reduce-aux svarlist-fix))))
+  :verify-guards nil
+  (mbe :logic (if (atom keys)
+                  nil
+                (b* ((key (svar-fix (car keys)))
+                     (look (hons-get key (svex-env-fix env))))
+                  (if look
+                      (cons (cons key (cdr look))
+                            (svex-env-reduce (cdr keys) env))
+                    (svex-env-reduce (cdr keys) env))))
+       :exec (with-fast-alist env (svex-env-reduce-aux keys env)))
+  ///
+  (local (defthm svex-env-reduce-aux-elim
+           (equal (svex-env-reduce-aux keys env)
+                  (svex-env-reduce keys env))))
+
+  (verify-guards svex-env-reduce)
+
+  (defthm svex-env-lookup-of-svex-env-reduce
+    (equal (svex-env-lookup v (svex-env-reduce vars env))
+           (if (member (svar-fix v) (svarlist-fix vars))
+               (svex-env-lookup v env)
+             (4vec-x)))
+    :hints(("Goal" :in-theory (enable svarlist-fix svex-env-lookup))))
+
+  (local (in-theory (disable svex-env-reduce)))
+
+  (defthm-svex-eval-flag
+    (defthm svex-eval-reduce-var-superset
+      (implies (subsetp (svex-vars x) (svarlist-fix vars))
+               (equal (svex-eval x (svex-env-reduce vars env))
+                      (svex-eval x env)))
+      :hints ('(:expand ((svex-vars x)
+                         (:free (env) (svex-eval x env)))))
+      :flag expr)
+    (defthm svexlist-eval-reduce-var-superset
+      (implies (subsetp (svexlist-vars x) (svarlist-fix vars))
+               (equal (svexlist-eval x (svex-env-reduce vars env))
+                      (svexlist-eval x env)))
+      :hints ('(:expand ((svexlist-vars x)
+                         (:free (env) (svexlist-eval x env)))))
+      :flag list))
+
+  (defthm svex-alist-eval-of-reduce-var-supserset
+    (implies (subsetp (svexlist-vars (svex-alist-vals x)) (svarlist-fix vars))
+             (equal (svex-alist-eval x (svex-env-reduce vars env))
+                    (svex-alist-eval x env)))
+    :hints(("Goal" :in-theory (enable svex-alist-eval svex-alist-vals svex-alist-vars svexlist-vars))))
+
+  (local (defthm member-alist-keys-rw
+           (iff (member k (alist-keys x))
+                (hons-assoc-equal k x))
+           :hints(("Goal" :in-theory (enable alist-keys hons-assoc-equal)))))
+
+  (defthm alist-keys-of-svex-env-reduce
+    (equal (alist-keys (svex-env-reduce vars env))
+           (intersection-equal (svarlist-fix vars) (alist-keys (svex-env-fix env))))
+    :hints(("Goal" :in-theory (e/d (svarlist-fix alist-keys
+                                      svex-env-reduce
+                                      intersection-equal)
+                                   (hons-assoc-equal-of-svex-env-fix)))))
+
+
+  (local (defthm svex-env-reduce-when-car-not-member
+           (implies (not (member (caar x) (svarlist-fix keys)))
+                    (equal (svex-env-reduce keys (cdr x))
+                           (svex-env-reduce keys x)))
+           :hints(("Goal" :in-theory (enable svex-env-reduce svex-env-lookup)))))
+
+  (local (defthm svex-env-reduce-when-car-not-consp
+           (implies (not (and (consp (car x)) (svar-p (caar x))))
+                    (equal (svex-env-reduce keys (cdr x))
+                           (svex-env-reduce keys x)))
+           :hints(("Goal" :in-theory (enable svex-env-reduce svex-env-lookup)))))
+
+  (local (defthm svarlist-p-of-alist-keys-of-env
+           (implies (svex-env-p x)
+                    (svarlist-p (alist-keys x)))
+           :hints(("Goal" :in-theory (enable svex-env-p alist-keys)))))
+
+  (defthm svex-env-reduce-when-alist-keys-equal
+    (implies (and (equal (alist-keys (svex-env-fix x)) keys)
+                  (no-duplicatesp keys))
+             (equal (svex-env-reduce keys x)
+                    (svex-env-fix x)))
+    :hints(("Goal" :in-theory (enable svex-env-reduce svex-env-fix alist-keys no-duplicatesp))
+           (and stable-under-simplificationp
+                (not (access acl2::clause-id id :pool-lst))
+                '(:induct t))
+           (and stable-under-simplificationp
+                '(:in-theory (enable svex-env-lookup)))))
+
+  (defthm hons-assoc-equal-of-svex-env-reduce
+    (equal (hons-assoc-equal v (svex-env-reduce keys x))
+           (and (member v (svarlist-fix keys))
+                (hons-assoc-equal v (svex-env-fix x))))
+    :hints(("Goal" :in-theory (enable svex-env-reduce svarlist-fix hons-assoc-equal))))
+
+  (defthm svex-env-reduce-of-superset
+    (implies (subsetp (svarlist-fix keys) (svarlist-fix keys2))
+             (Equal (svex-env-reduce keys (svex-env-reduce keys2 x))
+                    (svex-env-reduce keys x)))
+    :hints(("Goal" :in-theory (enable svex-env-reduce svarlist-fix))))
+
+  (defthm svex-env-extract-of-subset-of-env-reduce
+    (implies (subsetp (svarlist-fix keys) (svarlist-fix keys2))
+             (Equal (svex-env-extract keys (svex-env-reduce keys2 x))
+                    (svex-env-extract keys x)))
+    :hints(("Goal" :in-theory (e/d (svex-env-extract svarlist-fix)
+                                   (svex-env-reduce)))))
+
+  ;; for :fix hook
+  (local (in-theory (enable svex-env-reduce))))
 
 
 (def-universal-equiv svex-envs-similar

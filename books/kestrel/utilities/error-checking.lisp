@@ -13,8 +13,8 @@
 (include-book "enumerations")
 (include-book "er-soft-plus")
 (include-book "event-forms")
+(include-book "messages")
 (include-book "numbered-names")
-(include-book "strings")
 (include-book "symbol-true-list-alists")
 (include-book "terms")
 
@@ -458,6 +458,11 @@
   "Cause an error if a value is not a symbol."
   (((symbolp x) "~@0 must be a symbol." description)))
 
+(def-error-checker ensure-string-or-nil
+  ((x "Value to check."))
+  "Cause an error if a value is not a string or @('nil')."
+  (((maybe-stringp x) "~@0 must be a string or NIL." description)))
+
 (def-error-checker ensure-symbol-list
   ((x "Value to check."))
   "Cause an error if a value is not a true list of symbols."
@@ -629,6 +634,22 @@
   "Cause an error if a value is not the name of an existing function."
   (((function-namep x (w state))
     "~@0 must be the name of an existing function." description)))
+
+(def-error-checker ensure-function-name-list
+  ((x "Value to check."))
+  "Cause an error if a value is not
+   a true list of names of existing functions."
+  (((function-name-listp x (w state))
+    "~@0 must be a true list of names of existing functions."
+    description)))
+
+(def-error-checker ensure-list-functions
+  ((list true-listp "List to check."))
+  "Cause an error if a true list
+   does not consist of names of existing functions."
+  (((and (symbol-listp list)
+         (function-symbol-listp list (w state)))
+    "~@0 must consist of names of existing functions." description)))
 
 (define ensure-function-name-or-numbered-wildcard
   ((x "Value to check.")

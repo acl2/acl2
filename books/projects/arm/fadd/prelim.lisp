@@ -844,20 +844,20 @@
 ;; LZA128
 ;;*******************************************************************************
 
-(defund p () (logxor (in1lza) (in2lza)))
+(defund p1 () (logxor (in1lza) (in2lza)))
 
-(defund k ()
+(defund k1 ()
   (logand (bits (lognot (in1lza)) 127 0)
           (bits (lognot (in2lza)) 127 0)))
 
-(defund w0 () (bits (lognot (logxor (p) (ash (k) 1))) 127 0))
+(defund w1 () (bits (lognot (logxor (p1) (ash (k1) 1))) 127 0))
 
 (defthmd lza128-lemma
-  (equal (lza*) (clz (bits (ash (w0) (- 1)) 127 0)))
+  (equal (lza*) (clz (bits (ash (w1) (- 1)) 127 0)))
   :hints (("Goal" :do-not '(preprocess) :expand :lambdas
-           :in-theory '(lza128 lza* p k w0))))
+           :in-theory '(lza128 lza* p1 k1 w1))))
 
-(in-theory (disable (p) (k) (w0)))
+(in-theory (disable (p1) (k1) (w1)))
 
 
 ;;*******************************************************************************

@@ -165,10 +165,20 @@
  documentation is integrated into ACL2 builds.</p>
 
  <p>By contrast, system-level documentation is in Lisp comments found in the
- ACL2 sources and in this Guide.  Please read the comments in a definition
- carefully before you modify it!  In particular, there are often comments
- warning you to ``keep in sync'' with one or more other definitions, which need
- to be heeded.</p>
+ ACL2 sources and in this Guide.  Those comments are geared towards
+ implementors; so while they are written with care, they sometimes assume
+ implementation-level background.  For example, the word ``primitive'' is
+ sometimes used for any built-in function, while other times it might suggest
+ the more limited notion implemented by the constant
+ @('*primitive-formals-and-guards*'); the context may help in understanding the
+ intended meaning (though perhaps, eventually, someone will use ``built-in''
+ for all uses of the broader notion).  Sometimes an Essay (see above) may
+ provide helpful background; indeed, comments sometimes direct the reader to an
+ Essay.</p>
+
+ <p>Please read the comments in a definition carefully before you modify it!
+ In particular, there are often comments warning you to ``keep in sync'' with
+ one or more other definitions, which need to be heeded.</p>
 
  <p>It is often helpful to read user-level documentation before reading
  system-level documentation when preparing to modify ACL2.  Often the
@@ -176,9 +186,9 @@
  make-event) as described above.  But user-level documentation may also provide
  general background; in particular, the topic @(see programming-with-state) is
  highly recommended for anyone who is considering doing system development.
- However, for documentation that is purely at the system level, it is best to
- put it in this Guide rather than elsewhere in the documentation, to avoid
- confusing or intimidating users.</p>
+ However, for most ACL2 system-level documentation, it is best to put it in the
+ ACL2 sources as Lisp comments or in this Guide, rather than elsewhere in the
+ documentation, to avoid confusing or intimidating typical users.</p>
 
  <p>The topic @(tsee system-utilities) is a borderline case.  These utilities
  were created for developing the ACL2 system.  However, users increasingly do
@@ -1718,9 +1728,9 @@
  Strother Moore, Journal of Automated Reasoning 26, no. 2 (2001),
  pp. 161--203.</p>
 
- <p>You are encouraged to extend this documentation topic with additional
- logical considerations as they arise.  Also see the Essay on Soundness
- Threats.</p>
+ <p><b>Note:</b> The examples below are by no means comprehensive!  You are
+ encouraged to extend this documentation topic with additional logical
+ considerations as they arise.  Also see the Essay on Soundness Threats.</p>
 
  <h3>Histories, chronologies, and theories</h3>
 
@@ -1765,7 +1775,7 @@
  is free of @('defaxiom') events, and thus (by the corollary stated in the
  preceding paragraph) is consistent.  For a detailed development of theory
  supporting the use of @('defattach') (though this can probably ignored unless
- you are doing deep work with @('defattach'), see the source code comment,
+ you are doing deep work with @('defattach')), see the source code comment,
  ``Essay on Defattach.''</p>
 
  <p>There is also a logical explanation for @(tsee apply$), which is based on
@@ -1782,8 +1792,8 @@
  <p>Many soundness bugs in past versions of ACL2 &mdash; indeed, perhaps the
  majority of them &mdash; can be attributed to a subtle mishandling of @(tsee
  local) @(see events).  Perhaps the only advice possible in this regard is the
- following: think carefully about the effects of @('local') when making
- event-level changes to ACL2.</p>
+ following: Think carefully about the effects of @('local') when making
+ event-level changes to ACL2!</p>
 
  <p>Consider for example the following, seemingly innocuous ``enhancement'':
  allow @(tsee verify-guards) to comprehend macro-aliases (see @(see
@@ -1814,7 +1824,75 @@
  @(see verify-guards+) for an example, using @(tsee encapsulate) and @(tsee
  local), for why such an enhancement to @('verify-guards') would be unsound.</p>
 
- <h3>Skip-proofs vs. defaxiom</h3>
+ <p>We turn now to discuss a key mechanism for avoiding potential soundness
+ issues caused by @('local'): the @(tsee acl2-defaults-table).  Because of the
+ logical information stored in this @(see table), it is prohibited to modify
+ this table locally, as we illustrate with a couple of examples.  First
+ consider the following introduction of a @(see program)-mode function, @('f'),
+ that clearly is inadmissible in @(see logic)-mode.</p>
+
+ @({
+ (encapsulate
+   ()
+   (program)
+   (defun f () (not (f))))
+ })
+
+ <p>If the @('(program)') event were allowed to be local, then the second pass
+ of the @('encapsulate') event would introduce @('f') in logic-mode, creating
+ an inconsistent theory!</p>
+
+ <p>A slightly more subtle example is the following.</p>
+
+ @({
+ (encapsulate
+   ()
+   (set-ruler-extenders :all)
+   (defun foo (x)
+     (cons (if (consp x) (foo (cdr x)) x)
+           3)))
+ })
+
+ <p>The induction scheme stored for @('foo') is as follows, which is the same
+ as would be stored for the simpler definition, @('(defun foo (x) (if (consp
+ x) (foo (cdr x)) x))').  (Don't worry about the form of the structure below.
+ Further relevant discussion may be found below in the section, ``Induction,
+ recursion, and termination.'')</p>
+
+ @({
+ ACL2 !>(getpropc 'foo 'induction-machine)
+ ((TESTS-AND-CALLS ((CONSP X))
+                   (FOO (CDR X)))
+  (TESTS-AND-CALLS ((NOT (CONSP X)))))
+ ACL2 !>
+ })
+
+ <p>The @(''induction-machine') property is computed based on the
+ ruler-extenders.  So if the event @('(set-ruler-extenders :all)') above could
+ be made local, we would be storing the same induction machine as for the
+ following definition.</p>
+
+ @({
+ (skip-proofs
+  (defun foo (x)
+    (declare (xargs :measure (acl2-count x)))
+    (cons (if (consp x) (foo (cdr x)) x)
+          3)))
+ })
+
+ <p>But that induction-machine is unsound!</p>
+
+ @({
+ (thm nil :hints ((\"Goal\" :induct (foo x))))
+ })
+
+ <p>The two examples above illustrate the importance of thinking about whether
+ an event can soundly be local.  If not, then it may be best for that event to
+ be one that sets the @(tsee acl2-defaults-table), like @(tsee program) and
+ @(tsee set-ruler-extenders), since @(tsee table) events that set the
+ @('acl2-defaults-table') are not permitted to be local.</p>
+
+ <h3>@(tsee Skip-proofs) vs. @(tsee defaxiom)</h3>
 
  <p>There is a fundamental logical difference between wrapping @(tsee
  skip-proofs) around a @(tsee defthm) event and using @(tsee defaxiom).  When
@@ -1964,7 +2042,7 @@
 
  })
 
- <p>Now suppose that the implementation as careless, by making the @(see
+ <p>Now suppose that the implementation is careless, by making the @(see
  ruler-extenders) affect the termination proof obligations but not the
  induction scheme.  Consider the following example.</p>
 

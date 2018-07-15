@@ -1,13 +1,48 @@
-;; AUTHOR:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
 
 ;; There are a lot of similar-looking theorems here that I plan to
 ;; generate and prove automatically in the future.
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
-(include-book "programmer-level-mode/environment-utils" :dir :proof-utils :ttags :all)
+(include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "app-view/environment-utils" :dir :proof-utils :ttags :all)
 (include-book "centaur/gl/gl" :dir :system)
 ;; Including the WC program binary and other misc. stuff:
 (include-book "wc-addr-byte")
@@ -236,7 +271,7 @@
 
   (and (x86p x86)
        (64-bit-modep x86)
-       (xr :programmer-level-mode 0 x86)
+       (xr :app-view 0 x86)
        ;; I don't care about alignment checks for this proof.
        (not (alignment-checking-enabled-p x86))
        (equal (xr :os-info 0 x86) :linux)
@@ -271,7 +306,7 @@
 (defthm preconditions-forward-chain-addresses-info
   (implies (preconditions addr x86)
            (and (x86p x86)
-                (xr :programmer-level-mode 0 x86)
+                (xr :app-view 0 x86)
                 ;; I don't care about alignment checks for this proof.
                 (not (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 x86) :linux)
@@ -308,7 +343,7 @@
   (implies (preconditions addr x86)
            (and (x86p x86)
                 (64-bit-modep x86)
-                (xr :programmer-level-mode 0 x86)
+                (xr :app-view 0 x86)
                 (not (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 x86) :linux)
                 (env-assumptions x86)
@@ -323,7 +358,7 @@
   ;; Note: addr is the address of the first instruction in the GC subroutine.
   (and (x86p x86)
        (64-bit-modep x86)
-       (xr :programmer-level-mode 0 x86)
+       (xr :app-view 0 x86)
        (not (alignment-checking-enabled-p x86))
        (equal (xr :os-info 0 x86) :linux)
        (env-assumptions x86)
@@ -406,7 +441,7 @@
   (implies (loop-preconditions addr x86)
            (and (x86p x86)
                 (64-bit-modep x86)
-                (xr :programmer-level-mode 0 x86)
+                (xr :app-view 0 x86)
                 (not (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 x86) :linux)
                 (env-assumptions x86)
@@ -670,11 +705,11 @@
            :in-theory (e/d* (env-assumptions) ())
            :use ((:instance preconditions-fwd-chaining-essentials)))))
 
-(defthmd effects-to-gc-programmer-level-mode-projection
+(defthmd effects-to-gc-app-view-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (preconditions addr x86))
-           (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-main-before-call) x86))
-                  (xr :programmer-level-mode 0 x86))))
+           (equal (xr :app-view 0 (x86-run (gc-clk-main-before-call) x86))
+                  (xr :app-view 0 x86))))
 
 (defthmd effects-to-gc-alignment-checking-enabled-p-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -725,14 +760,14 @@
                                     effects-to-gc-fault-projection
                                     effects-to-gc-env-assumptions-projection
                                     (len)
-                                    effects-to-gc-programmer-level-mode-projection
+                                    effects-to-gc-app-view-projection
                                     effects-to-gc-alignment-checking-enabled-p-projection
                                     effects-to-gc-os-info-projection
                                     loop-preconditions-fwd-chaining-essentials
                                     loop-preconditions-forward-chain-addresses-info
                                     preconditions-fwd-chaining-essentials
                                     preconditions-forward-chain-addresses-info
-                                    effects-to-gc-programmer-level-mode-projection
+                                    effects-to-gc-app-view-projection
                                     effects-to-gc-program-projection
                                     subset-p-two-create-canonical-address-lists-general
                                     effects-to-gc-64-bit-modep-projection)
@@ -961,7 +996,7 @@
   (implies ;; Doesn't have the rbp binding of loop-preconditions
    (and (x86p x86)
         (64-bit-modep x86)
-        (xr :programmer-level-mode 0 x86)
+        (xr :app-view 0 x86)
         (not (alignment-checking-enabled-p x86))
         (equal (xr :os-info 0 x86) :linux)
         (env-assumptions x86)
@@ -1196,7 +1231,7 @@
 (defthmd effects-call-gc-ms-projection
   (implies (and (x86p x86) ;; Doesn't have the rbp binding of loop-preconditions
                 (64-bit-modep x86)
-                (xr :programmer-level-mode 0 x86)
+                (xr :app-view 0 x86)
                 (not (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 x86) :linux)
                 (env-assumptions x86)
@@ -1233,7 +1268,7 @@
   (implies
    (and (x86p x86) ;; Doesn't have the rbp binding of loop-preconditions
         (64-bit-modep x86)
-        (xr :programmer-level-mode 0 x86)
+        (xr :app-view 0 x86)
         (not (alignment-checking-enabled-p x86))
         (equal (xr :os-info 0 x86) :linux)
         (env-assumptions x86)
@@ -2273,12 +2308,12 @@
            (equal (nl x86 (x86-run (gc-clk-no-eof) x86))
                   (nl x86 x86))))
 
-(defthmd effects-eof-not-encountered-prelim-programmer-level-mode-projection
+(defthmd effects-eof-not-encountered-prelim-app-view-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (not (equal (get-char (offset x86) (input x86)) *eof*)))
-           (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-no-eof) x86))
-                  (xr :programmer-level-mode 0 x86))))
+           (equal (xr :app-view 0 (x86-run (gc-clk-no-eof) x86))
+                  (xr :app-view 0 x86))))
 
 (defthmd effects-eof-not-encountered-prelim-alignment-checking-enabled-p-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2305,8 +2340,8 @@
   (implies (and (loop-preconditions addr x86)
                 (not (equal (get-char (offset x86) (input x86)) *eof*)))
            (and (x86p (x86-run (gc-clk-no-eof) x86))
-                (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-no-eof) x86))
-                       (xr :programmer-level-mode 0 x86))
+                (equal (xr :app-view 0 (x86-run (gc-clk-no-eof) x86))
+                       (xr :app-view 0 x86))
                 (equal (alignment-checking-enabled-p (x86-run (gc-clk-no-eof) x86))
                        (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 (x86-run (gc-clk-no-eof) x86))
@@ -2340,7 +2375,7 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (union-theories
                        '(subset-p
-                         effects-eof-not-encountered-prelim-programmer-level-mode-projection
+                         effects-eof-not-encountered-prelim-app-view-projection
                          effects-eof-not-encountered-prelim-alignment-checking-enabled-p-projection
                          effects-eof-not-encountered-prelim-rip-projection
                          effects-eof-not-encountered-prelim-fault-projection
@@ -2373,11 +2408,12 @@
   :hints (("Goal" :in-theory (e/d* (x86-run-plus-1)
                                    (x86-run-plus)))))
 
-(defthmd programmer-level-mode-permissions-dont-matter
+(defthmd app-view-permissions-dont-matter
   ;; [Shilpi]: This thing won't be true if I incorporate the
-  ;; memory-permissions map into the programmer-level mode, unless I make sure
-  ;; that the memory regions in question are both read and execute enabled.
-  (implies (and (xr :programmer-level-mode 0 x86)
+  ;; memory-permissions map into the application-level view, unless I
+  ;; make sure that the memory regions in question are both read and
+  ;; execute enabled.
+  (implies (and (xr :app-view 0 x86)
                 (x86p x86)
                 (force (canonical-address-p addr))
                 (force (canonical-address-p (+ -1 n addr))))
@@ -2396,7 +2432,7 @@
   (implies
    (and (x86p x86-new)
         (64-bit-modep x86-new)
-        (xr :programmer-level-mode 0 x86-new)
+        (xr :app-view 0 x86-new)
         (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
         (canonical-address-p (xr :rgf *rsp* x86-new))
@@ -2557,7 +2593,7 @@
                              offset
                              rgfi-is-i64p
                              (len) (loghead)
-                             programmer-level-mode-permissions-dont-matter)
+                             app-view-permissions-dont-matter)
                             (not))
            :use ((:instance effects-newline-encountered-limited
                             (x86-new (x86-run (gc-clk-no-eof) x86)))
@@ -2696,18 +2732,18 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d*
                        (effects-eof-not-encountered-prelim-env-assumptions-projection
-                        effects-eof-not-encountered-prelim-programmer-level-mode-projection
+                        effects-eof-not-encountered-prelim-app-view-projection
                         effects-eof-not-encountered-prelim-x86p-projection)
                        ()))
           ("Goal''" :in-theory (e/d* (env-assumptions eof-terminatedp) ())
            :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
-(defthmd effects-newline-encountered-programmer-level-mode-projection
+(defthmd effects-newline-encountered-app-view-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
-           (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-newline) x86))
-                  (xr :programmer-level-mode 0 x86))))
+           (equal (xr :app-view 0 (x86-run (gc-clk-newline) x86))
+                  (xr :app-view 0 x86))))
 
 (defthmd effects-newline-encountered-alignment-checking-enabled-p-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2746,7 +2782,7 @@
                                (len)
                                loop-preconditions-fwd-chaining-essentials
                                loop-preconditions-forward-chain-addresses-info
-                               effects-newline-encountered-programmer-level-mode-projection
+                               effects-newline-encountered-app-view-projection
                                effects-newline-encountered-os-info-projection
                                effects-newline-encountered-program-projection
                                effects-newline-encountered-64-bit-modep-projection)
@@ -2793,7 +2829,7 @@
            (equal (nc x86 (x86-run (gc-clk-newline) x86))
                   (loghead 32 (+ 1 (nc x86 x86)))))
   :hints (("Goal" :in-theory (e/d*
-                              (programmer-level-mode-permissions-dont-matter)
+                              (app-view-permissions-dont-matter)
                               ()))))
 
 (defthmd effects-newline-encountered-variables-nc-in-terms-of-next-x86
@@ -2823,7 +2859,7 @@
                 (equal (get-char (offset x86) (input x86)) *newline*))
            (equal (nl x86 (x86-run (gc-clk-newline) x86))
                   (loghead 32 (+ 1 (nl x86 x86)))))
-  :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter) ()))))
+  :hints (("Goal" :in-theory (e/d* (app-view-permissions-dont-matter) ()))))
 
 (defthmd effects-newline-encountered-variables-nl-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2847,7 +2883,7 @@
   (implies
    (and (x86p x86-new)
         (64-bit-modep x86-new)
-        (xr :programmer-level-mode 0 x86-new)
+        (xr :app-view 0 x86-new)
         (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
         (canonical-address-p (xr :rgf *rsp* x86-new))
@@ -2987,7 +3023,7 @@
                  offset
                  rgfi-is-i64p
                  (len) (loghead)
-                 programmer-level-mode-permissions-dont-matter)
+                 app-view-permissions-dont-matter)
                 ())
            :use ((:instance effects-eof-not-encountered-prelim-for-composition
                             (x86 x86))
@@ -3123,19 +3159,19 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d*
                        (effects-eof-not-encountered-prelim-env-assumptions-projection
-                        effects-eof-not-encountered-prelim-programmer-level-mode-projection
+                        effects-eof-not-encountered-prelim-app-view-projection
                         effects-eof-not-encountered-prelim-x86p-projection)
                        ()))
           ("Goal''" :in-theory (e/d* (env-assumptions eof-terminatedp) ())
            :use ((:instance
                   loop-preconditions-fwd-chaining-essentials)))))
 
-(defthmd effects-space-encountered-programmer-level-mode-projection
+(defthmd effects-space-encountered-app-view-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *space*))
-           (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-space) x86))
-                  (xr :programmer-level-mode 0 x86))))
+           (equal (xr :app-view 0 (x86-run (gc-clk-space) x86))
+                  (xr :app-view 0 x86))))
 
 (defthmd effects-space-encountered-alignment-checking-enabled-p-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -3174,7 +3210,7 @@
                                loop-preconditions-fwd-chaining-essentials
                                effects-space-encountered-alignment-checking-enabled-p-projection
                                loop-preconditions-forward-chain-addresses-info
-                               effects-space-encountered-programmer-level-mode-projection
+                               effects-space-encountered-app-view-projection
                                effects-space-encountered-os-info-projection
                                effects-space-encountered-program-projection
                                effects-space-encountered-64-bit-modep-projection)
@@ -3218,7 +3254,7 @@
            (equal (nc x86 (x86-run (gc-clk-space) x86))
                   (loghead 32 (+ 1 (nc x86 x86)))))
   :hints (("Goal" :in-theory (e/d*
-                              (programmer-level-mode-permissions-dont-matter)
+                              (app-view-permissions-dont-matter)
                               ()))))
 
 (defthmd effects-space-encountered-variables-nc-in-terms-of-next-x86
@@ -3268,7 +3304,7 @@
   (implies
    (and (x86p x86-new)
         (64-bit-modep x86-new)
-        (xr :programmer-level-mode 0 x86-new)
+        (xr :app-view 0 x86-new)
         (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
         (canonical-address-p (xr :rgf *rsp* x86-new))
@@ -3408,7 +3444,7 @@
                  offset
                  rgfi-is-i64p
                  (len) (loghead)
-                 programmer-level-mode-permissions-dont-matter)
+                 app-view-permissions-dont-matter)
                 ())
            :use ((:instance effects-eof-not-encountered-prelim-for-composition
                             (x86 x86))
@@ -3539,19 +3575,19 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d*
                        (effects-eof-not-encountered-prelim-env-assumptions-projection
-                        effects-eof-not-encountered-prelim-programmer-level-mode-projection
+                        effects-eof-not-encountered-prelim-app-view-projection
                         effects-eof-not-encountered-prelim-x86p-projection)
                        ()))
           ("Goal''" :in-theory (e/d* (env-assumptions eof-terminatedp) ())
            :use ((:instance
                   loop-preconditions-fwd-chaining-essentials)))))
 
-(defthmd effects-tab-encountered-programmer-level-mode-projection
+(defthmd effects-tab-encountered-app-view-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *tab*))
-           (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-tab) x86))
-                  (xr :programmer-level-mode 0 x86))))
+           (equal (xr :app-view 0 (x86-run (gc-clk-tab) x86))
+                  (xr :app-view 0 x86))))
 
 (defthmd effects-tab-encountered-alignment-checking-enabled-p-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -3590,7 +3626,7 @@
                                (len)
                                loop-preconditions-fwd-chaining-essentials
                                loop-preconditions-forward-chain-addresses-info
-                               effects-tab-encountered-programmer-level-mode-projection
+                               effects-tab-encountered-app-view-projection
                                effects-tab-encountered-os-info-projection
                                effects-tab-encountered-program-projection
                                effects-tab-encountered-64-bit-modep-projection)
@@ -3634,7 +3670,7 @@
            (equal (nc x86 (x86-run (gc-clk-tab) x86))
                   (loghead 32 (+ 1 (nc x86 x86)))))
   :hints (("Goal" :in-theory (e/d*
-                              (programmer-level-mode-permissions-dont-matter)
+                              (app-view-permissions-dont-matter)
                               ()))))
 
 (defthmd effects-tab-encountered-variables-nc-in-terms-of-next-x86
@@ -3738,7 +3774,7 @@
   (implies
    (and (x86p x86-new)
         (64-bit-modep x86-new)
-        (xr :programmer-level-mode 0 x86-new)
+        (xr :app-view 0 x86-new)
         (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
         (canonical-address-p (xr :rgf *rsp* x86-new))
@@ -3995,7 +4031,7 @@
                  offset
                  rgfi-is-i64p
                  (len) (loghead)
-                 programmer-level-mode-permissions-dont-matter)
+                 app-view-permissions-dont-matter)
                 (effects-eof-not-encountered-prelim-for-composition
                  effects-eof-not-encountered-prelim-gc-byte-projection-size
                  effects-eof-not-encountered-prelim-env-assumptions-projection
@@ -4105,7 +4141,7 @@
                                (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))))))
   :hints (("Goal"
            :in-theory (union-theories
-                       '(programmer-level-mode-permissions-dont-matter
+                       '(app-view-permissions-dont-matter
                          word-state
                          gc-clk-otherwise-out
                          dumb-run-plus-thm
@@ -4226,7 +4262,7 @@
                 (equal len-wc *wc-len*))
            (program-at addr *wc* (x86-run (gc-clk-otherwise-out) x86)))
   :hints (("Goal" :in-theory (e/d*
-                              (effects-eof-not-encountered-prelim-programmer-level-mode-projection
+                              (effects-eof-not-encountered-prelim-app-view-projection
                                effects-eof-not-encountered-prelim-program-projection
                                effects-eof-not-encountered-prelim-x86p-projection
                                loop-preconditions-weird-rbp-rsp)
@@ -4249,7 +4285,7 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d*
                        (effects-eof-not-encountered-prelim-env-assumptions-projection
-                        effects-eof-not-encountered-prelim-programmer-level-mode-projection
+                        effects-eof-not-encountered-prelim-app-view-projection
                         effects-eof-not-encountered-prelim-x86p-projection)
                        (word-state)))
           ("Goal''" :in-theory (e/d* (env-assumptions eof-terminatedp)
@@ -4259,7 +4295,7 @@
            :use ((:instance loop-preconditions-fwd-chaining-essentials)
                  (:instance loop-preconditions-forward-chain-addresses-info)))))
 
-(defthmd effects-other-char-encountered-state-out-programmer-level-mode-projection
+(defthmd effects-other-char-encountered-state-out-app-view-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (not (equal (get-char (offset x86) (input x86)) *eof*))
@@ -4267,8 +4303,8 @@
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (equal (word-state x86 x86) *out*))
-           (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-otherwise-out) x86))
-                  (xr :programmer-level-mode 0 x86)))
+           (equal (xr :app-view 0 (x86-run (gc-clk-otherwise-out) x86))
+                  (xr :app-view 0 x86)))
   :hints (("Goal" :in-theory (e/d* () (word-state)))))
 
 (defthmd effects-other-char-encountered-state-out-alignment-checking-enabled-p-projection
@@ -4344,7 +4380,7 @@
                                (len)
                                loop-preconditions-fwd-chaining-essentials
                                loop-preconditions-forward-chain-addresses-info
-                               effects-other-char-encountered-state-out-programmer-level-mode-projection
+                               effects-other-char-encountered-state-out-app-view-projection
                                effects-other-char-encountered-state-out-alignment-checking-enabled-p-projection
                                effects-other-char-encountered-state-out-os-info-projection
                                effects-other-char-encountered-state-out-program-projection
@@ -4426,7 +4462,7 @@
                 (equal (word-state x86 x86) *out*))
            (equal (nc x86 (x86-run (gc-clk-otherwise-out) x86))
                   (loghead 32 (+ 1 (nc x86 x86)))))
-  :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
+  :hints (("Goal" :in-theory (e/d* (app-view-permissions-dont-matter)
                                    (negative-logand-to-positive-logand-with-integerp-x
                                     las-to-pas-values-and-!flgi
                                     las-to-pas
@@ -4463,7 +4499,7 @@
                 (equal (word-state x86 x86) *out*))
            (equal (nw x86 (x86-run (gc-clk-otherwise-out) x86))
                   (loghead 32 (+ 1 (nw x86 x86)))))
-  :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
+  :hints (("Goal" :in-theory (e/d* (app-view-permissions-dont-matter)
                                    (negative-logand-to-positive-logand-with-integerp-x
                                     las-to-pas-values-and-!flgi
                                     las-to-pas
@@ -4500,7 +4536,7 @@
                 (equal (word-state x86 x86) *out*))
            (equal (nl x86 (x86-run (gc-clk-otherwise-out) x86))
                   (nl x86 x86)))
-  :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
+  :hints (("Goal" :in-theory (e/d* (app-view-permissions-dont-matter)
                                    (negative-logand-to-positive-logand-with-integerp-x
                                     las-to-pas-values-and-!flgi
                                     las-to-pas
@@ -4540,7 +4576,7 @@
   (implies
    (and (x86p x86-new)
         (64-bit-modep x86-new)
-        (xr :programmer-level-mode 0 x86-new)
+        (xr :app-view 0 x86-new)
         (not (alignment-checking-enabled-p x86-new))
         (env-assumptions x86-new)
         (canonical-address-p (xr :rgf *rsp* x86-new))
@@ -4738,14 +4774,14 @@
                  get-char
                  offset
                  rgfi-is-i64p
-                 programmer-level-mode-permissions-dont-matter
+                 app-view-permissions-dont-matter
                  word-state)
                 ())
            :use ((:instance effects-eof-not-encountered-prelim-for-composition (x86 x86))
                  (:instance effects-eof-not-encountered-prelim-gc-byte-projection-size (x86 x86))
                  (:instance effects-eof-not-encountered-prelim-env-assumptions-projection (x86 x86))
                  (:instance effects-eof-not-encountered-prelim-rbp-projection (x86 x86))
-                 (:instance effects-eof-not-encountered-prelim-programmer-level-mode-projection (x86 x86))
+                 (:instance effects-eof-not-encountered-prelim-app-view-projection (x86 x86))
                  (:instance effects-other-char-encountered-state-in-limited
                             (x86-new (x86-run (gc-clk-no-eof) x86)))
                  effects-eof-not-encountered-prelim-64-bit-modep-projection))))
@@ -4811,7 +4847,7 @@
                            (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))
   :hints (("Goal"
            :in-theory (union-theories
-                       '(programmer-level-mode-permissions-dont-matter
+                       '(app-view-permissions-dont-matter
                          word-state
                          gc-clk-otherwise-in
                          dumb-run-plus-thm
@@ -4942,7 +4978,7 @@
                 (not (equal (word-state x86 x86) *out*)))
            (program-at addr *wc* (x86-run (gc-clk-otherwise-in) x86)))
   :hints (("Goal" :in-theory (e/d*
-                              (effects-eof-not-encountered-prelim-programmer-level-mode-projection
+                              (effects-eof-not-encountered-prelim-app-view-projection
                                effects-eof-not-encountered-prelim-program-projection
                                effects-eof-not-encountered-prelim-x86p-projection
                                loop-preconditions-weird-rbp-rsp)
@@ -4964,7 +5000,7 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d*
                        (effects-eof-not-encountered-prelim-env-assumptions-projection
-                        effects-eof-not-encountered-prelim-programmer-level-mode-projection
+                        effects-eof-not-encountered-prelim-app-view-projection
                         effects-eof-not-encountered-prelim-x86p-projection)
                        (word-state)))
           ("Goal''" :in-theory (e/d* (env-assumptions eof-terminatedp)
@@ -4972,7 +5008,7 @@
            :use ((:instance loop-preconditions-fwd-chaining-essentials)
                  (:instance loop-preconditions-forward-chain-addresses-info)))))
 
-(defthmd effects-other-char-encountered-state-in-programmer-level-mode-projection
+(defthmd effects-other-char-encountered-state-in-app-view-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (not (equal (get-char (offset x86) (input x86)) *eof*))
@@ -4980,8 +5016,8 @@
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (not (equal (word-state x86 x86) *out*)))
-           (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-otherwise-in) x86))
-                  (xr :programmer-level-mode 0 x86)))
+           (equal (xr :app-view 0 (x86-run (gc-clk-otherwise-in) x86))
+                  (xr :app-view 0 x86)))
   :hints (("Goal" :in-theory (e/d* () (word-state)))))
 
 (defthmd effects-other-char-encountered-state-in-alignment-checking-enabled-p-projection
@@ -5064,7 +5100,7 @@
                                (len)
                                loop-preconditions-fwd-chaining-essentials
                                loop-preconditions-forward-chain-addresses-info
-                               effects-other-char-encountered-state-in-programmer-level-mode-projection
+                               effects-other-char-encountered-state-in-app-view-projection
                                effects-other-char-encountered-state-in-alignment-checking-enabled-p-projection
                                effects-other-char-encountered-state-in-os-info-projection
                                effects-other-char-encountered-state-in-program-projection
@@ -5177,7 +5213,7 @@
                 (not (equal (word-state x86 x86) *out*)))
            (equal (nc x86 (x86-run (gc-clk-otherwise-in) x86))
                   (loghead 32 (+ 1 (nc x86 x86)))))
-  :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
+  :hints (("Goal" :in-theory (e/d* (app-view-permissions-dont-matter)
                                    (effects-other-char-encountered-state-in
                                     loop-preconditions-fwd-chaining-essentials))
            :use ((:instance effects-other-char-encountered-state-in)
@@ -6015,7 +6051,7 @@
                          word-state
                          effects-to-gc-rbp-projection
                          (len)
-                         effects-to-gc-programmer-level-mode-projection
+                         effects-to-gc-app-view-projection
                          effects-to-gc-input-projection
                          effects-to-gc-offset-projection
                          loop-preconditions-effects-to-gc
@@ -6071,7 +6107,7 @@
                          preconditions-fwd-chaining-essentials
                          effects-to-gc-input-projection
                          effects-to-gc-offset-projection
-                         effects-to-gc-programmer-level-mode-projection
+                         effects-to-gc-app-view-projection
                          loop-preconditions-effects-to-gc)
                        (theory 'minimal-theory))
            :use ((:instance effects-loop-nc
@@ -6109,7 +6145,7 @@
                          preconditions-fwd-chaining-essentials
                          effects-to-gc-input-projection
                          effects-to-gc-offset-projection
-                         effects-to-gc-programmer-level-mode-projection
+                         effects-to-gc-app-view-projection
                          loop-preconditions-effects-to-gc)
                        (theory 'minimal-theory))
            :use ((:instance effects-loop-nw
@@ -6147,7 +6183,7 @@
                          preconditions-fwd-chaining-essentials
                          effects-to-gc-input-projection
                          effects-to-gc-offset-projection
-                         effects-to-gc-programmer-level-mode-projection
+                         effects-to-gc-app-view-projection
                          loop-preconditions-effects-to-gc)
                        (theory 'minimal-theory))
            :use ((:instance effects-loop-nl
@@ -6233,7 +6269,7 @@
                          effects-to-gc-rbp-projection
                          effects-to-gc-input-projection
                          effects-to-gc-offset-projection
-                         effects-to-gc-programmer-level-mode-projection
+                         effects-to-gc-app-view-projection
                          loop-preconditions-effects-to-gc
                          rip-effects-loop)
                        (theory 'minimal-theory))
@@ -6312,7 +6348,7 @@
                          effects-to-gc-rbp-projection
                          effects-to-gc-input-projection
                          effects-to-gc-offset-projection
-                         effects-to-gc-programmer-level-mode-projection
+                         effects-to-gc-app-view-projection
                          ms-effects-loop
                          loop-preconditions-effects-to-gc)
                        (theory 'minimal-theory))
@@ -6423,7 +6459,7 @@
 (defthmd memory-analysis-effects-call-gc
   (implies (and (x86p x86)
                 (64-bit-modep x86)
-                (xr :programmer-level-mode 0 x86)
+                (xr :app-view 0 x86)
                 (not (alignment-checking-enabled-p x86))
                 (equal (xr :os-info 0 x86) :linux)
                 (env-assumptions x86)
@@ -6711,7 +6747,7 @@
       preconditions-fwd-chaining-essentials
       effects-to-gc-input-projection
       effects-to-gc-offset-projection
-      effects-to-gc-programmer-level-mode-projection)
+      effects-to-gc-app-view-projection)
      (loop-preconditions-effects-to-gc))
     :use ((:instance memory-analysis-loop
                      (x86 (x86-run (gc-clk-main-before-call) x86))

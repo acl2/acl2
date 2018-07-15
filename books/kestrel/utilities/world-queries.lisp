@@ -1258,6 +1258,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define all-pkgs-in-world ((wrld plist-worldp))
+  :returns (pkg-names "A @(tsee string-listp).")
+  :mode :program
+  :parents (world-queries)
+  :short "List of names of the packages in the ACL2, in chronological order."
+  :long
+  "<p>
+   We scan the world for @('defpkg') event landmarks,
+   collecting the corresponding names.
+   The tail recursion collects the names in the desired chronological order.
+   </p>
+   <p>
+   The main Lisp package and the @('\"ACL2\"') package are built-in,
+   not introduced via @(tsee defpkg)s.
+   Thus, after scanning the world, we add these two to the front of the list.
+   </p>"
+  (cons *main-lisp-package-name* (cons "ACL2" (all-pkgs-in-world-aux wrld nil)))
+
+  :prepwork
+  ((define all-pkgs-in-world-aux ((wrld plist-worldp)
+                                  (current-pkg-names string-listp))
+     :returns final-pkg-names ; STRING-LISTP
+     :mode :program
+     (cond ((endp wrld) current-pkg-names)
+           ((and (eq (caar wrld) 'event-landmark)
+                 (eq (cadar wrld) 'global-value)
+                 (eq (access-event-tuple-type (cddar wrld)) 'defpkg))
+            (b* ((pkg-name (access-event-tuple-namex (cddar wrld))))
+              (all-pkgs-in-world-aux (cdr wrld)
+                                     (cons pkg-name current-pkg-names))))
+           (t (all-pkgs-in-world-aux (cdr wrld) current-pkg-names))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define included-books ((wrld plist-worldp))
   :returns (result "A @(tsee string-listp).")
   :verify-guards nil

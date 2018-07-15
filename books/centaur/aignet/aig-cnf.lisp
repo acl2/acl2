@@ -199,7 +199,7 @@
 
   (local (defthm aignet-eval-to-env-of-consecutive-vars-to-varmap
            (implies (and (no-duplicatesp vars)
-                         (non-bool-atom-listp vars))
+                         (acl2::aig-var-listp vars))
                     (acl2::alist-equiv (aignet-eval-to-env
                                         (consecutive-vars-to-varmap 1 vars nil)
                                         invals regvals

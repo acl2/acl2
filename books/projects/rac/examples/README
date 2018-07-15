@@ -1,14 +1,21 @@
-This subdirectory contains two examples of MASC programs:
+This subdirectory contains two examples of RAC programs:
 
   hello.cpp: a mindless example intended to illustrate the MASC parser.
 
   imul/imul.cpp: a toy integer multiplier, described in the ACL22014 paper
 
-    www.russinoff.com/papers/masc.html
+      www.russinoff.com/papers/masc.html
 
-As described in ../README, compile and run hello.cpp, and parse it with the options 
--m, -c, and -a.
+    Note, however, that this paper was written before MASC evolved into RAC,
+    i.e., when we used SystemC instead of Algorithmic C registers.
 
+    The imul subdirectory also contains the System Verilog version of the
+    multiplier, imul.sv, along with scripts slec_script.tcl and
+    hector_script.tcl, that invoke the commercial tools SLEC and Hector,
+    respectively, to check functional equivalence of imul.sv and imul.cpp.
+
+As described in ../README, compile and run hello.cpp, and parse it with the 
+options -r and -a.
 
 Load ACL2 and run the LISP version:
 
@@ -32,8 +39,3 @@ cd to the imul subdirectory and do the same with imul.cpp:
 Certify the correctness proof:
 
   RTL !>(certify-book "proof" 1)
-
-
-
- 
-1

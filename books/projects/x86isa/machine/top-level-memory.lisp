@@ -1,4 +1,40 @@
-;; Author: Alessandro Coglio <coglio@kestrel.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2018, Kestrel Technology, LLC
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+;   Alessandro Coglio <coglio@kestrel.edu>
 
 (in-package "X86ISA")
 
@@ -120,37 +156,37 @@
              (equal (mv-nth 1 (rme08 eff-addr seg-reg r-x x86)) 0))
     :enable (rml08 rvm08))
 
-  (defrule rme08-does-not-affect-state-in-programmer-level-mode
-    (implies (programmer-level-mode x86)
+  (defrule rme08-does-not-affect-state-in-app-view
+    (implies (app-view x86)
              (equal (mv-nth 2 (rme08 eff-addr seg-reg r-x x86)) x86))
     :enable rml08)
 
-  (defrule mv-nth-2-rme08-in-system-level-non-marking-mode
-    (implies (and (not (programmer-level-mode x86))
-                  (not (page-structure-marking-mode x86))
+  (defrule mv-nth-2-rme08-in-system-level-non-marking-view
+    (implies (and (not (app-view x86))
+                  (not (marking-view x86))
                   (x86p x86)
                   (not (mv-nth 0 (rme08 eff-addr seg-reg r-x x86))))
              (equal (mv-nth 2 (rme08 eff-addr seg-reg r-x x86))
                     x86)))
 
-  (defrule xr-rme08-state-programmer-level-mode
-    (implies (programmer-level-mode x86)
+  (defrule xr-rme08-state-app-view
+    (implies (app-view x86)
              (equal (xr fld index (mv-nth 2 (rme08 addr seg-reg r-x x86)))
                     (xr fld index x86)))
     :enable rml08)
 
-  (defrule xr-rme08-state-system-level-mode
-    (implies (and (not (programmer-level-mode x86))
+  (defrule xr-rme08-state-sys-view
+    (implies (and (not (app-view x86))
                   (not (equal fld :mem))
                   (not (equal fld :fault)))
              (equal (xr fld index (mv-nth 2 (rme08 addr seg-reg r-x x86)))
                     (xr fld index x86))))
 
-  (defrule rme08-xw-programmer-level-mode
+  (defrule rme08-xw-app-view
     (implies
-     (and (programmer-level-mode x86)
+     (and (app-view x86)
           (not (equal fld :mem))
-          (not (equal fld :programmer-level-mode))
+          (not (equal fld :app-view))
           (not (equal fld :seg-hidden))
           (not (equal fld :msr)))
      (and (equal (mv-nth 0 (rme08 addr seg-reg r-x (xw fld index value x86)))
@@ -158,13 +194,13 @@
           (equal (mv-nth 1 (rme08 addr seg-reg r-x (xw fld index value x86)))
                  (mv-nth 1 (rme08 addr seg-reg r-x x86)))
           ;; No need for the conclusion about the state because
-          ;; "rme08-does-not-affect-state-in-programmer-level-mode".
+          ;; "rme08-does-not-affect-state-in-app-view".
           ))
     )
 
-  (defrule rme08-xw-system-level-mode
+  (defrule rme08-xw-sys-view
     (implies
-     (and (not (programmer-level-mode x86))
+     (and (not (app-view x86))
           (not (equal fld :fault))
           (not (equal fld :seg-visible))
           (not (equal fld :seg-hidden))
@@ -172,8 +208,8 @@
           (not (equal fld :ctr))
           (not (equal fld :msr))
           (not (equal fld :rflags))
-          (not (equal fld :programmer-level-mode))
-          (not (equal fld :page-structure-marking-mode)))
+          (not (equal fld :app-view))
+          (not (equal fld :marking-view)))
      (and (equal (mv-nth 0 (rme08 addr seg-reg r-x (xw fld index value x86)))
                  (mv-nth 0 (rme08 addr seg-reg r-x x86)))
           (equal (mv-nth 1 (rme08 addr seg-reg r-x (xw fld index value x86)))
@@ -181,9 +217,9 @@
           (equal (mv-nth 2 (rme08 addr seg-reg r-x (xw fld index value x86)))
                  (xw fld index value (mv-nth 2 (rme08 addr seg-reg r-x x86)))))))
 
-  (defrule rme08-xw-system-level-mode-rflags-not-ac
+  (defrule rme08-xw-sys-view-rflags-not-ac
     (implies
-     (and (not (programmer-level-mode x86))
+     (and (not (app-view x86))
           (equal (rflags-slice :ac value)
                  (rflags-slice :ac (rflags x86))))
      (and (equal (mv-nth 0 (rme08 addr seg-reg r-x (xw :rflags 0 value x86)))

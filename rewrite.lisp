@@ -7281,7 +7281,7 @@
                    "The only variable allowed in a break condition ~
                     is STATE.  Your form, ~x0, contains the ~
                     variable~#1~[~/s~] ~&2."
-                   xterm (if (cdr bad-vars) 1 0) bad-vars))
+                   xterm (if (cdr bad-vars) 1 0) (reverse bad-vars)))
               (t (value term))))))
 
 (defun eval-break-condition (rune term ctx state)
@@ -9790,7 +9790,7 @@
                                  (cons #\2
                                        (if all-vars-bound-p
                                            '<all_variables>
-                                           bound-vars))))
+                                           (reverse bound-vars)))))
                           bound-vars all-vars-bound-p))
                      ((and (not all-vars-bound-p)
                            (not (subsetp-eq (set-difference-eq vars
@@ -9803,7 +9803,7 @@
                             bound.  This does not appear to be the case ~
                             in ~x0.  The vars already bound are ~x1."
                            (list (cons #\0 (untranslate hyp t wrld))
-                                 (cons #\1 bound-vars)
+                                 (cons #\1 (reverse bound-vars))
                                  (cons #\2 'mfc)
                                  (cons #\3 'state)))
                           bound-vars all-vars-bound-p))
@@ -9828,7 +9828,7 @@
                                   (list (cons #\0 (untranslate hyp nil wrld))
                                         (cons #\1 (if all-vars-bound-p
                                                       '<all_variables>
-                                                    bound-vars))))
+                                                    (reverse bound-vars)))))
                                  bound-vars all-vars-bound-p))
                             ((or (not (eq 'state (car vars)))
                                  (member-eq 'state (cdr vars))
@@ -9848,7 +9848,7 @@
                                   (list (cons #\0 (untranslate hyp nil wrld))
                                         (cons #\1 (if all-vars-bound-p
                                                       '<all_variables>
-                                                    bound-vars))))
+                                                    (reverse bound-vars)))))
                                  bound-vars all-vars-bound-p))
                             (t
                              (mv nil
@@ -11598,7 +11598,7 @@
      ((set-difference-eq vars formals)
       (er hard? 'make-lambda-application
           "Unexpected unbound vars ~x0"
-          (set-difference-eq vars formals)))
+          (set-difference-eq (reverse vars) formals)))
      (t
 
 ; The slightly tricky thing here is to avoid using all the formals,

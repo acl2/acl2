@@ -31,7 +31,7 @@
 (in-package "BED")
 (include-book "ops")
 
-(define bed-env-lookup ((var atom) env)
+(define bed-env-lookup (var env)
   (b* (((when (or (eq var t)
                   (eq var nil)))
         ;; Goofy restriction to agree with aig-eval
@@ -40,7 +40,7 @@
        ((unless look)
         ;; Goofy default value agrees with aig-env-lookup
         t))
-    (cdr look))
+    (and (cdr look) t))
   ///
   (defthm bed-env-lookup-of-nil
     (equal (bed-env-lookup nil env)
@@ -61,7 +61,7 @@
         (if x 1 0))
        ((cons a b) x)
 
-       ((when (atom a))
+       ((unless (integerp b))
         ;; Variable node -- lazily evaluate whichever branch we need.
         (if (bed-env-lookup a env)
             (bed-eval (car$ b) env)
@@ -83,7 +83,7 @@
 
   (defthm bed-eval-of-var
     (implies (and (consp x)
-                  (atom (car x)))
+                  (not (integerp (cdr x))))
              (equal (bed-eval x env)
                     (if (bed-env-lookup (car x) env)
                         (bed-eval (car (cdr x)) env)
@@ -91,7 +91,7 @@
 
   (defthm bed-eval-when-known-op
     (implies (and (equal (bed-op-fix op) fixed-op)
-                  (consp leftright))
+                  (integerp op))
              (equal (bed-eval (cons leftright op) env)
                     (bed-op-eval fixed-op
                                  (bed-eval (car leftright) env)

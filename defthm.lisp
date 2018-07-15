@@ -5363,7 +5363,8 @@
                      conclusion.  See :DOC type-prescription."
                     name
                     typed-term
-                    (set-difference-eq all-vars-concl all-vars-typed-term))
+                    (reverse
+                     (set-difference-eq all-vars-concl all-vars-typed-term)))
                nil nil nil nil nil))
           (t (let* ((new-var (genvar (find-pkg-witness typed-term)
                                      "TYPED-TERM" nil all-vars-typed-term))
@@ -6928,7 +6929,7 @@
            violates~/variables ~&1 violate~] this requirement.~@2  See :DOC ~
            definition."
           er-preamble
-          (set-difference-eq (all-vars1-lst hyps nil) args)
+          (reverse (set-difference-eq (all-vars1-lst hyps nil) args))
           install-body-msg))
      ((free-varsp-member body args)
       (er soft ctx
@@ -6937,7 +6938,7 @@
            The ~#1~[variable ~&1 violates~/variables ~&1 violate~] this ~
            requirement.~@2  See :DOC definition."
           er-preamble
-          (set-difference-eq (all-vars body) args)
+          (reverse (set-difference-eq (all-vars body) args))
           install-body-msg))
      (t (pprogn (cond ((member-eq fn *definition-minimal-theory*)
 
@@ -8547,7 +8548,7 @@
                         not occur in the pattern term ~x2.  Thus the ~
                         :INDUCTION rule class specified for ~x3 is illegal."
                        cond-term
-                       (set-difference-eq cond-vars pat-vars)
+                       (reverse (set-difference-eq cond-vars pat-vars))
                        pat-term
                        name))
                   ((not (subsetp-eq scheme-vars pat-vars))
@@ -8559,7 +8560,7 @@
                         not occur in the pattern term ~x2.  Thus the ~
                         :INDUCTION rule class specified for ~x3 is illegal."
                        scheme-term
-                       (set-difference-eq scheme-vars pat-vars)
+                       (reverse (set-difference-eq scheme-vars pat-vars))
                        pat-term
                        name))
                   ((assoc-eq :condition seen)

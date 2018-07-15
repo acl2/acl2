@@ -1,9 +1,44 @@
-;; AUTHOR:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
 (include-book "loop-base" :ttags :all)
 (include-book "loop-recur" :ttags :all)
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
@@ -20,8 +55,8 @@
                          las-to-pas
                          las-to-pas-values-and-!flgi
                          mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
-                         xr-fault-wb-in-system-level-marking-mode
-                         xr-fault-wb-in-system-level-mode))))
+                         xr-fault-wb-in-system-level-marking-view
+                         xr-fault-wb-in-sys-view))))
 
 ;; ======================================================================
 
@@ -360,7 +395,7 @@
 (defun-nx preconditions (n addr x86)
   (and (x86p x86)
        (64-bit-modep x86)
-       (xr :programmer-level-mode 0 x86)
+       (xr :app-view 0 x86)
        (equal (xr :ms 0 x86) nil)
        (equal (xr :fault 0 x86) nil)
        ;; We are poised to run the copyData sub-routine.
@@ -441,7 +476,7 @@
   (implies (preconditions n addr x86)
            (and (x86p x86)
                 (64-bit-modep x86)
-                (xr :programmer-level-mode 0 x86)
+                (xr :app-view 0 x86)
                 (equal (xr :ms 0 x86) nil)
                 (equal (xr :fault 0 x86) nil)
                 ;; We are poised to run the copyData sub-routine.
@@ -641,10 +676,10 @@
                                     x86-effective-addr)
                                    (not force (force))))))
 
-(defthm effects-copyData-pre-programmer-level-mode-projection
+(defthm effects-copyData-pre-app-view-projection
   (implies (preconditions n addr x86)
-           (equal (xr :programmer-level-mode 0 (x86-run (pre-clk n) x86))
-                  (xr :programmer-level-mode 0 x86)))
+           (equal (xr :app-view 0 (x86-run (pre-clk n) x86))
+                  (xr :app-view 0 x86)))
   :hints (("Goal"
            :use ((:instance effects-copydata-pre))
            :in-theory (e/d* ()
@@ -866,11 +901,11 @@
 ;; pre+loop-copies-m-bytes-from-source-to-destination, but in terms of
 ;; program-clk...
 
-(defthm loop-state-programmer-level-mode-projection
+(defthm loop-state-app-view-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (natp k))
-           (equal (xr :programmer-level-mode 0 (loop-state k m src-addr dst-addr x86))
-                  (xr :programmer-level-mode 0 x86)))
+           (equal (xr :app-view 0 (loop-state k m src-addr dst-addr x86))
+                  (xr :app-view 0 x86)))
   :hints (("Goal"
            :hands-off (x86-run)
            :in-theory (e/d* ()
@@ -884,10 +919,10 @@
                              (loop-clk-base)
                              force (force))))))
 
-(defthm loop-clk-programmer-level-mode-projection
+(defthm loop-clk-app-view-projection
   (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
-           (equal (xr :programmer-level-mode 0 (x86-run (loop-clk m) x86))
-                  (xr :programmer-level-mode 0 x86)))
+           (equal (xr :app-view 0 (x86-run (loop-clk m) x86))
+                  (xr :app-view 0 x86)))
   :hints (("Goal"
            :use ((:instance effects-copydata-loop (k 0)))
            :hands-off (x86-run)
@@ -1238,7 +1273,7 @@
 (defun-nx after-the-copy-conditions (n addr x86)
   (and (x86p x86)
        (64-bit-modep x86)
-       (xr :programmer-level-mode 0 x86)
+       (xr :app-view 0 x86)
        (equal (xr :ms 0 x86) nil)
        (equal (xr :fault 0 x86) nil)
        ;; We are poised to run the last two instructions.

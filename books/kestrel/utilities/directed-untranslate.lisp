@@ -231,7 +231,8 @@
 (defun directed-untranslate-drop-conjuncts-rec (uterm tterm sterm top)
   (case-match tterm
     (('if tterm-1 tterm-2 *nil*)
-     (cond ((equal tterm-1 (fargn sterm 1))
+     (cond ((and (ffn-symb-p sterm 'if)
+                 (equal tterm-1 (fargn sterm 1)))
             (if top
                 (mv nil nil)
               (mv uterm tterm)))
@@ -260,11 +261,11 @@
 
 ; Tterm is the translation of uterm, where uterm represents a conjunction (and
 ; x1 x2 ... xn), perhaps instead represented as (if x1 & nil), or (if x1 &
-; 'nil).  Sterm is of the form (if a b *nil*).  If sterm is the translation for
-; some k of (and xk . rest), even if subsequent conjuncts differ, then return
-; (mv uterm' tterm'), where uterm' and tterm' represent (and xk ... xn).  (xk
-; ... xn) and the corresponding subterm of tterm; else return (mv nil nil).
-; Note: return (mv nil nil if there is an immediate match.
+; 'nil).  If sterm is the translation for some k of (and xk . rest), even if
+; subsequent conjuncts differ, then return (mv uterm' tterm'), where uterm'
+; represents (and xk ... xn) and tterm' representes the corresponding subterm
+; of tterm; else return (mv nil nil).  But note: instead return (mv nil nil) if
+; tterm is equal to sterm.
 
   (directed-untranslate-drop-conjuncts-rec uterm tterm sterm t))
 
@@ -300,7 +301,8 @@
                     (and (nvariablep tterm-1)
                          (not (fquotep tterm-1))
                          (boolean-fnp (ffn-symb tterm-1) wrld)))))
-       (cond ((equal tterm-1 (fargn sterm 1))
+       (cond ((and (ffn-symb-p sterm 'if)
+                   (equal tterm-1 (fargn sterm 1)))
               (if top
                   (mv nil nil)
                 (mv uterm tterm)))

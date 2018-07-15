@@ -60,7 +60,7 @@
 
 ;; lzcnt of a concatenation:
 
-;; The next two should be in lib:
+;; The next two might be moved to lib:
 
 (local-defthm cat-bits-3
   (implies (and (integerp i) (integerp m) (>= i (1- m)))

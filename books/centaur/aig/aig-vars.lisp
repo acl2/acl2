@@ -37,19 +37,26 @@
 
 (local (in-theory (disable set::double-containment)))
 
+(define aiglist-vars (x)
+  (if (atom x)
+      nil
+    (set::union (aig-vars (car x))
+                (aiglist-vars (cdr x)))))
+
 (defsection aig-vars-thms
   :parents (aig-vars)
   :short "Theorems about @(see aig-vars) from @('centaur/aig/aig-vars')."
 
   (defthm aig-vars-cons
-    (equal (aig-vars (cons x y))
-           (set::union (aig-vars x)
-                       (aig-vars y))))
+    (implies (or x (not y))
+             (equal (aig-vars (cons x y))
+                    (set::union (aig-vars x)
+                                (aig-vars y)))))
 
   (defthm member-aig-vars-alist-vals
-    (implies (not (set::in v (aig-vars (alist-vals al))))
+    (implies (not (set::in v (aiglist-vars (alist-vals al))))
              (not (set::in v (aig-vars (cdr (hons-assoc-equal x al))))))
-    :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+    :hints(("Goal" :in-theory (enable hons-assoc-equal aiglist-vars))))
 
 
   (defthm aig-vars-aig-not
@@ -137,6 +144,8 @@
                            (not (set::in v (aig-vars arg2))))))
            :hints(("Goal" :in-theory (enable aig-and-main)))))
 
+  (local (in-theory (enable aig-atom-p-of-cons-strong)))
+
   (defthm member-aig-vars-aig-and
     (implies (and (not (set::in v (aig-vars x)))
                   (not (set::in v (aig-vars y))))
@@ -152,7 +161,7 @@
   (defthm member-aig-vars-aig-restrict
     (implies (and (not (and (set::in v (aig-vars x))
                             (not (member-equal v (alist-keys al)))))
-                  (not (set::in v (aig-vars (alist-vals al)))))
+                  (not (set::in v (aiglist-vars (alist-vals al)))))
              (not (set::in v (aig-vars (aig-restrict x al)))))
     :hints(("Goal" :in-theory (enable aig-restrict))))
 

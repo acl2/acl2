@@ -11,7 +11,7 @@ ACL2 ?= ../../../saved_acl2
 ACL2_SYSTEM_BOOKS ?= ../..
 ACL2_BUILD_DIR := ../../build
 
-JOBS ?= 2
+JOBS ?= 3
 
 all: example
 

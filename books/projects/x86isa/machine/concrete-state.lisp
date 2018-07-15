@@ -1,8 +1,43 @@
-;; AUTHORS:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
-;; Matt Kaufmann <kaufmann@cs.utexas.edu>
-;; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
-;; Robert Krug <rkrug@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Matt Kaufmann       <kaufmann@cs.utexas.edu>
+; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
+; Robert Krug         <rkrug@cs.utexas.edu>
 
 (in-package "X86ISA")
 
@@ -268,18 +303,17 @@
       (fp-opcode$c :type (unsigned-byte 11)
                    :initially 0)
 
-      ;; XMM 128-bit data registers
-      (xmm$c :type (array (unsigned-byte 128)
-                          (#.*xmm-register-names-len*))
+      ;; ZMM 512-bit data registers The lower 256-bits of the ZMM
+      ;; registers are aliased to the respective 256-bit YMM registers
+      ;; and the lower 128-bit are aliased to the respective 128-bit
+      ;; XMM registers.  Note that registers YMM16/XMM16 to
+      ;; YMM31/XMM31 are available only via the EVEX prefix (AVX-512).
+      (zmm$c :type (array (unsigned-byte 512)
+                          (#.*zmm-register-names-len*))
              :initially 0
              :resizable nil)
 
       ;; MXCSR
-      ;; We do not separate out the MXCSR flags like we did for RFLAGS
-      ;; since on average, MXCSR flags are not as often
-      ;; accessed/updated as the RFLAGS, simply because in avergae
-      ;; programs, there are more general-purpose instructions than
-      ;; floating-point instructions.
       ;; Top 16 bits are reserved.
       (mxcsr$c :type (unsigned-byte 32)
                ;; Bits 7 through 12 are the individual masks for the
@@ -303,11 +337,9 @@
       ;; We need some way to pass exceptions and such around.  So we
       ;; stuff them into the fault slot, to be processed by the step
       ;; function.
-
       (fault$c :type t :initially nil)
 
       ;; Environment for the programs running on our x86 model:
-
       (env$c :type (satisfies env-alistp) :initially nil)
 
       ;; Field that seeds unknown values that characterize commonly
@@ -318,17 +350,16 @@
       ;; support for paging is absent, and it is present otherwise.
       ;; This field is an artifact of our model, and does not exist on
       ;; the real x86 processors.
-      (programmer-level-mode$c :type (satisfies booleanp) :initially t)
+      (app-view$c :type (satisfies booleanp) :initially t)
 
       ;; The following field also acts as a switch. When its value is
       ;; t, then accessed and dirty bits in the paging structures are
       ;; set during those data structure traversals, as
       ;; expected. Otherwise, these bits are not set. This switch is
-      ;; meaningful only in the system-level mode of operation.
-      (page-structure-marking-mode$c :type (satisfies booleanp) :initially t)
+      ;; meaningful only in when the model is in sys-view.
+      (marking-view$c :type (satisfies booleanp) :initially t)
 
-      ;; The os-info$c is meaningful only when we are in the
-      ;; programmer-level mode.
+      ;; The os-info$c is meaningful only in the application-level view.
       (os-info$c               :type (satisfies keywordp) :initially :linux)
 
       ;; For our ACL2 model, we define a paging-like mechanism to

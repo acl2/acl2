@@ -25,14 +25,7 @@
 <h4>Overview</h4>
 <p>@('Smtlink') is a framework for representing suitable ACL2 theorems as a SMT
 (Satisfiability Modulo Theories) formula, and calling SMT solvers from within
-ACL2.  Two phases of translation are carried out in the framework. The first
-phase, including function expansion and all kinds of transformations, is fully
-verified using several verified clause processors interleaved with computed
-hints. This first translation is therefore ensured to be sound.  The second
-phase involves a transliteration from ACL2's LISP language to the target SMT
-solver's language.  This phase is carried out by ACL2's trusted clause
-processor, rather than a verified clause processor, and thus, it has not been
-verified in ACL2 to be sound.</p>
+ACL2.</p>
 
 <p>SMT solvers combine domain-specific techniques together into a SAT
 (Satisfiability) Solver and solves domain-specific satisfiability problems.
@@ -42,18 +35,35 @@ theory.  Modern SMT solvers benefit from the development of both the SAT
 solvers and the domain-specific techniques and have become very fast at solving
 some relatively large problems.</p>
 
+<p>In the 2018 Workshop version, we call it @('smtlink 2.0'), we make major
+improvements over the initial version with respect to soundness, extensibility,
+ease-of-use, and the range of types and associated theory-solvers supported.
+Most theorems that one would want to prove using an SMT solver must first be
+translated to use only the primitive operations supported by the SMT solver --
+this translation includes function expansion and type inference.  @('Smtlink
+2.0') performs this translation using sequence of steps performed by verified
+clause processors and computed hints.  These steps are ensured to be sound.
+The final transliteration from ACL2 to Z3's Python interface requires a trusted
+clause processor.  This is a great improvement in soundness and extensibility
+over the the original @('Smtlink') which was implemented as a single,
+monolithic, trusted clause processor.  @('Smtlink 2.0') provides support for
+@(tsee acl2::FTY), @(tsee fty::defprod), @(tsee fty::deflist), @(tsee
+fty::defalist), and @(tsee fty::defoption) types by using Z3's arrays and user
+defined data types.</p>
+
 <p>@('Smtlink') can be used both in ACL2 and ACL2(r).  The macro @(see
-Real/rationalp) should make one's proof portable between ACL2 and ACL2(r).</p>
+Real/rationalp) should make one's proof portable between ACL2 and ACL2(r). It
+is also compatible with both Python 2 and Python 3.</p>
 
 <p>@('Smtlink') currently only supports <a
-href='https://github.com/Z3Prover/z3/wiki'>Z3</a>.  We will be adding an
-interface to include the <a href='http://smtlib.cs.uiowa.edu/'>SMT-LIB</a> in
-near future.</p>
+href='https://github.com/Z3Prover/z3/wiki'>Z3</a>.  We hope to add an interface
+to include the <a href='http://smtlib.cs.uiowa.edu/'>SMT-LIB</a> in near
+future.</p>
 
 <h3>Using Smtlink</h3>
 <h4>Requirements</h4>
 <ul>
-<li>Python 2 is properly installed.</li>
+<li>Python 2/3 is properly installed.</li>
 <li>Z3 is properly installed.
 <p>One needs to build Z3 on one's own instead of using the binary release.
 Also, since we are using the Python interface, please follow the \"python\"
@@ -90,45 +100,21 @@ sat
 <li>Setup smtlink configuration in file smtlink-config in either a user
 specified directory @('$SMT_HOME') or in directory @('$HOME').  When both
 environment variables are set, @('$SMT_HOME') is used. The configuration takes
-below format:</li>
+below format:
 @({
-  interface-dir=...
-  smt-module=...
-  smt-class=...
   smt-cmd=...
   })
-<table>
+<box>
+<p>
+<b><color rgb='#FF0000'>NOTE:</color></b>
+It used to be four options, we simplified it into just one @('smt-cmd').
+</p>
+</box>
 
-<li>Below table explains what they stand for.</li>
-<tr>
-<th>Option</th>
-<th>Explanation</th>
-<th>Example</th>
-</tr>
-<tr>
-<td>@('interface-dir')</td>
-<td>The directory where the SMT solver interface module files are</td>
-<td>/Users/.../smtlink/z3_interface</td>
-</tr>
-<tr>
-<td>@('smt-module')</td>
-<td>The module name (i.e. the file name)</td>
-<td>ACL2_to_Z3</td>
-</tr>
-<tr>
-<td>@('smt-class')</td>
-<td>The class name</td>
-<td>ACL22SMT</td>
-</tr>
-<tr>
-<td>@('smt-cmd')</td>
-<td>The command for running the SMT solver</td>
-<td>/usr/local/bin/python</td>
-</tr>
-</table>
-<p>Note that @('smt-cmd') for running Z3 is the Python command since we are
-using the Python interface. The Z3 library is imported into Python in the
-scripts written out by Smtlink like is shown in \"Requirements\".</p>
+<p>@('smt-cmd') is the command for running Z3, which is the Python command
+since we are using the Python interface.  The Z3 library is imported into Python
+in the scripts written out by Smtlink like is shown in the example script in
+\"Requirements\".</p></li>
 <li>Certify the book top.lisp in the Smtlink directory, to bake setup into
 certified books.
 <p>This took about 8 mins on my 4-core mac with hyperthreading @('-j 2').</p>
@@ -139,7 +125,6 @@ A complete recertification of Smtlink is required if one changes the
 configuration in smtlink-config.
 </p>
 </box>
-
 </li>
 
 </ul>
@@ -155,6 +140,19 @@ configuration in smtlink-config.
   })
 <p>@(tsee value-triple) makes sure the form @('(tshell-ensure)') can be
 submitted in an event context and therefore is certifiable.</p>
+<p>In order to install the computed-hint, one needs to
+@(see add-default-hints).</p>
+@({
+  (add-default-hints '((SMT::SMT-computed-hint clause)))
+})
+<box>
+<p>
+<b><color rgb='#FF0000'>NOTE:</color></b>
+The computed-hint used to be called @('SMT::SMT-process-hint'), we find this name
+  doesn't represent what it does. We changed the name to
+  @('SMT::SMT-computed-hint').
+</p>
+</box>
 
 <p>For a detail description of how to setup and get started using @('Smtlink'),
 see @(tsee tutorial) and @(tsee SMT-hint).</p>
@@ -203,15 +201,25 @@ ACL2 Workshop 2015. October 2015. EPTCS 192. Pages 61-77.</p>")
   (tshell-ensure)
 })
 <p>Smtlink uses a sequence of computed hints and clause processors to perform
-different stages.  In order to install the first computed-hint, one needs to
+different stages.  In order to install the computed-hint, one needs to
 @(see add-default-hints).</p>
 @({
-  (add-default-hints '((SMT::SMT-process-hint clause)))
+  (add-default-hints '((SMT::SMT-computed-hint clause)))
 })
-<p>The rest of this document contains three pieces of arithmetic examples to
-show what one can do with Smtlink and how.  The first one shows a regular
+<box>
+<p>
+<b><color rgb='#FF0000'>NOTE:</color></b>
+The computed-hint used to be called @('SMT::SMT-process-hint'), we find this name
+  doesn't represent what it does. We changed the name to
+  @('SMT::SMT-computed-hint').
+</p>
+</box>
+
+<p>The rest of this document contains four pieces of arithmetic examples to
+show what one can do with @('Smtlink') and how.  The first one shows a regular
 example, the second one is proved using the extended version called
-smtlink-custom and the third one is a theorem that does not pass Smtlink.</p>"
+smtlink-custom, the third one is a theorem that does not pass Smtlink, and the
+fourth is a list of examples for @('FTY') types.</p>"
   )
 
 (defxdoc SMT-hint
@@ -231,6 +239,7 @@ smtlink-custom and the third one is a theorem that does not pass Smtlink.</p>"
               ((< 0 (expt z m)))
               ((< 0 (expt z n)))
               ...)
+ :fty (acl2::integer-list)
  :main-hint (:use ((:instance main-hint (n n) (x x))))
  :int-to-rat t
  :smt-fname \"my-smt-problem.lisp\"
@@ -285,6 +294,11 @@ smtlink-custom and the third one is a theorem that does not pass Smtlink.</p>"
  proving any of the hypotheses.  It follows the format of the @(see acl2::hints),
  except that no goal specifier is needed.</p></dd>
 
+ <dt>@(':fty')</dt><p/>
+
+ <dd><p>@(':fty') specifies a list of FTY types to be used in this
+ theorem</p></dd>
+
  <dt>@(':main-hint')</dt><p/>
 
  <dd><p>@(':main-hint') provides a hint to the main returned auxiliary theorem.
@@ -324,18 +338,42 @@ smtlink-custom and the third one is a theorem that does not pass Smtlink.</p>"
 <p>Currently only Z3 is supported.</p>
 
 <h3>Theories</h3>
-<p>The current Smtlink supports basic linear and nonlinear arithmetic proofs
-involving functions defined with basic functions in @(see smt-basics).</p>
+<p>Currently @('Smtlink') supports:</p>
+
+<ul>
+<li><b>Basic types:</b> @(tsee booleanp), @(tsee integerp), @(tsee real),
+@(tsee rationalp), @(tsee real/rationalp) and @(tsee symbolp)</li>
+<li><b>FTY types generated using:</b> @(tsee defprod), @(tsee deflist),
+@(tsee defalist) and @(tsee defoption)</li>
+<li><b>Basic functions:</b> @(tsee binary-+), @(tsee binary-*), @(tsee
+unary-/), @(tsee unary--), @(tsee equal), @(tsee <), @(tsee implies), @(tsee
+if), @(tsee not), and @(tsee lambda)</li>
+<li><b>Functions associated with FTY types:</b>
+<ul>
+<li><b>defprod:</b> recognizer, fixer, constructor, and field accessors.</li>
+<li><b>deflist:</b> recognizer, fixer, @(tsee cons), @(tsee car), @(tsee cdr)
+and @(tsee consp).</li>
+<li><b>defalist:</b> recognizer, fixer, @(tsee acons), and @(tsee
+assoc-equal)</li>
+<li><b>defoption:</b> recognizer, fixer, constructor, and field-accessor.</li>
+</ul>
+</li>
+</ul>
 
 <h3>Wishlist</h3>
 <ul>
+<li>Using @(tsee acl2::meta-extract) capability introduced in year 2017 Workshop for
+fully verifying several of the verified clause-processors in the architecture.
+This will improve performance.</li>
+<li>Develop type inference engine to remove the burden on the user for
+providing type information.</li>
+<li>Generate ACL2 evaluatable counter-examples.</li>
 <li>Adding support for SMT-LIB.</li>
-<li>Adding support for algebraic data types (FTY).</li>
-<li>Adding support for lists.</li>
 <li>Build a computed hint for Smtlink so that it's automatically fired on goals
-that seems likely to be solved by Smtlink.</li>
-<li>Generalize @(':smtlink-custom') to be verified.</li>
-<li>Fully verified Smtlink.</li>
+that seems likely to be solved by Smtlink, possibly recognizing induction
+steps.</li>
+<li>Do proof reconstruction for the trusted clause-processor so that ACL2
+doesn't have to trust an external procedure.</li>
 </ul>"
   )
 
@@ -344,7 +382,9 @@ that seems likely to be solved by Smtlink.</li>
   :short "How to install Z3"
   :long "<h3>How I installed Z3</h3>
 <p>In case you find the Z3 README page confusing, here's how I installed Z3.
-  One can adjust the process to one's own needs.</p>
+  One can adjust the process to one's own needs.  The version of Z3 I used is
+  @('Z3 version 4.5.0 - 64 bit'), and the version of Python I used is @('Python
+  2.7.15').</p>
 <ul>
 <li>Download the current stable release from Z3 <a
   href='https://github.com/Z3Prover/z3/releases'>releases</a>

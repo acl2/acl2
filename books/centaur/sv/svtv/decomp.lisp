@@ -2419,7 +2419,7 @@ trigger on any of the following:</p>
               ((when err)
                (acl2::fmt-to-comment-window
                 "svdecomp-svex-eval-meta failed to process the environment term: ~@0~%"
-                `((#\0 . ,err)) 0 '(nil 8 10 nil))
+                `((#\0 . ,err)) 0 '(nil 8 10 nil) nil)
                x)
               ((mv err symenv2) (map-alist-term-keys-to-val-terms env2))
               ((when err)
@@ -2454,7 +2454,7 @@ trigger on any of the following:</p>
              ;;                  (list s1 s2)
              ;;                  (list (str::hexify mask3) (str::hexify mask4))
              ;;                  (list ctx1 ctx2))))
-             ;;  0 '(nil 10 10 nil)))
+             ;;  0 '(nil 10 10 nil) nil))
              )
            (svdecomp-svex?-eval-compare-term newsvex1 newsvex2 newenv1 newenv2 'svex-eval))
          :name svdecomp-equal-svex-evals-metafun)))

@@ -353,8 +353,8 @@
     (if (and (consp (car x))
              (svar-p (caar x)))
         (cons (cons (caar x) (4vec-fix (cdar x)))
-              (svex-env-fix-gl-non-term (cdr x)))
-      (svex-env-fix-gl-non-term (cdr x)))))
+              (svex-env-fix (cdr x)))
+      (svex-env-fix (cdr x)))))
 
 (gl::Def-gl-rewrite svex-env-fix-of-non-term-gl2
   (implies (syntaxp (not (and (consp x)
@@ -489,9 +489,10 @@
     ans))
 
 
-(define svarlist-has-svex-cycle-var-memo ((x svarlist-p))
+(define svarlist-has-svex-cycle-var-memo (x)
   :enabled t
-  (svarlist-has-svex-cycle-var x)
+  (mbe :logic (svarlist-has-svex-cycle-var x)
+       :exec (svarlist-has-svex-cycle-var (ec-call (svarlist-fix x))))
   ///
   (memoize 'svarlist-has-svex-cycle-var-memo))
 
@@ -560,6 +561,13 @@
                   (if (zp n)
                       (car x)
                     (nth (1- (nfix n)) (cdr x))))))
+
+
+#!sv
+(local (defthm svarlist-has-svex-cycle-var-of-intersection
+         (implies (not (svarlist-has-svex-cycle-var vars))
+                  (not (svarlist-has-svex-cycle-var (intersection$ (svarlist-fix vars) keys))))
+         :hints(("Goal" :in-theory (enable intersection$ svarlist-fix svarlist-has-svex-cycle-var)))))
 
 (gl::def-gl-rewrite svex-env-lookup-of-svtv-fsm-symbolic-env
   (implies (and (syntaxp (and (gl::general-concretep var)

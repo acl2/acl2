@@ -1,9 +1,44 @@
-;; AUTHOR:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
 
-(include-book "programmer-level-mode/programmer-level-memory-utils" :dir :proof-utils :ttags :all)
+(include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
 
 (local (include-book "centaur/gl/gl" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -208,7 +243,7 @@
                 (equal (ms x86) nil)
                 (equal (fault x86) nil)
                 (64-bit-modep x86)
-                (equal (programmer-level-mode x86) t)
+                (equal (app-view x86) t)
                 (n32p (rgfi *rdi* x86))
                 (canonical-address-p (rip x86))
                 (canonical-address-p (+ -1 (len *popcount-32-bytes*) (rip x86)))
@@ -777,12 +812,12 @@
                    (:rewrite bitops::logbitp-of-const)
                    (:rewrite greater-logbitp-of-unsigned-byte-p . 1)
                    (:meta bitops::open-logbitp-of-const-lite-meta)
-                   (:rewrite rb-values-and-!flgi-in-system-level-mode)
+                   (:rewrite rb-values-and-!flgi-in-sys-view)
                    (:rewrite acl2::zip-open)
                    (:type-prescription natp)
                    (:type-prescription acl2::logtail-type)
                    (:rewrite canonical-address-p-limits-thm-3)
-                   (:rewrite rb-values-and-!flgi-undefined-in-system-level-mode)
+                   (:rewrite rb-values-and-!flgi-undefined-in-sys-view)
                    (:rewrite default-<-1)
                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
                    (:rewrite acl2::difference-unsigned-byte-p)
@@ -837,15 +872,15 @@
                    (:rewrite bitops::unsigned-byte-p-incr)
                    (:linear bitops::upper-bound-of-logand . 1)
                    (:linear bitops::logand->=-0-linear-1)
-                   (:rewrite rb-returns-x86-in-non-marking-mode-if-no-error)
-                   (:definition page-structure-marking-mode$inline)
+                   (:rewrite rb-returns-x86-in-non-marking-view-if-no-error)
+                   (:definition marking-view$inline)
                    (:linear acl2::logext-bounds)
                    (:meta acl2::mv-nth-cons-meta)
                    (:rewrite acl2::natp-when-integerp)
                    (:rewrite acl2::natp-when-gte-0)
                    (:rewrite acl2::reduce-integerp-+-constant)
                    (:linear mv-nth-1-imul-spec-32)
-                   (:type-prescription booleanp-page-structure-marking-mode-type)))))
+                   (:type-prescription booleanp-marking-view-type)))))
 
 ;; The following takes ~600s. Sigh.
 ;; (acl2::why x86-run-opener-not-ms-not-zp-n)
@@ -855,7 +890,7 @@
                  (equal (ms x86) nil)
                  (equal (fault x86) nil)
                  (64-bit-modep x86)
-                 (equal (programmer-level-mode x86) t)
+                 (equal (app-view x86) t)
                  (unsigned-byte-p 64 n)
                  (equal n (rr64 *rdi* x86))
                  (canonical-address-p (rip x86))
@@ -928,7 +963,7 @@
                 (equal (ms x86) nil)
                 (equal (fault x86) nil)
                 (64-bit-modep x86)
-                (equal (programmer-level-mode x86) t)
+                (equal (app-view x86) t)
                 (unsigned-byte-p 64 n)
                 (equal n (rr64 *rdi* x86))
                 (canonical-address-p (rip x86))

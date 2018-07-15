@@ -82,28 +82,36 @@
    x
    :true (mv nil nil)
    :false (mv nil nil)
-   :var (mv (list x) nil)
-   :inv (if (and (atom (car x))
-                 (not (booleanp (car x))))
-            (mv nil (list (car x)))
+   :var (mv (mbe :logic (set::insert x nil)
+                 :exec (list x))
+            nil)
+   :inv (if (aig-var-p (car x))
+            (mv nil (mbe :logic (set::insert (car x) nil)
+                         :exec (list (car x))))
           (mv nil nil))
    :and (mv-let (trues1 falses1)
           (aig-extract-assigns (car x))
           (mv-let (trues2 falses2)
             (aig-extract-assigns (cdr x))
-            (mv (hons-alphorder-merge trues1 trues2)
-                (hons-alphorder-merge falses1 falses2))))))
+            (mv (set::union trues1 trues2)
+                (set::union falses1 falses2))))))
 
-(defthm atom-listp-aig-extract-assigns
+(defthm aig-var-listp-aig-extract-assigns
   (mv-let (trues falses)
     (aig-extract-assigns x)
-    (and (atom-listp trues)
-         (atom-listp falses))))
+    (and (aig-var-listp trues)
+         (aig-var-listp falses))))
 
-(verify-guards aig-extract-assigns)
+(defthm setp-of-aig-extract-assigns
+  (b* (((mv trues falses) (aig-extract-assigns x)))
+    (and (set::setp trues)
+         (set::setp falses))))
+
+(verify-guards aig-extract-assigns
+  :hints(("Goal" :in-theory (enable set::insert))))
 
 (memoize 'aig-extract-assigns
-         :condition '(and (consp x) (cdr x))
+         :condition '(and (not (aig-atom-p x)) (cdr x))
          :forget t)
 
 (defthm aig-extract-assigns-member-impl

@@ -1,5 +1,43 @@
-;; AUTHOR:
-;; Shilpi Goel <shigoel@cs.utexas.edu>
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2018, Kestrel Technology, LLC
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author(s):
+; Alessandro Coglio   <coglio@kestrel.edu>
 
 (in-package "X86ISA")
 
@@ -15,21 +53,21 @@
 ;; INSTRUCTION: XCHG
 ;; ======================================================================
 
-(local
- (defthm-sb i49p-mv-nth-3-x86-operand-from-modr/m-and-sib-bytes
-   ;; Useful in guard proofs
-   :hyp (forced-and (x86p x86))
-   :bound 49
-   :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes
-                     reg-type operand-size inst-ac? memory-ptr?
-                     p2 p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
-   :hints (("Goal"
-            :use
-            ((:instance i48p-x86-operand-from-modr/m-and-sib-bytes))
-            :in-theory
-            (e/d* () (signed-byte-p
-                      i48p-x86-operand-from-modr/m-and-sib-bytes))))
-   :gen-linear t))
+;; (local
+;;  (defthm-sb i49p-mv-nth-3-x86-operand-from-modr/m-and-sib-bytes
+;;    ;; Useful in guard proofs
+;;    :hyp (forced-and (x86p x86))
+;;    :bound 49
+;;    :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes
+;;                      reg-type operand-size inst-ac? memory-ptr?
+;;                      p2 p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
+;;    :hints (("Goal"
+;;             :use
+;;             ((:instance i48p-x86-operand-from-modr/m-and-sib-bytes))
+;;             :in-theory
+;;             (e/d* () (signed-byte-p
+;;                       i48p-x86-operand-from-modr/m-and-sib-bytes))))
+;;    :gen-linear t))
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-xchg
@@ -191,6 +229,7 @@
 ;; INSTRUCTION: CMPXCHG
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cmpxchg
 
   ;; Op/En: MR
@@ -214,43 +253,57 @@
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* ((ctx 'x86-cmpxchg)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
        (reg (mrm-reg modr/m))
+
        ;; If the lock prefix is used but the destination is not a memory
        ;; operand, then the #UD exception is raised.
        ((when (and lock? (equal mod #b11)))
-        (!!ms-fresh :lock-prefix-but-destination-not-a-memory-operand
-                    prefixes))
+        (!!fault-fresh
+         :ud nil ;; #UD
+         :lock-prefix-but-destination-not-a-memory-operand prefixes))
+
        (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes-slice :group-4-prefix prefixes)))
 
        (select-byte-operand (equal opcode #xB0))
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size select-byte-operand rex-byte nil prefixes x86))
+
        (rAX (rgfi-size reg/mem-size *rax* rex-byte x86))
+
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
        (inst-ac? t)
        ;; Fetch the first (destination) operand:
-       ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* reg/mem-size inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       ((mv flg0
+            reg/mem
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+                                                reg/mem-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -272,11 +325,16 @@
             (let ((register (rgfi-size reg/mem-size
                                        (reg-index reg rex-byte #.*r*) rex-byte
                                        x86)))
-              (x86-operand-to-reg/mem
-               reg/mem-size inst-ac?
-               nil ;; Not a memory pointer operand
-               register (the (signed-byte #.*max-linear-address-size*) v-addr)
-               rex-byte r/m mod x86))
+              (x86-operand-to-reg/mem$ reg/mem-size
+                                       inst-ac?
+                                       nil ;; Not a memory pointer operand
+                                       register
+                                       seg-reg
+                                       (the (signed-byte 64) addr)
+                                       rex-byte
+                                       r/m
+                                       mod
+                                       x86))
           ;; rAX != reg/mem or ZF == 0
           ;; Put the destination operand into the accumulator.
           (let ((x86 (!rgfi-size reg/mem-size *rax* reg/mem rex-byte x86)))
@@ -285,19 +343,20 @@
        ((when flg1)
         (!!ms-fresh :x86-operand-to-reg/mem-error flg1))
 
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: NOP
 ;; ======================================================================
 
+; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-two-byte-nop
 
   ;; Op/En: NP
   ;; 0F 1F/0
 
-  ;; The Intel manual (Vol. 2B, p. 4-162) has a note on the recommended
+  ;; The Intel manual (Vol. 2B, NOP specification) has a note on the recommended
   ;; multi-byte NOP sequences, and the address-size override prefix is
   ;; absent from all of them.  However, since the operand for the
   ;; multi-byte NOP is an r/m operand, we account for the effect of that
@@ -314,40 +373,44 @@
 
   :body
 
-
   (b* ((ctx 'x86-two-byte-nop)
+
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
+
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
 
-       ((mv flg0 (the (signed-byte 64) ?v-addr) (the (unsigned-byte 3) increment-RIP-by) x86)
+       ((mv flg0
+            (the (signed-byte 64) ?addr)
+            (the (unsigned-byte 3) increment-RIP-by)
+            x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+          (x86-effective-addr p4?
+                              temp-rip
+                              rex-byte
+                              r/m
+                              mod
+                              sib
                               0 ;; No immediate operand
                               x86)))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                                  temp-rip))))
-        (!!ms-fresh :next-rip-invalid temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :next-rip-invalid temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; (def-inst x86-nop

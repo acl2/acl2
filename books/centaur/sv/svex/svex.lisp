@@ -523,3 +523,17 @@ typically be @(see memoize)d in some way or another.</p>"
   :elt-type constraint
   :true-listp t)
 
+
+
+
+(define svarlist-svex-vars ((x svarlist-p))
+  :returns (vars svexlist-p)
+  (if (atom x)
+      nil
+    (cons (svex-var (car x))
+          (svarlist-svex-vars (cdr x))))
+  ///
+  (defret len-of-svarlist-svex-vars
+    (equal (len vars) (len x)))
+
+  (fty::deffixequiv svarlist-svex-vars))
