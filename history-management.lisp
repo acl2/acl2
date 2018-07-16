@@ -2087,6 +2087,9 @@
              (list 'quote val))))
     `(set-checkpoint-summary-limit-fn ,x state)))
 
+(defmacro checkpoint-summary-limit ()
+  '(f-get-global 'checkpoint-summary-limit state))
+
 (defun print-gag-stack-rev (lst limit orig-limit msg chan state)
 
 ; Lst is the reverse of the :abort-stack, :top-stack, or :sub-stack field of a
