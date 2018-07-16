@@ -37,12 +37,12 @@
 (local (include-book "../util/osets"))
 
 (defxdoc typo-detection
-  :parents (use-set)
+  :parents (lucid)
   :short "We try to detect possible typos in wire names."
 
   :long "<p>Verilog implementations allow the use of implicit wires.  Because
 of this, a typo in a wire name might go undetected.  As part of our @(see
-use-set) analysis, we now try to detect wires that might be typos.</p>
+lucid) analysis, we now try to detect wires that might be typos.</p>
 
 <p>How do we know whether a wire name is actually misspelled, and is not simply
 some implicit wire that a logic designer is using?  It is not clear that there
@@ -60,7 +60,7 @@ it is quite easy to identify these wires, e.g., see @(see make-implicit-wires),
 which adds declarations to the modules to make these wires explicit.</li>
 
 <li>Next, we will only consider the subset of these wires that are either
-unused or unset, per our ordinary @(see use-set) analysis.  The idea behind
+unused or unset, per our ordinary @(see lucid) analysis.  The idea behind
 this restriction is that typos are probably relatively rare, and it is unlikely
 that someone would misspell the name in both contexts.</li>
 
@@ -609,6 +609,12 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
   (b* (((when (atom strs))
         nil)
        (name1      (car strs))
+       ((when (or (str::substrp "SDN" name1)
+                  (str::substrp "SDF" name1)))
+        ;; Some primitive modules have SDN/SDF and these look close
+        ;; enough alike that they cause a lot of problems, so suppress
+        ;; typo warnings about these particular substrings.
+        (typo-detect-aux (cdr strs) alist))
        (partition1 (typo-partition (explode name1)))
        (typos1     (typo-find-plausible-typos1 partition1 alist))
        ((when typos1)

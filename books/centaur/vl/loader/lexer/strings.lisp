@@ -168,9 +168,11 @@ escape sequences for suitable @(see vl-edition-p)s.</p>
 <i>Nonprinting and other special characters are preceded with a backslash</i>.
 It's not clear whether this is just an informal description of what the escape
 tables mean, or if we're supposed to allow any non-printable character to be
-included in a string literal by preceding it with a backslash.  To try to
-ensure compatibility, VL rejects any characters other than those explicitly in
-the table to be preceded by backslashes.</p>
+included in a string literal by preceding it with a backslash.  But it appears
+(cosims/str) that other tools allow most characters to be preceded by a
+backslash in which case they expand to themselves.  We try to be compatible
+where we think this seems safe.</p>
+
 
 
 <h5>Hex escapes</h5>
@@ -391,6 +393,29 @@ printing.</p>"
   :prefix-n 1
   :remainder-n 2)
 
+(defchar string-self-escape
+  (or
+   ;; Most lowercase letters -- on other tools, all lowercase letters other
+   ;; than 'n' and 't' seem to get escaped to themselves.  (These tools fail to
+   ;; handle the new \v, \f, \a, and \x escapes, which we will rule out).
+   (and (str::down-alpha-p x)
+        (not (member x '(#\n #\t #\v #\f #\a #\x))))
+   ;; On other tools, all uppercase letters seem to get escaped to themselves.
+   (str::up-alpha-p x)
+   ;; On other tools, 8 and 9 seem to get escaped to themselves.  0-7 do not
+   ;; because they would be interpreted as octal byte sequences
+   (consp (member x '(#\8 #\9)))
+   ;; On other tools, these other random printable characters seem to get
+   ;; escaped to themselves.
+   (consp (member x '(#\~ #\! #\@ #\# #\$ #\%
+                      #\^ #\& #\* #\( #\) #\_
+                      #\- #\+ #\= #\[ #\] #\{ #\}
+                      #\| #\; #\: #\< #\> #\,
+                      #\. #\? #\/ #\` #\Space))))
+  :parents (vl-read-string-escape-sequence)
+  :short "I'm not sure the standard really says this is OK, but it seems like
+          these characters escape to themselves when preceded by a backslash on
+          other tools.")
 
 (define vl-read-string-escape-sequence
   :short "Try to read a string escape sequence."
@@ -423,13 +448,8 @@ printing.</p>"
        ((when (eql char2 #\t)) (mv #\Tab     (list echar1 echar2) (cddr echars)))
        ((when (eql char2 #\\)) (mv #\\       (list echar1 echar2) (cddr echars)))
        ((when (eql char2 #\")) (mv #\"       (list echar1 echar2) (cddr echars)))
-
-       ;; [Jared] gross hack, I don't think this should be legal but VCS allows it
-       ((when (eql char2 #\/)) (mv #\/       (list echar1 echar2) (cddr echars)))
-
        ((when (vl-echar-digit-value echar2 8))
         (vl-read-octal-string-escape echars))
-
        ((vl-lexstate st) st)
        ((unless st.strextsp)
         (mv nil nil echars))
@@ -444,7 +464,11 @@ printing.</p>"
        ((when (eql char2 #\a))
         (mv (code-char 7) (list echar1 echar2) (cddr echars)))
        ((when (eql char2 #\x))
-        (vl-read-hex-string-escape echars)))
+        (vl-read-hex-string-escape echars))
+
+       ((when (vl-string-self-escape-p char2))
+        (mv char2 (list echar1 echar2) (cddr echars))))
+
     (mv (cw "Lexer error (~s0): invalid string escape sequence: ~s1~%"
             (vl-location-string (vl-echar->loc (car echars)))
             (vl-echarlist->string (list echar1 echar2)))

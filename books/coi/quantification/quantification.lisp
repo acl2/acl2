@@ -516,7 +516,7 @@
       `((,(car vars) (gensym::generalize (acl2::hide ,witness))))
     (generalize-witness-rec 0 vars witness)))
 
-(defun defun-sk-fn (name args body disable doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls)
+(defun defun-sk-fn (name args body disable doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls strengthen)
   (let* ((formula `(,name ,@args))
 	 (formula-by-multiplicity (intern-in-package-of-symbol
 				   (concatenate 'string
@@ -578,7 +578,8 @@
 	,@(rekey :skolem-name skolem-name)
 	,@(rekey :thm-name thm-name)
 	,@(rekey :rewrite rewrite)
-	,@(rekey :witness-dcls witness-dcls))
+	,@(rekey :witness-dcls witness-dcls)
+        ,@(rekey :strengthen strengthen))
 
       (in-theory (disable ,thm-name))
 
@@ -605,11 +606,11 @@
 
       )))
 
-(defmacro def::un-sk (name args body &key doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls)
-  (defun-sk-fn name args body nil doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls))
+(defmacro def::un-sk (name args body &key doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls strengthen)
+  (defun-sk-fn name args body nil doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls strengthen))
 
-(defmacro def::un-skd (name args body &key doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls)
-  (defun-sk-fn name args body t doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls))
+(defmacro def::un-skd (name args body &key doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls strengthen)
+  (defun-sk-fn name args body t doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls strengthen))
 
 ;; ===========================================================================
 

@@ -95,6 +95,10 @@ VL Module Browser.  They can alternately be reloaded into ACL2 sessions using
                  the command line, hence :hide t)"
                 :hide t)
 
+   (plusargs    string-listp
+                "The list of plusargs without plusses."
+                :hide t)
+
    (search-path string-listp
                 :longname "search"
                 :alias #\s
@@ -133,9 +137,12 @@ VL Module Browser.  They can alternately be reloaded into ACL2 sessions using
                 :longname "define"
                 :alias #\D
                 :argname "VAR"
-                "Set up definitions to use before parsing begins.  Equivalent
-                 to putting `define VAR 1 at the top of your Verilog file.
-                 You can give this option multiple times."
+                "Set up definitions to use before parsing begins.  For instance,
+                \"--define foo\" is similar to \"`define foo\" and \"--define
+                foo=3\" is similar to \"`define foo 3\".  Note: these defines
+                are \"sticky\" and will override subsequent `defines in your
+                Verilog files unless your Verilog explicitly uses `undef.  You
+                can give this option multiple times."
                 :parser getopt::parse-string
                 :merge acl2::cons)
 
@@ -182,25 +189,44 @@ Options:" *nls* *nls* *vl-zip-opts-usage* *nls*))
 
   (b* (((vl-zip-opts opts) opts)
 
+       ((mv cmdline-warnings defines)
+        (vl-parse-cmdline-defines opts.defines
+                                  (make-vl-location :filename "vl cmdline"
+                                                    :line 1
+                                                    :col 0)
+                                  ;; Command line defines are sticky
+                                  t))
+
+       (- (or (not cmdline-warnings)
+              (vl-cw-ps-seq (vl-print-warnings cmdline-warnings))))
+
        (loadconfig (make-vl-loadconfig
                     :edition       opts.edition
                     :strictp       opts.strict
                     :start-files   opts.start-files
+                    :plusargs      opts.plusargs
                     :search-path   opts.search-path
                     :search-exts   opts.search-exts
                     :include-dirs  opts.include-dirs
-                    :defines       (vl-make-initial-defines opts.defines)
+                    :defines       defines
                     :filemapp      t))
 
        ((mv result state) (vl-load loadconfig))
        ((vl-loadresult result) result)
        ((mv date state) (oslib::date))
        ((mv ltime state) (oslib::universal-time))
+
+       (design (change-vl-design result.design
+                :warnings
+                (append-without-guard cmdline-warnings
+                                      (vl-design->warnings result.design))))
+
+
        (zip (make-vl-zipfile :name    opts.name
                              :syntax  *vl-current-syntax-version*
                              :date    date
                              :ltime   ltime
-                             :design  result.design
+                             :design  design
                              :filemap result.filemap
                              :defines result.defines))
        (- (cw "Writing output file ~x0~%" opts.output))
@@ -216,12 +242,14 @@ Options:" *nls* *nls* *vl-zip-opts-usage* *nls*))
 (define vl-zip-top ((argv string-listp) &key (state 'state))
   :short "Top-level @('vl zip') command."
 
-  (b* (((mv errmsg opts start-files)
+  (b* (((mv errmsg opts start-files-and-plusargs)
         (parse-vl-zip-opts argv))
        ((when errmsg)
         (die "~@0~%" errmsg)
         state)
+       ((mv start-files plusargs) (split-plusargs start-files-and-plusargs))
        (opts (change-vl-zip-opts opts
+                                 :plusargs plusargs
                                  :start-files start-files))
        ((vl-zip-opts opts) opts)
 

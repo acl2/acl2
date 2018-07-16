@@ -37,35 +37,35 @@ outlaw_warning_global("VL-PARSE-ERROR")
 outlaw_warning_global("VL-PARSE-FAILED")
 
 def normal(modname, wirename)
-  outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
-  outlaw_warning(modname, "VL-LUCID-UNUSED", wirename)
-  outlaw_warning(modname, "VL-LUCID-UNSET", wirename)
-  outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
+  outlaw_warning_ss(modname, "VL-WARN-UNDECLARED", wirename)
+  outlaw_warning_ss(modname, "VL-LUCID-UNUSED", wirename)
+  outlaw_warning_ss(modname, "VL-LUCID-UNSET", wirename)
+  outlaw_warning_ss(modname, "VL-LUCID-SPURIOUS", wirename)
 end
 
 def unused(modname, wirename)
-  match_warning(modname, "VL-LUCID-UNUSED", wirename)
-  outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
-  outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
-  outlaw_warning(modname, "VL-LUCID-UNSET", wirename)
+  match_warning_ss(modname, "VL-LUCID-UNUSED", wirename)
+  outlaw_warning_ss(modname, "VL-WARN-UNDECLARED", wirename)
+  outlaw_warning_ss(modname, "VL-LUCID-SPURIOUS", wirename)
+  outlaw_warning_ss(modname, "VL-LUCID-UNSET", wirename)
 end
 
 def unset(modname, wirename)
-  match_warning(modname, "VL-LUCID-UNSET", wirename)
-  outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
-  outlaw_warning(modname, "VL-LUCID-UNUSED", wirename)
-  outlaw_warning(modname, "VL-LUCID-SPURIOUS", wirename)
+  match_warning_ss(modname, "VL-LUCID-UNSET", wirename)
+  outlaw_warning_ss(modname, "VL-WARN-UNDECLARED", wirename)
+  outlaw_warning_ss(modname, "VL-LUCID-UNUSED", wirename)
+  outlaw_warning_ss(modname, "VL-LUCID-SPURIOUS", wirename)
 end
 
 def spurious(modname, wirename)
-  match_warning(modname, "VL-LUCID-SPURIOUS", wirename)
-  outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
-  outlaw_warning(modname, "VL-LUCID-UNSET", wirename)
-  outlaw_warning(modname, "VL-LUCID-UNUSED", wirename)
+  match_warning_ss(modname, "VL-LUCID-SPURIOUS", wirename)
+  outlaw_warning_ss(modname, "VL-WARN-UNDECLARED", wirename)
+  outlaw_warning_ss(modname, "VL-LUCID-UNSET", wirename)
+  outlaw_warning_ss(modname, "VL-LUCID-UNUSED", wirename)
 end
 
 def undeclared(modname, wirename)
-  match_warning(modname, "VL-WARN-UNDECLARED", wirename)
+  match_warning_ss(modname, "VL-WARN-UNDECLARED", wirename)
 end
 
 
@@ -141,14 +141,14 @@ undeclared(:m1, "w3_undeclared")
 
 unset(:m1, "w4_unset")
 unused(:m1, "w5_unused")
-outlaw_warning(:m1, "VL-WARN-UNDECLARED", "triple_t")
+outlaw_warning_ss(:m1, "VL-WARN-UNDECLARED", "triple_t")
 
 undeclared(:m1, "undeclared_t")
 
 unused(:m1, "w6_unused")
 unused(:m1, "w7_unused")
-outlaw_warning(:m1, "VL-WARN-UNDECLARED", "pkg1_decl1")
-outlaw_warning(:m1, "VL-WARN-UNDECLARED", "pkg1_decl2")
+outlaw_warning_ss(:m1, "VL-WARN-UNDECLARED", "pkg1_decl1")
+outlaw_warning_ss(:m1, "VL-WARN-UNDECLARED", "pkg1_decl2")
 
 normal(:pkg1, "pkg1_decl1")
 normal(:pkg1, "pkg1_decl2")
@@ -157,8 +157,8 @@ undeclared(:m2, "subname_in1")
 
 ## These warnings are different only because they're checked later in
 ## argresolve instead of earlier in make-implicit
-match_warning(:m3, "VL-BAD-INSTANCE", "subname_in1")
-match_warning(:m3, "VL-BAD-INSTANCE", "subname_out1")
+match_warning_ss(:m3, "VL-BAD-INSTANCE", "subname_in1")
+match_warning_ss(:m3, "VL-BAD-INSTANCE", "subname_out1")
 
 unset(:m4, "subname_in1")
 unused(:m4, "subname_out1")

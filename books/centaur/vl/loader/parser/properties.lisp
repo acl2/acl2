@@ -494,6 +494,98 @@ have</p>
        (return (cons first rest))))
 
 
+(local (with-output :off (prove proof-tree)
+  (defthm-parse-expressions-flag consp-of-vl-parse-event-expression-2012
+    (defthm consp-of-vl-parse-event-expression-2012
+      (b* (((mv ?err val ?tokstream) (vl-parse-event-expression-2012)))
+        (equal (consp val)
+               (not err)))
+      :flag vl-parse-event-expression-2012)
+    :skip-others t
+    :hints(("Goal" :expand ((vl-parse-event-expression-2012)))))))
+
+(local (with-output :off (prove proof-tree)
+  (defthm-parse-expressions-flag consp-of-vl-parse-event-expression-2005
+    (defthm consp-of-vl-parse-event-expression-2005
+      (b* (((mv ?err val ?tokstream) (vl-parse-event-expression-2005)))
+        (equal (consp val)
+               (not err)))
+      :flag vl-parse-event-expression-2005)
+    :skip-others t
+    :hints(("Goal" :expand ((vl-parse-event-expression-2005)))))))
+
+(local (with-output :off (prove proof-tree)
+  (defthm-parse-expressions-flag consp-of-vl-parse-event-expression
+    (defthm consp-of-vl-parse-event-expression
+      (b* (((mv ?err val ?tokstream) (vl-parse-event-expression)))
+        (equal (consp val)
+               (not err)))
+      :flag vl-parse-event-expression)
+    :skip-others t
+    :hints(("Goal" :expand ((vl-parse-event-expression)))))))
+
+
+(local (with-output :off (prove proof-tree)
+  (defthm-parse-expressions-flag vl-evatomlist-p-of-vl-parse-event-expression-2005
+    (defthm vl-evatomlist-p-of-vl-parse-event-expression-2005
+      (b* (((mv ?err val ?tokstream) (vl-parse-event-expression-2005)))
+        (vl-evatomlist-p val))
+      :flag vl-parse-event-expression-2005)
+    :skip-others t
+    :hints(("Goal" :expand ((vl-parse-event-expression-2005)))))))
+
+(local (with-output :off (prove proof-tree)
+  (defthm-parse-expressions-flag vl-evatomlist-p-of-vl-parse-event-expression-2012
+    (defthm vl-evatomlist-p-of-vl-parse-event-expression-2012
+      (b* (((mv ?err val ?tokstream) (vl-parse-event-expression-2012)))
+        (vl-evatomlist-p val))
+      :flag vl-parse-event-expression-2012)
+    :skip-others t
+    :hints(("Goal" :expand ((vl-parse-event-expression-2012)))))))
+
+(local (with-output :off (prove proof-tree)
+  (defthm-parse-expressions-flag vl-evatomlist-p-of-vl-parse-event-expression
+    (defthm vl-evatomlist-p-of-vl-parse-event-expression
+      (b* (((mv ?err val ?tokstream) (vl-parse-event-expression)))
+        (vl-evatomlist-p val))
+      :flag vl-parse-event-expression)
+    :skip-others t
+    :hints(("Goal" :expand ((vl-parse-event-expression)))))))
+
+
+
+(local (with-output :off (prove proof-tree)
+  (defthm-parse-expressions-flag true-listp-of-vl-parse-event-expression-2005
+    (defthm true-listp-of-vl-parse-event-expression-2005
+      (b* (((mv ?err val ?tokstream) (vl-parse-event-expression-2005)))
+        (true-listp val))
+      :rule-classes :type-prescription
+      :flag vl-parse-event-expression-2005)
+    :skip-others t
+    :hints(("Goal" :expand ((vl-parse-event-expression-2005)))))))
+
+(local (with-output :off (prove proof-tree)
+  (defthm-parse-expressions-flag true-listp-of-vl-parse-event-expression-2012
+    (defthm true-listp-of-vl-parse-event-expression-2012
+      (b* (((mv ?err val ?tokstream) (vl-parse-event-expression-2012)))
+        (true-listp val))
+      :rule-classes :type-prescription
+      :flag vl-parse-event-expression-2012)
+    :skip-others t
+    :hints(("Goal" :expand ((vl-parse-event-expression-2012)))))))
+
+(local (with-output :off (prove proof-tree)
+  (defthm-parse-expressions-flag true-listp-of-vl-parse-event-expression
+    (defthm true-listp-of-vl-parse-event-expression
+      (b* (((mv ?err val ?tokstream) (vl-parse-event-expression)))
+        (true-listp val))
+      :rule-classes :type-prescription
+      :flag vl-parse-event-expression)
+    :skip-others t
+    :hints(("Goal" :expand ((vl-parse-event-expression)))))))
+
+(local (in-theory (disable (force))))
+
 (defparser vl-parse-event-expression-fragment ()
   :parents (vl-parse-property-list-of-arguments)
   :short "Special subset of @('event_expression') for use only in

@@ -188,6 +188,71 @@ statement is well-formed.</p>")
        (level := (vl-match))
        (return (vl-udp-level-symbol-token->interp level))))
 
+(define vl-01-integer-token-p ((x vl-token-p))
+  (case (vl-token->type x)
+    (:vl-inttoken (let ((etext (vl-inttoken->etext x)))
+                    (and (eql (len etext) 2)
+                         (eql (vl-echar->char (first etext)) #\0)
+                         (eql (vl-echar->char (second etext)) #\1))))
+    (otherwise nil)))
+
+(define vl-10-integer-token-p ((x vl-token-p))
+  (case (vl-token->type x)
+    (:vl-inttoken (let ((etext (vl-inttoken->etext x)))
+                    (and (eql (len etext) 2)
+                         (eql (vl-echar->char (first etext)) #\1)
+                         (eql (vl-echar->char (second etext)) #\0))))
+    (otherwise nil)))
+
+(defparser vl-parse-two-level-symbols ()
+  :short "Horrible.  To support edge_indicator, match two @('level_symbol')s,
+          which would be so easy except they might not be separated by
+          whitespace."
+  :result (vl-udpentry-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (when (and (consp (vl-tokstream->tokens))
+                  (vl-udp-level-symbol-token-p (car (vl-tokstream->tokens))))
+         ;; We found a legitimate level_symbol right away, so there must be
+         ;; whitespace separating these.  So try to parse them both.
+         (prev := (vl-parse-level-symbol))
+         (next := (vl-parse-level-symbol))
+         (return (make-vl-udpedge :prev prev :next next)))
+       ;; Otherwise, we might still have a valid level_symbol token, but it
+       ;; might take many forms.  The valid level symbols are:
+       ;;
+       ;;    0   1   x   X   ?   b   B
+       ;;
+       ;; So if we have two of these together with no whitespace, we might
+       ;; have lots of combinations.
+       ;;
+       ;; We can ignore all ? cases because those would look like separate
+       ;; tokens: they're not identifiers and not numbers, so there's no way
+       ;; they'll get merged with anything and we've handled them above.  So
+       ;; that leaves:
+       ;;
+       ;;   0   1   x   X   b   B
+       ;;
+       ;;    {0}{1}     -- token is 01, need to handle this
+       ;;    {1}{0}     -- token is 10, need to handle this
+       ;;    {01}{xXbB} -- separate tokens, handled above, no need to handle this below
+       ;;    {xXbB}{*}  -- single identifier token, need to handle this
+       (when (and (consp (vl-tokstream->tokens))
+                  (vl-01-integer-token-p (car (vl-tokstream->tokens))))
+         (:= (vl-match))
+         (return (make-vl-udpedge :prev :vl-udp-0 :next :vl-udp-1)))
+
+       (when (and (consp (vl-tokstream->tokens))
+                  (vl-10-integer-token-p (car (vl-tokstream->tokens))))
+         (:= (vl-match))
+         (return (make-vl-udpedge :prev :vl-udp-1 :next :vl-udp-0)))
+
+       ;; BOZO try harder and implement the other identifier cases, if they're valid.
+       (return-raw
+        (vl-parse-error "Unsupported two level_symbols"))))
+
 (defparser vl-parse-output-symbol ()
   :short "@('output_symbol ::= '0' | '1' | 'x' | 'X'')"
   :result (vl-udpsymbol-p val)
@@ -302,13 +367,11 @@ statement is well-formed.</p>")
   :fails gracefully
   :count strong
   (seq tokstream
-       (when (vl-is-token? :vl-kwd-lparen)
+       (when (vl-is-token? :vl-lparen)
          (:= (vl-match))
-         (prev := (vl-parse-level-symbol))
-         (next := (vl-parse-level-symbol))
-         (:= (vl-match-token :vl-kwd-rparen))
-         (return (make-vl-udpedge :prev prev
-                                  :next next)))
+         (edge := (vl-parse-two-level-symbols))
+         (:= (vl-match-token :vl-rparen))
+         (return edge))
        (sym := (vl-parse-edge-symbol))
        (return sym)))
 

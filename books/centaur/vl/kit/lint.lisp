@@ -36,6 +36,7 @@
 (include-book "../mlib/hierarchy")
 (include-book "../lint/drop-user-submodules")
 (include-book "../lint/suppress-warnings")
+(include-book "../lint/suppress-files")
 (include-book "../lint/condcheck")
 (include-book "../lint/duplicate-detect")
 (include-book "../lint/dupeinst-check")
@@ -173,6 +174,10 @@ for particular modules, or all warnings of particular types, etc.  See @(see
                 "The list of files to process."
                 :hide t)
 
+   (plusargs    string-listp
+                "The list of +args, with plusses removed."
+                :hide t)
+
    (help        booleanp
                 "Show a brief usage message and exit."
                 :rule-classes :type-prescription
@@ -263,15 +268,31 @@ for particular modules, or all warnings of particular types, etc.  See @(see
                 :parser getopt::parse-string
                 :merge cons)
 
-   (defines     string-listp
+   (ignore-files string-listp
+                 :longname "ignore-file"
+                 :argname "FILENAME"
+                 "Ignore warnings from modules in filename.  For instance,
+                  \"--ignore-file foo.v\" will suppress all warnings from
+                  modules in foo.v (from any directory).  You can also give
+                  absolute paths, in which case only exact matches will be
+                  suppressed.  Note that there are much finer-grained ways
+                  to suppress warnings; see \"vl lint --readme\" for more
+                  information."
+                 :parser getopt::parse-string
+                 :merge cons)
+
+   (defines    string-listp
                :longname "define"
                :alias #\D
                :argname "VAR"
-                "Set up definitions to use before parsing begins.  Equivalent
-                 to putting `define VAR 1 at the top of your Verilog file.
-                 You can give this option multiple times."
-                :parser getopt::parse-string
-                :merge cons)
+               "Set up definitions to use before parsing begins.  For instance,
+                \"--define foo\" is similar to \"`define foo\" and \"--define
+                foo=3\" is similar to \"`define foo 3\".  Note: these defines
+                are \"sticky\" and will override subsequent `defines in your
+                Verilog files unless your Verilog explicitly uses `undef.  You
+                can give this option multiple times."
+               :parser getopt::parse-string
+               :merge cons)
 
    (cclimit     natp
                 :argname "N"
@@ -289,6 +310,36 @@ for particular modules, or all warnings of particular types, etc.  See @(see
                      should not be defined anywhere else."
                     :merge cons
                     :parser getopt::parse-string)
+   (elab-limit  natp
+                :argname "N"
+                "Default 10000.  Recursion limit for elaboration.  This usually
+                 shouldn't matter or need tinkering.  It's a safety valve
+                 against possible loops in elaboration, e.g., to resolve
+                 parameter P you need to evaluate parameter Q, which might
+                 require you to resolve R, which might depend hierarchically on
+                 P, and so on.  So if you hit this there's probably something
+                 wrong with your design."
+                :rule-classes :type-prescription
+                :default 10000)
+
+   (stmt-limit natp
+               :argname "N"
+               "Default 80.  Recursion limit for compiling statements, e.g.,
+                unrolling loops and figuring out when they terminate.  For
+                linting we use a low default limit that is meant to avoid
+                wasting an inordinate amount of time compiling troublesome
+                loops.  Increasing this may avoid svex translation warnings,
+                but may result in bad performance in some cases."
+               :rule-classes :type-prescription
+               :default 80)
+
+   (no-typo     booleanp
+                "Disable typo detection (it is sometimes slow)."
+                :rule-classes :type-prescription)
+
+   (no-sv-use-set booleanp
+                  "Disable sv-use-set check."
+                  :rule-classes :type-prescription)
 
    (edition     vl-edition-p
                 :argname "EDITION"
@@ -338,7 +389,7 @@ Example:  vl lint engine.v wrapper.v core.v \\
             --search ./simlibs \\
             --search ./baselibs
 
-Usage:    vl lint [OPTIONS] file.v [file2.v ...]
+Usage:    vl lint [OPTIONS] file.v [file2.v ...] [+mymode ...]
 
 Options:" *nls* *nls* *vl-lintconfig-usage* *nls*))
 
@@ -485,15 +536,29 @@ shown.</p>"
                    acl2::no-duplicatesp-equal-append-iff
                    mergesort)))
 
+(define vl-collect-new-names-from-orignames ((keep-orignames string-listp)
+                                             (mods vl-modulelist-p))
+  :returns (keep-newnames string-listp)
+  (b* (((when (atom mods))
+        nil)
+       ((vl-module x1) (car mods))
+       ((when (member-equal x1.origname (string-list-fix keep-orignames)))
+        (cons x1.name (vl-collect-new-names-from-orignames keep-orignames (cdr mods)))))
+    (vl-collect-new-names-from-orignames keep-orignames (cdr mods))))
+
 (define vl-design-remove-unnecessary-modules ((keep string-listp)
                                               (design vl-design-p))
   :returns (new-design vl-design-p)
   (b* ((design (vl-design-fix design))
-       (keep   (mergesort (string-list-fix keep)))
        ((unless keep)
-        ;; Special feature: if the user didn't specify any top modules,
-        ;; then we want to keep everything.
-        design))
+        ;; Special feature: if the user didn't specify any top modules, then we
+        ;; want to keep everything.
+        design)
+       (keep1 (mergesort (string-list-fix keep)))
+       ;; If the user wants to keep a parameterized module, we need to go
+       ;; through and find all of its new names.
+       (keep2 (mergesort (vl-collect-new-names-from-orignames keep1 (vl-design->mods design))))
+       (keep  (union keep1 keep2)))
     (vl-remove-unnecessary-elements keep design)))
 
 ;; (define vl-lint-unparam ((good vl-design-p))
@@ -539,6 +604,95 @@ shown.</p>"
        (mods   (vl-delete-modules quiet mods)))
     (change-vl-design design :mods mods)))
 
+
+(encapsulate
+  ()
+  (defund vl-lint-suppress-large-integer-problems (suppressp)
+    (declare (xargs :guard t)
+             (ignorable suppressp))
+    t)
+
+  (defttag :vl-lint-suppress-large-integer-problems)
+  (acl2::include-raw "lint-raw.lsp"))
+
+
+(defconst *vl-svbad-limit* (expt 2 20))
+
+(define vl-datatype-svbad-p ((x vl-datatype-p))
+  (b* (((unless (vl-datatype-resolved-p x))
+        t)
+       ((mv err size)
+        (vl-datatype-size x)))
+    (or err
+        (and size (> size *vl-svbad-limit*)))))
+
+(define vl-vardecl-svbad-warnings ((x        vl-vardecl-p)
+                                   (warnings vl-warninglist-p))
+  :returns (warnings vl-warninglist-p)
+  (b* (((vl-vardecl x))
+       ((unless (vl-datatype-svbad-p x.type))
+        (ok)))
+    (fatal :type :vl-warn-svbad-p
+           :msg "~a0: type ~a1 looks like it will cause problems for SV."
+           :args (list x x.type))))
+
+(define vl-vardecllist-svbad-warnings ((x        vl-vardecllist-p)
+                                       (warnings vl-warninglist-p))
+  :returns (warnings vl-warninglist-p)
+  (b* (((when (atom x))
+        (ok))
+       (warnings (vl-vardecl-svbad-warnings (car x) warnings)))
+    (vl-vardecllist-svbad-warnings (cdr x) warnings)))
+
+(define vl-module-add-svbad-warnings ((x    vl-module-p)
+                                      (good vl-modulelist-p)
+                                      (bad  vl-modulelist-p))
+  :returns (mv (good vl-modulelist-p)
+               (bad  vl-modulelist-p))
+  (b* (((vl-module x) (vl-module-fix x))
+       (good (vl-modulelist-fix good))
+       (bad  (vl-modulelist-fix bad))
+       (warnings (vl-vardecllist-svbad-warnings x.vardecls nil))
+       ((unless warnings)
+        ;; no obvious problems, so keep this module
+        (mv (cons x good) bad))
+       ;; some wire looks really big and is probably going to cause
+       ;; problems for SV, so drop this module
+       (new-x (change-vl-module x :warnings (append-without-guard warnings x.warnings))))
+    (mv good (cons new-x bad))))
+
+(define vl-modulelist-add-svbad-warnings ((x    vl-modulelist-p)
+                                          (good vl-modulelist-p)
+                                          (bad  vl-modulelist-p))
+  :returns (mv (good vl-modulelist-p)
+               (bad  vl-modulelist-p))
+  (b* (((when (atom x))
+        (mv (vl-modulelist-fix good) (vl-modulelist-fix bad)))
+       ((mv good bad) (vl-module-add-svbad-warnings (first x) good bad)))
+    (vl-modulelist-add-svbad-warnings (rest x) good bad)))
+
+(define vl-lint-design->svex-modalist-wrapper ((x      vl-design-p)
+                                               (config vl-simpconfig-p))
+  :returns (new-x vl-design-p)
+  (b* (((vl-design x))
+       (- (sneaky-save :vl-lint-svconfig config))
+       (- (sneaky-save :vl-lint-pre-sv-design x))
+
+       ((mv good bad) (vl-modulelist-add-svbad-warnings x.mods nil nil))
+
+       ;; Strip out the bad mods so that we don't try to build SV
+       ;; modules for them.
+       (good-x (change-vl-design x :mods good))
+       ((mv reportcard ?modalist)
+        (xf-cwtime (vl-design->svex-modalist good-x :config config)))
+
+       ;; Reattach the bad mods so that we get their warning.
+       (merged-x (change-vl-design x :mods (append-without-guard good bad)))
+
+       ;; Finally get the warnings from SV translation from the reportcard.
+       (final-x (xf-cwtime (vl-apply-reportcard merged-x reportcard))))
+    final-x))
+
 (define run-vl-lint-main ((design vl-design-p)
                           (config vl-lintconfig-p))
   :guard-debug t
@@ -546,8 +700,9 @@ shown.</p>"
 
   (b* (((vl-lintconfig config) config)
        (design-orig design)
-       (design (vl-annotate-design design))
+       (- (vl-lint-suppress-large-integer-problems t))
 
+       (design (vl-annotate-design design))
        ;; We originally did this before annotate, but that doesn't work in the
        ;; new world of loaditems.  we need to annotate first.
        (design (xf-cwtime (vl-design-drop-user-submodules design config.dropmods)))
@@ -592,9 +747,11 @@ shown.</p>"
        ;; this goes away (design (cwtime (vl-design-resolve-indexing design)))
 
        ;; Pre-unparameterization Lucidity Check.
+       (typosp (not config.no-typo))
        (design (xf-cwtime (vl-design-lucid design
-                                           :modportsp t ;; Good time to check modports
-                                           :paramsp t   ;; Good time to check params
+                                           :modportsp t    ;; Good time to check modports
+                                           :paramsp t      ;; Good time to check params
+                                           :typosp typosp  ;; Good time to check for typos
                                            :generatesp nil ;; Bad time to check generates
                                            )))
 
@@ -608,7 +765,11 @@ shown.</p>"
        (design (xf-cwtime (vl-design-logicassign design)))
 
 
-       (simpconfig (make-vl-simpconfig :sv-simplify nil))
+       ((vl-simpconfig simpconfig)
+        (change-vl-simpconfig *vl-default-simpconfig*
+                              :sv-simplify nil
+                              :elab-limit config.elab-limit
+                              :sc-limit config.stmt-limit))
 
        ;; BOZO we need to do something to throw away instances with unresolved
        ;; arguments to avoid programming-errors in drop-blankports... and actually
@@ -617,7 +778,7 @@ shown.</p>"
        ;;(design (cwtime (vl-design-follow-hids design)))
        ;; (design (cwtime (vl-design-clean-params design)))
        ;; (design (cwtime (vl-design-check-good-paramdecls design)))
-       (design (xf-cwtime (vl-design-elaborate design :config simpconfig)))
+       (design (xf-cwtime (vl-design-elaborate design simpconfig)))
 
        ((mv design stubnames) (vl-design-lint-stubs design))
 
@@ -640,6 +801,7 @@ shown.</p>"
        (design (xf-cwtime (vl-design-lucid design
                                            :modportsp nil
                                            :paramsp nil
+                                           :typosp nil
                                            :generatesp t)))
 
 ;;*** do we want to do thsi???  I can't think of why
@@ -683,7 +845,9 @@ shown.</p>"
        ((mv reportcard modalist) (xf-cwtime (vl-design->svex-modalist
                                               design :config simpconfig)))
        (design (xf-cwtime (vl-apply-reportcard design reportcard)))
-       (design (xf-cwtime (vl-design-sv-use-set design modalist)))
+       (design (if (not config.no-sv-use-set)
+                   (xf-cwtime (vl-design-sv-use-set design modalist))
+                 design))
 
        (design (xf-cwtime (vl-design-remove-unnecessary-modules config.topmods design)))
 
@@ -715,12 +879,13 @@ shown.</p>"
 
 
        (design   (xf-cwtime (vl-design-clean-warnings design)))
+       (design   (xf-cwtime (vl-design-suppress-file-warnings design config.ignore-files)))
        (design   (xf-cwtime (vl-design-suppress-lint-warnings design)))
        (design   (xf-cwtime (vl-design-lint-ignoreall design config.ignore)))
        (design   (xf-cwtime (vl-lint-apply-quiet (append stubnames config.quiet) design)))
        (sd-probs (xf-cwtime (vl-delete-sd-problems-for-modnames (append stubnames config.quiet) sd-probs)))
        (reportcard  (xf-cwtime (vl-design-origname-reportcard design))))
-
+    (vl-lint-suppress-large-integer-problems nil)
     (make-vl-lintresult :design design
                         :design0 design0
                         :design-orig design-orig
@@ -728,7 +893,53 @@ shown.</p>"
                         :sd-probs sd-probs
                         )))
 
-(define vl-lintconfig-loadconfig ((config vl-lintconfig-p))
+(defsection vl-lint-extra-actions
+  :parents (vl-lint)
+  :short "Customizable hook to run at the end of VL Lint."
+  :long "<p>This is an attachment that allows you to extend VL Lint with
+  support additional, customized (e.g., methodology-specific) checks and custom
+  reports.</p>
+
+  <p>It gets called as the last step of @(see run-vl-lint) and has access to
+  the entire @(see vl-lintconfig) and the corresponding @(see vl-loadconfig),
+  the full @(see vl-loadresult), and also the full @(see vl-lintresult) which
+  contains all the warnings and the final, fully processed design.</p>"
+
+  (encapsulate
+    (((vl-lint-extra-actions * * * * state) => state
+      :formals (lintconfig loadconfig loadresult lintresult state)
+      :guard (and (vl-lintconfig-p lintconfig)
+                  (vl-loadconfig-p loadconfig)
+                  (vl-loadresult-p loadresult)
+                  (vl-lintresult-p lintresult))))
+
+    (local (defun vl-lint-extra-actions
+             (lintconfig loadconfig loadresult lintresult state)
+             (declare (ignore lintconfig loadconfig loadresult lintresult)
+                      (xargs :stobjs state))
+             state))
+
+    (defthm state-p1-of-vl-lint-extra-actions
+      (implies (state-p1 state)
+               (state-p1 (vl-lint-extra-actions lintconfig loadconfig
+                                                loadresult lintresult
+                                                state))))))
+
+(define vl-lint-extra-actions-default ((lintconfig vl-lintconfig-p)
+                                       (loadconfig vl-loadconfig-p)
+                                       (loadresult vl-loadresult-p)
+                                       (lintresult vl-lintresult-p)
+                                       state)
+  :parents (vl-lint-extra-actions)
+  :short "Does nothing -- this is the default implementation for
+          @('vl-lint-extra-actions')."
+  (declare (ignore lintconfig loadconfig loadresult lintresult))
+  state
+  ///
+  (defattach vl-lint-extra-actions vl-lint-extra-actions-default))
+
+(define vl-lintconfig-loadconfig ((config vl-lintconfig-p)
+                                  (defines vl-defines-p))
   :returns (loadconfig vl-loadconfig-p)
   (b* (((vl-lintconfig config)))
     (make-vl-loadconfig
@@ -738,7 +949,9 @@ shown.</p>"
      :search-path   config.search-path
      :search-exts   config.search-exts
      :include-dirs  config.include-dirs
-     :defines       (vl-make-initial-defines config.defines)
+     :plusargs      config.plusargs
+     :defines       defines
+     :mintime       1/100
      :debugp        config.debug)))
 
 (define run-vl-lint ((config vl-lintconfig-p) &key (state 'state))
@@ -751,16 +964,35 @@ shown.</p>"
        (- (or (not config.debug)
               (cw "Lint configuration: ~x0~%" config)))
 
-       (loadconfig (vl-lintconfig-loadconfig config))
+       ((mv cmdline-warnings defines)
+        (vl-parse-cmdline-defines config.defines
+                                  (make-vl-location :filename "vl cmdline"
+                                                    :line 1
+                                                    :col 0)
+                                  ;; Command line defines are sticky
+                                  t))
+
+       (- (or (not cmdline-warnings)
+              (vl-cw-ps-seq (vl-print-warnings cmdline-warnings))))
+
+       (loadconfig (vl-lintconfig-loadconfig config defines))
+
        (- (or (not config.debug)
               (cw "Load configuration: ~x0~%" loadconfig)))
 
        (- (cw "~%vl-lint: loading modules...~%"))
        ((mv loadres state) (cwtime (vl-load loadconfig)))
 
-       (lintres
-        (cwtime (run-vl-lint-main (vl-loadresult->design loadres)
-                                  config))))
+       (design (vl-loadresult->design loadres))
+       (design (change-vl-design design
+                :warnings
+                (append-without-guard cmdline-warnings
+                                      (vl-design->warnings design))))
+
+       (lintres (cwtime (run-vl-lint-main design config)))
+       (state (cwtime (vl-lint-extra-actions
+                       config loadconfig loadres lintres state))))
+
     (mv lintres loadres loadconfig state)))
 
 
@@ -903,7 +1135,17 @@ shown.</p>"
         :vl-warn-blank
         :vl-undefined-names
         :vl-port-mismatch
-        :vl-warn-scary-translate-comment))
+        :vl-warn-scary-translate-comment
+        :vl-preprocessor-error
+        :vl-preprocess-failed
+        :vl-parse-error
+        :vl-parse-failed
+        :vl-search-failed
+        :vl-unreachable-module
+        :vl-warn-define-smashed
+        :vl-warn-undef
+        :vl-warn-define-ignored
+        :vl-bindelim-fail))
 
 (defconst *trunc-warnings*
   (list :vl-warn-extension
@@ -919,6 +1161,7 @@ shown.</p>"
 (defconst *smell-warnings*
   (list :vl-warn-qmark-width
         :vl-warn-qmark-const
+        :vl-warn-qmark-always-true
         :vl-warn-leftright
         :vl-warn-selfassign
         :vl-warn-instances-same
@@ -927,6 +1170,8 @@ shown.</p>"
         :vl-const-expr
         :vl-warn-vardecl-assign
         :vl-warn-oddexpr
+        :vl-warn-possible-typo
+        :vl-warn-include-guard
         ))
 
 (defconst *smell-minor-warnings*
@@ -1086,7 +1331,6 @@ shown.</p>"
        (missing (difference orig-descs final-descs)))
     (vl-pp-stringlist-lines missing)))
     
-
 
 
 (defun vl-lint-report (lintresult state)
@@ -1351,18 +1595,18 @@ wide addition instead of a 10-bit wide addition.")))
 
     state))
 
-
-
 (define vl-lint-top ((args string-listp) &key (state 'state))
   :short "Top-level @('vl lint') command."
 
-  (b* (((mv errmsg config start-files)
+  (b* (((mv errmsg config start-files-and-plusargs)
         (parse-vl-lintconfig args))
        ((when errmsg)
         (die "~@0~%" errmsg)
         state)
+       ((mv start-files plusargs) (split-plusargs start-files-and-plusargs))
        (config
         (change-vl-lintconfig config
+                              :plusargs plusargs
                               :start-files start-files))
        ((vl-lintconfig config) config)
 

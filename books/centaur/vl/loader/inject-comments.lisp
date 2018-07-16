@@ -279,7 +279,8 @@ and max, gathering their comments.</p>"
 (define vl-description-has-comments-p ((x vl-description-p))
   (b* ((x (vl-description-fix x)))
     (case (tag x)
-      ((:vl-module :vl-udp :vl-interface :vl-package :vl-program :vl-config :vl-typedef)
+      ((:vl-module :vl-udp :vl-interface :vl-package :vl-program
+        :vl-class :vl-config :vl-typedef)
        t)
       (otherwise
        nil))))
@@ -308,6 +309,9 @@ and max, gathering their comments.</p>"
       (:vl-fwdtypedef (vl-fwdtypedef->loc x))
       (:vl-dpiimport  (vl-dpiimport->loc x))
       (:vl-dpiexport  (vl-dpiexport->loc x))
+      (:vl-bind       (vl-bind->loc x))
+      (:vl-property   (vl-property->loc x))
+      (:vl-sequence   (vl-sequence->loc x))
       (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->maxloc ((x vl-description-p))
@@ -332,6 +336,9 @@ and max, gathering their comments.</p>"
       (:vl-fwdtypedef (vl-fwdtypedef->loc x))
       (:vl-dpiimport  (vl-dpiimport->loc x))
       (:vl-dpiexport  (vl-dpiexport->loc x))
+      (:vl-bind       (vl-bind->loc x))
+      (:vl-property   (vl-property->loc x))
+      (:vl-sequence   (vl-sequence->loc x))
       (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->comments ((x vl-description-p))
@@ -344,6 +351,7 @@ and max, gathering their comments.</p>"
       (:vl-interface (vl-interface->comments x))
       (:vl-package   (vl-package->comments x))
       (:vl-program   (vl-program->comments x))
+      (:vl-class     (vl-class->comments x))
       (:vl-config    (vl-config->comments x))
       (:vl-typedef   (vl-typedef->comments x))
       (otherwise     (impossible)))))
@@ -359,6 +367,7 @@ and max, gathering their comments.</p>"
       (:vl-interface (change-vl-interface x :warnings (cons warning (vl-interface->warnings x))))
       (:vl-package   (change-vl-package   x :warnings (cons warning (vl-package->warnings x))))
       (:vl-program   (change-vl-program   x :warnings (cons warning (vl-program->warnings x))))
+      (:vl-class     (change-vl-class     x :warnings (cons warning (vl-class->warnings x))))
       (:vl-config    (change-vl-config    x :warnings (cons warning (vl-config->warnings x))))
       (:vl-typedef   (change-vl-typedef   x :warnings (cons warning (vl-typedef->warnings x))))
       (otherwise     (progn$ (impossible) x))))
@@ -380,6 +389,7 @@ and max, gathering their comments.</p>"
       (:vl-interface (change-vl-interface x :comments comments))
       (:vl-package   (change-vl-package   x :comments comments))
       (:vl-program   (change-vl-program   x :comments comments))
+      (:vl-class     (change-vl-class     x :comments comments))
       (:vl-config    (change-vl-config    x :comments comments))
       (:vl-typedef   (change-vl-typedef   x :comments comments))
       (otherwise     (progn$ (impossible) x))))

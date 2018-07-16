@@ -37,10 +37,12 @@ outlaw_bad_warnings()
 
 raise "To_be_stubbed has warnings" if WARNINGS.has_key?(:to_be_stubbed) or LOCATIONS.has_key?(:to_be_stubbed)
 
-match_warning(:container, "SV-USE-SET-UNSET-VARIABLE", "unset4")
-match_warning(:container, "SV-USE-SET-UNSET-VARIABLE", "unset1")
-match_warning(:container, "SV-USE-SET-UNUSED-VARIABLE", "unused4")
-match_warning(:container, "SV-USE-SET-UNUSED-VARIABLE", "unused1")
+# BOZO fix this when we re-enable the sv use-set check
+
+#match_warning(:container, "SV-USE-SET-UNSET-VARIABLE", "unset4")
+#match_warning(:container, "SV-USE-SET-UNSET-VARIABLE", "unset1")
+#match_warning(:container, "SV-USE-SET-UNUSED-VARIABLE", "unused4")
+#match_warning(:container, "SV-USE-SET-UNUSED-VARIABLE", "unused1")
 
 test_passed()
 

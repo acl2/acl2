@@ -36,7 +36,7 @@
 
 (include-book "coi/symbol-fns/symbol-fns" :dir :system)
 (include-book "coi/util/mv-nth" :dir :system)
-(include-book "coi/gensym/gensym" :dir :system)
+(include-book "coi/gensym/gensym-list" :dir :system)
 
 (local (include-book "coi/bags/top" :dir :system))
 (local (include-book "coi/lists/set" :dir :system))
@@ -105,7 +105,9 @@
       (let ((clause (car clauses)))
 	(cond
 	 ((symbolp clause)
-	  (cons clause (clause-keys (cdr clauses))))
+          (if clause
+              (cons clause (clause-keys (cdr clauses)))
+            (clause-keys (cdr clauses))))
 	 ((atom clause)
 	  (clause-keys (cdr clauses)))
 	 ((eq (car clause) 'quote)
@@ -118,8 +120,9 @@
 		  (clause-keys (cdr clauses))))))
     nil))
 
-(defthm true-listp-clause-keys
-  (true-listp (clause-keys clauses)))
+(defthm non-nil-symbol-listp-clause-keys
+  (non-nil-symbol-listp (clause-keys clauses))
+  :rule-classes ((:forward-chaining :trigger-terms ((clause-keys clauses)))))
 
 (verify-guards clause-keys)
 
@@ -136,11 +139,23 @@
 	  (and stable-under-simplificationp
 	       '(:in-theory (enable GENSYM::EVAL-CONSTRAINT-0)))))
 
+(local (include-book "coi/alists/keyquiv" :dir :system))
+
+(local
+ (defthm disjoint-keys-clause-keys-reduction
+   (implies
+    (and
+     (pseudo-term-listp clauses)
+     (bag::disjoint (alist::keys x) (clause-keys clauses)))
+    (equal (gensym::eval-list clauses (append x y))
+           (gensym::eval-list clauses y)))
+   :hints (("Goal" :induct (len x)))))
+
 (defun term-keys (term)
   (declare (type t term))
   (cond
    ((symbolp term)
-    (list term))
+    (and term (list term)))
    ((atom term)
     nil)
    ((eq (car term) 'quote)
@@ -149,6 +164,10 @@
     (clause-keys (cdr term)))
    (t
     (clause-keys (cdr term)))))
+
+(defthm non-nil-symbol-listp-term-keys
+  (non-nil-symbol-listp (term-keys term))
+  :rule-classes ((:forward-chaining :trigger-terms ((term-keys term)))))
 
 (defthm not-member-key-term-keys-reduction
   (implies
@@ -159,6 +178,55 @@
    (equal (gensym::eval term a)
 	  (gensym::eval term (cdr a))))
   :hints (("Goal" :in-theory (enable GENSYM::EVAL-CONSTRAINT-0 pseudo-termp))))
+
+(local
+ (defun alist::vals (list)
+   (declare (type t list))
+   (if (not (consp list)) nil
+     (let ((entry (car list)))
+       (cons (if (consp entry) (cdr entry) nil)
+             (alist::vals (cdr list)))))))
+
+(local
+ (defthm vals-append
+   (equal (alist::vals (append x y))
+          (append (alist::vals x)
+                  (alist::vals y)))))
+ 
+(local
+ (defthm disjoint-keys-term-keys-reduction
+   (implies
+    (and
+     (pseudo-termp term)
+     (bag::disjoint (alist::keys x) (term-keys term)))
+    (equal (gensym::eval term (append x y))
+           (gensym::eval term y)))))
+
+(local
+ (defthm subset-keys-clause-keys-reduction
+   (implies
+    (and
+     (pseudo-term-listp clause)
+     (subsetp-equal (clause-keys clause) (alist::keys x)))
+    (equal (gensym::eval-list clause (append x y))
+           (gensym::eval-list clause x)))
+   :hints (("Goal" :expand ((pseudo-term-listp clause)
+                            (pseudo-termp (car clause)))
+            :in-theory (enable GENSYM::EVAL-CONSTRAINT-0)
+            :induct (clause-keys clause)))))
+
+(local
+(defthm subset-keys-term-keys-reduction
+  (implies
+   (and
+    (pseudo-termp term)
+    (subsetp-equal (term-keys term) (alist::keys x)))
+   (equal (gensym::eval term (append x y))
+          (gensym::eval term x)))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (enable GENSYM::EVAL-CONSTRAINT-0)
+           :expand ((pseudo-termp term)
+                    (term-keys term))))))
 
 (in-theory (disable term-keys))
 
@@ -194,55 +262,122 @@
 	      (pattern-match-args fn args (cdr terms))))))
     nil))
 
-#+joe
-(defthm pseudo-termp-pattern-match
+(defun fn-symbolp (x)
+  (declare (type t x))
+  (and (non-nil-symbolp x)
+       (not (equal x 'quote))))
+
+(defthm fn-symbolp-implies
   (implies
-   (pseudo-term-listp terms)
-   (pseudo-termp (pattern-match-args fn args terms))))
+   (fn-symbolp x)
+   (and (non-nil-symbolp x)
+        (not (equal x 'quote))))
+  :rule-classes (:forward-chaining))
 
-(defun replace-common-subterm (subterm var terms)
-  (declare (type t subterm var terms))
-  (if (consp terms)
-      (let ((term (car terms)))
-	(if (equal term subterm)
-	    (cons var (replace-common-subterm subterm var (cdr terms)))
-	  (cond
-	   ((atom term)
-	    (cons term (replace-common-subterm subterm var (cdr terms))))
-	   ((eq (car term) 'quote)
-	    (cons term (replace-common-subterm subterm var (cdr terms))))
-	   ((consp (car term))
-	    (cons (cons (car term) (replace-common-subterm subterm var (cdr term)))
-		  (replace-common-subterm subterm var (cdr terms))))
-	   (t
-	    (cons (cons (car term) (replace-common-subterm subterm var (cdr term)))
-		  (replace-common-subterm subterm var (cdr terms)))))))
-    nil))
+(in-theory (disable fn-symbolp))
 
-(defthm len-replace-common-subterm
-  (equal (len (replace-common-subterm suterm var list))
-	 (len list)))
+(defun wf-map (map)
+  (declare (type t map))
+  (if (atom map) (null map)
+    (let ((entry (car map)))
+      (and (consp entry)
+           (pseudo-termp (car entry))
+           (non-nil-symbolp (cdr entry))
+           (wf-map (cdr map))))))
 
-(defthm pseudo-termp-listp-replace-common-subterm
+(defthm wf-map-pairlis$
+  (implies
+   (force
+    (and
+     (pseudo-term-listp keys)
+     (non-nil-symbol-listp vals)
+     (equal (len keys) (len vals))))
+   (wf-map (pairlis$ keys vals))))
+
+(defthm wf-map-implies-alistp
+  (implies
+   (wf-map map)
+   (alistp map))
+  :rule-classes (:Forward-chaining))
+
+(defthm wf-map-implication
   (implies
    (and
-    (pseudo-termp var)
+    (wf-map map)
+    (assoc-equal key map))
+   (non-nil-symbolp (cdr (assoc-equal key map))))
+  :rule-classes ((:forward-chaining :trigger-terms ((assoc-equal key map)))))
+
+(defun assox (key alist)
+  (declare (type (satisfies alistp) alist))
+  (assoc-equal key alist))
+
+(defun replace-matching-subterms (map term-list)
+  (declare (type (satisfies alistp) map))
+  (if (consp term-list)
+      (let ((term (car term-list)))
+        (let ((hit (assox term map)))
+          (if hit
+              (cons (cdr hit) (replace-matching-subterms map (cdr term-list)))
+            (cond
+             ((atom term)
+              (cons term (replace-matching-subterms map (cdr term-list))))
+             ((eq (car term) 'quote)
+              (cons term (replace-matching-subterms map (cdr term-list))))
+             ((consp (car term))
+              (cons (cons (car term) (replace-matching-subterms map (cdr term)))
+                    (replace-matching-subterms map (cdr term-list))))
+             (t
+              (cons (cons (car term) (replace-matching-subterms map (cdr term)))
+                    (replace-matching-subterms map (cdr term-list))))))))
+    nil))
+
+(defthm len-replace-matching-subterms
+  (equal (len (replace-matching-subterms map list))
+	 (len list)))
+
+(defthm pseudo-termp-listp-replace-matching-subterms
+  (implies
+   (and
+    (wf-map map)
     (pseudo-term-listp clauses))
-   (pseudo-term-listp (replace-common-subterm subterm var clauses)))
+   (pseudo-term-listp (replace-matching-subterms map clauses)))
   :hints (("Goal" :in-theory (enable pseudo-termp
 				     pseudo-term-listp))))
 
-(defthm generic-replace-common-subterm-reduction
+(defun bound-map (map a)
+  (if (endp map) t
+    (let ((entry (car map)))
+      (and (equal (gensym::eval (cdr entry) a) (gensym::eval (car entry) a))
+           (bound-map (cdr map) a)))))
+
+(local
+(defthmd bound-map-alt
+  (equal (bound-map map a)
+         (equal (gensym::eval-list (alist::vals map) a)
+                (gensym::eval-list (alist::keys map) a))))
+)
+
+(defthm bound-map-implication
   (implies
    (and
-    var
-    (symbolp var)
-    (equal (cdr (assoc-eq var a)) (gensym::eval subterm a)))
-   (equal (gensym::eval-list (replace-common-subterm subterm var terms) a)
+    (bound-map map a)
+    (assoc-equal term map))
+   (equal (gensym::eval (cdr (assoc-equal term map)) a) (gensym::eval term a))))
+
+(defthm generic-replace-matching-subterms-reduction
+  (implies
+   (force 
+    (and
+     (wf-map map)
+     (bound-map map a)))
+   (equal (gensym::eval-list (replace-matching-subterms map terms) a)
 	  (gensym::eval-list terms a)))
   :hints ((and stable-under-simplificationp
 	       '(:in-theory (enable GENSYM::EVAL-CONSTRAINT-0)))
-	  ("Goal" :induct (replace-common-subterm subterm var terms))))
+	  ("Goal" :induct (replace-matching-subterms map terms))))
+
+(local (in-theory (e/d (bound-map-alt) (bound-map))))
 
 (local
  (defthm non-membership-from-non-memberp-superset-free
@@ -263,7 +398,7 @@
    (list::subsetp x (append term x)))
  )
 
-(defun generalization-symbol-base (subterm)
+(defund generalization-symbol-base (subterm)
   (declare (type t subterm))
   (if (and (consp subterm)
 	   (consp (cdr subterm))
@@ -272,63 +407,232 @@
 	(if (symbolp symbol) symbol `gensym::||))
     `gensym::||))
 
-(defun generalize-clause-processor (clause subterm)
-  (declare (type t clause subterm))
-  (if (consp subterm)
-      (let ((fn (generalization-symbol-base subterm)))
-	(let ((avoid (append (term-keys subterm) (clause-keys clause))))
-	  (let ((var (gensym::gensym fn avoid)))
-	    (if (not var) (mv nil nil)
-	      (mv var (replace-common-subterm subterm var clause))))))
-    (mv nil nil)))
+(defthm alistp-pairlis$
+  (alistp (pairlis$ keys vals)))
 
-(defun generalize-clause-alist (clause a subterm)
-  (declare (type t clause subterm))
-  (if (consp subterm)
-      (let ((fn (generalization-symbol-base subterm)))
-	(let ((avoid (append (term-keys subterm) (clause-keys clause))))
-	  (let ((var (gensym::gensym fn avoid)))
-	    (if (not var) a
-	      (cons (cons var (gensym::eval subterm a)) a)))))
-    a))
+(defund car? (x)
+  (declare (type t x))
+  (if (consp x) (car x) nil))
+
+(defun generalize-clause-processor (clause subterms)
+  (declare (type t clause subterms)
+           (type (satisfies true-listp) subterms))
+  (let ((fn (generalization-symbol-base (car? subterms))))
+    (let ((avoid (append (clause-keys subterms) (clause-keys clause))))
+      (let ((vars (gensym::gensym-n (len subterms) fn avoid)))
+        (mv vars (replace-matching-subterms (pairlis$ subterms vars) clause))))))
+
+(defthm pseudo-term-listp-v1-eneralize-clause-processor
+  (implies
+   (and
+    (pseudo-term-listp clause)
+    (pseudo-term-listp subterms))
+   (pseudo-term-listp (v1 (generalize-clause-processor clause subterms))))
+  :rule-classes (:rewrite
+                 (:forward-chaining :trigger-terms ((generalize-clause-processor clause subterms)))))
+
+(defthm non-nil-symbol-listp-v0-eneralize-clause-processor
+  (non-nil-symbol-listp (v0 (generalize-clause-processor clause subterms)))
+  :rule-classes (:rewrite
+                 (:forward-chaining :trigger-terms ((generalize-clause-processor clause subterms)))))
+
+(defthm len-v0-generalize-clause-processor
+  (equal (len (val 0 (generalize-clause-processor cl list)))
+         (len list)))
+
+(defun generalize-clause-alist (clause a subterms)
+  (declare (type t clause subterms)
+           (type (satisfies true-listp) subterms))
+  (let ((fn (generalization-symbol-base (car? subterms))))
+    (let ((avoid (append (clause-keys subterms) (clause-keys clause))))
+      (let ((vars (gensym::gensym-n (len subterms) fn avoid)))
+        (append (pairlis$ vars (gensym::eval-list subterms a)) a)))))
+
+(local
+ (defun len-len-induction (x y)
+   (if (and (consp x) (consp y))
+       (len-len-induction (cdr x) (cdr y))
+     (list x y))))
+
+(defthmd equal-to-list-equiv
+  (implies
+   (true-listp x)
+   (iff (equal x y)
+        (and (true-listp y)
+             (acl2::list-equiv x y)))))
+
+(in-theory (disable list::equiv-of-two-true-listps))
+
+(defthm true-listp-eval-list
+  (true-listp (gensym::eval-list list env))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :induct (len list))))
+
+(defthm len-eval-list
+  (equal (len (gensym::eval-list list env))
+         (len list)))
+
+(defthm nth-eval-list
+  (equal (nth i (gensym::eval-list list env))
+         (if (< (nfix i) (len list))
+             (gensym::eval (nth i list) env)
+           nil))
+  :hints (("Goal" :induct (nth i list))))
+
+(local
+(defthm nth-memberp
+  (implies
+   (and
+    (natp i)
+    (< i (len list)))
+   (list::memberp (nth i list) list))
+  :rule-classes (:rewrite (:forward-chaining :trigger-terms ((nth i list)))))
+)
+
+(local
+(defthm keys-pairlis$
+  (implies
+   (equal (len x) (len y))
+   (equal (alist::keys (pairlis$ x y))
+          (list::fix x))))
+)
+
+(local
+(defthm vals-pairlis$
+  (implies
+   (equal (len x) (len y))
+   (equal (alist::vals (pairlis$ x y))
+          (list::fix y))))
+)
+
+(local
+(defthm assoc-equal-append
+  (implies
+   (list::memberp a (alist::keys x))
+   (equal (assoc-equal a (append x y))
+          (assoc-equal a x))))
+)
+
+(defthm assoc-nth-pairlis$
+  (implies
+   (and
+    (< (nfix i) (len symbols))
+    (bag::unique symbols)
+    (equal (len symbols) (len values)))
+   (equal (assoc-equal (nth i symbols) (pairlis$ symbols values))
+          (cons (nth i symbols) (nth i values))))
+  :hints (("Goal" :in-theory (enable bag::unique)
+           :induct (cons (nth i symbols) (nth i values)))))
+
+(local
+(defthm nth-outside
+  (implies
+   (<= (len list) (nfix i))
+   (equal (nth i list) nil)))
+)
+
+(defthm eval-list-symbols
+  (implies
+   (and
+    (non-nil-symbol-listp symbols)
+    (true-listp values)
+    (bag::unique symbols)
+    (equal (len symbols) (len values)))
+   (equal (gensym::eval-list symbols (append (pairlis$ symbols values) env))
+          values))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (enable list::equiv-by-multiplicity equal-to-list-equiv))))
 
 (defthm eval-v0-generalize-clause-processor
   (implies
+   (pseudo-term-listp subterms)
+   (equal (gensym::eval-list (v0 (generalize-clause-processor clause subterms)) (GENERALIZE-CLAUSE-ALIST clause A subterms))
+	  (gensym::eval-list subterms a)))
+  :hints (("Goal" :do-not-induct t)))
+
+(encapsulate
+ ()
+ (local
+  (encapsulate
+      ()
+    
+    (defthm list-euqiv-implies-nth-equiv
+      (implies
+       (list-equiv x y)
+       (iff (equal (nth i x)
+                   (nth i y)) t)))
+    
+    (defthmd eval-nth-v0-generalize-clause-processor-helper
+      (implies
+       (pseudo-term-listp subterms)
+       (equal (nth i (gensym::eval-list (v0 (generalize-clause-processor clause subterms)) (GENERALIZE-CLAUSE-ALIST clause A subterms)))
+              (nth i (gensym::eval-list subterms a))))
+      :hints (("Goal" :in-theory '(list-euqiv-implies-nth-equiv equal-to-list-equiv true-listp-eval-list)
+               :use eval-v0-generalize-clause-processor)))
+    ))
+
+ (defthm eval-nth-v0-generalize-clause-processor
+   (implies
+    (and
+     (pseudo-term-listp subterms)
+     (< (nfix i) (len subterms)))
+    (equal (gensym::eval (nth i (v0 (generalize-clause-processor clause subterms))) (GENERALIZE-CLAUSE-ALIST clause A subterms))
+           (gensym::eval (nth i subterms) a)))
+   :hints (("Goal" :do-not-induct t
+            :in-theory (disable nth nfix eval-v0-generalize-clause-processor generalize-clause-processor GENERALIZE-CLAUSE-ALIST)
+            :use eval-nth-v0-generalize-clause-processor-helper)))
+ 
+ )
+
+
+(defthm disjoint-from-disjoint-subset
+  (implies
    (and
-    (v0 (generalize-clause-processor clause subterm))
-    (pseudo-termp subterm))
-   (equal (gensym::eval (v0 (generalize-clause-processor clause subterm)) (GENERALIZE-CLAUSE-ALIST clause A subterm))
-	  (gensym::eval subterm a))))
+    (subsetp-equal x y)
+    (bag::disjoint y z))
+   (bag::disjoint x z))
+  :rule-classes (:rewrite :forward-chaining))
 
 (defthm eval-subterm-GENERALIZE-CLAUSE-ALIST
   (implies
    (and
-    (v0 (generalize-clause-processor clause subterm))
-    (pseudo-termp subterm)
+    (pseudo-term-listp subterms)
     (pseudo-termp term)
-    (list::subsetp (term-keys term) (append (term-keys subterm) (clause-keys clause))))
-   (equal (gensym::eval term (GENERALIZE-CLAUSE-ALIST clause A subterm))
+    (list::subsetp (term-keys term) (append (clause-keys subterms) (clause-keys clause))))
+   (equal (gensym::eval term (GENERALIZE-CLAUSE-ALIST clause A subterms))
 	  (gensym::eval term a)))
-  :hints (("Goal" :in-theory (disable LIST::SUBSETP-APPEND-2))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (disable LIST::SUBSETP-APPEND-2))))
 
+(defthm eval-list-clauses-GENERALIZE-CLAUSE-ALIST
+  (implies
+   (and
+    (pseudo-term-listp subterms)
+    (pseudo-term-listp z)
+    (list::subsetp (clause-keys z) (append (clause-keys subterms) (clause-keys clause))))
+   (equal (gensym::eval-list z (GENERALIZE-CLAUSE-ALIST clause A subterms))
+	  (gensym::eval-list z a)))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (disable LIST::SUBSETP-APPEND-2))))
 
 (defthm generalize-clause-processor-reduction
   (implies
    (and
     (pseudo-term-listp clause)
-    (pseudo-termp subterm)
-    (v0 (generalize-clause-processor clause subterm)))
-   (equal (gensym::eval-list (v1 (generalize-clause-processor clause subterm))
-			     (generalize-clause-alist clause a subterm))
-	  (gensym::eval-list clause a))))
+    (pseudo-term-listp subterms))
+   (equal (gensym::eval-list (v1 (generalize-clause-processor clause subterms))
+			     (generalize-clause-alist clause a subterms))
+	  (gensym::eval-list clause a)))
+  :hints (("Goal" :do-not-induct t)))
 
 (defthm generalize-clause-alist-reduction
   (implies
    (and
     (pseudo-term-listp clause)
-    (pseudo-termp subterm))
-   (equal (gensym::eval-list clause (generalize-clause-alist clause a subterm))
-	  (gensym::eval-list clause a))))
+    (pseudo-term-listp subterms))
+   (equal (gensym::eval-list clause (generalize-clause-alist clause a subterms))
+	  (gensym::eval-list clause a)))
+  :hints (("Goal" :do-not-induct t)))
 
 (in-theory (disable generalize-clause-processor generalize-clause-alist))
 
@@ -416,31 +720,62 @@
        (null (cddr term))
        (equal (car term) 'gensym::generalize)))
 
+(local
+(defthm consp-implies-memberp-car
+  (implies
+   (consp list)
+   (list::memberp (car list) list))
+  :rule-classes (:forward-chaining)))
+
+(defun type-pred (type-p arg)
+  (declare (type t type-p))
+  `(,type-p ,arg))
+
+(defun print-generalization-rec (terms vars)
+  (declare (type t terms vars))
+  (if (and (consp terms) (consp vars))
+      (let ((zed (cw "Generalizing ~p0 to ~p1~%" (car terms) (car vars))))
+        (declare (ignore zed))
+        (print-generalization-rec (cdr terms) (cdr vars)))
+    nil))
+
+(defun print-generalization (terms vars)
+  (declare (type t terms vars)
+           (irrelevant terms vars))
+  (let ((zed (cw "~%")))
+    (declare (ignore zed))
+    (let ((zed (print-generalization-rec terms vars)))
+      (declare (ignore zed))
+      (cw "~%"))))
+
 (defun generalize-clause-processor-wrapper (clause hint)
   (declare (type t clause hint))
   (if (consp hint)
       (let ((subterm (car hint))
 	    (type-p  (cdr hint)))
-	(met ((var new) (generalize-clause-processor clause subterm))
-	     (if (and (generalize-termp subterm) (symbolp type-p) (not (equal type-p 'quote)) var)
-		 (if type-p
-		     (list
-		      (cons `(if (,type-p ,(cadr subterm)) ,*t* ,*nil*) new)
-		      (cons `(if (,type-p ,var) ,*nil* ,*t*) new)
-		      )
-		   (list new))
-	       (list clause))))
+	(met ((var new) (generalize-clause-processor clause (list subterm)))
+          (let ((zed (print-generalization (list subterm) var)))
+            (declare (ignore zed))
+            (if (and (consp var) (or (not type-p) (fn-symbolp type-p)) (generalize-termp subterm))
+                (if (not type-p) (list new)
+                  (list
+                   (cons `(if ,(type-pred type-p (cadr subterm)) ,*t* ,*nil*) new)
+                   (cons `(if ,(type-pred type-p (nth 0 var)) ,*nil* ,*t*) new)
+                   ))
+              (list clause)))))
     (list clause)))
+
+(local (in-theory (disable nth)))
 
 (defun generalize-clause-alist-wrapper (clause a hint)
   (declare (type t clause hint))
   (if (consp hint)
       (let ((subterm (car hint))
 	    (type-p  (cdr hint)))
-	(met ((var new) (generalize-clause-processor clause subterm))
+	(met ((var new) (generalize-clause-processor clause (list subterm)))
 	     (declare (ignore new))
-	     (if (and (generalize-termp subterm) (symbolp type-p) (not (equal type-p 'quote)) var)
-		 (generalize-clause-alist clause a subterm)
+	     (if (and (consp var) (or (not type-p) (fn-symbolp type-p)) (generalize-termp subterm))
+		 (generalize-clause-alist clause a (list subterm))
 	       a)))
     a))
 
@@ -467,6 +802,87 @@
    (equal (clause-keys terms) nil))
   :hints (("Goal" :in-theory (enable term-keys clause-keys))))
 
+(defthm type-pred-congruence
+  (implies
+   (and
+    (fn-symbolp type-p)
+    (pseudo-termp c1)
+    (pseudo-termp c2)
+    (equal (gensym::eval c1 a1)
+           (gensym::eval c2 a2)))
+   (iff (equal (GENSYM::EVAL (type-pred type-p c1) a1)
+               (gensym::eval (type-pred type-p c2) a2)) t))
+  :hints (("Goal" :in-theory (enable GENSYM::EVAL-CONSTRAINT-0))))
+
+(defthm ungeneralize-type-pred
+  (implies
+   (and
+    (fn-symbolp type-p)
+    (generalize-termp x))
+   (equal (gensym::eval (type-pred type-p x) a)
+          (gensym::eval (type-pred type-p (cadr x)) a)))
+  :hints (("Goal" :in-theory (enable GENSYM::EVAL-CONSTRAINT-0))))
+
+(defthm generalize-termp-implies-pseudo-termp
+  (implies
+   (generalize-termp x)
+   (and (pseudo-termp x)
+        (pseudo-termp (cadr x))))
+  :rule-classes (:rewrite :forward-chaining))
+
+(defthm clause-keys-generaliz-termp
+  (implies
+   (generalize-termp x)
+   (equal (clause-keys (list x))
+          (term-keys (cadr x)))))
+
+(defthm non-nil-symbol-listp-is-pseudo-term-listp
+  (implies
+   (non-nil-symbol-listp list)
+   (pseudo-term-listp list))
+  :rule-classes (:rewrite :forward-chaining)
+  :hints (("Goal" :expand ((pseudo-termp (car list))
+                           (pseudo-term-listp list)))))
+
+(defthm pseudo-termp-member-pseudo-term-listp
+  (implies
+   (and
+    (pseudo-term-listp list)
+    (list::memberp a list))
+   (pseudo-termp a))
+  :hints (("Goal" :in-theory (enable list::memberp)))
+  :rule-classes (:rewrite :forward-chaining))
+
+(defthm pseudo-termp-nth
+  (implies
+   (and
+    (pseudo-term-listp list)
+    (< (nfix i) (len list)))
+   (pseudo-termp (nth i list)))
+  :hints (("Goal" :in-theory (enable nth))))
+
+(in-theory (disable type-pred))
+
+(defthm type-pred-rule-1
+  (implies
+   (and
+    (pseudo-termp gensubterm)
+    (pseudo-term-listp genlist)
+    (fn-symbolp type-p)
+    (list::subsetp (term-keys gensubterm) (append (clause-keys genlist) (clause-keys cl))))
+   (equal (GENSYM::EVAL (TYPE-PRED type-p gensubterm) (GENERALIZE-CLAUSE-ALIST CL A genlist))
+          (gensym::eval (TYPE-PRED type-p gensubterm) A))))
+
+(in-theory (disable LIST::LEN-EQUAL-0-REWRITE))
+
+(defthm type-pred-rule-2
+  (implies
+   (and (pseudo-termp genterm) (pseudo-term-listp cl) (fn-symbolp type-p))
+   (equal (GENSYM::EVAL (TYPE-PRED type-p (NTH 0 (VAL 0 (GENERALIZE-CLAUSE-PROCESSOR CL (LIST genterm)))))
+                        (GENERALIZE-CLAUSE-ALIST CL A (LIST genterm)))
+          (gensym::eval (type-pred type-p genterm) a))))
+
+(in-theory (disable generalize-termp))
 
 (defthm generalize-clause-processor-works
   (implies
@@ -478,18 +894,13 @@
    (gensym::eval (disjoin cl) a))
   :hints (("Goal" :do-not-induct t
 	   :do-not '(eliminate-destructors generalize)
-	   :in-theory (e/d (pseudo-termp pseudo-term-listp GENSYM::EVAL-CONSTRAINT-0)
-			   (LIST::SUBSETP-APPEND-2))
-	   :use ((:instance disjoin-implication
-			    (args1 cl)
-			    (a1    (generalize-clause-alist cl a (car hint)))
-			    (args2 cl)
-			    (a2    a))
-		 (:instance disjoin-implication
-			    (args1 (val 1 (generalize-clause-processor cl (car hint))))
-			    (a1    (generalize-clause-alist cl a (car hint)))
-			    (args2 cl)
-			    (a2    a)))))
+	   :in-theory (e/d nil
+			   (open-disjoin open-conjoin disjoin LIST::SUBSETP-APPEND-2))
+           :use ((:instance disjoin-implication
+                            (args1 (val 1 (generalize-clause-processor cl (list (car hint)))))
+                            (a1    (generalize-clause-alist cl a (list (car hint))))
+                            (args2 cl)
+                            (a2    a)))))
   :rule-classes :clause-processor)
 
 (defun get-generalization-patterns (world)
@@ -563,3 +974,88 @@
     (goo (gensym::generalize (foo x)))))
 
  )))
+
+(defun map-type (type-p list)
+  (declare (type t list))
+  (if (atom list) *t*
+    (let ((entry (car list)))
+      `(if (,type-p ,entry) ,(map-type type-p (cdr list)) ,*nil*))))
+
+(defun generalize-list-clause-processor-wrapper (clause hint)
+  (declare (type t clause hint))
+  (if (consp hint)
+      (let ((subterms (car hint))
+	    (type-p   (cdr hint)))
+        (if (and (pseudo-term-listp subterms) (fn-symbolp type-p))
+            (met ((vars new) (generalize-clause-processor clause subterms))
+              (let ((zed (print-generalization subterms vars)))
+                (declare (ignore zed))
+                (list
+                 (cons `(if ,(map-type type-p subterms) ,*t* ,*nil*) new)
+                 (cons `(if ,(map-type type-p vars) ,*nil* ,*t*) new)
+                 )))
+          (list clause)))
+    (list clause)))
+
+(defun generalize-list-clause-alist-wrapper (clause a hint)
+  (declare (type t clause hint))
+  (if (consp hint)
+      (let ((subterms (car hint))
+	    (type-p   (cdr hint)))
+        (if (and (pseudo-term-listp  subterms) (fn-symbolp type-p))
+            (generalize-clause-alist clause a subterms)
+          a))
+    a))
+
+(defthm map-type-congruence-1
+  (implies
+   (and
+    (fn-symbolp type-p)
+    (pseudo-term-listp c1)
+    (pseudo-term-listp c2)
+    (equal (gensym::eval-list c1 a1)
+           (gensym::eval-list c2 a2)))
+   (iff (equal (GENSYM::EVAL (MAP-TYPE type-p c1) a1)
+               (gensym::eval (map-type type-p c2) a2)) t))
+  :hints (("Goal" :induct (len-len-induction c1 c2)
+           :in-theory (enable GENSYM::EVAL-CONSTRAINT-0))))
+
+(defthm map-type-rule-1
+  (implies
+   (and
+    (fn-symbolp type-p)
+    (pseudo-term-listp cl)
+    (pseudo-term-listp clauses))
+   (equal (GENSYM::EVAL (MAP-TYPE type-p (VAL 0 (GENERALIZE-CLAUSE-PROCESSOR CL clauses)))
+                        (GENERALIZE-CLAUSE-ALIST CL A clauses))
+          (gensym::eval (map-type type-p clauses) a)))
+  :hints (("Goal" :do-not-induct t)))
+
+(defthm map-type-rule-2
+  (implies
+   (and
+    (fn-symbolp type-p)
+    (pseudo-term-listp cl)
+    (pseudo-term-listp clauses))
+   (equal (GENSYM::EVAL (MAP-TYPE type-p clauses) (GENERALIZE-CLAUSE-ALIST CL A clauses))
+          (gensym::eval (map-type type-p clauses) a)))
+  :hints (("Goal" :do-not-induct t)))
+
+(in-theory (disable open-disjoin open-conjoin))
+
+(defthm generalize-list-clause-processor-works
+  (implies
+   (and
+    (pseudo-term-listp cl)
+    (alistp a)
+    (gensym::eval (conjoin-clauses (generalize-list-clause-processor-wrapper cl hint))
+	      (generalize-list-clause-alist-wrapper cl a hint)))
+   (gensym::eval (disjoin cl) a))
+  :hints (("Goal" :do-not-induct t
+           :use (:instance disjoin-implication
+                           (args1 (val 1 (generalize-clause-processor cl (car hint))))
+                           (a1    (generalize-clause-alist cl a (car hint)))
+                           (args2 cl)
+                           (a2    a))))
+  :rule-classes :clause-processor)
+

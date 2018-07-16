@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "../../util/defs")
 (include-book "../../util/echars")
+(include-book "../../util/warnings")
 (local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -42,12 +43,11 @@
             :rule-classes :type-prescription
             "Name of the formal argument.  This should be a simple
              identifier.")
-   (default stringp
+   (default maybe-stringp
             :rule-classes :type-prescription
             "SystemVerilog only: default text for the argument, if applicable,
-             or the empty string if no default was provided.  Note that we
-             generally expect this to be trimmed of any whitespace."
-            :default "")))
+             or NIL if no default was provided.  Note that we generally expect
+             this to be trimmed of any whitespace.")))
 
 (fty::deflist vl-define-formallist
   :elt-type vl-define-formal)
@@ -55,10 +55,6 @@
 (defprojection vl-define-formallist->names ((x vl-define-formallist-p))
   :returns (names string-listp)
   (vl-define-formal->name x))
-
-(defprojection vl-define-formallist->defaults ((x vl-define-formallist-p))
-  :returns (defaults string-listp)
-  (vl-define-formal->default x))
 
 (fty::defprod vl-define
   :parents (preprocessor)
@@ -70,19 +66,27 @@
             "Macro text associated with this definition. Note that we generally
              expect this to be trimmed of any whitespace.")
    (loc     vl-location-p
-            "Location of this definition in the source code.")))
+            "Location of this definition in the source code.")
+   (stickyp booleanp :rule-classes :type-prescription
+            "Is this define \"sticky\".  If so, and we encounter another
+             @('`define') of @('name'), then we keep the old definition instead
+             of redefining it.  This is similar to how other tools
+             treat command-line @('+define') options; see the @('defines')
+             cosim for more details.")))
 
 (fty::deflist vl-defines
   :parents (preprocessor)
   :elt-type vl-define)
 
+(defprojection vl-defines->names ((x vl-defines-p))
+  :returns (names string-listp)
+  (vl-define->name x))
 
 (define vl-find-define
   :short "Look up a definition in the defines list."
   ((name stringp)
    (x    vl-defines-p))
   :returns (guts (iff (vl-define-p guts) guts))
-  :parents (vl-defines-p)
   (cond ((atom x)
          nil)
         ((equal (string-fix name) (vl-define->name (car x)))
@@ -95,7 +99,6 @@
   ((name stringp)
    (x    vl-defines-p))
   :returns (new-x vl-defines-p)
-  :parents (vl-defines-p)
   (cond ((atom x)
          nil)
         ((equal (string-fix name) (vl-define->name (car x)))
@@ -111,9 +114,9 @@
   :returns (new-x vl-defines-p)
   (cons (vl-define-fix a) (vl-defines-fix x)))
 
-(define vl-make-initial-defines ((x string-listp))
+(define vl-make-initial-defines ((x string-listp)
+                                 &key (stickyp booleanp))
   :returns (defs vl-defines-p)
-  :parents (vl-defines-p)
   :short "Simple way to build a @(see vl-defines-p) that @('`define')s a list
 of names to @('1')."
   (if (atom x)
@@ -121,6 +124,83 @@ of names to @('1')."
     (cons (make-vl-define :name (car x)
                           :formals nil
                           :body "1"
-                          :loc *vl-fakeloc*)
-          (vl-make-initial-defines (cdr x)))))
+                          :loc *vl-fakeloc*
+                          :stickyp stickyp)
+          (vl-make-initial-defines (cdr x) :stickyp stickyp))))
 
+
+(local (defthm position-type
+         ;; Ugh -- why isn't this built in?
+         (or (not (position-equal x l))
+             (natp (position-equal x l)))
+         :rule-classes :type-prescription
+         :hints(("Goal" :in-theory (enable position-equal)))))
+
+(define vl-parse-cmdline-define ((x stringp)
+                                 (loc vl-location-p)
+                                 (stickyp booleanp))
+  :returns (mv (okp booleanp :rule-classes :type-prescription)
+               (def (iff (vl-define-p def) okp)))
+  :short "Essentially treats @('\"foo\") like @('`define foo'), or
+@('\"foo=3\"') like @('`define foo 3`')."
+  :long "<p>BOZO we could do better sanity checking here.</p>"
+  (b* ((x (string-fix x))
+       (pos (position #\= x))
+       ((unless pos)
+        (mv t (make-vl-define :name x
+                              :formals nil
+                              :body ""
+                              :loc loc
+                              :stickyp stickyp)))
+       ((unless (< (+ 1 pos) (length x)))
+        (mv nil nil))
+       (name (subseq x 0 pos))
+       (body (subseq x (+ 1 pos) nil)))
+    (mv t (make-vl-define :name name
+                          :formals nil
+                          :body body
+                          :loc loc
+                          :stickyp stickyp))))
+
+;(vl-parse-cmdline-define "foo" *vl-fakeloc* nil)
+;(vl-parse-cmdline-define "foo=" *vl-fakeloc* nil)
+;(vl-parse-cmdline-define "foo=bar" *vl-fakeloc* nil)
+
+(define vl-parse-cmdline-defines-aux ((x string-listp)
+                                      (loc vl-location-p)
+                                      (stickyp booleanp))
+  :returns (mv (warnings vl-warninglist-p)
+               (defs vl-defines-p))
+  (b* (((when (atom x))
+        (mv nil nil))
+       ((mv okp first)
+        (vl-parse-cmdline-define (car x) loc stickyp))
+       ((mv warnings rest)
+        (vl-parse-cmdline-defines-aux (cdr x) loc stickyp))
+       ((when okp)
+        (mv warnings (cons first rest))))
+    (mv (fatal :type :vl-bad-define
+               :msg "Error parsing command-line define: ~s0"
+               :args (list (string-fix (car x))))
+        rest)))
+
+(define vl-parse-cmdline-defines ((x      string-listp)
+                                  (loc    vl-location-p)
+                                  (sticky booleanp))
+  :returns (mv (warnings vl-warninglist-p)
+               (defs     vl-defines-p))
+  (b* (((mv warnings defs)
+        (vl-parse-cmdline-defines-aux x loc sticky))
+       (dupes (duplicated-members
+               (vl-defines->names
+                ;; Sort first to remove true redundancies
+                (set::mergesort defs))))
+       (warnings (if (not dupes)
+                     (ok)
+                   (fatal :type :vl-bad-defines
+                          :msg "Conflict command-line defines for ~&0."
+                          :args (list dupes)))))
+    (mv warnings defs)))
+
+;; (vl-parse-cmdline-defines (list "foo" "bar" "baz=3" "baz=5")
+;;                           *vl-fakeloc* t)

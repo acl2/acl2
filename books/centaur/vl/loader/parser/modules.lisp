@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "ports")      ;; vl-portdecllist-p, vl-portlist-p
 (include-book "elements")
+(include-book "timeunits")
 (include-book "../../mlib/blocks")
 (local (include-book "../../util/arithmetic"))
 
@@ -77,14 +78,20 @@
                                               :vl-cassertion
                                               :vl-property
                                               :vl-sequence
+                                              :vl-clkdecl
+                                              :vl-gclkdecl
                                               :vl-dpiimport
                                               :vl-dpiexport
+                                              :vl-bind
+                                              :vl-class
+                                              :vl-covergroup
+                                              :vl-elabtask
                                               )))
        (warnings
         (if (not bad-item)
             warnings
           (fatal :type :vl-bad-module-item
-                 :msg "~a0: a module may not contain ~s1s."
+                 :msg "~a0: a module may not contain a ~s1."
                  :args (list bad-item (vl-genelement->short-kind-string bad-item)))))
 
        ((vl-genblob c) (vl-sort-genelements items))
@@ -112,10 +119,16 @@
                     :typedefs    c.typedefs
                     :properties  c.properties
                     :sequences   c.sequences
+                    :clkdecls    c.clkdecls
+                    :gclkdecls   c.gclkdecls
                     :assertions  c.assertions
                     :cassertions c.cassertions
                     :dpiimports  c.dpiimports
                     :dpiexports  c.dpiexports
+                    :binds       c.binds
+                    :classes     c.classes
+                    :covergroups c.covergroups
+                    :elabtasks   c.elabtasks
                     :atts        atts
                     :minloc      minloc
                     :maxloc      maxloc
@@ -167,6 +180,7 @@
        (params   := (vl-maybe-parse-parameter-port-list))
        (portinfo := (vl-parse-module-port-list-top))
        (:= (vl-match-token :vl-semi))
+       ((timeunit . timeprec) := (vl-parse-optional-timeunits-declaration))
        (items := (vl-parse-genelements-until :vl-kwd-endmodule))
        (endkwd := (vl-match-token :vl-kwd-endmodule))
        (:= (vl-parse-endblock-name (vl-idtoken->name id) "module/endmodule"))
@@ -184,7 +198,12 @@
               (vl-parse-error "ANSI module cannot have internal port declarations."))
              (items (append (vl-modelementlist->genelements imports) items))
              (module (vl-make-module-by-items name params ansi-portdecls ports ansi-p items
-                                              atts minloc maxloc warnings)))
+                                              atts minloc maxloc warnings))
+             (module (if (or timeunit timeprec)
+                         (change-vl-module module
+                                           :timeunit timeunit
+                                           :timeprecision timeprec)
+                       module)))
           (mv nil module tokstream)))))
 
 (defparser vl-parse-module-main (atts module_keyword id)

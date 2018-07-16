@@ -97,12 +97,16 @@ benchmark; see @('std/strings/pretty-tests.lisp') for details.</p>
 <li>@(see revappend-pretty) - pretty print onto an accumulator, in reverse
 order, which is useful for building strings as described in @(see
 revappend-chars).</li>
+
 </ul>
 
 <p>There are many available settings that you can tune to customize the way
 that objects are printed; see @(see printconfig-p) for details.  The defaults
 are sensible and are mostly compatible with the way that ACL2 normally prints
 things.</p>
+
+<p>We also implement our own @(see eviscerate), which is more limited than
+ACL2's and does not, for instance, support @(see acl2::iprinting).</p>
 
 
 <h3>Limitations</h3>
@@ -258,13 +262,7 @@ avoid this dependency.</p>")
   :short "Notes about some ACL2 pretty-printer settings that are not
 implemented in our @(see printconfig-p) objects."
 
-  :long "<h5>Evisceration</h5>
-
-<p>We actually probably support evisceration in the printer, but the actual
-evisceration step needs to be done separately.  I haven't looked at ACL2's
-functions for this, yet.</p>
-
-<h5>@('print-escape') and @('print-readably')</h5>
+  :long "<h5>@('print-escape') and @('print-readably')</h5>
 
 <p>ACL2's take on print-readably:</p>
 <ul>
@@ -1863,3 +1861,226 @@ revappend-chars).</p>"
       nil
     (cons (pretty      (car x) :config config :col col :eviscp eviscp)
           (pretty-list (cdr x) :config config :col col :eviscp eviscp))))
+
+
+; ----------------------------------------------------------------------------
+;
+;                              Evisceration
+;
+; ----------------------------------------------------------------------------
+
+(local (xdoc::set-default-parents eviscerate))
+
+(fty::defprod eviscconfig
+  :tag :eviscconfig
+  :layout :fulltree
+  :short "Controls how to eviscerate a term&mdash;our alternative to ACL2's
+          @(see acl2::evisc-tuple)s."
+  ((print-level  acl2::maybe-natp :rule-classes :type-prescription
+                 "Similar to the Common Lisp @('*print-level*').  If set, this
+                  limits how deeply to descend into subterms before we
+                  eviscerate them.")
+   (print-length acl2::maybe-natp :rule-classes :type-prescription
+                 "Similar to the Common lisp @('*print-length*').  If set, this
+                  limits how many elements of a list to print (at any level).")
+   (replacement-alist t
+                      "Ordinary (non-fast) alist.  Binds subterms either to
+                       strings (which are interpreted as the eviscerated
+                       replacement text for the subterms) or else to
+                       replacement terms (which are not to be recursively
+                       eviscerated).")
+   (hiding-cars  t
+                 "Should be a fast alist.  Binds symbols to T.  Any subterm
+                  whose @('car') is bound in @('hiding-cars') will be
+                  eviscerated with @('<hidden>').")))
+
+; Macros instead of constants to avoid special lookups
+
+(defmacro evisceration-hash-mark ()
+  ''(:evisceration-mark . "#"))
+
+(defmacro list-of-evisceration-ellipsis-mark ()
+  ;; We do the (list ...) ahead of time
+  ''((:evisceration-mark . "...")))
+
+(defmacro anti-evisceration-mark ()
+  ''(:evisceration-mark . ":EVISCERATION-MARK"))
+
+(defmacro evisceration-hiding-mark ()
+  ''(:evisceration-mark . "<hidden>"))
+
+(local (assert! (equal acl2::*evisceration-hash-mark* (evisceration-hash-mark))))
+(local (assert! (equal (list acl2::*evisceration-ellipsis-mark*) (list-of-evisceration-ellipsis-mark))))
+(local (assert! (equal acl2::*anti-evisceration-mark* (anti-evisceration-mark))))
+(local (assert! (equal acl2::*evisceration-hiding-mark* (evisceration-hiding-mark))))
+
+
+(defines eviscerate1
+  :short "Main function for eviscerating a term."
+  :long "<p>These are adapted from ACL2's functions of the same names,
+basically by consolidating the arguments into an eviscconfig and removing
+support for iprinting.</p>"
+
+  (define eviscerate1 ((x "The object to eviscerate.")
+                       (v natp "Depth we are currently at.")
+                       (config eviscconfig-p))
+    :measure (acl2::two-nats-measure (acl2-count x) 1)
+    (b* (((eviscconfig config))
+         ;; Subtle.  We use hons-assoc-equal instead of hons-get because it
+         ;; means we do not have to hons X.
+         (temp (hons-assoc-equal x config.replacement-alist))
+         ((when (cdr temp))
+          (cond ((stringp (cdr temp))
+                 (cons :evisceration-mark (cdr temp)))
+                (t (cdr temp))))
+         ((when (atom x))
+          (cond ((eq x :evisceration-mark) (anti-evisceration-mark))
+                (t x)))
+         ((when (and config.print-level
+                     (>= (lnfix v) config.print-level)))
+          (evisceration-hash-mark))
+         ((when (and (consp config.hiding-cars)
+                     (hons-get (car x) config.hiding-cars)))
+          (evisceration-hiding-mark)))
+      ;; Note that this recurs on all of X, which is why we're not consing
+      ;; the car onto something.
+      (eviscerate1-lst x (+ 1 (lnfix v)) 0 config)))
+
+  (define eviscerate1-lst ((x "List of objects to eviscerate, including its car.")
+                           (v   natp "Depth we are currently at.")
+                           (n   natp "Length we are currently at.")
+                           (config eviscconfig-p))
+    :measure (acl2::two-nats-measure (acl2-count x) 0)
+    (b* (((eviscconfig config))
+         ;; Subtle.  We use hons-assoc-equal instead of hons-get because it
+         ;; means we do not have to hons X.
+         (temp (hons-assoc-equal x config.replacement-alist))
+         ((when (cdr temp))
+          (cond ((stringp (cdr temp))
+                 (cons :evisceration-mark (cdr temp)))
+                (t (cdr temp))))
+         ((when (atom x))
+          (cond ((eq x :evisceration-mark) (anti-evisceration-mark))
+                (t x)))
+         ((when (and config.print-length
+                     (>= (lnfix n) config.print-length)))
+          (list-of-evisceration-ellipsis-mark)))
+      (cons (eviscerate1 (car x) v config)
+            (eviscerate1-lst (cdr x) v (+ 1 (lnfix n)) config)))))
+
+(defines eviscerate1p
+  :short "Helper function for avoiding consing when evisceration will not
+          change a term."
+
+  (define eviscerate1p ((x "Term to perhaps eviscerate.")
+                        (config eviscconfig-p))
+    :returns (needs-to-be-eviscerated-p)
+    :measure (acl2::two-nats-measure (acl2-count x) 1)
+    (b* (((eviscconfig config))
+         (temp (hons-assoc-equal x config.replacement-alist))
+         ((when (cdr temp))
+          t)
+         ((when (atom x))
+          (eq x :evisceration-mark))
+         ((when (and (consp config.hiding-cars)
+                     (hons-get (car x) config.hiding-cars)))
+          t))
+      (eviscerate1p-lst x config)))
+
+  (define eviscerate1p-lst ((x "List to perhaps eviscerate.")
+                            (config eviscconfig-p))
+    :measure (acl2::two-nats-measure (acl2-count x) 0)
+    (b* (((eviscconfig config))
+         (temp (hons-assoc-equal x config.replacement-alist))
+         ((when (cdr temp))
+          t)
+         ((when (atom x))
+          (eq x :evisceration-mark)))
+      (or (eviscerate1p (car x) config)
+          (eviscerate1p-lst (cdr x) config)))))
+
+(define eviscerate ((x "The term to eviscerate")
+                    (config eviscconfig-p))
+  :parents (pretty-printing)
+  :short "Elide portions of a term, for use with @(see str::pretty)."
+  :returns (eviscerated-x "A new version of @('x'), perhaps with some subterms
+                           replaced.")
+  (b* (((eviscconfig config))
+       ((when (or config.print-level
+                  config.print-length
+                  (eviscerate1p x config)))
+        (eviscerate1 x 0 config)))
+    x)
+
+  :long #{"""<p>Sometimes terms are too big to practically print.  Much like
+ACL2's built-in pretty-printer, our @(see pretty-printing) functions have
+special support for printing ``eviscerated'' terms where, e.g., some particular
+subterms are elided in certain ways.</p>
+
+<p>The pretty-printer itself does not do any elision.  Instead, @('eviscerate')
+is a separate function that can be used, ahead of time, to elide certain
+sub-terms.  Typically the result of @('eviscerate') is then given to, e.g.,
+@(see str::pretty), along with a special @(':eviscp') flag) to indicate that
+elisions have been made.</p>
+
+<p>ACL2 has its own, built-in evisceration functions that support fancy
+features such as @(see acl2::iprinting).  However, much like ACL2's pretty printer
+itself, these functions are in program mode and take @(see state), which is
+sometimes inconvenient.  So, here, we (re)implement a simple evisceration
+function that provides fewer features but avoids state.</p>
+
+<p>Our function is very much styled after ACL2's and should be familiar if you
+know about ACL2's @(see evisc-tuple)s, except that instead of evisc-tuples we
+use @(see eviscconfig) structures.</p>
+
+<h3>Examples</h3>
+
+<p>Suppose we want to pretty-print the following constant:</p>
+
+@({
+    ACL2 !> (defconst *demo* '(foo (bar aaa bbb ccc (baz 1 2 3))
+                                   1 2 3 4 5 6
+                                   (baz 3 2 1)))
+})
+
+<p>To print without evisceration we can just use @(see str::pretty)
+directly (with its default @(see printconfig):</p>
+
+@({
+    ACL2 !> (str::pretty *demo*)
+    "(FOO (BAR AAA BBB CCC (BAZ 1 2 3))
+         1 2 3 4 5 6 (BAZ 3 2 1))"
+})
+
+<p>To print with evisceration, we (1) eviscerate the term and then (2) tell
+@(see str::pretty) to print it with evisceration enabled.  For example:</p>
+
+@({
+    ACL2 !> (let* ((econfig (str::make-eviscconfig
+                             :print-level 100
+                             :print-length 2)))
+              (str::pretty (str::eviscerate *demo* econfig)
+                           :eviscp t))
+    "(FOO (BAR AAA ...) ...)"
+})
+
+<p>Above the use of @('print-length') truncates the printing after two items in
+each list.  Extending the print-length lets us see more of the term:</p>
+
+@({
+    ACL2 !> (let* ((econfig (str::make-eviscconfig
+                             :print-level 100
+                             :print-length 4)))
+              (str::pretty (str::eviscerate *demo* econfig)
+                           :eviscp t))
+    "(FOO (BAR AAA BBB CCC ...) 1 2 ...)"
+})
+
+<p>There are also other options for hiding all subterms with a certain car, and
+for making particular replacements of particular subterms; see @(see eviscconfig)
+for details.</p>
+
+"""})
+
+
+

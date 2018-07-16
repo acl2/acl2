@@ -563,14 +563,29 @@ corresponding bits of the two inputs as follows:</p>
 
   (deffixequiv 4vec-resor))
 
-(defmacro 4vec-bit-limit () (expt 2 28))
+
+; Special hack for bit explosions.
+;
+; Operations like `(4vec-zero-ext ,(expt 2 30) -1) could result in the creation
+; of huge bignums.  Normally we should try to detect this kind of problem and
+; cause a clean (break) so that the problem can be debugged.  However, in some
+; cases, such as Verilog linting, it is better to fudge the result and
+; continue.
+
+(defmacro 4vec-bit-limit () (expt 2 24))
+
+(defconst *4vec-unsoundly-suppress-large-integers* nil)
 
 (defmacro 4vec-very-large-integer-warning (n)
-  `(prog2$ (cw "!!!!!!!! Danger -- if you continue, ~x0 will create a ~x1-bit ~
-               value -- examine the backtrace to diagnose.~%"
-               std::__function__ ,n)
-           (break$)))
+  ;; Logically always returns NIL.
+  `(if *4vec-unsoundly-suppress-large-integers*
+       t
+     (prog2$ (cw "!!!!!!!! Danger -- if you continue, ~x0 will create a ~x1-bit ~
+                  value -- examine the backtrace to diagnose.~%"
+                 std::__function__ ,n)
+             (break$))))
 
+(local (in-theory (disable (break$))))
 
 (define 4vec-zero-ext ((n 4vec-p "Position to truncate/zero-extend at.")
                        (x 4vec-p "The @(see 4vec) to truncate/zero-extend."))
@@ -586,20 +601,25 @@ bits.</p>"
 
   (if (and (2vec-p n)
            (<= 0 (2vec->val n)))
-      (progn$ (and (>= (2vec->val n) (4vec-bit-limit))
-                   (b* (((4vec x)))
-                     ;; can only create a very large integer from a
-                     ;; not-very-large integer by zero extension if x is
-                     ;; negative or x/z-extended
-                     (or (< x.upper 0)
-                         (< x.lower 0)))
-                   (4vec-very-large-integer-warning (2vec->val n)))
-              (if-2vec-p (x)
-                         (2vec (loghead (2vec->val n) (2vec->val x)))
-                         (b* (((4vec x))
-                              (nval (2vec->val n)))
-                           (4vec (loghead nval x.upper)
-                                 (loghead nval x.lower)))))
+      (if (mbe :logic nil
+               :exec
+               (and (>= (2vec->val n) (4vec-bit-limit))
+                    (b* (((4vec x)))
+                      ;; can only create a very large integer from a
+                      ;; not-very-large integer by zero extension if x is
+                      ;; negative or x/z-extended
+                      (or (< x.upper 0)
+                          (< x.lower 0)))
+                    (4vec-very-large-integer-warning (2vec->val n))))
+          ;; Logically unreachable case -- but we can do this if
+          ;; *4vec-unsoundly-suppress-large-integers* is redefined
+          (4vec-x)
+        (if-2vec-p (x)
+                   (2vec (loghead (2vec->val n) (2vec->val x)))
+                   (b* (((4vec x))
+                        (nval (2vec->val n)))
+                     (4vec (loghead nval x.upper)
+                           (loghead nval x.lower)))))
     (4vec-x))
   ///
   (deffixequiv 4vec-zero-ext))
@@ -903,26 +923,32 @@ negative.  In this case, the result is infinite Xes.</p>"
 
   (if (and (2vec-p width)
            (<= 0 (2vec->val width)))
-      (progn$ (and (>= (2vec->val width) (4vec-bit-limit))
-                   (b* (((4vec low))
-                        ((4vec high)))
-                     ;; can only create a very large integer from a
-                     ;; not-very-large integer by zero extension if x is
-                     ;; negative or x/z-extended
-                     (or (if (< low.upper 0)
-                             (not (eql high.upper -1))
-                           (not (eql high.upper 0)))
-                         (if (< low.lower 0)
-                             (not (eql high.lower -1))
-                           (not (eql high.lower 0)))))
-                   (4vec-very-large-integer-warning (2vec->val width)))
-              (b* ((wval (2vec->val width)))
-                (if-2vec-p (low high)
-                           (2vec (logapp wval (2vec->val low) (2vec->val high)))
-                           (b* (((4vec low))
-                                ((4vec high)))
-                             (4vec (logapp wval low.upper high.upper)
-                                   (logapp wval low.lower high.lower))))))
+      (if (mbe :logic nil
+               :exec
+               (and (>= (2vec->val width) (4vec-bit-limit))
+                    (b* (((4vec low))
+                         ((4vec high)))
+                      ;; can only create a very large integer from a
+                      ;; not-very-large integer by zero extension if x is
+                      ;; negative or x/z-extended
+                      (or (if (< low.upper 0)
+                              (not (eql high.upper -1))
+                            (not (eql high.upper 0)))
+                          (if (< low.lower 0)
+                              (not (eql high.lower -1))
+                            (not (eql high.lower 0)))))
+                    (4vec-very-large-integer-warning (2vec->val width))))
+          ;; Logically unreachable case -- but we can do this if
+          ;; *4vec-unsoundly-suppress-large-integers* is redefined
+          (4vec-x)
+        ;; Normal case
+        (b* ((wval (2vec->val width)))
+          (if-2vec-p (low high)
+                     (2vec (logapp wval (2vec->val low) (2vec->val high)))
+                     (b* (((4vec low))
+                          ((4vec high)))
+                       (4vec (logapp wval low.upper high.upper)
+                             (logapp wval low.lower high.lower))))))
     (4vec-x))
   ///
   (deffixequiv 4vec-concat
@@ -935,16 +961,21 @@ negative.  In this case, the result is infinite Xes.</p>"
                          (src 4vec-p "Source operand."))
   :returns (shift 4vec-p)
   (b* ((amt (lifix amt)))
-    (prog2$ (and (>= amt (4vec-bit-limit))
+    (if (mbe :logic nil
+             :exec (and (>= amt (4vec-bit-limit))
+                        (b* (((4vec src)))
+                          (not (and (eql src.upper 0)
+                                    (eql src.lower 0))))
+                        (4vec-very-large-integer-warning amt)))
+        ;; Logically unreachable case -- but we can do this if
+        ;; *4vec-unsoundly-suppress-large-integers* is redefined
+        (4vec-x)
+      ;; Normal case
+      (if-2vec-p (src)
+                 (2vec (ash (2vec->val src) amt))
                  (b* (((4vec src)))
-                   (not (and (eql src.upper 0)
-                             (eql src.lower 0))))
-                 (4vec-very-large-integer-warning amt))
-            (if-2vec-p (src)
-                       (2vec (ash (2vec->val src) amt))
-                       (b* (((4vec src)))
-                         (4vec (ash src.upper amt)
-                               (ash src.lower amt))))))
+                   (4vec (ash src.upper amt)
+                         (ash src.lower amt))))))
   ///
   (deffixequiv 4vec-shift-core))
 

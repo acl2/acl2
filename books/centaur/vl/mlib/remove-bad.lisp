@@ -294,6 +294,18 @@ its removal.</p>")
         (t
          (vl-programlist-zombies (cdr x)))))
 
+(define vl-classlist-zombies
+  :parents (vl-design-zombies)
+  :short "Identify classes with fatal warnings."
+  ((x vl-classlist-p))
+  :returns (names string-listp)
+  (cond ((atom x)
+         nil)
+        ((vl-some-warning-fatalp (vl-class->warnings (car x)))
+         (cons (vl-class->name (car x)) (vl-classlist-zombies (cdr x))))
+        (t
+         (vl-classlist-zombies (cdr x)))))
+
 (define vl-configlist-zombies
   :parents (vl-design-zombies)
   :short "Identify configs with fatal warnings."
@@ -328,6 +340,7 @@ its removal.</p>")
             (vl-interfacelist-zombies x.interfaces)
             (vl-packagelist-zombies x.packages)
             (vl-programlist-zombies x.programs)
+            (vl-classlist-zombies x.classes)
             (vl-configlist-zombies x.configs)
             (vl-typedeflist-zombies x.typedefs))))
 
@@ -348,6 +361,7 @@ from the @('good') design into the @('bad') design."
        ((mv bad-interfaces good-interfaces) (vl-filter-interfaces (vl-interfacelist-zombies good.interfaces) good.interfaces))
        ((mv bad-udps       good-udps)       (vl-filter-udps       (vl-udplist-zombies       good.udps)       good.udps))
        ((mv bad-programs   good-programs)   (vl-filter-programs   (vl-programlist-zombies   good.programs)   good.programs))
+       ((mv bad-classes    good-classes)    (vl-filter-classes    (vl-classlist-zombies     good.classes)    good.classes))
        ((mv bad-packages   good-packages)   (vl-filter-packages   (vl-packagelist-zombies   good.packages)   good.packages))
        ((mv bad-configs    good-configs)    (vl-filter-configs    (vl-configlist-zombies    good.configs)    good.configs))
        ((mv bad-typedefs   good-typedefs)   (vl-filter-typedefs   (vl-typedeflist-zombies   good.typedefs)   good.typedefs))
@@ -357,6 +371,7 @@ from the @('good') design into the @('bad') design."
                                :interfaces good-interfaces
                                :udps       good-udps
                                :programs   good-programs
+                               :classes    good-classes
                                :packages   good-packages
                                :configs    good-configs
                                :typedefs   good-typedefs))
@@ -366,6 +381,7 @@ from the @('good') design into the @('bad') design."
                                :interfaces (append bad-interfaces bad.interfaces)
                                :udps       (append bad-udps       bad.udps)
                                :programs   (append bad-programs   bad.programs)
+                               :classes    (append bad-classes    bad.classes)
                                :packages   (append bad-packages   bad.packages)
                                :configs    (append bad-configs    bad.configs)
                                :typedefs   (append bad-typedefs   bad.typedefs))))

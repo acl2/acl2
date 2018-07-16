@@ -51,14 +51,18 @@ FAILING_TEST_TARGETS := \
   inc9.svok \
   inst9.svok \
   inst12.svok \
-  param1.svok \
+  param9.svok \
+  param10.svok \
+  param11.svok \
   elab6.vok elab6.svok \
   stmt1.svok  \
   gen8b.vok gen8b.svok \
   iface26.svok \
-  names4.svok names4.vok \
-  names5.svok names5.vok \
-  names6.svok names6.vok
+  clocking2.svok \
+  clocking3.svok \
+  clocking4.svok \
+  clocking5.svok \
+  clocking6.svok
 
 $(CORE):
 	cd $(COSIM_DIR); $(MAKE) cosim-core

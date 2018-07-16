@@ -183,7 +183,7 @@
       (:vl-interface (vl-ppc-interface x ss))
       (:vl-package   (vl-ppc-package   x ss))
       (:vl-program   (vl-ppc-program   x))
-      (:vl-class     (vl-ppc-class   x))
+      (:vl-class     (vl-ppc-class     x))
       (:vl-config    (vl-ppc-config    x))
 
       ;; items without comments
@@ -195,6 +195,9 @@
       (:vl-vardecl    (vl-pp-vardecl    x))
       (:vl-dpiimport  (vl-pp-dpiimport  x))
       (:vl-dpiexport  (vl-pp-dpiexport  x))
+      (:vl-bind       (vl-pp-bind       x ss))
+      (:vl-property   (vl-pp-property   x))
+      (:vl-sequence   (vl-pp-sequence   x))
       (otherwise      (vl-pp-typedef    x)))))
 
 (define vl-description-summary ((x vl-description-p))
@@ -258,6 +261,7 @@
                                                      (:vl-interface (length "endinterface"))
                                                      (:vl-package   (length "endpackage"))
                                                      (:vl-program   (length "endprogram"))
+                                                     (:vl-class     (length "endclass"))
                                                      (:vl-config    (length "endconfig"))
                                                      (otherwise     0))))))
 
@@ -388,6 +392,9 @@ declaration, ...)."
       (:vl-vardecl    nil)
       (:vl-dpiimport  nil)
       (:vl-dpiexport  nil)
+      (:vl-bind       nil)
+      (:vl-property   nil)
+      (:vl-sequence   nil)
       (otherwise      (impossible)))))
 
 (define vls-data-origname-reportcard ((data vls-data-p))

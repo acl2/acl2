@@ -176,7 +176,7 @@ formerly the \"location directive\" and printed a location.</p>")
     (case (tag x)
       ((:vl-special :vl-literal :vl-index :vl-unary :vl-binary
         :vl-qmark :vl-mintypmax :vl-concat :vl-multiconcat :vl-stream
-        :vl-call :vl-cast :vl-inside :vl-tagged :vl-pattern)
+        :vl-call :vl-cast :vl-inside :vl-tagged :vl-pattern :vl-eventexpr)
        (vl-fmt-tilde-a-case vl-expr-p vl-pp-origexpr))
       ((:vl-hidindex)
        (vl-fmt-tilde-a-case vl-hidindex-p vl-pp-hidindex))
@@ -191,7 +191,7 @@ formerly the \"location directive\" and printed a location.</p>")
       ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt :vl-callstmt
         :vl-disablestmt :vl-eventtriggerstmt :vl-casestmt :vl-ifstmt
         :vl-foreverstmt :vl-waitstmt :vl-repeatstmt :vl-whilestmt
-        :vl-forstmt :vl-blockstmt :vl-timingstmt :vl-breakstmt
+        :vl-forstmt :vl-foreachstmt :vl-blockstmt :vl-timingstmt :vl-breakstmt
         :vl-continuestmt :vl-returnstmt :vl-assertstmt :vl-cassertstmt)
        (vl-fmt-tilde-a-case vl-stmt-p vl-pp-stmt))
       ((:vl-propcore :vl-propinst :vl-propthen :vl-proprepeat
@@ -207,7 +207,9 @@ formerly the \"location directive\" and printed a location.</p>")
         :vl-alias :vl-vardecl :vl-paramdecl :vl-fundecl :vl-taskdecl
         :vl-modinst :vl-gateinst :vl-always :vl-initial :vl-final
         :vl-typedef :vl-fwdtypedef :vl-assertion :vl-cassertion
-        :vl-property :vl-sequence :vl-import :vl-dpiimport :vl-dpiexport
+        :vl-property :vl-sequence :vl-clkdecl :vl-gclkdecl
+        :vl-import :vl-dpiimport :vl-dpiexport :vl-bind :vl-class
+        :vl-covergroup :vl-elabtask
         :vl-genarray :vl-genbegin :vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-modport)
        (vl-fmt-tilde-a-case vl-ctxelement-p vl-pp-ctxelement-summary))
       ((:vl-genvar)

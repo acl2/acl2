@@ -188,4 +188,23 @@
     ppr
     pretty
     revappend-pretty
-    pretty-list))
+    pretty-list
+
+    acl2::maybe-natp-fix
+
+    eviscconfig-p
+    eviscconfig
+    eviscconfig->print-level
+    eviscconfig->print-length
+    eviscconfig->replacement-alist
+    eviscconfig->hiding-cars
+    patbind-eviscconfig
+    make-eviscconfig
+
+    evisceration-hash-mark
+    list-of-evisceration-ellipsis-mark
+    anti-evisceration-mark
+    evisceration-hiding-mark
+    eviscerate1
+    eviscerate1p
+    eviscerate))

@@ -263,9 +263,6 @@ current one.  We translate module @('a') as follows:</p>
 (local (in-theory (disable (tau-system))))
 
 
-
-
-
 (define svex-svar-from-name ((name stringp))
   :returns (svar sv::svar-p)
   :prepwork ((local (in-theory (enable sv::name-p))))
@@ -2082,12 +2079,39 @@ how VL module instances are translated.</p>"
            t nil
            '("out" "in" "ncontrol" "pcontrol")
            '(:vl-output :vl-input :vl-input :vl-input)))
-      ((:vl-bufif0 :vl-bufif1 :vl-notif0 :vl-notif1
-        :vl-nmos :vl-rnmos :vl-pmos :vl-rpmos)
+      ((:vl-nmos :vl-rnmos :vl-pmos :vl-rpmos)
        (mv (if (eql nargs 3) nil (vmsg "Need 3 arguments for ~x0" type))
            t nil
            '("out" "in" "control")
            '(:vl-output :vl-input :vl-input)))
+      ((:vl-bufif0 :vl-bufif1 :vl-notif0 :vl-notif1)
+       (b* (((unless (eql nargs 3))
+             (mv (vmsg "Need 3 arguments for ~x0" type) nil nil nil nil))
+            (ins      '("data" "control"))
+            (svex-ins (vl-fixup-wide-gate-inputs (svex-vars-from-names ins)))
+            ((list data ctrl) svex-ins)
+            (rhs      (case type
+                        (:vl-bufif0
+                         (sv::svcall sv::? ctrl
+                                     (sv::svex-z)
+                                     (sv::svcall sv::unfloat data)))
+                        (:vl-bufif1
+                         (sv::svcall sv::? ctrl
+                                     (sv::svcall sv::unfloat data)
+                                     (sv::svex-z)))
+                        (:vl-notif0
+                         (sv::svcall sv::? ctrl
+                                     (sv::svex-z)
+                                     (sv::svcall sv::bitnot data)))
+                        (:vl-notif1
+                         (sv::svcall sv::? ctrl
+                                     (sv::svcall sv::bitnot data)
+                                     (sv::svex-z)))))
+            (assigns  (list (cons (svex-lhs-from-name "out")
+                                  (sv::make-driver :value rhs))))
+            (portnames (cons "out" ins))
+            (portdirs  (list :vl-output :vl-input :vl-input)))
+         (mv nil nil assigns portnames portdirs)))
       ((:vl-and :vl-nand :vl-or :vl-nor :vl-xor :vl-xnor)
        (if (< nargs 2)
            (mv (vmsg "Need 2 or more arguments for ~x0" type) nil nil nil nil)
@@ -4820,11 +4844,13 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
     (b* ((vttree nil)
          (elabindex (vl-elabindex-push (vl-genblob-fix x)))
          ((vl-genblob x))
+         ((vl-simpconfig config))
          ((wvmv ?ok vttree ?new-x elabindex)
           ;; new-x isn't really relevant since we've already run
           ;; unparameterization before; we're just doing this to generate the
           ;; tables.
-          (vl-genblob-elaborate x elabindex))
+          (vl-genblob-elaborate x elabindex
+                                :reclimit config.elab-limit))
          (elabindex (vl-elabindex-sync-scopes))
          (ss (vl-elabindex->ss))
          (scopes (vl-elabindex->scopes))
@@ -4852,7 +4878,6 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
          
          (modalist (hons-shrink-alist ifportmod-alist (hons-shrink-alist gatemod-alist (hons-shrink-alist arraymod-alist modalist))))
 
-         ((vl-simpconfig config))
          ((wvmv vttree always-assigns constraints)
           (vl-alwayslist->svex x.alwayses ss scopes config))
          (vttree (vttree-add-constraints constraints vttree))
@@ -4891,7 +4916,6 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
      (self-lsb maybe-natp "indicates whether we are in an interface; if so, gives
                            the lsb of the outer block's wire at which to alias
                            the inner block's wire"))
-
     :returns (mv (warnings vl-warninglist-p)
                  (modalist1
                   (and (sv::modalist-p modalist1)
@@ -5109,8 +5133,10 @@ ports, by calling @(see vl-interfaceports->svex).</p>"
   (b* (((when (atom x)) (mv nil (sv::modalist-fix modalist) elabindex))
        (name (vl-module->name (car x)))
        ((mv warnings modalist elabindex)
-        (vl-module->svex-module name elabindex config modalist))
-       
+        (time$ (vl-module->svex-module name elabindex config modalist)
+               :msg "; mod->sv ~s0: ~st sec, ~sa bytes~%"
+               :args (list name)
+               :mintime 1))
        ((mv reportcard modalist elabindex)
         (vl-modulelist->svex-modalist (cdr x) elabindex config modalist)))
     (mv (if warnings
@@ -5176,9 +5202,13 @@ the concatenation of all its other declared wires.</p>"
                (new-elabindex))
   (b* (((when (atom x)) (mv nil (sv::modalist-fix modalist) elabindex))
        (name (vl-interface->name (car x)))
-       ((mv warnings modalist elabindex) (vl-interface->svex-module name elabindex config modalist))
-
-       ((mv reportcard modalist elabindex) (vl-interfacelist->svex-modalist (cdr x) elabindex config modalist)))
+       ((mv warnings modalist elabindex)
+        (time$ (vl-interface->svex-module name elabindex config modalist)
+               :msg "; iface->sv ~s0: ~st sec, ~sa bytes~%"
+               :args (list name)
+               :mintime 1))
+       ((mv reportcard modalist elabindex)
+        (vl-interfacelist->svex-modalist (cdr x) elabindex config modalist)))
     (mv (if warnings
             (cons (cons name warnings) reportcard)
           reportcard)

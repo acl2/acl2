@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "argresolve")
+(include-book "bind")
 (include-book "make-implicit-wires")
 (include-book "type-disambiguation")
 (include-book "enumnames")
@@ -67,6 +68,7 @@ first step in any VL-based tool.</p>"
        (design (xf-cwtime (vl-design-add-enumname-declarations design)))
        (design (xf-cwtime (vl-design-make-implicit-wires design)))
        (design (xf-cwtime (vl-design-portdecl-sign design)))
+       (design (xf-cwtime (vl-design-bindelim design)))
        (design (xf-cwtime (vl-design-udp-elim design)))
        (design (xf-cwtime (vl-design-basicsanity design)))
        (design (xf-cwtime (vl-design-increment-elim design)))

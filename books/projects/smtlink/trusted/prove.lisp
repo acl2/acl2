@@ -12,6 +12,7 @@
 (include-book "centaur/misc/tshell" :dir :system)
 
 (include-book "../verified/hint-interface")
+(include-book "../verified/expand-cp")
 (include-book "../config")
 (include-book "./run")
 (include-book "./write")
@@ -69,17 +70,26 @@
     )
 
   (define SMT-prove ((term pseudo-termp) (smtlink-hint smtlink-hint-p) (state))
-    :returns (mv (proved? booleanp)
-                 (state))
+    ;; :returns (mv (proved? booleanp)
+    ;;              (smt-precond pseudo-termp)
+    ;;              (state))
+    :mode :program
     (b* ((term (pseudo-term-fix term))
          (smtlink-hint (smtlink-hint-fix smtlink-hint))
-         ((smtlink-hint h) smtlink-hint)
+         ;; generate all fty related stuff, recalculating so that we are not
+         ;; trusting smtlink-hint, which can be changed by malicious
+         ;; attacker/careless user
+         (flextypes-table (table-alist 'fty::flextypes-table (w state)))
+         ((unless (alistp flextypes-table)) (mv nil nil state))
+         (smtlink-hint1 (generate-fty-info-alist smtlink-hint flextypes-table))
+         (smtlink-hint2 (generate-fty-types-top smtlink-hint1 flextypes-table))
+         ((smtlink-hint h) smtlink-hint2)
          (c h.smt-cnf)
          (smt-file (make-fname h.smt-dir h.smt-fname))
-         (smt-term (SMT-translation term smtlink-hint))
+         ((mv smt-term smt-precond) (SMT-translation term h state))
          ((mv head import) (SMT-head c))
          ;; (state (SMT-write-file smt-file (cons head (ACL22SMT)) import smt-term state))
          (state (SMT-write-file smt-file head import smt-term state))
          ((mv result state) (SMT-interpret smt-file h.rm-file c state)))
-      (mv result state)))
+      (mv result smt-precond state)))
   )

@@ -14,7 +14,7 @@
   :parents (trusted)
   :short "The trusted clause processor"
 
-  (defstub SMT-prove-stub (term smtlink-hint state) (mv t state))
+  (defstub SMT-prove-stub (term smtlink-hint state) (mv t nil state))
 
   (program)
   (defttag :Smtlink)
@@ -40,13 +40,21 @@
       :mode :program
       (b* ((smt-cnf (if custom-p (custom-smt-cnf) (default-smt-cnf)))
            (smtlink-hint (change-smtlink-hint smtlink-hint :smt-cnf smt-cnf))
-           ((mv res state) (SMT-prove-stub (disjoin cl) smtlink-hint state)))
+           ((mv res smt-precond state)
+            (SMT-prove-stub (disjoin cl) smtlink-hint state))
+           (subgoal-lst `(((hint-please
+                            '(:in-theory (enable magic-fix
+                                                 hint-please
+                                                 type-hyp)
+                              :expand ((:free (x) (hide x)))))
+                           ,smt-precond
+                           ,(disjoin cl)))))
         (if res
-            (prog2$ (cw "Proved!~%") (mv nil nil state))
+            (prog2$ (cw "Proved!~%") (mv nil subgoal-lst state))
           (mv (cons "NOTE: Unable to prove goal with ~
                       SMT-trusted-cp and indicated hint." nil)
               (list cl) state))))
-    
+
     (push-untouchable SMT-prove-stub t)
     )
 
@@ -58,16 +66,16 @@
     :mode :program
     :stobjs state
     (prog2$ (cw "Using default SMT-trusted-cp...~%")
-            (SMT-trusted-cp-main cl smtlink-hint nil state)))
-  
+            (SMT-trusted-cp-main (remove-hint-please cl) smtlink-hint nil state)))
+
   (define SMT-trusted-cp-custom ((cl pseudo-term-listp)
                                  (smtlink-hint smtlink-hint-p)
                                  state)
     :mode :program
     :stobjs state
     (prog2$ (cw "Using custom SMT-trusted-cp...~%")
-            (SMT-trusted-cp-main cl smtlink-hint t state)))
-  
+            (SMT-trusted-cp-main (remove-hint-please cl) smtlink-hint t state)))
+
   (define-trusted-clause-processor
     SMT-trusted-cp
     nil

@@ -37,7 +37,7 @@
 (define vl-pp-define-formal ((x vl-define-formal-p) &key (ps 'ps))
   (b* (((vl-define-formal x))
        (ps (vl-print-str x.name))
-       ((when (equal x.default ""))
+       ((unless x.default)
         ps))
     (vl-ps-seq (vl-print " = ")
                (vl-print x.default))))

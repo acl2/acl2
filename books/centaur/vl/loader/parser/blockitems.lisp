@@ -88,10 +88,11 @@ out some duplication and indirection:</p>
        | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
        | identifier [ '=' class_new ]
 
-    dynamic_array_new ::= new [ expression ] [ ( expression ) ]
+    dynamic_array_new ::= 'new' '[' expression ']' [ '(' expression ')' ]
 
-    class_new ::= [ class_scope ] new [ ( list_of_arguments ) ]
-                | new expression
+    class_new ::= [ class_scope ] 'new' [ '(' list_of_arguments ')' ]
+                | 'new' expression
+
 
     variable_dimension ::= unsized_dimension
                          | unpacked_dimension
@@ -128,7 +129,7 @@ out some duplication and indirection:</p>
         nil)
        ((vl-vardeclassign temp1) (car temps))
        (decl1 (make-vl-vardecl :name     temp1.id
-                               :initval  temp1.expr
+                               :initval  temp1.rhs
                                :constp   constp
                                :varp     varp
                                :lifetime lifetime
@@ -167,11 +168,11 @@ out some duplication and indirection:</p>
           (expr := (vl-parse-expression))
           (return (make-vl-vardeclassign :id (vl-idtoken->name id)
                                          :dims nil
-                                         :expr expr)))
+                                         :rhs (make-vl-rhsexpr :guts expr))))
         (arrdims := (vl-parse-0+-ranges))
         (return (make-vl-vardeclassign :id (vl-idtoken->name id)
                                        :dims (vl-ranges->packeddimensions arrdims)
-                                       :expr nil))))
+                                       :rhs nil))))
 
 (defparser vl-parse-list-of-variable-identifiers ()
   :short "Match @('list_of_variable_identifiers') for Verilog-2005."

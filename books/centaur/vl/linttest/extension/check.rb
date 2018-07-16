@@ -36,11 +36,11 @@ require_relative '../utils'
 outlaw_bad_warnings()
 outlaw_warning_global("VL-PROGRAMMING-ERROR")
 
-def find_major_fussy_warning(substring)
+def find_major_extension_warning(substring)
   raise "No warnings for top" unless WARNINGS.has_key?(:top)
   wlist = WARNINGS[:top]
   wlist.each do |w|
-    if ((w[:type].include?("VL-FUSSY")) and
+    if ((w[:type].include?("VL-WARN-EXTENSION")) and
         (not w[:type].include?("MINOR")) and
         (w[:text].include?(substring)))
       return w
@@ -49,11 +49,11 @@ def find_major_fussy_warning(substring)
   return false
 end
 
-def find_minor_fussy_warning(substring)
+def find_minor_extension_warning(substring)
   raise "No warnings for top" unless WARNINGS.has_key?(:top)
   wlist = WARNINGS[:top]
   wlist.each do |w|
-    if ((w[:type].include?("VL-FUSSY")) and
+    if ((w[:type].include?("VL-WARN-EXTENSION")) and
         (w[:type].include?("MINOR")) and
         (w[:text].include?(substring)))
       return w
@@ -62,103 +62,73 @@ def find_minor_fussy_warning(substring)
   return false
 end
 
-def fuss(substring)
+def major(substring)
 
-  major = find_major_fussy_warning(substring)
+  major = find_major_extension_warning(substring)
   if (major)
-    puts "OK: #{substring}: found major fussy warning: #{major[:type]}"
+    puts "OK: #{substring}: found major extension warning: #{major[:type]}"
   else
-    raise "FAIL: #{substring}: no major fussy warning"
+    raise "FAIL: #{substring}: no major extension warning"
   end
 
-  minor = find_minor_fussy_warning(substring)
+  minor = find_minor_extension_warning(substring)
   if (minor)
-    raise "FAIL: fussy warning for #{substring} is minor instead of major:\n         #{major[:type]} -- #{major[:text]}"
+    raise "FAIL: extension warning for #{substring} is minor instead of major:\n         #{minor[:type]} -- #{minor[:text]}"
   else
-    puts "OK: #{substring}: no minor fussy warning"
+    puts "OK: #{substring}: no minor extension warning"
   end
 
 end
 
 def normal(substring)
 
-  major = find_major_fussy_warning(substring)
+  major = find_major_extension_warning(substring)
   if (major)
-    raise "FAIL: #{substring}: unexpected major fussy warning:\n     #{major[:type]} -- #{major[:text]}"
+    raise "FAIL: #{substring}: unexpected major extension warning:\n     #{major[:type]} -- #{major[:text]}"
   else
-    puts "OK: #{substring}: no major fussy warnings"
+    puts "OK: #{substring}: no major extension warnings"
   end
 
-  minor = find_minor_fussy_warning(substring)
+  minor = find_minor_extension_warning(substring)
   if (minor)
-    raise "FAIL: #{substring}: unexpected minor fussy warning:\n     #{minor[:type]} -- #{minor[:text]}"
+    raise "FAIL: #{substring}: unexpected minor extension warning:\n     #{minor[:type]} -- #{minor[:text]}"
   else
-    puts "OK: #{substring}: no minor fussy warnings"
+    puts "OK: #{substring}: no minor extension warnings"
   end
 
 end
 
 def minor(substring)
 
-  major = find_major_fussy_warning(substring)
+  major = find_major_extension_warning(substring)
   if (major)
-    raise "FAIL: #{substring}: unexpected major fussy warning:\n     #{major[:type]} -- #{major[:text]}"
+    raise "FAIL: #{substring}: unexpected major extension warning:\n     #{major[:type]} -- #{major[:text]}"
   else
-    puts "OK: #{substring}: no major fussy warnings"
+    puts "OK: #{substring}: no major extension warnings"
   end
 
-  minor = find_minor_fussy_warning(substring)
+  minor = find_minor_extension_warning(substring)
   if (minor)
-    puts "OK: #{substring}: found minor fussy warning: #{minor[:type]}"
+    puts "OK: #{substring}: found minor extension warning: #{minor[:type]}"
   else
-    raise "FAIL: #{substring}: no minor fussy warning"
+    raise "FAIL: #{substring}: no minor extension warning"
   end
 
 end
 
 
-fuss("and_warn1")
-fuss("and_warn2")
-fuss("and_warn3")
-fuss("and_warn4")
-fuss("and_warn5")
+normal("as_normal1")
+normal("as_normal2")
+normal("as_normal3")
+normal("as_normal4")
+normal("as_normal5")
+normal("as_normal6")
 
-normal("and_normal1")
-normal("and_normal2")
-normal("and_normal3")
-normal("and_normal4")
-
-normal("andc_normal1")
-normal("andc_normal2")
-normal("andc_normal3")
-
-fuss("andc_warn1")
-fuss("andc_warn2")
-fuss("andc_warn3")
-fuss("andc_warn4")
-
-minor("andc_minor1")
-minor("andc_minor2")
-
-normal("lt_normal1")
-normal("lt_normal2")
-normal("lt_normal3")
-
-fuss("lt_warn1")
-fuss("lt_warn2")
-
-minor("ltc_minor1")
-minor("ltc_minor2")
+major("as_warn1")
+major("as_warn2")
+major("as_warn3")
 
 
-normal("cond_normal1")
-normal("cond_normal2")
-normal("cond_normal3")
-normal("cond_normal4")
-
-fuss("cond_warn1")
-fuss("cond_warn2")
-fuss("cond_warn3")
 
 test_passed()
 

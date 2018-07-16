@@ -161,7 +161,7 @@
   ;; lisp-to-python-names
   (define lisp-to-python-names ((var string-or-symbol-p))
     :returns (name stringp)
-    (b* ((var (mbe :logic (string-or-symbol-fix var) :exec var))
+    (b* ((var (string-or-symbol-fix var))
          (var (if (stringp var) var (string var)))
          (var-char (coerce var 'LIST)))
       (coerce (lisp-to-python-names-list-top var-char) 'STRING)))

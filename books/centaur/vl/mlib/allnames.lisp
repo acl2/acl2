@@ -108,6 +108,7 @@
    (vl-package       (name nameset-add))
    (vl-interface     (name nameset-add))
    (vl-program       (name nameset-add))
+   (vl-class         (name nameset-add))
    (vl-dpiimport     (name nameset-add))
    ))
 

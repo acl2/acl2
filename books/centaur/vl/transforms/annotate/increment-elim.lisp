@@ -246,6 +246,19 @@ these are the only operators we're dealing with.</p>"
       (or (vl-expr-has-incexprs-p (car x))
           (vl-exprlist-has-incexprs-p (cdr x))))))
 
+(define vl-maybe-expr-has-incexprs-p ((x vl-maybe-expr-p))
+  (let ((x (vl-maybe-expr-fix x)))
+    (if x
+        (vl-expr-has-incexprs-p x)
+      nil)))
+
+(define vl-maybe-exprlist-has-incexprs-p ((x vl-maybe-exprlist-p))
+  :measure (len x)
+  (if (atom x)
+      nil
+    (or (vl-maybe-expr-has-incexprs-p (car x))
+        (vl-maybe-exprlist-has-incexprs-p (cdr x)))))
+
 
 (defines vl-expr-increwrite-aux
   :verify-guards nil
@@ -323,7 +336,7 @@ these are the only operators we're dealing with.</p>"
           ;; rewritten the args, there's nothing left to do.
           (mv new-x pre post))
          (lhs (vl-incexpr->lhsexpr new-x))
-         (rhs (vl-incexpr->rhsexpr new-x))
+         (rhs (make-vl-rhsexpr :guts (vl-incexpr->rhsexpr new-x)))
          ((when (vl-incexpr-post-p new-x))
           ;; Post-increment/decrement operator like a++ or a--.
           ;;   - We'll rewrite X to just be A, because the current expression
@@ -333,7 +346,7 @@ these are the only operators we're dealing with.</p>"
           ;;     - RHS is a + 1 or a - 1 as appropriate.
           (mv lhs pre (cons (make-vl-assignstmt :type :vl-blocking
                                                 :lvalue lhs
-                                                :expr rhs
+                                                :rhs rhs
                                                 :loc loc)
                             post))))
       ;; Otherwise, pre-operator like ++a, --a, a=5, a+=5, etc.
@@ -345,7 +358,7 @@ these are the only operators we're dealing with.</p>"
       (mv lhs
           (cons (make-vl-assignstmt :type :vl-blocking
                                     :lvalue lhs
-                                    :expr rhs
+                                    :rhs rhs
                                     :loc loc)
                 pre)
           post)))
@@ -368,6 +381,37 @@ these are the only operators we're dealing with.</p>"
   ///
   (verify-guards vl-expr-increwrite-aux)
   (deffixequiv-mutual vl-expr-increwrite-aux))
+
+(define vl-maybe-expr-increwrite-aux
+  ((x    vl-maybe-expr-p)
+   (pre  vl-stmtlist-p)
+   (post vl-stmtlist-p)
+   (loc  vl-location-p))
+  :returns
+  (mv (new-x vl-maybe-expr-p)
+      (pre   vl-stmtlist-p)
+      (post  vl-stmtlist-p))
+  (if x
+      (vl-expr-increwrite-aux x pre post loc)
+    (mv nil
+        (vl-stmtlist-fix pre)
+        (vl-stmtlist-fix post))))
+
+(define vl-maybe-exprlist-increwrite-aux
+  ((x    vl-maybe-exprlist-p)
+   (pre  vl-stmtlist-p)
+   (post vl-stmtlist-p)
+   (loc  vl-location-p))
+  :returns (mv (new-x (and (vl-maybe-exprlist-p new-x)
+                           (equal (len new-x) (len x))))
+               (pre   vl-stmtlist-p)
+               (post  vl-stmtlist-p))
+  :measure (len x)
+  (b* (((when (atom x))
+        (mv nil (vl-stmtlist-fix pre) (vl-stmtlist-fix post)))
+       ((mv car pre post) (vl-maybe-expr-increwrite-aux (car x) pre post loc))
+       ((mv cdr pre post) (vl-maybe-exprlist-increwrite-aux (cdr x) pre post loc)))
+    (mv (cons car cdr) pre post)))
 
 (define vl-expr-increwrite
   :short "Main function for rewriting expressions."
@@ -428,6 +472,66 @@ these are the only operators we're dealing with.</p>"
        ((mv new-x pre-rev post-rev)
         (vl-exprlist-increwrite-aux x nil nil loc)))
     (mv new-x (rev pre-rev) (rev post-rev))))
+
+(define vl-maybe-expr-increwrite
+  ((x    vl-maybe-expr-p)
+   (loc  vl-location-p))
+  :returns
+  (mv (new-x vl-maybe-expr-p)
+      (pre   vl-stmtlist-p)
+      (post  vl-stmtlist-p))
+  (b* ((x (vl-maybe-expr-fix x))
+       ((unless (vl-maybe-expr-has-incexprs-p x))
+        ;; Optimization.  There aren't any increment/decrement operators
+        ;; anywhere in here, so we don't need to recons anything.
+        (mv x nil nil))
+       ((mv new-x pre-rev post-rev)
+        (vl-maybe-expr-increwrite-aux x nil nil loc)))
+    (mv new-x (rev pre-rev) (rev post-rev))))
+
+(define vl-maybe-exprlist-increwrite
+  ((x    vl-maybe-exprlist-p)
+   (loc  vl-location-p))
+  :returns
+  (mv (new-x vl-maybe-exprlist-p)
+      (pre   vl-stmtlist-p)
+      (post  vl-stmtlist-p))
+  (b* ((x (vl-maybe-exprlist-fix x))
+       ((unless (vl-maybe-exprlist-has-incexprs-p x))
+        ;; Optimization.  There aren't any increment/decrement operators
+        ;; anywhere in here, so we don't need to recons anything.
+        (mv x nil nil))
+       ((mv new-x pre-rev post-rev)
+        (vl-maybe-exprlist-increwrite-aux x nil nil loc)))
+    (mv new-x (rev pre-rev) (rev post-rev))))
+
+(define vl-rhs-increwrite
+  ((x   vl-rhs-p)
+   (loc vl-location-p))
+  :returns
+  (mv (new-x vl-rhs-p)
+      (pre   vl-stmtlist-p)
+      (post  vl-stmtlist-p))
+  (b* ((x (vl-rhs-fix x)))
+    (vl-rhs-case x
+      (:vl-rhsexpr
+       (b* (((unless (vl-expr-has-incexprs-p x.guts))
+             ;; Optimization.  There aren't any increment/decrement operators
+             ;; anywhere in here, so we don't need to recons anything.
+             (mv x nil nil))
+            ((mv new-guts pre-rev post-rev)
+             (vl-expr-increwrite-aux x.guts nil nil loc)))
+         (mv (change-vl-rhsexpr x :guts new-guts)
+             (rev pre-rev)
+             (rev post-rev))))
+      (:vl-rhsnew
+       (b* (((mv new-arrsize pre1 post1) (vl-maybe-expr-increwrite x.arrsize loc))
+            ((mv new-args pre2 post2)    (vl-exprlist-increwrite x.args loc)))
+         (mv (change-vl-rhsnew x
+                               :arrsize new-arrsize
+                               :args new-args)
+             (append-without-guard pre1 pre2)
+             (append-without-guard post1 post2)))))))
 
 
 (defines vl-stmt-increwrite
@@ -513,15 +617,15 @@ these are the only operators we're dealing with.</p>"
              ;; regard checking for blocking/nonblocking sanity as something
              ;; that is definitely beyond the scope of increwrite, so we'll
              ;; allow it too.
-             ((mv new-expr pre post) (vl-expr-increwrite x.expr x.loc))
-             (new-x (change-vl-assignstmt x :expr new-expr)))
+             ((mv new-rhs pre post) (vl-rhs-increwrite x.rhs x.loc))
+             (new-x (change-vl-assignstmt x :rhs new-rhs)))
           (mv new-x pre post))
 
         :vl-callstmt
         ;; I don't think we want to allow increments in the ID or typearg?  But
         ;; it might be OK to have them there.  See failtest/inc12.v.  It seems
         ;; OK to have them in the arguments.
-        (b* (((mv new-args pre post) (vl-exprlist-increwrite x.args x.loc))
+        (b* (((mv new-args pre post) (vl-maybe-exprlist-increwrite x.args x.loc))
              (new-x (change-vl-callstmt x :args new-args)))
           (mv new-x pre post))
 
@@ -620,6 +724,11 @@ these are the only operators we're dealing with.</p>"
         ;; for now.
         (b* ((new-body (vl-stmt-increwrite-flat x.body))
              (new-x    (change-vl-forstmt x :body new-body)))
+          (mv new-x nil nil))
+
+        :vl-foreachstmt
+        (b* ((new-body (vl-stmt-increwrite-flat x.body))
+             (new-x    (change-vl-foreachstmt x :body new-body)))
           (mv new-x nil nil))
 
         :vl-blockstmt

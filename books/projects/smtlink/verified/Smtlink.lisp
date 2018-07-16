@@ -10,9 +10,10 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/basic/inductions" :dir :system)
 (include-book "std/basic/defs" :dir :system)
+(include-book "centaur/fty/baselists" :dir :system)
 
 (include-book "hint-interface")
-(include-book "verified-cps")
+(include-book "hint-please")
 (include-book "../config")
 
 (defsection Smtlink-process-user-hint
@@ -33,6 +34,7 @@
   ;;                                          :more-returns (((> r0 0) :hints (:use ((:instance more-lemma)))))))
   ;;                          :hypotheses (((> a b) :hints (:use ((:instance lemma)))))
   ;;                          :main-hint (:use ((:instance thm1)))
+  ;;                          :fty (...)
   ;;                          :int-to-rat nil
   ;;                          :smt-fname ""
   ;;                          :rm-file t
@@ -170,8 +172,10 @@
     :parents (argument-lst-syntax)
     :returns (valid-type? booleanp)
     :short "Types allowed in Smtlink."
-    (if (assoc-equal term *SMT-uninterpreted-types*)
-        t nil))
+    ;; (if (assoc-equal term *SMT-uninterpreted-types*)
+    ;;     t nil)
+    (symbolp term)
+    )
 
   (define argument-syntax-p ((term t))
     :parents (argument-lst-syntax)
@@ -314,6 +318,7 @@
 
   (defequiv true-set-equiv
     :hints (("Goal" :in-theory (enable true-set-equiv))))
+  (in-theory (disable (:type-prescription true-set-equiv)))
 
   (defsection function-option-name-lst
     :parents (function-syntax)
@@ -717,6 +722,7 @@
     '((:functions . function-lst-syntax-p)
       (:hypotheses . hypothesis-lst-syntax-p)
       (:main-hint . hints-syntax-p)
+      (:fty . symbol-listp)
       (:int-to-rat . booleanp)
       (:smt-fname . stringp)
       (:smt-dir . stringp)
@@ -824,6 +830,7 @@
       (function-lst-syntax-p (function-lst-syntax-p term))
       (hypothesis-lst-syntax-p (hypothesis-lst-syntax-p term))
       (hints-syntax-p (hints-syntax-p term))
+      (symbol-listp (symbol-listp term))
       (booleanp (booleanp term))
       (stringp (stringp term))
       (smt-solver-params-p (smt-solver-params-p term))
@@ -975,7 +982,10 @@
                                       (or (and (equal (cdr (assoc-equal (car term) *smtlink-options*)) 'function-lst-syntax-p)
                                                (function-lst-syntax-p (cadr term)))
                                           (and (equal (cdr (assoc-equal (car term) *smtlink-options*)) 'hypothesis-lst-syntax-p)
-                                               (hypothesis-lst-syntax-p (cadr term)))
+                                               (hypothesis-lst-syntax-p (cadr
+                                                                         term)))
+                                          (and (equal (cdr (assoc-equal (car term) *smtlink-options*)) 'symbol-listp)
+                                               (symbol-listp (cadr term)))
                                           (and (equal (cdr (assoc-equal (car term) *smtlink-options*)) 'hints-syntax-p)
                                                (hints-syntax-p (cadr term)))
                                           (and (equal (cdr (assoc-equal (car term) *smtlink-options*)) 'booleanp)
@@ -1007,6 +1017,8 @@
                                           (hypothesis-lst-syntax-p val))
                                  (implies (equal option-type 'hints-syntax-p)
                                           (hints-syntax-p val))
+                                 (implies (equal option-type 'symbol-listp)
+                                          (symbol-listp val))
                                  (implies (equal option-type 'booleanp)
                                           (booleanp val))
                                  (implies (equal option-type 'stringp)
@@ -1058,9 +1070,9 @@
 (defsection process-smtlink-hints
   :parents (Smtlink-process-user-hint)
 
-  (define make-merge-formals-helper ((content argument-lst-syntax-p) (smt-func func-p))
+  (define make-merge-formals-helper ((content argument-lst-syntax-p))
     :parents (process-smtlink-hints)
-    :returns (func func-p)
+    :returns (decls decl-listp)
     :short "Adding user defined formals to overwrite what's already in smt-func."
     :measure (len content)
     :hints (("Goal" :in-theory (enable argument-lst-syntax-fix)))
@@ -1071,17 +1083,13 @@
                                              smt-typep
                                              hints-syntax-p)))
     (b* ((content (argument-lst-syntax-fix content))
-         (smt-func (func-fix smt-func))
-         ((func f) smt-func)
-         ((unless (consp content)) smt-func)
+         ((unless (consp content)) nil)
          ((cons first rest) content)
          ((list* argname type & hints) first)
-         (new-formals (cons (make-decl :name argname
-                                       :type (make-hint-pair :thm type
-                                                             :hints hints))
-                            f.formals))
-         (new-func (change-func f :formals new-formals)))
-        (make-merge-formals-helper rest new-func)))
+         (new-formal (make-decl :name argname
+                                :type (make-hint-pair :thm type
+                                                      :hints hints))))
+        (cons new-formal (make-merge-formals-helper rest))))
 
   (define remove-duplicate-from-decl-list ((decls decl-listp) (seen symbol-listp))
     :parents (process-smtlink-hints)
@@ -1100,13 +1108,16 @@
     :parents (process-smtlink-hints)
     :returns (func func-p)
     :short "Adding user defined formals to overwrite what's already in smt-func."
-    (b* ((new-func (make-merge-formals-helper content smt-func))
-         ((func f) new-func))
-        (change-func f :formals (remove-duplicate-from-decl-list f.formals nil))))
+    (b* ((new-formals (make-merge-formals-helper content))
+         ((func f) smt-func)
+         (all-formals
+          (remove-duplicate-from-decl-list (append new-formals f.formals)
+                                           nil)))
+        (change-func f :formals all-formals)))
 
-  (define make-merge-returns-helper ((content argument-lst-syntax-p) (smt-func func-p))
+  (define make-merge-returns-helper ((content argument-lst-syntax-p))
     :parents (process-smtlink-hints)
-    :returns (func func-p)
+    :returns (decls decl-listp)
     :short "Adding user defined returns to overwrite what's already in smt-func."
     :measure (len content)
     :hints (("Goal" :in-theory (enable argument-lst-syntax-fix)))
@@ -1118,25 +1129,24 @@
                                              smt-typep
                                              )))
     (b* ((content (argument-lst-syntax-fix content))
-         (smt-func (func-fix smt-func))
-         ((func f) smt-func)
-         ((unless (consp content)) smt-func)
+         ((unless (consp content)) nil)
          ((cons first rest) content)
          ((cons argname (cons type (cons & hints))) first)
-         (new-returns (cons (make-decl :name argname
-                                       :type (make-hint-pair :thm type
-                                                             :hints (car hints)))
-                            f.returns))
-         (new-func (change-func f :returns new-returns)))
-        (make-merge-returns-helper rest new-func)))
+         (new-return (make-decl :name argname
+                                :type (make-hint-pair :thm type
+                                                      :hints (car hints)))))
+      (cons new-return (make-merge-returns-helper rest))))
 
   (define make-merge-returns ((content argument-lst-syntax-p) (smt-func func-p))
     :parents (process-smtlink-hints)
     :returns (func func-p)
     :short "Adding user defined returns to overwrite what's already in smt-func."
-    (b* ((new-func (make-merge-returns-helper content smt-func))
-         ((func f) new-func))
-        (change-func f :returns (remove-duplicate-from-decl-list f.returns nil))))
+    (b* ((new-return (make-merge-returns-helper content))
+         ((func f) smt-func)
+         (all-returns
+          (remove-duplicate-from-decl-list (append new-return f.returns)
+                                           nil)))
+        (change-func f :returns all-returns)))
 
   (define make-merge-guard ((content hypothesis-syntax-p) (smt-func func-p))
     :parents (process-smtlink-hints)
@@ -1278,6 +1288,15 @@
          (new-hint (change-smtlink-hint hint :main-hint content)))
         new-hint))
 
+  (define set-fty-types ((content symbol-listp)
+                         (hint smtlink-hint-p))
+    :parents (process-smtlink-hints)
+    :returns (new-hint smtlink-hint-p)
+    :short "set fty types"
+    (b* ((hint (smtlink-hint-fix hint))
+         (new-hint (change-smtlink-hint hint :fty content)))
+      new-hint))
+
   (define set-int-to-rat ((content booleanp)
                           (hint smtlink-hint-p))
     :parents (process-smtlink-hints)
@@ -1371,6 +1390,7 @@
                                                                     :fast-functions fast-funcs))))
                      (:hypotheses (merge-hypothesis second hint))
                      (:main-hint (merge-main-hint second hint))
+                     (:fty (set-fty-types second hint))
                      (:int-to-rat (set-int-to-rat second hint))
                      (:smt-fname (set-fname second hint))
                      (:smt-dir (set-smt-dir second hint))
@@ -1390,8 +1410,10 @@
                   (list cl)))
          (combined-hint (combine-hints user-hint (smt-hint)))
          ;; (- (cw "combined-hint: ~q0" combined-hint))
-         (cp-hint `(:clause-processor (Smt-verified-cp clause ',combined-hint)))
-         (subgoal-lst (cons `(hint-please ',cp-hint 'process-hint) cl)))
+         (next-cp (cdr (assoc-equal 'process-hint *SMT-architecture*)))
+         ((if (null next-cp)) (list cl))
+         (cp-hint `(:clause-processor (,next-cp clause ',combined-hint)))
+         (subgoal-lst (cons `(hint-please ',cp-hint) cl)))
         (list subgoal-lst)))
   )
 
@@ -1418,7 +1440,7 @@
                                (w state) (acl2::default-state-vars t)))
          ((when err)
           (er hard? 'Smtlink-process-user-hint->trans-hypothesis "Error ~
-    translating form: ~@0" (car val))))
+    translating form: ~q0" (car val))))
         `(,term ,@(cdr val))))
 
   (define trans-guard ((val t) (state))
@@ -1448,15 +1470,13 @@
                                (w state) (acl2::default-state-vars t)))
          ((when err)
           (er hard? 'Smtlink-process-user-hint->trans-argument "Error ~
-    translating form: ~@0" to-be-trans))
-         (- (cw "~q0" `(,name ,(car term)))))
+    translating form: ~@0" to-be-trans)))
         `(,name ,(car term))))
 
   (define trans-formals ((val t) (state))
     :parents (translate-cmp-smtlink)
     :mode :program
-    (b* ((- (cw "trans formals: ~q0" val))
-         ((unless (true-listp val)) val)
+    (b* (((unless (true-listp val)) val)
          ((unless (consp val)) val)
          ((cons first rest) val)
          (new-first (trans-argument first state)))
@@ -1483,11 +1503,9 @@
   (define trans-function ((val t) (state))
     :parents (translate-cmp-smtlink)
     :mode :program
-    (b* ((- (cw "val: ~q0" val))
-         ((unless (and (true-listp val) (consp val)))
+    (b* (((unless (and (true-listp val) (consp val)))
           val)
          ((list* first second rest) val)
-         (- (cw "first: ~q0, second: ~q1, rest: ~q2" first second rest))
          (new-second (trans-func-option first second state))
          (new-functions `(,first ,new-second ,@(trans-function rest state))))
         new-functions))
@@ -1495,8 +1513,7 @@
   (define trans-functions ((val t) (state))
     :parents (translate-cmp-smtlink)
     :mode :program
-    (b* ((- (cw "val: ~q0" val))
-         ((unless (true-listp val)) val)
+    (b* (((unless (true-listp val)) val)
          ((unless (consp val)) val)
          ((cons first rest) val)
          ((cons fname options) first)
@@ -1533,8 +1550,7 @@
          ((unless (cdr hint)) hint)
          ((list* first second rest) hint)
          (new-second (trans-hint-option first second state))
-         (new-hint `(,first ,new-second ,@(trans-hint rest state)))
-         (- (cw "I'm finished~%")))
+         (new-hint `(,first ,new-second ,@(trans-hint rest state))))
         new-hint))
   )
 
@@ -1548,7 +1564,7 @@
   :parents (Smtlink-process-user-hint)
 
   (defevaluator ev-process-hint ev-lst-process-hint
-    ((not x) (if x y z) (hint-please hint tag)))
+    ((not x) (if x y z) (hint-please hint)))
 
   (def-join-thms ev-process-hint)
 
