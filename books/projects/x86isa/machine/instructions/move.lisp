@@ -67,12 +67,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOV #x88 '(:nil nil)
-                                      'x86-mov-Op/En-MR)
-    (add-to-implemented-opcodes-table 'MOV #x89 '(:nil nil)
-                                      'x86-mov-Op/En-MR))
 
   :body
 
@@ -152,13 +146,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOV #x8A '(:nil nil)
-                                      'x86-mov-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MOV #x8B '(:nil nil)
-                                      'x86-mov-Op/En-RM))
   :body
 
   (b* ((ctx 'x86-mov-Op/En-RM)
@@ -228,13 +215,6 @@
   :guard-hints (("Goal" :in-theory (enable select-address-size
                                            rme-size
                                            rime-size)))
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOV #xA0 '(:nil nil)
-                                      'x86-mov-Op/En-FD)
-    (add-to-implemented-opcodes-table 'MOV #xA1 '(:nil nil)
-                                      'x86-mov-Op/En-FD))
   :body
 
   (b* ((ctx 'x86-mov-Op/En-FD)
@@ -329,41 +309,6 @@
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOV #xB0 '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xB1 '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xB2 '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xB3 '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xB4 '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xB5 '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xB6 '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xB7 '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xB8 '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xB9 '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xBA '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xBB '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xBC '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xBD '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xBE '(:nil nil)
-                                      'x86-mov-Op/En-OI)
-    (add-to-implemented-opcodes-table 'MOV #xBF '(:nil nil)
-                                      'x86-mov-Op/En-OI))
-
   :body
 
   (b* ((ctx 'x86-mov-Op/En-OI)
@@ -420,13 +365,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOV #xC6 '(:reg 0)
-                                      'x86-mov-Op/En-MI)
-    (add-to-implemented-opcodes-table 'MOV #xC7 '(:reg 0)
-                                      'x86-mov-Op/En-MI))
 
   :body
 
@@ -531,9 +469,6 @@
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
-  :implemented
-  (add-to-implemented-opcodes-table 'LEA #x8D '(:nil nil) 'x86-lea)
-
   :body
 
   (b* ((ctx 'x86-lea)
@@ -607,9 +542,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'MOVSXD #x63 '(:nil nil) 'x86-one-byte-movsxd)
-
   :body
 
   (b* ((ctx 'x86-one-byte-movsxd)
@@ -679,12 +611,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVSXD #x0FBE '(:nil nil)
-                                      'x86-two-byte-movsxd)
-    (add-to-implemented-opcodes-table 'MOVSXD #x0FBF '(:nil nil)
-                                      'x86-two-byte-movsxd))
   :body
 
   (b* ((ctx 'x86-two-byte-movsxd)
@@ -766,12 +692,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVZX #x0FB6 '(:nil nil)
-                                      'x86-movzx)
-    (add-to-implemented-opcodes-table 'MOVZX #x0FB7 '(:nil nil)
-                                      'x86-movzx))
   :body
 
   (b* ((ctx 'x86-movzx)
@@ -859,9 +779,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'MOV #x0F20 '(:nil nil)
-                                    'x86-mov-control-regs-Op/En-MR)
 
   :body
 

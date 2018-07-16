@@ -127,18 +127,7 @@
        (x86 (!xmmi-size operand-size xmm-index xmm/mem x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVSS #x0F10
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-movss/movsd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MOVSD #x0F10
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-movss/movsd-Op/En-RM)))
+    x86))
 
 (def-inst x86-movss/movsd-Op/En-MR
 
@@ -215,18 +204,7 @@
        ((when flg1)
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVSS #x0F11
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-movss/movsd-Op/En-MR)
-    (add-to-implemented-opcodes-table 'MOVSD #x0F11
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-movss/movsd-Op/En-MR)))
+    x86))
 
 (def-inst x86-movaps/movapd-Op/En-RM
 
@@ -295,17 +273,7 @@
        (x86 (!xmmi-size 16 xmm-index xmm/mem x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVAPS #x0F28
-                                      '(:nil nil)
-                                      'x86-movaps/movapd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MOVAPD #x0F28
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movaps/movapd-Op/En-RM)))
+    x86))
 
 (def-inst x86-movaps/movapd-Op/En-MR
 
@@ -378,17 +346,7 @@
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVAPS #x0F29
-                                      '(:nil nil)
-                                      'x86-movaps/movapd-Op/En-MR)
-    (add-to-implemented-opcodes-table 'MOVAPD #x0F29
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movaps/movapd-Op/En-MR)))
+    x86))
 
 (def-inst x86-movups/movupd/movdqu-Op/En-RM
 
@@ -466,21 +424,7 @@
        (x86 (!xmmi-size 16 xmm-index xmm/mem x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVUPS #x0F10
-                                      '(:nil nil)
-                                      'x86-movups/movupd/movdqu-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MOVUPD #x0F10
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movups/movupd/movdqu-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MOVDQU #x0F6F
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-movups/movupd/movdqu-Op/En-RM)))
+    x86))
 
 
 (def-inst x86-movups/movupd/movdqu-Op/En-MR
@@ -558,21 +502,7 @@
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVUPS #x0F11
-                                      '(:nil nil)
-                                      'x86-movups/movupd/movdqu-Op/En-MR)
-    (add-to-implemented-opcodes-table 'MOVUPD #x0F11
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movups/movupd/movdqu-Op/En-MR)
-    (add-to-implemented-opcodes-table 'MOVDQU #x0F7F
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-movups/movupd/movdqu-Op/En-MR)))
+    x86))
 
 
 (def-inst x86-movlps/movlpd-Op/En-RM
@@ -643,17 +573,7 @@
        (x86 (!xmmi-size 8 xmm-index mem x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVLPS #x0F12
-                                      '(:nil nil)
-                                      'x86-movlps/movlpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MOVLPD #x0F12
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movlps/movlpd-Op/En-RM)))
+    x86))
 
 
 (def-inst x86-movlps/movlpd-Op/En-MR
@@ -724,17 +644,7 @@
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVLPS #x0F13
-                                      '(:nil nil)
-                                      'x86-movlps/movlpd-Op/En-MR)
-    (add-to-implemented-opcodes-table 'MOVLPD #x0F13
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movlps/movlpd-Op/En-MR)))
+    x86))
 
 
 (def-inst x86-movhps/movhpd-Op/En-RM
@@ -806,17 +716,7 @@
        (result (merge-2-u64s mem low-qword))
        (x86 (!xmmi-size 16 xmm-index result x86))
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVHPS #x0F16
-                                      '(:nil nil)
-                                      'x86-movhps/movhpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MOVHPD #x0F16
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movhps/movhpd-Op/En-RM)))
+    x86))
 
 (def-inst x86-movhps/movhpd-Op/En-MR
 
@@ -894,16 +794,6 @@
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVLPS #x0F17
-                                      '(:nil nil)
-                                      'x86-movhps/movhpd-Op/En-MR)
-    (add-to-implemented-opcodes-table 'MOVLPD #x0F17
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movhps/movhpd-Op/En-MR)))
+    x86))
 
 ;; ======================================================================

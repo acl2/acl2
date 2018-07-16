@@ -99,9 +99,6 @@
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
-  :implemented
-  (add-to-implemented-opcodes-table 'CALL #xE8 '(:nil nil) 'x86-call-E8-Op/En-M)
-
   :body
 
   (b* ((ctx 'x86-call-E8-Op/En-M)
@@ -193,10 +190,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-
-  :implemented
-  (add-to-implemented-opcodes-table 'CALL #xFF '(:reg 2)
-                                    'x86-call-FF/2-Op/En-M)
 
   :body
 
@@ -343,11 +336,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'RET #xC2 '(:nil nil) 'x86-ret)
-    (add-to-implemented-opcodes-table 'RET #xC3 '(:nil nil) 'x86-ret))
-
   :body
 
   (b* ((ctx 'x86-ret)
@@ -463,9 +451,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-
-  :implemented
-  (add-to-implemented-opcodes-table 'LEAVE #xC9 '(:nil nil) 'x86-leave)
 
   :body
 

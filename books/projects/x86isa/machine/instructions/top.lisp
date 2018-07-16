@@ -150,9 +150,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'HLT #xF4 '(:nil nil) 'x86-hlt)
-
   :body
 
   (b* ((ctx 'x86-hlt)
@@ -187,19 +184,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CMC #xF5 '(:nil nil)
-                                      'x86-cmc/clc/stc/cld/std)
-    (add-to-implemented-opcodes-table 'CLC #xF8 '(:nil nil)
-                                      'x86-cmc/clc/stc/cld/std)
-    (add-to-implemented-opcodes-table 'STC #xF9 '(:nil nil)
-                                      'x86-cmc/clc/stc/cld/std)
-    (add-to-implemented-opcodes-table 'CLD #xFC '(:nil nil)
-                                      'x86-cmc/clc/stc/cld/std)
-    (add-to-implemented-opcodes-table 'STD #xFD '(:nil nil)
-                                      'x86-cmc/clc/stc/cld/std))
-
   :body
 
   (b* ((ctx 'x86-cmc/clc/stc/cld/std)
@@ -242,9 +226,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'SAHF #x9E '(:nil nil) 'x86-sahf)
-
   :body
 
   (b* ((ctx 'x86-sahf)
@@ -279,9 +260,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'LAHF #x9F '(:nil nil) 'x86-lahf)
-
   :body
 
   (b* ((ctx 'x86-lahf)
@@ -318,9 +296,6 @@ writes the final value of the instruction pointer into RIP.</p>")
                 :hints (("Goal" :in-theory (e/d (hw_rnd_gen
                                                  hw_rnd_gen-logic)
                                                 (force (force))))))
-  :implemented
-  (add-to-implemented-opcodes-table 'RDRAND #x0FC7 '(:reg 6 :mod 3)
-                                    'x86-rdrand)
 
   :long
   "<p>Note from the Intel Manual (March 2017, Vol. 1, Section 7.3.17):</p>

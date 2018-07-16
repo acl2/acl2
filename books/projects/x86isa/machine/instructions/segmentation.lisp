@@ -68,10 +68,6 @@
   <p><b>TO-DO:</b> If a memory address referencing the SS segment is in
   a non-canonical form, raise the SS exception.</p>"
 
-  :implemented
-  (add-to-implemented-opcodes-table 'LGDT #x0F01 '(:reg 2)
-                                    'x86-lgdt)
-
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
@@ -166,10 +162,6 @@
   <p><b>TO-DO:</b> If a memory address referencing the SS segment is in
   a non-canonical form, raise the SS exception.</p>"
 
-  :implemented
-  (add-to-implemented-opcodes-table 'LIDT #x0F01 '(:reg 3)
-                                    'x86-lidt)
-
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
@@ -255,9 +247,6 @@
                                          riml32
                                          ia32e-valid-ldt-segment-descriptor-p)
                                         ())))
-  :implemented
-  (add-to-implemented-opcodes-table 'LLDT #x0F00 '(:reg 2) 'x86-lldt)
-
   :long "<h3>Op/En = M: \[OP r/m16\]</h3>
   \[OP  M\]<br/>
   0F 00/2: LLDT r/m16<br/>

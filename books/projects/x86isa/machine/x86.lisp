@@ -61,6 +61,11 @@
   and the top-level run function"
   )
 
+(defsection implemented-opcodes
+  :parents (instructions x86-decoder)
+  :short "Opcodes supported by the x86 model"
+  )
+
 (local (xdoc::set-default-parents x86-decoder))
 
 ;; ----------------------------------------------------------------------
@@ -617,279 +622,651 @@
 
 ;; ----------------------------------------------------------------------
 
-(defsection opcode-dispatch-utilities
-  :short "Utilities to generate opcode dispatch functions from the annotated
-  opcode maps"
-  :parents (x86-decoder)
+;; Utilities to generate opcode dispatch functions from the annotated opcode
+;; maps:
 
-  (define replace-element (x y lst)
-    (if (atom lst)
-        lst
-      (if (equal (car lst) x)
-          (cons y (replace-element x y (cdr lst)))
-        (cons (car lst) (replace-element x y (cdr lst)))))
-    ///
-    (defthm true-listp-of-replace-element
-      (implies (true-listp lst)
-               (true-listp (replace-element x y lst)))))
+(local (include-book "std/strings/pretty" :dir :system))
 
-  (define replace-formals-with-arguments-aux ((bindings alistp)
-                                              (formals true-listp))
-    (if (endp bindings)
-        formals
-      (b* ((binding     (car bindings))
-           (formal      (car binding))
-           (argument    (cdr binding))
-           (new-formals (replace-element formal argument formals)))
-        (replace-formals-with-arguments-aux (cdr bindings) new-formals)))
-    ///
-    (defthm true-listp-of-replace-formals-with-arguments-aux
-      (implies (true-listp formals)
-               (true-listp (replace-formals-with-arguments-aux
-                            bindings formals)))))
+(local
+ (defconst *x86isa-printconfig*
+   (str::make-printconfig
+    :home-package (pkg-witness "X86ISA")
+    :print-lowercase t)))
 
-  (define replace-formals-with-arguments ((fn symbolp)
-                                          (bindings alistp)
-                                          (world plist-worldp))
+(local
+ (encapsulate
+   ()
 
-    (b* ((formals (acl2::formals fn world))
-         ((unless (true-listp formals)) nil)
-         (args    (replace-formals-with-arguments-aux bindings formals))
-         (call    (cons fn args)))
-      call)
-    ///
-    (defthm true-listp-of-replace-formals-with-arguments
-      (true-listp (replace-formals-with-arguments fn bindings world))))
+   (define get-string-name-of-basic-simple-cell ((cell basic-simple-cell-p))
+     :prepwork ((local (in-theory (e/d (basic-simple-cell-p) ()))))
+     (if (mbt (basic-simple-cell-p cell))
+         (string (first cell))
+       "")
+
+     ///
+
+     (defthm stringp-of-get-string-name-of-basic-simple-cell
+       (stringp (get-string-name-of-basic-simple-cell cell))))
+
+   (define insert-slash-in-list ((lst string-listp))
+     (if (or (equal (len lst) 1)
+             (endp lst))
+         lst
+       (cons (car lst)
+             (cons "/" (insert-slash-in-list (cdr lst)))))
+
+     ///
+
+     (defthm string-listp-of-insert-slash-in-list
+       (implies (string-listp lst)
+                (string-listp (insert-slash-in-list lst)))))
 
 
-  (define create-call-from-semantic-info ((info semantic-function-info-p)
-                                          (world plist-worldp))
-    :guard-hints (("Goal" :in-theory (e/d (semantic-function-info-p) ())))
+   (define get-string-name-of-simple-cell ((cell simple-cell-p))
+     :guard-hints (("Goal" :do-not-induct t))
+     :prepwork ((local (in-theory (e/d (simple-cell-p
+                                        basic-simple-cell-p
+                                        basic-simple-cells-p)
+                                       ()))))
+     (if (basic-simple-cell-p cell)
+         (get-string-name-of-basic-simple-cell cell)
+       (b* ((rest (rest cell))
+            (alt-opcodes (car rest))
+            ((unless (alistp alt-opcodes))
+             (er hard? 'get-string-name-of-simple-cell
+                 "~%Expected to be alist: ~p0~%"
+                 alt-opcodes))
+            (opcode-names (strip-cars alt-opcodes))
+            ((unless (string-listp opcode-names))
+             (er hard? 'get-string-name-of-simple-cell
+                 "~%Expected to be string-listp: ~p0~%"
+                 opcode-names)))
+         (str::fast-string-append-lst (insert-slash-in-list opcode-names))))
 
-    ;; (create-call-from-semantic-info
-    ;;  '(:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-    ;;           (operation . #.*OP-ADD*)))
-    ;;  (w state))
-    (if (equal info nil)
-        (replace-formals-with-arguments
-         'x86-step-unimplemented
-         '((message . "Opcode Unimplemented in x86isa!"))
-         world)
-      (b* ((rest (cdr info)))
-        (if (equal (car rest) :no-instruction)
+     ///
+
+     (defthm maybe-stringp-of-get-string-name-of-simple-cell
+       (acl2::maybe-stringp (get-string-name-of-simple-cell cell))))
+
+   (define replace-element (x y lst)
+     (if (atom lst)
+         lst
+       (if (equal (car lst) x)
+           (cons y (replace-element x y (cdr lst)))
+         (cons (car lst) (replace-element x y (cdr lst)))))
+     ///
+     (defthm true-listp-of-replace-element
+       (implies (true-listp lst)
+                (true-listp (replace-element x y lst)))))
+
+   (define replace-formals-with-arguments-aux ((bindings alistp)
+                                               (formals true-listp))
+     (if (endp bindings)
+         formals
+       (b* ((binding     (car bindings))
+            (formal      (car binding))
+            (argument    (cdr binding))
+            (new-formals (replace-element formal argument formals)))
+         (replace-formals-with-arguments-aux (cdr bindings) new-formals)))
+     ///
+     (defthm true-listp-of-replace-formals-with-arguments-aux
+       (implies (true-listp formals)
+                (true-listp (replace-formals-with-arguments-aux
+                             bindings formals)))))
+
+   (define replace-formals-with-arguments ((fn symbolp)
+                                           (bindings alistp)
+                                           (world plist-worldp))
+
+     (b* ((formals (acl2::formals fn world))
+          ((unless (true-listp formals)) nil)
+          (args    (replace-formals-with-arguments-aux bindings formals))
+          (call    (cons fn args)))
+       call)
+     ///
+     (defthm true-listp-of-replace-formals-with-arguments
+       (true-listp (replace-formals-with-arguments fn bindings world))))
+
+   (define create-call-from-semantic-info ((info semantic-function-info-p)
+                                           (world plist-worldp))
+     :guard-hints (("Goal" :in-theory (e/d (semantic-function-info-p) ())))
+
+     ;; (create-call-from-semantic-info
+     ;;  '(:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+     ;;           (operation . #.*OP-ADD*)))
+     ;;  (w state))
+     (if (equal info nil)
+         (mv "Unimplemented"
+             (replace-formals-with-arguments
+              'x86-step-unimplemented
+              '((message . "Opcode Unimplemented in x86isa!"))
+              world))
+       (b* ((rest (cdr info)))
+         (if (equal (car rest) :no-instruction)
+             (mv
+              "Reserved"
+              (replace-formals-with-arguments
+               'x86-illegal-instruction
+               '((message . "Reserved Opcode!"))
+               world))
+           (mv
+            (concatenate
+             'string
+             "@(tsee "
+             (str::pretty (car rest) :config *x86isa-printconfig*)
+             ")"
+             (if (cdr rest)
+                 (concatenate
+                  'string " -- <br/> "
+                  (str::pretty (cdr rest) :config *x86isa-printconfig*))
+               ""))
             (replace-formals-with-arguments
-             'x86-illegal-instruction
-             '((message . "Reserved or Illegal Opcode!"))
-             world)
-          (replace-formals-with-arguments
-           (car rest) (cdr rest) world))))
-    ///
-    (defthm true-listp-of-create-call-from-semantic-info
-      (true-listp (create-call-from-semantic-info info world))))
+             (car rest) (cdr rest) world)))))
+     ///
 
-  (define create-dispatch-from-no-extensions-simple-cell
-    ((cell simple-cell-p)
-     (world plist-worldp))
-    (b* (((when (member-equal (car cell) *group-numbers*))
-          (er hard? 'create-dispatch-from-no-extensions-simple-cell
-              "~%We don't expect groups here: ~p0~%"
-              cell))
-         (rest (cdr cell))
-         (semantic-info (get-semantic-function-info-p rest)))
-      (create-call-from-semantic-info semantic-info world))
+     (defthm stringp-of-mv-nth-0-create-call-from-semantic-info
+       (stringp
+        (mv-nth 0 (create-call-from-semantic-info info world))))
 
-    ///
+     (defthm true-listp-of-mv-nth-1-create-call-from-semantic-info
+       (true-listp
+        (mv-nth 1 (create-call-from-semantic-info info world)))))
 
-    (defthm true-listp-of-create-dispatch-from-no-extensions-simple-cell
-      (true-listp (create-dispatch-from-no-extensions-simple-cell cell world))))
+   (define create-dispatch-from-no-extensions-simple-cell
+     ((cell simple-cell-p)
+      (world plist-worldp))
+     (b* (((when (member-equal (car cell) *group-numbers*))
+           (mv ""
+               (er hard? 'create-dispatch-from-no-extensions-simple-cell
+                   "~%We don't expect groups here: ~p0~%"
+                   cell)))
+          (rest (cdr cell))
+          (semantic-info (get-semantic-function-info-p rest)))
+       (create-call-from-semantic-info semantic-info world))
 
-  (define create-case-dispatch-for-opcode-extensions-aux
-    ((opcode natp)
-     (desc-list opcode-descriptor-list-p)
-     (world plist-worldp))
+     ///
 
-    :guard-hints (("Goal"
-                   :in-theory (e/d (opcode-descriptor-list-p
-                                    opcode-descriptor-p)
-                                   ())
-                   :do-not-induct t))
+     (defthm stringp-of-mv-nth-1-create-dispatch-from-no-extensions-simple-cell
+       (stringp
+        (mv-nth 0 (create-dispatch-from-no-extensions-simple-cell cell world))))
 
-    (if (endp desc-list)
-        `((t
-           ,(create-call-from-semantic-info '(:fn . (:no-instruction)) world)))
-      (b* ((opcode-descriptor (car desc-list))
-           (opcode-identifier (car opcode-descriptor))
-           ((unless (equal (cdr (assoc-equal :opcode opcode-identifier))
-                           opcode))
-            (create-case-dispatch-for-opcode-extensions-aux
-             opcode (cdr desc-list) world))
-           (opcode-cell (cdr opcode-descriptor))
-           (reg (cdr (assoc-equal :reg opcode-identifier)))
-           (prefix (cdr (assoc-equal :prefix opcode-identifier)))
-           (mod (cdr (assoc-equal :mod opcode-identifier)))
-           (r/m (cdr (assoc-equal :r/m opcode-identifier)))
-           ;; (i64 (cdr (assoc-equal :i64 opcode-identifier)))
-           ;; (o64 (cdr (assoc-equal :o64 opcode-identifier)))
-           (condition
-            `(and ,@(and reg
-                         `((equal (mrm-reg modr/m) ,reg)))
-                  ,@(and mod
-                         (if (equal mod :mem)
-                             `((not (equal (mrm-mod modr/m) #b11)))
-                           `((equal (mrm-mod modr/m) #b11))))
-                  ,@(and r/m
-                         `((equal (mrm-r/m modr/m) ,r/m)))
-                  ,@(and prefix
-                         `((equal mandatory-prefix ,prefix)))
-                  ;; ,@(and i64
-                  ;;        `((not (64-bit-modep x86))))
-                  ;; ,@(and o64
-                  ;;        `((64-bit-modep x86)))
-                  ))
-           (cell-dispatch
-            `(,condition
-              ,(create-dispatch-from-no-extensions-simple-cell
-                opcode-cell world))))
-        (cons cell-dispatch
-              (create-case-dispatch-for-opcode-extensions-aux
-               opcode (cdr desc-list) world)))))
+     (defthm true-listp-of-mv-nth-1-create-dispatch-from-no-extensions-simple-cell
+       (true-listp
+        (mv-nth 1 (create-dispatch-from-no-extensions-simple-cell cell world)))))
 
-  (define create-case-dispatch-for-opcode-extensions
-    ((opcode natp)
-     (desc-list opcode-descriptor-list-p)
-     (world plist-worldp))
+   (define create-case-dispatch-for-opcode-extensions-aux
+     ((opcode natp)
+      (desc-list opcode-descriptor-list-p)
+      (world plist-worldp)
+      &key
+      ((escape-bytes natp) '0))
 
-    (b* ((dispatch
-          (create-case-dispatch-for-opcode-extensions-aux
-           opcode desc-list world)))
-      `(cond ,@dispatch)))
+     :verify-guards nil
+     :guard-hints (("Goal"
+                    :in-theory (e/d (opcode-descriptor-list-p
+                                     opcode-descriptor-p)
+                                    ())
+                    :do-not-induct t))
 
-  (define create-dispatch-from-simple-cell
-    ((start-opcode natp)
-     (cell simple-cell-p)
-     (world plist-worldp))
-    (cond
-     ((and (basic-simple-cell-p cell)
-           (member-equal (car cell) *group-numbers*))
-      (create-case-dispatch-for-opcode-extensions
-       start-opcode
-       ;; desc-list
-       (cdr (assoc-equal
-             (car cell)
-             *opcode-extensions-by-group-number*))
-       world))
-     ((and (basic-simple-cell-p cell)
-           (or (stringp (car cell))
-               (member-equal (car cell)
-                             *simple-cells-standalone-legal-keywords*)))
-      (create-dispatch-from-no-extensions-simple-cell cell world))
-     ((and (simple-cell-p cell)
-           (equal (car cell) ':ALT))
-      (b* ((semantic-info (get-semantic-function-info-p (cdr cell))))
-        (create-call-from-semantic-info semantic-info world)))
-     (t
-      '(nil))))
+     (if (endp desc-list)
 
-  (define create-dispatch-from-compound-cell
-    ((start-opcode natp)
-     (cell compound-cell-p)
-     (world plist-worldp))
+         (b* (((mv & dispatch)
+               ;; This is a catch-all case --- so we ignore the doc here.
+               (create-call-from-semantic-info '(:fn . (:no-instruction)) world)))
+           (mv ""
+               `((t ,dispatch))))
 
-    (b* ((keys (strip-cars cell))
-         ((unless (subsetp-equal keys *compound-cells-legal-keys*))
-          (cw "~%cell: ~p0~%" cell)
-          '(nil))
-         (o64 (cdr (assoc-equal :o64 cell)))
-         (i64 (cdr (assoc-equal :i64 cell)))
-         (no-prefix (cdr (assoc-equal :no-prefix cell)))
-         (66-prefix (cdr (assoc-equal :66 cell)))
-         (F3-prefix (cdr (assoc-equal :F3 cell)))
-         (F2-prefix (cdr (assoc-equal :F2 cell)))
-         ((unless (and (or (not o64) (simple-cell-p o64))
-                       (or (not i64) (simple-cell-p i64))
-                       (or (not no-prefix) (simple-cell-p no-prefix))
-                       (or (not 66-prefix) (simple-cell-p 66-prefix))
-                       (or (not F3-prefix) (simple-cell-p F3-prefix))
-                       (or (not F2-prefix) (simple-cell-p F2-prefix))))
-          '(nil))
-         (dispatch
-          `(,@(and o64
-                   `(((64-bit-modep x86)
-                      ,(create-dispatch-from-simple-cell
-                        start-opcode o64 world))))
-            ,@(and i64
-                   `(((not (64-bit-modep x86))
-                      ,(create-dispatch-from-simple-cell
-                        start-opcode i64 world))))
-            ,@(and 66-prefix
-                   `(((equal mandatory-prefix #.*mandatory-66h*)
-                      ,(create-dispatch-from-simple-cell
-                        start-opcode 66-prefix world))))
-            ,@(and F2-prefix
-                   `(((equal mandatory-prefix #.*mandatory-F2h*)
-                      ,(create-dispatch-from-simple-cell
-                        start-opcode F2-prefix world))))
-            ,@(and F3-prefix
-                   `(((equal mandatory-prefix #.*mandatory-F3h*)
-                      ,(create-dispatch-from-simple-cell
-                        start-opcode F3-prefix world))))
-            ,@(and no-prefix
-                   `(((and
-                       (not (equal mandatory-prefix #.*mandatory-66h*))
-                       (not (equal mandatory-prefix #.*mandatory-F2h*))
-                       (not (equal mandatory-prefix #.*mandatory-F3h*)))
-                      ,(create-dispatch-from-simple-cell
-                        start-opcode no-prefix world))))
+       (b* ((opcode-descriptor (car desc-list))
+            (opcode-identifier (car opcode-descriptor))
+            ((unless (equal (cdr (assoc-equal :opcode opcode-identifier))
+                            (+ escape-bytes opcode)))
+             (create-case-dispatch-for-opcode-extensions-aux
+              opcode (cdr desc-list) world :escape-bytes escape-bytes))
+            (opcode-cell (cdr opcode-descriptor))
+            (vex (cdr (assoc-equal :vex opcode-identifier)))
+            (reg (cdr (assoc-equal :reg opcode-identifier)))
+            (prefix (cdr (assoc-equal :prefix opcode-identifier)))
+            (mod (cdr (assoc-equal :mod opcode-identifier)))
+            (r/m (cdr (assoc-equal :r/m opcode-identifier)))
+            (condition
+             `(and
+               ;; TODO: Check for VEX here.
+               ,@(and reg
+                      `((equal (mrm-reg modr/m) ,reg)))
+               ,@(and mod
+                      (if (equal mod :mem)
+                          `((not (equal (mrm-mod modr/m) #b11)))
+                        `((equal (mrm-mod modr/m) #b11))))
+               ,@(and r/m
+                      `((equal (mrm-r/m modr/m) ,r/m)))
+               ,@(and prefix
+                      `((equal mandatory-prefix ,prefix)))))
+            ((mv doc-string dispatch)
+             (create-dispatch-from-no-extensions-simple-cell
+              opcode-cell world))
+            (this-doc-string
+             (if (or vex prefix reg mod r/m)
+                 (concatenate 'string
+                              " <td> @('"
+                              (str::pretty
+                               `(,@(and vex    `((:VEX ,vex)))
+                                 ,@(and prefix `((:PFX ,prefix)))
+                                 ,@(and reg    `((:REG ,reg)))
+                                 ,@(and mod    `((:MOD ,mod)))
+                                 ,@(and r/m    `((:R/M ,r/m))))
+                               :config *x86isa-printconfig*)
+                              ;; (str::pretty (cdr condition) ;; remove the 'and
+                              ;;              :config *x86isa-printconfig*)
+                              "') </td> <td> "
+                              doc-string
+                              " </td> ")
+               (concatenate 'string
+                            " <td> "
+                            doc-string
+                            " </td> ")))
+            (string-name-of-simple-cell
+             (get-string-name-of-simple-cell opcode-cell))
+            (this-doc-string
+             (if string-name-of-simple-cell
+                 (concatenate
+                  'string
+                  " <tr> <td> "
+                  string-name-of-simple-cell
+                  " </td> "
+                  this-doc-string
+                  " </tr> ")
+               this-doc-string))
+            (cell-dispatch
+             `(,condition ,dispatch))
+
+            ((mv final-doc-string cells-dispatch)
+             (create-case-dispatch-for-opcode-extensions-aux
+              opcode (cdr desc-list) world :escape-bytes escape-bytes)))
+         (mv (concatenate 'string this-doc-string final-doc-string)
+             (cons cell-dispatch cells-dispatch))))
+
+     ///
+
+     (defthm stringp-of-mv-nth-0-create-case-dispatch-for-opcode-extensions-aux
+       (stringp
+        (mv-nth 0
+                (create-case-dispatch-for-opcode-extensions-aux
+                 opcode desc-list world :escape-bytes escape-bytes))))
+
+     (verify-guards create-case-dispatch-for-opcode-extensions-aux-fn
+       :hints (("Goal" :in-theory (e/d (opcode-descriptor-list-p
+                                        opcode-descriptor-p)
+                                       ())))))
+
+   (define create-case-dispatch-for-opcode-extensions
+     ((opcode natp)
+      (desc-list opcode-descriptor-list-p)
+      (world plist-worldp)
+      &key
+      ((escape-bytes natp) '0))
+
+     (b* (((mv doc-string dispatch)
+           (create-case-dispatch-for-opcode-extensions-aux
+            opcode desc-list world :escape-bytes escape-bytes))
+          (doc-string (concatenate 'string
+                                   " <td> <table> "
+                                   doc-string
+                                   " </table> </td> ")))
+       (mv doc-string `(cond ,@dispatch)))
+
+     ///
+
+     (defthm stringp-of-mv-nth-0-create-case-dispatch-for-opcode-extensions
+       (stringp
+        (mv-nth 0
+                (create-case-dispatch-for-opcode-extensions
+                 opcode desc-list world :escape-bytes escape-bytes)))))
+
+   (define create-dispatch-from-simple-cell
+     ((start-opcode natp)
+      (cell simple-cell-p)
+      (world plist-worldp)
+      &key
+      ((escape-bytes natp) '0))
+
+     ;; (create-dispatch-from-simple-cell
+     ;;  0 (caar *one-byte-opcode-map-lst*) (w state))
+     ;; (create-dispatch-from-simple-cell
+     ;;  #x80 (car (nth 8 *one-byte-opcode-map-lst*)) (w state))
+
+     (b* (((mv doc-string dispatch)
+           (cond
+            ((and (basic-simple-cell-p cell)
+                  (member-equal (car cell) *group-numbers*))
+             (b* (((mv doc-string dispatch)
+                   (create-case-dispatch-for-opcode-extensions
+                    start-opcode
+                    (cdr (assoc-equal
+                          (car cell)
+                          *opcode-extensions-by-group-number*))
+                    world
+                    :escape-bytes escape-bytes)))
+               (mv doc-string dispatch)))
+            ((or
+              (and (basic-simple-cell-p cell)
+                   (or (stringp (car cell))
+                       (member-equal (car cell)
+                                     *simple-cells-standalone-legal-keywords*)))
+              (equal (car cell) ':ALT))
+             (b* (((mv doc-string dispatch)
+                   (create-dispatch-from-no-extensions-simple-cell cell world))
+                  (doc-string (concatenate 'string " <td> " doc-string " </td>")))
+               (mv doc-string dispatch)))
             (t
-             ,(create-call-from-semantic-info
-               '(:fn . (:no-instruction)) world)))))
-      `(cond ,@dispatch)))
+             (mv "" '(nil)))))
+          (string-name-of-simple-cell
+           (get-string-name-of-simple-cell cell))
+          (doc-string
+           (concatenate 'string
+                        " <td> " (or string-name-of-simple-cell "") " </td> "
+                        doc-string)))
+       (mv doc-string dispatch))
 
-  (define create-dispatch-from-opcode-row ((start-opcode natp)
-                                           (row opcode-row-p)
-                                           (world plist-worldp))
-    :measure (len row)
-    :guard-hints (("Goal" :do-not-induct t))
 
-    (if (endp row)
-        nil
-      (b* ((cell (car row))
-           (cell-dispatch
-            (if (simple-cell-p cell)
-                (create-dispatch-from-simple-cell start-opcode cell world)
-              (if (compound-cell-p cell)
-                  (create-dispatch-from-compound-cell start-opcode cell world)
-                '(nil))))
-           ((when (equal cell-dispatch '(nil)))
-            (er hard? 'create-dispatch-from-opcode-row
-                "~%Something went wrong for this cell: ~p0~%"
-                cell)))
-        (cons
-         (cons start-opcode (list cell-dispatch))
-         (create-dispatch-from-opcode-row (1+ start-opcode) (cdr row) world))))
+     ///
 
-    ///
+     (defthm stringp-mv-nth-0-create-dispatch-from-simple-cell
+       (stringp
+        (mv-nth 0
+                (create-dispatch-from-simple-cell
+                 start-opcode cell world :escape-bytes escape-bytes)))))
 
-    (defthm true-listp-of-create-dispatch-from-opcode-row
-      (true-listp (create-dispatch-from-opcode-row start-opcode row world))))
+   (define create-dispatch-from-compound-cell
+     ((start-opcode natp)
+      (cell compound-cell-p)
+      (world plist-worldp)
+      &key
+      ((escape-bytes natp) '0))
 
-  (define create-dispatch-from-opcode-map ((start-opcode natp)
-                                           (map opcode-map-p)
-                                           (world plist-worldp))
-    :guard-hints (("Goal" :in-theory (e/d (opcode-map-p) ())))
+     :guard-hints (("Goal" :in-theory (e/d ()
+                                           ((str::pretty-fn)
+                                            string-append
+                                            str::fast-string-append-lst
+                                            (tau-system)))))
 
-    (if (endp map)
-        `((t
-           ,(create-call-from-semantic-info '(:fn . (:no-instruction)) world)))
-      (b* ((row (car map))
-           (row-dispatch
-            (create-dispatch-from-opcode-row start-opcode row world)))
-        (append
-         row-dispatch
-         (create-dispatch-from-opcode-map (+ 16 start-opcode) (cdr map) world))))
-    ///
-    (defthm true-listp-of-create-dispatch-from-opcode-map
-      (true-listp (create-dispatch-from-opcode-map start-opcode map world)))))
+     ;; (create-dispatch-from-compound-cell
+     ;;  #x10
+     ;;  (nth 0 (nth 1 *two-byte-opcode-map-lst*))
+     ;;  (w state))
+
+     (b* ((keys (strip-cars cell))
+          ((unless (subsetp-equal keys *compound-cells-legal-keys*))
+           (cw "~%cell: ~p0~%" cell)
+           (mv "" '(nil)))
+          (o64 (cdr (assoc-equal :o64 cell)))
+          (i64 (cdr (assoc-equal :i64 cell)))
+          (no-prefix (cdr (assoc-equal :no-prefix cell)))
+          (66-prefix (cdr (assoc-equal :66 cell)))
+          (F3-prefix (cdr (assoc-equal :F3 cell)))
+          (F2-prefix (cdr (assoc-equal :F2 cell)))
+          ((unless (and (or (not o64) (simple-cell-p o64))
+                        (or (not i64) (simple-cell-p i64))
+                        (or (not no-prefix) (simple-cell-p no-prefix))
+                        (or (not 66-prefix) (simple-cell-p 66-prefix))
+                        (or (not F3-prefix) (simple-cell-p F3-prefix))
+                        (or (not F2-prefix) (simple-cell-p F2-prefix))))
+           (mv "" '(nil)))
+          ((mv o64-doc o64-dispatch)
+           (if o64
+               (create-dispatch-from-simple-cell
+                start-opcode o64 world :escape-bytes escape-bytes)
+             (mv "" '(nil))))
+          ((mv i64-doc i64-dispatch)
+           (if i64
+               (create-dispatch-from-simple-cell
+                start-opcode i64 world :escape-bytes escape-bytes)
+             (mv "" '(nil))))
+          ((mv 66-prefix-doc 66-prefix-dispatch)
+           (if 66-prefix
+               (create-dispatch-from-simple-cell
+                start-opcode 66-prefix world :escape-bytes escape-bytes)
+             (mv "" '(nil))))
+          ((mv F2-prefix-doc F2-prefix-dispatch)
+           (if F2-prefix
+               (create-dispatch-from-simple-cell
+                start-opcode F2-prefix world :escape-bytes escape-bytes)
+             (mv "" '(nil))))
+          ((mv F3-prefix-doc F3-prefix-dispatch)
+           (if F3-prefix
+               (create-dispatch-from-simple-cell
+                start-opcode F3-prefix world :escape-bytes escape-bytes)
+             (mv "" '(nil))))
+          ((mv no-prefix-doc no-prefix-dispatch)
+           (if no-prefix
+               (create-dispatch-from-simple-cell
+                start-opcode no-prefix world :escape-bytes escape-bytes)
+             (mv "" '(nil))))
+          (doc-string
+           (str::fast-string-append-lst
+            (if
+                (and (not o64)
+                     (not i64)
+                     (not 66-prefix)
+                     (not F2-prefix)
+                     (not F3-prefix)
+                     (not no-prefix))
+
+                nil
+
+              (list
+               " <td> <table> "
+               (if o64
+                   (concatenate
+                    'string
+                    " <tr> <td> @(':o64') </td> " o64-doc " </tr>")
+                 "")
+               (if i64
+                   (concatenate
+                    'string
+                    " <tr> <td> @(':i64') </td> " i64-doc " </tr>")
+                 "")
+               (if 66-prefix
+                   (concatenate
+                    'string
+                    " <tr> <td> @(':66') </td> " 66-prefix-doc " </tr>")
+                 "")
+               (if F2-prefix
+                   (concatenate
+                    'string
+                    " <tr> <td> @(':F2') </td> " F2-prefix-doc " </tr>")
+                 "")
+               (if F3-prefix
+                   (concatenate
+                    'string
+                    " <tr> <td> @(':F3') </td> " F3-prefix-doc " </tr>")
+                 "")
+               (if no-prefix
+                   (concatenate
+                    'string
+                    " <tr> <td> @('No-Pfx') </td> " no-prefix-doc " </tr>")
+                 "")
+
+               " </table> </td> "))))
+          (dispatch
+           `(,@(and o64
+                    `(((64-bit-modep x86)
+                       ,o64-dispatch)))
+             ,@(and i64
+                    `(((not (64-bit-modep x86))
+                       ,i64-dispatch)))
+             ,@(and 66-prefix
+                    `(((equal mandatory-prefix #.*mandatory-66h*)
+                       ,66-prefix-dispatch)))
+             ,@(and F2-prefix
+                    `(((equal mandatory-prefix #.*mandatory-F2h*)
+                       ,F2-prefix-dispatch)))
+             ,@(and F3-prefix
+                    `(((equal mandatory-prefix #.*mandatory-F3h*)
+                       ,F3-prefix-dispatch)))
+             ,@(and no-prefix
+                    `(((and
+                        (not (equal mandatory-prefix #.*mandatory-66h*))
+                        (not (equal mandatory-prefix #.*mandatory-F2h*))
+                        (not (equal mandatory-prefix #.*mandatory-F3h*)))
+                       ,no-prefix-dispatch)))
+             (t
+              ;; Catch-all case:
+              ;; ,(create-call-from-semantic-info
+              ;;   '(:fn . (:no-instruction)) world)
+              (x86-illegal-instruction
+               "Reserved or Illegal Opcode!" x86)))))
+       (mv doc-string `(cond ,@dispatch)))
+
+     ///
+
+     (defthm stringp-mv-nth-0-create-dispatch-from-compound-cell
+       (stringp
+        (mv-nth 0
+                (create-dispatch-from-compound-cell
+                 start-opcode cell world :escape-bytes escape-bytes)))
+       :hints (("Goal" :do-not '(preprocess)
+                :in-theory (e/d ()
+                                ((str::pretty-fn)
+                                 str::fast-string-append-lst
+                                 string-append))))))
+
+   (define create-dispatch-from-opcode-cell
+     ((start-opcode natp)
+      (cell opcode-cell-p)
+      (world plist-worldp)
+      &key
+      ((escape-bytes natp) '0))
+
+     (b* (((mv doc-string cell-dispatch)
+           (if (simple-cell-p cell)
+               (create-dispatch-from-simple-cell
+                start-opcode cell world :escape-bytes escape-bytes)
+             (if (compound-cell-p cell)
+                 (create-dispatch-from-compound-cell
+                  start-opcode cell world :escape-bytes escape-bytes)
+               (mv "" '(nil)))))
+          (doc-string
+           (concatenate 'string
+                        " <tr> <td> "
+                        (str::hexify start-opcode)
+                        " </td> " doc-string " </tr> "))
+          (dispatch
+           (cons start-opcode (list cell-dispatch))))
+       (mv doc-string dispatch))
+
+     ///
+
+     (defthm stringp-mv-nth-0-create-dispatch-from-opcode-cell
+       (stringp
+        (mv-nth 0
+                (create-dispatch-from-opcode-cell
+                 start-opcode cell world :escape-bytes escape-bytes)))))
+
+   (define create-dispatch-from-opcode-row ((start-opcode natp)
+                                            (row opcode-row-p)
+                                            (world plist-worldp)
+                                            &key
+                                            ((escape-bytes natp) '0))
+     :measure (len row)
+
+     (if (endp row)
+         (mv "" nil)
+       (b* ((cell (car row))
+            ((mv doc-string cell-dispatch)
+             (create-dispatch-from-opcode-cell
+              start-opcode cell world :escape-bytes escape-bytes))
+            ((when (equal cell-dispatch '(nil)))
+             (mv
+              ""
+              (er hard? 'create-dispatch-from-opcode-row
+                  "~%Something went wrong for this cell: ~p0~%"
+                  cell)))
+            ((mv rest-doc-string rest-cell-dispatch)
+             (create-dispatch-from-opcode-row
+              (1+ start-opcode) (cdr row) world :escape-bytes escape-bytes)))
+         (mv
+          (concatenate 'string doc-string rest-doc-string)
+          (cons cell-dispatch rest-cell-dispatch))))
+
+     ///
+
+     (defthm stringp-of-mv-nth-0-create-dispatch-from-opcode-row
+       (stringp
+        (mv-nth 0
+                (create-dispatch-from-opcode-row
+                 start-opcode row world :escape-bytes escape-bytes))))
+
+     (defthm true-listp-of-mv-nth-1-create-dispatch-from-opcode-row
+       (true-listp
+        (mv-nth 1
+                (create-dispatch-from-opcode-row
+                 start-opcode row world :escape-bytes escape-bytes)))))
+
+   (define create-dispatch-from-opcode-map-aux ((start-opcode natp)
+                                                (map opcode-map-p)
+                                                (world plist-worldp)
+                                                &key
+                                                ((escape-bytes natp) '0))
+     :verify-guards nil
+
+     (if (endp map)
+         (mv
+          ""
+          `((t
+             ;; Catch-all case:
+             ;; ,(create-call-from-semantic-info
+             ;;   '(:fn . (:no-instruction)) world)
+             (x86-illegal-instruction
+              "Reserved or Illegal Opcode!" x86))))
+       (b* ((row (car map))
+            ((mv row-doc-string row-dispatch)
+             (create-dispatch-from-opcode-row
+              start-opcode row world :escape-bytes escape-bytes))
+            ((mv rest-doc-string rest-dispatch)
+             (create-dispatch-from-opcode-map-aux
+              (+ 16 start-opcode) (cdr map) world :escape-bytes escape-bytes)))
+         (mv (concatenate 'string row-doc-string rest-doc-string)
+             (append row-dispatch rest-dispatch))))
+     ///
+
+     (defthm stringp-of-mv-nth-0-create-dispatch-from-opcode-map-aux
+       (stringp
+        (mv-nth 0
+                (create-dispatch-from-opcode-map-aux
+                 start-opcode row world :escape-bytes escape-bytes))))
+
+     (defthm true-listp-of-mv-nth-1-create-dispatch-from-opcode-map-aux
+       (true-listp
+        (mv-nth 1 (create-dispatch-from-opcode-map-aux
+                   start-opcode map world :escape-bytes escape-bytes))))
+
+     (verify-guards create-dispatch-from-opcode-map-aux-fn
+       :hints (("Goal" :in-theory (e/d (opcode-map-p) ())))))
+
+   (define create-dispatch-from-opcode-map ((map opcode-map-p)
+                                            (world plist-worldp)
+                                            &key
+                                            ((escape-bytes natp) '0))
+
+     (b* (((mv doc-string dispatch)
+           (create-dispatch-from-opcode-map-aux
+            0 map world :escape-bytes escape-bytes)))
+
+       (mv (concatenate 'string "<table> " doc-string " </table>")
+           dispatch))
+
+     ///
+
+     (defthm stringp-of-mv-nth-0-create-dispatch-from-opcode-map
+       (stringp
+        (mv-nth 0
+                (create-dispatch-from-opcode-map
+                 row world :escape-bytes escape-bytes))))
+
+     (defthm true-listp-of-mv-nth-1-create-dispatch-from-opcode-map
+       (true-listp
+        (mv-nth 1 (create-dispatch-from-opcode-map
+                   map world :escape-bytes escape-bytes)))))))
 
 ;; ----------------------------------------------------------------------
 
@@ -898,92 +1275,112 @@
 (set-rewrite-stack-limit (+ 500 acl2::*default-rewrite-stack-limit*))
 
 (make-event
- `(define first-three-byte-opcode-execute
-    ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
-     (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
-     (prefixes         :type (unsigned-byte 52))
-     (mandatory-prefix :type (unsigned-byte 8))
-     (rex-byte         :type (unsigned-byte 8))
-     (opcode           :type (unsigned-byte 8))
-     (modr/m           :type (unsigned-byte 8))
-     (sib              :type (unsigned-byte 8))
-     x86)
+ (b* (((mv table-doc-string dispatch)
+       (create-dispatch-from-opcode-map
+        *0F-38-three-byte-opcode-map-lst*
+        (w state)
+        :escape-bytes #ux0F_38_00)))
 
-    ;; #x0F #x38 are the first two opcode bytes.
+   `(progn
+      (define first-three-byte-opcode-execute
+        ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
+         (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
+         (prefixes         :type (unsigned-byte 52))
+         (mandatory-prefix :type (unsigned-byte 8))
+         (rex-byte         :type (unsigned-byte 8))
+         (opcode           :type (unsigned-byte 8))
+         (modr/m           :type (unsigned-byte 8))
+         (sib              :type (unsigned-byte 8))
+         x86)
 
-    :parents (x86-decoder)
-    ;; The following arg will avoid binding __function__ to
-    ;; first-three-byte-opcode-execute. The automatic __function__ binding that
-    ;; comes with define causes stack overflows during the guard proof of this
-    ;; function.
-    :no-function t
-    :ignore-ok t
-    :short "First three-byte opcode dispatch function."
-    :long "<p>@('first-three-byte-opcode-execute) is the doorway to the first
+        ;; #x0F #x38 are the first two opcode bytes.
+
+        :parents (x86-decoder)
+        ;; The following arg will avoid binding __function__ to
+        ;; first-three-byte-opcode-execute. The automatic __function__ binding that
+        ;; comes with define causes stack overflows during the guard proof of this
+        ;; function.
+        :no-function t
+        :ignore-ok t
+        :short "First three-byte opcode dispatch function."
+        :long "<p>@('first-three-byte-opcode-execute) is the doorway to the first
      three-byte opcode map, i.e., to all three-byte opcodes whose first two
      opcode bytes are @('0F 38').</p>"
-    :guard-hints (("Goal"
-                   :do-not '(preprocess)
-                   :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
+        :guard-hints (("Goal"
+                       :do-not '(preprocess)
+                       :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
 
-    (case opcode
-      ,@(create-dispatch-from-opcode-map
-         0 *0F-38-three-byte-opcode-map-lst*
-         (w state)))
-    ///
+        (let ((opcode (+ #ux0F_38_00 opcode)))
+          (case opcode ,@dispatch))
 
-    (defthm x86p-first-three-byte-opcode-execute
-      (implies (and (x86p x86)
-                    (canonical-address-p temp-rip))
-               (x86p
-                (first-three-byte-opcode-execute
-                 start-rip temp-rip prefixes mandatory-prefix rex-byte opcode
-                 modr/m sib x86))))))
+        ///
+
+        (defthm x86p-first-three-byte-opcode-execute
+          (implies (and (x86p x86)
+                        (canonical-address-p temp-rip))
+                   (x86p
+                    (first-three-byte-opcode-execute
+                     start-rip temp-rip prefixes mandatory-prefix rex-byte opcode
+                     modr/m sib x86)))))
+
+      (defsection 0F-38-three-byte-opcodes
+        :parents (implemented-opcodes)
+        :short "@('x86isa') Support for Opcodes in the @('0F 38') Three Byte Map"
+        :long ,table-doc-string))))
 
 
 (make-event
- `(define second-three-byte-opcode-execute
-    ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
-     (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
-     (prefixes         :type (unsigned-byte 52))
-     (mandatory-prefix :type (unsigned-byte 8))
-     (rex-byte         :type (unsigned-byte 8))
-     (opcode           :type (unsigned-byte 8))
-     (modr/m           :type (unsigned-byte 8))
-     (sib              :type (unsigned-byte 8))
-     x86)
+ (b* (((mv table-doc-string dispatch)
+       (create-dispatch-from-opcode-map
+        *0F-3A-three-byte-opcode-map-lst*
+        (w state)
+        :escape-bytes #ux0F_3A_00)))
 
-    ;; #x0F #x3A are the first two opcode bytes.
+   `(progn
+      (define second-three-byte-opcode-execute
+        ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
+         (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
+         (prefixes         :type (unsigned-byte 52))
+         (mandatory-prefix :type (unsigned-byte 8))
+         (rex-byte         :type (unsigned-byte 8))
+         (opcode           :type (unsigned-byte 8))
+         (modr/m           :type (unsigned-byte 8))
+         (sib              :type (unsigned-byte 8))
+         x86)
 
-    :parents (x86-decoder)
-    ;; The following arg will avoid binding __function__ to
-    ;; second-three-byte-opcode-execute. The automatic __function__ binding that
-    ;; comes with define causes stack overflows during the guard proof of this
-    ;; function.
-    :no-function t
-    :ignore-ok t
-    :short "Second three-byte opcode dispatch function."
-    :long "<p>@('second-three-byte-opcode-execute) is the doorway to the second
+        ;; #x0F #x3A are the first two opcode bytes.
+
+        :parents (x86-decoder)
+        ;; The following arg will avoid binding __function__ to
+        ;; second-three-byte-opcode-execute. The automatic __function__ binding that
+        ;; comes with define causes stack overflows during the guard proof of this
+        ;; function.
+        :no-function t
+        :ignore-ok t
+        :short "Second three-byte opcode dispatch function."
+        :long "<p>@('second-three-byte-opcode-execute) is the doorway to the second
      three-byte opcode map, i.e., to all three-byte opcodes whose second two
      opcode bytes are @('0F 3A').</p>"
-    :guard-hints (("Goal"
-                   :do-not '(preprocess)
-                   :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
+        :guard-hints (("Goal"
+                       :do-not '(preprocess)
+                       :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
 
-    (case opcode
-      ,@(create-dispatch-from-opcode-map
-         0 *0F-3A-three-byte-opcode-map-lst*
-         (w state)))
+        (let ((opcode (+ #ux0F_3A_00 opcode)))
+          (case opcode ,@dispatch))
 
-    ///
+        ///
 
-    (defthm x86p-second-three-byte-opcode-execute
-      (implies (and (x86p x86)
-                    (canonical-address-p temp-rip))
-               (x86p (second-three-byte-opcode-execute
-                      start-rip temp-rip prefixes mandatory-prefix
-                      rex-byte opcode modr/m sib x86))))))
+        (defthm x86p-second-three-byte-opcode-execute
+          (implies (and (x86p x86)
+                        (canonical-address-p temp-rip))
+                   (x86p (second-three-byte-opcode-execute
+                          start-rip temp-rip prefixes mandatory-prefix
+                          rex-byte opcode modr/m sib x86)))))
 
+      (defsection 0F-3A-three-byte-opcodes
+        :parents (implemented-opcodes)
+        :short "@('x86isa') Support for Opcodes in the @('0F 3A') Three Byte Map"
+        :long ,table-doc-string))))
 
 (define three-byte-opcode-decode-and-execute
   ((start-rip          :type (signed-byte #.*max-linear-address-size*))
@@ -1098,48 +1495,58 @@
                     vex-prefixes escape-byte x86)))
     :enable add-to-*ip-is-i48p-rewrite-rule))
 
+
 (make-event
- `(define two-byte-opcode-execute
+ (b* (((mv table-doc-string dispatch)
+       (create-dispatch-from-opcode-map
+        *two-byte-opcode-map-lst*
+        (w state)
+        :escape-bytes #ux0F_00)))
 
-    ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
-     (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
-     (prefixes         :type (unsigned-byte 52))
-     (mandatory-prefix :type (unsigned-byte 8))
-     (rex-byte         :type (unsigned-byte 8))
-     (vex-prefixes     :type (unsigned-byte 32))
-     (opcode           :type (unsigned-byte 8))
-     (modr/m           :type (unsigned-byte 8))
-     (sib              :type (unsigned-byte 8))
-     x86)
+   `(progn
+      (define two-byte-opcode-execute
 
-    :parents (x86-decoder)
-    ;; The following arg will avoid binding __function__ to
-    ;; two-byte-opcode-execute. The automatic __function__ binding that comes
-    ;; with define causes stack overflows during the guard proof of this
-    ;; function.
-    :no-function t
-    :short "Two-byte opcode dispatch function."
-    :long "<p>@('two-byte-opcode-execute') is the doorway to the two-byte
+        ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
+         (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
+         (prefixes         :type (unsigned-byte 52))
+         (mandatory-prefix :type (unsigned-byte 8))
+         (rex-byte         :type (unsigned-byte 8))
+         (vex-prefixes     :type (unsigned-byte 32))
+         (opcode           :type (unsigned-byte 8))
+         (modr/m           :type (unsigned-byte 8))
+         (sib              :type (unsigned-byte 8))
+         x86)
+
+        :parents (x86-decoder)
+        ;; The following arg will avoid binding __function__ to
+        ;; two-byte-opcode-execute. The automatic __function__ binding that comes
+        ;; with define causes stack overflows during the guard proof of this
+        ;; function.
+        :no-function t
+        :short "Two-byte opcode dispatch function."
+        :long "<p>@('two-byte-opcode-execute') is the doorway to the two-byte
      opcode map, and will lead to the three-byte opcode map if @('opcode') is
      either @('#x38') or @('#x3A').</p>"
-    :guard-hints (("Goal"
-                   :do-not '(preprocess)
-                   :in-theory (e/d (member-equal)
-                                   (unsigned-byte-p signed-byte-p))))
+        :guard-hints (("Goal"
+                       :do-not '(preprocess)
+                       :in-theory (e/d (member-equal)
+                                       (unsigned-byte-p signed-byte-p))))
 
-    (case opcode
-      ,@(create-dispatch-from-opcode-map
-         0 *two-byte-opcode-map-lst*
-         (w state)))
+        (case opcode ,@dispatch)
 
-    ///
+        ///
 
-    (defthm x86p-two-byte-opcode-execute
-      (implies (and (x86p x86)
-                    (canonical-address-p temp-rip))
-               (x86p (two-byte-opcode-execute
-                      start-rip temp-rip prefixes mandatory-prefix
-                      rex-byte vex-prefixes opcode modr/m sib x86))))))
+        (defthm x86p-two-byte-opcode-execute
+          (implies (and (x86p x86)
+                        (canonical-address-p temp-rip))
+                   (x86p (two-byte-opcode-execute
+                          start-rip temp-rip prefixes mandatory-prefix
+                          rex-byte vex-prefixes opcode modr/m sib x86)))))
+
+      (defsection two-byte-opcodes
+        :parents (implemented-opcodes)
+        :short "@('x86isa') Support for Opcodes in the Two-Byte Map"
+        :long ,table-doc-string))))
 
 (define two-byte-opcode-decode-and-execute
   ((start-rip    :type (signed-byte #.*max-linear-address-size*))
@@ -1240,43 +1647,54 @@
     :enable add-to-*ip-is-i48p-rewrite-rule))
 
 (make-event
- `(define top-level-opcode-execute
 
-    ((start-rip :type (signed-byte   #.*max-linear-address-size*))
-     (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
-     (prefixes  :type (unsigned-byte 52))
-     (rex-byte  :type (unsigned-byte 8))
-     (opcode    :type (unsigned-byte 8))
-     (modr/m    :type (unsigned-byte 8))
-     (sib       :type (unsigned-byte 8))
-     x86)
+ (b* (((mv table-doc-string dispatch)
+       (create-dispatch-from-opcode-map
+        *one-byte-opcode-map-lst*
+        (w state)
+        :escape-bytes #ux00)))
 
-    :parents (x86-decoder)
-    ;; The following arg will avoid binding __function__ to
-    ;; top-level-opcode-execute. The automatic __function__ binding
-    ;; that comes with define causes stack overflows during the guard
-    ;; proof of this function.
-    :no-function t
-    :short "Top-level dispatch function."
-    :long "<p>@('top-level-opcode-execute') is the doorway to all the opcode
+   `(progn
+      (define top-level-opcode-execute
+
+        ((start-rip :type (signed-byte   #.*max-linear-address-size*))
+         (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
+         (prefixes  :type (unsigned-byte 52))
+         (rex-byte  :type (unsigned-byte 8))
+         (opcode    :type (unsigned-byte 8))
+         (modr/m    :type (unsigned-byte 8))
+         (sib       :type (unsigned-byte 8))
+         x86)
+
+        :parents (x86-decoder)
+        ;; The following arg will avoid binding __function__ to
+        ;; top-level-opcode-execute. The automatic __function__ binding
+        ;; that comes with define causes stack overflows during the guard
+        ;; proof of this function.
+        :no-function t
+        :short "Top-level dispatch function."
+        :long "<p>@('top-level-opcode-execute') is the doorway to all the opcode
      maps.</p>"
-    :guard-hints (("Goal"
-                   :do-not '(preprocess)
-                   :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
+        :guard-hints (("Goal"
+                       :do-not '(preprocess)
+                       :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
 
-    (case opcode
-      ,@(create-dispatch-from-opcode-map
-         0 *one-byte-opcode-map-lst*
-         (w state)))
+        (case opcode
+          ,@dispatch)
 
-    ///
+        ///
 
-    (defthm x86p-top-level-opcode-execute
-      (implies (and (x86p x86)
-                    (canonical-address-p temp-rip))
-               (x86p (top-level-opcode-execute
-                      start-rip temp-rip prefixes rex-byte opcode
-                      modr/m sib x86))))))
+        (defthm x86p-top-level-opcode-execute
+          (implies (and (x86p x86)
+                        (canonical-address-p temp-rip))
+                   (x86p (top-level-opcode-execute
+                          start-rip temp-rip prefixes rex-byte opcode
+                          modr/m sib x86)))))
+
+      (defsection one-byte-opcodes
+        :parents (implemented-opcodes)
+        :short "@('x86isa') Support for Opcodes in the One-Byte Map"
+        :long ,table-doc-string))))
 
 ;; VEX-encoded instructions:
 
@@ -1448,6 +1866,13 @@
                start-rip temp-rip prefixes rex-byte vex-prefixes x86)))))
 
 (set-rewrite-stack-limit acl2::*default-rewrite-stack-limit*)
+
+(xdoc::order-subtopics
+ implemented-opcodes
+ (one-byte-opcodes
+  two-byte-opcodes
+  0f-38-three-byte-opcodes
+  0f-3A-three-byte-opcodes))
 
 ;; ----------------------------------------------------------------------
 

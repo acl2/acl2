@@ -90,8 +90,6 @@
 (def-inst x86-bsf-Op/En-RM
 
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (add-to-implemented-opcodes-table 'BSF #x0FBC '(:nil nil) 'x86-bsf-Op/En-RM)
 
   :short "Bit scan forward"
 

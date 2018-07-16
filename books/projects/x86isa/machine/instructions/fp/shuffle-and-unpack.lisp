@@ -193,12 +193,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'SHUFPS #x0FC6
-                                    '(:nil nil)
-                                    'x86-shufps-Op/En-RMI))
+    x86))
 
 (def-inst x86-shufpd-Op/En-RMI
 
@@ -294,13 +289,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'SHUFPD #x0FC6
-                                    '(:misc
-                                      (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                    'x86-shufpd-Op/En-RMI))
+    x86))
 
 (def-inst x86-unpck?ps-Op/En-RM
 
@@ -428,15 +417,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'UNPCKLPS #x0F14
-                                      '(:nil nil)
-                                      'x86-unpck?ps-Op/En-RM)
-    (add-to-implemented-opcodes-table 'UNPCKHPS #x0F15
-                                      '(:nil nil)
-                                      'x86-unpck?ps-Op/En-RM)))
+    x86))
 
 (def-inst x86-unpck?pd-Op/En-RM
 
@@ -550,17 +531,6 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'UNPCKLPD #x0F14
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-unpck?pd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'UNPCKHPD #x0F15
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-unpck?pd-Op/En-RM)))
+    x86))
 
 ;; ======================================================================

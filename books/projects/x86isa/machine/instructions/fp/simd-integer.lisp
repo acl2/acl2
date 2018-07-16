@@ -213,13 +213,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'PCMPEQB #x0F74
-                                    '(:misc
-                                      (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                    'x86-pcmpeqb-Op/En-RM))
+      x86))
 
 (def-inst x86-pmovmskb-Op/En-RM
 
@@ -346,12 +340,6 @@
        (x86 (!rgfi-size 8 rgf-index result rex-byte x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'PMOVMSKB #x0FD7
-                                    '(:misc
-                                      (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                    'x86-pmovmskb-Op/En-RM))
+    x86))
 
 ;; ======================================================================

@@ -148,47 +148,7 @@
        (x86 (!rgfi-size reg-size rgf-index result rex-byte x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CVTTSS2SI #x0F2C
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTTSS2SI #x0F2C
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
-                                        (logbitp #.*w* rex-byte))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTTSD2SI #x0F2C
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTTSD2SI #x0F2C
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
-                                        (logbitp #.*w* rex-byte))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'CVTSS2SI #x0F2D
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTSS2SI #x0F2D
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes))
-                                        (logbitp #.*w* rex-byte))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTSD2SI #x0F2D
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTSD2SI #x0F2D
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes))
-                                        (logbitp #.*w* rex-byte))
-                                      'x86-cvts?2si/cvtts?2si-Op/En-RM)))
+      x86))
 
 (def-inst x86-cvtsi2s?-Op/En-RM
 
@@ -280,31 +240,7 @@
        (x86 (!xmmi-size xmm-size xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CVTSI2SS #x0F2A
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvtsi2s?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTSI2SS #x0F2A
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice
-                                                                :group-1-prefix prefixes))
-                                        (logbitp #.*w* rex-byte))
-                                      'x86-cvtsi2s?-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'CVTSI2SD #x0F2A
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvtsi2s?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTSI2SD #x0F2A
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice
-                                                                :group-1-prefix prefixes))
-                                        (logbitp #.*w* rex-byte))
-                                      'x86-cvtsi2s?-Op/En-RM)))
+    x86))
 
 (def-inst x86-cvts?2s?-Op/En-RM
 
@@ -390,18 +326,7 @@
        (x86 (!xmmi-size xmm-size xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CVTSS2SD #x0F5A
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvts?2s?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'CVTSD2SS #x0F5A
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cvts?2s?-Op/En-RM)))
+    x86))
 
 (def-inst x86-cvtps2pd-Op/En-RM
 
@@ -506,11 +431,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-  :implemented
-  (add-to-implemented-opcodes-table 'CVTPS2PD #x0F5A
-                                    '(:nil nil)
-                                    'x86-cvtps2pd-Op/En-RM))
+    x86))
 
 (def-inst x86-cvtpd2ps-Op/En-RM
 
@@ -621,12 +542,6 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-  :implemented
-  (add-to-implemented-opcodes-table 'CVTPD2PS #x0F5A
-                                    '(:misc
-                                      (eql #.*mandatory-66h*
-                                           (prefixes-slice :group-3-prefix prefixes)))
-                                    'x86-cvtpd2ps-Op/En-RM))
+    x86))
 
 ;; ======================================================================

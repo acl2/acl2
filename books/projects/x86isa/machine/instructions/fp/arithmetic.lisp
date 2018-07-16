@@ -145,48 +145,7 @@
        (x86 (!xmmi-size operand-size xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADDSS #x0F58
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MULSS #x0F59
-                                      '(:misc (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'SUBSS #x0F5C
-                                      '(:misc (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MINSS #x0F5D
-                                      '(:misc (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'DIVSS #x0F5E
-                                      '(:misc (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MAXSS #x0F5F
-                                      '(:misc (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'ADDSD #x0F58
-                                      '(:misc (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MULSD #x0F59
-                                      '(:misc (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'SUBSD #x0F5C
-                                      '(:misc (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MINSD #x0F5D
-                                      '(:misc (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'DIVSD #x0F5E
-                                      '(:misc (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MAXSD #x0F5F
-                                      '(:misc (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)))
+      x86))
 
 (def-inst x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
 
@@ -331,28 +290,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADDPS #x0F58
-                                      '(:nil nil)
-                                      'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MULPS #x0F59
-                                      '(:nil nil)
-                                      'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)
-    (add-to-implemented-opcodes-table 'SUBPS #x0F5C
-                                      '(:nil nil)
-                                      'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MINPS #x0F5D
-                                      '(:nil nil)
-                                      'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)
-    (add-to-implemented-opcodes-table 'DIVPS #x0F5E
-                                      '(:nil nil)
-                                      'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MAXPS #x0F5F
-                                      '(:nil nil)
-                                      'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)))
+    x86))
 
 (def-inst x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
 
@@ -475,34 +413,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADDPD #x0F58
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'SUBPD #x0F5C
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MULPD #x0F59
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'DIVPD #x0F5E
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MAXPD #x0F5F
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MINPD #x0F5D
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)))
+    x86))
 
 ;; ======================================================================
 
@@ -588,18 +499,7 @@
        (x86 (!xmmi-size operand-size xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'SQRTSS #x0F51
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-sqrts?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'SQRTSD #x0F51
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-sqrts?-Op/En-RM)))
+      x86))
 
 (def-inst x86-sqrtps-Op/En-RM
 
@@ -730,12 +630,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'SQRTPS #x0F51
-                                    '(:nil nil)
-                                    'x86-sqrtps-Op/En-RM))
+    x86))
 
 (def-inst x86-sqrtpd-Op/En-RM
 
@@ -841,12 +736,6 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'SQRTPD #x0F51
-                                    '(:misc
-                                      (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                    'x86-sqrtpd-Op/En-RM))
+    x86))
 
 ;; ======================================================================

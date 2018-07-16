@@ -82,11 +82,6 @@
                 :hyp (and (x86p x86)
                           (canonical-address-p temp-rip)))
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVS #xA4 '(:nil nil) 'x86-movs)
-    (add-to-implemented-opcodes-table 'MOVS #xA5 '(:nil nil) 'x86-movs))
-
   :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08
                                            rme-size-of-2-to-rme16
                                            rme-size-of-4-to-rme32
@@ -317,10 +312,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CMPS #xA6 '(:nil nil) 'x86-cmps)
-    (add-to-implemented-opcodes-table 'CMPS #xA7 '(:nil nil) 'x86-cmps))
 
   :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08
                                            rme-size-of-2-to-rme16
@@ -543,11 +534,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'STOS #xAA '(:nil nil) 'x86-stos)
-    (add-to-implemented-opcodes-table 'STOS #xAB '(:nil nil) 'x86-stos))
 
   :body
 

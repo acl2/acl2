@@ -79,12 +79,6 @@
       MUL r/m32: EDX:EAX := EAX \* r/m32<br/>
       MUL r/m64: RDX:RAX := RAX \* r/m64<br/></p>"
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MUL #xF6 '(:reg 4)
-                                      'x86-mul)
-    (add-to-implemented-opcodes-table 'MUL #xF7 '(:reg 4)
-                                      'x86-mul))
   :body
 
   (b* ((ctx 'x86-mul)
@@ -189,13 +183,6 @@
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip))
                 :hints (("Goal" :in-theory (e/d () (force (force))))))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'IMUL #xF6 '(:reg 5)
-                                      'x86-imul-Op/En-M)
-    (add-to-implemented-opcodes-table 'IMUL #xF7 '(:reg 5)
-                                      'x86-imul-Op/En-M))
-
 
   ;; Note that the reg field serves as an opcode extension for this
   ;; instruction.  The reg field will always be 5 when this function is
@@ -307,9 +294,6 @@
                                (canonical-address-p temp-rip))
                 :hints (("Goal" :in-theory (e/d () (force (force))))))
 
-  :implemented
-  (add-to-implemented-opcodes-table 'IMUL #x0FAF '(:nil nil)
-                                    'x86-imul-Op/En-RM)
 
   :long
   "<h4>Op/En: RM</h4>
@@ -419,13 +403,6 @@
       IMUL r16, r/m16, imm16 <br/>
       IMUL r32, r/m32, imm32 <br/>
       IMUL r64, r/m64, imm32 <br/> </p>"
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'PUSHF #x69 '(:nil nil)
-                                      'x86-imul-Op/En-RMI)
-    (add-to-implemented-opcodes-table 'PUSHF #x6B '(:nil nil)
-                                      'x86-imul-Op/En-RMI))
 
   :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08
                                            rme-size-of-2-to-rme16

@@ -96,13 +96,6 @@
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'JMP #xE9 '(:nil nil)
-                                      'x86-near-jmp-Op/En-D)
-    (add-to-implemented-opcodes-table 'JMP #xEB '(:nil nil)
-                                      'x86-near-jmp-Op/En-D))
-
   :body
 
   (b* ((ctx 'x86-near-jmp-Op/En-D)
@@ -166,10 +159,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-
-  :implemented
-  (add-to-implemented-opcodes-table 'JMP #xFF '(:reg 4)
-                                    'x86-near-jmp-Op/En-M)
 
   :body
 
@@ -304,9 +293,6 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                                                   not rml-size
                                                   signed-byte-p
                                                   select-operand-size)))))
-  :implemented
-  (add-to-implemented-opcodes-table 'JMP #xFF '(:reg 5)
-                                    'x86-far-jmp-Op/En-D)
 
   :prepwork
   ((local (in-theory (e/d* (far-jump-guard-helpers)
@@ -790,15 +776,6 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                             member-equal
                             acl2::logtail-identity
                             not)))))
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'LOOP #xE0 '(:nil nil)
-                                      'x86-loop)
-    (add-to-implemented-opcodes-table 'LOOP #xE1 '(:nil nil)
-                                      'x86-loop)
-    (add-to-implemented-opcodes-table 'LOOP #xE2 '(:nil nil)
-                                      'x86-loop))
 
   :body
 

@@ -461,9 +461,6 @@
 
  <ul>
 
- <li>Generate the dispatch function using
- @('implemented-opcodes-table') in @('machine/x86.lisp').</li>
-
  <li>Save memory by loading either the elf or mach-o stobj as
  necessary, as opposed to loading both by default in
  @('tools/execution/top.lisp').</li>
@@ -471,105 +468,105 @@
  </ul>")
 
 
-(defun implemented-opcodes-table-entry-p (e)
-  (declare (xargs :guard t))
-  ;; Maybe extend this to other fields too?
-  (and (consp e)
-       (consp (car e))
-       ;; Opcode
-       (natp (caar e))))
+;; (defun implemented-opcodes-table-entry-p (e)
+;;   (declare (xargs :guard t))
+;;   ;; Maybe extend this to other fields too?
+;;   (and (consp e)
+;;        (consp (car e))
+;;        ;; Opcode
+;;        (natp (caar e))))
 
-(defun implemented-opcodes-table-alist-p (l)
-  (declare (xargs :guard t))
-  (cond ((not (consp l)) (eq l nil))
-        (t (and (implemented-opcodes-table-entry-p (car l))
-                (implemented-opcodes-table-alist-p (cdr l))))))
+;; (defun implemented-opcodes-table-alist-p (l)
+;;   (declare (xargs :guard t))
+;;   (cond ((not (consp l)) (eq l nil))
+;;         (t (and (implemented-opcodes-table-entry-p (car l))
+;;                 (implemented-opcodes-table-alist-p (cdr l))))))
 
-(assert-event
- (equal (implemented-opcodes-table-alist-p
-         (table-alist 'implemented-opcodes-table (w state)))
-        t))
+;; (assert-event
+;;  (equal (implemented-opcodes-table-alist-p
+;;          (table-alist 'implemented-opcodes-table (w state)))
+;;         t))
 
-(defun x86-opcode-< (x y)
-  (declare (xargs :guard (and (implemented-opcodes-table-entry-p x)
-                              (implemented-opcodes-table-entry-p y))))
-  (b* ((x-opcode (caar x))
-       (y-opcode (caar y)))
-    (< x-opcode y-opcode)))
+;; (defun x86-opcode-< (x y)
+;;   (declare (xargs :guard (and (implemented-opcodes-table-entry-p x)
+;;                               (implemented-opcodes-table-entry-p y))))
+;;   (b* ((x-opcode (caar x))
+;;        (y-opcode (caar y)))
+;;     (< x-opcode y-opcode)))
 
-(acl2::defsort sort-by-x86-opcodes<
-               :prefix x86-sort-by-opcode
-               :compare< x86-opcode-<
-               :comparablep implemented-opcodes-table-entry-p
-               :comparable-listp implemented-opcodes-table-alist-p
-               :true-listp t
-               :weak t)
+;; (acl2::defsort sort-by-x86-opcodes<
+;;                :prefix x86-sort-by-opcode
+;;                :compare< x86-opcode-<
+;;                :comparablep implemented-opcodes-table-entry-p
+;;                :comparable-listp implemented-opcodes-table-alist-p
+;;                :true-listp t
+;;                :weak t)
 
-;; (sort-by-x86-opcodes< (table-alist 'implemented-opcodes-table (w state)))
+;; ;; (sort-by-x86-opcodes< (table-alist 'implemented-opcodes-table (w state)))
 
-(defun print-implemented-opcodes-table (op-table)
-  (declare (xargs :mode :program))
-  ;; (print-implemented-opcodes-table (table-alist 'implemented-opcodes-table (w state)))
-  (if (endp op-table)
-      nil
-    (b* ((t-entry           (car op-table))
-         (ins-name          (symbol-name (car (cdr t-entry))))
-         (semantic-fn-name  (symbol-name (cdr (cdr t-entry))))
-         (t-opcode-info     (car t-entry))
-         (t-opcode          (car t-opcode-info))
-         (opcode-string     (cond
-                             ((n04p t-opcode)
-                              (string-append "0" (str::natstr16 t-opcode)))
-                             ((n08p t-opcode)
-                              (str::natstr16 t-opcode))
-                             ((n12p t-opcode)
-                              (string-append "0" (str::natstr16 t-opcode)))
-                             (t
-                              (str::natstr16 t-opcode))))
-         (opcode-extns      (cdr t-opcode-info))
-         (opcode-extns      (if (equal (car opcode-extns) :nil)
-                                nil
-                              opcode-extns))
+;; (defun print-implemented-opcodes-table (op-table)
+;;   (declare (xargs :mode :program))
+;;   ;; (print-implemented-opcodes-table (table-alist 'implemented-opcodes-table (w state)))
+;;   (if (endp op-table)
+;;       nil
+;;     (b* ((t-entry           (car op-table))
+;;          (ins-name          (symbol-name (car (cdr t-entry))))
+;;          (semantic-fn-name  (symbol-name (cdr (cdr t-entry))))
+;;          (t-opcode-info     (car t-entry))
+;;          (t-opcode          (car t-opcode-info))
+;;          (opcode-string     (cond
+;;                              ((n04p t-opcode)
+;;                               (string-append "0" (str::natstr16 t-opcode)))
+;;                              ((n08p t-opcode)
+;;                               (str::natstr16 t-opcode))
+;;                              ((n12p t-opcode)
+;;                               (string-append "0" (str::natstr16 t-opcode)))
+;;                              (t
+;;                               (str::natstr16 t-opcode))))
+;;          (opcode-extns      (cdr t-opcode-info))
+;;          (opcode-extns      (if (equal (car opcode-extns) :nil)
+;;                                 nil
+;;                               opcode-extns))
 
-         (table-info-string
-          (fms-to-string
-           "<li>Opcode: ~s0 Extension: ~y1 Mnemonic: <b>~s2</b> <br/> Semantic Function: @(see ~s3)</li>"
-           (list (cons #\0 opcode-string)
-                 (cons #\1 opcode-extns)
-                 (cons #\2 ins-name)
-                 (cons #\3 semantic-fn-name)))))
-      (concatenate
-       'string
-       table-info-string
-       (print-implemented-opcodes-table (cdr op-table))))))
+;;          (table-info-string
+;;           (fms-to-string
+;;            "<li>Opcode: ~s0 Extension: ~y1 Mnemonic: <b>~s2</b> <br/> Semantic Function: @(see ~s3)</li>"
+;;            (list (cons #\0 opcode-string)
+;;                  (cons #\1 opcode-extns)
+;;                  (cons #\2 ins-name)
+;;                  (cons #\3 semantic-fn-name)))))
+;;       (concatenate
+;;        'string
+;;        table-info-string
+;;        (print-implemented-opcodes-table (cdr op-table))))))
 
-(define generate-implemented-opcodes-section (state)
-  :mode :program
-  ;; TO-DO: Link to relevant sections in the Intel manuals?
-  (b* ((long-section
-        (string-append-lst
-         (list
-          "<p>In the list below, <i>opcode</i> refers to the x86
-  opcode (one- or two-byte) in hexadecimal, <i>extension</i> refers to
-  the opcode extension (e.g., an implementation of the CMP instruction
-  is identified by both the opcode 0x80 and the extension 3, which is
-  the value of the REG field in the ModR/M byte of the instruction),
-  <i>mnemonic</i> refers to the name of the instruction, and
-  <i>semantic function</i> refers to the specification function of
-  that opcode in the <tt>x86isa</tt> books.</p>
+;; (define generate-implemented-opcodes-section (state)
+;;   :mode :program
+;;   ;; TO-DO: Link to relevant sections in the Intel manuals?
+;;   (b* ((long-section
+;;         (string-append-lst
+;;          (list
+;;           "<p>In the list below, <i>opcode</i> refers to the x86
+;;   opcode (one- or two-byte) in hexadecimal, <i>extension</i> refers to
+;;   the opcode extension (e.g., an implementation of the CMP instruction
+;;   is identified by both the opcode 0x80 and the extension 3, which is
+;;   the value of the REG field in the ModR/M byte of the instruction),
+;;   <i>mnemonic</i> refers to the name of the instruction, and
+;;   <i>semantic function</i> refers to the specification function of
+;;   that opcode in the <tt>x86isa</tt> books.</p>
 
-  <ul>"
-          (print-implemented-opcodes-table
-           (sort-by-x86-opcodes< (table-alist 'implemented-opcodes-table (w state))))
+;;   <ul>"
+;;           (print-implemented-opcodes-table
+;;            (sort-by-x86-opcodes< (table-alist 'implemented-opcodes-table (w state))))
 
-          "</ul>"))))
+;;           "</ul>"))))
 
-    `(defsection implemented-opcodes
-       :parents (instructions)
-       :short "Opcodes supported by the x86 model"
-       :long ,long-section)))
+;;     `(defsection implemented-opcodes
+;;        :parents (instructions)
+;;        :short "Opcodes supported by the x86 model"
+;;        :long ,long-section)))
 
-(make-event (generate-implemented-opcodes-section state))
+;; (make-event (generate-implemented-opcodes-section state))
 
 (xdoc::order-subtopics
  instructions

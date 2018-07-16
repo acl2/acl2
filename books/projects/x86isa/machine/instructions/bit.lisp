@@ -69,9 +69,6 @@
 
   :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08)))
 
-  :implemented
-  (add-to-implemented-opcodes-table 'BT #x0FBA '(:reg 4) 'x86-bt-0F-BA)
-
   :body
 
   ;; Note: opcode is the second byte of the two-byte opcode.
@@ -175,9 +172,6 @@
     (in-theory (e/d ()
                     (acl2::mod-minus
                      unsigned-byte-p)))))
-
-  :implemented
-  (add-to-implemented-opcodes-table 'BT #x0FA3 '(:nil nil) 'x86-bt-0F-A3)
 
   :body
 

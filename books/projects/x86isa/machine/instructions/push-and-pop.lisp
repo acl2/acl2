@@ -174,26 +174,7 @@
        (x86 (write-*sp new-rsp x86))
        (x86 (write-*ip temp-rip x86)))
 
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'PUSH #x50 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x51 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x52 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x53 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x54 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x55 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x56 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x57 '(:nil nil)
-                                      'x86-push-general-register)))
+    x86))
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-Ev
@@ -215,9 +196,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-
-  :implemented
-  (progn (add-to-implemented-opcodes-table 'PUSH #xFF '(:reg 6) 'x86-push-Ev))
 
   :body
 
@@ -330,13 +308,6 @@
 
   :guard-hints (("Goal" :in-theory (enable rime-size)))
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'PUSH #x68 '(:nil nil)
-                                      'x86-push-I)
-    (add-to-implemented-opcodes-table 'PUSH #x6A '(:nil nil)
-                                      'x86-push-I))
-
   :body
 
   (b* ((ctx 'x86-push-I)
@@ -437,20 +408,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'PUSH #x0E '(:nil nil)
-                                      'x86-push-segment-register)
-    (add-to-implemented-opcodes-table 'PUSH #x16 '(:nil nil)
-                                      'x86-push-segment-register)
-    (add-to-implemented-opcodes-table 'PUSH #x1E '(:nil nil)
-                                      'x86-push-segment-register)
-    (add-to-implemented-opcodes-table 'PUSH #x06 '(:nil nil)
-                                      'x86-push-segment-register)
-    (add-to-implemented-opcodes-table 'PUSH #x0FA0 '(:nil nil)
-                                      'x86-push-segment-register)
-    (add-to-implemented-opcodes-table 'PUSH #x0FA8 '(:nil nil)
-                                      'x86-push-segment-register))
 
   :body
 
@@ -607,18 +564,7 @@
 
     x86)
 
-  :guard-hints (("Goal" :in-theory (enable rme-size)))
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'POP #x58 '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x59 '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5A '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5B '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5C '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5D '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5E '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5F '(:nil nil) 'x86-pop-general-register)))
+  :guard-hints (("Goal" :in-theory (enable rme-size))))
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-pop-Ev
@@ -640,10 +586,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-
-  :implemented
-  (add-to-implemented-opcodes-table 'POP #x8F '(:reg 0) 'x86-pop-Ev)
-
   :body
 
   (b* ((ctx 'x86-pop-Ev)
@@ -871,8 +813,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'PUSHF #x9C '(:nil nil) 'x86-pushf)
 
   :body
 
@@ -1007,8 +947,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'POPF #x9D '(:nil nil) 'x86-popf)
 
   :body
 
@@ -1116,8 +1054,6 @@
    It may be possible to optimize it by pushing all the registers in one shot.
    </p>"
 
-  :implemented
-  (add-to-implemented-opcodes-table 'pusha #x60 '(:nil nil) 'x86-pusha)
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -1228,9 +1164,6 @@
    We use some simple and repetitive code to read the registers from the stack.
    It may be possible to optimize it by popping all the registers in one shot.
    </p>"
-
-  :implemented
-  (add-to-implemented-opcodes-table 'popa #x61 '(:nil nil) 'x86-popa)
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))

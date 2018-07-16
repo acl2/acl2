@@ -95,28 +95,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'XCHG #x86 '(:nil nil)
-                                      'x86-xchg)
-    (add-to-implemented-opcodes-table 'XCHG #x87 '(:nil nil)
-                                      'x86-xchg)
-    (add-to-implemented-opcodes-table 'XCHG #x90 '(:nil nil)
-                                      'x86-xchg)
-    (add-to-implemented-opcodes-table 'XCHG #x91 '(:nil nil)
-                                      'x86-xchg)
-    (add-to-implemented-opcodes-table 'XCHG #x92 '(:nil nil)
-                                      'x86-xchg)
-    (add-to-implemented-opcodes-table 'XCHG #x93 '(:nil nil)
-                                      'x86-xchg)
-    (add-to-implemented-opcodes-table 'XCHG #x94 '(:nil nil)
-                                      'x86-xchg)
-    (add-to-implemented-opcodes-table 'XCHG #x95 '(:nil nil)
-                                      'x86-xchg)
-    (add-to-implemented-opcodes-table 'XCHG #x96 '(:nil nil)
-                                      'x86-xchg)
-    (add-to-implemented-opcodes-table 'XCHG #x97 '(:nil nil)
-                                      'x86-xchg))
   :body
 
   (b* ((ctx 'x86-xchg)
@@ -242,12 +220,6 @@
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CMPXCHG #x0FB0 '(:nil nil)
-                                      'x86-cmpxchg)
-    (add-to-implemented-opcodes-table 'CMPXCHG #x0FB1 '(:nil nil)
-                                      'x86-cmpxchg))
   :body
 
   ;; Note: opcode is the second byte of the two-byte opcode.
@@ -368,9 +340,6 @@
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
-  :implemented
-  (add-to-implemented-opcodes-table 'NOP #x0F1F '(:reg 0) 'x86-two-byte-nop)
-
   :body
 
   (b* ((ctx 'x86-two-byte-nop)
@@ -430,8 +399,6 @@
 
 ;;   :returns (x86 x86p :hyp (and (x86p x86)
 ;;                                (canonical-address-p temp-rip)))
-;;   :implemented
-;;   (add-to-implemented-opcodes-table 'NOP #x90 '(:nil nil) 'x86-nop)
 
 ;;   :body
 

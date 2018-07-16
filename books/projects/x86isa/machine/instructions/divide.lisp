@@ -79,12 +79,6 @@
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip))
                 :hints (("Goal" :in-theory (e/d () (force (force))))))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'DIV #xF6 '(:reg 6)
-                                      'x86-div)
-    (add-to-implemented-opcodes-table 'DIV #xF7 '(:reg 6)
-                                      'x86-div))
 
   :guard (equal (mrm-reg modr/m) 6)
 
@@ -217,13 +211,6 @@
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip))
                 :hints (("Goal" :in-theory (e/d () (force (force))))))
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'IDIV #xF6 '(:reg 7)
-                                      'x86-idiv)
-    (add-to-implemented-opcodes-table 'IDIV #xF7 '(:reg 7)
-                                      'x86-idiv))
 
   :guard (equal (mrm-reg modr/m) 7)
 

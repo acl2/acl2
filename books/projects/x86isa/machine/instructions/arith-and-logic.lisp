@@ -300,46 +300,7 @@
        (x86 (write-user-rflags output-rflags undefined-flags x86))
        (x86 (write-*ip temp-rip x86)))
 
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADD #x00 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'ADD #x01 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'OR #x08 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'OR #x09 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'ADC #x10 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'ADC #x11 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'SBB #x18 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'SBB #x19 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'AND #x20 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'AND #x21 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'SUB #x28 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'SUB #x29 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'XOR #x30 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'XOR #x31 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'CMP #x38 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'CMP #x39 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'TEST #x84 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'TEST #x85 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)))
+    x86))
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
@@ -377,41 +338,6 @@
                 :hints (("Goal" :in-theory (e/d* ()
                                                  (unsigned-byte-p
                                                   signed-byte-p)))))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADD #x02 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'ADD #x03 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'OR #x0A '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'OR #x0B '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'ADC #x12 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'ADC #x13 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'SBB #x1A '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'SBB #x1B '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'AND #x22 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'AND #x23 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'SUB #x2A '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'SUB #x2B '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'XOR #x32 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'XOR #x33 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'CMP #x3A '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'CMP #x3B '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E))
-
   :body
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
@@ -551,88 +477,6 @@
                                                   select-operand-size
                                                   unsigned-byte-p
                                                   signed-byte-p)))))
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADD #x80 '(:reg 0)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'ADD #x81 '(:reg 0)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'ADD #x82 '(:reg 0)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'ADD #x83 '(:reg 0)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    ;; [Shilpi]: Thanks to Dmitry Nadezhin for spotting typos in the
-    ;; :reg field for the OR opcode.
-    (add-to-implemented-opcodes-table 'OR #x80 '(:reg 1)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'OR #x81 '(:reg 1)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'OR #x82 '(:reg 1)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'OR #x83 '(:reg 1)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'ADC #x80 '(:reg 2)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'ADC #x81 '(:reg 2)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'ADC #x82 '(:reg 2)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'ADC #x83 '(:reg 2)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'SBB #x80 '(:reg 3)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'SBB #x81 '(:reg 3)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'SBB #x82 '(:reg 3)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'SBB #x83 '(:reg 3)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'AND #x80 '(:reg 4)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'AND #x81 '(:reg 4)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'AND #x82 '(:reg 4)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'AND #x83 '(:reg 4)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'SUB #x80 '(:reg 5)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'SUB #x81 '(:reg 5)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'SUB #x82 '(:reg 5)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'SUB #x83 '(:reg 5)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'XOR #x80 '(:reg 6)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'XOR #x81 '(:reg 6)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'XOR #x82 '(:reg 6)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'XOR #x83 '(:reg 6)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'CMP #x80 '(:reg 7)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'CMP #x81 '(:reg 7)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'CMP #x82 '(:reg 7)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'CMP #x83 '(:reg 7)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'TEST #xF6 '(:reg 0)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'TEST #xF7 '(:reg 0)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I))
-
   :body
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
@@ -815,45 +659,6 @@
                                                         gpr-arith/logic-spec-2
                                                         gpr-arith/logic-spec-1
                                                         unsigned-byte-p)))))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADD #x04 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'ADD #x05 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'OR #x0C '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'OR #x0D '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'ADC #x14 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'ADC #x15 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'SBB #x1C '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'SBB #x1D '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'AND #x24 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'AND #x25 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'SUB #x2C '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'SUB #x2D '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'XOR #x34 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'XOR #x35 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'CMP #x3C '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'CMP #x3D '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'TEST #xA8 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'TEST #xA9 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I))
-
   :body
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
@@ -941,17 +746,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'INC #xFE '(:reg 0)
-                                      'x86-inc/dec-FE-FF)
-    (add-to-implemented-opcodes-table 'DEC #xFE '(:reg 1)
-                                      'x86-inc/dec-FE-FF)
-    (add-to-implemented-opcodes-table 'INC #xFF '(:reg 0)
-                                      'x86-inc/dec-FE-FF)
-    (add-to-implemented-opcodes-table 'DEC #xFF '(:reg 1)
-                                      'x86-inc/dec-FE-FF))
-
   :body
 
   (b* ((ctx 'x86-inc/dec-FE-FF)
@@ -1053,42 +847,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'INC #x40 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x41 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x42 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x43 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x44 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x45 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x46 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x47 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x48 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x49 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x4A '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x4B '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x4C '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x4D '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x4E '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x4F '(:nil nil)
-                                      'x86-inc/dec-4x))
-
   :body
 
   (b* ((ctx 'x86-inc/dec-4x)
@@ -1146,16 +904,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'NOT #xF6 '(:reg 2)
-                                      'x86-not/neg-F6-F7)
-    (add-to-implemented-opcodes-table 'NOT #xF6 '(:reg 3)
-                                      'x86-not/neg-F6-F7)
-    (add-to-implemented-opcodes-table 'NEG #xF7 '(:reg 2)
-                                      'x86-not/neg-F6-F7)
-    (add-to-implemented-opcodes-table 'NEG #xF7 '(:reg 3)
-                                      'x86-not/neg-F6-F7))
   :body
 
   (b* ((ctx 'x86-not/neg-F6-F7)

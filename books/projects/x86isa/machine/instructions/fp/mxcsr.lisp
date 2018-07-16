@@ -133,15 +133,6 @@
            x86)))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'LDMXCSR #x0FAE
-                                      '(:misc (eql (mrm-reg modr/m) 2))
-                                      'x86-ldmxcsr/stmxcsr-Op/En-M)
-    (add-to-implemented-opcodes-table 'STMXCSR #x0FAE
-                                      '(:misc (eql (mrm-reg modr/m) 3))
-                                      'x86-ldmxcsr/stmxcsr-Op/En-M)))
+    x86))
 
 ;; ======================================================================

@@ -63,16 +63,6 @@
                                (app-view x86)
                                (canonical-address-p temp-rip)))
 
-  ;; Since this function does not specify the actual semantics of the
-  ;; SYSCALL instruction, we do not add anything to the
-  ;; implemented-opcodes-table, and we prefer to do that for the
-  ;; "true" instruction semantic function x86-syscall instead.
-  :implemented
-  (make-event
-   (value (quote
-           (value-triple
-            (cw "~%~%Nothing added to the implemented-opcodes-table.~%~%~%")))))
-
   :guard-hints (("Goal" :in-theory (e/d () (msri-is-n64p))
                  :use ((:instance msri-is-n64p (i 0)))))
 
@@ -221,9 +211,6 @@
   :returns (x86 x86p :hyp (and (x86p x86)
                                (not (app-view x86))
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'SYSCALL #x0F05 '(:nil nil)
-                                    'x86-syscall)
 
   :guard-hints (("Goal" :in-theory (e/d (n64-to-i64 wr64)
                                         ())))
@@ -470,9 +457,6 @@ REX.W + 0F 07: SYSRET</p>
 
   :returns (x86 x86p :hyp (and (x86p x86)                               
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'SYSRET #x0F07 '(:nil nil)
-                                    'x86-sysret)
 
   :prepwork ((local (in-theory (e/d* (sysret-guard-helpers) ())))
 

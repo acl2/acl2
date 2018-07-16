@@ -1935,74 +1935,8 @@ reference made from privilege level 3.</blockquote>"
 
 ;; ======================================================================
 
-;; Some misc. stuff to be used to define instruction semantic
-;; functions:
-
-;; implemented-opcodes-table contains information about opcodes that
-;; are supported by the model.  We build the information in the table
-;; when defining instruction semantic functions using the macro
-;; def-inst.
-
-;; ----------------------------------------------------------------------
-
-(program)
-
-(defun add-to-implemented-opcodes-table-fn
-    (opcode-name opcode type fn-name world state)
-
-  ;; For most x86 instructions (e.g., ADD, opcode: 00), the type field
-  ;; is simply '(:nil nil) --- though we don't enforce any constraints
-  ;; on it (except that it must be a true-listp).  However, this type
-  ;; field comes in useful when just knowing the opcode value is not
-  ;; sufficient to tell us which x86 instruction we're talking about.
-  ;; Consider the one-byte opcode 80 --- unless we also know the value
-  ;; of the reg field of the ModR/M byte, we can't tell whether this
-  ;; opcode corresponds to an ADD, OR, CMP, XOR, SUB, AND, SBB, or ADC
-  ;; instruction (immediate group 1).  For instance, the ADD flavor of
-  ;; 80 is listed as "80 / 0" in the Intel manuals (see Section
-  ;; 3.1.1.1 in Intel Vol. 2, March 2017 edition, for details), which
-  ;; means that the opcode byte is 80 and the reg field has the value
-  ;; 0.  For this instruction, the type field would be '(:reg 0).
-
-  ;; Another example of the kind of information the type field can
-  ;; have is mandatory prefixes.  For example, instruction MOVSS
-  ;; (two-byte opcode, 0F 10) is called with a mandatory prefix F3. We
-  ;; chose the type field to be the following in this case:
-  ;; '(:misc
-  ;;   (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-
-  ;; All of this type information in the implemented-opcodes-table can
-  ;; be seen in :doc x86isa::implemented-opcodes, listed in the
-  ;; "Extension" part of each instruction.
-
-  (declare (xargs :stobjs state
-                  :guard (and (natp opcode)
-                              (true-listp type)
-                              (symbolp fn-name))))
-  (if (function-symbolp fn-name world)
-      (value `(table implemented-opcodes-table
-                     (cons ',opcode ',type)
-                     (cons ',opcode-name ',fn-name)))
-    (er soft 'add-to-implemented-opcodes-table
-        "Semantic function ~x0 is invalid!~%" fn-name)))
-
-(defmacro add-to-implemented-opcodes-table
-  (opcode-name opcode type fn-name)
-  `(make-event
-    (add-to-implemented-opcodes-table-fn
-     ,opcode-name ,opcode ,type ,fn-name (w state) state)))
-
-
-(logic)
-
-;; ----------------------------------------------------------------------
-
 (defmacro def-inst
   (name &key
-        ;; Will raise an error as a part of calling
-        ;; add-to-implemented-opcodes-table when def-inst is expanded
-        ;; and "implemented" is not an embedded event form.
-        (implemented 't)
         (operation   'nil)
         (sp/dp       'nil)
         (dp-to-sp    'nil)
@@ -2056,8 +1990,6 @@ reference made from privilege level 3.</blockquote>"
 
          (add-to-ruleset instruction-decoding-and-spec-rules
                          '(,name))
-
-         ,implemented
 
          ,@(and thms
                 `(,@thms)))

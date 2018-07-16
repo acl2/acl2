@@ -159,57 +159,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ANDPS #x0F54
-                                      '(:nil nil)
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'ANDNPS #x0F55
-                                      '(:nil nil)
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'ORPS #x0F56
-                                      '(:nil nil)
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'XORPS #x0F57
-                                      '(:nil nil)
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'ANDPD #x0F54
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'ANDNPD #x0F55
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'ORPD #x0F56
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'XORPD #x0F57
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'PAND #x0FDB
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'PANDN #x0FDF
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'POR #x0FEB
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'PXOR #x0FEF
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: SSE/SSE2 Comparison Instructions
@@ -313,18 +263,7 @@
        (x86 (!xmmi-size operand-size xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CMPSS #x0FC2
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cmpss/cmpsd-Op/En-RMI)
-    (add-to-implemented-opcodes-table 'CMPSD #x0FC2
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cmpss/cmpsd-Op/En-RMI)))
+      x86))
 
 (def-inst x86-cmpps-Op/En-RMI
 
@@ -486,12 +425,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'CMPPS #x0FC2
-                                    '(:nil nil)
-                                    'x86-cmpps-Op/En-RMI))
+    x86))
 
 (def-inst x86-cmppd-Op/En-RMI
 
@@ -622,13 +556,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'CMPPD #x0FC2
-                                    '(:misc
-                                      (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                    'x86-cmppd-Op/En-RMI))
+      x86))
 
 (def-inst x86-comis?/ucomis?-Op/En-RM
 
@@ -749,24 +677,6 @@
              x86))))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'COMISS #x0F2F
-                                      '(:nil nil)
-                                      'x86-comis?/ucomis?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'UCOMISS #x0F2E
-                                      '(:nil nil)
-                                      'x86-comis?/ucomis?-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'COMISD #x0F2F
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-comis?/ucomis?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'UCOMISD #x0F2E
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-comis?/ucomis?-Op/En-RM)))
+    x86))
 
 ;; ======================================================================

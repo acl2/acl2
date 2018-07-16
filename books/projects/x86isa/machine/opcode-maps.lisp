@@ -1417,8 +1417,7 @@
     #| b8 |#  ((:no-prefix . ("JMPE"   0))
                (:F3        . ("POPCNT" 2 (G v) (E v))))
 
-              ((:no-prefix . (:Group-10 0 :1a))
-               (:no-prefix . ("InvalidOpcode" 0 :1b)))
+              (:Group-10 0 :1a :1b)
 
               (:Group-8 2 (E v) (I b) :1a)
 
@@ -3463,254 +3462,254 @@
 
 
     (:Group-6 . ;; Covers opcode 0F 00.
-              ((((:opcode . (#x0F #x00))
+              ((((:opcode . #ux0F_00)
                  (:reg    . #b000)) .
                  (:ALT
                   (("SLDT" 1 (R v) :1a)
                    ("SLDT" 1 (M w) :1a))))
-               (((:opcode . (#x0F #x00))
+               (((:opcode . #ux0F_00)
                  (:reg    . #b001)) .
                  (:ALT
                   (("STR" 1 (R v) :1a)
                    ("STR" 1 (M w) :1a))))
-               (((:opcode . (#x0F #x00))
+               (((:opcode . #ux0F_00)
                  (:reg    . #b010)) .
                  ("LLDT" 1 (E w) :1a
                   (:fn . (x86-lldt))))
-               (((:opcode . (#x0F #x00))
+               (((:opcode . #ux0F_00)
                  (:reg    . #b011)) .
                  ("LTR" 1 (E w) :1a))
-               (((:opcode . (#x0F #x00))
+               (((:opcode . #ux0F_00)
                  (:reg    . #b100)) .
                  ("VERR" 1 (E w) :1a))
-               (((:opcode . (#x0F #x00))
+               (((:opcode . #ux0F_00)
                  (:reg    . #b101)) .
                  ("VERW" 1 (E w) :1a))
-               (((:opcode . (#x0F #x00))
+               (((:opcode . #ux0F_00)
                  (:reg    . #b110)) .
                  (:none
                   (:fn . (:no-instruction))))
-               (((:opcode . (#x0F #x00))
+               (((:opcode . #ux0F_00)
                  (:reg    . #b111)) .
                  (:none
                   (:fn . (:no-instruction))))))
 
     (:Group-7 . ;; Covers opcode 0F 01.
-              ((((:opcode . (#x0F #x01))
+              ((((:opcode . #ux0F_01)
                  (:mod    . :mem)
                  (:reg    . #b000)) .
                  ("SGDT" 1 (M s) :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b000)
                  (:r/m    . #b001)) .
                  ("VMCALL" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b000)
                  (:r/m    . #b010)) .
                  ("VMLAUNCH" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b000)
                  (:r/m    . #b011)) .
                  ("VMRESUME" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b000)
                  (:r/m    . #b100)) .
                  ("VMXOFF" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . :mem)
                  (:reg    . #b001)) .
                  ("SIDT" 1 (M s) :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b001)
                  (:r/m    . #b000)) .
                  ("MONITOR" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b001)
                  (:r/m    . #b001)) .
                  ("MWAIT" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b001)
                  (:r/m    . #b010)) .
                  ("CLAC" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b001)
                  (:r/m    . #b011)) .
                  ("STAC" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b001)
                  (:r/m    . #b111)) .
                  ("ENCLS" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . :mem)
                  (:reg    . #b010)) .
                  ("LGDT" 1 (M s) :1a
                   (:fn . (x86-lgdt))))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . :mem)
                  (:reg    . #b011)) .
                  ("LIDT" 1 (M s) :1a
                   (:fn . (x86-lidt))))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b011)
                  (:r/m    . #b000)) .
                  ("XGETBV" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b011)
                  (:r/m    . #b001)) .
                  ("XSETBV" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b011)
                  (:r/m    . #b100)) .
                  ("VMFUNC" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b011)
                  (:r/m    . #b101)) .
                  ("XEND" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b011)
                  (:r/m    . #b110)) .
                  ("XTEST" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b011)
                  (:r/m    . #b111)) .
                  ("ENCLU" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:reg    . #b100)) .
                  (:ALT
                   (("SMSW" 1 (M w) :1a)
                    ("SMSW" 1 (R v) :1a))))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:reg    . #b100)
                  (:r/m    . #b11)) .
                  (:none
                   (:fn . (:no-instruction))))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:reg    . #b101)) .
                  (:none
                   (:fn . (:no-instruction))))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:reg    . #b110)) .
                  ("LMSW" 1 (E w) :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:reg    . #b111)
                  (:r/m    . :mem)) .
                  ("INVLPG" 1 (M b) :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b111)
                  (:r/m    . #b000)) .
                  ("SWAPGS" 0 :1a))
-               (((:opcode . (#x0F #x01))
+               (((:opcode . #ux0F_01)
                  (:mod    . #b11)
                  (:reg    . #b111)
                  (:r/m    . #b001)) .
                  ("RDTSCP" 0 :1a))))
 
     (:Group-8 . ;; Covers opcode 0F BA.
-              ((((:opcode . (#x0F #xBA))
+              ((((:opcode . #ux0F_BA)
                  (:reg    . #b000)) .
                  (:none
                   (:fn . (:no-instruction))))
-               (((:opcode . (#x0F #xBA))
+               (((:opcode . #ux0F_BA)
                  (:reg    . #b001)) .
                  (:none
                   (:fn . (:no-instruction))))
-               (((:opcode . (#x0F #xBA))
+               (((:opcode . #ux0F_BA)
                  (:reg    . #b010)) .
                  (:none
                   (:fn . (:no-instruction))))
-               (((:opcode . (#x0F #xBA))
+               (((:opcode . #ux0F_BA)
                  (:reg    . #b011)) .
                  (:none
                   (:fn . (:no-instruction))))
-               (((:opcode . (#x0F #xBA))
+               (((:opcode . #ux0F_BA)
                  (:reg    . #b100)) .
                  ("BT" 2 (E v) (I b) :1a
                   (:fn . (x86-bt-0f-ba))))
-               (((:opcode . (#x0F #xBA))
+               (((:opcode . #ux0F_BA)
                  (:reg    . #b101)) .
                  ("BTS" 2 (E b) (I b) :1a))
-               (((:opcode . (#x0F #xBA))
+               (((:opcode . #ux0F_BA)
                  (:reg    . #b110)) .
                  ("BTR" 2 (E b) (I b) :1a))
-               (((:opcode . (#x0F #xBA))
+               (((:opcode . #ux0F_BA)
                  (:reg    . #b111)) .
                  ("BTC" 2 (E b) (I b) :1a))))
 
     (:Group-9 . ;; Covers opcode 0F C7.
-              ((((:opcode . (#x0F #xC7))
+              ((((:opcode . #ux0F_C7)
                  (:reg    . #b000)) .
                  (:none
                   (:fn . (:no-instruction))))
-               (((:opcode . (#x0F #xC7))
+               (((:opcode . #ux0F_C7)
                  (:prefix . nil)
                  (:mod    . :mem)
                  (:reg    . #b001)) .
                  (:ALT
                   (("CMPXCH8B" 1 (M q) :1a)
                    ("CMPXCHG16B" 1 (M dq) :1a))))
-               (((:opcode . (#x0F #xC7))
+               (((:opcode . #ux0F_C7)
                  (:mod    . #b11)
                  (:reg    . #b001)) .
                  (:none
                   (:fn . (:no-instruction))))
-               (((:opcode . (#x0F #xC7))
+               (((:opcode . #ux0F_C7)
                  (:reg    . #b010)) .
                  (:none
                   (:fn . (:no-instruction))))
-               (((:opcode . (#x0F #xC7))
+               (((:opcode . #ux0F_C7)
                  (:reg    . #b011)) .
                  (:none
                   (:fn . (:no-instruction))))
-               (((:opcode . (#x0F #xC7))
+               (((:opcode . #ux0F_C7)
                  (:reg    . #b100)) .
                  (:none
                   (:fn . (:no-instruction))))
-               (((:opcode . (#x0F #xC7))
+               (((:opcode . #ux0F_C7)
                  (:reg    . #b101)) .
                  (:none
                   (:fn . (:no-instruction))))
-               (((:opcode . (#x0F #xC7))
+               (((:opcode . #ux0F_C7)
                  (:prefix . nil)
                  (:mod    . :mem)
                  (:reg    . #b110)) .
                  ("VMPTRLD" 1 (M q) :1a))
-               (((:opcode . (#x0F #xC7))
+               (((:opcode . #ux0F_C7)
                  (:prefix . :66)
                  (:mod    . :mem)
                  (:reg    . #b110)) .
                  ("VMCLEAR" 1 (M q) :1a))
-               (((:opcode . (#x0F #xC7))
+               (((:opcode . #ux0F_C7)
                  (:prefix . :F3)
                  (:mod    . :mem)
                  (:reg    . #b110)) .
                  ("VMXON" 1 (M q) :1a))
-               (((:opcode . (#x0F #xC7))
+               (((:opcode . #ux0F_C7)
                  (:prefix . nil)
                  (:mod    . #b11)
                  (:reg    . #b110)) .
                  ("RDRAND" 1 (R v) :1a
                   (:fn . (x86-rdrand))))
-               (((:opcode . (#x0F #xC7))
+               (((:opcode . #ux0F_C7)
                  (:prefix . nil)
                  (:reg    . #b111)) .
                  ("RDSEED" 1 (R v) :1a))
-               (((:opcode . (#x0F #xC7))
+               (((:opcode . #ux0F_C7)
                  (:prefix . :F3)
                  (:reg    . #b111)) .
                  (:ALT
@@ -3718,7 +3717,7 @@
                    ("RDPID" 1 (R q) :1a))))))
 
     (:Group-10 . ;; Covers opcode 0F B9.
-               ((((:opcode . (#x0F #xB9))) .
+               ((((:opcode . #ux0F_B9)) .
                  ("UD1" 0 :1a))))
 
     (:Group-11 . ;; Covers opcodes C6 and C7.
@@ -3801,221 +3800,221 @@
                   ("XBEGIN" 1 (J z) :1a))))
 
     (:Group-12 . ;; Covers opcode 0F 71.
-               ((((:opcode . (#x0F #x71))
+               ((((:opcode . #ux0F_71)
                   (:reg    . #b000)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (#x0F #x71))
+                (((:opcode . #ux0F_71)
                   (:reg    . #b001)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (#x0F #x71))
+                (((:opcode . #ux0F_71)
                   (:prefix . nil)
                   (:mod    . #b11)
                   (:reg    . #b010)) .
                   ("PSRLW" 2 (N q) (I b) :1a))
-                (((:opcode . (#x0F #x71))
+                (((:opcode . #ux0F_71)
                   (:prefix . :66)
                   (:mod    . #b11)
                   (:reg    . #b010)) .
                   ("VPSRLW" 3 (H x) (U x) (I b) :1a))
-                (((:opcode . (#x0F #x71))
+                (((:opcode . #ux0F_71)
                   (:reg    . #b011)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (#x0F #x71))
+                (((:opcode . #ux0F_71)
                   (:prefix . nil)
                   (:mod    . #b11)
                   (:reg    . #b100)) .
                   ("PSRAW" 2 (N q) (I b) :1a))
-                (((:opcode . (#x0F #x71))
+                (((:opcode . #ux0F_71)
                   (:prefix . :66)
                   (:mod    . #b11)
                   (:reg    . #b100)) .
                   ("VPSRAW" 3 (H x) (U x) (I b) :1a))
-                (((:opcode . (#x0F #x71))
+                (((:opcode . #ux0F_71)
                   (:reg    . #b101)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (#x0F #x71))
+                (((:opcode . #ux0F_71)
                   (:prefix . nil)
                   (:mod    . #b11)
                   (:reg    . #b110)) .
                   ("PSLLW" 2 (N q) (I b) :1a))
-                (((:opcode . (#x0F #x71))
+                (((:opcode . #ux0F_71)
                   (:prefix . :66)
                   (:mod    . #b11)
                   (:reg    . #b110)) .
                   ("VPSLLW" 3 (H x) (U x) (I b) :1a))
-                (((:opcode . (#x0F #x71))
+                (((:opcode . #ux0F_71)
                   (:reg    . #b111)) .
                   (:none
                    (:fn . (:no-instruction))))))
 
     (:Group-13 . ;; Covers opcode 0F 72.
-               ((((:opcode . (#x0F #x72))
+               ((((:opcode . #ux0F_72)
                   (:reg    . #b000)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (#x0F #x72))
+                (((:opcode . #ux0F_72)
                   (:reg    . #b001)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (#x0F #x72))
+                (((:opcode . #ux0F_72)
                   (:prefix . nil)
                   (:mod    . #b11)
                   (:reg    . #b010)) .
                   ("PSRLD" 2 (N q) (I b) :1a))
-                (((:opcode . (#x0F #x72))
+                (((:opcode . #ux0F_72)
                   (:prefix . :66)
                   (:mod    . #b11)
                   (:reg    . #b010)) .
                   ("VPSRLD" 3 (H x) (U x) (I b) :1a))
-                (((:opcode . (#x0F #x72))
+                (((:opcode . #ux0F_72)
                   (:reg    . #b011)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (#x0F #x72))
+                (((:opcode . #ux0F_72)
                   (:prefix . nil)
                   (:mod    . #b11)
                   (:reg    . #b100)) .
                   ("PSRAD" 2 (N q) (I b) :1a))
-                (((:opcode . (#x0F #x72))
+                (((:opcode . #ux0F_72)
                   (:prefix . :66)
                   (:mod    . #b11)
                   (:reg    . #b100)) .
                   ("VPSRAD" 3 (H x) (U x) (I b) :1a))
-                (((:opcode . (#x0F #x72))
+                (((:opcode . #ux0F_72)
                   (:reg    . #b101)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (#x0F #x72))
+                (((:opcode . #ux0F_72)
                   (:prefix . nil)
                   (:mod    . #b11)
                   (:reg    . #b110)) .
                   ("PSLLD" 2 (N q) (I b) :1a))
-                (((:opcode . (#x0F #x72))
+                (((:opcode . #ux0F_72)
                   (:prefix . :66)
                   (:mod    . #b11)
                   (:reg    . #b110)) .
                   ("VPSLLD" 3 (H x) (U x) (I b) :1a))
-                (((:opcode . (#x0F #x72))
+                (((:opcode . #ux0F_72)
                   (:reg    . #b111)) .
                   (:none
                    (:fn . (:no-instruction))))))
 
     (:Group-14 . ;; Covers opcode 0F 73.
-               ((((:opcode . (#x0F #x73))
+               ((((:opcode . #ux0F_73)
                   (:reg    . #b000)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (#x0F #x73))
+                (((:opcode . #ux0F_73)
                   (:reg    . #b001)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (#x0F #x73))
+                (((:opcode . #ux0F_73)
                   (:prefix . nil)
                   (:mod    . #b11)
                   (:reg    . #b010)) .
                   ("PSRLQ" 2 (N q) (I b) :1a))
-                (((:opcode . (#x0F #x73))
+                (((:opcode . #ux0F_73)
                   (:prefix . :66)
                   (:mod    . #b11)
                   (:reg    . #b010)) .
                   ("VPSRLQ" 3 (H x) (U x) (I b) :1a))
-                (((:opcode . (#x0F #x73))
+                (((:opcode . #ux0F_73)
                   (:prefix . :66)
                   (:mod    . #b11)
                   (:reg    . #b011)) .
                   ("VPSRLDQ" 3 (H x) (U x) (I b) :1a))
-                (((:opcode . (#x0F #x73))
+                (((:opcode . #ux0F_73)
                   (:prefix . nil)
                   (:reg    . #b100)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (#x0F #x73))
+                (((:opcode . #ux0F_73)
                   (:reg    . #b101)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (#x0F #x73))
+                (((:opcode . #ux0F_73)
                   (:prefix . nil)
                   (:mod    . #b11)
                   (:reg    . #b110)) .
                   ("PSLLQ" 2 (N q) (I b) :1a))
-                (((:opcode . (#x0F #x73))
+                (((:opcode . #ux0F_73)
                   (:prefix . :66)
                   (:mod    . #b11)
                   (:reg    . #b110)) .
                   ("VPSLLQ" 3 (H x) (U x) (I b) :1a))
-                (((:opcode . (#x0F #x73))
+                (((:opcode . #ux0F_73)
                   (:prefix . :66)
                   (:mod    . #b11)
                   (:reg    . #b111)) .
                   ("VPSLLDQ" 3 (H x) (U x) (I b) :1a))))
 
     (:Group-15 . ;; Covers opcode 0F AE.
-               ((((:opcode . (#x0F #xAE))
+               ((((:opcode . #ux0F_AE)
                   (:prefix . nil)
                   (:mod    . :mem)
                   (:reg    . #b000)) .
                   ("FXSAVE" 0 :1a))
-                (((:opcode . (#x0F #xAE))
+                (((:opcode . #ux0F_AE)
                   (:prefix . :F3)
                   (:mod    . #b11)
                   (:reg    . #b000)) .
                   ("RDFSBASE" 1 (R y) :1a))
-                (((:opcode . (#x0F #xAE))
+                (((:opcode . #ux0F_AE)
                   (:prefix . nil)
                   (:mod    . :mem)
                   (:reg    . #b001)) .
                   ("FXRSTOR" 0 :1a))
-                (((:opcode . (#x0F #xAE))
+                (((:opcode . #ux0F_AE)
                   (:prefix . :F3)
                   (:mod    . #b11)
                   (:reg    . #b001)) .
                   ("RDGSBASE" 1 (R y) :1a))
-                (((:opcode . (#x0F #xAE))
+                (((:opcode . #ux0F_AE)
                   (:prefix . nil)
                   (:mod    . :mem)
                   (:reg    . #b010)) .
                   ("LDMXCSR" 0 :1a
                    (:fn . (x86-ldmxcsr/stmxcsr-Op/En-M))))
-                (((:opcode . (#x0F #xAE))
+                (((:opcode . #ux0F_AE)
                   (:prefix . :F3)
                   (:mod    . #b11)
                   (:reg    . #b010)) .
                   ("WRFSBASE" 1 (R y) :1a))
-                (((:opcode . (#x0F #xAE))
+                (((:opcode . #ux0F_AE)
                   (:prefix . nil)
                   (:mod    . :mem)
                   (:reg    . #b011)) .
                   ("STMXCSR" 0 :1a
                    (:fn . (x86-ldmxcsr/stmxcsr-Op/En-M))))
-                (((:opcode . (#x0F #xAE))
+                (((:opcode . #ux0F_AE)
                   (:prefix . :F3)
                   (:mod    . #b11)
                   (:reg    . #b011)) .
                   ("WRGSBASE" 1 (R y) :1a))
-                (((:opcode . (#x0F #xAE))
+                (((:opcode . #ux0F_AE)
                   (:prefix . nil)
                   (:mod    . :mem)
                   (:reg    . #b100)) .
                   ("XSAVE" 0 :1a))
-                (((:opcode . (#x0F #xAE))
+                (((:opcode . #ux0F_AE)
                   (:prefix . nil)
                   (:mod    . #b11)
                   (:reg    . #b101)) .
                   (:ALT
                    (("XRSTOR" 0 :1a)
                     ("LFENCE" 0 :1a))))
-                (((:opcode . (#x0F #xAE))
+                (((:opcode . #ux0F_AE)
                   (:prefix . nil)
                   (:mod    . #b11)
                   (:reg    . #b110)) .
                   (:ALT
                    (("XSAVEOPT" 0 :1a)
                     ("MFENCE" 0 :1a))))
-                (((:opcode . (#x0F #xAE))
+                (((:opcode . #ux0F_AE)
                   (:prefix . nil)
                   (:mod    . #b11)
                   (:reg    . #b111)) .
@@ -4024,65 +4023,73 @@
                     ("SFENCE"  0 :1a))))))
 
     (:Group-16 . ;; Covers opcode 0F 18.
-               ((((:opcode . (#x0F #x18))
+               ((((:opcode . #ux0F_18)
                   (:mod    . :mem)
                   (:reg    . #b000)) .
                   ("PREFETCHNTA" 0 :1a))
-                (((:opcode . (#x0F #x18))
+                (((:opcode . #ux0F_18)
                   (:mod    . :mem)
                   (:reg    . #b001)) .
                   ("PREFETCHT0" 0 :v))
-                (((:opcode . (#x0F #x18))
+                (((:opcode . #ux0F_18)
                   (:mod    . :mem)
                   (:reg    . #b010)) .
                   ("PREFETCHT1" 0 :1a))
-                (((:opcode . (#x0F #x18))
+                (((:opcode . #ux0F_18)
                   (:mod    . :mem)
                   (:reg    . #b011)) .
                   ("PREFETCHT2" 0 :1a))
-                (((:opcode . (#x0F #x18))
+                (((:opcode . #ux0F_18)
                   (:reg    . #b100)) .
                   ("RESERVEDNOP" 0))
-                (((:opcode . (#x0F #x18))
+                (((:opcode . #ux0F_18)
                   (:reg    . #b101)) .
                   ("RESERVEDNOP" 0))
-                (((:opcode . (#x0F #x18))
+                (((:opcode . #ux0F_18)
                   (:reg    . #b110)) .
                   ("RESERVEDNOP" 0))
-                (((:opcode . (#x0F #x18))
+                (((:opcode . #ux0F_18)
                   (:reg    . #b111)) .
                   ("RESERVEDNOP" 0))
-                (((:opcode . (#x0F #x18))
+                (((:opcode . #ux0F_18)
                   (:mod    . #b11)) .
                   ("RESERVEDNOP" 0))))
 
     (:Group-17 . ;; Covers opcode VEX 0F 38 F3.
-               ((((:opcode . (:vex #x0F #x38 #xF3))
+               ((((:opcode . #ux0F_38_F3)
+                  (:vex    . t)
                   (:reg    . #b000)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (:vex #x0F #x38 #xF3))
+                (((:opcode . #ux0F_38_F3)
+                  (:vex    . t)
                   (:reg    . #b001)) .
                   ("BLSR" 2 (B y) (E y) :v))
-                (((:opcode . (:vex #x0F #x38 #xF3))
+                (((:opcode . #ux0F_38_F3)
+                  (:vex    . t)
                   (:reg    . #b010)) .
                   ("BLSMSK" 2 (B y) (E y) :v))
-                (((:opcode . (:vex #x0F #x38 #xF3))
+                (((:opcode . #ux0F_38_F3)
+                  (:vex    . t)
                   (:reg    . #b011)) .
                   ("BLSI" 2 (B y) (E y) :v))
-                (((:opcode . (:vex #x0F #x38 #xF3))
+                (((:opcode . #ux0F_38_F3)
+                  (:vex    . t)
                   (:reg    . #b100)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (:vex #x0F #x38 #xF3))
+                (((:opcode . #ux0F_38_F3)
+                  (:vex    . t)
                   (:reg    . #b101)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (:vex #x0F #x38 #xF3))
+                (((:opcode . #ux0F_38_F3)
+                  (:vex    . t)
                   (:reg    . #b110)) .
                   (:none
                    (:fn . (:no-instruction))))
-                (((:opcode . (:vex #x0F #x38 #xF3))
+                (((:opcode . #ux0F_38_F3)
+                  (:vex    . t)
                   (:reg    . #b111)) .
                   (:none
                    (:fn . (:no-instruction))))))
@@ -4275,8 +4282,8 @@
      (semantic-function-info-p semantic-info)
      (or
       (and (or (stringp first)
-               (member-equal first *group-numbers*)
-               (simple-cell-addressing-info-p new-rest)))
+               (member-equal first *group-numbers*))
+           (simple-cell-addressing-info-p new-rest))
       (and
        (member-equal first *simple-cells-standalone-legal-keywords*)
        (equal new-rest nil)))))
@@ -4437,7 +4444,7 @@
            (keys (strip-cars opcode-identifier))
            ((unless (subsetp-equal
                      keys
-                     '(:opcode :reg :prefix :mod :r/m)))
+                     '(:opcode :reg :prefix :mod :r/m :vex)))
             (cw "~%Keys ~p0 ill-formed!~%" keys))
            (opcode-cell (cdr opcode-descriptor))
            ((unless (simple-cell-p opcode-cell))

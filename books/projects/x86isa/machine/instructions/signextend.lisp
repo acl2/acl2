@@ -68,10 +68,6 @@
                                          n32-to-i32
                                          n64-to-i64)
                                         ())))
-  :implemented
-  (add-to-implemented-opcodes-table 'CBW #x98 '(:nil nil)
-                                    'x86-cbw/cwd/cdqe)
-
   :body
 
   (b* ((ctx 'x86-cbw/cwd/cdqe)
@@ -129,9 +125,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'CWD #x99 '(:nil nil) 'x86-cwd/cdq/cqo)
-
   :body
 
   (b* ((ctx 'x86-cwd/cdq/cqo)
