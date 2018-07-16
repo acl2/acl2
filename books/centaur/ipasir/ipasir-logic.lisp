@@ -137,9 +137,30 @@
 
 (local (xdoc::set-default-parents ipasir$a))
 
+(define ipasir-get-status$a ((solver ipasir$a-p))
+  :enabled t
+  (ipasir$a->status solver))
+
+(define ipasir-some-history$a ((solver ipasir$a-p))
+  :enabled t
+  (consp (ipasir$a->history solver)))
+
+(define ipasir-empty-new-clause$a ((solver ipasir$a-p))
+  :enabled t
+  (not (ipasir$a->new-clause solver)))
+
+(define ipasir-get-assumption$a ((solver ipasir$a-p))
+  :enabled t
+  (ipasir$a->assumption solver))
+
+(define ipasir-solved-assumption$a ((solver ipasir$a-p))
+  :guard (eq (ipasir-get-status$a solver) :unsat)
+  :enabled t
+  (ipasir$a->solved-assumption solver))
+
 (define ipasir-init$a ((solver ipasir$a-p)
                        state)
-  :guard (non-exec (eq (ipasir$a->status solver) :undef))
+  :guard (eq (ipasir-get-status$a solver) :undef)
   :returns (mv (new-solver ipasir$a-p)
                (new-state (equal new-state (mv-nth 2 (read-acl2-oracle state)))))
   :short "Logic form of @(see ipasir-init).  See @(see ipasir) for usage."
@@ -164,8 +185,8 @@
 
 
 (define ipasir-reinit$a ((solver ipasir$a-p))
-  :guard (non-exec (and (eq (ipasir$a->status solver) :undef)
-                        (consp (ipasir$a->history solver))))
+  :guard (and (eq (ipasir-get-status$a solver) :undef)
+              (ipasir-some-history$a solver))
   :returns (new-solver ipasir$a-p)
   :short "Logic form of @(see ipasir-reinit).  See @(see ipasir) for usage."
   (b* (((ipasir$a solver)))
@@ -187,7 +208,7 @@
 
 
 (define ipasir-release$a ((solver ipasir$a-p))
-  :guard (non-exec (not (eq (ipasir$a->status solver) :undef)))
+  :guard (not (eq (ipasir-get-status$a solver) :undef))
   :returns (new-solver ipasir$a-p)
   :short "Logic form of @(see ipasir-release).  See @(see ipasir) for usage."
   (b* (((ipasir$a solver)))
@@ -201,7 +222,7 @@
     (consp (ipasir$a->history new-solver))))
 
 (define ipasir-input$a ((solver ipasir$a-p))
-  :guard (non-exec (not (eq (ipasir$a->status solver) :undef)))
+  :guard (not (eq (ipasir-get-status$a solver) :undef))
   :returns (new-solver ipasir$a-p)
   :short "Logic form of @(see ipasir-input).  See @(see ipasir) for usage."
   (b* (((ipasir$a solver)))
@@ -224,7 +245,7 @@
 
 (define ipasir-add-lit$a ((solver ipasir$a-p)
                           (lit litp))
-  :guard (non-exec (not (eq (ipasir$a->status solver) :undef)))
+  :guard (not (eq (ipasir-get-status$a solver) :undef))
   :returns (new-solver ipasir$a-p)
   :short "Logic form of @(see ipasir-add-lit).  See @(see ipasir) for usage."
   (b* (((ipasir$a solver))
@@ -262,7 +283,7 @@
            (ipasir$a->assumption solver))))
 
 (define ipasir-finalize-clause$a ((solver ipasir$a-p))
-  :guard (non-exec (not (eq (ipasir$a->status solver) :undef)))
+  :guard (not (eq (ipasir-get-status$a solver) :undef))
   :returns (new-solver ipasir$a-p)
   :short "Logic form of @(see ipasir-finalize-clause).  See @(see ipasir) for usage."
   (b* (((ipasir$a solver)))
@@ -290,7 +311,7 @@
 
 (define ipasir-assume$a ((solver ipasir$a-p)
                          (lit litp))
-  :guard (non-exec (not (eq (ipasir$a->status solver) :undef)))
+  :guard (not (eq (ipasir-get-status$a solver) :undef))
   :returns (new-solver ipasir$a-p)
   :short "Logic form of @(see ipasir-assume).  See @(see ipasir) for usage."
   (b* (((ipasir$a solver))
@@ -319,7 +340,7 @@
 
 (define ipasir-val$a ((solver ipasir$a-p)
                       (lit litp))
-  :guard (non-exec (eq (ipasir$a->status solver) :sat))
+  :guard (eq (ipasir-get-status$a solver) :sat)
   :Returns (val (or (bitp val)
                     (not val))
                 :rule-classes :type-prescription)
@@ -330,9 +351,8 @@
 
 (define ipasir-failed$a ((solver ipasir$a-p)
                          (lit litp))
-  :guard (non-exec (b* (((ipasir$a solver)))
-                     (and (eq solver.status :unsat)
-                          (member lit solver.solved-assumption))))
+  :guard (and (eq (ipasir-get-status$a solver) :unsat)
+              (member lit (ipasir-solved-assumption$a solver)))
   :short "Logic form of @(see ipasir-failed).  See @(see ipasir) for usage."
   (b* (((ipasir$a solver))
        (lit (lit-fix lit)))
@@ -340,7 +360,7 @@
 
 (define ipasir-set-limit$a ((solver ipasir$a-p)
                             (limit acl2::maybe-natp))
-  :guard (non-exec (not (eq (ipasir$a->status solver) :undef)))
+  :guard (not (eq (ipasir-get-status$a solver) :undef))
   :returns (new-solver ipasir$a-p)
   :short "Logic form of @(see ipasir-set-limit).  See @(see ipasir) for usage."
   (b* (((ipasir$a solver)))
@@ -367,7 +387,7 @@
              solver.assumption))))
 
 (define ipasir-callback-count$a ((solver ipasir$a-p))
-  :guard (non-exec (not (eq (ipasir$a->status solver) :undef)))
+  :guard (not (eq (ipasir-get-status$a solver) :undef))
   :enabled t
   :short "Logic form of @(see ipasir-callback-count).  See @(see ipasir) for usage."
   (ipasir$a->callback-count solver))
@@ -385,8 +405,8 @@
   (encapsulate
     (((ipasir-solve$a *) => (mv * *)
       :guard (and (ipasir$a-p solver)
-                  (non-exec (and (not (equal (ipasir$a->status solver) :undef))
-                                 (not (ipasir$a->new-clause solver)))))
+                  (not (equal (ipasir-get-status$a solver) :undef))
+                  (ipasir-empty-new-clause$a solver))
       :formals (solver)))
 
     (local (define ipasir-solve$a ((solver ipasir$a-p))
@@ -400,7 +420,7 @@
                                   :new-clause nil
                                   ;; :solved-assumption (ipasir$a->assumption solver)
                                   :history (cons :solve (ipasir$a->history solver))))))
-
+    
     (defthm ipasir-solve$a-status
       (let ((status (mv-nth 0 (ipasir-solve$a solver))))
         (or (equal status :failed)
@@ -418,7 +438,7 @@
              ;; (equal new-solver.solved-assumption solver.assumption)
              (equal new-solver.assumption nil)
              (equal new-solver.history (cons :solve solver.history)))))
-
+    
     (defthm ipasir-solve$a-callback-count
       (b* (((ipasir$a solver))
            ((mv ?status (ipasir$a new-solver)) (ipasir-solve$a solver)))
@@ -467,6 +487,53 @@
 (local (xdoc::set-default-parents ipasir))
 
 
+(define ipasir-bump-activity-vars$a ((solver ipasir$a-p)
+                                     (vars nat-listp)
+                                     (num-bumps natp))
+  :enabled t
+  :guard (not (equal (ipasir-get-status$a solver) :undef))
+  :returns (new-solver ipasir$a-p)
+  :short "Logical function for bumping var activity (unmodeled side-effect)"
+  (b* (((ipasir$a solver)))
+    (change-ipasir$a solver :history
+                     (cons (list :bump-activity-vars vars (lnfix num-bumps)) solver.history))))
+
+(defun ipasir-useless-clauseproc2 (clause)
+  (list clause))
+
+(defttag ipasir-get-curr-stats$a)
+
+(define-trusted-clause-processor
+  ipasir-useless-clauseproc2
+  nil
+  :partial-theory
+  (encapsulate
+    (((ipasir-get-curr-stats$a *) => (mv * * * * *)
+      :guard (and (ipasir$a-p solver)
+                  (not (equal (ipasir-get-status$a solver) :undef)))
+      :formals (solver)))
+
+    (local (define ipasir-get-curr-stats$a ((solver ipasir$a-p))
+             :enabled t
+             (declare (ignore solver))
+             (mv 0 0 0 0 0)))
+    
+    (defthm ipasir-get-curr-stats$a-mv-nth-0
+      (natp (mv-nth 0 (ipasir-get-curr-stats$a solver))))
+    
+    (defthm ipasir-get-curr-stats$a-mv-nth-1
+      (natp (mv-nth 1 (ipasir-get-curr-stats$a solver))))
+    
+    (defthm ipasir-get-curr-stats$a-mv-nth-2
+      (natp (mv-nth 2 (ipasir-get-curr-stats$a solver))))
+    
+    (defthm ipasir-get-curr-stats$a-mv-nth-3
+      (natp (mv-nth 3 (ipasir-get-curr-stats$a solver))))
+    
+    (defthm ipasir-get-curr-stats$a-mv-nth-4
+      (natp (mv-nth 4 (ipasir-get-curr-stats$a solver))))))
+
+(defttag nil)
 
 
 (make-event
@@ -475,10 +542,25 @@
      :type (satisfies ipasir$a-p)
      :initially ,(make-ipasir$a :status :undef))
     (ipasir-limit)
-    :renaming ((ipasir-val        ipasir-get)
-               (update-ipasir-val ipasir-set)
-               (ipasir-limit      ipasir-limit-get)
-               (update-ipasir-limit ipasir-limit-set))))
+    (ipasir-status-field :initially :undef)
+    (ipasir-empty-new-clause-field :initially t)
+    (ipasir-some-history-field :initially nil)
+    (ipasir-assumption-field :initially nil)
+    (ipasir-solved-assumption-field :initially nil)
+    :renaming ((ipasir-val                            ipasir-get)
+               (update-ipasir-val                     ipasir-set)
+               (ipasir-limit                          ipasir-limit-get)
+               (update-ipasir-limit                   ipasir-limit-set)
+               (ipasir-status-field                   ipasir-status-get)
+               (update-ipasir-status-field            ipasir-status-set)
+               (ipasir-assumption-field               ipasir-assumption-get)
+               (update-ipasir-assumption-field        ipasir-assumption-set)
+               (ipasir-some-history-field             ipasir-some-history-get)
+               (update-ipasir-some-history-field      ipasir-some-history-set)
+               (ipasir-empty-new-clause-field         ipasir-empty-new-clause-get)
+               (update-ipasir-empty-new-clause-field  ipasir-empty-new-clause-set)
+               (ipasir-solved-assumption-field        ipasir-solved-assumption-get)
+               (update-ipasir-solved-assumption-field ipasir-solved-assumption-set))))
 
 (define create-ipasir$a ()
   :enabled t
@@ -547,11 +629,41 @@
   :enabled t
   (ipasir-set (ipasir-set-limit$a (ipasir-get ipasir$c) limit) ipasir$c))
 
+(define ipasir-get-status$c (ipasir$c)
+  :enabled t
+  (ipasir$a->status (ipasir-get ipasir$c)))
+
+(define ipasir-some-history$c (ipasir$c)
+  :enabled t
+  (consp (ipasir$a->history (ipasir-get ipasir$c))))
+
+(define ipasir-empty-new-clause$c (ipasir$c)
+  :enabled t
+  (not (ipasir$a->new-clause (ipasir-get ipasir$c))))
+
+(define ipasir-get-assumption$c (ipasir$c)
+  :enabled t
+  (ipasir$a->assumption (ipasir-get ipasir$c)))
+
+(define ipasir-solved-assumption$c (ipasir$c)
+  :enabled t
+  (ipasir$a->solved-assumption (ipasir-get ipasir$c)))
+
 (define ipasir-callback-count$c (ipasir$c)
   :guard (not (eq (ipasir$a->status (ipasir-get ipasir$c)) :undef))
   :enabled t
   (ipasir$a->callback-count (ipasir-get ipasir$c)))
 
+
+(define ipasir-bump-activity-vars$c (ipasir$c (vars nat-listp) (num-bumps natp))
+  :guard (not (eq (ipasir$a->status (ipasir-get ipasir$c)) :undef))
+  :enabled t
+  (ipasir-set (ipasir-bump-activity-vars$a (ipasir-get ipasir$c) vars num-bumps) ipasir$c))
+
+(define ipasir-get-curr-stats$c (ipasir$c)
+  :guard (not (eq (ipasir$a->status (ipasir-get ipasir$c)) :undef))
+  :enabled t
+  (ipasir-get-curr-stats$a (ipasir-get ipasir$c)))
 
 
 (local (define ipasir-corr (ipasir$c solver)
@@ -562,9 +674,19 @@
   :concrete ipasir$c
   :recognizer (ipasirp :logic ipasir$a-p :exec ipasir$cp)
   :creator (create-ipasir :logic create-ipasir$a
-                            :exec create-ipasir$c)
+                          :exec create-ipasir$c)
   :corr-fn ipasir-corr
-  :exports ((ipasir-init :logic ipasir-init$a :exec ipasir-init$c)
+  :exports ((ipasir-get-status
+             :logic ipasir-get-status$a :exec ipasir-get-status$c)
+            (ipasir-empty-new-clause
+             :logic ipasir-empty-new-clause$a :exec ipasir-empty-new-clause$c)
+            (ipasir-some-history
+             :logic ipasir-some-history$a :exec ipasir-some-history$c)
+            (ipasir-get-assumption
+             :logic ipasir-get-assumption$a :exec ipasir-get-assumption$c) 
+            (ipasir-solved-assumption
+             :logic ipasir-solved-assumption$a :exec ipasir-solved-assumption$c) 
+            (ipasir-init :logic ipasir-init$a :exec ipasir-init$c)
             (ipasir-reinit :logic ipasir-reinit$a :exec ipasir-reinit$c)
             (ipasir-release :logic ipasir-release$a :exec ipasir-release$c)
             (ipasir-input :logic ipasir-input$a :exec ipasir-input$c)
@@ -574,6 +696,10 @@
             (ipasir-val :logic ipasir-val$a :exec ipasir-val$c)
             (ipasir-failed :logic ipasir-failed$a :exec ipasir-failed$c)
             (ipasir-solve :logic ipasir-solve$a :exec ipasir-solve$c)
+            (ipasir-bump-activity-vars
+             :logic ipasir-bump-activity-vars$a :exec ipasir-bump-activity-vars$c)
+            (ipasir-get-curr-stats
+             :logic ipasir-get-curr-stats$a :exec ipasir-get-curr-stats$c)
             (ipasir-set-limit
              :logic ipasir-set-limit$a :exec ipasir-set-limit$c)
             (ipasir-callback-count
@@ -609,6 +735,11 @@
 ;;   (defthm ipasir$c-contra-true
 ;;     (mv-nth 0 (ipasir$c-contra state))))
 
+(push-untouchable ipasir-get-status$c t)
+(push-untouchable ipasir-empty-new-clause$c t)
+(push-untouchable ipasir-some-history$c t)
+(push-untouchable ipasir-get-assumption$c t)
+(push-untouchable ipasir-solved-assumption$c t)
 (push-untouchable ipasir-init$c t)
 (push-untouchable ipasir-reinit$c t)
 (push-untouchable ipasir-release$c t)
@@ -619,9 +750,10 @@
 (push-untouchable ipasir-val$c t)
 (push-untouchable ipasir-failed$c t)
 (push-untouchable ipasir-solve$c t)
+(push-untouchable ipasir-bump-activity-vars$c t)
+(push-untouchable ipasir-get-curr-stats$c t)
 (push-untouchable ipasir-set-limit$c t)
 (push-untouchable ipasir-callback-count$c t)
-
 
 
 
@@ -714,17 +846,6 @@ are available from its website
 work slightly differently than the underlying ipasir implementation.  The
 differences are listed below under \"Departures from the C Interface.\"</p>
 
-<p>One oddity of the ipasir library is that the guards for most of the
-interface functions are non-executable, which means you can't run anything on
-the global ipasir stobj.  Instead, you need to create a local stobj with @(see
-with-local-stobj), or with @(see with-local-ipasir), which also takes care of
-initializing and releasing the solver object.  The guards are stated in terms
-of the underlying logical model of the solver, which can't actually be accessed
-by executable code.  In particular, the solver is said to be in one of the
-states @(':undef'), @(':input'), @(':sat''), or @(':unsat'); each function has
-certain constraints on the state when it is called.  Note the solver is in the
-@(':undef') state when first created.</p>
-
 <p>The following interfacing
 functions are provided:</p>
 
@@ -800,6 +921,15 @@ call of solve may only call the callback that many times before it fails.
 Setting it to nil or 0 removes the limit.  If 0, the callbacks are still
 performed and counted, but will not cause termination.  The frequency with
 which the callback is called varies by solver.</li>
+
+<li>@('(ipasir-get-status ipasir)') simply returns the current status :undef,
+:input, :sat, or :unsat. Mostly used in guards to allow executable guards for 
+most of the ipasir functions.</li>
+
+<li>@('(ipasir-some-history ipasir) (ipasir-empty-new-clause ipasir)
+(ipasir-get-assumption ipasir) (ipasir-solved-assumption ipasir)') are
+functions similar in spirit to @('ipasir-get-status') in that they are intended
+to only be used to define executable guards for the ipasir stobj.</li>
 
 <li>@('(ipasir-callback-count ipasir)') queries how many times the
 @('ipasir-set-limit') callback has been called since the last initialization or

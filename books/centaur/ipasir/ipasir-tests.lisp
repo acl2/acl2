@@ -103,8 +103,8 @@
 
 (local
  (define ipasir-set-maj3 (ipasir (out litp) (a litp) (b litp) (c litp))
-   :guard (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                         (not (ipasir$a->new-clause ipasir))))
+   :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+               (ipasir-empty-new-clause ipasir))
    :returns (new-ipasir)
    :parents (ipasir-formula)
    :short "Add clauses restricting @('out') to be @('(maj3 a b c)')."
@@ -176,8 +176,8 @@
                            ipasir)
          :guard (and (eql (len a-inputs) (len b-inputs))
                      (consp a-inputs)
-                     (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                                    (not (ipasir$a->new-clause ipasir)))))
+                     (not (eq (ipasir-get-status ipasir) :undef))
+                     (ipasir-empty-new-clause ipasir))
          :returns (mv (next-out natp :rule-classes :type-prescription)
                       (sum lit-listp)
                       new-ipasir)
@@ -335,8 +335,8 @@
                            ipasir)
          :guard (and (eql (len a-inputs) (len b-inputs))
                      (consp a-inputs)
-                     (non-exec (and (not (eq (ipasir$a->status ipasir) :undef))
-                                    (not (ipasir$a->new-clause ipasir)))))
+                     (not (eq (ipasir-get-status ipasir) :undef))
+                     (ipasir-empty-new-clause ipasir))
          :returns (mv (next natp :rule-classes :type-prescription)
                       (equalp litp :rule-classes :type-prescription)
                       new-ipasir)
@@ -402,7 +402,7 @@
                   (consp x))))
 
 (local (define ipasir-lit-list-val (ipasir (lits lit-listp))
-         :guard (non-exec (eq (ipasir$a->status ipasir) :sat))
+         :guard (eq (ipasir-get-status ipasir) :sat)
          (if (atom lits)
              nil
            (cons (ipasir-val ipasir (car lits))
