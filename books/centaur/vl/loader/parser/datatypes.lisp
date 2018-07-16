@@ -446,7 +446,7 @@
   :layout :fulltree
   ((id   stringp :rule-classes :type-prescription)
    (dims vl-packeddimensionlist-p "BOZO not sufficiently general.")
-   (expr vl-maybe-expr-p          "BOZO not sufficiently general."))
+   (rhs  vl-maybe-rhs-p           "BOZO not sufficiently general."))
 
 :long "<p>This captures something like a @('variable_type') from
 Verilog-2005:</p>
@@ -456,20 +456,87 @@ Verilog-2005:</p>
                     | identifier '=' expression
 })
 
-<p>Or @('variable_decl_assignment') from SystemVerilog-2012, except that
-<b>BOZO</b> we don't yet support @('new') sorts of stuff or certain kinds of
-dimensions.</p>
+<p>Or @('variable_decl_assignment') from SystemVerilog-2012, which is
+richer and supports @('new') invocations,</p>
 
 @({
     variable_decl_assignment ::=
          identifier { variable_dimension } [ '=' expression ]
        | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
        | identifier [ '=' class_new ]
-})")
+
+    dynamic_array_new ::= 'new' '[' expression ']' [ '(' expression ')' ]
+
+    class_new ::= [ class_scope ] 'new' [ '(' list_of_arguments ')' ]
+                | 'new' expression
+})
+
+<p>Except that <b>BOZO</b> we currently don't support @('class_scope') or some
+kinds of @('list_of_arguments').</p>")
 
 (deflist vl-vardeclassignlist-p (x)
   (vl-vardeclassign-p x)
   :elementp-of-nil nil)
+
+(defparser vl-parse-rhs ()
+  :result (vl-rhs-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       ;; BOZO implement class_scope
+       (unless (vl-is-token? :vl-kwd-new)
+         (expr := (vl-parse-expression))
+         (return (make-vl-rhsexpr :guts expr)))
+       (:= (vl-match)) ;; eat the 'new'
+
+       (when (vl-is-token? :vl-lbrack)
+         ;; dynamic_array_new ::= 'new' '[' expression ']' [ '(' expression ')' ]
+         (:= (vl-match))
+         (arrsize := (vl-parse-expression))
+         (:= (vl-match-token :vl-rbrack))
+         (when (vl-is-token? :vl-lparen)
+           (:= (vl-match))
+           (arg1 := (vl-parse-expression))
+           (:= (vl-match-token :vl-rparen))
+           (return (make-vl-rhsnew :arrsize arrsize :args (list arg1))))
+         (return (make-vl-rhsnew :arrsize arrsize)))
+
+       ;; class_new ::= [ class_scope ] 'new' [ '(' list_of_arguments ')' ]
+       ;;             | 'new' expression
+       ;;
+       ;; This is a bit tricky/ambiguous.
+       ;;
+       ;;  - Since it's legal to nest parens in an expression, if we write "new
+       ;;    (5)" is that supposed to be a list_of_arguments or an expression?
+       ;;    Strategy: always try to parse a list_of_arguments, but then fall
+       ;;    back on parsing a single expression if that fails.
+       ;;
+       ;;  - The list_of_arguments is itself optional, so there's really a case
+       ;;    of just "new" all by itself to support.  Strategy: if we fail to
+       ;;    parse either of the above, fall back and assume it's an empty "new"
+       (return-raw
+        (b* ((backup (vl-tokstream-save))
+             ;; Try parsing a list_of_arguments.  BOZO we currently only
+             ;; handle plain expression lists.
+             ((mv err1 args tokstream)
+              (seq tokstream
+                   (:= (vl-match-token :vl-lparen))
+                   (args := (vl-parse-1+-expressions-separated-by-commas))
+                   (:= (vl-match-token :vl-rparen))
+                   (return args)))
+             ((unless err1)
+              (mv nil (make-vl-rhsnew :arrsize nil :args args) tokstream))
+
+             ;; Else, try parsing a plain expression.
+             (tokstream (vl-tokstream-restore backup))
+             ((mv err2 arg1 tokstream) (vl-parse-expression))
+             ((unless err2)
+              (mv nil (make-vl-rhsnew :arrsize nil :args (list arg1)) tokstream))
+
+             ;; Else, must just be a plain "new" with no arguments.
+             (tokstream (vl-tokstream-restore backup)))
+          (mv nil (make-vl-rhsnew :arrsize nil :args nil) tokstream)))))
 
 (defparser vl-parse-variable-decl-assignment ()
   ;; SystemVerilog-2012 Only.
@@ -486,16 +553,12 @@ dimensions.</p>
 
         (when (vl-is-token? :vl-equalsign)
           (:= (vl-match))
-          (expr := (vl-parse-expression))
-          (when (or (vl-is-token? :vl-kwd-new)
-                    (and (vl-is-token? :vl-scope)
-                         (vl-lookahead-is-token? :vl-kwd-new (cdr (vl-tokstream->tokens)))))
-            (return-raw (vl-parse-error "Implement support for 'new' in struct/union members!"))))
+          (rhs := (vl-parse-rhs)))
 
         (return (make-vl-vardeclassign
                  :id (vl-idtoken->name id)
                  :dims dims
-                 :expr expr))))
+                 :rhs rhs))))
 
 (defparser vl-parse-1+-variable-decl-assignments-separated-by-commas ()
   ;; SystemVerilog-2012 Only.
@@ -513,20 +576,48 @@ dimensions.</p>
           (rest := (vl-parse-1+-variable-decl-assignments-separated-by-commas)))
         (return (cons first rest))))
 
+
+;; Curiously the grammar allows for the use of 'new' right-hand-sides in struct
+;; member initializers.  But this appears to be illegal (probably?), since per
+;; SystemVerilog-2012 section 7.2.2, "the assigned expression shall be a
+;; constant expression."  We will explicitly check for use of "new" here at
+;; parse time and cause an error.  This behavior allows us to keep vl-rhs out
+;; of the datatype/expression mutual recursion, which seems nice.
+
+(define vl-vardeclassignlist-newfree-p ((x vl-vardeclassignlist-p))
+  (or (atom x)
+      (and (let ((rhs1 (vl-vardeclassign->rhs (car x))))
+             (or (not rhs1)
+                 (vl-rhs-case rhs1 :vl-rhsexpr)))
+           (vl-vardeclassignlist-newfree-p (cdr x))))
+  ///
+  (defthm vl-vardeclassignlist-newfree-p-when-atom
+    (implies (atom x)
+             (vl-vardeclassignlist-newfree-p x)))
+  (defthm vl-vardeclassignlist-newfree-p-of-cons
+    (equal (vl-vardeclassignlist-newfree-p (cons a x))
+           (and (let ((rhs1 (vl-vardeclassign->rhs a)))
+                  (or (not rhs1)
+                      (vl-rhs-case rhs1 :vl-rhsexpr)))
+                (vl-vardeclassignlist-newfree-p x)))))
+
+
 (define vl-make-structmembers ((atts vl-atts-p)
                                (rand vl-randomqualifier-p)
                                (type vl-datatype-p)
                                (decls vl-vardeclassignlist-p))
-  :returns (decls vl-structmemberlist-p :hyp :fguard)
-  (b* (((when (atom decls)) nil)
+  :guard (vl-vardeclassignlist-newfree-p decls)
+  :returns (decls vl-structmemberlist-p)
+  :prepwork ((local (in-theory (enable vl-vardeclassignlist-newfree-p))))
+  (b* (((when (atom decls))
+        nil)
        ((vl-vardeclassign decl) (car decls)))
     (cons (make-vl-structmember :atts atts
                                 :rand rand
                                 :type (vl-datatype-update-udims decl.dims type)
                                 :name decl.id
-                                :rhs  decl.expr)
+                                :rhs  (and decl.rhs (vl-rhsexpr->guts decl.rhs)))
           (vl-make-structmembers atts rand type (cdr decls)))))
-
 
 
 
@@ -691,6 +782,9 @@ dimensions.</p>
           (type :s= (vl-parse-datatype-or-void))
           (decls := (vl-parse-1+-variable-decl-assignments-separated-by-commas))
           (:= (vl-match-token :vl-semi))
+          (unless (vl-vardeclassignlist-newfree-p decls)
+            (return-raw
+             (vl-parse-error "Illegal use of 'new' in a struct or union member initial value")))
           (return
            (let ((rand (and rand (case (vl-token->type rand)
                                    (:vl-kwd-rand  :vl-rand)

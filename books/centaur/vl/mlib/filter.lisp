@@ -411,6 +411,11 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
          (list-fix (vl-programlist-fix x)))
   :hints(("Goal" :induct (len x))))
 
+(defthm vl-classlist-fix-of-list-fix
+  (equal (vl-classlist-fix (list-fix x))
+         (list-fix (vl-classlist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
 (defthm vl-interfacelist-fix-of-list-fix
   (equal (vl-interfacelist-fix (list-fix x))
          (list-fix (vl-interfacelist-fix x)))
@@ -486,6 +491,7 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
 (def-vl-filter-by-name package)
 (def-vl-filter-by-name interface)
 (def-vl-filter-by-name program)
+(def-vl-filter-by-name class :suffix classes)
 (def-vl-filter-by-name typedef)
 
 

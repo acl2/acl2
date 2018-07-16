@@ -89,6 +89,10 @@ allow it to find modules from many directories.</p>
                  the command line, hence :hide t)"
                 :hide t)
 
+   (plusargs    string-listp
+                "Plusargs with plusses removed."
+                :hide t)
+
    (search-path string-listp
                 :longname "search"
                 :alias #\s
@@ -124,15 +128,18 @@ allow it to find modules from many directories.</p>
                 :merge acl2::rcons
                 :default '("v"))
 
-   (defines     string-listp
-                :longname "define"
-                :alias #\D
-                :argname "VAR"
-                "Set up definitions to use before parsing begins.  Equivalent
-                 to putting `define VAR 1 at the top of your Verilog file.
-                 You can give this option multiple times."
-                :parser getopt::parse-string
-                :merge acl2::cons)
+   (defines    string-listp
+               :longname "define"
+               :alias #\D
+               :argname "VAR"
+               "Set up definitions to use before parsing begins.  For instance,
+                \"--define foo\" is similar to \"`define foo\" and \"--define
+                foo=3\" is similar to \"`define foo 3\".  Note: these defines
+                are \"sticky\" and will override subsequent `defines in your
+                Verilog files unless your Verilog explicitly uses `undef.  You
+                can give this option multiple times."
+               :parser getopt::parse-string
+               :merge cons)
 
    (edition     vl-edition-p
                 :argname "EDITION"
@@ -238,14 +245,27 @@ Options:" *nls* *nls* *vl-gather-opts-usage* *nls*))
 
   (b* (((vl-gather-opts opts) opts)
 
+
+       ((mv ?cmdline-warnings defines)
+        (vl-parse-cmdline-defines opts.defines
+                                  (make-vl-location :filename "vl cmdline"
+                                                    :line 1
+                                                    :col 0)
+                                  ;; Command line defines are sticky
+                                  t))
+
+       (- (or (not cmdline-warnings)
+              (vl-cw-ps-seq (vl-print-warnings cmdline-warnings))))
+
        (loadconfig (make-vl-loadconfig
                     :edition       opts.edition
                     :strictp       opts.strict
                     :start-files   opts.start-files
+                    :plusargs      opts.plusargs
                     :search-path   opts.search-path
                     :search-exts   opts.search-exts
                     :include-dirs  opts.include-dirs
-                    :defines       (vl-make-initial-defines opts.defines)
+                    :defines       defines
                     :filemapp      t))
 
        ((mv result state) (vl-load loadconfig))
@@ -264,12 +284,14 @@ Options:" *nls* *nls* *vl-gather-opts-usage* *nls*))
 
 (define vl-gather-top ((argv string-listp) &key (state 'state))
   :short "Top-level @('vl gather') command."
-  (b* (((mv errmsg opts start-files)
+  (b* (((mv errmsg opts start-files-and-plusargs)
         (parse-vl-gather-opts argv))
        ((when errmsg)
         (die "~@0~%" errmsg)
         state)
+       ((mv start-files plusargs) (split-plusargs start-files-and-plusargs))
        (opts (change-vl-gather-opts opts
+                                    :plusargs plusargs
                                     :start-files start-files))
        ((vl-gather-opts opts) opts)
 

@@ -40,6 +40,9 @@
 (include-book "imports")
 (include-book "asserts")
 (include-book "dpi")
+(include-book "clocking")
+(include-book "classes")
+(include-book "covergroups")
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
 
@@ -250,6 +253,37 @@ rules:</p>
   (declare (ignore atts))
   (vl-unimplemented))
 
+(define vl-elaborate-system-task-function-p ((x vl-sysidtoken-p))
+  (if (member-equal (vl-sysidtoken->name x)
+                    '("$fatal" "$error" "$warning" "$info"))
+      t
+    nil))
+
+(defparser vl-parse-elaborate-system-task ()
+  :guard (and (vl-is-token? :vl-sysidtoken)
+              (vl-elaborate-system-task-function-p (car (vl-tokstream->tokens))))
+  :result (vl-elabtask-p val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count strong
+  :prepwork ((local (in-theory (enable vl-is-token?))))
+  ;; SystemVerilog-2012:
+  ;;
+  ;; elaboration_system_task ::=
+  ;;      '$fatal'   [ '(' finish_number [ ',' list_of_arguments ] ')' ] ';'
+  ;;    | '$error'   [ '(' [ list_of_arguments ] ')' ]                   ';'
+  ;;    | '$warning' [ '(' [ list_of_arguments ] ')' ]                   ';'
+  ;;    | '$info'    [ '(' [ list_of_arguments ] ')' ]                   ';'
+  ;;
+  ;; finish_number ::= '0' | '1' | '2'
+  ;;
+  ;; It seems pretty reasonable to be generous with the arguments here
+  ;; and just try to handle any system-tf-call of these four functions.
+  (seq tokstream
+       (stmt := (vl-parse-system-tf-call))
+       (:= (vl-match-token :vl-semi))
+       (return (make-vl-elabtask :stmt stmt))))
 
 
 (defconst *vl-netdecltypes-kwds*
@@ -271,7 +305,6 @@ rules:</p>
              (equal (vl-modelement-p res)
                     (not err))))
   :hints(("Goal" :in-theory (enable vl-parse-type-declaration))))
-
 
 (encapsulate nil
   (local (in-theory (enable vl-is-token?)))
@@ -420,8 +453,33 @@ rules:</p>
                (sequence := (vl-parse-sequence-declaration))
                (return (list sequence))))
 
+         ((when (eq type1 :vl-kwd-global))
+          (seq tokstream
+               (gclkdecl := (vl-parse-global-clocking-declaration atts))
+               (return (list gclkdecl))))
+
+         ((when (eq type1 :vl-kwd-clocking))
+          (seq tokstream
+               (clkdecl := (vl-parse-normal-clocking-declaration atts))
+               (return (list clkdecl))))
+
          ((when (eq type1 :vl-kwd-let))
           (vl-parse-error "BOZO not yet implemented: let declarations"))
+
+         ((when (eq type1 :vl-kwd-bind))
+          (seq tokstream
+               (bind := (vl-parse-bind-directive atts))
+               (return (list bind))))
+
+         ((when (eq type1 :vl-kwd-class))
+          (seq tokstream
+               (class := (vl-parse-class-declaration atts))
+               (return (list class))))
+
+         ((when (eq type1 :vl-kwd-covergroup))
+          (seq tokstream
+               (covergroup := (vl-parse-covergroup-declaration atts))
+               (return (list covergroup))))
 
          ((when (eq type1 :vl-semi))
           ;; SystemVerilog-2012 seems to allow allows empty items to occur most anywhere:
@@ -436,6 +494,12 @@ rules:</p>
           (seq tokstream
                (:= (vl-match))
                (return nil)))
+
+         ((when (and (eq type1 :vl-sysidtoken)
+                     (vl-elaborate-system-task-function-p (car tokens))))
+          (seq tokstream
+               (task := (vl-parse-elaborate-system-task))
+               (return (list task))))
 
          ((when (eq type1 :vl-idtoken))
           ;; It's either a udp/module/interface instance, a variable decl, or a
@@ -898,8 +962,14 @@ returns a @(see vl-genblock).</li>
     (:vl-cassertion "concurrent assertion")
     (:vl-property   "property declaration")
     (:vl-sequence   "sequence declaration")
+    (:vl-clkdecl    "clocking declaration")
+    (:vl-gclkdecl   "global clocking declaration")
     (:vl-dpiimport  "DPI import")
     (:vl-dpiexport  "DPI export")
+    (:vl-bind       "bind declaration")
+    (:vl-class      "class declaration")
+    (:vl-covergroup "covergroup")
+    (:vl-elabtask   "elaborate (e.g., $fatal, ...) system task")
     (otherwise      (progn$ (impossible)
                             "invalid"))))
 

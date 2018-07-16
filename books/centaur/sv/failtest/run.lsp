@@ -109,6 +109,13 @@ $ fvq ../cosims/cosim-core
         (cw "~@0~%~%" err)
         (let ((state (write-passed-file testname edition)))
           (mv t good bad state)))
+       ;; For some warnings (like bind errors) it's probably necessary to check for
+       ;; fatal floating warnings.
+       ((when (or (vl-some-warning-fatalp (vl-design->warnings good))
+                  (vl-some-warning-fatalp (vl-design->warnings bad))))
+        (cw "~%+++Status: GOOD: No clear error but design has fatal floating warnings. +++~%~%")
+        (let ((state (write-passed-file testname edition)))
+          (mv t good bad state)))
        ;; Otherwise let's check to make sure that at least there is a fatal warning
        ;; in the top module.
        (mod (vl-find-module "top" (vl-design->mods good)))

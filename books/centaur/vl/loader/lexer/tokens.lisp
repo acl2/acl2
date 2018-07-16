@@ -145,6 +145,7 @@ SystemVerilog 2012 source code."
             :vl-$          ;;; $
             :vl-$root      ;;; $root
             :vl-$unit      ;;; $unit
+            :vl-1step      ;;; 1step
             ))
   ///
   (assert! (subsetp *vl-2005-plain-nonkeywords*

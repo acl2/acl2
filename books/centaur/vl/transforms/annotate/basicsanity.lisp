@@ -225,7 +225,7 @@ interfaces.</p>")
        (dupes          (duplicated-members (remove nil external-names)))
        (warnings       (if (not dupes)
                            warnings
-                         (warn :type :vl-bad-ports
+                         (fatal :type :vl-bad-ports
                                 :msg "Duplicate port names: ~&0."
                                 :args (list dupes)))))
 
@@ -331,6 +331,7 @@ interfaces.</p>")
                              ;; don't really have any support for programs so
                              ;; let's just rule it out, too.
                              (:vl-program   "program")
+                             (:vl-class     "class")
                              (otherwise (impossible)))))))
     ;; Else, looks like an interface, so that seems good.
     (ok))
@@ -341,7 +342,8 @@ interfaces.</p>")
                                (or (equal (tag x) :vl-interface)
                                    (equal (tag x) :vl-module)
                                    (equal (tag x) :vl-udp)
-                                   (equal (tag x) :vl-program)))
+                                   (equal (tag x) :vl-program)
+                                   (equal (tag x) :vl-class)))
                       :rule-classes :forward-chaining
                       :hints(("Goal" :in-theory (enable vl-scopedef-p)))))
 
@@ -351,7 +353,8 @@ interfaces.</p>")
                                  (or (equal (tag x) :vl-interface)
                                      (equal (tag x) :vl-module)
                                      (equal (tag x) :vl-udp)
-                                     (equal (tag x) :vl-program))))
+                                     (equal (tag x) :vl-program)
+                                     (equal (tag x) :vl-class))))
                       :rule-classes :forward-chaining
                       :hints(("goal" :use ((:instance l0 (x (vl-scopestack-find-definition name ss))))))))
 

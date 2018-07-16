@@ -880,8 +880,8 @@ same direction.\"</blockquote>
        (udims := (vl-parse-0+-variable-dimensions))
 
        (when (vl-is-token? :vl-equalsign)
-         (return-raw
-          (vl-parse-error "BOZO implement default values for task/function arguments.")))
+         (:= (vl-match))
+         (default := (vl-parse-expression)))
 
        (return (make-vl-portdecl
                 :name (vl-idtoken->name name)
@@ -927,6 +927,7 @@ same direction.\"</blockquote>
 
                            (vl-portdecl->type prev))))
 
+                :default default
                 :atts atts
                 :nettype nil))))
 
@@ -963,8 +964,7 @@ same direction.\"</blockquote>
   :tag :vl-tf-parsed-var-id
   ((name    vl-idtoken-p)
    (udims   vl-packeddimensionlist-p)
-   ;; BOZO eventually add default value
-   ))
+   (default vl-maybe-expr-p)))
 
 (deflist vl-tf-parsed-var-idlist-p (x)
   (vl-tf-parsed-var-id-p x))
@@ -980,10 +980,11 @@ same direction.\"</blockquote>
        (name  := (vl-match-token :vl-idtoken))
        (udims := (vl-parse-0+-ranges))
        (when (vl-is-token? :vl-equalsign)
-         (return-raw
-          (vl-parse-error "BOZO implement default values for function/task ports.")))
+         (:= (vl-match))
+         (default := (vl-parse-expression)))
        (return (make-vl-tf-parsed-var-id :name name
-                                         :udims (vl-ranges->packeddimensions udims)))))
+                                         :udims (vl-ranges->packeddimensions udims)
+                                         :default default))))
 
 (defparser vl-parse-list-of-tf-variable-identifiers ()
   :short "Matches @('list_of_tf_variable_identifiers')."
@@ -1018,6 +1019,7 @@ same direction.\"</blockquote>
                             :nettype nil
                             :dir     dir
                             :type    (vl-datatype-update-udims id1.udims type)
+                            :default id1.default
                             :atts    atts)
           (vl-make-tf-ports-from-parsed-ids (cdr ids)
                                             :dir dir

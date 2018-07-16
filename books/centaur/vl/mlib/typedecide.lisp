@@ -477,7 +477,11 @@ expression signedness.</p>"
                        ((unless (vl-datatype-packedp pattype))
                         (mv (ok) :vl-other-class))
                        ((mv ?caveat class) (vl-datatype-arithclass pattype)))
-                    (mv (ok) class))))
+                    (mv (ok) class))
+
+      ;; These aren't vector types
+      :vl-eventexpr
+      (mv (ok) :vl-other-class)))
 
     ///
     (verify-guards vl-expr-typedecide))

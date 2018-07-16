@@ -109,6 +109,7 @@ particular standard we're implementing.</p>"
    (strextsp   booleanp "Enable SystemVerilog 2012 string literal extensions?")
    (timelitsp  booleanp "Enable SystemVerilog 2012 time literals?")
    (extintsp   booleanp "Enable SystemVerilog 2012 '0/'1/'x/'z integers?")
+   (onestepp   booleanp "Enable SystemVerilog 2012 '1step' tokens?")
    ))
 
 
@@ -171,6 +172,7 @@ particular standard we're implementing.</p>"
    :strextsp   nil
    :timelitsp  nil
    :extintsp   nil
+   :onestepp   nil
    )
   ///
   (assert!
@@ -263,7 +265,8 @@ particular standard we're implementing.</p>"
    :quotesp    t
    :strextsp   t
    :timelitsp  t
-   :extintsp   t)
+   :extintsp   t
+   :onestepp   t)
   ///
   (assert!
    ;; Basic sanity check, everything should be unique and valid.
@@ -292,7 +295,7 @@ particular standard we're implementing.</p>"
             (difference (mergesort new-spec)
                         ;; These are special because they're not just
                         ;; handled as simple plaintoken-alists.
-                        '(:vl-quote))))))
+                        (mergesort '(:vl-1step :vl-quote)))))))
 
 (defval *vl-2012-lexstate*
   :parents (lexstate)

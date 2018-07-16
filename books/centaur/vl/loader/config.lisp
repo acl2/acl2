@@ -129,6 +129,13 @@
                     see @(see vl-make-initial-defines), and you should probably
                     be aware of the @(see scope-of-defines).")
 
+   (plusargs       string-listp
+                   "List of plusargs for functions like @('$test$plusargs').
+                    These should have no leading @('+') characters.  For
+                    instance, using @(':plusargs (list \"foo\" \"bar\")') is
+                    intended to be equivalent to passing @('+foo +bar') to a
+                    Verilog simulator as command-line options.")
+
    (filemapp       booleanp
                    :rule-classes :type-prescription
                    :default t
