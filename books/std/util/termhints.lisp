@@ -84,6 +84,11 @@ where all the commas are accompanied by hq calls; e.g.:</p>
   (or x t))
 (in-theory (disable (:t use-termhint-hyp) (use-termhint-hyp)))
 
+(defthm use-termhint-hyp-is-true
+  (use-termhint-hyp x)
+  :hints(("Goal" :in-theory (enable use-termhint-hyp)))
+  :rule-classes nil)
+
 (defun use-termhint-find-hint (clause)
   (if (atom clause)
       nil
@@ -95,12 +100,12 @@ where all the commas are accompanied by hq calls; e.g.:</p>
            :clause-processor (remove-hyp-cp clause ',(car clause)))))
       (& (use-termhint-find-hint (cdr clause))))))
 
-(defmacro use-termhint (hint)
+(defmacro use-termhint (hint-term)
   `'(:computed-hint-replacement
      ((and stable-under-simplificationp
            (use-termhint-find-hint clause)))
-     :use ((:instance (:type-prescription use-termhint-hyp)
-            (x ,hint)))))
+     :use ((:instance use-termhint-hyp-is-true
+            (x ,hint-term)))))
 
 
 
