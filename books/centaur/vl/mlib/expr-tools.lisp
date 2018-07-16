@@ -1283,6 +1283,56 @@ construct fast alists binding identifiers to things, etc.</p>"
     :hints(("Goal" :in-theory (enable vl-call-namedargs->subexprs)))))
 
 
+(define vl-evatomlist->subexprs ((x vl-evatomlist-p))
+  :returns (subexprs vl-exprlist-p)
+  :measure (len (vl-evatomlist-fix x))
+  (let ((x (vl-evatomlist-fix x)))
+    (if (atom x)
+        nil
+      (cons (vl-evatom->expr (car x))
+            (vl-evatomlist->subexprs (cdr x)))))
+  ///
+  (defthm len-of-vl-evatomlist->subexprs
+    (equal (len (vl-evatomlist->subexprs x))
+           (len x)))
+  (defret vl-exprlist-count-of-vl-evatomlist->subexprs
+    (<= (vl-exprlist-count subexprs)
+        (vl-evatomlist-count x))
+    :hints(("Goal" :in-theory (enable vl-exprlist-count
+                                      vl-evatomlist-count)))
+    :rule-classes :linear))
+
+(define vl-evatomlist-update-subexprs ((x        vl-evatomlist-p)
+                                       (subexprs vl-exprlist-p))
+  :guard (equal (len subexprs)
+                (len (vl-evatomlist->subexprs x)))
+  :guard-hints (("goal" :in-theory (enable vl-evatomlist->subexprs)))
+  :returns (new-x vl-evatomlist-p)
+  :measure (len (vl-evatomlist-fix x))
+  (b* ((x (vl-evatomlist-fix x)))
+    (if (atom x)
+        x
+      (cons (change-vl-evatom (car x) :expr (car subexprs))
+            (vl-evatomlist-update-subexprs (cdr x) (cdr subexprs)))))
+  ///
+  (defthm len-of-vl-evatomlist-update-subexprs
+    (equal (len (vl-evatomlist-update-subexprs x subexprs))
+           (len x))
+    :hints(("Goal" :induct (len x))))
+  (defthm vl-evatomlist-update-subexprs-identity
+    (equal (vl-evatomlist-update-subexprs x (vl-evatomlist->subexprs x))
+           (vl-evatomlist-fix x))
+    :hints(("Goal" :in-theory (enable vl-evatomlist->subexprs))))
+  (defthm vl-evatomlist->subexprs-of-vl-evatomlist-update-subexprs
+    (implies (equal (len subexprs) (len x))
+             (equal (vl-evatomlist->subexprs (vl-evatomlist-update-subexprs x subexprs))
+                    (vl-exprlist-fix subexprs)))
+    :hints(("Goal"
+            :induct (vl-evatomlist-update-subexprs x subexprs)
+            :in-theory (enable vl-evatomlist->subexprs)
+            :expand (len x)))))
+
+
 (define vl-expr->subexprs ((x vl-expr-p))
   :returns (subexprs vl-exprlist-p)
   (vl-expr-case x
@@ -1307,7 +1357,8 @@ construct fast alists binding identifiers to things, etc.</p>"
                :otherwise (list x.expr))
     :vl-inside (cons x.elem (vl-valuerangelist->subexprs x.set))
     :vl-tagged (and x.expr (list x.expr))
-    :vl-pattern (vl-assignpat->subexprs x.pat))
+    :vl-pattern (vl-assignpat->subexprs x.pat)
+    :vl-eventexpr (vl-evatomlist->subexprs x.atoms))
   ///
   (defret vl-exprlist-count-of-vl-expr->subexprs
     (< (vl-exprlist-count subexprs)
@@ -1385,6 +1436,8 @@ construct fast alists binding identifiers to things, etc.</p>"
                    (vl-expr-fix x))
       :vl-pattern
       (change-vl-pattern x :pat (vl-assignpat-update-subexprs x.pat subexprs))
+      :vl-eventexpr
+      (change-vl-eventexpr x :atoms (vl-evatomlist-update-subexprs x.atoms subexprs))
       :otherwise (vl-expr-fix x)))
   ///
   (defthm vl-expr-update-subexprs-identity
@@ -1432,15 +1485,6 @@ construct fast alists binding identifiers to things, etc.</p>"
                     (vl-exprlist-fix y)))
     :hints(("Goal" :in-theory (enable vl-expr->subexprs)
             :do-not-induct t))))
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2046,7 +2090,8 @@ throughout the expression, with repetition.  The resulting list may contain any
     :vl-cast (change-vl-cast x :atts (append-without-guard new-atts x.atts))
     :vl-inside (change-vl-inside x :atts (append-without-guard new-atts x.atts))
     :vl-tagged (change-vl-tagged x :atts (append-without-guard new-atts x.atts))
-    :vl-pattern (change-vl-pattern x :atts (append-without-guard new-atts x.atts))))
+    :vl-pattern (change-vl-pattern x :atts (append-without-guard new-atts x.atts))
+    :vl-eventexpr (change-vl-eventexpr x :atts (append-without-guard new-atts x.atts))))
 
 
 

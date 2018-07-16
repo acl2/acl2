@@ -139,7 +139,7 @@ expression with @(see vl-expr-to-svex).</p>")
 (fty::defvisitor-template elaborate ((x :object)
                                      elabindex
                                      &key
-                                     ((reclimit natp) '1000)
+                                     ((reclimit natp) 'reclimit)
                                      ((config vl-simpconfig-p) 'config))
   :returns (mv (ok (:join (and ok1 ok)
                     :initial t
@@ -273,7 +273,8 @@ expression with @(see vl-expr-to-svex).</p>")
    :hints(("Goal" :in-theory (enable acl2::member-of-cons)))))
 
 (fty::defvisitor-multi vl-elaborate
-  :defines-args (:ruler-extenders :all ;; :measure-debug t
+  :defines-args (:ruler-extenders :all
+                 ;; :measure-debug t
                  ;; :guard-debug t
                  )
 
@@ -292,7 +293,9 @@ expression with @(see vl-expr-to-svex).</p>")
 
   (define vl-function-compile-and-bind ((fnname vl-scopeexpr-p)
                                         elabindex
-                                        &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                                        &key
+                                        ((reclimit natp) 'reclimit)
+                                        ((config vl-simpconfig-p) 'config))
     :returns (mv (ok)
                  (warnings vl-warninglist-p)
                  new-elabindex)
@@ -345,7 +348,9 @@ expression with @(see vl-expr-to-svex).</p>")
 
   (define vl-usertype-resolve ((x vl-datatype-p)
                                elabindex
-                               &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                               &key
+                               ((reclimit natp) 'reclimit)
+                               ((config vl-simpconfig-p) 'config))
     :guard (vl-datatype-case x :vl-usertype)
     :measure (acl2::nat-list-measure
               (list reclimit 0 0 0))
@@ -435,7 +440,9 @@ expression with @(see vl-expr-to-svex).</p>")
 
   (define vl-datatype-elaborate ((x vl-datatype-p)
                                  elabindex
-                                 &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                                 &key
+                                 ((reclimit natp) 'reclimit)
+                                 ((config vl-simpconfig-p) 'config))
     :measure (acl2::nat-list-measure
               (list reclimit 1 (vl-datatype-count x) 12))
     :returns (mv (ok)
@@ -487,7 +494,8 @@ expression with @(see vl-expr-to-svex).</p>")
   (define vl-expr-resolve-to-constant ((x vl-expr-p)
                                        elabindex
                                        &key
-                                       ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config)
+                                       ((reclimit natp) 'reclimit)
+                                       ((config vl-simpconfig-p) 'config)
                                        ((ctxsize maybe-natp) 'nil)
                                        ((type vl-maybe-datatype-p) 'nil)
                                        ((lhs vl-maybe-expr-p) 'nil))
@@ -516,10 +524,46 @@ expression with @(see vl-expr-to-svex).</p>")
     ///
     (in-theory (disable vl-expr-resolve-to-constant)))
 
+  (define vl-rhs-resolve-to-constant ((x vl-rhs-p)
+                                      elabindex
+                                      &key
+                                      ((reclimit natp) 'reclimit)
+                                      ((config vl-simpconfig-p) 'config)
+                                      ((ctxsize maybe-natp) 'nil)
+                                      ((type vl-maybe-datatype-p) 'nil)
+                                      ((lhs vl-maybe-expr-p) 'nil))
+    :measure (acl2::nat-list-measure
+              (list reclimit 2 nil nil))
+    :returns (mv (ok)
+                 (warnings vl-warninglist-p)
+                 (new-x vl-rhs-p)
+                 (svex sv::svex-p)
+                 new-elabindex)
+    (b* ((x (vl-rhs-fix x))
+         (warnings nil))
+      (vl-rhs-case x
+        :vl-rhsexpr
+        (b* (((mv ok warnings new-guts svex elabindex)
+              (vl-expr-resolve-to-constant x.guts elabindex
+                                           :ctxsize ctxsize
+                                           :type type
+                                           :lhs lhs))
+             (new-x (change-vl-rhsexpr x :guts new-guts)))
+          (mv ok warnings new-x svex elabindex))
+        :vl-rhsnew
+        (mv nil
+            (fatal :type :vl-expr-consteval-fail
+                   :msg "Couldn't resolve rhs ~a0 to constant."
+                   :args (list (vl-rhs-fix x)))
+            x
+            (svex-x)
+            elabindex))))
+
   ;; (define vl-expr-resolve-to-constant-top ((x vl-expr-p)
   ;;                                          elabindex
   ;;                                          &key
-  ;;                                          ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config)
+  ;;                                          ((reclimit natp) 'reclimit)
+  ;;                                          ((config vl-simpconfig-p) 'config)
   ;;                                          ((ctxsize maybe-natp) 'nil)
   ;;                                          ((type vl-maybe-datatype-p) 'nil))
   
@@ -549,7 +593,8 @@ expression with @(see vl-expr-to-svex).</p>")
   (define vl-expr-maybe-resolve-to-constant ((x vl-expr-p)
                                              elabindex
                                              &key
-                                             ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config)
+                                             ((reclimit natp) 'reclimit)
+                                             ((config vl-simpconfig-p) 'config)
                                              ((ctxsize maybe-natp) 'nil)
                                              ((type vl-maybe-datatype-p) 'nil)
                                              ((lhs vl-maybe-expr-p) 'nil))
@@ -576,7 +621,9 @@ expression with @(see vl-expr-to-svex).</p>")
 
   (define vl-index-resolve-if-constant ((x vl-expr-p)
                                         elabindex
-                                        &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                                        &key
+                                        ((reclimit natp) 'reclimit)
+                                        ((config vl-simpconfig-p) 'config))
     :measure (acl2::nat-list-measure
               (list reclimit 1 (vl-expr-count x) 10))
     :returns (mv (ok)
@@ -592,7 +639,9 @@ expression with @(see vl-expr-to-svex).</p>")
 
   (define vl-index-resolve-constant ((x vl-expr-p)
                                      elabindex
-                                     &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                                     &key
+                                     ((reclimit natp) 'reclimit)
+                                     ((config vl-simpconfig-p) 'config))
     :measure (acl2::nat-list-measure
               (list reclimit 1 (vl-expr-count x) 11))
     :returns (mv (ok)
@@ -609,7 +658,9 @@ expression with @(see vl-expr-to-svex).</p>")
 
   (define vl-index-expr-resolve-paramref ((x vl-expr-p)
                                           elabindex
-                                          &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                                          &key
+                                          ((reclimit natp) 'reclimit)
+                                          ((config vl-simpconfig-p) 'config))
     ;; Call this AFTER indices within the hids have been maybe-resolved.
     :measure (acl2::nat-list-measure
               (list reclimit 1 0 10))
@@ -753,7 +804,9 @@ expression with @(see vl-expr-to-svex).</p>")
 
   (define vl-expr-elaborate ((x vl-expr-p)
                              elabindex
-                             &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                             &key
+                             ((reclimit natp) 'reclimit)
+                             ((config vl-simpconfig-p) 'config))
     :measure (acl2::nat-list-measure
               (list reclimit 1 (vl-expr-count x) 8))
     :returns (mv (ok)
@@ -829,7 +882,9 @@ expression with @(see vl-expr-to-svex).</p>")
 
   (define vl-indexlist-resolve-constants ((x vl-exprlist-p)
                                           elabindex
-                                          &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                                          &key
+                                          ((reclimit natp) 'reclimit)
+                                          ((config vl-simpconfig-p) 'config))
     :measure (acl2::nat-list-measure
               (list reclimit 1 (vl-exprlist-count x) 12))
     :returns (mv (ok)
@@ -838,16 +893,18 @@ expression with @(see vl-expr-to-svex).</p>")
                  new-elabindex)
     (b* (((when (atom x)) (mv t nil nil elabindex))
          ((mv ok2 warnings rest elabindex)
-          (vl-indexlist-resolve-constants (cdr x) elabindex :reclimit reclimit))
+          (vl-indexlist-resolve-constants (cdr x) elabindex))
          ((wmv ok1 ?constantp warnings first ?svex elabindex)
-          (vl-expr-maybe-resolve-to-constant (car x) elabindex :reclimit reclimit)))
+          (vl-expr-maybe-resolve-to-constant (car x) elabindex)))
       (mv (and* ok1 ok2) warnings (cons first rest) elabindex))
     ///
     (in-theory (disable vl-indexlist-resolve-constants)))
 
   (define vl-maybe-indexlist-resolve-constants ((x vl-maybe-exprlist-p)
                                                 elabindex
-                                                &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                                                &key
+                                                ((reclimit natp) 'reclimit)
+                                                ((config vl-simpconfig-p) 'config))
     :measure (acl2::nat-list-measure
               (list reclimit 1 (vl-maybe-exprlist-count x) 12))
     :returns (mv (ok)
@@ -856,11 +913,11 @@ expression with @(see vl-expr-to-svex).</p>")
                  new-elabindex)
     (b* (((when (atom x)) (mv t nil nil elabindex))
          ((mv ok2 warnings rest elabindex)
-          (vl-maybe-indexlist-resolve-constants (cdr x) elabindex :reclimit reclimit))
+          (vl-maybe-indexlist-resolve-constants (cdr x) elabindex))
          ((unless (car x))
           (mv ok2 warnings (cons nil rest) elabindex))
          ((wmv ok1 ?constantp warnings first ?svex elabindex)
-          (vl-expr-maybe-resolve-to-constant (car x) elabindex :reclimit reclimit)))
+          (vl-expr-maybe-resolve-to-constant (car x) elabindex)))
       (mv (and* ok1 ok2) warnings (cons first rest) elabindex))
     ///
     (in-theory (disable vl-maybe-indexlist-resolve-constants)))
@@ -874,10 +931,55 @@ expression with @(see vl-expr-to-svex).</p>")
     :order-base 100
     :measure (acl2::nat-list-measure (list reclimit :order :count 0)))
 
+  ;; Hrmn, turns out we don't actually need these...
+
+  ;; (define vl-rhs-elaborate ((x vl-rhs-p)
+  ;;                           (elabindex "in the scope where x is declared")
+  ;;                           &key
+  ;;                           ((reclimit natp) 'reclimit)
+  ;;                           ((config vl-simpconfig-p) 'config))
+  ;;   :measure (acl2::nat-list-measure (list reclimit 140 0 0))
+  ;;   :returns (mv (ok)
+  ;;                (warnings vl-warninglist-p)
+  ;;                (new-x vl-rhs-p)
+  ;;                new-elabindex)
+  ;;   (b* ((warnings nil))
+  ;;     (vl-rhs-case x
+  ;;       :vl-rhsexpr
+  ;;       (b* (((wmv ok warnings new-guts elabindex)
+  ;;             (vl-expr-elaborate x.guts elabindex))
+  ;;            (new-x (change-vl-rhsexpr x :guts new-guts)))
+  ;;         (mv ok warnings new-x elabindex))
+  ;;       :vl-rhsnew
+  ;;       (b* (((wmv ok1 warnings new-arrsize elabindex)
+  ;;             (vl-expr-elaborate x.arrsize elabindex))
+  ;;            ((wmv ok2 warnings new-args elabindex)
+  ;;             (vl-exprlist-elaborate x.args elabindex))
+  ;;            (new-x (change-vl-rhsnew x
+  ;;                                     :arrsize new-arrsize
+  ;;                                     :args new-args)))
+  ;;         (mv (and* ok1 ok2) warnings new-x elabindex)))))
+
+  ;; (define vl-maybe-rhs-elaborate ((x vl-maybe-rhs-p)
+  ;;                                 (elabindex "in the scope where x is declared")
+  ;;                                 &key
+  ;;                                 ((reclimit natp) 'reclimit)
+  ;;                                 ((config vl-simpconfig-p) 'config))
+  ;;   :measure (acl2::nat-list-measure (list reclimit 141 0 0))
+  ;;   :returns (mv (ok)
+  ;;                (warnings vl-warninglist-p)
+  ;;                (new-x vl-rhs-p)
+  ;;                new-elabindex)
+  ;;   (b* ((x (vl-maybe-rhs-fix x)))
+  ;;     (if x
+  ;;         (vl-rhs-elaborate x elabindex)
+  ;;       (mv t nil nil elabindex))))
 
   (define vl-vardecl-elaborate ((x vl-vardecl-p)
                                 (elabindex "in the scope where x is declared")
-                                &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                                &key
+                                ((reclimit natp) 'reclimit)
+                                ((config vl-simpconfig-p) 'config))
     :measure (acl2::nat-list-measure (list reclimit 150 0 0))
     :returns (mv (ok)
                  (warnings vl-warninglist-p)
@@ -906,10 +1008,10 @@ expression with @(see vl-expr-to-svex).</p>")
             (mv ok warnings new-x elabindex)))
          ;; analogous to the explicitvalueparam case in paramdecl-elaborate
          ((wmv ok1 warnings ?new-expr svex elabindex :ctx x)
-          (vl-expr-resolve-to-constant
-           new-x.initval elabindex :reclimit reclimit
-           :type new-x.type
-           :lhs (vl-idexpr x.name)))
+          (vl-rhs-resolve-to-constant new-x.initval elabindex
+                                      :reclimit reclimit
+                                      :type new-x.type
+                                      :lhs (vl-idexpr x.name)))
 
          (val (sv::svex-constval svex))
          ((unless (and ok1 val))
@@ -929,7 +1031,9 @@ expression with @(see vl-expr-to-svex).</p>")
 
   (define vl-typedef-elaborate ((x vl-typedef-p)
                                 (elabindex "in the scope where x is declared")
-                                &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                                &key
+                                ((reclimit natp) 'reclimit)
+                                ((config vl-simpconfig-p) 'config))
     :measure (acl2::nat-list-measure (list reclimit 150 0 0))
     :returns (mv (ok)
                  (warnings vl-warninglist-p)
@@ -957,7 +1061,9 @@ expression with @(see vl-expr-to-svex).</p>")
 
   (define vl-paramdecl-elaborate ((x vl-paramdecl-p)
                                   elabindex
-                                  &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                                  &key
+                                  ((reclimit natp) 'reclimit)
+                                  ((config vl-simpconfig-p) 'config))
     :measure (acl2::nat-list-measure
               ;; order of paramdecl-elaborate-aux is 2
               (list reclimit 150 0 0))
@@ -1125,7 +1231,9 @@ expression with @(see vl-expr-to-svex).</p>")
 
   (define vl-stmt-elaborate ((x vl-stmt-p)
                              elabindex
-                             &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                             &key
+                             ((reclimit natp) 'reclimit)
+                             ((config vl-simpconfig-p) 'config))
     :measure (acl2::nat-list-measure
               (list reclimit 250 (vl-stmt-count x) 1))
     :returns (mv (ok)
@@ -1184,6 +1292,13 @@ expression with @(see vl-expr-to-svex).</p>")
                                  :stepforms stepforms
                                  :body body)
               elabindex))
+        :vl-foreachstmt
+        (mv nil
+            (fatal :type :vl-resolve-constants-fail
+                   :msg "Not yet implemented: elaboration support for foreach statements"
+                   :args (list (vl-stmt-fix x)))
+            (vl-stmt-fix x)
+            elabindex)
         :otherwise
         (vl-stmt-elaborate-aux x elabindex :reclimit reclimit)))
     ///
@@ -1204,7 +1319,9 @@ expression with @(see vl-expr-to-svex).</p>")
 
   (define vl-fundecl-elaborate ((x vl-fundecl-p)
                                 elabindex
-                                &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                                &key
+                                ((reclimit natp) 'reclimit)
+                                ((config vl-simpconfig-p) 'config))
     ;; :guard-debug t
     :measure (acl2::nat-list-measure
               (list reclimit 350 0 1))
@@ -1310,7 +1427,7 @@ expression with @(see vl-expr-to-svex).</p>")
   ;;    (expr vl-expr-p)
   ;;    elabindex
   ;;    &key
-  ;;    ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+  ;;    ((reclimit natp) 'reclimit) ((config vl-simpconfig-p) 'config))
   ;;   :measure (acl2::nat-list-measure
   ;;             (list reclimit 0 (vl-expr-count expr) 20))
 
@@ -1336,7 +1453,7 @@ expression with @(see vl-expr-to-svex).</p>")
   ;;                                             (type vl-datatype-p)
   ;;                                             elabindex
   ;;                                             &key
-  ;;                                             ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+  ;;                                             ((reclimit natp) 'reclimit) ((config vl-simpconfig-p) 'config))
   ;;   :measure (acl2::nat-list-measure
   ;;             (list reclimit 0 (vl-datatype-count type) 20))
   ;;   :returns (mv (ok)
@@ -1362,7 +1479,7 @@ expression with @(see vl-expr-to-svex).</p>")
 
   ;; (define vl-scopeitem-elaborate ((x vl-scopeitem-p)
   ;;                                 (elabindex "must be in the scope where x is declared")
-  ;;                                 &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+  ;;                                 &key ((reclimit natp) 'reclimit) ((config vl-simpconfig-p) 'config))
   ;;   :measure-debug t
   ;;   :measure
   ;;   ;; we're just going to decrease the reclimit on every call
@@ -1436,7 +1553,9 @@ expression with @(see vl-expr-to-svex).</p>")
   (template-subst
    '(define vl-<<type>>-elaborate ((x vl-<<type>>-p)
                                    (elabindex "in the scope where x is declared")
-                                   &key ((reclimit natp) '1000) ((config vl-simpconfig-p) 'config))
+                                   &key
+                                   ((reclimit natp) 'reclimit)
+                                   ((config vl-simpconfig-p) 'config))
       :measure (acl2::nat-list-measure (list reclimit 150 0 0))
       :returns (mv (ok)
                    (warnings vl-warninglist-p)

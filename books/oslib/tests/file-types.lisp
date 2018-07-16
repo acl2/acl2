@@ -77,9 +77,18 @@
                  :regular-file
                  :follow-symlinks t)
 
+(check-file-kind "test-broken-link"
+                 :broken-symbolic-link
+                 :follow-symlinks t)
+
+(check-file-kind "test-broken-link"
+                 :symbolic-link
+                 :follow-symlinks nil)
 
 #+Unix ;; <-- maybe need to tweak this
 (progn
   (check-file-kind "/dev/null" :character-device)
   #-(or darwin freebsd) ;; has failed on Mac OS 10.6.8 and 10.10.5, and FreeBSD
   (check-file-kind "/dev/sda1" :block-device))
+
+

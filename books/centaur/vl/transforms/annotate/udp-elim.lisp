@@ -223,7 +223,11 @@ support, the resulting module will have fatal @(see warnings).</p>"
        (portdecls (cons x.output x.inputs))
        (ports     (vl-ports-from-portdecls portdecls))
        (vardecls  (vl-udp-vardecls-from-portdecls portdecls))
-       (atts      (cons (list "VL_CONVERTED_UDP") x.atts))
+       (atts      (list* (list "VL_CONVERTED_UDP")
+                         (if x.sequentialp
+                             (list "VL_SEQUENTIAL_UDP")
+                           (list "VL_COMBINATIONAL_UDP"))
+                         x.atts))
        (warnings  x.warnings)
        (warnings  (if x.sequentialp
                       (fatal :type :vl-sequential-udp

@@ -211,6 +211,7 @@
     :vl-waitstmt         x.atts
     :vl-whilestmt        x.atts
     :vl-forstmt          x.atts
+    :vl-foreachstmt      x.atts
     :vl-blockstmt        x.atts
     :vl-repeatstmt       x.atts
     :vl-timingstmt       x.atts
@@ -240,6 +241,7 @@ expressions.</p>"
     :vl-whilestmt        (list x.body)
     :vl-forstmt          (append-without-guard
                           x.initassigns x.stepforms (list x.body))
+    :vl-foreachstmt      (list x.body)
     :vl-blockstmt        x.stmts
     :vl-repeatstmt       (list x.body)
     :vl-timingstmt       (list x.body)
@@ -285,15 +287,6 @@ expressions.</p>"
     :rule-classes ((:rewrite) (:linear))
     :hints(("Goal" :in-theory (enable vl-atomicstmt-p)))))
 
-(define vl-vardecllist->initvals ((x vl-vardecllist-p))
-  :returns (vals vl-exprlist-p)
-  (b* (((when (atom x)) nil)
-       (initval (vl-vardecl->initval (car x))))
-    (if initval
-        (cons initval (vl-vardecllist->initvals (cdr x)))
-      (vl-vardecllist->initvals (cdr x)))))
-
-
 
 (define vl-compoundstmt->exprs ((x vl-stmt-p))
   :prepwork ((local (defthm vl-exprlist-p-of-flatten-when-vl-exprlistlist-p
@@ -337,7 +330,6 @@ directly part of the statement.</p>"
              (equal (vl-compoundstmt->ctrl x)
                     nil))))
 
-
 (define vl-compoundstmt->vardecls
   :short "Get the declarations, if any, from an arbitrary compound (non-atomic) statement."
   ((x vl-stmt-p))
@@ -345,13 +337,15 @@ directly part of the statement.</p>"
   :returns (decls vl-vardecllist-p)
   :long "<p>This really only makes sense for block/for statements.</p>"
   (vl-stmt-case x
-    :vl-blockstmt x.vardecls
-    :vl-forstmt x.initdecls
+    :vl-blockstmt   x.vardecls
+    :vl-forstmt     x.initdecls
+    :vl-foreachstmt x.vardecls
     :otherwise nil)
   ///
   (defthm vl-compoundstmt->vardecls-is-usually-nil
     (implies (and (not (vl-stmt-case x :vl-blockstmt))
-                  (not (vl-stmt-case x :vl-forstmt)))
+                  (not (vl-stmt-case x :vl-forstmt))
+                  (not (vl-stmt-case x :vl-foreachstmt)))
              (equal (vl-compoundstmt->vardecls x)
                     nil))))
 
@@ -573,6 +567,12 @@ directly part of the statement.</p>"
                            :test    (first exprs)
                            :stepforms (take nstepforms stmts-starting-with-stepforms)
                            :body    (nth nstepforms stmts-starting-with-stepforms)))
+
+      :vl-foreachstmt
+      (change-vl-foreachstmt x
+                             :vardecls vardecls
+                             :body (first stmts))
+
       :vl-repeatstmt
       (change-vl-repeatstmt x
                             :condition (first exprs)
@@ -663,7 +663,8 @@ directly part of the statement.</p>"
   (defthm vl-compoundstmt->ctrl-of-change-vl-compoundstmt-vardecls
     (implies (or (not vardecls)
                  (vl-stmt-case x :vl-blockstmt)
-                 (vl-stmt-case x :vl-forstmt))
+                 (vl-stmt-case x :vl-forstmt)
+                 (vl-stmt-case x :vl-foreachstmt))
              (equal (vl-compoundstmt->vardecls (change-vl-compoundstmt-core x stmts exprs ctrl vardecls paramdecls))
                     (vl-vardecllist-fix vardecls))))
 

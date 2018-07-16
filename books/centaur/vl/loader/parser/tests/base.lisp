@@ -308,7 +308,10 @@
         :vl-pattern (list* :pattern
                            (vl-pretty-atts atts)
                            (vl-pretty-maybe-datatype x.pattype)
-                           (vl-pretty-assignpat x.pat)))))
+                           (vl-pretty-assignpat x.pat))
+        :vl-eventexpr (list* :event
+                             (vl-pretty-atts x.atts)
+                             (vl-pretty-evatomlist x.atoms)))))
 
   (define vl-pretty-atts ((x vl-atts-p))
     :measure (vl-atts-count x)
@@ -464,7 +467,20 @@
     :measure (vl-maybe-datatype-count x)
     (if x
         (vl-pretty-datatype x)
-      nil)))
+      nil))
+
+  (define vl-pretty-evatom ((x vl-evatom-p))
+    :measure (vl-evatom-count x)
+    (b* (((vl-evatom x)))
+      (list x.type (vl-pretty-expr x.expr))))
+
+  (define vl-pretty-evatomlist ((x vl-evatomlist-p))
+    :measure (vl-evatomlist-count x)
+    (if (atom x)
+        nil
+      (cons (vl-pretty-evatom (car x))
+            (vl-pretty-evatomlist (cdr x))))))
+
 
 (define vl-pretty-range-list ((x vl-rangelist-p))
   (if (atom x)
@@ -521,16 +537,6 @@
       (vl-pretty-fwdtypedef x)
     (vl-pretty-typedef x)))
 
-
-(define vl-pretty-evatom ((x vl-evatom-p))
-  (b* (((vl-evatom x)))
-    (list x.type (vl-pretty-expr x.expr))))
-
-(define vl-pretty-evatomlist ((x vl-evatomlist-p))
-  (if (atom x)
-      nil
-    (cons (vl-pretty-evatom (car x))
-          (vl-pretty-evatomlist (cdr x)))))
 
 (define vl-pretty-eventcontrol ((x vl-eventcontrol-p))
   (b* (((vl-eventcontrol x)))
@@ -734,6 +740,11 @@
     (:vl-forkjoinany  :fork-join-any)
     (:vl-forkjoinnone :fork-join-none)))
 
+(define vl-pretty-rhs ((x vl-rhs-p))
+  (vl-rhs-case x
+    (:vl-rhsexpr (vl-pretty-expr x.guts))
+    (:vl-rhsnew (list* :new x.arrsize (vl-pretty-exprlist x.args)))))
+
 (defines vl-pretty-stmt
 
   (define vl-pretty-stmt ((x vl-stmt-p))
@@ -742,7 +753,7 @@
       :vl-nullstmt :null
       :vl-assignstmt (list* (vl-pretty-expr x.lvalue)
                             (vl-pretty-assign-type x.type)
-                            (vl-pretty-expr x.expr)
+                            (vl-pretty-rhs x.rhs)
                             (append (and x.ctrl (list :ctrl (vl-pretty-delayoreventcontrol x.ctrl))
                                     (and x.atts (list :atts (vl-pretty-atts x.atts))))))
       :vl-deassignstmt (list* (vl-pretty-deassign-type x.type)
@@ -751,7 +762,7 @@
       :vl-callstmt (list* :call
                           (vl-pretty-scopeexpr x.id)
                           (append (and x.typearg (list (vl-pretty-datatype x.typearg)))
-                                  (vl-pretty-exprlist x.args)
+                                  (vl-pretty-maybe-exprlist x.args)
                                   (and x.systemp (list :system))
                                   (and x.voidp (list :void))
                                   (and x.atts (list :atts (vl-pretty-atts x.atts)))))
@@ -782,6 +793,11 @@
                            (vl-pretty-stmt x.body)
                            (and x.atts (list :atts (vl-pretty-atts x.atts))))
       :vl-forstmt (list* :for :bozo-for-loops)
+      :vl-foreachstmt (list* :foreach
+                             (vl-pretty-scopeexpr x.array)
+                             :vars x.loopvars
+                             :body (vl-pretty-stmt x.body)
+                             (and x.atts (list :atts (vl-pretty-atts x.atts))))
       :vl-breakstmt (list* :break
                            (and x.atts (list :atts (vl-pretty-atts x.atts))))
       :vl-continuestmt (list* :continue

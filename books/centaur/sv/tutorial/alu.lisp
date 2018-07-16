@@ -124,7 +124,9 @@
    (vl::vl-reportcard-to-string (vl::vl-design-reportcard *alu-vl-design*))))
 
 (def-saved-event alu->svex-form
-  (defconsts (*alu-svex-design* *alu-simplified-good* *alu-simplified-bad*)
+  (defconsts (*alu-svex-design*
+              *alu-simplified-good*
+              *alu-simplified-bad*)
     (b* (((mv errmsg svex-design good bad)
           (vl::vl-design->svex-design "alu16" *alu-vl-design* (vl::make-vl-simpconfig))))
       (and errmsg

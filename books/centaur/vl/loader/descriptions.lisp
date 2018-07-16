@@ -44,7 +44,9 @@
    vl-program
    vl-class
    vl-config
-   ;; bozo add bind directives
+   vl-bind
+   vl-property
+   vl-sequence
 
    ;; package items
    vl-vardecl
@@ -96,6 +98,9 @@ process, we convert all of the descriptions into a @(see vl-design-p).</p>")
        (implies (vl-typedeflist-p x) (vl-descriptionlist-p x))
        (implies (vl-dpiimportlist-p x) (vl-descriptionlist-p x))
        (implies (vl-dpiexportlist-p x) (vl-descriptionlist-p x))
+       (implies (vl-bindlist-p x) (vl-descriptionlist-p x))
+       (implies (vl-propertylist-p x) (vl-descriptionlist-p x))
+       (implies (vl-sequencelist-p x) (vl-descriptionlist-p x))
        )
   :hints(("Goal" :induct (len x))))
 
@@ -132,8 +137,10 @@ doesn't introduce a name (e.g., an @('import') statement."
        ;; basically the same reason as forward typedefs.  We want to find the
        ;; actual definition, not the fact that it's exported.
        nil)
+      (:vl-bind nil)
+      (:vl-property  (vl-property->name x))
+      (:vl-sequence  (vl-sequence->name x))
       (otherwise     (impossible)))))
-
 
 
 
@@ -245,6 +252,9 @@ the number of descriptions in the list.</p>"
        ;; basically the same reason as forward typedefs.  We want to find the
        ;; actual definition, not the fact that it's exported.
        nil)
+      (:vl-bind nil)
+      (:vl-property  (vl-property->name x))
+      (:vl-sequence  (vl-sequence->name x))
       (otherwise     (impossible)))))
 
 
@@ -428,12 +438,15 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                               (fwdtypedefs vl-fwdtypedeflist-p)
                               (typedefs    vl-typedeflist-p)
                               (dpiimports  vl-dpiimportlist-p)
-                              (dpiexports  vl-dpiexportlist-p))
+                              (dpiexports  vl-dpiexportlist-p)
+                              (binds       vl-bindlist-p)
+                              (properties  vl-propertylist-p)
+                              (sequences   vl-sequencelist-p))
   :returns (mv (modules     vl-modulelist-p)
                (udps        vl-udplist-p)
                (interfaces  vl-interfacelist-p)
                (programs    vl-programlist-p)
-               (classes    vl-classlist-p)
+               (classes     vl-classlist-p)
                (packages    vl-packagelist-p)
                (configs     vl-configlist-p)
                (vardecls    vl-vardecllist-p)
@@ -444,7 +457,10 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                (fwdtypedefs vl-fwdtypedeflist-p)
                (typedefs    vl-typedeflist-p)
                (dpiimports  vl-dpiimportlist-p)
-               (dpiexports  vl-dpiexportlist-p))
+               (dpiexports  vl-dpiexportlist-p)
+               (binds       vl-bindlist-p)
+               (properties  vl-propertylist-p)
+               (sequences   vl-sequencelist-p))
   (b* (((when (atom x))
         (mv (vl-modulelist-fix modules)
             (vl-udplist-fix udps)
@@ -461,7 +477,10 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
             (vl-fwdtypedeflist-fix fwdtypedefs)
             (vl-typedeflist-fix typedefs)
             (vl-dpiimportlist-fix dpiimports)
-            (vl-dpiexportlist-fix dpiexports)))
+            (vl-dpiexportlist-fix dpiexports)
+            (vl-bindlist-fix binds)
+            (vl-propertylist-fix properties)
+            (vl-sequencelist-fix sequences)))
        (x1  (vl-description-fix (car x)))
        (tag (tag x1)))
     (vl-sort-descriptions
@@ -470,7 +489,7 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
      :udps        (if (eq tag :vl-udp)        (cons x1 udps)        udps)
      :interfaces  (if (eq tag :vl-interface)  (cons x1 interfaces)  interfaces)
      :programs    (if (eq tag :vl-program)    (cons x1 programs)    programs)
-     :classes    (if (eq tag :vl-class)    (cons x1 classes)    classes)
+     :classes     (if (eq tag :vl-class)      (cons x1 classes)     classes)
      :packages    (if (eq tag :vl-package)    (cons x1 packages)    packages)
      :configs     (if (eq tag :vl-config)     (cons x1 configs)     configs)
      :vardecls    (if (eq tag :vl-vardecl)    (cons x1 vardecls)    vardecls)
@@ -482,6 +501,9 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
      :typedefs    (if (eq tag :vl-typedef)    (cons x1 typedefs)    typedefs)
      :dpiimports  (if (eq tag :vl-dpiimport)  (cons x1 dpiimports)  dpiimports)
      :dpiexports  (if (eq tag :vl-dpiexport)  (cons x1 dpiexports)  dpiexports)
+     :binds       (if (eq tag :vl-bind)       (cons x1 binds)       binds)
+     :properties  (if (eq tag :vl-property)   (cons x1 properties)  properties)
+     :sequences   (if (eq tag :vl-sequence)   (cons x1 sequences)   sequences)
      )))
 
 (define vl-design-from-descriptions ((x vl-descriptionlist-p))
@@ -501,13 +523,16 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
             fwdtypedefs
             typedefs
             dpiimports
-            dpiexports)
+            dpiexports
+            binds
+            properties
+            sequences)
         (vl-sort-descriptions x)))
     (make-vl-design :mods        modules
                     :udps        udps
                     :interfaces  interfaces
                     :programs    programs
-                    :classes    classes
+                    :classes     classes
                     :packages    packages
                     :configs     configs
                     :vardecls    vardecls
@@ -518,7 +543,10 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                     :fwdtypes    fwdtypedefs
                     :typedefs    typedefs
                     :dpiimports  dpiimports
-                    :dpiexports  dpiexports)))
+                    :dpiexports  dpiexports
+                    :binds       binds
+                    :properties  properties
+                    :sequences   sequences)))
 
 (local (in-theory (disable acl2::true-listp-append
                            acl2::consp-append
@@ -545,7 +573,11 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                           x.fwdtypes
                           x.typedefs
                           x.dpiimports
-                          x.dpiexports)))
+                          x.dpiexports
+                          x.binds
+                          x.properties
+                          x.sequences
+                          )))
 
 ;; BOZO could probably prove something like this, some day...
 ;; (defthm vl-design-descriptions-identity

@@ -132,6 +132,42 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
 
 ; Value Parameters ------------------------------------------------------------
 
+(define vl-update-paramtype-udims ((udims vl-packeddimensionlist-p)
+                                   (x     vl-paramtype-p))
+  :guard (and (consp udims)
+              (member (vl-paramtype-kind x)
+                      '(:vl-implicitvalueparam :vl-explicitvalueparam)))
+  :returns (new-x vl-paramtype-p)
+  (vl-paramtype-case x
+    :vl-implicitvalueparam
+    ;; Special hack.  We currently believe that there is no difference between
+    ;;
+    ;;    parameter [3:0] foo [1:0] = ...
+    ;;    parameter logic [3:0] foo [1:0] = ...
+    ;;
+    ;; I.e., the presence of unpacked dimensions seems to imply that the
+    ;; parameter has an explicit type.  So: if we started with an implicit
+    ;; parameter and have now encountered some udims, we're going to go ahead
+    ;; and turn it into an explicit parameter right at parse time.
+    (b* ((signedp (cond ((not x.sign) nil)
+                        ((vl-exprsign-equiv x.sign :vl-signed) t)
+                        (t nil)))
+         (pdims (and x.range
+                     (list (vl-range->packeddimension x.range))))
+         (datatype (make-vl-coretype :name :vl-logic
+                                     :pdims pdims
+                                     :signedp signedp
+                                     :udims udims)))
+      (make-vl-explicitvalueparam :type datatype
+                                  :default x.default
+                                  :final-value nil))
+    :vl-explicitvalueparam
+    (change-vl-explicitvalueparam x :type (vl-datatype-update-udims udims x.type))
+    :otherwise
+    (progn$ (impossible)
+            (vl-paramtype-fix x))))
+
+
 (defparser vl-parse-param-assignment (atts localp type)
   ;; Verilog-2005:       param_assignment ::= identifier = mintypmax_expression
   ;; SystemVerilog-2012: param_assignment ::= identifier { unpacked_dimension } [ '=' constant_param_expression ]
@@ -152,33 +188,28 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
           ;; We make this very strict because otherwise it seems that ambiguities
           ;; can arise.
           (return-raw
-           (vl-parse-error (cat "Parameter names that shadow types are not supported: " (vl-idtoken->name id)))))
+           (vl-parse-error (cat "Parameter names that shadow types are not supported: "
+                                (vl-idtoken->name id)))))
 
-        (udims := (vl-parse-0+-unpacked-dimensions))
+        (when (not (eq (vl-loadconfig->edition config) :verilog-2005))
+          (udims := (vl-parse-0+-unpacked-dimensions)))
 
-        (utype := (if udims
-                     (vl-paramtype-case type
-                       :vl-explicitvalueparam
-                       (mv nil
-                           (change-vl-explicitvalueparam type :type (vl-datatype-update-udims udims type.type))
-                           tokstream)
-                       :vl-implicitvalueparam
-                       (vl-parse-error "Implicit-type parameter declarations with unpacked dimensions are not yet supported.")
-                       :otherwise
-                       (vl-parse-error "impossible"))
-                   (mv nil type tokstream)))
-
-        ;; For SystemVerilog-2012, the right hand side is optional but only for non-local parameters.
+        ;; For SystemVerilog-2012, the right hand side is optional but only for
+        ;; non-local parameters.
         (when (and (not (vl-is-token? :vl-equalsign))
                    (not (eq (vl-loadconfig->edition config) :verilog-2005))
                    (not localp))
           ;; Special case: SystemVerilog-2012 with a non-local parameter, so
           ;; we're allowed to not have a default value here.
-          (return (make-vl-paramdecl :loc (vl-token->loc id)
-                                     :name (vl-idtoken->name id)
-                                     :atts atts
-                                     :localp localp
-                                     :type utype)))
+          (return
+           (let ((type (if (atom udims)
+                           type
+                         (vl-update-paramtype-udims udims type))))
+             (make-vl-paramdecl :loc (vl-token->loc id)
+                                :name (vl-idtoken->name id)
+                                :atts atts
+                                :localp localp
+                                :type type))))
 
         ;; Otherwise, a default value has been given or is required.
         (:= (vl-match-token :vl-equalsign))
@@ -190,15 +221,19 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
         ;;   (2) The lone $ is already supported as a kind of base expression
         ;; So this all just collapses down into a mintypmax expression.
         (default := (vl-parse-mintypmax-expression))
-        (return (make-vl-paramdecl
-                 :loc (vl-token->loc id)
-                 :name (vl-idtoken->name id)
-                 :atts atts
-                 :localp localp
-                 :type
-                 (if (eq (vl-paramtype-kind utype) :vl-implicitvalueparam)
-                     (change-vl-implicitvalueparam utype :default default)
-                   (change-vl-explicitvalueparam utype :default default))))))
+        (return
+         (let* ((type (if (eq (vl-paramtype-kind type) :vl-implicitvalueparam)
+                          (change-vl-implicitvalueparam type :default default)
+                        (change-vl-explicitvalueparam type :default default)))
+                (type (if (atom udims)
+                          type
+                        (vl-update-paramtype-udims udims type))))
+           (make-vl-paramdecl :loc (vl-token->loc id)
+                              :name (vl-idtoken->name id)
+                              :atts atts
+                              :localp localp
+                              :type type)))))
+
 
 (defparser vl-parse-list-of-param-assignments (atts localp type)
   ;; list_of_param_assignments ::= param_assignment { ',' param_assignment }
@@ -412,21 +447,45 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
           (signing := (vl-match)))
 
         (when (vl-is-token? :vl-lbrack)
-          ;; the grammar allows things like parameter signed [3:0][4:0] ..., but I don't
-          ;; know what we would really do with those, so for now I'm just going to accept
-          ;; at most a single range here.
-          (range := (vl-parse-range)))
+          (dims := (vl-parse-0+-packed-dimensions)))
 
-        (when (or signing range)
-          ;; This is similar to what we do in the Verilog-2005 version.
+        (when (or signing dims)
           (decls := (vl-parse-list-of-param-assignments
                      atts
                      (eq (vl-token->type start) :vl-kwd-localparam)
-                     (make-vl-implicitvalueparam :range range
-                                                 :sign (and signing
-                                                            (case (vl-token->type signing)
-                                                              (:vl-kwd-signed   :vl-signed)
-                                                              (:vl-kwd-unsigned :vl-unsigned))))))
+                     (if (or (atom dims)
+                             (and (atom (cdr dims))
+                                  (vl-packeddimension-case (car dims) :range)))
+                         ;; If any dimensions are provided, there is only one
+                         ;; of them and it is an ordinary sized dimension, so
+                         ;; this is something like parameter [3:0] foo.  This
+                         ;; is a partially implicit parameter; do basically
+                         ;; like the Verilog-2005 version does.
+                         (make-vl-implicitvalueparam :range (if (atom dims)
+                                                                nil
+                                                              (vl-packeddimension->range (car dims)))
+                                                     :sign (and signing
+                                                                (case (vl-token->type signing)
+                                                                  (:vl-kwd-signed   :vl-signed)
+                                                                  (:vl-kwd-unsigned :vl-unsigned))))
+                       ;; Otherwise: there are multiple or complex dimensions
+                       ;; here, but there is no base type like "logic".  That
+                       ;; is, we're dealing with something like "parameter
+                       ;; signed [3:0][4:0] foo" or perhaps "parameter
+                       ;; [3:0][4:0] bar".  I don't know how to reconcile this
+                       ;; with the different Verilog rules for implicit versus
+                       ;; explicit parameters.  I think the most sensible thing
+                       ;; to do here is treat this like an *explicitly* typed
+                       ;; parameter, by acting as though it was written as
+                       ;; "parameter logic [3:0][4:0] bar" or similar.
+                       (make-vl-explicitvalueparam
+                        :type (make-vl-coretype :name :vl-logic
+                                                :pdims dims
+                                                :udims nil
+                                                :signedp (and signing
+                                                              (case (vl-token->type signing)
+                                                                (:vl-kwd-signed   t)
+                                                                (:vl-kwd-unsigned nil))))))))
           (return decls))
 
         ;; Now this is tricky.  We know we don't have a signing or range, but

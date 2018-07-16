@@ -411,7 +411,9 @@ address with empty index and scope qualifier 0.</p>"
     (defthm svexlist-add-delay-when-0
       (equal (svexlist-add-delay x 0)
              (svexlist-fix x))
-      :flag svexlist-add-delay)))
+      :flag svexlist-add-delay))
+
+  (memoize 'svex-add-delay :condition '(eq (svex-kind x) :call)))
 
 (define svex-add-delay-top ((x svex-p)
                             (delay natp))
@@ -448,8 +450,10 @@ address with empty index and scope qualifier 0.</p>"
                       :hints(("Goal" :in-theory (enable svex-lookup svarlist-fix
                                                         pairlis$))))))
   :returns (new-x svex-alist-p)
-  (pairlis$ (svex-alist-keys x)
-            (svexlist-add-delay (svex-alist-vals x) delay))
+  (b* ((ans (pairlis$ (svex-alist-keys x)
+                      (svexlist-add-delay (svex-alist-vals x) delay))))
+    (clear-memoize-table 'svex-add-delay)
+    ans)
   ///
   (more-returns
    (new-x :name keys-of-svex-alist-add-delay

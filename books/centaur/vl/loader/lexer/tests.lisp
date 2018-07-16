@@ -150,7 +150,8 @@
             ("<<<=" . :vl-ashleq)
             (">>>=" . :vl-ashreq)
             ("'"    . :vl-quote)
-            ("$"    . :vl-$))))
+            ("$"    . :vl-$)
+            ("1step" . :vl-1step))))
 
 (defun make-punctuation-tests (alist config)
   (b* (((when (atom alist))
@@ -313,7 +314,6 @@
   (list
    (make-strtest :input "\"Hello\""
                  :expansion "Hello")
-
    (make-strtest :input "\"Hello\" world"
                  :remainder " world"
                  :expansion "Hello")
@@ -930,3 +930,18 @@ a b c")
 (vl-lex-misc-testcase :input "`timescale bogus"
   :successp nil)
 
+(vl-lex-misc-testcase :input "1step"
+  :successp t
+  :value "1step"
+  :type :vl-1step
+  :remainder ""
+  :config (change-vl-loadconfig *vl-default-loadconfig*
+                                :edition :system-verilog-2012))
+
+(vl-lex-misc-testcase :input "1step"
+  :successp t
+  :value "1"
+  :type :vl-inttoken
+  :remainder "step"
+  :config (change-vl-loadconfig *vl-default-loadconfig*
+                                :edition :verilog-2005))

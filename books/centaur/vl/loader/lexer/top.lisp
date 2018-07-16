@@ -267,6 +267,49 @@ order, you can search for long prefixes first, e.g., @('>>>') before
   ///
   (def-token/remainder-thms vl-lex-timescale))
 
+(define vl-lex-1step-or-number ((echars (and (vl-echarlist-p echars)
+                                             (consp echars)
+                                             (vl-decimal-digit-p
+                                              (vl-echar->char (car echars)))))
+                                (breakp   booleanp)
+                                (st       vl-lexstate-p)
+                                (warnings vl-warninglist-p))
+  :parents (vl-lex)
+  :short "Match any @('integral_number') or @('1step')."
+  :returns (mv token?
+               remainder
+               (warnings vl-warninglist-p))
+  :long "<p>This is a ugly function that allows us to treat @('1step') in a
+special way.  No other SystemVerilog keyword begins with a number and
+@('1step') is not listed in the keywords table in the standard.  However, we
+find that for instance in some other tools we are permitted to write:</p>
+
+@({
+      wire #1 step;
+})
+
+<p>This seems to indicate that @('#1step') delay values are indeed to be
+treated as atomic tokens and spaces should not be permitted within them.
+We therefore handle them directly in the lexer.</p>"
+
+  (b* (((unless (and (eql (vl-echar->char (car echars)) #\1)
+                     (vl-lexstate->onestepp st)))
+        (vl-lex-number echars breakp st warnings))
+       ((mv step remainder)
+        (vl-read-literal "step" (cdr echars)))
+       ((when step)
+        (mv (make-vl-plaintoken :etext (cons (car echars) step)
+                                :type :vl-1step
+                                :breakp breakp)
+            remainder (ok))))
+    (vl-lex-number echars breakp st warnings))
+  ///
+  (def-token/remainder-thms vl-lex-1step-or-number
+    :formals (echars breakp st warnings)
+    :extra-tokenhyp (booleanp breakp)
+    :extra-appendhyp (booleanp breakp)))
+
+
 (define vl-lex-token1
   :parents (vl-lex)
   :short "Try to parse a single token at the front of @('echars')."
@@ -296,7 +339,7 @@ order, you can search for long prefixes first, e.g., @('>>>') before
                   (ok))))
 
            ((when (vl-decimal-digit-p char1)) ;; codes 48...57
-            (vl-lex-number echars breakp st warnings)))
+            (vl-lex-1step-or-number echars breakp st warnings)))
 
         (case char1
           ;; Other special characters whose codes are less than 57.

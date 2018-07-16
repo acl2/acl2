@@ -1115,7 +1115,8 @@ explicit declarations.</p>")
     :vl-inside nil
     :vl-tagged nil
     :vl-pattern x.pattype
-    :vl-special nil)
+    :vl-special nil
+    :vl-eventexpr nil)
   ///
   (defret vl-maybe-datatype-count-of-vl-expr->maybe-subtype
     (< (vl-maybe-datatype-count subtype)
@@ -1524,6 +1525,14 @@ explicit declarations.</p>")
                (st               (vl-shadowcheck-pop-scope st)))
             (mv st warnings)))
 
+         ((when (eq (vl-stmt-kind x) :vl-foreachstmt))
+          (b* (((vl-foreachstmt x))
+               ((mv st warnings) (vl-shadowcheck-push-scope (vl-foreachstmt->blockscope x) st warnings))
+               ((mv st warnings) (vl-shadowcheck-blockitemlist x.vardecls st warnings))
+               ((mv st warnings) (vl-shadowcheck-stmt x.body ctx st warnings))
+               (st               (vl-shadowcheck-pop-scope st)))
+            (mv st warnings)))
+
          ;; No other statement has a scope, but compound statements might have
          ;; block statements inside of them.  See vl-stmt-check-undeclared.  We
          ;; don't use vl-stmt-allexprs here because it grabs exprs from
@@ -1737,8 +1746,14 @@ explicit declarations.</p>")
        ((when (eq tag :vl-cassertion)) (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-property))   (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-sequence))   (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-clkdecl))    (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-gclkdecl))   (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-dpiexport))  (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-fwdtypedef)) (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-bind))       (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-class))      (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-covergroup)) (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-elabtask))   (mv st warnings)) ;; BOZO figure out what we want to do here.
        )
     (impossible)
     (mv st warnings)))

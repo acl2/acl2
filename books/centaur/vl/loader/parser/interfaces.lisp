@@ -102,14 +102,22 @@ interface_ansi_header ::=
                                               :vl-cassertion
                                               :vl-property
                                               :vl-sequence
+                                              :vl-clkdecl
+                                              :vl-gclkdecl
                                               :vl-dpiimport
                                               :vl-dpiexport
+                                              :vl-bind
+                                              :vl-class
+                                              ;; covergroups?  not sure -- if you add them, add them to the parsetree,
+                                              ;; here, below, and remove them from the excluded fields in
+                                              ;; *vl-interface/genblob-fields* in mlib/blocks.lisp
+                                              :vl-elabtask
                                               )))
        (warnings
         (if (not bad-item)
             warnings
           (fatal :type :vl-bad-interface-item
-                 :msg "~a0: an interface may not contain ~s1s."
+                 :msg "~a0: an interface may not contain a ~s1."
                  :args (list bad-item (vl-genelement->short-kind-string bad-item)))))
 
        ((vl-genblob c) (vl-sort-genelements items)))
@@ -128,6 +136,11 @@ interface_ansi_header ::=
                         :dpiexports  c.dpiexports
                         :properties  c.properties
                         :sequences   c.sequences
+                        :clkdecls    c.clkdecls
+                        :gclkdecls   c.gclkdecls
+                        :binds       c.binds
+                        :classes     c.classes
+                        :elabtasks   c.elabtasks
                         :modinsts    c.modinsts
                         :assigns     c.assigns
                         :assertions  c.assertions
