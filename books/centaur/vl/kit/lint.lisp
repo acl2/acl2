@@ -339,12 +339,7 @@ for particular modules, or all warnings of particular types, etc.  See @(see
 
    (no-sv-use-set booleanp
                   "Disable sv-use-set check."
-                  :rule-classes :type-prescription
-                  ;; [Jared] defaulting this to true, for now, because this
-                  ;; check seems to go out to lunch on wide wires, as in the
-                  ;; linttest/trunc example.  FIXME eventually fix that and
-                  ;; change this to NIL.
-                  :default t)
+                  :rule-classes :type-prescription)
 
    (edition     vl-edition-p
                 :argname "EDITION"
