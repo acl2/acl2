@@ -62,8 +62,49 @@
   )
 
 (defsection implemented-opcodes
-  :parents (instructions x86-decoder)
-  :short "Opcodes supported by the x86 model"
+  :parents (x86isa instructions x86-decoder)
+  :short "Intel Opcodes Supported in @('x86isa')"
+  :long
+
+  "<h3>How to Read Opcode Tables</h3>
+
+ <p>The opcode tables have 2^8 = 256 rows, one row for each relevant opcode
+ byte (i.e., the only opcode byte for one-byte opcodes in @(see
+ one-byte-opcodes-table), the second opcode byte for the two-byte opcodes in
+ @(see two-byte-opcodes-table), and the third opcode byte for the three-byte
+ opcodes in @(see 0F-38-three-byte-opcodes-table) and @(see
+ 0F-3A-three-byte-opcodes-table)).  Each row lists the opcode, the name of the
+ Intel instruction corresponding to it, and the instruction semantic function
+ that implements that opcode.</p>
+
+ <p>Sometimes, just the opcode byte is not enough to determine the x86
+ instruction.  We may need to know the processor's mode of operation (e.g.,
+ 32-bit or 64-bit mode), the value in the fields of the ModR/M byte (the
+ so-called opcode extensions grouped together in Intel Volume 2, Table A-6),
+ the mandatory prefixes, etc.  The following keywords are used to describe such
+ information in these tables.</p>
+
+ <ul>
+   <li>@(':i64'):    Invalid in 64-bit mode</li>
+   <li>@(':o64'):    Valid only in 64-bit mode</li>
+   <li>@(':reg'):    Value of ModR/M.reg</li>
+   <li>@(':mod'):    Value of ModR/M.mod</li>
+   <li>@(':r/m'):    Value of ModR/M.r/m</li>
+   <li>@(':66'):     Mandatory Prefix 0x66</li>
+   <li>@(':F2'):     Mandatory Prefix 0xF2</li>
+   <li>@(':F3'):     Mandatory Prefix 0xF3</li>
+   <li>@('No-Pfx'):  No Mandatory Prefix</li>
+   <li>@(':vex'):    Vex Prefix Present</li>
+ </ul>
+
+ <p>Instead of the instruction semantic function, these tables may also list
+ 'Reserved' or 'Unimplemented' for certain opcodes.  'Reserved' stands for
+ opcodes that Intel deems to be reserved or illegal --- an x86 processor is
+ supposed to throw a @('#UD') (undefined instruction) exception if that opcode
+ is encountered --- we call @(tsee x86-illegal-instruction) in such cases.
+ 'Unimplemented' stands for legal x86 instructions that are not yet supported
+ in @('x86isa') --- we call @(tsee x86-step-unimplemented) in such cases.</p>"
+
   )
 
 (local (xdoc::set-default-parents x86-decoder))
@@ -1051,10 +1092,12 @@
                      (not F3-prefix)
                      (not no-prefix))
 
-                nil
+                (list "<td> </td> <td> </td>")
 
               (list
-               " <td> <table> "
+               ;; Inserting empty second column, which usually holds the name
+               ;; of the instruction or instruction group for simple cells:
+               " <td> </td> <td> <table> "
                (if o64
                    (concatenate
                     'string
@@ -1323,9 +1366,10 @@
                      start-rip temp-rip prefixes mandatory-prefix rex-byte opcode
                      modr/m sib x86)))))
 
-      (defsection 0F-38-three-byte-opcodes
+      (defsection 0F-38-three-byte-opcodes-table
         :parents (implemented-opcodes)
-        :short "@('x86isa') Support for Opcodes in the @('0F 38') Three Byte Map"
+        :short "@('x86isa') Support for Opcodes in the @('0F 38') Three Byte
+        Map; @(see implemented-opcodes) for details."
         :long ,table-doc-string))))
 
 
@@ -1377,9 +1421,10 @@
                           start-rip temp-rip prefixes mandatory-prefix
                           rex-byte opcode modr/m sib x86)))))
 
-      (defsection 0F-3A-three-byte-opcodes
+      (defsection 0F-3A-three-byte-opcodes-table
         :parents (implemented-opcodes)
-        :short "@('x86isa') Support for Opcodes in the @('0F 3A') Three Byte Map"
+        :short "@('x86isa') Support for Opcodes in the @('0F 3A') Three Byte
+        Map; @(see implemented-opcodes) for details."
         :long ,table-doc-string))))
 
 (define three-byte-opcode-decode-and-execute
@@ -1543,9 +1588,10 @@
                           start-rip temp-rip prefixes mandatory-prefix
                           rex-byte vex-prefixes opcode modr/m sib x86)))))
 
-      (defsection two-byte-opcodes
+      (defsection two-byte-opcodes-table
         :parents (implemented-opcodes)
-        :short "@('x86isa') Support for Opcodes in the Two-Byte Map"
+        :short "@('x86isa') Support for Opcodes in the Two-Byte Map (i.e.,
+        first opcode byte is 0x0F); @(see implemented-opcodes) for details."
         :long ,table-doc-string))))
 
 (define two-byte-opcode-decode-and-execute
@@ -1691,9 +1737,10 @@
                           start-rip temp-rip prefixes rex-byte opcode
                           modr/m sib x86)))))
 
-      (defsection one-byte-opcodes
+      (defsection one-byte-opcodes-table
         :parents (implemented-opcodes)
-        :short "@('x86isa') Support for Opcodes in the One-Byte Map"
+        :short "@('x86isa') Support for Opcodes in the One-Byte Map; @(see
+        implemented-opcodes) for details."
         :long ,table-doc-string))))
 
 ;; VEX-encoded instructions:

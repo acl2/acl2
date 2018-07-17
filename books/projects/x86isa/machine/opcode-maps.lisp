@@ -49,13 +49,18 @@
 ; Vol. 2, Appendix A)
 
 (defsection opcode-maps
-  :parents (x86isa decoding-and-spec-utils)
-  :short "<b>ACL2 representation of Intel's x86 Opcode Maps</b>"
+  :parents (instructions x86-decoder)
+  :short "ACL2 representation of Intel's x86 Opcode Maps"
   :long "<p>The constants @('*one-byte-opcode-map-lst*'),
  @('*two-byte-opcode-map-lst*'), @('*0F-38-three-byte-opcode-map-lst*'),
  @('*0F-3A-three-byte-opcode-map-lst*'), and
  @('*opcode-extensions-by-group-number*') contain information presented in the
- opcode maps, as described in Intel Manual, Volume 2, Appendix A.</p>")
+ opcode maps, as described in Intel Manual, Volume 2, Appendix A.</p>
+
+ <p>We annotate each opcode in these opcode maps with the instruction semantic
+ function that specifies it (if one exists; @(see x86-step-unimplemented) is
+ the 'default' semantic function).  See @(see implemented-opcodes) for
+ details.</p>")
 
 (local (xdoc::set-default-parents 'opcode-maps))
 
@@ -4126,12 +4131,6 @@
 ;;   Two-byte opcode map legal keys:
 ;;     :NO-PREFIX, :66, :F3, :F2, and all superscripts except :i64 in
 ;;     *opcode-map-true-superscripts*. ]]
-
-;; TODO: What do I do about the opcode extensions (which will have a
-;; different recognizer than the opcode maps one), esp. stuff like the
-;; following:
-;; (("XRSTOR" 0 :1a)
-;;  ("LFENCE" 0 :1a))
 
 (defconst *group-numbers*
   (strip-cars *opcode-extensions-by-group-number*))
