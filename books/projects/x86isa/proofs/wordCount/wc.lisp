@@ -602,7 +602,7 @@
 
                              select-segment-register
 
-                             top-level-opcode-execute
+                             one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
@@ -1184,7 +1184,7 @@
                              imul-spec-32
                              gpr-sub-spec-4
 
-                             top-level-opcode-execute
+                             one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
@@ -1458,7 +1458,7 @@
                                                           X86))))))))))))))))))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (env-assumptions
-                             top-level-opcode-execute
+                             one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-add-spec-4
@@ -2124,7 +2124,7 @@
                                                           X86))))))))))))))))))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (env-assumptions
-                             top-level-opcode-execute
+                             one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -2501,7 +2501,7 @@
                                        (!FLGI *SF*
                                               0 (!FLGI *OF* 0 X86-NEW)))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (top-level-opcode-execute
+           :in-theory (e/d* (one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -2941,7 +2941,7 @@
                               (!FLGI *ZF* 1
                                      (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (top-level-opcode-execute
+           :in-theory (e/d* (one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -3362,7 +3362,7 @@
                               (!FLGI *ZF* 1
                                      (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (top-level-opcode-execute
+           :in-theory (e/d* (one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -3896,7 +3896,7 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (negative-loghead
 
-                             top-level-opcode-execute
+                             one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4
@@ -4670,7 +4670,7 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (negative-loghead
 
-                             top-level-opcode-execute
+                             one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
 
                              gpr-sub-spec-4

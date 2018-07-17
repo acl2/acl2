@@ -2649,7 +2649,7 @@
                   (not (cw "              op0: ~s0 ] ~%"
                            (str::hexify (unquote opcode/escape/vex-byte)))))))
    (equal (x86-fetch-decode-execute x86)
-          (top-level-opcode-execute
+          (one-byte-opcode-execute
            start-rip temp-rip3 prefixes rex-byte
            opcode/escape/vex-byte modr/m sib x86-4)))
   :hints
@@ -2659,7 +2659,7 @@
     (e/d (x86-fetch-decode-execute
           get-prefixes-alt)
          (rewrite-get-prefixes-to-get-prefixes-alt
-          top-level-opcode-execute
+          one-byte-opcode-execute
           xlate-equiv-memory-and-mv-nth-0-rml08-cong
           xlate-equiv-memory-and-two-mv-nth-2-rml08-cong
           xlate-equiv-memory-and-mv-nth-2-rml08

@@ -118,7 +118,7 @@
                          imul-spec-32
                          gpr-sub-spec-4
 
-                         top-level-opcode-execute
+                         one-byte-opcode-execute
                          !rgfi-size
                          x86-operand-to-reg/mem
                          x86-operand-to-reg/mem$

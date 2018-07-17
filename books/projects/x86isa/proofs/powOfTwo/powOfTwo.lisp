@@ -253,7 +253,7 @@
                              gpr-and-spec-8
                              gpr-xor-spec-4
 
-                             top-level-opcode-execute
+                             one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
@@ -305,7 +305,7 @@
                              gpr-and-spec-8
                              gpr-xor-spec-4
 
-                             top-level-opcode-execute
+                             one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$

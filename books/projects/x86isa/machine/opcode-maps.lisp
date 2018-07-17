@@ -501,10 +501,12 @@
                                 (message .
                                          "POPA is illegal in the 64-bit mode!"))))))
               ((:i64 . ("BOUND"  2 (G v) (M a)))
-               (:o64 . ("#UD" 0
-                        (:fn . (x86-illegal-instruction
-                                (message .
-                                         "BOUND is illegal in the 64-bit mode!"))))))
+               (:o64 . (:evex-byte0 (:fn . (:no-instruction)))
+                     ;; ("#UD" 0
+                     ;;  (:fn . (x86-illegal-instruction
+                     ;;          (message .
+                     ;;                   "BOUND is illegal in the 64-bit mode!"))))
+                     ))
               ((:o64 . ("MOVSXD" 2 (G v) (E v)
                         (:fn . (x86-one-byte-movsxd))))
                (:i64 . ("ARPL"   2 (E w) (G w))))
@@ -4191,7 +4193,8 @@
    :REX-WRX
    :REX-WRXB
    :VEX3-BYTE0
-   :VEX2-BYTE0))
+   :VEX2-BYTE0
+   :EVEX-BYTE0))
 
 (defconst *simple-cells-legal-keywords*
   (append
@@ -4514,6 +4517,8 @@
 ;; ----------------------------------------------------------------------
 
 ;; Some interesting resources related to x86 ISA instruction encoding:
+
+;; -- http://www.sandpile.org/x86/opc_enc.htm
 
 ;; -- https://www.strchr.com/machine_code_redundancy
 

@@ -64,7 +64,7 @@
          gpr-or-spec-8
          gpr-xor-spec-4
          jcc/cmovcc/setcc-spec
-         top-level-opcode-execute
+         one-byte-opcode-execute
          two-byte-opcode-decode-and-execute
          x86-operand-from-modr/m-and-sib-bytes
          x86-operand-from-modr/m-and-sib-bytes$

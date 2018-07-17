@@ -101,7 +101,7 @@
                              sal/shl-spec
                              sal/shl-spec-64
 
-                             top-level-opcode-execute
+                             one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
@@ -649,7 +649,7 @@
                                     sal/shl-spec-64
                                     address-aligned-p
 
-                                    top-level-opcode-execute
+                                    one-byte-opcode-execute
                                     !rgfi-size
                                     x86-operand-to-reg/mem
                                     x86-operand-to-reg/mem$
@@ -1366,7 +1366,7 @@
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
                              64-bit-modep
-                             top-level-opcode-execute
+                             one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$

@@ -352,6 +352,92 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   (defmacro !vex3-byte2-slice (flg val reg)
     (!slice flg val reg 8 *vex3-byte2-layout*)))
 
+(defsection evex-prefixes-layout-structures
+
+  :short "Functions to decode and collect EVEX prefix bytes from an x86
+  instruction"
+
+  (defconst *evex-prefixes-layout*
+    '((:next-byte   0  8) ;; First byte following EVEX prefixes
+      (:byte0       8  8) ;; Should be #ux62
+      (:byte1      16  8) ;;
+      (:byte2      24  8) ;;
+      (:byte3      32  8) ;;
+      ))
+
+  (defthm evex-prefixes-table-ok
+    (layout-constant-alistp *evex-prefixes-layout* 0 40)
+    :rule-classes nil)
+
+  (defmacro evex-prefixes-slice (flg evex-prefixes)
+    (slice flg evex-prefixes 40 *evex-prefixes-layout*))
+
+  (defmacro !evex-prefixes-slice (flg val reg)
+    (!slice flg val reg 40 *evex-prefixes-layout*))
+
+  (defconst *evex-byte1-layout*
+    '((:mm                0  2) ;; Identical to low two bits of VEX.m-mmmm.
+      (:res               2  2) ;; Must be zero.
+      (:r-prime           4  1) ;; High-16 register specifier modifier
+                                ;; -- combine with EVEX.R and ModR/M.reg.
+
+                                ;; R, X, B are the next-8 register specifier
+                                ;; modifiers --- combine with ModR/M.reg,
+                                ;; ModR/M.r/m (base, index/vidx).
+      (:b                 5  1)
+      (:x                 6  1) ;; Must be set to '1' in 32-bit mode,
+                                ;; otherwise instruction is BOUND.
+      (:r                 7  1) ;; Must be set to '1' in 32-bit mode.
+                                ;; otherwise instruction is BOUND.
+      ))
+
+  (defthm evex-byte1-table-ok
+    (layout-constant-alistp *evex-byte1-layout* 0 8)
+    :rule-classes nil)
+
+  (defmacro evex-byte1-slice (flg evex-byte1)
+    (slice flg evex-byte1 8 *evex-byte1-layout*))
+
+  (defmacro !evex-byte1-slice (flg val reg)
+    (!slice flg val reg 8 *evex-byte1-layout*))
+
+  (defconst *evex-byte2-layout*
+    '((:pp                0  2) ;; Compressed legacy escape -- identical to low
+                                ;; two bits of VEX.pp.
+      (:res               2  1) ;; Must be one.
+      (:vvvv              3  4) ;; NDS register specifier --- same as VEX.vvvv
+      (:W                 7  1) ;; Osize promotion/opcode extension
+      ))
+
+  (defthm evex-byte2-table-ok
+    (layout-constant-alistp *evex-byte2-layout* 0 8)
+    :rule-classes nil)
+
+  (defmacro evex-byte2-slice (flg evex-byte2)
+    (slice flg evex-byte2 8 *evex-byte2-layout*))
+
+  (defmacro !evex-byte2-slice (flg val reg)
+    (!slice flg val reg 8 *evex-byte2-layout*))
+
+  (defconst *evex-byte3-layout*
+    '((:aaa               0  3) ;; Embedded opmask register specifier
+      (:V-prime           3  1) ;; High-16 NDS/VIDX register specifier --
+                                ;; combine with EVEX.vvvv or when VSIB present
+      (:b                 4  1) ;; Broadcast/RC/SAE Context
+      (:L-prime-L         5  2) ;; Vector length/RC
+      (:z                 7  1) ;; Zeroing/Merging
+      ))
+
+  (defthm evex-byte3-table-ok
+    (layout-constant-alistp *evex-byte3-layout* 0 8)
+    :rule-classes nil)
+
+  (defmacro evex-byte3-slice (flg evex-byte3)
+    (slice flg evex-byte3 8 *evex-byte3-layout*))
+
+  (defmacro !evex-byte3-slice (flg val reg)
+    (!slice flg val reg 8 *evex-byte3-layout*)))
+
 ;; ======================================================================
 
 ; Intel manual, Mar'17, Vol. 3A, Figure 3-7

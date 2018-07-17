@@ -66,7 +66,7 @@
   :short "Intel Opcodes Supported in @('x86isa')"
   :long
 
-  "<h3>How to Read Opcode Tables</h3>
+  "<h3>How to Read the Opcode Tables</h3>
 
  <p>The opcode tables have 2^8 = 256 rows, one row for each relevant opcode
  byte (i.e., the only opcode byte for one-byte opcodes in @(see
@@ -77,12 +77,12 @@
  Intel instruction corresponding to it, and the instruction semantic function
  that implements that opcode.</p>
 
- <p>Sometimes, just the opcode byte is not enough to determine the x86
- instruction.  We may need to know the processor's mode of operation (e.g.,
- 32-bit or 64-bit mode), the value in the fields of the ModR/M byte (the
- so-called opcode extensions grouped together in Intel Volume 2, Table A-6),
- the mandatory prefixes, etc.  The following keywords are used to describe such
- information in these tables.</p>
+ <p>Often, just the opcode byte is not enough to determine the x86 instruction.
+ We may need to know the processor's mode of operation (e.g., 32-bit or 64-bit
+ mode), the value in the fields of the ModR/M byte (the so-called opcode
+ extensions grouped together in Intel Volume 2, Table A-6), the mandatory
+ prefixes, etc.  The following keywords are used to describe such information
+ in these tables.</p>
 
  <ul>
    <li>@(':i64'):    Invalid in 64-bit mode</li>
@@ -98,12 +98,13 @@
  </ul>
 
  <p>Instead of the instruction semantic function, these tables may also list
- 'Reserved' or 'Unimplemented' for certain opcodes.  'Reserved' stands for
- opcodes that Intel deems to be reserved or illegal --- an x86 processor is
- supposed to throw a @('#UD') (undefined instruction) exception if that opcode
- is encountered --- we call @(tsee x86-illegal-instruction) in such cases.
- 'Unimplemented' stands for legal x86 instructions that are not yet supported
- in @('x86isa') --- we call @(tsee x86-step-unimplemented) in such cases.</p>"
+ <i>Reserved</i> or <i>Unimplemented</i> for certain opcodes.  <i>Reserved</i>
+ stands for opcodes that Intel deems reserved --- an x86 processor is supposed
+ to throw a @('#UD') (undefined instruction) exception if that opcode is
+ encountered --- we call @(tsee x86-illegal-instruction) in such cases.
+ <i>Unimplemented</i> stands for legal x86 instructions that are not yet
+ supported in @('x86isa') --- we call @(tsee x86-step-unimplemented) in such
+ cases.</p>"
 
   )
 
@@ -1313,9 +1314,13 @@
 
 ;; ----------------------------------------------------------------------
 
-;; Three-byte Opcode Maps:
-
+;; We set this limit back to the default one once we've defined all the opcode
+;; dispatch functions.
 (set-rewrite-stack-limit (+ 500 acl2::*default-rewrite-stack-limit*))
+
+;; ----------------------------------------------------------------------
+
+;; Three-byte Opcode Maps:
 
 (make-event
  (b* (((mv table-doc-string dispatch)
@@ -1540,6 +1545,9 @@
                     vex-prefixes escape-byte x86)))
     :enable add-to-*ip-is-i48p-rewrite-rule))
 
+;; ----------------------------------------------------------------------
+
+;; Two-byte Opcode Map:
 
 (make-event
  (b* (((mv table-doc-string dispatch)
@@ -1692,6 +1700,10 @@
                     escape-byte x86)))
     :enable add-to-*ip-is-i48p-rewrite-rule))
 
+;; ----------------------------------------------------------------------
+
+;; One-byte Opcode Map:
+
 (make-event
 
  (b* (((mv table-doc-string dispatch)
@@ -1701,7 +1713,7 @@
         :escape-bytes #ux00)))
 
    `(progn
-      (define top-level-opcode-execute
+      (define one-byte-opcode-execute
 
         ((start-rip :type (signed-byte   #.*max-linear-address-size*))
          (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
@@ -1714,12 +1726,12 @@
 
         :parents (x86-decoder)
         ;; The following arg will avoid binding __function__ to
-        ;; top-level-opcode-execute. The automatic __function__ binding
+        ;; one-byte-opcode-execute. The automatic __function__ binding
         ;; that comes with define causes stack overflows during the guard
         ;; proof of this function.
         :no-function t
         :short "Top-level dispatch function."
-        :long "<p>@('top-level-opcode-execute') is the doorway to all the opcode
+        :long "<p>@('one-byte-opcode-execute') is the doorway to all the opcode
      maps.</p>"
         :guard-hints (("Goal"
                        :do-not '(preprocess)
@@ -1730,10 +1742,10 @@
 
         ///
 
-        (defthm x86p-top-level-opcode-execute
+        (defthm x86p-one-byte-opcode-execute
           (implies (and (x86p x86)
                         (canonical-address-p temp-rip))
-                   (x86p (top-level-opcode-execute
+                   (x86p (one-byte-opcode-execute
                           start-rip temp-rip prefixes rex-byte opcode
                           modr/m sib x86)))))
 
@@ -1742,6 +1754,8 @@
         :short "@('x86isa') Support for Opcodes in the One-Byte Map; @(see
         implemented-opcodes) for details."
         :long ,table-doc-string))))
+
+;; ----------------------------------------------------------------------
 
 ;; VEX-encoded instructions:
 
@@ -1901,9 +1915,8 @@
 
   ///
 
-  ;; TODO: If VEX prefixes are added to instructions in the one-byte opcode map
-  ;; (or any other instruction that does not use VEX), will they be ignored or
-  ;; will it #UD?
+  ;; TODO: If VEX prefixes are added to instructions that do not use VEX, will
+  ;; they be ignored or will it #UD?
 
   (defthm x86p-vex-decode-and-execute
     (implies (and (x86p x86)
@@ -1912,14 +1925,77 @@
               (vex-decode-and-execute
                start-rip temp-rip prefixes rex-byte vex-prefixes x86)))))
 
+;; ----------------------------------------------------------------------
+
+;; EVEX-encoded instructions:
+
+;; Byte 0x62 is byte0 of the 4-byte EVEX prefix.  In 64-bit mode, this byte
+;; indicates the beginning of the EVEX prefix --- in the pre-AVX512 era, this
+;; would lead to a #UD.
+
+;; Similar to the VEX prefix situation, things are more complicated in the
+;; 32-bit mode, where 0x62 aliases to the 32-bit only BOUND instruction.  The
+;; Intel Manuals (May, 2018) don't seem to say anything explicitly about how
+;; one differentiates between the EVEX prefix and the BOUND instruction in
+;; 32-bit mode.  However, a legal BOUND instruction must always have a memory
+;; operand as its second operand, which means that ModR/M.mod != 0b11 (see
+;; Intel Vol. 2, Table 2-2).  So, if bits [7:6] of the byte following 0x63 are
+;; NOT 0b11, then 0x62 refers to a legal BOUND instruction.  Otherwise, it
+;; signals the beginning of the EVEX prefix.
+
+(define evex-decode-and-execute
+  ((start-rip              :type (signed-byte   #.*max-linear-address-size*))
+   (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
+                           "@('temp-rip') points to the byte following the
+                            first two EVEX prefixes that were already read and
+                            placed in the @('evex-prefixes') structure in @(tsee
+                            x86-fetch-decode-execute).")
+   (prefixes               :type (unsigned-byte 52))
+   (rex-byte               :type (unsigned-byte 8))
+   (evex-prefixes          :type (unsigned-byte 32)
+                           "Only @('byte0') and @('byte1') fields are populated
+                            when this function is called.")
+   x86)
+
+  :ignore-ok t
+
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (e/d (add-to-*ip-is-i48p-rewrite-rule)
+         (bitops::logand-with-negated-bitmask))))
+
+  (x86-step-unimplemented
+   "AVX-512 (EVEX-encoded) instructions unimplemented!"
+   x86)
+
+  ///
+
+
+  ;; TODO: If EVEX prefixes are added to instructions that do not use EVEX,
+  ;; will they be ignored or will it #UD?
+
+  (defthm x86p-evex-decode-and-execute
+    (implies (and (x86p x86)
+                  (canonical-address-p temp-rip))
+             (x86p
+              (evex-decode-and-execute
+               start-rip temp-rip prefixes rex-byte evex-prefixes x86)))))
+
+
+;; ----------------------------------------------------------------------
+
+;; Setting this limit back to the default value:
 (set-rewrite-stack-limit acl2::*default-rewrite-stack-limit*)
+
+;; ----------------------------------------------------------------------
 
 (xdoc::order-subtopics
  implemented-opcodes
- (one-byte-opcodes
-  two-byte-opcodes
-  0f-38-three-byte-opcodes
-  0f-3A-three-byte-opcodes))
+ (one-byte-opcodes-table
+  two-byte-opcodes-table
+  0f-38-three-byte-opcodes-table
+  0f-3a-three-byte-opcodes-table))
 
 ;; ----------------------------------------------------------------------
 
@@ -2004,14 +2080,19 @@
        ;; next byte, which we call les/lds-distinguishing-byte below, are *not*
        ;; 11b.  Otherwise, they signal the start of VEX prefixes in the 32-bit
        ;; mode too.
+
+       ;; Though the second byte acts as the distinguishing byte only in the
+       ;; 32-bit mode, we always read the first two bytes of a VEX prefix in
+       ;; this function for simplicity.
        ((mv flg3 les/lds-distinguishing-byte x86)
-        (if (and (not 64-bit-modep) (or vex2-byte0? vex3-byte0?))
+        (if (or vex2-byte0? vex3-byte0?)
             (rme08 temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg3)
         (!!ms-fresh :les/lds-distinguishing-byte-read-error flg3))
        ;; If the instruction is indeed LDS or LES in the 32-bit mode, temp-rip
-       ;; is incremented after the ModR/M is fetched (see below).
+       ;; is incremented after the ModR/M is detected (see add-to-*ip following
+       ;; modr/m? below).
        ((when (and (or vex2-byte0? vex3-byte0?)
                    (or 64-bit-modep
                        (and (not 64-bit-modep)
@@ -2044,14 +2125,14 @@
 
        ;; 1. An opcode of the one-byte opcode map: this function prefetches the
        ;;    ModR/M and SIB bytes for these opcodes.  The function
-       ;;    top-level-opcode-execute case-splits on this opcode byte and calls
+       ;;    one-byte-opcode-execute case-splits on this opcode byte and calls
        ;;    the appropriate instruction semantic function.
 
        ;; 2. #x0F -- two-byte or three-byte opcode indicator: modr/m? is set to
        ;;    NIL (see *64-bit-mode-one-byte-has-modr/m-ar* and
        ;;    *32-bit-mode-one-byte-has-modr/m-ar*).  No ModR/M and SIB bytes
        ;;    are prefetched by this function for the two-byte or three-byte
-       ;;    opcode maps.  In top-level-opcode-execute, we call
+       ;;    opcode maps.  In one-byte-opcode-execute, we call
        ;;    two-byte-opcode-decode-and-execute, where we fetch the ModR/M and
        ;;    SIB bytes for the two-byte opcodes or dispatch control to
        ;;    three-byte-opcode-decode-and-execute when appropriate (i.e., when
@@ -2076,8 +2157,8 @@
        ((mv flg4 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
             (if (or vex2-byte0? vex3-byte0?)
-                ;; The above will be true if the instruction is LES or LDS in
-                ;; the 32-bit mode.
+                ;; The above will be true only if the instruction is LES or LDS
+                ;; in the 32-bit mode.
                 (mv nil les/lds-distinguishing-byte x86)
               (rme08 temp-rip *cs* :x x86))
           (mv nil 0 x86)))
@@ -2109,7 +2190,7 @@
           (mv nil temp-rip)))
        ((when flg7) (!!ms-fresh :increment-error flg7)))
 
-    (top-level-opcode-execute
+    (one-byte-opcode-execute
      start-rip temp-rip prefixes rex-byte opcode/escape-byte modr/m sib x86))
 
   ///
@@ -2210,18 +2291,18 @@
                      (str::hexify (unquote opcode/escape/vex-byte)))))))
      (equal
       (x86-fetch-decode-execute x86)
-      (top-level-opcode-execute start-rip temp-rip3 prefixes rex-byte
+      (one-byte-opcode-execute start-rip temp-rip3 prefixes rex-byte
                                 opcode/escape/vex-byte modr/m sib x86)))
     :hints (("Goal"
              :cases ((app-view x86))
              :in-theory (e/d ()
-                             (top-level-opcode-execute
+                             (one-byte-opcode-execute
                               signed-byte-p
                               not
                               member-equal))))))
 
 (in-theory (e/d (vex-decode-and-execute
-                 top-level-opcode-execute
+                 one-byte-opcode-execute
                  two-byte-opcode-execute
                  first-three-byte-opcode-execute
                  second-three-byte-opcode-execute)
