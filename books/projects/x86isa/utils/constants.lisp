@@ -555,7 +555,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     ;; interrupts will be disabled.
 
     (:cr8-trpl        0  4) ;; Task Priority Level
-;;  (0                4 59) ;; 0 (Reserved)
+    ;;  (0                4 59) ;; 0 (Reserved)
 
     ))
 
@@ -567,19 +567,25 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
                    )
   :rule-classes nil)
 
-; Intel manual, Mar'17, Vol. 3A, Figure 2-8
+; Intel manual, May'18, Vol. 3A, Figure 2-8
 (defconst *xcr0-layout*
 
   ;; Software can access XCR0 only if CR4.OSXSAVE[bit 18] = 1. (This bit
   ;; is also readable as CPUID.01H:ECX.OSXSAVE[bit 27].)
 
-  '((:xcr0-fpu/mmx-state 0 1) ;; This bit must be 1.  An attempt
-                              ;; to write 0 to this bit causes a
-                              ;; #GP exception.
-    (:xcr0-sse-state    1  1)
-    (:xcr0-avx-state    2  1)
-    (0                  3 60) ;; 0 (Reserved)
-
+  '((:xcr0-fpu/mmx-state   0  1) ;; This bit must be 1.  An attempt
+                                 ;; to write 0 to this bit causes a
+                                 ;; #GP exception.
+    (:xcr0-sse-state       1  1)
+    (:xcr0-avx-state       2  1)
+    (:xcr0-bndreg-state    3  1)
+    (:xcr0-bndcsr-state    4  1)
+    (:xcr0-opmask-state    5  1)
+    (:xcr0-zmm_hi256-state 6  1)
+    (:xcr0-hi16_zmm-state  7  1)
+    (0                     8  1) ;; 0 (Reserved)
+    (:xcr0-pkru-state      9  1)
+    (0                    10 54) ;; 0 (Reserved)
     ))
 
 (defthm xcr0-layout-ok

@@ -82,22 +82,27 @@
 
 (defsection instructions
   :parents (machine)
+  :short "Umbrella topic for specification of Intel's x86 instructions"
   )
 
 (defsection one-byte-opcodes
   :parents (instructions)
-  )
+  :short "Instruction semantic functions for Intel's instructions with a
+  one-byte opcode" )
 
 (defsection two-byte-opcodes
   :parents (instructions)
-  )
+  :short "Instruction semantic functions for Intel's instructions with two-byte
+  opcodes" )
 
 (defsection fp-opcodes
   :parents (instructions)
+  :short "Instruction semantic functions for Intel's floating-point instructions"
   )
 
 (defsection privileged-opcodes
   :parents (instructions)
+  :short "Instruction semantic functions for Intel's privileged instructions"
   )
 
 (defsection instruction-semantic-functions
@@ -362,16 +367,21 @@ Digital Random Number Generator Guide</a> for more details.</p>"
 
 (define x86-step-unimplemented (message x86)
   :parents (instructions)
-  ;; "Message" can contain some specific error message and the
-  ;; opcode(s).
+  :short "Semantic function corresponding to Intel's instructions unsupported
+  in the @('x86isa') books"
+  :long "<p>Note that the @('ms') field is populated with @('message') here
+  because this function is called when a model-related error occurs.</p>"
   :returns (x86 x86p :hyp :guard)
   (b* ((ctx 'x86-step-unimplemented))
     (!!ms-fresh :message message)))
 
 (define x86-illegal-instruction (message x86)
   :parents (instructions)
-  ;; "Message" can contain some specific error message and the
-  ;; opcode(s).
+  :short "Semantic function corresponding to opcodes that Intel deems to be
+  illegal or reserved"
+  :long "<p>Note that the @('#UD') (undefined operation) exception should be
+  thrown here, which is why the @('fault') field is populated with
+  @('message').</p>"
   :returns (x86 x86p :hyp :guard)
   (b* ((ctx 'x86-illegal-instruction))
     (!!fault-fresh :ud message)))

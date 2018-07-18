@@ -1985,15 +1985,6 @@
 
 ;; ----------------------------------------------------------------------
 
-(xdoc::order-subtopics
- implemented-opcodes
- (one-byte-opcodes-table
-  two-byte-opcodes-table
-  0f-38-three-byte-opcodes-table
-  0f-3a-three-byte-opcodes-table))
-
-;; ----------------------------------------------------------------------
-
 (define x86-fetch-decode-execute (x86)
 
   :parents (x86-decoder)
