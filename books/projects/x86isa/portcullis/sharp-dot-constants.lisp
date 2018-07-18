@@ -168,6 +168,9 @@
 (defconst *vex2-byte0*            #xC5) ;; First byte of the 2-byte VEX prefix
 (defconst *vex3-byte0*            #xC4) ;; First byte of the 3-byte VEX prefix
 
+;; EVEX Prefix:
+(defconst *evex-byte0*            #x62) ;; First byte of the 4-byte EVEX prefix
+
 ;; ======================================================================
 
 ;; Identifiers of some arithmetic and logical instructions: (note: different

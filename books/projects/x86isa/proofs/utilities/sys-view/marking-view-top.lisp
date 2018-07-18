@@ -2544,7 +2544,7 @@
 
 (defthm x86-fetch-decode-execute-opener-in-marking-view
   ;; Note that we use get-prefixes-alt here instead of get-prefixes.
-  ;; TODO: Extend to VEX prefixes when necessary.
+  ;; TODO: Extend to VEX and EVEX prefixes when necessary.
   (implies
    (and
     ;; Start: binding hypotheses.
@@ -2555,33 +2555,35 @@
     (equal prefixes (mv-nth 1 three-vals-of-get-prefixes))
     (equal x86-1 (mv-nth 2 three-vals-of-get-prefixes))
 
-    (equal opcode/escape/rex/vex-byte (prefixes-slice :next-byte prefixes))
+    (equal opcode/rex/vex-byte (prefixes-slice :next-byte prefixes))
     (equal prefix-length (prefixes-slice :num-prefixes prefixes))
     (equal temp-rip0 (if (equal prefix-length 0)
                          (+ 1 start-rip)
                        (+ prefix-length start-rip 1)))
-    (equal rex-byte (if (equal (ash opcode/escape/rex/vex-byte -4) 4)
-                        opcode/escape/rex/vex-byte
+    (equal rex-byte (if (equal (ash opcode/rex/vex-byte -4) 4)
+                        opcode/rex/vex-byte
                       0))
 
-    ;; opcode/escape/vex-byte:
-    (equal three-vals-of-opcode/escape/vex-byte
+    ;; opcode/vex/evex-byte:
+    (equal three-vals-of-opcode/vex/evex-byte
            (if (equal rex-byte 0)
-               (mv nil opcode/escape/rex/vex-byte x86-1)
+               (mv nil opcode/rex/vex-byte x86-1)
              (rml08 temp-rip0 :x x86-1)))
-    (equal flg-opcode/escape/vex-byte
-           (mv-nth 0 three-vals-of-opcode/escape/vex-byte))
-    (equal opcode/escape/vex-byte
-           (mv-nth 1 three-vals-of-opcode/escape/vex-byte))
-    (equal x86-2 (mv-nth 2 three-vals-of-opcode/escape/vex-byte))
+    (equal flg-opcode/vex/evex-byte
+           (mv-nth 0 three-vals-of-opcode/vex/evex-byte))
+    (equal opcode/vex/evex-byte
+           (mv-nth 1 three-vals-of-opcode/vex/evex-byte))
+    (equal x86-2 (mv-nth 2 three-vals-of-opcode/vex/evex-byte))
 
     (equal temp-rip1 (if (equal rex-byte 0) temp-rip0 (1+ temp-rip0)))
 
     ;; *** No VEX prefixes ***
-    (not (equal opcode/escape/vex-byte #.*vex3-byte0*))
-    (not (equal opcode/escape/vex-byte #.*vex2-byte0*))
+    (not (equal opcode/vex/evex-byte #.*vex3-byte0*))
+    (not (equal opcode/vex/evex-byte #.*vex2-byte0*))
+    ;; *** No EVEX prefixes ***
+    (not (equal opcode/vex/evex-byte #.*evex-byte0*))
 
-    (equal modr/m? (64-bit-mode-one-byte-opcode-modr/m-p opcode/escape/vex-byte))
+    (equal modr/m? (64-bit-mode-one-byte-opcode-modr/m-p opcode/vex/evex-byte))
 
     ;; modr/m byte:
     (equal three-vals-of-modr/m
@@ -2619,7 +2621,7 @@
         ;; the new RIP is canonical, not that there's no error
         ;; in reading a value from that address.
         t
-      (not flg-opcode/escape/vex-byte))
+      (not flg-opcode/vex/evex-byte))
     (if (equal rex-byte 0)
         t
       (canonical-address-p temp-rip1))
@@ -2647,11 +2649,11 @@
     ;; this rule have been relieved:
     (syntaxp (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
                   (not (cw "              op0: ~s0 ] ~%"
-                           (str::hexify (unquote opcode/escape/vex-byte)))))))
+                           (str::hexify (unquote opcode/vex/evex-byte)))))))
    (equal (x86-fetch-decode-execute x86)
           (one-byte-opcode-execute
            start-rip temp-rip3 prefixes rex-byte
-           opcode/escape/vex-byte modr/m sib x86-4)))
+           opcode/vex/evex-byte modr/m sib x86-4)))
   :hints
   (("Goal"
     :do-not '(preprocess)

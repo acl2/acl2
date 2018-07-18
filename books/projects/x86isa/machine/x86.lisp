@@ -1461,6 +1461,8 @@
   (b* ((ctx 'three-byte-opcode-decode-and-execute)
 
        ((when (not (equal vex-prefixes 0)))
+        ;; Note: remember to use :next-byte in vex-prefixes for opcode
+        ;; dispatch.
         (!!ms-fresh :VEX-encoded-instructions-unsupported))
 
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
@@ -1629,6 +1631,8 @@
   (b* ((ctx 'two-byte-opcode-decode-and-execute)
 
        ((when (not (equal vex-prefixes 0)))
+        ;; Note: remember to use :next-byte in vex-prefixes for opcode
+        ;; dispatch.
         (!!ms-fresh :VEX-encoded-instructions-unsupported))
 
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
@@ -1760,7 +1764,7 @@
 ;; VEX-encoded instructions:
 
 (local
- (defthm dumb-integerp-of-mv-nth-1-rme080-rule
+ (defthm dumb-integerp-of-mv-nth-1-rme08-rule
    (implies (force (x86p x86))
             (integerp (mv-nth 1 (rme08 eff-addr seg-reg r-x x86))))
    :rule-classes (:rewrite :type-prescription)))
@@ -1929,19 +1933,11 @@
 
 ;; EVEX-encoded instructions:
 
-;; Byte 0x62 is byte0 of the 4-byte EVEX prefix.  In 64-bit mode, this byte
-;; indicates the beginning of the EVEX prefix --- in the pre-AVX512 era, this
-;; would lead to a #UD.
-
-;; Similar to the VEX prefix situation, things are more complicated in the
-;; 32-bit mode, where 0x62 aliases to the 32-bit only BOUND instruction.  The
-;; Intel Manuals (May, 2018) don't seem to say anything explicitly about how
-;; one differentiates between the EVEX prefix and the BOUND instruction in
-;; 32-bit mode.  However, a legal BOUND instruction must always have a memory
-;; operand as its second operand, which means that ModR/M.mod != 0b11 (see
-;; Intel Vol. 2, Table 2-2).  So, if bits [7:6] of the byte following 0x63 are
-;; NOT 0b11, then 0x62 refers to a legal BOUND instruction.  Otherwise, it
-;; signals the beginning of the EVEX prefix.
+(local
+ (defthm unsigned-byte-p-40-of-evex-prefixes-rule
+   (implies
+    (unsigned-byte-p 8 byte)
+    (unsigned-byte-p 40 (logior #x6200 (ash byte 16))))))
 
 (define evex-decode-and-execute
   ((start-rip              :type (signed-byte   #.*max-linear-address-size*))
@@ -1952,7 +1948,7 @@
                             x86-fetch-decode-execute).")
    (prefixes               :type (unsigned-byte 52))
    (rex-byte               :type (unsigned-byte 8))
-   (evex-prefixes          :type (unsigned-byte 32)
+   (evex-prefixes          :type (unsigned-byte 40)
                            "Only @('byte0') and @('byte1') fields are populated
                             when this function is called.")
    x86)
@@ -1981,7 +1977,6 @@
              (x86p
               (evex-decode-and-execute
                start-rip temp-rip prefixes rex-byte evex-prefixes x86)))))
-
 
 ;; ----------------------------------------------------------------------
 
@@ -2034,7 +2029,7 @@
        ((when flg0)
         (!!ms-fresh :error-in-reading-prefixes flg0))
 
-       ((the (unsigned-byte 8) opcode/escape/rex/vex-byte)
+       ((the (unsigned-byte 8) opcode/rex/vex/evex-byte)
         (prefixes-slice :next-byte prefixes))
 
        ((the (unsigned-byte 4) prefix-length)
@@ -2045,24 +2040,24 @@
                             (add-to-*ip start-rip (1+ prefix-length) x86)))
        ((when flg) (!!ms-fresh :increment-error flg))
 
-       ;; If opcode/escape/rex/vex-byte is a rex byte, it is filed away in
+       ;; If opcode/rex/vex/evex-byte is a rex byte, it is filed away in
        ;; "rex-byte". A REX byte has the form 4xh, but this applies only to
        ;; 64-bit mode; in 32-bit mode, 4xh is an opcode for INC or DEC, so in
        ;; 32-bit mode, there is no REX byte "by construction".
        ((the (unsigned-byte 8) rex-byte)
         (if (and 64-bit-modep
                  (equal (the (unsigned-byte 4)
-                          (ash opcode/escape/rex/vex-byte -4))
+                          (ash opcode/rex/vex/evex-byte -4))
                         4))
-            opcode/escape/rex/vex-byte
+            opcode/rex/vex/evex-byte
           0))
 
-       ((mv flg1 (the (unsigned-byte 8) opcode/escape/vex-byte) x86)
+       ((mv flg1 (the (unsigned-byte 8) opcode/vex/evex-byte) x86)
         (if (equal 0 rex-byte)
-            (mv nil opcode/escape/rex/vex-byte x86)
+            (mv nil opcode/rex/vex/evex-byte x86)
           (rme08 temp-rip *cs* :x x86)))
        ((when flg1)
-        (!!ms-fresh :opcode/escape/vex-byte-read-error flg1))
+        (!!ms-fresh :opcode/vex/evex-byte-read-error flg1))
 
        ((mv flg2 temp-rip)
         (if (equal rex-byte 0)
@@ -2070,9 +2065,9 @@
           (add-to-*ip temp-rip 1 x86)))
        ((when flg2) (!!ms-fresh :increment-error flg2))
 
-       (vex2-byte0? (equal opcode/escape/vex-byte #.*vex2-byte0*))
-       (vex3-byte0? (equal opcode/escape/vex-byte #.*vex3-byte0*))
-       ;; If opcode/escape/vex-byte is either 0xC4 (*vex3-byte0*) or 0xC5
+       (vex-byte0? (or (equal opcode/vex/evex-byte #.*vex2-byte0*)
+                       (equal opcode/vex/evex-byte #.*vex3-byte0*)))
+       ;; If opcode/vex/evex-byte is either 0xC4 (*vex3-byte0*) or 0xC5
        ;; (*vex2-byte0*), then we always have a VEX-encoded instruction in the
        ;; 64-bit mode.  But in the 32-bit mode, these bytes may not signal the
        ;; start of the VEX prefixes.  0xC4 and 0xC5 map to LES and LDS
@@ -2085,7 +2080,7 @@
        ;; 32-bit mode, we always read the first two bytes of a VEX prefix in
        ;; this function for simplicity.
        ((mv flg3 les/lds-distinguishing-byte x86)
-        (if (or vex2-byte0? vex3-byte0?)
+        (if vex-byte0?
             (rme08 temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg3)
@@ -2093,7 +2088,7 @@
        ;; If the instruction is indeed LDS or LES in the 32-bit mode, temp-rip
        ;; is incremented after the ModR/M is detected (see add-to-*ip following
        ;; modr/m? below).
-       ((when (and (or vex2-byte0? vex3-byte0?)
+       ((when (and vex-byte0?
                    (or 64-bit-modep
                        (and (not 64-bit-modep)
                             (equal (part-select
@@ -2107,21 +2102,73 @@
               (!!ms-fresh :vex-byte1-increment-error flg1-vex))
              (vex-prefixes
               (!vex-prefixes-slice
-               :byte0 opcode/escape/vex-byte 0))
+               :byte0 opcode/vex/evex-byte 0))
              (vex-prefixes
               (!vex-prefixes-slice
                :byte1 les/lds-distinguishing-byte vex-prefixes)))
           (vex-decode-and-execute
            start-rip temp-rip prefixes rex-byte vex-prefixes x86)))
 
-       (opcode/escape-byte opcode/escape/vex-byte)
+       (opcode/evex-byte opcode/vex/evex-byte)
 
-       ;; Possible values of opcode/escape-byte:
+       (evex-byte0? (equal opcode/evex-byte #.*evex-byte0*))
+       ;; Byte 0x62 is byte0 of the 4-byte EVEX prefix.  In 64-bit mode, this
+       ;; byte indicates the beginning of the EVEX prefix --- note that in the
+       ;; pre-AVX512 era, this would lead to a #UD.
 
-       ;; The opcode/escape-byte should not contain any of the (legacy)
-       ;; prefixes, REX bytes, and VEX prefixes -- by this point, all these
+       ;; Similar to the VEX prefix situation, things are more complicated in
+       ;; the 32-bit mode, where 0x62 aliases to the 32-bit only BOUND
+       ;; instruction.  The Intel Manuals (May, 2018) don't seem to say
+       ;; anything explicitly about how one differentiates between the EVEX
+       ;; prefix and the BOUND instruction in 32-bit mode.  However, a legal
+       ;; BOUND instruction must always have a memory operand as its second
+       ;; operand, which means that ModR/M.mod != 0b11 (see Intel Vol. 2, Table
+       ;; 2-2).  So, if bits [7:6] of the byte following 0x62 are NOT 0b11,
+       ;; then 0x62 refers to a legal BOUND instruction.  Otherwise, it signals
+       ;; the beginning of the EVEX prefix.
+
+       ;; Again, similar to the VEX prefix situation: though the second byte
+       ;; acts as the distinguishing byte only in the 32-bit mode, we always
+       ;; read the first two bytes of an EVEX prefix in this function for
+       ;; simplicity.
+       ((mv flg4 bound-distinguishing-byte x86)
+        (if evex-byte0?
+            (rme08 temp-rip *cs* :x x86)
+          (mv nil 0 x86)))
+       ((when flg4)
+        (!!ms-fresh :bound-distinguishing-byte-read-error flg4))
+       ;; If the instruction is indeed BOUND in the 32-bit mode, temp-rip is
+       ;; incremented after the ModR/M is detected (see add-to-*ip following
+       ;; modr/m? below).
+       ((when (and evex-byte0?
+                   (or 64-bit-modep
+                       (and (not 64-bit-modep)
+                            (equal (part-select
+                                    bound-distinguishing-byte
+                                    :low 6 :high 7)
+                                   #b11)))))
+        ;; Handle EVEX-encoded instructions separately.
+        (b* (((mv flg1-evex temp-rip)
+              (add-to-*ip temp-rip 1 x86))
+             ((when flg1-evex)
+              (!!ms-fresh :evex-byte1-increment-error flg1-evex))
+             (evex-prefixes
+              (!evex-prefixes-slice :byte0 opcode/evex-byte 0))
+             (evex-prefixes
+              (!evex-prefixes-slice
+               :byte1 bound-distinguishing-byte evex-prefixes)))
+          (evex-decode-and-execute
+           start-rip temp-rip prefixes rex-byte evex-prefixes x86)))
+
+
+       (opcode-byte opcode/evex-byte)
+
+       ;; Possible values of opcode-byte:
+
+       ;; The opcode-byte should not contain any of the (legacy) prefixes, REX
+       ;; bytes, VEX prefixes, and EVEX prefixes -- by this point, all these
        ;; prefix bytes should have been processed.  So, here are the kinds of
-       ;; values opcode/escape-byte can have:
+       ;; values opcode-byte can have:
 
        ;; 1. An opcode of the one-byte opcode map: this function prefetches the
        ;;    ModR/M and SIB bytes for these opcodes.  The function
@@ -2152,24 +2199,24 @@
        ;; "escapes" into another.
 
        (modr/m? (if 64-bit-modep
-                    (64-bit-mode-one-byte-opcode-ModR/M-p opcode/escape-byte)
-                  (32-bit-mode-one-byte-opcode-ModR/M-p opcode/escape-byte)))
-       ((mv flg4 (the (unsigned-byte 8) modr/m) x86)
+                    (64-bit-mode-one-byte-opcode-ModR/M-p opcode-byte)
+                  (32-bit-mode-one-byte-opcode-ModR/M-p opcode-byte)))
+       ((mv flg5 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
-            (if (or vex2-byte0? vex3-byte0?)
+            (if (or vex-byte0? evex-byte0?)
                 ;; The above will be true only if the instruction is LES or LDS
-                ;; in the 32-bit mode.
+                ;; or BOUND in the 32-bit mode.
                 (mv nil les/lds-distinguishing-byte x86)
               (rme08 temp-rip *cs* :x x86))
           (mv nil 0 x86)))
-       ((when flg4)
-        (!!ms-fresh :modr/m-byte-read-error flg4))
+       ((when flg5)
+        (!!ms-fresh :modr/m-byte-read-error flg5))
 
-       ((mv flg5 temp-rip)
+       ((mv flg6 temp-rip)
         (if modr/m?
             (add-to-*ip temp-rip 1 x86)
           (mv nil temp-rip)))
-       ((when flg5) (!!ms-fresh :increment-error flg5))
+       ((when flg6) (!!ms-fresh :increment-error flg6))
 
        (sib? (and modr/m?
                   (b* ((p4? (eql #.*addr-size-override*
@@ -2177,21 +2224,21 @@
                        (16-bit-addressp (eql 2 (select-address-size p4? x86))))
                     (x86-decode-SIB-p modr/m 16-bit-addressp))))
 
-       ((mv flg6 (the (unsigned-byte 8) sib) x86)
+       ((mv flg7 (the (unsigned-byte 8) sib) x86)
         (if sib?
             (rme08 temp-rip *cs* :x x86)
           (mv nil 0 x86)))
-       ((when flg6)
-        (!!ms-fresh :sib-byte-read-error flg6))
+       ((when flg7)
+        (!!ms-fresh :sib-byte-read-error flg7))
 
-       ((mv flg7 temp-rip)
+       ((mv flg8 temp-rip)
         (if sib?
             (add-to-*ip temp-rip 1 x86)
           (mv nil temp-rip)))
-       ((when flg7) (!!ms-fresh :increment-error flg7)))
+       ((when flg8) (!!ms-fresh :increment-error flg8)))
 
     (one-byte-opcode-execute
-     start-rip temp-rip prefixes rex-byte opcode/escape-byte modr/m sib x86))
+     start-rip temp-rip prefixes rex-byte opcode-byte modr/m sib x86))
 
   ///
 
@@ -2206,7 +2253,7 @@
              (equal (x86-fetch-decode-execute x86) x86)))
 
   (defthm x86-fetch-decode-execute-opener
-    ;; TODO: Extend to VEX prefixes when necessary.
+    ;; TODO: Extend to VEX and EVEX prefixes when necessary.
     (implies
      (and
       (not (ms x86))
@@ -2215,7 +2262,7 @@
       (equal 64-bit-modep (64-bit-modep x86))
       (not (mv-nth 0 (get-prefixes start-rip 0 15 x86)))
       (equal prefixes (mv-nth 1 (get-prefixes start-rip 0 15 x86)))
-      (equal opcode/escape/rex/vex-byte
+      (equal opcode/rex/vex/evex-byte
              (prefixes-slice :next-byte prefixes))
       (equal prefix-length (prefixes-slice :num-prefixes prefixes))
       (equal temp-rip0
@@ -2223,24 +2270,26 @@
                  (mv-nth 1 (add-to-*ip start-rip 1 x86))
                (mv-nth 1 (add-to-*ip start-rip (1+ prefix-length) x86))))
       (equal rex-byte (if (and 64-bit-modep
-                               (equal (ash opcode/escape/rex/vex-byte -4) 4))
-                          opcode/escape/rex/vex-byte
+                               (equal (ash opcode/rex/vex/evex-byte -4) 4))
+                          opcode/rex/vex/evex-byte
                         0)) ; rex-byte is 0 in 32-bit mode
-      (equal opcode/escape/vex-byte (if (equal rex-byte 0)
-                                        opcode/escape/rex/vex-byte
-                                      (mv-nth 1 (rme08 temp-rip0 *cs* :x x86))))
+      (equal opcode/vex/evex-byte (if (equal rex-byte 0)
+                                      opcode/rex/vex/evex-byte
+                                    (mv-nth 1 (rme08 temp-rip0 *cs* :x x86))))
       (equal temp-rip1 (if (equal rex-byte 0)
                            temp-rip0
                          (mv-nth 1 (add-to-*ip temp-rip0 1 x86))))
 
       ;; *** No VEX prefixes ***
-      (not (equal opcode/escape/vex-byte #.*vex3-byte0*))
-      (not (equal opcode/escape/vex-byte #.*vex2-byte0*))
+      (not (equal opcode/vex/evex-byte #.*vex3-byte0*))
+      (not (equal opcode/vex/evex-byte #.*vex2-byte0*))
+      ;; *** No EVEX prefixes ***
+      (not (equal opcode/vex/evex-byte #.*evex-byte0*))
 
       (equal modr/m?
              (if 64-bit-modep
-                 (64-bit-mode-one-byte-opcode-ModR/M-p opcode/escape/vex-byte)
-               (32-bit-mode-one-byte-opcode-ModR/M-p opcode/escape/vex-byte)))
+                 (64-bit-mode-one-byte-opcode-ModR/M-p opcode/vex/evex-byte)
+               (32-bit-mode-one-byte-opcode-ModR/M-p opcode/vex/evex-byte)))
       (equal modr/m (if modr/m?
                         (mv-nth 1 (rme08 temp-rip1 *cs* :x x86))
                       0))
@@ -2288,11 +2337,11 @@
       (syntaxp
        (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
             (not (cw "              op0: ~s0 ] ~%"
-                     (str::hexify (unquote opcode/escape/vex-byte)))))))
+                     (str::hexify (unquote opcode/vex/evex-byte)))))))
      (equal
       (x86-fetch-decode-execute x86)
       (one-byte-opcode-execute start-rip temp-rip3 prefixes rex-byte
-                                opcode/escape/vex-byte modr/m sib x86)))
+                               opcode/vex/evex-byte modr/m sib x86)))
     :hints (("Goal"
              :cases ((app-view x86))
              :in-theory (e/d ()
@@ -2302,6 +2351,7 @@
                               member-equal))))))
 
 (in-theory (e/d (vex-decode-and-execute
+                 evex-decode-and-execute
                  one-byte-opcode-execute
                  two-byte-opcode-execute
                  first-three-byte-opcode-execute
