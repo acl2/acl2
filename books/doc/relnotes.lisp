@@ -353,6 +353,14 @@
  @('app-view') and @('marking-view'), and also renaming some functions and
  theorems acccordingly.</p>
 
+ <p>The instruction decoder has been extended to detect VEX- and EVEX-encoded
+ (AVX, AVX2, AVX512) instructions, in both 64- and 32-bit modes of operation.
+ However, semantic functions of many of these instructions are still
+ unimplemented.</p>
+
+ <p>Annotated opcode maps are now used to generate opcode dispatch functions
+ and instruction coverage information.</p>
+
  <h4><see topic='@(url apt::apt)'>APT</see></h4>
 
  <p>Improved documentation.</p>
