@@ -2252,6 +2252,26 @@
        :fail))
     (& :fail)))
 
+(defun collect-ignored-mv-vars (mv-var i bound vars/rest mv-nths/rest)
+
+; For context, see the call of this function in untranslate1.  This function is
+; called to check that a given lambda may be reasonably construed as an mv-let.
+; It assumes that the mv-let was created using translate11-mv-let.
+
+  (cond ((= i bound)
+         (mv t nil))
+        (t (mv-let (flg ignored-vars)
+             (collect-ignored-mv-vars
+              mv-var (1+ i) bound (cdr vars/rest) (cdr mv-nths/rest))
+             (cond ((null flg) (mv nil nil))
+                   (t (let ((next (car mv-nths/rest)))
+                        (case-match next
+                          (('hide ('mv-nth ('quote !i) !mv-var))
+                           (mv t (cons (car vars/rest) ignored-vars)))
+                          (('mv-nth ('quote !i) !mv-var)
+                           (mv t ignored-vars))
+                          (& (mv nil nil))))))))))
+
 (mutual-recursion
 
 ; These functions assume that the input world is "close to" the installed
@@ -3574,15 +3594,76 @@
                   (cadr term))
                  (t term)))
           ((flambda-applicationp term)
-           (make-let-or-let*
-            (collect-non-trivial-bindings (lambda-formals (ffn-symb term))
-                                          (untranslate1-lst (fargs term)
-                                                            nil
-                                                            untrans-tbl
-                                                            preprocess-fn
-                                                            wrld))
-            (untranslate1 (lambda-body (ffn-symb term)) iff-flg untrans-tbl
-                          preprocess-fn wrld)))
+           (or (case-match term
+                 ((('lambda (mv-var . rest)
+                     (('lambda vars/rest body)
+                      . mv-nths/rest))
+                   tm
+                   . rest)
+
+; Here we are attempting to reconstruct an mv-let:
+
+;   (mv-let (v0 ... vn)
+;     tm
+;     (declare (ignore ...)) ; if any of the vi are ignored
+;     body)
+
+; So term is, we expect, as follows, where w1, ... wk enumerates the variables
+; occurring free in body that are not among v0, ..., vn.  Here we ignore the
+; distinction between translated and untranslated terms for tm and body, and
+; we also ignore the effects of type declarations.
+
+;   ((lambda (mv w1 ... wk)
+;            ((lambda (v0 ... vn w1 ... wk) body)
+;             (mv-nth '0 mv) ; instead (hide (mv-nth '0 mv)) if v0 is ignored
+;             ...
+;             (mv-nth 'n mv) ; instead (hide (mv-nth 'n mv)) if vn is ignored
+;             w1 ... wk))
+;    tm
+;    w1 ... wk)
+
+                  (let* ((len-rest (len rest))
+                         (len-vars/rest (len vars/rest))
+                         (len-vars (- len-vars/rest len-rest)))
+                    (and (true-listp rest)
+                         (true-listp mv-nths/rest)
+                         (true-listp vars/rest)
+                         (<= 0 len-vars)
+                         (equal len-vars/rest (len mv-nths/rest))
+                         (equal (nthcdr len-vars vars/rest)
+                                rest)
+                         (equal (nthcdr len-vars mv-nths/rest)
+                                rest)
+                         (mv-let (flg ignores)
+                           (collect-ignored-mv-vars mv-var 0 len-vars
+                                                    vars/rest mv-nths/rest)
+                           (and flg
+                                (let* ((uterm
+                                        (untranslate1 tm nil untrans-tbl
+                                                      preprocess-fn wrld))
+                                       (uterm
+                                        (if (and (consp uterm) ; always true?
+                                                 (eq (car uterm) 'list))
+                                            (cons 'mv (cdr uterm))
+                                          uterm))
+                                       (ubody
+                                        (untranslate1 body iff-flg
+                                                      untrans-tbl
+                                                      preprocess-fn wrld)))
+                                  `(mv-let ,(take len-vars vars/rest)
+                                     ,uterm
+                                     ,@(and ignores
+                                            `((declare (ignore ,@ignores))))
+                                     ,ubody))))))))
+               (make-let-or-let*
+                (collect-non-trivial-bindings (lambda-formals (ffn-symb term))
+                                              (untranslate1-lst (fargs term)
+                                                                nil
+                                                                untrans-tbl
+                                                                preprocess-fn
+                                                                wrld))
+                (untranslate1 (lambda-body (ffn-symb term)) iff-flg untrans-tbl
+                              preprocess-fn wrld))))
           ((eq (ffn-symb term) 'if)
            (case-match term
              (('if x1 *nil* *t*)
@@ -7872,7 +7953,8 @@
 ; local-stobj.
 
 ; Warning: If the final form of a translated mv-let is changed, be sure to
-; reconsider translated-acl2-unwind-protectp.
+; reconsider translated-acl2-unwind-protectp and the creation of mv-let
+; expressions in untranslate1.
 
   (cond
    ((not (and (true-listp (cadr x))
