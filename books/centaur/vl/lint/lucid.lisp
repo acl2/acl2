@@ -1688,6 +1688,11 @@ created when we process their packages, etc.</p>"
              (st (vl-stmt-lucidcheck x.body ss st ctx)))
           st)
 
+        :vl-dostmt
+        (b* ((st (vl-rhsexpr-lucidcheck x.condition ss st ctx))
+             (st (vl-stmt-lucidcheck x.body ss st ctx)))
+          st)
+
         :vl-forstmt
         ;; NOTE -- this must be kept in sync with vl-stmt-luciddb-init!
         (b* ((ss (vl-scopestack-push (vl-forstmt->blockscope x) ss))

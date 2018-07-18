@@ -3470,6 +3470,18 @@ expression into a string."
                  ;; no ending semicolon, the body prints one
                  )
 
+      :vl-dostmt
+      (vl-ps-seq (vl-progindent)
+                 (if x.atts (vl-pp-atts x.atts) ps)
+                 (vl-ps-span "vl_key" (vl-println "do"))
+                 (vl-progindent-block (vl-pp-stmt x.body))
+                 (vl-ps-span "vl_key" (vl-print "while"))
+                 (vl-print " (")
+                 (vl-pp-expr x.condition)
+                 (vl-println ");")
+                 ;; yes ending semicolon, i think
+                 )
+
       :vl-casestmt
       (vl-ps-seq (vl-progindent)
                  (if x.atts (vl-pp-atts x.atts) ps)

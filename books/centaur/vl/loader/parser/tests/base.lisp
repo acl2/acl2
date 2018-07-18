@@ -795,6 +795,9 @@
                            (vl-pretty-expr x.condition)
                            (vl-pretty-stmt x.body)
                            (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-dostmt (list* :do (vl-pretty-stmt x.body)
+                        :while (vl-pretty-expr x.condition)
+                        (and x.atts (list :atts (vl-pretty-atts x.atts))))
       :vl-forstmt (list* :for :bozo-for-loops)
       :vl-foreachstmt (list* :foreach
                              (vl-pretty-scopeexpr x.array)

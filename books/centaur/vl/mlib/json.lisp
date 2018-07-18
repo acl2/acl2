@@ -1213,6 +1213,12 @@ which could not hold such large values.</p>")
                   :body      (vl-jp-stmt x.body)
                   :atts      (vl-jp-atts x.atts))
 
+       :vl-dostmt
+       (jp-object :tag       (jp-sym kind)
+                  :condition (vl-jp-expr x.condition)
+                  :body      (vl-jp-stmt x.body)
+                  :atts      (vl-jp-atts x.atts))
+
        :vl-forstmt
        (jp-object :tag         (jp-sym kind)
                   :initdecls   (vl-jp-vardecllist x.initdecls)
