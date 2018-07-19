@@ -721,7 +721,7 @@
                (:fn . (x86-leave)))
               ("RET" 1 (I w))
               ("RET" 0)
-              ("INT 3" 0)
+              ("INT3" 0)
               ("INT" 1 (I b))
               ((:i64 . ("INTO" 0))
                (:o64 . ("#UD" 0
@@ -787,8 +787,7 @@
 
     #| f0 |# ((:prefix-Lock
                (:fn . (:no-instruction)))
-              (:none
-               (:fn . (:no-instruction)))
+              ("INT1" 0)
               (:prefix-REPNE
                (:fn . (:no-instruction)))
               (:prefix-REP/REPE

@@ -93,7 +93,7 @@
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 4 8) operand-size)
         (if (equal sp/dp #.*OP-DP*) 8 4))
@@ -136,8 +136,8 @@
 
        ((when flg1)
         (if (equal sp/dp #.*OP-DP*)
-            (!!ms-fresh :dp-sse-add/sub/mul/div/max/min flg1)
-          (!!ms-fresh :sp-sse-add/sub/mul/div/max/min flg1)))
+            (!!fault-fresh :fp-exception :dp-sse-add/sub/mul/div/max/min flg1)
+          (!!fault-fresh :fp-exception :sp-sse-add/sub/mul/div/max/min flg1)))
 
        ;; Update the x86 state:
        (x86 (!mxcsr mxcsr x86))
@@ -177,7 +177,7 @@
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
