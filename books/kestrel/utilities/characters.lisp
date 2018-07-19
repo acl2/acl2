@@ -233,7 +233,12 @@
   (defrule chars=>nats-of-append
     (equal (chars=>nats (append chars1 chars2))
            (append (chars=>nats chars1)
-                   (chars=>nats chars2)))))
+                   (chars=>nats chars2))))
+
+  (defrule nth-of-chars=>nats
+    (iff (integerp (nth n (chars=>nats chars)))
+         (< (nfix n) (len chars)))
+    :induct (nth n chars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

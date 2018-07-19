@@ -65,7 +65,12 @@
   (defrule len-of-string=>nats
     (implies (stringp string)
              (equal (len (string=>nats string))
-                    (length string)))))
+                    (length string))))
+
+  (defrule nth-of-string=>nats
+    (implies (stringp string)
+             (iff (integerp (nth n (string=>nats string)))
+                  (< (nfix n) (length string))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
