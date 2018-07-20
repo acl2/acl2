@@ -118,7 +118,7 @@
  attempt.</li>
 
  <li>Here are some features that are not yet implemented but might be in the
- future.
+ future, quite possibly only upon request.
 
  <ul>
 
@@ -130,10 +130,10 @@
  <li>More macros could quite reasonably be handled, but aren't yet, such as
  @(tsee case).</li>
 
- <li>Support for preserving @('let'), @('let*'), @(tsee mv-let), and @(tsee b*)
- may be improved.  In particular, @(tsee b*) currently is preserved only for
- certain simple bindings: @('(- expr)'), @('(var expr)'), and @('((mv v1
- ... vn) expr)').</li>
+ <li>Support for preserving @(tsee let), @(tsee let*), @(tsee mv-let), and
+ @(tsee b*) may be improved.  In particular, @('b*') currently is preserved
+ only for certain simple bindings: @('(- expr)'), @('(var expr)'), and @('((mv
+ v1 ... vn) expr)').</li>
 
  </ul></li>
 
