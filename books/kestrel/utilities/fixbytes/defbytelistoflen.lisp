@@ -60,7 +60,7 @@
 ;; This will be redundant if fixbytes/instances.lisp
 ;; has been loaded, but if not, we need it here.
 
-(defbyte 8 :unsigned)
+(defbyte 8 :signed nil)
 
 
 

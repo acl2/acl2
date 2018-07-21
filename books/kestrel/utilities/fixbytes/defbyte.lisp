@@ -34,11 +34,11 @@
    as well as for true lists thereof.
    It also generates various theorems that relate the unary predicates
    to the binary predicates and to other built-in predicates.
-   The first argument to the macro must be
-   a positive integer @('n') that specifies the size;
-   the second argument must be
-   one of the keywords @(':unsigned') and @(':signed'),
-   which specifies whether the bytes are unsigned or signed.
+   This macro has one required argument,
+   which must be a positive integer @('n') that specifies the size.
+   This macro also has a keyword argument @(':signed')
+   that specified whether
+   the bytes are signed (@('t')) or not (@('nil'), the default).
    </p>
    <p>
    More precisely, this macro generates:
@@ -84,28 +84,26 @@
    </p>
    @(def defbyte)"
 
-  (define defbyte-fn ((n posp) (u/s (member-eq u/s '(:unsigned :signed))))
+  (define defbyte-fn ((n posp) (signed booleanp))
     :returns (event pseudo-event-formp
                     ;; just to speed up the proof:
                     :hints (("Goal" :in-theory (disable packn))))
     :verify-guards nil
-    (b* ((byte (case u/s
-                 (:unsigned 'ubyte)
-                 (:signed 'sbyte)))
-         (byte-p (case u/s
-                   (:unsigned 'unsigned-byte-p)
-                   (:signed 'signed-byte-p)))
-         (byte-listp (case u/s
-                       (:unsigned 'unsigned-byte-listp)
-                       (:signed 'signed-byte-listp)))
+    (b* ((byte (if signed 'sbyte 'ubyte))
+         (byte-p (if signed 'signed-byte-p 'unsigned-byte-p))
+         (byte-listp (if signed 'signed-byte-listp 'unsigned-byte-listp))
          (byte<n> (packn (list byte n)))
          (byte<n>p (packn (list byte<n> 'p)))
          (byte<n>-fix (packn (list byte<n> '-fix)))
          (byte<n>-equiv (packn (list byte<n> '-equiv)))
-         (byte<n>-fix-when-byte<n>p (packn (list byte<n>-fix '-when- byte<n>p)))
+         (byte<n>-fix-when-byte<n>p (packn (list byte<n>-fix
+                                                 '-when-
+                                                 byte<n>p)))
          (byte<n>-list (packn (list byte<n> '-list)))
          (byte<n>-listp (packn (list byte<n>-list 'p)))
-         (byte<n>p-forward-byte-p (packn (list byte<n>p '-forward- byte-p)))
+         (byte<n>p-forward-byte-p (packn (list byte<n>p
+                                               '-forward-
+                                               byte-p)))
          (byte<n>-listp-forward-byte-listp (packn (list byte<n>-listp
                                                         '-forward-
                                                         byte-listp)))
@@ -121,12 +119,8 @@
                                                              '-rewrite)))
          (byte<n>-list-theorems (packn (list byte<n>-list '-theorems)))
          (<n>string (coerce (explode-nonnegative-integer n 10 nil) 'string))
-         (unsigned/signed-string (case u/s
-                                   (:unsigned "unsigned")
-                                   (:signed "signed")))
-         (ubyte/sbyte-string (case u/s
-                               (:unsigned "ubyte")
-                               (:signed "sbyte"))))
+         (unsigned/signed-string (if signed "signed" "unsigned"))
+         (ubyte/sbyte-string (if signed "sbyte" "ubyte")))
       `(progn
          (define ,byte<n>p (x)
            :returns (yes/no booleanp)
@@ -214,6 +208,6 @@
              (implies (,byte<n>-listp x)
                       (true-listp x)))))))
 
-  (defmacro defbyte (n u/s)
-    (declare (xargs :guard (and (posp n) (member-eq u/s '(:unsigned :signed)))))
-    `(make-event (defbyte-fn ,n ,u/s))))
+  (defmacro defbyte (n &key signed)
+    (declare (xargs :guard (and (posp n) (booleanp signed))))
+    `(make-event (defbyte-fn ,n ,signed))))
