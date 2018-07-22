@@ -77,6 +77,14 @@
       All the other generated XDOC topics are (directly or indirectly)
       under the XDOC topic for this generated fixtype."))
 
+   (xdoc::p
+    "This macro currently does not perform a thorough validation of its inputs.
+     In particular, it does not check whether
+     the names of the generated events already exists.
+     Errors may result in failures of the generated events.
+     These errors should be easy to diagnose,
+     also since this macro has a very simple and readable implementation.")
+
    (xdoc::h3 "Generated Functions and Theorems")
 
    (xdoc::p
