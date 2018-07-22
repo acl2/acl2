@@ -24,7 +24,8 @@
   :parents (kestrel-utilities fty::fty)
 
   :short "Introduce <see topic='@(url fty)'>fixtypes</see> for
-          unsigned or signed bytes of a given size and true lists thereof."
+          unsigned or signed bytes of a specified size,
+          and true lists thereof."
 
   :long
 
@@ -34,14 +35,15 @@
 
    (xdoc::p
     "Currently fixtypes can only be associated to unary predicates,
-     but @(tsee unsigned-byte-p) and @(tsee signed-byte-p) are binary predicates
-     (as are @(tsee unsigned-byte-listp) and @(tsee signed-byte-listp)).")
+     but @(tsee unsigned-byte-p) and @(tsee signed-byte-p)
+     are binary predicates,
+     as are @(tsee unsigned-byte-listp) and @(tsee signed-byte-listp).")
 
    (xdoc::p
-    "This macro introduces unary predicates, and associated fixtypes,
+    "This macro introduces unary recognizers, and associated fixtypes,
      for unsigned or signed bytes of specified sizes,
      as well as for true lists thereof.
-     It also generates various theorems that relate the unary predicates
+     It also generates various theorems that relate the unary recognizers
      to the binary predicates and to other built-in predicates.")
 
    (xdoc::h3 "General Form")
@@ -75,33 +77,34 @@
       for unsigned or signed bytes of the specified size.")
 
     (xdoc::li
-     "A recognizer, a fixer, an equivalence, and a fixtype
+     "A unary recognizer, a fixer, an equivalence, and a fixtype
       for true lists of unsigned or signed bytes of the specified size.")
 
     (xdoc::li
-     "Forward chaining rules from the unary predicates to the binary predicates,
+     "Forward chaining rules
+      from the unary recognizers to the binary predicates,
       which can combine with
       forward chaining rules from the binary predicates.")
 
     (xdoc::li
      "A rule that rewrites the binary predicate for unsigned or signed bytes
-      to the unary predicate for unsigned or signed bytes.
+      to the unary recognizer for unsigned or signed bytes.
       This rule is disabled by default, but may be useful in some proofs.
-      Since this is the converse of the definition of the unary predicate,
+      Since this is the converse of the definition of the unary recognizer,
       a theory invariant is also generated preventing the enabling of
-      both this rule and the definition of the unary predicate.")
+      both this rule and the definition of the unary recognizer.")
 
     (xdoc::li
      "Rules that rewrite between
       the binary predicate for lists of unsigned or signed bytes
-      and the unary predicate for lists of unsigned or signed bytes.
+      and the unary recognizer for lists of unsigned or signed bytes.
       These rules are disabled by default, but may be useful in some proofs.
       Since these are converse rules,
       a theory invariant is also generated preventing the enabling of both.")
 
     (xdoc::li
      "A rule to prove @(tsee true-listp)
-      from the unary predicate of lists of unsigned or signed bytes.
+      from the unary recognizer of lists of unsigned or signed bytes.
       Since @(tsee true-listp) is relatively common,
       this rule is disabled by default for efficiency."))
 
