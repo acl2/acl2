@@ -46,7 +46,7 @@
 (std::deflist pseudo-event-form-listp (x)
   (pseudo-event-formp x)
   :parents (event-forms)
-  :short "Recognize trues lists whose elements all have the
+  :short "Recognize true lists whose elements all have the
           <see topic='@(url pseudo-event-formp)'>basic structure
           of an event form</see>."
   :true-listp t
