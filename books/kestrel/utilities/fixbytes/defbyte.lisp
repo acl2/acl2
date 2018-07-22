@@ -210,7 +210,8 @@
                                          (if signed "signed" "unsigned")
                                          " bytes of size "
                                          <n>-string))))
-    `(progn
+    `(encapsulate
+       ()
        (define ,byte<n>p (x)
          :returns (yes/no booleanp)
          :parents (,byte<n>)
