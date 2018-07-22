@@ -52,6 +52,7 @@
     "(defbyte size"
     "         :signed ..."
     "         :parents ..."
+    "         :description ..."
     "  )")
 
    (xdoc::h3 "Inputs")
@@ -76,6 +77,25 @@
       The default is @('nil'), i.e. no parents.
       All the other generated XDOC topics are (directly or indirectly)
       under the XDOC topic for this generated fixtype."))
+
+   (xdoc::desc
+    "@(':description')"
+    (xdoc::p
+     "A string that describes the bytes for which the fixtype is generated,
+      or @('nil') (the default).
+      If this is a string,
+      it is inserted into the generated XDOC @(':short') strings;
+      the string must start with a lowercase letter
+      (because it is used to complete the phrase in the @(':short')),
+      must not end with any punctuation
+      (because a period is automatically added just after this string),
+      and must be plural in number
+      (because that matches the rest of the phrase).
+      If this is @('nil') instead,
+      the @(':short') is entirely generated,
+      based on the @('size') and @(':signed') inputs.
+      See the implementation for the exact details:
+      the requirements on this input should be clear from the way it is used."))
 
    (xdoc::p
     "This macro currently does not perform a thorough validation of its inputs.
@@ -134,7 +154,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defbyte-fn (size signed parents)
+(define defbyte-fn (size signed parents description)
   :returns (event (or (pseudo-event-formp event)
                       (null event))
                   ;; just to speed up the proof:
@@ -151,6 +171,9 @@
        ((unless (symbol-listp parents))
         (raise "The :PARENTS input must be a true list of symbols, ~
                 but it is ~x0 instead." parents))
+       ((unless (maybe-stringp description))
+        (raise "The :DESCRIPTION input must be a string or NIL, ~
+                but it is ~x0 instead." description))
        (n size) ; abbreviation
        (byte (if signed 'sbyte 'ubyte))
        (byte-p (if signed 'signed-byte-p 'unsigned-byte-p))
@@ -181,18 +204,20 @@
                                                            byte<n>-listp
                                                            '-rewrite)))
        (byte<n>-list-theorems (packn (list byte<n>-list '-theorems)))
-       (<n>string (coerce (explode-nonnegative-integer n 10 nil) 'string))
-       (unsigned/signed-string (if signed "signed" "unsigned"))
-       (ubyte/sbyte-string (if signed "sbyte" "ubyte")))
+       (<n>-string (coerce (explode-nonnegative-integer n 10 nil) 'string))
+       (ubyte/sbyte-string (if signed "sbyte" "ubyte"))
+       (bytes<n>-string (or description
+                            (concatenate 'string
+                                         (if signed "signed" "unsigned")
+                                         " bytes of size "
+                                         <n>-string))))
     `(progn
        (define ,byte<n>p (x)
          :returns (yes/no booleanp)
          :parents (,byte<n>)
          :short ,(concatenate 'string
                               "Recognize "
-                              unsigned/signed-string
-                              " bytes of size "
-                              <n>string
+                              bytes<n>-string
                               ".")
          (,byte-p ,n x)
          :no-function t
@@ -211,9 +236,9 @@
          :returns (fixed-x ,byte<n>p)
          :parents (,byte<n>)
          :short ,(concatenate 'string
-                              "Fixing function for @(tsee "
+                              "Fixer for @(tsee "
                               ubyte/sbyte-string
-                              <n>string
+                              <n>-string
                               "p).")
          (mbe :logic (if (,byte<n>p x) x 0)
               :exec x)
@@ -227,9 +252,7 @@
          :parents ,parents
          :short ,(concatenate 'string
                               "<see topic='@(url fty)'>Fixtype</see> of "
-                              unsigned/signed-string
-                              " bytes of size "
-                              <n>string
+                              bytes<n>-string
                               ".")
          (fty::deffixtype ,byte<n>
            :pred ,byte<n>p
@@ -243,9 +266,7 @@
          :short ,(concatenate 'string
                               "<see topic='@(url fty)'>Fixtype</see> of "
                               "true lists of "
-                              unsigned/signed-string
-                              " bytes of size "
-                              <n>string
+                              bytes<n>-string
                               ".")
          :true-listp t
          :pred ,byte<n>-listp)
@@ -277,5 +298,5 @@
   :parents (defbyte)
   :short "Definition of the @(tsee defyte) macro."
   :long "@(def defbyte)"
-  (defmacro defbyte (n &key signed parents)
-    `(make-event (defbyte-fn ',n ',signed ',parents))))
+  (defmacro defbyte (n &key signed parents description)
+    `(make-event (defbyte-fn ',n ',signed ',parents ',description))))
