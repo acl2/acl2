@@ -178,13 +178,13 @@
 
   <ol>
 
-  <li><it>Arithmetic</it> -- Leave unsigned-byte-p's regular definition
-  enabled and try to reason about the resulting inequalities.  This sometimes
-  works and may be a good approach if you have goals involving \"non bit-vector
+  <li><i>Arithmetic</i> -- Leave unsigned-byte-p's regular definition enabled
+  and try to reason about the resulting inequalities.  This sometimes works and
+  may be a good approach if you have goals involving \"non bit-vector
   functions\" like +, *, /, etc.  I usually don't use this approach but I
   haven't done a lot of proofs about true arithmetic functions.</li>
 
-  <li><it>Induction</it> -- Disable unsigned-byte-p's regular definition but
+  <li><i>Induction</i> -- Disable unsigned-byte-p's regular definition but
   instead enable an alternate definition, e.g., the
   centaur/bitops/ihsext-basics book has unsigned-byte-p**, which is a recursive
   version that works well for induction.  This definition is in the
@@ -193,10 +193,10 @@
   unsigned-byte-p but is probably mainly useful when reasoning about new
   recursive functions.</li>
 
-  <li><it>Vector</it> -- Leave @(see unsigned-byte-p) disabled except to
-  prove lemmas, and expect to reason about (unsigned-byte-p n x) via lemmas.  I
-  think I usually prefer this strategy as it feels more reliable/less magical
-  than reasoning about arithmetic inequalities.  Some useful books:
+  <li><i>Vector</i> -- Leave @(see unsigned-byte-p) disabled except to prove
+  lemmas, and expect to reason about (unsigned-byte-p n x) via lemmas.  I think
+  I usually prefer this strategy as it feels more reliable/less magical than
+  reasoning about arithmetic inequalities.  Some useful books:
 
     <ol>
 
