@@ -22,26 +22,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defbyte 1 :signed nil)
-(defbyte 2 :signed nil)
-(defbyte 3 :signed nil)
-(defbyte 4 :signed nil)
-(defbyte 8 :signed nil)
-(defbyte 16 :signed nil)
-(defbyte 32 :signed nil)
-(defbyte 64 :signed nil)
-(defbyte 128 :signed nil)
-(defbyte 256 :signed nil)
+(defxdoc defbyte-instances
+  :parents (defbyte)
+  :short "Fixtypes for unsigned and signed bytes of several common sizes,
+          and for lists thereof, with accompanying theorems."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "These are all obtained via @(tsee defbyte).
+     If fixtypes for (lists of) unsigned or signed bytes for a certain size
+     are needed but are not among the ones defined here,
+     they should be added here.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defbyte 1 :signed t)
-(defbyte 2 :signed t)
-(defbyte 3 :signed t)
-(defbyte 4 :signed t)
-(defbyte 8 :signed t)
-(defbyte 16 :signed t)
-(defbyte 32 :signed t)
-(defbyte 64 :signed t)
-(defbyte 128 :signed t)
-(defbyte 256 :signed t)
+(defbyte 1 :signed nil :parents (defbyte-instances))
+(defbyte 2 :signed nil :parents (defbyte-instances))
+(defbyte 3 :signed nil :parents (defbyte-instances))
+(defbyte 4 :signed nil :parents (defbyte-instances))
+(defbyte 8 :signed nil :parents (defbyte-instances))
+(defbyte 16 :signed nil :parents (defbyte-instances))
+(defbyte 32 :signed nil :parents (defbyte-instances))
+(defbyte 64 :signed nil :parents (defbyte-instances))
+(defbyte 128 :signed nil :parents (defbyte-instances))
+(defbyte 256 :signed nil :parents (defbyte-instances))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defbyte 1 :signed t :parents (defbyte-instances))
+(defbyte 2 :signed t :parents (defbyte-instances))
+(defbyte 3 :signed t :parents (defbyte-instances))
+(defbyte 4 :signed t :parents (defbyte-instances))
+(defbyte 8 :signed t :parents (defbyte-instances))
+(defbyte 16 :signed t :parents (defbyte-instances))
+(defbyte 32 :signed t :parents (defbyte-instances))
+(defbyte 64 :signed t :parents (defbyte-instances))
+(defbyte 128 :signed t :parents (defbyte-instances))
+(defbyte 256 :signed t :parents (defbyte-instances))
