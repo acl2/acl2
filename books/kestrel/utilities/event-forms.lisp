@@ -52,6 +52,17 @@
   :true-listp t
   :elementp-of-nil nil)
 
+(define maybe-pseudo-event-formp (x)
+  :returns (yes/no booleanp)
+  :parents (event-forms)
+  :short "Recognize @(tsee pseudo-event-formp) values and @('nil')."
+  (or (pseudo-event-formp x)
+      (null x))
+  ///
+  (defrule maybe-pseudo-event-formp-when-pseudo-event-formp
+    (implies (pseudo-event-formp x)
+             (maybe-pseudo-event-formp x))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define function-intro-macro
