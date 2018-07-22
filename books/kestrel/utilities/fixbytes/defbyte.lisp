@@ -15,6 +15,7 @@
 (include-book "std/typed-lists/signed-byte-listp" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "kestrel/utilities/event-forms" :dir :system)
+(include-book "kestrel/utilities/xdoc-constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -23,66 +24,58 @@
   :short "Introduce <see topic='@(url fty)'>fixtypes</see> for
           unsigned or signed bytes of a given size and true lists thereof."
   :long
-  "<p>
-   Currently fixtypes can only be associated to unary predicates,
-   but @(tsee unsigned-byte-p) and @(tsee signed-byte-p) are binary predicates
-   (as are @(tsee unsigned-byte-listp) and @(tsee signed-byte-listp)).
-   </p>
-   <p>
-   This macro introduces unary predicates, and associated fixtypes,
-   for unsigned or signed bytes of specified sizes,
-   as well as for true lists thereof.
-   It also generates various theorems that relate the unary predicates
-   to the binary predicates and to other built-in predicates.
-   This macro has one required argument,
-   which must be a positive integer @('n') that specifies the size.
-   This macro also has a keyword argument @(':signed')
-   that specified whether
-   the bytes are signed (@('t')) or not (@('nil'), the default).
-   </p>
-   <p>
-   More precisely, this macro generates:
-   </p>
-   <ul>
-     <li>
-     A unary predicate, a fixing function, and a fixtype
-     for unsigned or signed bytes of size @('n').
-     </li>
-     <li>
-     A unary predicate, a fixing function, and a fixtype
-     for true lists of unsigned or signed bytes of size @('n').
-     </li>
-     <li>
-     Forward chaining rules from the unary predicates to the binary predicates,
-     which can combine with forward chaining rules from the binary predicates.
-     </li>
-     <li>
-     A rule that rewrites the binary predicate for unsigned or signed bytes
-     to the unary predicate for unsigned or signed bytes.
-     This rule is disabled by default, but may be useful in some proofs.
-     Since this is the converse of the definition of the unary predicate,
-     a theory invariant is also generated preventing the enabling of
-     both this rule and the definition of the unary predicate.
-     </li>
-     <li>
-     Rules that rewrite between
-     the binary predicate for lists of unsigned or signed bytes
-     and the unary predicate for lists of unsigned or signed bytes.
-     These rules are disabled by default, but may be useful in some proofs.
-     Since these are converse rules,
-     a theory invariant is also generated preventing the enabling of both.
-     </li>
-     <li>
-     A rule to prove @(tsee true-listp)
-     from the unary predicate of lists of unsigned or signed bytes.
-     Since @(tsee true-listp) is relatively common,
-     this rule is disabled by default for efficiency.
-     </li>
-   </ul>
-   <p>
-   These generated items include XDOC documentation.
-   </p>
-   @(def defbyte)"
+  (xdoc::topapp
+   (xdoc::p
+    "Currently fixtypes can only be associated to unary predicates,
+     but @(tsee unsigned-byte-p) and @(tsee signed-byte-p) are binary predicates
+     (as are @(tsee unsigned-byte-listp) and @(tsee signed-byte-listp)).")
+   (xdoc::p
+    "This macro introduces unary predicates, and associated fixtypes,
+     for unsigned or signed bytes of specified sizes,
+     as well as for true lists thereof.
+     It also generates various theorems that relate the unary predicates
+     to the binary predicates and to other built-in predicates.
+     This macro has one required argument,
+     which must be a positive integer @('n') that specifies the size.
+     This macro also has a keyword argument @(':signed')
+     that specified whether
+     the bytes are signed (@('t')) or not (@('nil'), the default).")
+   (xdoc::p
+    "More precisely, this macro generates:")
+   (xdoc::ul
+    (xdoc::li
+     "A unary predicate, a fixing function, and a fixtype
+      for unsigned or signed bytes of size @('n').")
+    (xdoc::li
+     "A unary predicate, a fixing function, and a fixtype
+      for true lists of unsigned or signed bytes of size @('n').")
+    (xdoc::li
+     "Forward chaining rules from the unary predicates to the binary predicates,
+      which can combine
+      with forward chaining rules from the binary predicates.")
+    (xdoc::li
+     "A rule that rewrites the binary predicate for unsigned or signed bytes
+      to the unary predicate for unsigned or signed bytes.
+      This rule is disabled by default, but may be useful in some proofs.
+      Since this is the converse of the definition of the unary predicate,
+      a theory invariant is also generated preventing the enabling of
+      both this rule and the definition of the unary predicate.")
+    (xdoc::li
+     "Rules that rewrite between
+      the binary predicate for lists of unsigned or signed bytes
+      and the unary predicate for lists of unsigned or signed bytes.
+      These rules are disabled by default, but may be useful in some proofs.
+      Since these are converse rules,
+      a theory invariant is also generated preventing the enabling of both.")
+    (xdoc::li
+     "A rule to prove @(tsee true-listp)
+      from the unary predicate of lists of unsigned or signed bytes.
+      Since @(tsee true-listp) is relatively common,
+      this rule is disabled by default for efficiency."))
+   (xdoc::p
+    "These generated items include XDOC documentation.")
+   (xdoc::p
+    "@(def defbyte)"))
 
   (define defbyte-fn ((n posp) (signed booleanp))
     :returns (event pseudo-event-formp
