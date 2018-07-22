@@ -12,6 +12,7 @@
 
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "kestrel/utilities/xdoc-constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -19,25 +20,24 @@
   :parents (kestrel-utilities system-utilities)
   :short "Utilities for event forms.")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pseudo-event-formp (x)
   :returns (yes/no booleanp)
   :parents (event-forms)
   :short "Recognize the basic structure of an event form."
   :long
-  "<p>
-   Check whether @('x') is a non-empty true list that starts with a symbol
-   (like a function or macro call).
-   </p>
-   <p>
-   This is a shallow check.
-   Its satisfaction does not guarantee that @('x') is a valid event form.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "Check whether @('x') is a non-empty true list that starts with a symbol
+     (like a function or macro call).")
+   (xdoc::p
+    "This is a shallow check.
+     Its satisfaction does not guarantee that @('x') is a valid event form."))
   (and x
        (true-listp x)
        (symbolp (car x)))
-
   ///
-
   (defrule pseudo-event-formp-of-cons
     (equal (pseudo-event-formp (cons a b))
            (and (symbolp a)
@@ -51,6 +51,8 @@
           of an event form</see>."
   :true-listp t
   :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define function-intro-macro
   ((enable booleanp "Enable function or not.")
