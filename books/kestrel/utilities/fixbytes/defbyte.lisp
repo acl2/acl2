@@ -155,8 +155,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defbyte-fn (size signed parents description)
-  :returns (event (or (pseudo-event-formp event)
-                      (null event))
+  :returns (event maybe-pseudo-event-formp
                   ;; just to speed up the proof:
                   :hints (("Goal" :in-theory (disable packn))))
   :parents (defbyte-macro-definition)
