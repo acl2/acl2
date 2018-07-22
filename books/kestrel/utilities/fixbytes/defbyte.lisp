@@ -111,14 +111,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defbyte-fn ((n posp) ; <- this is the SIZE input, abbreviated as 'N'
-                    (signed booleanp))
-  :returns (event pseudo-event-formp
+(define defbyte-fn (size signed)
+  :returns (event (or (pseudo-event-formp event)
+                      (null event))
                   ;; just to speed up the proof:
                   :hints (("Goal" :in-theory (disable packn))))
   :parents nil
   :verify-guards nil
-  (b* ((byte (if signed 'sbyte 'ubyte))
+  (b* (((unless (posp size))
+        (raise "The first argument must be a positive integer, ~
+                but it is ~x0 instead." size))
+       ((unless (booleanp signed))
+        (raise "The :SIGNED argument must be a boolean, ~
+                but it is ~x0 instead." signed))
+       (n size) ; shorter
+       (byte (if signed 'sbyte 'ubyte))
        (byte-p (if signed 'signed-byte-p 'unsigned-byte-p))
        (byte-listp (if signed 'signed-byte-listp 'unsigned-byte-listp))
        (byte<n> (packn (list byte n)))
@@ -240,5 +247,4 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro defbyte (n &key signed)
-  (declare (xargs :guard (and (posp n) (booleanp signed))))
   `(make-event (defbyte-fn ',n ',signed)))
