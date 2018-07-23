@@ -53,6 +53,7 @@
     "         :signed ..."
     "         :type ..."
     "         :pred ..."
+    "         :fix ..."
     "         :parents ..."
     "         :description ..."
     "  )")
@@ -77,8 +78,7 @@
       If this is @('nil') (the default),
       the name of the type is @('ubyte<size>') or @('sbyte<size>'),
       based on whether @(':signed') is @('nil') or @('t'),
-      where @('<size>') is a decimal representation of @('size').
-      All the other generated names are derived from this name."))
+      where @('<size>') is a decimal representation of @('size')."))
 
    (xdoc::desc
     "@(':pred')"
@@ -86,6 +86,15 @@
      "A symbol that specifies the name of the unary recognizer for the bytes.
       If this is @('nil') (the default),
       the name of the recognizer is @('<type>-p'),
+      where @('<type>') is the name of the fixtype,
+      as specified via the @(':type') input."))
+
+   (xdoc::desc
+    "@(':fix')"
+    (xdoc::p
+     "A symbol that specifies the name of the fixer for the bytes.
+      If this is @('nil') (the default),
+      the name of the fixer is @('<type>-fix'),
       where @('<type>') is the name of the fixtype,
       as specified via the @(':type') input."))
 
@@ -175,7 +184,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defbyte-fn (size signed type pred parents description)
+(define defbyte-fn (size signed type pred fix parents description)
   :returns (event maybe-pseudo-event-formp
                   ;; just to speed up the proof:
                   :hints (("Goal" :in-theory (disable packn))))
@@ -194,6 +203,9 @@
        ((unless (symbolp pred))
         (raise "The :PRED input must be a symbol, ~
                 but it is ~x0 instead." pred))
+       ((unless (symbolp fix))
+        (raise "The :FIX input must be a symbol, ~
+                but it is ~x0 instead." fix))
        ((unless (symbol-listp parents))
         (raise "The :PARENTS input must be a true list of symbols, ~
                 but it is ~x0 instead." parents))
@@ -205,11 +217,11 @@
        (lbinpred (if signed 'signed-byte-listp 'unsigned-byte-listp))
        (type (or type (packn (list (if signed 'sbyte 'ubyte) n))))
        (pred (or pred (packn (list type '-p))))
-       (byte<n>-fix (packn (list type '-fix)))
+       (fix (or fix (packn (list type '-fix))))
        (byte<n>-equiv (packn (list type '-equiv)))
-       (byte<n>-fix-when-pred (packn (list byte<n>-fix
-                                           '-when-
-                                           pred)))
+       (fix-when-pred (packn (list fix
+                                   '-when-
+                                   pred)))
        (byte<n>-list (packn (list type '-list)))
        (byte<n>-listp (packn (list byte<n>-list 'p)))
        (pred-forward-binpred (packn (list pred
@@ -260,7 +272,7 @@
          (theory-invariant
           (incompatible (:rewrite ,binpred-rewrite-pred)
                         (:definition ,pred))))
-       (define ,byte<n>-fix ((x ,pred))
+       (define ,fix ((x ,pred))
          :returns (fixed-x ,pred)
          :parents (,type)
          :short ,(concatenate 'string
@@ -272,9 +284,9 @@
               :exec x)
          :no-function t
          ///
-         (defrule ,byte<n>-fix-when-pred
+         (defrule ,fix-when-pred
            (implies (,pred x)
-                    (equal (,byte<n>-fix x) x))
+                    (equal (,fix x) x))
            :enable ,pred))
        (defsection ,type
          :parents ,parents
@@ -284,7 +296,7 @@
                               ".")
          (fty::deffixtype ,type
            :pred ,pred
-           :fix ,byte<n>-fix
+           :fix ,fix
            :equiv ,byte<n>-equiv
            :define t
            :forward t))
@@ -326,11 +338,12 @@
   :parents (defbyte)
   :short "Definition of the @(tsee defyte) macro."
   :long "@(def defbyte)"
-  (defmacro defbyte (size &key signed type pred parents description)
+  (defmacro defbyte (size &key signed type pred fix parents description)
     `(make-event (defbyte-fn
                    ',size
                    ',signed
                    ',type
                    ',pred
+                   ',fix
                    ',parents
                    ',description))))

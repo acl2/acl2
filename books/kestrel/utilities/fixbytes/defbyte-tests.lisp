@@ -101,6 +101,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; test the :FIX input:
+
+(must-succeed*
+ (defbyte 10 :fix nil)
+ (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
+ (assert! (function-symbolp 'ubyte10-p (w state)))
+ (assert! (function-symbolp 'ubyte10-fix (w state)))
+ (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+
+(must-succeed*
+ (defbyte 10 :fix ubyte10fix)
+ (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
+ (assert! (function-symbolp 'ubyte10-p (w state)))
+ (assert! (function-symbolp 'ubyte10fix (w state)))
+ (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; test the :PARENTS input:
 
 (must-succeed*
