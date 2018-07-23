@@ -201,7 +201,9 @@
                (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
                        (operation . #.*OP-ADD*))))
               ((:i64 . ("PUSH ES" 0
-                        (:fn . (x86-push-segment-register))))
+                        (:fn . (x86-push-segment-register
+                                (vex-prefixes  . 0)
+                                (evex-prefixes . 0)))))
                (:o64 . ("#UD" 0
                         (:fn . (x86-illegal-instruction
                                 (message .
@@ -230,7 +232,9 @@
                (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
                        (operation . #.*OP-OR*))))
               ((:i64 . ("PUSH CS" 0
-                        (:fn . (x86-push-segment-register))))
+                        (:fn . (x86-push-segment-register
+                                (vex-prefixes  . 0)
+                                (evex-prefixes . 0)))))
                (:o64 . ("#UD" 0
                         (:fn . (x86-illegal-instruction
                                 (message .
@@ -243,6 +247,7 @@
                        ;; See x86-fetch-decode-execute and
                        ;; vex-decode-and-execute for details.
                        (vex-prefixes . 0)
+                       (evex-prefixes . 0)
                        (escape-byte . opcode)))))
 
     #| 10 |# (("ADC" 2 (E b) (G b)
@@ -264,7 +269,9 @@
                (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
                        (operation . #.*OP-ADC*))))
               ((:i64 . ("PUSH SS" 0
-                        (:fn . (x86-push-segment-register))))
+                        (:fn . (x86-push-segment-register
+                                (vex-prefixes  . 0)
+                                (evex-prefixes . 0)))))
                (:o64 . ("#UD" 0
                         (:fn . (x86-illegal-instruction
                                 (message .
@@ -293,7 +300,9 @@
                (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
                        (operation . #.*OP-SBB*))))
               ((:i64 . ("PUSH DS" 0
-                        (:fn . (x86-push-segment-register))))
+                        (:fn . (x86-push-segment-register
+                                (vex-prefixes  . 0)
+                                (evex-prefixes . 0)))))
                (:o64 . ("#UD" 0
                         (:fn . (x86-illegal-instruction
                                 (message .
@@ -1674,36 +1683,36 @@
                (:66        . ("VPMULHRSW"       3 (V x) (H x) (W x))))
               ((:no-prefix . (:none
                (:fn . (:no-instruction))))
-               (:66        . ("VPERMILPSV"      3 (V x) (H x) (W x) :v)))
+               (:66        . ("VPERMILPS"      3 (V x) (H x) (W x) :v)))
               ((:no-prefix . (:none
                               (:fn . (:no-instruction))))
-               (:66        . ("VPERMILPDV"      3 (V x) (H x) (W x) :v)))
+               (:66        . ("VPERMILPD"      3 (V x) (H x) (W x) :v)))
               ((:no-prefix . (:none
                               (:fn . (:no-instruction))))
-               (:66        . ("VTESTPSV"        2 (V x) (W x) :v)))
+               (:66        . ("VTESTPS"        2 (V x) (W x) :v)))
               ((:no-prefix . (:none
                               (:fn . (:no-instruction))))
-               (:66        . ("VTESTPDV"        2 (V x) (W x) :v))))
+               (:66        . ("VTESTPD"        2 (V x) (W x) :v))))
 
     #| 10 |# (((:66        . ("PBLENDVB"        2 (V dq) (W dq))))
               (:none
                (:fn . (:no-instruction)))
               (:none
                (:fn . (:no-instruction)))
-              ((:66        . ("VCVTPH2PSV"      3 (V x)  (W x)  (I b) :v)))
+              ((:66        . ("VCVTPH2PS"       3 (V x)  (W x)  (I b) :v)))
               ((:66        . ("BLENDVPS"        2 (V dq) (W dq))))
               ((:66        . ("BLENDVPD"        2 (V dq) (W dq))))
-              ((:66        . ("VPERMPSV"        3 (V qq) (H qq) (W qq) :v)))
+              ((:66        . ("VPERMPS"         3 (V qq) (H qq) (W qq) :v)))
               ((:66        . ("VPTEST"          2 (V x)  (W x))))
     #| 18 |#  ((:no-prefix . (:none
                (:fn . (:no-instruction))))
-               (:66        . ("VBROADCASTSSV"   2 (V x)  (W d) :v)))
+               (:66        . ("VBROADCASTSS"    2 (V x)  (W d) :v)))
               ((:no-prefix . (:none
                               (:fn . (:no-instruction))))
-               (:66        . ("VBROADCASTSDV"   2 (V qq) (W q) :v)))
+               (:66        . ("VBROADCASTSD"    2 (V qq) (W q) :v)))
               ((:no-prefix . (:none
                               (:fn . (:no-instruction))))
-               (:66        . ("VBROADCASTF128V" 2 (V qq) (M dq) :v)))
+               (:66        . ("VBROADCASTF128"  2 (V qq) (M dq) :v)))
               (:none
                (:fn . (:no-instruction)))
               ((:no-prefix . ("PABSB"           2 (P q)  (Q q)))

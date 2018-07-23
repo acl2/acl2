@@ -288,6 +288,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-rdrand
+  :evex t
 
   ;; 0F C7:
   ;; Opcode Extensions:
@@ -305,21 +306,26 @@ writes the final value of the instruction pointer into RIP.</p>")
   :long
   "<p>Note from the Intel Manual (March 2017, Vol. 1, Section 7.3.17):</p>
 
-<p><em>Under heavy load, with multiple cores executing RDRAND in
-parallel, it is possible, though unlikely, for the demand of random
-numbers by software processes or threads to exceed the rate at which
-the random number generator hardware can supply them. This will lead
-to the RDRAND instruction returning no data transitorily. The RDRAND
-instruction indicates the occurrence of this rare situation by
-clearing the CF flag.</em></p>
+ <p><em>Under heavy load, with multiple cores executing RDRAND in parallel, it
+ is possible, though unlikely, for the demand of random numbers by software
+ processes or threads to exceed the rate at which the random number generator
+ hardware can supply them. This will lead to the RDRAND instruction returning
+ no data transitorily. The RDRAND instruction indicates the occurrence of this
+ rare situation by clearing the CF flag.</em></p>
 
-<p>See <a
-href='http://software.intel.com/en-us/articles/intel-digital-random-number-generator-drng-software-implementation-guide/'>Intel's
-Digital Random Number Generator Guide</a> for more details.</p>"
+ <p>See <a
+ href='http://software.intel.com/en-us/articles/intel-digital-random-number-generator-drng-software-implementation-guide/'>Intel's
+ Digital Random Number Generator Guide</a> for more details.</p>"
 
   :body
 
   (b* ((ctx 'x86-rdrand)
+
+       ((when (or (not (equal vex-prefixes 0))
+                  (not (equal evex-prefixes 0))))
+        ;; VEX/EVEX encoding illegal.
+        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
+
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
        ;; TODO: throw #UD if CPUID.01H:ECX.RDRAND[bit 30] = 0

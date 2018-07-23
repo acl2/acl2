@@ -144,6 +144,14 @@
   (i.e., for two- and three-byte opcode maps) --- the last prefix is the
   mandatory prefix, and the other prefixes are simply the usual modifiers.</p>
 
+  <p>If the value of @(':last-prefix') is anything other than the three SIMD
+  prefixes (0x66, 0xF2, or 0xF3), then it's irrelevant as far as the mandatory
+  prefix is concerned.  This is because all the functions that take the
+  mandatory prefix as input (e.g., modr/m detecting functions like @(tsee
+  64-bit-mode-two-byte-opcode-ModR/M-p), opcode dispatch functions like @(tsee
+  second-three-byte-opcode-execute), etc.), detect the no mandatory prefix case
+  by checking that @(':last-prefix') is not a SIMD prefix.</p>
+
   <p>Important note:</p>
 
   <p>From <a
@@ -1345,9 +1353,9 @@
 
         :parents (x86-decoder)
         ;; The following arg will avoid binding __function__ to
-        ;; first-three-byte-opcode-execute. The automatic __function__ binding that
-        ;; comes with define causes stack overflows during the guard proof of this
-        ;; function.
+        ;; first-three-byte-opcode-execute. The automatic __function__ binding
+        ;; that comes with define causes stack overflows during the guard proof
+        ;; of this function.
         :no-function t
         :ignore-ok t
         :short "First three-byte opcode dispatch function."
@@ -1438,6 +1446,7 @@
    (prefixes           :type (unsigned-byte 52))
    (rex-byte           :type (unsigned-byte 8))
    (vex-prefixes       :type (unsigned-byte 32))
+   (evex-prefixes      :type (unsigned-byte 40))
    (second-escape-byte :type (unsigned-byte 8))
    x86)
 
@@ -1460,10 +1469,9 @@
 
   (b* ((ctx 'three-byte-opcode-decode-and-execute)
 
-       ((when (not (equal vex-prefixes 0)))
-        ;; Note: remember to use :next-byte in vex-prefixes for opcode
-        ;; dispatch.
-        (!!ms-fresh :VEX-encoded-instructions-unsupported))
+       ((when (not (equal evex-prefixes 0)))
+        (!!ms-fresh :evex-encoded-instructions-currently-unsupported 
+                    evex-prefixes))
 
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
         (rme08 temp-rip *cs* :x x86))
@@ -1479,8 +1487,27 @@
        ((mv flg temp-rip) (add-to-*ip temp-rip 1 x86))
        ((when flg) (!!ms-fresh :increment-error flg))
 
-       (mandatory-prefix (the (unsigned-byte 8)
-                           (prefixes-slice :last-prefix prefixes)))
+       ((when (and (not (equal vex-prefixes 0))
+                   (not (equal (vex-prefixes-slice :byte0 vex-prefixes)
+                               #.*vex3-byte0*))))
+        (!!ms-fresh :VEX3-Expected-for-Three-Byte-Opcodes))
+
+       ((the (unsigned-byte 8) mandatory-prefix)
+        (if (equal vex-prefixes 0)
+            ;; If the last-prefix is anything other than the three SIMD
+            ;; prefixes (#x66, #xF2, or #xF3), it's irrelevant as far as
+            ;; mandatory-prefix is concerned.  This is because all the
+            ;; functions that take mandatory-prefix as input (e.g., modr/m
+            ;; detecting functions like 64-bit-mode-two-byte-opcode-ModR/M-p,
+            ;; opcode dispatch functions like second-three-byte-opcode-execute,
+            ;; etc.), detect the no mandatory prefix case by checking that
+            ;; :last-prefix is not a SIMD prefix.
+            (prefixes-slice :last-prefix prefixes)
+          (case (vex3-byte2-slice :pp (vex-prefixes-slice :byte2 vex-prefixes))
+            (#b01 #x66)
+            (#b10 #xF3)
+            (#b11 #xF2)
+            (otherwise 0))))
 
        (modr/m?
         (case second-escape-byte
@@ -1544,7 +1571,7 @@
                   (x86p x86))
              (x86p (three-byte-opcode-decode-and-execute
                     start-rip temp-rip prefixes rex-byte
-                    vex-prefixes escape-byte x86)))
+                    vex-prefixes evex-prefixes escape-byte x86)))
     :enable add-to-*ip-is-i48p-rewrite-rule))
 
 ;; ----------------------------------------------------------------------
@@ -1567,6 +1594,7 @@
          (mandatory-prefix :type (unsigned-byte 8))
          (rex-byte         :type (unsigned-byte 8))
          (vex-prefixes     :type (unsigned-byte 32))
+         (evex-prefixes    :type (unsigned-byte 40))
          (opcode           :type (unsigned-byte 8))
          (modr/m           :type (unsigned-byte 8))
          (sib              :type (unsigned-byte 8))
@@ -1596,7 +1624,8 @@
                         (canonical-address-p temp-rip))
                    (x86p (two-byte-opcode-execute
                           start-rip temp-rip prefixes mandatory-prefix
-                          rex-byte vex-prefixes opcode modr/m sib x86)))))
+                          rex-byte vex-prefixes evex-prefixes
+                          opcode modr/m sib x86)))))
 
       (defsection two-byte-opcodes-table
         :parents (implemented-opcodes)
@@ -1605,12 +1634,13 @@
         :long ,table-doc-string))))
 
 (define two-byte-opcode-decode-and-execute
-  ((start-rip    :type (signed-byte #.*max-linear-address-size*))
-   (temp-rip     :type (signed-byte #.*max-linear-address-size*))
-   (prefixes     :type (unsigned-byte 52))
-   (rex-byte     :type (unsigned-byte 8))
-   (vex-prefixes :type (unsigned-byte 32))
-   (escape-byte  :type (unsigned-byte 8))
+  ((start-rip     :type (signed-byte #.*max-linear-address-size*))
+   (temp-rip      :type (signed-byte #.*max-linear-address-size*))
+   (prefixes      :type (unsigned-byte 52))
+   (rex-byte      :type (unsigned-byte 8))
+   (vex-prefixes  :type (unsigned-byte 32))
+   (evex-prefixes :type (unsigned-byte 40))
+   (escape-byte   :type (unsigned-byte 8))
    x86)
 
   :ignore-ok t
@@ -1630,15 +1660,14 @@
 
   (b* ((ctx 'two-byte-opcode-decode-and-execute)
 
-       ((when (not (equal vex-prefixes 0)))
-        ;; Note: remember to use :next-byte in vex-prefixes for opcode
-        ;; dispatch.
-        (!!ms-fresh :VEX-encoded-instructions-unsupported))
+       ((when (not (equal evex-prefixes 0)))
+        (!!ms-fresh :evex-encoded-instructions-currently-unsupported 
+                    evex-prefixes))
 
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
         (rme08 temp-rip *cs* :x x86))
        ((when flg0)
-        (!!ms-fresh :opcode-byte-access-error flg0))
+        (!!ms-fresh :opcode-byte-access-error flg0))       
 
        ;; Possible values of opcode:
 
@@ -1654,8 +1683,47 @@
        ((mv flg temp-rip) (add-to-*ip temp-rip 1 x86))
        ((when flg) (!!ms-fresh :increment-error flg))
 
-       (mandatory-prefix (the (unsigned-byte 8)
-                           (prefixes-slice :last-prefix prefixes)))
+       (vex2-prefix?
+        (equal (vex-prefixes-slice :byte0 vex-prefixes) #.*vex2-byte0*))
+       (vex3-prefix?
+        (equal (vex-prefixes-slice :byte0 vex-prefixes) #.*vex3-byte0*))
+       ((when (and (not (equal vex-prefixes 0))
+                   (not (or vex2-prefix? vex3-prefix?))))
+        (!!ms-fresh :Unexpected-VEX-Byte0 vex-prefixes))
+
+       ((when (and (not (equal vex-prefixes 0))
+                   (or (equal opcode #x38)
+                       (equal opcode #x3A))))
+        ;; If the opcode is #x38 or #x3A (i.e., escape to the three-byte maps)
+        ;; and VEX prefixes are present, then a #UD should be raised.  A
+        ;; VEX-encoded instruction should be followed by exactly one opcode
+        ;; byte, and escaping to the three-byte maps from a two-byte map is not
+        ;; allowed.  (See Intel Vol. 2, Ch. 2: Instruction Format, Section
+        ;; 2.3.7: The Opcode Byte).
+        (!!fault-fresh :ud nil
+                       :vex-supports-exactly-one-opcode-byte
+                       vex-prefixes opcode))
+
+       ((the (unsigned-byte 8) mandatory-prefix)
+        (if (equal vex-prefixes 0)
+            ;; If the last-prefix is anything other than the three SIMD
+            ;; prefixes (#x66, #xF2, or #xF3), it's irrelevant as far as
+            ;; mandatory-prefix is concerned.  This is because all the
+            ;; functions that take mandatory-prefix as input (e.g., modr/m
+            ;; detecting functions like 64-bit-mode-two-byte-opcode-ModR/M-p,
+            ;; opcode dispatch functions like second-three-byte-opcode-execute,
+            ;; etc.), detect the no mandatory prefix case by checking that
+            ;; :last-prefix is not a SIMD prefix.
+            (prefixes-slice :last-prefix prefixes)
+          (case (if vex2-prefix?
+                    (vex2-byte1-slice :pp
+                                      (vex-prefixes-slice :byte1 vex-prefixes))
+                  (vex3-byte2-slice :pp
+                                    (vex-prefixes-slice :byte2 vex-prefixes)))
+            (#b01 #x66)
+            (#b10 #xF3)
+            (#b11 #xF2)
+            (otherwise 0))))
 
        (modr/m? (if (64-bit-modep x86)
                     (64-bit-mode-two-byte-opcode-ModR/M-p
@@ -1692,7 +1760,7 @@
 
     (two-byte-opcode-execute
      start-rip temp-rip prefixes mandatory-prefix
-     rex-byte vex-prefixes opcode modr/m sib x86))
+     rex-byte vex-prefixes evex-prefixes opcode modr/m sib x86))
 
   ///
 
@@ -1700,8 +1768,8 @@
     (implies (and (canonical-address-p temp-rip)
                   (x86p x86))
              (x86p (two-byte-opcode-decode-and-execute
-                    start-rip temp-rip prefixes rex-byte vex-prefixes
-                    escape-byte x86)))
+                    start-rip temp-rip prefixes rex-byte vex-prefixes 
+                    evex-prefixes escape-byte x86)))
     :enable add-to-*ip-is-i48p-rewrite-rule))
 
 ;; ----------------------------------------------------------------------
@@ -1902,25 +1970,26 @@
     (if vex3-prefix?
         (cond (vex3-0F-map?
                (two-byte-opcode-decode-and-execute
-                start-rip temp-rip prefixes rex-byte vex-prefixes #x0F x86))
+                start-rip temp-rip prefixes rex-byte vex-prefixes 
+                0 #x0F x86))
               (vex3-0F38-map?
                (three-byte-opcode-decode-and-execute
-                start-rip temp-rip prefixes rex-byte vex-prefixes #x38 x86))
+                start-rip temp-rip prefixes rex-byte vex-prefixes 
+                0 #x38 x86))
               (vex3-0F3A-map?
                (three-byte-opcode-decode-and-execute
-                start-rip temp-rip prefixes rex-byte vex-prefixes #x3A x86))
+                start-rip temp-rip prefixes rex-byte vex-prefixes
+                0 #x3A x86))
               (t
                ;; Unreachable.
                (!!ms-fresh :illegal-value-of-VEX-m-mmmm)))
 
       ;; vex2: 0F Map:
       (two-byte-opcode-decode-and-execute
-       start-rip temp-rip prefixes rex-byte vex-prefixes #x0F x86)))
+       start-rip temp-rip prefixes rex-byte vex-prefixes 
+       0 #x0F x86)))
 
   ///
-
-  ;; TODO: If VEX prefixes are added to instructions that do not use VEX, will
-  ;; they be ignored or will it #UD?
 
   (defthm x86p-vex-decode-and-execute
     (implies (and (x86p x86)
@@ -1968,9 +2037,6 @@
   ///
 
 
-  ;; TODO: If EVEX prefixes are added to instructions that do not use EVEX,
-  ;; will they be ignored or will it #UD?
-
   (defthm x86p-evex-decode-and-execute
     (implies (and (x86p x86)
                   (canonical-address-p temp-rip))
@@ -1996,7 +2062,7 @@
  dispatches control to the appropriate instruction semantic function.</p>"
 
   :prepwork
-  ((local (in-theory (e/d* () (unsigned-byte-p not)))))
+  ((local (in-theory (e/d* () (signed-byte-p unsigned-byte-p not)))))
 
   :guard-hints
   (("Goal" :in-theory (e/d (add-to-*ip-is-i48p-rewrite-rule) ())))

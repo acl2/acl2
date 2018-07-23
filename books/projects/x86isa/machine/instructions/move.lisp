@@ -591,6 +591,7 @@
     x86))
 
 (def-inst x86-two-byte-movsxd
+  :evex t
 
   ;; Op/En: RM
   ;; [OP REG, R/M]
@@ -617,14 +618,18 @@
 
        ((when (not (64-bit-modep x86)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
+       
+       ((when (or (not (equal vex-prefixes 0))
+                  (not (equal evex-prefixes 0))))
+        ;; VEX/EVEX encoding illegal.
+        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
+       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock?)
+        (!!fault-fresh :ud nil :lock-prefix prefixes))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
-
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))       
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))
@@ -677,6 +682,7 @@
 ;; ======================================================================
 
 (def-inst x86-movzx
+  :evex t
 
   ;; Op/En: RM
   ;; [OP REG, R/M]
@@ -698,6 +704,11 @@
 
        ((when (not (64-bit-modep x86)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
+
+       ((when (or (not (equal vex-prefixes 0))
+                  (not (equal evex-prefixes 0))))
+        ;; VEX/EVEX encoding illegal.
+        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
@@ -746,6 +757,7 @@
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-control-regs-Op/En-MR
+  :evex t
 
   ;; Move control register to GPR
 
@@ -783,6 +795,11 @@
   :body
 
   (b* ((ctx 'x86-mov-control-regs-Op/En-MR)
+
+       ((when (or (not (equal vex-prefixes 0))
+                  (not (equal evex-prefixes 0))))
+        ;; VEX/EVEX encoding illegal.
+        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)

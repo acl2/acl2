@@ -57,6 +57,7 @@
   ;; Note: No segment register updates/accesses here since we do not
   ;; support segments at this time.
 
+  :evex t
   :parents (two-byte-opcodes)
 
   :returns (x86 x86p :hyp (and (x86p x86)
@@ -72,7 +73,11 @@
        ;; 64-bit mode exceptions
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (or (not (equal vex-prefixes 0))
+                  (not (equal evex-prefixes 0))))
+        ;; VEX/EVEX encoding illegal.
+        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -206,6 +211,7 @@
   ;; Op/En: NP
   ;; 0F 05: SYSCALL
 
+  :evex t
   :parents (two-byte-opcodes)
 
   :returns (x86 x86p :hyp (and (x86p x86)
@@ -221,7 +227,11 @@
        ;; 64-bit mode exceptions
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes))
+       ((when (or (not (equal vex-prefixes 0))
+                  (not (equal evex-prefixes 0))))
+        ;; VEX/EVEX encoding illegal.
+        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -409,33 +419,27 @@
 
     x86))
 
-(define x86-syscall-both-views
-  ((start-rip :type (signed-byte 48))
-   (temp-rip :type (signed-byte 48))
-   (prefixes :type (unsigned-byte 52))
-   (rex-byte :type (unsigned-byte 8))
-   (opcode :type (unsigned-byte 8))
-   (modr/m :type (unsigned-byte 8))
-   (sib :type (unsigned-byte 8))
-   x86)
-  (declare (ignorable start-rip temp-rip prefixes rex-byte opcode modr/m sib))
+
+(def-inst x86-syscall-both-views
+  :evex t
   :parents (two-byte-opcodes)
-  :guard-hints
-  (("goal" :in-theory (e/d nil (msri-is-n64p))
-    :use ((:instance msri-is-n64p (i 0)))))
+
   :returns
   (x86 x86p
        :hyp (and (x86p x86)
                  (canonical-address-p temp-rip)))
-
+  
+  :body
   (b* ((ctx 'x86-syscall-both-views)
        ((when (not (64-bit-modep x86)))
         (!!ms-fresh :syscall-unimplemented-in-32-bit-mode)))
     (if (app-view x86)
         (x86-syscall-app-view
-         start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
+         start-rip temp-rip prefixes rex-byte vex-prefixes evex-prefixes
+         opcode modr/m sib x86)
       (x86-syscall
-       start-rip temp-rip prefixes rex-byte opcode modr/m sib x86))))
+       start-rip temp-rip prefixes rex-byte vex-prefixes evex-prefixes
+       opcode modr/m sib x86))))
 
 ;; ======================================================================
 ;; INSTRUCTION: SYSRET
@@ -443,6 +447,7 @@
 
 (def-inst x86-sysret
 
+  :evex t
   :parents (two-byte-opcodes)
 
   :short "Return from fast system call to user code at privilege level
@@ -455,7 +460,7 @@ REX.W + 0F 07: SYSRET</p>
   opposed to REX.W + 0F 07\) returns to compatibility mode, not 64-bit
   mode.</p>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)                               
+  :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
   :prepwork ((local (in-theory (e/d* (sysret-guard-helpers) ())))
@@ -477,6 +482,11 @@ REX.W + 0F 07: SYSRET</p>
        ((when (or (not (64-bit-modep x86))
                   (app-view x86)))
         (!!ms-fresh :sysret-unimplemented))
+
+       ((when (or (not (equal vex-prefixes 0))
+                  (not (equal evex-prefixes 0))))
+        ;; VEX/EVEX encoding illegal.
+        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)

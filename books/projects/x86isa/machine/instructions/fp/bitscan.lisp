@@ -89,6 +89,8 @@
 
 (def-inst x86-bsf-Op/En-RM
 
+  :evex t
+
   :parents (two-byte-opcodes fp-opcodes)
 
   :short "Bit scan forward"
@@ -109,13 +111,18 @@
        ((when (not (64-bit-modep x86)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
+       ((when (or (not (equal vex-prefixes 0))
+                  (not (equal evex-prefixes 0))))
+        ;; VEX/EVEX encoding illegal.
+        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
        (lock (eql #.*lock*
                   (prefixes-slice :group-1-prefix prefixes)))
        ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
+       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
        (p3 (equal #.*operand-size-override*
                   (prefixes-slice :group-3-prefix prefixes)))

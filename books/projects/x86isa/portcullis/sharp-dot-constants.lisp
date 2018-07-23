@@ -536,6 +536,20 @@
 
 ;; ======================================================================
 
+;; Instruction Sets:
+
+;; Floating-Point:
+(defconst *fpu*    0)
+(defconst *mmx*    1)
+(defconst *sse*    2)
+(defconst *sse2*   3)
+(defconst *sse3*   4)
+(defconst *avx*    5)
+(defconst *avx2*   6)
+(defconst *avx512* 7)
+
+;; ======================================================================
+
 ;; Indices and length of fields in the x86 state (see
 ;; machine/state-concrete.lisp):
 

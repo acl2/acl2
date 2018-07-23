@@ -241,6 +241,8 @@
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-two-byte-jcc
 
+  :evex t
+
   ;; Jump (near) if condition is met
 
   ;; Intel manual, Mar'17, Vol. 2A, Jcc reference says:
@@ -283,6 +285,11 @@
   ;; Note: Here opcode is the second byte of the two byte opcode.
 
   (b* ((ctx 'x86-two-byte-jcc)
+
+       ((when (or (not (equal vex-prefixes 0))
+                  (not (equal evex-prefixes 0))))
+        ;; VEX/EVEX encoding illegal.
+        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
@@ -405,6 +412,8 @@
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cmovcc
 
+  :evex t
+
   ;; Op/En: RM
   ;; [OP REG, R/M]
 
@@ -438,12 +447,18 @@
 
   (b* ((ctx 'x86-cmovcc)
 
+       ((when (or (not (equal vex-prefixes 0))
+                  (not (equal evex-prefixes 0))))
+        ;; VEX/EVEX encoding illegal.
+        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
+
+       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        (p2 (prefixes-slice :group-2-prefix prefixes))
 
        ((the (integer 1 8) operand-size)
@@ -501,6 +516,8 @@
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-setcc
 
+  :evex t
+
   ;; Op/En: M
 
   ;; SETcc
@@ -534,12 +551,16 @@
 
   (b* ((ctx 'x86-setcc)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
+       ((when (or (not (equal vex-prefixes 0))
+                  (not (equal evex-prefixes 0))))
+        ;; VEX/EVEX encoding illegal.
+        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
+       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
+       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))

@@ -384,6 +384,7 @@
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-segment-register
+  :evex t
   :parents (one-byte-opcodes two-byte-opcodes)
 
   :short "PUSH FS/GS"
@@ -413,6 +414,10 @@
 
   (b* ((ctx 'x86-push-general-register)
 
+       ((when (or (not (equal vex-prefixes 0))
+                  (not (equal evex-prefixes 0))))
+        ;; VEX/EVEX encoding illegal.
+        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
        (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 

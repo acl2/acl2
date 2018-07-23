@@ -209,6 +209,7 @@
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cmpxchg
+  :evex t
 
   ;; Op/En: MR
   ;; 0F B0: CMPXCHG r/m8, r8
@@ -226,18 +227,22 @@
 
   (b* ((ctx 'x86-cmpxchg)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       ((when (or (not (equal vex-prefixes 0))
+                  (not (equal evex-prefixes 0))))
+        ;; VEX/EVEX encoding illegal.
+        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
+
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
        (reg (mrm-reg modr/m))
-
+       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
        ;; If the lock prefix is used but the destination is not a memory
        ;; operand, then the #UD exception is raised.
        ((when (and lock? (equal mod #b11)))
         (!!fault-fresh
          :ud nil ;; #UD
          :lock-prefix-but-destination-not-a-memory-operand prefixes))
-
+       
        (p2 (prefixes-slice :group-2-prefix prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :group-4-prefix prefixes)))

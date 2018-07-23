@@ -267,7 +267,11 @@ the @('fault') field instead.</li>
        (and (integerp (mv-nth 1 (add-to-*ip *ip delta x86)))
             (rationalp (mv-nth 1 (add-to-*ip *ip delta x86)))
             (<= -140737488355328 (mv-nth 1 (add-to-*ip *ip delta x86)))
-            (< (mv-nth 1 (add-to-*ip *ip delta x86)) 140737488355328))))
+            (< (mv-nth 1 (add-to-*ip *ip delta x86)) 140737488355328)
+            ;; The following allow us to disable signed-byte-p in places where
+            ;; add-to-*ip is followed by a check for canonical addresses.
+            (signed-byte-p 48 (mv-nth 1 (add-to-*ip *ip delta x86)))
+            (signed-byte-p 64 (mv-nth 1 (add-to-*ip *ip delta x86))))))
 
     (defrule add-to-*ip-rationalp-type
       (implies (and (rationalp *ip)
@@ -1942,6 +1946,8 @@ reference made from privilege level 3.</blockquote>"
         (dp-to-sp    'nil)
         (high/low    'nil)
         (trunc       'nil)
+        (vex         'nil)
+        (evex        'nil)
         body parents short long
         inline enabled guard-debug guard
         guard-hints (verify-guards 't) prepwork thms
@@ -1954,13 +1960,20 @@ reference made from privilege level 3.</blockquote>"
           ,@(and dp-to-sp  `((dp-to-sp  :type (integer 0 1))))
           ,@(and high/low  `((high/low  :type (integer 0 1))))
           ,@(and trunc     `((trunc     booleanp)))
-          (start-rip :type (signed-byte   #.*max-linear-address-size*))
-          (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
-          (prefixes  :type (unsigned-byte 52))
-          (rex-byte  :type (unsigned-byte 8))
-          (opcode    :type (unsigned-byte 8))
-          (modr/m    :type (unsigned-byte 8))
-          (sib       :type (unsigned-byte 8))
+          (start-rip     :type (signed-byte   #.*max-linear-address-size*))
+          (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
+          (prefixes      :type (unsigned-byte 52))
+          (rex-byte      :type (unsigned-byte 8))
+          ,@(if evex
+                ;; EVEX-encoded instructions also support VEX encodings.
+                `((vex-prefixes   :type (unsigned-byte 32))
+                  (evex-prefixes  :type (unsigned-byte 40)))
+              (if vex
+                  `((vex-prefixes   :type (unsigned-byte 32)))
+                `()))
+          (opcode        :type (unsigned-byte 8))
+          (modr/m        :type (unsigned-byte 8))
+          (sib           :type (unsigned-byte 8))
           x86
           ;; If operation = -1, ignore this field.  Note that -1 is
           ;; the default value of operation.

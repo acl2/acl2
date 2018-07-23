@@ -43,7 +43,7 @@
 ;; All the floating-point instructions implemented so far are 128-bit
 ;; Legacy SSE (or in some cases, SSE2) versions. Just to be very
 ;; clear, the following versions of the floating-point instructions
-;; are unimplemented: MMX, AVX, and AVX2.
+;; are unimplemented: MMX, AVX, AVX2, and AVX512.
 
 (include-book "bitscan"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
