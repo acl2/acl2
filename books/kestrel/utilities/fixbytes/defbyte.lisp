@@ -51,6 +51,7 @@
    (xdoc::code
     "(defbyte size"
     "         :signed ..."
+    "         :type ..."
     "         :parents ..."
     "         :description ..."
     "  )")
@@ -67,6 +68,16 @@
     (xdoc::p
      "A boolean that specifies whether the bytes are
       unsigned (@('nil'), the default) or signed (@('t'))."))
+
+   (xdoc::desc
+    "@(':type')"
+    (xdoc::p
+     "A symbol that specifies the name of the fixtype for the bytes.
+      If this is @('nil') (the default),
+      the name of the type is @('ubyte<size>') or @('sbyte<size>'),
+      based on whether @(':signed') is @('nil') or @('t'),
+      where @('<size>') is a decimal representation of @('size').
+      All the other generated names are derived from this name."))
 
    (xdoc::desc
     "@(':parents')"
@@ -154,7 +165,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defbyte-fn (size signed parents description)
+(define defbyte-fn (size signed type parents description)
   :returns (event maybe-pseudo-event-formp
                   ;; just to speed up the proof:
                   :hints (("Goal" :in-theory (disable packn))))
@@ -167,6 +178,9 @@
        ((unless (booleanp signed))
         (raise "The :SIGNED input must be a boolean, ~
                 but it is ~x0 instead." signed))
+       ((unless (symbolp type))
+        (raise "The :TYPE input must be a symbol, ~
+                but it is ~x0 instead." type))
        ((unless (symbol-listp parents))
         (raise "The :PARENTS input must be a true list of symbols, ~
                 but it is ~x0 instead." parents))
@@ -174,31 +188,32 @@
         (raise "The :DESCRIPTION input must be a string or NIL, ~
                 but it is ~x0 instead." description))
        (n size) ; abbreviation
-       (byte (if signed 'sbyte 'ubyte))
-       (byte-p (if signed 'signed-byte-p 'unsigned-byte-p))
-       (byte-listp (if signed 'signed-byte-listp 'unsigned-byte-listp))
-       (byte<n> (packn (list byte n)))
-       (byte<n>p (packn (list byte<n> 'p)))
-       (byte<n>-fix (packn (list byte<n> '-fix)))
-       (byte<n>-equiv (packn (list byte<n> '-equiv)))
+       (binary-pred (if signed 'signed-byte-p 'unsigned-byte-p))
+       (binary-lpred (if signed 'signed-byte-listp 'unsigned-byte-listp))
+       (type (or type (packn (list (if signed 'sbyte 'ubyte) n))))
+       (byte<n>p (packn (list type 'p)))
+       (byte<n>-fix (packn (list type '-fix)))
+       (byte<n>-equiv (packn (list type '-equiv)))
        (byte<n>-fix-when-byte<n>p (packn (list byte<n>-fix
                                                '-when-
                                                byte<n>p)))
-       (byte<n>-list (packn (list byte<n> '-list)))
+       (byte<n>-list (packn (list type '-list)))
        (byte<n>-listp (packn (list byte<n>-list 'p)))
-       (byte<n>p-forward-byte-p (packn (list byte<n>p
-                                             '-forward-
-                                             byte-p)))
-       (byte<n>-listp-forward-byte-listp (packn (list byte<n>-listp
-                                                      '-forward-
-                                                      byte-listp)))
-       (byte-p-rewrite-byte<n>p (packn (list byte-p '-rewrite- byte<n>p)))
-       (byte<n>-listp-rewrite-byte-listp (packn (list byte<n>-listp
-                                                      '-rewrite-
-                                                      byte-listp)))
-       (byte-listp-rewrite-byte<n>-listp (packn (list byte-listp
-                                                      '-rewrite-
-                                                      byte<n>-listp)))
+       (byte<n>p-forward-binary-pred (packn (list byte<n>p
+                                                  '-forward-
+                                                  binary-pred)))
+       (byte<n>-listp-forward-binary-lpred (packn (list byte<n>-listp
+                                                        '-forward-
+                                                        binary-lpred)))
+       (binary-pred-rewrite-byte<n>p (packn (list binary-pred
+                                                  '-rewrite-
+                                                  byte<n>p)))
+       (byte<n>-listp-rewrite-binary-lpred (packn (list byte<n>-listp
+                                                        '-rewrite-
+                                                        binary-lpred)))
+       (binary-lpred-rewrite-byte<n>-listp (packn (list binary-lpred
+                                                        '-rewrite-
+                                                        byte<n>-listp)))
        (true-listp-when-byte<n>-listp-rewrite (packn (list 'true-listp-when-
                                                            byte<n>-listp
                                                            '-rewrite)))
@@ -214,27 +229,27 @@
        ()
        (define ,byte<n>p (x)
          :returns (yes/no booleanp)
-         :parents (,byte<n>)
+         :parents (,type)
          :short ,(concatenate 'string
                               "Recognize "
                               bytes<n>-string
                               ".")
-         (,byte-p ,n x)
+         (,binary-pred ,n x)
          :no-function t
          ///
-         (defrule ,byte<n>p-forward-byte-p
+         (defrule ,byte<n>p-forward-binary-pred
            (implies (,byte<n>p x)
-                    (,byte-p ,n x))
+                    (,binary-pred ,n x))
            :rule-classes :forward-chaining)
-         (defruled ,byte-p-rewrite-byte<n>p
-           (equal (,byte-p ,n x)
+         (defruled ,binary-pred-rewrite-byte<n>p
+           (equal (,binary-pred ,n x)
                   (,byte<n>p x)))
          (theory-invariant
-          (incompatible (:rewrite ,byte-p-rewrite-byte<n>p)
+          (incompatible (:rewrite ,binary-pred-rewrite-byte<n>p)
                         (:definition ,byte<n>p))))
        (define ,byte<n>-fix ((x ,byte<n>p))
          :returns (fixed-x ,byte<n>p)
-         :parents (,byte<n>)
+         :parents (,type)
          :short ,(concatenate 'string
                               "Fixer for @(tsee "
                               ubyte/sbyte-string
@@ -248,21 +263,21 @@
            (implies (,byte<n>p x)
                     (equal (,byte<n>-fix x) x))
            :enable ,byte<n>p))
-       (defsection ,byte<n>
+       (defsection ,type
          :parents ,parents
          :short ,(concatenate 'string
                               "<see topic='@(url fty)'>Fixtype</see> of "
                               bytes<n>-string
                               ".")
-         (fty::deffixtype ,byte<n>
+         (fty::deffixtype ,type
            :pred ,byte<n>p
            :fix ,byte<n>-fix
            :equiv ,byte<n>-equiv
            :define t
            :forward t))
        (fty::deflist ,byte<n>-list
-         :elt-type ,byte<n>
-         :parents (,byte<n>)
+         :elt-type ,type
+         :parents (,type)
          :short ,(concatenate 'string
                               "<see topic='@(url fty)'>Fixtype</see> of "
                               "true lists of "
@@ -272,22 +287,22 @@
          :pred ,byte<n>-listp)
        (defsection ,byte<n>-list-theorems
          :extension ,byte<n>-list
-         (defrule ,byte<n>-listp-forward-byte-listp
+         (defrule ,byte<n>-listp-forward-binary-lpred
            (implies (,byte<n>-listp x)
-                    (,byte-listp ,n x))
+                    (,binary-lpred ,n x))
            :rule-classes :forward-chaining
            :enable (,byte<n>-listp ,byte<n>p))
-         (defruled ,byte<n>-listp-rewrite-byte-listp
+         (defruled ,byte<n>-listp-rewrite-binary-lpred
            (equal (,byte<n>-listp x)
-                  (,byte-listp ,n x))
+                  (,binary-lpred ,n x))
            :enable (,byte<n>-listp ,byte<n>p))
-         (defruled ,byte-listp-rewrite-byte<n>-listp
-           (equal (,byte-listp ,n x)
+         (defruled ,binary-lpred-rewrite-byte<n>-listp
+           (equal (,binary-lpred ,n x)
                   (,byte<n>-listp x))
-           :enable ,byte<n>-listp-rewrite-byte-listp)
+           :enable ,byte<n>-listp-rewrite-binary-lpred)
          (theory-invariant
-          (incompatible (:rewrite ,byte<n>-listp-rewrite-byte-listp)
-                        (:rewrite ,byte-listp-rewrite-byte<n>-listp)))
+          (incompatible (:rewrite ,byte<n>-listp-rewrite-binary-lpred)
+                        (:rewrite ,binary-lpred-rewrite-byte<n>-listp)))
          (defruled ,true-listp-when-byte<n>-listp-rewrite
            (implies (,byte<n>-listp x)
                     (true-listp x)))))))
@@ -298,5 +313,5 @@
   :parents (defbyte)
   :short "Definition of the @(tsee defyte) macro."
   :long "@(def defbyte)"
-  (defmacro defbyte (n &key signed parents description)
-    `(make-event (defbyte-fn ',n ',signed ',parents ',description))))
+  (defmacro defbyte (n &key signed type parents description)
+    `(make-event (defbyte-fn ',n ',signed ',type ',parents ',description))))
