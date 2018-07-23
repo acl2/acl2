@@ -23,7 +23,7 @@
  (assert! (function-symbolp 'ubyte10-p (w state)))
  (assert! (function-symbolp 'ubyte10-fix (w state)))
  (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
 
@@ -37,7 +37,7 @@
  (assert! (function-symbolp 'ubyte10-p (w state)))
  (assert! (function-symbolp 'ubyte10-fix (w state)))
  (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
 
@@ -47,7 +47,7 @@
  (assert! (function-symbolp 'sbyte10-p (w state)))
  (assert! (function-symbolp 'sbyte10-fix (w state)))
  (assert! (function-symbolp 'sbyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'sbyte10-listp (w state)))
+ (assert! (function-symbolp 'sbyte10-list-p (w state)))
  (assert! (function-symbolp 'sbyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'sbyte10-list-equiv$inline (w state))))
 
@@ -61,7 +61,7 @@
  (assert! (function-symbolp 'ubyte10-p (w state)))
  (assert! (function-symbolp 'ubyte10-fix (w state)))
  (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
 
@@ -71,7 +71,7 @@
  (assert! (function-symbolp 'word-p (w state)))
  (assert! (function-symbolp 'word-fix (w state)))
  (assert! (function-symbolp 'word-equiv$inline (w state)))
- (assert! (function-symbolp 'word-listp (w state)))
+ (assert! (function-symbolp 'word-list-p (w state)))
  (assert! (function-symbolp 'word-list-fix$inline (w state)))
  (assert! (function-symbolp 'word-list-equiv$inline (w state))))
 
@@ -85,7 +85,7 @@
  (assert! (function-symbolp 'ubyte10-p (w state)))
  (assert! (function-symbolp 'ubyte10-fix (w state)))
  (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
 
@@ -95,7 +95,7 @@
  (assert! (function-symbolp 'ubyte10p (w state)))
  (assert! (function-symbolp 'ubyte10-fix (w state)))
  (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
 
@@ -109,7 +109,7 @@
  (assert! (function-symbolp 'ubyte10-p (w state)))
  (assert! (function-symbolp 'ubyte10-fix (w state)))
  (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
 
@@ -119,7 +119,7 @@
  (assert! (function-symbolp 'ubyte10-p (w state)))
  (assert! (function-symbolp 'ubyte10fix (w state)))
  (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
 
@@ -133,7 +133,7 @@
  (assert! (function-symbolp 'ubyte10-p (w state)))
  (assert! (function-symbolp 'ubyte10-fix (w state)))
  (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
 
@@ -143,9 +143,105 @@
  (assert! (function-symbolp 'ubyte10-p (w state)))
  (assert! (function-symbolp 'ubyte10-fix (w state)))
  (assert! (function-symbolp 'ubyte10equiv$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
+ (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; test the :LTYPE input:
+
+(must-succeed*
+ (defbyte 10 :ltype nil)
+ (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
+ (assert! (function-symbolp 'ubyte10-p (w state)))
+ (assert! (function-symbolp 'ubyte10-fix (w state)))
+ (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
+ (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+
+(must-succeed*
+ (defbyte 10 :ltype ubyte10list)
+ (fty::defprod test-types ((one ubyte10) (two ubyte10list)))
+ (assert! (function-symbolp 'ubyte10-p (w state)))
+ (assert! (function-symbolp 'ubyte10-fix (w state)))
+ (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
+ (assert! (function-symbolp 'ubyte10list-p (w state)))
+ (assert! (function-symbolp 'ubyte10list-fix$inline (w state)))
+ (assert! (function-symbolp 'ubyte10list-equiv$inline (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; test the :LPRED input:
+
+(must-succeed*
+ (defbyte 10 :lpred nil)
+ (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
+ (assert! (function-symbolp 'ubyte10-p (w state)))
+ (assert! (function-symbolp 'ubyte10-fix (w state)))
+ (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
+ (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+
+(must-succeed*
+ (defbyte 10 :lpred ubyte10-listp)
+ (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
+ (assert! (function-symbolp 'ubyte10-p (w state)))
+ (assert! (function-symbolp 'ubyte10-fix (w state)))
+ (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
  (assert! (function-symbolp 'ubyte10-listp (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; test the :LFIX input:
+
+(must-succeed*
+ (defbyte 10 :lfix nil)
+ (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
+ (assert! (function-symbolp 'ubyte10-p (w state)))
+ (assert! (function-symbolp 'ubyte10-fix (w state)))
+ (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
+ (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+
+(must-succeed*
+ (defbyte 10 :lfix ubyte10-listfix)
+ (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
+ (assert! (function-symbolp 'ubyte10-p (w state)))
+ (assert! (function-symbolp 'ubyte10-fix (w state)))
+ (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
+ (assert! (function-symbolp 'ubyte10-listfix$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; test the :LEQUIV input:
+
+(must-succeed*
+ (defbyte 10 :lequiv nil)
+ (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
+ (assert! (function-symbolp 'ubyte10-p (w state)))
+ (assert! (function-symbolp 'ubyte10-fix (w state)))
+ (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
+ (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+
+(must-succeed*
+ (defbyte 10 :lequiv ubyte10-listequiv)
+ (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
+ (assert! (function-symbolp 'ubyte10-p (w state)))
+ (assert! (function-symbolp 'ubyte10-fix (w state)))
+ (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
+ (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-listequiv$inline (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -157,7 +253,7 @@
  (assert! (function-symbolp 'ubyte10-p (w state)))
  (assert! (function-symbolp 'ubyte10-fix (w state)))
  (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
 
@@ -167,7 +263,7 @@
  (assert! (function-symbolp 'ubyte10-p (w state)))
  (assert! (function-symbolp 'ubyte10-fix (w state)))
  (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
 
@@ -181,7 +277,7 @@
  (assert! (function-symbolp 'ubyte10-p (w state)))
  (assert! (function-symbolp 'ubyte10-fix (w state)))
  (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
 
@@ -191,6 +287,6 @@
  (assert! (function-symbolp 'ubyte10-p (w state)))
  (assert! (function-symbolp 'ubyte10-fix (w state)))
  (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listp (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
