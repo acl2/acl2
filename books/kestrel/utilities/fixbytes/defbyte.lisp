@@ -54,6 +54,7 @@
     "         :type ..."
     "         :pred ..."
     "         :fix ..."
+    "         :equiv ..."
     "         :parents ..."
     "         :description ..."
     "  )")
@@ -95,6 +96,15 @@
      "A symbol that specifies the name of the fixer for the bytes.
       If this is @('nil') (the default),
       the name of the fixer is @('<type>-fix'),
+      where @('<type>') is the name of the fixtype,
+      as specified via the @(':type') input."))
+
+   (xdoc::desc
+    "@(':equiv')"
+    (xdoc::p
+     "A symbol that specifies the name of the equivalence for the bytes.
+      If this is @('nil') (the default),
+      the name of the equivalence is @('<type>-equiv'),
       where @('<type>') is the name of the fixtype,
       as specified via the @(':type') input."))
 
@@ -184,7 +194,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defbyte-fn (size signed type pred fix parents description)
+(define defbyte-fn (size signed type pred fix equiv parents description)
   :returns (event maybe-pseudo-event-formp
                   ;; just to speed up the proof:
                   :hints (("Goal" :in-theory (disable packn))))
@@ -206,6 +216,9 @@
        ((unless (symbolp fix))
         (raise "The :FIX input must be a symbol, ~
                 but it is ~x0 instead." fix))
+       ((unless (symbolp equiv))
+        (raise "The :EQUIV input must be a symbol, ~
+                but it is ~x0 instead." equiv))
        ((unless (symbol-listp parents))
         (raise "The :PARENTS input must be a true list of symbols, ~
                 but it is ~x0 instead." parents))
@@ -218,7 +231,8 @@
        (type (or type (packn (list (if signed 'sbyte 'ubyte) n))))
        (pred (or pred (packn (list type '-p))))
        (fix (or fix (packn (list type '-fix))))
-       (byte<n>-equiv (packn (list type '-equiv)))
+       (equiv (or equiv (packn (list type '-equiv))))
+       ;; (byte<n>-equiv (packn (list type '-equiv)))
        (fix-when-pred (packn (list fix
                                    '-when-
                                    pred)))
@@ -297,7 +311,7 @@
          (fty::deffixtype ,type
            :pred ,pred
            :fix ,fix
-           :equiv ,byte<n>-equiv
+           :equiv ,equiv
            :define t
            :forward t))
        (fty::deflist ,byte<n>-list
@@ -338,12 +352,21 @@
   :parents (defbyte)
   :short "Definition of the @(tsee defyte) macro."
   :long "@(def defbyte)"
-  (defmacro defbyte (size &key signed type pred fix parents description)
+  (defmacro defbyte (size
+                     &key
+                     signed
+                     type
+                     pred
+                     fix
+                     equiv
+                     parents
+                     description)
     `(make-event (defbyte-fn
                    ',size
                    ',signed
                    ',type
                    ',pred
                    ',fix
+                   ',equiv
                    ',parents
                    ',description))))
