@@ -239,8 +239,8 @@ e.g., @('make wp-gen') from the @('books/') directory.</p>
 <h3>Overview</h3>
 
 <p>This book generates weakest precondition predicates, which are admitted
-as (possibly mutually recursive) ACL2 functions as described in the paper <it>A
-Weakest Precondition Model for Assembly Language Programs</it> by Bill Legato,
+as (possibly mutually recursive) ACL2 functions as described in the paper <i>A
+Weakest Precondition Model for Assembly Language Programs</i> by Bill Legato,
 dated January 28, 2003.</p>
 
 <p>The input program is given in a variation of Legato's format for assembly
