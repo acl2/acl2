@@ -15,7 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; test default keyword inputs:
+; test the SIZE input:
 
 (must-succeed*
  (defbyte 10)
@@ -26,6 +26,45 @@
  (assert! (function-symbolp 'ubyte10-list-p (w state)))
  (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
  (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+
+(must-succeed*
+ (defconst *size* 10)
+ (defbyte *size*)
+ (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
+ (assert! (function-symbolp 'ubyte10-p (w state)))
+ (assert! (function-symbolp 'ubyte10-fix (w state)))
+ (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-p (w state)))
+ (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
+ (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+
+(must-succeed*
+ (encapsulate
+   (((size) => *))
+   (local (defun size () 100))
+   (defthm size-constraint (posp (size))))
+ (defbyte (size) :type byte :description "bytes")
+ (fty::defprod test-types ((one byte) (two byte-list)))
+ (assert! (function-symbolp 'byte-p (w state)))
+ (assert! (function-symbolp 'byte-fix (w state)))
+ (assert! (function-symbolp 'byte-equiv$inline (w state)))
+ (assert! (function-symbolp 'byte-list-p (w state)))
+ (assert! (function-symbolp 'byte-list-fix$inline (w state)))
+ (assert! (function-symbolp 'byte-list-equiv$inline (w state))))
+
+(must-succeed*
+ (encapsulate
+   (((size) => *))
+   (local (defun size () 100))
+   (defthm size-constraint (posp (size))))
+ (defbyte (size) :signed t :type byte :description "bytes")
+ (fty::defprod test-types ((one byte) (two byte-list)))
+ (assert! (function-symbolp 'byte-p (w state)))
+ (assert! (function-symbolp 'byte-fix (w state)))
+ (assert! (function-symbolp 'byte-equiv$inline (w state)))
+ (assert! (function-symbolp 'byte-list-p (w state)))
+ (assert! (function-symbolp 'byte-list-fix$inline (w state)))
+ (assert! (function-symbolp 'byte-list-equiv$inline (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
