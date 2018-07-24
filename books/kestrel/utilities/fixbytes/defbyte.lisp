@@ -430,8 +430,7 @@
               `((defrulel recog-of-0
                   (,pred 0)
                   :enable ,pred
-                  :prep-books ((include-book "arithmetic-5/top"
-                                             :dir :system)))))
+                  :prep-books ((include-book "arithmetic/top" :dir :system)))))
        (define ,fix ((x ,pred))
          :returns (fixed-x ,pred)
          :parents (,type)
