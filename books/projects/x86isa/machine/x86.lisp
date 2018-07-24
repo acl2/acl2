@@ -128,19 +128,34 @@
 
   :parents (x86-decoder)
 
-  :long "<p>@('get-prefixes') fetches the prefixes of an instruction
-  and also returns the first byte following the last prefix.
-  @('start-rip') points to the first byte of an instruction,
-  potentially a legacy prefix.</p>
+  :long "<p>From Intel Manual, Vol. 2, May 2018, Section 2.1.1 (Instruction
+  Prefixes):</p>
 
-  <p>The initial value of @('cnt') should be 15 so that the result @('(- 15
-  cnt)') returned at the end of the recursion is the correct number of prefix
-  bytes parsed.</p>
+  <p><em>Instruction prefixes are divided into four groups, each with a set of
+     allowable prefix codes. For each instruction, it is only useful to include
+     up to one prefix code from each of the four groups (Groups 1, 2, 3,
+     4). Groups 1 through 4 may be placed in any order relative to each
+     other.</em></p>
 
-  <p>We keep overwriting the @(':last-prefix') field in every recursive call
-  with the prefix read from the instruction stream --- this way, at the end of
-  this function, we'll have the last legacy prefix in the current instruction.
-  This information can be useful if we have mandatory prefixes
+  <p>The function @('get-prefixes') fetches the prefixes of an instruction and
+  also returns the first byte following the last prefix.  The input
+  @('start-rip') points to the first byte of an instruction, which may
+  potentially be a legacy prefix.  The initial value of @('cnt') should be
+  @('15') so that the result @('(- 15 cnt)') returned at the end of the
+  recursion is the correct number of prefix bytes parsed by this function.</p>
+
+  <p>Despite the quote from the Intel Manual above, the order of the prefixes
+  does matter in at least two cases: (1) when there are mandatory prefixes,
+  and (2) when there is more than one prefix from the same group.  We discuss
+  these two situations below.</p>
+
+  <ul>
+
+  <li>
+  <p>We keep overwriting the @(':last-prefix') field in every recursive
+  call with the prefix read from the instruction stream --- this way, at the
+  end of this function, we'll have the last legacy prefix in the current
+  instruction.  This information can be useful if we have mandatory prefixes
   (i.e., for two- and three-byte opcode maps) --- the last prefix is the
   mandatory prefix, and the other prefixes are simply the usual modifiers.</p>
 
@@ -151,9 +166,9 @@
   64-bit-mode-two-byte-opcode-ModR/M-p), opcode dispatch functions like @(tsee
   second-three-byte-opcode-execute), etc.), detect the no mandatory prefix case
   by checking that @(':last-prefix') is not a SIMD prefix.</p>
+  </li>
 
-  <p>Important note:</p>
-
+  <li>
   <p>From <a
   href='http://wiki.osdev.org/X86-64_Instruction_Encoding#Legacy_Prefixes'>OSDev
   Wiki</a>:</p>
@@ -163,18 +178,39 @@
      prefixes from the same group, or use only the last prefix
      specified for any group.</em></p>
 
-  <p>From Intel Manual, page 22-20 Vol. 3B, September 2013:</p>
+  <p>Older versions of this function
+   (in @('x86isa') books before Jul. 2018) didn't tolerate more than one prefix
+  from a single prefix group, though we did accept redundant prefixes --- this
+  was due to descriptions such as the above on non-Intel sources.  However,
+  after running tests on x86 machines, we have changed this function to ignore
+  all but the last prefix from a single prefix group.  For example:</p>
 
-     <p><em>The Intel386 processor sets a limit of 15 bytes on
-     instruction length. The only way to violate this limit is by
-     putting redundant prefixes before an instruction. A
-     general-protection exception is generated if the limit on
-     instruction length is violated.</em></p>
+  <ul>
+  <li>@('0x64_88_00')    is @('mov byte ptr fs:[rax], al')</li>
+  <li>@('0x65_88_00')    is @('mov byte ptr gs:[rax], al')</li>
+  <li>@('0x64_65_88_00') is @('mov byte ptr gs:[rax], al')</li>
+  <li>@('0x65_64_88_00') is @('mov byte ptr fs:[rax], al')</li>
+  </ul>
 
-  <p>If our interpreter encounters two or more prefixes from a single
-  prefix group, we halt after raising an error.  However, we can
-  tolerate redundant prefixes.</p>"
+  <ul>
+  <li>@('0xf2_a4')    is @('repne movsb byte ptr [rdi], byte ptr [rsi]')</li>
+  <li>@('0xf3_a4')    is @('repe  movsb byte ptr [rdi], byte ptr [rsi]')</li>
+  <li>@('0xf2_f3_a4') is @('repe  movsb byte ptr [rdi], byte ptr [rsi]')</li>
+  <li>@('0xf3_f2_a4') is @('repne movsb byte ptr [rdi], byte ptr [rsi]')</li>
+  </ul>
 
+  <p>If you run into an example of where this is inconsistent with an x86
+  machine, please do get in touch!</p>
+ </li>
+
+  </ul>"
+
+  ;; TODO: The problem with this approach is that it'll ignore #UDs for illegal
+  ;; use of lock prefixes if the rep/repne prefixes are also used.  E.g.:
+  ;; 0xf0_f2_a4 should UD, but since f2 overshadows f0, it won't with the
+  ;; current implementation of get-prefixes.  I need a separate field for lock,
+  ;; and I should make the prefixes output a fixnum by making last-byte a 3-bit
+  ;; field.
 
   :prepwork
 
@@ -237,93 +273,69 @@
 
         (case prefix-byte-group-code
 
-          (1 (let ((prefix-1?
-                    (prefixes-slice :group-1-prefix prefixes)))
-               (if (or (eql 0 (the (unsigned-byte 8) prefix-1?))
-                       ;; Redundant Prefix Okay
-                       (eql byte prefix-1?))
-                   (mv-let
-                     (flg next-rip)
-                     (add-to-*ip start-rip 1 x86)
-                     (if flg
-                         (mv flg prefixes x86)
-                       ;; Storing the group 1 prefix and going on...
-                       (get-prefixes
-                        next-rip
-                        (the (unsigned-byte 52)
-                          (!prefixes-slice
-                           :group-1-prefix byte
-                           (!prefixes-slice :last-prefix byte prefixes)))
-                        (the (integer 0 15) (1- cnt))
-                        x86)))
-                 ;; We do not tolerate more than one prefix from a prefix group.
-                 (mv t prefixes x86))))
+          (1 (mv-let
+               (flg next-rip)
+               (add-to-*ip start-rip 1 x86)
+               (if flg
+                   (mv flg prefixes x86)
+                 ;; Storing the group 1 prefix (possibly overwriting a
+                 ;; previously seen group 1 prefix) and going on...
+                 (get-prefixes
+                  next-rip
+                  (the (unsigned-byte 52)
+                    (!prefixes-slice
+                     :group-1-prefix byte
+                     (!prefixes-slice :last-prefix byte prefixes)))
+                  (the (integer 0 15) (1- cnt))
+                  x86))))
 
-          (2 (let ((prefix-2?
-                    (prefixes-slice :group-2-prefix prefixes)))
-               (if (or (eql 0 (the (unsigned-byte 8) prefix-2?))
-                       ;; Redundant Prefixes Okay
-                       (eql byte (the (unsigned-byte 8) prefix-2?)))
-                   (mv-let
-                     (flg next-rip)
-                     (add-to-*ip start-rip 1 x86)
-                     (if flg
-                         (mv flg prefixes x86)
-                       ;; Storing the group 2 prefix and going on...
-                       (get-prefixes
-                        next-rip
-                        (the (unsigned-byte 52)
-                          (!prefixes-slice
-                           :group-2-prefix byte
-                           (!prefixes-slice :last-prefix byte prefixes)))
-                        (the (integer 0 15) (1- cnt))
-                        x86)))
-                 ;; We do not tolerate more than one prefix from a prefix group.
-                 (mv t prefixes x86))))
+          (2 (mv-let
+               (flg next-rip)
+               (add-to-*ip start-rip 1 x86)
+               (if flg
+                   (mv flg prefixes x86)
+                 ;; Storing the group 2 prefix (possibly overwriting a
+                 ;; previously seen group 2 prefix) and going on...
+                 (get-prefixes
+                  next-rip
+                  (the (unsigned-byte 52)
+                    (!prefixes-slice
+                     :group-2-prefix byte
+                     (!prefixes-slice :last-prefix byte prefixes)))
+                  (the (integer 0 15) (1- cnt))
+                  x86))))
 
-          (3 (let ((prefix-3?
-                    (prefixes-slice :group-3-prefix prefixes)))
-               (if (or (eql 0 (the (unsigned-byte 8) prefix-3?))
-                       ;; Redundant Prefix Okay
-                       (eql byte (the (unsigned-byte 8) prefix-3?)))
-                   (mv-let
-                     (flg next-rip)
-                     (add-to-*ip start-rip 1 x86)
-                     (if flg
-                         (mv flg prefixes x86)
-                       ;; Storing the group 3 prefix and going on...
-                       (get-prefixes
-                        next-rip
-                        (the (unsigned-byte 52)
-                          (!prefixes-slice
-                           :group-3-prefix byte
-                           (!prefixes-slice :last-prefix byte prefixes)))
-                        (the (integer 0 15) (1- cnt))
-                        x86)))
-                 ;; We do not tolerate more than one prefix from a prefix group.
-                 (mv t prefixes x86))))
+          (3 (mv-let
+               (flg next-rip)
+               (add-to-*ip start-rip 1 x86)
+               (if flg
+                   (mv flg prefixes x86)
+                 ;; Storing the group 3 prefix (possibly overwriting a
+                 ;; previously seen group 3 prefix) and going on...
+                 (get-prefixes
+                  next-rip
+                  (the (unsigned-byte 52)
+                    (!prefixes-slice
+                     :group-3-prefix byte
+                     (!prefixes-slice :last-prefix byte prefixes)))
+                  (the (integer 0 15) (1- cnt))
+                  x86))))
 
-          (4 (let ((prefix-4?
-                    (prefixes-slice :group-4-prefix prefixes)))
-               (if (or (eql 0 (the (unsigned-byte 8) prefix-4?))
-                       ;; Redundant Prefix Okay
-                       (eql byte (the (unsigned-byte 8) prefix-4?)))
-                   (mv-let
-                     (flg next-rip)
-                     (add-to-*ip start-rip 1 x86)
-                     (if flg
-                         (mv flg prefixes x86)
-                       ;; Storing the group 4 prefix and going on...
-                       (get-prefixes
-                        next-rip
-                        (the (unsigned-byte 52)
-                          (!prefixes-slice
-                           :group-4-prefix byte
-                           (!prefixes-slice :last-prefix byte prefixes)))
-                        (the (integer 0 15) (1- cnt))
-                        x86)))
-                 ;; We do not tolerate more than one prefix from a prefix group.
-                 (mv t prefixes x86))))
+          (4 (mv-let
+               (flg next-rip)
+               (add-to-*ip start-rip 1 x86)
+               (if flg
+                   (mv flg prefixes x86)
+                 ;; Storing the group 4 prefix (possibly overwriting a
+                 ;; previously seen group 4 prefix) and going on...
+                 (get-prefixes
+                  next-rip
+                  (the (unsigned-byte 52)
+                    (!prefixes-slice
+                     :group-4-prefix byte
+                     (!prefixes-slice :last-prefix byte prefixes)))
+                  (the (integer 0 15) (1- cnt))
+                  x86))))
 
           (otherwise
            (mv t prefixes x86))))))
@@ -519,7 +531,6 @@
                            (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
                     (and (not flg) ;; No error in reading a byte
                          (equal prefix-byte-group-code 1)))
-                  (equal (prefixes-slice :group-1-prefix prefixes) 0)
                   (not (zp cnt))
                   (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
              (equal (get-prefixes start-rip prefixes cnt x86)
@@ -548,7 +559,6 @@
                            (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
                     (and (not flg) ;; No error in reading a byte
                          (equal prefix-byte-group-code 2)))
-                  (equal (prefixes-slice :group-2-prefix prefixes) 0)
                   (not (zp cnt))
                   (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
              (equal (get-prefixes start-rip prefixes cnt x86)
@@ -577,7 +587,6 @@
                            (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
                     (and (not flg) ;; No error in reading a byte
                          (equal prefix-byte-group-code 3)))
-                  (equal (prefixes-slice :group-3-prefix prefixes) 0)
                   (not (zp cnt))
                   (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
              (equal (get-prefixes start-rip prefixes cnt x86)
@@ -606,7 +615,6 @@
                            (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
                     (and (not flg) ;; No error in reading a byte
                          (equal prefix-byte-group-code 4)))
-                  (equal (prefixes-slice :group-4-prefix prefixes) 0)
                   (not (zp cnt))
                   (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
              (equal (get-prefixes start-rip prefixes cnt x86)
@@ -1382,7 +1390,7 @@
       (defsection 0F-38-three-byte-opcodes-table
         :parents (implemented-opcodes)
         :short "@('x86isa') Support for Opcodes in the @('0F 38') Three Byte
-        Map; @(see implemented-opcodes) for details."
+        Map; see @(see implemented-opcodes) for details."
         :long ,table-doc-string))))
 
 
@@ -1437,7 +1445,7 @@
       (defsection 0F-3A-three-byte-opcodes-table
         :parents (implemented-opcodes)
         :short "@('x86isa') Support for Opcodes in the @('0F 3A') Three Byte
-        Map; @(see implemented-opcodes) for details."
+        Map; see @(see implemented-opcodes) for details."
         :long ,table-doc-string))))
 
 (define three-byte-opcode-decode-and-execute
@@ -1470,7 +1478,7 @@
   (b* ((ctx 'three-byte-opcode-decode-and-execute)
 
        ((when (not (equal evex-prefixes 0)))
-        (!!ms-fresh :evex-encoded-instructions-currently-unsupported 
+        (!!ms-fresh :evex-encoded-instructions-currently-unsupported
                     evex-prefixes))
 
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
@@ -1630,7 +1638,7 @@
       (defsection two-byte-opcodes-table
         :parents (implemented-opcodes)
         :short "@('x86isa') Support for Opcodes in the Two-Byte Map (i.e.,
-        first opcode byte is 0x0F); @(see implemented-opcodes) for details."
+        first opcode byte is 0x0F); see @(see implemented-opcodes) for details."
         :long ,table-doc-string))))
 
 (define two-byte-opcode-decode-and-execute
@@ -1661,13 +1669,13 @@
   (b* ((ctx 'two-byte-opcode-decode-and-execute)
 
        ((when (not (equal evex-prefixes 0)))
-        (!!ms-fresh :evex-encoded-instructions-currently-unsupported 
+        (!!ms-fresh :evex-encoded-instructions-currently-unsupported
                     evex-prefixes))
 
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
         (rme08 temp-rip *cs* :x x86))
        ((when flg0)
-        (!!ms-fresh :opcode-byte-access-error flg0))       
+        (!!ms-fresh :opcode-byte-access-error flg0))
 
        ;; Possible values of opcode:
 
@@ -1768,7 +1776,7 @@
     (implies (and (canonical-address-p temp-rip)
                   (x86p x86))
              (x86p (two-byte-opcode-decode-and-execute
-                    start-rip temp-rip prefixes rex-byte vex-prefixes 
+                    start-rip temp-rip prefixes rex-byte vex-prefixes
                     evex-prefixes escape-byte x86)))
     :enable add-to-*ip-is-i48p-rewrite-rule))
 
@@ -1970,11 +1978,11 @@
     (if vex3-prefix?
         (cond (vex3-0F-map?
                (two-byte-opcode-decode-and-execute
-                start-rip temp-rip prefixes rex-byte vex-prefixes 
+                start-rip temp-rip prefixes rex-byte vex-prefixes
                 0 #x0F x86))
               (vex3-0F38-map?
                (three-byte-opcode-decode-and-execute
-                start-rip temp-rip prefixes rex-byte vex-prefixes 
+                start-rip temp-rip prefixes rex-byte vex-prefixes
                 0 #x38 x86))
               (vex3-0F3A-map?
                (three-byte-opcode-decode-and-execute
@@ -1986,7 +1994,7 @@
 
       ;; vex2: 0F Map:
       (two-byte-opcode-decode-and-execute
-       start-rip temp-rip prefixes rex-byte vex-prefixes 
+       start-rip temp-rip prefixes rex-byte vex-prefixes
        0 #x0F x86)))
 
   ///

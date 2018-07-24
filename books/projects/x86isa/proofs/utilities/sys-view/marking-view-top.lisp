@@ -1500,8 +1500,7 @@
     (implies
      (and
       (canonical-address-p (1+ start-rip))
-      (not (zp cnt))
-      (equal (prefixes-slice :group-1-prefix prefixes) 0)
+      (not (zp cnt))      
       (b* (((mv flg prefix-byte &)
             (rb-alt 1 start-rip :x x86))
            (prefix-byte-group-code
@@ -1564,7 +1563,6 @@
      (and
       (canonical-address-p (1+ start-rip))
       (not (zp cnt))
-      (equal (prefixes-slice :group-2-prefix prefixes) 0)
       (b* (((mv flg prefix-byte &)
             ;; (rml08 start-rip :x x86)
             (rb-alt 1 start-rip :x x86))
@@ -1626,7 +1624,6 @@
      (and
       (canonical-address-p (1+ start-rip))
       (not (zp cnt))
-      (equal (prefixes-slice :group-3-prefix prefixes) 0)
       (b* (((mv flg prefix-byte &)
             (rb-alt 1 start-rip :x x86))
            (prefix-byte-group-code
@@ -1687,7 +1684,6 @@
      (and
       (canonical-address-p (1+ start-rip))
       (not (zp cnt))
-      (equal (prefixes-slice :group-4-prefix prefixes) 0)
       (b* (((mv flg prefix-byte &)
             (rb-alt 1 start-rip :x x86))
            (prefix-byte-group-code
