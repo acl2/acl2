@@ -499,7 +499,7 @@
 
 (defsection defbyte-macro-definition
   :parents (defbyte)
-  :short "Definition of the @(tsee defyte) macro."
+  :short "Definition of the @(tsee defbyte) macro."
   :long "@(def defbyte)"
   (defmacro defbyte (size
                      &key
