@@ -342,11 +342,10 @@
 
 
 (defconst *message*
- "~|~%We suspect this conjecture should be proven by functional ~
-  instantiation of ~x0.  This suspicion is caused by ~x2, so ~
-  if this is not what you want to do, then you should disable ~
-  ~x2.  Accordingly, we suggest the following hint: ~
-  ~%~%~x1~%")
+ "~|~%We suspect this conjecture should be proven by functional instantiation ~
+  of ~x0.  This suspicion is caused by ~x2, so if this is not what you want ~
+  to do, then you should disable ~x2.  Accordingly, we suggest the following ~
+  :HINTS declaration: ~%~%~x1~%")
 
 
 
@@ -389,7 +388,7 @@
                                     :expand triggers)))
                (prog2$ (cw *message*
                            ,generic-theorem
-                           (list phrase hints)
+                           (cons phrase hints)
                            ,tagging-theorem)
                        hints))))))
 
