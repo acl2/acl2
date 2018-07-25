@@ -10,15 +10,37 @@
 
 (in-package "ACL2")
 
-(include-book "defbyte")
+(include-book "ubyte1")
+(include-book "ubyte2")
+(include-book "ubyte3")
+(include-book "ubyte4")
+(include-book "ubyte8")
+(include-book "ubyte16")
+(include-book "ubyte32")
+(include-book "ubyte64")
+(include-book "ubyte128")
+(include-book "ubyte256")
+
+(include-book "sbyte1")
+(include-book "sbyte2")
+(include-book "sbyte3")
+(include-book "sbyte4")
+(include-book "sbyte8")
+(include-book "sbyte16")
+(include-book "sbyte32")
+(include-book "sbyte64")
+(include-book "sbyte128")
+(include-book "sbyte256")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file uses DEFBYTE to generate fixtypes (and theorems)
+; The files includes by this file use DEFBYTE
+; to generate fixtypes (and theorems)
 ; for (lists of) unsigned and signed bytes of several common sizes.
 ; If fixtypes for (lists of) unsigned or signed bytes for a certain size
-; are needed but are not among the ones defined here,
-; this file can be easily extended to include such fixtypes.
+; are needed but are not among the ones already defined here,
+; new files can be easily added for such fixtypes,
+; and included in this file so they will all appear in the manual.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,127 +55,3 @@
      If fixtypes for (lists of) unsigned or signed bytes for a certain size
      are needed but are not among the ones defined here,
      they should be added here.")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defbyte 1
-  :signed nil
-  :pred ubyte1p
-  :lpred ubyte1-listp
-  :parents (defbyte-instances))
-
-(defbyte 2
-  :signed nil
-  :pred ubyte2p
-  :lpred ubyte2-listp
-  :parents (defbyte-instances))
-
-(defbyte 3
-  :signed nil
-  :pred ubyte3p
-  :lpred ubyte3-listp
-  :parents (defbyte-instances))
-
-(defbyte 4
-  :signed nil
-  :pred ubyte4p
-  :lpred ubyte4-listp
-  :parents (defbyte-instances))
-
-(defbyte 8
-  :signed nil
-  :pred ubyte8p
-  :lpred ubyte8-listp
-  :parents (defbyte-instances))
-
-(defbyte 16
-  :signed nil
-  :pred ubyte16p
-  :lpred ubyte16-listp
-  :parents (defbyte-instances))
-
-(defbyte 32
-  :signed nil
-  :pred ubyte32p
-  :lpred ubyte32-listp
-  :parents (defbyte-instances))
-
-(defbyte 64
-  :signed nil
-  :pred ubyte64p
-  :lpred ubyte64-listp
-  :parents (defbyte-instances))
-
-(defbyte 128
-  :signed nil
-  :pred ubyte128p
-  :lpred ubyte128-listp
-  :parents (defbyte-instances))
-
-(defbyte 256
-  :signed nil
-  :pred ubyte256p
-  :lpred ubyte256-listp
-  :parents (defbyte-instances))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defbyte 1
-  :signed t
-  :pred sbyte1p
-  :lpred sbyte1-listp
-  :parents (defbyte-instances))
-
-(defbyte 2
-  :signed t
-  :pred sbyte2p
-  :lpred sbyte2-listp
-  :parents (defbyte-instances))
-
-(defbyte 3
-  :signed t
-  :pred sbyte3p
-  :lpred sbyte3-listp
-  :parents (defbyte-instances))
-
-(defbyte 4
-  :signed t
-  :pred sbyte4p
-  :lpred sbyte4-listp
-  :parents (defbyte-instances))
-
-(defbyte 8
-  :signed t
-  :pred sbyte8p
-  :lpred sbyte8-listp
-  :parents (defbyte-instances))
-
-(defbyte 16
-  :signed t
-  :pred sbyte16p
-  :lpred sbyte16-listp
-  :parents (defbyte-instances))
-
-(defbyte 32
-  :signed t
-  :pred sbyte32p
-  :lpred sbyte32-listp
-  :parents (defbyte-instances))
-
-(defbyte 64
-  :signed t
-  :pred sbyte64p
-  :lpred sbyte64-listp
-  :parents (defbyte-instances))
-
-(defbyte 128
-  :signed t
-  :pred sbyte128p
-  :lpred sbyte128-listp
-  :parents (defbyte-instances))
-
-(defbyte 256
-  :signed t
-  :pred sbyte256p
-  :lpred sbyte256-listp
-  :parents (defbyte-instances))
