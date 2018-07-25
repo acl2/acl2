@@ -341,12 +341,6 @@
                        predicate-rewrite))))
 
 
-(defconst *message*
- "~|~%We suspect this conjecture should be proven by functional instantiation ~
-  of ~x0.  This suspicion is caused by ~x2, so if this is not what you want ~
-  to do, then you should disable ~x2.  Accordingly, we suggest the following ~
-  :HINTS declaration: ~%~%~x1~%")
-
 
 
 ; Of course, some of those hints can be computed.  Here we write a function to
@@ -366,7 +360,7 @@
 
      (defun ,new-hint-name (id clause world stable)
        (declare (xargs :mode :program)
-                (ignore world))
+                (ignore id world))
        (if (not stable)
            nil
          (let ((triggers (harvest-trigger clause ,trigger-symbol)))
@@ -374,7 +368,6 @@
                nil
              (let* ((others   (set-difference-equal clause triggers))
                     (hyps     (others-to-hyps others))
-                    (phrase   (string-for-tilde-@-clause-id-phrase id))
                     (fi-hints (build-hints triggers
                                            ,generic-theorem
                                            ,generic-hyps
@@ -386,9 +379,9 @@
                                            ,predicate-rewrite))
                     (hints    (list :use fi-hints
                                     :expand triggers)))
-               (prog2$ (cw *message*
-                           ,generic-theorem
-                           (cons phrase hints)
+               (prog2$ (cw "~|~%Attempting to discharge subgoal by a ~
+                            pick-a-point strategy; disable ~x1 to ~
+                            prevent this.~%~%"
                            ,tagging-theorem)
                        hints))))))
 
