@@ -35,6 +35,7 @@
 (include-book "fraig")
 (include-book "balance")
 (include-book "observability")
+(include-book "constprop")
 (include-book "abc-wrappers")
 
 (defxdoc aignet-comb-transforms
@@ -51,6 +52,7 @@ transforms.  The currently supported transforms are:</p>
 <li>@(see fraig)</li>
 <li>@(see rewrite)</li>
 <li>@(see observability-fix)</li>
+<li>@(see constprop)</li>
 <li>@(see abc-comb-simplify)</li>
 </ul>
 
@@ -145,6 +147,7 @@ for translating between ABC and aignet does not support xors.</p>"
    rewrite-config
    abc-comb-simp-config
    observability-config
+   constprop-config
    snapshot-config
    prune-config))
 
@@ -155,6 +158,7 @@ for translating between ABC and aignet does not support xors.</p>"
     (:fraig-config "Fraig")
     (:rewrite-config "Rewrite")
     (:observability-config "Observability")
+    (:constprop-config "Constprop")
     (:snapshot-config "Snapshot")
     (:prune-config "Prune")
     (t "Abc simplify")))
@@ -176,6 +180,8 @@ for translating between ABC and aignet does not support xors.</p>"
              (:rewrite-config (b* ((aignet2 (rewrite aignet aignet2 transform)))
                                 (mv aignet2 state)))
              (:observability-config (observability-fix aignet aignet2 transform state))
+             (:constprop-config (b* ((aignet2 (constprop aignet aignet2 transform)))
+                                  (mv aignet2 state)))
              (:snapshot-config (b* ((state (aignet-write-aiger (snapshot-config->filename transform)
                                                                aignet state))
                                     (aignet2 (aignet-raw-copy aignet aignet2)))
@@ -222,6 +228,8 @@ for translating between ABC and aignet does not support xors.</p>"
              (:rewrite-config (b* ((aignet (rewrite! aignet transform)))
                                 (mv aignet state)))
              (:observability-config (observability-fix! aignet transform state))
+             (:constprop-config (b* ((aignet (constprop! aignet transform)))
+                                  (mv aignet state)))
              (:snapshot-config (b* ((state (aignet-write-aiger (snapshot-config->filename transform)
                                                                aignet state)))
                                  (mv aignet state)))
