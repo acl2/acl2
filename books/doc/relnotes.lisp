@@ -254,12 +254,12 @@
  utilities</see> with a recognizer for symbols that name @(tsee defchoose)
  functions.</p>
 
- <p>Made several improvements to @(tsee directed-untranslate), including: one
- to avoid assertion errors that could occur when using @(tsee declare) forms
- with @(tsee let), @(tsee let*), or @(tsee mv-let) expressions: one to enhance
- insertion of appropriate @(tsee mv) calls; one to extend dropping of
- unused @(tsee let) bindings; and one to avoid an assertion error with
- @('mv-let') expressions.</p>
+ <p>Made several improvements to @(tsee directed-untranslate), including: avoid
+ assertion errors that could occur when using @(tsee declare) forms with @(tsee
+ let), @(tsee let*), or @(tsee mv-let) expressions: enhance insertion of
+ appropriate @(tsee mv) calls; extend dropping of unused @(tsee let) bindings;
+ avoid an assertion error with @('mv-let') expressions; and preserve basic uses
+ of @(tsee b*).</p>
 
  <p>Removed the @('keywords-of-keyword-value-list') utility, because it is
  subsumed by the built-in @(tsee evens) utility.</p>

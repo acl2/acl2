@@ -11175,7 +11175,7 @@
 (defstub assume-true-false-aggressive-p () t)
 (defattach assume-true-false-aggressive-p constant-nil-function-arity-0)
 
-(defun top-level-if-reduce-rec (test term not-flg)
+(defun top-level-if-reduce-rec (test term not-flg ts)
 
 ; See top-level-if-reduce.  We return (mv changedp reduced-term), where if
 ; changedp is nil, then reduced-term is EQ to term.
@@ -11187,31 +11187,51 @@
                      (equal test (fargn (fargn term 1) 1)))
                 (mv t (if not-flg (fargn term 2) (fargn term 3))))
                (t (mv-let (changedp-tbr tbr)
-                    (top-level-if-reduce-rec test (fargn term 2) not-flg)
+                    (top-level-if-reduce-rec test (fargn term 2) not-flg ts)
                     (mv-let (changedp-fbr fbr)
-                      (top-level-if-reduce-rec test (fargn term 3) not-flg)
+                      (top-level-if-reduce-rec test (fargn term 3) not-flg ts)
                       (cond ((or changedp-tbr changedp-fbr)
                              (mv t
-                                 (fcons-term* 'if (fargn term 1) tbr fbr)))
+                                 (cond ((equal tbr fbr)
+                                        tbr)
+                                       ((and (equal tbr *t*)
+                                             (equal fbr *nil*)
+                                             (ts= ts (ts-complement *ts-nil*)))
+
+; (thm (equal (not (equal (if x t nil) nil)) (not (equal x nil))))
+
+                                        (fargn term 1))
+                                       ((and (equal tbr *nil*)
+                                             (equal fbr *t*)
+                                             (ts= ts *nil*)
+                                             (ffn-symb-p (fargn term 1) 'not))
+
+; (thm (equal (equal (if (not x) nil t) nil) (equal x nil)))
+
+                                        (fargn (fargn term 1) 1))
+                                       (t
+                                        (fcons-term* 'if (fargn term 1) tbr fbr)))))
                             (t (mv nil term))))))))
         (t (mv nil term))))
 
-(defun top-level-if-reduce (test term not-flg)
+(defun top-level-if-reduce (test term not-flg ts)
 
 ; Reduce top-level subterms of term under the assumption that test is true if
 ; not-flg is nil, or under the assumption that test is false if not-flg is
-; true.  (Here, "top-level" is in the sense of the if-then-else structure: we
-; continue the search only through true and false branches of IF calls.)
-; Specifically: we reduce each top-level subterm (if test tbr fbr) to tbr if
-; not-flg is false, else to fbr; and we reduce each top-level subterm (if (not
-; test) tbr fbr) to fbr if not-flg is true, else to tbr.
+; true, so that (if not-flg (not test) test) has type ts if and only if the
+; result has type ts.  (Here, "top-level" is in the sense of the if-then-else
+; structure: we continue the search only through true and false branches of IF
+; calls.)  Specifically: we reduce each top-level subterm (if test tbr fbr) to
+; tbr if not-flg is false, else to fbr; we reduce each top-level subterm (if
+; (not test) tbr fbr) to fbr if not-flg is true, else to tbr; and we do a few
+; additional reductions to simplify certain if-subterms.
 
 ; For efficiency, it may be a good idea first to call (top-level-if-p test
 ; term) to determine whether there is any such opportunity for reduction,
 ; before doing the more elaborate term walk of top-level-if-reduce-rec.
 
   (mv-let (changedp val)
-    (top-level-if-reduce-rec test term not-flg)
+    (top-level-if-reduce-rec test term not-flg ts)
     (declare (ignore changedp))
     val))
 
@@ -11230,10 +11250,10 @@
 
 (defun type-alist-reducible-entries (term type-alist bound)
 
-; Return an entry (term2 ts . ttree) in type-alist for which term or (not term)
-; is a top-level test of term2.  Or, return nil if no such entry is found.
-; Bound is a natural number or nil; we look for up to bound-many entries,
-; except that nil represents that there is no bound.
+; Return a list of entries (term2 ts . ttree) in type-alist for which term or
+; (not term) is a top-level test of term2.  Bound is a natural number or nil;
+; we look for up to bound-many entries, except that nil represents that there
+; is no bound.
 
   (cond
    ((or (endp type-alist)
@@ -11250,7 +11270,8 @@
               (type-alist-reducible-entries term rest-type-alist bound-1)))
        (t (type-alist-reducible-entries term rest-type-alist bound-1)))))))
 
-(defun assume-true-false-aggressive-1 (entries tta fta x xttree wrld ignore0)
+(defun assume-true-false-aggressive-1 (entries tta fta x xttree wrld ignore0
+                                               not-flg)
   (cond
    ((endp entries)
     (mv nil nil tta fta nil))
@@ -11259,16 +11280,18 @@
            (term (car entry))
            (ts (cadr entry))
            (new-ttree (cons-tag-trees xttree (cddr entry)))
-           (new-tta (if (eq ignore0 :tta)
-                        tta
-                      (extend-type-alist (top-level-if-reduce x term nil)
-                                         ts new-ttree tta wrld)))
-           (new-fta (if (eq ignore0 :fta)
-                        fta
-                      (extend-type-alist (top-level-if-reduce x term t)
-                                         ts new-ttree fta wrld))))
+           (new-tta
+            (if (eq ignore0 :tta)
+                tta
+              (extend-type-alist (top-level-if-reduce x term not-flg ts)
+                                 ts new-ttree tta wrld)))
+           (new-fta
+            (if (eq ignore0 :fta)
+                fta
+              (extend-type-alist (top-level-if-reduce x term (not not-flg) ts)
+                                 ts new-ttree fta wrld))))
       (assume-true-false-aggressive-1
-       (cdr entries) new-tta new-fta x xttree wrld ignore0)))))
+       (cdr entries) new-tta new-fta x xttree wrld ignore0 not-flg)))))
 
 (defun assume-true-false-aggressive (x xttree force-flg dwp type-alist
                                        ens w pot-lst pt
@@ -11284,12 +11307,14 @@
      ((or mbt mbf)
       (mv mbt mbf tta fta ttree))
      (t
-      (let ((entries
-             (type-alist-reducible-entries x
-                                           type-alist
-                                           (and (natp bound) bound))))
-        (assume-true-false-aggressive-1
-         entries
+      (mv-let (not-flg atm)
+        (strip-not x)
+        (let ((entries
+               (type-alist-reducible-entries atm
+                                             type-alist
+                                             (and (natp bound) bound))))
+          (assume-true-false-aggressive-1
+           entries
 
 ; Each member of entries subsumes some member of the given type-alist.  It is
 ; tempting not to bother removing them from tta or fta.  But we have seen a
@@ -11298,9 +11323,9 @@
 ; when assume-true-false-aggressive-p was given attachment
 ; constant-nil-function-arity-0.
 
-         (set-difference-equal tta entries)
-         (set-difference-equal fta entries)
-         x xttree w ignore0))))))
+           (set-difference-equal tta entries)
+           (set-difference-equal fta entries)
+           atm xttree w ignore0 not-flg)))))))
 
 (defun assume-true-false (x xttree force-flg dwp type-alist ens w pot-lst pt
                             ignore0)

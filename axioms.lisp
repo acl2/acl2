@@ -8884,8 +8884,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     (list 'with-output
                           :stack :pop
                           (cons 'defthm (cdr event-form)))
-                    (list 'in-theory
-                          (list 'disable name))
+                    (list 'with-output
+                          :stack :pop
+                          :off :all
+                          :on 'event
+                          (list 'in-theory
+                                (list 'disable name)))
                     (list 'value-triple
                           (list 'quote (xd-name 'defthmd name))
                           :on-skip-proofs t)))))))
@@ -9603,10 +9607,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (symbolp key)
                               (plist-worldp world-alist))))
   (cons (cons symb (cons key value)) world-alist))
-
-; Occasionally you will find comments of the form:
-
-; On Metering
 
 ; Occasionally in this code you will see forms protected by
 ; #+acl2-metering.  If you (push :acl2-metering *features*) and then
@@ -16146,6 +16146,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; . val2)).
 
          (alistp val))
+        ((eq key :in-theory-redundant-okp)
+         (booleanp val))
         (t nil)))
 
 ; (set-state-ok t)
@@ -16542,11 +16544,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defvar *print-circle-stream* nil)
 
-(defun get-serialize-character (state)
-  (declare (xargs :guard (and (state-p state)
-                              (boundp-global 'serialize-character state))))
-  (f-get-global 'serialize-character state))
-
 (defun w (state)
   (declare (xargs :guard (state-p state)
 
@@ -16558,6 +16555,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
                   :verify-guards nil))
   (f-get-global 'current-acl2-world state))
+
+(defun get-serialize-character (state)
+  (declare (xargs :guard (and (state-p state)
+                              (boundp-global 'serialize-character state))))
+  (f-get-global 'serialize-character state))
 
 (defun hons-enabledp (state)
 
@@ -22437,6 +22439,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore toggle))
   nil)
 
+(defun get-in-theory-redundant-okp (state)
+  (declare (xargs :stobjs state
+                  :guard
+                  (alistp (table-alist 'acl2-defaults-table (w state)))))
+  (let ((pair (assoc-eq :in-theory-redundant-okp
+                        (table-alist 'acl2-defaults-table (w state)))))
+    (cond (pair (cdr pair))
+          (t ; default
+           nil))))
+
 #+acl2-loop-only
 (defmacro defttag (tag-name)
   (declare (xargs :guard (symbolp tag-name)))
@@ -25638,8 +25650,9 @@ Lisp definition."
 (defmacro count (item sequence &key (start '0) end)
   `(count-fn ,item ,sequence ,start ,end))
 
-; Skipped on first (:program mode) pass:
+; Skipped on first pass of the build:
 (verify-termination-boot-strap cpu-core-count)
+(verify-termination-boot-strap get-in-theory-redundant-okp)
 
 ; We need for sharp-atsign-alist to be compiled before it is called in
 ; *sharp-atsign-ar*, file basis.lisp.  So we put its definition here, along
@@ -27725,4 +27738,3 @@ Lisp definition."
           (set-compile-fns t)
           ,@x
           (set-compile-fns nil))))
-

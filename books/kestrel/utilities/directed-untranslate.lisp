@@ -109,17 +109,16 @@
  untranslation of a given term may change over time as the tool uses
  increasingly sophisticated heuristics.</li>
 
- <li>The heuristics may work best in the case that sterm is a simplification of
- tterm.</li>
+ <li>The heuristics may work best in the case that @('sterm') is a
+ simplification of @('tterm').</li>
 
- <li>The heuristics are also optimized for an intended use case in which
- @('sterm') has no @(tsee lambda) applications.  An attempt is made to insert
- suitable @('LET') and/or @('LET*') bindings into the result.  The utility
- @('directed-untranslate-no-lets') is similar but does not make such an
+ <li>When @('sterm') has no @(tsee lambda) applications, an attempt is made to
+ insert suitable @('LET') and/or @('LET*') bindings into the result.  The
+ utility @('directed-untranslate-no-lets') is similar but does not make such an
  attempt.</li>
 
  <li>Here are some features that are not yet implemented but might be in the
- future.
+ future, quite possibly only upon request.
 
  <ul>
 
@@ -128,11 +127,13 @@
  term @('tterm').  As it stands now, the original untranslated term @('uterm')
  is probably useless in that case.</li>
 
- <li>Macros including @(tsee b*), @(tsee case), and quite possibly others could
- probably be reasonably handled, but aren't yet.</li>
+ <li>More macros could quite reasonably be handled, but aren't yet, such as
+ @(tsee case).</li>
 
- <li>Support for preserving @('let'), @('let*'), and @(tsee mv-let) may be
- improved.</li>
+ <li>Support for preserving @(tsee let), @(tsee let*), @(tsee mv-let), and
+ @(tsee b*) may be improved.  In particular, @('b*') currently is preserved
+ only for certain simple bindings: @('(- expr)'), @('(var expr)'), and @('((mv
+ v1 ... vn) expr)').</li>
 
  </ul></li>
 
@@ -1359,7 +1360,12 @@
                   (and flg
                        `(mv-let ,vars
                           ,mv-let-body
-                          ,main-body)))))))
+                          ,main-body))))))
+        (('LET bindings main-body)
+         (and (consp (cdr bindings))
+              `(mv-let ,(strip-cars bindings)
+                 (mv ,@(strip-cadrs bindings))
+                 ,main-body))))
       x))
 
 (defun expand-mv-let (uterm tterm)
@@ -1470,6 +1476,9 @@
                                            exec-p wrld)))
        (du-make-mv-let ans wrld)))
     ((and (consp uterm) (eq (car uterm) 'let*))
+
+; Warning: If you change this, consider changing the case for b* below.
+
      (case-match uterm
        (('let* () . &)
         (directed-untranslate-rec
@@ -1500,6 +1509,79 @@
         (er hard 'directed-untranslate-rec
             "Implementation error: unexpected uterm, ~x0."
             uterm))))
+    ((and
+      (consp uterm)
+      (eq (car uterm) 'b*)
+
+; Warning: If you change this, consider changing the case for let* above.
+
+; We want to fall through if we encounter a b* case that's not handled, so we
+; structure this cond clause as just a non-nilvalue, not (test value).
+
+; Note: It's technically wrong to untranslate to b*, since someone may have b*
+; defined differently from how it's defined in std/util/bstar.lisp.  But we
+; view directed-untranslate as essentially heuristic, so we can live with that
+; technical "unsoundness" that, in fact, is very likely ever to be relevant.
+
+      (case-match uterm
+        (('b* () rest)
+         (directed-untranslate-rec
+          rest tterm sterm iff-flg lflg exec-p wrld))
+        (('b* ((('mv . vars) val) . bindings) rest)
+         (let ((x (directed-untranslate-rec
+                   `(mv-let ,vars
+                      ,val
+                      (b* ,bindings ,rest))
+                   tterm sterm iff-flg lflg exec-p wrld)))
+           (case-match x
+             (('mv-let !vars val2 ('b* bindings2 rest2))
+              `(b* (((mv ,@vars) ,val2) ,@bindings2)
+                 ,rest2))
+             (('mv-let !vars val2 rest2)
+              `(b* (((mv ,@vars) ,val2))
+                 ,rest2))
+             (& x))))
+        (('b* ((var val) . bindings) rest)
+         (cond
+          ((eq var '-)
+           (case-match tterm
+             (('return-last '(quote progn) val2 rest2)
+              (case-match sterm
+                (('return-last '(quote progn) val3 rest3)
+                 (let ((val4 (directed-untranslate-rec
+                              val val2 val3 nil lflg exec-p wrld))
+                       (rest4 (directed-untranslate-rec
+                               (list 'b* bindings rest)
+                               rest2 rest3 iff-flg lflg exec-p wrld)))
+                   (case-match rest4
+                     (('b* bindings5 rest5)
+                      `(b* ((- ,val4) ,@bindings5) ,rest5))
+                     (& `(prog2$ ,val4 ,rest4)))))
+                (& ; prog2$ was probably just blown away
+                 (directed-untranslate-rec
+                  (list 'b* bindings rest)
+                  rest2 sterm iff-flg lflg exec-p wrld))))
+             (& (er hard 'directed-untranslate-rec
+                    "Implementation error: unexpected translation of ~x0:~|~x1."
+                    uterm tterm))))
+          ((symbolp var)
+           (let ((x (directed-untranslate-rec
+                     `(let ((,var ,val))
+                        (b* ,bindings ,rest))
+                     tterm sterm iff-flg lflg exec-p wrld)))
+             (case-match x
+               (('let ((var2 val2)) ('b* bindings2 rest2))
+                `(b* ((,var2 ,val2) ,@bindings2)
+                   ,rest2))
+               (('let ((var2 val2)) rest2)
+                `(b* ((,var2 ,val2))
+                   ,rest2))
+               (& x))))
+          (t nil)))
+         (& ; impossible
+          (er hard 'directed-untranslate-rec
+              "Implementation error: unexpected uterm, ~x0."
+              uterm)))))
     ((and (lambda-applicationp tterm)
           (lambda-applicationp sterm)
           (consp uterm)

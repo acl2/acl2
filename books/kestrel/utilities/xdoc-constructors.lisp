@@ -375,4 +375,4 @@
    This is a @('@(def ...)') directive.
    The name is supplied as an argument.
    </p>"
-  (concatenate 'string "@(def " name))
+  (concatenate 'string "@(def " name ")"))
