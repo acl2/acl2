@@ -449,7 +449,7 @@
        (defsection ,type
          :parents ,parents
          :short ,(concatenate 'string
-                              "<see topic='@(url fty)'>Fixtype</see> of "
+                              "<see topic='@(url acl2::fty)'>Fixtype</see> of "
                               bytes-string
                               ".")
          ,@(and long `(:long ,long))
@@ -463,7 +463,7 @@
          :elt-type ,type
          :parents (,type)
          :short ,(concatenate 'string
-                              "<see topic='@(url fty)'>Fixtype</see> of "
+                              "<see topic='@(url acl2::fty)'>Fixtype</see> of "
                               "true lists of "
                               bytes-string
                               ".")
