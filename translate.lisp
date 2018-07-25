@@ -4464,8 +4464,9 @@
 ; This function has the same effect as warning1, except that printing is in a
 ; wormhole and hence doesn't modify state.
 
-  (declare (xargs :guard (and (stringp summary)
-                              (standard-string-p summary)
+  (declare (xargs :guard (and (or (null summary)
+                                  (and (stringp summary)
+                                       (standard-string-p summary)))
                               (alistp alist)
                               (plist-worldp wrld)
                               (standard-string-alistp
@@ -4500,12 +4501,12 @@
 
 (defmacro warning$-cw (ctx &rest args)
 
-; This differs from warning$-cw1 only in that state-vars and wrld are bound
-; here for the user, so that warnings are not suppressed merely by virtue of
-; the value of state global 'ld-skip-proofsp.  Thus, unlike warning$ and
-; warning$-cw, there is no warning string, and a typical use of this macro
-; might be:
-; (warning$-cw ctx "The :REWRITE rule ~x0 loops forever." name).
+; This differs from warning$-cw1 in that state-vars and wrld are bound here for
+; the user, warnings are not suppressed based on the value of state global
+; 'ld-skip-proofsp, and there is no summary string.  A typical use of this
+; macro might be as follows.
+
+; (warning$-cw ctx "The :REWRITE rule ~x0 loops forever." name)
 
   `(let ((state-vars (default-state-vars nil))
          (wrld nil))
