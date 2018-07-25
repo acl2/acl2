@@ -76,13 +76,13 @@
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (the (unsigned-byte 8) (prefixes-slice :group-2-prefix prefixes)))
+       (p2 (the (unsigned-byte 8) (prefixes-slice :seg prefixes)))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (byte-operand? (equal opcode #x88))
        ((the (integer 1 8) operand-size)
@@ -154,13 +154,13 @@
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (byte-operand? (equal opcode #x8A))
        ((the (integer 1 8) operand-size)
@@ -222,12 +222,12 @@
        ;; This instruction does not require a ModR/M byte.
 
        ;; Get prefixes:
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        ;; The Intel manual says the following:
 
@@ -313,7 +313,7 @@
 
   (b* ((ctx 'x86-mov-Op/En-OI)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -373,12 +373,12 @@
        (mod (mrm-mod modr/m))
        (r/m (mrm-r/m modr/m))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (byte-operand? (eql opcode #xC6))
        ((the (integer 1 8) imm-size)
@@ -477,11 +477,11 @@
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        ;; this is the operand size
        ;; in Intel manual, Mar'17, Vol 2, Tables 3-53 and 3-54:
@@ -548,13 +548,13 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
 
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size nil rex-byte t prefixes x86))
        (inst-ac? t)
@@ -623,16 +623,16 @@
                   (not (equal evex-prefixes 0))))
         ;; VEX/EVEX encoding illegal.
         (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))       
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
        (reg/mem-size (if (equal opcode #xBE) 1 2))
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
@@ -714,12 +714,12 @@
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (reg/mem-size (if (equal opcode #xB6) 1 2))
        (inst-ac? t)
@@ -811,7 +811,7 @@
        ;; The reg field specifies the control register (source).
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (cpl (cpl x86))

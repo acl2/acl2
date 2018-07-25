@@ -72,7 +72,7 @@
 
   (b* ((ctx 'x86-cbw/cwd/cdqe)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -129,7 +129,7 @@
 
   (b* ((ctx 'x86-cwd/cdq/cqo)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (badlength? (check-instruction-length start-rip temp-rip 0))

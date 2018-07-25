@@ -99,12 +99,12 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (select-byte-operand (equal opcode #xF6))
        ((the (integer 1 8) reg/mem-size)
@@ -232,12 +232,12 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (select-byte-operand (equal opcode #xF6))
        ((the (integer 1 8) reg/mem-size)

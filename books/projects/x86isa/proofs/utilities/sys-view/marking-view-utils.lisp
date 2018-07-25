@@ -1131,29 +1131,30 @@
                     (:linear bitops::logior-<-0-linear-1)))))
 
   (defthm get-prefixes-opener-lemma-group-1-prefix-in-marking-view
-    (implies
-     (and
-      (64-bit-modep x86) ; added
-      (canonical-address-p (1+ start-rip))
-      (not (zp cnt))
-      (equal (prefixes-slice :group-1-prefix prefixes) 0)
-      (let*
-          ((flg (mv-nth 0 (rml08 start-rip :x x86)))
-           (prefix-byte-group-code
-            (get-one-byte-prefix-array-code (mv-nth 1 (rml08 start-rip :x x86)))))
-        (and (not flg)
-             (equal prefix-byte-group-code 1))))
-     (equal (get-prefixes start-rip prefixes cnt x86)
-            (get-prefixes (+ 1 start-rip)
+    (b* (((mv flg byte new-x86) (rml08 start-rip :x x86))
+         (prefix-byte-group-code
+          (get-one-byte-prefix-array-code byte)))
+      (implies
+       (and
+        (64-bit-modep x86) ; added
+        (canonical-address-p (1+ start-rip))
+        (not (zp cnt))      
+        (not flg)
+        (equal prefix-byte-group-code 1))
+       (equal
+        (get-prefixes start-rip prefixes cnt x86)
+        (get-prefixes (+ 1 start-rip)
+                      (if (equal byte #.*lock*)
                           (!prefixes-slice
-                           :group-1-prefix
-                           (mv-nth 1 (rml08 start-rip :x x86))
+                           :lck byte
                            (!prefixes-slice
-                            :last-prefix
-                            (mv-nth 1 (rml08 start-rip :x x86))
-                            prefixes))
-                          (+ -1 cnt)
-                          (mv-nth 2 (rml08 start-rip :x x86)))))
+                            :last-prefix #.*lck-pfx* prefixes))
+                        (!prefixes-slice
+                         :rep byte
+                         (!prefixes-slice
+                          :last-prefix #.*rep-pfx* prefixes)))
+                      (+ -1 cnt)
+                      new-x86))))
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
              :in-theory (e/d* (get-prefixes
@@ -1170,21 +1171,21 @@
               (64-bit-modep x86) ; added
               (canonical-address-p (1+ start-rip))
               (not (zp cnt))
-              (equal (prefixes-slice :group-2-prefix prefixes) 0)
               (let*
                   ((flg (mv-nth 0 (rml08 start-rip :x x86)))
                    (prefix-byte-group-code
-                    (get-one-byte-prefix-array-code (mv-nth 1 (rml08 start-rip :x x86)))))
+                    (get-one-byte-prefix-array-code
+                     (mv-nth 1 (rml08 start-rip :x x86)))))
                 (and (not flg)
                      (equal prefix-byte-group-code 2))))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice
-                                   :group-2-prefix
+                                   :seg
                                    (mv-nth 1 (rml08 start-rip :x x86))
                                    (!prefixes-slice
                                     :last-prefix
-                                    (mv-nth 1 (rml08 start-rip :x x86))
+                                    #.*seg-pfx*
                                     prefixes))
                                   (1- cnt)
                                   (mv-nth 2 (rml08 start-rip :x x86)))))
@@ -1204,21 +1205,21 @@
               (64-bit-modep x86) ; added
               (canonical-address-p (1+ start-rip))
               (not (zp cnt))
-              (equal (prefixes-slice :group-3-prefix prefixes) 0)
               (let*
                   ((flg (mv-nth 0 (rml08 start-rip :x x86)))
                    (prefix-byte-group-code
-                    (get-one-byte-prefix-array-code (mv-nth 1 (rml08 start-rip :x x86)))))
+                    (get-one-byte-prefix-array-code
+                     (mv-nth 1 (rml08 start-rip :x x86)))))
                 (and (not flg)
                      (equal prefix-byte-group-code 3))))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice
-                                   :group-3-prefix
+                                   :opr
                                    (mv-nth 1 (rml08 start-rip :x x86))
                                    (!prefixes-slice
                                     :last-prefix
-                                    (mv-nth 1 (rml08 start-rip :x x86))
+                                    #.*opr-pfx*
                                     prefixes))
                                   (1- cnt)
                                   (mv-nth 2 (rml08 start-rip :x x86)))))
@@ -1238,21 +1239,21 @@
               (64-bit-modep x86) ; added
               (canonical-address-p (1+ start-rip))
               (not (zp cnt))
-              (equal (prefixes-slice :group-4-prefix prefixes) 0)
               (let*
                   ((flg (mv-nth 0 (rml08 start-rip :x x86)))
                    (prefix-byte-group-code
-                    (get-one-byte-prefix-array-code (mv-nth 1 (rml08 start-rip :x x86)))))
+                    (get-one-byte-prefix-array-code
+                     (mv-nth 1 (rml08 start-rip :x x86)))))
                 (and (not flg)
                      (equal prefix-byte-group-code 4))))
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice
-                                   :group-4-prefix
+                                   :adr
                                    (mv-nth 1 (rml08 start-rip :x x86))
                                    (!prefixes-slice
                                     :last-prefix
-                                    (mv-nth 1 (rml08 start-rip :x x86))
+                                    #.*adr-pfx*
                                     prefixes))
                                   (1- cnt)
                                   (mv-nth 2 (rml08 start-rip :x x86)))))
@@ -1267,7 +1268,7 @@
                                negative-logand-to-positive-logand-with-integerp-x
                                force (force))))))
 
-  ;; Get-prefixes and xlate-equiv-memory:
+  ;; Get-prefixes and xlate-equiv-memory:  
 
   ;; The following definition has not been changed after extending GET-PREFIXES
   ;; to use ADD-TO-*IP instead of just incrementing RIP by 1 (and checking that
@@ -1308,128 +1309,98 @@
                   x86-1 x86-2))
 
           (case prefix-byte-group-code
-            (1 (let ((prefix-1?
-                      (prefixes-slice :group-1-prefix prefixes)))
-                 (if (or (eql 0 (the (unsigned-byte 8) prefix-1?))
-                         ;; Redundant Prefix Okay
-                         (eql byte prefix-1?))
-                     (let ((next-rip (the (signed-byte
-                                           #.*max-linear-address-size+1*)
-                                       (1+ start-rip))))
-                       (if (mbe :logic (canonical-address-p next-rip)
-                                :exec
-                                (< (the (signed-byte
-                                         #.*max-linear-address-size+1*)
-                                     next-rip)
-                                   #.*2^47*))
-                           ;; Storing the group 1 prefix and going on...
-                           (get-prefixes-two-x86-induct-hint
-                            next-rip
-                            (the (unsigned-byte 43)
-                              (!prefixes-slice
-                               :group-1-prefix
-                               byte
-                               (!prefixes-slice
-                                :last-prefix
-                                byte
-                                prefixes)))
-                            (the (integer 0 5) (1- cnt))
-                            x86-1
-                            x86-2)
-                         (mv (cons 'non-canonical-address next-rip)
-                             prefixes x86-1 x86-2)))
-                   ;; We do not tolerate more than one prefix from a prefix group.
-                   (mv t prefixes x86-1 x86-2))))
+            
+            (1       
+             (let ((next-rip (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               (1+ start-rip))))
+               (if (mbe :logic (canonical-address-p next-rip)
+                        :exec
+                        (< (the (signed-byte
+                                 #.*max-linear-address-size+1*)
+                             next-rip)
+                           #.*2^47*))
+                   ;; Storing the group 1 prefix and going on...
+                   (get-prefixes-two-x86-induct-hint
+                    next-rip
+                    (if (equal byte *lock*)
+                        (!prefixes-slice :lck byte
+                                         (!prefixes-slice
+                                          :last-prefix *lck-pfx* prefixes))
+                      (!prefixes-slice
+                       :rep byte
+                       (!prefixes-slice
+                        :last-prefix *rep-pfx* prefixes)))
+                    (1- cnt)
+                    x86-1
+                    x86-2)
+                 (mv (cons 'non-canonical-address next-rip)
+                     prefixes x86-1 x86-2))))
 
-            (2 (let ((prefix-2?
-                      (prefixes-slice :group-2-prefix prefixes)))
-                 (if (or (eql 0 (the (unsigned-byte 8) prefix-2?))
-                         ;; Redundant Prefixes Okay
-                         (eql byte (the (unsigned-byte 8) prefix-2?)))
-                     (let ((next-rip (the (signed-byte
-                                           #.*max-linear-address-size+1*)
-                                       (1+ start-rip))))
-                       (if (mbe :logic (canonical-address-p next-rip)
-                                :exec
-                                (< (the (signed-byte
-                                         #.*max-linear-address-size+1*)
-                                     next-rip)
-                                   #.*2^47*))
-                           ;; Storing the group 2 prefix and going on...
-                           (get-prefixes-two-x86-induct-hint
-                            next-rip
-                            (!prefixes-slice :group-2-prefix
-                                             byte
-                                             (!prefixes-slice
-                                              :last-prefix
-                                              byte
-                                              prefixes))
-                            (the (integer 0 5) (1- cnt))
-                            x86-1 x86-2)
-                         (mv (cons 'non-canonical-address next-rip)
-                             prefixes x86-1 x86-2)))
-                   ;; We do not tolerate more than one prefix from a prefix group.
-                   (mv t prefixes x86-1 x86-2))))
+            (2
+             (let ((next-rip (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               (1+ start-rip))))
+               (if (mbe :logic (canonical-address-p next-rip)
+                        :exec
+                        (< (the (signed-byte
+                                 #.*max-linear-address-size+1*)
+                             next-rip)
+                           #.*2^47*))
+                   ;; Storing the group 2 prefix and going on...
+                   (get-prefixes-two-x86-induct-hint
+                    next-rip
+                    (!prefixes-slice
+                     :seg byte
+                     (!prefixes-slice
+                      :last-prefix *seg-pfx* prefixes))
+                    (1- cnt)
+                    x86-1 x86-2)
+                 (mv (cons 'non-canonical-address next-rip)
+                     prefixes x86-1 x86-2))))
 
-            (3 (let ((prefix-3?
-                      (prefixes-slice :group-3-prefix prefixes)))
-                 (if (or (eql 0 (the (unsigned-byte 8) prefix-3?))
-                         ;; Redundant Prefix Okay
-                         (eql byte (the (unsigned-byte 8) prefix-3?)))
+            (3 
+             (let ((next-rip (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               (1+ start-rip))))
+               (if (mbe :logic (canonical-address-p next-rip)
+                        :exec
+                        (< (the (signed-byte
+                                 #.*max-linear-address-size+1*)
+                             next-rip)
+                           #.*2^47*))
+                   ;; Storing the group 3 prefix and going on...
+                   (get-prefixes-two-x86-induct-hint
+                    next-rip
+                    (!prefixes-slice
+                     :opr byte
+                     (!prefixes-slice
+                      :last-prefix *opr-pfx* prefixes))
+                    (1- cnt) x86-1 x86-2)
+                 (mv (cons 'non-canonical-address next-rip)
+                     prefixes x86-1 x86-2))))
 
-                     (let ((next-rip (the (signed-byte
-                                           #.*max-linear-address-size+1*)
-                                       (1+ start-rip))))
-                       (if (mbe :logic (canonical-address-p next-rip)
-                                :exec
-                                (< (the (signed-byte
-                                         #.*max-linear-address-size+1*)
-                                     next-rip)
-                                   #.*2^47*))
-                           ;; Storing the group 3 prefix and going on...
-                           (get-prefixes-two-x86-induct-hint
-                            next-rip
-                            (!prefixes-slice :group-3-prefix
-                                             byte
-                                             (!prefixes-slice
-                                              :last-prefix
-                                              byte
-                                              prefixes))
-                            (the (integer 0 5) (1- cnt)) x86-1 x86-2)
-                         (mv (cons 'non-canonical-address next-rip)
-                             prefixes x86-1 x86-2)))
-                   ;; We do not tolerate more than one prefix from a prefix group.
-                   (mv t prefixes x86-1 x86-2))))
-
-            (4 (let ((prefix-4?
-                      (prefixes-slice :group-4-prefix prefixes)))
-                 (if (or (eql 0 (the (unsigned-byte 8) prefix-4?))
-                         ;; Redundant Prefix Okay
-                         (eql byte (the (unsigned-byte 8) prefix-4?)))
-                     (let ((next-rip (the (signed-byte
-                                           #.*max-linear-address-size+1*)
-                                       (1+ start-rip))))
-                       (if (mbe :logic (canonical-address-p next-rip)
-                                :exec
-                                (< (the (signed-byte
-                                         #.*max-linear-address-size+1*)
-                                     next-rip)
-                                   #.*2^47*))
-                           ;; Storing the group 4 prefix and going on...
-                           (get-prefixes-two-x86-induct-hint
-                            next-rip
-                            (!prefixes-slice :group-4-prefix
-                                             byte
-                                             (!prefixes-slice
-                                              :last-prefix
-                                              byte
-                                              prefixes))
-                            (the (integer 0 5) (1- cnt))
-                            x86-1 x86-2)
-                         (mv (cons 'non-canonical-address next-rip)
-                             prefixes x86-1 x86-2)))
-                   ;; We do not tolerate more than one prefix from a prefix group.
-                   (mv t prefixes x86-1 x86-2))))
+            (4 
+             (let ((next-rip (the (signed-byte
+                                   #.*max-linear-address-size+1*)
+                               (1+ start-rip))))
+               (if (mbe :logic (canonical-address-p next-rip)
+                        :exec
+                        (< (the (signed-byte
+                                 #.*max-linear-address-size+1*)
+                             next-rip)
+                           #.*2^47*))
+                   ;; Storing the group 4 prefix and going on...
+                   (get-prefixes-two-x86-induct-hint
+                    next-rip
+                    (!prefixes-slice
+                     :adr byte
+                     (!prefixes-slice
+                      :last-prefix *adr-pfx* prefixes))
+                    (1- cnt)
+                    x86-1 x86-2)
+                 (mv (cons 'non-canonical-address next-rip)
+                     prefixes x86-1 x86-2))))
 
             (otherwise
              (mv t prefixes x86-1 x86-2)))))))

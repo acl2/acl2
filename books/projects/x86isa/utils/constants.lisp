@@ -163,12 +163,19 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   (defconst *prefixes-layout*
     '((:num-prefixes      0  4) ;; Number of prefixes
-      (:group-1-prefix    4  8) ;; Lock, Repeat prefix
-      (:group-2-prefix   12  8) ;; Segment Override prefix
-      (:group-3-prefix   20  8) ;; Operand-Size Override prefix
-      (:group-4-prefix   28  8) ;; Address-Size Override prefix
-      (:next-byte        36  8) ;; Byte following the prefixes
-      (:last-prefix      44  8) ;; Last prefix byte
+      (:lck               4  8) ;; Lock prefix
+      (:rep              12  8) ;; Repeat prefix
+      (:seg              20  8) ;; Segment Override prefix
+      (:opr              28  8) ;; Operand-Size Override prefix
+      (:adr              36  8) ;; Address-Size Override prefix
+      (:next-byte        44  8) ;; Byte immediately following the prefixes
+      (:last-prefix      52  3) ;; Last prefix byte:
+                                ;; 001b: lck (*lck-pfx*)
+                                ;; 010b: rep (*rep-pfx*)
+                                ;; 011b: seg (*seg-pfx*)
+                                ;; 100b: opr (*opr-pfx*)
+                                ;; 101b: adr (*adr-pfx*)
+                                ;; otherwise: none
       ))
 
   ;; Comment about why we need the :last-prefix field:
@@ -191,14 +198,14 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   ;; errors when appropriate.
 
   (defthm prefixes-table-ok
-    (layout-constant-alistp *prefixes-layout* 0 52)
+    (layout-constant-alistp *prefixes-layout* 0 55)
     :rule-classes nil)
 
   (defmacro prefixes-slice (flg prefixes)
-    (slice flg prefixes 52 *prefixes-layout*))
+    (slice flg prefixes 55 *prefixes-layout*))
 
   (defmacro !prefixes-slice (flg val reg)
-    (!slice flg val reg 52 *prefixes-layout*)))
+    (!slice flg val reg 55 *prefixes-layout*)))
 
 (defsection vex-prefixes-layout-structures
 

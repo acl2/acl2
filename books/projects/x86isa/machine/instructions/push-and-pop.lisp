@@ -117,11 +117,11 @@
 
   (b* ((ctx 'x86-push-general-register)
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
+                 (prefixes-slice :opr prefixes)))
 
        ((the (integer 1 8) operand-size)
         (if (64-bit-modep x86)
@@ -201,14 +201,14 @@
 
   (b* ((ctx 'x86-push-Ev)
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
+                 (prefixes-slice :opr prefixes)))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
 
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
@@ -312,11 +312,11 @@
 
   (b* ((ctx 'x86-push-I)
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
+                 (prefixes-slice :opr prefixes)))
 
        (byte-imm? (eql opcode #x6A))
        ((the (integer 1 8) imm-size)
@@ -418,8 +418,9 @@
                   (not (equal evex-prefixes 0))))
         ;; VEX/EVEX encoding illegal.
         (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ;; PUSH CS/SS/DS/ES are invalid in 64-bit mode:
        ((when (and (64-bit-modep x86)
@@ -427,7 +428,7 @@
         (!!fault-fresh :ud nil :push-segment-64-bit-mode opcode)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
+                 (prefixes-slice :opr prefixes)))
 
        ((the (integer 1 8) operand-size)
         (if (64-bit-modep x86)
@@ -511,11 +512,11 @@
 
   (b* ((ctx 'x86-pop-general-register)
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
+                 (prefixes-slice :opr prefixes)))
 
        ((the (integer 1 8) operand-size)
         (if (64-bit-modep x86)
@@ -595,14 +596,14 @@
 
   (b* ((ctx 'x86-pop-Ev)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
+                   (prefixes-slice :opr prefixes)))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
@@ -718,7 +719,7 @@
 ;;   :body
 
 ;;   (b* ((ctx 'x86-pop-Ev)
-;;        (lock (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+;;        (lock (equal #.*lock* (prefixes-slice :lck prefixes)))
 ;;        ((when lock)
 ;;         (!!ms-fresh :lock-prefix prefixes))
 ;;        (p2 (prefixes-slice :group-2-prefix prefixes))
@@ -823,11 +824,11 @@
 
   (b* ((ctx 'x86-pushf)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
+                   (prefixes-slice :opr prefixes)))
 
        ((the (integer 1 8) operand-size)
         (if (64-bit-modep x86)
@@ -957,11 +958,11 @@
 
   (b* ((ctx 'x86-popf)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
+                   (prefixes-slice :opr prefixes)))
 
        ((the (integer 1 8) operand-size)
         (if (64-bit-modep x86)
@@ -1071,7 +1072,7 @@
 
        ((when (64-bit-modep x86)) (!!fault-fresh :ud nil)) ;; #UD
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 2 4) operand-size)
@@ -1202,7 +1203,7 @@
 
        ((when (64-bit-modep x86)) (!!fault-fresh :ud nil)) ;; #UD
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 2 4) operand-size)

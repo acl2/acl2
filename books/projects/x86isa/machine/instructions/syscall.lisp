@@ -71,7 +71,7 @@
 
   (b* ((ctx 'x86-syscall-app-view)
        ;; 64-bit mode exceptions
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        ((when (or (not (equal vex-prefixes 0))
@@ -225,7 +225,7 @@
 
   (b* ((ctx 'x86-syscall)
        ;; 64-bit mode exceptions
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes))
        ((when (or (not (equal vex-prefixes 0))
@@ -498,7 +498,7 @@ REX.W + 0F 07: SYSRET</p>
        ;; 64-bit mode exceptions
 
        ;; If the LOCK prefix is used...
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 

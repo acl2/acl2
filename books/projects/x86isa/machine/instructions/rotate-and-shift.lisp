@@ -124,16 +124,16 @@
 
   (b* ((ctx 'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
 
-       (lock (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
        (reg (mrm-reg modr/m))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (byte-operand? (or (equal opcode #xC0)
                           (equal opcode #xD0)

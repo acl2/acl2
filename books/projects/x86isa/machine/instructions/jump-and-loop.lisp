@@ -100,11 +100,11 @@
 
   (b* ((ctx 'x86-near-jmp-Op/En-D)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes))) 
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
+                   (prefixes-slice :opr prefixes)))
 
        ((the (integer 0 4) offset-size)
         (if (eql opcode #xEB) ; jump short
@@ -164,8 +164,8 @@
 
   (b* ((ctx 'x86-near-jmp-Op/En-M)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        ;; Note that the reg field serves as an opcode extension for
@@ -173,11 +173,11 @@
        ;; function is called.
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
+                   (prefixes-slice :opr prefixes)))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        ((the (integer 2 8) operand-size)
         (if (64-bit-modep x86)
@@ -307,8 +307,8 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        ((when (not (64-bit-modep x86)))
         (!!ms-fresh :far-jmp-unimplemented-in-32-bit-mode))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
@@ -322,9 +322,9 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        ((when (equal mod #b11))
         (!!ms-fresh :source-operand-not-memory-location mod))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (offset-size
         ;; Offset size can be 2, 4, or 8 bytes.
@@ -781,8 +781,8 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
   (b* ((ctx 'x86-loop)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ;; temp-rip right now points to the rel8 byte.  Add 1 to
        ;; temp-rip to account for rel8 when computing the length
@@ -792,7 +792,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        ((the (integer 2 8) counter-size) (select-address-size p4? x86))
        (counter (rgfi-size counter-size *rcx* rex-byte x86))

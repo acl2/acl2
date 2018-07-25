@@ -116,7 +116,7 @@
         ;; VEX/EVEX encoding illegal.
         (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
        (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
+                  (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
@@ -125,7 +125,7 @@
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
        (p3 (equal #.*operand-size-override*
-                  (prefixes-slice :group-3-prefix prefixes)))
+                  (prefixes-slice :opr prefixes)))
 
        ((the (integer 2 8) operand-size)
         (if (logbitp *w* rex-byte)
@@ -138,10 +138,10 @@
        ((the (unsigned-byte 4) rgf-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
 
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
        (inst-acc? t)
        ((mv flg0 reg/mem
             (the (integer 0 4) increment-RIP-by)

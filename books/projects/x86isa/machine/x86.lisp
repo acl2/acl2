@@ -44,6 +44,7 @@
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "std/strings/hexify" :dir :system)
 
+(local (include-book "dispatch"))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
@@ -114,7 +115,7 @@
 
 (define get-prefixes
   ((start-rip :type (signed-byte   #.*max-linear-address-size*))
-   (prefixes  :type (unsigned-byte 52))
+   (prefixes  :type (unsigned-byte 55))
    (cnt       :type (integer 0 15))
    x86)
 
@@ -151,25 +152,24 @@
 
   <ul>
 
-  <li>
-  <p>We keep overwriting the @(':last-prefix') field in every recursive
-  call with the prefix read from the instruction stream --- this way, at the
-  end of this function, we'll have the last legacy prefix in the current
-  instruction.  This information can be useful if we have mandatory prefixes
+  <li><p>We keep overwriting the @(':last-prefix') field in every recursive
+  call with the code for prefix read from the instruction
+  stream (@('*lck-pfx*'), @('*rep-pfx*'), @('*seg-pfx*'), @('*opr-pfx*'), or
+  @('*adr-pfx*')) --- this way, at the end of this function, we'll have the
+  last legacy prefix in the current instruction.  This information can be
+  useful if we have mandatory prefixes
   (i.e., for two- and three-byte opcode maps) --- the last prefix is the
   mandatory prefix, and the other prefixes are simply the usual modifiers.</p>
 
-  <p>If the value of @(':last-prefix') is anything other than the three SIMD
-  prefixes (0x66, 0xF2, or 0xF3), then it's irrelevant as far as the mandatory
-  prefix is concerned.  This is because all the functions that take the
-  mandatory prefix as input (e.g., modr/m detecting functions like @(tsee
+  <p>If the value of @(':last-prefix') indicates anything other than the three
+  SIMD prefixes (0x66, 0xF2, or 0xF3), then it's irrelevant as far as the
+  mandatory prefix is concerned.  This is because all the functions that take
+  the mandatory prefix as input (e.g., modr/m detecting functions like @(tsee
   64-bit-mode-two-byte-opcode-ModR/M-p), opcode dispatch functions like @(tsee
   second-three-byte-opcode-execute), etc.), detect the no mandatory prefix case
-  by checking that @(':last-prefix') is not a SIMD prefix.</p>
-  </li>
+  by checking that @(':last-prefix') does not indicate a SIMD prefix.</p></li>
 
-  <li>
-  <p>From <a
+  <li><p>From <a
   href='http://wiki.osdev.org/X86-64_Instruction_Encoding#Legacy_Prefixes'>OSDev
   Wiki</a>:</p>
 
@@ -182,8 +182,10 @@
    (in @('x86isa') books before Jul. 2018) didn't tolerate more than one prefix
   from a single prefix group, though we did accept redundant prefixes --- this
   was due to descriptions such as the above on non-Intel sources.  However,
-  after running tests on x86 machines, we have changed this function to ignore
-  all but the last prefix from a single prefix group.  For example:</p>
+  after running tests on modern x86 machines (circa ~2015-2018), we have
+  changed this function to ignore all but the last prefix from a single prefix
+  group.  The only exception in this case is for Group 1 prefixes --- see below
+  for details.  For example:</p>
 
   <ul>
   <li>@('0x64_88_00')    is @('mov byte ptr fs:[rax], al')</li>
@@ -199,18 +201,22 @@
   <li>@('0xf3_f2_a4') is @('repne movsb byte ptr [rdi], byte ptr [rsi]')</li>
   </ul>
 
+  <p>We now discuss the Group 1 exception below.</p>
+
+  <p>@('0xf0_f2_a4') is <b>NOT</b> <br/>
+  @('repne movsb byte ptr [rdi], byte ptr [rsi]') <br/>
+  It is: <br/>
+  @('lock repne movsb byte ptr [rdi], byte ptr [rsi]')</p>
+
+  <p>Note that lock and rep/repne are Group 1 prefixes.  It is important to
+  record the lock prefix, even if it is overshadowed by a rep/repne prefix,
+  because the former instruction will not @('#UD'), but the latter instruction
+  will.</p>
+
   <p>If you run into an example of where this is inconsistent with an x86
-  machine, please do get in touch!</p>
- </li>
+  machine, please do get in touch!</p></li>
 
   </ul>"
-
-  ;; TODO: The problem with this approach is that it'll ignore #UDs for illegal
-  ;; use of lock prefixes if the rep/repne prefixes are also used.  E.g.:
-  ;; 0xf0_f2_a4 should UD, but since f2 overshadows f0, it won't with the
-  ;; current implementation of get-prefixes.  I need a separate field for lock,
-  ;; and I should make the prefixes output a fixnum by making last-byte a 3-bit
-  ;; field.
 
   :prepwork
 
@@ -237,12 +243,22 @@
       ()
       (local (include-book "arithmetic-5/top" :dir :system))
 
-      (defthm negative-logand-to-positive-logand-with-n52p-x
+      (defthm get-prefixes-storing-last-byte-lemma
+        (implies (unsigned-byte-p 8 byte)
+                 (<
+                  (logior (logand
+                           #x7FFFFFFFF00FFF
+                           (logior #x20000000000000 (loghead 52 prefixes)))
+                          (ash byte 12))
+                  #x80000000000000))
+        :rule-classes :linear)
+
+      (defthm negative-logand-to-positive-logand-with-n55p-x
         (implies (and (< n 0)
                       (syntaxp (quotep n))
-                      (equal m 52)
+                      (equal m 55)
                       (integerp n)
-                      (n52p x))
+                      (n55p x))
                  (equal (logand n x)
                         (logand (logand (1- (ash 1 m)) n) x)))))))
 
@@ -273,69 +289,78 @@
 
         (case prefix-byte-group-code
 
-          (1 (mv-let
-               (flg next-rip)
-               (add-to-*ip start-rip 1 x86)
-               (if flg
-                   (mv flg prefixes x86)
-                 ;; Storing the group 1 prefix (possibly overwriting a
-                 ;; previously seen group 1 prefix) and going on...
+          (1
+           ;; LOCK (F0), REPE (F3), REPNE (F2)
+           (mv-let
+             (flg next-rip)
+             (add-to-*ip start-rip 1 x86)
+             (if flg
+                 (mv flg prefixes x86)
+               ;; Storing the group 1 prefix (possibly overwriting a
+               ;; previously seen group 1 prefix) and going on...
+               (b* ((prefixes
+                     (if (equal byte #.*lock*)
+                         (!prefixes-slice
+                          :lck byte
+                          (!prefixes-slice
+                           :last-prefix #.*lck-pfx* prefixes))
+                       (!prefixes-slice
+                        :rep byte
+                        (!prefixes-slice
+                         :last-prefix #.*rep-pfx* prefixes)))))
                  (get-prefixes
-                  next-rip
-                  (the (unsigned-byte 52)
-                    (!prefixes-slice
-                     :group-1-prefix byte
-                     (!prefixes-slice :last-prefix byte prefixes)))
-                  (the (integer 0 15) (1- cnt))
-                  x86))))
+                  next-rip prefixes (the (integer 0 15) (1- cnt)) x86)))))
 
-          (2 (mv-let
-               (flg next-rip)
-               (add-to-*ip start-rip 1 x86)
-               (if flg
-                   (mv flg prefixes x86)
-                 ;; Storing the group 2 prefix (possibly overwriting a
-                 ;; previously seen group 2 prefix) and going on...
-                 (get-prefixes
-                  next-rip
-                  (the (unsigned-byte 52)
-                    (!prefixes-slice
-                     :group-2-prefix byte
-                     (!prefixes-slice :last-prefix byte prefixes)))
-                  (the (integer 0 15) (1- cnt))
-                  x86))))
+          (2
+           ;; ES (26), CS (2E), SS (36), DS (3E), FS (64), GS (65)
+           (mv-let
+             (flg next-rip)
+             (add-to-*ip start-rip 1 x86)
+             (if flg
+                 (mv flg prefixes x86)
+               ;; Storing the group 2 prefix (possibly overwriting a
+               ;; previously seen group 2 prefix) and going on...
+               (get-prefixes
+                next-rip
+                (!prefixes-slice
+                 :seg byte
+                 (!prefixes-slice :last-prefix #.*seg-pfx* prefixes))
+                (the (integer 0 15) (1- cnt))
+                x86))))
 
-          (3 (mv-let
-               (flg next-rip)
-               (add-to-*ip start-rip 1 x86)
-               (if flg
-                   (mv flg prefixes x86)
-                 ;; Storing the group 3 prefix (possibly overwriting a
-                 ;; previously seen group 3 prefix) and going on...
-                 (get-prefixes
-                  next-rip
-                  (the (unsigned-byte 52)
-                    (!prefixes-slice
-                     :group-3-prefix byte
-                     (!prefixes-slice :last-prefix byte prefixes)))
-                  (the (integer 0 15) (1- cnt))
-                  x86))))
+          (3
+           ;; Operand-Size Override (66)
+           (mv-let
+             (flg next-rip)
+             (add-to-*ip start-rip 1 x86)
+             (if flg
+                 (mv flg prefixes x86)
+               ;; Storing the group 3 prefix (possibly overwriting a
+               ;; previously seen group 3 prefix) and going on...
+               (get-prefixes
+                next-rip
+                (!prefixes-slice
+                 :opr byte
+                 (!prefixes-slice :last-prefix #.*opr-pfx* prefixes))
+                (the (integer 0 15) (1- cnt))
+                x86))))
 
-          (4 (mv-let
-               (flg next-rip)
-               (add-to-*ip start-rip 1 x86)
-               (if flg
-                   (mv flg prefixes x86)
-                 ;; Storing the group 4 prefix (possibly overwriting a
-                 ;; previously seen group 4 prefix) and going on...
-                 (get-prefixes
-                  next-rip
-                  (the (unsigned-byte 52)
-                    (!prefixes-slice
-                     :group-4-prefix byte
-                     (!prefixes-slice :last-prefix byte prefixes)))
-                  (the (integer 0 15) (1- cnt))
-                  x86))))
+          (4
+           ;; Address-Size Override (67)
+           (mv-let
+             (flg next-rip)
+             (add-to-*ip start-rip 1 x86)
+             (if flg
+                 (mv flg prefixes x86)
+               ;; Storing the group 4 prefix (possibly overwriting a
+               ;; previously seen group 4 prefix) and going on...
+               (get-prefixes
+                next-rip
+                (!prefixes-slice
+                 :adr byte
+                 (!prefixes-slice :last-prefix #.*adr-pfx* prefixes))
+                (the (integer 0 15) (1- cnt))
+                x86))))
 
           (otherwise
            (mv t prefixes x86))))))
@@ -361,11 +386,11 @@
                                      bitops::unsigned-byte-p-incr))))
     :rule-classes :type-prescription)
 
-  (defthm-usb n52p-get-prefixes
-    :hyp (and (n52p prefixes)
+  (defthm-usb n55p-get-prefixes
+    :hyp (and (n55p prefixes)
               (canonical-address-p start-rip)
               (x86p x86))
-    :bound 52
+    :bound 55
     :concl (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))
     :hints (("Goal"
              :in-theory (e/d ()
@@ -415,7 +440,7 @@
                               bitops::basic-signed-byte-p-of-+
                               default-<-1
                               negative-logand-to-positive-logand-with-integerp-x
-                              negative-logand-to-positive-logand-with-n52p-x
+                              negative-logand-to-positive-logand-with-n55p-x
                               force (force))))))
 
   (defthm get-prefixes-does-not-modify-x86-state-in-app-view
@@ -460,7 +485,7 @@
     (implies (and (<= cnt 15)
                   (x86p x86)
                   (canonical-address-p start-rip)
-                  (n52p prefixes)
+                  (n55p prefixes)
                   (< (part-select prefixes :low 0 :high 2) 5))
              (<=
               (prefixes-slice
@@ -523,31 +548,35 @@
                        (!prefixes-slice :num-prefixes (- 15 cnt) prefixes))))))
 
   (defthm get-prefixes-opener-lemma-group-1-prefix
-    (implies (and (or (app-view x86)
-                      (not (marking-view x86)))
-                  (let* ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
-                         (prefix-byte-group-code
-                          (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
-                    (and (not flg) ;; No error in reading a byte
-                         (equal prefix-byte-group-code 1)))
-                  (not (zp cnt))
-                  (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
-             (equal (get-prefixes start-rip prefixes cnt x86)
-                    (get-prefixes (1+ start-rip)
-                                  (!prefixes-slice
-                                   :group-1-prefix
-                                   (mv-nth 1 (rme08 start-rip *cs* :x x86))
-                                   (!prefixes-slice
-                                    :last-prefix
-                                    (mv-nth 1 (rme08 start-rip *cs* :x x86))
-                                    prefixes))
-                                  (1- cnt) x86)))
-    :hints (("Goal" :in-theory (e/d* (add-to-*ip)
-                                     (rb
-                                      unsigned-byte-p
-                                      negative-logand-to-positive-logand-with-n52p-x
-                                      negative-logand-to-positive-logand-with-integerp-x)))))
+    (b* (((mv flg byte x86)
+          (rme08 start-rip *cs* :x x86))
+         (prefix-byte-group-code (get-one-byte-prefix-array-code byte)))
+      (implies
+       (and (or (app-view x86)
+                (not (marking-view x86)))
+            (not flg) ;; No error in reading a byte
+            (equal prefix-byte-group-code 1)
+            (not (zp cnt))
+            (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
+       (equal (get-prefixes start-rip prefixes cnt x86)
+              (let ((prefixes
+                     (if (equal byte #.*lock*)
+                         (!prefixes-slice
+                          :lck byte
+                          (!prefixes-slice
+                           :last-prefix #.*lck-pfx* prefixes))
+                       (!prefixes-slice
+                        :rep byte
+                        (!prefixes-slice
+                         :last-prefix #.*rep-pfx* prefixes)))))
+                (get-prefixes (1+ start-rip) prefixes (1- cnt) x86)))))
+    :hints (("Goal"
+             :in-theory
+             (e/d* (add-to-*ip)
+                   (rb
+                    unsigned-byte-p
+                    negative-logand-to-positive-logand-with-n55p-x
+                    negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-2-prefix
     (implies (and (or (app-view x86)
@@ -564,17 +593,17 @@
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice
-                                   :group-2-prefix
+                                   :seg
                                    (mv-nth 1 (rme08 start-rip *cs* :x x86))
                                    (!prefixes-slice
                                     :last-prefix
-                                    (mv-nth 1 (rme08 start-rip *cs* :x x86))
+                                    #.*seg-pfx*
                                     prefixes))
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* (add-to-*ip)
                                      (rb
                                       unsigned-byte-p
-                                      negative-logand-to-positive-logand-with-n52p-x
+                                      negative-logand-to-positive-logand-with-n55p-x
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-3-prefix
@@ -592,17 +621,17 @@
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice
-                                   :group-3-prefix
+                                   :opr
                                    (mv-nth 1 (rme08 start-rip *cs* :x x86))
                                    (!prefixes-slice
                                     :last-prefix
-                                    (mv-nth 1 (rme08 start-rip *cs* :x x86))
+                                    #.*opr-pfx*
                                     prefixes))
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* (add-to-*ip)
                                      (rb
                                       unsigned-byte-p
-                                      negative-logand-to-positive-logand-with-n52p-x
+                                      negative-logand-to-positive-logand-with-n55p-x
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-4-prefix
@@ -620,17 +649,17 @@
              (equal (get-prefixes start-rip prefixes cnt x86)
                     (get-prefixes (1+ start-rip)
                                   (!prefixes-slice
-                                   :group-4-prefix
+                                   :adr
                                    (mv-nth 1 (rme08 start-rip *cs* :x x86))
                                    (!prefixes-slice
                                     :last-prefix
-                                    (mv-nth 1 (rme08 start-rip *cs* :x x86))
+                                    #.*adr-pfx*
                                     prefixes))
                                   (1- cnt) x86)))
     :hints (("Goal" :in-theory (e/d* (add-to-*ip)
                                      (rb
                                       unsigned-byte-p
-                                      negative-logand-to-positive-logand-with-n52p-x
+                                      negative-logand-to-positive-logand-with-n55p-x
                                       negative-logand-to-positive-logand-with-integerp-x)))))
 
   (local
@@ -657,7 +686,7 @@
               :in-theory (e/d ()
                               (unsigned-byte-p
                                (:linear <=-logior)
-                               negative-logand-to-positive-logand-with-n52p-x
+                               negative-logand-to-positive-logand-with-n55p-x
                                las-to-pas rb rme08 rml08))))))
 
   (local
@@ -680,656 +709,6 @@
 
 ;; ----------------------------------------------------------------------
 
-;; Utilities to generate opcode dispatch functions from the annotated opcode
-;; maps:
-
-(local (include-book "std/strings/pretty" :dir :system))
-
-(local
- (defconst *x86isa-printconfig*
-   (str::make-printconfig
-    :home-package (pkg-witness "X86ISA")
-    :print-lowercase t)))
-
-(local
- (encapsulate
-   ()
-
-   (define get-string-name-of-basic-simple-cell ((cell basic-simple-cell-p))
-     :prepwork ((local (in-theory (e/d (basic-simple-cell-p) ()))))
-     (if (mbt (basic-simple-cell-p cell))
-         (string (first cell))
-       "")
-
-     ///
-
-     (defthm stringp-of-get-string-name-of-basic-simple-cell
-       (stringp (get-string-name-of-basic-simple-cell cell))))
-
-   (define insert-slash-in-list ((lst string-listp))
-     (if (or (equal (len lst) 1)
-             (endp lst))
-         lst
-       (cons (car lst)
-             (cons "/" (insert-slash-in-list (cdr lst)))))
-
-     ///
-
-     (defthm string-listp-of-insert-slash-in-list
-       (implies (string-listp lst)
-                (string-listp (insert-slash-in-list lst)))))
-
-
-   (define get-string-name-of-simple-cell ((cell simple-cell-p))
-     :guard-hints (("Goal" :do-not-induct t))
-     :prepwork ((local (in-theory (e/d (simple-cell-p
-                                        basic-simple-cell-p
-                                        basic-simple-cells-p)
-                                       ()))))
-     (if (basic-simple-cell-p cell)
-         (get-string-name-of-basic-simple-cell cell)
-       (b* ((rest (rest cell))
-            (alt-opcodes (car rest))
-            ((unless (alistp alt-opcodes))
-             (er hard? 'get-string-name-of-simple-cell
-                 "~%Expected to be alist: ~p0~%"
-                 alt-opcodes))
-            (opcode-names (strip-cars alt-opcodes))
-            ((unless (string-listp opcode-names))
-             (er hard? 'get-string-name-of-simple-cell
-                 "~%Expected to be string-listp: ~p0~%"
-                 opcode-names)))
-         (str::fast-string-append-lst (insert-slash-in-list opcode-names))))
-
-     ///
-
-     (defthm maybe-stringp-of-get-string-name-of-simple-cell
-       (acl2::maybe-stringp (get-string-name-of-simple-cell cell))))
-
-   (define replace-element (x y lst)
-     (if (atom lst)
-         lst
-       (if (equal (car lst) x)
-           (cons y (replace-element x y (cdr lst)))
-         (cons (car lst) (replace-element x y (cdr lst)))))
-     ///
-     (defthm true-listp-of-replace-element
-       (implies (true-listp lst)
-                (true-listp (replace-element x y lst)))))
-
-   (define replace-formals-with-arguments-aux ((bindings alistp)
-                                               (formals true-listp))
-     (if (endp bindings)
-         formals
-       (b* ((binding     (car bindings))
-            (formal      (car binding))
-            (argument    (cdr binding))
-            (new-formals (replace-element formal argument formals)))
-         (replace-formals-with-arguments-aux (cdr bindings) new-formals)))
-     ///
-     (defthm true-listp-of-replace-formals-with-arguments-aux
-       (implies (true-listp formals)
-                (true-listp (replace-formals-with-arguments-aux
-                             bindings formals)))))
-
-   (define replace-formals-with-arguments ((fn symbolp)
-                                           (bindings alistp)
-                                           (world plist-worldp))
-
-     (b* ((formals (acl2::formals fn world))
-          ((unless (true-listp formals)) nil)
-          (args    (replace-formals-with-arguments-aux bindings formals))
-          (call    (cons fn args)))
-       call)
-     ///
-     (defthm true-listp-of-replace-formals-with-arguments
-       (true-listp (replace-formals-with-arguments fn bindings world))))
-
-   (define create-call-from-semantic-info ((info semantic-function-info-p)
-                                           (world plist-worldp))
-     :guard-hints (("Goal" :in-theory (e/d (semantic-function-info-p) ())))
-
-     ;; (create-call-from-semantic-info
-     ;;  '(:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-     ;;           (operation . #.*OP-ADD*)))
-     ;;  (w state))
-     (if (equal info nil)
-         (mv "Unimplemented"
-             (replace-formals-with-arguments
-              'x86-step-unimplemented
-              '((message . "Opcode Unimplemented in x86isa!"))
-              world))
-       (b* ((rest (cdr info)))
-         (if (equal (car rest) :no-instruction)
-             (mv
-              "Reserved"
-              (replace-formals-with-arguments
-               'x86-illegal-instruction
-               '((message . "Reserved Opcode!"))
-               world))
-           (mv
-            (concatenate
-             'string
-             "@(tsee "
-             (str::pretty (car rest) :config *x86isa-printconfig*)
-             ")"
-             (if (cdr rest)
-                 (concatenate
-                  'string " -- <br/> "
-                  (str::pretty (cdr rest) :config *x86isa-printconfig*))
-               ""))
-            (replace-formals-with-arguments
-             (car rest) (cdr rest) world)))))
-     ///
-
-     (defthm stringp-of-mv-nth-0-create-call-from-semantic-info
-       (stringp
-        (mv-nth 0 (create-call-from-semantic-info info world))))
-
-     (defthm true-listp-of-mv-nth-1-create-call-from-semantic-info
-       (true-listp
-        (mv-nth 1 (create-call-from-semantic-info info world)))))
-
-   (define create-dispatch-from-no-extensions-simple-cell
-     ((cell simple-cell-p)
-      (world plist-worldp))
-     (b* (((when (member-equal (car cell) *group-numbers*))
-           (mv ""
-               (er hard? 'create-dispatch-from-no-extensions-simple-cell
-                   "~%We don't expect groups here: ~p0~%"
-                   cell)))
-          (rest (cdr cell))
-          (semantic-info (get-semantic-function-info-p rest)))
-       (create-call-from-semantic-info semantic-info world))
-
-     ///
-
-     (defthm stringp-of-mv-nth-1-create-dispatch-from-no-extensions-simple-cell
-       (stringp
-        (mv-nth 0 (create-dispatch-from-no-extensions-simple-cell cell world))))
-
-     (defthm true-listp-of-mv-nth-1-create-dispatch-from-no-extensions-simple-cell
-       (true-listp
-        (mv-nth 1 (create-dispatch-from-no-extensions-simple-cell cell world)))))
-
-   (define create-case-dispatch-for-opcode-extensions-aux
-     ((opcode natp)
-      (desc-list opcode-descriptor-list-p)
-      (world plist-worldp)
-      &key
-      ((escape-bytes natp) '0))
-
-     :verify-guards nil
-     :guard-hints (("Goal"
-                    :in-theory (e/d (opcode-descriptor-list-p
-                                     opcode-descriptor-p)
-                                    ())
-                    :do-not-induct t))
-
-     (if (endp desc-list)
-
-         (b* (((mv & dispatch)
-               ;; This is a catch-all case --- so we ignore the doc here.
-               (create-call-from-semantic-info '(:fn . (:no-instruction)) world)))
-           (mv ""
-               `((t ,dispatch))))
-
-       (b* ((opcode-descriptor (car desc-list))
-            (opcode-identifier (car opcode-descriptor))
-            ((unless (equal (cdr (assoc-equal :opcode opcode-identifier))
-                            (+ escape-bytes opcode)))
-             (create-case-dispatch-for-opcode-extensions-aux
-              opcode (cdr desc-list) world :escape-bytes escape-bytes))
-            (opcode-cell (cdr opcode-descriptor))
-            (vex (cdr (assoc-equal :vex opcode-identifier)))
-            (reg (cdr (assoc-equal :reg opcode-identifier)))
-            (prefix (cdr (assoc-equal :prefix opcode-identifier)))
-            (mod (cdr (assoc-equal :mod opcode-identifier)))
-            (r/m (cdr (assoc-equal :r/m opcode-identifier)))
-            (condition
-             `(and
-               ;; TODO: Check for VEX here.
-               ,@(and reg
-                      `((equal (mrm-reg modr/m) ,reg)))
-               ,@(and mod
-                      (if (equal mod :mem)
-                          `((not (equal (mrm-mod modr/m) #b11)))
-                        `((equal (mrm-mod modr/m) #b11))))
-               ,@(and r/m
-                      `((equal (mrm-r/m modr/m) ,r/m)))
-               ,@(and prefix
-                      `((equal mandatory-prefix ,prefix)))))
-            ((mv doc-string dispatch)
-             (create-dispatch-from-no-extensions-simple-cell
-              opcode-cell world))
-            (this-doc-string
-             (if (or vex prefix reg mod r/m)
-                 (concatenate 'string
-                              " <td> @('"
-                              (str::pretty
-                               `(,@(and vex    `((:VEX ,vex)))
-                                 ,@(and prefix `((:PFX ,prefix)))
-                                 ,@(and reg    `((:REG ,reg)))
-                                 ,@(and mod    `((:MOD ,mod)))
-                                 ,@(and r/m    `((:R/M ,r/m))))
-                               :config *x86isa-printconfig*)
-                              ;; (str::pretty (cdr condition) ;; remove the 'and
-                              ;;              :config *x86isa-printconfig*)
-                              "') </td> <td> "
-                              doc-string
-                              " </td> ")
-               (concatenate 'string
-                            " <td> "
-                            doc-string
-                            " </td> ")))
-            (string-name-of-simple-cell
-             (get-string-name-of-simple-cell opcode-cell))
-            (this-doc-string
-             (if string-name-of-simple-cell
-                 (concatenate
-                  'string
-                  " <tr> <td> "
-                  string-name-of-simple-cell
-                  " </td> "
-                  this-doc-string
-                  " </tr> ")
-               this-doc-string))
-            (cell-dispatch
-             `(,condition ,dispatch))
-
-            ((mv final-doc-string cells-dispatch)
-             (create-case-dispatch-for-opcode-extensions-aux
-              opcode (cdr desc-list) world :escape-bytes escape-bytes)))
-         (mv (concatenate 'string this-doc-string final-doc-string)
-             (cons cell-dispatch cells-dispatch))))
-
-     ///
-
-     (defthm stringp-of-mv-nth-0-create-case-dispatch-for-opcode-extensions-aux
-       (stringp
-        (mv-nth 0
-                (create-case-dispatch-for-opcode-extensions-aux
-                 opcode desc-list world :escape-bytes escape-bytes))))
-
-     (verify-guards create-case-dispatch-for-opcode-extensions-aux-fn
-       :hints (("Goal" :in-theory (e/d (opcode-descriptor-list-p
-                                        opcode-descriptor-p)
-                                       ())))))
-
-   (define create-case-dispatch-for-opcode-extensions
-     ((opcode natp)
-      (desc-list opcode-descriptor-list-p)
-      (world plist-worldp)
-      &key
-      ((escape-bytes natp) '0))
-
-     (b* (((mv doc-string dispatch)
-           (create-case-dispatch-for-opcode-extensions-aux
-            opcode desc-list world :escape-bytes escape-bytes))
-          (doc-string (concatenate 'string
-                                   " <td> <table> "
-                                   doc-string
-                                   " </table> </td> ")))
-       (mv doc-string `(cond ,@dispatch)))
-
-     ///
-
-     (defthm stringp-of-mv-nth-0-create-case-dispatch-for-opcode-extensions
-       (stringp
-        (mv-nth 0
-                (create-case-dispatch-for-opcode-extensions
-                 opcode desc-list world :escape-bytes escape-bytes)))))
-
-   (define create-dispatch-from-simple-cell
-     ((start-opcode natp)
-      (cell simple-cell-p)
-      (world plist-worldp)
-      &key
-      ((escape-bytes natp) '0))
-
-     ;; (create-dispatch-from-simple-cell
-     ;;  0 (caar *one-byte-opcode-map-lst*) (w state))
-     ;; (create-dispatch-from-simple-cell
-     ;;  #x80 (car (nth 8 *one-byte-opcode-map-lst*)) (w state))
-
-     (b* (((mv doc-string dispatch)
-           (cond
-            ((and (basic-simple-cell-p cell)
-                  (member-equal (car cell) *group-numbers*))
-             (b* (((mv doc-string dispatch)
-                   (create-case-dispatch-for-opcode-extensions
-                    start-opcode
-                    (cdr (assoc-equal
-                          (car cell)
-                          *opcode-extensions-by-group-number*))
-                    world
-                    :escape-bytes escape-bytes)))
-               (mv doc-string dispatch)))
-            ((or
-              (and (basic-simple-cell-p cell)
-                   (or (stringp (car cell))
-                       (member-equal (car cell)
-                                     *simple-cells-standalone-legal-keywords*)))
-              (equal (car cell) ':ALT))
-             (b* (((mv doc-string dispatch)
-                   (create-dispatch-from-no-extensions-simple-cell cell world))
-                  (doc-string (concatenate 'string " <td> " doc-string " </td>")))
-               (mv doc-string dispatch)))
-            (t
-             (mv "" '(nil)))))
-          (string-name-of-simple-cell
-           (get-string-name-of-simple-cell cell))
-          (doc-string
-           (concatenate 'string
-                        " <td> " (or string-name-of-simple-cell "") " </td> "
-                        doc-string)))
-       (mv doc-string dispatch))
-
-
-     ///
-
-     (defthm stringp-mv-nth-0-create-dispatch-from-simple-cell
-       (stringp
-        (mv-nth 0
-                (create-dispatch-from-simple-cell
-                 start-opcode cell world :escape-bytes escape-bytes)))))
-
-   (define create-dispatch-from-compound-cell
-     ((start-opcode natp)
-      (cell compound-cell-p)
-      (world plist-worldp)
-      &key
-      ((escape-bytes natp) '0))
-
-     :guard-hints (("Goal" :in-theory (e/d ()
-                                           ((str::pretty-fn)
-                                            string-append
-                                            str::fast-string-append-lst
-                                            (tau-system)))))
-
-     ;; (create-dispatch-from-compound-cell
-     ;;  #x10
-     ;;  (nth 0 (nth 1 *two-byte-opcode-map-lst*))
-     ;;  (w state))
-
-     (b* ((keys (strip-cars cell))
-          ((unless (subsetp-equal keys *compound-cells-legal-keys*))
-           (cw "~%cell: ~p0~%" cell)
-           (mv "" '(nil)))
-          (o64 (cdr (assoc-equal :o64 cell)))
-          (i64 (cdr (assoc-equal :i64 cell)))
-          (no-prefix (cdr (assoc-equal :no-prefix cell)))
-          (66-prefix (cdr (assoc-equal :66 cell)))
-          (F3-prefix (cdr (assoc-equal :F3 cell)))
-          (F2-prefix (cdr (assoc-equal :F2 cell)))
-          ((unless (and (or (not o64) (simple-cell-p o64))
-                        (or (not i64) (simple-cell-p i64))
-                        (or (not no-prefix) (simple-cell-p no-prefix))
-                        (or (not 66-prefix) (simple-cell-p 66-prefix))
-                        (or (not F3-prefix) (simple-cell-p F3-prefix))
-                        (or (not F2-prefix) (simple-cell-p F2-prefix))))
-           (mv "" '(nil)))
-          ((mv o64-doc o64-dispatch)
-           (if o64
-               (create-dispatch-from-simple-cell
-                start-opcode o64 world :escape-bytes escape-bytes)
-             (mv "" '(nil))))
-          ((mv i64-doc i64-dispatch)
-           (if i64
-               (create-dispatch-from-simple-cell
-                start-opcode i64 world :escape-bytes escape-bytes)
-             (mv "" '(nil))))
-          ((mv 66-prefix-doc 66-prefix-dispatch)
-           (if 66-prefix
-               (create-dispatch-from-simple-cell
-                start-opcode 66-prefix world :escape-bytes escape-bytes)
-             (mv "" '(nil))))
-          ((mv F2-prefix-doc F2-prefix-dispatch)
-           (if F2-prefix
-               (create-dispatch-from-simple-cell
-                start-opcode F2-prefix world :escape-bytes escape-bytes)
-             (mv "" '(nil))))
-          ((mv F3-prefix-doc F3-prefix-dispatch)
-           (if F3-prefix
-               (create-dispatch-from-simple-cell
-                start-opcode F3-prefix world :escape-bytes escape-bytes)
-             (mv "" '(nil))))
-          ((mv no-prefix-doc no-prefix-dispatch)
-           (if no-prefix
-               (create-dispatch-from-simple-cell
-                start-opcode no-prefix world :escape-bytes escape-bytes)
-             (mv "" '(nil))))
-          (doc-string
-           (str::fast-string-append-lst
-            (if
-                (and (not o64)
-                     (not i64)
-                     (not 66-prefix)
-                     (not F2-prefix)
-                     (not F3-prefix)
-                     (not no-prefix))
-
-                (list "<td> </td> <td> </td>")
-
-              (list
-               ;; Inserting empty second column, which usually holds the name
-               ;; of the instruction or instruction group for simple cells:
-               " <td> </td> <td> <table> "
-               (if o64
-                   (concatenate
-                    'string
-                    " <tr> <td> @(':o64') </td> " o64-doc " </tr>")
-                 "")
-               (if i64
-                   (concatenate
-                    'string
-                    " <tr> <td> @(':i64') </td> " i64-doc " </tr>")
-                 "")
-               (if 66-prefix
-                   (concatenate
-                    'string
-                    " <tr> <td> @(':66') </td> " 66-prefix-doc " </tr>")
-                 "")
-               (if F2-prefix
-                   (concatenate
-                    'string
-                    " <tr> <td> @(':F2') </td> " F2-prefix-doc " </tr>")
-                 "")
-               (if F3-prefix
-                   (concatenate
-                    'string
-                    " <tr> <td> @(':F3') </td> " F3-prefix-doc " </tr>")
-                 "")
-               (if no-prefix
-                   (concatenate
-                    'string
-                    " <tr> <td> @('No-Pfx') </td> " no-prefix-doc " </tr>")
-                 "")
-
-               " </table> </td> "))))
-          (dispatch
-           `(,@(and o64
-                    `(((64-bit-modep x86)
-                       ,o64-dispatch)))
-             ,@(and i64
-                    `(((not (64-bit-modep x86))
-                       ,i64-dispatch)))
-             ,@(and 66-prefix
-                    `(((equal mandatory-prefix #.*mandatory-66h*)
-                       ,66-prefix-dispatch)))
-             ,@(and F2-prefix
-                    `(((equal mandatory-prefix #.*mandatory-F2h*)
-                       ,F2-prefix-dispatch)))
-             ,@(and F3-prefix
-                    `(((equal mandatory-prefix #.*mandatory-F3h*)
-                       ,F3-prefix-dispatch)))
-             ,@(and no-prefix
-                    `(((and
-                        (not (equal mandatory-prefix #.*mandatory-66h*))
-                        (not (equal mandatory-prefix #.*mandatory-F2h*))
-                        (not (equal mandatory-prefix #.*mandatory-F3h*)))
-                       ,no-prefix-dispatch)))
-             (t
-              ;; Catch-all case:
-              ;; ,(create-call-from-semantic-info
-              ;;   '(:fn . (:no-instruction)) world)
-              (x86-illegal-instruction
-               "Reserved or Illegal Opcode!" x86)))))
-       (mv doc-string `(cond ,@dispatch)))
-
-     ///
-
-     (defthm stringp-mv-nth-0-create-dispatch-from-compound-cell
-       (stringp
-        (mv-nth 0
-                (create-dispatch-from-compound-cell
-                 start-opcode cell world :escape-bytes escape-bytes)))
-       :hints (("Goal" :do-not '(preprocess)
-                :in-theory (e/d ()
-                                ((str::pretty-fn)
-                                 str::fast-string-append-lst
-                                 string-append))))))
-
-   (define create-dispatch-from-opcode-cell
-     ((start-opcode natp)
-      (cell opcode-cell-p)
-      (world plist-worldp)
-      &key
-      ((escape-bytes natp) '0))
-
-     (b* (((mv doc-string cell-dispatch)
-           (if (simple-cell-p cell)
-               (create-dispatch-from-simple-cell
-                start-opcode cell world :escape-bytes escape-bytes)
-             (if (compound-cell-p cell)
-                 (create-dispatch-from-compound-cell
-                  start-opcode cell world :escape-bytes escape-bytes)
-               (mv "" '(nil)))))
-          (doc-string
-           (concatenate 'string
-                        " <tr> <td> "
-                        (str::hexify start-opcode)
-                        " </td> " doc-string " </tr> "))
-          (dispatch
-           (cons start-opcode (list cell-dispatch))))
-       (mv doc-string dispatch))
-
-     ///
-
-     (defthm stringp-mv-nth-0-create-dispatch-from-opcode-cell
-       (stringp
-        (mv-nth 0
-                (create-dispatch-from-opcode-cell
-                 start-opcode cell world :escape-bytes escape-bytes)))))
-
-   (define create-dispatch-from-opcode-row ((start-opcode natp)
-                                            (row opcode-row-p)
-                                            (world plist-worldp)
-                                            &key
-                                            ((escape-bytes natp) '0))
-     :measure (len row)
-
-     (if (endp row)
-         (mv "" nil)
-       (b* ((cell (car row))
-            ((mv doc-string cell-dispatch)
-             (create-dispatch-from-opcode-cell
-              start-opcode cell world :escape-bytes escape-bytes))
-            ((when (equal cell-dispatch '(nil)))
-             (mv
-              ""
-              (er hard? 'create-dispatch-from-opcode-row
-                  "~%Something went wrong for this cell: ~p0~%"
-                  cell)))
-            ((mv rest-doc-string rest-cell-dispatch)
-             (create-dispatch-from-opcode-row
-              (1+ start-opcode) (cdr row) world :escape-bytes escape-bytes)))
-         (mv
-          (concatenate 'string doc-string rest-doc-string)
-          (cons cell-dispatch rest-cell-dispatch))))
-
-     ///
-
-     (defthm stringp-of-mv-nth-0-create-dispatch-from-opcode-row
-       (stringp
-        (mv-nth 0
-                (create-dispatch-from-opcode-row
-                 start-opcode row world :escape-bytes escape-bytes))))
-
-     (defthm true-listp-of-mv-nth-1-create-dispatch-from-opcode-row
-       (true-listp
-        (mv-nth 1
-                (create-dispatch-from-opcode-row
-                 start-opcode row world :escape-bytes escape-bytes)))))
-
-   (define create-dispatch-from-opcode-map-aux ((start-opcode natp)
-                                                (map opcode-map-p)
-                                                (world plist-worldp)
-                                                &key
-                                                ((escape-bytes natp) '0))
-     :verify-guards nil
-
-     (if (endp map)
-         (mv
-          ""
-          `((t
-             ;; Catch-all case:
-             ;; ,(create-call-from-semantic-info
-             ;;   '(:fn . (:no-instruction)) world)
-             (x86-illegal-instruction
-              "Reserved or Illegal Opcode!" x86))))
-       (b* ((row (car map))
-            ((mv row-doc-string row-dispatch)
-             (create-dispatch-from-opcode-row
-              start-opcode row world :escape-bytes escape-bytes))
-            ((mv rest-doc-string rest-dispatch)
-             (create-dispatch-from-opcode-map-aux
-              (+ 16 start-opcode) (cdr map) world :escape-bytes escape-bytes)))
-         (mv (concatenate 'string row-doc-string rest-doc-string)
-             (append row-dispatch rest-dispatch))))
-     ///
-
-     (defthm stringp-of-mv-nth-0-create-dispatch-from-opcode-map-aux
-       (stringp
-        (mv-nth 0
-                (create-dispatch-from-opcode-map-aux
-                 start-opcode row world :escape-bytes escape-bytes))))
-
-     (defthm true-listp-of-mv-nth-1-create-dispatch-from-opcode-map-aux
-       (true-listp
-        (mv-nth 1 (create-dispatch-from-opcode-map-aux
-                   start-opcode map world :escape-bytes escape-bytes))))
-
-     (verify-guards create-dispatch-from-opcode-map-aux-fn
-       :hints (("Goal" :in-theory (e/d (opcode-map-p) ())))))
-
-   (define create-dispatch-from-opcode-map ((map opcode-map-p)
-                                            (world plist-worldp)
-                                            &key
-                                            ((escape-bytes natp) '0))
-
-     (b* (((mv doc-string dispatch)
-           (create-dispatch-from-opcode-map-aux
-            0 map world :escape-bytes escape-bytes)))
-
-       (mv (concatenate 'string "<table> " doc-string " </table>")
-           dispatch))
-
-     ///
-
-     (defthm stringp-of-mv-nth-0-create-dispatch-from-opcode-map
-       (stringp
-        (mv-nth 0
-                (create-dispatch-from-opcode-map
-                 row world :escape-bytes escape-bytes))))
-
-     (defthm true-listp-of-mv-nth-1-create-dispatch-from-opcode-map
-       (true-listp
-        (mv-nth 1 (create-dispatch-from-opcode-map
-                   map world :escape-bytes escape-bytes)))))))
-
-;; ----------------------------------------------------------------------
-
 ;; We set this limit back to the default one once we've defined all the opcode
 ;; dispatch functions.
 (set-rewrite-stack-limit (+ 500 acl2::*default-rewrite-stack-limit*))
@@ -1349,7 +728,7 @@
       (define first-three-byte-opcode-execute
         ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
          (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
-         (prefixes         :type (unsigned-byte 52))
+         (prefixes         :type (unsigned-byte 55))
          (mandatory-prefix :type (unsigned-byte 8))
          (rex-byte         :type (unsigned-byte 8))
          (opcode           :type (unsigned-byte 8))
@@ -1405,7 +784,7 @@
       (define second-three-byte-opcode-execute
         ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
          (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
-         (prefixes         :type (unsigned-byte 52))
+         (prefixes         :type (unsigned-byte 55))
          (mandatory-prefix :type (unsigned-byte 8))
          (rex-byte         :type (unsigned-byte 8))
          (opcode           :type (unsigned-byte 8))
@@ -1451,7 +830,7 @@
 (define three-byte-opcode-decode-and-execute
   ((start-rip          :type (signed-byte #.*max-linear-address-size*))
    (temp-rip           :type (signed-byte #.*max-linear-address-size*))
-   (prefixes           :type (unsigned-byte 52))
+   (prefixes           :type (unsigned-byte 55))
    (rex-byte           :type (unsigned-byte 8))
    (vex-prefixes       :type (unsigned-byte 32))
    (evex-prefixes      :type (unsigned-byte 40))
@@ -1502,19 +881,14 @@
 
        ((the (unsigned-byte 8) mandatory-prefix)
         (if (equal vex-prefixes 0)
-            ;; If the last-prefix is anything other than the three SIMD
-            ;; prefixes (#x66, #xF2, or #xF3), it's irrelevant as far as
-            ;; mandatory-prefix is concerned.  This is because all the
-            ;; functions that take mandatory-prefix as input (e.g., modr/m
-            ;; detecting functions like 64-bit-mode-two-byte-opcode-ModR/M-p,
-            ;; opcode dispatch functions like second-three-byte-opcode-execute,
-            ;; etc.), detect the no mandatory prefix case by checking that
-            ;; :last-prefix is not a SIMD prefix.
-            (prefixes-slice :last-prefix prefixes)
+            (case (prefixes-slice :last-prefix prefixes)
+              (#.*rep-pfx* (prefixes-slice :rep prefixes)) ;; F3 or F2
+              (#.*opr-pfx* (prefixes-slice :opr prefixes)) ;; 66
+              (otherwise 0))
           (case (vex3-byte2-slice :pp (vex-prefixes-slice :byte2 vex-prefixes))
-            (#b01 #x66)
-            (#b10 #xF3)
-            (#b11 #xF2)
+            (#b01 #.*mandatory-66h*)
+            (#b10 #.*mandatory-F3h*)
+            (#b11 #.*mandatory-F2h*)
             (otherwise 0))))
 
        (modr/m?
@@ -1544,7 +918,7 @@
 
        (sib? (and modr/m?
                   (b* ((p4? (eql #.*addr-size-override*
-                                 (prefixes-slice :group-4-prefix prefixes)))
+                                 (prefixes-slice :adr prefixes)))
                        (16-bit-addressp (eql 2 (select-address-size p4? x86))))
                     (x86-decode-SIB-p modr/m 16-bit-addressp))))
        ((mv flg2 (the (unsigned-byte 8) sib) x86)
@@ -1598,7 +972,7 @@
 
         ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
          (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
-         (prefixes         :type (unsigned-byte 52))
+         (prefixes         :type (unsigned-byte 55))
          (mandatory-prefix :type (unsigned-byte 8))
          (rex-byte         :type (unsigned-byte 8))
          (vex-prefixes     :type (unsigned-byte 32))
@@ -1644,7 +1018,7 @@
 (define two-byte-opcode-decode-and-execute
   ((start-rip     :type (signed-byte #.*max-linear-address-size*))
    (temp-rip      :type (signed-byte #.*max-linear-address-size*))
-   (prefixes      :type (unsigned-byte 52))
+   (prefixes      :type (unsigned-byte 55))
    (rex-byte      :type (unsigned-byte 8))
    (vex-prefixes  :type (unsigned-byte 32))
    (evex-prefixes :type (unsigned-byte 40))
@@ -1714,23 +1088,18 @@
 
        ((the (unsigned-byte 8) mandatory-prefix)
         (if (equal vex-prefixes 0)
-            ;; If the last-prefix is anything other than the three SIMD
-            ;; prefixes (#x66, #xF2, or #xF3), it's irrelevant as far as
-            ;; mandatory-prefix is concerned.  This is because all the
-            ;; functions that take mandatory-prefix as input (e.g., modr/m
-            ;; detecting functions like 64-bit-mode-two-byte-opcode-ModR/M-p,
-            ;; opcode dispatch functions like second-three-byte-opcode-execute,
-            ;; etc.), detect the no mandatory prefix case by checking that
-            ;; :last-prefix is not a SIMD prefix.
-            (prefixes-slice :last-prefix prefixes)
+            (case (prefixes-slice :last-prefix prefixes)
+              (#.*rep-pfx* (prefixes-slice :rep prefixes)) ;; F3 or F2
+              (#.*opr-pfx* (prefixes-slice :opr prefixes)) ;; 66
+              (otherwise 0))
           (case (if vex2-prefix?
                     (vex2-byte1-slice :pp
                                       (vex-prefixes-slice :byte1 vex-prefixes))
                   (vex3-byte2-slice :pp
                                     (vex-prefixes-slice :byte2 vex-prefixes)))
-            (#b01 #x66)
-            (#b10 #xF3)
-            (#b11 #xF2)
+            (#b01 #.*mandatory-66h*)
+            (#b10 #.*mandatory-F3h*)
+            (#b11 #.*mandatory-F2h*)
             (otherwise 0))))
 
        (modr/m? (if (64-bit-modep x86)
@@ -1751,7 +1120,7 @@
 
        (sib? (and modr/m?
                   (b* ((p4? (eql #.*addr-size-override*
-                                 (prefixes-slice :group-4-prefix prefixes)))
+                                 (prefixes-slice :adr prefixes)))
                        (16-bit-addressp (eql 2 (select-address-size p4? x86))))
                     (x86-decode-SIB-p modr/m 16-bit-addressp))))
        ((mv flg2 (the (unsigned-byte 8) sib) x86)
@@ -1797,7 +1166,7 @@
 
         ((start-rip :type (signed-byte   #.*max-linear-address-size*))
          (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
-         (prefixes  :type (unsigned-byte 52))
+         (prefixes  :type (unsigned-byte 55))
          (rex-byte  :type (unsigned-byte 8))
          (opcode    :type (unsigned-byte 8))
          (modr/m    :type (unsigned-byte 8))
@@ -1859,7 +1228,7 @@
                             first two VEX prefixes that were already read and
                             placed in the @('vex-prefixes') structure in @(tsee
                             x86-fetch-decode-execute).")
-   (prefixes               :type (unsigned-byte 52))
+   (prefixes               :type (unsigned-byte 55))
    (rex-byte               :type (unsigned-byte 8))
    (vex-prefixes           :type (unsigned-byte 32)
                            "Only @('byte0') and @('byte1') fields are populated
@@ -1910,15 +1279,14 @@
         (!!fault-fresh :ud :vex-prefixes vex-prefixes :rex rex-byte))
        ;; TODO: Intel Vol. 2A Sections 2.3.2 and 2.3.3 say "Any VEX-encoded
        ;; instruction with a LOCK/66H/F2H/F3H prefix preceding VEX will #UD."
-       ;; So, should I check :last-byte or :group-1-prefix/:group-3-prefix
-       ;; fields here?
-       ((when (equal (prefixes-slice :group-1-prefix prefixes) #.*lock*))
+       ;; So, should I check :last-byte here instead?
+       ((when (equal (prefixes-slice :lck prefixes) #.*lock*))
         (!!fault-fresh :ud :vex-prefixes vex-prefixes :lock-prefix))
-       ((when (equal (prefixes-slice :group-1-prefix prefixes) #.*mandatory-f2h*))
+       ((when (equal (prefixes-slice :rep prefixes) #.*mandatory-f2h*))
         (!!fault-fresh :ud :vex-prefixes vex-prefixes :F2-prefix))
-       ((when (equal (prefixes-slice :group-1-prefix prefixes) #.*mandatory-f3h*))
+       ((when (equal (prefixes-slice :rep prefixes) #.*mandatory-f3h*))
         (!!fault-fresh :ud :vex-prefixes vex-prefixes :F3-prefix))
-       ((when (equal (prefixes-slice :group-3-prefix prefixes) #.*mandatory-66h*))
+       ((when (equal (prefixes-slice :opr prefixes) #.*mandatory-66h*))
         (!!fault-fresh :ud :vex-prefixes vex-prefixes :66-prefix))
 
        (vex3-prefix?
@@ -2023,7 +1391,7 @@
                             first two EVEX prefixes that were already read and
                             placed in the @('evex-prefixes') structure in @(tsee
                             x86-fetch-decode-execute).")
-   (prefixes               :type (unsigned-byte 52))
+   (prefixes               :type (unsigned-byte 55))
    (rex-byte               :type (unsigned-byte 8))
    (evex-prefixes          :type (unsigned-byte 40)
                            "Only @('byte0') and @('byte1') fields are populated
@@ -2085,7 +1453,7 @@
        (start-rip (the (signed-byte #.*max-linear-address-size*)
                     (read-*ip x86)))
 
-       ((mv flg0 (the (unsigned-byte 52) prefixes) x86)
+       ((mv flg0 (the (unsigned-byte 55) prefixes) x86)
         (get-prefixes start-rip 0 15 x86))
        ;; Among other errors (including if there are 15 prefix bytes, which
        ;; leaves no room for an opcode byte in a legal instruction), if
@@ -2285,7 +1653,7 @@
 
        (sib? (and modr/m?
                   (b* ((p4? (eql #.*addr-size-override*
-                                 (prefixes-slice :group-4-prefix prefixes)))
+                                 (prefixes-slice :adr prefixes)))
                        (16-bit-addressp (eql 2 (select-address-size p4? x86))))
                     (x86-decode-SIB-p modr/m 16-bit-addressp))))
 
@@ -2362,7 +1730,7 @@
                            (mv-nth 1 (add-to-*ip temp-rip1 1 x86))
                          temp-rip1))
       (equal p4? (equal #.*addr-size-override*
-                        (prefixes-slice :group-4-prefix prefixes)))
+                        (prefixes-slice :adr prefixes)))
       (equal 16-bit-addressp (equal 2 (select-address-size p4? x86)))
       (equal sib? (and modr/m? (x86-decode-sib-p modr/m 16-bit-addressp)))
       (equal sib (if sib? (mv-nth 1 (rme08 temp-rip2 *cs* :x x86)) 0))

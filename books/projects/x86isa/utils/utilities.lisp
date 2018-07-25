@@ -641,7 +641,7 @@ constants and functions; it also proves some associated lemmas.</p>"
   (cons 'progn (np-defs lst)))
 
 (defuns-np 1 2 3 4 5 6 8 9 11 12 16 17 18 20 21 22 24 25 26 27 28
-  30 32 33 35 43 44 45 47 48 49 51 52 59 60 64 65 80 112 120 128 256 512)
+  30 32 33 35 43 44 45 47 48 49 51 52 55 59 60 64 65 80 112 120 128 256 512)
 
 
 (defmacro n-size (n x)

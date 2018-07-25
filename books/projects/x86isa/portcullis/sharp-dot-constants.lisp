@@ -141,11 +141,15 @@
 ;; Prefixes (Intel manual, Mar'17, Vol. 2A, Section 2.1.1):
 
 ;; Group 1:
+(defconst *lck-pfx*               #b001)
 (defconst *lock*                  #xF0)
+
+(defconst *rep-pfx*               #b010)
 (defconst *repe*                  #xF3)
 (defconst *repne*                 #xF2)
 
 ;; Group 2:
+(defconst *seg-pfx*               #b011)
 (defconst *es-override*           #x26)
 (defconst *cs-override*           #x2E)
 (defconst *ss-override*           #x36)
@@ -154,9 +158,11 @@
 (defconst *gs-override*           #x65)
 
 ;; Group 3:
+(defconst *opr-pfx*               #b100)
 (defconst *operand-size-override* #x66)
 
 ;; Group 4:
+(defconst *adr-pfx*               #b101)
 (defconst *addr-size-override*    #x67)
 
 ;; SIMD Prefixes:

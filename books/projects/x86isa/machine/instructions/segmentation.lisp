@@ -94,11 +94,11 @@
         (!!ms-fresh :source-operand-not-memory-location mod))
        ;; If the lock prefix is used, then the #UD exception is
        ;; raised.
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes-slice :adr prefixes)))
 
        ;; Fetch the memory operand:
        (inst-ac? nil)
@@ -188,11 +188,11 @@
         (!!ms-fresh :source-operand-not-memory-location mod))
        ;; If the lock prefix is used, then the #UD exception is
        ;; raised.
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes-slice :adr prefixes)))
 
        ;; Fetch the memory operand:
        (inst-ac? nil)
@@ -288,11 +288,11 @@ a non-canonical form, raise the SS exception.</p>"
         (!!ms-fresh :cpl-not-zero cpl))
        ;; If the lock prefix is used, then the #UD exception is
        ;; raised.
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes-slice :adr prefixes)))
 
        ;; Fetch the memory operand:
        (inst-ac? nil)

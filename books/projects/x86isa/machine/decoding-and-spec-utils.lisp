@@ -671,7 +671,7 @@ the @('fault') field instead.</li>
 
   (defrule select-address-size-not-2-when-64-bit-modep
     (implies (64-bit-modep x86)
-             (not (equal 2 (select-address-size prefixes x86))))))
+             (not (equal 2 (select-address-size p4? x86))))))
 
 ;; ======================================================================
 
@@ -1962,7 +1962,7 @@ reference made from privilege level 3.</blockquote>"
           ,@(and trunc     `((trunc     booleanp)))
           (start-rip     :type (signed-byte   #.*max-linear-address-size*))
           (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
-          (prefixes      :type (unsigned-byte 52))
+          (prefixes      :type (unsigned-byte 55))
           (rex-byte      :type (unsigned-byte 8))
           ,@(if evex
                 ;; EVEX-encoded instructions also support VEX encodings.
@@ -2019,7 +2019,7 @@ reference made from privilege level 3.</blockquote>"
   ((byte-operand? :type (or t nil))
    (rex-byte      :type (unsigned-byte  8))
    (imm?          :type (or t nil))
-   (prefixes      :type (unsigned-byte 52))
+   (prefixes      :type (unsigned-byte 55))
    (x86 x86p))
 
   :inline t
@@ -2082,7 +2082,7 @@ reference made from privilege level 3.</blockquote>"
                 4
               8)
           (if (eql #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes))
+                   (prefixes-slice :opr prefixes))
               2 ;; 16-bit operand-size
             4   ;; Default 32-bit operand size (in 64-bit mode)
             ))
@@ -2091,7 +2091,7 @@ reference made from privilege level 3.</blockquote>"
            (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
            (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
            (p3? (eql #.*operand-size-override*
-                     (prefixes-slice :group-3-prefix prefixes))))
+                     (prefixes-slice :opr prefixes))))
         (if (= cs.d 1)
             (if p3? 2 4)
           (if p3? 4 2))))))

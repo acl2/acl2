@@ -1323,14 +1323,14 @@
              (natp (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86))))
     :rule-classes :type-prescription)
 
-  (defthm-usb n52p-get-prefixes-alt
-    :hyp (and (n52p prefixes)
+  (defthm-usb n55p-get-prefixes-alt
+    :hyp (and (n55p prefixes)
               (x86p x86))
-    :bound 52
+    :bound 55
     :concl (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86))
     :hints (("Goal"
-             :use ((:instance n52p-get-prefixes))
-             :in-theory (e/d () (n52p-get-prefixes))))
+             :use ((:instance n55p-get-prefixes))
+             :in-theory (e/d () (n55p-get-prefixes))))
     :gen-linear t)
 
   (defthm x86p-get-prefixes-alt
@@ -1453,41 +1453,42 @@
                       (get-prefixes-opener-lemma-zero-cnt force (force))))))
 
   (defthm get-prefixes-alt-opener-lemma-no-prefix-byte
-    (implies (and (b* (((mv flg prefix-byte &)
-                        ;; (rml08 start-rip :x x86)
-                        (rb-alt 1 start-rip :x x86))
-                       (prefix-byte-group-code (get-one-byte-prefix-array-code prefix-byte)))
-                    (and (not flg)
-                         (zp prefix-byte-group-code)))
-                  (not (zp cnt))
-                  (marking-view x86)
-                  (64-bit-modep x86) ; added
-                  (not (app-view x86))
-                  (canonical-address-p start-rip)
-                  ;; We read only one byte inside get-prefixes-alt --
-                  ;; there's really no need for us to know that the
-                  ;; translation of (create-canonical-address-list cnt
-                  ;; start-rip) is non-erroneous or that that range is
-                  ;; disjoint from the paging structures.  But,
-                  ;; unfortunately, because of the definition of
-                  ;; get-prefixes-alt, we need to know the following two
-                  ;; things in terms of a general cnt instead of cnt == 1.
-                  (not (mv-nth 0 (las-to-pas cnt start-rip :x (double-rewrite x86))))
-                  (disjoint-p
-                   (mv-nth 1 (las-to-pas cnt start-rip :x (double-rewrite x86)))
-                   (open-qword-paddr-list
-                    (gather-all-paging-structure-qword-addresses
-                     (double-rewrite x86)))))
-             (and
-              (equal (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt x86))
-                     nil)
-              (equal (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86))
-                     (let ((prefixes
-                            (!prefixes-slice :next-byte
-                                             ;; (mv-nth 1 (rml08 start-rip :x x86))
-                                             (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                             prefixes)))
-                       (!prefixes-slice :num-prefixes (- 15 cnt) prefixes)))))
+    (implies
+     (and (b* (((mv flg prefix-byte &)
+                (rb-alt 1 start-rip :x x86))
+               (prefix-byte-group-code
+                (get-one-byte-prefix-array-code prefix-byte)))
+            (and (not flg)
+                 (zp prefix-byte-group-code)))
+          (not (zp cnt))
+          (marking-view x86)
+          (64-bit-modep x86) ; added
+          (not (app-view x86))
+          (canonical-address-p start-rip)
+          ;; We read only one byte inside get-prefixes-alt --
+          ;; there's really no need for us to know that the
+          ;; translation of (create-canonical-address-list cnt
+          ;; start-rip) is non-erroneous or that that range is
+          ;; disjoint from the paging structures.  But,
+          ;; unfortunately, because of the definition of
+          ;; get-prefixes-alt, we need to know the following two
+          ;; things in terms of a general cnt instead of cnt == 1.
+          (not (mv-nth 0 (las-to-pas cnt start-rip :x (double-rewrite x86))))
+          (disjoint-p
+           (mv-nth 1 (las-to-pas cnt start-rip :x (double-rewrite x86)))
+           (open-qword-paddr-list
+            (gather-all-paging-structure-qword-addresses
+             (double-rewrite x86)))))
+     (and
+      (equal (mv-nth 0 (get-prefixes-alt start-rip prefixes cnt x86))
+             nil)
+      (equal (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86))
+             (let ((prefixes
+                    (!prefixes-slice :next-byte
+                                     ;; (mv-nth 1 (rml08 start-rip :x x86))
+                                     (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                     prefixes)))
+               (!prefixes-slice :num-prefixes (- 15 cnt) prefixes)))))
     :hints (("Goal"
              :use ((:instance get-prefixes-opener-lemma-no-prefix-byte)
                    (:instance rewrite-rb-to-rb-alt
@@ -1497,37 +1498,40 @@
                                get-prefixes-opener-lemma-no-prefix-byte)))))
 
   (defthm get-prefixes-alt-opener-lemma-group-1-prefix-in-marking-view
-    (implies
-     (and
-      (canonical-address-p (1+ start-rip))
-      (not (zp cnt))      
-      (b* (((mv flg prefix-byte &)
-            (rb-alt 1 start-rip :x x86))
-           (prefix-byte-group-code
-            (get-one-byte-prefix-array-code prefix-byte)))
-        (and (not flg)
-             (equal prefix-byte-group-code 1)))
-      (marking-view x86)
-      (64-bit-modep x86) ; added
-      (not (app-view x86))
-      (canonical-address-p start-rip)
-      (disjoint-p
-       (mv-nth 1 (las-to-pas cnt start-rip :x (double-rewrite x86)))
-       (open-qword-paddr-list
-        (gather-all-paging-structure-qword-addresses x86)))
-      (not (mv-nth 0 (las-to-pas cnt start-rip :x x86))))
-     (equal (get-prefixes-alt start-rip prefixes cnt x86)
-            (get-prefixes-alt
-             (+ 1 start-rip)
-             (!prefixes-slice
-              :group-1-prefix
-              (mv-nth 1 (rb-alt 1 start-rip :x x86))
-              (!prefixes-slice
-               :last-prefix
-               (mv-nth 1 (rb-alt 1 start-rip :x x86))
-               prefixes))
-             (+ -1 cnt)
-             (mv-nth 2 (rb-alt 1 start-rip :x x86)))))
+    (b* (((mv flg prefix-byte new-x86)
+          (rb-alt 1 start-rip :x x86))
+         (prefix-byte-group-code
+          (get-one-byte-prefix-array-code prefix-byte)))
+      (implies
+       (and
+        (not flg)
+        (equal prefix-byte-group-code 1)
+        (canonical-address-p (1+ start-rip))
+        (not (zp cnt))
+        (marking-view x86)
+        (64-bit-modep x86) ; added
+        (not (app-view x86))
+        (canonical-address-p start-rip)
+        (disjoint-p
+         (mv-nth 1 (las-to-pas cnt start-rip :x (double-rewrite x86)))
+         (open-qword-paddr-list
+          (gather-all-paging-structure-qword-addresses x86)))
+        (not (mv-nth 0 (las-to-pas cnt start-rip :x x86))))
+       (equal (get-prefixes-alt start-rip prefixes cnt x86)
+              (get-prefixes-alt
+               (+ 1 start-rip)
+               (if (equal prefix-byte *lock*)
+                   (!prefixes-slice
+                    :lck prefix-byte
+                    (!prefixes-slice
+                     :last-prefix *lck-pfx* prefixes))
+                 (!prefixes-slice
+                  :rep
+                  prefix-byte
+                  (!prefixes-slice
+                   :last-prefix *rep-pfx* prefixes)))
+               (+ -1 cnt)
+               new-x86))))
     :hints (("Goal"
              :use ((:instance get-prefixes-opener-lemma-group-1-prefix-in-marking-view)
                    (:instance rewrite-rb-to-rb-alt
@@ -1536,13 +1540,19 @@
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt
                               (start-rip (1+ start-rip))
                               (prefixes
-                               (!prefixes-slice
-                                :group-1-prefix
-                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                (!prefixes-slice
-                                 :last-prefix
-                                 (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                 prefixes)))
+                               (if (equal
+                                    (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                    *lock*)
+                                   (!prefixes-slice
+                                    :lck
+                                    (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                    (!prefixes-slice
+                                     :last-prefix *lck-pfx* prefixes))
+                                 (!prefixes-slice
+                                  :rep
+                                  (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                  (!prefixes-slice
+                                   :last-prefix *rep-pfx* prefixes))))
                               (cnt (1- cnt))
                               (x86 (mv-nth 2 (rb-alt 1 start-rip :x x86))))
                    (:instance mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
@@ -1582,11 +1592,11 @@
      (equal (get-prefixes-alt start-rip prefixes cnt x86)
             (get-prefixes-alt (+ 1 start-rip)
                               (!prefixes-slice
-                               :group-2-prefix
+                               :seg
                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                (!prefixes-slice
                                 :last-prefix
-                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                *seg-pfx*
                                 prefixes))
                               (+ -1 cnt)
                               (mv-nth 2 (rb-alt 1 start-rip :x x86)))))
@@ -1598,11 +1608,11 @@
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt
                               (start-rip (1+ start-rip))
                               (prefixes (!prefixes-slice
-                                         :group-2-prefix
+                                         :seg
                                          (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                          (!prefixes-slice
                                           :last-prefix
-                                          (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                          *seg-pfx*
                                           prefixes)))
                               (cnt (1- cnt))
                               (x86 (mv-nth 2 (rb-alt 1 start-rip :x x86))))
@@ -1642,11 +1652,11 @@
      (equal (get-prefixes-alt start-rip prefixes cnt x86)
             (get-prefixes-alt (+ 1 start-rip)
                               (!prefixes-slice
-                               :group-3-prefix
+                               :opr
                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                (!prefixes-slice
                                 :last-prefix
-                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                *opr-pfx*
                                 prefixes))
                               (+ -1 cnt)
                               (mv-nth 2 (rb-alt 1 start-rip :x x86)))))
@@ -1658,11 +1668,11 @@
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt
                               (start-rip (1+ start-rip))
                               (prefixes (!prefixes-slice
-                                         :group-3-prefix
+                                         :opr
                                          (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                          (!prefixes-slice
                                           :last-prefix
-                                          (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                          *opr-pfx*
                                           prefixes)))
                               (cnt (1- cnt))
                               (x86 (mv-nth 2 (rb-alt 1 start-rip :x x86))))
@@ -1702,11 +1712,11 @@
      (equal (get-prefixes-alt start-rip prefixes cnt x86)
             (get-prefixes-alt (+ 1 start-rip)
                               (!prefixes-slice
-                               :group-4-prefix
+                               :adr
                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                (!prefixes-slice
                                 :last-prefix
-                                (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                *adr-pfx*
                                 prefixes))
                               (+ -1 cnt)
                               (mv-nth 2 (rb-alt 1 start-rip :x x86)))))
@@ -1719,11 +1729,11 @@
                               (start-rip (1+ start-rip))
                               (prefixes
                                (!prefixes-slice
-                                :group-4-prefix
+                                :adr
                                 (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                 (!prefixes-slice
                                  :last-prefix
-                                 (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                 *adr-pfx*
                                  prefixes)))
                               (cnt (1- cnt))
                               (x86 (mv-nth 2 (rb-alt 1 start-rip :x x86))))
@@ -1907,7 +1917,7 @@
                 (find-l-addrs-from-disjoint-p-of-las-to-pas-1-aux vars (cdr calls))))))
 
     (defun find-l-addrs-from-disjoint-p-of-las-to-pas-and-all-xlation
-        (vars r-w-x mfc state)
+      (vars r-w-x mfc state)
       (declare (xargs :stobjs (state) :mode :program)
                (ignorable state))
       ;; Narrows the matches by looking at only those calls of las-to-pas
@@ -2128,7 +2138,7 @@
                (:rewrite subset-p-cdr-x)
                (:type-prescription n52p-mv-nth-1-ia32e-la-to-pa)
                (:linear <=-logior)
-               (:linear n52p-get-prefixes)
+               (:linear n55p-get-prefixes)
                (:rewrite get-prefixes-opener-lemma-group-4-prefix)
                (:rewrite get-prefixes-opener-lemma-group-3-prefix)
                (:rewrite get-prefixes-opener-lemma-group-2-prefix)
@@ -2136,6 +2146,7 @@
                (:rewrite unsigned-byte-p-of-ash)
                (:linear bitops::logior->=-0-linear)
                (:definition n52p$inline)
+               (:definition n55p$inline)
                (:rewrite bitops::logtail-of-logtail)
                (:rewrite mv-nth-2-las-to-pas-system-level-non-marking-view)
                (:rewrite mv-nth-1-las-to-pas-when-error)
@@ -2166,6 +2177,7 @@
                (:rewrite acl2::unsigned-byte-p-loghead)
                (:rewrite bitops::loghead-of-ash-same)
                (:type-prescription n52p$inline)
+               (:type-prescription n55p$inline)
                (:type-prescription ash)
                (:rewrite bitops::loghead-of-0-i)
                (:rewrite acl2::equal-constant-+)

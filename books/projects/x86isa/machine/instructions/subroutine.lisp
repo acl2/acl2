@@ -103,11 +103,11 @@
 
   (b* ((ctx 'x86-call-E8-Op/En-M)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
+                   (prefixes-slice :opr prefixes)))
 
        ((the (integer 0 4) offset-size)
         (if (64-bit-modep x86)
@@ -195,14 +195,14 @@
 
   (b* ((ctx ' x86-call-FF/2-Op/En-M)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
+                   (prefixes-slice :opr prefixes)))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
@@ -340,7 +340,7 @@
 
   (b* ((ctx 'x86-ret)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (rsp (read-*sp x86))
@@ -458,11 +458,11 @@
        ((when (not (64-bit-modep x86)))
         (!!ms-fresh :leave-unimplemented-in-32-bit-mode))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        (p3 (equal #.*operand-size-override*
-                  (prefixes-slice :group-3-prefix prefixes)))
+                  (prefixes-slice :opr prefixes)))
        ((the (integer 2 8) pop-bytes)
         (if p3
             2

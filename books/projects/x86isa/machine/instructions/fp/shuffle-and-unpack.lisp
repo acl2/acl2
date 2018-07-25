@@ -106,7 +106,7 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -115,9 +115,9 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
        ;; non 16-byte aligned addresses on a real machine.
@@ -216,7 +216,7 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock) (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
@@ -224,8 +224,8 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
        ;; non 16-byte aligned addresses on a real machine.
@@ -332,7 +332,7 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -342,8 +342,8 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
        ;; non 16-byte aligned addresses on a real machine.
@@ -460,7 +460,7 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -470,8 +470,8 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
        ;; non 16-byte aligned addresses on a real machine.
