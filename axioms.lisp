@@ -9608,10 +9608,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (plist-worldp world-alist))))
   (cons (cons symb (cons key value)) world-alist))
 
-; Occasionally you will find comments of the form:
-
-; On Metering
-
 ; Occasionally in this code you will see forms protected by
 ; #+acl2-metering.  If you (push :acl2-metering *features*) and then
 ; recompile the affected forms, you will get some additional printing
