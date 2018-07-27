@@ -167,7 +167,11 @@
                                                                                  prev-st)
                                                         :exec prev-st)
                                                    (svex-env-fix in)))))
-    (svex-alist-eval x.nextstate current-cycle-env)))
+    (svex-alist-eval x.nextstate current-cycle-env))
+  ///
+  (defret alist-keys-of-svtv-fsm-step
+    (equal (alist-keys next-st)
+           (svex-alist-keys (svtv->nextstate x)))))
 
 (define svtv-fsm-step-outs ((in svex-env-p)
                             (prev-st svex-env-p)
@@ -181,6 +185,21 @@
                                                         :exec prev-st)
                                                    (svex-env-fix in)))))
     (svex-alist-eval x.outexprs current-cycle-env)))
+
+(define svtv-fsm-final-state ((ins svex-envlist-p)
+                              (prev-st svex-env-p)
+                              (x svtv-p))
+  :guard (and (equal (alist-keys prev-st) (svex-alist-keys (svtv->nextstate x)))
+              (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate x)))))
+  :returns (final-st svex-env-p)
+  (b* (((svtv x)))
+    (if (atom ins)
+        (mbe :logic (svex-env-extract (svex-alist-keys x.nextstate)
+                                      prev-st)
+             :exec prev-st)
+      (svtv-fsm-final-state (cdr ins)
+                            (svtv-fsm-step (car ins) prev-st x)
+                            x))))
 
 
 (define svtv-fsm-eval ((ins svex-envlist-p)

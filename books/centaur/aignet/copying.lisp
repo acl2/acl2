@@ -2824,6 +2824,24 @@ aignet when its initial value is the specified vector:</p>
             :in-theory (disable nth-of-input-copy-values-lemma
                                 input-copy-values))))
 
+  (local (defthm nth-of-nil
+           (equal (nth n nil) nil)
+           :hints(("Goal" :in-theory (enable nth)))))
+
+  (local (defret nth-of-input-copy-values-out-of-bounds-lemma
+           (implies (<= (num-ins aignet) (nfix m))
+                    (equal (nth (- (nfix m) (nfix n)) input-vals) nil))
+           :hints(("Goal" :induct <call>
+                   :expand ((:free (m a b) (nth m (cons a b))))))))
+
+  (defret nth-of-input-copy-values-out-of-bounds
+    (implies (<= (num-ins aignet) (+ (nfix m) (nfix n)))
+             (equal (nth m input-vals) nil))
+    :hints(("Goal" :use ((:instance nth-of-input-copy-values-out-of-bounds-lemma
+                          (m (+ (nfix m) (nfix n)))))
+            :in-theory (disable nth-of-input-copy-values-out-of-bounds-lemma
+                                input-copy-values))))
+
   (defthm input-copy-values-of-update-non-input
     (implies (not (equal (stype (Car (lookup-id id aignet))) :pi))
              (equal (input-copy-values n invals regvals aignet
@@ -2878,6 +2896,24 @@ aignet when its initial value is the specified vector:</p>
     :hints(("Goal" :use ((:instance nth-of-reg-copy-values-lemma
                           (m (+ (nfix m) (nfix n)))))
             :in-theory (disable nth-of-reg-copy-values-lemma
+                                reg-copy-values))))
+
+  (local (defthm nth-of-nil
+           (equal (nth n nil) nil)
+           :hints(("Goal" :in-theory (enable nth)))))
+
+  (local (defret nth-of-reg-copy-values-out-of-bounds-lemma
+           (implies (<= (num-regs aignet) (nfix m))
+                    (equal (nth (- (nfix m) (nfix n)) reg-vals) nil))
+           :hints(("Goal" :induct <call>
+                   :expand ((:free (m a b) (nth m (cons a b))))))))
+
+  (defret nth-of-reg-copy-values-out-of-bounds
+    (implies (<= (num-regs aignet) (+ (nfix m) (nfix n)))
+             (equal (nth m reg-vals) nil))
+    :hints(("Goal" :use ((:instance nth-of-reg-copy-values-out-of-bounds-lemma
+                          (m (+ (nfix m) (nfix n)))))
+            :in-theory (disable nth-of-reg-copy-values-out-of-bounds-lemma
                                 reg-copy-values))))
 
   (defthm reg-copy-values-of-update-non-reg
