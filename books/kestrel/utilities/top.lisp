@@ -60,6 +60,7 @@
 (include-book "paired-names")
 (include-book "proof-builder-macros")
 (include-book "prove-interface")
+(include-book "set-size")
 (include-book "skip-in-book")
 (include-book "strings")
 (include-book "symbol-symbol-alists")
