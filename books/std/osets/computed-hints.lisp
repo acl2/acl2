@@ -380,7 +380,7 @@
                     (hints    (list :use fi-hints
                                     :expand triggers)))
                (prog2$ (cw "~|~%Attempting to discharge subgoal by a ~
-                            pick-a-point strategy; disable ~x1 to ~
+                            pick-a-point strategy; disable ~x0 to ~
                             prevent this.~%~%"
                            ,tagging-theorem)
                        hints))))))
