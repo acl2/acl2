@@ -198,7 +198,7 @@
 ;;    (cons #x400607 #xf8) ;;
 
 ;;    ;; ||Cutpoint:HALT||
-;;    (cons #x400608 #xf4) ;; hlt
+;;    (cons #x400608 #xd6) ;; fake hlt (0xd6 is an illegal opcode)
 
 ;;    ))
 
@@ -219,8 +219,12 @@
 
     ;; ||Cutpoint:HALT||
 
-    #xf4                               ;; Fake Halt
+    #xd6                               ;; Fake Halt (0xd6 is an illegal opcode)
 ))
+
+;; The Fake Halt above could be a retq --- in order to reason about that, we'd
+;; have needed preconditions about the stack being well-formed.  So we skip
+;; that for now in order to keep this program proof simple.
 
 ;; ======================================================================
 
@@ -259,7 +263,7 @@
   (declare (xargs :guard (and (n32p n0)
                               (n32p a))))
   ;; Post-Condition
-  ;; a is the value of eax just before the halt instruction.
+  ;; a is the value of eax just before the fake halt instruction.
   (and (n32p n0)
        (equal (fact-algorithm n0 1) a)))
 
@@ -267,7 +271,7 @@
   (declare (xargs :guard (and (n32p n0)
                               (n32p a))))
   ;; Post-Condition
-  ;; a is the value of eax just before the halt instruction.
+  ;; a is the value of eax just before the fake halt instruction.
   (equal (f n0) a))
 
 (defthmd halt-and-halt-spec
@@ -341,7 +345,8 @@
                                   ())))))
   (let* ((n (rr32 *rdi* x86))
          (a (rr32 *rax* x86)))
-    (if (equal (rip x86) addr)
+
+    (if (equal (rip x86) addr) ;; Poised to execute BEGIN
         (and (begin n0 n)
              (not (ms x86))
              (not (fault x86))
@@ -351,7 +356,8 @@
              (canonical-address-p addr)
              (canonical-address-p (+ addr (len *factorial_recursive*)))
              (program-at addr *factorial_recursive* x86))
-      (if (equal (rip x86) (+ 16 addr))
+
+      (if (equal (rip x86) (+ 16 addr)) ;; Posied to execute LOOP-INV
           (and (loop-inv n0 n 1 a)
                (not (ms x86))
                (not (fault x86))
@@ -361,16 +367,18 @@
                (canonical-address-p addr)
                (canonical-address-p (+ addr (len *factorial_recursive*)))
                (program-at addr *factorial_recursive* x86))
-        (if (equal (rip x86) (+ 25 addr))
+
+        (if (equal (rip x86) (+ 25 addr)) ;; Already executed fake HALT
             (and (halt n0 a)
                  (64-bit-modep x86)
                  (app-view x86)
-                 (not (fault x86))
-                 (ms x86)
+                 (fault x86) ;; d6 is "fake" halt -- it causes a #UD.
+                 (not (ms x86))
                  ;; Program is in the memory
                  (canonical-address-p addr)
                  (canonical-address-p (+ addr (len *factorial_recursive*)))
                  (program-at addr *factorial_recursive* x86))
+
           nil)))))
 
 ;; ======================================================================
@@ -452,10 +460,7 @@
                 (app-view x86)
                 (canonical-address-p addr)
                 (canonical-address-p (+ 25 addr))
-                (program-at addr
-                         '(133 255 184 1 0 0 0 116 15 15 31 128 0
-                               0 0 0 15 175 199 131 239 1 117 248 244)
-                         x86))
+                (program-at addr *factorial_recursive* x86))
            (inv n0 addr (x86-fetch-decode-execute x86)))
   :hints (("Goal"
            :in-theory (e/d* (check-instruction-length)
@@ -691,8 +696,8 @@
                 (equal x86-after-run (x86-run k x86))
                 (equal (rip x86-after-run) (+ 25 addr)))
            (and (halt n0 (rr32 *rax* x86-after-run))
-                (not (fault x86-after-run))
-                (ms x86-after-run)
+                (fault x86-after-run)
+                (not (ms x86-after-run))
                 (program-at addr *factorial_recursive* x86-after-run)))
   :hints (("Goal"
            :use ((:instance partial-correctness-of-fact-recursive-effects-helper)))))
@@ -713,8 +718,8 @@
                 (equal x86-after-run (x86-run k x86))
                 (equal (rip x86-after-run) (+ 25 addr)))
            (and (halt-spec n0 (rr32 *rax* x86-after-run))
-                (not (fault x86-after-run))
-                (ms x86-after-run)
+                (fault x86-after-run)
+                (not (ms x86-after-run))
                 (program-at addr *factorial_recursive* x86-after-run)))
   :hints (("Goal"
            :in-theory (e/d (halt-and-halt-spec) ())

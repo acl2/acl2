@@ -381,16 +381,29 @@ writes the final value of the instruction pointer into RIP.</p>")
   (b* ((ctx 'x86-step-unimplemented))
     (!!ms-fresh :message message)))
 
-(define x86-illegal-instruction (message x86)
+(define x86-illegal-instruction
+  (message
+   (start-rip :type (signed-byte   #.*max-linear-address-size*))
+   (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
+   x86)
   :parents (instructions)
   :short "Semantic function corresponding to opcodes that Intel deems to be
   illegal or reserved"
   :long "<p>Note that the @('#UD') (undefined operation) exception should be
   thrown here, which is why the @('fault') field is populated with
   @('message').</p>"
-  :returns (x86 x86p :hyp :guard)
-  (b* ((ctx 'x86-illegal-instruction))
-    (!!fault-fresh :ud message)))
+  :returns (x86 x86p :hyp (and (x86p x86) 
+                               (canonical-address-p temp-rip)))
+  (b* ((ctx 'x86-illegal-instruction)
+       ;; We update the RIP to point to the next instruction --- in case we
+       ;; ever get to the point that we can recover from #UD exceptions, this
+       ;; may be the right thing to do.
+       (x86 (!rip temp-rip x86)))
+    (!!fault-fresh :ud message :instruction-address start-rip)))
+
+(add-to-ruleset instruction-decoding-and-spec-rules
+                '(x86-step-unimplemented
+                  x86-illegal-instruction))
 
 ;; ======================================================================
 

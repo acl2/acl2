@@ -310,19 +310,18 @@
               (x86 (!app-view t (create-x86)))
               ((mv flg x86)
                (init-x86-state-64
-                nil start-address halt-address
+                nil start-address
                 nil nil nil nil nil 0
                 *popcount-64*
                 x86))
               (x86 (wr32 *rdi* n x86))
               (count 300)
-              (x86 (x86-run count x86)))
-           (and (equal (rgfi *rax* x86)
-                       (logcount n))
+              (x86 (x86-run-halt halt-address count x86)))
+           (and (equal (rgfi *rax* x86) (logcount n))
                 (equal flg nil)
-                (equal (rip x86)
-                       (+ 1 halt-address))
-                (equal (caar (ms x86)) 'X86-HLT)))
+                (equal (rip x86) halt-address)
+                (equal (ms x86) `((x86-fetch-decode-execute-halt
+                                   :rip ,halt-address)))))
   :g-bindings
   `((n    (:g-number ,(gl-int 0 1 33))))
   :n-counterexamples 0
@@ -338,7 +337,7 @@
               (x86 (!app-view t (create-x86)))
               ((mv flg x86)
                (init-x86-state-64
-                nil start-address halt-address
+                nil start-address
                 nil nil nil nil nil 0
                 *popcount-64*
                 x86))
@@ -349,54 +348,19 @@
                ;; state.
                (wr64 *rdi* n x86))
               (count 300)
-              (x86 (x86-run count x86)))
+              (x86 (x86-run-halt halt-address count x86)))
            (and (equal (rgfi *rax* x86)
                        (logcount n))
                 (equal flg nil)
-                (equal (rip x86)
-                       (+ 1 halt-address))))
+                (equal (rip x86) halt-address)
+                (equal (ms x86) `((x86-fetch-decode-execute-halt
+                                   :rip ,halt-address)))))
   :g-bindings
   `((n   (:g-number ,(gl-int 0 1 65))))
   :n-counterexamples 1
   :abort-indeterminate t
   :exec-ctrex nil
   :rule-classes nil)
-
-;; (def-gl-thm x86-popcount-correct-general
-;;   :hyp (and (natp n)
-;;             (< n (expt 2 64))
-;;             (natp m)
-;;             (< m (expt 2 64)))
-;;   :concl (b* ((start-address #x400650)
-;;               (halt-address #x4006c2)
-;;               (x86 (!app-view t (create-x86)))
-;;               ((mv flg x86)
-;;                (init-x86-state-64
-;;                 nil start-address halt-address
-;;                 nil nil nil nil nil 0
-;;                 *popcount-64*
-;;                 x86))
-;;               (x86
-;;                (wr64 *rax* m x86))
-;;               (x86 ;; (!rgfi *rdi* n x86)
-;;                ;; Shilpi: It's important to use wr64 instead of !rgfi
-;;                ;; because wr64 converts unsigned numbers to signed
-;;                ;; ones, which is the representation of GPRs in the x86
-;;                ;; state.
-;;                (wr64 *rdi* n x86))
-;;               (count 300)
-;;               (x86 (x86-run count x86)))
-;;            (and (equal (rgfi *rax* x86)
-;;                        (logcount n))
-;;                 (equal flg nil)
-;;                 (equal (rip x86)
-;;                        (+ 1 halt-address))))
-;;   :g-bindings
-;;   (gl::auto-bindings (:mix (:nat n 64) (:nat m 64)))
-;;   :n-counterexamples 1
-;;   :abort-indeterminate t
-;;   :exec-ctrex nil
-;;   :rule-classes nil)
 
 ;; ======================================================================
 
@@ -502,18 +466,19 @@
                (x86 (!app-view t (create-x86)))
                ((mv flg x86)
                 (init-x86-state-64
-                 nil start-address halt-address
+                 nil start-address
                  nil nil nil nil nil 0
                  *popcount-32-buggy*
                  x86))
                (x86 (wr32 *rdi* n x86))
                (count 300)
-               (x86 (x86-run count x86)))
+               (x86 (x86-run-halt halt-address count x86)))
             (and (equal (rgfi *rax* x86)
                         (logcount n))
                  (equal flg nil)
-                 (equal (rip x86)
-                        (+ 1 halt-address))))
+                 (equal (rip x86) halt-address)
+                 (equal (ms x86) `((x86-fetch-decode-execute-halt
+                                    :rip ,halt-address)))))
    :g-bindings
    `((n    (:g-number ,(gl-int 0 1 33))))
    :n-counterexamples 3
@@ -527,13 +492,13 @@
      (x86 (!app-view t x86))
      ((mv ?flg x86)
       (init-x86-state-64
-       nil start-address halt-address
+       nil start-address
        nil nil nil nil nil 0
        *popcount-32-buggy*
        x86))
      (x86 (wr32 *rdi* #x80000000  x86))
      (count 300)
-     (x86 (x86-run count x86)))
+     (x86 (x86-run-halt halt-address count x86)))
   x86)
 (rgfi *rax* x86)
 
@@ -542,13 +507,13 @@
      (x86 (!app-view t x86))
      ((mv ?flg x86)
       (init-x86-state-64
-       nil start-address halt-address
+       nil start-address
        nil nil nil nil nil 0
        *popcount-32-buggy*
        x86))
      (x86 (wr32 *rdi* #xFFFFFFFF  x86))
      (count 300)
-     (x86 (x86-run count x86)))
+     (x86 (x86-run-halt halt-address count x86)))
   x86)
 (rgfi *rax* x86)
 
@@ -563,18 +528,19 @@
               (x86 (!app-view t (create-x86)))
               ((mv flg x86)
                (init-x86-state-64
-                nil start-address halt-address
+                nil start-address
                 nil nil nil nil nil 0
                 *popcount-32-buggy*
                 x86))
               (x86 (wr32 *rdi* n x86))
               (count 300)
-              (x86 (x86-run count x86)))
+              (x86 (x86-run-halt halt-address count x86)))
            (and (equal (ash (rgfi *rax* x86) -24)
                        (logcount n))
                 (equal flg nil)
-                (equal (rip x86)
-                       (+ 1 halt-address))))
+                (equal (rip x86) halt-address)
+                (equal (ms x86) `((x86-fetch-decode-execute-halt
+                                   :rip ,halt-address)))))
   :g-bindings
   `((n    (:g-number ,(gl-int 0 1 33))))
   :n-counterexamples 3

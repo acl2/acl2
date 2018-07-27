@@ -1547,7 +1547,8 @@
        (evex-byte0? (equal opcode/evex-byte #.*evex-byte0*))
        ;; Byte 0x62 is byte0 of the 4-byte EVEX prefix.  In 64-bit mode, this
        ;; byte indicates the beginning of the EVEX prefix --- note that in the
-       ;; pre-AVX512 era, this would lead to a #UD.
+       ;; pre-AVX512 era, this would lead to a #UD, but we don't model that
+       ;; here.
 
        ;; Similar to the VEX prefix situation, things are more complicated in
        ;; the 32-bit mode, where 0x62 aliases to the 32-bit only BOUND
@@ -1962,5 +1963,44 @@
                                               (x86-fetch-decode-execute x86)))))))
 
 (in-theory (disable x86-run-steps1))
+
+;; ----------------------------------------------------------------------
+
+(define x86-fetch-decode-execute-halt
+  ((halt-address :type (signed-byte   #.*max-linear-address-size*))
+   x86)
+  :enabled t
+  :parents (x86-decoder)
+
+  :short "Alternative version of @(tsee x86-fetch-decode-execute) that sets the
+  @('MS') field if @('rip') is equal to @('halt-address')"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :prepwork
+  ((local (in-theory (e/d* () (signed-byte-p unsigned-byte-p not)))))
+
+  (b* ((ctx __function__))
+    (if (equal (rip x86) halt-address)
+        (!!ms-fresh)
+      (x86-fetch-decode-execute x86))))
+
+(define x86-run-halt
+  ((halt-address :type (signed-byte   #.*max-linear-address-size*))
+   (n            :type (unsigned-byte 59))
+   x86)
+
+  :parents (x86-decoder)
+  :short "Alternative version of @(tsee x86-run) that uses @(tsee
+  x86-fetch-decode-execute-halt) instead of @(tsee x86-fetch-decode-execute)"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  (cond ((fault x86) x86)
+        ((ms x86) x86)
+        ((mbe :logic (zp n) :exec (equal 0 n)) x86)
+        (t (let* ((x86 (x86-fetch-decode-execute-halt halt-address x86))
+                  (n (the (unsigned-byte 59) (1- n))))
+             (x86-run-halt halt-address n x86)))))
 
 ;; ----------------------------------------------------------------------

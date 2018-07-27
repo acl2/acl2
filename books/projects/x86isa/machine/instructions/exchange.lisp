@@ -53,22 +53,6 @@
 ;; INSTRUCTION: XCHG
 ;; ======================================================================
 
-;; (local
-;;  (defthm-sb i49p-mv-nth-3-x86-operand-from-modr/m-and-sib-bytes
-;;    ;; Useful in guard proofs
-;;    :hyp (forced-and (x86p x86))
-;;    :bound 49
-;;    :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes
-;;                      reg-type operand-size inst-ac? memory-ptr?
-;;                      p2 p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
-;;    :hints (("Goal"
-;;             :use
-;;             ((:instance i48p-x86-operand-from-modr/m-and-sib-bytes))
-;;             :in-theory
-;;             (e/d* () (signed-byte-p
-;;                       i48p-x86-operand-from-modr/m-and-sib-bytes))))
-;;    :gen-linear t))
-
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-xchg
 
@@ -390,36 +374,5 @@
        ;; Update the x86 state:
        (x86 (write-*ip temp-rip x86)))
     x86))
-
-;; (def-inst x86-nop
-
-;;   ;; Note: With operand-size override prefix (#x66), the single byte
-;;   ;; NOP instruction is equivalent to XCHG ax, ax.
-
-;;   ;; Op/En: NP
-;;   ;; 90
-
-;;   :parents (one-byte-opcodes)
-;;   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
-
-;;   :returns (x86 x86p :hyp (and (x86p x86)
-;;                                (canonical-address-p temp-rip)))
-
-;;   :body
-
-
-;;   (b* ((ctx 'x86-nop)
-;;        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-;;        ((when lock?)
-;;         (!!ms-fresh :lock-prefix prefixes)))
-
-;;     ;; We don't need to check for valid length for one-byte
-;;     ;; instructions.  The length will be more than 15 only if
-;;     ;; get-prefixes fetches 15 prefixes, and that error will be
-;;     ;; caught in x86-fetch-decode-execute, that is, before control
-;;     ;; reaches this function.
-
-;;     ;; Update the x86 state:
-;;     (!rip temp-rip x86)))
 
 ;; ======================================================================

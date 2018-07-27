@@ -552,7 +552,7 @@ int main (int argc, char *argv[], char *env[])
    (cons #x400526 #xff) ;;
    (cons #x400527 #xff) ;;
    (cons #x400528 #xff) ;;
-   (cons #x400529 #xf4) ;; hlt
+   (cons #x400529 #xd6) ;; fake hlt (should #ud)
    (cons #x40052a #x90) ;; nop
    (cons #x40052b #x90) ;; nop
 
@@ -1974,9 +1974,10 @@ int main (int argc, char *argv[], char *env[])
   ;; page tables at address #x402000.  Comment out the following
   ;; init-sys-view expression if you wish to run the program
   ;; in programmer-level mode.
-  (init-sys-view #x402000 x86)
 
-  (init-x86-state
+  ;; (init-sys-view #x402000 x86)
+
+  (init-x86-state-64
 
    ;; Status (MS and fault field)
    nil
@@ -2003,6 +2004,12 @@ int main (int argc, char *argv[], char *env[])
    ;; in init-sys-view)
    nil
 
+   ;; seg-visibles
+   nil
+
+   ;; seg-hiddens
+   nil
+
    ;; Initial value of the Rflags Register
    2
 
@@ -2017,12 +2024,15 @@ int main (int argc, char *argv[], char *env[])
    (time$ (x86-run-steps (@ xrun-limit) x86))
    (ACL2::state-free-global-let*
     ((print-base 10))
-    (cond ((not (equal (ms x86)
-                       '((X86-HLT :RIP  #x400609
-                                  :LEGAL-HALT :HLT))))
+    (cond ((or (ms x86)
+               (not (equal (fault x86)
+                           '((X86-ILLEGAL-INSTRUCTION
+                              :RIP #x400609
+                              :UD "Reserved Opcode!"
+                              :INSTRUCTION-ADDRESS #x400608)))))
            (ACL2::er soft ctx
-                     "~|(ms x86) = ~x0"
-                     (ms x86)))
+                     "~|(ms x86) = ~x0 (fault x86) = ~x1"
+                     (ms x86) (fault x86)))
           (t (let ((expected (fact input)))
                (cond
                 ((equal (rgfi *rax* x86)
@@ -2059,7 +2069,8 @@ int main (int argc, char *argv[], char *env[])
   ;; page tables at address #x402000.  Comment out the following
   ;; init-sys-view expression if you wish to run the program
   ;; in programmer-level mode.
-  (init-sys-view #x402000 x86)
+
+  ;; (init-sys-view #x402000 x86)
 
   (init-x86-state
 
@@ -2143,7 +2154,8 @@ int main (int argc, char *argv[], char *env[])
   ;; page tables at address #x402000.  Comment out the following
   ;; init-sys-view expression if you wish to run the program
   ;; in programmer-level mode.
-  (init-sys-view #x402000 x86)
+
+  ;; (init-sys-view #x402000 x86)
 
   (init-x86-state
 

@@ -183,7 +183,7 @@ written to the x86 state.  For example, the following form will
  nil
  ;; Start Address --- set the RIP to this address
  #x100000f12
- ;; Halt Address --- overwrites this address by #xF4 (HLT)
+ ;; Halt Address --- overwrites this address by #xD6 (illegal opcode)
  #x100000f17
  ;; Initial values of General-Purpose Registers
  '((#.*rdi* . #xff00ff00)
@@ -316,18 +316,23 @@ file, etc.</p>
 </code>
 
 <p>How do know that the program ran to completion?  After executing
-the above form, we can inspect the contents of the @('ms') field:</p>
+the above form, we can inspect the contents of the following
+fields:</p>
 
 <code>
+(fault x86)
 (ms x86)
+(rip x86)
 </code>
 
-<p>If the @('ms') field contains a legal halt message, we know that
-the program was run successfully.  If it contains an error message, we
-need to figure out what went wrong during the program execution ---
-the @(see Dynamic-instrumentation) utilities can help in debugging.
-If @('ms') contains @('nil'), the program did not run to completion
-and the x86 state is poised to continue execution.</p>
+<p>If the @('fault') field contains the symbol
+@('x86-illegal-instruction'), @('ms') is empty, and @('rip') contains
+the expected address, then we know that the program was run
+successfully.  Otherwise, we need to figure out what went wrong during
+the program execution --- the @(see Dynamic-instrumentation) utilities
+can help in debugging.  If @('ms') and @('fault') contain @('nil'),
+then the program did not run to completion and the x86 state is poised
+to continue execution.</p>
 
 <p>Where did the number @('10000') in the argument to @('x86-run') or
 @('x86-run-steps') come from?  This number is the clock, i.e., the

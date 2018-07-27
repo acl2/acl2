@@ -536,7 +536,7 @@
            ;; ,(create-call-from-semantic-info
            ;;   '(:fn . (:no-instruction)) world)
            (x86-illegal-instruction
-            "Reserved or Illegal Opcode!" x86)))))
+            "Reserved or Illegal Opcode!" start-rip temp-rip x86)))))
     (mv doc-string `(cond ,@dispatch)))
 
   ///
@@ -639,7 +639,7 @@
           ;; ,(create-call-from-semantic-info
           ;;   '(:fn . (:no-instruction)) world)
           (x86-illegal-instruction
-           "Reserved or Illegal Opcode!" x86))))
+           "Reserved or Illegal Opcode!" start-rip temp-rip x86))))
     (b* ((row (car map))
          ((mv row-doc-string row-dispatch)
           (create-dispatch-from-opcode-row
