@@ -1971,6 +1971,7 @@
    x86)
   :enabled t
   :parents (x86-decoder)
+  :inline t
 
   :short "Alternative version of @(tsee x86-fetch-decode-execute) that sets the
   @('MS') field if @('rip') is equal to @('halt-address')"
@@ -1981,7 +1982,9 @@
   ((local (in-theory (e/d* () (signed-byte-p unsigned-byte-p not)))))
 
   (b* ((ctx __function__))
-    (if (equal (rip x86) halt-address)
+    (if (equal (the (signed-byte #.*max-linear-address-size*)
+                 (rip x86))
+               halt-address)
         (!!ms-fresh)
       (x86-fetch-decode-execute x86))))
 

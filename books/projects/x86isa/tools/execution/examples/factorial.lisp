@@ -40,6 +40,12 @@
 
 (include-book "../top" :ttags :all)
 
+(defsection factorial-cosim
+  :parents (concrete-simulation-examples)
+  )
+
+(local (xdoc::set-default-parents factorial-cosim))
+
 ;; ======================================================================i
 
 #||
@@ -99,7 +105,9 @@ int main (int argc, char *argv[], char *env[])
 
 ||#
 
-(defun fact (n)
+;; ----------------------------------------------------------------------
+
+(define fact ((n natp))
   ;; Specification Function in ACL2
   (declare (xargs :measure (nfix n)))
   (if (or (< n 2) (not (integerp n)))
@@ -109,7 +117,6 @@ int main (int argc, char *argv[], char *env[])
 ;; The following ACL2 representation of the factorial binary (with the
 ;; assembly instructions preserved as comments) was obtained from the
 ;; factorial machine-code program using the -O2 option of GCC.
-
 (defconst *factorial-binary*
   (list
 
@@ -1959,275 +1966,151 @@ int main (int argc, char *argv[], char *env[])
    (cons #x47 #x00) ;;
    ))
 
-(assign xrun-limit 100000000000000000)
+;; ----------------------------------------------------------------------
 
-(set-raw-mode-on!)
+(defconst *fact-xrun-limit* 5000)
 
-;------------------------------------------------------------------------------
-;------------------------------------------------------------------------------
+(define check-fact-output
+  ((input        :type (unsigned-byte 50))
+   (halt-address :type (signed-byte #.*max-linear-address-size*))
+   (x86 "Output x86 State"))
 
-;; Factorial_recursive:
+  (cond ((or (fault x86)
+             (not (equal (ms x86)
+                         `((x86-fetch-decode-execute-halt
+                            :rip ,halt-address)))))
 
-(defun run-factorial_recursive (input x86 &aux (ctx 'run-factorial_recursive))
+         (cw "~|(ms x86) = ~x0 (fault x86) = ~x1~%"
+             (ms x86) (fault x86)))
 
-  ;; The following initializes the system-level mode and sets up the
-  ;; page tables at address #x402000.  Comment out the following
-  ;; init-sys-view expression if you wish to run the program
-  ;; in programmer-level mode.
+        (t (let ((expected (fact input)))
 
-  ;; (init-sys-view #x402000 x86)
+             (cond
+              ((and (< input 13)
+                    (equal (rgfi *rax* x86) expected))
+               (prog2$
+                (cw
+                 "~|(x86isa-fact ~x0) was correctly computed as ~x1.~%"
+                 input
+                 expected)
+                t))
+              (t
+               (prog2$
+                (cw
+                 "~|(x86isa-fact ~x0) = ~x1, but rax is ~x2,~% ~
+              but that's okay: that's what the program does for input ~x0.~%"
+                 input expected (rgfi *rax* x86))
+                t)))))))
 
-  (init-x86-state-64
-
-   ;; Status (MS and fault field)
-   nil
-
-   ;; Start Address
-   #x4005f0
-
-   ;; Halt Address
-   #x400608
-
-   ;; Initial values of General-Purpose Registers
-   (acons
-    ;; Input is in RDI.
-    #.*rdi* input
-    (acons
-     #.*rsp* #.*2^45*
-     nil))
-
-   ;; Initial values of Control Registers (already initialized in
-   ;; init-sys-view)
-   nil
-
-   ;; Initial values of Model-Specific Registers (already initialized
-   ;; in init-sys-view)
-   nil
-
-   ;; seg-visibles
-   nil
-
-   ;; seg-hiddens
-   nil
-
-   ;; Initial value of the Rflags Register
-   2
-
-   ;; Initial memory image
-   *factorial-binary*
-
-   ;; x86 state
+(define x86isa-one-fact-cosim
+  ((input         :type (unsigned-byte 50))
+   (start-address :type (signed-byte #.*max-linear-address-size*))
+   (halt-address  :type (signed-byte #.*max-linear-address-size*))
+   (xrun-limit    :type (unsigned-byte 50))
+   (sys-view?     booleanp)
    x86)
 
-  (mv-let
-   (factorial_recursive-steps x86)
-   (time$ (x86-run-steps (@ xrun-limit) x86))
-   (ACL2::state-free-global-let*
-    ((print-base 10))
-    (cond ((or (ms x86)
-               (not (equal (fault x86)
-                           '((X86-ILLEGAL-INSTRUCTION
-                              :RIP #x400609
-                              :UD "Reserved Opcode!"
-                              :INSTRUCTION-ADDRESS #x400608)))))
-           (ACL2::er soft ctx
-                     "~|(ms x86) = ~x0 (fault x86) = ~x1"
-                     (ms x86) (fault x86)))
-          (t (let ((expected (fact input)))
-               (cond
-                ((equal (rgfi *rax* x86)
-                        expected)
-                 (pprogn
-                  (ACL2::fmx "(factorial_recursive ~x0) was correctly computed as ~x1 (~x2 steps)~|"
-                             input
-                             expected
-                             factorial_recursive-steps)
-                  (ACL2::value t)))
-                (t (ACL2::er soft ctx
-                             "(factorial_recursive ~x0) = ~x1, but rax is ~x2"
-                             input
-                             expected
-                             (rgfi *rax* x86)))))))))
-  nil)
+  (b* ((ctx __function__)
+       (x86 (if sys-view?
+                ;; The following initializes the system-level mode and sets up
+                ;; the page tables at address #x402000.
+                (init-sys-view #x402000 x86)
+              x86))
+       ((mv flg x86)
+        (init-x86-state-64
+         ;; Status (MS and fault field)
+         nil
+         start-address
+         ;; Initial values of General-Purpose Registers
+         (acons
+          ;; Input is in RDI.
+          #.*rdi* input
+          (acons
+           #.*rsp* #.*2^45*
+           nil))
+         ;; Initial values of Control Registers (already initialized in
+         ;; init-sys-view)
+         nil
+         ;; Initial values of Model-Specific Registers (already initialized
+         ;; in init-sys-view)
+         nil
+         ;; seg-visibles
+         nil
+         ;; seg-hiddens
+         nil
+         ;; Initial value of the Rflags Register
+         2
+         ;; Initial memory image
+         *factorial-binary*
+         ;; x86 state
+         x86))
+       ((when flg)
+        (let ((x86 (!!ms-fresh :init-x86-state-64-error flg)))
+          (mv nil x86)))
+       (x86 (time$ (x86-run-halt halt-address xrun-limit x86)))
+       (ok? (check-fact-output input halt-address x86))
+       ((unless ok?) (mv nil x86)))
+    (mv t x86)))
 
-;; Some runs:
-
-;; Note: Error from (fact 13) onwards.  The C program behaves in the same way.
-;; so we're fine.
-(dotimes (x 30 (time$ (run-factorial_recursive x x86)))
-  (time$ (run-factorial_recursive x x86))
-  (format t  "~%~%-----------------------------------------------~%~%"))
-
-;------------------------------------------------------------------------------
-;------------------------------------------------------------------------------
-
-;; Factorial_Iterative:
-
-(defun run-factorial_iterative (input x86 &aux (ctx 'run-factorial_iterative))
-
-  ;; The following initializes the system-level mode and sets up the
-  ;; page tables at address #x402000.  Comment out the following
-  ;; init-sys-view expression if you wish to run the program
-  ;; in programmer-level mode.
-
-  ;; (init-sys-view #x402000 x86)
-
-  (init-x86-state
-
-   ;; Status (MS and fault field)
-   nil
-
-   ;; Start Address
-   #x400610
-
-   ;; Halt Address
-   #x40062a
-
-   ;; Initial values of General-Purpose Registers
-   (acons
-    ;; Input is in RDI.
-    #.*rdi* input
-    (acons
-     #.*rsp* #.*2^45*
-     nil))
-
-   ;; Initial values of Control Registers (already initialized in
-   ;; init-sys-view)
-   nil
-
-   ;; Initial values of Model-Specific Registers (already initialized
-   ;; in init-sys-view)
-   nil
-
-   ;; Initial value of the Rflags Register
-   2
-
-   ;; Initial memory image
-   *factorial-binary*
-
-   ;; x86 state
+(define run-x86isa-fact
+  ((input         :type (unsigned-byte 50))
+   (start-address :type (signed-byte #.*max-linear-address-size*))
+   (halt-address  :type (signed-byte #.*max-linear-address-size*))
+   (xrun-limit    :type (unsigned-byte 50))
+   (sys-view?     booleanp)
    x86)
 
-  (mv-let
-   (factorial_iterative-steps x86)
-   (time$ (x86-run-steps (@ xrun-limit) x86))
-   (ACL2::state-free-global-let*
-    ((print-base 10))
-    (cond ((not (equal (ms x86)
-                       '((X86-HLT :RIP #x40062B :LEGAL-HALT :HLT))))
-           (ACL2::er soft ctx
-                     "~|(ms x86) = ~x0"
-                     (ms x86)))
-          (t (let ((expected (fact input)))
-               (cond
-                ((equal (rgfi *rax* x86)
-                        expected)
-                 (pprogn
-                  (ACL2::fmx "(factorial_iterative ~x0) was correctly computed as ~x1 (~x2 steps)~|"
-                             input
-                             expected
-                             factorial_iterative-steps)
-                  (ACL2::value t)))
-                (t (ACL2::er soft ctx
-                             "(factorial_iterative ~x0) = ~x1, but rax is ~x2"
-                             input
-                             expected
-                             (rgfi *rax* x86)))))))))
-  nil)
+  (if (zp input)
 
-;; Some runs:
+      (mv t x86)
 
-;; Note: Error from (fact 13) onwards.  The C program behaves in the same way.
-;; so we're fine.
-(dotimes (x 30 (time$ (run-factorial_iterative x x86)))
-  (time$ (run-factorial_iterative x x86))
-  (format t  "~%~%-----------------------------------------------~%~%"))
+    (b* (((mv flg x86)
+          (x86isa-one-fact-cosim
+           (1- input) start-address halt-address xrun-limit sys-view? x86))
+         ((unless flg)
+          (cw "~% Mismatch found!~%")
+          (mv flg x86)))
 
-;------------------------------------------------------------------------------
-;------------------------------------------------------------------------------
+      (run-x86isa-fact
+       (1- input) start-address halt-address xrun-limit sys-view? x86))))
 
-;; Factorial_Tail_Recursive:
+;; ----------------------------------------------------------------------
 
-(defun run-factorial_tail_recursive (input x86 &aux (ctx 'run-factorial_tail_recursive))
+(acl2::assert!-stobj
+ ;; fact_recursive:
+ (b* ((start-address #x4005f0)
+      (halt-address  #x400608)
+      (input         20)
+      (sys-view?     t)
+      ((mv flg x86)
+       (run-x86isa-fact
+        input start-address halt-address *fact-xrun-limit* sys-view? x86)))
+   (mv flg x86))
+ x86)
 
-  ;; The following initializes the system-level mode and sets up the
-  ;; page tables at address #x402000.  Comment out the following
-  ;; init-sys-view expression if you wish to run the program
-  ;; in programmer-level mode.
+(acl2::assert!-stobj
+ ;; fact_iterative:
+ (b* ((start-address #x400610)
+      (halt-address  #x40062a)
+      (input         20)
+      (sys-view?     nil)
+      ((mv flg x86)
+       (run-x86isa-fact
+        input start-address halt-address *fact-xrun-limit* sys-view? x86)))
+   (mv flg x86))
+ x86)
 
-  ;; (init-sys-view #x402000 x86)
-
-  (init-x86-state
-
-   ;; Status (MS and fault field)
-   nil
-
-   ;; Start Address
-   #x400650
-
-   ;; Halt Address
-   #x400668
-
-   ;; Initial values of General-Purpose Registers
-   (acons
-    ;; Input is in RDI.
-    #.*rdi* input
-    (acons
-     #.*rsp* #.*2^45*
-     nil))
-
-   ;; Initial values of Control Registers (already initialized in
-   ;; init-sys-view)
-   nil
-
-   ;; Initial values of Model-Specific Registers (already initialized
-   ;; in init-sys-view)
-   nil
-
-   ;; Initial value of the Rflags Register
-   2
-
-   ;; Initial memory image
-   *factorial-binary*
-
-   ;; x86 state
-   x86)
-
-  (mv-let
-   (factorial_tail_recursive-steps x86)
-   (time$ (x86-run-steps (@ xrun-limit) x86))
-   (ACL2::state-free-global-let*
-    ((print-base 10))
-    (cond ((not (equal (ms x86)
-                       '((X86-HLT :RIP #x400669
-                                  :LEGAL-HALT :HLT))))
-           (ACL2::er soft ctx
-                     "~|(ms x86) = ~x0"
-                     (ms x86)))
-          (t (let ((expected (fact input)))
-               (cond
-                ((equal (rgfi *rax* x86)
-                        expected)
-                 (pprogn
-                  (ACL2::fmx "(factorial_tail_recursive ~x0) was correctly computed as ~x1 (~x2 steps)~|"
-                             input
-                             expected
-                             factorial_tail_recursive-steps)
-                  (ACL2::value t)))
-                (t (ACL2::er soft ctx
-                             "(factorial_tail_recursive ~x0) = ~x1, but rax is ~x2"
-                             input
-                             expected
-                             (rgfi *rax* x86)))))))))
-  nil)
-
-;; Some runs:
-
-;; Note: Error from (fact 13) onwards.  The C program behaves in the same way.
-;; so we're fine.
-(dotimes (x 30 (time$ (run-factorial_tail_recursive x x86)))
-  (time$ (run-factorial_tail_recursive x x86))
-  (format t  "~%~%-----------------------------------------------~%~%"))
+(acl2::assert!-stobj
+ ;; fact_tail_recursive:
+ (b* ((start-address #x400650)
+      (halt-address  #x400668)
+      (input         20)
+      (sys-view?     t)
+      ((mv flg x86)
+       (run-x86isa-fact
+        input start-address halt-address *fact-xrun-limit* sys-view? x86)))
+   (mv flg x86))
+ x86)
 
 ;------------------------------------------------------------------------------
 ;------------------------------------------------------------------------------

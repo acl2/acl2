@@ -40,6 +40,12 @@
 
 (include-book "../top" :ttags :all)
 
+(defsection fibonacci-cosim
+  :parents (concrete-simulation-examples)
+  )
+
+(local (xdoc::set-default-parents fibonacci-cosim))
+
 ;; (include-book "centaur/memoize/old/profile" :dir :system)
 
 ;; ======================================================================
@@ -77,12 +83,7 @@ int main (int argc, char *argv[], char *env[])
 
 ||#
 
-(defun fib (n)
-  ;; Specification Function in ACL2
-  (declare (xargs :guard (natp n)))
-  (cond ((zp n) 0)
-        ((eql n 1) 1)
-        (t (+ (fib (- n 1)) (fib (- n 2))))))
+;; ----------------------------------------------------------------------
 
 ;; The following ACL2 representation of the fibonacci binary (with the
 ;; assembly instructions preserved as comments) was obtained from the
@@ -1714,100 +1715,136 @@ int main (int argc, char *argv[], char *env[])
    (cons #x47 #x00) ;;
    ))
 
-(assign xrun-limit 100000000000000000)
-
-(set-raw-mode-on!)
+(define fib ((n natp))
+  ;; Specification Function in ACL2
+  (declare (xargs :guard (natp n)))
+  (cond ((zp n) 0)
+        ((eql n 1) 1)
+        (t (+ (fib (- n 1)) (fib (- n 2))))))
 
 ;; ======================================================================
 
-(defun run-fib (input x86 &aux (ctx 'run-fib))
+(defconst *fib-xrun-limit* #u_100_000_000_000)
 
-  ;; The following initializes the system-level mode and sets up the
-  ;; page tables at address #x402000.  Comment out the following
-  ;; init-sys-view expression if you wish to run the program
-  ;; in programmer-level mode.
-  (init-sys-view #x402000 x86)
+(define check-fib-output
+  ((input        :type (unsigned-byte 50))
+   (halt-address :type (signed-byte #.*max-linear-address-size*))
+   (x86 "Output x86 State"))
 
-  (init-x86-state
+  (cond ((or (fault x86)
+             (not (equal (ms x86)
+                         `((x86-fetch-decode-execute-halt
+                            :rip ,halt-address)))))
 
-   ;; Status (MS and fault field)
-   nil
+         (cw "~|(ms x86) = ~x0 (fault x86) = ~x1~%"
+             (ms x86) (fault x86)))
 
-   ;; Start Address
-   #x400666
+        (t (let ((expected (fib input)))
 
-   ;; Halt Address
-   #x400670
+             (cond
+              ((equal (rgfi *rax* x86) expected)
+               (prog2$
+                (cw
+                 "~|(x86isa-fib ~x0) was correctly computed as ~x1.~%"
+                 input
+                 expected)
+                t))
+              (t
+               (prog2$
+                (cw
+                 "~|(x86isa-fib ~x0) = ~x1, but rax is ~x2.~%"
+                 input expected (rgfi *rax* x86))
+                t)))))))
 
-   ;; Initial values of General-Purpose Registers
-   (acons
-    ;; Input is in RAX.
-    #.*rax* input
-    (acons
-     #.*rsp* #.*2^45*
-     nil))
-
-   ;; Initial values of Control Registers (already initialized in
-   ;; init-sys-view)
-   nil
-
-   ;; Initial values of Model-Specific Registers (already initialized
-   ;; in init-sys-view)
-   nil
-
-   ;; Initial value of the Rflags Register
-   2
-
-   ;; Initial memory image
-   *fibonacci-binary*
-
-   ;; x86 state
+(define x86isa-one-fib-cosim
+  ((input         :type (unsigned-byte 50))
+   (start-address :type (signed-byte #.*max-linear-address-size*))
+   (halt-address  :type (signed-byte #.*max-linear-address-size*))
+   (xrun-limit    :type (unsigned-byte 50))
+   (sys-view?     booleanp)
    x86)
 
-  (mv-let
-   (fib-steps x86)
-   (time$ (x86-run-steps (@ xrun-limit) x86))
-   (ACL2::state-free-global-let*
-    ((print-base 10))
-    (cond ((not (equal (ms x86)
-                       '((X86-HLT :RIP #x400671
-                                  :LEGAL-HALT :HLT))))
-           (ACL2::er soft ctx
-                     "~|(ms x86) = ~x0"
-                     (ms x86)))
-          (t (let ((expected (fib input)))
-               (cond
-                ((equal (rgfi *rax* x86)
-                        expected)
-                 (pprogn
-                  (ACL2::fmx "(fib ~x0) was correctly computed as ~x1 (~x2 steps)~|"
-                             input
-                             expected
-                             fib-steps)
-                  (ACL2::value t)))
-                (t (ACL2::er soft ctx
-                             "(fib ~x0) = ~x1, but rax is ~x2"
-                             input
-                             expected
-                             (rgfi *rax* x86)))))))))
-  nil)
+  (b* ((ctx __function__)
+       (x86 (if sys-view?
+                ;; The following initializes the system-level mode and sets up
+                ;; the page tables at address #x402000.
+                (init-sys-view #x402000 x86)
+              x86))
+       ((mv flg x86)
+        (init-x86-state-64
+         ;; Status (MS and fault field)
+         nil
+         start-address
+         ;; Initial values of General-Purpose Registers
+         (acons
+          ;; Input is in RAX.
+          #.*rax* input
+          (acons
+           #.*rsp* #.*2^45*
+           nil))
+         ;; Initial values of Control Registers (already initialized in
+         ;; init-sys-view)
+         nil
+         ;; Initial values of Model-Specific Registers (already initialized
+         ;; in init-sys-view)
+         nil
+         ;; seg-visibles
+         nil
+         ;; seg-hiddens
+         nil
+         ;; Initial value of the Rflags Register
+         2
+         ;; Initial memory image
+         *fibonacci-binary*
+         ;; x86 state
+         x86))
+       ((when flg)
+        (let ((x86 (!!ms-fresh :init-x86-state-64-error flg)))
+          (mv nil x86)))
+       (x86 (time$ (x86-run-halt halt-address xrun-limit x86)))
+       (ok? (check-fib-output input halt-address x86))
+       ((unless ok?) (mv nil x86)))
+    (mv t x86)))
 
-;; ======================================================================
+(define run-x86isa-fib
+  ((input         :type (unsigned-byte 50))
+   (start-address :type (signed-byte #.*max-linear-address-size*))
+   (halt-address  :type (signed-byte #.*max-linear-address-size*))
+   (xrun-limit    :type (unsigned-byte 50))
+   (sys-view?     booleanp)
+   x86)
 
-;; Some runs:
+  (if (zp input)
 
-(run-fib  3 x86)
-(run-fib  6 x86)
-(run-fib  9 x86)
-(run-fib 12 x86)
-(run-fib 15 x86)
-(run-fib 18 x86)
-(run-fib 21 x86)
-(run-fib 24 x86)
-(run-fib 27 x86)
-(run-fib 30 x86)
+      (mv t x86)
+
+    (b* (((mv flg x86)
+          (x86isa-one-fib-cosim
+           (1- input) start-address halt-address xrun-limit sys-view? x86))
+         ((unless flg)
+          (cw "~% Mismatch found!~%")
+          (mv flg x86)))
+
+      (run-x86isa-fib
+       (1- input) start-address halt-address xrun-limit sys-view? x86))))
+
+;; ----------------------------------------------------------------------
+
+(acl2::assert!-stobj
+ (b* ((start-address #x400666)
+      (halt-address  #x400670)
+      (input         22)
+      (sys-view?     nil)
+      ((mv flg x86)
+       (run-x86isa-fib
+        input start-address halt-address *fib-xrun-limit* sys-view? x86)))
+   (mv flg x86))
+ x86)
+
+;; ----------------------------------------------------------------------
+
 ;; (run-fib 33 x86) ;; ~200s
 ;; (run-fib 36 x86) ;; ~630s
 ;; (run-fib 39 x86) ;; ~2673s
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
