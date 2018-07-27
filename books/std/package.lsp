@@ -83,7 +83,6 @@
 (defpkg "COMPUTED-HINTS"
   (append '(mfc-ancestors
             mfc-clause
-            string-for-tilde-@-clause-id-phrase
             INSTANCE::instance-rewrite)
           *standard-acl2-imports*))
 
