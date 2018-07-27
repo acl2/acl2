@@ -145,14 +145,13 @@ after the above @('include-book').</p>
 
 </li>
 
-<li> If you desire to run the model in the @(see
-app-view), skip this step.  Use the function @(see
-init-sys-view) to switch the model to the system-level view
-and load our default configuration of 1G page tables \(set up to
-provide an identity mapping from linear to physical addresses\) into
-the model's memory at the provided address, i.e., @('0x0') in our
-example.  Of course, this is a contrived example.  For more
-flexibility in constructing and loading page tables, see @(csee
+<li> If you desire to run the model in the @(see app-view), skip this
+step.  Use the function @(tsee init-sys-view) to switch the model to
+the system-level view and load our default configuration of 1G page
+tables \(set up to provide an identity mapping from linear to physical
+addresses\) into the model's memory at the provided address, i.e.,
+@('0x0') in our example.  Of course, this is a contrived example.  For
+more flexibility in constructing and loading page tables, see @(csee
 Setting-up-Page-Tables).
 
 <code>
@@ -169,22 +168,23 @@ macro @('binary-file-load').</p>
 ELF or Mach-O file.</p>
 </li>
 
-<li><p>Use @(see init-x86-state) to modify other components of the x86
-state, like the instruction pointer, registers, arguments in memory,
-if necessary.  Note that @('init-x86-state') only writes the specified
-values into the x86 state while preserving any values previously
-written to the x86 state.  For example, the following form will
-<i>not</i> make changes to any general-purpose registers except
-@('rdi') and @('rsp').</p>
+<li><p>Use @(tsee init-x86-state-64) to modify other components of the
+x86 state, like the instruction pointer, registers, arguments in
+memory, if necessary.  This function only writes the specified values
+into the x86 state while preserving any values previously written to
+the x86 state.  For example, the following form will <i>not</i> make
+changes to any general-purpose registers except @('rdi') and @('rsp').
+Note that the function @('init-x86-state-64') sets up the state to be
+in 64-bit mode of operation of an x86 machine --- see @(tsee
+init-x86-state) for an initialization function that does not do
+so.</p>
 
 <code>
-(init-x86-state
+(init-x86-state-64
  ;; Status (MS and fault field)
  nil
  ;; Start Address --- set the RIP to this address
  #x100000f12
- ;; Halt Address --- overwrites this address by #xD6 (illegal opcode)
- #x100000f17
  ;; Initial values of General-Purpose Registers
  '((#.*rdi* . #xff00ff00)
    (#.*rsp* . #.*2^45*))
@@ -210,16 +210,16 @@ listed below.  The list is not exhaustive.</p>
 
 <ul>
 
-<li><p>The memory image argument of @(see init-x86-state) accepts
-alists satisfying @(see n64p-byte-alistp).  This can be used to
+<li><p>The memory image argument of @(tsee init-x86-state) accepts
+alists satisfying @(tsee n64p-byte-alistp).  This can be used to
 provide a program binary in the form of a list of address-byte pairs
 rather using @('binary-file-load') to parse and load the binary
 automatically.</p></li>
 
-<li><p>The function @(see load-program-into-memory) also accepts
+<li><p>The function @(tsee load-program-into-memory) also accepts
 programs that satisfy @('n64p-byte-alistp').</p></li>
 
-<li><p>Of course, @(see wml08) \(and its friends like @(see
+<li><p>Of course, @(tsee wml08) \(and its friends like @(tsee
 write-bytes-to-memory)\) can also be used to write a program to the
 memory.  Initialization of other components of the x86 state can be
 done by using the appropriate updater functions directly.  For
@@ -302,17 +302,23 @@ from the user.</p>
 
 <li>
 
-<p>Run the program using @(see x86-run) or @(see x86-run-steps);
-@('x86-run') returns only the modified x86 state and @('x86-run-step')
-returns the number of instructions actually executed as well as the
-modified x86 state. To run one instruction only, use @(see
+<p>Run the program using @(tsee x86-run) or @(tsee x86-run-steps) or
+@(tsee x86-run-halt).  To run one instruction only, use @(see
 x86-fetch-decode-execute).  You can also see @(see
 Dynamic-instrumentation) for details about dynamically debugging the
 program by inserting breakpoints and logging the x86 state into a
 file, etc.</p>
 
 <code>
-(x86-run-steps 10000 x86) ;; or (x86-run 10000 x86)
+(x86-run-halt  #x100000f17 ;; halt-address
+               10000       ;; limit on number of steps to be run
+               x86)
+
+;; or
+;;    (x86-run-steps 10000 x86)
+
+;; or
+;;    (x86-run 10000 x86)
 </code>
 
 <p>How do know that the program ran to completion?  After executing
@@ -325,37 +331,35 @@ fields:</p>
 (rip x86)
 </code>
 
-<p>If the @('fault') field contains the symbol
-@('x86-illegal-instruction'), @('ms') is empty, and @('rip') contains
-the expected address, then we know that the program was run
-successfully.  Otherwise, we need to figure out what went wrong during
-the program execution --- the @(see Dynamic-instrumentation) utilities
-can help in debugging.  If @('ms') and @('fault') contain @('nil'),
-then the program did not run to completion and the x86 state is poised
-to continue execution.</p>
+<p>If the @('fault') and @('ms') fields are empty, then the program
+didn't run to completion and the x86 state is poised to continue
+execution.  If @('rip') is at the @('halt-address'), @('ms') contains
+a legal halt message, and @('fault') is empty, then the program ran to
+completion successfully.  If you see some other error message in
+either @('ms') or @('fault'), you need to figure out what went wrong
+during the program execution --- the @(see Dynamic-instrumentation)
+utilities can help in debugging.</p>
 
 <p>Where did the number @('10000') in the argument to @('x86-run') or
-@('x86-run-steps') come from?  This number is the clock, i.e., the
-upper limit on the number of instructions the x86 interpreter will
-execute.  Fewer instructions that this number can be executed if the
-program reached the halt address sooner or if an error is encountered
-\(in which case the @('ms') field will contain the error message).  It
-might also be the case that this argument to @('x86-run') or
-@('x86-run-steps') is less than the number of instructions required to
-run the program to completion.  So, how do we pick the value of the
-clock?</p>
+@('x86-run-steps') or @('x86-run-halt') come from?  This number is the
+clock, i.e., the upper limit on the number of instructions the x86
+interpreter will execute.  Fewer instructions that this number can be
+executed if the program reached the halt address sooner or if an error
+is encountered \(in which case the @('ms') field will contain the
+error message).  It might also be the case that this argument to these
+functions is less than the number of instructions required to run the
+program to completion.  So, how do we pick the value of the clock?</p>
 
 <p>This, again, is up to the user.  Guessing the clock value is an
 answer.  In our example, @('10000') is large enough --- this example
 program is small enough that it takes only around a couple dozen
 instructions to run to completion.  You need not worry about the
 interpreter stepping uselessly after the program halts \(or encounters
-an error\) because then, the @('ms') field will contain a message and
-@('x86-run') and @('x86-run-steps') will stop executing as soon as the
-@('ms') field is non-nil.  On the other hand, if the clock you
-provided is not sufficient \(@('ms') is nil\), then you can always
-execute @('x86-run') or @('x86-run-steps') again and the program
-execution will continue.</p>
+an error\) because then, the @('ms') or @('fault') fields will contain
+a message and these functions will stop executing as soon as these
+fields are non-nil.  On the other hand, if the clock you provided is
+not sufficient, then you can always execute these functions again and
+the program execution will continue.</p>
 
 </li>
 

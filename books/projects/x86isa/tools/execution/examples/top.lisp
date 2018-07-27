@@ -46,7 +46,7 @@
 ;; ----------------------------------------------------------------------
 
 (defsection concrete-simulation-examples
-  :parents (program-execution)
+  :parents (program-execution x86isa)
   )
 
 (local (xdoc::set-default-parents concrete-simulation-examples))
@@ -56,5 +56,6 @@
 (include-book "factorial" :ttags :all)
 (include-book "fibonacci" :ttags :all)
 (include-book "nop-sequence/nop" :ttags :all)
+(include-book "dataCopy/dataCopy" :ttags :all)
 
 ;; ----------------------------------------------------------------------
