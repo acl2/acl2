@@ -139,7 +139,7 @@
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
         (add-to-*ip temp-rip increment-RIP-by x86))
-       ((when flg) (!!ms-fresh :virtual-memory-error temp-rip))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -177,7 +177,7 @@
 
        ;; Update the x86 state:
        (x86 (!stri *gdtr* gdtr x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================
@@ -190,16 +190,20 @@
 
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :long "<h3>Op/En = M: \[OP m16@('&')m64\]</h3>
+  :long
 
-  <p>In 64-bit mode, the instruction's operand size is fixed at 8+2
-  bytes (an 8-byte base and a 2-byte limit).</p>
+  "<h3>Op/En = M: \[OP m16@('&')m32\]</h3>
+   <h3>Op/En = M: \[OP m16@('&')m64\]</h3>
 
-  <p>\[OP  M\]<br/>
-  0F 01/3: LIDT m16@('&')64</p>
+   <p>In 64-bit mode, the instruction's operand size is fixed at 8+2
+   bytes (an 8-byte base and a 2-byte limit).</p>
 
-  <p><b>TO-DO:</b> If a memory address referencing the SS segment is in
-  a non-canonical form, raise the SS exception.</p>"
+   <p>\[OP  M\]<br/>
+   0F 01/3: LIDT m16@('&')32<br/>
+   0F 01/3: LIDT m16@('&')64</p>
+
+   <p><b>TO-DO:</b> If a memory address referencing the SS segment is in
+   a non-canonical form, raise the SS exception.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -210,54 +214,89 @@
 
   (b* ((ctx 'x86-lidt)
 
-       ((when (or (app-view x86)
-                  (not (64-bit-modep x86))))
+       ((when (app-view x86))
         (!!ms-fresh :lidt-unimplemented))
 
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
+
        ;; If the current privilege level is not 0, the #GP exception
        ;; is raised.
        (cpl (cpl x86))
        ((when (not (equal cpl 0)))
-        (!!ms-fresh :cpl-not-zero cpl))
+        (!!fault-fresh :gp 0 :cpl-not-zero cpl)) ;; #GP(0)
+
        ;; If the source operand is not a memory location, then #GP is
        ;; raised.
        ((when (equal mod #b11))
         (!!ms-fresh :source-operand-not-memory-location mod))
+
        ;; If the lock prefix is used, then the #UD exception is
        ;; raised.
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes))
+
        (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes-slice :adr prefixes)))
 
+       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+
+       ((the (integer 4 8) base-size)
+        (if (64-bit-modep x86) 8 4))
+
+       ((the (integer 6 10) base-size+2) (+ 2 base-size))
+
        ;; Fetch the memory operand:
        (inst-ac? nil)
-       ((mv flg0 mem (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         0 10 inst-ac?
-         t ;; Memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       ((mv flg0
+            mem
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ 0
+                                                base-size+2
+                                                inst-ac?
+                                                t ;; Memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; The operand size attribute is needed because, according to Intel
+       ;; manual, May'18, specification of LGDT, only 24 bits from the base are
+       ;; copied into GDTR when the operand size attribute is 16 bits.
+       (p3? (eql #.*operand-size-override*
+                 (prefixes-slice :opr prefixes)))
+       (operand-size
+        (if (eql base-size 8)
+            8
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d
+                (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
+       (base-bits (case operand-size
+                    (8 64)
+                    (4 32)
+                    (t 24)))
 
        ;; Load the memory operand in the IDTR register.
        (idtr-limit
@@ -266,12 +305,12 @@
                                  0))
        (idtr
         (!gdtr/idtr-layout-slice :base-addr
-                                 (part-select mem :low 16 :width 64)
+                                 (part-select mem :low 16 :width base-bits)
                                  idtr-limit))
 
        ;; Update the x86 state:
        (x86 (!stri *idtr* idtr x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip temp-rip x86)))
     x86))
 
 ;; ======================================================================
