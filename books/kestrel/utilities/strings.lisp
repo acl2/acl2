@@ -60,17 +60,13 @@
 
   (more-returns
    (nats nat-listp
-         :name nat-listp-of-string=>nats))
+         :name nat-listp-of-string=>nats)
+   (nats integer-listp))
 
   (defrule len-of-string=>nats
     (implies (stringp string)
              (equal (len (string=>nats string))
-                    (length string))))
-
-  (defrule nth-of-string=>nats
-    (implies (stringp string)
-             (iff (integerp (nth n (string=>nats string)))
-                  (< (nfix n) (length string))))))
+                    (length string)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -209,7 +209,8 @@
 
   (more-returns
    (nats nat-listp
-         :name nat-listp-of-chars=>nats))
+         :name nat-listp-of-chars=>nats)
+   (nats integer-listp))
 
   (defrulel verify-guards-lemma-1
     (equal (chars=>nats-exec chars rev-nats)
@@ -233,12 +234,7 @@
   (defrule chars=>nats-of-append
     (equal (chars=>nats (append chars1 chars2))
            (append (chars=>nats chars1)
-                   (chars=>nats chars2))))
-
-  (defrule nth-of-chars=>nats
-    (iff (integerp (nth n (chars=>nats chars)))
-         (< (nfix n) (len chars)))
-    :induct (nth n chars)))
+                   (chars=>nats chars2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
