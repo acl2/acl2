@@ -114,7 +114,10 @@
     :rule-classes :forward-chaining)
 
   (defrule dab-digitp-of-0
-    (dab-digitp base 0)))
+    (dab-digitp base 0))
+
+  (defrule dab-digitp-of-1
+    (dab-digitp base 1)))
 
 (define dab-digit-fix ((base dab-basep) (x (dab-digitp base x)))
   :returns (fixed-x (dab-digitp base fixed-x))
@@ -336,6 +339,10 @@
 
   (verify-guards lendian=>nat
     :hints (("Goal" :in-theory (enable digits=>nat-exec-to-lendian=>nat))))
+
+  (defrule lendian=>nat-of-nil
+    (equal (lendian=>nat base nil)
+           0))
 
   (defrule lendian=>nat-of-all-zeros
     (equal (lendian=>nat base (repeat n 0))
@@ -609,6 +616,10 @@
                  (expt (dab-base-fix base) (len lodigits)))
               (bendian=>nat base lodigits)))
     :enable lendian=>nat-of-append)
+
+  (defrule bendian=>nat-of-nil
+    (equal (bendian=>nat base nil)
+           0))
 
   (defrule bendian=>nat-of-all-zeros
     (equal (bendian=>nat base (repeat n 0))
