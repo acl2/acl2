@@ -1,6 +1,6 @@
 ; ABNF Library -- Concrete Syntax
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -273,7 +273,7 @@
   :long
   "<p>
    These rules are well-formed, closed,
-   and generate a language consisting only of ASCII codes.
+   and generate terminal strings consisting only of ASCII codes.
    </p>
    <p>
    We use @(tsee add-const-to-untranslate-preprocess)

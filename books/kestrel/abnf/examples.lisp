@@ -1,6 +1,6 @@
 ; ABNF Library -- Examples
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -94,7 +94,7 @@
    </p>
    <p>
    The resulting rules are well-formed and closed.
-   They generate a language consisting only of ASCII codes;
+   They generate terminal strings consisting only of ASCII codes;
    more precisely, the ASCII codes of
    all the visible characters (i.e. @('VCHAR') in the ABNF core rules)
    except
@@ -199,7 +199,7 @@
    </p>
    <p>
    The resulting rules are well-formed and closed,
-   and generate a language consisting only of octets.
+   and generate terminal strings consisting only of octets.
    </p>
    <p>
    Section 1.2 of RFC 7230 lists a number of ABNF core rules
@@ -273,7 +273,7 @@
    <p>
    The rules reached starting from @('HTTP-message') are well-formed and closed.
    Since they are a subset of @(tsee *all-http-grammar-rules*),
-   they also generate a language consisting only of octets.
+   they also generate terminal strings consisting only of octets.
    </p>"
   (trans-rules-of-names (list (rulename "HTTP-message"))
                         *all-http-grammar-rules*)
@@ -469,7 +469,7 @@
    These rules are well-formed and closed.
    </p>
    <p>
-   These rules generate a language consisting only of Unicode codes,
+   These rules generate terminal strings consisting only of Unicode codes,
    i.e. natural numbers between 0 and @('x10FFFF').
    However, running this proof currently takes a long time
    due to the inefficient definition of @(tsee rulelist-in-termset-p)

@@ -116,7 +116,12 @@
 
   (defrule rulenamep-of-tail-when-set-all-rulenamep
     (implies (set-all-rulenamep rulenames)
-             (set-all-rulenamep (tail rulenames)))))
+             (set-all-rulenamep (tail rulenames))))
+
+  (defrule rulenamep-when-member-of-set-all-rulenamep
+    (implies (and (in rulename rulenames)
+                  (set-all-rulenamep rulenames))
+             (rulenamep rulename))))
 
 (define rulename-setp (x)
   :returns (yes/no booleanp)
@@ -152,7 +157,12 @@
 
   (defrule rulenamep-of-tail-when-rulename-setp
     (implies (rulename-setp rulenames)
-             (rulename-setp (tail rulenames)))))
+             (rulename-setp (tail rulenames))))
+
+  (defrule rulenamep-when-member-of-rulename-setp
+    (implies (and (in rulename rulenames)
+                  (rulename-setp rulenames))
+             (rulenamep rulename))))
 
 (fty::deftagsum num-val
   :parents (abstract-syntax)
