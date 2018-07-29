@@ -265,7 +265,7 @@
    a first-level definition of messages.
    According to these rules, strings of terminals (octets)
    are parsed into trees rooted at @('HTTP-message').
-   In these parse trees, field values are &ldquo;opaque&rdquo;,
+   In these parse trees, field values are ``opaque'',
    i.e. they are essentially unstructured sequences of certain octets,
    according to the @('field-content') rule.
    These field values can be parsed further according to the other rules.

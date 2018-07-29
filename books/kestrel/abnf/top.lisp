@@ -1,6 +1,6 @@
 ; ABNF Library (Excluding Examples)
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -71,18 +71,20 @@
 
    <p>
    In the documentation of this library,
-   we append dotted section and subsection numbers to &lsquo;RFC&rsquo;
-   to refer to the corresponding sections and subsections
-   of the result of updating RFC 5234 as specified by RFC 7405.
-   For example, &lsquo;RFC.3&rsquo; refers to Section 3 of RFC 5234.
-   As another example, &lsquo;RFC.2.3&rsquo; refers to
+   `RFC' refers to the result of updating RFC 5234 as specified by RFC 7405.
+   Sections and subsections of RFC are referenced
+   by appending their numbers to `RFC:'.
+   For example, `RFC:3' refers to Section 3 of RFC 5234.
+   As another example, `RFC:2.3' refers to
    the result of updating Section 2.3 of RFC 5234
    as specified in Section 2.1 of RFC 7405.
+   These references are enclosed in square brackets when used parenthetically,
+   as often done with bibliographic references.
    </p>
 
    <p>
    The Kestrel Institute Technical Report
-   &ldquo;ABNF in ACL2&rdquo; of April 2017,
+   ``ABNF in ACL2'' of April 2017,
    available <a href=\"http://www.kestrel.edu/~coglio\">here</a>,
    provides an overview
    of the formalization of the ABNF notation

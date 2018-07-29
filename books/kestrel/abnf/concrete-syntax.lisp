@@ -26,7 +26,7 @@
   :short "Concrete syntax of ABNF."
   :long
   "<p>
-   The concrete syntax of ABNF is specified, in RFC.4,
+   The concrete syntax of ABNF is specified, in RFC:4,
    using ABNF concrete syntax.
    We break the circularity by formalizing the concrete syntax of ABNF
    using the abstract syntax of ABNF.
@@ -39,7 +39,7 @@
   :short "Rules that specify the concrete syntax of ABNF."
   :long
   "<p>
-   These are the rules in RFC.4.
+   These are the rules in RFC:4.
    </p>")
 
 (xdoc::order-subtopics concrete-syntax-rules nil t)
@@ -319,21 +319,21 @@
    </p>
    <p>
    This function may return more than one parse tree,
-   because the @('rulelist') rule in RFC.4 is ambiguous.
+   because the @('rulelist') rule in RFC:4 is ambiguous.
    For example, the string
-   &lsquo;@('rulename defined-as alternation c-nl WSP c-nl')&rsquo;
+   `@('rulename defined-as alternation c-nl WSP c-nl')'
    can be parsed in two different ways (see the theorem below):
    </p>
    <ol>
      <li>
      As a @('rulelist') consisting of
      just a @('rule')
-     whose @('elements') has &lsquo;@('c-nl WSP')&rsquo; as @('*c-wsp').
+     whose @('elements') has `@('c-nl WSP')' as @('*c-wsp').
      </li>
      <li>
      As a @('rulelist') consisting of
      a @('rule')
-     whose @('elements') has &lsquo;&rsquo; (i.e. the empty string)
+     whose @('elements') has `' (i.e. the empty string)
      as @('*c-wsp'),
      followed by a @('(*c-wsp c-nl)') with @('WSP') as @('*c-wsp').
      </li>

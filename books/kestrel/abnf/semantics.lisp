@@ -46,7 +46,7 @@
   :short "Symbols."
   :long
   "<p>
-   As explained in RFC.2.3, the terminal values of ABNF are natural numbers.
+   As explained in RFC:2.3, the terminal values of ABNF are natural numbers.
    </p>
    <p>
    Rule names are the nonterminal symbols of ABNF.
@@ -146,11 +146,11 @@
      the element instances of the corresponding repetition.
      An empty inner list is used for a repetition of no elements.
      An empty outer list is used for an empty concatenation,
-     which is disallowed by RFC.4 but allowed by our abstract syntax;
-     an empty outer list is also used for an option (RFC.3.8) that is absent.
+     which is disallowed by RFC:4 but allowed by our abstract syntax;
+     an empty outer list is also used for an option [RFC:3.8] that is absent.
      </p>
      <p>
-     Since, via groups (RFC.3.5) and options (RFC.3.8),
+     Since, via groups [RFC:3.5] and options [RFC:3.8],
      an element may recursively be an alternation,
      if a branch in an inner list under a rule name is an alternation,
      that branch recursively has a list of lists of branches.
@@ -901,7 +901,7 @@
    that matches the rule name (viewed as an element)
    and such that the string is the one at the leaves of the tree.
    A parse tree describes
-   how a string is an &ldquo;instance&rdquo; of the rule name,
+   how a string is an ``instance'' of the rule name,
    given the rules.
    </p>"
   (and (treep tree)

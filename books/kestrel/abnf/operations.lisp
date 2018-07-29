@@ -37,7 +37,7 @@
    Certain ABNF @(see grammar)s are valid according to the
    <see topic='@(url abstract-syntax)'>formalized abstract syntax</see>,
    but (include parts that) violate certain conditions that are
-   either required by the concrete syntax defined in RFC.4
+   either required by the concrete syntax defined in RFC:4
    or otherwise reasonably justifiable.
    These additional conditions are captured by the notion of well-formedness.
    </p>")
@@ -52,10 +52,10 @@
   :long
   "<p>
    Aside from all letters being lowercase,
-   these constraints are required by the rule @('rulename') in RFC.4.
+   these constraints are required by the rule @('rulename') in RFC:4.
    The constraint that all letters be lowercase
    provides a normalized representation of rule names,
-   which are case-insensitive (RFC.2.1).
+   which are case-insensitive [RFC:2.1].
    </p>"
   (b* ((charstring (rulename->get rulename))
        (chars (explode charstring)))
@@ -76,7 +76,7 @@
   :long
   "<p>
    The condition on direct numeric value notations is required
-   by the rules @('bin-val'), @('dec-val'), and @('hex-val') in RFC.4.
+   by the rules @('bin-val'), @('dec-val'), and @('hex-val') in RFC:4.
    The condition on range numeric value notations is reasonably justifiable
    because no number exists in a range whose minimum exceeds the maximum;
    formally, no tree matches a malformed range numeric value notation.
@@ -103,9 +103,9 @@
   :long
   "<p>
    These allowed characters are consistent with
-   the rule @('quoted-string') in RFC.4.
+   the rule @('quoted-string') in RFC:4.
    That rule allows empty strings,
-   so the rule @('char-val') in RFC.4 also allows empty strings.
+   so the rule @('char-val') in RFC:4 also allows empty strings.
    An empty character value notation
    may play the role of the empty sequence of symbols
    (often denoted by @($\\epsilon$) in textbooks)
@@ -129,7 +129,7 @@
   :long
   "<p>
    These allowed characters are consistent with
-   the rule @('prose-val') in RFC.4.
+   the rule @('prose-val') in RFC:4.
    That rule allows empty bracketed strings.
    Normally prose should be non-empty (so it provides some description),
    but in the formal semantics any tree matches prose,
@@ -176,7 +176,7 @@
     :long
     "<p>
      This non-emptiness condition
-     is required by the rule @('alternation') in RFC.4.
+     is required by the rule @('alternation') in RFC:4.
      The well-formedness condition on the concatenations is structural.
      </p>
      @(def alternation-wfp)"
@@ -205,7 +205,7 @@
     :long
     "<p>
      This non-emptiness condition
-     is required by the rule @('concatenation') in RFC.4.
+     is required by the rule @('concatenation') in RFC:4.
      The well-formedness condition on the repetitions is structural.
      </p>
      @(def concatenation-wfp)"
@@ -340,10 +340,10 @@
    The first condition is structural.
    The second condition is justifiable
    because duplicate rules are redundant.
-   The third condition is reasonably implied by RFC.3.3.
+   The third condition is reasonably implied by RFC:3.3.
    </p>
    <p>
-   Non-emptiness is not required by the rule @('rulelist') in RFC.4,
+   Non-emptiness is not required by the rule @('rulelist') in RFC:4,
    which allows just @('(*c-wsp c-nl)') groups without @('rule')s.
    </p>"
   (and (rule-list-wfp rules)
@@ -358,9 +358,9 @@
   :short "Closure in ABNF grammars."
   :long
   "<p>
-   A rule's definiens may reference (i.e. &ldquo;call&rdquo;) other rules.
+   A rule's definiens may reference (i.e. ``call'') other rules.
    Those rules may in turn call further rules,
-   and so on until a &ldquo;closed&rdquo; set of rules is reached.
+   and so on until a ``closed'' set of rules is reached.
    </p>
    <p>
    When grammars are modularly defined, a grammar may not be closed,
@@ -1274,7 +1274,7 @@
   :long
   "<p>
    Certain ABNF grammars are defined modularly.
-   A &ldquo;module&rdquo; may not be <see topic='@(url closure)'>closed</see>,
+   A ``module'' may not be <see topic='@(url closure)'>closed</see>,
    but when it is combined with other modules,
    the resulting grammar may be closed.
    </p>
@@ -1300,7 +1300,7 @@
    <p>
    Here we define an operation to accomplish the kind of composition
    exemplified above.
-   The operation &ldquo;plugs&rdquo; a rule list into another rule list,
+   The operation ``plugs'' a rule list into another rule list,
    e.g. it plugs the core rules into the concrete syntax rules,
    and it plugs the URI rules into the HTTP rules.
    </p>")
@@ -1355,8 +1355,8 @@
    This choice is motivated by the fact that grammar rules
    are usually presented in a top-down manner,
    and so it seems more natural to have
-   the &ldquo;plugged&rdquo; rules (e.g. HTTP)
-   appear before the &ldquo;plugging&rdquo; rules (e.g. URI).
+   the ``plugged'' rules (e.g. HTTP)
+   appear before the ``plugging'' rules (e.g. URI).
    </p>
    <p>
    After removing from @('rules1') the prose rules
