@@ -332,7 +332,7 @@
   ;;        #xC3:    NP: Near return to calling procedure
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (rime-size rml16 rme-size rme16) ())))
+  :guard-hints (("Goal" :in-theory (e/d (rime-size rme-size) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))

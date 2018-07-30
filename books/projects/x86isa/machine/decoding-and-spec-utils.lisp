@@ -185,9 +185,11 @@ the @('fault') field instead.</li>
                (equal (read-*ip x86)
                       (rip x86)))))
 
-  (define add-to-*ip ((*ip i48p) (delta integerp) x86)
+  (define add-to-*ip ((*ip   :type (signed-byte #.*max-linear-address-size*))
+                      (delta :type (signed-byte #.*max-linear-address-size*))
+                      x86)
     :returns (mv flg
-                 (*ip+delta i48p :hyp (and (i48p *ip) (integerp delta))))
+                 (*ip+delta i48p :hyp (and (i48p *ip) (i48p delta))))
     :parents (instruction-pointer-operations)
     :short "Add a specified amount to an instruction pointer."
     :long
@@ -218,14 +220,16 @@ the @('fault') field instead.</li>
      so the valid effective addresses are always between 0 and the segment limit
      (cf. @(tsee segment-base-and-bounds)).
      </p>"
-    (b* ((*ip+delta (+ *ip delta)))
+    (b* ((*ip+delta
+          (the (signed-byte #.*max-linear-address-size+1*)
+            (+ *ip delta))))
       (if (64-bit-modep x86)
           (if (mbe :logic (canonical-address-p *ip+delta)
-                   :exec (and (<= *-2^47* *ip+delta)
+                   :exec (and (<= #.*-2^47* *ip+delta)
                               (< *ip+delta #.*2^47*)))
               (mv nil *ip+delta)
             (mv (list :non-canonical-instruction-pointer *ip+delta) 0))
-        (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+        (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden *cs* x86)))
              (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
           (if (and (<= 0 *ip+delta)
                    (<= *ip+delta cs.limit))
@@ -294,7 +298,8 @@ the @('fault') field instead.</li>
                           (+ *ip delta)
                         0)))))
 
-  (define write-*ip ((*ip i48p) x86)
+  (define write-*ip ((*ip :type (signed-byte #.*max-linear-address-size*))
+                     x86)
     :returns (x86-new x86p :hyp (and (i48p *ip) (x86p x86)))
     :parents (instruction-pointer-operations)
     :short "Write an instruction pointer into the register RIP, EIP, or IP."
@@ -375,7 +380,7 @@ the @('fault') field instead.</li>
      </p>"
     (if (64-bit-modep x86)
         (!rip *ip x86)
-      (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+      (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden *cs* x86)))
            (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
            (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
         (if (= cs.d 1)
@@ -437,7 +442,7 @@ the @('fault') field instead.</li>
      It does not seem to make sense
      to change the stack address size on a per-instruction basis.
      </p>"
-    (b* ((*sp (rgfi *rsp* x86)))
+    (b* ((*sp (the (signed-byte 64) (rgfi #.*rsp* x86))))
       (if (64-bit-modep x86)
           *sp
         (b* ((ss-hidden (xr :seg-hidden *ss* x86))
@@ -462,7 +467,9 @@ the @('fault') field instead.</li>
                (equal (read-*sp x86)
                       (rgfi *rsp* x86)))))
 
-  (define add-to-*sp ((*sp i64p) (delta integerp) x86)
+  (define add-to-*sp ((*sp   :type (signed-byte 64))
+                      (delta :type (signed-byte 64))
+                      x86)
     :returns (mv flg
                  (*sp+delta i64p))
     :parents (stack-pointer-operations)
@@ -504,14 +511,14 @@ the @('fault') field instead.</li>
      Thus, the conversions @(tsee n32) and @(tsee n16) below
      are expected to leave their arguments unchanged.
      </p>"
-    (b* ((*sp+delta (+ *sp delta)))
+    (b* ((*sp+delta (the (signed-byte 65) (+ *sp delta))))
       (if (64-bit-modep x86)
           (if (mbe :logic (canonical-address-p *sp+delta)
-                   :exec (and (<= *-2^47* *sp+delta)
+                   :exec (and (<= #.*-2^47* *sp+delta)
                               (< *sp+delta #.*2^47*)))
               (mv nil *sp+delta)
             (mv (list :non-canonical-stack-address *sp+delta) 0))
-        (b* ((ss-hidden (xr :seg-hidden *ss* x86))
+        (b* ((ss-hidden (the (unsigned-byte 112) (xr :seg-hidden *ss* x86)))
              (ss.limit (hidden-seg-reg-layout-slice :limit ss-hidden))
              (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
              (ss.b (data-segment-descriptor-attributes-layout-slice :d/b ss-attr))
@@ -548,7 +555,8 @@ the @('fault') field instead.</li>
                           (+ *sp delta)
                         0)))))
 
-  (define write-*sp ((*sp i64p) x86)
+  (define write-*sp ((*sp :type (signed-byte 64))
+                     x86)
     :returns (x86-new x86p :hyp (and (i64p *sp) (x86p x86)))
     :parents (stack-pointer-operations)
     :short "Write a stack pointer into the register RSP, ESP, or SP."
@@ -603,30 +611,30 @@ the @('fault') field instead.</li>
      these coercions are expected not to change the argument stack pointer.
      </p>"
     (if (64-bit-modep x86)
-        (!rgfi *rsp* *sp x86)
-      (b* ((ss-hidden (xr :seg-hidden *ss* x86))
+        (!rgfi #.*rsp* *sp x86)
+      (b* ((ss-hidden (the (unsigned-byte 112) (xr :seg-hidden *ss* x86)))
            (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
            (ss.b (data-segment-descriptor-attributes-layout-slice
                   :d/b ss-attr)))
         (if (= ss.b 1)
-            (!rgfi *rsp* (n32 *sp) x86)
+            (!rgfi #.*rsp* (n32 *sp) x86)
           ;; converting RSP to unsigned (via N64) and then back to signed (via
           ;; I64) lets the guard proofs go through easily, but at some point we
           ;; might look into adding theorems about PART-INSTALL and
           ;; SIGNED-BYTE-P to the BITOPS libraries to let the guard proofs here
           ;; go through without the conversions:
-          (b* ((rsp (rgfi *rsp* x86))
+          (b* ((rsp (rgfi #.*rsp* x86))
                (ursp (n64 rsp))
                (ursp-new (part-install (n16 *sp) ursp :low 0 :width 16))
                (rsp-new (i64 ursp-new)))
-            (!rgfi *rsp* rsp-new x86)))))
+            (!rgfi #.*rsp* rsp-new x86)))))
     :inline t
     ///
 
     (defrule write-*sp-when-64-bit-modep
       (implies (64-bit-modep x86)
                (equal (write-*sp *sp x86)
-                      (!rgfi *rsp* *sp x86))))))
+                      (!rgfi #.*rsp* *sp x86))))))
 
 ;; ======================================================================
 
@@ -663,7 +671,7 @@ the @('fault') field instead.</li>
    </p>"
   (if (64-bit-modep x86)
       (if p4? 4 8)
-    (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+    (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden *cs* x86)))
          (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
          (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
       (if (= cs.d 1) (if p4? 2 4) (if p4? 4 2))))
@@ -903,36 +911,36 @@ the @('fault') field instead.</li>
      see @(tsee x86-effective-addr-32/64).
      </p>"
     (case r/m
-      (0 (b* ((bx (rr16 *rbx* x86))
-              (si (rr16 *rsi* x86))
+      (0 (b* ((bx (rr16 #.*rbx* x86))
+              (si (rr16 #.*rsi* x86))
               ((mv flg disp increment-rip-by x86)
                (x86-effective-addr-16-disp temp-rip mod x86))
               ((when flg) (mv flg 0 0 x86)))
            (mv nil (n16 (+ bx si disp)) increment-rip-by x86)))
-      (1 (b* ((bx (rr16 *rbx* x86))
-              (di (rr16 *rdi* x86))
+      (1 (b* ((bx (rr16 #.*rbx* x86))
+              (di (rr16 #.*rdi* x86))
               ((mv flg disp increment-rip-by x86)
                (x86-effective-addr-16-disp temp-rip mod x86))
               ((when flg) (mv flg 0 0 x86)))
            (mv nil (n16 (+ bx di disp)) increment-rip-by x86)))
-      (2 (b* ((bp (rr16 *rbp* x86))
-              (si (rr16 *rsi* x86))
+      (2 (b* ((bp (rr16 #.*rbp* x86))
+              (si (rr16 #.*rsi* x86))
               ((mv flg disp increment-rip-by x86)
                (x86-effective-addr-16-disp temp-rip mod x86))
               ((when flg) (mv flg 0 0 x86)))
            (mv nil (n16 (+ bp si disp)) increment-rip-by x86)))
-      (3 (b* ((bp (rr16 *rbp* x86))
-              (di (rr16 *rdi* x86))
+      (3 (b* ((bp (rr16 #.*rbp* x86))
+              (di (rr16 #.*rdi* x86))
               ((mv flg disp increment-rip-by x86)
                (x86-effective-addr-16-disp temp-rip mod x86))
               ((when flg) (mv flg 0 0 x86)))
            (mv nil (n16 (+ bp di disp)) increment-rip-by x86)))
-      (4 (b* ((si (rr16 *rsi* x86))
+      (4 (b* ((si (rr16 #.*rsi* x86))
               ((mv flg disp increment-rip-by x86)
                (x86-effective-addr-16-disp temp-rip mod x86))
               ((when flg) (mv flg 0 0 x86)))
            (mv nil (n16 (+ si disp)) increment-rip-by x86)))
-      (5 (b* ((di (rr16 *rdi* x86))
+      (5 (b* ((di (rr16 #.*rdi* x86))
               ((mv flg disp increment-rip-by x86)
                (x86-effective-addr-16-disp temp-rip mod x86))
               ((when flg) (mv flg 0 0 x86)))
@@ -941,12 +949,12 @@ the @('fault') field instead.</li>
            (0 (b* (((mv flg disp x86) (rime-size 2 temp-rip *cs* :x nil x86 :mem-ptr? nil))
                    ((when flg) (mv flg 0 0 x86)))
                 (mv nil (n16 disp) 2 x86)))
-           (otherwise (b* ((bp (rr16 *rbp* x86))
+           (otherwise (b* ((bp (rr16 #.*rbp* x86))
                            ((mv flg disp increment-rip-by x86)
                             (x86-effective-addr-16-disp temp-rip mod x86))
                            ((when flg) (mv flg 0 0 x86)))
                         (mv nil (n16 (+ bp disp)) increment-rip-by x86)))))
-      (7 (b* ((bx (rr16 *rbx* x86))
+      (7 (b* ((bx (rr16 #.*rbx* x86))
               ((mv flg disp increment-rip-by x86)
                (x86-effective-addr-16-disp temp-rip mod x86))
               ((when flg) (mv flg 0 0 x86)))
@@ -1819,6 +1827,17 @@ reference made from privilege level 3.</blockquote>"
                  4))
     :hints (("Goal" :in-theory (e/d (rml-size) ())))
     :rule-classes :linear)
+
+  (defthm-sb i48p-x86-operand-from-modr/m-and-sib-bytes$
+    ;; For guard proofs obligations originating from calls to add-to-*ip:
+    :hyp (forced-and (x86p x86))
+    :bound 48
+    :concl (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes$
+                      reg-type operand-size inst-ac? memory-ptr? seg-reg p4
+                      temp-rip rex-byte r/m mod sib num-imm-bytes x86))
+    :hints (("Goal" :in-theory (e/d (signed-byte-p) ())))
+    :gen-linear t
+    :gen-type t)
 
   (defthm-sb i64p-x86-operand-from-modr/m-and-sib-bytes$
     :hyp (forced-and (x86p x86))

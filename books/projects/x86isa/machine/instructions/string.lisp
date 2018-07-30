@@ -80,13 +80,26 @@
 
   :returns (x86 x86p
                 :hyp (and (x86p x86)
-                          (canonical-address-p temp-rip)))
+                          (canonical-address-p temp-rip))
+                :hints
+                (("Goal" :in-theory (e/d ()
+                                         (rme-size
+                                          !rgfi-size
+                                          unsigned-byte-p
+                                          signed-byte-p)))
+                 (if (and (consp id)
+                          (consp (car id))
+                          (equal (caar id) 1))
+                     ;; Top-level goals in a forcing round:
+                     '(:in-theory (e/d ()
+                                       (rme-size
+                                        !rgfi-size
+                                        unsigned-byte-p)))
+                   nil)))
 
-  :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08
-                                           rme-size-of-2-to-rme16
-                                           rme-size-of-4-to-rme32
-                                           rme-size-of-8-to-rme64
-                                           select-address-size)))
+  :prepwork
+  ((local (in-theory (e/d (rme-size select-address-size)
+                          (not (tau-system))))))
 
   :body
 
@@ -189,7 +202,7 @@
                (mv (+ -4 (the (signed-byte #.*max-linear-address-size*)
                            src-addr))
                    (+ -4 (the (signed-byte #.*max-linear-address-size*)
-                              dst-addr)))))
+                           dst-addr)))))
 
           (otherwise (if (equal df 0)
                          (mv (+ 8 (the (signed-byte #.*max-linear-address-size*)
@@ -254,28 +267,28 @@
                              x86))
               (t (!rgfi *rsi*
                         (the (signed-byte
-                                    #.*max-linear-address-size+1*)
-                             src-addr)
+                              #.*max-linear-address-size+1*)
+                          src-addr)
                         x86))))
        (x86 (case counter/addr-size
               (2 (!rgfi-size 2
                              *rdi*
                              (n16 (the
-                                   (signed-byte
-                                    #.*max-linear-address-size+1*) dst-addr))
+                                      (signed-byte
+                                       #.*max-linear-address-size+1*) dst-addr))
                              rex-byte
                              x86))
               (4 (!rgfi-size 4
                              *rdi*
                              (n32 (the
-                                   (signed-byte
-                                    #.*max-linear-address-size+1*) dst-addr))
+                                      (signed-byte
+                                       #.*max-linear-address-size+1*) dst-addr))
                              rex-byte
                              x86))
               (t (!rgfi *rdi*
                         (the (signed-byte
                               #.*max-linear-address-size+1*)
-                             dst-addr)
+                          dst-addr)
                         x86)))))
 
     x86))
@@ -309,14 +322,28 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p
+                :hyp (and (x86p x86)
+                          (canonical-address-p temp-rip))
+                :hints
+                (("Goal" :in-theory (e/d ()
+                                         (rme-size
+                                          !rgfi-size
+                                          unsigned-byte-p
+                                          signed-byte-p)))
+                 (if (and (consp id)
+                          (consp (car id))
+                          (equal (caar id) 1))
+                     ;; Top-level goals in a forcing round:
+                     '(:in-theory (e/d ()
+                                       (rme-size
+                                        !rgfi-size
+                                        unsigned-byte-p)))
+                   nil)))
 
-  :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08
-                                           rme-size-of-2-to-rme16
-                                           rme-size-of-4-to-rme32
-                                           rme-size-of-8-to-rme64
-                                           select-address-size)))
+  :prepwork
+  ((local (in-theory (e/d (rme-size select-address-size)
+                          (not (tau-system))))))
 
   :body
 
@@ -526,18 +553,34 @@
   ;; AB STOSW/STOSD/STOSQ: Store AX/EAX/RDX at address DI or EDI or RDI
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08
-                                         riml32
-                                         select-address-size)
-                                        ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p
+                :hyp (and (x86p x86)
+                          (canonical-address-p temp-rip))
+                :hints
+                (("Goal" :in-theory (e/d ()
+                                         (rme-size
+                                          !rgfi-size
+                                          unsigned-byte-p
+                                          signed-byte-p)))
+                 (if (and (consp id)
+                          (consp (car id))
+                          (equal (caar id) 1))
+                     ;; Top-level goals in a forcing round:
+                     '(:in-theory (e/d ()
+                                       (rme-size
+                                        !rgfi-size
+                                        unsigned-byte-p)))
+                   nil)))
+
+  :prepwork
+  ((local (in-theory (e/d (rme-size select-address-size)
+                          (not (tau-system))))))
 
   :body
 
   (b* ((ctx 'x86-stos)
-       
+
        ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
@@ -653,23 +696,23 @@
               (2 (!rgfi-size 2
                              *rdi*
                              (n16 (the
-                                   (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                   dst-addr))
+                                      (signed-byte
+                                       #.*max-linear-address-size+1*)
+                                    dst-addr))
                              rex-byte
                              x86))
               (4 (!rgfi-size 4
                              *rdi*
                              (n32 (the
-                                   (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                   dst-addr))
+                                      (signed-byte
+                                       #.*max-linear-address-size+1*)
+                                    dst-addr))
                              rex-byte
                              x86))
               (t (!rgfi *rdi*
                         (the (signed-byte
                               #.*max-linear-address-size+1*)
-                             dst-addr)
+                          dst-addr)
                         x86)))))
 
     x86))

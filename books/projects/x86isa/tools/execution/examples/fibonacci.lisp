@@ -42,6 +42,7 @@
 
 (defsection fibonacci-cosim
   :parents (concrete-simulation-examples)
+  :short "Test to check if a fibonacci program behaves as expected"
   )
 
 (local (xdoc::set-default-parents fibonacci-cosim))

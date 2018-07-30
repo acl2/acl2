@@ -42,6 +42,7 @@
 
 (defsection factorial-cosim
   :parents (concrete-simulation-examples)
+  :short "Test to check if a factorial program behaves as expected"
   )
 
 (local (xdoc::set-default-parents factorial-cosim))
