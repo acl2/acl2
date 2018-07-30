@@ -618,7 +618,7 @@
 
        ((when (not (64-bit-modep x86)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
-       
+
        ((when (or (not (equal vex-prefixes 0))
                   (not (equal evex-prefixes 0))))
         ;; VEX/EVEX encoding illegal.
@@ -629,7 +629,7 @@
 
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))       
+       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
        (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :adr prefixes)))
@@ -800,10 +800,6 @@
                   (not (equal evex-prefixes 0))))
         ;; VEX/EVEX encoding illegal.
         (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; The r/m field specifies the GPR (destination).
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
