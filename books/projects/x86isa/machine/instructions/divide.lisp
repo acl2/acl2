@@ -145,7 +145,9 @@
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       (rAX (rgfi-size reg/mem-size *rax* rex-byte x86))
+       (rAX (rgfi-size
+             (if (eql reg/mem-size 1) 2 reg/mem-size)
+             *rax* rex-byte x86))
        (rDX (if select-byte-operand
                 0
               (rgfi-size reg/mem-size *rdx* rex-byte x86)))
