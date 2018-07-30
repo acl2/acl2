@@ -93,10 +93,11 @@
        ((when (not (equal cpl 0)))
         (!!fault-fresh :gp 0 :cpl-not-zero cpl)) ;; #GP(0)
 
-       ;; If the source operand is not a memory location, then #GP is
-       ;; raised.
+       ;; If the source operand is not a memory location, then #UD is raised.
+       ;; This is not explicitly said in the May'18 version of the Intel manual,
+       ;; but it is in the Dec'16 version.
        ((when (equal mod #b11))
-        (!!ms-fresh :source-operand-not-memory-location mod))
+        (!!fault-fresh :ud nil :source-operand-not-memory-location mod)) ;; #UD
 
        ;; If the lock prefix is used, then the #UD exception is
        ;; raised.
@@ -226,10 +227,11 @@
        ((when (not (equal cpl 0)))
         (!!fault-fresh :gp 0 :cpl-not-zero cpl)) ;; #GP(0)
 
-       ;; If the source operand is not a memory location, then #GP is
-       ;; raised.
+       ;; If the source operand is not a memory location, then #UD is raised.
+       ;; This is not explicitly said in the May'18 version of the Intel manual,
+       ;; but it is in the Dec'16 version.
        ((when (equal mod #b11))
-        (!!ms-fresh :source-operand-not-memory-location mod))
+        (!!fault-fresh :ud nil :source-operand-not-memory-location mod)) ;; #UD
 
        ;; If the lock prefix is used, then the #UD exception is
        ;; raised.
