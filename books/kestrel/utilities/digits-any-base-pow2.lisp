@@ -20,12 +20,12 @@
   :short "Conversions between natural numbers
           and their representations as digits in power-of-two bases."
   :long
-  "<p>
-   When the base is a (positive) power of 2,
-   digits are <see topic='@(url unsigned-byte-p)'>unsigned bytes</see>
-   of positive size (the exponent of the base).
-   Thus, here we provide theorems about this connection.
-   </p>")
+  (xdoc::topapp
+   (xdoc::p
+    "When the base is a (positive) power of 2,
+     digits are <see topic='@(url unsigned-byte-p)'>unsigned bytes</see>
+     of positive size (the exponent of the base).
+     Thus, here we provide theorems about this connection.")))
 
 (local (xdoc::set-default-parents digits-any-base-pow2))
 
@@ -34,19 +34,18 @@
 (defsection digit-byte-equivalence
   :short "Equivalences between digits and bytes."
   :long
-  "<p>
-   These rules are disabled by default.
-   They can be selectively enabled for specific proofs as needed.
-   </p>
-   <p>
-   Note that the converse equalities
-   would include @('(expt 2 n)') in their left-hand sides,
-   which may rarely match,
-   in particular when the base is a constant power of 2.
-   We may add converse theorems with a generic base,
-   a hypothesis that the base is a power of 2,
-   and a logarithm in base 2 in the right hand side.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "These rules are disabled by default.
+     They can be selectively enabled for specific proofs as needed.")
+   (xdoc::p
+    "Note that the converse equalities
+     would include @('(expt 2 n)') in their left-hand sides,
+     which may rarely match,
+     in particular when the base is a constant power of 2.
+     We may add converse theorems with a generic base,
+     a hypothesis that the base is a power of 2,
+     and a logarithm in base 2 in the right hand side."))
 
   (defruled unsigned-byte-p-rewrite-dab-digitp
     (implies (posp n)
@@ -72,14 +71,14 @@
           the conversions from natural numbers
           to digits in a specified power-of-2 base."
   :long
-  "<p>
-   The event form is a @(tsee defsection)
-   with six theorems asserting that
-   the conversions from natural numbers to digits in base @('(expt 2 n)')
-   return true lists of unsigned bytes of size @('n').
-   These are expressed using the fixtypes for true lists of unsigned bytes
-   introduced via @(tsee defbyte).
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "The event form is a @(tsee defsection)
+     with six theorems asserting that
+     the conversions from natural numbers to digits in base @('(expt 2 n)')
+     return true lists of unsigned bytes of size @('n').
+     These are expressed using the fixtypes for true lists of unsigned bytes
+     introduced via @(tsee defbyte)."))
   (b* ((ubyte<n> (packn (list 'ubyte n)))
        (ubyte<n>-listp (packn (list ubyte<n> '-listp)))
        (ubyte<n>-listp-of-nat=>bendian* (packn (list ubyte<n>-listp

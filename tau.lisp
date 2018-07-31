@@ -791,11 +791,11 @@
 ; disabled type-set-inverters.
 
 ; The only time flg matters is the case that flg is true, term is known to be
-; Boolean, and ts is *ts-boolean*.  In that case we return x instead of the
-; provably equivalent (equal x 'T).  If you're trying to explain or show what a
-; type-set means, you need to use flg = nil.  But if you're trying to assume or
-; prove that x has the given type-set, you may use flg = t.  See the comment
-; where flg is used below for an explanation of why this feature matters.
+; Boolean, and ts is *ts-t*.  In that case we return x instead of the provably
+; equivalent (equal x 'T).  If you're trying to explain or show what a type-set
+; means, you need to use flg = nil.  But if you're trying to assume or prove
+; that x has the given type-set, you may use flg = t.  See the comment where
+; flg is used below for an explanation of why this feature matters.
 
 ; Note: This function is just a helper function for convert-type-set-to-term.
 ; That function is called in several places in the ACL2 code and in a couple of

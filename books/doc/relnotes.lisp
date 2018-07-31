@@ -184,6 +184,13 @@
  duplicates; and @(tsee subsetp-eq-linear), which is a linear-time subset test
  for sorted lists of symbols.</p>
 
+ <p>Added a new macro @(tsee defbyte) for introducing fixtypes for unsigned and
+ signed bytes of specified sizes, as well as fixtypes of lists of such bytes,
+ along with theorems relating the fixtype recognizers to the built-in binary
+ predicates @(tsee unsigned-byte-p) and @(tsee signed-byte-p) and to the
+ library binary predicates @(tsee unsigned-byte-listp) and @(tsee
+ signed-byte-listp).</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <p>The behavior and code for the expander (see @(see defthm?)) have been
@@ -337,9 +344,10 @@
  opcodes FEh-FFh, DEC with opcodes FEh-FFh, CBW, CWDE, CDQE, CWD, CDQ, CQO,
  ROL, ROR, RCL, RCR, SAL, SAR, SHL, SHR, BT, JMP, Jcc, JCXZ, JECXZ, JRCXZ,
  CMOVcc, SETcc, MOVS, CMPS, STOS, LOOP, LOOPcc, CALL, RET, CMC, CLC, STC, CLD,
- STD, SAHF, LAHF, RDRAND, HLT, and NOP instructions also work in 32-bit mode
- now; the 32-bit instructions PUSHA, POPA, INC with opcodes 40h-47h, DEC with
- opcodes 48h-4Fh, and PUSH CS/SS/DS/ES are now part of the model.</p>
+ STD, SAHF, LAHF, RDRAND, LGDT,LIDT, HLT, and NOP instructions also work in
+ 32-bit mode now; the 32-bit instructions PUSHA, POPA, INC with opcodes
+ 40h-47h, DEC with opcodes 48h-4Fh, and PUSH CS/SS/DS/ES are now part of the
+ model.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>

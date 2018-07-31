@@ -51,7 +51,6 @@
 ;; INSTRUCTION: CBW/CWDE/CDQE/CLTQ
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cbw/cwd/cdqe
 
   ;; Op/En: NP
@@ -74,10 +73,6 @@
 
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((the (integer 1 8) register-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes x86))
@@ -112,7 +107,6 @@
 ;; INSTRUCTION: CWD/CDQ/CQO
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cwd/cdq/cqo
 
   ;; Op/En: NP
@@ -131,10 +125,6 @@
 
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((the (integer 1 8) src-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes x86))

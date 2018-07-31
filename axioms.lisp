@@ -8886,8 +8886,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           (cons 'defthm (cdr event-form)))
                     (list 'with-output
                           :stack :pop
-                          :off :all
-                          :on 'event
+
+; We never want to see the summary here.  But we do want to see a redundancy
+; message, which is printed in stop-redundant-event with (io? event ...) --
+; unless event output is inhibited at the start of the defthmd call.
+
+                          :off 'summary
                           (list 'in-theory
                                 (list 'disable name)))
                     (list 'value-triple

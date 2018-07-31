@@ -1,6 +1,6 @@
 ; ABNF Library -- Parser
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -105,8 +105,8 @@
 
    <p>
    As explained in the documentation of @(tsee parse-grammar*),
-   the grammar of the ABNF concrete syntax (RFC.4) is ambiguous.
-   The rule @('rulelist') allows strings &lsquo;@('c-nl WSP')&rsquo;
+   the grammar of the ABNF concrete syntax [RFC:4] is ambiguous.
+   The rule @('rulelist') allows strings `@('c-nl WSP')'
    either to be split into an ending @('c-nl') under a @('rule')
    and a starting @('WSP') under an immediately following @('(*c-wsp c-nl)'),
    or to be made into a @('c-wsp')
@@ -114,7 +114,7 @@
    The same kind of choice applies when,
    instead of a @('rule') immediately followed by a @('(*c-wsp c-nl)'),
    there are two subsequent @('(*c-wsp c-nl)')s:
-   the string &lsquo;@('c-nl WSP')&rsquo; can be
+   the string `@('c-nl WSP')' can be
    either split between the two @('(*c-wsp c-nl)')s
    or put all under the first one.
    Indeed, expanding @('elements') in the definiens of @('rule')
@@ -209,7 +209,7 @@
 
    <p>
    The parser resolves the @('rulelist') ambiguity
-   by keeping strings &lsquo;@('c-nl WSP')&rsquo; as @('c-wsp')s
+   by keeping strings `@('c-nl WSP')' as @('c-wsp')s
    under @('rule') or
    under the first @('(*c-wsp c-nl)') of two subsequent @('(*c-wsp c-nl)')s,
    instead of splitting them into a @('c-nl')
@@ -224,7 +224,7 @@
    or should the parser attempt to extend the @('*c-wsp')
    with an extra @('c-wsp'), if the @('c-nl') is followed by a @('WSP')?
    By having @(tsee parse-*cwsp) always try the extra @('c-wsp'),
-   we never split strings &lsquo;@('c-nl WSP')&rsquo;.
+   we never split strings `@('c-nl WSP')'.
    Thus, @(tsee parse-*cwsp) tries to parse as many @('c-wsp')s as possible,
    like all the other @('parse-*...') parsing functions.
    If the @('c-nl') is not followed by a @('WSP'),
@@ -5383,7 +5383,7 @@
    If certain parsing functions fail,
    other parsing functions fail as well,
    because the former parse prefixes of the latter.
-   In other words, parsing failures &ldquo;propagate&rdquo;.
+   In other words, parsing failures ``propagate''.
    </p>
    <p>
    The parsing failure propagation theorems below state this kind of facts.
@@ -5549,7 +5549,7 @@
    Most parsing constraint theorems state constraints
    just on the first natural number of the input (the @(tsee car)),
    because most of the grammar is LL(1);
-   these constraints correspond to &lsquo;first sets&rsquo;
+   these constraints correspond to `first sets'
    in LL(1) parsing theory.
    A few parsing constraint theorems state additional constraints
    on the second natural number of the input (the @(tsee cadr)),
@@ -7155,7 +7155,7 @@
    </p>
 
    <p>
-   Given the potentially &ldquo;quadratic&rdquo; number
+   Given the potentially ``quadratic'' number
    of disambiguation theorems
    (i.e. for all syntactic entities combined with all parsing functions),
    some disambiguation theorems group together
@@ -7190,7 +7190,7 @@
 
    <p>
    In particular,
-   the &ldquo;asymmetric&rdquo; use of trees and parsing functions
+   the ``asymmetric'' use of trees and parsing functions
    to show incompatibility
    (as opposed to showing incompatibility
    between parsing functions or between trees)
@@ -7444,7 +7444,7 @@
    to reduce the potentially quadratic number of theorems.
    This means that,
    when some of these disambiguation theorems are used in the proofs of others,
-   only &ldquo;parts&rdquo; of the former are actually used.
+   only ``parts'' of the former are actually used.
    </p>
 
    <p>
@@ -7486,7 +7486,7 @@
    <p>
    The proofs of some disambiguation theorems use certain completeness theorems.
    In some cases, this is related to LL(*) parts of the grammar:
-   the completeness theorems serve to go &ldquo;past&rdquo;
+   the completeness theorems serve to go ``past''
    the unbounded look-ahead,
    before reaching the point where the constraints
    from (sub)tree matching and (called) parsing functions are incompatible.
@@ -7558,7 +7558,7 @@
    and some expand many definitions.
    It may be possible to make these proofs more systematic,
    by introducing and using
-   some additional &ldquo;intermediate &rdquo; disambiguation theorems
+   some additional ``intermediate '' disambiguation theorems
    and some additional rules about the ABNF semantics.
    </p>")
 
@@ -9148,7 +9148,7 @@
 
    <p>
    In contrast,
-   if a parsing function &ldquo;examines&rdquo; (part of) the remaining input,
+   if a parsing function ``examines'' (part of) the remaining input,
    the corresponding completeness theorem has hypotheses on the remaining input.
    If a parsing function examines part of the remaining input,
    but that part of the remaining input is absent from the returned tree(s)
@@ -9225,7 +9225,7 @@
    <p>
    If a parsing function calls, or may call, another parsing function
    as its last action,
-   the former's completeness theorem &ldquo;inherits&rdquo;
+   the former's completeness theorem ``inherits''
    the hypotheses on the remaining input from the latter's completeness theorem.
    If the hypotheses were not inherited,
    the called function may successfully parse some of the remaining input,
@@ -9304,8 +9304,8 @@
    </p>
 
    <p>
-   In the rules in RFC.4, certain repeated and optional syntactic entities
-   &ldquo;nest to the right&ldquo;,
+   In the rules in RFC:4, certain repeated and optional syntactic entities
+   ``nest to the right'',
    e.g. @('1*BIT') nests to the right inside @('1*(\".\" 1*BIT)').
    When this kind of nesting occurs,
    the completeness theorem
@@ -9434,7 +9434,7 @@
    <h3>Proof Methods</h3>
 
    <p>
-   The completeness theorems of the more &ldquo;basic&rdquo; parsing functions
+   The completeness theorems of the more ``basic'' parsing functions
    @(tsee parse-any),
    @(tsee parse-exact),
    @(tsee parse-in-range),
@@ -9588,7 +9588,7 @@
    follow this proof pattern,
    which motivates the formulation of the disambiguation theorems.
    In particular,
-   it motivates the &ldquo;asymmetric&rdquo; use of trees and parsing functions
+   it motivates the ``asymmetric'' use of trees and parsing functions
    to show incompatibility
    (as opposed to showing incompatibility
    between parsing functions or between trees).
@@ -9669,8 +9669,8 @@
    and we prove all these predicates by induction on
    the mutually recursive functions.
    That is, we prove that the parsing functions
-   satisfy their &ldquo;completeness properties&rdquo; for every way
-   in which their input can be &ldquo;split&rdquo;
+   satisfy their ``completeness properties'' for every way
+   in which their input can be ``split''
    into (the string at the leaves of) a (list of) tree(s)
    and some remaining input.
    The predicates capture these completeness properties.

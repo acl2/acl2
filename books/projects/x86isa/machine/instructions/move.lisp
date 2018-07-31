@@ -51,7 +51,6 @@
 ;; INSTRUCTION: MOV
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-MR
 
   ;; Op/En: MR
@@ -131,7 +130,6 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-RM
 
   ;; Op/En: RM
@@ -192,7 +190,6 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-FD
 
   ;; Op/En: FD
@@ -286,7 +283,6 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-OI
 
   ;; Op/En: OI
@@ -341,7 +337,6 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
       x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-MI
 
   ;; Op/En: MI
@@ -447,7 +442,6 @@
 ;; INSTRUCTION: LEA
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-lea
 
   ;; Op/En: RM
@@ -611,7 +605,7 @@
 
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
-       
+
        ((when (or (not (equal vex-prefixes 0))
                   (not (equal evex-prefixes 0))))
         ;; VEX/EVEX encoding illegal.
@@ -622,7 +616,7 @@
 
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))       
+       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
        (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :adr prefixes)))
@@ -748,7 +742,6 @@
 ;; INSTRUCTION: MOV to/from Control Registers
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-control-regs-Op/En-MR
   :evex t
 
@@ -793,10 +786,6 @@
                   (not (equal evex-prefixes 0))))
         ;; VEX/EVEX encoding illegal.
         (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; The r/m field specifies the GPR (destination).
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
