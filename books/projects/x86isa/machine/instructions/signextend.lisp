@@ -51,7 +51,6 @@
 ;; INSTRUCTION: CBW/CWDE/CDQE/CLTQ
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cbw/cwd/cdqe
 
   ;; Op/En: NP
@@ -108,7 +107,6 @@
 ;; INSTRUCTION: CWD/CDQ/CQO
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cwd/cdq/cqo
 
   ;; Op/En: NP

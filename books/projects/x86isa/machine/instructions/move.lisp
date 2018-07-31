@@ -51,7 +51,6 @@
 ;; INSTRUCTION: MOV
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-MR
 
   ;; Op/En: MR
@@ -131,7 +130,6 @@
        (x86 (write-*ip temp-rip x86)))
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-RM
 
   ;; Op/En: RM
@@ -199,7 +197,6 @@
        (x86 (write-*ip temp-rip x86)))
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-FD
 
   ;; Op/En: FD
@@ -293,7 +290,6 @@
        (x86 (write-*ip temp-rip x86)))
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-OI
 
   ;; Op/En: OI
@@ -348,7 +344,6 @@
        (x86 (write-*ip temp-rip x86)))
       x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-Op/En-MI
 
   ;; Op/En: MI
@@ -454,7 +449,6 @@
 ;; INSTRUCTION: LEA
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-lea
 
   ;; Op/En: RM
@@ -755,7 +749,6 @@
 ;; INSTRUCTION: MOV to/from Control Registers
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mov-control-regs-Op/En-MR
   :evex t
 
