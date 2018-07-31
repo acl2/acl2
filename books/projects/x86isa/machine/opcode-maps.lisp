@@ -170,7 +170,7 @@
 
 ;; Note that for opcode cells with :i64 and :o64:
 ;;     ((:i64 . foo) (:o64 . bar))
-;; the following code will be generated:
+;; the following sort of code will be generated:
 ;;    (if (64-bit-modep x86)
 ;;        <appropriate call for bar>
 ;;        <appropriate call for foo>)

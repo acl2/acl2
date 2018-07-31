@@ -399,6 +399,7 @@
   :hints (("Goal"
            :induct (loop-all-induction n a loop-addr x86)
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             x86-operation-mode
                              imul-spec             ;; IMUL
                              imul-spec-32          ;; IMUL
                              gpr-sub-spec-4        ;; SUB
@@ -461,6 +462,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
@@ -504,6 +506,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
@@ -554,6 +557,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
@@ -599,6 +603,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
@@ -650,6 +655,7 @@
                     x86)))
   :hints (("Goal" :do-not-induct t
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem

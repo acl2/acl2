@@ -70,7 +70,7 @@
   :body
   (b* ((ctx 'x86-movss/movsd-Op/En-RM)
 
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
        
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -91,7 +91,7 @@
         t)
 
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* operand-size inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -147,7 +147,7 @@
   :body
   (b* ((ctx 'x86-movss/movsd-Op/En-MR)
 
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -171,7 +171,7 @@
             x86)
         (if (int= mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+          (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
                               0 ;; No immediate operand
                               x86)))
 
@@ -222,7 +222,7 @@
   :body
   (b* ((ctx 'x86-movaps/movapd-Op/En-RM)
 
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -245,7 +245,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -291,7 +291,7 @@
   :body
   (b* ((ctx 'x86-movaps/movapd-Op/En-MR)
 
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -313,7 +313,7 @@
             x86)
         (if (int= mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+          (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
                               0 ;; No immediate operand
                               x86)))
        ((when flg0)
@@ -371,7 +371,7 @@
   :body
   (b* ((ctx 'x86-movups/movupd/movdqu-Op/En-RM)
 
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -396,7 +396,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -442,7 +442,7 @@
   :body
   (b* ((ctx 'x86-movups/movupd/movdqu-Op/En-MR)
 
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -467,7 +467,7 @@
             x86)
         (if (int= mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+          (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
                               0 ;; No immediate operand
                               x86)))
        ((when flg0)
@@ -521,7 +521,7 @@
   :body
   (b* ((ctx 'x86-movlps/movlpd-Op/En-RM)
 
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -545,7 +545,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 8 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -592,7 +592,7 @@
   :body
   (b* ((ctx 'x86-movlps/movlpd-Op/En-MR)
 
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -612,7 +612,7 @@
             (the (signed-byte 64) v-addr)
             (the (unsigned-byte 3) increment-RIP-by)
             x86)
-        (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+        (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
                             0 ;; No immediate operand
                             x86))
        ((when flg0)
@@ -663,7 +663,7 @@
   :body
   (b* ((ctx 'x86-movhps/movhpd-Op/En-RM)
        
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
        
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -686,7 +686,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 8 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -734,7 +734,7 @@
   :body
   (b* ((ctx 'x86-movhps/movhpd-Op/En-MR)
 
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -762,7 +762,7 @@
             (the (signed-byte 64) v-addr)
             (the (unsigned-byte 3) increment-RIP-by)
             x86)
-        (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+        (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
                             0 ;; No immediate operand
                             x86))
        ((when flg0)

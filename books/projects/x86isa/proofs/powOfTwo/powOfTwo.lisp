@@ -248,6 +248,7 @@
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             x86-operation-mode
 
                              jcc/cmovcc/setcc-spec
                              gpr-and-spec-8
@@ -300,6 +301,7 @@
            :do-not-induct t
            :cases (equal (rgfi *rdi* x86) 0)
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             x86-operation-mode
 
                              jcc/cmovcc/setcc-spec
                              gpr-and-spec-8

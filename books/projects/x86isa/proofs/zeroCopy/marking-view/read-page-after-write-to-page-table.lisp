@@ -40,7 +40,8 @@
 
 (include-book "zeroCopy-init")
 
-(local (in-theory (e/d* () (unsigned-byte-p signed-byte-p))))
+(local (in-theory (e/d* (x86-operation-mode)
+                        (unsigned-byte-p signed-byte-p))))
 
 ;; ACL2's default ancestors-check kills me --- for instance, it
 ;; doesn't let the hyps of ia32e-la-to-pa-values-for-same-1G-page be

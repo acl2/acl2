@@ -556,6 +556,25 @@
 
 ;; ======================================================================
 
+;; Constants related to modes of operation of an x86 processor:
+
+;; IA-32e Mode, introduced by Intel 64(R) Architecture, has the following two
+;; sub-modes:
+(defconst *64-bit-mode*        0)
+(defconst *compatibility-mode* 1)
+
+;; IA-32 architecture supports the following modes:
+(defconst *32-bit-mode*        2) ;; a.k.a. Protected Mode --- also has a
+                                  ;; virtual-8086 mode built into it
+(defconst *real-address-mode*  3)
+(defconst *smm-mode*           4) ;; System Management Mode
+
+;; Total Number of Processor Modes:
+(defconst *num-proc-modes*     5)
+(defconst *num-proc-modes-1*   (1- *num-proc-modes*))
+
+;; ======================================================================
+
 ;; Indices and length of fields in the x86 state (see
 ;; machine/state-concrete.lisp):
 
@@ -767,16 +786,28 @@
           (cons 'mv (append lst (list len))))))
 
 (make-event (define-general-purpose-registers))
+
 (make-event (define-segment-registers))
+(defconst *segment-register-names-len-1* (1- *segment-register-names-len*))
+
 (make-event (define-gdtr/idtr-registers))
+
 (make-event (define-ldtr/tr-registers))
+
 (make-event (define-control-registers))
+
 (make-event (define-debug-registers))
+
 (make-event (define-fp-registers))
+
 (make-event (define-mmx-registers))
+
 (make-event (define-xmm-registers))
+
 (make-event (define-ymm-registers))
+
 (make-event (define-zmm-registers))
+
 (make-event (define-model-specific-registers))
 
 ;; ======================================================================

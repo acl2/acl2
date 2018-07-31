@@ -139,24 +139,16 @@
                           (equal opcode #xD0)
                           (equal opcode #xD2)))
        ((the (integer 0 8) ?reg/mem-size)
-        (select-operand-size byte-operand? rex-byte nil prefixes x86))
+        (select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg0 ?reg/mem (the (unsigned-byte 3) increment-RIP-by) addr x86)
         (x86-operand-from-modr/m-and-sib-bytes$
-         #.*gpr-access*
-         reg/mem-size
-         inst-ac?
+         proc-mode #.*gpr-access* reg/mem-size inst-ac?
          nil ;; Not a memory pointer operand
-         seg-reg
-         p4?
-         temp-rip
-         rex-byte
-         r/m
-         mod
-         sib
+         seg-reg p4? temp-rip rex-byte r/m mod sib
          ;; Bytes of immediate data (only relevant when RIP-relative
          ;; addressing is done to get ?reg/mem operand)
          (if (or (equal opcode #xC0)
@@ -168,7 +160,7 @@
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ((mv flg1 shift/rotate-by x86)
@@ -178,7 +170,7 @@
           ((#xD2 #xD3)
            (mv nil (rr08 *rcx* rex-byte x86) x86))
           ((#xC0 #xC1)
-           (rme-size 1 temp-rip *cs* :x nil x86))
+           (rme-size proc-mode 1 temp-rip *cs* :x nil x86))
           (otherwise ;; will not be reached
            (mv nil 0 x86))))
        ((when flg1)
@@ -192,7 +184,7 @@
        ((mv flg (the (signed-byte #.*max-linear-address-size+1*) temp-rip))
         (if (or (equal opcode #xC0)
                 (equal opcode #xC1))
-            (add-to-*ip temp-rip 1 x86)
+            (add-to-*ip proc-mode temp-rip 1 x86)
           (mv nil temp-rip)))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
@@ -238,7 +230,7 @@
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
        ((mv flg2 x86)
-        (x86-operand-to-reg/mem$ reg/mem-size
+        (x86-operand-to-reg/mem$ proc-mode reg/mem-size
                                  inst-ac?
                                  nil ;; Not a memory pointer operand
                                  ;; TO-DO@Shilpi: Remove this trunc.
@@ -253,7 +245,7 @@
        ((when flg2)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
 
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================

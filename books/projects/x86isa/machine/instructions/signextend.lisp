@@ -80,7 +80,7 @@
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((the (integer 1 8) register-size)
-        (select-operand-size nil rex-byte nil prefixes x86))
+        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
        ((the (integer 1 4) src-size) (ash register-size -1))
 
        ((the (unsigned-byte 32) src)
@@ -104,7 +104,7 @@
 
        ;; Update the x86 state:
        (x86 (!rgfi-size register-size *rax* dst rex-byte x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
 
@@ -137,7 +137,7 @@
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((the (integer 1 8) src-size)
-        (select-operand-size nil rex-byte nil prefixes x86))
+        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
        (src (rgfi-size src-size *rax* rex-byte x86))
 
@@ -147,7 +147,7 @@
 
        ;; Update the x86 state:
        (x86 (!rgfi-size src-size *rdx* rDX rex-byte x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
       x86))
 

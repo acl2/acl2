@@ -100,7 +100,7 @@
   :body
   (b* ((ctx 'x86-shufps-Op/En-RMI)
        
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -129,7 +129,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -210,7 +210,7 @@
   :body
   (b* ((ctx 'x86-shufpd-Op/En-RMI)
 
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -237,7 +237,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -326,7 +326,7 @@
   :body
   (b* ((ctx 'x86-unpck?ps-Op/En-RM)
 
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -355,7 +355,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -454,7 +454,7 @@
   :body
   (b* ((ctx 'x86-unpck?pd-Op/En-RM)
 
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
@@ -483,7 +483,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib

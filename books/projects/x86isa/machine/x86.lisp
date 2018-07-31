@@ -114,7 +114,8 @@
 ;; ----------------------------------------------------------------------
 
 (define get-prefixes
-  ((start-rip :type (signed-byte   #.*max-linear-address-size*))
+  ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+   (start-rip :type (signed-byte   #.*max-linear-address-size*))
    (prefixes  :type (unsigned-byte 55))
    (cnt       :type (integer 0 15))
    x86)
@@ -270,7 +271,7 @@
 
     (b* ((ctx 'get-prefixes)
          ((mv flg (the (unsigned-byte 8) byte) x86)
-          (rme08 start-rip *cs* :x x86))
+          (rme08 proc-mode start-rip *cs* :x x86))
          ((when flg)
           (mv (cons ctx flg) byte x86))
 
@@ -293,7 +294,7 @@
            ;; LOCK (F0), REPE (F3), REPNE (F2)
            (mv-let
              (flg next-rip)
-             (add-to-*ip start-rip 1 x86)
+             (add-to-*ip proc-mode start-rip 1 x86)
              (if flg
                  (mv flg prefixes x86)
                ;; Storing the group 1 prefix (possibly overwriting a
@@ -309,19 +310,20 @@
                         (!prefixes-slice
                          :last-prefix #.*rep-pfx* prefixes)))))
                  (get-prefixes
-                  next-rip prefixes (the (integer 0 15) (1- cnt)) x86)))))
+                  proc-mode next-rip prefixes
+                  (the (integer 0 15) (1- cnt)) x86)))))
 
           (2
            ;; ES (26), CS (2E), SS (36), DS (3E), FS (64), GS (65)
            (mv-let
              (flg next-rip)
-             (add-to-*ip start-rip 1 x86)
+             (add-to-*ip proc-mode start-rip 1 x86)
              (if flg
                  (mv flg prefixes x86)
                ;; Storing the group 2 prefix (possibly overwriting a
                ;; previously seen group 2 prefix) and going on...
                (get-prefixes
-                next-rip
+                proc-mode next-rip
                 (!prefixes-slice
                  :seg byte
                  (!prefixes-slice :last-prefix #.*seg-pfx* prefixes))
@@ -332,13 +334,13 @@
            ;; Operand-Size Override (66)
            (mv-let
              (flg next-rip)
-             (add-to-*ip start-rip 1 x86)
+             (add-to-*ip proc-mode start-rip 1 x86)
              (if flg
                  (mv flg prefixes x86)
                ;; Storing the group 3 prefix (possibly overwriting a
                ;; previously seen group 3 prefix) and going on...
                (get-prefixes
-                next-rip
+                proc-mode next-rip
                 (!prefixes-slice
                  :opr byte
                  (!prefixes-slice :last-prefix #.*opr-pfx* prefixes))
@@ -349,13 +351,13 @@
            ;; Address-Size Override (67)
            (mv-let
              (flg next-rip)
-             (add-to-*ip start-rip 1 x86)
+             (add-to-*ip proc-mode start-rip 1 x86)
              (if flg
                  (mv flg prefixes x86)
                ;; Storing the group 4 prefix (possibly overwriting a
                ;; previously seen group 4 prefix) and going on...
                (get-prefixes
-                next-rip
+                proc-mode next-rip
                 (!prefixes-slice
                  :adr byte
                  (!prefixes-slice :last-prefix #.*adr-pfx* prefixes))
@@ -373,7 +375,8 @@
     (implies (forced-and (natp prefixes)
                          (canonical-address-p start-rip)
                          (x86p x86))
-             (natp (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))))
+             (natp (mv-nth 1 (get-prefixes
+                              proc-mode start-rip prefixes cnt x86))))
     :hints (("Goal" :in-theory (e/d ()
                                     (force
                                      (force)
@@ -391,7 +394,7 @@
               (canonical-address-p start-rip)
               (x86p x86))
     :bound 55
-    :concl (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))
+    :concl (mv-nth 1 (get-prefixes proc-mode start-rip prefixes cnt x86))
     :hints (("Goal"
              :in-theory (e/d ()
                              (signed-byte-p
@@ -418,7 +421,9 @@
   (defthm x86p-get-prefixes
     (implies (forced-and (x86p x86)
                          (canonical-address-p start-rip))
-             (x86p (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))))
+             (x86p (mv-nth
+                    2
+                    (get-prefixes proc-mode start-rip prefixes cnt x86))))
     :hints (("Goal"
              :in-theory (e/d ()
                              (unsigned-byte-p
@@ -445,7 +450,7 @@
 
   (defthm get-prefixes-does-not-modify-x86-state-in-app-view
     (implies (app-view x86)
-             (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))
+             (equal (mv-nth 2 (get-prefixes proc-mode start-rip prefixes cnt x86))
                     x86))
     :hints (("Goal"
              :in-theory
@@ -458,8 +463,9 @@
     (implies (and (not (app-view x86))
                   (not (marking-view x86))
                   (x86p x86)
-                  (not (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))))
-             (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))
+                  (not (mv-nth
+                        0 (get-prefixes proc-mode start-rip prefixes cnt x86))))
+             (equal (mv-nth 2 (get-prefixes proc-mode start-rip prefixes cnt x86))
                     x86))
     :hints (("Goal"
              :in-theory (union-theories
@@ -490,11 +496,11 @@
              (<=
               (prefixes-slice
                :num-prefixes
-               (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))
+               (mv-nth 1 (get-prefixes proc-mode start-rip prefixes cnt x86)))
               15))
     :hints (("Goal"
-             :induct (get-prefixes start-rip prefixes cnt x86)
-             :in-theory (e/d (rme08-value-when-error)
+             :induct (get-prefixes proc-mode start-rip prefixes cnt x86)
+             :in-theory (e/d (rme08 rme08-value-when-error)
                              (signed-byte-p
                               unsigned-byte-p rme08 rml08
                               (force) force
@@ -520,7 +526,7 @@
 
   (defthm get-prefixes-opener-lemma-zero-cnt
     (implies (zp cnt)
-             (equal (get-prefixes start-rip prefixes cnt x86)
+             (equal (get-prefixes proc-mode start-rip prefixes cnt x86)
                     (mv t prefixes x86)))
     :hints (("Goal" :in-theory (e/d (get-prefixes) ()))))
 
@@ -529,27 +535,29 @@
     ;; This lemma would be used for those instructions which do not have
     ;; any prefix byte.
     (implies (and
-              (let* ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
+              (let* ((flg (mv-nth 0 (rme08 proc-mode start-rip *cs* :x x86)))
                      (prefix-byte-group-code
                       (get-one-byte-prefix-array-code
-                       (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
+                       (mv-nth 1 (rme08 proc-mode start-rip *cs* :x x86)))))
                 (and (not flg)
                      (zp prefix-byte-group-code)))
               (not (zp cnt)))
              (and
-              (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt x86))
+              (equal (mv-nth 0
+                             (get-prefixes proc-mode start-rip prefixes cnt x86))
                      nil)
-              (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))
+              (equal (mv-nth 1
+                             (get-prefixes proc-mode start-rip prefixes cnt x86))
                      (let ((prefixes
                             (!prefixes-slice
                              :next-byte
-                             (mv-nth 1 (rme08 start-rip *cs* :x x86))
+                             (mv-nth 1 (rme08 proc-mode start-rip *cs* :x x86))
                              prefixes)))
                        (!prefixes-slice :num-prefixes (- 15 cnt) prefixes))))))
 
   (defthm get-prefixes-opener-lemma-group-1-prefix
     (b* (((mv flg byte x86)
-          (rme08 start-rip *cs* :x x86))
+          (rme08 proc-mode start-rip *cs* :x x86))
          (prefix-byte-group-code (get-one-byte-prefix-array-code byte)))
       (implies
        (and (or (app-view x86)
@@ -557,8 +565,8 @@
             (not flg) ;; No error in reading a byte
             (equal prefix-byte-group-code 1)
             (not (zp cnt))
-            (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
-       (equal (get-prefixes start-rip prefixes cnt x86)
+            (not (mv-nth 0 (add-to-*ip proc-mode start-rip 1 x86))))
+       (equal (get-prefixes proc-mode start-rip prefixes cnt x86)
               (let ((prefixes
                      (if (equal byte #.*lock*)
                          (!prefixes-slice
@@ -569,7 +577,7 @@
                         :rep byte
                         (!prefixes-slice
                          :last-prefix #.*rep-pfx* prefixes)))))
-                (get-prefixes (1+ start-rip) prefixes (1- cnt) x86)))))
+                (get-prefixes proc-mode (1+ start-rip) prefixes (1- cnt) x86)))))
     :hints (("Goal"
              :in-theory
              (e/d* (add-to-*ip)
@@ -582,19 +590,19 @@
     (implies (and (or (app-view x86)
                       (and (not (app-view x86))
                            (not (marking-view x86))))
-                  (let* ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
+                  (let* ((flg (mv-nth 0 (rme08 proc-mode start-rip *cs* :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
+                           (mv-nth 1 (rme08 proc-mode start-rip *cs* :x x86)))))
                     (and (not flg) ;; No error in reading a byte
                          (equal prefix-byte-group-code 2)))
                   (not (zp cnt))
-                  (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
-             (equal (get-prefixes start-rip prefixes cnt x86)
-                    (get-prefixes (1+ start-rip)
+                  (not (mv-nth 0 (add-to-*ip proc-mode start-rip 1 x86))))
+             (equal (get-prefixes proc-mode start-rip prefixes cnt x86)
+                    (get-prefixes proc-mode (1+ start-rip)
                                   (!prefixes-slice
                                    :seg
-                                   (mv-nth 1 (rme08 start-rip *cs* :x x86))
+                                   (mv-nth 1 (rme08 proc-mode start-rip *cs* :x x86))
                                    (!prefixes-slice
                                     :last-prefix
                                     #.*seg-pfx*
@@ -610,19 +618,19 @@
     (implies (and (or (app-view x86)
                       (and (not (app-view x86))
                            (not (marking-view x86))))
-                  (let* ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
+                  (let* ((flg (mv-nth 0 (rme08 proc-mode start-rip *cs* :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
+                           (mv-nth 1 (rme08 proc-mode start-rip *cs* :x x86)))))
                     (and (not flg) ;; No error in reading a byte
                          (equal prefix-byte-group-code 3)))
                   (not (zp cnt))
-                  (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
-             (equal (get-prefixes start-rip prefixes cnt x86)
-                    (get-prefixes (1+ start-rip)
+                  (not (mv-nth 0 (add-to-*ip proc-mode start-rip 1 x86))))
+             (equal (get-prefixes proc-mode start-rip prefixes cnt x86)
+                    (get-prefixes proc-mode (1+ start-rip)
                                   (!prefixes-slice
                                    :opr
-                                   (mv-nth 1 (rme08 start-rip *cs* :x x86))
+                                   (mv-nth 1 (rme08 proc-mode start-rip *cs* :x x86))
                                    (!prefixes-slice
                                     :last-prefix
                                     #.*opr-pfx*
@@ -638,19 +646,19 @@
     (implies (and (or (app-view x86)
                       (and (not (app-view x86))
                            (not (marking-view x86))))
-                  (let* ((flg (mv-nth 0 (rme08 start-rip *cs* :x x86)))
+                  (let* ((flg (mv-nth 0 (rme08 proc-mode start-rip *cs* :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rme08 start-rip *cs* :x x86)))))
+                           (mv-nth 1 (rme08 proc-mode start-rip *cs* :x x86)))))
                     (and (not flg) ;; No error in reading a byte
                          (equal prefix-byte-group-code 4)))
                   (not (zp cnt))
-                  (not (mv-nth 0 (add-to-*ip start-rip 1 x86))))
-             (equal (get-prefixes start-rip prefixes cnt x86)
-                    (get-prefixes (1+ start-rip)
+                  (not (mv-nth 0 (add-to-*ip proc-mode start-rip 1 x86))))
+             (equal (get-prefixes proc-mode start-rip prefixes cnt x86)
+                    (get-prefixes proc-mode (1+ start-rip)
                                   (!prefixes-slice
                                    :adr
-                                   (mv-nth 1 (rme08 start-rip *cs* :x x86))
+                                   (mv-nth 1 (rme08 proc-mode start-rip *cs* :x x86))
                                    (!prefixes-slice
                                     :last-prefix
                                     #.*adr-pfx*
@@ -666,9 +674,9 @@
    (defthm xr-msr-and-seg-hidden-of-get-prefixes-in-app-view
      (implies (app-view x86)
               (and
-               (equal (xr :msr idx (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+               (equal (xr :msr idx (mv-nth 2 (get-prefixes proc-mode start-rip prefixes cnt x86)))
                       (xr :msr idx x86))
-               (equal (xr :seg-hidden idx (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+               (equal (xr :seg-hidden idx (mv-nth 2 (get-prefixes proc-mode start-rip prefixes cnt x86)))
                       (xr :seg-hidden idx x86))))
      :hints (("Goal"
               :in-theory (e/d () (las-to-pas rb rme08 rml08))))))
@@ -677,12 +685,12 @@
    (defthm xr-msr-of-get-prefixes-in-sys-view
      (implies (not (app-view x86))
               (and
-               (equal (xr :msr idx (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+               (equal (xr :msr idx (mv-nth 2 (get-prefixes proc-mode start-rip prefixes cnt x86)))
                       (xr :msr idx x86))
-               (equal (xr :seg-hidden idx (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+               (equal (xr :seg-hidden idx (mv-nth 2 (get-prefixes proc-mode start-rip prefixes cnt x86)))
                       (xr :seg-hidden idx x86))))
      :hints (("Goal"
-              :induct (get-prefixes start-rip prefixes cnt x86)
+              :induct (get-prefixes proc-mode start-rip prefixes cnt x86)
               :in-theory (e/d ()
                               (unsigned-byte-p
                                (:linear <=-logior)
@@ -692,9 +700,9 @@
   (local
    (defthm xr-msr-of-get-prefixes
      (and
-      (equal (xr :msr idx (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+      (equal (xr :msr idx (mv-nth 2 (get-prefixes proc-mode start-rip prefixes cnt x86)))
              (xr :msr idx x86))
-      (equal (xr :seg-hidden idx (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+      (equal (xr :seg-hidden idx (mv-nth 2 (get-prefixes proc-mode start-rip prefixes cnt x86)))
              (xr :seg-hidden idx x86)))
      :hints (("Goal"
               :cases ((app-view x86))
@@ -702,10 +710,18 @@
               :in-theory (e/d () (get-prefixes las-to-pas rb rme08 rml08))))))
 
   (defrule 64-bit-modep-of-get-prefixes
-    (equal (64-bit-modep (mv-nth 2 (get-prefixes start-rip prefixes cnt x86)))
+    (equal (64-bit-modep (mv-nth 2 (get-prefixes proc-mode start-rip prefixes cnt x86)))
            (64-bit-modep x86))
     :in-theory (e/d (64-bit-modep) ())
-    :do-not-induct t))
+    :do-not-induct t)
+
+  (defrule x86-operation-mode-of-get-prefixes
+    (equal (x86-operation-mode
+            (mv-nth 2
+                    (get-prefixes
+                     proc-mode start-rip prefixes cnt x86)))
+           (x86-operation-mode x86))
+    :in-theory (e/d (x86-operation-mode) (get-prefixes))))
 
 ;; ----------------------------------------------------------------------
 
@@ -726,7 +742,8 @@
 
    `(progn
       (define first-three-byte-opcode-execute
-        ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
+        ((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
+         (start-rip        :type (signed-byte   #.*max-linear-address-size*))
          (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
          (prefixes         :type (unsigned-byte 55))
          (mandatory-prefix :type (unsigned-byte 8))
@@ -763,6 +780,7 @@
                         (canonical-address-p temp-rip))
                    (x86p
                     (first-three-byte-opcode-execute
+                     proc-mode
                      start-rip temp-rip prefixes mandatory-prefix rex-byte opcode
                      modr/m sib x86)))))
 
@@ -782,7 +800,8 @@
 
    `(progn
       (define second-three-byte-opcode-execute
-        ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
+        ((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
+         (start-rip        :type (signed-byte   #.*max-linear-address-size*))
          (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
          (prefixes         :type (unsigned-byte 55))
          (mandatory-prefix :type (unsigned-byte 8))
@@ -818,6 +837,7 @@
           (implies (and (x86p x86)
                         (canonical-address-p temp-rip))
                    (x86p (second-three-byte-opcode-execute
+                          proc-mode
                           start-rip temp-rip prefixes mandatory-prefix
                           rex-byte opcode modr/m sib x86)))))
 
@@ -828,7 +848,8 @@
         :long ,table-doc-string))))
 
 (define three-byte-opcode-decode-and-execute
-  ((start-rip          :type (signed-byte #.*max-linear-address-size*))
+  ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
+   (start-rip          :type (signed-byte #.*max-linear-address-size*))
    (temp-rip           :type (signed-byte #.*max-linear-address-size*))
    (prefixes           :type (unsigned-byte 55))
    (rex-byte           :type (unsigned-byte 8))
@@ -842,11 +863,12 @@
              (equal second-escape-byte #x3A))
   :guard-hints (("Goal" :do-not '(preprocess)
                  :in-theory (e/d*
-                             (add-to-*ip-is-i48p-rewrite-rule)
+                             (add-to-*ip add-to-*ip-is-i48p-rewrite-rule)
                              (unsigned-byte-p
                               (:type-prescription bitops::logand-natp-type-2)
                               (:type-prescription bitops::ash-natp-type)
                               acl2::loghead-identity
+                              not
                               tau-system
                               (tau-system)))))
   :parents (x86-decoder)
@@ -861,7 +883,7 @@
                     evex-prefixes))
 
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
-        (rme08 temp-rip *cs* :x x86))
+        (rme08 proc-mode temp-rip *cs* :x x86))
        ((when flg0)
         (!!ms-fresh :opcode-byte-access-error flg0))
 
@@ -871,7 +893,7 @@
        ;; second-three-byte-opcode-execute case-splits on this opcode byte and
        ;; calls the appropriate instruction semantic function.
 
-       ((mv flg temp-rip) (add-to-*ip temp-rip 1 x86))
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip 1 x86))
        ((when flg) (!!ms-fresh :increment-error flg))
 
        ((when (and (not (equal vex-prefixes 0))
@@ -894,52 +916,54 @@
        (modr/m?
         (case second-escape-byte
           (#x38
-           (if (64-bit-modep x86)
+           (if (equal proc-mode #.*64-bit-mode*)
                (64-bit-mode-0F-38-three-byte-opcode-ModR/M-p
                 mandatory-prefix opcode)
              (32-bit-mode-0F-38-three-byte-opcode-ModR/M-p
               mandatory-prefix opcode)))
           (#x3A
-           (if (64-bit-modep x86)
+           (if (equal proc-mode #.*64-bit-mode*)
                (64-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
                 mandatory-prefix opcode)
              (32-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
               mandatory-prefix opcode)))))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
-            (rme08 temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg1) (!!ms-fresh :modr/m-byte-read-error flg1))
 
        ((mv flg temp-rip) (if modr/m?
-                              (add-to-*ip temp-rip 1 x86)
+                              (add-to-*ip proc-mode temp-rip 1 x86)
                             (mv nil temp-rip)))
        ((when flg) (!!ms-fresh :increment-error flg))
 
        (sib? (and modr/m?
                   (b* ((p4? (eql #.*addr-size-override*
                                  (prefixes-slice :adr prefixes)))
-                       (16-bit-addressp (eql 2 (select-address-size p4? x86))))
+                       (16-bit-addressp (eql 2 (select-address-size proc-mode p4? x86))))
                     (x86-decode-SIB-p modr/m 16-bit-addressp))))
        ((mv flg2 (the (unsigned-byte 8) sib) x86)
         (if sib?
-            (rme08 temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg2)
         (!!ms-fresh :sib-byte-read-error flg2))
 
        ((mv flg temp-rip) (if sib?
-                              (add-to-*ip temp-rip 1 x86)
+                              (add-to-*ip proc-mode temp-rip 1 x86)
                             (mv nil temp-rip)))
        ((when flg) (!!ms-fresh :increment-error flg)))
 
     (case second-escape-byte
       (#x38
        (first-three-byte-opcode-execute
+        proc-mode
         start-rip temp-rip prefixes rex-byte mandatory-prefix
         opcode modr/m sib x86))
       (#x3A
        (second-three-byte-opcode-execute
+        proc-mode
         start-rip temp-rip prefixes rex-byte mandatory-prefix
         opcode modr/m sib x86))
       (otherwise
@@ -952,9 +976,11 @@
     (implies (and (canonical-address-p temp-rip)
                   (x86p x86))
              (x86p (three-byte-opcode-decode-and-execute
+                    proc-mode
                     start-rip temp-rip prefixes rex-byte
                     vex-prefixes evex-prefixes escape-byte x86)))
-    :enable add-to-*ip-is-i48p-rewrite-rule))
+    :enable add-to-*ip-is-i48p-rewrite-rule
+    :disable signed-byte-p))
 
 ;; ----------------------------------------------------------------------
 
@@ -969,8 +995,8 @@
 
    `(progn
       (define two-byte-opcode-execute
-
-        ((start-rip        :type (signed-byte   #.*max-linear-address-size*))
+        ((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
+         (start-rip        :type (signed-byte   #.*max-linear-address-size*))
          (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
          (prefixes         :type (unsigned-byte 55))
          (mandatory-prefix :type (unsigned-byte 8))
@@ -1005,6 +1031,7 @@
           (implies (and (x86p x86)
                         (canonical-address-p temp-rip))
                    (x86p (two-byte-opcode-execute
+                          proc-mode
                           start-rip temp-rip prefixes mandatory-prefix
                           rex-byte vex-prefixes evex-prefixes
                           opcode modr/m sib x86)))))
@@ -1016,7 +1043,8 @@
         :long ,table-doc-string))))
 
 (define two-byte-opcode-decode-and-execute
-  ((start-rip     :type (signed-byte #.*max-linear-address-size*))
+  ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
+   (start-rip     :type (signed-byte #.*max-linear-address-size*))
    (temp-rip      :type (signed-byte #.*max-linear-address-size*))
    (prefixes      :type (unsigned-byte 55))
    (rex-byte      :type (unsigned-byte 8))
@@ -1029,11 +1057,12 @@
   :guard (equal escape-byte #x0F)
   :guard-hints (("Goal" :do-not '(preprocess)
                  :in-theory (e/d*
-                             (add-to-*ip-is-i48p-rewrite-rule)
+                             (add-to-*ip add-to-*ip-is-i48p-rewrite-rule)
                              (unsigned-byte-p
                               (:type-prescription bitops::logand-natp-type-2)
                               (:type-prescription bitops::ash-natp-type)
                               acl2::loghead-identity
+                              not
                               tau-system
                               (tau-system)))))
   :parents (x86-decoder)
@@ -1047,7 +1076,7 @@
                     evex-prefixes))
 
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
-        (rme08 temp-rip *cs* :x x86))
+        (rme08 proc-mode temp-rip *cs* :x x86))
        ((when flg0)
         (!!ms-fresh :opcode-byte-access-error flg0))
 
@@ -1062,7 +1091,7 @@
        ;;    two-byte-opcode-execute case-splits on this opcode byte and calls
        ;;    the appropriate instruction semantic function.
 
-       ((mv flg temp-rip) (add-to-*ip temp-rip 1 x86))
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip 1 x86))
        ((when flg) (!!ms-fresh :increment-error flg))
 
        (vex2-prefix?
@@ -1102,40 +1131,41 @@
             (#b11 #.*mandatory-F2h*)
             (otherwise 0))))
 
-       (modr/m? (if (64-bit-modep x86)
+       (modr/m? (if (equal proc-mode #.*64-bit-mode*)
                     (64-bit-mode-two-byte-opcode-ModR/M-p
                      mandatory-prefix opcode)
                   (32-bit-mode-two-byte-opcode-ModR/M-p
                    mandatory-prefix opcode)))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
-            (rme08 temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg1) (!!ms-fresh :modr/m-byte-read-error flg1))
 
        ((mv flg temp-rip) (if modr/m?
-                              (add-to-*ip temp-rip 1 x86)
+                              (add-to-*ip proc-mode temp-rip 1 x86)
                             (mv nil temp-rip)))
        ((when flg) (!!ms-fresh :increment-error flg))
 
        (sib? (and modr/m?
                   (b* ((p4? (eql #.*addr-size-override*
                                  (prefixes-slice :adr prefixes)))
-                       (16-bit-addressp (eql 2 (select-address-size p4? x86))))
+                       (16-bit-addressp (eql 2 (select-address-size proc-mode p4? x86))))
                     (x86-decode-SIB-p modr/m 16-bit-addressp))))
        ((mv flg2 (the (unsigned-byte 8) sib) x86)
         (if sib?
-            (rme08 temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg2)
         (!!ms-fresh :sib-byte-read-error flg2))
 
        ((mv flg temp-rip) (if sib?
-                              (add-to-*ip temp-rip 1 x86)
+                              (add-to-*ip proc-mode temp-rip 1 x86)
                             (mv nil temp-rip)))
        ((when flg) (!!ms-fresh :increment-error flg)))
 
     (two-byte-opcode-execute
+     proc-mode
      start-rip temp-rip prefixes mandatory-prefix
      rex-byte vex-prefixes evex-prefixes opcode modr/m sib x86))
 
@@ -1145,9 +1175,11 @@
     (implies (and (canonical-address-p temp-rip)
                   (x86p x86))
              (x86p (two-byte-opcode-decode-and-execute
+                    proc-mode
                     start-rip temp-rip prefixes rex-byte vex-prefixes
                     evex-prefixes escape-byte x86)))
-    :enable add-to-*ip-is-i48p-rewrite-rule))
+    :enable add-to-*ip-is-i48p-rewrite-rule
+    :disable signed-byte-p))
 
 ;; ----------------------------------------------------------------------
 
@@ -1163,14 +1195,14 @@
 
    `(progn
       (define one-byte-opcode-execute
-
-        ((start-rip :type (signed-byte   #.*max-linear-address-size*))
-         (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
-         (prefixes  :type (unsigned-byte 55))
-         (rex-byte  :type (unsigned-byte 8))
-         (opcode    :type (unsigned-byte 8))
-         (modr/m    :type (unsigned-byte 8))
-         (sib       :type (unsigned-byte 8))
+        ((proc-mode    :type (integer 0 #.*num-proc-modes-1*))
+         (start-rip    :type (signed-byte   #.*max-linear-address-size*))
+         (temp-rip     :type (signed-byte   #.*max-linear-address-size*))
+         (prefixes     :type (unsigned-byte 55))
+         (rex-byte     :type (unsigned-byte 8))
+         (opcode       :type (unsigned-byte 8))
+         (modr/m       :type (unsigned-byte 8))
+         (sib          :type (unsigned-byte 8))
          x86)
 
         :parents (x86-decoder)
@@ -1195,6 +1227,7 @@
           (implies (and (x86p x86)
                         (canonical-address-p temp-rip))
                    (x86p (one-byte-opcode-execute
+                          proc-mode
                           start-rip temp-rip prefixes rex-byte opcode
                           modr/m sib x86)))))
 
@@ -1211,7 +1244,7 @@
 (local
  (defthm dumb-integerp-of-mv-nth-1-rme08-rule
    (implies (force (x86p x86))
-            (integerp (mv-nth 1 (rme08 eff-addr seg-reg r-x x86))))
+            (integerp (mv-nth 1 (rme08 proc-mode eff-addr seg-reg r-x x86))))
    :rule-classes (:rewrite :type-prescription)))
 
 (local
@@ -1222,7 +1255,8 @@
          (unsigned-byte-p 32 (logior #xC500 (ash byte 16)))))))
 
 (define vex-decode-and-execute
-  ((start-rip              :type (signed-byte   #.*max-linear-address-size*))
+  ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))
+   (start-rip              :type (signed-byte   #.*max-linear-address-size*))
    (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
                            "@('temp-rip') points to the byte following the
                             first two VEX prefixes that were already read and
@@ -1238,21 +1272,28 @@
   :guard-hints
   (("Goal"
     :in-theory
-    (e/d (add-to-*ip-is-i48p-rewrite-rule)
+    (e/d (add-to-*ip add-to-*ip-is-i48p-rewrite-rule)
          (bitops::logand-with-negated-bitmask))))
   :prepwork
   ((local
     (defthm vex-decode-and-execute-guard-helper
       (implies (and (unsigned-byte-p 8 byte-1)
                     (unsigned-byte-p 8 byte-2))
-               (<
-                (logior
-                 (logand #xffffff00
-                         (logior (logand #xffffffff00ffffff vex-prefixes)
-                                 (ash byte-1
-                                      24)))
-                 byte-2)
-                4294967296)))))
+               (and
+                (<
+                 (logior
+                  (logand #xffffff00
+                          (logior (logand #xffffffff00ffffff vex-prefixes)
+                                  (ash byte-1
+                                       24)))
+                  byte-2)
+                 4294967296)
+                (<
+                 (logior byte-1
+                         (logand #xffffff00
+                                 (logior (logand #xffffffff00ffffff vex-prefixes)
+                                         (ash byte-2 24))))
+                 4294967296))))))
 
   :parents (x86-decoder)
 
@@ -1308,11 +1349,11 @@
        ;; next-byte for vex2-prefixes and both byte2 and next-byte for
        ;; vex3-prefix:
        ((mv flg0 (the (unsigned-byte 8) byte2/next-byte) x86)
-        (rme08 temp-rip *cs* :x x86))
+        (rme08 proc-mode temp-rip *cs* :x x86))
        ((when flg0)
         (!!ms-fresh :vex-byte2/next-byte-read-error flg0))
        ((mv flg1 temp-rip)
-        (add-to-*ip temp-rip 1 x86))
+        (add-to-*ip proc-mode temp-rip 1 x86))
        ((when flg1)
         (!!ms-fresh :increment-error flg1))
        (vex-prefixes
@@ -1321,13 +1362,13 @@
           (!vex-prefixes-slice :next-byte byte2/next-byte vex-prefixes)))
        ((mv flg2 (the (unsigned-byte 8) next-byte) x86)
         (if vex3-prefix?
-            (rme08 temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg2)
         (!!ms-fresh :next-byte-read-error flg2))
        ((mv flg3 temp-rip)
         (if vex3-prefix?
-            (add-to-*ip temp-rip 1 x86)
+            (add-to-*ip proc-mode temp-rip 1 x86)
           (mv nil temp-rip)))
        ((when flg3)
         (!!ms-fresh :increment-error flg3))
@@ -1346,15 +1387,15 @@
     (if vex3-prefix?
         (cond (vex3-0F-map?
                (two-byte-opcode-decode-and-execute
-                start-rip temp-rip prefixes rex-byte vex-prefixes
+                proc-mode start-rip temp-rip prefixes rex-byte vex-prefixes
                 0 #x0F x86))
               (vex3-0F38-map?
                (three-byte-opcode-decode-and-execute
-                start-rip temp-rip prefixes rex-byte vex-prefixes
+                proc-mode start-rip temp-rip prefixes rex-byte vex-prefixes
                 0 #x38 x86))
               (vex3-0F3A-map?
                (three-byte-opcode-decode-and-execute
-                start-rip temp-rip prefixes rex-byte vex-prefixes
+                proc-mode start-rip temp-rip prefixes rex-byte vex-prefixes
                 0 #x3A x86))
               (t
                ;; Unreachable.
@@ -1362,6 +1403,7 @@
 
       ;; vex2: 0F Map:
       (two-byte-opcode-decode-and-execute
+       proc-mode
        start-rip temp-rip prefixes rex-byte vex-prefixes
        0 #x0F x86)))
 
@@ -1372,6 +1414,7 @@
                   (canonical-address-p temp-rip))
              (x86p
               (vex-decode-and-execute
+               proc-mode
                start-rip temp-rip prefixes rex-byte vex-prefixes x86)))))
 
 ;; ----------------------------------------------------------------------
@@ -1385,7 +1428,8 @@
     (unsigned-byte-p 40 (logior #x6200 (ash byte 16))))))
 
 (define evex-decode-and-execute
-  ((start-rip              :type (signed-byte   #.*max-linear-address-size*))
+  ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))
+   (start-rip              :type (signed-byte   #.*max-linear-address-size*))
    (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
                            "@('temp-rip') points to the byte following the
                             first two EVEX prefixes that were already read and
@@ -1403,7 +1447,7 @@
   :guard-hints
   (("Goal"
     :in-theory
-    (e/d (add-to-*ip-is-i48p-rewrite-rule)
+    (e/d (add-to-*ip add-to-*ip-is-i48p-rewrite-rule)
          (bitops::logand-with-negated-bitmask))))
 
   (x86-step-unimplemented
@@ -1418,6 +1462,7 @@
                   (canonical-address-p temp-rip))
              (x86p
               (evex-decode-and-execute
+               proc-mode
                start-rip temp-rip prefixes rex-byte evex-prefixes x86)))))
 
 ;; ----------------------------------------------------------------------
@@ -1438,23 +1483,41 @@
  dispatches control to the appropriate instruction semantic function.</p>"
 
   :prepwork
-  ((local (in-theory (e/d* () (signed-byte-p unsigned-byte-p not)))))
+  ((local
+    (defthm guard-helper-1
+      (implies (and (<= 0 (+ x y))
+                    (<= (+ x y) a)
+                    (unsigned-byte-p 32 a)
+                    (integerp x) (integerp y))
+               (signed-byte-p 48 (+ x y)))))
+
+   (local
+    (defthm guard-helper-2
+      (implies (and (<= 0 (+ x y))
+                    (<= (+ x y) a)
+                    (unsigned-byte-p 32 a)
+                    (integerp x) (integerp y))
+               (signed-byte-p 64 (+ x y)))))
+   
+   (local (in-theory (e/d* ()
+                           (signed-byte-p unsigned-byte-p not)))))
 
   :guard-hints
-  (("Goal" :in-theory (e/d (add-to-*ip-is-i48p-rewrite-rule) ())))
+  (("Goal" :in-theory (e/d (add-to-*ip add-to-*ip-is-i48p-rewrite-rule) ())))
 
   (b* ((ctx 'x86-fetch-decode-execute)
-       (64-bit-modep (64-bit-modep x86))
+       (proc-mode (x86-operation-mode x86))
+       (64-bit-modep (equal proc-mode #.*64-bit-mode*))
        ;; We don't want our interpreter to take a step if the machine is in a
        ;; bad state.  Such checks are made in x86-run but I am duplicating them
        ;; here in case this function is being used at the top-level.
        ((when (or (ms x86) (fault x86))) x86)
 
        (start-rip (the (signed-byte #.*max-linear-address-size*)
-                    (read-*ip x86)))
+                    (read-*ip proc-mode x86)))
 
        ((mv flg0 (the (unsigned-byte 55) prefixes) x86)
-        (get-prefixes start-rip 0 15 x86))
+        (get-prefixes proc-mode start-rip 0 15 x86))
        ;; Among other errors (including if there are 15 prefix bytes, which
        ;; leaves no room for an opcode byte in a legal instruction), if
        ;; get-prefixes detects a non-canonical address while attempting to
@@ -1469,8 +1532,8 @@
         (prefixes-slice :num-prefixes prefixes))
 
        ((mv flg temp-rip) (if (equal 0 prefix-length)
-                              (add-to-*ip start-rip 1 x86)
-                            (add-to-*ip start-rip (1+ prefix-length) x86)))
+                              (add-to-*ip proc-mode start-rip 1 x86)
+                            (add-to-*ip proc-mode start-rip (1+ prefix-length) x86)))
        ((when flg) (!!ms-fresh :increment-error flg))
 
        ;; If opcode/rex/vex/evex-byte is a rex byte, it is filed away in
@@ -1488,14 +1551,14 @@
        ((mv flg1 (the (unsigned-byte 8) opcode/vex/evex-byte) x86)
         (if (equal 0 rex-byte)
             (mv nil opcode/rex/vex/evex-byte x86)
-          (rme08 temp-rip *cs* :x x86)))
+          (rme08 proc-mode temp-rip *cs* :x x86)))
        ((when flg1)
         (!!ms-fresh :opcode/vex/evex-byte-read-error flg1))
 
        ((mv flg2 temp-rip)
         (if (equal rex-byte 0)
             (mv nil temp-rip)
-          (add-to-*ip temp-rip 1 x86)))
+          (add-to-*ip proc-mode temp-rip 1 x86)))
        ((when flg2) (!!ms-fresh :increment-error flg2))
 
        (vex-byte0? (or (equal opcode/vex/evex-byte #.*vex2-byte0*)
@@ -1514,7 +1577,7 @@
        ;; this function for simplicity.
        ((mv flg3 les/lds-distinguishing-byte x86)
         (if vex-byte0?
-            (rme08 temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg3)
         (!!ms-fresh :les/lds-distinguishing-byte-read-error flg3))
@@ -1530,7 +1593,7 @@
                                    #b11)))))
         ;; Handle VEX-encoded instructions separately.
         (b* (((mv flg1-vex temp-rip)
-              (add-to-*ip temp-rip 1 x86))
+              (add-to-*ip proc-mode temp-rip 1 x86))
              ((when flg1-vex)
               (!!ms-fresh :vex-byte1-increment-error flg1-vex))
              (vex-prefixes
@@ -1540,6 +1603,7 @@
               (!vex-prefixes-slice
                :byte1 les/lds-distinguishing-byte vex-prefixes)))
           (vex-decode-and-execute
+           proc-mode
            start-rip temp-rip prefixes rex-byte vex-prefixes x86)))
 
        (opcode/evex-byte opcode/vex/evex-byte)
@@ -1567,7 +1631,7 @@
        ;; simplicity.
        ((mv flg4 bound-distinguishing-byte x86)
         (if evex-byte0?
-            (rme08 temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg4)
         (!!ms-fresh :bound-distinguishing-byte-read-error flg4))
@@ -1583,7 +1647,7 @@
                                    #b11)))))
         ;; Handle EVEX-encoded instructions separately.
         (b* (((mv flg1-evex temp-rip)
-              (add-to-*ip temp-rip 1 x86))
+              (add-to-*ip proc-mode temp-rip 1 x86))
              ((when flg1-evex)
               (!!ms-fresh :evex-byte1-increment-error flg1-evex))
              (evex-prefixes
@@ -1592,6 +1656,7 @@
               (!evex-prefixes-slice
                :byte1 bound-distinguishing-byte evex-prefixes)))
           (evex-decode-and-execute
+           proc-mode
            start-rip temp-rip prefixes rex-byte evex-prefixes x86)))
 
 
@@ -1641,37 +1706,38 @@
                 ;; The above will be true only if the instruction is LES or LDS
                 ;; or BOUND in the 32-bit mode.
                 (mv nil les/lds-distinguishing-byte x86)
-              (rme08 temp-rip *cs* :x x86))
+              (rme08 proc-mode temp-rip *cs* :x x86))
           (mv nil 0 x86)))
        ((when flg5)
         (!!ms-fresh :modr/m-byte-read-error flg5))
 
        ((mv flg6 temp-rip)
         (if modr/m?
-            (add-to-*ip temp-rip 1 x86)
+            (add-to-*ip proc-mode temp-rip 1 x86)
           (mv nil temp-rip)))
        ((when flg6) (!!ms-fresh :increment-error flg6))
 
        (sib? (and modr/m?
                   (b* ((p4? (eql #.*addr-size-override*
                                  (prefixes-slice :adr prefixes)))
-                       (16-bit-addressp (eql 2 (select-address-size p4? x86))))
+                       (16-bit-addressp (eql 2 (select-address-size proc-mode p4? x86))))
                     (x86-decode-SIB-p modr/m 16-bit-addressp))))
 
        ((mv flg7 (the (unsigned-byte 8) sib) x86)
         (if sib?
-            (rme08 temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip *cs* :x x86)
           (mv nil 0 x86)))
        ((when flg7)
         (!!ms-fresh :sib-byte-read-error flg7))
 
        ((mv flg8 temp-rip)
         (if sib?
-            (add-to-*ip temp-rip 1 x86)
+            (add-to-*ip proc-mode temp-rip 1 x86)
           (mv nil temp-rip)))
        ((when flg8) (!!ms-fresh :increment-error flg8)))
 
     (one-byte-opcode-execute
+     proc-mode
      start-rip temp-rip prefixes rex-byte opcode-byte modr/m sib x86))
 
   ///
@@ -1692,27 +1758,28 @@
      (and
       (not (ms x86))
       (not (fault x86))
-      (equal start-rip (read-*ip x86))
-      (equal 64-bit-modep (64-bit-modep x86))
-      (not (mv-nth 0 (get-prefixes start-rip 0 15 x86)))
-      (equal prefixes (mv-nth 1 (get-prefixes start-rip 0 15 x86)))
+      (equal proc-mode (x86-operation-mode x86))
+      (equal start-rip (read-*ip proc-mode x86))
+      (equal 64-bit-modep (equal proc-mode #.*64-bit-mode*))
+      (not (mv-nth 0 (get-prefixes proc-mode start-rip 0 15 x86)))
+      (equal prefixes (mv-nth 1 (get-prefixes proc-mode start-rip 0 15 x86)))
       (equal opcode/rex/vex/evex-byte
              (prefixes-slice :next-byte prefixes))
       (equal prefix-length (prefixes-slice :num-prefixes prefixes))
       (equal temp-rip0
              (if (equal prefix-length 0)
-                 (mv-nth 1 (add-to-*ip start-rip 1 x86))
-               (mv-nth 1 (add-to-*ip start-rip (1+ prefix-length) x86))))
+                 (mv-nth 1 (add-to-*ip proc-mode start-rip 1 x86))
+               (mv-nth 1 (add-to-*ip proc-mode start-rip (1+ prefix-length) x86))))
       (equal rex-byte (if (and 64-bit-modep
                                (equal (ash opcode/rex/vex/evex-byte -4) 4))
                           opcode/rex/vex/evex-byte
                         0)) ; rex-byte is 0 in 32-bit mode
       (equal opcode/vex/evex-byte (if (equal rex-byte 0)
                                       opcode/rex/vex/evex-byte
-                                    (mv-nth 1 (rme08 temp-rip0 *cs* :x x86))))
+                                    (mv-nth 1 (rme08 proc-mode temp-rip0 *cs* :x x86))))
       (equal temp-rip1 (if (equal rex-byte 0)
                            temp-rip0
-                         (mv-nth 1 (add-to-*ip temp-rip0 1 x86))))
+                         (mv-nth 1 (add-to-*ip proc-mode temp-rip0 1 x86))))
 
       ;; *** No VEX prefixes ***
       (not (equal opcode/vex/evex-byte #.*vex3-byte0*))
@@ -1725,26 +1792,26 @@
                  (64-bit-mode-one-byte-opcode-ModR/M-p opcode/vex/evex-byte)
                (32-bit-mode-one-byte-opcode-ModR/M-p opcode/vex/evex-byte)))
       (equal modr/m (if modr/m?
-                        (mv-nth 1 (rme08 temp-rip1 *cs* :x x86))
+                        (mv-nth 1 (rme08 proc-mode temp-rip1 *cs* :x x86))
                       0))
       (equal temp-rip2 (if modr/m?
-                           (mv-nth 1 (add-to-*ip temp-rip1 1 x86))
+                           (mv-nth 1 (add-to-*ip proc-mode temp-rip1 1 x86))
                          temp-rip1))
       (equal p4? (equal #.*addr-size-override*
                         (prefixes-slice :adr prefixes)))
-      (equal 16-bit-addressp (equal 2 (select-address-size p4? x86)))
+      (equal 16-bit-addressp (equal 2 (select-address-size proc-mode p4? x86)))
       (equal sib? (and modr/m? (x86-decode-sib-p modr/m 16-bit-addressp)))
-      (equal sib (if sib? (mv-nth 1 (rme08 temp-rip2 *cs* :x x86)) 0))
+      (equal sib (if sib? (mv-nth 1 (rme08 proc-mode temp-rip2 *cs* :x x86)) 0))
 
       (equal temp-rip3 (if sib?
-                           (mv-nth 1 (add-to-*ip temp-rip2 1 x86))
+                           (mv-nth 1 (add-to-*ip proc-mode temp-rip2 1 x86))
                          temp-rip2))
 
       (or (app-view x86)
           (not (marking-view x86)))
       (not (if (equal prefix-length 0)
-               (mv-nth 0 (add-to-*ip start-rip 1 x86))
-             (mv-nth 0 (add-to-*ip start-rip (1+ prefix-length) x86))))
+               (mv-nth 0 (add-to-*ip proc-mode start-rip 1 x86))
+             (mv-nth 0 (add-to-*ip proc-mode start-rip (1+ prefix-length) x86))))
       (if (and (equal prefix-length 0)
                (equal rex-byte 0)
                (not modr/m?))
@@ -1752,17 +1819,17 @@
           ;; the new RIP is canonical, not that there's no error
           ;; in reading a value from that address.
           t
-        (not (mv-nth 0 (rme08 temp-rip0 *cs* :x x86))))
+        (not (mv-nth 0 (rme08 proc-mode temp-rip0 *cs* :x x86))))
       (if (equal rex-byte 0)
           t
-        (not (mv-nth 0 (add-to-*ip temp-rip0 1 x86))))
+        (not (mv-nth 0 (add-to-*ip proc-mode temp-rip0 1 x86))))
       (if modr/m?
-          (and (not (mv-nth 0 (add-to-*ip temp-rip1 1 x86)))
-               (not (mv-nth 0 (rme08 temp-rip1 *cs* :x x86))))
+          (and (not (mv-nth 0 (add-to-*ip proc-mode temp-rip1 1 x86)))
+               (not (mv-nth 0 (rme08 proc-mode temp-rip1 *cs* :x x86))))
         t)
       (if sib?
-          (and (not (mv-nth 0 (add-to-*ip temp-rip2 1 x86)))
-               (not (mv-nth 0 (rme08 temp-rip2 *cs* :x x86))))
+          (and (not (mv-nth 0 (add-to-*ip proc-mode temp-rip2 1 x86)))
+               (not (mv-nth 0 (rme08 proc-mode temp-rip2 *cs* :x x86))))
         t)
       (x86p x86)
       ;; Print the rip and the first opcode byte of the instruction
@@ -1774,8 +1841,9 @@
                      (str::hexify (unquote opcode/vex/evex-byte)))))))
      (equal
       (x86-fetch-decode-execute x86)
-      (one-byte-opcode-execute start-rip temp-rip3 prefixes rex-byte
-                               opcode/vex/evex-byte modr/m sib x86)))
+      (one-byte-opcode-execute
+       proc-mode start-rip temp-rip3 prefixes rex-byte
+       opcode/vex/evex-byte modr/m sib x86)))
     :hints (("Goal"
              :cases ((app-view x86))
              :in-theory (e/d ()

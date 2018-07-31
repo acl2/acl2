@@ -220,22 +220,22 @@
 
         ;; branch condition is true:
         (b* (;; read rel8 (a value between -128 and +127):
-             ((mv flg rel8 x86) (rime-size 1 temp-rip *cs* :x nil x86))
+             ((mv flg rel8 x86) (rime-size proc-mode 1 temp-rip *cs* :x nil x86))
              ((when flg) (!!ms-fresh :rime-size-error flg))
              ;; add rel8 to the address of the next instruction,
              ;; which is one past temp-rip to take the rel8 byte into account:
-             ((mv flg next-rip) (add-to-*ip temp-rip (1+ rel8) x86))
+             ((mv flg next-rip) (add-to-*ip proc-mode temp-rip (1+ rel8) x86))
              ((when flg) (!!ms-fresh :rip-increment-error flg))
              ;; set instruction pointer to new value:
-             (x86 (write-*ip next-rip x86)))
+             (x86 (write-*ip proc-mode next-rip x86)))
           x86)
 
       ;; branch condition is false:
       (b* (;; go to the next instruction,
            ;; which starts just after the rel8 byte:
-           ((mv flg next-rip) (add-to-*ip temp-rip 1 x86))
+           ((mv flg next-rip) (add-to-*ip proc-mode temp-rip 1 x86))
            ((when flg) (!!ms-fresh :rip-increment-error flg))
-           (x86 (write-*ip next-rip x86)))
+           (x86 (write-*ip proc-mode next-rip x86)))
         x86))))
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
@@ -295,7 +295,7 @@
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 0 4) offset-size)
-        (if (64-bit-modep x86)
+        (if (equal proc-mode #.*64-bit-mode*)
             4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
           (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
@@ -321,24 +321,24 @@
         ;; branch condition is true:
         (b* (;; read rel16/rel32 (as a signed value):
              ((mv flg offset x86)
-              (rime-size offset-size temp-rip *cs* :x nil x86))
+              (rime-size proc-mode offset-size temp-rip *cs* :x nil x86))
              ((when flg) (!!ms-fresh :rime-size-error flg))
              ;; add rel16/rel32 to the address of the next instruction,
              ;; which is 2 or 4 past temp-rip to take the rel16/32 into
              ;; account:
              ((mv flg next-rip)
-              (add-to-*ip temp-rip (+ offset-size offset) x86))
+              (add-to-*ip proc-mode temp-rip (+ offset-size offset) x86))
              ((when flg) (!!ms-fresh :rip-increment-error flg))
              ;; set instruction pointer to new value:
-             (x86 (write-*ip next-rip x86)))
+             (x86 (write-*ip proc-mode next-rip x86)))
           x86)
 
       ;; branch condition is false:
       (b* (;; fo to the next instruction,
            ;; which starts just after the rel16/rel32:
-           ((mv flg next-rip) (add-to-*ip temp-rip offset-size x86))
+           ((mv flg next-rip) (add-to-*ip proc-mode temp-rip offset-size x86))
            ((when flg) (!!ms-fresh :rip-increment-error flg))
-           (x86 (write-*ip next-rip x86)))
+           (x86 (write-*ip proc-mode next-rip x86)))
         x86))))
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
@@ -382,7 +382,7 @@
 
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :adr prefixes)))
-       (register-size (select-address-size p4? x86))
+       (register-size (select-address-size proc-mode p4? x86))
 
        (branch-cond
         (equal (rgfi-size register-size *rcx* rex-byte x86) 0)))
@@ -391,22 +391,22 @@
 
         ;; branch condition is true:
         (b* (;; read rel8 (a value between -128 and +127):
-             ((mv flg rel8 x86) (rime-size 1 temp-rip *cs* :x nil x86))
+             ((mv flg rel8 x86) (rime-size proc-mode 1 temp-rip *cs* :x nil x86))
              ((when flg) (!!ms-fresh :rime-size-error flg))
              ;; add rel8 to the address of the next instruction,
              ;; which is one past temp-rip to take the rel8 byte into account:
-             ((mv flg next-rip) (add-to-*ip temp-rip (1+ rel8) x86))
+             ((mv flg next-rip) (add-to-*ip proc-mode temp-rip (1+ rel8) x86))
              ((when flg) (!!ms-fresh :rip-increment-error flg))
              ;; set instruction pointer to new value:
-             (x86 (write-*ip next-rip x86)))
+             (x86 (write-*ip proc-mode next-rip x86)))
           x86)
 
       ;; branch condition is false:
       (b* (;; go to the next instruction,
            ;; which starts just after the rel8 byte:
-           ((mv flg next-rip) (add-to-*ip temp-rip 1 x86))
+           ((mv flg next-rip) (add-to-*ip proc-mode temp-rip 1 x86))
            ((when flg) (!!ms-fresh :rip-increment-error flg))
-           (x86 (write-*ip next-rip x86)))
+           (x86 (write-*ip proc-mode next-rip x86)))
         x86))))
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
@@ -462,12 +462,12 @@
        (p2 (prefixes-slice :seg prefixes))
 
        ((the (integer 1 8) operand-size)
-        (select-operand-size nil rex-byte nil prefixes x86))
+        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :adr prefixes)))
 
-       (seg-reg (select-segment-register p2 p4? mod  r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod  r/m x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -475,24 +475,17 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
-                                                operand-size
-                                                inst-ac?
-                                                nil ;; Not a memory pointer operand
-                                                seg-reg
-                                                p4?
-                                                temp-rip
-                                                rex-byte
-                                                r/m
-                                                mod
-                                                sib
-                                                0 ;; No immediate operand
-                                                x86))
+        (x86-operand-from-modr/m-and-sib-bytes$
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -510,7 +503,7 @@
                         rex-byte
                         x86)
           x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
@@ -571,7 +564,7 @@
             x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4?
+          (x86-effective-addr proc-mode p4?
                               temp-rip
                               rex-byte
                               r/m
@@ -583,7 +576,7 @@
         (!!ms-fresh :x86-effective-addr-error flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -592,13 +585,13 @@
 
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        ;; Update the x86 state:
        (inst-ac? t)
        (val (if branch-cond 1 0))
        ((mv flg2 x86)
-        (x86-operand-to-reg/mem$ 1
+        (x86-operand-to-reg/mem$ proc-mode 1
                                  inst-ac?
                                  nil ;; Not a memory pointer operand
                                  val
@@ -611,7 +604,7 @@
        ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
        ((when flg2)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================

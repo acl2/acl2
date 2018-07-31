@@ -472,6 +472,7 @@
           ("Subgoal 2"
            :in-theory (e/d*
                        (instruction-decoding-and-spec-rules
+                        x86-operation-mode
 
                         gpr-and-spec-4
                         jcc/cmovcc/setcc-spec
@@ -530,6 +531,7 @@
           ("Subgoal 1"
            :in-theory (e/d*
                        (instruction-decoding-and-spec-rules
+                        x86-operation-mode
 
                         gpr-and-spec-4
                         jcc/cmovcc/setcc-spec
@@ -595,6 +597,7 @@
   :hints (("Goal" :in-theory
            (e/d*
             (instruction-decoding-and-spec-rules
+             x86-operation-mode
 
              gpr-and-spec-4
              jcc/cmovcc/setcc-spec

@@ -78,7 +78,7 @@
   (b* ((ctx 'x86-lgdt)
 
        ((when (or (app-view x86)
-                  (not (64-bit-modep x86))))
+                  (not (equal proc-mode #.*64-bit-mode*))))
         (!!ms-fresh :lgdt-unimplemented))
 
        (r/m (mrm-r/m modr/m))
@@ -105,7 +105,7 @@
        ((mv flg0 mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         0 10 inst-ac?
+         proc-mode 0 10 inst-ac?
          t ;; Memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
@@ -172,7 +172,7 @@
   (b* ((ctx 'x86-lidt)
 
        ((when (or (app-view x86)
-                  (not (64-bit-modep x86))))
+                  (not (equal proc-mode #.*64-bit-mode*))))
         (!!ms-fresh :lidt-unimplemented))
 
        (r/m (mrm-r/m modr/m))
@@ -199,7 +199,7 @@
        ((mv flg0 mem (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         0 10 inst-ac?
+         proc-mode 0 10 inst-ac?
          t ;; Memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
@@ -276,7 +276,7 @@ a non-canonical form, raise the SS exception.</p>"
   (b* ((ctx 'x86-lldt)
        
        ((when (or (app-view x86)
-                  (not (64-bit-modep x86))))
+                  (not (equal proc-mode #.*64-bit-mode*))))
         (!!ms-fresh :lldt-unimplemented))
        
        (r/m (mrm-r/m modr/m))
@@ -299,7 +299,7 @@ a non-canonical form, raise the SS exception.</p>"
        ((mv flg0 selector (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         0 2 inst-ac?
+         proc-mode 0 2 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand

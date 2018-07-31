@@ -537,6 +537,12 @@
                                       write-x86-file-des-logic)
                                      ()))))
 
+  (defrule x86-operation-mode-of-write-x86-file-des
+    (equal (x86-operation-mode (write-x86-file-des fd fd-field x86))
+           (x86-operation-mode x86))
+    :hints (("Goal" :in-theory (e/d* (x86-operation-mode)
+                                     (write-x86-file-des)))))
+
   (defthm write-x86-file-des-xw
     (implies (not (equal fld :env))
              (equal (write-x86-file-des i v (xw fld index value x86))
@@ -847,9 +853,6 @@
                      (xw fld index value (mv-nth 1 (pop-x86-oracle x86)))))
      :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
                                        pop-x86-oracle-logic)
-                                      ())))))
-
-
-  )
+                                      ()))))))
 
 ;; ======================================================================

@@ -778,6 +778,12 @@ memory.</li>
              (64-bit-modep x86))
       :hints (("Goal" :in-theory (e/d* (64-bit-modep) ()))))
 
+    (defrule x86-operation-mode-of-las-to-pas
+      (equal (x86-operation-mode (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
+             (x86-operation-mode x86))
+      :hints (("Goal" :in-theory (e/d* (x86-operation-mode)
+                                       (las-to-pas)))))
+
     (defthm las-to-pas-xw-rflags-not-ac
       (implies (equal (rflags-slice :ac value)
                       (rflags-slice :ac (rflags x86)))
@@ -1126,7 +1132,13 @@ memory.</li>
     (defrule 64-bit-modep-of-rb
       (equal (64-bit-modep (mv-nth 2 (rb n addr r-x x86)))
              (64-bit-modep x86))
-      :enable 64-bit-modep))
+      :enable 64-bit-modep)
+    
+    (defrule x86-operation-mode-of-rb
+      (equal (x86-operation-mode (mv-nth 2 (rb n addr r-x x86)))
+             (x86-operation-mode x86))
+      :enable x86-operation-mode
+      :disable rb))
 
   ;; Definition of WB and other related events:
 
@@ -1220,7 +1232,13 @@ memory.</li>
     (defrule 64-bit-modep-of-write-to-physical-memory
       (equal (64-bit-modep (write-to-physical-memory p-addrs value x86))
              (64-bit-modep x86))
-      :enable 64-bit-modep))
+      :enable 64-bit-modep)
+
+    (defrule x86-operation-mode-of-write-to-physical-memory
+      (equal (x86-operation-mode (write-to-physical-memory p-addrs value x86))
+             (x86-operation-mode x86))
+      :enable x86-operation-mode
+      :disable write-to-physical-memory))
 
   (define wb ((n natp "Number of bytes to be written")
               (addr integerp "First linear address")
@@ -1538,6 +1556,12 @@ memory.</li>
     (equal (64-bit-modep (mv-nth 1 (wb n addr w value x86)))
            (64-bit-modep x86))
     :hints (("Goal" :in-theory (e/d* (64-bit-modep) ()))))
+
+  (defrule x86-operation-mode-of-mv-nth-1-of-wb
+    (equal (x86-operation-mode (mv-nth 1 (wb n addr w value x86)))
+           (x86-operation-mode x86))
+    :hints (("Goal" :in-theory (e/d* (x86-operation-mode)
+                                     (wb)))))
 
   ;; The following make-events generate a bunch of rules that together
   ;; say the same thing as wb-xw-in-sys-view, but these rules
@@ -1874,7 +1898,13 @@ memory.</li>
   (defrule 64-bit-modep-of-rml08
     (equal (64-bit-modep (mv-nth 2 (rml08 li-addr r-x x86)))
            (64-bit-modep x86))
-    :enable 64-bit-modep))
+    :enable 64-bit-modep)
+
+  (defrule x86-operation-mode-of-rml08
+    (equal (x86-operation-mode (mv-nth 2 (rml08 li-addr r-x x86)))
+           (x86-operation-mode x86))
+    :enable x86-operation-mode
+    :disable rml08))
 
 (define riml08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                (r-x    :type (member  :r :x))

@@ -1310,7 +1310,7 @@
              (gather-all-paging-structure-qword-addresses x86)))
            (not (mv-nth 0 (las-to-pas cnt start-rip :x x86))))
 
-      (get-prefixes start-rip prefixes cnt x86)
+      (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
 
     (mv nil prefixes x86))
 
@@ -1329,7 +1329,7 @@
     :bound 55
     :concl (mv-nth 1 (get-prefixes-alt start-rip prefixes cnt x86))
     :hints (("Goal"
-             :use ((:instance n55p-get-prefixes))
+             :use ((:instance n55p-get-prefixes (proc-mode #.*64-bit-mode*)))
              :in-theory (e/d () (n55p-get-prefixes))))
     :gen-linear t)
 
@@ -1433,7 +1433,7 @@
               (64-bit-modep x86) ; added
               (not (app-view x86))
               (canonical-address-p start-rip))
-             (equal (get-prefixes start-rip prefixes cnt x86)
+             (equal (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
                     (get-prefixes-alt start-rip prefixes cnt (double-rewrite x86))))
     :hints (("Goal" :in-theory (e/d* (get-prefixes-alt) ()))))
 
@@ -1448,7 +1448,9 @@
                     (mv t prefixes x86)))
     :hints
     (("Goal"
-      :use ((:instance get-prefixes-opener-lemma-zero-cnt (cnt 0)))
+      :use ((:instance get-prefixes-opener-lemma-zero-cnt
+                       (proc-mode #.*64-bit-mode*)
+                       (cnt 0)))
       :in-theory (e/d ()
                       (get-prefixes-opener-lemma-zero-cnt force (force))))))
 
@@ -1490,7 +1492,8 @@
                                      prefixes)))
                (!prefixes-slice :num-prefixes (- 15 cnt) prefixes)))))
     :hints (("Goal"
-             :use ((:instance get-prefixes-opener-lemma-no-prefix-byte)
+             :use ((:instance get-prefixes-opener-lemma-no-prefix-byte
+                              (proc-mode #.*64-bit-mode*))
                    (:instance rewrite-rb-to-rb-alt
                               (r-x :x) (addr start-rip) (n 1)))
              :in-theory (e/d* (mv-nth-0-las-to-pas-subset-p disjoint-p$)
@@ -1863,7 +1866,8 @@
 
     (defthm read-from-physical-memory-xw-mem
       (implies (disjoint-p (list index) p-addrs)
-               (equal (read-from-physical-memory p-addrs (xw :mem index value x86))
+               (equal (read-from-physical-memory
+                       p-addrs (xw :mem index value x86))
                       (read-from-physical-memory p-addrs x86)))
       :hints (("Goal" :in-theory (e/d* (read-from-physical-memory
                                         disjoint-p)
@@ -2253,12 +2257,20 @@
           (marking-view x86)
           (x86p x86))
          (and
-          (equal (mv-nth 0 (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
-                 (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))
-          (equal (mv-nth 1 (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
-                 (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))
-          (equal (mv-nth 2 (get-prefixes start-rip prefixes cnt (xw :mem index value x86)))
-                 (xw :mem index value (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))))))
+          (equal
+           (mv-nth 0 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt
+                                   (xw :mem index value x86)))
+           (mv-nth 0 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))
+          (equal
+           (mv-nth 1 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt
+                                   (xw :mem index value x86)))
+           (mv-nth 1 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))
+          (equal (mv-nth 2 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt
+                                         (xw :mem index value x86)))
+                 (xw :mem index value
+                     (mv-nth 2
+                             (get-prefixes
+                              #.*64-bit-mode* start-rip prefixes cnt x86))))))
         :hints
         (("Goal"
           :induct (list
@@ -2277,8 +2289,8 @@
                 (las-to-pas cnt start-rip :x x86)
                 (las-to-pas 1 start-rip :x (xw :mem index value x86))
                 (las-to-pas 1 start-rip :x x86)
-                (get-prefixes start-rip prefixes cnt (xw :mem index value x86))
-                (get-prefixes start-rip prefixes cnt x86))
+                (get-prefixes #.*64-bit-mode* start-rip prefixes cnt (xw :mem index value x86))
+                (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86))
                :in-theory (e/d* (get-prefixes disjoint-p$ subset-p disjoint-p-cons-1)
                                 ()))
            nil))))
@@ -2308,18 +2320,20 @@
         (x86p x86))
        (and
         (equal
-         (mv-nth 0 (get-prefixes start-rip prefixes cnt
+         (mv-nth 0 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt
                                  (write-to-physical-memory p-addrs value x86)))
-         (mv-nth 0 (get-prefixes start-rip prefixes cnt x86)))
+         (mv-nth 0 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))
         (equal
-         (mv-nth 1 (get-prefixes start-rip prefixes cnt
+         (mv-nth 1 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt
                                  (write-to-physical-memory p-addrs value x86)))
-         (mv-nth 1 (get-prefixes start-rip prefixes cnt x86)))
+         (mv-nth 1 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))
         (equal
-         (mv-nth 2 (get-prefixes start-rip prefixes cnt
+         (mv-nth 2 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt
                                  (write-to-physical-memory p-addrs value x86)))
          (write-to-physical-memory p-addrs value
-                                   (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))))))
+                                   (mv-nth
+                                    2
+                                    (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86))))))
       :hints
       (("Goal"
         :induct (write-to-physical-memory p-addrs value x86)
@@ -2660,14 +2674,15 @@
                            (str::hexify (unquote opcode/vex/evex-byte)))))))
    (equal (x86-fetch-decode-execute x86)
           (one-byte-opcode-execute
-           start-rip temp-rip3 prefixes rex-byte
+           #.*64-bit-mode* start-rip temp-rip3 prefixes rex-byte
            opcode/vex/evex-byte modr/m sib x86-4)))
   :hints
   (("Goal"
     :do-not '(preprocess)
     :in-theory
     (e/d (x86-fetch-decode-execute
-          get-prefixes-alt)
+          get-prefixes-alt
+          x86-operation-mode)
          (rewrite-get-prefixes-to-get-prefixes-alt
           one-byte-opcode-execute
           xlate-equiv-memory-and-mv-nth-0-rml08-cong

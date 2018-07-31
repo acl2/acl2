@@ -105,6 +105,7 @@
  )
 
 (local (in-theory (e/d* (instruction-decoding-and-spec-rules
+                         x86-operation-mode
                          
                          shr-spec
                          shr-spec-32

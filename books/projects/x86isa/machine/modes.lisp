@@ -64,6 +64,10 @@
    No real-address mode, virtual-8086 mode, or system management mode for now.
    </p>")
 
+(local (xdoc::set-default-parents x86-modes))
+
+;; ----------------------------------------------------------------------
+
 (define 64-bit-modep (x86)
   :parents (x86-modes)
   :short "Check whether we are in 64-bit mode."
@@ -122,3 +126,43 @@
   (defrule 64-bit-modep-of-write-user-rflags
     (equal (64-bit-modep (write-user-rflags vector mask x86))
            (64-bit-modep x86))))
+
+;; ----------------------------------------------------------------------
+
+(define x86-operation-mode (x86)
+  :short "Returns the current mode of operation of the x86 machine"
+  :long "<p>We only support 64-bit, Compatibility, and 32-bit Protected Modes
+  for now.</p>"
+  :parents (x86-modes)
+  :returns (mode natp :rule-classes (:type-prescription :rewrite))
+  (cond ((64-bit-modep x86) #.*64-bit-mode*)
+        ;; TODO: Other modes of operation
+        (t #.*compatibility-mode*))
+
+  ///
+
+  (defret range-of-x86-operation-mode
+    (and (<= 0 mode)
+         (< mode #.*num-proc-modes*))
+    :rule-classes :linear)
+
+  (defrule x86-operation-mode-of-xw
+    (implies (and (not (equal fld :msr))
+                  (not (equal fld :seg-hidden)))
+             (equal (x86-operation-mode (xw fld index value x86))
+                    (x86-operation-mode x86))))
+
+  (defrule x86-operation-mode-of-!flgi
+    (equal (x86-operation-mode (!flgi flag val x86))
+           (x86-operation-mode x86)))
+
+  (defrule x86-operation-mode-of-!flgi-undefined
+    (equal (x86-operation-mode (!flgi-undefined flg x86))
+           (x86-operation-mode x86))
+    :enable !flgi-undefined)
+
+  (defrule x86-operation-mode-of-write-user-rflags
+    (equal (x86-operation-mode (write-user-rflags vector mask x86))
+           (x86-operation-mode x86))))
+
+;; ----------------------------------------------------------------------

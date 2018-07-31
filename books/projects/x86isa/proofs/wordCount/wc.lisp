@@ -231,26 +231,27 @@
   (natp (clock str-bytes x86))
   :rule-classes (:type-prescription :rewrite))
 
-(in-theory (e/d* () (gc-clk-main-before-call
-                    (gc-clk-main-before-call)
-                    gc-clk
-                    (gc-clk)
-                    gc-clk-eof
-                    (gc-clk-eof)
-                    gc-clk-no-eof
-                    (gc-clk-no-eof)
-                    gc-clk-newline
-                    (gc-clk-newline)
-                    gc-clk-space
-                    (gc-clk-space)
-                    gc-clk-tab
-                    (gc-clk-tab)
-                    gc-clk-otherwise-out
-                    (gc-clk-otherwise-out)
-                    gc-clk-otherwise-in
-                    (gc-clk-otherwise-in)
-                    loop-clk
-                    clock)))
+(in-theory (e/d* () 
+                 (gc-clk-main-before-call
+                  (gc-clk-main-before-call)
+                  gc-clk
+                  (gc-clk)
+                  gc-clk-eof
+                  (gc-clk-eof)
+                  gc-clk-no-eof
+                  (gc-clk-no-eof)
+                  gc-clk-newline
+                  (gc-clk-newline)
+                  gc-clk-space
+                  (gc-clk-space)
+                  gc-clk-tab
+                  (gc-clk-tab)
+                  gc-clk-otherwise-out
+                  (gc-clk-otherwise-out)
+                  gc-clk-otherwise-in
+                  (gc-clk-otherwise-in)
+                  loop-clk
+                  clock)))
 
 (defun-nx input (x86)
   (string-to-bytes
@@ -470,7 +471,8 @@
 ;; Main
 ;;**********************************************************************
 
-(local (in-theory (e/d* (rime-size
+(local (in-theory (e/d* (x86-operation-mode
+                         rime-size
                          rme-size
                          wime-size
                          wme-size)

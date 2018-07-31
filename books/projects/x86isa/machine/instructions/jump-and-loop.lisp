@@ -110,7 +110,7 @@
         (if (eql opcode #xEB) ; jump short
             1 ; always 8 bits (rel8)
           ;; opcode = #xE9 -- jump near relative:
-          (if (64-bit-modep x86)
+          (if (equal proc-mode #.*64-bit-mode*)
               4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
             (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                  (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
@@ -121,18 +121,18 @@
                 (if p3? 4 2))))))
 
        ((mv ?flg (the (signed-byte 32) offset) x86)
-        (rime-size offset-size temp-rip *cs* :x nil x86))
+        (rime-size proc-mode offset-size temp-rip *cs* :x nil x86))
        ((when flg) (!!ms-fresh :rime-size-error flg))
 
        ((mv flg next-rip)
-        (add-to-*ip temp-rip (the (integer 0 4) offset-size) x86))
+        (add-to-*ip proc-mode temp-rip (the (integer 0 4) offset-size) x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        (badlength? (check-instruction-length start-rip next-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       ((mv flg temp-rip) (add-to-*ip next-rip offset x86))
+       ((mv flg temp-rip) (add-to-*ip proc-mode next-rip offset x86))
        ((when flg) (!!ms-fresh :virtual-memory-error temp-rip))
 
        ;; when the size is 16 bits, zero the high bits of EIP
@@ -142,7 +142,7 @@
                    temp-rip))
 
        ;; Update the x86 state:
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
@@ -180,7 +180,7 @@
                    (prefixes-slice :adr prefixes)))
 
        ((the (integer 2 8) operand-size)
-        (if (64-bit-modep x86)
+        (if (equal proc-mode #.*64-bit-mode*)
             8 ; Intel manual, Mar'17, Volume 1, Section 6.3.7
           (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
@@ -190,7 +190,7 @@
                 (if p3? 2 4)
               (if p3? 4 2)))))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg
@@ -198,24 +198,17 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
-                                                operand-size
-                                                inst-ac?
-                                                nil ;; Not a memory pointer operand
-                                                seg-reg
-                                                p4?
-                                                temp-rip
-                                                rex-byte
-                                                r/m
-                                                mod
-                                                sib
-                                                0 ;; No immediate operand
-                                                x86))
+        (x86-operand-from-modr/m-and-sib-bytes$
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes-error flg))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -224,13 +217,13 @@
 
        ;; Note that instruction pointers are modeled as signed in 64-bit mode,
        ;; but unsigned in 32-bit mode.
-       (jmp-addr (if (64-bit-modep x86)
+       (jmp-addr (if (equal proc-mode #.*64-bit-mode*)
                      (i64 jmp-addr)
                    jmp-addr))
        ;; Ensure that the return address is canonical (for 64-bit mode) and
        ;; within code segment limits (for 32-bit mode). See pseudocode in Intel
        ;; manual.
-       ((unless (if (64-bit-modep x86)
+       ((unless (if (equal proc-mode #.*64-bit-mode*)
                     (canonical-address-p jmp-addr)
                   (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                        (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
@@ -238,7 +231,7 @@
         (!!fault-fresh :gp 0 :bad-return-address jmp-addr)) ;; #GP(0)
 
        ;; Update the x86 state:
-       (x86 (write-*ip jmp-addr x86)))
+       (x86 (write-*ip proc-mode jmp-addr x86)))
       x86))
 
 (local
@@ -304,7 +297,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
   :body
 
   (b* ((ctx 'x86-far-jmp-Op/En-M)
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :far-jmp-unimplemented-in-32-bit-mode))
 
        ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
@@ -328,9 +321,9 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
        (offset-size
         ;; Offset size can be 2, 4, or 8 bytes.
-        (select-operand-size nil rex-byte nil prefixes x86))
+        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg
@@ -339,19 +332,12 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
             (the (signed-byte 64) ?addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes$
-         #.*gpr-access*
+         proc-mode #.*gpr-access*
          ;; offset-size is the number of bytes of the
          ;; offset.  We need two more bytes for the selector.
-         (the (integer 2 10) (+ 2 offset-size))
-         inst-ac?
+         (the (integer 2 10) (+ 2 offset-size)) inst-ac?
          t ;; A memory pointer operand
-         seg-reg
-         p4?
-         temp-rip
-         rex-byte
-         r/m
-         mod
-         sib
+         seg-reg p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
          x86))
        ((when flg)
@@ -504,7 +490,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                  ;; Update x86 state:
                  (x86 (!seg-visiblei *cs* new-cs-visible x86))
                  (x86 (!seg-hiddeni  *cs* new-cs-hidden  x86))
-                 (x86 (write-*ip jmp-addr x86)))
+                 (x86 (write-*ip proc-mode jmp-addr x86)))
               x86)
 
           ;; Non-Conforming Code Segment:
@@ -558,7 +544,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                ;; Update x86 state:
                (x86 (!seg-visiblei *cs* new-cs-visible x86))
                (x86 (!seg-hiddeni  *cs* new-cs-hidden  x86))
-               (x86 (write-*ip jmp-addr x86)))
+               (x86 (write-*ip proc-mode jmp-addr x86)))
             x86))
 
       ;; Call Gate Descriptor:
@@ -794,7 +780,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :adr prefixes)))
 
-       ((the (integer 2 8) counter-size) (select-address-size p4? x86))
+       ((the (integer 2 8) counter-size) (select-address-size proc-mode p4? x86))
        (counter (rgfi-size counter-size *rcx* rex-byte x86))
        (counter (trunc counter-size (1- counter)))
 
@@ -814,27 +800,27 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
         ;; branch condition is true:
         (b* (;; read rel8 (a value between -128 and +127):
-             ((mv flg rel8 x86) (rime-size 1 temp-rip *cs* :x nil x86))
+             ((mv flg rel8 x86) (rime-size proc-mode 1 temp-rip *cs* :x nil x86))
              ((when flg) (!!ms-fresh :rime-size-error flg))
              ;; add rel8 to the address of the next instruction,
              ;; which is one past temp-rip to take the rel8 byte into account:
-             ((mv flg next-rip) (add-to-*ip temp-rip (1+ rel8) x86))
+             ((mv flg next-rip) (add-to-*ip proc-mode temp-rip (1+ rel8) x86))
              ((when flg) (!!ms-fresh :rip-increment-error flg))
              ;; update counter:
              (x86 (!rgfi-size counter-size *rcx* counter rex-byte x86))
              ;; set instruction pointer to new value:
-             (x86 (write-*ip next-rip x86)))
+             (x86 (write-*ip proc-mode next-rip x86)))
           x86)
 
       ;; branch condition is false:
       (b* (;; go to the next instruction,
            ;; which starts just after the rel8 byte:
-           ((mv flg next-rip) (add-to-*ip temp-rip 1 x86))
+           ((mv flg next-rip) (add-to-*ip proc-mode temp-rip 1 x86))
            ((when flg) (!!ms-fresh :rip-increment-error flg))
            ;; update counter:
            (x86 (!rgfi-size counter-size *rcx* counter rex-byte x86))
            ;; set instruction pointer to new value:
-           (x86 (write-*ip next-rip x86)))
+           (x86 (write-*ip proc-mode next-rip x86)))
         x86))))
 
 ;; ======================================================================

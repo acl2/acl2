@@ -100,9 +100,9 @@
 
        (select-byte-operand (equal opcode #x86))
        (reg/mem-size
-        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register p2 p4? mod  r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod  r/m x86))
 
        (inst-ac? t)
        ;; Fetch the first operand and put it in val1.
@@ -116,24 +116,17 @@
             x86)
         (if (equal (ash opcode -4) 9) ;; #x90+rw/rd
             (mv nil (rgfi-size reg/mem-size *rax* rex-byte x86) 0 0 x86)
-          (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
-                                                  reg/mem-size
-                                                  inst-ac?
-                                                  nil ;; Not a memory pointer operand
-                                                  seg-reg
-                                                  p4?
-                                                  temp-rip
-                                                  rex-byte
-                                                  r/m
-                                                  mod
-                                                  sib
-                                                  0 ;; No immediate operand
-                                                  x86)))
+          (x86-operand-from-modr/m-and-sib-bytes$
+           proc-mode #.*gpr-access* reg/mem-size inst-ac?
+           nil ;; Not a memory pointer operand
+           seg-reg p4? temp-rip rex-byte r/m mod sib
+           0 ;; No immediate operand
+           x86)))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -161,7 +154,7 @@
         (if (equal (ash opcode -4) 9)
             (let ((x86 (!rgfi-size reg/mem-size *rax* val2 rex-byte x86)))
               (mv nil x86))
-          (x86-operand-to-reg/mem$ reg/mem-size
+          (x86-operand-to-reg/mem$ proc-mode reg/mem-size
                                    inst-ac?
                                    nil ;; Not a memory pointer operand
                                    val2
@@ -184,7 +177,7 @@
           (!rgfi-size reg/mem-size (reg-index reg rex-byte #.*r*) val1 rex-byte
                       x86)))
 
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================
@@ -233,11 +226,11 @@
 
        (select-byte-operand (equal opcode #xB0))
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
        (rAX (rgfi-size reg/mem-size *rax* rex-byte x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ;; Fetch the first (destination) operand:
@@ -246,24 +239,17 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
-                                                reg/mem-size
-                                                inst-ac?
-                                                nil ;; Not a memory pointer operand
-                                                seg-reg
-                                                p4?
-                                                temp-rip
-                                                rex-byte
-                                                r/m
-                                                mod
-                                                sib
-                                                0 ;; No immediate operand
-                                                x86))
+        (x86-operand-from-modr/m-and-sib-bytes$
+         proc-mode #.*gpr-access* reg/mem-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -286,7 +272,7 @@
             (let ((register (rgfi-size reg/mem-size
                                        (reg-index reg rex-byte #.*r*) rex-byte
                                        x86)))
-              (x86-operand-to-reg/mem$ reg/mem-size
+              (x86-operand-to-reg/mem$ proc-mode reg/mem-size
                                        inst-ac?
                                        nil ;; Not a memory pointer operand
                                        register
@@ -304,7 +290,7 @@
        ((when flg1)
         (!!ms-fresh :x86-operand-to-reg/mem-error flg1))
 
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================
@@ -352,7 +338,7 @@
             x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4?
+          (x86-effective-addr proc-mode p4?
                               temp-rip
                               rex-byte
                               r/m
@@ -364,7 +350,7 @@
         (!!ms-fresh :x86-effective-addr flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :next-rip-invalid temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -372,7 +358,7 @@
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================

@@ -108,7 +108,7 @@
   :body
   (b* ((ctx 'x86-bsf-Op/En-RM)
 
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
        ((when (or (not (equal vex-prefixes 0))
@@ -148,7 +148,7 @@
             (the (signed-byte 64) ?v-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* operand-size inst-acc?
+         proc-mode #.*gpr-access* operand-size inst-acc?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand

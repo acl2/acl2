@@ -160,7 +160,8 @@
     :var-names nil
     )
 
-   (local (in-theory (e/d* (x86-cmc/clc/stc/cld/std)
+   (local (in-theory (e/d* (x86-cmc/clc/stc/cld/std
+                            x86-operation-mode)
                            (create-canonical-address-list
                             (create-canonical-address-list)))))
 

@@ -167,7 +167,7 @@ writes the final value of the instruction pointer into RIP.</p>")
        ;; "If an interrupt ... is used to resume execution after a HLT
        ;; instruction, the saved instruction pointer points to the instruction
        ;; following the HLT instruction."
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     (!!ms-fresh :legal-halt :hlt)))
 
 ;; ======================================================================
@@ -211,7 +211,7 @@ writes the final value of the instruction pointer into RIP.</p>")
               (otherwise ;; #xFD STD
                (!flgi #.*df* 1 x86))))
 
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
       x86))
 
 ;; ======================================================================
@@ -245,7 +245,7 @@ writes the final value of the instruction pointer into RIP.</p>")
        ((the (unsigned-byte 8) ah) (logand #b11010111 (logior #b10 ah)))
        ;; Update the x86 state:
        (x86 (!rflags ah x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
       x86))
 
 ;; ======================================================================
@@ -279,7 +279,7 @@ writes the final value of the instruction pointer into RIP.</p>")
        ;; Update the x86 state:
        (x86 (mbe :logic (!rgfi-size 2 *rax* ax rex-byte x86)
                  :exec (wr16 *rax* ax x86)))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
       x86))
 
 ;; ======================================================================
@@ -339,7 +339,7 @@ writes the final value of the instruction pointer into RIP.</p>")
         (!!fault-fresh :ud nil :lock-prefix-or-rep-p prefixes)) ;; #UD
 
        ((the (integer 1 8) operand-size)
-        (select-operand-size nil rex-byte nil prefixes x86))
+        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
        ((mv cf rand x86)
         (HW_RND_GEN operand-size x86))
@@ -366,7 +366,7 @@ writes the final value of the instruction pointer into RIP.</p>")
                    (x86 (!flgi #.*sf* 0 x86))
                    (x86 (!flgi #.*of* 0 x86)))
               x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
       x86))
 
 ;; ----------------------------------------------------------------------

@@ -45,7 +45,8 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (in-theory (e/d* (rime-size
+(local (in-theory (e/d* (x86-operation-mode
+                         rime-size
                          rme-size
                          wime-size
                          wme-size)

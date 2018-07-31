@@ -84,8 +84,10 @@
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
-       ((the (unsigned-byte 1) ia32-efer-sce) (ia32_efer-slice :ia32_efer-sce ia32-efer))
-       ((the (unsigned-byte 1) ia32-efer-lma) (ia32_efer-slice :ia32_efer-lma ia32-efer))
+       ((the (unsigned-byte 1) ia32-efer-sce)
+        (ia32_efer-slice :ia32_efer-sce ia32-efer))
+       ((the (unsigned-byte 1) ia32-efer-lma)
+        (ia32_efer-slice :ia32_efer-lma ia32-efer))
        ((when (mbe :logic (or (zp ia32-efer-sce)
                               (zp ia32-efer-lma))
                    :exec (or (equal 0 ia32-efer-sce)
@@ -431,14 +433,14 @@
   
   :body
   (b* ((ctx 'x86-syscall-both-views)
-       ((when (not (64-bit-modep x86)))
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :syscall-unimplemented-in-32-bit-mode)))
     (if (app-view x86)
         (x86-syscall-app-view
-         start-rip temp-rip prefixes rex-byte vex-prefixes evex-prefixes
+         proc-mode start-rip temp-rip prefixes rex-byte vex-prefixes evex-prefixes
          opcode modr/m sib x86)
       (x86-syscall
-       start-rip temp-rip prefixes rex-byte vex-prefixes evex-prefixes
+       proc-mode start-rip temp-rip prefixes rex-byte vex-prefixes evex-prefixes
        opcode modr/m sib x86))))
 
 ;; ======================================================================
@@ -479,7 +481,7 @@ REX.W + 0F 07: SYSRET</p>
 
   (b* ((ctx 'x86-sysret)
 
-       ((when (or (not (64-bit-modep x86))
+       ((when (or (not (equal proc-mode #.*64-bit-mode*))
                   (app-view x86)))
         (!!ms-fresh :sysret-unimplemented))
 

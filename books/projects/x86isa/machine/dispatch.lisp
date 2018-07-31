@@ -511,10 +511,10 @@
             " </table> </td> "))))
        (dispatch
         `(,@(and o64
-                 `(((64-bit-modep x86)
+                 `(((equal proc-mode #.*64-bit-mode*)
                     ,o64-dispatch)))
           ,@(and i64
-                 `(((not (64-bit-modep x86))
+                 `(((not (equal proc-mode #.*64-bit-mode*))
                     ,i64-dispatch)))
           ,@(and 66-prefix
                  `(((equal mandatory-prefix #.*mandatory-66h*)

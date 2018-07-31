@@ -125,11 +125,11 @@
        ((the (unsigned-byte 1) df) (flgi #.*df* x86))
 
        ((the (integer 2 8) counter/addr-size)
-        (select-address-size p4? x86)) ; CX or ECX or RCX
+        (select-address-size proc-mode p4? x86)) ; CX or ECX or RCX
 
        (select-byte-operand (equal #xA4 opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
        (counter/addr-size-2/4? (or (eql counter/addr-size 2)
                                    (eql counter/addr-size 4)))
@@ -144,10 +144,10 @@
 
        (inst-ac? (alignment-checking-enabled-p x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        ((mv flg0 src x86)
-        (rme-size
+        (rme-size proc-mode
          operand-size (the (signed-byte 64) src-addr) seg-reg :r inst-ac? x86))
        ((when flg0)
         (!!ms-fresh :src-rme-size-error flg0))
@@ -216,7 +216,7 @@
 
        ;; Update the x86 state:
        ((mv flg1 x86)
-        (wme-size operand-size original-dst-addr *es* src inst-ac? x86))
+        (wme-size proc-mode operand-size original-dst-addr *es* src inst-ac? x86))
        ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
        ((when flg1)
         (!!ms-fresh :wme-size-error flg1))
@@ -234,7 +234,7 @@
                        x86)
                    (let* ((x86 (!rgfi-size
                                 counter/addr-size *rcx* counter rex-byte x86))
-                          (x86 (write-*ip temp-rip x86)))
+                          (x86 (write-*ip proc-mode temp-rip x86)))
                      x86))))
               (#.*repne*
                (let* ((counter (rgfi-size counter/addr-size *rcx* rex-byte x86))
@@ -243,13 +243,13 @@
                          (equal (the (unsigned-byte 1) (flgi #.*zf* x86)) 1))
                      (let* ((x86 (!rgfi-size
                                   counter/addr-size *rcx* counter rex-byte x86))
-                            (x86 (write-*ip temp-rip x86)))
+                            (x86 (write-*ip proc-mode temp-rip x86)))
                        x86)
                    (let* ((x86 (!rgfi-size
                                 counter/addr-size *rcx* counter rex-byte x86)))
                      x86))))
               (otherwise ;; no rep prefix present
-               (write-*ip temp-rip x86))))
+               (write-*ip proc-mode temp-rip x86))))
 
        ;; Updating rSI and rDI:
        (x86 (case counter/addr-size
@@ -370,11 +370,11 @@
        ((the (unsigned-byte 1) df) (flgi #.*df* x86))
 
        ((the (integer 2 8) counter/addr-size)
-        (select-address-size p4? x86)) ; CX or ECX or RCX
+        (select-address-size proc-mode p4? x86)) ; CX or ECX or RCX
 
        (select-byte-operand (equal #xA6 opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
        (counter/addr-size-2/4? (or (eql counter/addr-size 2)
                                    (eql counter/addr-size 4)))
@@ -389,10 +389,10 @@
 
        (inst-ac? (alignment-checking-enabled-p x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        ((mv flg0 src x86)
-        (rme-size operand-size src-addr seg-reg :r inst-ac? x86))
+        (rme-size proc-mode operand-size src-addr seg-reg :r inst-ac? x86))
        ((when flg0)
         (!!ms-fresh :src-rme-size-error flg0))
 
@@ -405,7 +405,7 @@
         (!!ms-fresh :dst-addr-not-canonical dst-addr))
 
        ((mv flg0 dst x86)
-        (rme-size operand-size dst-addr *es* :r inst-ac? x86))
+        (rme-size proc-mode operand-size dst-addr *es* :r inst-ac? x86))
        ((when flg0)
         (!!ms-fresh :dst-rme-size-error flg0))
 
@@ -482,7 +482,7 @@
                        x86)
                    (let* ((x86 (!rgfi-size
                                 counter/addr-size *rcx* counter rex-byte x86))
-                          (x86 (write-*ip temp-rip x86)))
+                          (x86 (write-*ip proc-mode temp-rip x86)))
                      x86))))
               (#.*repne*
                (let* ((counter (rgfi-size counter/addr-size *rcx* rex-byte x86))
@@ -491,13 +491,13 @@
                          (equal (the (unsigned-byte 1) (flgi #.*zf* x86)) 1))
                      (let* ((x86 (!rgfi-size
                                   counter/addr-size *rcx* counter rex-byte x86))
-                            (x86 (write-*ip temp-rip x86)))
+                            (x86 (write-*ip proc-mode temp-rip x86)))
                        x86)
                    (let* ((x86 (!rgfi-size
                                 counter/addr-size *rcx* counter rex-byte x86)))
                      x86))))
               (otherwise ;; no rep prefix present
-               (write-*ip temp-rip x86))))
+               (write-*ip proc-mode temp-rip x86))))
 
        ;; Updating rSI and rDI:
 
@@ -597,7 +597,7 @@
        ((the (unsigned-byte 1) df) (flgi #.*df* x86))
 
        ((the (integer 2 8) counter/addr-size)
-        (select-address-size p4? x86)) ; CX or ECX or RCX
+        (select-address-size proc-mode p4? x86)) ; CX or ECX or RCX
 
        (counter/addr-size-2/4? (or (eql counter/addr-size 2)
                                    (eql counter/addr-size 4)))
@@ -613,7 +613,7 @@
 
        (select-byte-operand (equal #xAA opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
        (rAX (rgfi-size operand-size *rax* rex-byte x86))
 
@@ -622,7 +622,7 @@
        ;; Writing rAX to the memory:
        (inst-ac? (alignment-checking-enabled-p x86))
        ((mv flg0 x86)
-        (wme-size operand-size dst-addr *es* rAX inst-ac? x86))
+        (wme-size proc-mode operand-size dst-addr *es* rAX inst-ac? x86))
        ((when flg0)
         (!!ms-fresh :wme-size-error flg0))
 
@@ -668,7 +668,7 @@
                                            counter
                                            rex-byte
                                            x86))
-                          (x86 (write-*ip temp-rip x86)))
+                          (x86 (write-*ip proc-mode temp-rip x86)))
                      x86))))
               (#.*repne*
                (let* ((counter (rgfi-size counter/addr-size *rcx* rex-byte x86))
@@ -680,7 +680,7 @@
                                              counter
                                              rex-byte
                                              x86))
-                            (x86 (write-*ip temp-rip x86)))
+                            (x86 (write-*ip proc-mode temp-rip x86)))
                        x86)
                    (let* ((x86 (!rgfi-size counter/addr-size
                                            *rcx*
@@ -689,7 +689,7 @@
                                            x86)))
                      x86))))
               (otherwise ;; no rep prefix present
-               (write-*ip temp-rip x86))))
+               (write-*ip proc-mode temp-rip x86))))
 
        ;; Updating rDI:
        (x86 (case counter/addr-size

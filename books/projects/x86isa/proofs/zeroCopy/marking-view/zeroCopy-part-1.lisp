@@ -53,6 +53,7 @@
  (in-theory
   ;; For the effects theorems:
   (e/d* (instruction-decoding-and-spec-rules
+         x86-operation-mode
          shr-spec
          shr-spec-64
          sal/shl-spec

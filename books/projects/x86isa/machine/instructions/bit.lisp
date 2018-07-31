@@ -82,13 +82,13 @@
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 1 8) operand-size)
-        (select-operand-size nil rex-byte nil prefixes x86))
+        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
        (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :adr prefixes)))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -96,32 +96,25 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
-                                                operand-size
-                                                inst-ac?
-                                                nil ;; Not a memory pointer operand
-                                                seg-reg
-                                                p4?
-                                                temp-rip
-                                                rex-byte
-                                                r/m
-                                                mod
-                                                sib
-                                                1 ;; One-byte immediate data
-                                                x86))
+        (x86-operand-from-modr/m-and-sib-bytes$ 
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         1 ;; One-byte immediate data
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        ((mv flg1 (the (unsigned-byte 8) bitOffset) x86)
-        (rme-size 1 temp-rip *cs* :x nil x86))
+        (rme-size proc-mode 1 temp-rip *cs* :x nil x86))
        ((when flg1) (!!ms-fresh :rme-size-error flg1))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip 1 x86))
+        (add-to-*ip proc-mode temp-rip 1 x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -144,7 +137,7 @@
                (x86 (!flgi-undefined #.*of* x86)))
           x86))
 
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
@@ -190,10 +183,10 @@
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :adr prefixes)))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        ((the (integer 1 8) operand-size)
-        (select-operand-size nil rex-byte nil prefixes x86))
+        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
        (bitOffset (rgfi-size operand-size
                              (reg-index reg rex-byte #.*r*)
@@ -208,7 +201,7 @@
             (mv nil 0 0 x86)
           (let ((p4? (equal #.*addr-size-override*
                             (prefixes-slice :adr prefixes))))
-            (x86-effective-addr p4?
+            (x86-effective-addr proc-mode p4?
                                 temp-rip
                                 rex-byte
                                 r/m
@@ -219,7 +212,7 @@
        ((when flg0) (!!ms-fresh :x86-effective-addr-error flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -249,7 +242,7 @@
                (inst-ac? t)
                ((mv flg byte x86)
                 (if (signed-byte-p 64 byte-addr)
-                    (rme-size 1 byte-addr seg-reg :r inst-ac? x86)
+                    (rme-size proc-mode 1 byte-addr seg-reg :r inst-ac? x86)
                   (mv (cons 'effective-address-error byte-addr) 0 x86))))
             (mv flg bitNumber byte x86))))
        ((when flg2)
@@ -266,7 +259,7 @@
                (x86 (!flgi-undefined #.*sf* x86))
                (x86 (!flgi-undefined #.*of* x86)))
           x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================
