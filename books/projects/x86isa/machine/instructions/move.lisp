@@ -687,6 +687,13 @@
   ;; #x0F B7: MOVZX r16/32/64, r/m16
   ;; (Move word to word/doubleword/quadword with zero-extension)
 
+  ;; Note that Intel manual, May'18, Volume 2 excludes the operand-size variant
+  ;; MOVZX r16 r/m16, in the sense that it does not list it explicitly.
+  ;; AMD manual, Dec'17, Volume 3 also omits this operand-size variant.
+  ;; However, experiments with real processors show that at least some
+  ;; processors support that operand-size variant. This suggests that it may be
+  ;; just an omission from the manuals, and therefore our model supports it.
+
   :parents (two-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
