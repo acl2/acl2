@@ -684,7 +684,7 @@
   ;; #x0F B6: MOVZX r16/32/64, r/m8
   ;; (Move byte to word/doubleword/quadword with zero-extension)
 
-  ;; #x0F B7: MOVSX r16/32/64, r/m16
+  ;; #x0F B7: MOVZX r16/32/64, r/m16
   ;; (Move word to word/doubleword/quadword with zero-extension)
 
   :parents (two-byte-opcodes)
