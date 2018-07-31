@@ -140,11 +140,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; INSTRUCTION: HLT
 ;; ======================================================================
 
-;; [Shilpi]: I haven't specified the halt instruction accurately --- halt can
-;; be called only in the supervisor mode.  For now, we use the HALT instruction
-;; for convenience, e.g., when we want to stop program execution.
-
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-hlt
 
   ;; Op/En: NP
@@ -161,6 +156,10 @@ writes the final value of the instruction pointer into RIP.</p>")
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
+       (cpl (cpl x86))
+       ((unless (eql cpl 0))
+        (!!fault-fresh :gp 0 :lock-prefix prefixes)) ;; #GP(0)
+
        ;; Update the x86 state:
 
        ;; Intel Vol. 2A, HLT specification: Instruction pointer is saved.
@@ -174,7 +173,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; INSTRUCTION: CMC/CLC/STC/CLD/STD
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cmc/clc/stc/cld/std
 
   ;; Op/En: NP
@@ -218,7 +216,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; INSTRUCTION: SAHF
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-sahf
 
   ;; Opcode: #x9E
@@ -252,7 +249,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; INSTRUCTION: LAHF
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-lahf
 
   ;; Opcode: #x9F
@@ -286,7 +282,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; INSTRUCTION: RDRAND
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-rdrand
   :evex t
 
@@ -392,7 +387,7 @@ writes the final value of the instruction pointer into RIP.</p>")
   :long "<p>Note that the @('#UD') (undefined operation) exception should be
   thrown here, which is why the @('fault') field is populated with
   @('message').</p>"
-  :returns (x86 x86p :hyp (and (x86p x86) 
+  :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
   (b* ((ctx 'x86-illegal-instruction)
        ;; We update the RIP to point to the next instruction --- in case we
