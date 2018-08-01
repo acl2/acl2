@@ -107,7 +107,7 @@ memory.</p>" )
 
   :parents (app-view)
 
-  :short "Definition of linear memory accessor and udpater functions,
+  :short "Definition of linear memory accessor and updater functions,
   used when @('app-view') = @('T')"
 
   :long "<p>Note that the top-level memory accessor function is @(see
