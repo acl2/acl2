@@ -564,8 +564,7 @@
 (defconst *compatibility-mode* 1)
 
 ;; IA-32 architecture supports the following modes:
-(defconst *32-bit-mode*        2) ;; a.k.a. Protected Mode --- also has a
-                                  ;; virtual-8086 mode built into it
+(defconst *protected-mode*     2) ;; Virtual-8086 mode is built into it
 (defconst *real-address-mode*  3)
 (defconst *smm-mode*           4) ;; System Management Mode
 

@@ -296,7 +296,7 @@
              (mv (list :non-canonical-address lin-addr) 0)))
        (mv nil eff-addr)))
 
-    (#.*compatibility-mode* ;; Maybe also *32-bit-mode*?
+    (#.*compatibility-mode* ;; Maybe also *protected-mode*?
      (b* (((mv base
                lower-bound
                upper-bound)

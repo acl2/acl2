@@ -399,7 +399,7 @@ the @('fault') field instead.</li>
       (#.*64-bit-mode*
        (!rip *ip x86))
 
-      (#.*compatibility-mode* ;; Maybe *32-bit-mode* too?
+      (#.*compatibility-mode* ;; Maybe *protected-mode* too?
        (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden *cs* x86)))
             (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
             (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
@@ -710,7 +710,7 @@ the @('fault') field instead.</li>
    </p>"
   (case proc-mode
     (#.*64-bit-mode* (if p4? 4 8))
-    (otherwise ;; #.*compatibility-mode* or #.*32-bit-mode*
+    (otherwise ;; #.*compatibility-mode* or #.*protected-mode*
      (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden *cs* x86)))
           (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
           (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
