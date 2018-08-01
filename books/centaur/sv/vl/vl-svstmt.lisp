@@ -929,7 +929,7 @@ because... (BOZO)</p>
   (defret vars-of-vttree-constraints-to-svstmts
     (implies (not (member v (sv::constraintlist-vars (vttree->constraints x))))
              (not (member v (sv::svstmtlist-vars svstmts))))))
-      
+
 (defines vl-stmt->svstmts
   :prepwork ((local (in-theory (disable not))))
   (define vl-stmt->svstmts ((x vl-stmt-p)
@@ -1002,6 +1002,23 @@ because... (BOZO)</p>
           (mv ok warnings
               (append-without-guard constraints
                                     (list (sv::make-svstmt-while :cond cond :body body :next nil)))))
+        :vl-dostmt
+        ;; This is effectively just transforming:
+        ;;     do { body } while (condition);
+        ;;   -->
+        ;;     body;
+        ;;     while(condition) { body }
+        (b* (((vwmv vttree cond ?type ?size)
+              (vl-expr-to-svex-untyped x.condition ss scopes))
+             (constraints (vttree-constraints-to-svstmts vttree))
+             ((wmv ok warnings body)
+              (vl-stmt->svstmts x.body ss scopes config fnname))
+             (while-loop (sv::make-svstmt-while :cond cond :body body :next nil)))
+          (mv ok warnings
+              (append-without-guard constraints
+                                    body
+                                    (list while-loop))))
+
         :vl-forstmt
         (b* (;; (warnings (if (consp x.initdecls)
              ;;               (warn :type :vl-stmt-unsupported
@@ -1295,7 +1312,7 @@ because... (BOZO)</p>
         (if (vl-range-resolved-p x.range)
             (mv warnings nil
                 (make-vl-coretype :name :vl-logic
-                                  :pdims (list (vl-range->packeddimension x.range))
+                                  :pdims (list (vl-range->dimension x.range))
                                   :signedp (eq x.sign :vl-signed)))
           (mv warnings (vmsg "Unresolved range") nil)))
        ((wmv warnings size) (vl-expr-selfsize override ss scopes))
@@ -1303,7 +1320,7 @@ because... (BOZO)</p>
         (mv warnings
             (vmsg "Unsized or zero-size parameter override: ~a0" override)
             nil))
-       (dims (list (vl-range->packeddimension
+       (dims (list (vl-range->dimension
                     (make-vl-range :msb (vl-make-index (1- size)) :lsb (vl-make-index 0)))))
        ((when x.sign)
         (mv warnings nil

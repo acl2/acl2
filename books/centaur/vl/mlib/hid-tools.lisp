@@ -271,9 +271,9 @@ yet.</p>"
 
 (define vl-follow-hidexpr-dimcheck
   :short "Check an array index against the corresponding array bounds."
-  ((name    stringp              "Name being the array, for better errors.")
-   (index   vl-expr-p            "An index into an array.")
-   (dim     vl-packeddimension-p "Bounds from the corresponding declaration.")
+  ((name    stringp        "Name being the array, for better errors.")
+   (index   vl-expr-p      "An index into an array.")
+   (dim     vl-dimension-p "Bounds from the corresponding declaration.")
    &key
    (strictp booleanp "Require indices to be resolved?"))
   :returns (err (iff (vl-msg-p err) err))
@@ -284,31 +284,49 @@ dimensions all be resolved and that the index be in range.</p>
 Note that we still do bounds checking if the indices and array bounds happen to
 be resolved.</p>"
 
-  (b* ((dim (vl-packeddimension-fix dim))
-       ((when (vl-packeddimension-case dim :unsized))
-        ;; Bounds checking doesn't make sense in this case, so we'll just
-        ;; regard this as fine.
-        nil)
-       (dim (vl-packeddimension->range dim))
-       ((unless (vl-expr-resolved-p index))
-        (if strictp
-            (vmsg "unresolved array index")
-          nil))
-       ((unless (vl-range-resolved-p dim))
-        (if strictp
-            (vmsg "unresolved bounds on declaration of ~s0" (string-fix name))
-          nil))
-       ((vl-range dim))
-       (idxval (vl-resolved->val index))
-       (msbval (vl-resolved->val dim.msb))
-       (lsbval (vl-resolved->val dim.lsb))
-       (minval (min msbval lsbval))
-       (maxval (max msbval lsbval))
-       ((unless (and (<= minval idxval)
-                     (<= idxval maxval)))
-        (vmsg "array index ~x0 out of bounds (~x1 to ~x2)"
-              idxval minval maxval)))
-    nil))
+  (b* ((dim (vl-dimension-fix dim)))
+    (vl-dimension-case dim
+      (:unsized
+       ;; Bounds checking doesn't make sense in this case, so we'll just regard
+       ;; this as fine.  BOZO we may want to revisit this.  This, and later
+       ;; cases, are potentially OK in dynamic/runtime contexts, but not so
+       ;; much in static/generate contexts.
+       nil)
+      (:star
+       ;; An associative dimension without a type, I don't think there is any
+       ;; bounds requirement here?
+       nil)
+      (:datatype
+       (if strictp
+           ;; BOZO eventually implement this.  Need to somehow look up the
+           ;; datatype size?  Do we have enough info to do this here?
+           (vmsg "unimplemented: check dimension against datatype-based associative
+                  dimension ~a0" dim)
+         nil))
+      (:queue
+       (if strictp
+           ;; BOZO eventually implement this.
+           (vmsg "unimplemented: check dimension against queue dimension ~a0" dim)
+         nil))
+      (:range
+       (b* (((unless (vl-expr-resolved-p index))
+             (if strictp
+                 (vmsg "unresolved array index")
+               nil))
+            ((unless (vl-range-resolved-p dim.range))
+             (if strictp
+                 (vmsg "unresolved bounds on declaration of ~s0" (string-fix name))
+               nil))
+            (idxval (vl-resolved->val index))
+            (msbval (vl-resolved->val dim.msb))
+            (lsbval (vl-resolved->val dim.lsb))
+            (minval (min msbval lsbval))
+            (maxval (max msbval lsbval))
+            ((unless (and (<= minval idxval)
+                          (<= idxval maxval)))
+             (vmsg "array index ~x0 out of bounds (~x1 to ~x2)"
+                   idxval minval maxval)))
+         nil)))))
 
 (define vl-follow-hidexpr-dimscheck-aux
   :parents (vl-follow-hidexpr-dimscheck)
@@ -318,7 +336,7 @@ be resolved.</p>"
                                (equal (vl-exprlist-fix x) nil)))))
   ((name    stringp)
    (indices vl-exprlist-p)
-   (dims    vl-packeddimensionlist-p)
+   (dims    vl-dimensionlist-p)
    &key
    (strictp booleanp))
   :guard (same-lengthp indices dims)
@@ -335,7 +353,7 @@ be resolved.</p>"
             "Indices from the HID piece we're following.  I.e., if we are
              resolving @('foo[3][4][5].bar'), this would be @('(3 4 5)')
              as an expression list.")
-   (dims    vl-packeddimensionlist-p
+   (dims    vl-dimensionlist-p
             "Corresponding dimensions from the declaration, i.e., if @('foo')
              is declared as a @('logic [7:0][15:0][3:0]'), then this would
              be the list of @('([7:0] [15:0] [3:0])').")
@@ -607,7 +625,7 @@ top-level hierarchical identifiers.</p>"
 
          ((when (eq (tag item) :vl-modinst))
           (b* (((vl-modinst item))
-               (dims    (and item.range (list (vl-range->packeddimension item.range))))
+               (dims    (and item.range (list (vl-range->dimension item.range))))
                (ifacep  (let ((def (vl-scopestack-find-definition item.modname ss)))
                           (and def (vl-scopedef-interface-p def))))
                ;; Start by checking for sensible array indexing.
@@ -1609,7 +1627,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                (caveat-flag "Indicates caveat about possible signedness ambiguities")
                (new-x (implies (not err) (vl-datatype-p new-x))
                       "Datatype after indexing")
-               (dim   (implies (not err) (vl-packeddimension-p dim))
+               (dim   (implies (not err) (vl-dimension-p dim))
                       "Dimension removed from the datatype"))
   (b* ((x (vl-maybe-usertype-resolve x))
        (udims (vl-datatype->udims x))
@@ -1649,8 +1667,8 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        ((when (and (vl-datatype-case x :vl-coretype)
                    (eql size 1)))
         (mv (vmsg "Index applied to bit type ~a0" x) nil nil nil))
-       (dim (vl-range->packeddimension (make-vl-range :msb (vl-make-index (1- size))
-                                                      :lsb (vl-make-index 0)))))
+       (dim (vl-range->dimension (make-vl-range :msb (vl-make-index (1- size))
+                                                :lsb (vl-make-index 0)))))
     (mv nil nil
         *vl-plain-old-logic-type* dim))
   ///
@@ -1822,10 +1840,13 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                      (atom (vl-datatype->pdims type))))
         (mv (vmsg "Dot-indexing (field ~s0) into a non-struct/union datatype: ~a1"
                   nextname
-                  (vl-datatype-update-dims (append-without-guard
-                                            (vl-datatype->udims type)
-                                            (vl-datatype->pdims type))
-                                           nil type))
+                  type
+                  ;; BOZO what was this doing
+                  ;; (vl-datatype-update-dims (append-without-guard
+                  ;;                           (vl-datatype->udims type)
+                  ;;                           (vl-datatype->pdims type))
+                  ;;                          nil type)
+                  )
             nil))
        ((when (eq nextname :vl-$root))
         (mv (vmsg "Can't use $root to index into a data structure: ~a0"
@@ -1992,7 +2013,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 
        ((mv err width) (vl-partselect-width part))
        ((when err) (mv err nil nil))
-       (new-dim (vl-range->packeddimension
+       (new-dim (vl-range->dimension
                  (make-vl-range :msb (vl-make-index (1- width))
                                 :lsb (vl-make-index 0))))
 
@@ -2002,7 +2023,8 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                        (cons new-dim (vl-datatype->pdims single-type))
                        single-type)
                     (vl-datatype-update-udims
-                     (cons new-dim (vl-datatype->udims single-type))
+                     (cons new-dim
+                           (vl-datatype->udims single-type))
                      single-type))))
     (mv nil seltrace psel-type))
   ///

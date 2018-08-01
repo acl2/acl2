@@ -664,6 +664,10 @@ for plain atoms like @('a') and @('b') in @('always @(a or b)').</p>")
 (local (xdoc::set-default-parents))
 
 
+(local (defthm tag-of-cons
+         (equal (tag (cons x y)) x)
+         :hints(("Goal" :in-theory (enable tag)))))
+
 (deftypes expressions-and-datatypes
   :parents (syntax)
   :short "Representation of expressions, datatypes, and other related,
@@ -1140,40 +1144,84 @@ unnamed (plain) arguments followed by some named arguments.</p>"
     :measure (two-nats-measure (acl2-count x) 110)
     :parents (vl-range))
 
-  (defflexsum vl-packeddimension
+  (defflexsum vl-dimension
     :parents (syntax)
     :measure (two-nats-measure (acl2-count x) 105)
-    :short "A range like @('[3:0]') or an <i>unsized dimension</i>, written as
-            @('[]')."
+    :short "Representation of a single packed or unpacked dimension.  These
+            could be a range like @('[3:0]') or something more exotic, like
+            @('[]'), @('[*]'), or @('[logic [3:0]]')."
+    ;; [Jared] This was originally called vl-packeddimension and lacked the
+    ;; star, datatype, and queue cases.  When adding the new dimension types, I
+    ;; originally considered distinguishing between packed and other
+    ;; dimensions, adding a vl-variabledimension type here.  This seemed to
+    ;; bring a lot of trouble for no gain.  When processing dimensions in any
+    ;; real way, the question is always: "are these dimensions all nicely
+    ;; resolved simple ranges?" so even with just packed_dimension, you already
+    ;; have unsized dimensions and unresolved ranges to handle as error cases.
+    ;; It's generally easy to extend these error cases to queues and
+    ;; associative dimensions as well.
     (:unsized
      :short "An unsized dimension, e.g., @('[]')."
+     :long "<p>See SystemVerilog-2012 section 7.5.  These are for dynamic
+            arrays whose size can be changed at runtime.</p>"
      :cond (eq x :vl-unsized-dimension)
      :fields nil
      :ctor-body ':vl-unsized-dimension)
+    (:star
+     :short "The @('associative_dimension') @('[*]')."
+     :long "<p>See SystemVeriog-2012 section 7.8.1 on the wildcard index type
+            for associative (sparse) arrays.  This allows the array to be
+            indexed by any integer-valued expression of arbitrary size.</p>"
+     :cond (eq x :vl-star-dimension)
+     :fields nil
+     :ctor-body ':vl-star-dimension)
+    (:datatype
+     :short "An @('associative_dimension') based on a data type."
+     :long "<p>See SystemVerilog-2012 section 7.8 on Associative Arrays.  The
+            type is an index type for a sparse array.</p>"
+     :cond (eq (tag x) :vl-type-dimension)
+     :fields ((type :acc-body (cdr x)
+                    :type vl-datatype
+                    :acc-name vl-dimension->type))
+     :ctor-body (cons :vl-type-dimension type))
+    (:queue
+     :short "A queue dimension, e.g., @('[$]') or @('[$ : 5]')"
+     :cond (eq (tag x) :vl-queue-dimension)
+     :fields ((maxsize :acc-body (cdr x)
+                       :acc-name vl-dimension->maxsize
+                       :type vl-maybe-expr-p
+                       :doc "For bounded queues, this is the maximum index of
+                             any element in the queue, e.g., it is the @('5')
+                             in @('[$ : 5]').  For unbounded queues, this is
+                             just @('nil')."))
+     :ctor-body (cons :vl-queue-dimension maxsize))
     (:range
-     :short "A packed dimension that is a range, e.g., @('[3:0]')."
+     :short "A dimension that is a range, e.g., @('[3:0]') or @('[3]')."
      :cond t
      :fields ((range :acc-body x
                      :type vl-range
-                     :acc-name vl-packeddimension->range
-                     :doc "The whole dimension as an atomic @(see vl-range)."))
+                     :acc-name vl-dimension->range
+                     :doc "The whole dimension as an atomic @(see vl-range).
+                           Note (SystemVerilog-2012 page 109): unpacked
+                           dimensions like @('[size]') are the same as
+                           @('[0:size-1]').  We therefore convert them into
+                           ranges at parse-time."))
      :ctor-body range
-     :ctor-name vl-range->packeddimension
+     :ctor-name vl-range->dimension
      :extra-binder-names (msb lsb)
      :long "<p>Note that the @(see b*) binder sets up extra bindings for
             @('.msb') and @('.lsb'), so you can typically access the guts of
             the interior range directly.</p>"))
 
-  (fty::deflist vl-packeddimensionlist
-    :elt-type vl-packeddimension
+  (fty::deflist vl-dimensionlist
+    :elt-type vl-dimension
     :measure (two-nats-measure (acl2-count x) 10)
     :elementp-of-nil nil
-    :parents (vl-packeddimension))
+    :parents (vl-dimension))
 
-  (defoption vl-maybe-packeddimension vl-packeddimension
+  (defoption vl-maybe-dimension vl-dimension
     :measure (two-nats-measure (acl2-count x) 110)
-    :parents (vl-packeddimension))
-
+    :parents (vl-dimension))
 
 
 ; -----------------------------------------------------------------------------
@@ -1576,12 +1624,12 @@ unnamed (plain) arguments followed by some named arguments.</p>"
      ((name    vl-coretypename-p
                "Kind of primitive datatype, e.g., @('byte'), @('string'),
                 etc.")
-      (pdims   vl-packeddimensionlist-p
+      (pdims   vl-dimensionlist-p
                "Only valid for integer vector types (bit, logic, reg).  If
                 present, these are the 'packed' array dimensions, i.e., the
                 [7:0] part of a declaration like @('bit [7:0] memory [255:0]').
                 There can be arbitrarily many of these.")
-      (udims   vl-packeddimensionlist-p
+      (udims   vl-dimensionlist-p
                "Unpacked array dimensions, for instance, the @('[255:0]') part
                 of a declaration like @('bit [7:0] memory [255:0]').  There can
                 be arbitrarily many of these.")
@@ -1601,9 +1649,9 @@ unnamed (plain) arguments followed by some named arguments.</p>"
                "Roughly: says whether this struct is @('packed') or not,
                 but <b>warning!</b> this is complicated and generally
                 should not be used; see below for details.")
-      (pdims    vl-packeddimensionlist-p
+      (pdims    vl-dimensionlist-p
                 "Packed dimensions for the structure.")
-      (udims    vl-packeddimensionlist-p
+      (udims    vl-dimensionlist-p
                 "Unpacked dimensions for the structure.")
       (signedp booleanp :rule-classes :type-prescription
                "Roughly: says whether this struct is @('signed') or not,
@@ -1670,9 +1718,9 @@ unnamed (plain) arguments followed by some named arguments.</p>"
                  <b>warning!</b> this should normally not be used as it has the
                  same problems as @('packedp') for structs; see @(see
                  vl-struct).")
-      (pdims    vl-packeddimensionlist-p
+      (pdims    vl-dimensionlist-p
                 "Packed dimensions for this union type.")
-      (udims    vl-packeddimensionlist-p
+      (udims    vl-dimensionlist-p
                 "Unpacked dimensions for the union type.  See also @(see
                  vl-struct) and the notes about unpacked dimensions there.")
       (signedp  booleanp :rule-classes :type-prescription
@@ -1696,9 +1744,9 @@ unnamed (plain) arguments followed by some named arguments.</p>"
                 "The items of the enumeration.")
       (values vl-exprlist-p
               "List of all valid values of this enum, generated by enumnames transform")
-      (pdims    vl-packeddimensionlist-p
+      (pdims    vl-dimensionlist-p
                 "Packed dimensions for this enum type.")
-      (udims    vl-packeddimensionlist-p
+      (udims    vl-dimensionlist-p
                 "Unpacked dimensions for this enum type.")))
 
     (:vl-usertype
@@ -1713,9 +1761,9 @@ unnamed (plain) arguments followed by some named arguments.</p>"
               "The resolved type that name refers to.  If present, it means
                we've already looked up the type and resolved its value.  See
                below for more notes.")
-      (pdims  vl-packeddimensionlist-p
+      (pdims  vl-dimensionlist-p
               "Packed dimensions for this user type.")
-      (udims  vl-packeddimensionlist-p
+      (udims  vl-dimensionlist-p
               "Unpacked dimensions for this user type."))
      :long "<h3>Notes about the @('res') Field</h3>
 
@@ -2089,23 +2137,24 @@ unnamed (plain) arguments followed by some named arguments.</p>"
   :enabled t
   (vl-plusminus->minusp (vl-arrayrange->plusminus x)))
 
-(define vl-packeddimension-range->msb ((x vl-packeddimension-p))
-  :parents (vl-packeddimension)
-  :guard (eq (vl-packeddimension-kind x) :range)
-  :short "Directly get the @('msb') of a @(see vl-packeddimension-range)'s range."
+(define vl-dimension-range->msb ((x vl-dimension-p))
+  :parents (vl-dimension)
+  :guard (eq (vl-dimension-kind x) :range)
+  :short "Directly get the @('msb') of a @(see vl-dimension-range)'s range."
   :long "<p>This is also available as a @('.msb') @(see b*) binding.</p>"
   :inline t
   :enabled t
-  (vl-range->msb (vl-packeddimension->range x)))
+  (vl-range->msb (vl-dimension->range x)))
 
-(define vl-packeddimension-range->lsb ((x vl-packeddimension-p))
-  :parents (vl-packeddimension)
-  :guard (eq (vl-packeddimension-kind x) :range)
-  :short "Directly get the @('lsb') of a @(see vl-packeddimension-range)'s range."
+(define vl-dimension-range->lsb ((x vl-dimension-p))
+  :parents (vl-dimension)
+  :guard (eq (vl-dimension-kind x) :range)
+  :short "Directly get the @('lsb') of a @(see vl-dimension-range)'s range."
   :long "<p>This is also available as a @('.lsb') @(see b*) binding.</p>"
   :inline t
   :enabled t
-  (vl-range->lsb (vl-packeddimension->range x)))
+  (vl-range->lsb (vl-dimension->range x)))
+
 
 
 ; -----------------------------------------------------------------------------
@@ -2174,30 +2223,32 @@ unnamed (plain) arguments followed by some named arguments.</p>"
           :expand ((vl-maybe-datatype-count x))
           :in-theory (enable vl-maybe-datatype-some->val))))
 
-(defthm type-when-vl-packeddimension-p
-  (implies (vl-packeddimension-p x)
+(defthm type-when-vl-dimension-p
+  (implies (vl-dimension-p x)
            (or (consp x)
                (and (symbolp x)
                     x
                     (not (equal x t)))))
   :rule-classes :compound-recognizer
-  :hints(("Goal" :in-theory (enable vl-packeddimension-p))))
+  :hints(("Goal" :in-theory (enable vl-dimension-p tag))))
 
-(defthm type-when-vl-maybe-packeddimension-p
-  (implies (vl-maybe-packeddimension-p x)
+(defthm type-when-vl-maybe-dimension-p
+  (implies (vl-maybe-dimension-p x)
            (or (consp x)
                (and (symbolp x)
                     (not (eq x t)))))
   :rule-classes :compound-recognizer
-  :hints(("Goal" :in-theory (enable vl-maybe-packeddimension-p))))
+  :hints(("Goal" :in-theory (enable vl-maybe-dimension-p))))
 
-(defthm vl-packeddimension-count-of-maybe-packeddimension
+(defthm vl-dimension-count-of-maybe-dimension
   (implies x
-           (< (vl-packeddimension-count x) (vl-maybe-packeddimension-count x)))
+           (< (vl-dimension-count x) (vl-maybe-dimension-count x)))
   :rule-classes :linear
   :hints(("Goal"
-          :expand ((vl-maybe-packeddimension-count x))
-          :in-theory (enable vl-maybe-packeddimension-some->val))))
+          :expand ((vl-maybe-dimension-count x))
+          :in-theory (enable vl-maybe-dimension-some->val))))
+
+
 
 (defthm vl-expr-p-of-cdr-of-hons-assoc-equal-when-vl-atts-p
   (implies (vl-atts-p atts)
@@ -2516,7 +2567,7 @@ unnamed (plain) arguments followed by some named arguments.</p>"
   :parents (vl-datatype)
   :short "Get the packed dimensions from any datatype."
   ((x vl-datatype-p))
-  :returns (pdims vl-packeddimensionlist-p)
+  :returns (pdims vl-dimensionlist-p)
   (vl-datatype-case x
     :vl-coretype x.pdims
     :vl-struct x.pdims
@@ -2591,7 +2642,7 @@ unnamed (plain) arguments followed by some named arguments.</p>"
 (define vl-datatype->udims ((x vl-datatype-p))
   :parents (vl-datatype)
   :short "Get the unpacked dimensions from any datatype."
-  :returns (udims vl-packeddimensionlist-p)
+  :returns (udims vl-dimensionlist-p)
   (vl-datatype-case x
     :vl-coretype x.udims
     :vl-struct x.udims
@@ -2601,9 +2652,9 @@ unnamed (plain) arguments followed by some named arguments.</p>"
   ///
   (deffixequiv vl-datatype->udims)
 
-  (defret vl-packeddimensionlist-count-of-vl-datatype->pdims/udims
-    (< (+ (vl-packeddimensionlist-count (vl-datatype->pdims x))
-          (vl-packeddimensionlist-count (vl-datatype->udims x)))
+  (defret vl-dimensionlist-count-of-vl-datatype->pdims/udims
+    (< (+ (vl-dimensionlist-count (vl-datatype->pdims x))
+          (vl-dimensionlist-count (vl-datatype->udims x)))
        (vl-datatype-count x))
     :hints (("goal"
              :expand ((vl-datatype-count x))))
@@ -2675,9 +2726,9 @@ unnamed (plain) arguments followed by some named arguments.</p>"
 (define vl-datatype-update-dims
   :parents (vl-datatype)
   :short "Update the dimensions of any datatype, no matter its kind."
-  ((pdims vl-packeddimensionlist-p "New packed dimensions to install.")
-   (udims vl-packeddimensionlist-p "New unpacked dimensions to install.")
-   (x     vl-datatype-p            "Datatype to update."))
+  ((pdims vl-dimensionlist-p   "New packed dimensions to install.")
+   (udims vl-dimensionlist-p "New unpacked dimensions to install.")
+   (x     vl-datatype-p              "Datatype to update."))
   :returns
   (newx "Updated version of @('x') with new dimensions installed."
         (and (vl-datatype-p newx)
@@ -2697,15 +2748,15 @@ unnamed (plain) arguments followed by some named arguments.</p>"
 
   (defthm vl-datatype->pdims-of-vl-datatype-update-dims
     (equal (vl-datatype->pdims (vl-datatype-update-dims pdims udims x))
-           (vl-packeddimensionlist-fix pdims))
+           (vl-dimensionlist-fix pdims))
     :hints(("Goal" :in-theory (enable vl-datatype->pdims))))
 
   (defthm vl-datatype->udims-of-vl-datatype-update-dims
     (equal (vl-datatype->udims (vl-datatype-update-dims pdims udims x))
-           (vl-packeddimensionlist-fix udims))
+           (vl-dimensionlist-fix udims))
     :hints(("Goal" :in-theory (enable vl-datatype->udims)))))
 
-(define vl-datatype-update-pdims ((pdims vl-packeddimensionlist-p) (x vl-datatype-p))
+(define vl-datatype-update-pdims ((pdims vl-dimensionlist-p) (x vl-datatype-p))
   :parents (vl-datatype)
   :enabled t
   :prepwork ((local (in-theory (enable vl-datatype-update-dims))))
@@ -2719,7 +2770,7 @@ unnamed (plain) arguments followed by some named arguments.</p>"
                   :vl-enum (change-vl-enum x :pdims pdims)
                   :vl-usertype (change-vl-usertype x :pdims pdims))))
 
-(define vl-datatype-update-udims ((udims vl-packeddimensionlist-p) (x vl-datatype-p))
+(define vl-datatype-update-udims ((udims vl-dimensionlist-p) (x vl-datatype-p))
   :parents (vl-datatype)
   :enabled t
   :prepwork ((local (in-theory (enable vl-datatype-update-dims))))

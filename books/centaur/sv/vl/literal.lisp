@@ -152,10 +152,10 @@
     (implies (vl-datatype-sizable x)
              (and (b* (((mv err size) (vl-datatype-size x)))
                     (and (not err) (natp size)))
-                  (vl-packeddimensionlist-resolved-p (vl-datatype->udims x))
-                  (vl-packeddimensionlist-resolved-p (vl-datatype->pdims x))
-                  (posp (vl-packeddimensionlist-total-size (vl-datatype->udims x)))
-                  (posp (vl-packeddimensionlist-total-size (vl-datatype->pdims x)))
+                  (vl-dimensionlist-resolved-p (vl-datatype->udims x))
+                  (vl-dimensionlist-resolved-p (vl-datatype->pdims x))
+                  (posp (vl-dimensionlist-total-size (vl-datatype->udims x)))
+                  (posp (vl-dimensionlist-total-size (vl-datatype->pdims x)))
                   (implies (vl-datatype-case x :vl-coretype)
                            (posp (vl-coredatatype-info->size (vl-coretypename->info (vl-coretype->name x)))))
                   (implies (vl-datatype-case x :vl-struct)
@@ -175,7 +175,7 @@
   (make-vl-pattern
    :pattype (make-vl-struct :members nil :packedp t :signedp signedp)
    :pat (vl-assignpat-positional nil)))
-                                  
+
 
 (define vl-literal-expr-from-4vec/vector-type ((type vl-datatype-p)
                                                (x sv::4vec-p))
@@ -215,10 +215,10 @@
           :expand ((vl-datatype-count x))))
   :rule-classes :linear)
 
-(local (defthm vl-packeddimensionlist-count-when-consp
+(local (defthm vl-dimensionlist-count-when-consp
          (implies (consp x)
-                  (< 1 (vl-packeddimensionlist-count x)))
-         :hints (("goal" :expand ((vl-packeddimensionlist-count x))))
+                  (< 1 (vl-dimensionlist-count x)))
+         :hints (("goal" :expand ((vl-dimensionlist-count x))))
          :rule-classes :linear))
 
 (defthm vl-datatype-count-of-vl-datatype-update-udims-strong
@@ -277,7 +277,7 @@
 
 (defthm vl-datatype->udims-of-vl-datatype-update-udims
   (equal (vl-datatype->udims (vl-datatype-update-udims udims x))
-         (vl-packeddimensionlist-fix udims)))
+         (vl-dimensionlist-fix udims)))
 
 (defthm vl-datatype->pdims-of-vl-datatype-update-udims
   (equal (vl-datatype->pdims (vl-datatype-update-udims udims x))
@@ -285,7 +285,7 @@
 
 (defthm vl-datatype->pdims-of-vl-datatype-update-pdims
   (equal (vl-datatype->pdims (vl-datatype-update-pdims pdims x))
-         (vl-packeddimensionlist-fix pdims)))
+         (vl-dimensionlist-fix pdims)))
 
 (local (defthm vl-coretype-integer-arithclass-when-sized
          (implies (and (vl-datatype-sizable x)
@@ -348,32 +348,28 @@
                    (x (cdr x)))
                   vl-structmemberlist-sizable-implies)))))
 
-(local (defthm vl-packeddimension-kind-when-total-size
-         (implies (and (vl-packeddimensionlist-total-size x)
+(local (defthm vl-dimension-kind-when-total-size
+         (implies (and (vl-dimensionlist-total-size x)
                        (consp x))
-                  (equal (vl-packeddimension-kind (car x)) :range))
-         :hints(("Goal" :expand ((vl-packeddimensionlist-total-size x))))))
+                  (equal (vl-dimension-kind (car x)) :range))
+         :hints(("Goal" :expand ((vl-dimensionlist-total-size x)
+                                 (vl-dimension-size (car x)))))))
 
-(local (defthm vl-packeddimension-range-resolved-when-resolved
-         (implies (and (vl-packeddimensionlist-resolved-p x)
+(local (defthm vl-dimension-range-resolved-when-resolved
+         (implies (and (vl-dimensionlist-resolved-p x)
                        (consp x)
-                       (equal (vl-packeddimension-kind (car x)) :range))
-                  (and (vl-expr-resolved-p (vl-range->msb (vl-packeddimension->range (car x))))
-                       (vl-expr-resolved-p (vl-range->lsb (vl-packeddimension->range (car x))))))
-         :hints(("Goal" :expand ((vl-packeddimensionlist-resolved-p x))))))
+                       (equal (vl-dimension-kind (car x)) :range))
+                  (and (vl-expr-resolved-p (vl-range->msb (vl-dimension->range (car x))))
+                       (vl-expr-resolved-p (vl-range->lsb (vl-dimension->range (car x))))))
+         :hints(("Goal" :expand ((vl-dimensionlist-resolved-p x)
+                                 (vl-dimension-size (car x)))))))
 
-(local (defthm vl-packeddimensionlist-size-of-cdr
-         (implies (and (vl-packeddimensionlist-total-size x)
+(local (defthm vl-dimensionlist-size-of-cdr
+         (implies (and (vl-dimensionlist-total-size x)
                        (consp x))
-                  (posp (vl-packeddimensionlist-total-size (cdr x))))
-         :hints(("Goal" :expand ((vl-packeddimensionlist-total-size x))))
+                  (posp (vl-dimensionlist-total-size (cdr x))))
+         :hints(("Goal" :expand ((vl-dimensionlist-total-size x))))
          :rule-classes :type-prescription))
-
-(local (defthm vl-packeddimensionlist-resolved-p-of-cdr
-         (implies (and (vl-packeddimensionlist-resolved-p x)
-                       (consp x))
-                  (vl-packeddimensionlist-resolved-p (cdr x)))
-         :hints(("Goal" :expand ((vl-packeddimensionlist-resolved-p x))))))
 
 (defines vl-literal-expr-from-4vec
   :prepwork ((local (in-theory (e/d (vl-datatype-sizable-implies)
@@ -389,15 +385,15 @@
                  (const-expr vl-expr-p)
                  (rest sv::4vec-p))
     :verify-guards nil
-    (b* ((udims (vl-datatype->udims type))
+    (b* ((udims    (vl-datatype->udims type))
          (new-type (vl-datatype-update-udims nil type)))
       (vl-literal-expr-from-4vec-dims udims new-type x)))
 
-  (define vl-literal-expr-from-4vec-dims ((dims vl-packeddimensionlist-p)
+  (define vl-literal-expr-from-4vec-dims ((dims vl-dimensionlist-p)
                                           (type vl-datatype-p)
                                           (x sv::4vec-p))
-    :guard (and (vl-packeddimensionlist-resolved-p dims)
-                (posp (vl-packeddimensionlist-total-size dims))
+    :guard (and (vl-dimensionlist-resolved-p dims)
+                (posp (vl-dimensionlist-total-size dims))
                 (not (consp (vl-datatype->udims type)))
                 (vl-datatype-resolved-p type)
                 (vl-datatype-sizable type))
@@ -407,7 +403,7 @@
                  (rest sv::4vec-p))
     (b* (((when (atom dims))
           (vl-literal-expr-from-4vec-no-dims type x))
-         ((vl-range range) (vl-packeddimension->range (car dims)))
+         ((vl-range range) (vl-dimension->range (car dims)))
          ((mv warnings exprs rest)
           (vl-literal-expr-from-4vec-dim (vl-resolved->val range.msb)
                                          (vl-resolved->val range.lsb)
@@ -418,11 +414,11 @@
 
   (define vl-literal-expr-from-4vec-dim ((range-msb integerp)
                                          (range-lsb integerp)
-                                         (dims vl-packeddimensionlist-p)
+                                         (dims vl-dimensionlist-p)
                                          (type vl-datatype-p)
                                          (x sv::4vec-p))
-    :guard (and (vl-packeddimensionlist-resolved-p dims)
-                (posp (vl-packeddimensionlist-total-size dims))
+    :guard (and (vl-dimensionlist-resolved-p dims)
+                (posp (vl-dimensionlist-total-size dims))
                 (not (consp (vl-datatype->udims type)))
                 (vl-datatype-resolved-p type)
                 (vl-datatype-sizable type))
