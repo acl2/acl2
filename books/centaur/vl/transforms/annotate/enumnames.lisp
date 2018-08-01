@@ -303,32 +303,43 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
   :verify-guards nil
 
   (define vl-genelementlist-enumname-declarations ((x vl-genelementlist-p))
-    :returns (mv (warnings vl-warninglist-p)
-                 (new-x    vl-genelementlist-p))
+    :returns (mv (warnings  vl-warninglist-p)
+                 (new-x     vl-genelementlist-p)
+                 (new-decls vl-paramdecllist-p))
     :measure (two-nats-measure (vl-genelementlist-count x) 0)
     (b* (((when (atom x))
-          (mv nil nil))
-         ((mv warnings elems1) (vl-genelement-enumname-declarations (car x)))
-         ((wmv warnings rest)  (vl-genelementlist-enumname-declarations (cdr x))))
+          (mv nil nil nil))
+         ((mv warnings new-car decls1)  (vl-genelement-enumname-declarations (car x)))
+         ((wmv warnings new-cdr decls2) (vl-genelementlist-enumname-declarations (cdr x))))
       (mv warnings
-          (append-without-guard elems1 rest))))
+          (cons new-car new-cdr)
+          (append-without-guard decls1 decls2))))
 
   (define vl-genblock-enumname-declarations ((x vl-genblock-p))
-    :returns (mv (warnings vl-warninglist-p)
-                 (new-x    vl-genblock-p))
+    :returns (mv (warnings  vl-warninglist-p)
+                 (new-x     vl-genblock-p))
     :measure (two-nats-measure (vl-genblock-count x) 0)
     (b* (((vl-genblock x))
-         ((mv warnings new-elems) (vl-genelementlist-enumname-declarations x.elems))
-         (new-x                   (change-vl-genblock x :elems new-elems)))
+         ((mv warnings new-elems new-decls) (vl-genelementlist-enumname-declarations x.elems))
+         (new-decls
+          ;; Remove duplicate decls because when we find something like:
+          ;;    enum { FOO, BAR } a, b;
+          ;; the declaration for "a" will try to introduce paramdecls for FOO
+          ;; and BAR, and so will the declaration for "b".  This will look like
+          ;; a name clash unless we remove the duplicates.
+          ;;
+          ;; Don't use mergesort to remove the dupes, because we want earlier
+          ;; declarations to come first, in case later declarations refer to
+          ;; them.
+          (remove-duplicates-equal (list-fix new-decls)))
+         (new-x (change-vl-genblock x :elems (append (vl-modelementlist->genelements new-decls)
+                                                     new-elems))))
       (mv warnings new-x)))
 
   (define vl-genelement-enumname-declarations ((x vl-genelement-p))
-    :returns (mv (warnings     vl-warninglist-p)
-                 (replacements vl-genelementlist-p
-                               "List of elements that should replace @('x').
-                                Even though we start with a single element, we
-                                need to return a list since we sometimes need
-                                to add parameter declarations."))
+    :returns (mv (warnings  vl-warninglist-p)
+                 (new-x     vl-genelement-p)
+                 (new-decls vl-paramdecllist-p))
     :measure (two-nats-measure (vl-genelement-count x) 0)
     (vl-genelement-case x
       :vl-genbase
@@ -337,31 +348,33 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
               (:vl-paramdecl (vl-paramdecl-enumname-declarations x.item))
               (:vl-typedef   (vl-typedef-enumname-declarations x.item))
               (:vl-vardecl   (vl-vardecl-enumname-declarations x.item))
-              (otherwise     (mv x.item nil nil)))))
-        (mv warnings (append (vl-modelementlist->genelements decls)
-                             (list (change-vl-genbase x :item new-item)))))
+              (otherwise     (mv x.item nil nil))))
+           (new-x (change-vl-genbase x :item new-item)))
+        (mv warnings new-x decls))
       :vl-genbegin
       (b* (((mv warnings new-block) (vl-genblock-enumname-declarations x.block))
-           (new-x                   (change-vl-genbegin x :block new-block)))
-        (mv warnings (list new-x)))
+           (new-x                   (change-vl-genbegin x :block new-block))
+           ;; The decls have already been added inside to the block.
+           (decls                   nil))
+        (mv warnings new-x decls))
       :vl-genif
       (b* (((mv warnings then)  (vl-genblock-enumname-declarations x.then))
            ((wmv warnings else) (vl-genblock-enumname-declarations x.else))
            (new-x               (change-vl-genif x :then then :else else)))
-        (mv warnings (list new-x)))
+        (mv warnings new-x nil))
       :vl-gencase
       (b* (((mv warnings cases)    (vl-gencaselist-enumname-declarations x.cases))
            ((wmv warnings default) (vl-genblock-enumname-declarations x.default))
            (new-x                  (change-vl-gencase x :cases cases :default default)))
-        (mv warnings (list new-x)))
+        (mv warnings new-x nil))
       :vl-genloop
       (b* (((mv warnings body) (vl-genblock-enumname-declarations x.body))
            (new-x              (change-vl-genloop x :body body)))
-        (mv warnings (list new-x)))
+        (mv warnings new-x nil))
       :vl-genarray
       (b* (((mv warnings blocks) (vl-genblocklist-enumname-declarations x.blocks))
            (new-x                (change-vl-genarray x :blocks blocks)))
-        (mv warnings (list new-x)))))
+        (mv warnings new-x nil))))
 
   (define vl-gencaselist-enumname-declarations ((x vl-gencaselist-p))
     :returns (mv (warnings vl-warninglist-p)
@@ -391,11 +404,13 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
   :returns (new-x vl-module-p)
   (b* (((vl-module x) (vl-module-fix x))
        ((unless x.parse-temps) x)
-       ((mv warnings items)
-        (vl-genelementlist-enumname-declarations (vl-parse-temps->loaditems x.parse-temps))))
+       ((mv warnings items decls)
+        (vl-genelementlist-enumname-declarations (vl-parse-temps->loaditems x.parse-temps)))
+       (decls      (remove-duplicates-equal (list-fix decls)))
+       (decl-items (vl-modelementlist->genelements decls)))
     ;; BOZO Enums first used in ports and paramports don't work yet
     (change-vl-module x
-                      :parse-temps (change-vl-parse-temps x.parse-temps :loaditems items)
+                      :parse-temps (change-vl-parse-temps x.parse-temps :loaditems (append decl-items items))
                       :warnings (append-without-guard warnings x.warnings))))
 
 (defprojection vl-modulelist-add-enumname-declarations ((x vl-modulelist-p))
@@ -406,11 +421,13 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
   :returns (new-x vl-interface-p)
   (b* (((vl-interface x) (vl-interface-fix x))
        ((unless x.parse-temps) x)
-       ((mv warnings items)
-        (vl-genelementlist-enumname-declarations (vl-parse-temps->loaditems x.parse-temps))))
+       ((mv warnings items decls)
+        (vl-genelementlist-enumname-declarations (vl-parse-temps->loaditems x.parse-temps)))
+       (decls      (remove-duplicates-equal (list-fix decls)))
+       (decl-items (vl-modelementlist->genelements decls)))
     ;; BOZO Enums first used in ports and paramports don't work yet
     (change-vl-interface x
-                         :parse-temps (change-vl-parse-temps x.parse-temps :loaditems items)
+                         :parse-temps (change-vl-parse-temps x.parse-temps :loaditems (append decl-items items))
                          :warnings (append-without-guard warnings x.warnings))))
 
 (defprojection vl-interfacelist-add-enumname-declarations ((x vl-interfacelist-p))
@@ -422,12 +439,13 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
   (b* (((vl-package x) (vl-package-fix x))
        ((mv typedefs warnings1 decls1) (vl-typedeflist-enumname-declarations x.typedefs))
        ((mv vardecls warnings2 decls2) (vl-vardecllist-enumname-declarations x.vardecls))
-       ((mv paramdecls warnings3 decls3) (vl-paramdecllist-enumname-declarations x.paramdecls)))
+       ((mv paramdecls warnings3 decls3) (vl-paramdecllist-enumname-declarations x.paramdecls))
+       (decls (remove-duplicates-equal (append-without-guard decls1 decls2 (list-fix decls3)))))
     (change-vl-package
      x
      :typedefs typedefs
      :vardecls vardecls
-     :paramdecls (append-without-guard decls1 decls2 decls3 paramdecls)
+     :paramdecls (append decls paramdecls)
      :warnings (append-without-guard warnings1 warnings2 warnings3 x.warnings))))
 
 (defprojection vl-packagelist-add-enumname-declarations ((x vl-packagelist-p))
@@ -440,9 +458,10 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
   (b* (((vl-design x))
        ((mv typedefs warnings1 decls1) (vl-typedeflist-enumname-declarations x.typedefs))
        ((mv vardecls warnings2 decls2) (vl-vardecllist-enumname-declarations x.vardecls))
-       ((mv paramdecls warnings3 decls3) (vl-paramdecllist-enumname-declarations x.paramdecls)))
+       ((mv paramdecls warnings3 decls3) (vl-paramdecllist-enumname-declarations x.paramdecls))
+       (decls (remove-duplicates-equal (append-without-guard decls1 decls2 (list-fix decls3)))))
     (change-vl-design x
-                      :paramdecls (append-without-guard decls1 decls2 decls3 paramdecls)
+                      :paramdecls (append decls paramdecls)
                       :typedefs   typedefs
                       :vardecls   vardecls
                       :mods       (vl-modulelist-add-enumname-declarations x.mods)

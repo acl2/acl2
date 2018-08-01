@@ -69,6 +69,7 @@ elab3.v -- parameter argument to submodule calls function from that submodule th
 elab6.v -- hierarchical reference into generate block before wire declaration
 
 enum1.v -- enum tries to have member foo[0] (explicitly forbidden)
+enum2.v -- redeclaration of enum parameters
 
 fn1.v -- shadowing too hard in function
 fn2.v -- function input names duplicated (ansi syntax)
