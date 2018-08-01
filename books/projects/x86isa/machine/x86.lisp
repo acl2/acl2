@@ -1233,7 +1233,7 @@
 
       (defsection one-byte-opcodes-table
         :parents (implemented-opcodes)
-        :short "@('x86isa') Support for Opcodes in the One-Byte Map; @(see
+        :short "@('x86isa') Support for Opcodes in the One-Byte Map; see @(see
         implemented-opcodes) for details."
         :long ,table-doc-string))))
 
