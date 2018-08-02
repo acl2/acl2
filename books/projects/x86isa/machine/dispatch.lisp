@@ -70,37 +70,37 @@
 
 (define insert-slash-in-list ((lst string-listp))
   (if (or (equal (len lst) 1)
-          (endp lst))
+	  (endp lst))
       lst
     (cons (car lst)
-          (cons "/" (insert-slash-in-list (cdr lst)))))
+	  (cons "/" (insert-slash-in-list (cdr lst)))))
 
   ///
 
   (defthm string-listp-of-insert-slash-in-list
     (implies (string-listp lst)
-             (string-listp (insert-slash-in-list lst)))))
+	     (string-listp (insert-slash-in-list lst)))))
 
 
 (define get-string-name-of-simple-cell ((cell simple-cell-p))
   :guard-hints (("Goal" :do-not-induct t))
   :prepwork ((local (in-theory (e/d (simple-cell-p
-                                     basic-simple-cell-p
-                                     basic-simple-cells-p)
-                                    ()))))
+				     basic-simple-cell-p
+				     basic-simple-cells-p)
+				    ()))))
   (if (basic-simple-cell-p cell)
       (get-string-name-of-basic-simple-cell cell)
     (b* ((rest (rest cell))
-         (alt-opcodes (car rest))
-         ((unless (alistp alt-opcodes))
-          (er hard? 'get-string-name-of-simple-cell
-              "~%Expected to be alist: ~p0~%"
-              alt-opcodes))
-         (opcode-names (strip-cars alt-opcodes))
-         ((unless (string-listp opcode-names))
-          (er hard? 'get-string-name-of-simple-cell
-              "~%Expected to be string-listp: ~p0~%"
-              opcode-names)))
+	 (alt-opcodes (car rest))
+	 ((unless (alistp alt-opcodes))
+	  (er hard? 'get-string-name-of-simple-cell
+	      "~%Expected to be alist: ~p0~%"
+	      alt-opcodes))
+	 (opcode-names (strip-cars alt-opcodes))
+	 ((unless (string-listp opcode-names))
+	  (er hard? 'get-string-name-of-simple-cell
+	      "~%Expected to be string-listp: ~p0~%"
+	      opcode-names)))
       (str::fast-string-append-lst (insert-slash-in-list opcode-names))))
 
   ///
@@ -112,31 +112,31 @@
   (if (atom lst)
       lst
     (if (equal (car lst) x)
-        (cons y (replace-element x y (cdr lst)))
+	(cons y (replace-element x y (cdr lst)))
       (cons (car lst) (replace-element x y (cdr lst)))))
   ///
   (defthm true-listp-of-replace-element
     (implies (true-listp lst)
-             (true-listp (replace-element x y lst)))))
+	     (true-listp (replace-element x y lst)))))
 
 (define replace-formals-with-arguments-aux ((bindings alistp)
-                                            (formals true-listp))
+					    (formals true-listp))
   (if (endp bindings)
       formals
     (b* ((binding     (car bindings))
-         (formal      (car binding))
-         (argument    (cdr binding))
-         (new-formals (replace-element formal argument formals)))
+	 (formal      (car binding))
+	 (argument    (cdr binding))
+	 (new-formals (replace-element formal argument formals)))
       (replace-formals-with-arguments-aux (cdr bindings) new-formals)))
   ///
   (defthm true-listp-of-replace-formals-with-arguments-aux
     (implies (true-listp formals)
-             (true-listp (replace-formals-with-arguments-aux
-                          bindings formals)))))
+	     (true-listp (replace-formals-with-arguments-aux
+			  bindings formals)))))
 
 (define replace-formals-with-arguments ((fn symbolp)
-                                        (bindings alistp)
-                                        (world plist-worldp))
+					(bindings alistp)
+					(world plist-worldp))
 
   (b* ((formals (acl2::formals fn world))
        ((unless (true-listp formals)) nil)
@@ -148,7 +148,7 @@
     (true-listp (replace-formals-with-arguments fn bindings world))))
 
 (define create-call-from-semantic-info ((info semantic-function-info-p)
-                                        (world plist-worldp))
+					(world plist-worldp))
   :guard-hints (("Goal" :in-theory (e/d (semantic-function-info-p) ())))
 
   ;; (create-call-from-semantic-info
@@ -157,31 +157,31 @@
   ;;  (w state))
   (if (equal info nil)
       (mv "Unimplemented"
-          (replace-formals-with-arguments
-           'x86-step-unimplemented
-           '((message . "Opcode Unimplemented in x86isa!"))
-           world))
+	  (replace-formals-with-arguments
+	   'x86-step-unimplemented
+	   '((message . "Opcode Unimplemented in x86isa!"))
+	   world))
     (b* ((rest (cdr info)))
       (if (equal (car rest) :no-instruction)
-          (mv
-           "Reserved"
-           (replace-formals-with-arguments
-            'x86-illegal-instruction
-            '((message . "Reserved Opcode!"))
-            world))
-        (mv
-         (concatenate
-          'string
-          "@(tsee "
-          (str::pretty (car rest) :config *x86isa-printconfig*)
-          ")"
-          (if (cdr rest)
-              (concatenate
-               'string " -- <br/> "
-               (str::pretty (cdr rest) :config *x86isa-printconfig*))
-            ""))
-         (replace-formals-with-arguments
-          (car rest) (cdr rest) world)))))
+	  (mv
+	   "Reserved"
+	   (replace-formals-with-arguments
+	    'x86-illegal-instruction
+	    '((message . "Reserved Opcode!"))
+	    world))
+	(mv
+	 (concatenate
+	  'string
+	  "@(tsee "
+	  (str::pretty (car rest) :config *x86isa-printconfig*)
+	  ")"
+	  (if (cdr rest)
+	      (concatenate
+	       'string " -- <br/> "
+	       (str::pretty (cdr rest) :config *x86isa-printconfig*))
+	    ""))
+	 (replace-formals-with-arguments
+	  (car rest) (cdr rest) world)))))
   ///
 
   (defthm stringp-of-mv-nth-0-create-call-from-semantic-info
@@ -196,10 +196,10 @@
   ((cell simple-cell-p)
    (world plist-worldp))
   (b* (((when (member-equal (car cell) *group-numbers*))
-        (mv ""
-            (er hard? 'create-dispatch-from-no-extensions-simple-cell
-                "~%We don't expect groups here: ~p0~%"
-                cell)))
+	(mv ""
+	    (er hard? 'create-dispatch-from-no-extensions-simple-cell
+		"~%We don't expect groups here: ~p0~%"
+		cell)))
        (rest (cdr cell))
        (semantic-info (get-semantic-function-info-p rest)))
     (create-call-from-semantic-info semantic-info world))
@@ -223,100 +223,103 @@
 
   :verify-guards nil
   :guard-hints (("Goal"
-                 :in-theory (e/d (opcode-descriptor-list-p
-                                  opcode-descriptor-p)
-                                 ())
-                 :do-not-induct t))
+		 :in-theory (e/d (opcode-descriptor-list-p
+				  opcode-descriptor-p)
+				 ())
+		 :do-not-induct t))
 
   (if (endp desc-list)
 
       (b* (((mv & dispatch)
-            ;; This is a catch-all case --- so we ignore the doc here.
-            (create-call-from-semantic-info '(:fn . (:no-instruction)) world)))
-        (mv ""
-            `((t ,dispatch))))
+	    ;; This is a catch-all case --- so we ignore the doc here.
+	    (create-call-from-semantic-info '(:fn . (:no-instruction)) world)))
+	(mv ""
+	    `((t ,dispatch))))
 
     (b* ((opcode-descriptor (car desc-list))
-         (opcode-identifier (car opcode-descriptor))
-         ((unless (equal (cdr (assoc-equal :opcode opcode-identifier))
-                         (+ escape-bytes opcode)))
-          (create-case-dispatch-for-opcode-extensions-aux
-           opcode (cdr desc-list) world :escape-bytes escape-bytes))
-         (opcode-cell (cdr opcode-descriptor))
-         (vex (cdr (assoc-equal :vex opcode-identifier)))
-         (reg (cdr (assoc-equal :reg opcode-identifier)))
-         (prefix (cdr (assoc-equal :prefix opcode-identifier)))
-         (mod (cdr (assoc-equal :mod opcode-identifier)))
-         (r/m (cdr (assoc-equal :r/m opcode-identifier)))
-         (condition
-          `(and
-            ;; TODO: Check for VEX here.
-            ,@(and reg
-                   `((equal (mrm-reg modr/m) ,reg)))
-            ,@(and mod
-                   (if (equal mod :mem)
-                       `((not (equal (mrm-mod modr/m) #b11)))
-                     `((equal (mrm-mod modr/m) #b11))))
-            ,@(and r/m
-                   `((equal (mrm-r/m modr/m) ,r/m)))
-            ,@(and prefix
-                   `((equal mandatory-prefix ,prefix)))))
-         ((mv doc-string dispatch)
-          (create-dispatch-from-no-extensions-simple-cell
-           opcode-cell world))
-         (this-doc-string
-          (if (or vex prefix reg mod r/m)
-              (concatenate 'string
-                           " <td> @('"
-                           (str::pretty
-                            `(,@(and vex    `((:VEX ,vex)))
-                              ,@(and prefix `((:PFX ,prefix)))
-                              ,@(and reg    `((:REG ,reg)))
-                              ,@(and mod    `((:MOD ,mod)))
-                              ,@(and r/m    `((:R/M ,r/m))))
-                            :config *x86isa-printconfig*)
-                           ;; (str::pretty (cdr condition) ;; remove the 'and
-                           ;;              :config *x86isa-printconfig*)
-                           "') </td> <td> "
-                           doc-string
-                           " </td> ")
-            (concatenate 'string
-                         " <td> "
-                         doc-string
-                         " </td> ")))
-         (string-name-of-simple-cell
-          (get-string-name-of-simple-cell opcode-cell))
-         (this-doc-string
-          (if string-name-of-simple-cell
-              (concatenate
-               'string
-               " <tr> <td> "
-               string-name-of-simple-cell
-               " </td> "
-               this-doc-string
-               " </tr> ")
-            this-doc-string))
-         (cell-dispatch
-          `(,condition ,dispatch))
+	 (opcode-identifier (car opcode-descriptor))
+	 ((unless (equal (cdr (assoc-equal :opcode opcode-identifier))
+			 (+ escape-bytes opcode)))
+	  (create-case-dispatch-for-opcode-extensions-aux
+	   opcode (cdr desc-list) world :escape-bytes escape-bytes))
+	 (opcode-cell (cdr opcode-descriptor))
+	 (vex         (cdr (assoc-equal :vex opcode-identifier)))
+	 (reg         (cdr (assoc-equal :reg opcode-identifier)))
+	 (prefix      (cdr (assoc-equal :prefix opcode-identifier)))
+	 (mod         (cdr (assoc-equal :mod opcode-identifier)))
+	 (r/m         (cdr (assoc-equal :r/m opcode-identifier)))
+	 (condition
+	  `(and
+	    ;; TODO: Check for EVEX here one day?
+	    ,@(if vex
+		  `((not (equal vex-prefixes 0)))
+		`((equal vex-prefixes 0)))
+	    ,@(and reg
+		   `((equal (mrm-reg modr/m) ,reg)))
+	    ,@(and mod
+		   (if (equal mod :mem)
+		       `((not (equal (mrm-mod modr/m) #b11)))
+		     `((equal (mrm-mod modr/m) #b11))))
+	    ,@(and r/m
+		   `((equal (mrm-r/m modr/m) ,r/m)))
+	    ,@(and prefix
+		   `((equal mandatory-prefix ,prefix)))))
+	 ((mv doc-string dispatch)
+	  (create-dispatch-from-no-extensions-simple-cell
+	   opcode-cell world))
+	 (this-doc-string
+	  (if (or vex prefix reg mod r/m)
+	      (concatenate 'string
+			   " <td> @('"
+			   (str::pretty
+			    `(,@(and vex    `((:VEX ,vex)))
+			      ,@(and prefix `((:PFX ,prefix)))
+			      ,@(and reg    `((:REG ,reg)))
+			      ,@(and mod    `((:MOD ,mod)))
+			      ,@(and r/m    `((:R/M ,r/m))))
+			    :config *x86isa-printconfig*)
+			   ;; (str::pretty (cdr condition) ;; remove the 'and
+			   ;;              :config *x86isa-printconfig*)
+			   "') </td> <td> "
+			   doc-string
+			   " </td> ")
+	    (concatenate 'string
+			 " <td> "
+			 doc-string
+			 " </td> ")))
+	 (string-name-of-simple-cell
+	  (get-string-name-of-simple-cell opcode-cell))
+	 (this-doc-string
+	  (if string-name-of-simple-cell
+	      (concatenate
+	       'string
+	       " <tr> <td> "
+	       string-name-of-simple-cell
+	       " </td> "
+	       this-doc-string
+	       " </tr> ")
+	    this-doc-string))
+	 (cell-dispatch
+	  `(,condition ,dispatch))
 
-         ((mv final-doc-string cells-dispatch)
-          (create-case-dispatch-for-opcode-extensions-aux
-           opcode (cdr desc-list) world :escape-bytes escape-bytes)))
+	 ((mv final-doc-string cells-dispatch)
+	  (create-case-dispatch-for-opcode-extensions-aux
+	   opcode (cdr desc-list) world :escape-bytes escape-bytes)))
       (mv (concatenate 'string this-doc-string final-doc-string)
-          (cons cell-dispatch cells-dispatch))))
+	  (cons cell-dispatch cells-dispatch))))
 
   ///
 
   (defthm stringp-of-mv-nth-0-create-case-dispatch-for-opcode-extensions-aux
     (stringp
      (mv-nth 0
-             (create-case-dispatch-for-opcode-extensions-aux
-              opcode desc-list world :escape-bytes escape-bytes))))
+	     (create-case-dispatch-for-opcode-extensions-aux
+	      opcode desc-list world :escape-bytes escape-bytes))))
 
   (verify-guards create-case-dispatch-for-opcode-extensions-aux-fn
     :hints (("Goal" :in-theory (e/d (opcode-descriptor-list-p
-                                     opcode-descriptor-p)
-                                    ())))))
+				     opcode-descriptor-p)
+				    ())))))
 
 (define create-case-dispatch-for-opcode-extensions
   ((opcode natp)
@@ -326,12 +329,12 @@
    ((escape-bytes natp) '0))
 
   (b* (((mv doc-string dispatch)
-        (create-case-dispatch-for-opcode-extensions-aux
-         opcode desc-list world :escape-bytes escape-bytes))
+	(create-case-dispatch-for-opcode-extensions-aux
+	 opcode desc-list world :escape-bytes escape-bytes))
        (doc-string (concatenate 'string
-                                " <td> <table> "
-                                doc-string
-                                " </table> </td> ")))
+				" <td> <table> "
+				doc-string
+				" </table> </td> ")))
     (mv doc-string `(cond ,@dispatch)))
 
   ///
@@ -339,12 +342,12 @@
   (defthm stringp-of-mv-nth-0-create-case-dispatch-for-opcode-extensions
     (stringp
      (mv-nth 0
-             (create-case-dispatch-for-opcode-extensions
-              opcode desc-list world :escape-bytes escape-bytes)))))
+	     (create-case-dispatch-for-opcode-extensions
+	      opcode desc-list world :escape-bytes escape-bytes)))))
 
 (define create-dispatch-from-simple-cell
   ((start-opcode natp)
-   (cell simple-cell-p)
+   (cell)
    (world plist-worldp)
    &key
    ((escape-bytes natp) '0))
@@ -354,38 +357,43 @@
   ;; (create-dispatch-from-simple-cell
   ;;  #x80 (car (nth 8 *one-byte-opcode-map-lst*)) (w state))
 
-  (b* (((mv doc-string dispatch)
-        (cond
-         ((and (basic-simple-cell-p cell)
-               (member-equal (car cell) *group-numbers*))
-          (b* (((mv doc-string dispatch)
-                (create-case-dispatch-for-opcode-extensions
-                 start-opcode
-                 (cdr (assoc-equal
-                       (car cell)
-                       *opcode-extensions-by-group-number*))
-                 world
-                 :escape-bytes escape-bytes)))
-            (mv doc-string dispatch)))
-         ((or
-           (and (basic-simple-cell-p cell)
-                (or (stringp (car cell))
-                    (member-equal (car cell)
-                                  *simple-cells-standalone-legal-keywords*)))
-           (equal (car cell) ':ALT))
-          (b* (((mv doc-string dispatch)
-                (create-dispatch-from-no-extensions-simple-cell cell world))
-               (doc-string (concatenate 'string " <td> " doc-string " </td>")))
-            (mv doc-string dispatch)))
-         (t
-          (mv "" '(nil)))))
-       (string-name-of-simple-cell
-        (get-string-name-of-simple-cell cell))
-       (doc-string
-        (concatenate 'string
-                     " <td> " (or string-name-of-simple-cell "") " </td> "
-                     doc-string)))
-    (mv doc-string dispatch))
+  (cond ((or (not cell)
+	     (not (simple-cell-p cell)))
+	 (mv "" '(nil)))
+
+	(t
+	 (b* (((mv doc-string dispatch)
+	       (cond
+		((and (basic-simple-cell-p cell)
+		      (member-equal (car cell) *group-numbers*))
+		 (b* (((mv doc-string dispatch)
+		       (create-case-dispatch-for-opcode-extensions
+			start-opcode
+			(cdr (assoc-equal
+			      (car cell)
+			      *opcode-extensions-by-group-number*))
+			world
+			:escape-bytes escape-bytes)))
+		   (mv doc-string dispatch)))
+		((or
+		  (and (basic-simple-cell-p cell)
+		       (or (stringp (car cell))
+			   (member-equal (car cell)
+					 *simple-cells-standalone-legal-keywords*)))
+		  (equal (car cell) ':ALT))
+		 (b* (((mv doc-string dispatch)
+		       (create-dispatch-from-no-extensions-simple-cell cell world))
+		      (doc-string (concatenate 'string " <td> " doc-string " </td>")))
+		   (mv doc-string dispatch)))
+		(t
+		 (mv "" '(nil)))))
+	      (string-name-of-simple-cell
+	       (get-string-name-of-simple-cell cell))
+	      (doc-string
+	       (concatenate 'string
+			    " <td> " (or string-name-of-simple-cell "") " </td> "
+			    doc-string)))
+	   (mv doc-string dispatch))))
 
 
   ///
@@ -393,21 +401,184 @@
   (defthm stringp-mv-nth-0-create-dispatch-from-simple-cell
     (stringp
      (mv-nth 0
-             (create-dispatch-from-simple-cell
-              start-opcode cell world :escape-bytes escape-bytes)))))
+	     (create-dispatch-from-simple-cell
+	      start-opcode cell world :escape-bytes escape-bytes)))))
 
-(define create-dispatch-from-compound-cell
-  ((start-opcode natp)
-   (cell compound-cell-p)
-   (world plist-worldp)
-   &key
-   ((escape-bytes natp) '0))
+(define create-compound-cell-subdoc-aux (cell name doc)
+  (if cell
+      (let ((name (acl2::str-fix name))
+	    (doc  (acl2::str-fix doc)))
+	(concatenate 'string " <tr> <td> @('" name "') </td> " doc " </tr>"))
+    "")
+
+  ///
+
+  (defthm stringp-of-create-compound-cell-subdoc-aux
+    (stringp (create-compound-cell-subdoc-aux cell name doc))))
+
+(define create-compound-cell-subdoc
+  (o64 o64-doc
+   i64 i64-doc
+   no-prefix no-prefix-doc
+   66-prefix 66-prefix-doc
+   F2-prefix F2-prefix-doc
+   F3-prefix F3-prefix-doc
+   v-prefix v-prefix-doc
+   v66-prefix v66-prefix-doc
+   vF2-prefix vF2-prefix-doc
+   vF3-prefix vF3-prefix-doc
+   ev-prefix ev-prefix-doc
+   ev66-prefix ev66-prefix-doc
+   evF2-prefix evF2-prefix-doc
+   evF3-prefix evF3-prefix-doc)
+
+  :returns (str stringp)
+
+  (str::fast-string-append-lst
+   (if
+       (and (not o64)
+	    (not i64)
+	    (not 66-prefix)
+	    (not F2-prefix)
+	    (not F3-prefix)
+	    (not no-prefix)
+	    (not v66-prefix)
+	    (not vF2-prefix)
+	    (not vF3-prefix)
+	    (not v-prefix)
+	    (not ev66-prefix)
+	    (not evF2-prefix)
+	    (not evF3-prefix)
+	    (not ev-prefix))
+
+       (list "<td> </td> <td> </td>")
+
+     (list
+      ;; Inserting empty second column, which usually holds the name
+      ;; of the instruction or instruction group for simple cells:
+      " <td> </td> <td> <table> "
+
+      (create-compound-cell-subdoc-aux o64          ":o64"       o64-doc)
+      (create-compound-cell-subdoc-aux i64          ":i64"       i64-doc)
+      (create-compound-cell-subdoc-aux 66-prefix    ":66"        66-prefix-doc)
+      (create-compound-cell-subdoc-aux F2-prefix    ":F2"        F2-prefix-doc)
+      (create-compound-cell-subdoc-aux F3-prefix    ":F3"        F3-prefix-doc)
+      (create-compound-cell-subdoc-aux no-prefix    ":No-Pfx"    no-prefix-doc)
+      (create-compound-cell-subdoc-aux v-prefix     ":v-No-Pfx"  v-prefix-doc)
+      (create-compound-cell-subdoc-aux v66-prefix   ":v66"       v66-prefix-doc)
+      (create-compound-cell-subdoc-aux vF2-prefix   ":vF2"       vF2-prefix-doc)
+      (create-compound-cell-subdoc-aux vF3-prefix   ":vF3"       vF3-prefix-doc)
+      (create-compound-cell-subdoc-aux ev-prefix    ":ev-No-Pfx" ev-prefix-doc)
+      (create-compound-cell-subdoc-aux ev66-prefix  ":ev66"      ev66-prefix-doc)
+      (create-compound-cell-subdoc-aux evF2-prefix  ":evF2"      evF2-prefix-doc)
+      (create-compound-cell-subdoc-aux evF3-prefix  ":evF3"      evF3-prefix-doc)
+
+      " </table> </td> "))))
+
+(define create-compound-cell-subdispatch
+  (o64 o64-dispatch
+       i64 i64-dispatch
+       no-prefix no-prefix-dispatch
+       66-prefix 66-prefix-dispatch
+       F2-prefix F2-prefix-dispatch
+       F3-prefix F3-prefix-dispatch
+       v-prefix v-prefix-dispatch
+       v66-prefix v66-prefix-dispatch
+       vF2-prefix vF2-prefix-dispatch
+       vF3-prefix vF3-prefix-dispatch
+       ev-prefix ev-prefix-dispatch
+       ev66-prefix ev66-prefix-dispatch
+       evF2-prefix evF2-prefix-dispatch
+       evF3-prefix evF3-prefix-dispatch)
+
+  `(cond
+    ,@(and o64
+	   `(((equal proc-mode #.*64-bit-mode*)
+	      ,o64-dispatch)))
+    ,@(and i64
+	   `(((not (equal proc-mode #.*64-bit-mode*))
+	      ,i64-dispatch)))
+    ,@(and no-prefix
+	   `(((and
+	       (equal vex-prefixes 0)
+	       (equal evex-prefixes 0)
+	       (equal mandatory-prefix 0))
+	      ,no-prefix-dispatch)))
+    ,@(and 66-prefix
+	   `(((and (equal vex-prefixes 0)
+		   (equal evex-prefixes 0)
+		   (equal mandatory-prefix #.*mandatory-66h*))
+	      ,66-prefix-dispatch)))
+    ,@(and F2-prefix
+	   `(((and (equal vex-prefixes 0)
+		   (equal evex-prefixes 0)
+		   (equal mandatory-prefix #.*mandatory-F2h*))
+	      ,F2-prefix-dispatch)))
+    ,@(and F3-prefix
+	   `(((and (equal vex-prefixes 0)
+		   (equal evex-prefixes 0)
+		   (equal mandatory-prefix #.*mandatory-F3h*))
+	      ,F3-prefix-dispatch)))
+    ,@(and v-prefix
+	   `(((and
+	       (not (equal vex-prefixes 0))
+	       (equal mandatory-prefix 0))
+	      ,v-prefix-dispatch)))
+    ,@(and v66-prefix
+	   `(((and
+	       (not (equal vex-prefixes 0))
+	       (equal mandatory-prefix #.*mandatory-66h*))
+	      ,v66-prefix-dispatch)))
+    ,@(and vF3-prefix
+	   `(((and
+	       (not (equal vex-prefixes 0))
+	       (equal mandatory-prefix #.*mandatory-F3h*))
+	      ,vF3-prefix-dispatch)))
+    ,@(and vF2-prefix
+	   `(((and
+	       (not (equal vex-prefixes 0))
+	       (equal mandatory-prefix #.*mandatory-F2h*))
+	      ,vF2-prefix-dispatch)))
+    ,@(and ev-prefix
+	   `(((and
+	       (not (equal evex-prefixes 0))
+	       (equal mandatory-prefix 0))
+	      ,ev-prefix-dispatch)))
+    ,@(and ev66-prefix
+	   `(((and
+	       (not (equal evex-prefixes 0))
+	       (equal mandatory-prefix #.*mandatory-66h*))
+	      ,ev66-prefix-dispatch)))
+    ,@(and evF3-prefix
+	   `(((and
+	       (not (equal evex-prefixes 0))
+	       (equal mandatory-prefix #.*mandatory-F3h*))
+	      ,evF3-prefix-dispatch)))
+    ,@(and evF2-prefix
+	   `(((and
+	       (not (equal evex-prefixes 0))
+	       (equal mandatory-prefix #.*mandatory-F2h*))
+	      ,evF2-prefix-dispatch)))
+    (t
+     ;; Catch-all case:
+     ;; ,(create-call-from-semantic-info
+     ;;   '(:fn . (:no-instruction)) world)
+     (x86-illegal-instruction
+      "Reserved or Illegal Opcode!" start-rip temp-rip x86))))
+
+(define create-dispatch-from-compound-cell ((start-opcode natp)
+					    (cell compound-cell-p)
+					    (world plist-worldp)
+					    &key
+					    ((escape-bytes natp) '0))
 
   :guard-hints (("Goal" :in-theory (e/d ()
-                                        ((str::pretty-fn)
-                                         string-append
-                                         str::fast-string-append-lst
-                                         (tau-system)))))
+					(natp
+					 not
+					 (str::pretty-fn)
+					 string-append
+					 str::fast-string-append-lst
+					 (tau-system)))))
 
   ;; (create-dispatch-from-compound-cell
   ;;  #x10
@@ -416,141 +587,114 @@
 
   (b* ((keys (strip-cars cell))
        ((unless (subsetp-equal keys *compound-cells-legal-keys*))
-        (cw "~%cell: ~p0~%" cell)
-        (mv "" '(nil)))
-       (o64 (cdr (assoc-equal :o64 cell)))
-       (i64 (cdr (assoc-equal :i64 cell)))
-       (no-prefix (cdr (assoc-equal :no-prefix cell)))
-       (66-prefix (cdr (assoc-equal :66 cell)))
-       (F3-prefix (cdr (assoc-equal :F3 cell)))
-       (F2-prefix (cdr (assoc-equal :F2 cell)))
-       ((unless (and (or (not o64) (simple-cell-p o64))
-                     (or (not i64) (simple-cell-p i64))
-                     (or (not no-prefix) (simple-cell-p no-prefix))
-                     (or (not 66-prefix) (simple-cell-p 66-prefix))
-                     (or (not F3-prefix) (simple-cell-p F3-prefix))
-                     (or (not F2-prefix) (simple-cell-p F2-prefix))))
-        (mv "" '(nil)))
+	(cw "~%cell: ~p0~%" cell)
+	(mv "" '(nil)))
+       (o64         (cdr (assoc-equal :o64 cell)))
+       (i64         (cdr (assoc-equal :i64 cell)))
+       (no-prefix   (cdr (assoc-equal :no-prefix cell)))
+       (66-prefix   (cdr (assoc-equal :66 cell)))
+       (F3-prefix   (cdr (assoc-equal :F3 cell)))
+       (F2-prefix   (cdr (assoc-equal :F2 cell)))
+       (v-prefix    (cdr (assoc-equal :v cell)))
+       (v66-prefix  (cdr (assoc-equal :v66 cell)))
+       (vF3-prefix  (cdr (assoc-equal :vF3 cell)))
+       (vF2-prefix  (cdr (assoc-equal :vF2 cell)))
+       (ev-prefix   (cdr (assoc-equal :ev cell)))
+       (ev66-prefix (cdr (assoc-equal :ev66 cell)))
+       (evF3-prefix (cdr (assoc-equal :evF3 cell)))
+       (evF2-prefix (cdr (assoc-equal :evF2 cell)))
+
        ((mv o64-doc o64-dispatch)
-        (if o64
-            (create-dispatch-from-simple-cell
-             start-opcode o64 world :escape-bytes escape-bytes)
-          (mv "" '(nil))))
+	(create-dispatch-from-simple-cell
+	 start-opcode o64 world :escape-bytes escape-bytes))
        ((mv i64-doc i64-dispatch)
-        (if i64
-            (create-dispatch-from-simple-cell
-             start-opcode i64 world :escape-bytes escape-bytes)
-          (mv "" '(nil))))
+	(create-dispatch-from-simple-cell
+	 start-opcode i64 world :escape-bytes escape-bytes))
        ((mv 66-prefix-doc 66-prefix-dispatch)
-        (if 66-prefix
-            (create-dispatch-from-simple-cell
-             start-opcode 66-prefix world :escape-bytes escape-bytes)
-          (mv "" '(nil))))
+	(create-dispatch-from-simple-cell
+	 start-opcode 66-prefix world :escape-bytes escape-bytes))
        ((mv F2-prefix-doc F2-prefix-dispatch)
-        (if F2-prefix
-            (create-dispatch-from-simple-cell
-             start-opcode F2-prefix world :escape-bytes escape-bytes)
-          (mv "" '(nil))))
+	(create-dispatch-from-simple-cell
+	 start-opcode F2-prefix world :escape-bytes escape-bytes))
        ((mv F3-prefix-doc F3-prefix-dispatch)
-        (if F3-prefix
-            (create-dispatch-from-simple-cell
-             start-opcode F3-prefix world :escape-bytes escape-bytes)
-          (mv "" '(nil))))
+	(create-dispatch-from-simple-cell
+	 start-opcode F3-prefix world :escape-bytes escape-bytes))
        ((mv no-prefix-doc no-prefix-dispatch)
-        (if no-prefix
-            (create-dispatch-from-simple-cell
-             start-opcode no-prefix world :escape-bytes escape-bytes)
-          (mv "" '(nil))))
+	(create-dispatch-from-simple-cell
+	 start-opcode no-prefix world :escape-bytes escape-bytes))
+       ((mv v66-prefix-doc v66-prefix-dispatch)
+	(create-dispatch-from-simple-cell
+	 start-opcode v66-prefix world :escape-bytes escape-bytes))
+       ((mv vF2-prefix-doc vF2-prefix-dispatch)
+	(create-dispatch-from-simple-cell
+	 start-opcode vF2-prefix world :escape-bytes escape-bytes))
+       ((mv vF3-prefix-doc vF3-prefix-dispatch)
+	(create-dispatch-from-simple-cell
+	 start-opcode vF3-prefix world :escape-bytes escape-bytes))
+       ((mv v-prefix-doc v-prefix-dispatch)
+	(create-dispatch-from-simple-cell
+	 start-opcode v-prefix world :escape-bytes escape-bytes))
+       ((mv ev66-prefix-doc ev66-prefix-dispatch)
+	(create-dispatch-from-simple-cell
+	 start-opcode ev66-prefix world :escape-bytes escape-bytes))
+       ((mv evF2-prefix-doc evF2-prefix-dispatch)
+	(create-dispatch-from-simple-cell
+	 start-opcode evF2-prefix world :escape-bytes escape-bytes))
+       ((mv evF3-prefix-doc evF3-prefix-dispatch)
+	(create-dispatch-from-simple-cell
+	 start-opcode evF3-prefix world :escape-bytes escape-bytes))
+       ((mv ev-prefix-doc ev-prefix-dispatch)
+	(create-dispatch-from-simple-cell
+	 start-opcode ev-prefix world :escape-bytes escape-bytes))
+
        (doc-string
-        (str::fast-string-append-lst
-         (if
-             (and (not o64)
-                  (not i64)
-                  (not 66-prefix)
-                  (not F2-prefix)
-                  (not F3-prefix)
-                  (not no-prefix))
+	(create-compound-cell-subdoc
+	 o64 o64-doc
+	 i64 i64-doc
+	 no-prefix no-prefix-doc
+	 66-prefix 66-prefix-doc
+	 F2-prefix F2-prefix-doc
+	 F3-prefix F3-prefix-doc
+	 v-prefix v-prefix-doc
+	 v66-prefix v66-prefix-doc
+	 vF2-prefix vF2-prefix-doc
+	 vF3-prefix vF3-prefix-doc
+	 ev-prefix ev-prefix-doc
+	 ev66-prefix ev66-prefix-doc
+	 evF2-prefix evF2-prefix-doc
+	 evF3-prefix evF3-prefix-doc))
 
-             (list "<td> </td> <td> </td>")
-
-           (list
-            ;; Inserting empty second column, which usually holds the name
-            ;; of the instruction or instruction group for simple cells:
-            " <td> </td> <td> <table> "
-            (if o64
-                (concatenate
-                 'string
-                 " <tr> <td> @(':o64') </td> " o64-doc " </tr>")
-              "")
-            (if i64
-                (concatenate
-                 'string
-                 " <tr> <td> @(':i64') </td> " i64-doc " </tr>")
-              "")
-            (if 66-prefix
-                (concatenate
-                 'string
-                 " <tr> <td> @(':66') </td> " 66-prefix-doc " </tr>")
-              "")
-            (if F2-prefix
-                (concatenate
-                 'string
-                 " <tr> <td> @(':F2') </td> " F2-prefix-doc " </tr>")
-              "")
-            (if F3-prefix
-                (concatenate
-                 'string
-                 " <tr> <td> @(':F3') </td> " F3-prefix-doc " </tr>")
-              "")
-            (if no-prefix
-                (concatenate
-                 'string
-                 " <tr> <td> @('No-Pfx') </td> " no-prefix-doc " </tr>")
-              "")
-
-            " </table> </td> "))))
        (dispatch
-        `(,@(and o64
-                 `(((equal proc-mode #.*64-bit-mode*)
-                    ,o64-dispatch)))
-          ,@(and i64
-                 `(((not (equal proc-mode #.*64-bit-mode*))
-                    ,i64-dispatch)))
-          ,@(and 66-prefix
-                 `(((equal mandatory-prefix #.*mandatory-66h*)
-                    ,66-prefix-dispatch)))
-          ,@(and F2-prefix
-                 `(((equal mandatory-prefix #.*mandatory-F2h*)
-                    ,F2-prefix-dispatch)))
-          ,@(and F3-prefix
-                 `(((equal mandatory-prefix #.*mandatory-F3h*)
-                    ,F3-prefix-dispatch)))
-          ,@(and no-prefix
-                 `(((and
-                     (not (equal mandatory-prefix #.*mandatory-66h*))
-                     (not (equal mandatory-prefix #.*mandatory-F2h*))
-                     (not (equal mandatory-prefix #.*mandatory-F3h*)))
-                    ,no-prefix-dispatch)))
-          (t
-           ;; Catch-all case:
-           ;; ,(create-call-from-semantic-info
-           ;;   '(:fn . (:no-instruction)) world)
-           (x86-illegal-instruction
-            "Reserved or Illegal Opcode!" start-rip temp-rip x86)))))
-    (mv doc-string `(cond ,@dispatch)))
+	(create-compound-cell-subdispatch
+	 o64 o64-dispatch
+	 i64 i64-dispatch
+	 no-prefix no-prefix-dispatch
+	 66-prefix 66-prefix-dispatch
+	 F2-prefix F2-prefix-dispatch
+	 F3-prefix F3-prefix-dispatch
+	 v-prefix v-prefix-dispatch
+	 v66-prefix v66-prefix-dispatch
+	 vF2-prefix vF2-prefix-dispatch
+	 vF3-prefix vF3-prefix-dispatch
+	 ev-prefix ev-prefix-dispatch
+	 ev66-prefix ev66-prefix-dispatch
+	 evF2-prefix evF2-prefix-dispatch
+	 evF3-prefix evF3-prefix-dispatch)))
+
+    (mv doc-string dispatch))
 
   ///
 
   (defthm stringp-mv-nth-0-create-dispatch-from-compound-cell
     (stringp
      (mv-nth 0
-             (create-dispatch-from-compound-cell
-              start-opcode cell world :escape-bytes escape-bytes)))
+	     (create-dispatch-from-compound-cell
+	      start-opcode cell world :escape-bytes escape-bytes)))
     :hints (("Goal" :do-not '(preprocess)
-             :in-theory (e/d ()
-                             ((str::pretty-fn)
-                              str::fast-string-append-lst
-                              string-append))))))
+	     :in-theory (e/d ()
+			     ((str::pretty-fn)
+			      str::fast-string-append-lst
+			      string-append))))))
 
 (define create-dispatch-from-opcode-cell
   ((start-opcode natp)
@@ -560,20 +704,20 @@
    ((escape-bytes natp) '0))
 
   (b* (((mv doc-string cell-dispatch)
-        (if (simple-cell-p cell)
-            (create-dispatch-from-simple-cell
-             start-opcode cell world :escape-bytes escape-bytes)
-          (if (compound-cell-p cell)
-              (create-dispatch-from-compound-cell
-               start-opcode cell world :escape-bytes escape-bytes)
-            (mv "" '(nil)))))
+	(if (simple-cell-p cell)
+	    (create-dispatch-from-simple-cell
+	     start-opcode cell world :escape-bytes escape-bytes)
+	  (if (compound-cell-p cell)
+	      (create-dispatch-from-compound-cell
+	       start-opcode cell world :escape-bytes escape-bytes)
+	    (mv "" '(nil)))))
        (doc-string
-        (concatenate 'string
-                     " <tr> <td> "
-                     (str::hexify start-opcode)
-                     " </td> " doc-string " </tr> "))
+	(concatenate 'string
+		     " <tr> <td> "
+		     (str::hexify start-opcode)
+		     " </td> " doc-string " </tr> "))
        (dispatch
-        (cons start-opcode (list cell-dispatch))))
+	(cons start-opcode (list cell-dispatch))))
     (mv doc-string dispatch))
 
   ///
@@ -581,31 +725,31 @@
   (defthm stringp-mv-nth-0-create-dispatch-from-opcode-cell
     (stringp
      (mv-nth 0
-             (create-dispatch-from-opcode-cell
-              start-opcode cell world :escape-bytes escape-bytes)))))
+	     (create-dispatch-from-opcode-cell
+	      start-opcode cell world :escape-bytes escape-bytes)))))
 
 (define create-dispatch-from-opcode-row ((start-opcode natp)
-                                         (row opcode-row-p)
-                                         (world plist-worldp)
-                                         &key
-                                         ((escape-bytes natp) '0))
+					 (row opcode-row-p)
+					 (world plist-worldp)
+					 &key
+					 ((escape-bytes natp) '0))
   :measure (len row)
 
   (if (endp row)
       (mv "" nil)
     (b* ((cell (car row))
-         ((mv doc-string cell-dispatch)
-          (create-dispatch-from-opcode-cell
-           start-opcode cell world :escape-bytes escape-bytes))
-         ((when (equal cell-dispatch '(nil)))
-          (mv
-           ""
-           (er hard? 'create-dispatch-from-opcode-row
-               "~%Something went wrong for this cell: ~p0~%"
-               cell)))
-         ((mv rest-doc-string rest-cell-dispatch)
-          (create-dispatch-from-opcode-row
-           (1+ start-opcode) (cdr row) world :escape-bytes escape-bytes)))
+	 ((mv doc-string cell-dispatch)
+	  (create-dispatch-from-opcode-cell
+	   start-opcode cell world :escape-bytes escape-bytes))
+	 ((when (equal cell-dispatch '(nil)))
+	  (mv
+	   ""
+	   (er hard? 'create-dispatch-from-opcode-row
+	       "~%Something went wrong for this cell: ~p0~%"
+	       cell)))
+	 ((mv rest-doc-string rest-cell-dispatch)
+	  (create-dispatch-from-opcode-row
+	   (1+ start-opcode) (cdr row) world :escape-bytes escape-bytes)))
       (mv
        (concatenate 'string doc-string rest-doc-string)
        (cons cell-dispatch rest-cell-dispatch))))
@@ -615,79 +759,79 @@
   (defthm stringp-of-mv-nth-0-create-dispatch-from-opcode-row
     (stringp
      (mv-nth 0
-             (create-dispatch-from-opcode-row
-              start-opcode row world :escape-bytes escape-bytes))))
+	     (create-dispatch-from-opcode-row
+	      start-opcode row world :escape-bytes escape-bytes))))
 
   (defthm true-listp-of-mv-nth-1-create-dispatch-from-opcode-row
     (true-listp
      (mv-nth 1
-             (create-dispatch-from-opcode-row
-              start-opcode row world :escape-bytes escape-bytes)))))
+	     (create-dispatch-from-opcode-row
+	      start-opcode row world :escape-bytes escape-bytes)))))
 
 (define create-dispatch-from-opcode-map-aux ((start-opcode natp)
-                                             (map opcode-map-p)
-                                             (world plist-worldp)
-                                             &key
-                                             ((escape-bytes natp) '0))
+					     (map opcode-map-p)
+					     (world plist-worldp)
+					     &key
+					     ((escape-bytes natp) '0))
   :verify-guards nil
 
   (if (endp map)
       (mv
        ""
        `((t
-          ;; Catch-all case:
-          ;; ,(create-call-from-semantic-info
-          ;;   '(:fn . (:no-instruction)) world)
-          (x86-illegal-instruction
-           "Reserved or Illegal Opcode!" start-rip temp-rip x86))))
+	  ;; Catch-all case:
+	  ;; ,(create-call-from-semantic-info
+	  ;;   '(:fn . (:no-instruction)) world)
+	  (x86-illegal-instruction
+	   "Reserved or Illegal Opcode!" start-rip temp-rip x86))))
     (b* ((row (car map))
-         ((mv row-doc-string row-dispatch)
-          (create-dispatch-from-opcode-row
-           start-opcode row world :escape-bytes escape-bytes))
-         ((mv rest-doc-string rest-dispatch)
-          (create-dispatch-from-opcode-map-aux
-           (+ 16 start-opcode) (cdr map) world :escape-bytes escape-bytes)))
+	 ((mv row-doc-string row-dispatch)
+	  (create-dispatch-from-opcode-row
+	   start-opcode row world :escape-bytes escape-bytes))
+	 ((mv rest-doc-string rest-dispatch)
+	  (create-dispatch-from-opcode-map-aux
+	   (+ 16 start-opcode) (cdr map) world :escape-bytes escape-bytes)))
       (mv (concatenate 'string row-doc-string rest-doc-string)
-          (append row-dispatch rest-dispatch))))
+	  (append row-dispatch rest-dispatch))))
   ///
 
   (defthm stringp-of-mv-nth-0-create-dispatch-from-opcode-map-aux
     (stringp
      (mv-nth 0
-             (create-dispatch-from-opcode-map-aux
-              start-opcode row world :escape-bytes escape-bytes))))
+	     (create-dispatch-from-opcode-map-aux
+	      start-opcode row world :escape-bytes escape-bytes))))
 
   (defthm true-listp-of-mv-nth-1-create-dispatch-from-opcode-map-aux
     (true-listp
      (mv-nth 1 (create-dispatch-from-opcode-map-aux
-                start-opcode map world :escape-bytes escape-bytes))))
+		start-opcode map world :escape-bytes escape-bytes))))
 
   (verify-guards create-dispatch-from-opcode-map-aux-fn
     :hints (("Goal" :in-theory (e/d (opcode-map-p) ())))))
 
 (define create-dispatch-from-opcode-map ((map opcode-map-p)
-                                         (world plist-worldp)
-                                         &key
-                                         ((escape-bytes natp) '0))
+					 (world plist-worldp)
+					 &key
+					 ((escape-bytes natp) '0))
 
   (b* (((mv doc-string dispatch)
-        (create-dispatch-from-opcode-map-aux
-         0 map world :escape-bytes escape-bytes)))
+	(create-dispatch-from-opcode-map-aux
+	 0 map world :escape-bytes escape-bytes)))
 
     (mv (concatenate 'string "<table> " doc-string " </table>")
-        dispatch))
+	dispatch))
 
   ///
 
   (defthm stringp-of-mv-nth-0-create-dispatch-from-opcode-map
     (stringp
      (mv-nth 0
-             (create-dispatch-from-opcode-map
-              row world :escape-bytes escape-bytes))))
+	     (create-dispatch-from-opcode-map
+	      row world :escape-bytes escape-bytes))))
 
   (defthm true-listp-of-mv-nth-1-create-dispatch-from-opcode-map
     (true-listp
      (mv-nth 1 (create-dispatch-from-opcode-map
-                map world :escape-bytes escape-bytes)))))
+		map world :escape-bytes escape-bytes)))))
 
 ;; ----------------------------------------------------------------------
