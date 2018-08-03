@@ -387,23 +387,26 @@
         (vl-pretty-range x)
       '(no-range)))
 
-  (define vl-pretty-packeddimension ((x vl-packeddimension-p))
-    :measure (vl-packeddimension-count x)
-    (vl-packeddimension-case x
+  (define vl-pretty-dimension ((x vl-dimension-p))
+    :measure (vl-dimension-count x)
+    (vl-dimension-case x
       :unsized :vl-unsized-dimension
-      :range   (vl-pretty-range x.range)))
+      :star    :vl-star-dimension
+      :range   (vl-pretty-range x.range)
+      :datatype (list :vl-type-dimension (vl-pretty-datatype x.type))
+      :queue    (list :vl-queue-dimension (vl-pretty-maybe-expr x.maxsize))))
 
-  (define vl-pretty-packeddimensionlist ((x vl-packeddimensionlist-p))
-    :measure (vl-packeddimensionlist-count x)
+  (define vl-pretty-dimensionlist ((x vl-dimensionlist-p))
+    :measure (vl-dimensionlist-count x)
     (if (atom x)
         nil
-      (cons (vl-pretty-packeddimension (car x))
-            (vl-pretty-packeddimensionlist (cdr x)))))
+      (cons (vl-pretty-dimension (car x))
+            (vl-pretty-dimensionlist (cdr x)))))
 
-  (define vl-pretty-maybe-packeddimension ((x vl-maybe-packeddimension-p))
-    :measure (vl-maybe-packeddimension-count x)
+  (define vl-pretty-maybe-dimension ((x vl-maybe-dimension-p))
+    :measure (vl-maybe-dimension-count x)
     (if x
-        (vl-pretty-packeddimension x)
+        (vl-pretty-dimension x)
       nil))
 
   (define vl-pretty-datatype ((x vl-datatype-p))
@@ -414,16 +417,16 @@
       (:vl-coretype
        (append (list x.name
                      (if x.signedp 'signed 'unsigned))
-               (and x.pdims (vl-pretty-packeddimensionlist x.pdims))
-               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))
+               (and x.pdims (vl-pretty-dimensionlist x.pdims))
+               (and x.udims (cons :udims (vl-pretty-dimensionlist x.udims)))))
 
       (:vl-struct
        (append '(:vl-struct)
                (if x.packedp '(packed) nil)
                (if x.signedp '(signed) nil)
                (vl-pretty-structmemberlist x.members)
-               (and x.pdims (cons :dims (vl-pretty-packeddimensionlist x.pdims)))
-               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))
+               (and x.pdims (cons :dims (vl-pretty-dimensionlist x.pdims)))
+               (and x.udims (cons :udims (vl-pretty-dimensionlist x.udims)))))
 
       (:vl-union
        (append '(:vl-union)
@@ -431,21 +434,21 @@
                (if x.packedp '(packed) nil)
                (if x.signedp '(signed) nil)
                (vl-pretty-structmemberlist x.members)
-               (and x.pdims (cons :dims (vl-pretty-packeddimensionlist x.pdims)))
-               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))
+               (and x.pdims (cons :dims (vl-pretty-dimensionlist x.pdims)))
+               (and x.udims (cons :udims (vl-pretty-dimensionlist x.udims)))))
 
       (:vl-enum
        (append '(:vl-enum)
                (vl-pretty-datatype x.basetype)
                (vl-pretty-enumitemlist x.items)
-               (and x.pdims (cons :dims (vl-pretty-packeddimensionlist x.pdims)))
-               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))
+               (and x.pdims (cons :dims (vl-pretty-dimensionlist x.pdims)))
+               (and x.udims (cons :udims (vl-pretty-dimensionlist x.udims)))))
 
       (:vl-usertype
        (append '(:vl-usertype)
                (list (vl-pretty-scopeexpr x.name))
-               (and x.pdims (cons :dims (vl-pretty-packeddimensionlist x.pdims)))
-               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))))
+               (and x.pdims (cons :dims (vl-pretty-dimensionlist x.pdims)))
+               (and x.udims (cons :udims (vl-pretty-dimensionlist x.udims)))))))
 
   (define vl-pretty-structmemberlist ((x vl-structmemberlist-p))
     :measure (vl-structmemberlist-count x)
@@ -792,6 +795,9 @@
                            (vl-pretty-expr x.condition)
                            (vl-pretty-stmt x.body)
                            (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-dostmt (list* :do (vl-pretty-stmt x.body)
+                        :while (vl-pretty-expr x.condition)
+                        (and x.atts (list :atts (vl-pretty-atts x.atts))))
       :vl-forstmt (list* :for :bozo-for-loops)
       :vl-foreachstmt (list* :foreach
                              (vl-pretty-scopeexpr x.array)

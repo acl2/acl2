@@ -337,6 +337,11 @@ for particular modules, or all warnings of particular types, etc.  See @(see
                 "Disable typo detection (it is sometimes slow)."
                 :rule-classes :type-prescription)
 
+   (no-html     booleanp
+                "Reduce the file size of vl-warnings.json by printing the
+                 warnings there in text-only mode."
+                :rule-classes :type-prescription)
+
    (no-sv-use-set booleanp
                   "Disable sv-use-set check."
                   :rule-classes :type-prescription)
@@ -1065,7 +1070,7 @@ shown.</p>"
             (vl-cw "~x0 ~s1 Warnings:~%~%" count label)))
      (vl-print-reportcard reportcard :elide nil))))
 
-(define vl-jp-reportcard-aux ((x vl-reportcard-p) &key (ps 'ps))
+(define vl-jp-reportcard-aux ((x vl-reportcard-p) &key (no-html booleanp) (ps 'ps))
   (b* (((when (atom x))
         ps)
        ((cons modname warnings) (car x))
@@ -1075,11 +1080,11 @@ shown.</p>"
     (vl-ps-seq (vl-indent 1)
                (jp-str modname)
                (vl-print ":")
-               (vl-jp-warninglist warnings)
+               (vl-jp-warninglist warnings :no-html no-html)
                (if (atom (cdr x))
                    ps
                  (vl-println ","))
-               (vl-jp-reportcard-aux (cdr x))))
+               (vl-jp-reportcard-aux (cdr x) :no-html no-html)))
   :prepwork
   ((local (defthm l0
             (implies (and (vl-reportcardkey-p x)
@@ -1087,9 +1092,9 @@ shown.</p>"
                      (stringp x))
             :hints(("Goal" :in-theory (enable vl-reportcardkey-p)))))))
 
-(define vl-jp-reportcard ((x vl-reportcard-p) &key (ps 'ps))
+(define vl-jp-reportcard ((x vl-reportcard-p) &key (no-html booleanp) (ps 'ps))
   (vl-ps-seq (vl-print "{")
-             (vl-jp-reportcard-aux x)
+             (vl-jp-reportcard-aux x :no-html no-html)
              (vl-println "}")))
 
 (define vl-remove-nameless-descriptions ((x vl-descriptionlist-p))
@@ -1203,7 +1208,11 @@ shown.</p>"
 (defconst *fussy-size-minor-warnings*
   (list :vl-fussy-size-warning-1-minor
         :vl-fussy-size-warning-2-minor
-        :vl-fussy-size-warning-3-minor))
+        :vl-fussy-size-warning-3-minor
+        :vl-fussy-size-warning-1-minor-intsize
+        :vl-fussy-size-warning-2-minor-intsize
+        :vl-fussy-size-warning-3-minor-intsize
+        ))
 
 (defconst *lucid-warnings*
   (list :vl-lucid-error
@@ -1333,11 +1342,13 @@ shown.</p>"
     
 
 
-(defun vl-lint-report (lintresult state)
-  (declare (xargs :guard (vl-lintresult-p lintresult)
+(defun vl-lint-report (config lintresult state)
+  (declare (xargs :guard (and (vl-lintconfig-p config)
+                              (vl-lintresult-p lintresult))
                   :stobjs state))
 
-  (b* (((vl-lintresult lintresult) lintresult)
+  (b* (((vl-lintresult lintresult))
+       ((vl-lintconfig config))
        (reportcard   lintresult.reportcard)
        (suppressed (vl-reportcard-keep-suppressed reportcard))
        (reportcard (vl-reportcard-remove-suppressed reportcard))
@@ -1577,11 +1588,23 @@ wide addition instead of a 10-bit wide addition.")))
        (cwtime
         (with-ps-file "vl-warnings.json"
                       (vl-print "{\"warnings\":")
-                      (vl-jp-reportcard reportcard)
+                      (vl-jp-reportcard reportcard :no-html config.no-html)
                       (vl-print ",\"locations\":")
                       (vl-jp-locations lintresult.design)
                       (vl-println "}"))
         :name write-warnings-json))
+
+      (state
+       ;; This has historically been part of vl-warnings.json, which is fine
+       ;; and we will leave it there, but since the warnings files can get
+       ;; large, it's nice to emit this separately as well.
+       (cwtime
+        (with-ps-file "vl-locations.json"
+                      (vl-print "{\"locations\":")
+                      (vl-jp-locations lintresult.design)
+                      (vl-println "}"))
+        :name write-locations-json))
+
 
       (state
        (cwtime
@@ -1649,7 +1672,7 @@ wide addition instead of a 10-bit wide addition.")))
         (cwtime (run-vl-lint config)
                 :name vl-lint))
        (state
-        (cwtime (vl-lint-report result state)))
+        (cwtime (vl-lint-report config result state)))
 
        ((when config.post-shell)
         (b* ((print (and (boundp-global 'acl2::ld-pre-eval-print state) ;; for guard

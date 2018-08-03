@@ -792,3 +792,12 @@ primitive awful_flop(out, data, clock);
       0   r  :  ?  :  0 ;
    endtable
 endprimitive
+
+
+module enumtest;
+
+   enum { FOO = 1, BAR = 2 } a, b;
+
+   assign a = b ? FOO : BAR;
+
+endmodule

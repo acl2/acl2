@@ -405,7 +405,7 @@ elements.")
   :body
   (b* (((vl-interfaceport x))
        (ctx x)
-       (ans (vl-packeddimensionlist-immdeps x.udims ans))
+       (ans (vl-dimensionlist-immdeps x.udims ans))
        (ans (vl-immdeps-add-definition x.ifname ans)))
     ans))
 

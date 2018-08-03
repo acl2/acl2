@@ -456,9 +456,9 @@ expression with @(see vl-expr-to-svex).</p>")
                 (vl-datatype-elaborate-aux x.res elabindex :reclimit reclimit)
               (vl-usertype-resolve x elabindex :reclimit reclimit)))
            ((wmv ok2 warnings pdims elabindex)
-            (vl-packeddimensionlist-elaborate x.pdims elabindex :reclimit reclimit))
+            (vl-dimensionlist-elaborate x.pdims elabindex :reclimit reclimit))
            ((wmv ok3 warnings udims elabindex)
-            (vl-packeddimensionlist-elaborate x.udims elabindex :reclimit reclimit)))
+            (vl-dimensionlist-elaborate x.udims elabindex :reclimit reclimit)))
         (mv (and* ok ok2 ok3) warnings
             (change-vl-usertype
              x
@@ -474,9 +474,9 @@ expression with @(see vl-expr-to-svex).</p>")
            ((wmv ok3 warnings values elabindex)
             (vl-indexlist-resolve-constants x.values elabindex :reclimit reclimit))
            ((wmv ok4 warnings pdims elabindex)
-            (vl-packeddimensionlist-elaborate x.pdims elabindex :reclimit reclimit))
+            (vl-dimensionlist-elaborate x.pdims elabindex :reclimit reclimit))
            ((wmv ok5 warnings udims elabindex)
-            (vl-packeddimensionlist-elaborate x.udims elabindex :reclimit reclimit)))
+            (vl-dimensionlist-elaborate x.udims elabindex :reclimit reclimit)))
         (mv (and* ok1 ok2 ok3 ok4 ok5) warnings
             (change-vl-enum
              x

@@ -210,6 +210,7 @@
     :vl-foreverstmt      x.atts
     :vl-waitstmt         x.atts
     :vl-whilestmt        x.atts
+    :vl-dostmt           x.atts
     :vl-forstmt          x.atts
     :vl-foreachstmt      x.atts
     :vl-blockstmt        x.atts
@@ -239,6 +240,7 @@ expressions.</p>"
     :vl-foreverstmt      (list x.body)
     :vl-waitstmt         (list x.body)
     :vl-whilestmt        (list x.body)
+    :vl-dostmt           (list x.body)
     :vl-forstmt          (append-without-guard
                           x.initassigns x.stepforms (list x.body))
     :vl-foreachstmt      (list x.body)
@@ -305,6 +307,7 @@ directly part of the statement.</p>"
     :vl-foreverstmt    nil
     :vl-waitstmt       (list x.condition)
     :vl-whilestmt      (list x.condition)
+    :vl-dostmt         (list x.condition)
     :vl-forstmt        (list x.test)
     :vl-repeatstmt     (list x.condition)
     :vl-blockstmt      nil
@@ -556,6 +559,10 @@ directly part of the statement.</p>"
       (change-vl-whilestmt x
                            :condition (first exprs)
                            :body (first stmts))
+      :vl-dostmt
+      (change-vl-dostmt x
+                        :condition (first exprs)
+                        :body (first stmts))
       :vl-forstmt
       (b* ((ninitassigns (len x.initassigns))
            (nstepforms   (len x.stepforms))
@@ -901,6 +908,11 @@ process them.</p>"
   :inline t
   :enabled t
   (vl-stmt-case x :vl-whilestmt))
+
+(define vl-dostmt-p ((x vl-stmt-p))
+  :inline t
+  :enabled t
+  (vl-stmt-case x :vl-dostmt))
 
 (define vl-foreverstmt-p ((x vl-stmt-p))
   :inline t

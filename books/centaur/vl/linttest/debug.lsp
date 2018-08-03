@@ -47,11 +47,11 @@
           (vl-pps-exprlist (cdr x)))))
 
 (defconst *lintconfig*
-  (make-vl-lintconfig :start-files (list "./implicit/spec2.sv")))
+  (make-vl-lintconfig :start-files (list "./fussy/spec.sv")))
 
-(defun vl-lint-report-wrap (lintresult state)
+(defun vl-lint-report-wrap (lintconfig lintresult state)
   (declare (xargs :mode :program :stobjs state))
-  (vl-lint-report lintresult state))
+  (vl-lint-report lintconfig lintresult state))
 
 (defconsts (*loadres* state)
   (b* (((vl-lintconfig config) *lintconfig*)
@@ -67,8 +67,21 @@
 (defconsts (*lintres* state)
   (b* ((res (run-vl-lint-main (vl-loadresult->design *loadres*)
                               *lintconfig*))
-       (state (vl-lint-report-wrap res state)))
+       (state (vl-lint-report-wrap *lintconfig* res state)))
     (mv res state)))
+
+(trace$ (vl-tweak-fussy-warning-expr-size
+         :entry (list 'vl-tweak-fussy-warning-expr-size
+                      (vl-pps-expr a)
+                      asize)
+         :exit (list 'vl-tweak-fussy-warning-expr-size
+                     (vl-pps-expr (first acl2::value))
+                     (second acl2::value))))
+
+(trace$ (vl-suppress-fussy-warning-for-shift-of-mask
+         :entry (list 'vl-suppress-fussy-warning-for-shift-of-mask
+                      op (vl-pps-expr a) (vl-pps-expr b))
+         :exit (list 'vl-suppress-fussy-warning-for-shift-of-mask value)))
 
 (trace$ (vl-lucid-maybe-push-genvar-scope
          :entry (list 'vl-lucid-maybe-push-genvar-scope name

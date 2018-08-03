@@ -190,7 +190,7 @@ formerly the \"location directive\" and printed a location.</p>")
        (vl-fmt-tilde-a-case vl-range-p vl-pp-range))
       ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt :vl-callstmt
         :vl-disablestmt :vl-eventtriggerstmt :vl-casestmt :vl-ifstmt
-        :vl-foreverstmt :vl-waitstmt :vl-repeatstmt :vl-whilestmt
+        :vl-foreverstmt :vl-waitstmt :vl-repeatstmt :vl-whilestmt :vl-dostmt
         :vl-forstmt :vl-foreachstmt :vl-blockstmt :vl-timingstmt :vl-breakstmt
         :vl-continuestmt :vl-returnstmt :vl-assertstmt :vl-cassertstmt)
        (vl-fmt-tilde-a-case vl-stmt-p vl-pp-stmt))
@@ -220,8 +220,8 @@ formerly the \"location directive\" and printed a location.</p>")
       ;;  (vl-fmt-tilde-a-case vl-plainarg-p vl-pp-plainarg))
       ;; ((:vl-namedarg)
       ;;  (vl-fmt-tilde-a-case vl-namedarg-p vl-pp-namedarg))
-      ((:vl-unsized-dimension)
-       (vl-fmt-tilde-a-case vl-packeddimension-p vl-pp-packeddimension))
+      ((:vl-unsized-dimension :vl-star-dimension :vl-type-dimension :vl-queue-dimension)
+       (vl-fmt-tilde-a-case vl-dimension-p vl-pp-dimension))
       ((:vl-enumitem)
        (vl-fmt-tilde-a-case vl-enumitem-p vl-pp-enumitem))
       ((:vl-coretype :vl-struct :vl-union :vl-enum :vl-usertype)
