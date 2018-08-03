@@ -767,7 +767,7 @@ these.</p>")
              For plain interfaces like @('simplebus foo') or non-interface
              ports, this is just @('nil').")
 
-   (udims   vl-packeddimensionlist-p
+   (udims   vl-dimensionlist-p
             "For interface ports only: the unpacked dimensions for this port.")))
 
 
@@ -2888,6 +2888,24 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
             becomes false.  If <i>condition</i> is false to begin with, then
             <i>body</i> is not executed at all.</p>")
 
+    (:vl-dostmt
+     :base-name vl-dostmt
+     :layout :tree
+     :short "Representation of @('do-while') loops."
+     ((body      vl-stmt-p)
+      (condition vl-expr-p)
+      (atts      vl-atts-p
+                 "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+                  with this statement."))
+     :long "<h4>General Form:</h4>
+
+            @({
+                do <body> while (<condition>);
+            })
+
+            <p>See SystemVerilog Section 12.7.5.  The semantics are similar
+            to those of @('do-while') loops in C.</p>")
+
     (:vl-forstmt
      :base-name vl-forstmt
      :layout :tree
@@ -4731,9 +4749,9 @@ the type information between the variable and port declarations.</p>"
               the interface, to be determined.")
    (type    vl-maybe-datatype-p
             "The datatype, if it was explicit")
-   (pdims      vl-packeddimensionlist-p
+   (pdims      vl-dimensionlist-p
                "Dimensions, if given and no explicit datatype")
-   (udims      vl-packeddimensionlist-p
+   (udims      vl-dimensionlist-p
                "Dimensions from after the name")
    (nettype vl-maybe-nettypename-p
             "Nettype, if present")

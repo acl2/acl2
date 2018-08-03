@@ -359,5 +359,11 @@ normal(:awful_flop, "out")
 normal(:awful_flop, "data")
 normal(:awful_flop, "clock")
 
+normal(:enumtest, "FOO")
+normal(:enumtest, "BAR")
+unused(:enumtest, "a")
+unset(:enumtest, "b")
+
+
 
 test_passed()

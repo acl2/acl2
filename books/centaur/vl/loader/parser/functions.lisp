@@ -219,7 +219,7 @@ information.</p>"
          (make-vl-coretype :name    :vl-logic
                            :signedp (if signed t nil)
                            :pdims   (and range
-                                         (list (vl-range->packeddimension range)))))))
+                                         (list (vl-range->dimension range)))))))
 
 (defparser vl-parse-taskport-declaration (atts)
   :short "Verilog-2005 only.  Match @('tf_input_declaration'), @('tf_output_declaration'), or @('tf_inout_declaration')."
@@ -274,7 +274,7 @@ information.</p>"
                           (:vl-kwd-time     *vl-plain-old-time-type*))
                       (make-vl-coretype :name :vl-logic
                                         :signedp (if signed t nil)
-                                        :pdims (and range (list (vl-range->packeddimension range))))))
+                                        :pdims (and range (list (vl-range->dimension range))))))
               (ret (vl-build-taskports atts dir type names)))
            (mv nil ret tokstream)))))
 
@@ -784,11 +784,6 @@ statements at all.\"</blockquote>
        (return (make-vl-blockstmt :blocktype :vl-beginend
                                   :stmts stmts))))
 
-;; (local (defthm vl-packeddimensionlist-p-when-vl-rangelist-p
-;;          (implies (vl-rangelist-p x)
-;;                   (vl-packeddimensionlist-p x))
-;;          :hints(("Goal" :induct (len x)))))
-
 (local (defthm vl-idtoken-p-of-car-by-vl-is-token-crock
          (implies (vl-is-token? :vl-idtoken)
                   (vl-idtoken-p (car (vl-tokstream->tokens))))
@@ -963,7 +958,7 @@ same direction.\"</blockquote>
   :short "Temporary structure used when parsing @('list_of_tf_variable_identifiers')."
   :tag :vl-tf-parsed-var-id
   ((name    vl-idtoken-p)
-   (udims   vl-packeddimensionlist-p)
+   (udims   vl-dimensionlist-p)
    (default vl-maybe-expr-p)))
 
 (deflist vl-tf-parsed-var-idlist-p (x)
@@ -983,7 +978,7 @@ same direction.\"</blockquote>
          (:= (vl-match))
          (default := (vl-parse-expression)))
        (return (make-vl-tf-parsed-var-id :name name
-                                         :udims (vl-ranges->packeddimensions udims)
+                                         :udims (vl-ranges->dimensions udims)
                                          :default default))))
 
 (defparser vl-parse-list-of-tf-variable-identifiers ()
@@ -1066,7 +1061,7 @@ same direction.\"</blockquote>
                   :type (make-vl-coretype :name    :vl-logic
                                           :signedp (and signing
                                                         (eq (vl-token->type signing) :vl-kwd-signed))
-                                          :pdims   (vl-ranges->packeddimensions ranges)))))
+                                          :pdims   (vl-ranges->dimensions ranges)))))
 
        ;; Otherwise, usual ambiguity between data types and identifiers.
        ;; As with ports, we know this is followed by an identifier.

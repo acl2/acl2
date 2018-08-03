@@ -717,6 +717,14 @@ these are the only operators we're dealing with.</p>"
              (new-x    (change-vl-whilestmt x :body new-body)))
           (mv new-x nil nil))
 
+        :vl-dostmt
+        ;; Hard to properly support increments in the condition.  Where to put
+        ;; pre-assigns?  Where to put post-assigns?  (Into the loop body
+        ;; probably, but also afterward?)  Just prohibit them for now.
+        (b* ((new-body (vl-stmt-increwrite-flat x.body))
+             (new-x    (change-vl-dostmt x :body new-body)))
+          (mv new-x nil nil))
+
         :vl-forstmt
         ;; The next steps expression is special and the parser handles it.  The
         ;; other initialization and loop test stuff seems tricky: where to put

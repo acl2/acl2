@@ -1242,17 +1242,17 @@
 ;  | 'while' '(' expression ')' statement
 ;  | 'for' '(' variable_assignment ';' expression ';' variable_assignment ')'
 ;      statement
+;  | 'do' statement_or_null 'while' '(' expression ')' ';'
 ;  | 'foreach' '(' ps_or_hierarchical_array_identifier '[' loop_variables ']' ')' statement
 
-
  (defparser vl-parse-loop-statement (atts)
-   ;; Returns a vl-foreverstmt-p, vl-repeatstmt-p, vl-whilestmt-p, or vl-forstmt-p
+   ;; Returns a vl-foreverstmt-p, vl-repeatstmt-p, vl-whilestmt-p, ...
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (vl-tokstream-measure) 0)
    (seq tokstream
 
          (when (vl-is-token? :vl-kwd-forever)
-           (:= (vl-match-token :vl-kwd-forever))
+           (:= (vl-match))
            (stmt :s= (vl-parse-statement))
            (return (make-vl-foreverstmt :body stmt
                                         :atts atts)))
@@ -1270,6 +1270,19 @@
                      (:vl-kwd-while  (make-vl-whilestmt :condition expr
                                                         :body stmt
                                                         :atts atts)))))
+
+         (when (vl-is-token? :vl-kwd-do)
+           (:= (vl-match))
+           (stmt :s= (vl-parse-statement))
+           (:= (vl-match-token :vl-kwd-while))
+           (:= (vl-match-token :vl-lparen))
+           (expr := (vl-parse-expression))
+           (:= (vl-match-token :vl-rparen))
+           (:= (vl-match-token :vl-semi))
+           (return (make-vl-dostmt :body stmt
+                                   :condition expr
+                                   :atts atts)))
+
          (when (vl-is-token? :vl-kwd-foreach)
            (type := (vl-match))
            (:= (vl-match-token :vl-lparen))
@@ -1822,10 +1835,8 @@
         (vl-parse-event-trigger atts))
 
        ;; -- loop_statement
-       ((:vl-kwd-forever :vl-kwd-repeat :vl-kwd-while :vl-kwd-for :vl-kwd-foreach)
+       ((:vl-kwd-forever :vl-kwd-repeat :vl-kwd-while :vl-kwd-for :vl-kwd-foreach :vl-kwd-do)
         (vl-parse-loop-statement atts))
-       ((:vl-kwd-do)
-        (vl-parse-error "BOZO not yet implemented: do loops."))
 
        ;; -- jump_statement ::= 'return' [expression] ';'
        ;;                     | 'break' ';'

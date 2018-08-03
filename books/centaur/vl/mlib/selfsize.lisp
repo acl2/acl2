@@ -442,6 +442,45 @@ references to untyped parameters.</p>"
       :otherwise
       x)))
 
+(define vl-tweak-fussy-warning-expr-size ((a     vl-expr-p)
+                                          (asize natp))
+  :returns (mv (new-a     vl-expr-p)
+               (new-asize natp :rule-classes :type-prescription))
+  (b* ((a     (vl-expr-fix a))
+       (asize (lnfix asize)))
+    (vl-expr-case a
+      :vl-binary
+      (cond
+       ((and (vl-binaryop-equiv a.op :vl-binary-shr)
+             (vl-expr-resolved-p a.right))
+        ;; Right shifts are trouble for fussy size warnings.  When a user
+        ;; writes something like foo >> 3 where foo is 5 bits, the Verilog
+        ;; self-sizing rules say the result of the shift is also 5 bits, even
+        ;; though only the low 2 bits can be nonzero.  It's particularly
+        ;; unhelpful to be shown warnings about mismatches between this
+        ;; "padded" size and other expressions, e.g., ((foo >> 3) & 2'b10) is a
+        ;; perfectly reasonable thing to write.
+        ;;
+        ;; To try to reduce this, if we see a shift by a resolved amount like
+        ;; this, then as a preliminary step we will artificially treat it as if
+        ;; it has a self size of 2 bits, instead of 5.
+        (let ((shift-amount (vl-resolved->val a.right)))
+          (if (< shift-amount asize)
+              (mv a
+                  (- asize shift-amount))
+            ;; BOZO it might be good to separately warn about constant shift
+            ;; amounts that are so large they will wipe out all the bits.  For
+            ;; fussy warnings, we'll just reduce these to zeroes.
+            (mv (make-vl-literal :val
+                                 (make-vl-constint :value 0
+                                                   :origwidth 1
+                                                   :origsign :vl-unsigned))
+                1))))
+       (t
+        (mv a asize)))
+      :otherwise
+      (mv a asize))))
+
 (define vl-tweak-fussy-warning-type-arithop ((x vl-binaryop-p))
   :parents (vl-tweak-fussy-warning-type)
   (or (vl-binaryop-equiv x :vl-binary-plus)
@@ -462,6 +501,22 @@ references to untyped parameters.</p>"
         (and (vl-fussy-may-as-well-be-extint-p x.then)
              (vl-fussy-may-as-well-be-extint-p x.else))
         :otherwise nil)))
+
+(define vl-suppress-fussy-warning-for-shift-of-mask ((op symbolp)
+                                                     (a vl-expr-p)
+                                                     (b vl-expr-p))
+  :returns (suppress booleanp)
+  ;; For now, just never ever warn about cases like "(a >> 3) & mask", because
+  ;; it's hard to have any idea what the intent is.  Maybe some day tweak this
+  ;; and warn if there are particular cases of this that seem troublesome, but
+  ;; it seems difficult to infer the intent here.
+  (and (eq (acl2::symbol-fix op) :vl-binary-bitand)
+       (or (vl-expr-case a
+             :vl-binary (vl-binaryop-equiv a.op :vl-binary-shr)
+             :otherwise nil)
+           (vl-expr-case b
+             :vl-binary (vl-binaryop-equiv b.op :vl-binary-shr)
+             :otherwise nil))))
 
 (define vl-tweak-fussy-warning-type
   :parents (vl-expr-selfsize)
@@ -502,8 +557,19 @@ details.</p>"
        (op    (acl2::symbol-fix op))
        (asize (lnfix asize))
        (bsize (lnfix bsize))
-       (a     (vl-tweak-fussy-warning-type-preclean a))
-       (b     (vl-tweak-fussy-warning-type-preclean b))
+
+       ;; Note that throughout this function, you can freely rewrite A and B in
+       ;; any crazy, unsound, heuristic way you please.  Also this function is
+       ;; called infrequently (only when we have noticed a problem) so you
+       ;; should not be very concerned with efficiency here.
+       (a            (vl-tweak-fussy-warning-type-preclean a))
+       (b            (vl-tweak-fussy-warning-type-preclean b))
+       ((mv a asize) (vl-tweak-fussy-warning-expr-size a asize))
+       ((mv b bsize) (vl-tweak-fussy-warning-expr-size b bsize))
+       ((when (equal asize bsize))
+        ;; After adjusting sizes, it looks like there is no problem, so do
+        ;; not issue a warning.
+        nil)
 
        (a-zerop (and (vl-expr-resolved-p a)
                      (eql (vl-resolved->val a) 0)))
@@ -521,7 +587,12 @@ details.</p>"
         ;; size of whatever is around them.
         nil)
 
-       (a-fits-b-p (and (vl-expr-resolved-p a) 
+       ((when (vl-suppress-fussy-warning-for-shift-of-mask op a b))
+        ;; Suppress warnings about (a >> b) & mask, since they are annoying
+        ;; to look through and difficult to warn about sensibly
+        nil)
+
+       (a-fits-b-p (and (vl-expr-resolved-p a)
                         (or (unsigned-byte-p bsize (vl-resolved->val a))
                             (and (< 0 bsize) (signed-byte-p bsize (vl-resolved->val a))))))
        (b-fits-a-p (and (vl-expr-resolved-p b)
@@ -554,7 +625,6 @@ details.</p>"
                      (intern-in-package-of-symbol (cat (symbol-name type) "-MINOR") type)
                    type))
 
-
        (a32p (eql asize 32))
        (b32p (eql bsize 32))
        ((unless (or a32p b32p))
@@ -586,7 +656,7 @@ details.</p>"
         ;; in positions that are affecting our selfsize, and every such unsized
         ;; number does fit into the new size we're going into, so it seems
         ;; pretty safe to make this a minor warning.
-        (intern-in-package-of-symbol (cat (symbol-name type) "-MINOR") type)))
+        (intern-in-package-of-symbol (cat (symbol-name type) "-MINOR-INTSIZE") type)))
 
     ;; Otherwise, we didn't find any unsized atoms, so just go ahead and do the
     ;; warning.

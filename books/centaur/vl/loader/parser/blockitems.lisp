@@ -145,9 +145,9 @@ out some duplication and indirection:</p>
                              :atts     atts
                              :loc      loc))))
 
-(defprojection vl-ranges->packeddimensions ((x vl-rangelist-p))
-  :returns (dims vl-packeddimensionlist-p)
-  (vl-range->packeddimension x))
+(defprojection vl-ranges->dimensions ((x vl-rangelist-p))
+  :returns (dims vl-dimensionlist-p)
+  (vl-range->dimension x))
 
 
 (defparser vl-parse-variable-type ()
@@ -171,7 +171,7 @@ out some duplication and indirection:</p>
                                          :rhs (make-vl-rhsexpr :guts expr))))
         (arrdims := (vl-parse-0+-ranges))
         (return (make-vl-vardeclassign :id (vl-idtoken->name id)
-                                       :dims (vl-ranges->packeddimensions arrdims)
+                                       :dims (vl-ranges->dimensions arrdims)
                                        :rhs nil))))
 
 (defparser vl-parse-list-of-variable-identifiers ()
@@ -317,7 +317,7 @@ out some duplication and indirection:</p>
                                           (make-vl-coretype :name :vl-reg
                                                             :signedp signedp
                                                             :pdims (if range
-                                                                       (list (vl-range->packeddimension range))
+                                                                       (list (vl-range->dimension range))
                                                                      nil)))
                                    :atts atts
                                    :loc (vl-token->loc kwd)))))
@@ -340,12 +340,14 @@ out some duplication and indirection:</p>
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
           (rest := (vl-parse-list-of-event-identifiers atts)))
-        (return (cons (make-vl-vardecl :type (make-vl-coretype :name :vl-event
-                                                               :udims (vl-ranges->packeddimensions arrdims))
-                                       :name (vl-idtoken->name id)
-                                       :loc (vl-token->loc id)
-                                       :atts atts)
-                      rest))))
+        (return
+         (b* ((udims-from-arrdims (vl-ranges->dimensions arrdims)))
+           (cons (make-vl-vardecl :type (make-vl-coretype :name :vl-event
+                                                          :udims udims-from-arrdims)
+                                  :name (vl-idtoken->name id)
+                                  :loc (vl-token->loc id)
+                                  :atts atts)
+                 rest)))))
 
 (defparser vl-parse-event-declaration (atts)
   :short "Match @('event_declaration') for Verilog-2005."

@@ -5,3 +5,4 @@ vl-warnings.json
 vl-warnings.ok
 ncverilog.history
 vl-warnings-suppressed.json
+vl-locations.json
