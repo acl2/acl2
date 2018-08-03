@@ -244,13 +244,16 @@
 	   opcode (cdr desc-list) world :escape-bytes escape-bytes))
 	 (opcode-cell (cdr opcode-descriptor))
 	 (vex         (cdr (assoc-equal :vex opcode-identifier)))
+	 (evex        (cdr (assoc-equal :evex opcode-identifier)))
 	 (reg         (cdr (assoc-equal :reg opcode-identifier)))
 	 (prefix      (cdr (assoc-equal :prefix opcode-identifier)))
 	 (mod         (cdr (assoc-equal :mod opcode-identifier)))
 	 (r/m         (cdr (assoc-equal :r/m opcode-identifier)))
 	 (condition
 	  `(and
-	    ;; TODO: Check for EVEX here one day?
+	    ,@(if evex
+		  `((not (equal evex-prefixes 0)))
+		`((equal evex-prefixes 0)))
 	    ,@(if vex
 		  `((not (equal vex-prefixes 0)))
 		`((equal vex-prefixes 0)))
@@ -268,15 +271,16 @@
 	  (create-dispatch-from-no-extensions-simple-cell
 	   opcode-cell world))
 	 (this-doc-string
-	  (if (or vex prefix reg mod r/m)
+	  (if (or evex vex prefix reg mod r/m)
 	      (concatenate 'string
 			   " <td> @('"
 			   (str::pretty
-			    `(,@(and vex    `((:VEX ,vex)))
-			      ,@(and prefix `((:PFX ,prefix)))
-			      ,@(and reg    `((:REG ,reg)))
-			      ,@(and mod    `((:MOD ,mod)))
-			      ,@(and r/m    `((:R/M ,r/m))))
+			    `(,@(and evex   `((:EVEX ,evex)))
+			      ,@(and vex    `((:VEX  ,vex)))
+			      ,@(and prefix `((:PFX  ,prefix)))
+			      ,@(and reg    `((:REG  ,reg)))
+			      ,@(and mod    `((:MOD  ,mod)))
+			      ,@(and r/m    `((:R/M  ,r/m))))
 			    :config *x86isa-printconfig*)
 			   ;; (str::pretty (cdr condition) ;; remove the 'and
 			   ;;              :config *x86isa-printconfig*)

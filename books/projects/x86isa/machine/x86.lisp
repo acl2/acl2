@@ -94,8 +94,17 @@
    <li>@(':66'):     Mandatory Prefix 0x66</li>
    <li>@(':F2'):     Mandatory Prefix 0xF2</li>
    <li>@(':F3'):     Mandatory Prefix 0xF3</li>
-   <li>@('No-Pfx'):  No Mandatory Prefix</li>
+   <li>@(':No-Pfx'): No Mandatory Prefix</li>
+   <li>@(':v66'):    VEX.pp indicates Mandatory Prefix 0x66</li>
+   <li>@(':vF2'):    VEX.pp indicates Mandatory Prefix 0xF2</li>
+   <li>@(':vF3'):    VEX.pp indicates Mandatory Prefix 0xF3</li>
+   <li>@(':v'):      VEX.pp indicates no Mandatory Prefix</li>
    <li>@(':vex'):    Vex Prefix Present</li>
+   <li>@(':ev66'):   EVEX.pp indicates Mandatory Prefix 0x66</li>
+   <li>@(':evF2'):   EVEX.pp indicates Mandatory Prefix 0xF2</li>
+   <li>@(':evF3'):   EVEX.pp indicates Mandatory Prefix 0xF3</li>
+   <li>@(':ev'):     EVEX.pp indicates no Mandatory Prefix</li>
+   <li>@(':evex'):   Evex Prefix Present</li>
  </ul>
 
  <p>Instead of the instruction semantic function, these tables may also list
@@ -924,9 +933,9 @@
 	    (otherwise 0))))
 
        (modr/m?
-        (three-byte-opcode-ModR/M-p
-         proc-mode vex-prefixes evex-prefixes mandatory-prefix 
-         second-escape-byte opcode))
+	(three-byte-opcode-ModR/M-p
+	 proc-mode vex-prefixes evex-prefixes mandatory-prefix
+	 second-escape-byte opcode))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
 	(if modr/m?
 	    (rme08 proc-mode temp-rip *cs* :x x86)
@@ -1800,7 +1809,7 @@
       (not (equal opcode/vex/evex-byte #.*evex-byte0*))
 
       (equal modr/m?
-             (one-byte-opcode-ModR/M-p proc-mode opcode/vex/evex-byte))
+	     (one-byte-opcode-ModR/M-p proc-mode opcode/vex/evex-byte))
       (equal modr/m (if modr/m?
 			(mv-nth 1 (rme08 proc-mode temp-rip1 *cs* :x x86))
 		      0))

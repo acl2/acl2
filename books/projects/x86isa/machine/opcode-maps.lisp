@@ -1300,8 +1300,7 @@
 	       (:66        . ("VPCMPEQD"    3 (V x)   (H x)  (W x))))
 
 	      ((:no-prefix . ("EMMS"        0))
-	       (:v         . ("VZEROUPPER"  0))
-	       (:v         . ("VZEROALL"    0)))
+	       (:v         . ("VZEROUPPER/VZEROALL"  0)))
 
     #| 78 |#  ("VMREAD" 2  (E y)  (G y))
 
@@ -4466,7 +4465,7 @@
 	 (len-of-each-row-okay-p (cdr x)))))
 
 (defconst *opcode-descriptor-legal-keys*
-  '(:opcode :reg :prefix :mod :r/m :vex))
+  '(:opcode :reg :prefix :mod :r/m :vex :evex))
 
 (define opcode-descriptor-p (opcode-descriptor)
   (if (consp opcode-descriptor)
