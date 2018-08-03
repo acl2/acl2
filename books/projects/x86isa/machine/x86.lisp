@@ -924,19 +924,9 @@
 	    (otherwise 0))))
 
        (modr/m?
-	(case second-escape-byte
-	  (#x38
-	   (if (equal proc-mode #.*64-bit-mode*)
-	       (64-bit-mode-0F-38-three-byte-opcode-ModR/M-p
-		mandatory-prefix opcode)
-	     (32-bit-mode-0F-38-three-byte-opcode-ModR/M-p
-	      mandatory-prefix opcode)))
-	  (#x3A
-	   (if (equal proc-mode #.*64-bit-mode*)
-	       (64-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
-		mandatory-prefix opcode)
-	     (32-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
-	      mandatory-prefix opcode)))))
+        (three-byte-opcode-ModR/M-p
+         proc-mode vex-prefixes evex-prefixes mandatory-prefix 
+         second-escape-byte opcode))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
 	(if modr/m?
 	    (rme08 proc-mode temp-rip *cs* :x x86)
@@ -1145,11 +1135,9 @@
 	    (#b11 #.*mandatory-F2h*)
 	    (otherwise 0))))
 
-       (modr/m? (if (equal proc-mode #.*64-bit-mode*)
-		    (64-bit-mode-two-byte-opcode-ModR/M-p
-		     mandatory-prefix opcode)
-		  (32-bit-mode-two-byte-opcode-ModR/M-p
-		   mandatory-prefix opcode)))
+       (modr/m?
+	(two-byte-opcode-ModR/M-p
+	 proc-mode vex-prefixes evex-prefixes mandatory-prefix opcode))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
 	(if modr/m?
 	    (rme08 proc-mode temp-rip *cs* :x x86)
@@ -1721,9 +1709,7 @@
        ;; understand this way; this is a nice way of seeing how one opcode map
        ;; "escapes" into another.
 
-       (modr/m? (if 64-bit-modep
-		    (64-bit-mode-one-byte-opcode-ModR/M-p opcode-byte)
-		  (32-bit-mode-one-byte-opcode-ModR/M-p opcode-byte)))
+       (modr/m? (one-byte-opcode-ModR/M-p proc-mode opcode-byte))
        ((mv flg5 (the (unsigned-byte 8) modr/m) x86)
 	(if modr/m?
 	    (if (or vex-byte0? evex-byte0?)
@@ -1814,9 +1800,7 @@
       (not (equal opcode/vex/evex-byte #.*evex-byte0*))
 
       (equal modr/m?
-	     (if 64-bit-modep
-		 (64-bit-mode-one-byte-opcode-ModR/M-p opcode/vex/evex-byte)
-	       (32-bit-mode-one-byte-opcode-ModR/M-p opcode/vex/evex-byte)))
+             (one-byte-opcode-ModR/M-p proc-mode opcode/vex/evex-byte))
       (equal modr/m (if modr/m?
 			(mv-nth 1 (rme08 proc-mode temp-rip1 *cs* :x x86))
 		      0))
