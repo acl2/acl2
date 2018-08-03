@@ -415,5 +415,5 @@
   (equal (ev-times-equal x a)
          (ev-times-equal (cancel_times-equal x) a))
   :rule-classes ((:meta :trigger-fns (equal)))
-  :hints (("Goal" :in-theory (disable ev-times-equal-constraint-6
+  :hints (("Goal" :in-theory (disable ev-times-equal-constraint-7
                                       ev-times-equal-formal-some-zerop-0))))
