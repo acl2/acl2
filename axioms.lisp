@@ -15225,7 +15225,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    ((null args)
     -1)
    ((null (cdr args))
-    (car args))
+    `(the integer ,(car args)))
    (t (xxxjoin 'binary-logand args))))
 
 #+acl2-loop-only
@@ -15234,7 +15234,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    ((null args)
     -1)
    ((null (cdr args))
-    (car args))
+    `(the integer ,(car args)))
    (t (xxxjoin 'binary-logeqv args))))
 
 #+acl2-loop-only
@@ -15243,7 +15243,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    ((null args)
     0)
    ((null (cdr args))
-    (car args))
+    `(the integer ,(car args)))
    (t (xxxjoin 'binary-logior args))))
 
 #+acl2-loop-only
@@ -15252,7 +15252,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    ((null args)
     0)
    ((null (cdr args))
-    (car args))
+    `(the integer ,(car args)))
    (t (xxxjoin 'binary-logxor args))))
 
 #+acl2-loop-only
