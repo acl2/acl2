@@ -1135,7 +1135,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
             ((er hyp)
              (if (pseudo-termp hyp)
                  (let ((hyp-unbound-vars
-                        (set-difference-eq (collect-vars hyp)
+                        (set-difference-eq (simple-term-vars hyp)
                                            bound-vars)))
                    (if hyp-unbound-vars
                        (prog2$ (flush-hons-get-hash-table-link obligs)
@@ -1266,7 +1266,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
                     ;; If the hyp holds, then one of the cases in the
                     ;; param-alist holds.
                     (params-cov-term (disjoin (strip-cars param-alist)))
-                    (params-cov-vars (collect-vars params-cov-term))
+                    (params-cov-vars (simple-term-vars params-cov-term))
                     (- (cw "Checking case split coverage ...~%"))
                     ((er (list params-cov-res-clause
                                params-cov-cov-clause obligs0))
@@ -1282,7 +1282,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
                     (- (cw "Case-split coverage OK~%"))
                     ((er (cons cases-res-clauses obligs1))
                      (run-cases
-                      param-alist concl (collect-vars concl) obligs0 config state)))
+                      param-alist concl (simple-term-vars concl) obligs0 config state)))
                  (clear-memoize-table 'glcp-get-branch-merge-rules)
                  (value (list* hyp-clause concl-clause
                                (append cases-res-clauses
@@ -1293,7 +1293,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
              ;; No case-splitting.
              (b* (((er (list res-clause cov-clause obligs))
                    (run-parametrized
-                    hyp concl (collect-vars concl) bindings
+                    hyp concl (simple-term-vars concl) bindings
                     "main theorem" nil config state)))
                (cw "GL symbolic simulation OK~%")
                (clear-memoize-table 'glcp-get-branch-merge-rules)

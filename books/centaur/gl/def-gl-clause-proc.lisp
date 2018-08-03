@@ -918,7 +918,7 @@ See :DOC GL::COVERAGE-PROOFS.
                                  state))
                ((er trconcl)
                 (acl2::translate concl t t nil 'gl-hint-fn (w state) state))
-               (vars (collect-vars trconcl))
+               (vars (simple-term-vars trconcl))
                (missing-vars (set-difference-eq vars (strip-cars g-bindings)))
                (- (and missing-vars
                        (let ((msg (acl2::msg "~

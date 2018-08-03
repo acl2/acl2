@@ -64,11 +64,6 @@
                  (glcp-generic-geval-alist al env)))))
 
 
-(local (defthm symbol-<-merge-under-set-equiv
-           (acl2::set-equiv (acl2::symbol-<-merge x y)
-                            (append x y))
-           :hints ((acl2::set-reasoning))))
-
 (defsection all-keys-bound
   (defund all-keys-bound (keys alist)
     (declare (xargs :guard t))

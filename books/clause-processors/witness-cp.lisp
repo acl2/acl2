@@ -725,6 +725,11 @@ defwitness/definstantiate rules for it.</p>")
 ;; WCP-LIT-APPLY-EXAMPLES
 ;;========================================================================
 
+(local (defthm member-of-union
+         (iff (member k (union-eq x y))
+              (or (member k x)
+                  (member k y)))))
+
 (local
  (defsection witness-ev-alist-lemmas
    (defthm-simple-term-vars-flag

@@ -288,21 +288,6 @@
           (and (subsetp-equal a c)
                (subsetp-equal b c))))
 
-   (defthm subsetp-of-symbol-<-merge-1
-     (iff (subsetp (symbol-<-merge x y) z)
-          (and (subsetp x z) (subsetp y z)))
-     :hints(("Goal" :in-theory (enable symbol-<-merge))))
-   (defthm subsetp-of-symbol-<-merge-2
-     (iff (subsetp z (symbol-<-merge x y))
-          (subsetp z (append x y)))
-     :hints(("Goal" :in-theory (enable symbol-<-merge)
-             :induct (len z))))
-
-   (defthm symbol-<-merge-under-set-equiv
-     (set-equiv (symbol-<-merge x y)
-                (append x y))
-     :hints(("Goal" :in-theory (enable set-equiv))))
-
    (defthm-simple-term-vars-flag
      (defthm normalize-sym-alist-eval
        (implies (and (subsetp-equal (simple-term-vars x) keys)

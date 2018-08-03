@@ -2,7 +2,7 @@
 ; Unify-subst.lisp: Term unification and substitution functions, and theorems
 ; for reasoning about them.
 
-; Copyright (C) 2010 Centaur Technology
+; Copyright (C) 2010-2018 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -50,13 +50,14 @@
 ;; for your evaluator, list-evaluator, and alist-evaluator.  You'll probably
 ;; also want to prove a lemma corresponding to assoc-equal-unify-ev-alist.
 
-(include-book "std/util/defines" :dir :system)
+(include-book "term-vars")
 (include-book "tools/def-functional-instance" :dir :system)
 (include-book "ev-find-rules")
 (include-book "meta/pseudo-termp-lemmas" :dir :system)
 
 (defevaluator unify-ev unify-ev-lst
-  ((cons a b) (binary-+ a b)))
+  ((cons a b) (binary-+ a b))
+  :namedp t)
 
 (define unify-ev-alist (x al)
   :verify-guards nil
@@ -100,21 +101,21 @@
 
 
 
-(define symbol-<-merge ((x symbol-listp)
-                        (y symbol-listp))
-  :measure (+ (len x) (len y))
-  :returns (merge symbol-listp :hyp :guard)
-  (b* (((when (atom x)) y)
-       ((when (atom y)) x)
-       ((when (equal (car x) (car y)))
-        (cons (car x) (symbol-<-merge (cdr x) (cdr y))))
-       ((when (symbol-< (car x) (car y)))
-        (cons (car x) (symbol-<-merge (cdr x) y))))
-    (cons (car y) (symbol-<-merge x (cdr y))))
-  ///
-  (defthm member-symbol-<-merge
-    (iff (member v (symbol-<-merge x y))
-         (or (member v x) (member v y)))))
+;; (define symbol-<-merge ((x symbol-listp)
+;;                         (y symbol-listp))
+;;   :measure (+ (len x) (len y))
+;;   :returns (merge symbol-listp :hyp :guard)
+;;   (b* (((when (atom x)) y)
+;;        ((when (atom y)) x)
+;;        ((when (equal (car x) (car y)))
+;;         (cons (car x) (symbol-<-merge (cdr x) (cdr y))))
+;;        ((when (symbol-< (car x) (car y)))
+;;         (cons (car x) (symbol-<-merge (cdr x) y))))
+;;     (cons (car y) (symbol-<-merge x (cdr y))))
+;;   ///
+;;   (defthm member-symbol-<-merge
+;;     (iff (member v (symbol-<-merge x y))
+;;          (or (member v x) (member v y)))))
 
 (define all-keys-bound (keys (alist alistp))
   (if (atom keys)
@@ -131,11 +132,12 @@
     (implies (all-keys-bound keys alist)
              (all-keys-bound keys (unify-ev-alist alist a))))
 
-  (defthm all-keys-bound-of-symbol-<-merge
-    (equal (all-keys-bound (symbol-<-merge x y) alist)
+  (defthm all-keys-bound-of-union-eq
+    (equal (all-keys-bound (union-eq x y) alist)
            (and (all-keys-bound x alist)
                 (all-keys-bound y alist)))
-    :hints(("Goal" :in-theory (enable symbol-<-merge))))
+    :hints(("Goal" :in-theory (enable union-eq)
+            :induct (len x))))
 
   (defthm all-keys-bound-of-cons
     (equal (all-keys-bound (cons x y) a)
@@ -149,85 +151,28 @@
   (defthm all-keys-bound-of-nil
     (all-keys-bound nil x)))
 
-(local (defthm true-listp-when-symbol-listp
-         (implies (symbol-listp x)
-                  (true-listp x))))
-
-(defines simple-term-vars
-  :verify-guards nil
-  :flag-local nil
-  (define simple-term-vars ((x pseudo-termp))
-    :returns (vars symbol-listp :hyp :guard)
-    (cond ((null x) nil)
-          ((atom x) (list x))
-          ((eq (car x) 'quote) nil)
-          (t (simple-term-vars-lst (cdr x)))))
-  (define simple-term-vars-lst ((x pseudo-term-listp))
-    :returns (vars symbol-listp :hyp :guard)
-    (if (atom x)
-        nil
-      (symbol-<-merge (simple-term-vars (car x))
-                      (simple-term-vars-lst (cdr x)))))
-  ///
-
-  (verify-guards simple-term-vars)
 
 
-  (defthm-simple-term-vars-flag
-    (defthm unify-ev-of-acons-when-all-vars-bound
-      (implies (and (all-keys-bound (simple-term-vars x) a)
-                    (not (assoc k a))
-                    (pseudo-termp x))
-               (equal (unify-ev x (cons (cons k v) a))
-                      (unify-ev x a)))
-      :hints ((and stable-under-simplificationp
-                   '(:in-theory (enable unify-ev-constraint-0))))
-      :flag simple-term-vars)
-    (defthm unify-ev-lst-of-acons-when-all-vars-bound
-      (implies (and (all-keys-bound (simple-term-vars-lst x) a)
-                    (not (assoc k a))
-                    (pseudo-term-listp x))
-               (equal (unify-ev-lst x (cons (cons k v) a))
-                      (unify-ev-lst x a)))
-      :flag simple-term-vars-lst))
 
-  (defthm simple-term-vars-lst-of-atom
-    (implies (not (consp x))
-             (equal (simple-term-vars-lst x) nil))
-    :rule-classes ((:rewrite :backchain-limit-lst 0)))
-
-  
-  (defthm true-listp-of-symbol-<-merge
-    (implies (and (true-listp x)
-                  (true-listp y))
-             (true-listp (symbol-<-merge x y)))
-    :hints(("Goal" :in-theory (enable symbol-<-merge))))
-
-  (defthm-simple-term-vars-flag
-    (defthm true-listp-of-simple-term-vars
-      (true-listp (simple-term-vars x))
-      :hints ((and stable-under-simplificationp
-                   '(:expand ((simple-term-vars x)))))
-      :flag simple-term-vars
-      :rule-classes :type-prescription)
-    (defthm true-listp-of-simple-term-vars-lst
-      (true-listp (simple-term-vars-lst x))
-      :hints ((and stable-under-simplificationp
-                   '(:expand ((simple-term-vars-lst x)))))
-      :flag simple-term-vars-lst
-      :rule-classes :type-prescription))
-
-  (defthm-simple-term-vars-flag
-    (defthm simple-term-vars-nonnil
-      (not (member nil (simple-term-vars x)))
-      :hints ((and stable-under-simplificationp
-                   '(:expand ((simple-term-vars x)))))
-      :flag simple-term-vars)
-    (defthm simple-term-vars-lst-nonnil
-      (not (member nil (simple-term-vars-lst x)))
-      :hints ((and stable-under-simplificationp
-                   '(:expand ((simple-term-vars-lst x)))))
-      :flag simple-term-vars-lst)))
+(defthm-simple-term-vars-flag
+  (defthm unify-ev-of-acons-when-all-vars-bound
+    (implies (and (all-keys-bound (simple-term-vars x) a)
+                  (not (assoc k a))
+                  (pseudo-termp x))
+             (equal (unify-ev x (cons (cons k v) a))
+                    (unify-ev x a)))
+    :hints ('(:expand ((simple-term-vars x)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable unify-ev-of-fncall-args))))
+    :flag simple-term-vars)
+  (defthm unify-ev-lst-of-acons-when-all-vars-bound
+    (implies (and (all-keys-bound (simple-term-vars-lst x) a)
+                  (not (assoc k a))
+                  (pseudo-term-listp x))
+             (equal (unify-ev-lst x (cons (cons k v) a))
+                    (unify-ev-lst x a)))
+    :hints ('(:expand ((simple-term-vars-lst x))))
+    :flag simple-term-vars-lst))
 
 
 (defines substitute-into-term
@@ -271,7 +216,7 @@
      :name substitute-into-list-correct)
     :hints (("goal" :induct (substitute-into-term-flag flag x subst))
             (and stable-under-simplificationp
-                 '(:in-theory (enable unify-ev-constraint-0)))))
+                 '(:in-theory (enable unify-ev-of-fncall-args)))))
 
   (defthm substitute-into-list-of-cons
     (equal (substitute-into-list (cons x y) a)
@@ -415,12 +360,33 @@
                       const)))
     :hints (("goal" :induct t)
             (and stable-under-simplificationp
-                 '(:in-theory (enable unify-ev-constraint-0)))))
+                 '(:in-theory (enable unify-ev-of-fncall-args)))))
 
   (defthm unify-const-vars-nonnil
     (implies (not (assoc nil alist))
              (not (assoc nil (mv-nth 1 (unify-const pat const alist)))))))
 
+
+
+
+
+(defthm-simple-term-vars-flag
+  (defthm unify-ev-of-acons-when-all-vars-bound
+    (implies (and (all-keys-bound (simple-term-vars x) a)
+                  (not (assoc k a))
+                  (pseudo-termp x))
+             (equal (unify-ev x (cons (cons k v) a))
+                    (unify-ev x a)))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable unify-ev-of-fncall-args))))
+    :flag simple-term-vars)
+  (defthm unify-ev-lst-of-acons-when-all-vars-bound
+    (implies (and (all-keys-bound (simple-term-vars-lst x) a)
+                  (not (assoc k a))
+                  (pseudo-term-listp x))
+             (equal (unify-ev-lst x (cons (cons k v) a))
+                    (unify-ev-lst x a)))
+    :flag simple-term-vars-lst))
 
 
 (defines simple-one-way-unify
@@ -691,7 +657,7 @@
       :hints ('(:expand ((:free (term) (simple-one-way-unify pat term alist))
                          (:free (term) (simple-one-way-unify nil term alist))))
               (and stable-under-simplificationp
-                   '(:in-theory (enable unify-ev-constraint-0))))
+                   '(:in-theory (enable unify-ev-of-fncall-args))))
       :flag simple-one-way-unify)
     (defthm simple-one-way-unify-lst-correct
       (mv-let (ok subst)

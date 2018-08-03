@@ -1987,23 +1987,36 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
              'nil)
         ''nil)))
   ///
-  (local (defthm collect-vars-list-of-append
-           (acl2::set-equiv (collect-vars-list (append a b))
-                            (append (collect-vars-list a) (collect-vars-list b)))
-           :hints(("Goal" :in-theory (enable collect-vars-list append)))))
+  (local (defthm open-simple-term-vars
+           (equal (simple-term-vars (cons fn args))
+                  (and (not (eq fn 'quote))
+                       (simple-term-vars-lst args)))
+           :hints(("Goal" :in-theory (enable simple-term-vars)))))
 
-  (local (defthm collect-vars-list-of-make-nth-terms
-           (implies (not (member v (collect-vars x)))
-                    (not (member v (collect-vars-list (make-nth-terms x start n)))))
-           :hints(("Goal" :in-theory (enable make-nth-terms)))))
+  (local (defthm simple-term-vars-lst-of-consp
+           (implies (consp x)
+                    (equal (simple-term-vars-lst x)
+                           (union-eq (simple-term-vars-lst (cdr x))
+                                     (simple-term-vars (car x)))))
+           :hints(("Goal" :in-theory (enable simple-term-vars-lst)))))
+
+  (local (defthm simple-term-vars-lst-of-append
+           (acl2::set-equiv (simple-term-vars-lst (append a b))
+                            (append (simple-term-vars-lst a) (simple-term-vars-lst b)))
+           :hints(("Goal" :in-theory (enable simple-term-vars-lst append)))))
+
+  (local (defthm simple-term-vars-lst-of-make-nth-terms
+           (implies (not (member v (simple-term-vars x)))
+                    (not (member v (simple-term-vars-lst (make-nth-terms x start n)))))
+           :hints(("Goal" :in-theory (enable make-nth-terms simple-term-vars)))))
 
   (local (defthm member-vars-of-car-term
-           (implies (not (member v (collect-vars x)))
-                    (not (member v (collect-vars (car-term x)))))
+           (implies (not (member v (simple-term-vars x)))
+                    (not (member v (simple-term-vars (car-term x)))))
            :hints(("Goal" :in-theory (enable car-term)))))
   (local (defthm member-vars-of-cdr-term
-           (implies (not (member v (collect-vars x)))
-                    (not (member v (collect-vars (cdr-term x)))))
+           (implies (not (member v (simple-term-vars x)))
+                    (not (member v (simple-term-vars (cdr-term x)))))
            :hints(("Goal" :in-theory (enable cdr-term)))))
 
   (local (defthm not-quote-of-ss-unary-function-fix
@@ -2011,19 +2024,19 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
 
   (defthm-shape-spec-oblig-term-flag
     (defthm vars-of-shape-spec-oblig-term-bvars
-      (implies (not (member v (collect-vars obj-term)))
-               (not (member v (collect-vars (shape-spec-oblig-term x obj-term)))))
+      (implies (not (member v (simple-term-vars obj-term)))
+               (not (member v (simple-term-vars (shape-spec-oblig-term x obj-term)))))
       :hints ('(:expand ((shape-spec-oblig-term x obj-term))))
       :flag shape-spec-oblig-term)
     (defthm vars-of-shape-spec-oblig-term-iff-bvars
-      (implies (not (member v (collect-vars obj-term)))
-               (not (member v (collect-vars (shape-spec-oblig-term-iff x obj-term)))))
+      (implies (not (member v (simple-term-vars obj-term)))
+               (not (member v (simple-term-vars (shape-spec-oblig-term-iff x obj-term)))))
       :hints ('(:expand ((shape-spec-oblig-term-iff x obj-term))
                 :in-theory (enable car-term cdr-term)))
       :flag shape-spec-oblig-term-iff)
     (defthm vars-of-shape-spec-list-oblig-term-bvars
-      (implies (not (member v (collect-vars-list obj-terms)))
-               (not (member v (collect-vars (shape-spec-list-oblig-term x obj-terms)))))
+      (implies (not (member v (simple-term-vars-lst obj-terms)))
+               (not (member v (simple-term-vars (shape-spec-list-oblig-term x obj-terms)))))
       :hints ('(:expand ((shape-spec-list-oblig-term x obj-terms)
                          (shape-spec-list-oblig-term x nil))))
       :flag shape-spec-list-oblig-term)))

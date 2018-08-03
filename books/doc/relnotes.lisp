@@ -186,6 +186,11 @@
 
  <p>Started a new library for <a href=\"https://bitcoin.org\">Bitcoin</a>.</p>
 
+ <p>A new book, @('clause-processors/bindinglist.lisp'), supports a meta-level
+ structure for a list of bindings of variables to values, with functions that
+ convert these to and from nests of lambdas and proofs that establish these
+ functions' semantics with respect to an evaluator.</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <p>The behavior and code for the expander (see @(see defthm?)) have been
@@ -406,6 +411,11 @@
  <p>Improved scalability of several SV utilities when large variables are present
  by recoding several functions that previously used Lisp bignums to use a
  @(see bitops::sparseint) based encoding.</p>
+
+ <h4><see topic='@(url gl::glmc)'>GLMC</see></h4>
+ <p>Added option to bind some variables that can be used by the nextstate, property,
+ constraint, and initstate terms.  These bindings will be symbolically evaluated once,
+ which can perhaps improve performance by not requiring them to be repeated.</p>
 
  <h4><see topic='@(url acl2::xdoc)'>Xdoc</see></h4>
 

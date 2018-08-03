@@ -764,11 +764,6 @@ when it becomes available.
 (local (defthm subsetp-of-union
          (subsetp-equal a (union-equal a b))))
 
-(defthm symbol-<-merge-under-set-equiv
-  (set-equiv (symbol-<-merge x y)
-             (append x y))
-  :hints((set-reasoning)))
-
 (defthm simple-term-vars-of-conjoin
   (subsetp-equal (simple-term-vars (conjoin x))
                  (simple-term-vars-lst x))

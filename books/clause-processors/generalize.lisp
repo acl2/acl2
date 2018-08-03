@@ -31,7 +31,8 @@
 
 (include-book "tools/flag" :dir :system)
 (include-book "join-thms")
-(include-book "unify-subst")
+(include-book "term-vars")
+(include-book "meta/pseudo-termp-lemmas" :dir :system)
 
 
 (defevaluator gen-eval gen-eval-lst ((if x y z)))
@@ -64,17 +65,26 @@
 ;; misc lemmas
 (local
  (progn
+   (local (defthm member-of-union
+            (iff (member x (union-equal y z))
+                 (or (member x y)
+                     (member x z)))))
+   (local (defthm intersectp-of-union
+            (iff (intersectp-equal x (union-equal y z))
+                 (or (intersectp-equal x y)
+                     (intersectp-equal x z)))))
+
    (defthm intersectp-equal-of-components-of-simple-term-vars-1
      (implies (and (not (intersectp-equal lst (simple-term-vars-lst x)))
                    (consp x))
               (not (intersectp-equal lst (simple-term-vars (car x)))))
-     :hints(("Goal" :in-theory (enable simple-term-vars-lst))))
+     :hints(("Goal" :expand ((simple-term-vars-lst x)))))
 
    (defthm intersectp-equal-of-components-of-simple-term-vars-2
      (implies (and (not (intersectp-equal lst (simple-term-vars-lst x)))
                    (consp x))
               (not (intersectp-equal lst (simple-term-vars-lst (cdr x)))))
-     :hints(("Goal" :in-theory (enable simple-term-vars-lst))))
+     :hints(("Goal" :expand ((simple-term-vars-lst x)))))
 
    (defthm intersectp-equal-of-components-of-simple-term-vars-3
      (implies (and (consp x) (not (equal (car x) 'quote))

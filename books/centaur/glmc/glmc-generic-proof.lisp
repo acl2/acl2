@@ -1449,7 +1449,6 @@
          :hints(("Goal" :in-theory (enable shape-spec-bindingsp)))))
 
 (defsection glcp-generic-geval-ev-of-extract-subset
-  (flag::make-flag flag-collect-vars collect-vars :local t)
 
   (local (defthm assoc-when-key
            (implies x
@@ -1458,24 +1457,24 @@
            :hints(("Goal" :in-theory (enable acl2::fal-extract member hons-assoc-equal)))))
 
 
-  (Defthm-flag-collect-vars
+  (acl2::defthm-simple-term-vars-flag
     (defthm glcp-generic-geval-ev-of-extract-variable-subset
-      (implies (and (subsetp (collect-vars x) vars)
+      (implies (and (subsetp (simple-term-vars x) vars)
                     (pseudo-termp x))
                (equal (glcp-generic-geval-ev x (acl2::fal-extract vars env))
                       (glcp-generic-geval-ev x env)))
-      :hints ('(:expand ((collect-vars x)
+      :hints ('(:expand ((simple-term-vars x)
                          (pseudo-termp x))
                 :in-theory (enable glcp-generic-geval-ev-of-fncall-args)))
-      :flag collect-vars)
+      :flag simple-term-vars)
     (defthm glcp-generic-geval-ev-lst-of-extract-variable-subset
-      (implies (and (subsetp (collect-vars-list x) vars)
+      (implies (and (subsetp (simple-term-vars-lst x) vars)
                     (pseudo-term-listp x))
                (equal (glcp-generic-geval-ev-lst x (acl2::fal-extract vars env))
                       (glcp-generic-geval-ev-lst x env)))
-      :hints ('(:expand ((collect-vars-list x)
+      :hints ('(:expand ((simple-term-vars-lst x)
                          (pseudo-term-listp x))))
-      :flag collect-vars-list)))
+      :flag simple-term-vars-lst)))
 
 
 
@@ -2228,24 +2227,24 @@
                   (and (member k keys)
                        (cons k (glcp-generic-geval-ev k alist))))))
 
-(Defthm-flag-collect-vars
+(acl2::defthm-simple-term-vars-flag
   (defthm glcp-generic-geval-ev-of-pairlis$-eval-keys
-    (implies (and (subsetp (collect-vars x) vars)
+    (implies (and (subsetp (simple-term-vars x) vars)
                   (pseudo-termp x))
              (equal (glcp-generic-geval-ev x (pairlis$ vars (glcp-generic-geval-ev-lst vars alist)))
                     (glcp-generic-geval-ev x alist)))
-    :hints ('(:expand ((collect-vars x)
+    :hints ('(:expand ((simple-term-vars x)
                        (pseudo-termp x))
               :in-theory (enable glcp-generic-geval-ev-of-fncall-args)))
-    :flag collect-vars)
+    :flag simple-term-vars)
   (defthm glcp-generic-geval-ev-lst-of-pairlis$-eval-keys
-    (implies (and (subsetp (collect-vars-list x) vars)
+    (implies (and (subsetp (simple-term-vars-lst x) vars)
                   (pseudo-term-listp x))
              (equal (glcp-generic-geval-ev-lst x (pairlis$ vars (glcp-generic-geval-ev-lst vars alist)))
                     (glcp-generic-geval-ev-lst x alist)))
-    :hints ('(:expand ((collect-vars-list x)
+    :hints ('(:expand ((simple-term-vars-lst x)
                        (pseudo-term-listp x))))
-    :flag collect-vars-list))
+    :flag simple-term-vars-lst))
 
 
 (defsection glcp-generic-geval-alist-of-shape-specs-to-interp-al
@@ -2592,10 +2591,350 @@
                            (glcp-generic-interp-correct-equivs)))))
 
 
+(DEFTHM BVAR-DB-ORDERED-OF-GLCP-GENERIC-INTERP-LIST-aig-mode
+  (B* (((MV ?VAL ?ERP ?PATHCOND1
+            ?INTERP-ST1 ?BVAR-DB1 ?STATE1)
+        (GLCP-GENERIC-INTERP-LIST
+         X ALIST PATHCOND
+         CLK CONFIG INTERP-ST BVAR-DB ST))
+       (K (NEXT-BVAR$A BVAR-DB)))
+    (IMPLIES
+     (and (EQUAL P (GLCP-CONFIG->PARAM-BFR CONFIG))
+          (GOBJ-ALIST-VARS-BOUNDED K P ALIST))
+     (AND
+      (IMPLIES
+       (AND (BFR-VARS-BOUNDED K P)
+            (BVAR-DB-ORDEREDP P BVAR-DB)
+            (BVAR-DB-VARS-BOUNDED K P K BVAR-DB)
+            (GBC-DB-VARS-BOUNDED
+             K P (NTH *IS-CONSTRAINT-DB* INTERP-ST))
+            (bfr-mode))
+       (BVAR-DB-ORDEREDP t BVAR-DB1)))))
+  :hints (("goal" :use ((:instance bvar-db-ordered-of-glcp-generic-interp-list
+                         (p (glcp-config->param-bfr config))))
+           :in-theory (disable bvar-db-ordered-of-glcp-generic-interp-list))))
+
+(DEFTHM VARS-BOUNDED-OF-GLCP-GENERIC-INTERP-LIST-aig-mode
+  (B* (((MV ?VAL ?ERP ?PATHCOND1 ?INTERP-ST1 ?BVAR-DB1 ?STATE1)
+        (GLCP-GENERIC-INTERP-LIST
+         X ALIST PATHCOND
+         CLK CONFIG INTERP-ST BVAR-DB ST)))
+    (IMPLIES
+     (AND (AND (EQUAL NN (NEXT-BVAR$A BVAR-DB1))
+               (EQUAL P (GLCP-CONFIG->PARAM-BFR CONFIG))
+               (<= (NEXT-BVAR$A BVAR-DB1) (NFIX K))
+               (BFR-VARS-BOUNDED K P)
+               (BVAR-DB-VARS-BOUNDED K P (NEXT-BVAR$A BVAR-DB)
+                                     BVAR-DB)
+               (GBC-DB-VARS-BOUNDED
+                K P (NTH *IS-CONSTRAINT-DB* INTERP-ST)))
+          (GOBJ-ALIST-VARS-BOUNDED K P ALIST)
+          (bfr-mode))
+     (AND (GOBJ-list-VARS-BOUNDED K t VAL)
+          (IMPLIES (BFR-CONSTR-VARS-BOUNDED
+                    K p (NTH *IS-CONSTRAINT* INTERP-ST))
+                   (BFR-CONSTR-VARS-BOUNDED
+                    K t (NTH *IS-CONSTRAINT* INTERP-ST1)))
+          (BVAR-DB-VARS-BOUNDED K t NN BVAR-DB1)
+          (GBC-DB-VARS-BOUNDED
+           K t
+           (NTH *IS-CONSTRAINT-DB* INTERP-ST1)))))
+  :hints (("goal" :use ((:instance vars-bounded-of-glcp-generic-interp-list
+                         (p (glcp-config->param-bfr config))))
+           :in-theory (disable vars-bounded-of-glcp-generic-interp-list))))
+
+
+(defthm glcp-generic-interp-correct-list-fix-env
+  (b* (((mv ?vals ?er ?new-pathcond ?new-interp-st ?new-bvar-db ?new-state)
+        (glcp-generic-interp-list
+         x alist pathcond clk config interp-st bvar-db st))
+       (p (glcp-config->param-bfr config))
+       (fix-bfr-env (bvar-db-fix-env
+                     last-bvar first-bvar new-bvar-db t bfr-env var-env)))
+    (implies
+     (and
+      (bfr-hyp-eval (nth *is-constraint* interp-st) fix-bfr-env)
+      (acl2::interp-defs-alistp (nth *is-obligs* interp-st))
+      (acl2::interp-defs-alistp (glcp-config->overrides config))
+      (bfr-eval p bfr-env)
+      (glcp-generic-geval-ev-theoremp
+       (conjoin-clauses
+        (acl2::interp-defs-alist-clauses (is-obligs new-interp-st))))
+      (glcp-generic-bvar-db-env-ok bvar-db t (next-bvar$a bvar-db) (cons bfr-env var-env))
+      (glcp-generic-geval-ev-meta-extract-global-facts :state state0)
+      (equal (w state0) (w st))
+      (equal last-bvar (next-bvar$a new-bvar-db))
+      (equal first-bvar (next-bvar$a bvar-db))
+      (pseudo-term-listp x)
+      (alistp alist)
+      (not er)
+      (bvar-db-orderedp p bvar-db)
+      (gobj-alist-vars-bounded (next-bvar$a bvar-db) p alist)
+      (bfr-constr-vars-bounded (next-bvar$a bvar-db) p (nth *is-constraint* interp-st))
+      (gbc-db-vars-bounded (next-bvar$a bvar-db) p (nth *is-constraint-db* interp-st))
+      (bfr-constr-vars-bounded (next-bvar$a bvar-db) p pathcond)
+      (pbfr-vars-bounded (next-bvar$a bvar-db) t p)
+      (bfr-mode))
+     (and
+      (implies
+       (bfr-hyp-eval pathcond bfr-env)
+       (equal (glcp-generic-geval-list vals (cons fix-bfr-env var-env))
+              (glcp-generic-geval-ev-lst
+               x
+               (glcp-generic-geval-alist alist (cons fix-bfr-env var-env)))))
+      (bfr-hyp-eval (nth *is-constraint* new-interp-st) fix-bfr-env))))
+  :hints (("goal" :use ((:instance glcp-generic-interp-correct-list
+                         (st st)
+                         (env (cons (bvar-db-fix-env
+                                     last-bvar first-bvar
+                                     (mv-nth 4 (glcp-generic-interp-list x alist pathcond clk config interp-st bvar-db st))
+                                     t bfr-env var-env)
+                                    var-env))))
+           :in-theory (e/d (bdd-mode-or-p-true glcp-interp-accs-ok iff*)
+                           (glcp-generic-interp-correct-list)))))
+
+
+(defthm alistp-of-glcp-generic-geval-alist
+  (alistp (glcp-generic-geval-alist x env))
+  :hints(("Goal" :in-theory (enable glcp-generic-geval-alist))))
+
+(defsection true-listp-of-glcp-generic-interp-list
+  (local (defun-sk true-listp-of-glcp-generic-interp-list-sk (x)
+           (forall (alist pathcond clk config interp-st bvar-db st)
+                   (true-listp (mv-nth 0 (glcp-generic-interp-list x alist pathcond clk config interp-st bvar-db st))))
+           :rewrite :direct))
+  (local (in-theory (disable true-listp-of-glcp-generic-interp-list-sk)))
+  (local (defthm true-listp-of-glcp-generic-interp-list-lemma
+           (true-listp-of-glcp-generic-interp-list-sk x)
+           :hints (("goal" :induct (len x))
+                   (and stable-under-simplificationp
+                        `(:expand (,(car (last clause))
+                                   (:free (alist pathcond clk config interp-st bvar-db st)
+                                    (glcp-generic-interp-list x alist pathcond clk config interp-st bvar-db st))))))))
+
+  (defthm true-listp-of-glcp-generic-interp-list
+    (true-listp (mv-nth 0 (glcp-generic-interp-list x alist pathcond clk config interp-st bvar-db state)))
+    :rule-classes :type-prescription))
+
+
+                  
+  
+(defthm glcp-generic-interp-accs-ok-equivs-forward-bfr-mode
+  (b* (((mv & & & new-interp-st new-bvar-db)
+        (glcp-generic-interp-term-equivs x alist contexts pathcond clk config interp-st bvar-db st)))
+    (implies (and (glcp-interp-accs-ok new-interp-st new-bvar-db config1 env)
+                  (bfr-mode))
+             (glcp-interp-accs-ok interp-st bvar-db config1 env)))
+  :hints (("goal" :use GLCP-GENERIC-INTERP-ACCS-OK-EQUIVS
+           :in-theory (disable GLCP-GENERIC-INTERP-ACCS-OK-EQUIVS)))
+  :rule-classes :forward-chaining)
+
+(defthm glcp-generic-interp-accs-ok-list-forward-bfr-mode
+  (b* (((mv & & & new-interp-st new-bvar-db)
+        (glcp-generic-interp-list x alist pathcond clk config interp-st bvar-db st)))
+    (implies (and (glcp-interp-accs-ok new-interp-st new-bvar-db config1 env)
+                  (bfr-mode))
+             (glcp-interp-accs-ok interp-st bvar-db config1 env)))
+  :hints (("goal" :use GLCP-GENERIC-INTERP-ACCS-OK-LIST
+           :in-theory (disable GLCP-GENERIC-INTERP-ACCS-OK-LIST)))
+  :rule-classes :forward-chaining)
+
+
+(defthm true-listp-of-glcp-generic-geval-ev-lst
+  (true-listp (Glcp-generic-geval-ev-lst x a))
+  :hints (("goal" :induct (len x))))
+
+(verify-guards glmc-generic-ev-bindinglist)
+
+(defsection glmc-generic-interp-bindinglist
+  (local (in-theory (enable (:i glmc-generic-interp-bindinglist))))
+  (local (std::set-define-current-function glmc-generic-interp-bindinglist))
+  (local (in-theory (disable pseudo-term-listp pseudo-termp)))
+
+  (std::defret interp-defs-of-<fn>
+    (b* (((glcp-config config)))
+      (implies (and (acl2::interp-defs-alistp (nth *is-obligs* interp-st))
+                    (acl2::interp-defs-alistp config.overrides)
+                    (acl2::bindinglist-p x))
+               (acl2::interp-defs-alistp (nth *is-obligs* new-interp-st))))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (local (defthm glcp-generic-geval-alist-of-append
+           (equal (glcp-generic-geval-alist (append a b) env)
+                  (append (glcp-generic-geval-alist a env)
+                          (glcp-generic-geval-alist b env)))
+           :hints(("Goal" :in-theory (enable glcp-generic-geval-alist)))))
+
+  (local (defthm glcp-generic-geval-alist-of-pairlis$
+           (equal (glcp-generic-geval-alist (pairlis$ a b) env)
+                  (pairlis$ a
+                            (glcp-generic-geval-list b env)))
+           :hints(("Goal" :in-theory (enable glcp-generic-geval-alist pairlis$
+                                             glcp-generic-geval-list)))))
+
+  (std::defret glcp-interp-accs-ok-of-<fn>
+    (implies (not (glcp-interp-accs-ok interp-st bvar-db config env))
+             (not (glcp-interp-accs-ok new-interp-st new-bvar-db config env)))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret glcp-interp-accs-ok-of-<fn>-fwd
+    (implies (glcp-interp-accs-ok new-interp-st new-bvar-db config env)
+             (glcp-interp-accs-ok interp-st bvar-db config env))
+    :rule-classes :forward-chaining)
+
+  (std::defret glcp-interp-accs-ok-of-<fn>-bfr-mode
+    (implies (and (not (glcp-interp-accs-ok interp-st bvar-db config1 env))
+                  (bfr-mode))
+             (not (glcp-interp-accs-ok new-interp-st new-bvar-db config1 env)))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret glcp-interp-accs-ok-of-<fn>-bfr-mode-fwd
+    (implies (and (glcp-interp-accs-ok new-interp-st new-bvar-db config1 env)
+                  (bfr-mode))
+             (glcp-interp-accs-ok interp-st bvar-db config1 env))
+    :rule-classes :forward-chaining)
+
+  (std::defret alistp-new-alist-of-<fn>
+    (implies (alistp alist)
+             (alistp new-alist))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret <fn>-correct
+    (b* (((glcp-config config))
+         (p (glcp-config->param-bfr config)))
+      (implies (and (bfr-hyp-eval (nth *is-constraint* interp-st) (car env))
+                    (acl2::interp-defs-alistp (nth *is-obligs* interp-st))
+                    (acl2::interp-defs-alistp config.overrides)
+                    (glcp-generic-geval-ev-meta-extract-global-facts :state state0)
+                    (equal (w state0) (w state))
+                    (glcp-interp-accs-ok new-interp-st new-bvar-db config env)
+                    (bdd-mode-or-p-true p (car env))
+                    (acl2::bindinglist-p x)
+                    (alistp alist))
+               (and (implies (and (not err)
+                                  (bfr-hyp-eval pathcond (car env)))
+                             (equal (glcp-generic-geval-alist new-alist env)
+                                    (glmc-generic-ev-bindinglist x
+                                                                 (glcp-generic-geval-alist alist env))))
+                    (bfr-hyp-eval (nth *is-constraint* new-interp-st) (car env))
+                    (implies (equal err :unreachable)
+                             (not (bfr-hyp-eval pathcond (car env)))))))
+    :hints (("goal" :induct <call> :expand (<call>))
+            (and stable-under-simplificationp
+                 '(:expand ((:free (a) (glmc-generic-ev-bindinglist x a)))))))
+
+  (std::defret w-state-of-<fn>
+    (equal (w new-state) (w state))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret pathcond-preserved-of-<fn>
+    (equal new-pathcond (bfr-hyp-fix pathcond))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret state-p1-preserved-of-<fn>
+    (implies (state-p1 state)
+             (state-p1 new-state))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret base-bvar-preserved-of-<fn>
+    (equal (base-bvar$a new-bvar-db)
+           (base-bvar$a bvar-db))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret next-bvar-of-<fn>
+    (>= (next-bvar$a new-bvar-db) (next-bvar$a bvar-db))
+    :hints (("goal" :induct <call> :expand (<call>)))
+    :rule-classes :linear)
+
+  (std::defret get-bvar->term-of-<fn>
+    (implies (and (<= (base-bvar$a bvar-db) (nfix n))
+                  (< (nfix n) (next-bvar$a bvar-db)))
+             (equal (get-bvar->term$a n new-bvar-db)
+                    (get-bvar->term$a n bvar-db)))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+
+  (defthm gobj-alist-vars-bounded-of-append
+    (implies (and (gobj-alist-vars-bounded k p a)
+                  (gobj-alist-vars-bounded k p b))
+             (gobj-alist-vars-bounded k p (append a b)))
+    :hints(("Goal" :in-theory (enable gobj-alist-vars-bounded))))
+
+  (std::defret <fn>-vars-bounded
+    (implies (and (<= (next-bvar$a new-bvar-db) (nfix k))
+                  (equal p (glcp-config->param-bfr config))
+                  (bfr-vars-bounded k p)
+                  (bvar-db-vars-bounded k p (next-bvar$a bvar-db) bvar-db)
+                  (equal nn (next-bvar$a new-bvar-db))
+                  (gbc-db-vars-bounded k p (nth *is-constraint-db* interp-st))
+                  (gobj-alist-vars-bounded k p alist))
+             (and (gobj-alist-vars-bounded k p new-alist)
+                  (implies (bfr-constr-vars-bounded k p (nth *is-constraint* interp-st))
+                           (bfr-constr-vars-bounded k p (nth *is-constraint* new-interp-st)))
+                  (bvar-db-vars-bounded k p nn new-bvar-db)
+                  (gbc-db-vars-bounded k p (nth *is-constraint-db* new-interp-st))))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret <fn>-vars-bounded-aig-mode
+    (implies (and (<= (next-bvar$a new-bvar-db) (nfix k))
+                  (equal p (glcp-config->param-bfr config))
+                  (bfr-vars-bounded k p)
+                  (bvar-db-vars-bounded k p (next-bvar$a bvar-db) bvar-db)
+                  (equal nn (next-bvar$a new-bvar-db))
+                  (gbc-db-vars-bounded k p (nth *is-constraint-db* interp-st))
+                  (gobj-alist-vars-bounded k p alist)
+                  (bfr-mode))
+             (and (gobj-alist-vars-bounded k t new-alist)
+                  (implies (bfr-constr-vars-bounded k p (nth *is-constraint* interp-st))
+                           (bfr-constr-vars-bounded k t (nth *is-constraint* new-interp-st)))
+                  (bvar-db-vars-bounded k t nn new-bvar-db)
+                  (gbc-db-vars-bounded k t (nth *is-constraint-db* new-interp-st))))
+    :hints (("goal" :use ((:instance glmc-generic-interp-bindinglist-vars-bounded))
+             :in-theory (disable glmc-generic-interp-bindinglist-vars-bounded))))
+
+  (std::defret <fn>-bvar-db-ordered
+    (b* ((k (next-bvar$a bvar-db)))
+      (implies (and (equal p (glcp-config->param-bfr config))
+                    (bfr-vars-bounded k p)
+                    (bvar-db-orderedp p bvar-db)
+                    (bvar-db-vars-bounded k p k bvar-db)
+                    (gbc-db-vars-bounded k p (nth *is-constraint-db* interp-st))
+                    (gobj-alist-vars-bounded k p alist))
+               (bvar-db-orderedp p new-bvar-db)))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret <fn>-bvar-db-ordered-aig-mode
+    (b* ((k (next-bvar$a bvar-db)))
+      (implies (and (equal p (glcp-config->param-bfr config))
+                    (bfr-vars-bounded k p)
+                    (bvar-db-orderedp p bvar-db)
+                    (bvar-db-vars-bounded k p k bvar-db)
+                    (gbc-db-vars-bounded k p (nth *is-constraint-db* interp-st))
+                    (gobj-alist-vars-bounded k p alist)
+                    (bfr-mode))
+               (bvar-db-orderedp t new-bvar-db)))
+    :hints (("Goal" :use ((:instance glmc-generic-interp-bindinglist-bvar-db-ordered))
+             :in-theory (disable glmc-generic-interp-bindinglist-bvar-db-ordered)
+             :do-not-induct t)))
+
+  (std::defret interp-st-obligs-extension-p-of-<fn>
+    (interp-st-obligs-extension-p new-interp-st interp-st)
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (std::defret bvar-db-extension-p-of-<fn>
+    (bvar-db-extension-p new-bvar-db bvar-db)
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (verify-guards glmc-generic-interp-bindinglist))
+
 
 (defsection glmc-generic-interp-nonhyps
   (local (in-theory (enable glmc-generic-interp-nonhyps)))
   (local (std::set-define-current-function glmc-generic-interp-nonhyps))
+
+  (local (in-theory (disable gobj-to-param-space
+                             gobj-alist-to-param-space
+                             equal-of-booleans-rewrite)))
 
   (verify-guards glmc-generic-interp-nonhyps)
 ;; (define glmc-generic-interp-nonhyps ((config glmc-config-p)
@@ -2675,7 +3014,9 @@
                     (bfr-mode)
                     (bfr-eval hyp-bfr bfr-env))
                (equal (glcp-generic-geval nextst env)
-                      (glcp-generic-geval-ev config1.nextst alist))))
+                      (glcp-generic-geval-ev config1.nextst
+                                             (glmc-generic-ev-bindinglist
+                                              config1.bindings alist)))))
     :hints(("Goal" :in-theory (enable bfr-unparam-env genv-unparam))))
 
 
@@ -2704,16 +3045,18 @@
                     (not er)
                     (bfr-mode)
                     (bfr-eval hyp-bfr bfr-env))
-               (and (iff (bfr-eval initst-bfr bfr-env)
-                         (glcp-generic-geval-ev config1.initstp alist))
-                    (iff (bfr-eval constr-bfr bfr-env)
-                         (glcp-generic-geval-ev config1.constr alist))
-                    (iff (bfr-eval prop-bfr bfr-env)
-                         (glcp-generic-geval-ev config1.prop alist))
-                    (iff (bfr-eval st-hyp-next-bfr bfr-env)
-                         (glcp-generic-geval-ev config1.st-hyp
-                                                (list (cons config1.st-var
-                                                            (glcp-generic-geval-ev config1.nextst alist))))))))
+               (b* ((new-alist (glmc-generic-ev-bindinglist
+                                              config1.bindings alist)))
+                 (and (iff (bfr-eval initst-bfr bfr-env)
+                           (glcp-generic-geval-ev config1.initstp new-alist))
+                      (iff (bfr-eval constr-bfr bfr-env)
+                           (glcp-generic-geval-ev config1.constr new-alist))
+                      (iff (bfr-eval prop-bfr bfr-env)
+                           (glcp-generic-geval-ev config1.prop new-alist))
+                      (iff (bfr-eval st-hyp-next-bfr bfr-env)
+                           (glcp-generic-geval-ev config1.st-hyp
+                                                  (list (cons config1.st-var
+                                                              (glcp-generic-geval-ev config1.nextst new-alist)))))))))
 
     :hints (("goal" :expand ((glcp-generic-geval-alist nil env))
              :in-theory (enable bfr-unparam-env genv-unparam
@@ -2846,18 +3189,6 @@
     :hints (("Goal" :use ((:instance glmc-generic-interp-nonhyps-bvar-db-ordered))
              :in-theory (disable glmc-generic-interp-nonhyps-bvar-db-ordered
                                  glmc-generic-interp-nonhyps))))
-
-  (std::defret glmc-generic-interp-nonhyps-bvar-db-ordered
-    (b* (((glmc-config+ config1) (glmc-config-update-param hyp-bfr config))
-         (k (next-bvar$a hyp-bvar-db)))
-      (implies (and (<= (shape-spec-max-bvar-list
-                         (shape-spec-bindings->sspecs config1.shape-spec-alist))
-                        (nfix k))
-                    (bfr-vars-bounded k hyp-bfr)
-                    (bvar-db-orderedp t hyp-bvar-db)
-                    (bvar-db-vars-bounded k t k hyp-bvar-db)
-                    (gbc-db-vars-bounded k t (nth *is-constraint-db* interp-st)))
-               (bvar-db-orderedp hyp-bfr new-bvar-db))))
   
   (local (acl2::use-trivial-ancestors-check))
 
@@ -2967,7 +3298,9 @@
                     (bvar-db-orderedp t hyp-bvar-db)
                     (gbc-db-vars-bounded k t (nth *is-constraint-db* interp-st)))
                (equal (glcp-generic-geval nextst (cons fix-bfr-env var-env))
-                      (glcp-generic-geval-ev config1.nextst alist))))
+                      (glcp-generic-geval-ev config1.nextst
+                                             (glmc-generic-ev-bindinglist
+                                              config1.bindings alist)))))
     :hints (("goal" :in-theory (e/d (glcp-interp-accs-ok)
                                     (glmc-generic-interp-nonhyps
                                      glmc-generic-interp-nonhyps-nextst-correct))
@@ -3012,16 +3345,17 @@
                     (pbfr-vars-bounded k t hyp-bfr)
                     (bvar-db-orderedp t hyp-bvar-db)
                     (gbc-db-vars-bounded k t (nth *is-constraint-db* interp-st)))
-               (and (iff (bfr-eval initst-bfr fix-bfr-env)
-                         (glcp-generic-geval-ev config1.initstp alist))
-                    (iff (bfr-eval constr-bfr fix-bfr-env)
-                         (glcp-generic-geval-ev config1.constr alist))
-                    (iff (bfr-eval prop-bfr fix-bfr-env)
-                         (glcp-generic-geval-ev config1.prop alist))
-                    (iff (bfr-eval st-hyp-next-bfr fix-bfr-env)
-                         (glcp-generic-geval-ev config1.st-hyp
-                                                (list (cons config1.st-var
-                                                            (glcp-generic-geval-ev config1.nextst alist))))))))
+               (b* ((new-alist (glmc-generic-ev-bindinglist config1.bindings alist)))
+                 (and (iff (bfr-eval initst-bfr fix-bfr-env)
+                           (glcp-generic-geval-ev config1.initstp new-alist))
+                      (iff (bfr-eval constr-bfr fix-bfr-env)
+                           (glcp-generic-geval-ev config1.constr new-alist))
+                      (iff (bfr-eval prop-bfr fix-bfr-env)
+                           (glcp-generic-geval-ev config1.prop new-alist))
+                      (iff (bfr-eval st-hyp-next-bfr fix-bfr-env)
+                           (glcp-generic-geval-ev config1.st-hyp
+                                                  (list (cons config1.st-var
+                                                              (glcp-generic-geval-ev config1.nextst new-alist)))))))))
     :hints (("goal" :in-theory (e/d (glcp-interp-accs-ok)
                                     (glmc-generic-interp-nonhyps
                                      glmc-generic-interp-nonhyps-st-bfrs-correct))
@@ -3455,6 +3789,11 @@
                 t hyp-max-bvar fix-env)))
     :hints(("Goal" :in-theory (enable glmc-generic-mcheck-main-interps-env))))
 
+  (local (defthm glmc-config->bindings-of-glmc-config-update-param
+           (equal (glmc-config->bindings (glmc-config-update-param p config))
+                  (glmc-config->bindings config))
+           :hints(("Goal" :in-theory (enable glmc-config-update-param)))))
+
   (std::defret glmc-generic-mcheck-main-interps-nextst-correct
     (b* (((glmc-config+ config))
          (alist (glcp-generic-geval-alist (shape-specs-to-interp-al config.shape-spec-alist) env))
@@ -3472,7 +3811,8 @@
                     (not er)
                     (bfr-mode))
                (equal (glcp-generic-geval nextst fix-env)
-                      (glcp-generic-geval-ev config.nextst alist))))
+                      (glcp-generic-geval-ev config.nextst
+                                             (glmc-generic-ev-bindinglist config.bindings alist)))))
     :hints(("Goal" :in-theory (enable glmc-generic-mcheck-main-interps-env))))
 
   (std::defret glmc-generic-mcheck-main-interps-concl-bfrs-correct
@@ -3492,16 +3832,17 @@
                     (equal (w state0) (w state))
                     (not er)
                     (bfr-mode))
+               (b* ((new-alist (glmc-generic-ev-bindinglist config.bindings alist)))
                (and (equal (bfr-eval initst-bfr (car fix-env))
-                           (bool-fix (glcp-generic-geval-ev config.initstp alist)))
+                           (bool-fix (glcp-generic-geval-ev config.initstp new-alist)))
                     (equal (bfr-eval constr-bfr (car fix-env))
-                           (bool-fix (glcp-generic-geval-ev config.constr alist)))
+                           (bool-fix (glcp-generic-geval-ev config.constr new-alist)))
                     (equal (bfr-eval prop-bfr (car fix-env))
-                           (bool-fix (glcp-generic-geval-ev config.prop alist)))
+                           (bool-fix (glcp-generic-geval-ev config.prop new-alist)))
                     (equal (bfr-eval st-hyp-next-bfr (car fix-env))
                            (bool-fix (glcp-generic-geval-ev config.st-hyp
                                                             (list (cons config.st-var
-                                                                        (glcp-generic-geval-ev config.nextst alist)))))))))
+                                                                        (glcp-generic-geval-ev config.nextst new-alist))))))))))
     :hints(("Goal" :in-theory (enable glmc-generic-mcheck-main-interps-env
                                       equal-of-booleans-rewrite))))
 
@@ -5920,31 +6261,32 @@
                     (equal (assoc k x) (hons-assoc-equal k x)))
            :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
-  (Defthm-flag-collect-vars
+  (acl2::defthm-simple-term-vars-flag
     (defthm glcp-generic-geval-ev-of-extract-variable-subset-incl-unbound
-      (implies (and (subsetp (collect-vars x) vars)
+      (implies (and (subsetp (simple-term-vars x) vars)
                     (pseudo-termp x))
                (equal (glcp-generic-geval-ev x (alist-extract-incl-unbound vars env))
                       (glcp-generic-geval-ev x env)))
-      :hints ('(:expand ((collect-vars x)
+      :hints ('(:expand ((simple-term-vars x)
                          (pseudo-termp x))
                 :in-theory (enable glcp-generic-geval-ev-of-fncall-args)))
-      :flag collect-vars)
+      :flag simple-term-vars)
     (defthm glcp-generic-geval-ev-lst-of-extract-variable-subset-incl-unbound
-      (implies (and (subsetp (collect-vars-list x) vars)
+      (implies (and (subsetp (simple-term-vars-lst x) vars)
                     (pseudo-term-listp x))
                (equal (glcp-generic-geval-ev-lst x (alist-extract-incl-unbound vars env))
                       (glcp-generic-geval-ev-lst x env)))
-      :hints ('(:expand ((collect-vars-list x)
+      :hints ('(:expand ((simple-term-vars-lst x)
                          (pseudo-term-listp x))))
-      :flag collect-vars-list))
+      :flag simple-term-vars-lst))
 
   (defthm glcp-generic-geval-ev-alist-of-extract-variable-subset-incl-unbound
-    (implies (and (subsetp (collect-vars-list (alist-vals x)) vars)
+    (implies (and (subsetp (simple-term-vars-lst (alist-vals x)) vars)
                   (pseudo-term-alistp x))
              (equal (glcp-generic-geval-ev-alist x (alist-extract-incl-unbound vars env))
                     (glcp-generic-geval-ev-alist x env)))
-    :hints(("Goal" :in-theory (enable alist-vals glcp-generic-geval-ev-alist pseudo-term-alistp)))))
+    :hints(("Goal" :in-theory (enable alist-vals glcp-generic-geval-ev-alist pseudo-term-alistp
+                                      simple-term-vars-lst)))))
 
 (local (defthm pseudo-term-list-listp-of-interp-defs-alist-clauses
          (implies (acl2::interp-defs-alistp defs)
@@ -5965,7 +6307,79 @@
                             bvar-db-fix-env
                             member
                             pseudo-termp)))
+
+
+
+(defthm glmc-generic-ev-bindinglist-when-eval-alists-agree-on-free-vars
+  (implies (and (acl2::eval-alists-agree (acl2::bindinglist-free-vars x) a b)
+                (acl2::eval-alists-agree (set-difference-eq (simple-term-vars body)
+                                                            (acl2::bindinglist-bound-vars x)) a b)
+                (acl2::bindinglist-p x)
+                (pseudo-termp body))
+           (equal (glcp-generic-geval-ev body (glmc-generic-ev-bindinglist x a))
+                  (glcp-generic-geval-ev body (glmc-generic-ev-bindinglist x b))))
+  :hints(("Goal" :use ((:instance
+                        (:functional-instance acl2::unify-ev-bindinglist-when-eval-alists-agree-on-free-vars
+                         (acl2::unify-ev glcp-generic-geval-ev)
+                         (acl2::unify-ev-lst glcp-generic-geval-ev-lst)
+                         (acl2::unify-ev-bindinglist glmc-generic-ev-bindinglist))
+                        (x x) (a a) (b b) (body body)))
+          :in-theory (enable glmc-generic-ev-bindinglist
+                             glcp-generic-geval-ev-of-fncall-args))))
   
+
+(local (defthm lookup-in-pairlis$-of-glcp-generic-geval-ev-lst
+         (equal (cdr (hons-assoc-equal k (pairlis$ vars (glcp-generic-geval-ev-lst vars a))))
+                (and (member k vars)
+                     (glcp-generic-geval-ev k a)))
+         :hints (("goal" :in-theory (enable pairlis$)))))
+
+
+(defsection eval-alists-agree-on-free-vars-of-pairlis$
+  (local (defthmd symbolp-when-member-symbol-list
+           (implies (and (member k x)
+                         (symbol-listp (list-fix x)))
+                    (symbolp k))
+           :hints(("Goal" :in-theory (enable list-fix)))))
+
+  (local (defthmd symbol-listp-when-subsetp
+           (implies (and (subsetp x y)
+                         (symbol-listp y))
+                    (symbol-listp (list-fix x)))
+           :hints(("Goal" :in-theory (enable subsetp symbolp-when-member-symbol-list)
+                   :induct (len x)))))
+                       
+  (defthm eval-alists-agree-on-free-vars-of-pairlis$
+    (implies (and (subsetp vars1 vars2)
+                  (symbol-listp vars2)
+                  (not (member nil vars1)))
+             (acl2::eval-alists-agree vars1 (pairlis$ vars2 (glcp-generic-geval-ev-lst vars2 a)) a))
+    :hints(("Goal" :in-theory (enable acl2::eval-alists-agree-by-bad-guy
+                                      symbolp-when-member-symbol-list
+                                      acl2::assoc-is-hons-assoc-equal-when-key-nonnil
+                                      symbol-listp-when-subsetp)
+            :do-not-induct t))))
+
+(defthm glmc-generic-ev-bindinglist-of-pairlis$-keys
+  (implies (and (subsetp (set-difference-eq (simple-term-vars body)
+                                            (acl2::bindinglist-bound-vars x))
+                         vars)
+                (subsetp (acl2::bindinglist-free-vars x) vars)
+                (symbol-listp vars)
+                (acl2::bindinglist-p x)
+                (pseudo-termp body))
+           (equal (glcp-generic-geval-ev body
+                                         (glmc-generic-ev-bindinglist
+                                          x
+                                          (pairlis$ vars (glcp-generic-geval-ev-lst vars a))))
+                  (glcp-generic-geval-ev body
+                                         (glmc-generic-ev-bindinglist x a))))
+  :hints (("goal" :use ((:instance glmc-generic-ev-bindinglist-when-eval-alists-agree-on-free-vars
+                         (a (pairlis$ vars (glcp-generic-geval-ev-lst vars a)))
+                         (b a)))
+           :in-theory (disable glmc-generic-ev-bindinglist-when-eval-alists-agree-on-free-vars)
+           :do-not-induct t)))
+
 (defsection glmc-generic-mcheck-to-fsm
   (local (in-theory (enable glmc-generic-mcheck-to-fsm)))
   (local (std::set-define-current-function glmc-generic-mcheck-to-fsm))
@@ -6025,6 +6439,12 @@
              (equal (glmc-generic-mcheck-to-fsm config bvar-db state)
                     (glmc-generic-mcheck-to-fsm config nil state))))
 
+  (local (defthm subsetp-of-set-difference
+           (iff (subsetp-equal (set-difference-equal a b) c)
+                (subsetp-equal a (union-equal c b)))
+           :hints ((acl2::set-reasoning))))
+
+  (local (in-theory (disable acl2::commutativity-of-append-under-set-equiv)))
 
   (std::defret glmc-generic-mcheck-to-fsm-correct
     (b* (((glmc-config+ config))
@@ -6054,23 +6474,24 @@
                      t fsm.hyp-var-bound env)
                     (implies (and (glcp-generic-geval-ev config.in-hyp alist)
                                   (glcp-generic-geval-ev config.st-hyp alist))
-                             (and (equal (bfr-eval fsm.bit-constr (car env)) t)
-                                  (glcp-generic-bvar-db-env-ok new-bvar-db t (next-bvar$a new-bvar-db) env)
-                                  (equal (bfr-eval-alist fsm.nextst (car env))
-                                         (glmc-generic-extract-state-bits
-                                          (glcp-generic-geval-ev config.nextst alist)
-                                          config
-                                          new-bvar-db))
-                                  (equal (bfr-eval fsm.prop (car env))
-                                         (bool-fix (glcp-generic-geval-ev config.prop alist)))
-                                  (equal (bfr-eval fsm.fsm-constr (car env))
-                                         (bool-fix (glcp-generic-geval-ev config.constr alist)))
-                                  (equal (bfr-eval fsm.initst (car env))
-                                         (bool-fix (glcp-generic-geval-ev config.initstp alist)))
-                                  (equal (bfr-eval fsm.st-hyp-next (car env))
-                                         (bool-fix (glcp-generic-geval-ev config.st-hyp
-                                                                          (list (cons config.st-var
-                                                                                      (glcp-generic-geval-ev config.nextst alist)))))))))))
+                             (b* ((new-alist (glmc-generic-ev-bindinglist config.bindings alist)))
+                               (and (equal (bfr-eval fsm.bit-constr (car env)) t)
+                                    (glcp-generic-bvar-db-env-ok new-bvar-db t (next-bvar$a new-bvar-db) env)
+                                    (equal (bfr-eval-alist fsm.nextst (car env))
+                                           (glmc-generic-extract-state-bits
+                                            (glcp-generic-geval-ev config.nextst new-alist)
+                                            config
+                                            new-bvar-db))
+                                    (equal (bfr-eval fsm.prop (car env))
+                                           (bool-fix (glcp-generic-geval-ev config.prop new-alist)))
+                                    (equal (bfr-eval fsm.fsm-constr (car env))
+                                           (bool-fix (glcp-generic-geval-ev config.constr new-alist)))
+                                    (equal (bfr-eval fsm.initst (car env))
+                                           (bool-fix (glcp-generic-geval-ev config.initstp new-alist)))
+                                    (equal (bfr-eval fsm.st-hyp-next (car env))
+                                           (bool-fix (glcp-generic-geval-ev config.st-hyp
+                                                                            (list (cons config.st-var
+                                                                                        (glcp-generic-geval-ev config.nextst new-alist))))))))))))
     :hints(("Goal" :in-theory (enable glmc-generic-mcheck-env))))
 
   (std::defret w-state-preserved-of-glmc-generic-mcheck-to-fsm
@@ -6433,21 +6854,26 @@
             :induct (shape-spec-bindingsp x))
            (acl2::set-reasoning)))
 
+  (local (defthm simple-term-vars-when-variablep
+           (implies (variablep v)
+                    (equal (simple-term-vars v) (list v)))
+           :hints(("Goal" :in-theory (enable simple-term-vars)))))
+
   (defthm lookup-in-shape-spec-invert-vars-subset
-    (implies (not (member v (collect-vars-list (alist-vals x))))
-             (not (member v (collect-vars (cdr (hons-assoc-equal k x))))))
-    :hints(("Goal" :in-theory (enable collect-vars-list hons-assoc-equal alist-vals))))
+    (implies (not (member v (simple-term-vars-lst (alist-vals x))))
+             (not (member v (simple-term-vars (cdr (hons-assoc-equal k x))))))
+    :hints(("Goal" :in-theory (enable simple-term-vars-lst hons-assoc-equal alist-vals))))
 
   (defthm lookup-in-shape-spec-invert-vars-subset-of-state
     (implies (variablep st-var)
-             (subsetp (collect-vars (cdr (hons-assoc-equal v (mv-nth 0 (shape-spec-invert x st-var)))))
+             (subsetp (simple-term-vars (cdr (hons-assoc-equal v (mv-nth 0 (shape-spec-invert x st-var)))))
                       (list st-var)))
     :hints ((acl2::set-reasoning)))
 
   
   (defthm lookup-in-shape-spec-invert-vars-subset-of-state-gvar
     (implies (variablep st-var)
-             (subsetp (collect-vars (cdr (hons-assoc-equal v (mv-nth 1 (shape-spec-invert x st-var)))))
+             (subsetp (simple-term-vars (cdr (hons-assoc-equal v (mv-nth 1 (shape-spec-invert x st-var)))))
                       (list st-var)))
     :hints ((acl2::set-reasoning)))
 
@@ -6467,7 +6893,7 @@
 
   (defthm shape-spec-invert-alist-vals-vars-subset-of-state-gvar
     (implies (variablep st-var)
-             (subsetp (collect-vars-list (alist-vals (mv-nth 1 (shape-spec-invert x st-var))))
+             (subsetp (simple-term-vars-lst (alist-vals (mv-nth 1 (shape-spec-invert x st-var))))
                       (list st-var)))
     :hints ((acl2::set-reasoning)))
 
@@ -7208,10 +7634,11 @@
   (b* (((when (atom alists)) t)
        ((glmc-config config))
        (alist (cons (cons config.st-var curr-st) (car alists)))
-       (nextst (glcp-generic-geval-ev config.nextst alist))
-       (constr (glcp-generic-geval-ev config.constr alist))
        (in-hyp (glcp-generic-geval-ev config.in-hyp alist))
-       (prop   (glcp-generic-geval-ev config.prop alist))
+       (binding-alist (glmc-generic-ev-bindinglist config.bindings (acl2::alist-fix alist)))
+       (nextst (glcp-generic-geval-ev config.nextst binding-alist))
+       (constr (glcp-generic-geval-ev config.constr binding-alist))
+       (prop   (glcp-generic-geval-ev config.prop binding-alist))
        (st-hyp-next (glcp-generic-geval-ev config.st-hyp (list (cons config.st-var nextst))))
        ((unless (and constr in-hyp)) t)
        ((unless (and prop st-hyp-next)) nil))
@@ -7263,11 +7690,12 @@
                                       (glcp-generic-geval-ev-lst config.frame-ins alist))
                             (cons `(,config.st-var . ,(cdr (hons-assoc-equal config.st-var alist)))
                                   (pairlis$ config.in-vars rest-ins))))
-       ((unless (and (glcp-generic-geval-ev config.constr frame-alist)
-                     (glcp-generic-geval-ev config.in-hyp frame-alist)
-                     (glcp-generic-geval-ev config.prop frame-alist)))
+       (binding-alist (glmc-generic-ev-bindinglist config.bindings frame-alist))
+       ((unless (and (glcp-generic-geval-ev config.in-hyp frame-alist)
+                     (glcp-generic-geval-ev config.constr binding-alist)
+                     (glcp-generic-geval-ev config.prop binding-alist)))
         (list frame-alist))
-       (nextst (glcp-generic-geval-ev config.nextst frame-alist))
+       (nextst (glcp-generic-geval-ev config.nextst binding-alist))
        ((unless (glcp-generic-geval-ev config.st-hyp (list (cons config.st-var nextst))))
         (list frame-alist))
        (next-alist (cons `(,config.st-var . ,nextst)
@@ -7430,69 +7858,117 @@
                                              glcp-generic-geval-ev-lst-of-cons)
                    :induct (pairlis$ vars vals)))))
 
-    (Defthm-flag-collect-vars
+    (acl2::defthm-simple-term-vars-flag
     (defthm glcp-generic-geval-ev-of-cons-redundant
       (implies (and (pseudo-termp x)
                     (equal val (cdr (hons-assoc-equal var al))))
                (equal (glcp-generic-geval-ev x (cons (cons var val) al))
                       (glcp-generic-geval-ev x al)))
       :hints ('(:in-theory (enable glcp-generic-geval-ev-of-fncall-args pseudo-termp)))
-      :flag collect-vars)
+      :flag simple-term-vars)
     (defthm glcp-generic-geval-ev-lst-of-cons-redundant
       (implies (and (pseudo-term-listp x)
                     (equal val (cdr (hons-assoc-equal var al))))
                (equal (glcp-generic-geval-ev-lst x (cons (cons var val) al))
                       (glcp-generic-geval-ev-lst x al)))
-      :flag collect-vars-list))
+      :flag simple-term-vars-lst))
 
   (local (defthm assoc-is-hons-assoc
            (implies k
                     (equal (assoc k x) (hons-assoc-equal k x)))
            :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
-  (Defthm-flag-collect-vars
+  (acl2::defthm-simple-term-vars-flag
     (defthm glcp-generic-geval-ev-of-normalize-append-cons
       (implies (and (pseudo-termp x)
                     (not (hons-assoc-equal var a))
                     (not (hons-assoc-equal var b)))
-               (and (equal (glcp-generic-geval-ev x (append a b (list (cons var val))))
-                           (glcp-generic-geval-ev x (cons (cons var val) (append a b))))
+               (and (equal (glcp-generic-geval-ev x (append a b (cons (cons var val) c)))
+                           (glcp-generic-geval-ev x (cons (cons var val) (append a b c))))
                     (equal (glcp-generic-geval-ev x (append a (cons (cons var val) b)))
                            (glcp-generic-geval-ev x (cons (cons var val) (append a b))))))
       :hints ('(:in-theory (enable glcp-generic-geval-ev-of-fncall-args pseudo-termp)))
-      :flag collect-vars)
+      :flag simple-term-vars)
     (defthm glcp-generic-geval-ev-lst-of-normalize-append-cons
       (implies (and (pseudo-term-listp x)
                     (not (hons-assoc-equal var a))
                     (not (hons-assoc-equal var b)))
-               (and (equal (glcp-generic-geval-ev-lst x (append a b (list (cons var val))))
-                           (glcp-generic-geval-ev-lst x (cons (cons var val) (append a b))))
+               (and (equal (glcp-generic-geval-ev-lst x (append a b (cons (cons var val) c)))
+                           (glcp-generic-geval-ev-lst x (cons (cons var val) (append a b c))))
                     (equal (glcp-generic-geval-ev-lst x (append a (cons (cons var val) b)))
                            (glcp-generic-geval-ev-lst x (cons (cons var val) (append a b))))))
-      :flag collect-vars-list))
+      :flag simple-term-vars-lst))
 
-  (Defthm-flag-collect-vars
+  (acl2::defthm-simple-term-vars-flag
+    (defthm glcp-generic-geval-ev-of-alist-fix
+      (implies (and (pseudo-termp x))
+               (equal (glcp-generic-geval-ev x (acl2::alist-fix a))
+                      (glcp-generic-geval-ev x a)))
+      :hints ('(:in-theory (enable glcp-generic-geval-ev-of-fncall-args pseudo-termp)))
+      :flag simple-term-vars)
+    (defthm glcp-generic-geval-ev-lst-of-alist-fix
+      (implies (and (pseudo-term-listp x))
+               (equal (glcp-generic-geval-ev-lst x (acl2::alist-fix a))
+                      (glcp-generic-geval-ev-lst x a)))
+      :flag simple-term-vars-lst))
+
+  (defthm glmc-generic-ev-bindinglist-of-normalize-append-cons
+    (implies (and (acl2::bindinglist-p x)
+                  (pseudo-termp body)
+                  (not (hons-assoc-equal var a))
+                  (not (hons-assoc-equal var b)))
+             (and (equal (glcp-generic-geval-ev body (glmc-generic-ev-bindinglist x (append a b (cons (cons var val) c))))
+                         (glcp-generic-geval-ev body (glmc-generic-ev-bindinglist x (cons (cons var val) (append a b c)))))
+                  (equal (glcp-generic-geval-ev body (glmc-generic-ev-bindinglist x (append a (cons (cons var val) b))))
+                         (glcp-generic-geval-ev body (glmc-generic-ev-bindinglist x (cons (cons var val) (append a b)))))))
+    :hints(("Goal" :use ((:instance glmc-generic-ev-bindinglist-when-eval-alists-agree-on-free-vars
+                          (a (append a b (cons (cons var val) c)))
+                          (b (cons (cons var val) (append a b c))))
+                         (:instance glmc-generic-ev-bindinglist-when-eval-alists-agree-on-free-vars
+                          (a (append a (cons (cons var val) b)))
+                          (b (cons (cons var val) (append a b)))))
+            :in-theory (e/d (acl2::eval-alists-agree-by-bad-guy)
+                            (glmc-generic-ev-bindinglist-when-eval-alists-agree-on-free-vars)))))
+
+  (defthm glmc-generic-ev-bindinglist-of-normalize-redundant-cons
+    (implies (and (acl2::bindinglist-p x)
+                  (pseudo-termp body))
+             (equal (glcp-generic-geval-ev body (glmc-generic-ev-bindinglist x (cons (cons var val) (append a (cons (cons var val) b)))))
+                    (glcp-generic-geval-ev body (glmc-generic-ev-bindinglist x (cons (cons var val) (append a b))))))
+    :hints(("Goal" :use ((:instance glmc-generic-ev-bindinglist-when-eval-alists-agree-on-free-vars
+                          (a (cons (cons var val) (append a (cons (cons var val) b))))
+                          (b (cons (cons var val) (append a b)))))
+            :in-theory (e/d (acl2::eval-alists-agree-by-bad-guy)
+                            (glmc-generic-ev-bindinglist-when-eval-alists-agree-on-free-vars)))))
+
+  (acl2::defthm-simple-term-vars-flag
     (defthm glcp-generic-geval-ev-of-cons-irrel
       (implies (and (pseudo-termp x)
-                    (not (member var (collect-vars x))))
+                    (not (member var (simple-term-vars x))))
                (equal (glcp-generic-geval-ev x (cons (cons var val) a))
                       (glcp-generic-geval-ev x a)))
       :hints ('(:in-theory (enable glcp-generic-geval-ev-of-fncall-args pseudo-termp)
-                :expand ((collect-vars x))))
-      :flag collect-vars)
+                :expand ((simple-term-vars x))))
+      :flag simple-term-vars)
     (defthm glcp-generic-geval-ev-lst-of-cons-irrel
       (implies (and (pseudo-term-listp x)
-                    (not (member var (collect-vars-list x))))
+                    (not (member var (simple-term-vars-lst x))))
                (equal (glcp-generic-geval-ev-lst x (cons (cons var val) a))
                       (glcp-generic-geval-ev-lst x a)))
-      :hints ('(:expand ((collect-vars-list x))))
-      :flag collect-vars-list))
+      :hints ('(:expand ((simple-term-vars-lst x))))
+      :flag simple-term-vars-lst))
 
   ;; (local (defthm alist-equiv-of-cons-redundant
   ;;          (implies (equal val (cdr (hons-assoc-equal var al)))
   ;;                   (acl2::alist-equiv (cons (cons var val) al) al))))
 
-
+  (acl2::def-functional-instance glmc-generic-ev-bindinglist-to-lambda-nest-correct
+    acl2::bindinglist-to-lambda-nest-correct
+    ((acl2::unify-ev glcp-generic-geval-ev)
+     (acl2::unify-ev-lst glcp-generic-geval-ev-lst)
+     (acl2::unify-ev-bindinglist glmc-generic-ev-bindinglist))
+    :hints ('(:in-theory (enable glmc-generic-ev-bindinglist
+                                 glcp-generic-geval-ev-of-fncall-args))))
 
   (local (in-theory (disable acl2::pseudo-term-listp-of-cons
                              acl2::pseudo-termp-opener
@@ -7510,20 +7986,21 @@
                       ;;                   (glcp-generic-geval-ev-lst config.rest-ins alist))
                       ;;         (list (cons config.st-var
                       ;;                     (cdr (hons-assoc-equal config.st-var alist)))))
-          (car (glmc-generic-term-level-alists config alist))))
+          (car (glmc-generic-term-level-alists config alist)))
+         (bindings-alist (glmc-generic-ev-bindinglist config.bindings frame-alist)))
       (implies (and (glcp-generic-geval-ev-theoremp
                      (disjoin (glmc-run-check-clause config)))
                     (glmc-config-p config)
                     (not (glmc-clause-syntax-checks config))
                     (not (glcp-generic-geval-ev config.run alist)))
                (and (not (glcp-generic-geval-ev config.end-ins alist))
-                    (glcp-generic-geval-ev config.constr frame-alist)
+                    (glcp-generic-geval-ev config.constr bindings-alist)
                     (glcp-generic-geval-ev config.in-hyp frame-alist)
-                    (implies (glcp-generic-geval-ev config.prop frame-alist)
+                    (implies (glcp-generic-geval-ev config.prop bindings-alist)
                              (let ((nextst-alist (append (pairlis$ config.in-vars
                                                                    (glcp-generic-geval-ev-lst config.rest-ins alist))
                                                          (list (cons config.st-var
-                                                                     (glcp-generic-geval-ev config.nextst frame-alist))))))
+                                                                     (glcp-generic-geval-ev config.nextst bindings-alist))))))
                                (implies (glcp-generic-geval-ev config.st-hyp nextst-alist)
                                         (not (glcp-generic-geval-ev config.run nextst-alist))))))))
     :hints (("goal" :use ((:instance glcp-generic-geval-ev-falsify-sufficient
@@ -7535,6 +8012,8 @@
 
   (local (in-theory (disable glmc-run-check-clause)))
 
+
+ 
 
 
   (defthm glmc-generic-run-clause-check-implies-term-level-alists-correct
@@ -7632,7 +8111,9 @@
                                                        (cdr (hons-assoc-equal config.st-var alist)))))
                     (implies (consp (glmc-generic-term-level-alists config alist))
                              (let ((alist (car (glmc-generic-term-level-alists config alist))))
-                               (glcp-generic-geval-ev config.initstp alist)))
+                               (glcp-generic-geval-ev config.initstp
+                                                      (glmc-generic-ev-bindinglist
+                                                       config.bindings alist))))
                     (not (glcp-generic-geval-ev config.run alist)))))
     :hints (("goal" :use ((:instance glcp-generic-geval-ev-falsify-sufficient
                            (x (disjoin (glmc-clause-check-clause clause config)))
@@ -7703,7 +8184,10 @@
                     (bfr-mode))
                (glcp-generic-geval-ev config.st-hyp
                                       (list (cons config.st-var
-                                                  (glcp-generic-geval-ev config.nextst alist))))))
+                                                  (glcp-generic-geval-ev
+                                                   config.nextst
+                                                   (glmc-generic-ev-bindinglist
+                                                    config.bindings alist)))))))
     :hints (("goal" :use ((:instance bfr-sat-unsat
                            (prop (b* (((mv (glmc-fsm fsm) ?mcheck-er & &)
                                        (glmc-generic-mcheck-to-fsm config bvar-db1 state1)))
@@ -7721,7 +8205,9 @@
   (std::defret glmc-state-hyp-is-inductive-clause-implies-rw
     (b* (((glmc-config+ config))
          (new-alist (list (cons config.st-var
-                                (glcp-generic-geval-ev config.nextst alist)))))
+                                (glcp-generic-geval-ev
+                                 config.nextst
+                                 (glmc-generic-ev-bindinglist config.bindings alist))))))
       (implies (and (glcp-generic-geval-ev-theoremp (conjoin-clauses clauses))
                     (equal config.st-hyp-method :inductive-clause)
                     (not (glmc-syntax-checks config))
@@ -7809,7 +8295,9 @@
                     (not (glmc-syntax-checks config))
                     (not (glmc-clause-syntax-checks config)))
                (let ((alist (car (glmc-generic-term-level-alists config alist))))
-                 (glcp-generic-geval-ev config.initstp alist))))
+                 (glcp-generic-geval-ev config.initstp
+                                        (glmc-generic-ev-bindinglist
+                                         config.bindings alist)))))
     :hints (("goal" :do-not-induct t
              :use glmc-clause-check-implies-consp-alists
              :in-theory (disable glmc-clause-check-implies-consp-alists)
@@ -7881,8 +8369,10 @@
                (glcp-generic-geval-ev config.st-hyp (list (cons config.st-var
                                                                 (glcp-generic-geval-ev
                                                                  config.nextst
-                                                                 (car (glmc-generic-term-level-alists
-                                                                       config alist))))))))
+                                                                 (glmc-generic-ev-bindinglist
+                                                                  config.bindings
+                                                                  (car (glmc-generic-term-level-alists
+                                                                        config alist)))))))))
     :hints (("goal" :do-not-induct t
              :use glmc-clause-check-implies-consp-alists
              :in-theory (disable glmc-clause-check-implies-consp-alists)
@@ -7915,7 +8405,9 @@
        ((glmc-config config))
        (alist (cons (cons config.st-var curr-st) (car alists)))
        (bfr-env (car (glmc-generic-mcheck-env alist config state)))
-       (nextst (glcp-generic-geval-ev config.nextst alist)))
+       (nextst (glcp-generic-geval-ev config.nextst
+                                      (glmc-generic-ev-bindinglist
+                                       config.bindings alist))))
     (cons bfr-env
           (glmc-mcrun-alists-to-envs config nextst (cdr alists) state)))
   ///
@@ -7962,11 +8454,28 @@
                                      (car (glmc-generic-mcheck-env alist config state))))
                       (glcp-generic-geval-ev config.st-hyp
                                              (list (cons config.st-var
-                                                         (glcp-generic-geval-ev config.nextst alist))))))
+                                                         (glcp-generic-geval-ev
+                                                          config.nextst
+                                                          (glmc-generic-ev-bindinglist
+                                                           config.bindings alist)))))))
            :hints (("goal" :cases ((equal (glmc-config->st-hyp-method config) :inductive-clause)
                                    (equal (glmc-config->st-hyp-method config) :inductive-sat))
                     :in-theory (enable glmc-mcheck-full-property)))))
                                   
+
+  (local (defthmd alist-fix-of-append
+           (equal (acl2::alist-fix (append a b))
+                  (append (acl2::alist-fix a)
+                          (acl2::alist-fix b)))))
+
+  (local (in-theory (disable acl2::alist-fix-of-cons)))
+
+  (defthm glmc-generic-ev-bindinglist-of-alist-fix
+    (implies (acl2::bindinglist-p x)
+             (equal (glmc-generic-ev-bindinglist x (acl2::alist-fix a))
+                    (glmc-generic-ev-bindinglist x a)))
+    :hints(("Goal" :in-theory (enable glmc-generic-ev-bindinglist
+                                      alist-fix-of-append))))
 
   (defthm glmc-generic-mcheck-to-fsm-translate-runs-correct
     (b* (((glmc-config+ config))
@@ -8208,6 +8717,34 @@
                       (pbfr-vars-bounded p t (glmc-mcheck-full-property config fsm))))
            :hints(("Goal" :in-theory (enable glmc-mcheck-full-property)))))
 
+  (local
+   (defthm glmc-generic-ev-bindinglist-of-remove-extra-st-var-binding
+     (b* (((glmc-config+ config))
+          (alist (car (glmc-generic-term-level-alists config a))))
+       (implies (and (acl2::bindinglist-p x)
+                     (pseudo-termp body)
+                     (not (glmc-clause-syntax-checks config))
+                     (consp (glmc-generic-term-level-alists config a)))
+                (equal (glcp-generic-geval-ev
+                        body
+                        (glmc-generic-ev-bindinglist
+                         x
+                         (cons (cons config.st-var (cdr (hons-assoc-equal
+                                                         config.st-var a)))
+                               alist)))
+                       (glcp-generic-geval-ev
+                        body
+                        (glmc-generic-ev-bindinglist
+                         x alist)))))
+     :hints(("Goal" :use ((:instance glmc-generic-ev-bindinglist-when-eval-alists-agree-on-free-vars
+                           (a (b* (((glmc-config config)))
+                                (cons (cons config.st-var (cdr (hons-assoc-equal
+                                                                config.st-var a)))
+                                      (car (glmc-generic-term-level-alists config a)))))
+                           (b (car (glmc-generic-term-level-alists config a)))))
+             :in-theory (e/d (acl2::eval-alists-agree-by-bad-guy)
+                             (glmc-generic-ev-bindinglist-when-eval-alists-agree-on-free-vars))))))
+
 
   (defthm glmc-generic-correct
     (implies (and (pseudo-term-listp clause)
@@ -8221,6 +8758,7 @@
     ;; :hints (("goal" :cases ((CONSP (GLMC-GENERIC-TERM-LEVEL-ALISTS CONFIG A)))))
     :otf-flg t
     :rule-classes :clause-processor))
+
 
 
 

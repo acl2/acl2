@@ -223,6 +223,7 @@
     (:nextstate term nil :nextst)
     (:frame-input-bindings bindings ((acl2::in (car acl2::ins))) :frame-in-vars :frame-ins)
     (:rest-of-input-bindings bindings ((acl2::ins (cdr acl2::ins))) :in-vars :rest-ins)
+    (:body-bindings b*-bindings nil :bindings)
     (:end-of-inputsp term (atom acl2::ins) :end-ins)
     (:measure term (acl2-count acl2::ins) :in-measure)
     (:run term nil :run)
@@ -285,6 +286,13 @@
                 ((when err)
                  (mv err nil state)))
              (mv nil `(,(car config-kwds) ',vars ,(cadr config-kwds) ',trans-terms) state)))
+
+          (b*-bindings
+           (b* (((mv err bindings)
+                 (acl2::b*-binders-to-bindinglist user-val (w state)))
+                ((when err)
+                 (mv err nil state)))
+             (mv nil `(,(car config-kwds) ',bindings) state)))
 
           (boolean
            (if (booleanp user-val)
@@ -482,11 +490,16 @@ property was proved, then this produces an ACL2 theorem.</p>
 <li>@(':state-var') is the variable containing the current machine
 state (as distinguished from the inputs).</li>
 
-<li>@(':initstatep') is a term referencing the state-var, true for the valid
-initial states.</li>
+<li>@(':body-bindings') is a list of @(see b*) bindings under which to evaluate
+the @(':nextstate), @(':initstatep') @(':prop'), and @(':constraint') terms.
+It should only use the state variable and frame inputs.</li>
+
+<li>@(':initstatep') is a term that must be true for valid initial states,
+though it may reference any variables bound in @(':body-bindings') as well as
+the state and frame input variables.</li>
 
 <li>@(':nextstate') is a term giving the next value of the state, in terms of
-the state variable and frame inputs.</li>
+the state variable, frame inputs, and variables bound by @(':body-bindings').</li>
 
 <li>@(':run') is a term calling some function that recursively checks the
 property on some finite run, i.e. it checks the property of the current state
@@ -541,12 +554,16 @@ at the Boolean level.  If it is @(':mcheck'), then the condition is ANDed with
 the property in the model checking problem.  This is a more flexible method
  (though potentially slower) because the state hyp may be an invariant of all
 reachable states without being an inductive invariant.</li>
+
 <li>@(':prop') gives the property that must be proven to hold in each
-frame (i.e., the run function returns false if it is ever violated).</li>
+frame (i.e., the run function returns false if it is ever violated).  It may
+reference the state and frame input variables as well as variables bound in the
+@(':body-bindings').</li>
 
 <li>@(':constraint') gives a constraint that is assumed to hold in each
 frame (i.e., the run function returns true if it is ever violated). (This may
-be omitted; its default is @('T').)</li>
+be omitted; its default is @('T').)  It may reference the state and frame input
+variables as well as variables bound in the @(':body-bindings').</li>
 
 <li>@(':side-goals'), if set to @('T'), skips the actual model checking and
 simply returns the \"side goals\" such as coverage and the check that the run
@@ -602,11 +619,12 @@ that is proved by the model check, namely:
      t
    (let <frame-input-bindings>
      (let <rest-of-input-bindings>
-       (if (not (and <input-hyp> <constraint>))
+       (if (not (and <input-hyp>
+                     (b* <body-bindings> <constraint>)))
            t
-         (if (not <prop>)
+         (if (not (b* <body-bindings> <prop>))
              nil
-           (let ((<st-var> <nextstate>))
+           (let ((<st-var> (b* <body-bindings> <nextstate>)))
              (if (not <state-hyp>)
                  'nil
                <run>)))))))
