@@ -172,6 +172,7 @@
                          io?
                          justification
                          keyword-value-list-to-alist
+                         lambda-applicationp
                          lambda-body
                          lambda-formals
                          macro-namep
