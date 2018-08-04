@@ -368,6 +368,9 @@
  with @(tsee mbt); added an applicability condition to ensure that the
  restriction test is boolean-valued.</p>
 
+ <p>Imported more symbols from the @('\"ACL2\"') package into the @('\"APT\"')
+ package.</p>
+
  <h4><see topic='@(url acl2::bitops)'>Bitops</see></h4>
 
  <p>Added the @(see bitops::sparseint) library, which represents large integers

@@ -1467,9 +1467,9 @@
 ; code and have state as a formal:
 
 ;;; (initialize-invariant-risk-1
-;;;  *primitive-program-fns-with-raw-code*
+;;;  *initial-program-fns-with-raw-code*
 ;;;  (initialize-invariant-risk-1
-;;;   *primitive-logic-fns-with-raw-code*
+;;;   *initial-logic-fns-with-raw-code*
 ;;;   wrld
 ;;;   wrld)
 ;;;  wrld)
@@ -1489,7 +1489,7 @@
 ;;;
 ;;; ; For robustness we do not call formals here, because it causes an error in
 ;;; ; the case that it is not given a known function symbol, as can happen (for
-;;; ; example) with a member of the list *primitive-program-fns-with-raw-code*.
+;;; ; example) with a member of the list *initial-program-fns-with-raw-code*.
 ;;; ; In that case, the following getprop will return nil, in which case the
 ;;; ; above member-eq test is false, which works out as expected.
 ;;;
@@ -24372,8 +24372,8 @@
 ; That's fine; we essentially do our own memoization via the cl-cache.
 
                   (if (eq key-class :program)
-                      (member-eq key *primitive-program-fns-with-raw-code*)
-                    (member-eq key *primitive-logic-fns-with-raw-code*)))
+                      (member-eq key *initial-program-fns-with-raw-code*)
+                    (member-eq key *initial-logic-fns-with-raw-code*)))
              (er hard ctx
                  "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
                   code, hence is illegal to memoize unless :RECURSIVE is nil."

@@ -60,7 +60,7 @@
 ; Below is a guide to the files primarily related to the integration of apply$
 ; into our source code.  Of course, the name ``APPLY$'' and related symbols are
 ; sprinkled throughout the ACL2 source files now, e.g., in
-; *primitive-logic-fns-with-raw-code*, but these are the main files and books
+; *initial-logic-fns-with-raw-code*, but these are the main files and books
 ; and we list them in four groups explained below.
 
 ; Foundations:

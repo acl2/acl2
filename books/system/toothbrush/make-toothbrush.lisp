@@ -94,7 +94,7 @@
 
 (defconst *primitive-macros-evaluating-args-like-functions*
 
-; Most or all of these are from *primitive-macros-with-raw-code*.
+; Most or all of these are from *initial-macros-with-raw-code*.
 
   '(caar cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar cdddr
          caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr cdaaar
@@ -116,7 +116,7 @@
 
 (defconst *macros-to-expand-in-acl2-loop*
 
-; Most or all of these are from *primitive-macros-with-raw-code*.
+; Most or all of these are from *initial-macros-with-raw-code*.
 
   '(cond case er let*
          plet por pand pargs spec-mv-let))
@@ -186,7 +186,7 @@
 ; all function, constant, and macro names encountered.  We are conservative, in
 ; that we are free to return an error where translate11 would not.
 
-; !! Add state parameter and then replace *primitive-logic-fns-with-raw-code*
+; !! Add state parameter and then replace *initial-logic-fns-with-raw-code*
 ; with logic-fns-with-raw-code and similarly for program fns and macros.
 
 ; !! Possible efficiency enhancement (but would need to think this through, in
@@ -246,7 +246,7 @@
 
 ; Some functions and macros that one might expect on the list above, such as
 ; stobj-let and pargs, are macros with raw Lisp code and are ruled out below by
-; the *primitive-*-with-raw-code* tests below.  Others, like with-local-stobj
+; the *-with-raw-code* tests below.  Others, like with-local-stobj
 ; and wormhole-eval, we might want to think about handling.
 
     (extend-with-supporters-er x))
@@ -260,7 +260,7 @@
       (extend-with-supporters-lst (cdr x) ctx wrld names seen))
      ((eq (car x) 'the) ; (the type term)
       (extend-with-supporters (caddr x) ctx wrld names seen))
-     ((and (member-eq (car x) *primitive-macros-with-raw-code*)
+     ((and (member-eq (car x) *initial-macros-with-raw-code*)
            (not (member-eq (car x) *macros-to-expand-in-acl2-loop*)))
       (extend-with-supporters-er
        x
@@ -345,16 +345,16 @@
                                 ctx wrld names seen)))))))))))))))))
    ((cl-defined-p (car x))
     (extend-with-supporters-lst (cdr x) ctx wrld names seen))
-   ((or (member-eq (car x) *primitive-program-fns-with-raw-code*)
-        (member-eq (car x) *primitive-logic-fns-with-raw-code*))
+   ((or (member-eq (car x) *initial-program-fns-with-raw-code*)
+        (member-eq (car x) *initial-logic-fns-with-raw-code*))
     (extend-with-supporters-er
      x
      (msg "Illegal function call: ~x0 is not fboundp but is in ~x1.  Probably ~
            it is necessary to extend file load-toothbrush.lsp."
           (car x)
-          (if (member-eq (car x) *primitive-program-fns-with-raw-code*)
-              '*primitive-program-fns-with-raw-code*
-            '*primitive-logic-fns-with-raw-code*))))
+          (if (member-eq (car x) *initial-program-fns-with-raw-code*)
+              '*initial-program-fns-with-raw-code*
+            '*initial-logic-fns-with-raw-code*))))
    (t
     (let* ((fn (car x))
            (body (get-cltl-body fn ctx wrld))

@@ -7271,7 +7271,7 @@
 ; the state.  The answer seems to be no, but only because (as Sol pointed out,
 ; if memory serves) trans-eval is in :program mode -- and it stays there
 ; because trans-eval calls ev-for-trans-eval, which calls ev, which belongs to
-; the list *primitive-program-fns-with-raw-code* (and because :logic mode
+; the list *initial-program-fns-with-raw-code* (and because :logic mode
 ; functions can't call :program mode functions).  Below is an example that
 ; illustrates what could go wrong if trans-eval were in :logic mode.
 
