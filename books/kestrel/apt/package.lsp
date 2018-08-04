@@ -29,6 +29,7 @@
                          all-calls
                          all-ffn-symbs
                          all-nils
+                         all-runes-in-ttree
                          append-lst
                          append?
                          apply-fn-if-known
@@ -39,6 +40,7 @@
                          attachment-pair
                          body
                          check-user-lambda
+                         clausify
                          cltl-def-from-name
                          collect-ideals
                          compute-stobj-flags
@@ -75,6 +77,7 @@
                          doublets-to-alist
                          drop-fake-runes
                          dumb-negate-lit
+                         dumb-occur
                          e/d*
                          enabled-numep
                          enabled-runep
@@ -124,6 +127,7 @@
                          ext-address-subterm-governors-lst-state
                          ext-fdeposit-term
                          ext-geneqv-at-subterm
+                         ext-rename-formals
                          fargn
                          fargs
                          fcons-term
@@ -216,6 +220,7 @@
                          strip-cddrs
                          strip-keyword-list
                          subcor-var
+                         sublis-expr
                          sublis-var
                          subst-expr
                          subst-expr1
@@ -234,6 +239,7 @@
                          tool2-fn
                          trans-eval
                          trans-eval-error-triple
+                         translate-hints
                          translate-term-lst
                          try-event
                          ubody
