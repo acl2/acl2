@@ -455,6 +455,71 @@ sat
 result.</p>
 </li>
 </ul>
-")
+
+<h3>Additional Notes</h3>
+<p>
+The instructions above explain how to install Z3 in the user's home directory.
+</p>
+<p>
+Another option is to install Z3 in a machine-wide location.
+The following instructions worked on at least two Mac machines:
+</p>
+<ol>
+<li>
+Download the latest stable release of Z3 as explained in the instructions above.
+Unzip it: let @('<dir>') be the name of the resulting directory.
+</li>
+<li>
+Move the directory to a machine-wide location, e.g.:
+@({
+  sudo mv <dir> /usr/local/
+})
+The @('sudo') is needed because @('/usr/local') is typically owned by @('root'),
+and it is not good practice to change the ownership of @('/usr/local')
+to a non-@('root') user.
+There is no need to change the ownership of @('/usr/local/<dir>') to @('root').
+</li>
+<li>
+Prepare to build Z3 with the Python bindings:
+@({
+  cd /usr/local/<dir>
+  python scripts/mk_make.py --python
+})
+Note that no @('--prefix') or @('--pypkgdir') options are used here,
+unlike the instructions given above.
+This may give a warning related to Z3's restriction,
+mentioned in the instructions above,
+that @('--prefix') must be a prefix of @('--pypkgdir');
+despite this warning, things worked on at least two Mac machines.
+On Mac, ensuring that this restriction is satisfied is tricky because
+Python packages are normally installed in places like
+@('/Library/Frameworks/Python.framework/Versions/3.6/...') or
+@('/System/Library/Frameworks/Python.framework/Versions/2.7/...'),
+but prefixes of these locations normally do not hold
+the @('bin'), @('lib'), and @('include') directories
+that the Z3 installation creates (see below).
+</li>
+<li>
+Build Z3:
+@({
+  cd build
+  make
+})
+This may take a while to complete.
+</li>
+<li>
+Install Z3:
+@({
+  sudo make install
+})
+The @('sudo') is needed because this will write into
+@('/usr/local/bin'), @('/usr/local/lib'), and @('/usr/local/include'),
+which are typically owned by @('root') (see comments above about this).
+</li>
+<li>
+Run the Z3 example in Python described in the instructions above,
+to confirm that the installation was successful.
+</li>
+</ol>")
 
 ;; (xdoc::save "./manual" :redef-okp t)  ;; write the manual
