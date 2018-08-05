@@ -8313,9 +8313,35 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                      "~&************ ABORTING from raw Lisp ***********")
              (format t
                      "~&********** (see :DOC raw-lisp-error) **********")
-             (format t
-                     "~&Error:  ~A"
-                     condition)))
+
+; In CCL we can get information about the function currently being executed.
+; Consider for example what happens if, during a computation, the evaluation of
+; (ash 1 (expt 2 48)) causes the error "Memory allocation request failed".
+; That is not very helpful, but it could be helpful to see the following extra
+; information about when this occurred:
+
+; "While executing: CCL::BIGNUM-ASHIFT-LEFT-DIGITS."
+
+; This extra information is a bit dodgy, since it comes from the low-level
+; definition of function ccl::%break-message in CCL source file
+; level-1/l1-readloop-lds.lisp (circa late 2017).  It is also may be unhelpful
+; in many cases, or not ideal; for example, the same function as above,
+; CCL::BIGNUM-ASHIFT-LEFT-DIGITS, is reported when attempting to evaluate (expt
+; 2 (expt 2 48)).  However, you get what you get with raw Lisp errors, and we
+; are happy to make them a bit more useful in some cases.
+
+             (cond
+              #+ccl
+              ((and (fboundp 'ccl::%real-err-fn-name)
+                    (boundp 'ccl::*top-error-frame*))
+               (format t
+                       "~&Error:  ~A~&While executing: ~S"
+                       condition
+                       (ccl::%real-err-fn-name ccl::*top-error-frame*)))
+              (t
+               (format t
+                       "~&Error:  ~A"
+                       condition)))))
            (when btp (format t "~%NOTE: See above for backtrace.~%"))
            (format t
                    "~&***********************************************~&")
