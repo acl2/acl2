@@ -532,27 +532,44 @@
   :body
 
   (b* ((ctx 'x86-one-byte-movsxd)
+
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
+
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (p2 (prefixes-slice :seg prefixes))
 
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :adr prefixes)))
+
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size proc-mode nil rex-byte t prefixes x86))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+
        (inst-ac? t)
-       ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         proc-mode #.*gpr-access* reg/mem-size inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       ((mv flg0
+            reg/mem
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+                                                #.*gpr-access*
+                                                reg/mem-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -574,7 +591,7 @@
        ;; Update the x86 state:
        (x86 (!rgfi-size register-size (reg-index reg rex-byte #.*r*) reg/mem
                         rex-byte x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 (def-inst x86-two-byte-movsxd
