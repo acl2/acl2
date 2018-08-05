@@ -218,6 +218,18 @@
   (defmacro xdoc::p* (&rest pieces)
     `(xdoc::tag "p" (concatenate 'string ,@pieces))))
 
+(define xdoc::topp ((string stringp))
+  :returns (text xdoc::textp)
+  :parents (xdoc::xdoc-constructors)
+  :short "Build an XML paragraph @('\<p\>...\</p\>') from a string,
+          at the top level."
+  :long
+  "<p>
+   This provides an abbreviation for the somewhat common case in which
+   a single paragraph is used as an XDOC string.
+   </p>"
+  (xdoc::topapp (xdoc::p string)))
+
 (define xdoc::li ((string stringp))
   :returns (text xdoc::textp)
   :parents (xdoc::xdoc-constructors)
