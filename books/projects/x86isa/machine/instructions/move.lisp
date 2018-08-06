@@ -518,7 +518,7 @@
 
   ;; Op/En: RM
   ;; [OP REG, R/M]
-  ;; #x63: MOVSX  r16, r/m16 (Move word to word)
+  ;; #x63: MOVSXD r16, r/m16 (Move word to word)
   ;;       MOVSXD r32, r/m32 (Move doubleword to doubleword)
   ;;       MOVSXD r64, r/m32 (Move doubleword to quadword with sign-extension)
 
