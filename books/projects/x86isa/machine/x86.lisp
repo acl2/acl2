@@ -927,9 +927,9 @@
 	      (#.*opr-pfx* (prefixes-slice :opr prefixes)) ;; 66
 	      (otherwise 0))
 	  (case (vex3-byte2-slice :pp (vex-prefixes-slice :byte2 vex-prefixes))
-	    (#b01 #.*mandatory-66h*)
-	    (#b10 #.*mandatory-F3h*)
-	    (#b11 #.*mandatory-F2h*)
+	    (#.*v66* #.*mandatory-66h*)
+	    (#.*vF3* #.*mandatory-F3h*)
+	    (#.*vF2* #.*mandatory-F2h*)
 	    (otherwise 0))))
 
        (modr/m?
@@ -1139,9 +1139,9 @@
 				      (vex-prefixes-slice :byte1 vex-prefixes))
 		  (vex3-byte2-slice :pp
 				    (vex-prefixes-slice :byte2 vex-prefixes)))
-	    (#b01 #.*mandatory-66h*)
-	    (#b10 #.*mandatory-F3h*)
-	    (#b11 #.*mandatory-F2h*)
+	    (#.*v66* #.*mandatory-66h*)
+	    (#.*vF3* #.*mandatory-F3h*)
+	    (#.*vF2* #.*mandatory-F2h*)
 	    (otherwise 0))))
 
        (modr/m?
@@ -1357,9 +1357,9 @@
        ;; References: Intel Vol. 2, Figure 2-9 and Section 2.3.6.1
        ((mv vex3-0F-map? vex3-0F38-map? vex3-0F3A-map?)
 	(if vex3-prefix?
-	    (mv (equal (vex3-byte1-slice :m-mmmm vex-byte1) #b00001)
-		(equal (vex3-byte1-slice :m-mmmm vex-byte1) #b00010)
-		(equal (vex3-byte1-slice :m-mmmm vex-byte1) #b00011))
+	    (mv (equal (vex3-byte1-slice :m-mmmm vex-byte1) #.*v0F*)
+		(equal (vex3-byte1-slice :m-mmmm vex-byte1) #.*v0F38*)
+		(equal (vex3-byte1-slice :m-mmmm vex-byte1) #.*v0F3A*))
 	  (mv nil nil nil)))
        ((when (and vex3-prefix?
 		   (not (or vex3-0F-map? vex3-0F38-map? vex3-0F3A-map?))))
@@ -1552,9 +1552,7 @@
        ((the (unsigned-byte 4) prefix-length)
 	(prefixes-slice :num-prefixes prefixes))
 
-       ((mv flg temp-rip) (if (equal 0 prefix-length)
-			      (add-to-*ip proc-mode start-rip 1 x86)
-			    (add-to-*ip proc-mode start-rip (1+ prefix-length) x86)))
+       ((mv flg temp-rip) (add-to-*ip proc-mode start-rip (1+ prefix-length) x86))
        ((when flg) (!!ms-fresh :increment-error flg))
 
        ;; If opcode/rex/vex/evex-byte is a rex byte, it is filed away in

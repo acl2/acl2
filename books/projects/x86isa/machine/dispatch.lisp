@@ -839,3 +839,70 @@
 		map world :escape-bytes escape-bytes)))))
 
 ;; ----------------------------------------------------------------------
+
+;; VEX-encoded instructions:
+
+(define vex-keyword-case-gen ((prefix-case keywordp))
+  (case prefix-case
+    (:UNUSED-VVVV     `((equal (vex-vvvv-slice vex-prefixes) #b1111)))
+    ((:NDS :NDD :DDS) `((not (equal (vex-vvvv-slice vex-prefixes) #b1111))))
+    ((:128 :LZ :L0)   `((equal (vex-l-slice vex-prefixes) 0)))
+    ((:256 :L1)       `((equal (vex-l-slice vex-prefixes) 1)))
+    ((:66)            `((equal (vex-pp-slice vex-prefixes) #.*v66*)))
+    ((:F3)            `((equal (vex-pp-slice vex-prefixes) #.*vF3*)))
+    ((:F2)            `((equal (vex-pp-slice vex-prefixes) #.*vF2*)))
+    ((:W0)            `((equal (vex-w-slice vex-prefixes) 0)))
+    ((:W1)            `((equal (vex-w-slice vex-prefixes) 1)))
+    ((:0F)            `((vex-prefixes-map-p #x0F vex-prefixes)))
+    ((:0F38)          `((vex-prefixes-map-p #x0F38 vex-prefixes)))
+    ((:0F3A)          `((vex-prefixes-map-p #x0F3A vex-prefixes)))
+    (otherwise
+     ;; :LIG, :WIG, :V, etc.
+     `())))
+
+(define vex-opcode-case-gen-aux ((case-info acl2::keyword-listp))
+  (if (endp case-info)
+      nil
+    `(,@(vex-keyword-case-gen (car case-info))
+      ,@(vex-opcode-case-gen-aux (cdr case-info)))))
+
+(define vex-opcode-case-gen ((kwd-lst acl2::keyword-listp))
+  (cons
+   (cons 'and
+	 (if (or (member-equal :NDS kwd-lst)
+		 (member-equal :NDD kwd-lst)
+		 (member-equal :DDS kwd-lst))
+	     (vex-opcode-case-gen-aux kwd-lst)
+	   (vex-opcode-case-gen-aux (cons :UNUSED-VVVV kwd-lst))))
+   `((x86-step-unimplemented "Opcode Unimplemented in x86isa!" x86))))
+
+(define vex-opcode-cases-gen ((lst true-list-listp))
+  (if (endp lst)
+      `((t
+	 (x86-illegal-instruction "Reserved or Illegal Opcode!" x86)))
+    (b* ((first (car lst))
+	 ((unless (acl2::keyword-listp first))
+	  `())
+	 (first-case (vex-opcode-case-gen first)))
+      `(,first-case
+	 ,@(vex-opcode-cases-gen (cdr lst))))))
+
+(define vex-case-gen ((map vex-maps-well-formed-p))
+  :guard-hints (("Goal" :in-theory (e/d (vex-maps-well-formed-p
+					 vex-opcode-cases-okp)
+					())))
+  (if (endp map)
+      `((t
+	 (x86-illegal-instruction "Reserved or Illegal Opcode!" x86)))
+    (b* ((first (car map))
+	 (opcode (car first))
+	 (info (cdr first))
+	 (kwd-lst (strip-cars info)))
+      `((,opcode (cond ,@(vex-opcode-cases-gen kwd-lst)))
+	,@(vex-case-gen (cdr map))))))
+
+;; (vex-case-gen *vex-0F-opcodes*)
+;; (vex-case-gen *vex-0F38-opcodes*)
+;; (vex-case-gen *vex-0F3A-opcodes*)
+
+;; ----------------------------------------------------------------------
