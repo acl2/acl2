@@ -53,7 +53,6 @@
 ;; INSTRUCTION: MUL
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-mul
 
   :parents (one-byte-opcodes)
@@ -168,7 +167,6 @@
 ;; INSTRUCTION: IMUL
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-imul-Op/En-M
 
   :parents (one-byte-opcodes)
@@ -271,7 +269,6 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-imul-Op/En-RM
   :evex t
   :parents (two-byte-opcodes)
@@ -364,7 +361,6 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-imul-Op/En-RMI
 
   :parents (one-byte-opcodes)

@@ -64,7 +64,6 @@
 
 ;; ======================================================================
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
 (define segment-base-and-bounds
   ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
    (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
@@ -201,7 +200,6 @@
      (equal (segment-base-and-bounds proc-mode seg-reg (xw fld index value x86))
             (segment-base-and-bounds proc-mode seg-reg x86)))))
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
 (define ea-to-la ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
                   (eff-addr  :type (signed-byte 64))
                   (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
@@ -341,7 +339,6 @@
            (mv-nth 1 (ea-to-la #.*64-bit-mode* eff-addr seg-reg x86))
            eff-addr)))))
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
 (define eas-to-las ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
                     (n natp)
                     (eff-addr  :type (signed-byte 64))

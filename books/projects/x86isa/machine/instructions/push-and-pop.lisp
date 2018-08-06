@@ -95,7 +95,6 @@
 ;; push
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-general-register
   :parents (one-byte-opcodes)
 
@@ -176,7 +175,6 @@
 
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-Ev
   :parents (one-byte-opcodes)
 
@@ -275,7 +273,6 @@
 
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-I
 
   :parents (one-byte-opcodes)
@@ -376,7 +373,6 @@
 
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-segment-register
   :evex t
   :parents (one-byte-opcodes two-byte-opcodes)
@@ -486,7 +482,6 @@
 ;; pop
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-pop-general-register
   :parents (one-byte-opcodes)
 
@@ -566,7 +561,6 @@
 
   :guard-hints (("Goal" :in-theory (enable rme-size))))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-pop-Ev
   :parents (one-byte-opcodes)
 
@@ -804,7 +798,6 @@
 ;; INSTRUCTION: PUSHF/PUSHFQ
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-pushf
 
   ;; #x9C: Op/En: NP
@@ -883,7 +876,6 @@
 ;; INSTRUCTION: POPF/POPFQ
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-popf
 
   ;; #x9D
@@ -1026,8 +1018,6 @@
 ;; INSTRUCTION: PUSHA/PUSHAD
 ;; ======================================================================
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
-
 (def-inst x86-pusha
 
   :parents (one-byte-opcodes)
@@ -1147,8 +1137,6 @@
 ;; ======================================================================
 ;; INSTRUCTION: POPA/POPAD
 ;; ======================================================================
-
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
 
 (def-inst x86-popa
 

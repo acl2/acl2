@@ -55,7 +55,6 @@
 ;; INSTRUCTION: SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-sal/sar/shl/shr/rcl/rcr/rol/ror
   :guard (not (equal (mrm-reg modr/m) 6))
 

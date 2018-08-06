@@ -529,7 +529,6 @@
                                       write-x86-file-des-logic)
                                      ()))))
 
-  ;; Contributed by Alessandro Coglio
   (defrule 64-bit-modep-of-write-x86-file-des
     (equal (64-bit-modep (write-x86-file-des fd fd-field x86))
            (64-bit-modep x86))

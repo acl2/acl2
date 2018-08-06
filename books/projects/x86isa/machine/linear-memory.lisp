@@ -772,7 +772,6 @@ memory.</li>
       (acl2::formals 'las-to-pas (w state))
       :output-index 1))
 
-    ;; Contributed by Alessandro Coglio.
     (defrule 64-bit-modep-of-las-to-pas
       (equal (64-bit-modep (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
              (64-bit-modep x86))
@@ -1133,7 +1132,7 @@ memory.</li>
       (equal (64-bit-modep (mv-nth 2 (rb n addr r-x x86)))
              (64-bit-modep x86))
       :enable 64-bit-modep)
-    
+
     (defrule x86-operation-mode-of-rb
       (equal (x86-operation-mode (mv-nth 2 (rb n addr r-x x86)))
              (x86-operation-mode x86))

@@ -643,7 +643,6 @@
 	   (er hard? 'compute-prop-for-a-simple-cell
 	       "Cell info.: ~x0~%" cell))))
 
-; extended to 32-bit mode by Alessandro Coglio (coglio@kestrel.edu):
   (define compute-prop-for-an-opcode-cell ((prop keywordp)
 					   (cell true-listp)
 					   (64-bit-modep booleanp)
@@ -801,7 +800,6 @@
 		       (ints-to-booleans
 			(quote ,computed-table))))))
 
-; added by Alessandro Coglio (coglio@kestrel.edu):
   (make-event
    ;; For 32-bit/Compatibility Modes:
    (b* ((precomputed-table
@@ -953,7 +951,6 @@
 		       (ints-to-booleans
 			(quote ,computed-table))))))
 
-; added by Alessandro Coglio (coglio@kestrel.edu):
   (make-event
    ;; For 32-bit mode: (:NO-PREFIX)
    (b* ((precomputed-table
@@ -984,7 +981,6 @@
 		       (ints-to-booleans
 			(quote ,computed-table))))))
 
-; added by Alessandro Coglio (coglio@kestrel.edu):
   (make-event
    ;; For 32-bit mode: (:66)
    (b* ((precomputed-table
@@ -1015,7 +1011,6 @@
 		       (ints-to-booleans
 			(quote ,computed-table))))))
 
-; added by Alessandro Coglio (coglio@kestrel.edu):
   (make-event
    ;; For 32-bit mode: (:F2)
    (b* ((precomputed-table
@@ -1046,7 +1041,6 @@
 		       (ints-to-booleans
 			(quote ,computed-table))))))
 
-; added by Alessandro Coglio (coglio@kestrel.edu):
   (make-event
    ;; For 32-bit mode: (:F3)
    (b* ((precomputed-table
@@ -1578,7 +1572,6 @@
 	(aref1 '64-bit-mode-one-byte-has-modr/m
 	       *64-bit-mode-one-byte-has-modr/m-ar* opcode))
 
-      ;; added by Alessandro Coglio (coglio@kestrel.edu):
       (define 32-bit-mode-one-byte-opcode-ModR/M-p
 	((opcode :type (unsigned-byte 8)))
 	:inline t
@@ -1631,7 +1624,6 @@
 	     (aref1 '64-bit-mode-two-byte-no-prefix-has-modr/m
 		    *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode)))))
 
-      ;; added by Alessandro Coglio (coglio@kestrel.edu):
       (define 32-bit-mode-two-byte-opcode-ModR/M-p
 	((mandatory-prefix :type (unsigned-byte 8))
 	 (opcode           :type (unsigned-byte 8)
@@ -1904,7 +1896,6 @@
 
   (local (xdoc::set-default-parents SIB-decoding))
 
-  ;; extended to 32-bit mode by Alessandro Coglio (coglio@kestrel.edu):
   (define x86-decode-SIB-p
     ((ModR/M :type (unsigned-byte 8))
      (16-bit-addressp booleanp))

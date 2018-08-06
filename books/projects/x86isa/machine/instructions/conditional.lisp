@@ -164,7 +164,6 @@
       (otherwise ;; will not be reached
        nil))))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-one-byte-jcc
 
   ;; Jump (short) if condition is met
@@ -238,7 +237,6 @@
            (x86 (write-*ip proc-mode next-rip x86)))
         x86))))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-two-byte-jcc
 
   :evex t
@@ -341,7 +339,6 @@
            (x86 (write-*ip proc-mode next-rip x86)))
         x86))))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-jrcxz
 
   ;; Jump (short) if condition is met
@@ -409,7 +406,6 @@
            (x86 (write-*ip proc-mode next-rip x86)))
         x86))))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cmovcc
 
   :evex t
@@ -506,7 +502,6 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-setcc
 
   :evex t

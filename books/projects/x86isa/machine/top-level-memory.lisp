@@ -34,8 +34,9 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ; Original Author(s):
-;   Alessandro Coglio <coglio@kestrel.edu>
-
+; Alessandro Coglio <coglio@kestrel.edu>
+; Contributing Author(s):
+; Dmitry Nadezhin
 (in-package "X86ISA")
 
 ;; ======================================================================
@@ -55,8 +56,6 @@
 
 ;; ======================================================================
 
-;; Factored out by Alessandro Coglio <coglio@kestrel.edu>
-;; Alignment check originally contributed by Dmitry Nadezhin
 (define address-aligned-p
   ((addr :type (signed-byte #.*max-linear-address-size*))
    (operand-size :type (member 1 2 4 6 8 10 16))

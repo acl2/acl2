@@ -77,7 +77,6 @@
 ;; are 64 bits by default; but they can be overridden to 32 bits by an address
 ;; size prefix.
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-near-jmp-Op/En-D
 
   ;; Op/En: D
@@ -100,7 +99,7 @@
 
   (b* ((ctx 'x86-near-jmp-Op/En-D)
 
-       ((when (equal #.*lock* (prefixes-slice :lck prefixes))) 
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (equal #.*operand-size-override*
@@ -145,7 +144,6 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-near-jmp-Op/En-M
 
   ;; Absolute indirect jump: RIP = r/m16/32/64
@@ -728,7 +726,6 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 ;; are 64 bits by default; but they can be overridden to 32 bits by an address
 ;; size prefix.
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-loop
 
   ;; E0: LOOPNE/LOOPNZ rel8

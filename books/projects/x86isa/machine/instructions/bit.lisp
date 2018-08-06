@@ -52,7 +52,6 @@
 ;; INSTRUCTION: BT
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-bt-0F-BA
   :evex t
   ;; 0F BA/4: BT r/m16/32/64, imm8
@@ -101,7 +100,7 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ 
+        (x86-operand-from-modr/m-and-sib-bytes$
          proc-mode #.*gpr-access* operand-size inst-ac?
          nil ;; Not a memory pointer operand
          seg-reg p4? temp-rip rex-byte r/m mod sib
@@ -145,7 +144,6 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-bt-0F-A3
   :evex t
   ;; TO-DO: Speed this up!

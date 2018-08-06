@@ -76,7 +76,6 @@
 ;; branches. Such addresses are 64 bits by default; but they can be
 ;; overridden to 32 bits by an address size prefix.
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-call-E8-Op/En-M
 
   ;; Call near, displacement relative to the next instruction
@@ -155,7 +154,7 @@
              next-rip
              (alignment-checking-enabled-p x86)
              x86)
-          (wme-size 
+          (wme-size
            proc-mode addr-size
            (the (signed-byte #.*max-linear-address-size*) new-rsp)
            *ss*
@@ -174,7 +173,6 @@
        (x86 (write-*sp proc-mode new-rsp x86)))
       x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-call-FF/2-Op/En-M
 
   ;; Call near, absolute indirect, address given in r/m16/32/64.
@@ -321,7 +319,6 @@
 ;; address (64 bits, even though in our model we only model the low 48 bits due
 ;; to the invariant of instruction pointers being canonical).
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-ret
 
   ;; Op/En: #xC2 iw: I:  Near return to calling procedure and pop imm16 bytes from
@@ -389,7 +386,7 @@
        (check-alignment? (alignment-checking-enabled-p x86))
        ((mv flg (the (signed-byte 64) tos) x86)
         (if (= operand-size 8)
-            (rime-size 
+            (rime-size
              proc-mode operand-size rsp *ss* :r check-alignment? x86
              :mem-ptr? nil)
           (rme-size

@@ -53,7 +53,6 @@
 ;; INSTRUCTION: XCHG
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-xchg
 
   ;; Note that for XCHG, the Op/En RM and MR are essentially the same.
@@ -184,7 +183,6 @@
 ;; INSTRUCTION: CMPXCHG
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cmpxchg
   :evex t
 
@@ -297,7 +295,6 @@
 ;; INSTRUCTION: NOP
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-two-byte-nop
 
   ;; Op/En: NP

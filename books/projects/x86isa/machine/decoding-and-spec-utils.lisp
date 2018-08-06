@@ -125,8 +125,6 @@ the @('fault') field instead.</li>
 
 ;; ======================================================================
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
-
 (defsection instruction-pointer-operations
   :parents (decoding-and-spec-utils)
   :short "Operations to manipulate instruction pointers."
@@ -429,8 +427,6 @@ the @('fault') field instead.</li>
 
 ;; ======================================================================
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
-
 (defsection stack-pointer-operations
   :parents (decoding-and-spec-utils)
   :short "Operations to manipulate stack pointers."
@@ -675,8 +671,6 @@ the @('fault') field instead.</li>
 
 ;; ======================================================================
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
-
 (define select-address-size ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
 			     (p4? booleanp)
 			     (x86 x86p))
@@ -721,8 +715,6 @@ the @('fault') field instead.</li>
     (not (equal 2 (select-address-size #.*64-bit-mode* p4? x86)))))
 
 ;; ======================================================================
-
-;; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 
 (defsection effective-address-computations
 
@@ -870,7 +862,6 @@ the @('fault') field instead.</li>
 	       (equal (logext n (loghead n x)) x))
       :hints (("Goal" :in-theory (e/d (logext loghead logapp logbitp) ())))))
 
-  ;; Added by Alessandro Coglio <coglio@kestrel.edu>
   (define x86-effective-addr-16-disp
     ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
      (temp-rip  :type (signed-byte   #.*max-linear-address-size*) )
@@ -934,7 +925,6 @@ the @('fault') field instead.</li>
 	  4)
       :rule-classes :linear))
 
-  ;; Added by Alessandro Coglio <coglio@kestrel.edu>
   (define x86-effective-addr-16
     ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
      (temp-rip  :type (signed-byte   #.*max-linear-address-size*) )
@@ -1241,7 +1231,6 @@ the @('fault') field instead.</li>
 	  4)
       :rule-classes :linear))
 
-  ;; Added by Alessandro Coglio <coglio@kestrel.edu>
   (define x86-effective-addr
     ((proc-mode      :type (integer 0 #.*num-proc-modes-1*))
      p4
@@ -1745,8 +1734,6 @@ reference made from privilege level 3.</blockquote>"
 
 ;; ======================================================================
 
-; Added by Alessandro Coglio <coglio@kestrel.edu>
-
 ;; The following are tentative extensions of
 ;; X86-OPERAND-FROM-MODR/M-AND-SIB-BYTES, X86-OPERAND-TO-REG/MEM, and
 ;; X86-OPERAND-TO-XMM/MEM to 32-bit mode. They are named like the existing ones
@@ -2112,7 +2099,6 @@ reference made from privilege level 3.</blockquote>"
 ;; functions.
 (def-ruleset instruction-decoding-and-spec-rules nil)
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (define select-operand-size
   ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
    (byte-operand? :type (or t nil))
@@ -2197,8 +2183,6 @@ reference made from privilege level 3.</blockquote>"
 
 ;; ======================================================================
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
-
 (define select-segment-register
   ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
    (p2 (unsigned-byte-p 8 p2))
@@ -2264,8 +2248,6 @@ reference made from privilege level 3.</blockquote>"
     :rule-classes :linear))
 
 ;; ======================================================================
-
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
 
 (define check-instruction-length
   ((start-rip :type (signed-byte #.*max-linear-address-size*))

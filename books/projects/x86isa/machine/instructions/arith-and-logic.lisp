@@ -167,7 +167,6 @@
 ;; add, adc, sub, sbb, or, and, sub, xor, cmp, test
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
 
   :parents (one-byte-opcodes)
@@ -302,7 +301,6 @@
 
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
 
   :parents (one-byte-opcodes)
@@ -423,8 +421,6 @@
 
     x86))
 
-
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
 
   :parents (one-byte-opcodes)
@@ -619,7 +615,6 @@
 
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
   :parents (one-byte-opcodes)
 
@@ -737,7 +732,6 @@
    :hints (("Goal" :in-theory (e/d (bitops::logsquash)
                                    (bitops::logand-with-negated-bitmask))))))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-inc/dec-FE-FF
 
   ;; FE/0,1: INC/DEC r/m8
@@ -836,7 +830,6 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-inc/dec-4x
 
   ;; 40 + rw: INC r16
@@ -892,7 +885,6 @@
 ;; INSTRUCTION: NOT/NEG
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-not/neg-F6-F7
 
   ;; F6/2: NOT r/m8
