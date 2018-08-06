@@ -324,7 +324,7 @@
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>The model includes more support for 32-bit mode.  In particular: (some
- variants of) the PUSH, PUSHF, POP, POPF, MOV, MOVZX, MOVSX, LEA, XCHG,
+ variants of) the PUSH, PUSHF, POP, POPF, MOV, MOVZX, MOVSX, MOVSXD, LEA, XCHG,
  CMPXCHG, ADD, ADC, SUB, SBB, OR, AND, XOR, NEG, NOT, CMP, TEST, MUL, IMUL,
  DIV, IDIV, INC with opcodes FEh-FFh, DEC with opcodes FEh-FFh, CBW, CWDE,
  CDQE, CWD, CDQ, CQO, ROL, ROR, RCL, RCR, SAL, SAR, SHL, SHR, BT, JMP, Jcc,
