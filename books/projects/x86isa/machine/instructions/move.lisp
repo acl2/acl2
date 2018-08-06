@@ -509,8 +509,10 @@
     x86))
 
 ;; ======================================================================
-;; INSTRUCTION: MOVSXD/MOVSLQ
+;; INSTRUCTION: MOVSX/MOVSXD
 ;; ======================================================================
+
+; AT&T mnemonic: MOVSLQ
 
 (def-inst x86-one-byte-movsxd
 
