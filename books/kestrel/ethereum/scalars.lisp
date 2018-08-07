@@ -12,6 +12,7 @@
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "kestrel/utilities/xdoc-constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -19,13 +20,12 @@
   :parents (basics)
   :short "Modeling of scalars."
   :long
-  "<p>
-   YP:3 says that scalars are
-   non-negative integers in the @($\\mathbb{N}$) set,
-   i.e. natural numbers.
-   We use the library type <see topic='@(url fty::basetypes)'>@('nat')</see>
-   to model scalars in our Ethereum model.
-   </p>")
+  (xdoc::topp
+   "YP:3 says that scalars are
+    non-negative integers in the @($\\mathbb{N}$) set,
+    i.e. natural numbers.
+    We use the library type <see topic='@(url fty::basetypes)'>@('nat')</see>
+    to model scalars in our Ethereum model."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -18,13 +18,12 @@
   :parents (basics)
   :short "Modeling of bytes."
   :long
-  "<p>
-   YP:B describes @($\\mathbb{O}$) as the set of 8-bit bytes.
-   We use the library type @(tsee ubyte8) of unsigned 8-bit bytes
-   to model bytes in our Ethereum model.
-   Unless otherwise stated, in the documentation of our Ethereum model
-   the unqualified term `byte' denotes an 8-bit byte.
-   </p>")
+  (xdoc::topp
+   "YP:B describes @($\\mathbb{O}$) as the set of 8-bit bytes.
+    We use the library type @(tsee ubyte8) of unsigned 8-bit bytes
+    to model bytes in our Ethereum model.
+    Unless otherwise stated, in the documentation of our Ethereum model
+    the unqualified term `byte' denotes an 8-bit byte."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,15 +31,14 @@
   :parents (basics)
   :short "Modeling of byte arrays."
   :long
-  "<p>
-   YP:3 mentions the set @($\\mathbb{B}$) of byte arrays,
-   and YP:(178) defines it as consisting of all finite sequences of bytes.
-   Given our modeling of @(tsee bytes),
-   we use the library type @(tsee ubyte8-list) of
-   true lists of unsigned 8-bit bytes
-   to model byte arrays in our Ethereum model;
-   the definition of this library type corresponds to YP:(178).
-   </p>")
+  (xdoc::topp
+   "YP:3 mentions the set @($\\mathbb{B}$) of byte arrays,
+    and YP:(178) defines it as consisting of all finite sequences of bytes.
+    Given our modeling of @(tsee bytes),
+    we use the library type @(tsee ubyte8-list) of
+    true lists of unsigned 8-bit bytes
+    to model byte arrays in our Ethereum model;
+    the definition of this library type corresponds to YP:(178)."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
