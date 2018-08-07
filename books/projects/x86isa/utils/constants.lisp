@@ -214,23 +214,24 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   instruction"
 
   (defconst *vex-prefixes-layout*
-    '((:next-byte   0  8) ;; First opcode byte (following VEX)
-      (:byte0       8  8) ;; Can either be #xC4 or #xC5
-      (:byte1      16  8) ;;
-      (:byte2      24  8) ;; 0 for 2-byte VEX prefixes
+    '((:byte0       0  8) ;; Can either be #xC4 or #xC5
+      (:byte1       8  8) ;; Byte1 of either VEX2 or VEX3 prefixes
+      (:byte2      16  8) ;; Ignored for 2-byte VEX prefixes
       ))
 
   (defthm vex-prefixes-table-ok
-    (layout-constant-alistp *vex-prefixes-layout* 0 32)
+    (layout-constant-alistp *vex-prefixes-layout* 0 24)
     :rule-classes nil)
 
   (defmacro vex-prefixes-slice (flg vex-prefixes)
-    (slice flg vex-prefixes 32 *vex-prefixes-layout*))
+    (slice flg vex-prefixes 24 *vex-prefixes-layout*))
 
   (defmacro !vex-prefixes-slice (flg val reg)
-    (!slice flg val reg 32 *vex-prefixes-layout*))
+    (!slice flg val reg 24 *vex-prefixes-layout*))
 
-  (define vex-prefixes-p ((vex-prefixes :type (unsigned-byte 32)))
+  (define vex-prefixes-byte0-p ((vex-prefixes :type (unsigned-byte 24)))
+    :short "Returns @('t') if byte0 of the @('vex-prefixes') structure is
+    either @('*vex2-byte0*') or @('*vex3-byte0*'); returns @('nil') otherwise"
     :returns (ok booleanp)
     (let ((byte0 (vex-prefixes-slice :byte0 vex-prefixes)))
       (or (equal byte0 #.*vex2-byte0*) (equal byte0 #.*vex3-byte0*))))
@@ -262,27 +263,27 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   (defconst *vex2-byte1-layout*
     '((:pp                0  2) ;; opcode extension providing
-      ;; equivalent functionality of a SIMD
-      ;; prefix
-      ;; #b00: None
-      ;; #b01: #x66
-      ;; #b10: #xF3
-      ;; #b11: #xF2
+				;; equivalent functionality of a SIMD
+				;; prefix
+				;; #b00: None
+				;; #b01: #x66
+				;; #b10: #xF3
+				;; #b11: #xF2
 
       (:l                 2  1) ;; Vector Length
-      ;; 0: scalar or 128-bit vector
-      ;; 1: 256-bit vector
+				;; 0: scalar or 128-bit vector
+				;; 1: 256-bit vector
 
       (:vvvv              3  4) ;; a register specifier (in 1's
-      ;; complement form) or 1111 if unused.
+				;; complement form) or 1111 if unused.
 
       (:r                 7  1) ;; REX.R in 1's complement (inverted) form
-      ;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
-      ;; 0: Same as REX.R=1 (64-bit mode only)
-      ;; In protected and compatibility
-      ;; modes the bit must be set to '1'
-      ;; otherwise the instruction is LES or
-      ;; LDS.
+				;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
+				;; 0: Same as REX.R=1 (64-bit mode only)
+				;; In protected and compatibility
+				;; modes the bit must be set to '1'
+				;; otherwise the instruction is LES or
+				;; LDS.
       ))
 
   (defthm vex2-byte1-table-ok
@@ -297,29 +298,29 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   (defconst *vex3-byte1-layout*
     '((:m-mmmm            0  5) ;; 00000: Reserved for future use (will #UD)
-      ;; 00001: implied 0F leading opcode byte
-      ;; 00010: implied 0F 38 leading opcode bytes
-      ;; 00011: implied 0F 3A leading opcode bytes
-      ;; 00100-11111: Reserved for future use (will #UD)
+				;; 00001: implied 0F leading opcode byte
+				;; 00010: implied 0F 38 leading opcode bytes
+				;; 00011: implied 0F 3A leading opcode bytes
+				;; 00100-11111: Reserved for future use (will #UD)
 
       (:b                 5  1) ;; REX.B in 1's complement (inverted) form
-      ;; 1: Same as REX.B=0 (Ignored in 32-bit mode).
-      ;; 0: Same as REX.B=1 (64-bit mode only)
+				;; 1: Same as REX.B=0 (Ignored in 32-bit mode).
+				;; 0: Same as REX.B=1 (64-bit mode only)
 
       (:x                 6  1) ;; REX.X in 1's complement (inverted) form
-      ;; 1: Same as REX.X=0 (must be 1 in 32-bit mode)
-      ;; 0: Same as REX.X=1 (64-bit mode only)
-      ;; In 32-bit modes, this bit must be
-      ;; set to '1', otherwise the
-      ;; instruction is LES or LDS.
+				;; 1: Same as REX.X=0 (must be 1 in 32-bit mode)
+				;; 0: Same as REX.X=1 (64-bit mode only)
+				;; In 32-bit modes, this bit must be
+				;; set to '1', otherwise the
+				;; instruction is LES or LDS.
 
       (:r                 7  1) ;; REX.R in 1's complement (inverted) form
-      ;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
-      ;; 0: Same as REX.R=1 (64-bit mode only)
-      ;; In protected and compatibility
-      ;; modes the bit must be set to '1'
-      ;; otherwise the instruction is LES or
-      ;; LDS.
+				;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
+				;; 0: Same as REX.R=1 (64-bit mode only)
+				;; In protected and compatibility
+				;; modes the bit must be set to '1'
+				;; otherwise the instruction is LES or
+				;; LDS.
 
       ))
 
@@ -334,25 +335,25 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (!slice flg val reg 8 *vex3-byte1-layout*))
 
   (defconst *vex3-byte2-layout*
-    '((:pp                0  2) ;; opcode extension providing
-      ;; equivalent functionality of a SIMD
-      ;; prefix
-      ;; #b00: None
-      ;; #b01: #x66
-      ;; #b10: #xF3
-      ;; #b11: #xF2
+    '((:pp                0  2)  ;; opcode extension providing
+				 ;; equivalent functionality of a SIMD
+				 ;; prefix
+				 ;; #b00: None
+				 ;; #b01: #x66
+				 ;; #b10: #xF3
+				 ;; #b11: #xF2
 
-      (:l                 2  1) ;; Vector Length
-      ;; 0: scalar or 128-bit vector
-      ;; 1: 256-bit vector
+      (:l                 2  1)  ;; Vector Length
+				 ;; 0: scalar or 128-bit vector
+				 ;; 1: 256-bit vector
 
-      (:vvvv              3  4) ;; a register specifier (in 1's
-      ;; complement form) or 1111 if unused.
+      (:vvvv              3  4)  ;; a register specifier (in 1's
+				 ;; complement form) or 1111 if unused.
 
       (:w                 7   1) ;; opcode specific (use like REX.W,
-      ;; or used for opcode extension, or
-      ;; ignored, depending on the opcode
-      ;; byte)
+				 ;; or used for opcode extension, or
+				 ;; ignored, depending on the opcode
+				 ;; byte)
       ))
 
   (defthm vex3-byte2-table-ok
@@ -366,12 +367,15 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (!slice flg val reg 8 *vex3-byte2-layout*))
 
   (define vex-prefixes-map-p ((bytes        :type (unsigned-byte 16))
-			      (vex-prefixes :type (unsigned-byte 32)))
-    :guard (and (vex-prefixes-p vex-prefixes)
+			      (vex-prefixes :type (unsigned-byte 24)))
+    :guard (and (vex-prefixes-byte0-p vex-prefixes)
 		(or (equal bytes #ux0F)
 		    (equal bytes #ux0F38)
 		    (equal bytes #ux0F3A)))
     :returns (ok booleanp)
+    :short "Returns @('t') if the @('vex-prefixes'), irrespective of whether
+    they are two- or three-byte form, indicate the map that begins with the
+    escape bytes @('bytes')"
     (b* ((byte0 (vex-prefixes-slice :byte0 vex-prefixes))
 	 (byte1 (vex-prefixes-slice :byte1 vex-prefixes)))
       (case bytes
@@ -382,18 +386,20 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 	(otherwise
 	 (and (equal byte0 #.*vex3-byte0*)
 	      (if (equal bytes #ux0F38)
-		  (equal byte1 #.*v0F38*)
-		(equal byte1 #.*v0F3A*)))))))
+		  (equal (vex3-byte1-slice :m-mmmm byte1) #.*v0F38*)
+		(equal (vex3-byte1-slice :m-mmmm byte1) #.*v0F3A*)))))))
 
   ;; Some convenient accessor functions for those fields of the VEX prefixes
   ;; that are common to both the two- and three-byte forms:
 
-  (define vex-vvvv-slice ((vex-prefixes :type (unsigned-byte 32)))
-    :guard (vex-prefixes-p vex-prefixes)
+  (define vex-vvvv-slice ((vex-prefixes :type (unsigned-byte 24)))
+    :short "Get the @('VVVV') field of @('vex-prefixes'); cognizant of the two-
+    or three-byte VEX prefixes form"
+    :guard (vex-prefixes-byte0-p vex-prefixes)
     :inline t
     :returns (vvvv (unsigned-byte-p 4 vvvv)
-		   :hyp (vex-prefixes-p vex-prefixes)
-		   :hints (("Goal" :in-theory (e/d (vex-prefixes-p) ()))))
+		   :hyp (vex-prefixes-byte0-p vex-prefixes)
+		   :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
     (case (vex-prefixes-slice :byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1-slice :vvvv (vex-prefixes-slice :byte1 vex-prefixes)))
@@ -401,12 +407,14 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
        (vex3-byte2-slice :vvvv (vex-prefixes-slice :byte2 vex-prefixes)))
       (otherwise -1)))
 
-  (define vex-l-slice ((vex-prefixes :type (unsigned-byte 32)))
-    :guard (vex-prefixes-p vex-prefixes)
+  (define vex-l-slice ((vex-prefixes :type (unsigned-byte 24)))
+    :short "Get the @('L') field of @('vex-prefixes'); cognizant of the two- or
+    three-byte VEX prefixes form"
+    :guard (vex-prefixes-byte0-p vex-prefixes)
     :inline t
     :returns (l (unsigned-byte-p 1 l)
-		:hyp (vex-prefixes-p vex-prefixes)
-		:hints (("Goal" :in-theory (e/d (vex-prefixes-p) ()))))
+		:hyp (vex-prefixes-byte0-p vex-prefixes)
+		:hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
     (case (vex-prefixes-slice :byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1-slice :l (vex-prefixes-slice :byte1 vex-prefixes)))
@@ -414,12 +422,14 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
        (vex3-byte2-slice :l (vex-prefixes-slice :byte2 vex-prefixes)))
       (otherwise -1)))
 
-  (define vex-pp-slice ((vex-prefixes :type (unsigned-byte 32)))
-    :guard (vex-prefixes-p vex-prefixes)
+  (define vex-pp-slice ((vex-prefixes :type (unsigned-byte 24)))
+    :short "Get the @('PP') field of @('vex-prefixes'); cognizant of the two- or
+    three-byte VEX prefixes form"
+    :guard (vex-prefixes-byte0-p vex-prefixes)
     :inline t
     :returns (pp (unsigned-byte-p 2 pp)
-		 :hyp (vex-prefixes-p vex-prefixes)
-		 :hints (("Goal" :in-theory (e/d (vex-prefixes-p) ()))))
+		 :hyp (vex-prefixes-byte0-p vex-prefixes)
+		 :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
     (case (vex-prefixes-slice :byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1-slice :pp (vex-prefixes-slice :byte1 vex-prefixes)))
@@ -427,13 +437,15 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
        (vex3-byte2-slice :pp (vex-prefixes-slice :byte2 vex-prefixes)))
       (otherwise -1)))
 
-  (define vex-w-slice ((vex-prefixes :type (unsigned-byte 32)))
-    :guard (vex-prefixes-p vex-prefixes)
+  (define vex-w-slice ((vex-prefixes :type (unsigned-byte 24)))
+    :short "Get the @('W') field of @('vex-prefixes'); cognizant of the two- or
+    three-byte VEX prefixes form"
+    :guard (vex-prefixes-byte0-p vex-prefixes)
     :inline t
     :returns (w (unsigned-byte-p 1 w)
-		:hyp (and (vex-prefixes-p vex-prefixes)
+		:hyp (and (vex-prefixes-byte0-p vex-prefixes)
 			  (equal (vex-prefixes-slice :byte0 vex-prefixes) #.*vex3-byte0*))
-		:hints (("Goal" :in-theory (e/d (vex-prefixes-p) ()))))
+		:hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
     (case (vex-prefixes-slice :byte0 vex-prefixes)
       (#.*vex3-byte0*
        (vex3-byte2-slice :w (vex-prefixes-slice :byte2 vex-prefixes)))
@@ -451,22 +463,21 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   instruction"
 
   (defconst *evex-prefixes-layout*
-    '((:next-byte   0  8) ;; First byte following EVEX prefixes
-      (:byte0       8  8) ;; Should be #ux62
-      (:byte1      16  8) ;;
-      (:byte2      24  8) ;;
-      (:byte3      32  8) ;;
+    '((:byte0       0   8) ;; Should be #ux62
+      (:byte1       8   8) ;;
+      (:byte2      16   8) ;;
+      (:byte3      24   8) ;;
       ))
 
   (defthm evex-prefixes-table-ok
-    (layout-constant-alistp *evex-prefixes-layout* 0 40)
+    (layout-constant-alistp *evex-prefixes-layout* 0 32)
     :rule-classes nil)
 
   (defmacro evex-prefixes-slice (flg evex-prefixes)
-    (slice flg evex-prefixes 40 *evex-prefixes-layout*))
+    (slice flg evex-prefixes 32 *evex-prefixes-layout*))
 
   (defmacro !evex-prefixes-slice (flg val reg)
-    (!slice flg val reg 40 *evex-prefixes-layout*))
+    (!slice flg val reg 32 *evex-prefixes-layout*))
 
   (defconst *evex-byte1-layout*
     '((:mm                0  2) ;; Identical to low two bits of VEX.m-mmmm.

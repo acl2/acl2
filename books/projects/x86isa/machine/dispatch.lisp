@@ -167,7 +167,7 @@
 	   "Reserved"
 	   (replace-formals-with-arguments
 	    'x86-illegal-instruction
-	    '((message . "Reserved Opcode!"))
+	    '((message . "Reserved or Illegal Opcode!"))
 	    world))
 	(mv
 	 (concatenate
@@ -842,6 +842,54 @@
 
 ;; VEX-encoded instructions:
 
+;; To collapse vex-encoded instructions with the same opcode and mnemonic but
+;; different VEX fields, we can do something like intersect-vex-keywords below.
+;; This'll likely be a good thing to do when we have instruction semantic
+;; functions for these instructions.
+
+;; (define intersect-vex-keywords ((k1 acl2::keyword-listp)
+;; 				(k2 acl2::keyword-listp))
+;;   ;; inputs: kwd-lists corresponding to a vex-encoded instruction with the same
+;;   ;; opcode and the same mnemonic
+;;   (b* ((common (intersection$ k1 k2))
+;;        (k1-unique (set-difference$ k1 k2))
+;;        (k2-unique (set-difference$ k2 k1))
+;;        (vvvv-clash
+;; 	;; TODO: Deal with instructions where vvvv is always used.
+;; 	(or (and (member :UNUSED-VVVV k1-unique)
+;; 		 (or (member :NDS k2-unique)
+;; 		     (member :NDD k2-unique)
+;; 		     (member :DDS k2-unique)))
+;; 	    (and (member :UNUSED-VVVV k2-unique)
+;; 		 (or (member :NDS k1-unique)
+;; 		     (member :NDD k1-unique)
+;; 		     (member :DDS k1-unique)))))
+;;        (l-clash
+;; 	(or (and (or (member :LIG  k1-unique)
+;; 		     (member :128  k1-unique)
+;; 		     (member :L0   k1-unique)
+;; 		     (member :LZ   k1-unique))
+;; 		 (or (member :256  k2-unique)
+;; 		     (member :L1   k2-unique)))
+;; 	    (and (or (member :LIG  k2-unique)
+;; 		     (member :128  k2-unique)
+;; 		     (member :L0   k2-unique)
+;; 		     (member :LZ   k2-unique))
+;; 		 (or (member :256  k1-unique)
+;; 		     (member :L1   k1-unique)))))
+;;        (pp-clash
+;; 	;; I don't think pp-clash will ever come into play, but eh, who knows
+;; 	;; with all these crazy encodings...
+;; 	)
+;;        (w-clash
+;; 	(or (and (or (member :WIG  k1-unique)
+;; 		     (member :W0   k1-unique))
+;; 		 (member :W1   k2-unique))
+;; 	    (and (or (member :WIG  k2-unique)
+;; 		     (member :W0   k2-unique))
+;; 		 (member :W1   k1-unique)))))
+;;     ...))
+
 (define vex-keyword-case-gen ((prefix-case keywordp))
   (case prefix-case
     (:UNUSED-VVVV     `((equal (vex-vvvv-slice vex-prefixes) #b1111)))
@@ -866,7 +914,8 @@
     `(,@(vex-keyword-case-gen (car case-info))
       ,@(vex-opcode-case-gen-aux (cdr case-info)))))
 
-(define vex-opcode-case-gen ((kwd-lst acl2::keyword-listp))
+(define vex-opcode-case-gen ((kwd-lst acl2::keyword-listp)
+                             state)
   (cons
    (cons 'and
 	 (if (or (member-equal :NDS kwd-lst)
@@ -874,35 +923,46 @@
 		 (member-equal :DDS kwd-lst))
 	     (vex-opcode-case-gen-aux kwd-lst)
 	   (vex-opcode-case-gen-aux (cons :UNUSED-VVVV kwd-lst))))
-   `((x86-step-unimplemented "Opcode Unimplemented in x86isa!" x86))))
+   `(,(replace-formals-with-arguments
+       'x86-step-unimplemented
+       '((message . "Opcode unimplemented in x86isa!"))
+       (w state)))))
 
-(define vex-opcode-cases-gen ((lst true-list-listp))
+(define vex-opcode-cases-gen ((lst true-list-listp)
+                              state)
   (if (endp lst)
       `((t
-	 (x86-illegal-instruction "Reserved or Illegal Opcode!" x86)))
+	 ,(replace-formals-with-arguments
+           'x86-illegal-instruction
+           '((message . "Reserved or Illegal Opcode!"))
+           (w state))))
     (b* ((first (car lst))
 	 ((unless (acl2::keyword-listp first))
 	  `())
-	 (first-case (vex-opcode-case-gen first)))
+	 (first-case (vex-opcode-case-gen first state)))
       `(,first-case
-	 ,@(vex-opcode-cases-gen (cdr lst))))))
+	 ,@(vex-opcode-cases-gen (cdr lst) state)))))
 
-(define vex-case-gen ((map vex-maps-well-formed-p))
+(define vex-case-gen ((map vex-maps-well-formed-p)
+                      state)
   :guard-hints (("Goal" :in-theory (e/d (vex-maps-well-formed-p
 					 vex-opcode-cases-okp)
 					())))
   (if (endp map)
       `((t
-	 (x86-illegal-instruction "Reserved or Illegal Opcode!" x86)))
+	 ,(replace-formals-with-arguments
+           'x86-illegal-instruction
+           '((message . "Reserved or Illegal Opcode!"))
+           (w state))))
     (b* ((first (car map))
 	 (opcode (car first))
 	 (info (cdr first))
 	 (kwd-lst (strip-cars info)))
-      `((,opcode (cond ,@(vex-opcode-cases-gen kwd-lst)))
-	,@(vex-case-gen (cdr map))))))
+      `((,opcode (cond ,@(vex-opcode-cases-gen kwd-lst state)))
+	,@(vex-case-gen (cdr map) state)))))
 
-;; (vex-case-gen *vex-0F-opcodes*)
-;; (vex-case-gen *vex-0F38-opcodes*)
-;; (vex-case-gen *vex-0F3A-opcodes*)
+;; (vex-case-gen *vex-0F-opcodes* state)
+;; (vex-case-gen *vex-0F38-opcodes* state)
+;; (vex-case-gen *vex-0F3A-opcodes* state)
 
 ;; ----------------------------------------------------------------------
