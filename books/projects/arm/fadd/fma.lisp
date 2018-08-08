@@ -40,7 +40,7 @@
            (or (zerp a (dp)) (fzerp a fz)))))
 
 ;; The special case data result:
-      
+
 (defund fmul64-fused-spec-special-val (a b fz dn)
   (cond ((inf-times-zero a b fz)
          (indef (dp)))
@@ -77,7 +77,7 @@
        (= data (ash (fmul64-fused-spec-special-val a b fz dn) 53))))
 
 
-;; Note that in the case of a subnormal product, the specification does not compute 
+;; Note that in the case of a subnormal product, the specification does not compute
 ;; a specific value, but rather constrains it:
 
 (defund fmul64-fused-comp (a b data flags prodinfzero infnanzero expovfl)
@@ -134,7 +134,7 @@
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     ash-to-floor |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 ;; Our ultimate objective:
@@ -213,11 +213,11 @@
                   :in-theory (enable rmode input-constraints bvecp-opb bvecp-opc bvecp-rin fzp dnp opd mulexcps piz inz expovfl)))
   :rule-classes ())
 
-;; In terms of these constants, we shall define constants corresponding to the local 
+;; In terms of these constants, we shall define constants corresponding to the local
 ;; variables of fadd64, culminating in the constants (data) and (flags), corresponding to
 ;; the outputs.
 
-;; The constant definitions will be derived from that of fadd64 in such a way that 
+;; The constant definitions will be derived from that of fadd64 in such a way that
 ;; the proof of the following will be trivial:
 
 ;; (defthmd equivalence-lemma
@@ -451,18 +451,18 @@
                   (fma) (inz) (piz) (expovfl) (mulexcps))
     (and (equal (d) d)
          (equal (flags) flags)))
-  :hints (("Goal" :do-not '(preprocess) :expand :lambdas  
-           :in-theory '(fzp dnp rmode opblong mulovfl piz-1 mulstk flags-1 opax                        
+  :hints (("Goal" :do-not '(preprocess) :expand :lambdas
+           :in-theory '(fzp dnp rmode opblong mulovfl piz-1 mulstk flags-1 opax
                         opaz flags-2 opbz flags-3 isspecial d-1 flags-4 usa far sum stk signl signout
                         lshift expshft sumshft rnddir incovfl incnorm inxovfl inxnorm
-                        sumunrnd sumnorm sumovfl ovfl2 ovfl informax tiny expout 
+                        sumunrnd sumnorm sumovfl ovfl2 ovfl informax tiny expout
                         fracout flags-5 d flags fadd64))))
 
 ;; It's usually a good idea to disable the executable counterpart of any function that depends
 ;; on a constrained function:
 
 (local-in-theory (disable (comp-constraints) (opblong) (mulovfl) (piz-1) (fzp) (dnp) (rmode)
-                    (mulstk) (flags-1) (opax) (opaz) (flags-2) (opbz) (flags-3) (isspecial) (d-1) (flags-4) (usa) 
+                    (mulstk) (flags-1) (opax) (opaz) (flags-2) (opbz) (flags-3) (isspecial) (d-1) (flags-4) (usa)
                     (far) (sum) (stk) (signl) (signout) (lshift) (expshft) (sumshft) (rnddir) (incovfl) (incnorm)
                     (inxovfl) (inxnorm) (sumunrnd) (sumnorm) (sumovfl) (tiny) (ovfl2) (ovfl)
                     (informax) (expout) (fracout) (flags-5) (d) (flags)))
@@ -558,7 +558,7 @@
 (local-defund opasnan () (logand1 (opanan) (lognot1 (bitn (fraca) 104))))
 
 (local-defund opbzero () (logand1 (logand1 (logand1 (log= (expb) 0) (log= (fracb) 0)) (lognot1 (mulovfl))) (lognot1 (mulstk))))
-   
+
 (local-defund opbinf () (logand1 (logand1 (log= (expb) 2047) (log= (fracb) 0)) (lognot1 (opblong))))
 
 (local-defund opbnan () (logand1 (logand1 (log= (expb) 2047) (log<> (fracb) 0)) (lognot1 (opblong))))
@@ -719,7 +719,7 @@
  :hints (("Goal" :in-theory (enable specialp fmul64-fused-spec fmul64-fused-special inf-times-zero fmul64-fused-spec-special-val
                                     snanp qnanp)
 		 :use (specialp-fused-specialp fmul64-result))))
-		
+
 (local-defthmd p-0-2
   (implies (and (not (specialp))
                 (fmul64-fused-special-p (opb) (opc) (fzp)))
@@ -733,7 +733,7 @@
 (local-defthm fma-1
   (equal (fma) 1)
   :hints (("Goal" :use (fma-constraints-lemma) :in-theory (enable fma-constraints))))
-		
+
 (local-in-theory (disable analyze specialcase clz53-loop-0 clz53-loop-1 clz53-loop-2 clz53 compress computeproduct-loop-0 computeproduct
                     expint rightshft-loop-0 rightshft leftshft fmul64 (analyze) (specialcase) (clz53-loop-0) (clz53-loop-1)
 		    (clz53-loop-2) (clz53) (compress) (computeproduct-loop-0) (computeproduct) (expint) (rightshft-loop-0) (rightshft)
@@ -741,7 +741,7 @@
 
 (local-defthm bvecp-mulexcps
   (bvecp (mulexcps) 8)
-  :hints (("Goal" :in-theory (enable mulexcps analyze specialcase fmul64))))	
+  :hints (("Goal" :in-theory (enable mulexcps analyze specialcase fmul64))))
 
 (local-defthm rin-12-10
   (equal (bits (rin) 12 10) 0)
@@ -762,7 +762,7 @@
 
 (local-defthm bvecp-opd
   (bvecp (opd) 117)
-  :hints (("Goal" :in-theory (enable opd specialcase fmul64))))	
+  :hints (("Goal" :in-theory (enable opd specialcase fmul64))))
 
 (local-defthmd comp-2
   (implies (not (fmul64-fused-special-p (opb) (opc) (fzp)))
@@ -931,7 +931,7 @@
            (equal (opd)
 	          (cond ((or (and (infp (opb) (dp)) (or (zerp (opc) (dp)) (fzerp (opc) (fzp))))
 		             (and (infp (opc) (dp)) (or (zerp (opb) (dp)) (fzerp (opb) (fzp))))
-			     (and (= (dnp) 1) (or (nanp (opb) (dp)) (nanp (opc) (dp)))))    
+			     (and (= (dnp) 1) (or (nanp (opb) (dp)) (nanp (opc) (dp)))))
                          (cat (indef (dp)) 64 0 53))
 			((snanp (opb) (dp))
                          (cat (opb) 64 0 53))
@@ -1003,7 +1003,7 @@
          (if (and (= (inz) 1) (nanp (bits (opd) 116 53) (dp)))
 	     1 0))
   :hints (("Goal" :in-theory (enable nanp opbnan expf dp expb encodingp unsupp expnt opblong fracb
-                                     manf frac) 
+                                     manf frac)
 	          :use (inz-0-1 (:instance bits-plus-bits (x (opd)) (n 104) (p 53) (m 0))))))
 
 (local-defthm nanp-bits-iencode
@@ -1033,7 +1033,7 @@
   (equal (opbsnan)
          (if (and (= (inz) 1) (snanp (bits (opd) 116 53) (dp)))
 	     1 0))
-  :hints (("Goal" :in-theory (enable snanp opbsnan nanp opbnan expf dp expb encodingp unsupp opbz expnt checkdenorm 
+  :hints (("Goal" :in-theory (enable snanp opbsnan nanp opbnan expf dp expb encodingp unsupp opbz expnt checkdenorm
                                      bitn-bits opblong fracb manf frac)
 	          :use ((:instance bits-plus-bits (x (opd)) (n 104) (p 53) (m 0))))))
 
@@ -1082,7 +1082,7 @@
   (equal (opbqnan)
          (if (and (= (inz) 1) (qnanp (bits (opd) 116 53) (dp)))
 	     1 0))
-  :hints (("Goal" :in-theory (enable qnanp opbqnan nanp opbnan expf dp expb encodingp unsupp opbz expnt checkdenorm 
+  :hints (("Goal" :in-theory (enable qnanp opbqnan nanp opbnan expf dp expb encodingp unsupp opbz expnt checkdenorm
                                      bitn-bits opblong fracb manf frac)
 	          :use ((:instance bits-plus-bits (x (opd)) (n 104) (p 53) (m 0))))))
 
@@ -1192,14 +1192,14 @@
   (equal (opasnan)
          (if (snanp (opa) (dp))
 	     1 0))
-  :hints (("Goal" :in-theory (enable snanp opasnan nanp opanan expf dp expa encodingp unsupp opaz expnt checkdenorm 
+  :hints (("Goal" :in-theory (enable snanp opasnan nanp opanan expf dp expa encodingp unsupp opaz expnt checkdenorm
                                      bvecp-opa cat opax bitn-bits fraca manf frac))))
 
 (local-defthmd opaqnan-nanp
   (equal (opaqnan)
          (if (qnanp (opa) (dp))
 	     1 0))
-  :hints (("Goal" :in-theory (enable qnanp opaqnan nanp opanan expf dp expa encodingp unsupp opaz expnt checkdenorm 
+  :hints (("Goal" :in-theory (enable qnanp opaqnan nanp opanan expf dp expa encodingp unsupp opaz expnt checkdenorm
                                      bvecp-opa cat opax bitn-bits fraca manf frac))))
 
 (local-defthmd opainf-infp
@@ -1311,7 +1311,7 @@
   (implies (not (= (a) 0))
            (equal (signa)
 	          (if (< (a) 0) 1 0)))
-  :hints (("Goal" :in-theory (enable decode ddecode ndecode a opaz opax sigw expw dp fraca frac 
+  :hints (("Goal" :in-theory (enable decode ddecode ndecode a opaz opax sigw expw dp fraca frac
                               bitn-bits sigf manf sgnf checkdenorm expnt expf expb b fzp sign signa))))
 
 (local-defthmd sum-0-4
@@ -1362,12 +1362,12 @@
            (> (abs (+ (a) (p))) (expt 2 1024)))
   :hints (("Goal" :use (sum-0-6 sum-0-8))))
 
-(local-defund siga () 
+(local-defund siga ()
   (if (= (expa) 0)
       (* 2 (fraca))
     (+ (expt 2 106) (* 2 (fraca)))))
 
-(local-defund sigb () 
+(local-defund sigb ()
   (if (= (expb) 0)
       (* 2 (fracb))
     (+ (expt 2 106) (* 2 (fracb)))))
@@ -1719,7 +1719,7 @@
   (if (and (= (bitn (rin) (fz)) 1) (denormp (opc) (dp)))
       (zencode (sgnf (opc) (dp)) (dp))
      (opc)))
-     
+
 (local-in-theory (disable (opad) (opbd) (opcd)))
 
 (local-defthmd arm-fma-spec-rewrite
@@ -2305,7 +2305,12 @@
                (fma-undefined-p (opbd) (opcd) (opad) (dp)))
 	   (equal (arm-fma-pre-comp-excp (opad) (opbd) (opcd) (rz) (dp))
 	          (mv-nth 1 (arm-fma-spec (opa) (opb) (opc) (rin) (dp)))))
-  :hints (("Goal" :in-theory (enable arm-fma-spec-rewrite final-34))))
+  :hints
+; Matt K. mod: Formerly both arm-fma-spec-rewrite and final-34 were enabled
+; below, with no :use hint.  But the change in storing rewrite rules after
+; v8-0, to keep LET (LAMBDA) expressions on the right-hand side, caused this to
+; fail, apparently without an easier solution than the one used below.
+  (("Goal" :use final-34 :in-theory (enable arm-fma-spec-rewrite))))
 
 (local-defthm final-36
   (implies (arm-fma-pre-comp-val (opad) (opbd) (opcd) (rz) (dp))
@@ -2411,7 +2416,7 @@
   (implies (not (= (a) 0))
            (equal (sgnf (opa) (dp))
 	          (if (> (a) 0) 0 1)))
-  :hints (("Goal" :in-theory (enable decode ddecode ndecode a sigw expw dp fraca frac 
+  :hints (("Goal" :in-theory (enable decode ddecode ndecode a sigw expw dp fraca frac
                               bitn-bits sigf manf sgnf checkdenorm expnt expf expa a fzp sign))))
 
 (local-defthmd final-44

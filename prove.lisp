@@ -499,7 +499,9 @@
               (('if & c2 c3)
                (if bool
                    (or (equal c2 *t*) (equal c3 *t*))
-                 (or (equal c2 *nil*) (equal c3 *nil*))))))
+                 (or (equal c2 *nil*) (equal c3 *nil*))))
+              ((('lambda & body) . &)
+               (and-orp body bool))))
 
 (defun find-and-or-lemma (term bool lemmas ens wrld)
 
@@ -567,7 +569,9 @@
         ((member-equal (ffn-symb term) fns-to-be-ignored-by-rewrite)
          (mv step-limit nil term ttree))
         ((flambda-applicationp term)
-         (cond ((and-orp (lambda-body (ffn-symb term)) bool)
+         (cond ((and (not (lambda-applicationp (lambda-body (ffn-symb term))))
+;;; !! Add something about backward compatibility -- perhaps see comment above.
+                     (and-orp (lambda-body (ffn-symb term)) bool))
                 (sl-let
                  (term ttree)
                  (expand-abbreviations
@@ -591,6 +595,11 @@
                              '(equal iff))
                   (enabled-numep (access def-body def-body :nume)
                                  ens)
+; !! Need comment here about backward compatility, much like the and-orp
+; restriction above, but this time for lemma
+; aignet-marked-copies-in-bounds-of-empty-bitarr in
+; books/centaur/aignet/rewrite.lisp.
+                  (not (lambda-applicationp (access def-body def-body :concl)))
                   (and-orp (access def-body def-body :concl)
                            bool))
              (sl-let

@@ -142,33 +142,41 @@
   (cond ((variablep term) (mv 'iff term *t* nil))
         ((fquotep term) (mv 'iff term *t* nil))
         ((member-eq (ffn-symb term) *equality-aliases*)
-         (mv 'equal (fargn term 1) (fargn term 2) nil))
+         (mv 'equal (remove-lambdas (fargn term 1)) (fargn term 2) nil))
+        ((flambdap (ffn-symb term))
+         (interpret-term-as-rewrite-rule1
+          (subcor-var (lambda-formals (ffn-symb term))
+                      (fargs term)
+                      (lambda-body (ffn-symb term)))
+          equiv-okp ens wrld))
         ((if equiv-okp
              (equivalence-relationp (ffn-symb term) wrld)
            (member-eq (ffn-symb term) '(equal iff)))
-         (mv-let (equiv ttree)
-                 (cond ((eq (ffn-symb term) 'iff)
-                        (mv-let
-                         (ts ttree)
-                         (type-set (fargn term 1) nil nil nil ens wrld nil
-                                   nil nil)
-                         (cond ((ts-subsetp ts *ts-boolean*)
-                                (mv-let
-                                 (ts ttree)
-                                 (type-set (fargn term 2) nil nil nil ens
-                                           wrld ttree nil nil)
-                                 (cond ((ts-subsetp ts *ts-boolean*)
-                                        (mv 'equal ttree))
-                                       (t (mv 'iff nil)))))
-                               (t (mv 'iff nil)))))
-                       (t (mv (ffn-symb term) nil)))
-                 (mv equiv (fargn term 1) (fargn term 2) ttree)))
-        ((eq (ffn-symb term) 'not) (mv 'equal (fargn term 1) *nil* nil))
+         (let ((lhs (remove-lambdas (fargn term 1))))
+           (mv-let (equiv ttree)
+             (cond ((eq (ffn-symb term) 'iff)
+                    (mv-let
+                      (ts ttree)
+                      (type-set lhs nil nil nil ens wrld nil
+                                nil nil)
+                      (cond ((ts-subsetp ts *ts-boolean*)
+                             (mv-let
+                               (ts ttree)
+                               (type-set (fargn term 2) nil nil nil ens
+                                         wrld ttree nil nil)
+                               (cond ((ts-subsetp ts *ts-boolean*)
+                                      (mv 'equal ttree))
+                                     (t (mv 'iff nil)))))
+                            (t (mv 'iff nil)))))
+                   (t (mv (ffn-symb term) nil)))
+             (mv equiv lhs (fargn term 2) ttree))))
+        ((eq (ffn-symb term) 'not)
+         (mv 'equal (remove-lambdas (fargn term 1)) *nil* nil))
         (t (mv-let (ts ttree)
-                   (type-set term nil nil nil ens wrld nil nil nil)
-                   (cond ((ts-subsetp ts *ts-boolean*)
-                          (mv 'equal term *t* ttree))
-                         (t (mv 'iff term *t* nil)))))))
+             (type-set term nil nil nil ens wrld nil nil nil)
+             (cond ((ts-subsetp ts *ts-boolean*)
+                    (mv 'equal (remove-lambdas term) *t* ttree))
+                   (t (mv 'iff (remove-lambdas term) *t* nil)))))))
 
 (defun interpret-term-as-rewrite-rule (name hyps term ens wrld)
 
@@ -181,13 +189,12 @@
 ; (eqv lhs rhs) is propositionally equivalent to term; and the last is an
 ; 'assumption-free ttree justifying the claim.
 
-  (let ((term (remove-lambdas term)))
-    (mv-let
-     (eqv lhs rhs ttree)
-     (interpret-term-as-rewrite-rule1 term t ens wrld)
-     (let ((msg (interpret-term-as-rewrite-rule2 name hyps lhs rhs wrld)))
-       (cond
-        (msg
+  (mv-let
+    (eqv lhs rhs ttree)
+    (interpret-term-as-rewrite-rule1 term t ens wrld)
+    (let ((msg (interpret-term-as-rewrite-rule2 name hyps lhs rhs wrld)))
+      (cond
+       (msg
 
 ; We try again, this time with equiv-okp = nil to avoid errors for a form such
 ; as the following.  Its evaluation caused a hard Lisp error in Version_4.3
@@ -205,14 +212,14 @@
 ;    (defthm my-equivp-reflexive
 ;      (my-equivp x x)))
 
-         (mv-let
+        (mv-let
           (eqv2 lhs2 rhs2 ttree2)
           (interpret-term-as-rewrite-rule1 term nil ens wrld)
           (cond
            ((interpret-term-as-rewrite-rule2 name hyps lhs2 rhs2 wrld)
             (mv msg eqv lhs rhs ttree))
            (t (mv nil eqv2 lhs2 rhs2 ttree2)))))
-        (t (mv nil eqv lhs rhs ttree)))))))
+       (t (mv nil eqv lhs rhs ttree))))))
 
 ; We inspect the lhs and some hypotheses with the following functions to
 ; determine if non-recursive defuns will present a problem to the user.
@@ -403,34 +410,37 @@
 
 (defun loop-stopper (lhs rhs)
 
-; If lhs and rhs are variants, we return the "expansion" (see next
-; paragraph) of the subset of the unifying substitution containing
-; those pairs (x . y) in which a variable symbol (y) is being moved
-; forward (to the position of x) in the print representation of the
-; term.  For example, suppose lhs is (foo x y z) and rhs is (foo y z
-; x).  Then both y and z are moved forward, so the loop-stopper is the
-; "expansion" of '((y . z) (x . y)).  This function exploits the fact
-; that all-vars returns the set of variables listed in reverse
-; print-order.
+; If lhs and rhs are variants (possibly after expanding lambdas in rhs; see
+; below), we return the "expansion" (see next paragraph) of the subset of the
+; unifying substitution containing those pairs (x . y) in which a variable
+; symbol (y) is being moved forward (to the position of x) in the print
+; representation of the term.  For example, suppose lhs is (foo x y z) and rhs
+; is (foo y z x).  Then both y and z are moved forward, so the loop-stopper is
+; the "expansion" of '((y . z) (x . y)).  This function exploits the fact that
+; all-vars returns the set of variables listed in reverse print-order.
 
-; In the paragraph above, the "expansion" of a substitution ((x1 .
-; y1) ... (xn . yn)) is the list ((x1 y1 . fns-1) ... (xn yn .
-; fns-n)), where fns-i is the list of function symbols of subterms of
-; lhs that contain xi or yi (or both) as a top-level argument.
-; Exception: If any such "function symbol" is a LAMBDA, then fns-i is
-; nil.
+; In the paragraph above, the "expansion" of a substitution ((x1 .  y1) ... (xn
+; . yn)) is the list ((x1 y1 . fns-1) ... (xn yn .  fns-n)), where fns-i is the
+; list of function symbols of subterms of lhs that contain xi or yi (or both)
+; as a top-level argument.  Exception: If any such "function symbol" is a
+; LAMBDA, then fns-i is nil.
 
-; Note: John Cowles first suggested the idea that led to the idea of
-; invisible function symbols as implemented here.  Cowles observation
-; was that it would be very useful if x and (- x) were moved into
-; adjacency by permutative rules.  His idea was to redefine term-order
-; so that those two terms were of virtually equal weight.  Our notion
-; of invisible function symbols and the handling of loop-stopper is
-; meant to address Cowles original concern without complicating
+; Note: John Cowles first suggested the idea that led to the idea of invisible
+; function symbols as implemented here.  Cowles observation was that it would
+; be very useful if x and (- x) were moved into adjacency by permutative rules.
+; His idea was to redefine term-order so that those two terms were of virtually
+; equal weight.  Our notion of invisible function symbols and the handling of
+; loop-stopper is meant to address Cowles original concern without complicating
 ; term-order, which is used in places besides permutative rewriting.
 
   (mv-let (ans unify-subst)
-    (variantp lhs rhs)
+    (variantp lhs
+
+; We expect lhs and rhs to be the left- and right-hand sides of rewrite rules.
+; Thus lhs was created by expanding lambdas, but not rhs.  We thus expand
+; lambdas here.
+
+              (remove-lambdas rhs))
     (cond (ans (loop-stopper1 unify-subst (all-vars lhs) lhs))
           (t nil))))
 
