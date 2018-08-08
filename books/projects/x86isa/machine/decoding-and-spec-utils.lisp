@@ -2051,8 +2051,8 @@ reference made from privilege level 3.</blockquote>"
 	  (prefixes      :type (unsigned-byte 55))
 	  (rex-byte      :type (unsigned-byte 8))
 	  ,@(if evex
-		`((vex-prefixes   :type (unsigned-byte 32))
-		  (evex-prefixes  :type (unsigned-byte 40)))
+		`((vex-prefixes   :type (unsigned-byte 24))
+		  (evex-prefixes  :type (unsigned-byte 32)))
 	      `())
 	  (opcode        :type (unsigned-byte 8))
 	  (modr/m        :type (unsigned-byte 8))
