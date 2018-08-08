@@ -890,32 +890,39 @@
 ;; 		 (member :W1   k1-unique)))))
 ;;     ...))
 
-(define vex-keyword-case-gen ((prefix-case keywordp))
-  (case prefix-case
-    (:UNUSED-VVVV     `((equal (vex-vvvv-slice vex-prefixes) #b1111)))
-    ((:NDS :NDD :DDS) `((not (equal (vex-vvvv-slice vex-prefixes) #b1111))))
-    ((:128 :LZ :L0)   `((equal (vex-l-slice vex-prefixes) 0)))
-    ((:256 :L1)       `((equal (vex-l-slice vex-prefixes) 1)))
-    ((:66)            `((equal (vex-pp-slice vex-prefixes) #.*v66*)))
-    ((:F3)            `((equal (vex-pp-slice vex-prefixes) #.*vF3*)))
-    ((:F2)            `((equal (vex-pp-slice vex-prefixes) #.*vF2*)))
-    ((:W0)            `((equal (vex-w-slice vex-prefixes) 0)))
-    ((:W1)            `((equal (vex-w-slice vex-prefixes) 1)))
-    ((:0F)            `((vex-prefixes-map-p #x0F vex-prefixes)))
-    ((:0F38)          `((vex-prefixes-map-p #x0F38 vex-prefixes)))
-    ((:0F3A)          `((vex-prefixes-map-p #x0F3A vex-prefixes)))
-    (otherwise
-     ;; :LIG, :WIG, :V, etc.
-     `())))
+(define vex-keyword-case-gen ((prefix-case kwd-or-key-consp))
 
-(define vex-opcode-case-gen-aux ((case-info acl2::keyword-listp))
+  (if (atom prefix-case)
+      (case prefix-case
+	(:UNUSED-VVVV     `((equal (vex-vvvv-slice vex-prefixes) #b1111)))
+	((:NDS :NDD :DDS) `((not (equal (vex-vvvv-slice vex-prefixes) #b1111))))
+	((:128 :LZ :L0)   `((equal (vex-l-slice vex-prefixes) 0)))
+	((:256 :L1)       `((equal (vex-l-slice vex-prefixes) 1)))
+	((:66)            `((equal (vex-pp-slice vex-prefixes) #.*v66*)))
+	((:F3)            `((equal (vex-pp-slice vex-prefixes) #.*vF3*)))
+	((:F2)            `((equal (vex-pp-slice vex-prefixes) #.*vF2*)))
+	((:W0)            `((equal (vex-w-slice vex-prefixes) 0)))
+	((:W1)            `((equal (vex-w-slice vex-prefixes) 1)))
+	((:0F)            `((vex-prefixes-map-p #x0F vex-prefixes)))
+	((:0F38)          `((vex-prefixes-map-p #x0F38 vex-prefixes)))
+	((:0F3A)          `((vex-prefixes-map-p #x0F3A vex-prefixes)))
+	(otherwise
+	 ;; :LIG, :WIG, :V, etc.
+	 `()))
+    (case (car prefix-case)
+      (:REG   `((equal (mrm-reg modr/m) ,(cdr prefix-case))))
+      (otherwise
+       ;; Should be unreachable.
+       `()))))
+
+(define vex-opcode-case-gen-aux ((case-info kwd-or-key-cons-listp))
   (if (endp case-info)
       nil
     `(,@(vex-keyword-case-gen (car case-info))
       ,@(vex-opcode-case-gen-aux (cdr case-info)))))
 
-(define vex-opcode-case-gen ((kwd-lst acl2::keyword-listp)
-                             state)
+(define vex-opcode-case-gen ((kwd-lst kwd-or-key-cons-listp)
+			     state)
   (cons
    (cons 'and
 	 (if (or (member-equal :NDS kwd-lst)
@@ -929,31 +936,31 @@
        (w state)))))
 
 (define vex-opcode-cases-gen ((lst true-list-listp)
-                              state)
+			      state)
   (if (endp lst)
       `((t
 	 ,(replace-formals-with-arguments
-           'x86-illegal-instruction
-           '((message . "Reserved or Illegal Opcode!"))
-           (w state))))
+	   'x86-illegal-instruction
+	   '((message . "Reserved or Illegal Opcode!"))
+	   (w state))))
     (b* ((first (car lst))
-	 ((unless (acl2::keyword-listp first))
+	 ((unless (kwd-or-key-cons-listp first))
 	  `())
 	 (first-case (vex-opcode-case-gen first state)))
       `(,first-case
 	 ,@(vex-opcode-cases-gen (cdr lst) state)))))
 
 (define vex-case-gen ((map vex-maps-well-formed-p)
-                      state)
+		      state)
   :guard-hints (("Goal" :in-theory (e/d (vex-maps-well-formed-p
 					 vex-opcode-cases-okp)
 					())))
   (if (endp map)
       `((t
 	 ,(replace-formals-with-arguments
-           'x86-illegal-instruction
-           '((message . "Reserved or Illegal Opcode!"))
-           (w state))))
+	   'x86-illegal-instruction
+	   '((message . "Reserved or Illegal Opcode!"))
+	   (w state))))
     (b* ((first (car map))
 	 (opcode (car first))
 	 (info (cdr first))

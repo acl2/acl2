@@ -1284,7 +1284,12 @@
 			     "Completely populated when this function is
 			      called")
      (opcode                 :type (unsigned-byte 8))
+     (modr/m                 :type (unsigned-byte 8))
+     (sib                    :type (unsigned-byte 8))
      x86)
+
+    :ignore-ok t
+
     :parents (x86-decoder)
     :no-function t
     :short "Dispatch function for VEX-encoded instructions in the two-byte opcode map"
@@ -1313,7 +1318,12 @@
 			     "Completely populated when this function is
 			      called")
      (opcode                 :type (unsigned-byte 8))
+     (modr/m                 :type (unsigned-byte 8))
+     (sib                    :type (unsigned-byte 8))
      x86)
+
+    :ignore-ok t
+
     :parents (x86-decoder)
     :no-function t
     :short "Dispatch function for VEX-encoded instructions in the first
@@ -1344,7 +1354,12 @@
 			     "Completely populated when this function is
 			      called")
      (opcode                 :type (unsigned-byte 8))
+     (modr/m                 :type (unsigned-byte 8))
+     (sib                    :type (unsigned-byte 8))
      x86)
+
+    :ignore-ok t
+
     :parents (x86-decoder)
     :no-function t
     :short "Dispatch function for VEX-encoded instructions in the second
@@ -1503,18 +1518,46 @@
 
        (opcode
 	(the (unsigned-byte 8)
-	  (if vex3-prefix? next-byte byte2/next-byte))))
+	  (if vex3-prefix? next-byte byte2/next-byte)))
+
+       ;; All VEX- and EVEX-encoded instructions require a ModR/M byte.
+       ;; Reference: Intel Manual, Vol. 2, Figure 2-8 (Instruction Encoding
+       ;; Format with VEX Prefix) and Figure 2-10 (AVX-512 Instruction Format
+       ;; and the EVEX Prefix)
+       ((mv flg4 (the (unsigned-byte 8) modr/m) x86)
+	(rme08 proc-mode temp-rip *cs* :x x86))
+       ((when flg4)
+	(!!ms-fresh :modr/m-byte-read-error flg4))
+       ((mv flg5 temp-rip)
+	(add-to-*ip proc-mode temp-rip 1 x86))
+       ((when flg5) (!!ms-fresh :increment-error flg5))
+
+       (sib? (b* ((p4? (eql #.*addr-size-override*
+			    (prefixes-slice :adr prefixes)))
+		  (16-bit-addressp (eql 2 (select-address-size proc-mode p4? x86))))
+	       (x86-decode-SIB-p modr/m 16-bit-addressp)))
+       ((mv flg6 (the (unsigned-byte 8) sib) x86)
+	(if sib?
+	    (rme08 proc-mode temp-rip *cs* :x x86)
+	  (mv nil 0 x86)))
+       ((when flg6)
+	(!!ms-fresh :sib-byte-read-error flg6))
+       ((mv flg7 temp-rip)
+	(if sib?
+	    (add-to-*ip proc-mode temp-rip 1 x86)
+	  (mv nil temp-rip)))
+       ((when flg7) (!!ms-fresh :increment-error flg7)))
 
     (cond
      ((mbe :logic (vex-prefixes-map-p #ux0F vex-prefixes)
 	   :exec (or vex2-prefix? (and vex3-prefix? vex3-0F-map?)))
-      (vex-0F-execute start-rip temp-rip vex-prefixes opcode x86))
+      (vex-0F-execute start-rip temp-rip vex-prefixes opcode modr/m sib x86))
      ((mbe :logic (vex-prefixes-map-p #ux0F_38 vex-prefixes)
 	   :exec (and vex3-prefix? vex3-0F38-map?))
-      (vex-0F38-execute start-rip temp-rip vex-prefixes opcode x86))
+      (vex-0F38-execute start-rip temp-rip vex-prefixes opcode modr/m sib x86))
      ((mbe :logic (vex-prefixes-map-p #ux0F_3A vex-prefixes)
 	   :exec (and vex3-prefix? vex3-0F3A-map?))
-      (vex-0F3A-execute start-rip temp-rip vex-prefixes opcode x86))
+      (vex-0F3A-execute start-rip temp-rip vex-prefixes opcode modr/m sib x86))
      (t
       ;; Unreachable.
       (!!ms-fresh :illegal-value-of-VEX-m-mmmm))))
@@ -1527,7 +1570,9 @@
 	     (x86p
 	      (vex-decode-and-execute
 	       proc-mode
-	       start-rip temp-rip prefixes rex-byte vex-prefixes x86)))))
+	       start-rip temp-rip prefixes rex-byte vex-prefixes x86)))
+    :hints (("Goal" :in-theory (e/d (add-to-*ip add-to-*ip-is-i48p-rewrite-rule)
+				    ())))))
 
 ;; ----------------------------------------------------------------------
 
@@ -1615,9 +1660,9 @@
     (defthm guard-helper-3
       (implies (unsigned-byte-p 8 b0)
 	       (and
-                (unsigned-byte-p 32 (logior 98 (ash b0 8)))
-                (unsigned-byte-p 24 (logior 196 (ash b0 8)))
-                (unsigned-byte-p 24 (logior 197 (ash b0 8)))))))
+		(unsigned-byte-p 32 (logior 98 (ash b0 8)))
+		(unsigned-byte-p 24 (logior 196 (ash b0 8)))
+		(unsigned-byte-p 24 (logior 197 (ash b0 8)))))))
 
    (local (in-theory (e/d* ()
 			   (signed-byte-p unsigned-byte-p not
@@ -1625,8 +1670,8 @@
 
   :guard-hints
   (("Goal" :in-theory (e/d (vex-prefixes-byte0-p
-                            add-to-*ip add-to-*ip-is-i48p-rewrite-rule)
-                           ())))
+			    add-to-*ip add-to-*ip-is-i48p-rewrite-rule)
+			   ())))
 
   (b* ((ctx 'x86-fetch-decode-execute)
        (proc-mode (x86-operation-mode x86))
