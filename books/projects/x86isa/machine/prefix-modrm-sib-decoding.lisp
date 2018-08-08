@@ -779,7 +779,7 @@
 	     1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
 	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     0 0 0 1 0 0 0 0 0 1 0 1 1 1 1 1
+	     0 0 0 1 0 0 0 0 0 1 0 1 0 0 0 0
 	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 	     1 1 0 1 1 1 1 1 1 1 1 1 1 1 1 1
 	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
@@ -809,7 +809,7 @@
 	     1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
 	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     0 0 1 1 0 0 0 0 0 1 0 1 1 1 1 1
+	     0 0 1 1 0 0 0 0 0 1 0 1 0 0 0 0
 	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 	     1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
 	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
@@ -1588,7 +1588,7 @@
 	:returns (bool booleanp :hyp (n08p opcode))
 	(if (equal proc-mode #.*64-bit-mode*)
 	    (64-bit-mode-one-byte-opcode-ModR/M-p opcode)
-          ;; TODO: Other modes eventually.
+	  ;; TODO: Other modes eventually.
 	  (32-bit-mode-one-byte-opcode-ModR/M-p opcode)))
 
       (define 64-bit-mode-two-byte-opcode-ModR/M-p
@@ -1659,8 +1659,8 @@
 
       (define two-byte-opcode-ModR/M-p
 	((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
-	 (vex-prefixes     :type (unsigned-byte 32))
-	 (evex-prefixes    :type (unsigned-byte 40))
+	 (vex-prefixes     :type (unsigned-byte 24))
+	 (evex-prefixes    :type (unsigned-byte 32))
 	 (mandatory-prefix :type (unsigned-byte 8))
 	 (opcode           :type (unsigned-byte 8)
 			   "Second byte of the two-byte opcode"))
@@ -1841,8 +1841,8 @@
 
       (define three-byte-opcode-ModR/M-p
 	((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
-	 (vex-prefixes     :type (unsigned-byte 32))
-	 (evex-prefixes    :type (unsigned-byte 40))
+	 (vex-prefixes     :type (unsigned-byte 24))
+	 (evex-prefixes    :type (unsigned-byte 32))
 	 (mandatory-prefix :type (unsigned-byte 8))
 	 (escape-byte      :type (unsigned-byte 8)
 			   "Second byte of the three-byte opcode --- either
