@@ -535,10 +535,10 @@
 	       (:fn . (x86-push-I)))
 	      ("IMUL"  3 (G v) (E v) (I b)
 	       (:fn . (x86-imul-Op/En-RMI)))
-	      ("INS/INSB" 2 (Y b) (D x))
-	      ("INS/INSW/INSD" 2 (Y z) (D x))
-	      ("OUTS/OUTSB" 2 (Y b) (D x))
-	      ("OUTS/OUTSW/OUTSD" 2 (Y z) (D x)))
+	      ("INS/INSB" 2 (Y b) (:DX))
+	      ("INS/INSW/INSD" 2 (Y z) (:DX))
+	      ("OUTS/OUTSB" 2 (Y b) (:DX))
+	      ("OUTS/OUTSW/OUTSD" 2 (Y z) (:DX)))
 
     #| 70 |# (("JO" 1 (J b) :f64
 	       (:fn . (x86-one-byte-jcc)))
