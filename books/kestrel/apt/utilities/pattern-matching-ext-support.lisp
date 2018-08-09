@@ -16,6 +16,7 @@
 (in-package "ACL2")
 
 (include-book "std/util/bstar" :dir :system)
+(include-book "kestrel/utilities/symbols" :dir :system)
 
 (local (in-theory (disable mv-nth)))
 (local (in-theory (disable true-listp))) ;for speed
@@ -183,14 +184,13 @@
 
 (defun ext-new-formal (root-var n)
   (declare (xargs :mode :program))
-  (intern-in-package-of-symbol
-   (concatenate 'string
-                (symbol-name root-var)
-                "{"
-                (coerce (explode-nonnegative-integer n 10 nil)
-                        'string)
-                "}")
-   root-var))
+  (intern$ (concatenate 'string
+                        (symbol-name root-var)
+                        "{"
+                        (coerce (explode-nonnegative-integer n 10 nil)
+                                'string)
+                        "}")
+           (symbol-package-name-safe root-var)))
 
 (defun ext-maybe-rename-formal (root-var var avoid-vars n)
   (declare (xargs :mode :program))
