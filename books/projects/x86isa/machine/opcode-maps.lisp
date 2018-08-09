@@ -5930,7 +5930,7 @@
 	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFMSUB132PS")
 	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFMSUB132PS")
 	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFMSUB132PS"))
-    (#x9B ((:ev :0F38 :DDS :LLIG :F2 :W0)         "V4FMADDSS")
+    (#x9B ((:ev :0F38 :DDS :LIG :F2 :W0)         "V4FMADDSS")
 	  ((:ev :0F38 :DDS :LIG :66 :W1)          "VFMSUB132SD")
 	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFMSUB132SS"))
     (#x9C ((:ev :0F38 :NDS :128 :66 :W1)          "VFNMADD132PD")
@@ -6000,7 +6000,7 @@
 	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFMSUB213PS")
 	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFMSUB213PS")
 	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFMSUB213PS"))
-    (#xAB ((:ev :0F38 :DDS :LLIG :F2 :W0)         "V4FNMADDSS")
+    (#xAB ((:ev :0F38 :DDS :LIG :F2 :W0)         "V4FNMADDSS")
 	  ((:ev :0F38 :DDS :LIG :66 :W1)          "VFMSUB213SD")
 	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFMSUB213SS"))
     (#xAC ((:ev :0F38 :NDS :128 :66 :W1)          "VFNMADD213PD")
@@ -6652,36 +6652,44 @@
       (opcode-extensions-map-p (cdr map)))))
 
 (defconst *vex-prefix-cases*
-  ;; [NDS|NDD|DDS].[128|256|LIG|LZ].[66|F2|F3].[0F|0F38|0F3A].[W0|W1|WIG]
+  ;; VEX:  [NDS|NDD|DDS].[128|256|LIG|LZ].[66|F2|F3].[0F|0F38|0F3A].[W0|W1|WIG]
   '(:v :unused-vvvv :NDS :NDD :DDS :128 :256 :L0 :L1 :LIG
        :LZ :66 :F2 :F3 :0F :0F38 :0F3A :W0 :W1 :WIG))
 
-(defconst *vex-extra-prefix-cases*
+(defconst *evex-prefix-cases*
+  ;; EVEX: [NDS|NDD|DDS].[128|256|512|LIG|LZ].[66|F2|F3].[0F|0F38|0F3A].[W0|W1|WIG]
+  (append '(:ev :512) (remove :v *vex-prefix-cases*)))
+
+(defconst *avx-extra-prefix-cases*
   ;; Note: Modify vex-keyword-case-gen in dispatch.lisp when more elements are
   ;; added here.
   '(:reg))
 
-(define kwd-or-key-consp (e)
+(define kwd-or-key-consp ((e)
+			  (vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
   :enabled t
   (or (and (keywordp e)
-	   (member e *vex-prefix-cases*))
+	   (if vex? (member e *vex-prefix-cases*) (member e *evex-prefix-cases*)))
       (and (consp e)
-	   (member (car e) *vex-extra-prefix-cases*))))
+	   (member (car e) *avx-extra-prefix-cases*))))
 
-(define kwd-or-key-cons-listp (lst)
+(define kwd-or-key-cons-listp ((lst)
+			       (vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
   :short "Recognizer for lists whose elements are either keywords or cons
   pairs whose @('car') is a keyword"
   :enabled t
   (if (atom lst)
       (equal lst nil)
-    (and (kwd-or-key-consp (car lst))
-	 (kwd-or-key-cons-listp (cdr lst)))))
+    (and (kwd-or-key-consp (car lst) vex?)
+	 (kwd-or-key-cons-listp (cdr lst) vex?))))
 
-(define vex-cases-okp (lst)
+(define avx-cases-okp ((lst)
+		       (vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
   :enabled t
-  (kwd-or-key-cons-listp lst))
+  (kwd-or-key-cons-listp lst vex?))
 
-(define vex-opcode-cases-okp (lst)
+(define avx-opcode-cases-okp ((lst)
+                              (vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
   (if (atom lst)
       (equal lst nil)
     (b* ((first (car lst))
@@ -6689,12 +6697,13 @@
 	  (cw "~% We expect ~p0 to be a cons pair! ~%" first)
 	  nil)
 	 (kwd-lst (car first))
-	 ((unless (vex-cases-okp kwd-lst))
-	  (cw "~% ~p0 contains unrecognized VEX prefix cases! ~%" kwd-lst)
+	 ((unless (avx-cases-okp kwd-lst vex?))
+	  (cw "~% ~p0 contains unrecognized prefix cases! ~%" kwd-lst)
 	  nil))
-      (vex-opcode-cases-okp (cdr lst)))))
+      (avx-opcode-cases-okp (cdr lst) vex?))))
 
-(define vex-maps-well-formed-p (map)
+(define avx-maps-well-formed-p ((map)
+                                (vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
   (if (atom map)
       (equal map nil)
     (b* ((first (car map))
@@ -6708,8 +6717,8 @@
 	      opcode)
 	  nil)
 	 (variants (cdr first))
-	 ((unless (vex-opcode-cases-okp variants)) nil))
-      (vex-maps-well-formed-p (cdr map)))))
+	 ((unless (avx-opcode-cases-okp variants vex?)) nil))
+      (avx-maps-well-formed-p (cdr map) vex?))))
 
 ;; ----------------------------------------------------------------------
 
@@ -6743,9 +6752,15 @@
 
 (local
  (defthm vex-maps-are-well-formed
-   (and (vex-maps-well-formed-p *vex-0F-opcodes*)
-	(vex-maps-well-formed-p *vex-0F38-opcodes*)
-	(vex-maps-well-formed-p *vex-0F3A-opcodes*))))
+   (and (avx-maps-well-formed-p *vex-0F-opcodes* t)
+	(avx-maps-well-formed-p *vex-0F38-opcodes* t)
+	(avx-maps-well-formed-p *vex-0F3A-opcodes* t))))
+
+(local
+ (defthm evex-maps-are-well-formed
+   (and (avx-maps-well-formed-p *evex-0F-opcodes* nil)
+	(avx-maps-well-formed-p *evex-0F38-opcodes* nil)
+	(avx-maps-well-formed-p *evex-0F3A-opcodes* nil))))
 
 ;; ----------------------------------------------------------------------
 

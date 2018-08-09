@@ -842,7 +842,7 @@
 
 ;; VEX-encoded instructions:
 
-;; To collapse vex-encoded instructions with the same opcode and mnemonic but
+;; To collapse vex--encoded instructions with the same opcode and mnemonic but
 ;; different VEX fields, we can do something like intersect-vex-keywords below.
 ;; This'll likely be a good thing to do when we have instruction semantic
 ;; functions for these instructions.
@@ -890,7 +890,7 @@
 ;; 		 (member :W1   k1-unique)))))
 ;;     ...))
 
-(define vex-keyword-case-gen ((prefix-case kwd-or-key-consp))
+(define vex-keyword-case-gen ((prefix-case (kwd-or-key-consp prefix-case t)))
 
   (if (atom prefix-case)
       (case prefix-case
@@ -917,13 +917,13 @@
        ;; Should be unreachable.
        `()))))
 
-(define vex-opcode-case-gen-aux ((case-info kwd-or-key-cons-listp))
+(define vex-opcode-case-gen-aux ((case-info (kwd-or-key-cons-listp case-info t)))
   (if (endp case-info)
       nil
     `(,@(vex-keyword-case-gen (car case-info))
       ,@(vex-opcode-case-gen-aux (cdr case-info)))))
 
-(define vex-opcode-case-gen ((kwd-lst kwd-or-key-cons-listp)
+(define vex-opcode-case-gen ((kwd-lst (kwd-or-key-cons-listp kwd-lst t))
 			     state)
   (cons
    (cons 'and
@@ -946,16 +946,16 @@
 	   '((message . "Reserved or Illegal Opcode!"))
 	   (w state))))
     (b* ((first (car lst))
-	 ((unless (kwd-or-key-cons-listp first))
+	 ((unless (kwd-or-key-cons-listp first t))
 	  `())
 	 (first-case (vex-opcode-case-gen first state)))
       `(,first-case
 	 ,@(vex-opcode-cases-gen (cdr lst) state)))))
 
-(define vex-case-gen ((map vex-maps-well-formed-p)
+(define vex-case-gen ((map (avx-maps-well-formed-p map t))
 		      state)
-  :guard-hints (("Goal" :in-theory (e/d (vex-maps-well-formed-p
-					 vex-opcode-cases-okp)
+  :guard-hints (("Goal" :in-theory (e/d (avx-maps-well-formed-p
+					 avx-opcode-cases-okp)
 					())))
   (if (endp map)
       `((t
@@ -973,5 +973,92 @@
 ;; (vex-case-gen *vex-0F-opcodes* state)
 ;; (vex-case-gen *vex-0F38-opcodes* state)
 ;; (vex-case-gen *vex-0F3A-opcodes* state)
+
+;; ----------------------------------------------------------------------
+
+(define evex-keyword-case-gen ((prefix-case (kwd-or-key-consp prefix-case nil)))
+
+  (if (atom prefix-case)
+      (case prefix-case
+	(:UNUSED-VVVV     `((and (equal (evex-vvvv-slice evex-prefixes) #b1111)
+				 (equal (evex-v-prime-slice evex-prefixes) #b1))))
+	((:NDS :NDD :DDS) `((not
+			     (and (equal (evex-vvvv-slice evex-prefixes) #b1111)
+				  (equal (evex-v-prime-slice evex-prefixes) #b1)))))
+	((:128 :LZ :L0)   `((equal (evex-vl/rc-slice evex-prefixes) 0)))
+	((:256 :L1)       `((equal (evex-vl/rc-slice evex-prefixes) 1)))
+	(:512             `((equal (evex-vl/rc-slice evex-prefixes) 2)))
+	((:66)            `((equal (evex-pp-slice evex-prefixes) #.*v66*)))
+	((:F3)            `((equal (evex-pp-slice evex-prefixes) #.*vF3*)))
+	((:F2)            `((equal (evex-pp-slice evex-prefixes) #.*vF2*)))
+	((:W0)            `((equal (evex-w-slice evex-prefixes) 0)))
+	((:W1)            `((equal (evex-w-slice evex-prefixes) 1)))
+	;; I don't need to account for :0F, :0F38, and :0F3A because the
+	;; evex-decode-and-execute function deals with this already.
+	(otherwise
+	 ;; :LIG, :WIG, :EV, etc.
+	 `()))
+    (case (car prefix-case)
+      (:REG   `((equal (mrm-reg modr/m) ,(cdr prefix-case))))
+      (otherwise
+       ;; Should be unreachable.
+       `()))))
+
+(define evex-opcode-case-gen-aux ((case-info (kwd-or-key-cons-listp case-info nil)))
+  (if (endp case-info)
+      nil
+    `(,@(evex-keyword-case-gen (car case-info))
+      ,@(evex-opcode-case-gen-aux (cdr case-info)))))
+
+(define evex-opcode-case-gen ((kwd-lst (kwd-or-key-cons-listp kwd-lst nil))
+                              state)
+  (cons
+   (cons 'and
+	 (if (or (member-equal :NDS kwd-lst)
+		 (member-equal :NDD kwd-lst)
+		 (member-equal :DDS kwd-lst))
+	     (evex-opcode-case-gen-aux kwd-lst)
+	   (evex-opcode-case-gen-aux (cons :UNUSED-VVVV kwd-lst))))
+   `(,(replace-formals-with-arguments
+       'x86-step-unimplemented
+       '((message . "Opcode unimplemented in x86isa!"))
+       (w state)))))
+
+(define evex-opcode-cases-gen ((lst true-list-listp)
+                               state)
+  (if (endp lst)
+      `((t
+	 ,(replace-formals-with-arguments
+	   'x86-illegal-instruction
+	   '((message . "Reserved or Illegal Opcode!"))
+	   (w state))))
+    (b* ((first (car lst))
+	 ((unless (kwd-or-key-cons-listp first nil))
+	  `())
+	 (first-case (evex-opcode-case-gen first state)))
+      `(,first-case
+	 ,@(evex-opcode-cases-gen (cdr lst) state)))))
+
+(define evex-case-gen ((map (avx-maps-well-formed-p map nil))
+                       state)
+  :guard-hints (("Goal" :in-theory (e/d (avx-maps-well-formed-p
+					 avx-opcode-cases-okp)
+					())))
+  (if (endp map)
+      `((t
+	 ,(replace-formals-with-arguments
+	   'x86-illegal-instruction
+	   '((message . "Reserved or Illegal Opcode!"))
+	   (w state))))
+    (b* ((first (car map))
+	 (opcode (car first))
+	 (info (cdr first))
+	 (kwd-lst (strip-cars info)))
+      `((,opcode (cond ,@(evex-opcode-cases-gen kwd-lst state)))
+	,@(evex-case-gen (cdr map) state)))))
+
+;; (evex-case-gen *evex-0F-opcodes* state)
+;; (evex-case-gen *evex-0F38-opcodes* state)
+;; (evex-case-gen *evex-0F3A-opcodes* state)
 
 ;; ----------------------------------------------------------------------
