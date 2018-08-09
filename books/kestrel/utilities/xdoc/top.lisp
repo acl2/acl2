@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "constructors")
+(include-book "defxdoc-plus")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
