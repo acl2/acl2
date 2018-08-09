@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc xdoc::xdoc-constructors
+(defxdoc xdoc::constructors
   :parents (kestrel-utilities)
   :short "Utilities to costruct
           well-tagged <see topic='@(url xdoc)'>XDOC</see> strings."
@@ -54,11 +54,11 @@
    </p>")
 
 (define xdoc::textp (x)
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Recognize XDOC text."
   :long
   "<p>
-   See the discussion <see topic='@(url xdoc::xdoc-constructors)'>here</see>
+   See the discussion <see topic='@(url xdoc::constructors)'>here</see>
    about the current vs. possible future implementation.
    </p>"
   (stringp x))
@@ -67,7 +67,7 @@
   :returns (text xdoc::textp
                  :hyp :guard
                  :hints (("Goal" :in-theory (enable xdoc::textp))))
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Turn a string into XDOC text."
   :long
   "<p>
@@ -75,13 +75,13 @@
    because @(tsee xdoc::textp) is currently a synonym of @(tsee stringp),
    but if the definition of @(tsee xdoc::textp) changes at some point,
    this function will be changed accordingly.
-   See the discussion <see topic='@(url xdoc::xdoc-constructors)'>here</see>
+   See the discussion <see topic='@(url xdoc::constructors)'>here</see>
    about the current vs. possible future implementation.
    </p>"
   string)
 
 (defsection xdoc::app
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Concatenate zero or more pieces of XDOC text,
           at an intermediate level."
   :long
@@ -99,7 +99,7 @@
     `(concatenate 'string ,@pieces)))
 
 (defsection xdoc::topapp
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Concatenate zero or more pieces of XDOC text, at the top level."
   :long
   "<p>
@@ -117,7 +117,7 @@
 
 (define xdoc::tag ((tag-name stringp) (text xdoc::textp))
   :returns (text1 xdoc::textp :hints (("Goal" :in-theory (enable xdoc::textp))))
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Surround the given text with a tag with the given name."
   :long
   "<p>
@@ -136,7 +136,7 @@
 
 (define xdoc::h1 ((string stringp))
   :returns (text xdoc::textp)
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML level-1 heading @('\<h1\>...\</h1\>')."
   :long
   "<p>
@@ -147,7 +147,7 @@
 
 (define xdoc::h2 ((string stringp))
   :returns (text xdoc::textp)
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML level-2 heading @('\<h2\>...\</h2\>')."
   :long
   "<p>
@@ -158,7 +158,7 @@
 
 (define xdoc::h3 ((string stringp))
   :returns (text xdoc::textp)
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML level-3 heading @('\<h3\>...\</h3\>')."
   :long
   "<p>
@@ -169,7 +169,7 @@
 
 (define xdoc::h4 ((string stringp))
   :returns (text xdoc::textp)
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML level-4 heading @('\<h4\>...\</h4\>')."
   :long
   "<p>
@@ -180,7 +180,7 @@
 
 (define xdoc::h5 ((string stringp))
   :returns (text xdoc::textp)
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML level-5 heading @('\<h5\>...\</h5\>')."
   :long
   "<p>
@@ -191,7 +191,7 @@
 
 (define xdoc::p ((string stringp))
   :returns (text xdoc::textp)
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML paragraph @('\<p\>...\</p\>') from a string."
   :long
   "<p>
@@ -203,7 +203,7 @@
   (xdoc::tag "p" (xdoc::text string)))
 
 (defsection xdoc::p*
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML paragraph @('\<p\>...\</p\>') from
           zero or more pieces of XDOC text."
   :long
@@ -220,7 +220,7 @@
 
 (define xdoc::topp ((string stringp))
   :returns (text xdoc::textp)
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML paragraph @('\<p\>...\</p\>') from a string,
           at the top level."
   :long
@@ -232,7 +232,7 @@
 
 (define xdoc::li ((string stringp))
   :returns (text xdoc::textp)
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML list item @('\<li\>...\</li\>') from a string."
   :long
   "<p>
@@ -244,7 +244,7 @@
   (xdoc::tag "li" (xdoc::text string)))
 
 (defsection xdoc::li*
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML list item @('\<li\>...\</li\>') from
           zero or more pieces of XDOC text."
   :long
@@ -260,7 +260,7 @@
     `(xdoc::tag "li" (concatenate 'string ,@pieces))))
 
 (defsection xdoc::ul
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML unordered list @('\<ul\>...\</ul\>')."
   :long
   "<p>
@@ -274,7 +274,7 @@
     `(xdoc::tag "ul" (concatenate 'string ,@items))))
 
 (defsection xdoc::ol
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML ordered list @('\<ol\>...\</ol\>')."
   :long
   "<p>
@@ -288,7 +288,7 @@
     `(xdoc::tag "ol" (concatenate 'string ,@items))))
 
 (defsection xdoc::blockquote
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML quoted block @('\<blockquote\>...\</blockquote\>')."
   :long
   "<p>
@@ -301,7 +301,7 @@
     `(xdoc::tag "blockquote" (concatenate 'string ,@items))))
 
 (defsection xdoc::code
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML preformatted code block @('@({...})')."
   :long
   "<p>
@@ -343,7 +343,7 @@
       `(concatenate 'string "@({" ,newline ,@lines "})" ,newline ,newline))))
 
 (defsection xdoc::desc
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build a description."
   :long
   "<p>
@@ -370,7 +370,7 @@
 
 (define xdoc::img ((src stringp))
   :returns (text xdoc::textp :hints (("Goal" :in-theory (enable xdoc::textp))))
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XML image reference @('<img src=\"...\">')."
   :long
   "<p>
@@ -380,7 +380,7 @@
 
 (define xdoc::def ((name stringp))
   :returns (text xdoc::textp :hints (("Goal" :in-theory (enable xdoc::textp))))
-  :parents (xdoc::xdoc-constructors)
+  :parents (xdoc::constructors)
   :short "Build an XDOC definition directive."
   :long
   "<p>
