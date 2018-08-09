@@ -1,4 +1,4 @@
-; XDOC Constructors
+; XDOC Utilities -- Constructors
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc xdoc::constructors
-  :parents (kestrel-utilities)
+  :parents (xdoc-utilities)
   :short "Utilities to costruct
           well-tagged <see topic='@(url xdoc)'>XDOC</see> strings."
   :long
