@@ -10,8 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc-constructors")
-(include-book "testing")
+(include-book "kestrel/utilities/testing" :dir :system)
+
+(include-book "constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
