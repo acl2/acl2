@@ -903,9 +903,11 @@
 	((:F2)            `((equal (vex-pp-slice vex-prefixes) #.*vF2*)))
 	((:W0)            `((equal (vex-w-slice vex-prefixes) 0)))
 	((:W1)            `((equal (vex-w-slice vex-prefixes) 1)))
-	((:0F)            `((vex-prefixes-map-p #x0F vex-prefixes)))
-	((:0F38)          `((vex-prefixes-map-p #x0F38 vex-prefixes)))
-	((:0F3A)          `((vex-prefixes-map-p #x0F3A vex-prefixes)))
+	;; I don't need :0F, :0F38, and :0F3A below because the
+	;; vex-decode-and-execute function deals with this already.
+	;; ((:0F)            `((vex-prefixes-map-p #x0F vex-prefixes)))
+	;; ((:0F38)          `((vex-prefixes-map-p #x0F38 vex-prefixes)))
+	;; ((:0F3A)          `((vex-prefixes-map-p #x0F3A vex-prefixes)))
 	(otherwise
 	 ;; :LIG, :WIG, :V, etc.
 	 `()))
