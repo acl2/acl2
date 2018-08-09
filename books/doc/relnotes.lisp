@@ -157,10 +157,11 @@
  from previously-proved theorems.  It does this by generating suitable @(see
  hints) using the new utility, @(see previous-subsumer-hints).</p>
 
- <p>Added <see topic='@(url xdoc::xdoc-constructors)'>the XDOC
- constructors</see>, which are utilities to construct well-tagged XDOC strings
- via ACL2 function calls whose nesting structure mirrors the nesting of the
- XML.</p>
+ <p>Added some <see topic='@(url xdoc-utilities)'>utilities for building XDOC
+ documentation</see>.  The <see topic='@(url xdoc::constructors)'>XDOC
+ constructors</see> are utilities to construct well-tagged XDOC strings via
+ ACL2 function calls whose nesting structure mirrors the nesting of the XML.
+ @(tsee defxdoc+) extends @(tsee defxdoc) with additional conveniences.</p>
 
  <p>A new event, @(tsee defunt), is a variant of @(tsee defun) that uses
  termination theorems from a large set of @(see community-books) &mdash;

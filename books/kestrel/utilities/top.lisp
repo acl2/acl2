@@ -78,7 +78,7 @@
 (include-book "verify-guards-program")
 (include-book "world-queries")
 (include-book "world-theorems")
-(include-book "xdoc-constructors")
+(include-book "xdoc/top")
 (include-book "zp-lists")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

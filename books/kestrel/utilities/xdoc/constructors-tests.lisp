@@ -1,4 +1,4 @@
-; XDOC Constructors -- Tests
+; XDOC Utilities -- Constructors -- Tests
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,8 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc-constructors")
-(include-book "testing")
+(include-book "kestrel/utilities/testing" :dir :system)
+
+(include-book "constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
