@@ -314,6 +314,24 @@
  topic='@(url string-utilities)'>string utilities</see> to the <see
  topic='@(url message-utilities)'>message utilities</see>.</p>
 
+ <p>A new book, @('kestrel/utilities/proof-builder-macros.lisp'), is a place to
+ define @(see proof-builder) macros.  This book currently defines a simple
+ macro, @('when-not-proved') (see @(tsee acl2-pc::when-not-proved)), for
+ skipping instructions when all goals have been proved.  It also defines two
+ (more complex) macros, @('prove-guard') (see @(tsee acl2-pc::prove-guard)) and
+ @('prove-termination') (see @(tsee acl2-pc::prove-termination)), for
+ (respectively) using previously-proved @(see guard) or termination theorems
+ efficiently, as well as a more general macro, @(tsee acl2-pc::fancy-use), for
+ using lemma instances (via @(':use')) efficiently.</p>
+
+ <p>Improved the @('copy-def') utility (community book
+ @('kestrel/utilities/copy-def.lisp')) by adding an @(':expand') hint in the
+ recursive case, as is sometimes necessary.  Also improved it to work better
+ with @(tsee mutual-recursion).</p>
+
+ <p>Fixed the utility, @(tsee orelse), so that @(':quiet t') pushes the output
+ stack, as per existing documentation.</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
@@ -402,26 +420,6 @@
   @('projects/x86isa/tools/execution/exec-loaders/mach-o/mach-o-reader.lisp'),
   @('std/io/take-bytes.lisp'), @('unicode/read-utf8.lisp'), and
   @('unicode/utf8-decode.lisp') also include this book locally.</p>
-
- <h4>Kestrel Utilities</h4>
-
- <p>A new book, @('kestrel/utilities/proof-builder-macros.lisp'), is a place to
- define @(see proof-builder) macros.  This book currently defines a simple
- macro, @('when-not-proved') (see @(tsee acl2-pc::when-not-proved)), for
- skipping instructions when all goals have been proved.  It also defines two
- (more complex) macros, @('prove-guard') (see @(tsee acl2-pc::prove-guard)) and
- @('prove-termination') (see @(tsee acl2-pc::prove-termination)), for
- (respectively) using previously-proved @(see guard) or termination theorems
- efficiently, as well as a more general macro, @(tsee acl2-pc::fancy-use), for
- using lemma instances (via @(':use')) efficiently.</p>
-
- <p>Improved the @('copy-def') utility (community book
- @('kestrel/utilities/copy-def.lisp')) by adding an @(':expand') hint in the
- recursive case, as is sometimes necessary.  Also improved it to work better
- with @(tsee mutual-recursion).</p>
-
- <p>Fixed the utility, @(tsee orelse), so that @(':quiet t') pushes the output
- stack, as per existing documentation.</p>
 
  <h3>Licensing Changes</h3>
 
