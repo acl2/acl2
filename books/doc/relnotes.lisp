@@ -182,6 +182,8 @@
  library binary predicates @(tsee unsigned-byte-listp) and @(tsee
  signed-byte-listp).</p>
 
+ <p>Started a new library for <a href=\"https://ethereum.org\">Ethereum</a>.</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <p>The behavior and code for the expander (see @(see defthm?)) have been
