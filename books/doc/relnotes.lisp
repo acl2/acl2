@@ -395,6 +395,8 @@
  <p>The @(tsee defpointer) utility for @(see xdoc) now accepts names that have
  special characters such as @('<').</p>
 
+ <h4><see topic='@(url acl2::std)'>STD</see></h4>
+
  <p>The @('std/typed-lists/unsigned-byte-listp.lisp') book now includes
   @('std/lists/take') locally. As a result,
   @('projects/x86isa/tools/execution/exec-loaders/mach-o/mach-o-reader.lisp'),
