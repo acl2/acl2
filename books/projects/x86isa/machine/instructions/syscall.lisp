@@ -57,7 +57,6 @@
   ;; Note: No segment register updates/accesses here since we do not
   ;; support segments at this time.
 
-  :evex t
   :parents (two-byte-opcodes)
 
   :returns (x86 x86p :hyp (and (x86p x86)
@@ -74,10 +73,6 @@
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce)
@@ -209,7 +204,6 @@
   ;; Op/En: NP
   ;; 0F 05: SYSCALL
 
-  :evex t
   :parents (two-byte-opcodes)
 
   :returns (x86 x86p :hyp (and (x86p x86)
@@ -226,10 +220,6 @@
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes))
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce) (ia32_efer-slice :ia32_efer-sce ia32-efer))
@@ -415,7 +405,7 @@
 
 
 (def-inst x86-syscall-both-views
-  :evex t
+
   :parents (two-byte-opcodes)
 
   :returns
@@ -429,10 +419,10 @@
         (!!ms-fresh :syscall-unimplemented-in-32-bit-mode)))
     (if (app-view x86)
         (x86-syscall-app-view
-         proc-mode start-rip temp-rip prefixes rex-byte vex-prefixes evex-prefixes
+         proc-mode start-rip temp-rip prefixes rex-byte
          opcode modr/m sib x86)
       (x86-syscall
-       proc-mode start-rip temp-rip prefixes rex-byte vex-prefixes evex-prefixes
+       proc-mode start-rip temp-rip prefixes rex-byte
        opcode modr/m sib x86))))
 
 ;; ======================================================================
@@ -441,7 +431,6 @@
 
 (def-inst x86-sysret
 
-  :evex t
   :parents (two-byte-opcodes)
 
   :short "Return from fast system call to user code at privilege level
@@ -476,11 +465,6 @@ REX.W + 0F 07: SYSRET</p>
        ((when (or (not (equal proc-mode #.*64-bit-mode*))
                   (app-view x86)))
         (!!ms-fresh :sysret-unimplemented))
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        ((when (not (logbitp #.*w* rex-byte)))
         (!!ms-fresh :unsupported-sysret-because-rex.w!=1 rex-byte))

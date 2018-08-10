@@ -184,7 +184,6 @@
 ;; ======================================================================
 
 (def-inst x86-cmpxchg
-  :evex t
 
   ;; Op/En: MR
   ;; 0F B0: CMPXCHG r/m8, r8
@@ -201,11 +200,6 @@
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* ((ctx 'x86-cmpxchg)
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))

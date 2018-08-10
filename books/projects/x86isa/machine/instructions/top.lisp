@@ -283,7 +283,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; ======================================================================
 
 (def-inst x86-rdrand
-  :evex t
 
   ;; 0F C7:
   ;; Opcode Extensions:
@@ -315,11 +314,6 @@ writes the final value of the instruction pointer into RIP.</p>")
   :body
 
   (b* ((ctx 'x86-rdrand)
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 

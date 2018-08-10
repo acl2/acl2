@@ -55,7 +55,6 @@
 ;; ======================================================================
 
 (def-inst x86-lgdt
-  :evex t
   :parents (privileged-opcodes two-byte-opcodes)
 
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
@@ -86,11 +85,6 @@
 
        ((when (app-view x86))
         (!!ms-fresh :lgdt-unimplemented))
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
@@ -194,7 +188,6 @@
 ;; ======================================================================
 
 (def-inst x86-lidt
-  :evex t
   :parents (privileged-opcodes two-byte-opcodes)
 
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
@@ -225,11 +218,6 @@
 
        ((when (app-view x86))
         (!!ms-fresh :lidt-unimplemented))
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
@@ -333,7 +321,6 @@
 ;; ======================================================================
 
 (def-inst x86-lldt
-  :evex t
   :parents (privileged-opcodes two-byte-opcodes)
 
   :guard-hints (("Goal" :in-theory (e/d (riml08
@@ -372,11 +359,6 @@ a non-canonical form, raise the SS exception.</p>"
                   (not (equal proc-mode #.*64-bit-mode*))))
         (!!ms-fresh :lldt-unimplemented))
        
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
-
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
        ;; If the current privilege level is not 0, the #GP exception

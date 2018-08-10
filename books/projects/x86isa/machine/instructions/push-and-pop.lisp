@@ -374,7 +374,6 @@
     x86))
 
 (def-inst x86-push-segment-register
-  :evex t
   :parents (one-byte-opcodes two-byte-opcodes)
 
   :short "PUSH FS/GS"
@@ -403,11 +402,6 @@
   :body
 
   (b* ((ctx 'x86-push-general-register)
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD

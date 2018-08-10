@@ -53,7 +53,7 @@
 ;; ======================================================================
 
 (def-inst x86-bt-0F-BA
-  :evex t
+
   ;; 0F BA/4: BT r/m16/32/64, imm8
 
   ;; If the bitBase is a register, the BitOffset can be in the range 0
@@ -73,11 +73,6 @@
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* ((ctx 'x86-bt-0f-ba)
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
@@ -145,7 +140,6 @@
     x86))
 
 (def-inst x86-bt-0F-A3
-  :evex t
   ;; TO-DO: Speed this up!
 
   ;; 0F A3: BT r/m16/32/64, r16/32/64
@@ -175,11 +169,6 @@
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* ((ctx 'x86-bt-0f-a3)
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
