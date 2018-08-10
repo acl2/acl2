@@ -10,6 +10,8 @@
 
 (in-package "ETHEREUM")
 
+(include-book "kestrel/utilities/fixbytes/ubyte4" :dir :system)
+
 (include-book "basics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
