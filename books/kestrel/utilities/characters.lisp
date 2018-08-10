@@ -209,7 +209,8 @@
 
   (more-returns
    (nats nat-listp
-         :name nat-listp-of-chars=>nats))
+         :name nat-listp-of-chars=>nats)
+   (nats integer-listp))
 
   (defrulel verify-guards-lemma-1
     (equal (chars=>nats-exec chars rev-nats)

@@ -12,7 +12,7 @@
 
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
-(include-book "kestrel/utilities/xdoc-constructors" :dir :system)
+(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

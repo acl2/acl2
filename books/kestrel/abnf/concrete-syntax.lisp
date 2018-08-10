@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc concrete-syntax
+(defxdoc+ concrete-syntax
   :parents (abnf)
   :short "Concrete syntax of ABNF."
   :long
@@ -30,19 +30,17 @@
    using ABNF concrete syntax.
    We break the circularity by formalizing the concrete syntax of ABNF
    using the abstract syntax of ABNF.
-   </p>")
+   </p>"
+  :order-subtopics t)
 
-(xdoc::order-subtopics concrete-syntax nil t)
-
-(defxdoc concrete-syntax-rules
+(defxdoc+ concrete-syntax-rules
   :parents (concrete-syntax)
   :short "Rules that specify the concrete syntax of ABNF."
   :long
   "<p>
    These are the rules in RFC:4.
-   </p>")
-
-(xdoc::order-subtopics concrete-syntax-rules nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection concrete-syntax-rule-names
   :parents (concrete-syntax-rules)

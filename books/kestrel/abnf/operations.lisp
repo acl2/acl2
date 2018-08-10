@@ -21,15 +21,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc operations
+(defxdoc+ operations
   :parents (abnf)
-  :short "Operations on ABNF grammars.")
-
-(xdoc::order-subtopics operations nil t)
+  :short "Operations on ABNF grammars."
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc well-formedness
+(defxdoc+ well-formedness
   :parents (operations)
   :short "Well-formed ABNF grammars."
   :long
@@ -40,9 +39,8 @@
    either required by the concrete syntax defined in RFC:4
    or otherwise reasonably justifiable.
    These additional conditions are captured by the notion of well-formedness.
-   </p>")
-
-(xdoc::order-subtopics well-formedness nil t)
+   </p>"
+  :order-subtopics t)
 
 (define rulename-wfp ((rulename rulenamep))
   :returns (yes/no booleanp)
@@ -353,7 +351,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc closure
+(defxdoc+ closure
   :parents (operations)
   :short "Closure in ABNF grammars."
   :long
@@ -369,9 +367,8 @@
    When composing grammars, sometimes only a portion of a grammar is selected,
    consisting of a subset of its rules (perhaps called by other grammars)
    along with their closure.
-   </p>")
-
-(xdoc::order-subtopics closure nil t)
+   </p>"
+  :order-subtopics t)
 
 (defines alt/conc/rep/elem-called-rules
   :verify-guards nil ; done below
@@ -544,7 +541,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc in-terminal-set
+(defxdoc+ in-terminal-set
   :parents (operations)
   :short "ABNF grammars that generate only terminals in given sets."
   :long
@@ -561,9 +558,8 @@
    and can be parsed starting from character strings
    (since @(see acl2::characters) are isomorphic to octets)
    instead of natural numbers.
-   </p>")
-
-(xdoc::order-subtopics in-terminal-set nil t)
+   </p>"
+  :order-subtopics t)
 
 (define num-val-in-termset-p ((num-val num-val-p) (termset nat-setp))
   :returns (yes/no booleanp)
@@ -958,16 +954,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc ambiguity
+(defxdoc+ ambiguity
   :parents (operations)
   :short "Ambiguity (and unambiguity) in ABNF grammars."
   :long
   "<p>
    This part of the ABNF formalization is work in progress.
    More definitions and theorems should be added.
-   </p>")
-
-(xdoc::order-subtopics ambiguity nil t)
+   </p>"
+  :order-subtopics t)
 
 (define-sk rules-ambiguousp ((rules rulelistp))
   :returns (yes/no booleanp)
@@ -1268,7 +1263,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc plugging
+(defxdoc+ plugging
   :parents (operations)
   :short "Composition of ABNF grammars."
   :long
@@ -1303,9 +1298,8 @@
    The operation ``plugs'' a rule list into another rule list,
    e.g. it plugs the core rules into the concrete syntax rules,
    and it plugs the URI rules into the HTTP rules.
-   </p>")
-
-(xdoc::order-subtopics plugging nil t)
+   </p>"
+  :order-subtopics t)
 
 (define rule-prosep ((rule rulep))
   :returns (yes/no booleanp)
@@ -1395,7 +1389,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc renaming
+(defxdoc+ renaming
   :parents (operations)
   :short "Renaming of rules in ABNF grammars."
   :long
@@ -1411,9 +1405,8 @@
    Prior to @(see plugging) the URI grammar rules into the HTTP grammar rules,
    the rule @('host') in the URI grammar rules
    should be renamed to @('uri-host').
-   </p>")
-
-(xdoc::order-subtopics renaming nil t)
+   </p>"
+  :order-subtopics t)
 
 (defines alt/conc/rep/elem-rename-rule
   :verify-guards nil ; done below
@@ -1521,7 +1514,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc removal
+(defxdoc+ removal
   :parents (operations)
   :short "Removal of rules in ABNF grammars."
   :long
@@ -1540,9 +1533,8 @@
    Thus, before @(see plugging) the IMF rules into the SMTP rules,
    the removal operation can be used to remove, from the IMF rules,
    @('atom') and possibly any other rule already defined by SMTP.
-   </p>")
-
-(xdoc::order-subtopics removal nil t)
+   </p>"
+  :order-subtopics t)
 
 (define remove-rules-that-define ((rulenames rulename-setp) (rules rulelistp))
   :returns (new-rules rulelistp)

@@ -22,7 +22,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc semantics
+(defxdoc+ semantics
   :parents (abnf)
   :short "Semantics of ABNF."
   :long
@@ -37,9 +37,8 @@
    These concepts are analogous to the ones
    for the typical notion of formal grammar in textbooks,
    but because ABNF is more complex, its semantics are more complex.
-   </p>")
-
-(xdoc::order-subtopics semantics nil t)
+   </p>"
+  :order-subtopics t)
 
 (fty::defflexsum symbol
   :parents (semantics)

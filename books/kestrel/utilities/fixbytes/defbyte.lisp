@@ -15,7 +15,7 @@
 (include-book "std/typed-lists/signed-byte-listp" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "kestrel/utilities/event-forms" :dir :system)
-(include-book "kestrel/utilities/xdoc-constructors" :dir :system)
+(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -24,7 +24,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc apt
+(defxdoc+ apt
 
   :parents (acl2::kestrel-books acl2::macro-libraries acl2::projects)
 
@@ -94,9 +94,9 @@
 
    (xdoc::p
     "Also see the <a href=\"http://www.kestrel.edu/home/projects/apt\">APT
-     Project Web page</a>.")))
+     Project Web page</a>."))
 
-(xdoc::order-subtopics apt nil t)
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,8 +114,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc implementation
+(defxdoc+ implementation
   :parents (apt)
-  :short "Implementation of the APT tools.")
-
-(xdoc::order-subtopics implementation (utilities) t)
+  :short "Implementation of the APT tools."
+  :order-subtopics t)
