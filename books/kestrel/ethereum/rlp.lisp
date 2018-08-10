@@ -19,16 +19,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc rlp
+(defxdoc+ rlp
   :parents (ethereum)
   :short "Recursive Length Prefix (RLP)."
   :long
   (xdoc::topp
    "RLP is a serialization (encoding) method for Ethereum,
     described in YP:B and in the `RLP' page of Wiki
-    (which we refer to as `Wiki:RLP')."))
-
-(xdoc::order-subtopics rlp nil t)
+    (which we refer to as `Wiki:RLP').")
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

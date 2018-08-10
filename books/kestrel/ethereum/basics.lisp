@@ -10,13 +10,14 @@
 
 (in-package "ETHEREUM")
 
+(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
+
 (include-book "bytes")
 (include-book "scalars")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc basics
+(defxdoc+ basics
   :parents (ethereum)
-  :short "Some basic Ethereum notions and utilities.")
-
-(xdoc::order-subtopics basics nil t)
+  :short "Some basic Ethereum notions and utilities."
+  :order-subtopics t)

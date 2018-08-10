@@ -23,7 +23,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc core-rules
+(defxdoc+ core-rules
   :parents (abnf)
   :short "Core rules of ABNF."
   :long
@@ -41,9 +41,8 @@
    uses the core rules,
    we break the circularity by formalizing the core rules
    using the abstract syntax of ABNF.
-   </p>")
-
-(xdoc::order-subtopics core-rules nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection core-rule-names
   :parents (core-rules)

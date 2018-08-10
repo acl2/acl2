@@ -20,7 +20,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc ethereum
+(defxdoc+ ethereum
 
   :parents (acl2::kestrel-books acl2::projects)
 
@@ -54,6 +54,6 @@
      `YP:B' references Appendix B of YP, and
      `YP:(4)' references Equation (4) of YP.
      These references are enclosed in square brackets when used parenthetically,
-     as often done with bibliographic references.")))
+     as often done with bibliographic references."))
 
-(xdoc::order-subtopics ethereum nil t)
+  :order-subtopics t)

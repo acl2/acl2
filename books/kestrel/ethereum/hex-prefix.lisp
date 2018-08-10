@@ -16,7 +16,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc hex-prefix
+(defxdoc+ hex-prefix
   :parents (ethereum)
   :short "Hex-prefix encoding."
   :long
@@ -25,9 +25,8 @@
     described in YP:C and in the section
     `Specification: Compact encoding of hex sequence with optional terminator'
     of the `Patricia Tree' page of Wiki
-    (we refer to that section as `Wiki:HP')."))
-
-(xdoc::order-subtopics hex-prefix nil t)
+    (we refer to that section as `Wiki:HP').")
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc abnf
+(defxdoc+ abnf
 
   :parents (acl2::kestrel-books acl2::projects)
 
@@ -93,9 +93,9 @@
    The differences between the technical report and the ABNF library
    are described
    <see topic='@(url differences-with-technical-report)'>here</see>.
-   </p>")
+   </p>"
 
-(xdoc::order-subtopics abnf nil t)
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

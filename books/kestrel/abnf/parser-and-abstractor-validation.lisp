@@ -18,7 +18,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc parser-and-abstractor-validation
+(defxdoc+ parser-and-abstractor-validation
   :parents (abnf)
   :short "A validation of the parser and abstractor."
   :long
@@ -31,9 +31,8 @@
    directly defined in the formalization of the
    <see topic='@(url concrete-syntax)'>concrete syntax</see>.
    This provides a testing validation of the parser and abstractor.
-   </p>")
-
-(xdoc::order-subtopics parser-and-abstractor-validation nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection *core-rules-parse-tree*
   :parents (parser-and-abstractor-validation)

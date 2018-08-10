@@ -69,6 +69,7 @@
                          defun-sk-strengthen
                          defun-sk-witness
                          defun-sk2
+                         defxdoc+
                          directed-untranslate
                          directed-untranslate-no-lets
                          disable*

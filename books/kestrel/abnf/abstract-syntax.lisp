@@ -18,6 +18,7 @@
 (include-book "kestrel/utilities/nati" :dir :system)
 (include-book "kestrel/utilities/osets" :dir :system)
 (include-book "kestrel/utilities/strings" :dir :system)
+(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "misc/seq" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
@@ -33,7 +34,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc abstract-syntax
+(defxdoc+ abstract-syntax
   :parents (abnf)
   :short "Abstract syntax of ABNF."
   :long
@@ -48,9 +49,8 @@
    things that are not relevant to the ABNF @(see semantics),
    such as blank space and comments,
    as well as certain restrictions that are not needed to define the semantics.
-   </p>")
-
-(xdoc::order-subtopics abstract-syntax nil t)
+   </p>"
+  :order-subtopics t)
 
 (fty::defprod rulename
   :parents (abstract-syntax)
@@ -383,7 +383,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc convenience-constructors
+(defxdoc+ convenience-constructors
   :parents (abstract-syntax)
   :short "Utilities to conveniently construct abstract syntactic entities."
   :long
@@ -397,9 +397,8 @@
    the core rules [RFC:B] and the concrete syntax rules [RFC:4].
    Thus, these function and macros only need to handle
    the constructs used in those rules, not all possible constructs.
-   </p>")
-
-(xdoc::order-subtopics convenience-constructors nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection %.
   :parents (convenience-constructors)
