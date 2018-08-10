@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "std/lists/list-defuns" :dir :system)
-(include-book "kestrel/utilities/xdoc-constructors" :dir :system)
+(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
 
