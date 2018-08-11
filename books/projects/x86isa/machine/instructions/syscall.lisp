@@ -94,7 +94,7 @@
        ((when (mbe :logic (zp ia32-efer-sce)
                    :exec (equal 0 ia32-efer-sce)))
         (!!fault-fresh :ud nil ;; #UD
-                       :ia32-efer-sce-or-lma=0 (cons 'ia32_efer ia32-efer)))
+                       :ia32-efer-sce=0 (cons 'ia32_efer ia32-efer)))
 
        ;; Update the x86 state:
 
@@ -243,7 +243,7 @@
        ((when (mbe :logic (zp ia32-efer-sce)
                    :exec (equal 0 ia32-efer-sce)))
         (!!fault-fresh :ud nil ;; #UD
-                       :ia32-efer-sce-or-lma=0 (cons 'ia32_efer ia32-efer)))
+                       :ia32-efer-sce=0 (cons 'ia32_efer ia32-efer)))
 
        (cs-hidden-descriptor (seg-hiddeni *cs* x86))
        (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden-descriptor))
@@ -488,7 +488,7 @@ REX.W + 0F 07: SYSRET</p>
        ((when (mbe :logic (zp ia32-efer-sce)
                    :exec (equal 0 ia32-efer-sce)))
         (!!fault-fresh :ud nil ;; #UD
-                       :ia32-efer-sce-or-lma=0 (cons 'ia32_efer ia32-efer)))
+                       :ia32-efer-sce=0 (cons 'ia32_efer ia32-efer)))
 
        ;; If CPL != 0...
        (current-cs-register (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
