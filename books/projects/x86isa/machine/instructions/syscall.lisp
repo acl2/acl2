@@ -484,6 +484,15 @@ REX.W + 0F 07: SYSRET</p>
         (!!fault-fresh :ud nil ;; #UD
                        :syscall-app-view-not-64bit-mode proc-mode))
 
+       ;; Intel manual, May'18, Volume 2, specification of SYSRET allows the
+       ;; absence of REX.W, in which case the instruction returns to 32-bit
+       ;; compatiblity mode. However, the specification of SYSCALL disallows
+       ;; 32-bit mode, so it wouldn't be possible to start a system call in
+       ;; 32-bit compatibility mode with SYSCALL and return from it with
+       ;; SYSRET. May it be possible to enter privilege level 0 from 32-bit
+       ;; compatibility mode via other means than SYSCALL, and then execute
+       ;; SYSRET to exit privilege level 0? Not clear, but for now we simply
+       ;; require the presence of REX.W in SYSRET.
        ((when (not (logbitp #.*w* rex-byte)))
         (!!ms-fresh :unsupported-sysret-because-rex.w!=1 rex-byte))
 
