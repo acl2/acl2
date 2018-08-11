@@ -58,7 +58,7 @@
   ;; 0F 05: SYSCALL
 
   ;; Note: No segment register updates/accesses here since we do not
-  ;; support segments at this time.
+  ;; support segment descriptors in the application-level view.
 
   ;; This semantic function is really a combination of SYSCALL, followed by a
   ;; model of the invoked system call, followed by SYSRET. So it starts as
