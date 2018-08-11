@@ -51,6 +51,11 @@
 ;; INSTRUCTION: SYSCALL
 ;; ======================================================================
 
+; The Intel manual only allows SYSCALL and SYSRET in 64-bit mode, while the AMD
+; manuals also allow them in 32-bit compatiblity mode. Since the model aims at
+; maximizing compatibility with the Intel manual, the following semantic
+; functions throw #UD if the processor is not in 64-bit mode.
+
 (def-inst x86-syscall-app-view
 
   ;; Fast System Call to privilege level 0 system procedures.
