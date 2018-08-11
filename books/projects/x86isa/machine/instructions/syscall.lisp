@@ -129,15 +129,17 @@
 
        (x86 (wr64 *r11* eflags x86)) ;; SYSCALL
 
-       (rax (rr64 *rax* x86))
-
+       ;; On Linux and macOS, EAX is used to identify the system call to make.
        ;; See
        ;; http://lxr.free-electrons.com/source/arch/x86/include/asm/syscall.h#L24.
        ;; "Only the low 32 bits of orig_ax are meaningful, so we
        ;; return int.  This importantly ignores the high bits on
        ;; 64-bit, so comparisons
        ;; sign-extend the low 32 bits."
+       ;; Also see ../syscalls.lisp and syscall-numbers.lisp.
+       ;; The model of system calls is discussed in the FMCAD paper.
 
+       (rax (rr64 *rax* x86))
        ((the (unsigned-byte 32) eax) (n32 rax))
 
        (x86
