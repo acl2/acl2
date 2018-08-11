@@ -57,6 +57,14 @@
   ;; Note: No segment register updates/accesses here since we do not
   ;; support segments at this time.
 
+  ;; This semantic function is really a combination of SYSCALL, followed by a
+  ;; model of the invoked system call, followed by SYSRET. So it starts as
+  ;; SYSCALL, but the final state is the one after the SYSRET, with the model
+  ;; of the system call also fully executed. It models a system call in the
+  ;; application-level view, where a system call is essentially an "atomic"
+  ;; action, since application-level code has no access to the system call
+  ;; internals.
+
   :parents (two-byte-opcodes)
 
   :returns (x86 x86p :hyp (and (x86p x86)
