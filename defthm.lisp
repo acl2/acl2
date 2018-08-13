@@ -3361,6 +3361,7 @@
 ; clauses.  (One of the five fixed clauses below is about only
 ; evfn-lst and not about evfn and hence wouldn't be among the
 ; constraints of evfn.)  If this changes, change chk-evaluator.
+; (Note there are now at least 6 constraints about each evaluator.)
 
 ; The functions guess-fn-args-lst-for-evfn and guess-evfn-lst-for-evfn take the
 ; known constraints on an evfn and guess the evfn-lst and list of fns for which
@@ -3433,7 +3434,10 @@
                     ((not (consp x-lst))
                      (equal (evfn-lst x-lst a)
                             (cons (evfn (car x-lst) a)
-                                  (evfn-lst (cdr x-lst) a))))))
+                                  (evfn-lst (cdr x-lst) a))))
+                    ((consp x)
+                     (symbolp x)
+                     (equal (evfn x a) 'nil))))
           (evaluator-clauses1 evfn fn-args-lst)))
 
 ; The function above describes the constraints on an evaluator
@@ -3741,11 +3745,11 @@
 
 (defun defevaluator-form/defthm-name (evfn evfn-lst namedp prefix i clause)
 
-; This function generates the name of the ith constraint for evaluator function
+; This function generates the name of constraint i for evaluator function
 ; evfn.  Namedp is t or nil and indicates whether we generate a name like
 ; evfn-OF-fn-CALL or like evfn-CONSTRAINT-i.  Prefix is a string and is either
-; of the form "evfn-OF-" or "evfn-CONSTRAINT-"; see namedp-prefix. I is 0-based
-; the number of the constraint and clause is the clausal form of the
+; of the form "evfn-OF-" or "evfn-CONSTRAINT-"; see namedp-prefix. I is the
+; 0-based number of the constraint and clause is the clausal form of the
 ; constraint.  But when namedp is non-nil we have to solve two problems: (a)
 ; give special names to the first few constraints (which do not concern one of
 ; the function symbols to be interpreted) and (b) figure out the function
@@ -3755,17 +3759,18 @@
 ; by evaluator-clauses and we solve (b) by looking into those clauses
 ; corresponding to calls of functions to be interpreted.
 
-; i             name of defthm when namedp
+; i             name of defthm when namedp         name when not namedp
 
-; 0             evfn-OF-FNCALL-ARGS
-; 1             evfn-OF-VARIABLE
-; 2             evfn-of-QUOTE
-; 3             evfn-of-LAMBDA
+; 0             evfn-OF-FNCALL-ARGS                evfn-constraint-0
+; 1             evfn-OF-VARIABLE                   evfn-constraint-1
+; 2             evfn-of-QUOTE                      evfn-constraint-2
+; 3             evfn-of-LAMBDA                     ...
 ; 4             evfn-lst-OF-ATOM
 ; 5             evfn-lst-OF-CONS
-; 6 ...         evfn-OF-fn-CALL, ... for each interpreted fn
+; 6             evfn-of-nonsymbol-atom
+; 7 ...         evfn-OF-fn-CALL, ... for each interpreted fn
 
-; When i>5, clause is always of the form:
+; When i>6, clause is always of the form:
 ; ((NOT (CONSP X)) (NOT (EQUAL (CAR X) 'fn)) (EQUAL (evfn X A) (fn ...)))
 ; and we recover fn from the second literal as shown in the binding of
 ; fn below.
@@ -3784,6 +3789,14 @@
         (5 (genvar evfn
                    (concatenate 'string (symbol-name evfn-lst) "-OF-CONS")
                    nil nil))
+        (6 (genvar evfn
+
+; Perhaps "NON-SYMBOL-ATOM" is more aesthetic.  But its meaning is perhaps less
+; clear than "NONSYMBOL-ATOM": a non-symbol that is an atom, rather than, say,
+; something that is not a symbol or an atom.
+
+                   (concatenate 'string prefix "NONSYMBOL-ATOM")
+                   nil nil))
         (otherwise
          (genvar evfn
                  (concatenate 'string prefix (symbol-name fn) "-CALL")
@@ -3800,7 +3813,7 @@
 ; for which suitable i would be 0, 1, ..., 8.
 
   (cond
-   ((> i 5)
+   ((> i 6)
     `(("Goal" :expand
        ((,evfn X A)
         (:free (x) (HIDE x))
@@ -3816,17 +3829,17 @@
             :in-theory '(eval-list-kwote-lst
                          fix-true-list-ev-lst
                          car-cons cdr-cons))))
-      ((1 2 3) `(("Goal" :expand ((,evfn X A)))))
+      ((1 2 3 6) `(("Goal" :expand ((,evfn X A)))))
       (otherwise
        `(("Goal" :expand ((,evfn-lst X-LST A)))))))))
 
 (defun defevaluator-form/defthm (evfn evfn-lst namedp prefix i clause)
 
 ; We generate the defthm event for the ith constraint, given the clause
-; expressing that constraint.  The 0th constraint is disabled; the
+; expressing that constraint.  Constraints 0 and 6 are disabled; the
 ; others are only locally disabled.
 
-  (let* ((defthm (if (zp i) 'defthmd 'defthm))
+  (let* ((defthm (if (or (eql i 0) (eql i 6)) 'defthmd 'defthm))
          (name (defevaluator-form/defthm-name
                  evfn evfn-lst namedp prefix i clause))
          (formula (prettyify-clause clause nil nil))
@@ -4050,7 +4063,8 @@
          state))
       (value '(value-triple nil))))))
 
-(defmacro defevaluator (&whole x evfn evfn-lst fn-args-lst &key skip-checks namedp)
+(defmacro defevaluator (&whole x evfn evfn-lst fn-args-lst
+                               &key skip-checks namedp)
 
 ; Note: It might be nice to allow defevaluator to take a :DOC string, but that
 ; would require allowing encapsulate to take such a string!
