@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2018, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,6 +36,8 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author(s):
+; Alessandro Coglio   <coglio@kestrel.edu>
 
 (in-package "X86ISA")
 
@@ -48,6 +51,11 @@
 ;; INSTRUCTION: SYSCALL
 ;; ======================================================================
 
+; The Intel manual only allows SYSCALL and SYSRET in 64-bit mode, while the AMD
+; manuals also allow them in 32-bit compatiblity mode. Since the model aims at
+; maximizing compatibility with the Intel manual, the following semantic
+; functions throw #UD if the processor is not in 64-bit mode.
+
 (def-inst x86-syscall-app-view
 
   ;; Fast System Call to privilege level 0 system procedures.
@@ -55,7 +63,15 @@
   ;; 0F 05: SYSCALL
 
   ;; Note: No segment register updates/accesses here since we do not
-  ;; support segments at this time.
+  ;; support segment descriptors in the application-level view.
+
+  ;; This semantic function is really a combination of SYSCALL, followed by a
+  ;; model of the invoked system call, followed by SYSRET. So it starts as
+  ;; SYSCALL, but the final state is the one after the SYSRET, with the model
+  ;; of the system call also fully executed. It models a system call in the
+  ;; application-level view, where a system call is essentially an "atomic"
+  ;; action, since application-level code has no access to the system call
+  ;; internals.
 
   :parents (two-byte-opcodes)
 
@@ -69,21 +85,21 @@
   :body
 
   (b* ((ctx 'x86-syscall-app-view)
-       ;; 64-bit mode exceptions
+
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock?)
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       ((unless (eql proc-mode #.*64-bit-mode*))
+        (!!fault-fresh :ud nil ;; #UD
+                       :syscall-app-view-not-64bit-mode proc-mode))
 
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce)
         (ia32_efer-slice :ia32_efer-sce ia32-efer))
-       ((the (unsigned-byte 1) ia32-efer-lma)
-        (ia32_efer-slice :ia32_efer-lma ia32-efer))
-       ((when (mbe :logic (or (zp ia32-efer-sce)
-                              (zp ia32-efer-lma))
-                   :exec (or (equal 0 ia32-efer-sce)
-                             (equal 0 ia32-efer-lma))))
-        (!!ms-fresh :ia32-efer-sce-or-lma=0 (cons 'ia32_efer ia32-efer)))
+       ((when (mbe :logic (zp ia32-efer-sce)
+                   :exec (equal 0 ia32-efer-sce)))
+        (!!fault-fresh :ud nil ;; #UD
+                       :ia32-efer-sce=0 (cons 'ia32_efer ia32-efer)))
 
        ;; Update the x86 state:
 
@@ -121,15 +137,17 @@
 
        (x86 (wr64 *r11* eflags x86)) ;; SYSCALL
 
-       (rax (rr64 *rax* x86))
-
+       ;; On Linux and macOS, EAX is used to identify the system call to make.
        ;; See
        ;; http://lxr.free-electrons.com/source/arch/x86/include/asm/syscall.h#L24.
        ;; "Only the low 32 bits of orig_ax are meaningful, so we
        ;; return int.  This importantly ignores the high bits on
        ;; 64-bit, so comparisons
        ;; sign-extend the low 32 bits."
+       ;; Also see ../syscalls.lisp and syscall-numbers.lisp.
+       ;; The model of system calls is discussed in the FMCAD paper.
 
+       (rax (rr64 *rax* x86))
        ((the (unsigned-byte 32) eax) (n32 rax))
 
        (x86
@@ -216,24 +234,24 @@
   :body
 
   (b* ((ctx 'x86-syscall)
-       ;; 64-bit mode exceptions
+
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock?)
-        (!!fault-fresh :ud nil :lock-prefix prefixes))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       ((unless (eql proc-mode #.*64-bit-mode*))
+        (!!fault-fresh :ud nil ;; #UD
+                       :syscall-app-view-not-64bit-mode proc-mode))
 
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
-       ((the (unsigned-byte 1) ia32-efer-sce) (ia32_efer-slice :ia32_efer-sce ia32-efer))
-       ((the (unsigned-byte 1) ia32-efer-lma) (ia32_efer-slice :ia32_efer-lma ia32-efer))
-       ((when (mbe :logic (or (zp ia32-efer-sce)
-                              (zp ia32-efer-lma))
-                   :exec (or (equal 0 ia32-efer-sce)
-                             (equal 0 ia32-efer-lma))))
-        (!!ms-fresh :ia32-efer-sce-or-lma=0 (cons 'ia32_efer ia32-efer)))
+       ((the (unsigned-byte 1) ia32-efer-sce)
+        (ia32_efer-slice :ia32_efer-sce ia32-efer))
+       ((when (mbe :logic (zp ia32-efer-sce)
+                   :exec (equal 0 ia32-efer-sce)))
+        (!!fault-fresh :ud nil ;; #UD
+                       :ia32-efer-sce=0 (cons 'ia32_efer ia32-efer)))
+
        (cs-hidden-descriptor (seg-hiddeni *cs* x86))
        (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden-descriptor))
-       (cs.l (code-segment-descriptor-attributes-layout-slice :l cs-attr))
-       ((when (not (equal cs.l 1)))
-        (!!ms-fresh :cs.l!=1 (cons 'cs-hidden-descriptor cs-hidden-descriptor)))
 
        ;; Update the x86 state:
 
@@ -414,16 +432,13 @@
                  (canonical-address-p temp-rip)))
 
   :body
-  (b* ((ctx 'x86-syscall-both-views)
-       ((when (not (equal proc-mode #.*64-bit-mode*)))
-        (!!ms-fresh :syscall-unimplemented-in-32-bit-mode)))
-    (if (app-view x86)
-        (x86-syscall-app-view
-         proc-mode start-rip temp-rip prefixes rex-byte
-         opcode modr/m sib x86)
-      (x86-syscall
+  (if (app-view x86)
+      (x86-syscall-app-view
        proc-mode start-rip temp-rip prefixes rex-byte
-       opcode modr/m sib x86))))
+       opcode modr/m sib x86)
+    (x86-syscall
+     proc-mode start-rip temp-rip prefixes rex-byte
+     opcode modr/m sib x86)))
 
 ;; ======================================================================
 ;; INSTRUCTION: SYSRET
@@ -462,35 +477,39 @@ REX.W + 0F 07: SYSRET</p>
 
   (b* ((ctx 'x86-sysret)
 
-       ((when (or (not (equal proc-mode #.*64-bit-mode*))
-                  (app-view x86)))
-        (!!ms-fresh :sysret-unimplemented))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
+       ((unless (eql proc-mode #.*64-bit-mode*))
+        (!!fault-fresh :ud nil ;; #UD
+                       :syscall-app-view-not-64bit-mode proc-mode))
+
+       ;; Intel manual, May'18, Volume 2, specification of SYSRET allows the
+       ;; absence of REX.W, in which case the instruction returns to 32-bit
+       ;; compatiblity mode. However, the specification of SYSCALL disallows
+       ;; 32-bit mode, so it wouldn't be possible to start a system call in
+       ;; 32-bit compatibility mode with SYSCALL and return from it with
+       ;; SYSRET. May it be possible to enter privilege level 0 from 32-bit
+       ;; compatibility mode via other means than SYSCALL, and then execute
+       ;; SYSRET to exit privilege level 0? Not clear, but for now we simply
+       ;; require the presence of REX.W in SYSRET.
        ((when (not (logbitp #.*w* rex-byte)))
         (!!ms-fresh :unsupported-sysret-because-rex.w!=1 rex-byte))
 
-       ;; 64-bit mode exceptions
-
-       ;; If the LOCK prefix is used...
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
-
-       ;; If SCE or LMA = 0...
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
-       ((the (unsigned-byte 1) ia32-efer-sce) (ia32_efer-slice :ia32_efer-sce ia32-efer))
-       ((the (unsigned-byte 1) ia32-efer-lma) (ia32_efer-slice :ia32_efer-lma ia32-efer))
-       ((when (mbe :logic (or (zp ia32-efer-sce)
-                              (zp ia32-efer-lma))
-                   :exec (or (equal 0 ia32-efer-sce)
-                             (equal 0 ia32-efer-lma))))
-        (!!ms-fresh :ia32-efer-sce-or-lma=0 (cons 'ia32_efer ia32-efer)))
+       ((the (unsigned-byte 1) ia32-efer-sce)
+        (ia32_efer-slice :ia32_efer-sce ia32-efer))
+       ((when (mbe :logic (zp ia32-efer-sce)
+                   :exec (equal 0 ia32-efer-sce)))
+        (!!fault-fresh :ud nil ;; #UD
+                       :ia32-efer-sce=0 (cons 'ia32_efer ia32-efer)))
 
        ;; If CPL != 0...
        (current-cs-register (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
        (cpl (seg-sel-layout-slice :rpl current-cs-register))
        ((when (not (equal 0 cpl)))
-        (!!ms-fresh :cpl!=0 (cons 'cs-register current-cs-register)))
+        (!!fault-fresh :gp 0 ;; #GP(0)
+                       :cpl!=0 (cons 'cs-register current-cs-register)))
 
        ;; If RCX contains a non-canonical address...
        (rcx (rgfi *rcx* x86))
