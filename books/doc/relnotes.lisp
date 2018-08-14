@@ -332,6 +332,9 @@
  <p>Fixed the utility, @(tsee orelse), so that @(':quiet t') pushes the output
  stack, as per existing documentation.</p>
 
+ <p>Fixed a few books that broke due to the change in @(tsee defevaluator) (see
+ @(see note-8-1) for details).</p>
+
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
  <p>Added a @(':print') option to control screen output.</p>
