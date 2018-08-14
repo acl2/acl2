@@ -973,7 +973,8 @@
                     (gbc-db-make-fast
                      (table-alist 'gl-bool-constraints (w state)))
                     interp-st))
-        (interp-st (update-is-add-bvars-allowed t interp-st)))
+        (interp-st (update-is-add-bvars-allowed t interp-st))
+        (interp-st (update-is-prof-enabledp config.prof-enabledp interp-st)))
      (glcp-generic-interp-hyp/concl-env
       env hyp concl al config.concl-clk config interp-st next-bvar state))))
     ;;    ;; (bvar-db nil)

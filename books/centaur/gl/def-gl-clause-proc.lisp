@@ -856,6 +856,7 @@ See :DOC GL::COVERAGE-PROOFS.
     :abort-ctrex
     :exec-ctrex
     :abort-vacuous
+    :prof-enabledp
     :case-split-override
     :test-side-goals))
 
@@ -1000,6 +1001,9 @@ descriptions of each keyword argument:</p>
 
           ;; abort if a hypothesis is discovered to be unsatisfiable.
           :abort-vacuous           t
+
+          ;; enable accumulated-persistence-like rule profiling
+          :prof-enabledp           nil
 
           ;; To perform case-splitting, set this argument:
           :param-bindings          nil

@@ -44,6 +44,7 @@
 (include-book "centaur/misc/beta-reduce-full" :dir :system)
 (include-book "glcp-geval")
 (include-book "constraint-db-deps")
+(include-book "prof")
 
 (verify-termination acl2::evisc-tuple)
 (verify-guards acl2::evisc-tuple)

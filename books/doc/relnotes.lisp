@@ -412,6 +412,10 @@
  by recoding several functions that previously used Lisp bignums to use a
  @(see bitops::sparseint) based encoding.</p>
 
+ <h4><see topic='@(url gl::gl)'>GL</see></h4>
+ <p>Added optional accumulated-persistence-style profiling of attempted rule
+ applications, available with keyword argument @(':prof-enabledp t').</p>
+
  <h4><see topic='@(url gl::glmc)'>GLMC</see></h4>
  <p>Added option to bind some variables that can be used by the nextstate, property,
  constraint, and initstate terms.  These bindings will be symbolically evaluated once,

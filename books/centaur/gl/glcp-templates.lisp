@@ -31,11 +31,42 @@
 (in-package "GL")
 (include-book "gl-util")
 
+(define nat-nat-alistp (x)
+  (if (atom x)
+      (eq x nil)
+    (and (consp (car x))
+         (natp (caar x))
+         (natp (cdar x))
+         (nat-nat-alistp (cdr x))))
+  ///
+  (defthm nat-nat-alistp-of-cons
+    (equal (nat-nat-alistp (cons a b))
+           (and (nat-nat-alistp b)
+                (consp a)
+                (natp (car a))
+                (natp (cdr a)))))
+  (defthmd nat-nat-alistp-when-consp
+    (implies (consp x)
+             (equal (nat-nat-alistp x)
+                    (and (consp (car x))
+                         (natp (caar x))
+                         (natp (cdar x))
+                         (nat-nat-alistp (cdr x)))))))
+
+(defstobj interp-profiler
+  (prof-enabledp :type (satisfies booleanp))
+  (prof-indextable)
+  (prof-totalcount :type (integer 0 *) :initially 0)
+  (prof-nextindex :type (integer 0 *) :initially 0)
+  (prof-array :type (array (unsigned-byte 32) (0)) :initially 0 :resizable t)
+  (prof-stack :type (satisfies nat-nat-alistp)))
+
 (defstobj interp-st
   is-obligs            ;; interp-defs-alistp
   is-constraint        ;; calist
   is-constraint-db     ;; constraint database
   is-add-bvars-allowed
+  (is-prof :type interp-profiler)
   )
 
 (defconst *glcp-common-inputs*
@@ -439,7 +470,8 @@
                                          state t nil)
                 (mv t nil)))
              ((unless fncall-failed)
-              (glcp-value (mk-g-concrete ans)))
+              (b* ((interp-st (is-prof-simple-increment-exec fn interp-st)))
+                (glcp-value (mk-g-concrete ans))))
              ((glcp-er successp term bindings)
               (rewrite fn actuals :fncall contexts . ,*glcp-common-inputs*))
              ((when successp)
@@ -447,7 +479,9 @@
                 (interp-term-equivs term bindings contexts . ,*glcp-common-inputs*)))
              ((mv ok ans pathcond)
               (run-gified fn actuals pathcond clk config bvar-db state))
-             ((when ok) (glcp-value ans))
+             ((when ok)
+              (b* ((interp-st (is-prof-simple-increment-g fn interp-st)))
+                (glcp-value ans)))
              ((when (and uninterp (not (eq uninterp :no-concrete))))
               (glcp-value (g-apply fn actuals)))
              ((mv erp body formals obligs1)
@@ -466,7 +500,8 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                 x fn (len actuals)
                 (len formals)
                 formals)))
-             (clk (1- clk)))
+             (clk (1- clk))
+             (interp-st (is-prof-simple-increment-def fn interp-st)))
           (interp-term-equivs body (pairlis$ formals actuals)
                               contexts . ,*glcp-common-inputs*)))
 
@@ -930,15 +965,20 @@ but its arity is ~x3.  Its formal parameters are ~x4."
              ((unless (pseudo-term-listp rule.hyps))
               (cw "malformed gl rewrite rule (hyps)?? ~x0~%" rule)
               (glcp-value nil nil nil))
+             (interp-st (is-prof-push rule.rune interp-st))
              (add-bvars-allowed (is-add-bvars-allowed interp-st))
              (interp-st (update-is-add-bvars-allowed nil interp-st))
              ((glcp-er hyps-ok gobj-bindings :nvals 3)
               (relieve-hyps rule.rune rule.hyps gobj-bindings . ,*glcp-common-inputs*))
              (interp-st (update-is-add-bvars-allowed add-bvars-allowed interp-st))
-             ((unless hyps-ok) (glcp-value nil nil nil))
+             ((unless hyps-ok)
+              (b* ((interp-st (is-prof-pop-increment nil interp-st)))
+                (glcp-value nil nil nil)))
              ((unless (pseudo-termp rule.rhs))
               (cw "malformed gl rewrite rule (rhs)?? ~x0~%" rule)
-              (glcp-value nil nil nil)))
+              (b* ((interp-st (is-prof-pop-increment nil interp-st)))
+                (glcp-value nil nil nil)))
+             (interp-st (is-prof-pop-increment t interp-st)))
           (glcp-value t rule.rhs gobj-bindings)))
 
       (defun relieve-hyps (rune hyps bindings . ,*glcp-common-inputs*)
@@ -1190,11 +1230,13 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
             (interp-st (update-is-constraint (bfr-constr-init) interp-st))
             (interp-st (update-is-constraint-db constraint-db interp-st))
             (interp-st (update-is-add-bvars-allowed t interp-st))
+            (interp-st (update-is-prof-enabledp config.prof-enabledp interp-st))
             (next-bvar (shape-spec-max-bvar-list (shape-spec-bindings->sspecs bindings)))
             ((mv hyp-bfr concl-bfr bvar-db1 . ,(remove 'pathcond *glcp-common-retvals*))
              (interp-hyp/concl
               hyp concl al config.concl-clk  config interp-st next-bvar bvar-db
               bvar-db1 state))
+            (interp-st (is-prof-report interp-st))
             ((when er)
              (flush-hons-get-hash-table-link (is-obligs interp-st))
              (gbc-db-free (is-constraint-db interp-st))

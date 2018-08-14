@@ -6183,6 +6183,8 @@
   (b* (((mv ?nextst-obj ?prop-bfr ?fsm-constr-bfr ?initst-bfr ?st-hyp-bfr ?hyp-bfr ?st-hyp-next-bfr ?hyp-max-bvar
             ?er interp-st bvar-db state)
         (glmc-generic-mcheck-main-interps config nil nil state))
+       (interp-st (is-prof-report interp-st))
+       (interp-st (is-prof-reset interp-st))
        ((when er) (mv nil er interp-st bvar-db state))
 
        ((mv ?nextst-bfrs ?er interp-st ?bvar-db ?state)
@@ -6383,7 +6385,8 @@
 (defsection glmc-generic-mcheck-to-fsm
   (local (in-theory (enable glmc-generic-mcheck-to-fsm)))
   (local (std::set-define-current-function glmc-generic-mcheck-to-fsm))
-  (verify-guards glmc-generic-mcheck-to-fsm)
+  (verify-guards glmc-generic-mcheck-to-fsm
+    :guard-debug t)
 
   (std::defret glmc-fsm-p-of-glmc-mcheck-to-fsm
     (b* (((glmc-config+ config)))

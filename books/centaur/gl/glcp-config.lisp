@@ -54,6 +54,7 @@
    (split-conses booleanp :default nil)
    (split-fncalls booleanp :default nil)
    (lift-ifsp booleanp :default nil)
+   (prof-enabledp booleanp :default nil)
    )
   :tag :glcp-config)
 

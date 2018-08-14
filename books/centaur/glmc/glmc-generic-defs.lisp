@@ -160,12 +160,14 @@
     :hints(("Goal" :in-theory (enable glmc-config-update-param)))))
 
 
-(define init-interp-st (interp-st state)
+(define init-interp-st (interp-st (config glmc-config-p) state)
   :guard (non-exec (equal interp-st (create-interp-st)))
   :returns (mv er new-interp-st)
   (b* ((interp-st (mbe :logic (non-exec (create-interp-st)) :exec interp-st))
+       ((glmc-config+ config))
        (interp-st (update-is-constraint (bfr-constr-init) interp-st))
        (interp-st (update-is-add-bvars-allowed t interp-st))
+       (interp-st (update-is-prof-enabledp config.prof-enabledp interp-st))
        (constraint-db (ec-call (gbc-db-make-fast (table-alist 'gl-bool-constraints (w state)))))
        ((unless (ec-call (gbc-db-emptyp constraint-db)))
         (mv "The constraint database stored in the table ~
@@ -190,8 +192,8 @@
 
   (std::defret init-interp-st-normalize
     (implies (syntaxp (not (equal interp-st ''nil)))
-             (equal (init-interp-st interp-st state)
-                    (init-interp-st nil state)))))
+             (equal (init-interp-st interp-st config state)
+                    (init-interp-st nil config state)))))
 
 
 (define alist-extract (keys alist)

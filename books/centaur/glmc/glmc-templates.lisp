@@ -100,7 +100,7 @@
           (next-bvar (shape-spec-max-bvar-list (shape-spec-bindings->sspecs config.shape-spec-alist)))
           (bvar-db (init-bvar-db next-bvar bvar-db))
 
-          ((mv er interp-st) (init-interp-st interp-st state))
+          ((mv er interp-st) (init-interp-st interp-st config state))
           ((when er)
            (mv nil nil er pathcond interp-st bvar-db state))
 
@@ -436,6 +436,8 @@
      (b* (((acl2::local-stobjs interp-st)
            (mv fsm er interp-st bvar-db state))
 
+          ((glmc-config+ config))
+
           (bvar-db (init-bvar-db 0 bvar-db))
           (er (glmc-syntax-checks config))
           ((when er) (mv nil er interp-st bvar-db state))
@@ -445,12 +447,15 @@
            (time$ (glmc-mcheck-main-interps config interp-st bvar-db state)
                   :msg "; ~s0: ~st seconds, ~sa bytes.~%"
                   :args '(glmc-mcheck-main-interps)))
+          (interp-st (is-prof-report interp-st))
+          (interp-st (is-prof-reset interp-st))
           ((when er) (mv nil er interp-st bvar-db state))
 
           ((mv nextst-bfrs er interp-st bvar-db state)
            (time$ (glmc-next-state nextst-obj hyp-bfr config interp-st bvar-db state)
                   :msg "; ~s0: ~st seconds, ~sa bytes.~%"
                   :args '(glmc-next-state)))
+          (interp-st (is-prof-report interp-st))
           ((when er) (mv nil er interp-st bvar-db state))
 
           (bit-constr-bfr (bfr-constr->bfr (is-constraint interp-st))))
