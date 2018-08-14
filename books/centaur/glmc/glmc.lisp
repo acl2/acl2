@@ -233,6 +233,7 @@
     (:state-hyp-method st-hyp-method :mcheck :st-hyp-method)
     (:constraint term t :constr)
     (:check-vacuity boolean t (:check-vacuous))
+    (:prof-enabledp boolean t (:prof-enabledp))
     (:ctrex-transform function (lambda (x) x) (:ctrex-transform))))
 
 (defun glmc-hint-translate-bindings (bindings ctx state)

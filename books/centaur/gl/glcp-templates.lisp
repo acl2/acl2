@@ -66,8 +66,28 @@
   is-constraint        ;; calist
   is-constraint-db     ;; constraint database
   is-add-bvars-allowed
+  (is-backchain-limit :type (or (integer 0 *) null))
   (is-prof :type interp-profiler)
   )
+
+(define is-decrement-backchain-limit (interp-st)
+  ;; Note: returns the old limit so that it can be restored after backchaining,
+  ;; and also so that you can check whether it's equal to 0 -- this says
+  ;; whether to allow rewriting or not.
+  :returns (mv (old-limit (or (natp old-limit) (equal old-limit nil)) :rule-classes :type-prescription)
+               (new-interp-st))
+  (b* ((limit (is-backchain-limit interp-st))
+       (limit (mbe :logic (and limit (nfix limit))
+                   :exec limit))
+       ((unless (and limit (not (eql 0 limit))))
+        (mv limit interp-st))
+       (interp-st (update-is-backchain-limit (1- limit) interp-st)))
+    (mv limit interp-st))
+  ///
+  (std::defret is-decrement-backchain-limit-frame
+    (implies (not (equal n *is-backchain-limit*))
+             (equal (nth n new-interp-st)
+                    (nth n interp-st)))))
 
 (defconst *glcp-common-inputs*
   '(pathcond clk config interp-st bvar-db state))
@@ -618,10 +638,14 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                    'cons))
              (rules (glcp-get-branch-merge-rules fn (w state)))
              (runes (rewrite-rules->runes rules))
+             ((mv backchain-limit interp-st) (is-decrement-backchain-limit interp-st))
              ((glcp-er successp term bindings)
-              (rewrite-apply-rules
-               rules runes 'if (list (g-boolean test-bfr) then else)
-               contexts . ,*glcp-common-inputs*))
+              (if (eql 0 backchain-limit)
+                  (glcp-value nil nil nil)
+                (rewrite-apply-rules
+                 rules runes 'if (list (g-boolean test-bfr) then else)
+                 contexts . ,*glcp-common-inputs*)))
+             (interp-st (update-is-backchain-limit backchain-limit interp-st))
              ((when successp)
               (b* ((clk (1- clk)))
                 (interp-term-equivs term bindings contexts . ,*glcp-common-inputs*))))
@@ -899,9 +923,15 @@ but its arity is ~x3.  Its formal parameters are ~x4."
              ;; expensive
              ((unless (and rules (true-listp rules))) ;; optimization (important?)
               (glcp-value nil nil nil))
-             (fn-rewrites (getprop fn 'acl2::lemmas nil 'current-acl2-world (w state))))
-          (rewrite-apply-rules
-           fn-rewrites rules fn actuals contexts . ,*glcp-common-inputs*)))
+             ((mv backchain-limit interp-st) (is-decrement-backchain-limit interp-st))
+             ((when (eql 0 backchain-limit))
+              (glcp-value nil nil nil))
+             (fn-rewrites (getprop fn 'acl2::lemmas nil 'current-acl2-world (w state)))
+             ((glcp-er successp term bindings)
+              (rewrite-apply-rules
+               fn-rewrites rules fn actuals contexts . ,*glcp-common-inputs*))
+             (interp-st (update-is-backchain-limit backchain-limit interp-st)))
+          (glcp-value successp term bindings)))
 
 
       (defun rewrite-apply-rules
