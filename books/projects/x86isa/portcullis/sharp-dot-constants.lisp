@@ -584,6 +584,91 @@
 
 ;; ======================================================================
 
+;; Exceptions and Interrupts
+;; Reference: Table 6-1, Chapter 6 (Interrupts and Exceptions), Intel Vol. 1
+
+;     Mnemonic    Vector     Description &
+;                            Source
+
+(defconst *#DE*     0)  ;    Divide Error
+			;    DIV and IDIV instructions.
+
+(defconst *#DB*     1)  ;    Debug
+			;    Any code or data reference.
+
+(defconst *#NMI*    2)  ;    Reserved: NMI Interrupt
+			;    Non-maskable external interrupt.
+
+(defconst *#BP*     3)  ;    Breakpoint
+			;    INT3 instruction.
+
+(defconst *#OF*     4)  ;    Overflow
+			;    INTO instruction.
+
+(defconst *#BR*     5)  ;    BOUND Range Exceeded
+			;    BOUND instruction.
+
+(defconst *#NM*     7)  ;    Device Not Available (No Math Coprocessor)
+			;    Floating-point or WAIT/FWAIT instruction.
+
+(defconst *#DF*     8)  ;    Double Fault
+			;    Any instruction that can generate an exception, an
+			;    NMI, or an INTR.
+
+(defconst *#resMF*  9)  ;    CoProcessor Segment Overrun (reserved)
+			;    Floating-point instruction.
+			;    NOTE: IA-32 processors after the Intel386
+			;    processor do not generate this exception.
+
+(defconst *#TS*     10) ;    Invalid TSS
+			;    Task switch or TSS access.
+
+(defconst *#NP*     11) ;    Segment Not Present
+			;    Loading segment registers or accessing system segments.
+
+(defconst *#SS*     12) ;    Stack Segment Fault
+			;    Stack operations and SS register loads.
+
+(defconst *#GP*     13) ;    General Protection
+			;    Any memory reference and other protection checks.
+
+(defconst *#PF*     14) ;    Page Fault
+			;    Any memory reference
+
+(defconst *#res15*  15) ;    Reserved
+
+(defconst *#MF*     16) ;    Floating-Point Error (Math Fault)
+			;    Floating-point or WAIT/FWAIT instruction.
+
+(defconst *#AC*     17) ;    Alignment Check
+			;    Any data reference in memory.
+			;    This exception was introduced in the Intel486 processor.
+
+(defconst *#MC*     18) ;    Machine Check
+			;    Error codes (if any) and source are model dependent.
+			;    This exception was introduced in the Pentium
+			;    processor and enhanced in the P6 family
+			;    processors.
+
+(defconst *#XM*     19) ;    SIMD Floating-Point Exception
+			;    SIMD Floating-Point Instruction
+			;    This exception was introduced in the Pentium III
+			;    processor.
+
+
+(defconst *#VE*     20) ;    Virtualization Exception
+			;    EPT violations
+			;    This exception can occur only on processors that
+			;    support the 1-setting of the “EPT-violation #VE”
+			;    VM-execution control.
+
+;; 21-31   Reserved
+;;
+;; 32-255  Maskable Interrupts
+;;         External interrupt from INTR pin or INT n instruction.
+
+;; ======================================================================
+
 ;; Indices and length of fields in the x86 state (see
 ;; machine/state-concrete.lisp):
 

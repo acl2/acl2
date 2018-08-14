@@ -57,6 +57,12 @@
  @('*opcode-extensions-by-group-number*') contain information presented in the
  opcode maps, as described in Intel Manual, Volume 2, Appendix A.</p>
 
+ <p>The constants @('*vex-0F-opcodes*'), @('*vex-0F38-opcodes*'),
+ @('*vex-0F3A-opcodes*'), @('*evex-0F-opcodes*'), @('*evex-0F38-opcodes*'), and
+ @('*evex-0F3A-opcodes*') contain a listing of all the possible VEX- and
+ EVEX-encoded instructions, gleaned from the Instruction Set Reference pages of
+ Intel Manuals, Vol. 2, Chapters 3, 4, and 5.</p>
+
  <p>We annotate each opcode in these opcode maps with the instruction semantic
  function that specifies it (if one exists; @(see x86-step-unimplemented) is
  the 'default' semantic function).  See @(see implemented-opcodes) for
@@ -4111,6 +4117,12 @@
 
 ;; ----------------------------------------------------------------------
 
+;; VEX-encoded instructions:
+
+;; The vex listings below have been cross-checked with Table 2-16 (#UD
+;; Exception and VEX.W=1 Encoding) and the first column of Table 2-17 (#UD
+;; Exception and VEX.L Field Encoding) of Intel Manuals, Vol. 2.
+
 (defconst *vex-0F-opcodes*
   '((#x10 ((:v :0F :LIG :F2 :WIG)           "VMOVSD")
 	  ((:v :0F :NDS :LIG :F2 :WIG)      "VMOVSD")
@@ -4808,25 +4820,25 @@
     (#x5 ((:v :0F3A :128 :66 :W0)             "VPERMILPD")
 	 ((:v :0F3A :256 :66 :W0)             "VPERMILPD"))
     (#x6 ((:v :0F3A :NDS :256 :66 :W0)        "VPERM2F128"))
-    (#x8 ((:v :0F3A :128 :66 :WIG)            "ROUNDPS")
-	 ((:v :0F3A :256 :66 :WIG)            "ROUNDPS"))
-    (#x9 ((:v :0F3A :128 :66 :WIG)            "ROUNDPD")
-	 ((:v :0F3A :256 :66 :WIG)            "ROUNDPD"))
-    (#xA ((:v :0F3A :NDS :LIG :66 :WIG)       "ROUNDSS"))
-    (#xB ((:v :0F3A :NDS :LIG :66 :WIG)       "ROUNDSD"))
-    (#xC ((:v :0F3A :NDS :128 :66 :WIG)       "BLENDPS")
-	 ((:v :0F3A :NDS :256 :66 :WIG)       "BLENDPS"))
-    (#xD ((:v :0F3A :NDS :128 :66 :WIG)       "BLENDPD")
-	 ((:v :0F3A :NDS :256 :66 :WIG)       "BLENDPD"))
-    (#xE ((:v :0F3A :NDS :128 :66 :WIG)       "PBLENDW")
-	 ((:v :0F3A :NDS :256 :66 :WIG)       "PBLENDW"))
-    (#xF ((:v :0F3A :NDS :128 :66 :WIG)       "PALIGNR")
-	 ((:v :0F3A :NDS :256 :66 :WIG)       "PALIGNR"))
+    (#x8 ((:v :0F3A :128 :66 :WIG)            "VROUNDPS")
+	 ((:v :0F3A :256 :66 :WIG)            "VROUNDPS"))
+    (#x9 ((:v :0F3A :128 :66 :WIG)            "VROUNDPD")
+	 ((:v :0F3A :256 :66 :WIG)            "VROUNDPD"))
+    (#xA ((:v :0F3A :NDS :LIG :66 :WIG)       "VROUNDSS"))
+    (#xB ((:v :0F3A :NDS :LIG :66 :WIG)       "VROUNDSD"))
+    (#xC ((:v :0F3A :NDS :128 :66 :WIG)       "VBLENDPS")
+	 ((:v :0F3A :NDS :256 :66 :WIG)       "VBLENDPS"))
+    (#xD ((:v :0F3A :NDS :128 :66 :WIG)       "VBLENDPD")
+	 ((:v :0F3A :NDS :256 :66 :WIG)       "VBLENDPD"))
+    (#xE ((:v :0F3A :NDS :128 :66 :WIG)       "VPBLENDW")
+	 ((:v :0F3A :NDS :256 :66 :WIG)       "VPBLENDW"))
+    (#xF ((:v :0F3A :NDS :128 :66 :WIG)       "VPALIGNR")
+	 ((:v :0F3A :NDS :256 :66 :WIG)       "VPALIGNR"))
     (#x14 ((:v :0F3A :128 :66 :W0)            "VPEXTRB"))
-    (#x15 ((:v :0F3A :128 :66 :W0)            "PEXTRW"))
+    (#x15 ((:v :0F3A :128 :66 :W0)            "VPEXTRW"))
     (#x16 ((:v :0F3A :128 :66 :W0)            "VPEXTRD")
 	  ((:v :0F3A :128 :66 :W1)            "VPEXTRQ"))
-    (#x17 ((:v :0F3A :128 :66 :WIG)           "EXTRACTPS"))
+    (#x17 ((:v :0F3A :128 :66 :WIG)           "VEXTRACTPS"))
     (#x18 ((:v :0F3A :NDS :256 :66 :W0)       "VINSERTF128"))
     (#x19 ((:v :0F3A :256 :66 :W0)            "VEXTRACTF128"))
     (#x1D ((:v :0F3A :128 :66 :W0)            "VCVTPS2PH")
@@ -4845,28 +4857,30 @@
 	  ((:v :0F3A :L0 :66 :W1)             "KSHIFTLQ"))
     (#x38 ((:v :0F3A :NDS :256 :66 :W0)       "VINSERTI128"))     ;;  ib
     (#x39 ((:v :0F3A :256 :66 :W0)            "VEXTRACTI128"))    ;;  ib
-    (#x40 ((:v :0F3A :NDS :128 :66 :WIG)      "DPPS")             ;;  ib
-	  ((:v :0F3A :NDS :256 :66 :WIG)      "DPPS"))            ;;  ib
-    (#x41 ((:v :0F3A :NDS :128 :66 :WIG)      "DPPD"))            ;;  ib
-    (#x42 ((:v :0F3A :NDS :128 :66 :WIG)      "MPSADBW")          ;;  ib
-	  ((:v :0F3A :NDS :256 :66 :WIG)      "MPSADBW"))         ;;  ib
-    (#x44 ((:v :0F3A :NDS :128 :66 :WIG)      "PCLMULQDQ"))       ;;  ib
+    (#x40 ((:v :0F3A :NDS :128 :66 :WIG)      "VDPPS")             ;;  ib
+	  ((:v :0F3A :NDS :256 :66 :WIG)      "VDPPS"))            ;;  ib
+    (#x41 ((:v :0F3A :NDS :128 :66 :WIG)      "VDPPD"))            ;;  ib
+    (#x42 ((:v :0F3A :NDS :128 :66 :WIG)      "VMPSADBW")          ;;  ib
+	  ((:v :0F3A :NDS :256 :66 :WIG)      "VMPSADBW"))         ;;  ib
+    (#x44 ((:v :0F3A :NDS :128 :66 :WIG)      "VPCLMULQDQ"))       ;;  ib
     (#x46 ((:v :0F3A :NDS :256 :66 :W0)       "VPERM2I128"))      ;;  ib
-    (#x4A ((:v :0F3A :NDS :128 :66 :W0)       "BLENDVPS")         ;;  /is4
-	  ((:v :0F3A :NDS :256 :66 :W0)       "BLENDVPS"))        ;;  /is4
-    (#x4B ((:v :0F3A :NDS :128 :66 :W0)       "BLENDVPD")         ;;  /is4
-	  ((:v :0F3A :NDS :256 :66 :W0)       "BLENDVPD"))        ;;  /is4
-    (#x4C ((:v :0F3A :NDS :128 :66 :W0)       "PBLENDVB")         ;;  /is4
-	  ((:v :0F3A :NDS :256 :66 :W0)       "PBLENDVB"))        ;;  /is4
-    (#x60 ((:v :0F3A :128 :66)                "PCMPESTRM"))       ;;  ib
-    (#x61 ((:v :0F3A :128 :66)                "PCMPESTRI"))       ;;  ib
-    (#x62 ((:v :0F3A :128 :66 :WIG)           "PCMPISTRM"))       ;;  ib
-    (#x63 ((:v :0F3A :128 :66 :WIG)           "PCMPISTRI"))       ;;  ib
+    (#x4A ((:v :0F3A :NDS :128 :66 :W0)       "VBLENDVPS")         ;;  /is4
+	  ((:v :0F3A :NDS :256 :66 :W0)       "VBLENDVPS"))        ;;  /is4
+    (#x4B ((:v :0F3A :NDS :128 :66 :W0)       "VBLENDVPD")         ;;  /is4
+	  ((:v :0F3A :NDS :256 :66 :W0)       "VBLENDVPD"))        ;;  /is4
+    (#x4C ((:v :0F3A :NDS :128 :66 :W0)       "VPBLENDVB")         ;;  /is4
+	  ((:v :0F3A :NDS :256 :66 :W0)       "VPBLENDVB"))        ;;  /is4
+    (#x60 ((:v :0F3A :128 :66)                "VPCMPESTRM"))       ;;  ib
+    (#x61 ((:v :0F3A :128 :66)                "VPCMPESTRI"))       ;;  ib
+    (#x62 ((:v :0F3A :128 :66 :WIG)           "VPCMPISTRM"))       ;;  ib
+    (#x63 ((:v :0F3A :128 :66 :WIG)           "VPCMPISTRI"))       ;;  ib
     (#xDF ((:v :0F3A :128 :66 :WIG)           "AESKEYGENASSIST")) ;;  ib
     (#xF0 ((:v :0F3A :LZ :F2 :W0)             "RORX")             ;;  ib
 	  ((:v :0F3A :LZ :F2 :W1)             "RORX"))))
 
 ;; ----------------------------------------------------------------------
+
+;; EVEX-encoded instructions:
 
 (defconst *evex-0F-opcodes*
   '((#x10 ((:ev :0F :LIG :F2 :W1)                 "VMOVSD")                 ;;
@@ -6689,7 +6703,7 @@
   (kwd-or-key-cons-listp lst vex?))
 
 (define avx-opcode-cases-okp ((lst)
-                              (vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
+			      (vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
   (if (atom lst)
       (equal lst nil)
     (b* ((first (car lst))
@@ -6703,7 +6717,7 @@
       (avx-opcode-cases-okp (cdr lst) vex?))))
 
 (define avx-maps-well-formed-p ((map)
-                                (vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
+				(vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
   (if (atom map)
       (equal map nil)
     (b* ((first (car map))
