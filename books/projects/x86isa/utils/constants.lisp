@@ -576,7 +576,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   (define evex-w-slice ((evex-prefixes :type (unsigned-byte 32)))
     :short "Get the @('W') field of @('evex-prefixes')"
     :inline t
-    :returns (w (unsigned-byte-p 2 w) :hyp :guard)
+    :returns (w (unsigned-byte-p 1 w) :hyp :guard)
     (evex-byte2-slice :w (evex-prefixes-slice :byte2 evex-prefixes))))
 
 ;; ======================================================================

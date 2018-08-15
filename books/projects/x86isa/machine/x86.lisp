@@ -897,8 +897,7 @@
 
        (modr/m?
 	(three-byte-opcode-ModR/M-p
-	 proc-mode 0 0 ;; vex-prefixes evex-prefixes
-	 mandatory-prefix second-escape-byte opcode))
+	 proc-mode mandatory-prefix second-escape-byte opcode))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
 	(if modr/m?
 	    (rme08 proc-mode temp-rip *cs* :x x86)
@@ -1060,8 +1059,7 @@
 
        (modr/m?
 	(two-byte-opcode-ModR/M-p
-	 proc-mode 0 0 ;; vex-prefixes evex-prefixes
-	 mandatory-prefix opcode))
+	 proc-mode mandatory-prefix opcode))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
 	(if modr/m?
 	    (rme08 proc-mode temp-rip *cs* :x x86)
@@ -1422,22 +1420,24 @@
 	(the (unsigned-byte 8)
 	  (if vex3-prefix? next-byte byte2/next-byte)))
 
-       ;; All VEX- and EVEX-encoded instructions require a ModR/M byte.
-       ;; Reference: Intel Manual, Vol. 2, Figure 2-8 (Instruction Encoding
-       ;; Format with VEX Prefix) and Figure 2-10 (AVX-512 Instruction Format
-       ;; and the EVEX Prefix)
+       (modr/m? (vex-opcode-ModR/M-p vex-prefixes opcode))
        ((mv flg4 (the (unsigned-byte 8) modr/m) x86)
-	(rme08 proc-mode temp-rip *cs* :x x86))
+	(if modr/m?
+	    (rme08 proc-mode temp-rip *cs* :x x86)
+	  (mv nil 0 x86)))
        ((when flg4)
 	(!!ms-fresh :modr/m-byte-read-error flg4))
        ((mv flg5 temp-rip)
-	(add-to-*ip proc-mode temp-rip 1 x86))
+        (if modr/m?
+            (add-to-*ip proc-mode temp-rip 1 x86)
+          (mv nil temp-rip)))
        ((when flg5) (!!ms-fresh :increment-error flg5))
 
-       (sib? (b* ((p4? (eql #.*addr-size-override*
-			    (prefixes-slice :adr prefixes)))
-		  (16-bit-addressp (eql 2 (select-address-size proc-mode p4? x86))))
-	       (x86-decode-SIB-p modr/m 16-bit-addressp)))
+       (sib? (and modr/m?
+                  (b* ((p4? (eql #.*addr-size-override*
+                                 (prefixes-slice :adr prefixes)))
+                       (16-bit-addressp (eql 2 (select-address-size proc-mode p4? x86))))
+                    (x86-decode-SIB-p modr/m 16-bit-addressp))))
        ((mv flg6 (the (unsigned-byte 8) sib) x86)
 	(if sib?
 	    (rme08 proc-mode temp-rip *cs* :x x86)
@@ -1657,7 +1657,7 @@
 	(!!fault-fresh :ud :evex-prefixes evex-prefixes :mm evex-byte1))
 
        ;; EVEX Byte 2:
-       ((mv flg0 (the (unsigned-byte 8) byte2) x86)
+       ((mv flg0 (the (unsigned-byte 8) evex-byte2) x86)
 	(rme08 proc-mode temp-rip *cs* :x x86))
        ((when flg0)
 	(!!ms-fresh :evex-byte2-read-error flg0))
@@ -1666,17 +1666,17 @@
        ((when flg1)
 	(!!ms-fresh :increment-error flg1))
        (evex-prefixes
-	(!evex-prefixes-slice :byte2 byte2 evex-prefixes))
+	(!evex-prefixes-slice :byte2 evex-byte2 evex-prefixes))
        ;; EVEX Byte 2 #UD Check
        ;; Reference: Intel Vol. 2, Section 2.6.11.2 (Opcode Independent #UD)
-       ((when (not (equal (evex-byte2-slice :res evex-byte1) 1)))
+       ((when (not (equal (evex-byte2-slice :res evex-byte2) 1)))
 	(!!fault-fresh :ud :evex-prefixes evex-prefixes :byte2-reserved-bit))
 
        ;; EVEX Byte 3:
-       ((mv flg2 (the (unsigned-byte 8) byte3) x86)
+       ((mv flg2 (the (unsigned-byte 8) evex-byte3) x86)
 	(rme08 proc-mode temp-rip *cs* :x x86))
        ((when flg2)
-	(!!ms-fresh :byte3-read-error flg2))
+	(!!ms-fresh :evex-byte3-read-error flg2))
        ((mv flg3 temp-rip)
 	(add-to-*ip proc-mode temp-rip 1 x86))
        ((when flg3)
@@ -1706,7 +1706,8 @@
 
        (sib? (b* ((p4? (eql #.*addr-size-override*
 			    (prefixes-slice :adr prefixes)))
-		  (16-bit-addressp (eql 2 (select-address-size proc-mode p4? x86))))
+		  (16-bit-addressp
+		   (eql 2 (select-address-size proc-mode p4? x86))))
 	       (x86-decode-SIB-p modr/m 16-bit-addressp)))
        ((mv flg8 (the (unsigned-byte 8) sib) x86)
 	(if sib?
