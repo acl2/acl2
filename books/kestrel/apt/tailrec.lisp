@@ -17,12 +17,13 @@
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
+(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "utilities/print-specifiers")
 (include-book "utilities/transformation-table")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection tailrec-implementation
+(defxdoc+ tailrec-implementation
   :parents (implementation tailrec)
   :short "Implementation of @(tsee tailrec)."
   :long
@@ -191,13 +192,12 @@
    <p>
    The parameters of implementation functions that are not listed above
    are described in, or clear from, those functions' documentation.
-   </p>")
-
-(xdoc::order-subtopics tailrec-implementation nil t)
+   </p>"
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc tailrec-input-processing
+(defxdoc+ tailrec-input-processing
   :parents (tailrec-implementation)
   :short "Input processing performed by @(tsee tailrec)."
   :long
@@ -206,11 +206,9 @@
    When validation fails, <see topic='@(url er)'>soft errors</see> occur.
    Thus, generally the input processing functions return
    <see topic='@(url acl2::error-triple)'>error triples</see>.
-   </p>")
-
-(xdoc::order-subtopics tailrec-input-processing nil t)
-
-(local (xdoc::set-default-parents tailrec-input-processing))
+   </p>"
+  :order-subtopics t
+  :default-parent t)
 
 (define tailrec-check-nonrec-conditions
   ((combine-nonrec pseudo-termp)
@@ -1004,7 +1002,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc tailrec-event-generation
+(defxdoc+ tailrec-event-generation
   :parents (tailrec-implementation)
   :short "Event generation performed by @(tsee tailrec)."
   :long
@@ -1025,9 +1023,9 @@
    <p>
    Other events are only exported from the @(tsee encapsulate),
    without any local counterparts.
-   </p>")
-
-(xdoc::order-subtopics tailrec-event-generation nil t)
+   </p>"
+  :order-subtopics t
+  :default-parent t)
 
 (local (xdoc::set-default-parents tailrec-event-generation))
 

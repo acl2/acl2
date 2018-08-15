@@ -239,8 +239,6 @@
 
 (def-inst x86-two-byte-jcc
 
-  :evex t
-
   ;; Jump (near) if condition is met
 
   ;; Intel manual, Mar'17, Vol. 2A, Jcc reference says:
@@ -283,11 +281,6 @@
   ;; Note: Here opcode is the second byte of the two byte opcode.
 
   (b* ((ctx 'x86-two-byte-jcc)
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
@@ -408,8 +401,6 @@
 
 (def-inst x86-cmovcc
 
-  :evex t
-
   ;; Op/En: RM
   ;; [OP REG, R/M]
 
@@ -442,11 +433,6 @@
   ;; Note, opcode here denotes the second byte of the two-byte opcode.
 
   (b* ((ctx 'x86-cmovcc)
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
@@ -504,8 +490,6 @@
 
 (def-inst x86-setcc
 
-  :evex t
-
   ;; Op/En: M
 
   ;; SETcc
@@ -538,11 +522,6 @@
   ;; Note, opcode here denotes the second byte of the two-byte opcode.
 
   (b* ((ctx 'x86-setcc)
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD

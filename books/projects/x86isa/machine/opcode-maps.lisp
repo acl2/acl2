@@ -4868,6 +4868,1387 @@
 
 ;; ----------------------------------------------------------------------
 
+(defconst *evex-0F-opcodes*
+  '((#x10 ((:ev :0F :LIG :F2 :W1)                 "VMOVSD")                 ;;
+	  ((:ev :0F :NDS :LIG :F2 :W1)            "VMOVSD")                 ;;
+	  ((:ev :0F :LIG :F3 :W0)                 "VMOVSS")                 ;;
+	  ((:ev :0F :NDS :LIG :F3 :W0)            "VMOVSS")                 ;;
+	  ((:ev :0F :128 :66 :W1)                 "VMOVUPD")                ;;
+	  ((:ev :0F :256 :66 :W1)                 "VMOVUPD")                ;;
+	  ((:ev :0F :512 :66 :W1)                 "VMOVUPD")                ;;
+	  ((:ev :0F :128 :W0)                     "VMOVUPS")                ;;
+	  ((:ev :0F :256 :W0)                     "VMOVUPS")                ;;
+	  ((:ev :0F :512 :W0)                     "VMOVUPS"))               ;;
+    (#x11 ((:ev :0F :LIG :F2 :W1)                 "VMOVSD")                 ;;
+	  ((:ev :0F :NDS :LIG :F2 :W1)            "VMOVSD")                 ;;
+	  ((:ev :0F :LIG :F3 :W0)                 "VMOVSS")                 ;;
+	  ((:ev :0F :NDS :LIG :F3 :W0)            "VMOVSS")                 ;;
+	  ((:ev :0F :128 :66 :W1)                 "VMOVUPD")                ;;
+	  ((:ev :0F :256 :66 :W1)                 "VMOVUPD")                ;;
+	  ((:ev :0F :512 :66 :W1)                 "VMOVUPD")                ;;
+	  ((:ev :0F :128 :W0)                     "VMOVUPS")                ;;
+	  ((:ev :0F :256 :W0)                     "VMOVUPS")                ;;
+	  ((:ev :0F :512 :W0)                     "VMOVUPS"))               ;;
+    (#x12 ((:ev :0F :128 :F2 :W1)                 "VMOVDDUP")               ;;
+	  ((:ev :0F :256 :F2 :W1)                 "VMOVDDUP")               ;;
+	  ((:ev :0F :512 :F2 :W1)                 "VMOVDDUP")               ;;
+	  ((:ev :0F :NDS :128 :W0)                "VMOVHLPS")               ;;
+	  ((:ev :0F :NDS :128 :66 :W1)            "VMOVLPD")                ;;
+	  ((:ev :0F :NDS :128 :W0)                "VMOVLPS")                ;;
+	  ((:ev :0F :128 :F3 :W0)                 "VMOVSLDUP")              ;;
+	  ((:ev :0F :256 :F3 :W0)                 "VMOVSLDUP")              ;;
+	  ((:ev :0F :512 :F3 :W0)                 "VMOVSLDUP"))             ;;
+    (#x13 ((:ev :0F :128 :66 :W1)                 "VMOVLPD")                ;;
+	  ((:ev :0F :128 :W0)                     "VMOVLPS"))               ;;
+    (#x14 ((:ev :0F :NDS :128 :66 :W1)            "VUNPCKLPD")              ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VUNPCKLPD")              ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VUNPCKLPD")              ;;
+	  ((:ev :0F :NDS :128 :W0)                "VUNPCKLPS")              ;;
+	  ((:ev :0F :NDS :256 :W0)                "VUNPCKLPS")              ;;
+	  ((:ev :0F :NDS :512 :W0)                "VUNPCKLPS"))             ;;
+    (#x15 ((:ev :0F :NDS :128 :66 :W1)            "VUNPCKHPD")              ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VUNPCKHPD")              ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VUNPCKHPD")              ;;
+	  ((:ev :0F :NDS :128 :W0)                "VUNPCKHPS")              ;;
+	  ((:ev :0F :NDS :256 :W0)                "VUNPCKHPS")              ;;
+	  ((:ev :0F :NDS :512 :W0)                "VUNPCKHPS"))             ;;
+    (#x16 ((:ev :0F :NDS :128 :66 :W1)            "VMOVHPD")                ;;
+	  ((:ev :0F :NDS :128 :W0)                "VMOVHPS")                ;;
+	  ((:ev :0F :NDS :128 :W0)                "VMOVLHPS")               ;;
+	  ((:ev :0F :128 :F3 :W0)                 "VMOVSHDUP")              ;;
+	  ((:ev :0F :256 :F3 :W0)                 "VMOVSHDUP")              ;;
+	  ((:ev :0F :512 :F3 :W0)                 "VMOVSHDUP"))             ;;
+    (#x17 ((:ev :0F :128 :66 :W1)                 "VMOVHPD")                ;;
+	  ((:ev :0F :128 :W0)                     "VMOVHPS"))               ;;
+    (#x28 ((:ev :0F :128 :66 :W1)                 "VMOVAPD")                ;;
+	  ((:ev :0F :256 :66 :W1)                 "VMOVAPD")                ;;
+	  ((:ev :0F :512 :66 :W1)                 "VMOVAPD")                ;;
+	  ((:ev :0F :128 :W0)                     "VMOVAPS")                ;;
+	  ((:ev :0F :256 :W0)                     "VMOVAPS")                ;;
+	  ((:ev :0F :512 :W0)                     "VMOVAPS"))               ;;
+    (#x29 ((:ev :0F :128 :66 :W1)                 "VMOVAPD")                ;;
+	  ((:ev :0F :256 :66 :W1)                 "VMOVAPD")                ;;
+	  ((:ev :0F :512 :66 :W1)                 "VMOVAPD")                ;;
+	  ((:ev :0F :128 :W0)                     "VMOVAPS")                ;;
+	  ((:ev :0F :256 :W0)                     "VMOVAPS")                ;;
+	  ((:ev :0F :512 :W0)                     "VMOVAPS"))               ;;
+    (#x2A ((:ev :0F :NDS :LIG :F2 :W0)            "VCVTSI2SD")              ;;
+	  ((:ev :0F :NDS :LIG :F2 :W1)            "VCVTSI2SD")              ;;
+	  ((:ev :0F :NDS :LIG :F3 :W0)            "VCVTSI2SS")              ;;
+	  ((:ev :0F :NDS :LIG :F3 :W1)            "VCVTSI2SS"))             ;;
+    (#x2B ((:ev :0F :128 :66 :W1)                 "VMOVNTPD")               ;;
+	  ((:ev :0F :256 :66 :W1)                 "VMOVNTPD")               ;;
+	  ((:ev :0F :512 :66 :W1)                 "VMOVNTPD")               ;;
+	  ((:ev :0F :128 :W0)                     "VMOVNTPS")               ;;
+	  ((:ev :0F :256 :W0)                     "VMOVNTPS")               ;;
+	  ((:ev :0F :512 :W0)                     "VMOVNTPS"))              ;;
+    (#x2C ((:ev :0F :LIG :F2 :W0)                 "VCVTTSD2SI")             ;;
+	  ((:ev :0F :LIG :F2 :W1)                 "VCVTTSD2SI")             ;;
+	  ((:ev :0F :LIG :F3 :W0)                 "VCVTTSS2SI")             ;;
+	  ((:ev :0F :LIG :F3 :W1)                 "VCVTTSS2SI"))            ;;
+    (#x2D ((:ev :0F :LIG :F2 :W0)                 "VCVTSD2SI")              ;;
+	  ((:ev :0F :LIG :F2 :W1)                 "VCVTSD2SI")              ;;
+	  ((:ev :0F :LIG :F3 :W0)                 "VCVTSS2SI")              ;;
+	  ((:ev :0F :LIG :F3 :W1)                 "VCVTSS2SI"))             ;;
+    (#x2E ((:ev :0F :LIG :66 :W1)                 "VUCOMISD")               ;;
+	  ((:ev :0F :LIG :W0)                     "VUCOMISS"))              ;;
+    (#x2F ((:ev :0F :LIG :66 :W1)                 "VCOMISD")                ;;
+	  ((:ev :0F :LIG :W0)                     "VCOMISS"))               ;;
+    (#x51 ((:ev :0F :128 :66 :W1)                 "VSQRTPD")                ;;
+	  ((:ev :0F :256 :66 :W1)                 "VSQRTPD")                ;;
+	  ((:ev :0F :512 :66 :W1)                 "VSQRTPD")                ;;
+	  ((:ev :0F :128 :W0)                     "VSQRTPS")                ;;
+	  ((:ev :0F :256 :W0)                     "VSQRTPS")                ;;
+	  ((:ev :0F :512 :W0)                     "VSQRTPS")                ;;
+	  ((:ev :0F :NDS :LIG :F2 :W1)            "VSQRTSD")                ;;
+	  ((:ev :0F :NDS :LIG :F3 :W0)            "VSQRTSS"))               ;;
+    (#x54 ((:ev :0F :NDS :128 :66 :W1)            "VANDPD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VANDPD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VANDPD")                 ;;
+	  ((:ev :0F :NDS :128 :W0)                "VANDPS")                 ;;
+	  ((:ev :0F :NDS :256 :W0)                "VANDPS")                 ;;
+	  ((:ev :0F :NDS :512 :W0)                "VANDPS"))                ;;
+    (#x55 ((:ev :0F :NDS :128 :66 :W1)            "VANDNPD")                ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VANDNPD")                ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VANDNPD")                ;;
+	  ((:ev :0F :NDS :128 :W0)                "VANDNPS")                ;;
+	  ((:ev :0F :NDS :256 :W0)                "VANDNPS")                ;;
+	  ((:ev :0F :NDS :512 :W0)                "VANDNPS"))               ;;
+    (#x56 ((:ev :0F :NDS :128 :66 :W1)            "VORPD")                  ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VORPD")                  ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VORPD")                  ;;
+	  ((:ev :0F :NDS :128 :W0)                "VORPS")                  ;;
+	  ((:ev :0F :NDS :256 :W0)                "VORPS")                  ;;
+	  ((:ev :0F :NDS :512 :W0)                "VORPS"))                 ;;
+    (#x57 ((:ev :0F :NDS :128 :66 :W1)            "VXORPD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VXORPD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VXORPD")                 ;;
+	  ((:ev :0F :NDS :128 :W0)                "VXORPS")                 ;;
+	  ((:ev :0F :NDS :256 :W0)                "VXORPS")                 ;;
+	  ((:ev :0F :NDS :512 :W0)                "VXORPS"))                ;;
+    (#x58 ((:ev :0F :NDS :128 :66 :W1)            "VADDPD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VADDPD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VADDPD")                 ;;
+	  ((:ev :0F :NDS :128 :W0)                "VADDPS")                 ;;
+	  ((:ev :0F :NDS :256 :W0)                "VADDPS")                 ;;
+	  ((:ev :0F :NDS :512 :W0)                "VADDPS")                 ;;
+	  ((:ev :0F :NDS :LIG :F2 :W1)            "VADDSD")                 ;;
+	  ((:ev :0F :NDS :LIG :F3 :W0)            "VADDSS"))                ;;
+    (#x59 ((:ev :0F :NDS :128 :66 :W1)            "VMULPD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VMULPD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VMULPD")                 ;;
+	  ((:ev :0F :NDS :128 :W0)                "VMULPS")                 ;;
+	  ((:ev :0F :NDS :256 :W0)                "VMULPS")                 ;;
+	  ((:ev :0F :NDS :512 :W0)                "VMULPS")                 ;;
+	  ((:ev :0F :NDS :LIG :F2 :W1)            "VMULSD")                 ;;
+	  ((:ev :0F :NDS :LIG :F3 :W0)            "VMULSS"))                ;;
+    (#x5A ((:ev :0F :128 :66 :W1)                 "VCVTPD2PS")              ;;
+	  ((:ev :0F :256 :66 :W1)                 "VCVTPD2PS")              ;;
+	  ((:ev :0F :512 :66 :W1)                 "VCVTPD2PS")              ;;
+	  ((:ev :0F :128 :W0)                     "VCVTPS2PD")              ;;
+	  ((:ev :0F :256 :W0)                     "VCVTPS2PD")              ;;
+	  ((:ev :0F :512 :W0)                     "VCVTPS2PD")              ;;
+	  ((:ev :0F :NDS :LIG :F2 :W1)            "VCVTSD2SS")              ;;
+	  ((:ev :0F :NDS :LIG :F3 :W0)            "VCVTSS2SD"))             ;;
+    (#x5B ((:ev :0F :128 :W0)                     "VCVTDQ2PS")              ;;
+	  ((:ev :0F :256 :W0)                     "VCVTDQ2PS")              ;;
+	  ((:ev :0F :512 :W0)                     "VCVTDQ2PS")              ;;
+	  ((:ev :0F :128 :66 :W0)                 "VCVTPS2DQ")              ;;
+	  ((:ev :0F :256 :66 :W0)                 "VCVTPS2DQ")              ;;
+	  ((:ev :0F :512 :66 :W0)                 "VCVTPS2DQ")              ;;
+	  ((:ev :0F :128 :W1)                     "VCVTQQ2PS")              ;;
+	  ((:ev :0F :256 :W1)                     "VCVTQQ2PS")              ;;
+	  ((:ev :0F :512 :W1)                     "VCVTQQ2PS")              ;;
+	  ((:ev :0F :128 :F3 :W0)                 "VCVTTPS2DQ")             ;;
+	  ((:ev :0F :256 :F3 :W0)                 "VCVTTPS2DQ")             ;;
+	  ((:ev :0F :512 :F3 :W0)                 "VCVTTPS2DQ"))            ;;
+    (#x5C ((:ev :0F :NDS :128 :66 :W1)            "VSUBPD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VSUBPD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VSUBPD")                 ;;
+	  ((:ev :0F :NDS :128 :W0)                "VSUBPS")                 ;;
+	  ((:ev :0F :NDS :256 :W0)                "VSUBPS")                 ;;
+	  ((:ev :0F :NDS :512 :W0)                "VSUBPS")                 ;;
+	  ((:ev :0F :NDS :LIG :F2 :W1)            "VSUBSD")                 ;;
+	  ((:ev :0F :NDS :LIG :F3 :W0)            "VSUBSS"))                ;;
+    (#x5D ((:ev :0F :NDS :128 :66 :W1)            "VMINPD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VMINPD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VMINPD")                 ;;
+	  ((:ev :0F :NDS :128 :W0)                "VMINPS")                 ;;
+	  ((:ev :0F :NDS :256 :W0)                "VMINPS")                 ;;
+	  ((:ev :0F :NDS :512 :W0)                "VMINPS")                 ;;
+	  ((:ev :0F :NDS :LIG :F2 :W1)            "VMINSD")                 ;;
+	  ((:ev :0F :NDS :LIG :F3 :W0)            "VMINSS"))                ;;
+    (#x5E ((:ev :0F :NDS :128 :66 :W1)            "VDIVPD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VDIVPD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VDIVPD")                 ;;
+	  ((:ev :0F :NDS :128 :W0)                "VDIVPS")                 ;;
+	  ((:ev :0F :NDS :256 :W0)                "VDIVPS")                 ;;
+	  ((:ev :0F :NDS :512 :W0)                "VDIVPS")                 ;;
+	  ((:ev :0F :NDS :LIG :F2 :W1)            "VDIVSD")                 ;;
+	  ((:ev :0F :NDS :LIG :F3 :W0)            "VDIVSS"))                ;;
+    (#x5F ((:ev :0F :NDS :128 :66 :W1)            "VMAXPD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VMAXPD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VMAXPD")                 ;;
+	  ((:ev :0F :NDS :128 :W0)                "VMAXPS")                 ;;
+	  ((:ev :0F :NDS :256 :W0)                "VMAXPS")                 ;;
+	  ((:ev :0F :NDS :512 :W0)                "VMAXPS")                 ;;
+	  ((:ev :0F :NDS :LIG :F2 :W1)            "VMAXSD")                 ;;
+	  ((:ev :0F :NDS :LIG :F3 :W0)            "VMAXSS"))                ;;
+    (#x60 ((:ev :0F :NDS :128 :66 :WIG)           "VPUNPCKLBW")             ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPUNPCKLBW")             ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPUNPCKLBW"))            ;;
+    (#x61 ((:ev :0F :NDS :128 :66 :WIG)           "VPUNPCKLWD")             ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPUNPCKLWD")             ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPUNPCKLWD"))            ;;
+    (#x62 ((:ev :0F :NDS :128 :66 :W0)            "VPUNPCKLDQ")             ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPUNPCKLDQ")             ;;
+	  ((:ev :0F :NDS :512 :66 :W0)            "VPUNPCKLDQ"))            ;;
+    (#x63 ((:ev :0F :NDS :128 :66 :WIG)           "VPACKSSWB")              ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPACKSSWB")              ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPACKSSWB"))             ;;
+    (#x64 ((:ev :0F :NDS :128 :66 :WIG)           "VPCMPGTB")               ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPCMPGTB")               ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPCMPGTB"))              ;;
+    (#x65 ((:ev :0F :NDS :128 :66 :WIG)           "VPCMPGTW")               ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPCMPGTW")               ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPCMPGTW"))              ;;
+    (#x66 ((:ev :0F :NDS :128 :66 :W0)            "VPCMPGTD")               ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPCMPGTD")               ;;
+	  ((:ev :0F :NDS :512 :66 :W0)            "VPCMPGTD"))              ;;
+    (#x67 ((:ev :0F :NDS :128 :66 :WIG)           "VPACKUSWB")              ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPACKUSWB")              ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPACKUSWB"))             ;;
+    (#x68 ((:ev :0F :NDS :128 :66 :WIG)           "VPUNPCKHBW")             ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPUNPCKHBW")             ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPUNPCKHBW"))            ;;
+    (#x69 ((:ev :0F :NDS :128 :66 :WIG)           "VPUNPCKHWD")             ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPUNPCKHWD")             ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPUNPCKHWD"))            ;;
+    (#x6A ((:ev :0F :NDS :128 :66 :W0)            "VPUNPCKHDQ")             ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPUNPCKHDQ")             ;;
+	  ((:ev :0F :NDS :512 :66 :W0)            "VPUNPCKHDQ"))            ;;
+    (#x6B ((:ev :0F :NDS :128 :66 :W0)            "VPACKSSDW")              ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPACKSSDW")              ;;
+	  ((:ev :0F :NDS :512 :66 :W0)            "VPACKSSDW"))             ;;
+    (#x6C ((:ev :0F :NDS :128 :66 :W1)            "VPUNPCKLQDQ")            ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VPUNPCKLQDQ")            ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VPUNPCKLQDQ"))           ;;
+    (#x6D ((:ev :0F :NDS :128 :66 :W1)            "VPUNPCKHQDQ")            ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VPUNPCKHQDQ")            ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VPUNPCKHQDQ"))           ;;
+    (#x6E ((:ev :0F :128 :66 :W0)                 "VMOVD")                  ;;
+	  ((:ev :0F :128 :66 :W1)                 "VMOVQ"))                 ;;
+    (#x6F ((:ev :0F :128 :66 :W0)                 "VMOVDQA32")              ;;
+	  ((:ev :0F :256 :66 :W0)                 "VMOVDQA32")              ;;
+	  ((:ev :0F :512 :66 :W0)                 "VMOVDQA32")              ;;
+	  ((:ev :0F :128 :66 :W1)                 "VMOVDQA64")              ;;
+	  ((:ev :0F :256 :66 :W1)                 "VMOVDQA64")              ;;
+	  ((:ev :0F :512 :66 :W1)                 "VMOVDQA64")              ;;
+	  ((:ev :0F :128 :F2 :W1)                 "VMOVDQU16")              ;;
+	  ((:ev :0F :256 :F2 :W1)                 "VMOVDQU16")              ;;
+	  ((:ev :0F :512 :F2 :W1)                 "VMOVDQU16")              ;;
+	  ((:ev :0F :128 :F3 :W0)                 "VMOVDQU32")              ;;
+	  ((:ev :0F :256 :F3 :W0)                 "VMOVDQU32")              ;;
+	  ((:ev :0F :512 :F3 :W0)                 "VMOVDQU32")              ;;
+	  ((:ev :0F :128 :F3 :W1)                 "VMOVDQU64")              ;;
+	  ((:ev :0F :256 :F3 :W1)                 "VMOVDQU64")              ;;
+	  ((:ev :0F :512 :F3 :W1)                 "VMOVDQU64")              ;;
+	  ((:ev :0F :128 :F2 :W0)                 "VMOVDQU8")               ;;
+	  ((:ev :0F :256 :F2 :W0)                 "VMOVDQU8")               ;;
+	  ((:ev :0F :512 :F2 :W0)                 "VMOVDQU8"))              ;;
+    (#x70 ((:ev :0F :128 :66 :W0)                 "VPSHUFD")                ;;  ib
+	  ((:ev :0F :256 :66 :W0)                 "VPSHUFD")                ;;  ib
+	  ((:ev :0F :512 :66 :W0)                 "VPSHUFD")                ;;  ib
+	  ((:ev :0F :128 :F3 :WIG)                "VPSHUFHW")               ;;  ib
+	  ((:ev :0F :256 :F3 :WIG)                "VPSHUFHW")               ;;  ib
+	  ((:ev :0F :512 :F3 :WIG)                "VPSHUFHW")               ;;  ib
+	  ((:ev :0F :128 :F2 :WIG)                "VPSHUFLW")               ;;  ib
+	  ((:ev :0F :256 :F2 :WIG)                "VPSHUFLW")               ;;  ib
+	  ((:ev :0F :512 :F2 :WIG)                "VPSHUFLW"))              ;;  ib
+    (#x71 ((:ev :0F :NDD :128 :66 :WIG (:REG . 2)) "VPSRLW")                ;; /2 ib
+	  ((:ev :0F :NDD :256 :66 :WIG (:REG . 2)) "VPSRLW")                ;;  /2 ib
+	  ((:ev :0F :NDD :512 :66 :WIG (:REG . 2)) "VPSRLW")                ;;  /2 ib
+	  ((:ev :0F :NDD :128 :66 :WIG (:REG . 4)) "VPSRAW")                ;;  /4 ib
+	  ((:ev :0F :NDD :256 :66 :WIG (:REG . 4)) "VPSRAW")                ;;  /4 ib
+	  ((:ev :0F :NDD :512 :66 :WIG (:REG . 4)) "VPSRAW")                ;;  /4 ib
+	  ((:ev :0F :NDD :128 :66 :WIG (:REG . 6)) "VPSLLW")                ;;  /6 ib
+	  ((:ev :0F :NDD :256 :66 :WIG (:REG . 6)) "VPSLLW")                ;;  /6 ib
+	  ((:ev :0F :NDD :512 :66 :WIG (:REG . 6)) "VPSLLW"))               ;;  /6 ib
+    (#x72 ((:ev :0F :NDD :128 :66 :W0 (:REG . 0)) "VPRORD")                 ;;  /0 ib
+	  ((:ev :0F :NDD :128 :66 :W1 (:REG . 0)) "VPRORD")                 ;;  /0 ib
+	  ((:ev :0F :NDD :256 :66 :W0 (:REG . 0)) "VPRORD")                 ;;  /0 ib
+	  ((:ev :0F :NDD :256 :66 :W1 (:REG . 0)) "VPRORD")                 ;;  /0 ib
+	  ((:ev :0F :NDD :512 :66 :W0 (:REG . 0)) "VPRORD")                 ;;  /0 ib
+	  ((:ev :0F :NDD :512 :66 :W1 (:REG . 0)) "VPRORD")                 ;;  /0 ib
+	  ((:ev :0F :NDD :128 :66 :W0 (:REG . 0)) "VPROLD")                 ;;  /1 ib
+	  ((:ev :0F :NDD :128 :66 :W1 (:REG . 1)) "VPROLD")                 ;;  /1 ib
+	  ((:ev :0F :NDD :256 :66 :W0 (:REG . 1)) "VPROLD")                 ;;  /1 ib
+	  ((:ev :0F :NDD :256 :66 :W1 (:REG . 1)) "VPROLD")                 ;;  /1 ib
+	  ((:ev :0F :NDD :512 :66 :W0 (:REG . 1)) "VPROLD")                 ;;  /1 ib
+	  ((:ev :0F :NDD :512 :66 :W1 (:REG . 1)) "VPROLD")                 ;;  /1 ib
+	  ((:ev :0F :NDD :128 :66 :W0 (:REG . 2)) "VPSRLD")                 ;;  /2 ib
+	  ((:ev :0F :NDD :256 :66 :W0 (:REG . 2)) "VPSRLD")                 ;;  /2 ib
+	  ((:ev :0F :NDD :512 :66 :W0 (:REG . 2)) "VPSRLD")                 ;;  /2 ib
+	  ((:ev :0F :NDD :128 :66 :W0 (:REG . 4)) "VPSRAD")                 ;;  /4 ib
+	  ((:ev :0F :NDD :128 :66 :W1 (:REG . 4)) "VPSRAD")                 ;;  /4 ib
+	  ((:ev :0F :NDD :256 :66 :W0 (:REG . 4)) "VPSRAD")                 ;;  /4 ib
+	  ((:ev :0F :NDD :256 :66 :W1 (:REG . 4)) "VPSRAD")                 ;;  /4 ib
+	  ((:ev :0F :NDD :512 :66 :W0 (:REG . 4)) "VPSRAD")                 ;;  /4 ib
+	  ((:ev :0F :NDD :512 :66 :W1 (:REG . 4)) "VPSRAD")                 ;;  /4 ib
+	  ((:ev :0F :NDD :128 :66 :W0 (:REG . 6)) "VPSLLD")                 ;;  /6 ib
+	  ((:ev :0F :NDD :256 :66 :W0 (:REG . 6)) "VPSLLD")                 ;;  /6 ib
+	  ((:ev :0F :NDD :512 :66 :W0 (:REG . 6)) "VPSLLD"))                ;;  /6 ib
+    (#x73 ((:ev :0F :NDD :128 :66 :W1 (:REG . 2)) "VPSRLQ")                 ;;  /2 ib
+	  ((:ev :0F :NDD :256 :66 :W1 (:REG . 2)) "VPSRLQ")                 ;;  /2 ib
+	  ((:ev :0F :NDD :512 :66 :W1 (:REG . 2)) "VPSRLQ")                 ;;  /2 ib
+	  ((:ev :0F :NDD :128 :66 :WIG (:REG . 3)) "VPSRLDQ")               ;;  /3 ib
+	  ((:ev :0F :NDD :256 :66 :WIG (:REG . 3)) "VPSRLDQ")               ;;  /3 ib
+	  ((:ev :0F :NDD :512 :66 :WIG (:REG . 3)) "VPSRLDQ")               ;;  /3 ib
+	  ((:ev :0F :NDD :128 :66 :W1 (:REG . 6)) "VPSLLQ")                 ;;  /6 ib
+	  ((:ev :0F :NDD :256 :66 :W1 (:REG . 6)) "VPSLLQ")                 ;;  /6 ib
+	  ((:ev :0F :NDD :512 :66 :W1 (:REG . 6)) "VPSLLQ")                 ;;  /6 ib
+	  ((:ev :0F :NDD :128 :66 :WIG (:REG . 7)) "VPSLLDQ")               ;;  /7 ib
+	  ((:ev :0F :NDD :256 :66 :WIG (:REG . 7)) "VPSLLDQ")               ;;  /7 ib
+	  ((:ev :0F :NDD :512 :66 :WIG (:REG . 7)) "VPSLLDQ"))              ;;  /7 ib
+    (#x74 ((:ev :0F :NDS :128 :66 :WIG)           "VPCMPEQB")               ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPCMPEQB")               ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPCMPEQB"))              ;;
+    (#x75 ((:ev :0F :NDS :128 :66 :WIG)           "VPCMPEQW")               ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPCMPEQW")               ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPCMPEQW"))              ;;
+    (#x76 ((:ev :0F :NDS :128 :66 :W0)            "VPCMPEQD")               ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPCMPEQD")               ;;
+	  ((:ev :0F :NDS :512 :66 :W0)            "VPCMPEQD"))              ;;
+    (#x78 ((:ev :0F :256 :W1)                     "VCVTTPD2UDQ")            ;;  02
+	  ((:ev :0F :128 :W1)                     "VCVTTPD2UDQ")            ;;
+	  ((:ev :0F :512 :W1)                     "VCVTTPD2UDQ")            ;;
+	  ((:ev :0F :128 :66 :W1)                 "VCVTTPD2UQQ")            ;;
+	  ((:ev :0F :256 :66 :W1)                 "VCVTTPD2UQQ")            ;;
+	  ((:ev :0F :512 :66 :W1)                 "VCVTTPD2UQQ")            ;;
+	  ((:ev :0F :128 :W0)                     "VCVTTPS2UDQ")            ;;
+	  ((:ev :0F :256 :W0)                     "VCVTTPS2UDQ")            ;;
+	  ((:ev :0F :512 :W0)                     "VCVTTPS2UDQ")            ;;
+	  ((:ev :0F :128 :66 :W0)                 "VCVTTPS2UQQ")            ;;
+	  ((:ev :0F :256 :66 :W0)                 "VCVTTPS2UQQ")            ;;
+	  ((:ev :0F :512 :66 :W0)                 "VCVTTPS2UQQ")            ;;
+	  ((:ev :0F :LIG :F2 :W0)                 "VCVTTSD2USI")            ;;
+	  ((:ev :0F :LIG :F2 :W1)                 "VCVTTSD2USI")            ;;
+	  ((:ev :0F :LIG :F3 :W0)                 "VCVTTSS2USI")            ;;
+	  ((:ev :0F :LIG :F3 :W1)                 "VCVTTSS2USI"))           ;;
+    (#x79 ((:ev :0F :128 :W1)                     "VCVTPD2UDQ")             ;;
+	  ((:ev :0F :256 :W1)                     "VCVTPD2UDQ")             ;;
+	  ((:ev :0F :512 :W1)                     "VCVTPD2UDQ")             ;;
+	  ((:ev :0F :128 :66 :W1)                 "VCVTPD2UQQ")             ;;
+	  ((:ev :0F :256 :66 :W1)                 "VCVTPD2UQQ")             ;;
+	  ((:ev :0F :512 :66 :W1)                 "VCVTPD2UQQ")             ;;
+	  ((:ev :0F :128 :W0)                     "VCVTPS2UDQ")             ;;
+	  ((:ev :0F :256 :W0)                     "VCVTPS2UDQ")             ;;
+	  ((:ev :0F :512 :W0)                     "VCVTPS2UDQ")             ;;
+	  ((:ev :0F :128 :66 :W0)                 "VCVTPS2UQQ")             ;;
+	  ((:ev :0F :256 :66 :W0)                 "VCVTPS2UQQ")             ;;
+	  ((:ev :0F :512 :66 :W0)                 "VCVTPS2UQQ")             ;;
+	  ((:ev :0F :LIG :F2 :W0)                 "VCVTSD2USI")             ;;
+	  ((:ev :0F :LIG :F2 :W1)                 "VCVTSD2USI")             ;;
+	  ((:ev :0F :LIG :F3 :W0)                 "VCVTSS2USI")             ;;
+	  ((:ev :0F :LIG :F3 :W1)                 "VCVTSS2USI"))            ;;
+    (#x7A ((:ev :0F :128 :66 :W1)                 "VCVTTPD2QQ")             ;;
+	  ((:ev :0F :256 :66 :W1)                 "VCVTTPD2QQ")             ;;
+	  ((:ev :0F :512 :66 :W1)                 "VCVTTPD2QQ")             ;;
+	  ((:ev :0F :128 :66 :W0)                 "VCVTTPS2QQ")             ;;
+	  ((:ev :0F :256 :66 :W0)                 "VCVTTPS2QQ")             ;;
+	  ((:ev :0F :512 :66 :W0)                 "VCVTTPS2QQ")             ;;
+	  ((:ev :0F :128 :F3 :W0)                 "VCVTUDQ2PD")             ;;
+	  ((:ev :0F :256 :F3 :W0)                 "VCVTUDQ2PD")             ;;
+	  ((:ev :0F :512 :F3 :W0)                 "VCVTUDQ2PD")             ;;
+	  ((:ev :0F :128 :F2 :W0)                 "VCVTUDQ2PS")             ;;
+	  ((:ev :0F :256 :F2 :W0)                 "VCVTUDQ2PS")             ;;
+	  ((:ev :0F :512 :F2 :W0)                 "VCVTUDQ2PS")             ;;
+	  ((:ev :0F :128 :F3 :W1)                 "VCVTUQQ2PD")             ;;
+	  ((:ev :0F :256 :F3 :W1)                 "VCVTUQQ2PD")             ;;
+	  ((:ev :0F :512 :F3 :W1)                 "VCVTUQQ2PD")             ;;
+	  ((:ev :0F :128 :F2 :W1)                 "VCVTUQQ2PS")             ;;
+	  ((:ev :0F :256 :F2 :W1)                 "VCVTUQQ2PS")             ;;
+	  ((:ev :0F :512 :F2 :W1)                 "VCVTUQQ2PS"))            ;;
+    (#x7B ((:ev :0F :128 :66 :W1)                 "VCVTPD2QQ")              ;;
+	  ((:ev :0F :256 :66 :W1)                 "VCVTPD2QQ")              ;;
+	  ((:ev :0F :512 :66 :W1)                 "VCVTPD2QQ")              ;;
+	  ((:ev :0F :128 :66 :W0)                 "VCVTPS2QQ")              ;;
+	  ((:ev :0F :256 :66 :W0)                 "VCVTPS2QQ")              ;;
+	  ((:ev :0F :512 :66 :W0)                 "VCVTPS2QQ")              ;;
+	  ((:ev :0F :NDS :LIG :F2 :W0)            "VCVTUSI2SD")             ;;
+	  ((:ev :0F :NDS :LIG :F2 :W1)            "VCVTUSI2SD")             ;;
+	  ((:ev :0F :NDS :LIG :F3 :W0)            "VCVTUSI2SS")             ;;
+	  ((:ev :0F :NDS :LIG :F3 :W1)            "VCVTUSI2SS"))            ;;
+    (#x7E ((:ev :0F :128 :66 :W0)                 "VMOVD")                  ;;
+	  ((:ev :0F :128 :66 :W1)                 "VMOVQ")                  ;;
+	  ((:ev :0F :128 :F3 :W1)                 "VMOVQ"))                 ;;
+    (#x7F ((:ev :0F :128 :66 :W0)                 "VMOVDQA32")              ;;
+	  ((:ev :0F :256 :66 :W0)                 "VMOVDQA32")              ;;
+	  ((:ev :0F :512 :66 :W0)                 "VMOVDQA32")              ;;
+	  ((:ev :0F :128 :66 :W1)                 "VMOVDQA64")              ;;
+	  ((:ev :0F :256 :66 :W1)                 "VMOVDQA64")              ;;
+	  ((:ev :0F :512 :66 :W1)                 "VMOVDQA64")              ;;
+	  ((:ev :0F :128 :F2 :W1)                 "VMOVDQU16")              ;;
+	  ((:ev :0F :256 :F2 :W1)                 "VMOVDQU16")              ;;
+	  ((:ev :0F :512 :F2 :W1)                 "VMOVDQU16")              ;;
+	  ((:ev :0F :128 :F3 :W0)                 "VMOVDQU32")              ;;
+	  ((:ev :0F :256 :F3 :W0)                 "VMOVDQU32")              ;;
+	  ((:ev :0F :512 :F3 :W0)                 "VMOVDQU32")              ;;
+	  ((:ev :0F :128 :F3 :W1)                 "VMOVDQU64")              ;;
+	  ((:ev :0F :256 :F3 :W1)                 "VMOVDQU64")              ;;
+	  ((:ev :0F :512 :F3 :W1)                 "VMOVDQU64")              ;;
+	  ((:ev :0F :128 :F2 :W0)                 "VMOVDQU8")               ;;
+	  ((:ev :0F :256 :F2 :W0)                 "VMOVDQU8")               ;;
+	  ((:ev :0F :512 :F2 :W0)                 "VMOVDQU8"))              ;;
+    (#xC2 ((:ev :0F :NDS :128 :66 :W1)            "VCMPPD")                 ;;  ib
+	  ((:ev :0F :NDS :256 :66 :W1)            "VCMPPD")                 ;;  ib
+	  ((:ev :0F :NDS :512 :66 :W1)            "VCMPPD")                 ;;  ib
+	  ((:ev :0F :NDS :128 :W0)                "VCMPPS")                 ;;  ib
+	  ((:ev :0F :NDS :256 :W0)                "VCMPPS")                 ;;  ib
+	  ((:ev :0F :NDS :512 :W0)                "VCMPPS")                 ;;  ib
+	  ((:ev :0F :NDS :LIG :F2 :W1)            "VCMPSD")                 ;;  ib
+	  ((:ev :0F :NDS :LIG :F3 :W0)            "VCMPSS"))                ;;  ib
+    (#xC4 ((:ev :0F :NDS :128 :66 :WIG)           "VPINSRW"))               ;;  ib
+    (#xC5 ((:ev :0F :128 :66 :WIG)                "VPEXTRW"))               ;;  ib
+    (#xC6 ((:ev :0F :NDS :128 :66 :W1)            "VSHUFPD")                ;;  ib
+	  ((:ev :0F :NDS :256 :66 :W1)            "VSHUFPD")                ;;  ib
+	  ((:ev :0F :NDS :512 :66 :W1)            "VSHUFPD")                ;;  ib
+	  ((:ev :0F :NDS :128 :W0)                "VSHUFPS")                ;;  ib
+	  ((:ev :0F :NDS :256 :W0)                "VSHUFPS")                ;;  ib
+	  ((:ev :0F :NDS :512 :W0)                "VSHUFPS"))               ;;  ib
+    (#xD1 ((:ev :0F :NDS :128 :66 :WIG)           "VPSRLW")                 ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPSRLW")                 ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPSRLW"))                ;;
+    (#xD2 ((:ev :0F :NDS :128 :66 :W0)            "VPSRLD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPSRLD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W0)            "VPSRLD"))                ;;
+    (#xD3 ((:ev :0F :NDS :128 :66 :W1)            "VPSRLQ")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VPSRLQ")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VPSRLQ"))                ;;
+    (#xD4 ((:ev :0F :NDS :512 :66 :W1)            "VPADDQ")                 ;;
+	  ((:ev :0F :NDS :128 :66 :W1)            "VPADDQ")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VPADDQ"))                ;;
+    (#xD5 ((:ev :0F :NDS :128 :66 :WIG)           "VPMULLW")                ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPMULLW")                ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPMULLW"))               ;;
+    (#xD6 ((:ev :0F :128 :66 :W1)                 "VMOVQ"))                 ;;
+    (#xD8 ((:ev :0F :NDS :128 :66 :WIG)           "VPSUBUSB")               ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPSUBUSB")               ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPSUBUSB"))              ;;
+    (#xD9 ((:ev :0F :NDS :128 :66 :WIG)           "VPSUBUSW")               ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPSUBUSW")               ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPSUBUSW"))              ;;
+    (#xDA ((:ev :0F :NDS :128 :66)                "VPMINUB")                ;;
+	  ((:ev :0F :NDS :256 :66)                "VPMINUB")                ;;
+	  ((:ev :0F :NDS :512 :66)                "VPMINUB"))               ;;
+    (#xDB ((:ev :0F :NDS :512 :66 :W0)            "VPANDD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VPANDQ")                 ;;
+	  ((:ev :0F :NDS :128 :66 :W0)            "VPANDD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPANDD")                 ;;
+	  ((:ev :0F :NDS :128 :66 :W1)            "VPANDQ")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VPANDQ"))                ;;
+    (#xDC ((:ev :0F :NDS :128 :66 :WIG)           "VPADDUSB")               ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPADDUSB")               ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPADDUSB"))              ;;
+    (#xDD ((:ev :0F :NDS :128 :66 :WIG)           "VPADDUSW")               ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPADDUSW")               ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPADDUSW"))              ;;
+    (#xDE ((:ev :0F :NDS :128 :66 :WIG)           "VPMAXUB")                ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPMAXUB")                ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPMAXUB"))               ;;
+    (#xDF ((:ev :0F :NDS :128 :66 :W0)            "VPANDND")                ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPANDND")                ;;
+	  ((:ev :0F :NDS :512 :66 :W0)            "VPANDND")                ;;
+	  ((:ev :0F :NDS :128 :66 :W1)            "VPANDNQ")                ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VPANDNQ")                ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VPANDNQ"))               ;;
+    (#xE0 ((:ev :0F :NDS :128 :66 :WIG)           "VPAVGB")                 ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPAVGB")                 ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPAVGB"))                ;;
+    (#xE1 ((:ev :0F :NDS :128 :66 :WIG)           "VPSRAW")                 ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPSRAW")                 ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPSRAW"))                ;;
+    (#xE2 ((:ev :0F :NDS :128 :66 :W0)            "VPSRAD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPSRAD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W0)            "VPSRAD")                 ;;
+	  ((:ev :0F :NDS :128 :66 :W1)            "VPSRAQ")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VPSRAQ")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VPSRAQ"))                ;;
+    (#xE3 ((:ev :0F :NDS :128 :66 :WIG)           "VPAVGW")                 ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPAVGW")                 ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPAVGW"))                ;;
+    (#xE4 ((:ev :0F :NDS :128 :66 :WIG)           "VPMULHUW")               ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPMULHUW")               ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPMULHUW"))              ;;
+    (#xE5 ((:ev :0F :NDS :128 :66 :WIG)           "VPMULHW")                ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPMULHW")                ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPMULHW"))               ;;
+    (#xE6 ((:ev :0F :128 :F3 :W0)                 "VCVTDQ2PD")              ;;
+	  ((:ev :0F :256 :F3 :W0)                 "VCVTDQ2PD")              ;;
+	  ((:ev :0F :512 :F3 :W0)                 "VCVTDQ2PD")              ;;
+	  ((:ev :0F :128 :F2 :W1)                 "VCVTPD2DQ")              ;;
+	  ((:ev :0F :256 :F2 :W1)                 "VCVTPD2DQ")              ;;
+	  ((:ev :0F :512 :F2 :W1)                 "VCVTPD2DQ")              ;;
+	  ((:ev :0F :128 :F3 :W1)                 "VCVTQQ2PD")              ;;
+	  ((:ev :0F :256 :F3 :W1)                 "VCVTQQ2PD")              ;;
+	  ((:ev :0F :512 :F3 :W1)                 "VCVTQQ2PD")              ;;
+	  ((:ev :0F :128 :66 :W1)                 "VCVTTPD2DQ")             ;;
+	  ((:ev :0F :256 :66 :W1)                 "VCVTTPD2DQ")             ;;
+	  ((:ev :0F :512 :66 :W1)                 "VCVTTPD2DQ"))            ;;
+    (#xE7 ((:ev :0F :128 :66 :W0)                 "VMOVNTDQ")               ;;
+	  ((:ev :0F :256 :66 :W0)                 "VMOVNTDQ")               ;;
+	  ((:ev :0F :512 :66 :W0)                 "VMOVNTDQ"))              ;;
+    (#xE8 ((:ev :0F :NDS :128 :66 :WIG)           "VPSUBSB")                ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPSUBSB")                ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPSUBSB"))               ;;
+    (#xE9 ((:ev :0F :NDS :128 :66 :WIG)           "VPSUBSW")                ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPSUBSW")                ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPSUBSW"))               ;;
+    (#xEA ((:ev :0F :NDS :128 :66 :WIG)           "VPMINSW")                ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPMINSW")                ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPMINSW"))               ;;
+    (#xEB ((:ev :0F :NDS :128 :66 :W0)            "VPORD")                  ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPORD")                  ;;
+	  ((:ev :0F :NDS :512 :66 :W0)            "VPORD")                  ;;
+	  ((:ev :0F :NDS :128 :66 :W1)            "VPORQ")                  ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VPORQ")                  ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VPORQ"))                 ;;
+    (#xEC ((:ev :0F :NDS :128 :66 :WIG)           "VPADDSB")                ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPADDSB")                ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPADDSB"))               ;;
+    (#xED ((:ev :0F :NDS :128 :66 :WIG)           "VPADDSW")                ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPADDSW")                ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPADDSW"))               ;;
+    (#xEE ((:ev :0F :NDS :128 :66 :WIG)           "VPMAXSW")                ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPMAXSW")                ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPMAXSW"))               ;;
+    (#xEF ((:ev :0F :NDS :128 :66 :W0)            "VPXORD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPXORD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W0)            "VPXORD")                 ;;
+	  ((:ev :0F :NDS :128 :66 :W1)            "VPXORQ")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VPXORQ")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VPXORQ"))                ;;
+    (#xF1 ((:ev :0F :NDS :128 :66 :WIG)           "VPSLLW")                 ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPSLLW")                 ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPSLLW"))                ;;
+    (#xF2 ((:ev :0F :NDS :128 :66 :W0)            "VPSLLD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPSLLD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W0)            "VPSLLD"))                ;;
+    (#xF3 ((:ev :0F :NDS :128 :66 :W1)            "VPSLLQ")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VPSLLQ")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VPSLLQ"))                ;;
+    (#xF4 ((:ev :0F :NDS :128 :66 :W1)            "VPMULUDQ")               ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VPMULUDQ")               ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VPMULUDQ"))              ;;
+    (#xF5 ((:ev :0F :NDS :128 :66 :WIG)           "VPMADDWD")               ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPMADDWD")               ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPMADDWD"))              ;;
+    (#xF6 ((:ev :0F :NDS :128 :66 :WIG)           "VPSADBW")                ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPSADBW")                ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPSADBW"))               ;;
+    (#xF8 ((:ev :0F :NDS :128 :66 :WIG)           "VPSUBB")                 ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPSUBB")                 ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPSUBB"))                ;;
+    (#xF9 ((:ev :0F :NDS :128 :66 :WIG)           "VPSUBW")                 ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPSUBW")                 ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPSUBW"))                ;;
+    (#xFA ((:ev :0F :NDS :128 :66 :W0)            "VPSUBD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPSUBD")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W0)            "VPSUBD"))                ;;
+    (#xFB ((:ev :0F :NDS :128 :66 :W1)            "VPSUBQ")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W1)            "VPSUBQ")                 ;;
+	  ((:ev :0F :NDS :512 :66 :W1)            "VPSUBQ"))                ;;
+    (#xFC ((:ev :0F :NDS :128 :66 :WIG)           "VPADDB")                 ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPADDB")                 ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPADDB"))                ;;
+    (#xFD ((:ev :0F :NDS :128 :66 :WIG)           "VPADDW")                 ;;
+	  ((:ev :0F :NDS :256 :66 :WIG)           "VPADDW")                 ;;
+	  ((:ev :0F :NDS :512 :66 :WIG)           "VPADDW"))                ;;
+    (#xFE ((:ev :0F :NDS :512 :66 :W0)            "VPADDD")                 ;;
+	  ((:ev :0F :NDS :128 :66 :W0)            "VPADDD")                 ;;
+	  ((:ev :0F :NDS :256 :66 :W0)            "VPADDD"))))              ;;
+
+(defconst *evex-0F38-opcodes*
+  '((#x0 ((:ev :0F38 :NDS :128 :66 :WIG)          "VPSHUFB")
+	 ((:ev :0F38 :NDS :256 :66 :WIG)          "VPSHUFB")
+	 ((:ev :0F38 :NDS :512 :66 :WIG)          "VPSHUFB"))
+    (#x4 ((:ev :0F38 :NDS :128 :66 :WIG)          "VPMADDUBSW")
+	 ((:ev :0F38 :NDS :256 :66 :WIG)          "VPMADDUBSW")
+	 ((:ev :0F38 :NDS :512 :66 :WIG)          "VPMADDUBSW"))
+    (#xB ((:ev :0F38 :NDS :128 :66 :WIG)          "VPMULHRSW")
+	 ((:ev :0F38 :NDS :256 :66 :WIG)          "VPMULHRSW")
+	 ((:ev :0F38 :NDS :512 :66 :WIG)          "VPMULHRSW"))
+    (#xC ((:ev :0F38 :NDS :128 :66 :W0)           "VPERMILPS")
+	 ((:ev :0F38 :NDS :256 :66 :W0)           "VPERMILPS")
+	 ((:ev :0F38 :NDS :512 :66 :W0)           "VPERMILPS"))
+    (#xD ((:ev :0F38 :NDS :128 :66 :W1)           "VPERMILPD")
+	 ((:ev :0F38 :NDS :256 :66 :W1)           "VPERMILPD")
+	 ((:ev :0F38 :NDS :512 :66 :W1)           "VPERMILPD"))
+    (#x10 ((:ev :0F38 :128 :F3 :W0)               "VPMOVUSWB")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVUSWB")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVUSWB")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPSRLVW")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPSRLVW")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPSRLVW"))
+    (#x11 ((:ev :0F38 :128 :F3 :W0)               "VPMOVUSDB")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVUSDB")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVUSDB")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPSRAVW")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPSRAVW")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPSRAVW"))
+    (#x12 ((:ev :0F38 :128 :F3 :W0)               "VPMOVUSQB")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVUSQB")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVUSQB")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPSLLVW")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPSLLVW")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPSLLVW"))
+    (#x13 ((:ev :0F38 :128 :F3 :W0)               "VPMOVUSDW")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVUSDW")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVUSDW")
+	  ((:ev :0F38 :128 :66 :W0)               "VCVTPH2PS")
+	  ((:ev :0F38 :256 :66 :W0)               "VCVTPH2PS")
+	  ((:ev :0F38 :512 :66 :W0)               "VCVTPH2PS"))
+    (#x14 ((:ev :0F38 :128 :F3 :W0)               "VPMOVUSQW")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVUSQW")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVUSQW")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VPRORVD")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPRORVD")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPRORVD")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPRORVQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPRORVQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPRORVQ"))
+    (#x15 ((:ev :0F38 :128 :F3 :W0)               "VPMOVUSQD")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVUSQD")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVUSQD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VPROLVD")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPROLVD")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPROLVD")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPROLVQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPROLVQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPROLVQ"))
+    (#x16 ((:ev :0F38 :NDS :256 :66 :W1)          "VPERMPD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPERMPD")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPERMPS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPERMPS"))
+    (#x18 ((:ev :0F38 :128 :66 :W0)               "VBROADCASTSS")
+	  ((:ev :0F38 :256 :66 :W0)               "VBROADCASTSS")
+	  ((:ev :0F38 :512 :66 :W0)               "VBROADCASTSS"))
+    (#x19 ((:ev :0F38 :256 :66 :W0)               "VBROADCASTF32X2")
+	  ((:ev :0F38 :512 :66 :W0)               "VBROADCASTF32X2")
+	  ((:ev :0F38 :256 :66 :W1)               "VBROADCASTSD")
+	  ((:ev :0F38 :512 :66 :W1)               "VBROADCASTSD"))
+    (#x1A ((:ev :0F38 :256 :66 :W0)               "VBROADCASTF32X4")
+	  ((:ev :0F38 :512 :66 :W0)               "VBROADCASTF32X4")
+	  ((:ev :0F38 :256 :66 :W1)               "VBROADCASTF64X2")
+	  ((:ev :0F38 :512 :66 :W1)               "VBROADCASTF64X2"))
+    (#x1B ((:ev :0F38 :512 :66 :W0)               "VBROADCASTF32X8")
+	  ((:ev :0F38 :512 :66 :W1)               "VBROADCASTF64X4"))
+    (#x1C ((:ev :0F38 :128 :66 :WIG)              "VPABSB")
+	  ((:ev :0F38 :256 :66 :WIG)              "VPABSB")
+	  ((:ev :0F38 :512 :66 :WIG)              "VPABSB"))
+    (#x1D ((:ev :0F38 :128 :66 :WIG)              "VPABSW")
+	  ((:ev :0F38 :256 :66 :WIG)              "VPABSW")
+	  ((:ev :0F38 :512 :66 :WIG)              "VPABSW"))
+    (#x1E ((:ev :0F38 :128 :66 :W0)               "VPABSD")
+	  ((:ev :0F38 :256 :66 :W0)               "VPABSD"))
+    (#x1F ((:ev :0F38 :128 :66 :W1)               "VPABSQ")
+	  ((:ev :0F38 :256 :66 :W1)               "VPABSQ")
+	  ((:ev :0F38 :512 :66 :W1)               "VPABSQ"))
+    (#x20 ((:ev :0F38 :128 :F3 :W0)               "VPMOVSWB")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVSWB")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVSWB")
+	  ((:ev :0F38 :128 :66 :WIG)              "VPMOVSXBW")
+	  ((:ev :0F38 :256 :66 :WIG)              "VPMOVSXBW")
+	  ((:ev :0F38 :512 :66 :WIG)              "VPMOVSXBW"))
+    (#x21 ((:ev :0F38 :128 :F3 :W0)               "VPMOVSDB")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVSDB")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVSDB")
+	  ((:ev :0F38 :128 :66 :WIG)              "VPMOVSXBD")
+	  ((:ev :0F38 :256 :66 :WIG)              "VPMOVSXBD")
+	  ((:ev :0F38 :512 :66 :WIG)              "VPMOVSXBD"))
+    (#x22 ((:ev :0F38 :128 :F3 :W0)               "VPMOVSQB")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVSQB")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVSQB")
+	  ((:ev :0F38 :128 :66 :WIG)              "VPMOVSXBQ")
+	  ((:ev :0F38 :256 :66 :WIG)              "VPMOVSXBQ")
+	  ((:ev :0F38 :512 :66 :WIG)              "VPMOVSXBQ"))
+    (#x23 ((:ev :0F38 :128 :F3 :W0)               "VPMOVSDW")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVSDW")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVSDW")
+	  ((:ev :0F38 :128 :66 :WIG)              "VPMOVSXWD")
+	  ((:ev :0F38 :256 :66 :WIG)              "VPMOVSXWD")
+	  ((:ev :0F38 :512 :66 :WIG)              "VPMOVSXWD"))
+    (#x24 ((:ev :0F38 :128 :F3 :W0)               "VPMOVSQW")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVSQW")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVSQW")
+	  ((:ev :0F38 :128 :66 :WIG)              "VPMOVSXWQ")
+	  ((:ev :0F38 :256 :66 :WIG)              "VPMOVSXWQ")
+	  ((:ev :0F38 :512 :66 :WIG)              "VPMOVSXWQ"))
+    (#x25 ((:ev :0F38 :128 :F3 :W0)               "VPMOVSQD")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVSQD")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVSQD")
+	  ((:ev :0F38 :128 :66 :W0)               "VPMOVSXDQ")
+	  ((:ev :0F38 :256 :66 :W0)               "VPMOVSXDQ")
+	  ((:ev :0F38 :512 :66 :W0)               "VPMOVSXDQ"))
+    (#x26 ((:ev :0F38 :NDS :128 :66 :W0)          "VPTESTMB")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPTESTMB")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPTESTMB")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPTESTMW")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPTESTMW")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPTESTMW")
+	  ((:ev :0F38 :NDS :128 :F3 :W0)          "VPTESTNMB")
+	  ((:ev :0F38 :NDS :256 :F3 :W0)          "VPTESTNMB")
+	  ((:ev :0F38 :NDS :512 :F3 :W0)          "VPTESTNMB")
+	  ((:ev :0F38 :NDS :128 :F3 :W1)          "VPTESTNMW")
+	  ((:ev :0F38 :NDS :256 :F3 :W1)          "VPTESTNMW")
+	  ((:ev :0F38 :NDS :512 :F3 :W1)          "VPTESTNMW"))
+    (#x27 ((:ev :0F38 :NDS :128 :66 :W0)          "VPTESTMD")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPTESTMD")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPTESTMD")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPTESTMQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPTESTMQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPTESTMQ")
+	  ((:ev :0F38 :NDS :128 :F3 :W0)          "VPTESTNMD")
+	  ((:ev :0F38 :NDS :256 :F3 :W0)          "VPTESTNMD")
+	  ((:ev :0F38 :NDS :512 :F3 :W0)          "VPTESTNMD")
+	  ((:ev :0F38 :NDS :128 :F3 :W1)          "VPTESTNMQ")
+	  ((:ev :0F38 :NDS :256 :F3 :W1)          "VPTESTNMQ")
+	  ((:ev :0F38 :NDS :512 :F3 :W1)          "VPTESTNMQ"))
+    (#x28 ((:ev :0F38 :128 :F3 :W0)               "VPMOVM2B")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVM2B")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVM2B")
+	  ((:ev :0F38 :128 :F3 :W1)               "VPMOVM2W")
+	  ((:ev :0F38 :256 :F3 :W1)               "VPMOVM2W")
+	  ((:ev :0F38 :512 :F3 :W1)               "VPMOVM2W")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPMULDQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPMULDQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPMULDQ"))
+    (#x29 ((:ev :0F38 :NDS :128 :66 :W1)          "VPCMPEQQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPCMPEQQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPCMPEQQ")
+	  ((:ev :0F38 :128 :F3 :W0)               "VPMOVB2M")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVB2M")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVB2M")
+	  ((:ev :0F38 :128 :F3 :W1)               "VPMOVW2M")
+	  ((:ev :0F38 :256 :F3 :W1)               "VPMOVW2M")
+	  ((:ev :0F38 :512 :F3 :W1)               "VPMOVW2M"))
+    (#x2A ((:ev :0F38 :128 :66 :W0)               "VMOVNTDQA")
+	  ((:ev :0F38 :256 :66 :W0)               "VMOVNTDQA")
+	  ((:ev :0F38 :512 :66 :W0)               "VMOVNTDQA")
+	  ((:ev :0F38 :128 :F3 :W1)               "VPBROADCASTMB2Q")
+	  ((:ev :0F38 :256 :F3 :W1)               "VPBROADCASTMB2Q")
+	  ((:ev :0F38 :512 :F3 :W1)               "VPBROADCASTMB2Q"))
+    (#x2B ((:ev :0F38 :NDS :128 :66 :W0)          "VPACKUSDW")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPACKUSDW")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPACKUSDW"))
+    (#x2C ((:ev :0F38 :NDS :128 :66 :W1)          "VSCALEFPD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VSCALEFPD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VSCALEFPD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VSCALEFPS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VSCALEFPS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VSCALEFPS"))
+    (#x2D ((:ev :0F38 :NDS :LIG :66 :W1)          "VSCALEFSD")
+	  ((:ev :0F38 :NDS :LIG :66 :W0)          "VSCALEFSS"))
+    (#x30 ((:ev :0F38 :128 :F3 :W0)               "VPMOVWB")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVWB")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVWB")
+	  ((:ev :0F38 :256 :66 :WIG)              "VPMOVZXBW")
+	  ((:ev :0F38 :512 :66 :WIG)              "VPMOVZXBW")
+	  ((:ev :0F38 :128 :66)                   "VPMOVZXBW"))
+    (#x31 ((:ev :0F38 :128 :F3 :W0)               "VPMOVDB")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVDB")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVDB")
+	  ((:ev :0F38 :128 :66 :WIG)              "VPMOVZXBD")
+	  ((:ev :0F38 :256 :66 :WIG)              "VPMOVZXBD")
+	  ((:ev :0F38 :512 :66 :WIG)              "VPMOVZXBD"))
+    (#x32 ((:ev :0F38 :128 :F3 :W0)               "VPMOVQB")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVQB")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVQB")
+	  ((:ev :0F38 :128 :66 :WIG)              "VPMOVZXBQ")
+	  ((:ev :0F38 :256 :66 :WIG)              "VPMOVZXBQ")
+	  ((:ev :0F38 :512 :66 :WIG)              "VPMOVZXBQ"))
+    (#x33 ((:ev :0F38 :128 :F3 :W0)               "VPMOVDW")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVDW")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVDW")
+	  ((:ev :0F38 :128 :66 :WIG)              "VPMOVZXWD")
+	  ((:ev :0F38 :256 :66 :WIG)              "VPMOVZXWD")
+	  ((:ev :0F38 :512 :66 :WIG)              "VPMOVZXWD"))
+    (#x34 ((:ev :0F38 :128 :F3 :W0)               "VPMOVQW")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVQW")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVQW")
+	  ((:ev :0F38 :128 :66 :WIG)              "VPMOVZXWQ")
+	  ((:ev :0F38 :256 :66 :WIG)              "VPMOVZXWQ")
+	  ((:ev :0F38 :512 :66 :WIG)              "VPMOVZXWQ"))
+    (#x35 ((:ev :0F38 :128 :F3 :W0)               "VPMOVQD")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVQD")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVQD")
+	  ((:ev :0F38 :128 :66 :W0)               "VPMOVZXDQ")
+	  ((:ev :0F38 :256 :66 :W0)               "VPMOVZXDQ")
+	  ((:ev :0F38 :512 :66 :W0)               "VPMOVZXDQ"))
+    (#x36 ((:ev :0F38 :NDS :256 :66 :W0)          "VPERMD")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPERMD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPERMQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPERMQ"))
+    (#x37 ((:ev :0F38 :NDS :128 :66 :W1)          "VPCMPGTQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPCMPGTQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPCMPGTQ"))
+    (#x38 ((:ev :0F38 :NDS :128 :66 :WIG)         "VPMINSB")
+	  ((:ev :0F38 :NDS :256 :66 :WIG)         "VPMINSB")
+	  ((:ev :0F38 :NDS :512 :66 :WIG)         "VPMINSB")
+	  ((:ev :0F38 :128 :F3 :W0)               "VPMOVM2D")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVM2D")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVM2D")
+	  ((:ev :0F38 :128 :F3 :W1)               "VPMOVM2Q")
+	  ((:ev :0F38 :256 :F3 :W1)               "VPMOVM2Q")
+	  ((:ev :0F38 :512 :F3 :W1)               "VPMOVM2Q"))
+    (#x39 ((:ev :0F38 :NDS :128 :66 :W0)          "VPMINSD")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPMINSD")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPMINSD")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPMINSQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPMINSQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPMINSQ")
+	  ((:ev :0F38 :128 :F3 :W0)               "VPMOVD2M")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPMOVD2M")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPMOVD2M")
+	  ((:ev :0F38 :128 :F3 :W1)               "VPMOVQ2M")
+	  ((:ev :0F38 :256 :F3 :W1)               "VPMOVQ2M")
+	  ((:ev :0F38 :512 :F3 :W1)               "VPMOVQ2M"))
+    (#x3A ((:ev :0F38 :128 :F3 :W0)               "VPBROADCASTMW2D")
+	  ((:ev :0F38 :256 :F3 :W0)               "VPBROADCASTMW2D")
+	  ((:ev :0F38 :512 :F3 :W0)               "VPBROADCASTMW2D")
+	  ((:ev :0F38 :NDS :128 :66)              "VPMINUW")
+	  ((:ev :0F38 :NDS :256 :66)              "VPMINUW")
+	  ((:ev :0F38 :NDS :512 :66)              "VPMINUW"))
+    (#x3B ((:ev :0F38 :NDS :128 :66 :W0)          "VPMINUD")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPMINUD")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPMINUD")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPMINUQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPMINUQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPMINUQ"))
+    (#x3C ((:ev :0F38 :NDS :128 :66 :WIG)         "VPMAXSB")
+	  ((:ev :0F38 :NDS :256 :66 :WIG)         "VPMAXSB")
+	  ((:ev :0F38 :NDS :512 :66 :WIG)         "VPMAXSB"))
+    (#x3D ((:ev :0F38 :NDS :128 :66 :W0)          "VPMAXSD")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPMAXSD")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPMAXSD")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPMAXSQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPMAXSQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPMAXSQ"))
+    (#x3E ((:ev :0F38 :NDS :128 :66 :WIG)         "VPMAXUW")
+	  ((:ev :0F38 :NDS :256 :66 :WIG)         "VPMAXUW")
+	  ((:ev :0F38 :NDS :512 :66 :WIG)         "VPMAXUW"))
+    (#x3F ((:ev :0F38 :NDS :128 :66 :W0)          "VPMAXUD")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPMAXUD")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPMAXUD")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPMAXUQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPMAXUQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPMAXUQ"))
+    (#x40 ((:ev :0F38 :NDS :128 :66 :W0)          "VPMULLD")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPMULLD")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPMULLD")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPMULLQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPMULLQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPMULLQ"))
+    (#x42 ((:ev :0F38 :128 :66 :W1)               "VGETEXPPD")
+	  ((:ev :0F38 :256 :66 :W1)               "VGETEXPPD")
+	  ((:ev :0F38 :512 :66 :W1)               "VGETEXPPD")
+	  ((:ev :0F38 :128 :66 :W0)               "VGETEXPPS")
+	  ((:ev :0F38 :256 :66 :W0)               "VGETEXPPS")
+	  ((:ev :0F38 :512 :66 :W0)               "VGETEXPPS"))
+    (#x43 ((:ev :0F38 :NDS :LIG :66 :W1)          "VGETEXPSD")
+	  ((:ev :0F38 :NDS :LIG :66 :W0)          "VGETEXPSS"))
+    (#x44 ((:ev :0F38 :128 :66 :W0)               "VPLZCNTD")
+	  ((:ev :0F38 :256 :66 :W0)               "VPLZCNTD")
+	  ((:ev :0F38 :512 :66 :W0)               "VPLZCNTD")
+	  ((:ev :0F38 :128 :66 :W1)               "VPLZCNTQ")
+	  ((:ev :0F38 :256 :66 :W1)               "VPLZCNTQ")
+	  ((:ev :0F38 :512 :66 :W1)               "VPLZCNTQ"))
+    (#x45 ((:ev :0F38 :NDS :128 :66 :W0)          "VPSRLVD")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPSRLVD")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPSRLVD")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPSRLVQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPSRLVQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPSRLVQ"))
+    (#x46 ((:ev :0F38 :NDS :128 :66 :W0)          "VPSRAVD")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPSRAVD")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPSRAVD")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPSRAVQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPSRAVQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPSRAVQ"))
+    (#x47 ((:ev :0F38 :NDS :128 :66 :W0)          "VPSLLVD")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPSLLVD")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPSLLVD")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPSLLVQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPSLLVQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPSLLVQ"))
+    (#x4C ((:ev :0F38 :128 :66 :W1)               "VRCP14PD")
+	  ((:ev :0F38 :256 :66 :W1)               "VRCP14PD")
+	  ((:ev :0F38 :512 :66 :W1)               "VRCP14PD")
+	  ((:ev :0F38 :128 :66 :W0)               "VRCP14PS")
+	  ((:ev :0F38 :256 :66 :W0)               "VRCP14PS")
+	  ((:ev :0F38 :512 :66 :W0)               "VRCP14PS"))
+    (#x4D ((:ev :0F38 :NDS :LIG :66 :W1)          "VRCP14SD")
+	  ((:ev :0F38 :NDS :LIG :66 :W0)          "VRCP14SS"))
+    (#x4E ((:ev :0F38 :128 :66 :W1)               "VRSQRT14PD")
+	  ((:ev :0F38 :256 :66 :W1)               "VRSQRT14PD")
+	  ((:ev :0F38 :512 :66 :W1)               "VRSQRT14PD")
+	  ((:ev :0F38 :128 :66 :W0)               "VRSQRT14PS")
+	  ((:ev :0F38 :256 :66 :W0)               "VRSQRT14PS")
+	  ((:ev :0F38 :512 :66 :W0)               "VRSQRT14PS"))
+    (#x4F ((:ev :0F38 :NDS :LIG :66 :W1)          "VRSQRT14SD")
+	  ((:ev :0F38 :NDS :LIG :66 :W0)          "VRSQRT14SS"))
+    (#x52 ((:ev :0F38 :DDS :512 :F2 :W0)          "VP4DPWSSD"))
+    (#x53 ((:ev :0F38 :DDS :512 :F2 :W0)          "VP4DPWSSDS"))
+    (#x58 ((:ev :0F38 :128 :66 :W0)               "VPBROADCASTD")
+	  ((:ev :0F38 :256 :66 :W0)               "VPBROADCASTD")
+	  ((:ev :0F38 :512 :66 :W0)               "VPBROADCASTD"))
+    (#x59 ((:ev :0F38 :128 :66 :W0)               "VBROADCASTI32x2")
+	  ((:ev :0F38 :256 :66 :W0)               "VBROADCASTI32x2")
+	  ((:ev :0F38 :512 :66 :W0)               "VBROADCASTI32x2")
+	  ((:ev :0F38 :128 :66 :W1)               "VPBROADCASTQ")
+	  ((:ev :0F38 :256 :66 :W1)               "VPBROADCASTQ")
+	  ((:ev :0F38 :512 :66 :W1)               "VPBROADCASTQ"))
+    (#x5A ((:ev :0F38 :256 :66 :W0)               "VBROADCASTI32X4")
+	  ((:ev :0F38 :512 :66 :W0)               "VBROADCASTI32X4")
+	  ((:ev :0F38 :256 :66 :W1)               "VBROADCASTI64X2")
+	  ((:ev :0F38 :512 :66 :W1)               "VBROADCASTI64X2"))
+    (#x5B ((:ev :0F38 :512 :66 :W0)               "VBROADCASTI32X8")
+	  ((:ev :0F38 :512 :66 :W1)               "VBROADCASTI64X4"))
+    (#x64 ((:ev :0F38 :NDS :128 :66 :W0)          "VPBLENDMD")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPBLENDMD")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPBLENDMD")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPBLENDMQ")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPBLENDMQ")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPBLENDMQ"))
+    (#x65 ((:ev :0F38 :NDS :128 :66 :W1)          "VBLENDMPD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VBLENDMPD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VBLENDMPD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VBLENDMPS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VBLENDMPS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VBLENDMPS"))
+    (#x66 ((:ev :0F38 :NDS :128 :66 :W0)          "VPBLENDMB")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPBLENDMB")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPBLENDMB")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPBLENDMW")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPBLENDMW")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPBLENDMW"))
+    (#x75 ((:ev :0F38 :DDS :128 :66 :W0)          "VPERMI2B")
+	  ((:ev :0F38 :DDS :256 :66 :W0)          "VPERMI2B")
+	  ((:ev :0F38 :DDS :512 :66 :W0)          "VPERMI2B")
+	  ((:ev :0F38 :DDS :128 :66 :W1)          "VPERMI2W")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VPERMI2W")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VPERMI2W"))
+    (#x76 ((:ev :0F38 :DDS :128 :66 :W0)          "VPERMI2D")
+	  ((:ev :0F38 :DDS :256 :66 :W0)          "VPERMI2D")
+	  ((:ev :0F38 :DDS :512 :66 :W0)          "VPERMI2D")
+	  ((:ev :0F38 :DDS :128 :66 :W1)          "VPERMI2Q")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VPERMI2Q")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VPERMI2Q"))
+    (#x77 ((:ev :0F38 :DDS :128 :66 :W1)          "VPERMI2PD")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VPERMI2PD")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VPERMI2PD")
+	  ((:ev :0F38 :DDS :128 :66 :W0)          "VPERMI2PS")
+	  ((:ev :0F38 :DDS :256 :66 :W0)          "VPERMI2PS")
+	  ((:ev :0F38 :DDS :512 :66 :W0)          "VPERMI2PS"))
+    (#x78 ((:ev :0F38 :128 :66 :W0)               "VPBROADCASTB")
+	  ((:ev :0F38 :256 :66 :W0)               "VPBROADCASTB")
+	  ((:ev :0F38 :512 :66 :W0)               "VPBROADCASTB"))
+    (#x79 ((:ev :0F38 :128 :66 :W0)               "VPBROADCASTW")
+	  ((:ev :0F38 :256 :66 :W0)               "VPBROADCASTW")
+	  ((:ev :0F38 :512 :66 :W0)               "VPBROADCASTW"))
+    (#x7A ((:ev :0F38 :128 :66 :W0)               "VPBROADCASTB")
+	  ((:ev :0F38 :256 :66 :W0)               "VPBROADCASTB")
+	  ((:ev :0F38 :512 :66 :W0)               "VPBROADCASTB"))
+    (#x7B ((:ev :0F38 :128 :66 :W0)               "VPBROADCASTW")
+	  ((:ev :0F38 :256 :66 :W0)               "VPBROADCASTW")
+	  ((:ev :0F38 :512 :66 :W0)               "VPBROADCASTW"))
+    (#x7C ((:ev :0F38 :128 :66 :W0)               "VPBROADCASTD")
+	  ((:ev :0F38 :256 :66 :W0)               "VPBROADCASTD")
+	  ((:ev :0F38 :512 :66 :W0)               "VPBROADCASTD")
+	  ((:ev :0F38 :128 :66 :W1)               "VPBROADCASTQ")
+	  ((:ev :0F38 :256 :66 :W1)               "VPBROADCASTQ")
+	  ((:ev :0F38 :512 :66 :W1)               "VPBROADCASTQ"))
+    (#x7D ((:ev :0F38 :DDS :128 :66 :W0)          "VPERMT2B")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPERMT2B")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPERMT2B")
+	  ((:ev :0F38 :DDS :128 :66 :W1)          "VPERMT2W")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VPERMT2W")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VPERMT2W"))
+    (#x7E ((:ev :0F38 :DDS :128 :66 :W0)          "VPERMT2D")
+	  ((:ev :0F38 :DDS :256 :66 :W0)          "VPERMT2D")
+	  ((:ev :0F38 :DDS :512 :66 :W0)          "VPERMT2D")
+	  ((:ev :0F38 :DDS :128 :66 :W1)          "VPERMT2Q")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VPERMT2Q")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VPERMT2Q"))
+    (#x7F ((:ev :0F38 :DDS :128 :66 :W1)          "VPERMT2PD")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VPERMT2PD")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VPERMT2PD")
+	  ((:ev :0F38 :DDS :128 :66 :W0)          "VPERMT2PS")
+	  ((:ev :0F38 :DDS :256 :66 :W0)          "VPERMT2PS")
+	  ((:ev :0F38 :DDS :512 :66 :W0)          "VPERMT2PS"))
+    (#x83 ((:ev :0F38 :NDS :128 :66 :W1)          "VPMULTISHIFTQB")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPMULTISHIFTQB")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPMULTISHIFTQB"))
+    (#x88 ((:ev :0F38 :128 :66 :W1)               "VEXPANDPD")
+	  ((:ev :0F38 :256 :66 :W1)               "VEXPANDPD")
+	  ((:ev :0F38 :512 :66 :W1)               "VEXPANDPD")
+	  ((:ev :0F38 :128 :66 :W0)               "VEXPANDPS")
+	  ((:ev :0F38 :256 :66 :W0)               "VEXPANDPS")
+	  ((:ev :0F38 :512 :66 :W0)               "VEXPANDPS"))
+    (#x89 ((:ev :0F38 :128 :66 :W0)               "VPEXPANDD")
+	  ((:ev :0F38 :256 :66 :W0)               "VPEXPANDD")
+	  ((:ev :0F38 :512 :66 :W0)               "VPEXPANDD")
+	  ((:ev :0F38 :128 :66 :W1)               "VPEXPANDQ")
+	  ((:ev :0F38 :256 :66 :W1)               "VPEXPANDQ")
+	  ((:ev :0F38 :512 :66 :W1)               "VPEXPANDQ"))
+    (#x8A ((:ev :0F38 :128 :66 :W1)               "VCOMPRESSPD")
+	  ((:ev :0F38 :256 :66 :W1)               "VCOMPRESSPD")
+	  ((:ev :0F38 :512 :66 :W1)               "VCOMPRESSPD")
+	  ((:ev :0F38 :128 :66 :W0)               "VCOMPRESSPS")
+	  ((:ev :0F38 :256 :66 :W0)               "VCOMPRESSPS")
+	  ((:ev :0F38 :512 :66 :W0)               "VCOMPRESSPS"))
+    (#x8B ((:ev :0F38 :128 :66 :W0)               "VPCOMPRESSD")
+	  ((:ev :0F38 :256 :66 :W0)               "VPCOMPRESSD")
+	  ((:ev :0F38 :512 :66 :W0)               "VPCOMPRESSD")
+	  ((:ev :0F38 :128 :66 :W1)               "VPCOMPRESSQ")
+	  ((:ev :0F38 :256 :66 :W1)               "VPCOMPRESSQ")
+	  ((:ev :0F38 :512 :66 :W1)               "VPCOMPRESSQ"))
+    (#x8D ((:ev :0F38 :NDS :128 :66 :W0)          "VPERMB")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VPERMB")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VPERMB")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VPERMW")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VPERMW")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VPERMW"))
+    (#x90 ((:ev :0F38 :128 :66 :W0)               "VPGATHERDD")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W0)               "VPGATHERDD")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0)               "VPGATHERDD")  ;; /vsib
+	  ((:ev :0F38 :128 :66 :W1)               "VPGATHERDQ")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W1)               "VPGATHERDQ")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1)               "VPGATHERDQ")) ;; /vsib
+    (#x91 ((:ev :0F38 :128 :66 :W0)               "VPGATHERQD")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W0)               "VPGATHERQD")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0)               "VPGATHERQD")  ;; /vsib
+	  ((:ev :0F38 :128 :66 :W1)               "VPGATHERQQ")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W1)               "VPGATHERQQ")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1)               "VPGATHERQQ")) ;; /vsib
+    (#x92 ((:ev :0F38 :128 :66 :W1)               "VGATHERDPD")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W1)               "VGATHERDPD")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1)               "VGATHERDPD")  ;; /vsib
+	  ((:ev :0F38 :128 :66 :W0)               "VGATHERDPS")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W0)               "VGATHERDPS")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0)               "VGATHERDPS")) ;; /vsib
+    (#x93 ((:ev :0F38 :128 :66 :W1)               "VGATHERQPD")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W1)               "VGATHERQPD")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1)               "VGATHERQPD")  ;; /vsib
+	  ((:ev :0F38 :128 :66 :W0)               "VGATHERQPS")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W0)               "VGATHERQPS")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0)               "VGATHERQPS")) ;; /vsib
+    (#x96 ((:ev :0F38 :DDS :128 :66 :W1)          "VFMADDSUB132PD")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VFMADDSUB132PD")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VFMADDSUB132PD")
+	  ((:ev :0F38 :DDS :128 :66 :W0)          "VFMADDSUB132PS")
+	  ((:ev :0F38 :DDS :256 :66 :W0)          "VFMADDSUB132PS")
+	  ((:ev :0F38 :DDS :512 :66 :W0)          "VFMADDSUB132PS"))
+    (#x97 ((:ev :0F38 :DDS :128 :66 :W1)          "VFMSUBADD132PD")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VFMSUBADD132PD")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VFMSUBADD132PD")
+	  ((:ev :0F38 :DDS :128 :66 :W0)          "VFMSUBADD132PS")
+	  ((:ev :0F38 :DDS :256 :66 :W0)          "VFMSUBADD132PS")
+	  ((:ev :0F38 :DDS :512 :66 :W0)          "VFMSUBADD132PS"))
+    (#x98 ((:ev :0F38 :NDS :128 :66 :W1)          "VFMADD132PD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VFMADD132PD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VFMADD132PD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFMADD132PS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFMADD132PS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFMADD132PS"))
+    (#x99 ((:ev :0F38 :DDS :LIG :66 :W1)          "VFMADD132SD")
+	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFMADD132SS"))
+    (#x9A ((:ev :0F38 :DDS :512 :F2 :W0)          "V4FMADDPS")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VFMSUB132PD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VFMSUB132PD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VFMSUB132PD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFMSUB132PS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFMSUB132PS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFMSUB132PS"))
+    (#x9B ((:ev :0F38 :DDS :LIG :F2 :W0)         "V4FMADDSS")
+	  ((:ev :0F38 :DDS :LIG :66 :W1)          "VFMSUB132SD")
+	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFMSUB132SS"))
+    (#x9C ((:ev :0F38 :NDS :128 :66 :W1)          "VFNMADD132PD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VFNMADD132PD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VFNMADD132PD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFNMADD132PS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFNMADD132PS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFNMADD132PS"))
+    (#x9D ((:ev :0F38 :DDS :LIG :66 :W1)          "VFNMADD132SD")
+	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFNMADD132SS"))
+    (#x9E ((:ev :0F38 :NDS :128 :66 :W1)          "VFNMSUB132PD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VFNMSUB132PD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VFNMSUB132PD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFNMSUB132PS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFNMSUB132PS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFNMSUB132PS"))
+    (#x9F ((:ev :0F38 :DDS :LIG :66 :W1)          "VFNMSUB132SD")
+	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFNMSUB132SS"))
+    (#xA0 ((:ev :0F38 :128 :66 :W0)               "VPSCATTERDD")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W0)               "VPSCATTERDD")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0)               "VPSCATTERDD")  ;; /vsib
+	  ((:ev :0F38 :128 :66 :W1)               "VPSCATTERDQ")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W1)               "VPSCATTERDQ")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1)               "VPSCATTERDQ")) ;; /vsib
+    (#xA1 ((:ev :0F38 :128 :66 :W0)               "VPSCATTERQD")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W0)               "VPSCATTERQD")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0)               "VPSCATTERQD")  ;; /vsib
+	  ((:ev :0F38 :128 :66 :W1)               "VPSCATTERQQ")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W1)               "VPSCATTERQQ")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1)               "VPSCATTERQQ")) ;; /vsib
+    (#xA2 ((:ev :0F38 :128 :66 :W1)               "VSCATTERDPD")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W1)               "VSCATTERDPD")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1)               "VSCATTERDPD")  ;; /vsib
+	  ((:ev :0F38 :128 :66 :W0)               "VSCATTERDPS")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W0)               "VSCATTERDPS")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0)               "VSCATTERDPS")) ;; /vsib
+    (#xA3 ((:ev :0F38 :128 :66 :W1)               "VSCATTERQPD")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W1)               "VSCATTERQPD")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1)               "VSCATTERQPD")  ;; /vsib
+	  ((:ev :0F38 :128 :66 :W0)               "VSCATTERQPS")  ;; /vsib
+	  ((:ev :0F38 :256 :66 :W0)               "VSCATTERQPS")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0)               "VSCATTERQPS")) ;; /vsib
+    (#xA6 ((:ev :0F38 :DDS :128 :66 :W1)          "VFMADDSUB213PD")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VFMADDSUB213PD")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VFMADDSUB213PD")
+	  ((:ev :0F38 :DDS :128 :66 :W0)          "VFMADDSUB213PS")
+	  ((:ev :0F38 :DDS :256 :66 :W0)          "VFMADDSUB213PS")
+	  ((:ev :0F38 :DDS :512 :66 :W0)          "VFMADDSUB213PS"))
+    (#xA7 ((:ev :0F38 :DDS :128 :66 :W1)          "VFMSUBADD213PD")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VFMSUBADD213PD")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VFMSUBADD213PD")
+	  ((:ev :0F38 :DDS :128 :66 :W0)          "VFMSUBADD213PS")
+	  ((:ev :0F38 :DDS :256 :66 :W0)          "VFMSUBADD213PS")
+	  ((:ev :0F38 :DDS :512 :66 :W0)          "VFMSUBADD213PS"))
+    (#xA8 ((:ev :0F38 :NDS :128 :66 :W1)          "VFMADD213PD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VFMADD213PD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VFMADD213PD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFMADD213PS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFMADD213PS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFMADD213PS"))
+    (#xA9 ((:ev :0F38 :DDS :LIG :66 :W1)          "VFMADD213SD")
+	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFMADD213SS"))
+    (#xAA ((:ev :0F38 :DDS :512 :F2 :W0)          "V4FNMADDPS")
+	  ((:ev :0F38 :NDS :128 :66 :W1)          "VFMSUB213PD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VFMSUB213PD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VFMSUB213PD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFMSUB213PS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFMSUB213PS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFMSUB213PS"))
+    (#xAB ((:ev :0F38 :DDS :LIG :F2 :W0)         "V4FNMADDSS")
+	  ((:ev :0F38 :DDS :LIG :66 :W1)          "VFMSUB213SD")
+	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFMSUB213SS"))
+    (#xAC ((:ev :0F38 :NDS :128 :66 :W1)          "VFNMADD213PD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VFNMADD213PD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VFNMADD213PD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFNMADD213PS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFNMADD213PS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFNMADD213PS"))
+    (#xAD ((:ev :0F38 :DDS :LIG :66 :W1)          "VFNMADD213SD")
+	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFNMADD213SS"))
+    (#xAE ((:ev :0F38 :NDS :128 :66 :W1)          "VFNMSUB213PD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VFNMSUB213PD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VFNMSUB213PD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFNMSUB213PS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFNMSUB213PS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFNMSUB213PS"))
+    (#xAF ((:ev :0F38 :DDS :LIG :66 :W1)          "VFNMSUB213SD")
+	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFNMSUB213SS"))
+    (#xB4 ((:ev :0F38 :DDS :128 :66 :W1)          "VPMADD52LUQ")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VPMADD52LUQ")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VPMADD52LUQ"))
+    (#xB5 ((:ev :0F38 :DDS :128 :66 :W1)          "VPMADD52HUQ")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VPMADD52HUQ")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VPMADD52HUQ"))
+    (#xB6 ((:ev :0F38 :DDS :128 :66 :W1)          "VFMADDSUB231PD")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VFMADDSUB231PD")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VFMADDSUB231PD")
+	  ((:ev :0F38 :DDS :128 :66 :W0)          "VFMADDSUB231PS")
+	  ((:ev :0F38 :DDS :256 :66 :W0)          "VFMADDSUB231PS")
+	  ((:ev :0F38 :DDS :512 :66 :W0)          "VFMADDSUB231PS"))
+    (#xB7 ((:ev :0F38 :DDS :128 :66 :W1)          "VFMSUBADD231PD")
+	  ((:ev :0F38 :DDS :256 :66 :W1)          "VFMSUBADD231PD")
+	  ((:ev :0F38 :DDS :512 :66 :W1)          "VFMSUBADD231PD")
+	  ((:ev :0F38 :DDS :128 :66 :W0)          "VFMSUBADD231PS")
+	  ((:ev :0F38 :DDS :256 :66 :W0)          "VFMSUBADD231PS")
+	  ((:ev :0F38 :DDS :512 :66 :W0)          "VFMSUBADD231PS"))
+    (#xB8 ((:ev :0F38 :NDS :128 :66 :W1)          "VFMADD231PD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VFMADD231PD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VFMADD231PD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFMADD231PS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFMADD231PS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFMADD231PS"))
+    (#xB9 ((:ev :0F38 :DDS :LIG :66 :W1)          "VFMADD231SD")
+	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFMADD231SS"))
+    (#xBA ((:ev :0F38 :NDS :128 :66 :W1)          "VFMSUB231PD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VFMSUB231PD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VFMSUB231PD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFMSUB231PS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFMSUB231PS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFMSUB231PS"))
+    (#xBB ((:ev :0F38 :DDS :LIG :66 :W1)          "VFMSUB231SD")
+	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFMSUB231SS"))
+    (#xBC ((:ev :0F38 :NDS :128 :66 :W1)          "VFNMADD231PD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VFNMADD231PD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VFNMADD231PD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFNMADD231PS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFNMADD231PS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFNMADD231PS"))
+    (#xBD ((:ev :0F38 :DDS :LIG :66 :W1)          "VFNMADD231SD")
+	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFNMADD231SS"))
+    (#xBE ((:ev :0F38 :NDS :128 :66 :W1)          "VFNMSUB231PD")
+	  ((:ev :0F38 :NDS :256 :66 :W1)          "VFNMSUB231PD")
+	  ((:ev :0F38 :NDS :512 :66 :W1)          "VFNMSUB231PD")
+	  ((:ev :0F38 :NDS :128 :66 :W0)          "VFNMSUB231PS")
+	  ((:ev :0F38 :NDS :256 :66 :W0)          "VFNMSUB231PS")
+	  ((:ev :0F38 :NDS :512 :66 :W0)          "VFNMSUB231PS"))
+    (#xBF ((:ev :0F38 :DDS :LIG :66 :W1)          "VFNMSUB231SD")
+	  ((:ev :0F38 :DDS :LIG :66 :W0)          "VFNMSUB231SS"))
+    (#xC4 ((:ev :0F38 :128 :66 :W0)               "VPCONFLICTD")
+	  ((:ev :0F38 :256 :66 :W0)               "VPCONFLICTD")
+	  ((:ev :0F38 :512 :66 :W0)               "VPCONFLICTD")
+	  ((:ev :0F38 :128 :66 :W1)               "VPCONFLICTQ")
+	  ((:ev :0F38 :256 :66 :W1)               "VPCONFLICTQ")
+	  ((:ev :0F38 :512 :66 :W1)               "VPCONFLICTQ"))
+    (#xC6 ((:ev :0F38 :512 :66 :W0 (:REG . 1))    "VGATHERPF0DPS")   ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1 (:REG . 1))    "VGATHERPF0DPD")   ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0 (:REG . 2))    "VGATHERPF1DPS")   ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1 (:REG . 2))    "VGATHERPF1DPD")   ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0 (:REG . 5))    "VSCATTERPF0DPS")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1 (:REG . 5))    "VSCATTERPF0DPD")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0 (:REG . 6))    "VSCATTERPF1DPS")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1 (:REG . 6))    "VSCATTERPF1DPD")) ;; /vsib
+    (#xC7 ((:ev :0F38 :512 :66 :W0 (:REG . 1))    "VGATHERPF0QPS")   ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1 (:REG . 1))    "VGATHERPF0QPD")   ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0 (:REG . 2))    "VGATHERPF1QPS")   ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1 (:REG . 2))    "VGATHERPF1QPD")   ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0 (:REG . 5))    "VSCATTERPF0QPS")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1 (:REG . 5))    "VSCATTERPF0QPD")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W0 (:REG . 6))    "VSCATTERPF1QPS")  ;; /vsib
+	  ((:ev :0F38 :512 :66 :W1 (:REG . 6))    "VSCATTERPF1QPD")) ;; /vsib
+    (#xC8 ((:ev :0F38 :512 :66 :W1)               "VEXP2PD")
+	  ((:ev :0F38 :512 :66 :W0)               "VEXP2PS"))
+    (#xCA ((:ev :0F38 :512 :66 :W1)               "VRCP28PD")
+	  ((:ev :0F38 :512 :66 :W0)               "VRCP28PS"))
+    (#xCB ((:ev :0F38 :NDS :LIG :66 :W1)          "VRCP28SD")
+	  ((:ev :0F38 :NDS :LIG :66 :W0)          "VRCP28SS"))
+    (#xCC ((:ev :0F38 :512 :66 :W1)               "VRSQRT28PD")
+	  ((:ev :0F38 :512 :66 :W0)               "VRSQRT28PS"))
+    (#xCD ((:ev :0F38 :NDS :LIG :66 :W1)          "VRSQRT28SD")
+	  ((:ev :0F38 :NDS :LIG :66 :W0)          "VRSQRT28SS"))))
+
+(defconst *evex-0F3A-opcodes*
+  '((#x0 ((:ev :0F3A :256 :66 :W1)                "VPERMQ")         ;; ib
+	 ((:ev :0F3A :512 :66 :W1)                "VPERMQ"))        ;; ib
+    (#x1 ((:ev :0F3A :256 :66 :W1)                "VPERMPD")        ;; ib
+	 ((:ev :0F3A :512 :66 :W1)                "VPERMPD"))       ;; ib
+    (#x3 ((:ev :0F3A :NDS :128 :66 :W0)           "VALIGND")        ;; ib
+	 ((:ev :0F3A :NDS :128 :66 :W1)           "VALIGNQ")        ;; ib
+	 ((:ev :0F3A :NDS :256 :66 :W0)           "VALIGND")        ;; ib
+	 ((:ev :0F3A :NDS :256 :66 :W1)           "VALIGNQ")        ;; ib
+	 ((:ev :0F3A :NDS :512 :66 :W0)           "VALIGND")        ;; ib
+	 ((:ev :0F3A :NDS :512 :66 :W1)           "VALIGNQ"))       ;; ib
+    (#x4 ((:ev :0F3A :128 :66 :W0)                "VPERMILPS")      ;; ib
+	 ((:ev :0F3A :256 :66 :W0)                "VPERMILPS")      ;; ib
+	 ((:ev :0F3A :512 :66 :W0)                "VPERMILPS"))     ;; ib
+    (#x5 ((:ev :0F3A :128 :66 :W1)                "VPERMILPD")      ;; ib
+	 ((:ev :0F3A :256 :66 :W1)                "VPERMILPD")      ;; ib
+	 ((:ev :0F3A :512 :66 :W1)                "VPERMILPD"))     ;; ib
+    (#x8 ((:ev :0F3A :128 :66 :W0)                "VRNDSCALEPS")    ;; ib
+	 ((:ev :0F3A :256 :66 :W0)                "VRNDSCALEPS")    ;; ib
+	 ((:ev :0F3A :512 :66 :W0)                "VRNDSCALEPS"))   ;; ib
+    (#x9 ((:ev :0F3A :128 :66 :W1)                "VRNDSCALEPD")    ;; ib
+	 ((:ev :0F3A :256 :66 :W1)                "VRNDSCALEPD")    ;; ib
+	 ((:ev :0F3A :512 :66 :W1)                "VRNDSCALEPD"))   ;; ib
+    (#xA ((:ev :0F3A :NDS :LIG :66 :W0)           "VRNDSCALESS"))   ;; ib
+    (#xB ((:ev :0F3A :NDS :LIG :66 :W1)           "VRNDSCALESD"))   ;; ib
+    (#xF ((:ev :0F3A :NDS :128 :66 :WIG)          "VPALIGNR")       ;; ib
+	 ((:ev :0F3A :NDS :256 :66 :WIG)          "VPALIGNR")       ;; ib
+	 ((:ev :0F3A :NDS :512 :66 :WIG)          "VPALIGNR"))      ;; ib
+    (#x14 ((:ev :0F3A :128 :66 :WIG)              "VPEXTRB"))       ;; ib
+    (#x15 ((:ev :0F3A :128 :66 :WIG)              "VPEXTRW"))       ;; ib
+    (#x16 ((:ev :0F3A :128 :66 :W0)               "VPEXTRD")        ;; ib
+	  ((:ev :0F3A :128 :66 :W1)               "VPEXTRQ"))       ;; ib
+    (#x17 ((:ev :0F3A :128 :66 :WIG)              "VEXTRACTPS"))    ;; ib
+    (#x18 ((:ev :0F3A :NDS :256 :66 :W0)          "VINSERTF32X4")   ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W1)          "VINSERTF64X2")   ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W0)          "VINSERTF32X4")   ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W1)          "VINSERTF64X2"))  ;; ib
+    (#x19 ((:ev :0F3A :256 :66 :W0)               "VEXTRACTF32X4")  ;; ib
+	  ((:ev :0F3A :256 :66 :W1)               "VEXTRACTF64X2")  ;; ib
+	  ((:ev :0F3A :512 :66 :W0)               "VEXTRACTF32x4")  ;; ib
+	  ((:ev :0F3A :512 :66 :W1)               "VEXTRACTF64X2")) ;; ib
+    (#x1A ((:ev :0F3A :NDS :512 :66 :W0)          "VINSERTF32X4")   ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W1)          "VINSERTF64X2"))  ;; ib
+    (#x1B ((:ev :0F3A :512 :66 :W0)               "VEXTRACTF32x4")  ;; ib
+	  ((:ev :0F3A :512 :66 :W1)               "VEXTRACTF64X2")) ;; ib
+    (#x1D ((:ev :0F3A :128 :66 :W0)               "VCVTPS2PH")      ;; ib
+	  ((:ev :0F3A :256 :66 :W0)               "VCVTPS2PH")      ;; ib
+	  ((:ev :0F3A :512 :66 :W0)               "VCVTPS2PH"))     ;; ib
+    (#x1E ((:ev :0F3A :NDS :128 :66 :W0)          "VPCMPD")         ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W0)          "VPCMPD")         ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W0)          "VPCMPD")         ;; ib
+	  ((:ev :0F3A :NDS :128 :66 :W1)          "VPCMPQ")         ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W1)          "VPCMPQ")         ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W1)          "VPCMPQ"))        ;; ib
+    (#x1F ((:ev :0F3A :NDS :128 :66 :W0)          "VPCMPD")         ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W0)          "VPCMPD")         ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W0)          "VPCMPD")         ;; ib
+	  ((:ev :0F3A :NDS :128 :66 :W1)          "VPCMPQ")         ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W1)          "VPCMPQ")         ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W1)          "VPCMPQ"))        ;; ib
+    (#x20 ((:ev :0F3A :NDS :128 :66 :WIG)         "VPINSRB"))       ;; ib
+    (#x21 ((:ev :0F3A :NDS :128 :66 :W0)          "VINSERTPS"))     ;; ib
+    (#x22 ((:ev :0F3A :NDS :128 :66 :W0)          "VPINSRD")        ;; ib
+	  ((:ev :0F3A :NDS :128 :66 :W1)          "VPINSRQ"))       ;; ib
+    (#x23 ((:ev :0F3A :NDS :256 :66 :W0)          "VSHUFF32X4")     ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W1)          "VSHUFF64X2")     ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W0)          "VSHUFF32x4")     ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W1)          "VSHUFF64x2"))    ;; ib
+    (#x25 ((:ev :0F3A :DDS :128 :66 :W0)          "VPTERNLOGD")     ;; ib
+	  ((:ev :0F3A :DDS :128 :66 :W1)          "VPTERNLOGQ")     ;; ib
+	  ((:ev :0F3A :DDS :256 :66 :W0)          "VPTERNLOGD")     ;; ib
+	  ((:ev :0F3A :DDS :256 :66 :W1)          "VPTERNLOGQ")     ;; ib
+	  ((:ev :0F3A :DDS :512 :66 :W0)          "VPTERNLOGD")     ;; ib
+	  ((:ev :0F3A :DDS :512 :66 :W1)          "VPTERNLOGQ"))    ;; ib
+    (#x26 ((:ev :0F3A :128 :66 :W1)               "VGETMANTPD")     ;; ib
+	  ((:ev :0F3A :256 :66 :W1)               "VGETMANTPD")     ;; ib
+	  ((:ev :0F3A :512 :66 :W1)               "VGETMANTPD")     ;; ib
+	  ((:ev :0F3A :128 :66 :W0)               "VGETMANTPS")     ;; ib
+	  ((:ev :0F3A :256 :66 :W0)               "VGETMANTPS")     ;; ib
+	  ((:ev :0F3A :512 :66 :W0)               "VGETMANTPS"))    ;; ib
+    (#x27 ((:ev :0F3A :NDS :LIG :66 :W1)          "VGETMANTSD")     ;; ib
+	  ((:ev :0F3A :NDS :LIG :66 :W0)          "VGETMANTSS"))    ;; ib
+    (#x38 ((:ev :0F3A :NDS :256 :66 :W0)          "VINSERTI32X4")   ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W1)          "VINSERTI64X2")   ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W0)          "VINSERTI32X4")   ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W1)          "VINSERTI64X2"))  ;; ib
+    (#x39 ((:ev :0F3A :256 :66 :W0)               "VEXTRACTI32X4")  ;; ib
+	  ((:ev :0F3A :256 :66 :W1)               "VEXTRACTI64X2")  ;; ib
+	  ((:ev :0F3A :512 :66 :W0)               "VEXTRACTI32x4")  ;; ib
+	  ((:ev :0F3A :512 :66 :W1)               "VEXTRACTI64X2")) ;; ib
+    (#x3A ((:ev :0F3A :NDS :512 :66 :W0)          "VINSERTI32X4")   ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W1)          "VINSERTI64X2"))  ;; ib
+    (#x3B ((:ev :0F3A :512 :66 :W0)               "VEXTRACTI32x4")  ;; ib
+	  ((:ev :0F3A :512 :66 :W1)               "VEXTRACTI64X2")) ;; ib
+    (#x3E ((:ev :0F3A :NDS :128 :66 :W0)          "VPCMPB")         ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W0)          "VPCMPB")         ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W0)          "VPCMPB")         ;; ib
+	  ((:ev :0F3A :NDS :128 :66 :W1)          "VPCMPW")         ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W1)          "VPCMPW"))        ;; ib
+    (#x3F ((:ev :0F3A :NDS :128 :66 :W0)          "VPCMPB")         ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W0)          "VPCMPB")         ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W0)          "VPCMPB")         ;; ib
+	  ((:ev :0F3A :NDS :128 :66 :W1)          "VPCMPW")         ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W1)          "VPCMPW")         ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W1)          "VPCMPW"))        ;; ib
+    (#x42 ((:ev :0F3A :NDS :128 :66 :W0)          "VDBPSADBW")      ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W0)          "VDBPSADBW")      ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W0)          "VDBPSADBW"))     ;; ib
+    (#x43 ((:ev :0F3A :NDS :256 :66 :W0)          "VSHUFI32X4")     ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W1)          "VSHUFI64X2")     ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W0)          "VSHUFI32x4")     ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W1)          "VSHUFI64x2"))    ;; ib
+    (#x50 ((:ev :0F3A :NDS :128 :66 :W1)          "VRANGEPD")       ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W1)          "VRANGEPD")       ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W1)          "VRANGEPD")       ;; ib
+	  ((:ev :0F3A :NDS :128 :66 :W0)          "VRANGEPS")       ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W0)          "VRANGEPS")       ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W0)          "VRANGEPS"))      ;; ib
+    (#x51 ((:ev :0F3A :NDS :LIG :66 :W1)          "VRANGESD")       ;;
+	  ((:ev :0F3A :NDS :LIG :66 :W0)          "VRANGESS"))      ;;
+    (#x54 ((:ev :0F3A :NDS :128 :66 :W1)          "VFIXUPIMMPD")    ;; ib
+	  ((:ev :0F3A :NDS :256 :66 :W1)          "VFIXUPIMMPD")    ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W1)          "VFIXUPIMMPD")    ;; ib
+	  ((:ev :0F3A :NDS :512 :66 :W0)          "VFIXUPIMMPS")    ;; ib
+	  ((:ev :0F3A :NDS :128 :66 :W0)          "VFIXUPIMMPS")    ;;
+	  ((:ev :0F3A :NDS :256 :66 :W0)          "VFIXUPIMMPS"))   ;;
+    (#x55 ((:ev :0F3A :NDS :LIG :66 :W1)          "VFIXUPIMMSD")    ;; ib
+	  ((:ev :0F3A :NDS :LIG :66 :W0)          "VFIXUPIMMSS"))   ;; ib
+    (#x56 ((:ev :0F3A :128 :66 :W1)               "VREDUCEPD")      ;; ib
+	  ((:ev :0F3A :256 :66 :W1)               "VREDUCEPD")      ;; ib
+	  ((:ev :0F3A :512 :66 :W1)               "VREDUCEPD")      ;; ib
+	  ((:ev :0F3A :128 :66 :W0)               "VREDUCEPS")      ;; ib
+	  ((:ev :0F3A :256 :66 :W0)               "VREDUCEPS")      ;; ib
+	  ((:ev :0F3A :512 :66 :W0)               "VREDUCEPS"))     ;; ib
+    (#x57 ((:ev :0F3A :NDS :LIG :66 :W0)          "VREDUCESS")      ;; ib
+	  ((:ev :0F3A :NDS :LIG :66 :W1)          "VREDUCESD"))     ;;
+    (#x66 ((:ev :0F3A :128 :66 :W1)               "VFPCLASSPD")     ;; ib
+	  ((:ev :0F3A :256 :66 :W1)               "VFPCLASSPD")     ;; ib
+	  ((:ev :0F3A :512 :66 :W1)               "VFPCLASSPD")     ;; ib
+	  ((:ev :0F3A :128 :66 :W0)               "VFPCLASSPS")     ;; ib
+	  ((:ev :0F3A :256 :66 :W0)               "VFPCLASSPS")     ;; ib
+	  ((:ev :0F3A :512 :66 :W0)               "VFPCLASSPS"))    ;; ib
+    (#x67 ((:ev :0F3A :LIG :66 :W1)               "VFPCLASSSD")     ;; ib
+	  ((:ev :0F3A :LIG :66 :W0)               "VFPCLASSSS"))))
+
+;; ----------------------------------------------------------------------
+
 ;; Well-formedness of our representation of opcode maps:
 
 ;; Each cell in an opcode map (i.e., the box referring to one opcode
@@ -5271,36 +6652,44 @@
       (opcode-extensions-map-p (cdr map)))))
 
 (defconst *vex-prefix-cases*
-  ;; [NDS|NDD|DDS].[128|256|LIG|LZ].[66|F2|F3].[0F|0F38|0F3A].[W0|W1|WIG]
+  ;; VEX:  [NDS|NDD|DDS].[128|256|LIG|LZ].[66|F2|F3].[0F|0F38|0F3A].[W0|W1|WIG]
   '(:v :unused-vvvv :NDS :NDD :DDS :128 :256 :L0 :L1 :LIG
        :LZ :66 :F2 :F3 :0F :0F38 :0F3A :W0 :W1 :WIG))
 
-(defconst *vex-extra-prefix-cases*
+(defconst *evex-prefix-cases*
+  ;; EVEX: [NDS|NDD|DDS].[128|256|512|LIG|LZ].[66|F2|F3].[0F|0F38|0F3A].[W0|W1|WIG]
+  (append '(:ev :512) (remove :v *vex-prefix-cases*)))
+
+(defconst *avx-extra-prefix-cases*
   ;; Note: Modify vex-keyword-case-gen in dispatch.lisp when more elements are
   ;; added here.
   '(:reg))
 
-(define kwd-or-key-consp (e)
+(define kwd-or-key-consp ((e)
+			  (vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
   :enabled t
   (or (and (keywordp e)
-	   (member e *vex-prefix-cases*))
+	   (if vex? (member e *vex-prefix-cases*) (member e *evex-prefix-cases*)))
       (and (consp e)
-	   (member (car e) *vex-extra-prefix-cases*))))
+	   (member (car e) *avx-extra-prefix-cases*))))
 
-(define kwd-or-key-cons-listp (lst)
+(define kwd-or-key-cons-listp ((lst)
+			       (vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
   :short "Recognizer for lists whose elements are either keywords or cons
   pairs whose @('car') is a keyword"
   :enabled t
   (if (atom lst)
       (equal lst nil)
-    (and (kwd-or-key-consp (car lst))
-	 (kwd-or-key-cons-listp (cdr lst)))))
+    (and (kwd-or-key-consp (car lst) vex?)
+	 (kwd-or-key-cons-listp (cdr lst) vex?))))
 
-(define vex-cases-okp (lst)
+(define avx-cases-okp ((lst)
+		       (vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
   :enabled t
-  (kwd-or-key-cons-listp lst))
+  (kwd-or-key-cons-listp lst vex?))
 
-(define vex-opcode-cases-okp (lst)
+(define avx-opcode-cases-okp ((lst)
+                              (vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
   (if (atom lst)
       (equal lst nil)
     (b* ((first (car lst))
@@ -5308,12 +6697,13 @@
 	  (cw "~% We expect ~p0 to be a cons pair! ~%" first)
 	  nil)
 	 (kwd-lst (car first))
-	 ((unless (vex-cases-okp kwd-lst))
-	  (cw "~% ~p0 contains unrecognized VEX prefix cases! ~%" kwd-lst)
+	 ((unless (avx-cases-okp kwd-lst vex?))
+	  (cw "~% ~p0 contains unrecognized prefix cases! ~%" kwd-lst)
 	  nil))
-      (vex-opcode-cases-okp (cdr lst)))))
+      (avx-opcode-cases-okp (cdr lst) vex?))))
 
-(define vex-maps-well-formed-p (map)
+(define avx-maps-well-formed-p ((map)
+                                (vex? booleanp "@('t') if VEX; @('nil') if EVEX"))
   (if (atom map)
       (equal map nil)
     (b* ((first (car map))
@@ -5327,8 +6717,8 @@
 	      opcode)
 	  nil)
 	 (variants (cdr first))
-	 ((unless (vex-opcode-cases-okp variants)) nil))
-      (vex-maps-well-formed-p (cdr map)))))
+	 ((unless (avx-opcode-cases-okp variants vex?)) nil))
+      (avx-maps-well-formed-p (cdr map) vex?))))
 
 ;; ----------------------------------------------------------------------
 
@@ -5362,9 +6752,15 @@
 
 (local
  (defthm vex-maps-are-well-formed
-   (and (vex-maps-well-formed-p *vex-0F-opcodes*)
-	(vex-maps-well-formed-p *vex-0F38-opcodes*)
-	(vex-maps-well-formed-p *vex-0F3A-opcodes*))))
+   (and (avx-maps-well-formed-p *vex-0F-opcodes* t)
+	(avx-maps-well-formed-p *vex-0F38-opcodes* t)
+	(avx-maps-well-formed-p *vex-0F3A-opcodes* t))))
+
+(local
+ (defthm evex-maps-are-well-formed
+   (and (avx-maps-well-formed-p *evex-0F-opcodes* nil)
+	(avx-maps-well-formed-p *evex-0F38-opcodes* nil)
+	(avx-maps-well-formed-p *evex-0F3A-opcodes* nil))))
 
 ;; ----------------------------------------------------------------------
 

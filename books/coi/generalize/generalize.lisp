@@ -53,8 +53,8 @@
    )
   )
 
-(in-theory (disable GENSYM::EVAL-CONSTRAINT-6))
-(in-theory (disable GENSYM::EVAL-CONSTRAINT-7))
+(in-theory (disable GENSYM::EVAL-constraint-7))
+(in-theory (disable GENSYM::EVAL-constraint-8))
 
 (defun pattern-match-rec (args terms alist)
   (declare (type (satisfies alistp) alist)
@@ -636,8 +636,8 @@
 
 (in-theory (disable generalize-clause-processor generalize-clause-alist))
 
-(in-theory (enable GENSYM::EVAL-CONSTRAINT-6))
-(in-theory (enable GENSYM::EVAL-CONSTRAINT-7))
+(in-theory (enable GENSYM::EVAL-constraint-7))
+(in-theory (enable GENSYM::EVAL-constraint-8))
 
 (include-book "coi/util/clause-processor" :dir :system)
 

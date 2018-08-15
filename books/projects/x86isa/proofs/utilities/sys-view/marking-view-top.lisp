@@ -2675,7 +2675,7 @@
    (equal (x86-fetch-decode-execute x86)
 	  (one-byte-opcode-execute
 	   #.*64-bit-mode* start-rip temp-rip3 prefixes rex-byte
-	   0 0 opcode/vex/evex-byte modr/m sib x86-4)))
+	   opcode/vex/evex-byte modr/m sib x86-4)))
   :hints
   (("Goal"
     :do-not '(preprocess)

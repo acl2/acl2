@@ -462,6 +462,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   :short "Functions to decode and collect EVEX prefix bytes from an x86
   instruction"
 
+  ;; Sources: - Intel Vol. 2, Table 2-30
+  ;;          - Sandpile, under "byte encodings" section:
+  ;;            http://www.sandpile.org/x86/opc_enc.htm
+
   (defconst *evex-prefixes-layout*
     '((:byte0       0   8) ;; Should be #ux62
       (:byte1       8   8) ;;
@@ -510,7 +514,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 				;; two bits of VEX.pp.
       (:res               2  1) ;; Must be one.
       (:vvvv              3  4) ;; NDS register specifier --- same as VEX.vvvv
-      (:W                 7  1) ;; Osize promotion/opcode extension
+      (:w                 7  1) ;; Osize promotion/opcode extension
       ))
 
   (defthm evex-byte2-table-ok
@@ -525,10 +529,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   (defconst *evex-byte3-layout*
     '((:aaa               0  3) ;; Embedded opmask register specifier
-      (:V-prime           3  1) ;; High-16 NDS/VIDX register specifier --
+      (:v-prime           3  1) ;; High-16 NDS/VIDX register specifier --
 				;; combine with EVEX.vvvv or when VSIB present
       (:b                 4  1) ;; Broadcast/RC/SAE Context
-      (:L-prime-L         5  2) ;; Vector length/RC
+      (:vl/rc             5  2) ;; Vector length/RC (denoted as L'L in the Intel manuals)
       (:z                 7  1) ;; Zeroing/Merging
       ))
 
@@ -540,7 +544,40 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (slice flg evex-byte3 8 *evex-byte3-layout*))
 
   (defmacro !evex-byte3-slice (flg val reg)
-    (!slice flg val reg 8 *evex-byte3-layout*)))
+    (!slice flg val reg 8 *evex-byte3-layout*))
+
+  ;; Some wrapper functions to the macros above to make the EVEX dispatch
+  ;; functions' guard proofs simpler:
+
+  (define evex-vvvv-slice ((evex-prefixes :type (unsigned-byte 32)))
+    :short "Get the @('VVVV') field of @('evex-prefixes')"
+    :inline t
+    :returns (vvvv (unsigned-byte-p 4 vvvv) :hyp :guard)
+    (evex-byte2-slice :vvvv (evex-prefixes-slice :byte2 evex-prefixes)))
+
+  (define evex-v-prime-slice ((evex-prefixes :type (unsigned-byte 32)))
+    :short "Get the @('v-prime') field of @('evex-prefixes')"
+    :inline t
+    :returns (v-prime (unsigned-byte-p 1 v-prime) :hyp :guard)
+    (evex-byte3-slice :v-prime (evex-prefixes-slice :byte3 evex-prefixes)))
+
+  (define evex-vl/rc-slice ((evex-prefixes :type (unsigned-byte 32)))
+    :short "Get the @('vl/rc') field of @('evex-prefixes')"
+    :inline t
+    :returns (vl/rc (unsigned-byte-p 2 vl/rc) :hyp :guard)
+    (evex-byte3-slice :vl/rc (evex-prefixes-slice :byte3 evex-prefixes)))
+
+  (define evex-pp-slice ((evex-prefixes :type (unsigned-byte 32)))
+    :short "Get the @('PP') field of @('evex-prefixes')"
+    :inline t
+    :returns (pp (unsigned-byte-p 2 pp) :hyp :guard)
+    (evex-byte2-slice :pp (evex-prefixes-slice :byte2 evex-prefixes)))
+
+  (define evex-w-slice ((evex-prefixes :type (unsigned-byte 32)))
+    :short "Get the @('W') field of @('evex-prefixes')"
+    :inline t
+    :returns (w (unsigned-byte-p 2 w) :hyp :guard)
+    (evex-byte2-slice :w (evex-prefixes-slice :byte2 evex-prefixes))))
 
 ;; ======================================================================
 

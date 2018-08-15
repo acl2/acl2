@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc concrete-to-abstract-syntax
+(defxdoc+ concrete-to-abstract-syntax
   :parents (abnf)
   :short "An executable mapping from
           the concrete syntax of ABNF to the abstract syntax of ABNF."
@@ -40,9 +40,8 @@
    satisfy certain expected conditions.
    Eventually, these expected conditions
    should be proved to follow from suitable guards.
-   </p>")
-
-(xdoc::order-subtopics concrete-to-abstract-syntax nil t)
+   </p>"
+  :order-subtopics t)
 
 (define abstract-fail ()
   :returns (nothing null)

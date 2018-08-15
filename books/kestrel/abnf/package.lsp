@@ -21,6 +21,7 @@
                           bool
                           char-fix
                           chars=>nats
+                          defxdoc+
                           explode
                           implode
                           integers-from-to

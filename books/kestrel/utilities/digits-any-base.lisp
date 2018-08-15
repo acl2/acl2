@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/xdoc-constructors" :dir :system)
+(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "kestrel/utilities/zp-lists" :dir :system)

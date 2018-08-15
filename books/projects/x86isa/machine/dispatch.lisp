@@ -243,20 +243,20 @@
 	  (create-case-dispatch-for-opcode-extensions-aux
 	   opcode (cdr desc-list) world :escape-bytes escape-bytes))
 	 (opcode-cell (cdr opcode-descriptor))
-	 (vex         (cdr (assoc-equal :vex opcode-identifier)))
-	 (evex        (cdr (assoc-equal :evex opcode-identifier)))
+	 ;; (vex         (cdr (assoc-equal :vex opcode-identifier)))
+	 ;; (evex        (cdr (assoc-equal :evex opcode-identifier)))
 	 (reg         (cdr (assoc-equal :reg opcode-identifier)))
 	 (prefix      (cdr (assoc-equal :prefix opcode-identifier)))
 	 (mod         (cdr (assoc-equal :mod opcode-identifier)))
 	 (r/m         (cdr (assoc-equal :r/m opcode-identifier)))
 	 (condition
 	  `(and
-	    ,@(if evex
-		  `((not (equal evex-prefixes 0)))
-		`((equal evex-prefixes 0)))
-	    ,@(if vex
-		  `((not (equal vex-prefixes 0)))
-		`((equal vex-prefixes 0)))
+	    ;; ,@(if evex
+	    ;;       `((not (equal evex-prefixes 0)))
+	    ;;     `((equal evex-prefixes 0)))
+	    ;; ,@(if vex
+	    ;;       `((not (equal vex-prefixes 0)))
+	    ;;     `((equal vex-prefixes 0)))
 	    ,@(and reg
 		   `((equal (mrm-reg modr/m) ,reg)))
 	    ,@(and mod
@@ -271,12 +271,13 @@
 	  (create-dispatch-from-no-extensions-simple-cell
 	   opcode-cell world))
 	 (this-doc-string
-	  (if (or evex vex prefix reg mod r/m)
+	  (if (or ;; evex vex
+		  prefix reg mod r/m)
 	      (concatenate 'string
 			   " <td> @('"
 			   (str::pretty
-			    `(,@(and evex   `((:EVEX ,evex)))
-			      ,@(and vex    `((:VEX  ,vex)))
+			    `(;; ,@(and evex   `((:EVEX ,evex)))
+			      ;; ,@(and vex    `((:VEX  ,vex)))
 			      ,@(and prefix `((:PFX  ,prefix)))
 			      ,@(and reg    `((:REG  ,reg)))
 			      ,@(and mod    `((:MOD  ,mod)))
@@ -427,14 +428,15 @@
    66-prefix 66-prefix-doc
    F2-prefix F2-prefix-doc
    F3-prefix F3-prefix-doc
-   v-prefix v-prefix-doc
-   v66-prefix v66-prefix-doc
-   vF2-prefix vF2-prefix-doc
-   vF3-prefix vF3-prefix-doc
-   ev-prefix ev-prefix-doc
-   ev66-prefix ev66-prefix-doc
-   evF2-prefix evF2-prefix-doc
-   evF3-prefix evF3-prefix-doc)
+   ;; v-prefix v-prefix-doc
+   ;; v66-prefix v66-prefix-doc
+   ;; vF2-prefix vF2-prefix-doc
+   ;; vF3-prefix vF3-prefix-doc
+   ;; ev-prefix ev-prefix-doc
+   ;; ev66-prefix ev66-prefix-doc
+   ;; evF2-prefix evF2-prefix-doc
+   ;; evF3-prefix evF3-prefix-doc
+   )
 
   :returns (str stringp)
 
@@ -446,14 +448,15 @@
 	    (not F2-prefix)
 	    (not F3-prefix)
 	    (not no-prefix)
-	    (not v66-prefix)
-	    (not vF2-prefix)
-	    (not vF3-prefix)
-	    (not v-prefix)
-	    (not ev66-prefix)
-	    (not evF2-prefix)
-	    (not evF3-prefix)
-	    (not ev-prefix))
+	    ;; (not v66-prefix)
+	    ;; (not vF2-prefix)
+	    ;; (not vF3-prefix)
+	    ;; (not v-prefix)
+	    ;; (not ev66-prefix)
+	    ;; (not evF2-prefix)
+	    ;; (not evF3-prefix)
+	    ;; (not ev-prefix)
+	    )
 
        (list "<td> </td> <td> </td>")
 
@@ -468,14 +471,14 @@
       (create-compound-cell-subdoc-aux F2-prefix    ":F2"        F2-prefix-doc)
       (create-compound-cell-subdoc-aux F3-prefix    ":F3"        F3-prefix-doc)
       (create-compound-cell-subdoc-aux no-prefix    ":No-Pfx"    no-prefix-doc)
-      (create-compound-cell-subdoc-aux v-prefix     ":v-No-Pfx"  v-prefix-doc)
-      (create-compound-cell-subdoc-aux v66-prefix   ":v66"       v66-prefix-doc)
-      (create-compound-cell-subdoc-aux vF2-prefix   ":vF2"       vF2-prefix-doc)
-      (create-compound-cell-subdoc-aux vF3-prefix   ":vF3"       vF3-prefix-doc)
-      (create-compound-cell-subdoc-aux ev-prefix    ":ev-No-Pfx" ev-prefix-doc)
-      (create-compound-cell-subdoc-aux ev66-prefix  ":ev66"      ev66-prefix-doc)
-      (create-compound-cell-subdoc-aux evF2-prefix  ":evF2"      evF2-prefix-doc)
-      (create-compound-cell-subdoc-aux evF3-prefix  ":evF3"      evF3-prefix-doc)
+      ;; (create-compound-cell-subdoc-aux v-prefix     ":v-No-Pfx"  v-prefix-doc)
+      ;; (create-compound-cell-subdoc-aux v66-prefix   ":v66"       v66-prefix-doc)
+      ;; (create-compound-cell-subdoc-aux vF2-prefix   ":vF2"       vF2-prefix-doc)
+      ;; (create-compound-cell-subdoc-aux vF3-prefix   ":vF3"       vF3-prefix-doc)
+      ;; (create-compound-cell-subdoc-aux ev-prefix    ":ev-No-Pfx" ev-prefix-doc)
+      ;; (create-compound-cell-subdoc-aux ev66-prefix  ":ev66"      ev66-prefix-doc)
+      ;; (create-compound-cell-subdoc-aux evF2-prefix  ":evF2"      evF2-prefix-doc)
+      ;; (create-compound-cell-subdoc-aux evF3-prefix  ":evF3"      evF3-prefix-doc)
 
       " </table> </td> "))))
 
@@ -486,14 +489,15 @@
        66-prefix 66-prefix-dispatch
        F2-prefix F2-prefix-dispatch
        F3-prefix F3-prefix-dispatch
-       v-prefix v-prefix-dispatch
-       v66-prefix v66-prefix-dispatch
-       vF2-prefix vF2-prefix-dispatch
-       vF3-prefix vF3-prefix-dispatch
-       ev-prefix ev-prefix-dispatch
-       ev66-prefix ev66-prefix-dispatch
-       evF2-prefix evF2-prefix-dispatch
-       evF3-prefix evF3-prefix-dispatch)
+       ;; v-prefix v-prefix-dispatch
+       ;; v66-prefix v66-prefix-dispatch
+       ;; vF2-prefix vF2-prefix-dispatch
+       ;; vF3-prefix vF3-prefix-dispatch
+       ;; ev-prefix ev-prefix-dispatch
+       ;; ev66-prefix ev66-prefix-dispatch
+       ;; evF2-prefix evF2-prefix-dispatch
+       ;; evF3-prefix evF3-prefix-dispatch
+       )
 
   `(cond
     ,@(and o64
@@ -503,66 +507,70 @@
 	   `(((not (equal proc-mode #.*64-bit-mode*))
 	      ,i64-dispatch)))
     ,@(and no-prefix
-	   `(((and
-	       (equal vex-prefixes 0)
-	       (equal evex-prefixes 0)
-	       (equal mandatory-prefix 0))
+	   `(((equal mandatory-prefix 0)
+	      ;; (and
+	      ;;  (equal vex-prefixes 0)
+	      ;;  (equal evex-prefixes 0)
+	      ;;  (equal mandatory-prefix 0))
 	      ,no-prefix-dispatch)))
     ,@(and 66-prefix
-	   `(((and (equal vex-prefixes 0)
-		   (equal evex-prefixes 0)
-		   (equal mandatory-prefix #.*mandatory-66h*))
+	   `(((equal mandatory-prefix #.*mandatory-66h*)
+	      ;; (and (equal vex-prefixes 0)
+	      ;;      (equal evex-prefixes 0)
+	      ;;      (equal mandatory-prefix #.*mandatory-66h*))
 	      ,66-prefix-dispatch)))
     ,@(and F2-prefix
-	   `(((and (equal vex-prefixes 0)
-		   (equal evex-prefixes 0)
-		   (equal mandatory-prefix #.*mandatory-F2h*))
+	   `(((equal mandatory-prefix #.*mandatory-F2h*)
+	      ;; (and (equal vex-prefixes 0)
+	      ;;      (equal evex-prefixes 0)
+	      ;;      (equal mandatory-prefix #.*mandatory-F2h*))
 	      ,F2-prefix-dispatch)))
     ,@(and F3-prefix
-	   `(((and (equal vex-prefixes 0)
-		   (equal evex-prefixes 0)
-		   (equal mandatory-prefix #.*mandatory-F3h*))
+	   `(((equal mandatory-prefix #.*mandatory-F3h*)
+	      ;; (and (equal vex-prefixes 0)
+	      ;;      (equal evex-prefixes 0)
+	      ;;      (equal mandatory-prefix #.*mandatory-F3h*))
 	      ,F3-prefix-dispatch)))
-    ,@(and v-prefix
-	   `(((and
-	       (not (equal vex-prefixes 0))
-	       (equal mandatory-prefix 0))
-	      ,v-prefix-dispatch)))
-    ,@(and v66-prefix
-	   `(((and
-	       (not (equal vex-prefixes 0))
-	       (equal mandatory-prefix #.*mandatory-66h*))
-	      ,v66-prefix-dispatch)))
-    ,@(and vF3-prefix
-	   `(((and
-	       (not (equal vex-prefixes 0))
-	       (equal mandatory-prefix #.*mandatory-F3h*))
-	      ,vF3-prefix-dispatch)))
-    ,@(and vF2-prefix
-	   `(((and
-	       (not (equal vex-prefixes 0))
-	       (equal mandatory-prefix #.*mandatory-F2h*))
-	      ,vF2-prefix-dispatch)))
-    ,@(and ev-prefix
-	   `(((and
-	       (not (equal evex-prefixes 0))
-	       (equal mandatory-prefix 0))
-	      ,ev-prefix-dispatch)))
-    ,@(and ev66-prefix
-	   `(((and
-	       (not (equal evex-prefixes 0))
-	       (equal mandatory-prefix #.*mandatory-66h*))
-	      ,ev66-prefix-dispatch)))
-    ,@(and evF3-prefix
-	   `(((and
-	       (not (equal evex-prefixes 0))
-	       (equal mandatory-prefix #.*mandatory-F3h*))
-	      ,evF3-prefix-dispatch)))
-    ,@(and evF2-prefix
-	   `(((and
-	       (not (equal evex-prefixes 0))
-	       (equal mandatory-prefix #.*mandatory-F2h*))
-	      ,evF2-prefix-dispatch)))
+    ;; ,@(and v-prefix
+    ;;        `(((and
+    ;;            (not (equal vex-prefixes 0))
+    ;;            (equal mandatory-prefix 0))
+    ;;           ,v-prefix-dispatch)))
+    ;; ,@(and v66-prefix
+    ;;        `(((and
+    ;;            (not (equal vex-prefixes 0))
+    ;;            (equal mandatory-prefix #.*mandatory-66h*))
+    ;;           ,v66-prefix-dispatch)))
+    ;; ,@(and vF3-prefix
+    ;;        `(((and
+    ;;            (not (equal vex-prefixes 0))
+    ;;            (equal mandatory-prefix #.*mandatory-F3h*))
+    ;;           ,vF3-prefix-dispatch)))
+    ;; ,@(and vF2-prefix
+    ;;        `(((and
+    ;;            (not (equal vex-prefixes 0))
+    ;;            (equal mandatory-prefix #.*mandatory-F2h*))
+    ;;           ,vF2-prefix-dispatch)))
+    ;; ,@(and ev-prefix
+    ;;        `(((and
+    ;;            (not (equal evex-prefixes 0))
+    ;;            (equal mandatory-prefix 0))
+    ;;           ,ev-prefix-dispatch)))
+    ;; ,@(and ev66-prefix
+    ;;        `(((and
+    ;;            (not (equal evex-prefixes 0))
+    ;;            (equal mandatory-prefix #.*mandatory-66h*))
+    ;;           ,ev66-prefix-dispatch)))
+    ;; ,@(and evF3-prefix
+    ;;        `(((and
+    ;;            (not (equal evex-prefixes 0))
+    ;;            (equal mandatory-prefix #.*mandatory-F3h*))
+    ;;           ,evF3-prefix-dispatch)))
+    ;; ,@(and evF2-prefix
+    ;;        `(((and
+    ;;            (not (equal evex-prefixes 0))
+    ;;            (equal mandatory-prefix #.*mandatory-F2h*))
+    ;;           ,evF2-prefix-dispatch)))
     (t
      ;; Catch-all case:
      ;; ,(create-call-from-semantic-info
@@ -599,14 +607,14 @@
        (66-prefix   (cdr (assoc-equal :66 cell)))
        (F3-prefix   (cdr (assoc-equal :F3 cell)))
        (F2-prefix   (cdr (assoc-equal :F2 cell)))
-       (v-prefix    (cdr (assoc-equal :v cell)))
-       (v66-prefix  (cdr (assoc-equal :v66 cell)))
-       (vF3-prefix  (cdr (assoc-equal :vF3 cell)))
-       (vF2-prefix  (cdr (assoc-equal :vF2 cell)))
-       (ev-prefix   (cdr (assoc-equal :ev cell)))
-       (ev66-prefix (cdr (assoc-equal :ev66 cell)))
-       (evF3-prefix (cdr (assoc-equal :evF3 cell)))
-       (evF2-prefix (cdr (assoc-equal :evF2 cell)))
+       ;; (v-prefix    (cdr (assoc-equal :v cell)))
+       ;; (v66-prefix  (cdr (assoc-equal :v66 cell)))
+       ;; (vF3-prefix  (cdr (assoc-equal :vF3 cell)))
+       ;; (vF2-prefix  (cdr (assoc-equal :vF2 cell)))
+       ;; (ev-prefix   (cdr (assoc-equal :ev cell)))
+       ;; (ev66-prefix (cdr (assoc-equal :ev66 cell)))
+       ;; (evF3-prefix (cdr (assoc-equal :evF3 cell)))
+       ;; (evF2-prefix (cdr (assoc-equal :evF2 cell)))
 
        ((mv o64-doc o64-dispatch)
 	(create-dispatch-from-simple-cell
@@ -626,30 +634,30 @@
        ((mv no-prefix-doc no-prefix-dispatch)
 	(create-dispatch-from-simple-cell
 	 start-opcode no-prefix world :escape-bytes escape-bytes))
-       ((mv v66-prefix-doc v66-prefix-dispatch)
-	(create-dispatch-from-simple-cell
-	 start-opcode v66-prefix world :escape-bytes escape-bytes))
-       ((mv vF2-prefix-doc vF2-prefix-dispatch)
-	(create-dispatch-from-simple-cell
-	 start-opcode vF2-prefix world :escape-bytes escape-bytes))
-       ((mv vF3-prefix-doc vF3-prefix-dispatch)
-	(create-dispatch-from-simple-cell
-	 start-opcode vF3-prefix world :escape-bytes escape-bytes))
-       ((mv v-prefix-doc v-prefix-dispatch)
-	(create-dispatch-from-simple-cell
-	 start-opcode v-prefix world :escape-bytes escape-bytes))
-       ((mv ev66-prefix-doc ev66-prefix-dispatch)
-	(create-dispatch-from-simple-cell
-	 start-opcode ev66-prefix world :escape-bytes escape-bytes))
-       ((mv evF2-prefix-doc evF2-prefix-dispatch)
-	(create-dispatch-from-simple-cell
-	 start-opcode evF2-prefix world :escape-bytes escape-bytes))
-       ((mv evF3-prefix-doc evF3-prefix-dispatch)
-	(create-dispatch-from-simple-cell
-	 start-opcode evF3-prefix world :escape-bytes escape-bytes))
-       ((mv ev-prefix-doc ev-prefix-dispatch)
-	(create-dispatch-from-simple-cell
-	 start-opcode ev-prefix world :escape-bytes escape-bytes))
+       ;; ((mv v66-prefix-doc v66-prefix-dispatch)
+       ;;  (create-dispatch-from-simple-cell
+       ;;   start-opcode v66-prefix world :escape-bytes escape-bytes))
+       ;; ((mv vF2-prefix-doc vF2-prefix-dispatch)
+       ;;  (create-dispatch-from-simple-cell
+       ;;   start-opcode vF2-prefix world :escape-bytes escape-bytes))
+       ;; ((mv vF3-prefix-doc vF3-prefix-dispatch)
+       ;;  (create-dispatch-from-simple-cell
+       ;;   start-opcode vF3-prefix world :escape-bytes escape-bytes))
+       ;; ((mv v-prefix-doc v-prefix-dispatch)
+       ;;  (create-dispatch-from-simple-cell
+       ;;   start-opcode v-prefix world :escape-bytes escape-bytes))
+       ;; ((mv ev66-prefix-doc ev66-prefix-dispatch)
+       ;;  (create-dispatch-from-simple-cell
+       ;;   start-opcode ev66-prefix world :escape-bytes escape-bytes))
+       ;; ((mv evF2-prefix-doc evF2-prefix-dispatch)
+       ;;  (create-dispatch-from-simple-cell
+       ;;   start-opcode evF2-prefix world :escape-bytes escape-bytes))
+       ;; ((mv evF3-prefix-doc evF3-prefix-dispatch)
+       ;;  (create-dispatch-from-simple-cell
+       ;;   start-opcode evF3-prefix world :escape-bytes escape-bytes))
+       ;; ((mv ev-prefix-doc ev-prefix-dispatch)
+       ;;  (create-dispatch-from-simple-cell
+       ;;   start-opcode ev-prefix world :escape-bytes escape-bytes))
 
        (doc-string
 	(create-compound-cell-subdoc
@@ -659,14 +667,15 @@
 	 66-prefix 66-prefix-doc
 	 F2-prefix F2-prefix-doc
 	 F3-prefix F3-prefix-doc
-	 v-prefix v-prefix-doc
-	 v66-prefix v66-prefix-doc
-	 vF2-prefix vF2-prefix-doc
-	 vF3-prefix vF3-prefix-doc
-	 ev-prefix ev-prefix-doc
-	 ev66-prefix ev66-prefix-doc
-	 evF2-prefix evF2-prefix-doc
-	 evF3-prefix evF3-prefix-doc))
+	 ;; v-prefix v-prefix-doc
+	 ;; v66-prefix v66-prefix-doc
+	 ;; vF2-prefix vF2-prefix-doc
+	 ;; vF3-prefix vF3-prefix-doc
+	 ;; ev-prefix ev-prefix-doc
+	 ;; ev66-prefix ev66-prefix-doc
+	 ;; evF2-prefix evF2-prefix-doc
+	 ;; evF3-prefix evF3-prefix-doc
+	 ))
 
        (dispatch
 	(create-compound-cell-subdispatch
@@ -676,14 +685,15 @@
 	 66-prefix 66-prefix-dispatch
 	 F2-prefix F2-prefix-dispatch
 	 F3-prefix F3-prefix-dispatch
-	 v-prefix v-prefix-dispatch
-	 v66-prefix v66-prefix-dispatch
-	 vF2-prefix vF2-prefix-dispatch
-	 vF3-prefix vF3-prefix-dispatch
-	 ev-prefix ev-prefix-dispatch
-	 ev66-prefix ev66-prefix-dispatch
-	 evF2-prefix evF2-prefix-dispatch
-	 evF3-prefix evF3-prefix-dispatch)))
+	 ;; v-prefix v-prefix-dispatch
+	 ;; v66-prefix v66-prefix-dispatch
+	 ;; vF2-prefix vF2-prefix-dispatch
+	 ;; vF3-prefix vF3-prefix-dispatch
+	 ;; ev-prefix ev-prefix-dispatch
+	 ;; ev66-prefix ev66-prefix-dispatch
+	 ;; evF2-prefix evF2-prefix-dispatch
+	 ;; evF3-prefix evF3-prefix-dispatch
+	 )))
 
     (mv doc-string dispatch))
 
@@ -840,12 +850,140 @@
 
 ;; ----------------------------------------------------------------------
 
-;; VEX-encoded instructions:
+;; VEX- and EVEX-encoded instructions:
 
-;; To collapse vex-encoded instructions with the same opcode and mnemonic but
-;; different VEX fields, we can do something like intersect-vex-keywords below.
-;; This'll likely be a good thing to do when we have instruction semantic
-;; functions for these instructions.
+(define vex-keyword-case-gen ((prefix-case (kwd-or-key-consp prefix-case t)))
+
+  (if (atom prefix-case)
+      (case prefix-case
+	(:UNUSED-VVVV     `((equal (vex-vvvv-slice vex-prefixes) #b1111)))
+	((:NDS :NDD :DDS) `((not (equal (vex-vvvv-slice vex-prefixes) #b1111))))
+	((:128 :LZ :L0)   `((equal (vex-l-slice vex-prefixes) 0)))
+	((:256 :L1)       `((equal (vex-l-slice vex-prefixes) 1)))
+	((:66)            `((equal (vex-pp-slice vex-prefixes) #.*v66*)))
+	((:F3)            `((equal (vex-pp-slice vex-prefixes) #.*vF3*)))
+	((:F2)            `((equal (vex-pp-slice vex-prefixes) #.*vF2*)))
+	((:W0)            `((equal (vex-w-slice vex-prefixes) 0)))
+	((:W1)            `((equal (vex-w-slice vex-prefixes) 1)))
+	;; I don't need :0F, :0F38, and :0F3A below because the
+	;; vex-decode-and-execute function deals with this already.
+	;; ((:0F)            `((vex-prefixes-map-p #x0F vex-prefixes)))
+	;; ((:0F38)          `((vex-prefixes-map-p #x0F38 vex-prefixes)))
+	;; ((:0F3A)          `((vex-prefixes-map-p #x0F3A vex-prefixes)))
+	(otherwise
+	 ;; :LIG, :WIG, :V, etc.
+	 `()))
+    (case (car prefix-case)
+      (:REG   `((equal (mrm-reg modr/m) ,(cdr prefix-case))))
+      (otherwise
+       ;; Should be unreachable.
+       `()))))
+
+(define evex-keyword-case-gen ((prefix-case (kwd-or-key-consp prefix-case nil)))
+
+  (if (atom prefix-case)
+      (case prefix-case
+	(:UNUSED-VVVV     `((and (equal (evex-vvvv-slice evex-prefixes) #b1111)
+				 (equal (evex-v-prime-slice evex-prefixes) #b1))))
+	((:NDS :NDD :DDS) `((not
+			     (and (equal (evex-vvvv-slice evex-prefixes) #b1111)
+				  (equal (evex-v-prime-slice evex-prefixes) #b1)))))
+	((:128 :LZ :L0)   `((equal (evex-vl/rc-slice evex-prefixes) 0)))
+	((:256 :L1)       `((equal (evex-vl/rc-slice evex-prefixes) 1)))
+	(:512             `((equal (evex-vl/rc-slice evex-prefixes) 2)))
+	((:66)            `((equal (evex-pp-slice evex-prefixes) #.*v66*)))
+	((:F3)            `((equal (evex-pp-slice evex-prefixes) #.*vF3*)))
+	((:F2)            `((equal (evex-pp-slice evex-prefixes) #.*vF2*)))
+	((:W0)            `((equal (evex-w-slice evex-prefixes) 0)))
+	((:W1)            `((equal (evex-w-slice evex-prefixes) 1)))
+	;; I don't need to account for :0F, :0F38, and :0F3A because the
+	;; evex-decode-and-execute function deals with this already.
+	(otherwise
+	 ;; :LIG, :WIG, :EV, etc.
+	 `()))
+    (case (car prefix-case)
+      (:REG   `((equal (mrm-reg modr/m) ,(cdr prefix-case))))
+      (otherwise
+       ;; Should be unreachable.
+       `()))))
+
+(define avx-keyword-case-gen ((prefix-case (kwd-or-key-consp prefix-case vex?))
+			      (vex? booleanp))
+  (if vex?
+      (vex-keyword-case-gen prefix-case)
+    (evex-keyword-case-gen prefix-case)))
+
+(define avx-opcode-case-gen-aux ((case-info (kwd-or-key-cons-listp case-info vex?))
+				 (vex? booleanp))
+  (if (endp case-info)
+      nil
+    `(,@(avx-keyword-case-gen (car case-info) vex?)
+      ,@(avx-opcode-case-gen-aux (cdr case-info) vex?))))
+
+(define avx-opcode-case-gen ((kwd-lst (kwd-or-key-cons-listp kwd-lst vex?))
+			     (vex? booleanp)
+			     state)
+  (cons
+   (cons 'and
+	 (if (or (member-equal :NDS kwd-lst)
+		 (member-equal :NDD kwd-lst)
+		 (member-equal :DDS kwd-lst))
+	     (avx-opcode-case-gen-aux kwd-lst vex?)
+	   (avx-opcode-case-gen-aux (cons :UNUSED-VVVV kwd-lst) vex?)))
+   `(,(replace-formals-with-arguments
+       'x86-step-unimplemented
+       '((message . "Opcode unimplemented in x86isa!"))
+       (w state)))))
+
+(define avx-opcode-cases-gen ((lst true-list-listp)
+			      (vex? booleanp)
+			      state)
+  (if (endp lst)
+      `((t
+	 ,(replace-formals-with-arguments
+	   'x86-illegal-instruction
+	   '((message . "Reserved or Illegal Opcode!"))
+	   (w state))))
+    (b* ((first (car lst))
+	 ((unless (kwd-or-key-cons-listp first vex?))
+	  `())
+	 (first-case (avx-opcode-case-gen first vex? state)))
+      `(,first-case
+	 ,@(avx-opcode-cases-gen (cdr lst) vex? state)))))
+
+(define avx-case-gen ((map (avx-maps-well-formed-p map vex?))
+		      (vex? booleanp)
+		      state)
+  :guard-hints (("Goal" :in-theory (e/d (avx-maps-well-formed-p
+					 avx-opcode-cases-okp)
+					())))
+  (if (endp map)
+      `((t
+	 ,(replace-formals-with-arguments
+	   'x86-illegal-instruction
+	   '((message . "Reserved or Illegal Opcode!"))
+	   (w state))))
+    (b* ((first (car map))
+	 (opcode (car first))
+	 (info (cdr first))
+	 (kwd-lst (strip-cars info)))
+      `((,opcode (cond ,@(avx-opcode-cases-gen kwd-lst vex? state)))
+	,@(avx-case-gen (cdr map) vex? state)))))
+
+;; (avx-case-gen *vex-0F-opcodes*   t state)
+;; (avx-case-gen *vex-0F38-opcodes* t state)
+;; (avx-case-gen *vex-0F3A-opcodes* t state)
+
+;; (avx-case-gen *evex-0F-opcodes*   nil state)
+;; (avx-case-gen *evex-0F38-opcodes* nil state)
+;; (avx-case-gen *evex-0F3A-opcodes* nil state)
+
+;; ----------------------------------------------------------------------
+
+;; To collapse vex- and evex-encoded instructions with the same opcode and
+;; mnemonic but different VEX fields, we can do something like
+;; intersect-vex-keywords below.  This'll likely be a good thing to do when we
+;; have instruction semantic functions for these instructions.
 
 ;; (define intersect-vex-keywords ((k1 acl2::keyword-listp)
 ;; 				(k2 acl2::keyword-listp))
@@ -889,87 +1027,5 @@
 ;; 		     (member :W0   k2-unique))
 ;; 		 (member :W1   k1-unique)))))
 ;;     ...))
-
-(define vex-keyword-case-gen ((prefix-case kwd-or-key-consp))
-
-  (if (atom prefix-case)
-      (case prefix-case
-	(:UNUSED-VVVV     `((equal (vex-vvvv-slice vex-prefixes) #b1111)))
-	((:NDS :NDD :DDS) `((not (equal (vex-vvvv-slice vex-prefixes) #b1111))))
-	((:128 :LZ :L0)   `((equal (vex-l-slice vex-prefixes) 0)))
-	((:256 :L1)       `((equal (vex-l-slice vex-prefixes) 1)))
-	((:66)            `((equal (vex-pp-slice vex-prefixes) #.*v66*)))
-	((:F3)            `((equal (vex-pp-slice vex-prefixes) #.*vF3*)))
-	((:F2)            `((equal (vex-pp-slice vex-prefixes) #.*vF2*)))
-	((:W0)            `((equal (vex-w-slice vex-prefixes) 0)))
-	((:W1)            `((equal (vex-w-slice vex-prefixes) 1)))
-	((:0F)            `((vex-prefixes-map-p #x0F vex-prefixes)))
-	((:0F38)          `((vex-prefixes-map-p #x0F38 vex-prefixes)))
-	((:0F3A)          `((vex-prefixes-map-p #x0F3A vex-prefixes)))
-	(otherwise
-	 ;; :LIG, :WIG, :V, etc.
-	 `()))
-    (case (car prefix-case)
-      (:REG   `((equal (mrm-reg modr/m) ,(cdr prefix-case))))
-      (otherwise
-       ;; Should be unreachable.
-       `()))))
-
-(define vex-opcode-case-gen-aux ((case-info kwd-or-key-cons-listp))
-  (if (endp case-info)
-      nil
-    `(,@(vex-keyword-case-gen (car case-info))
-      ,@(vex-opcode-case-gen-aux (cdr case-info)))))
-
-(define vex-opcode-case-gen ((kwd-lst kwd-or-key-cons-listp)
-			     state)
-  (cons
-   (cons 'and
-	 (if (or (member-equal :NDS kwd-lst)
-		 (member-equal :NDD kwd-lst)
-		 (member-equal :DDS kwd-lst))
-	     (vex-opcode-case-gen-aux kwd-lst)
-	   (vex-opcode-case-gen-aux (cons :UNUSED-VVVV kwd-lst))))
-   `(,(replace-formals-with-arguments
-       'x86-step-unimplemented
-       '((message . "Opcode unimplemented in x86isa!"))
-       (w state)))))
-
-(define vex-opcode-cases-gen ((lst true-list-listp)
-			      state)
-  (if (endp lst)
-      `((t
-	 ,(replace-formals-with-arguments
-	   'x86-illegal-instruction
-	   '((message . "Reserved or Illegal Opcode!"))
-	   (w state))))
-    (b* ((first (car lst))
-	 ((unless (kwd-or-key-cons-listp first))
-	  `())
-	 (first-case (vex-opcode-case-gen first state)))
-      `(,first-case
-	 ,@(vex-opcode-cases-gen (cdr lst) state)))))
-
-(define vex-case-gen ((map vex-maps-well-formed-p)
-		      state)
-  :guard-hints (("Goal" :in-theory (e/d (vex-maps-well-formed-p
-					 vex-opcode-cases-okp)
-					())))
-  (if (endp map)
-      `((t
-	 ,(replace-formals-with-arguments
-	   'x86-illegal-instruction
-	   '((message . "Reserved or Illegal Opcode!"))
-	   (w state))))
-    (b* ((first (car map))
-	 (opcode (car first))
-	 (info (cdr first))
-	 (kwd-lst (strip-cars info)))
-      `((,opcode (cond ,@(vex-opcode-cases-gen kwd-lst state)))
-	,@(vex-case-gen (cdr map) state)))))
-
-;; (vex-case-gen *vex-0F-opcodes* state)
-;; (vex-case-gen *vex-0F38-opcodes* state)
-;; (vex-case-gen *vex-0F3A-opcodes* state)
 
 ;; ----------------------------------------------------------------------

@@ -88,9 +88,7 @@
     :rule-classes :linear))
 
 (def-inst x86-bsf-Op/En-RM
-
-  :evex t
-
+  
   :parents (two-byte-opcodes fp-opcodes)
 
   :short "Bit scan forward"
@@ -110,11 +108,7 @@
 
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
+       
        (lock (eql #.*lock*
                   (prefixes-slice :lck prefixes)))
        ((when lock)

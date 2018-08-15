@@ -27,7 +27,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc examples
+(defxdoc+ examples
   :parents (abnf)
   :short "Some real-world examples of ABNF grammars."
   :long
@@ -38,22 +38,20 @@
    <see topic='@(url grammar-parser)'>parser</see> and
    <see topic='@(url concrete-to-abstract-syntax)'>abstractor</see>.
    We also demonstrate the use of some @(see operations) on these grammars.
-   </p>")
-
-(xdoc::order-subtopics examples nil t)
+   </p>"
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc uri-example
+(defxdoc+ uri-example
   :parents (examples)
   :short "The ABNF grammar of the URI (Uniform Resource Identifier) syntax."
   :long
   "<p>
    The URI syntax is specified by
    <a href=\"https://www.rfc-editor.org/info/rfc3986\">RFC 3968</a>.
-   </p>")
-
-(xdoc::order-subtopics uri-example nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection *uri-grammar-rules*
   :parents (uri-example)
@@ -139,7 +137,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc http-example
+(defxdoc+ http-example
   :parents (examples)
   :short "The ABNF grammar of
           the HTTP (Hypertext Transfer Protocol) 1.1 syntax."
@@ -147,9 +145,8 @@
   "<p>
    The HTTP 1.1 syntax is specified by
    <a href=\"https://www.rfc-editor.org/info/rfc7230\">RFC 7230</a>.
-   </p>")
-
-(xdoc::order-subtopics http-example nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection *http-grammar-rules*
   :parents (http-example)
@@ -287,16 +284,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc imf-example
+(defxdoc+ imf-example
   :parents (examples)
   :short "The ABNF grammar of the IMF (Internet Message Format) syntax."
   :long
   "<p>
    The IMF syntax is specified by
    <a href=\"https://www.rfc-editor.org/info/rfc5322\">RFC 5322</a>.
-   </p>")
-
-(xdoc::order-subtopics imf-example nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection *imf-grammar-rules*
   :parents (imf-example)
@@ -330,16 +326,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc smtp-example
+(defxdoc+ smtp-example
   :parents (examples)
   :short "The ABNF grammar of the SMTP (Simple Mail Transfer Protocol) syntax."
   :long
   "<p>
    The SMTP syntax is specified by
    <a href=\"smtps://www.rfc-editor.org/info/rfc5321\">RFC 5321</a>.
-   </p>")
-
-(xdoc::order-subtopics smtp-example nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection *smtp-grammar-rules*
   :parents (smtp-example)
@@ -373,7 +368,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc imap-example
+(defxdoc+ imap-example
   :parents (examples)
   :short "The ABNF grammar of
           the IMAP (Internet Message Access Protocol) 4rev1 syntax."
@@ -381,9 +376,8 @@
   "<p>
    The IMAP 4rev1 syntax is specified by
    <a href=\"https://www.rfc-editor.org/info/rfc3501\">RFC 3501</a>.
-   </p>")
-
-(xdoc::order-subtopics imap-example nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection *imap-grammar-rules*
   :parents (imap-example)
@@ -417,16 +411,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc json-example
+(defxdoc+ json-example
   :parents (examples)
   :short "The ABNF grammar of the JSON (JavaScript Object Notation) syntax."
   :long
   "<p>
    The JSON syntax is specified by
    <a href=\"https://www.rfc-editor.org/info/rfc7159\">RFC 7159</a>.
-   </p>")
-
-(xdoc::order-subtopics json-example nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection *json-grammar-rules*
   :parents (json-example)

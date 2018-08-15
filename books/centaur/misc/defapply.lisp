@@ -474,15 +474,15 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                 (:META MV-NTH-CONS-META)
                 (:REWRITE EVMETA-EV-CONSTRAINT-0)
                 (:REWRITE EVMETA-EV-CONSTRAINT-1)
-                (:REWRITE EVMETA-EV-CONSTRAINT-14)
-                (:REWRITE EVMETA-EV-CONSTRAINT-16)
-                (:REWRITE EVMETA-EV-CONSTRAINT-19)
+                (:REWRITE EVMETA-EV-constraint-15)
+                (:REWRITE EVMETA-EV-constraint-17)
+                (:REWRITE EVMETA-EV-constraint-20)
                 (:REWRITE EVMETA-EV-CONSTRAINT-2)
-                (:REWRITE EVMETA-EV-CONSTRAINT-22)
+                (:REWRITE EVMETA-EV-constraint-23)
                 (:REWRITE EVMETA-EV-CONSTRAINT-4)
                 (:REWRITE EVMETA-EV-CONSTRAINT-5)
-                (:REWRITE EVMETA-EV-CONSTRAINT-6)
-                (:REWRITE EVMETA-EV-CONSTRAINT-9)
+                (:REWRITE EVMETA-EV-constraint-7)
+                (:REWRITE EVMETA-EV-constraint-10)
                 (:REWRITE EVMETA-EV-EV-APPLY-ARGLIST)
                 (:REWRITE EVMETA-EV-LST-TERM-LIST-OF-NTHS)
                 (:REWRITE EVMETA-EV-THEOREMP-CONJOIN-CLAUSES-CONS)
@@ -534,6 +534,7 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
     evmeta-ev-meta-extract-global-badguy))
   :hints ((and stable-under-simplificationp
                '(:use (evmeta-ev-constraint-0
+                       evmeta-ev-constraint-6
                        evmeta-ev-falsify
                        evmeta-ev-meta-extract-global-badguy)))))
 
@@ -794,7 +795,7 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                                                      acl2-count
                                                      (:t acl2-count)
                                                      o< o-finp)))))
-          (b* (((when (atom x)) (and x (cdr (assoc x a))))
+          (b* (((when (atom x)) (and (symbolp x) x (cdr (assoc x a))))
                ((when (eq (car x) 'quote)) (cadr x))
                (args (_name_-ev-concrete-lst
                       (cdr x) a appalist))
@@ -857,6 +858,7 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                                    ;; _name_-ev-rules
                                    kwote nfix
                                    _name_-ev-of-fncall-args
+                                   _name_-ev-of-nonsymbol-atom
                                    (cons) (equal) (member-equal) (eql)
                                    car-cons cdr-cons _name_-eval-nth-kwote-lst
                                    list-fix-when-true-listp

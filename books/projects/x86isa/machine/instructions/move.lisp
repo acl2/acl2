@@ -597,7 +597,6 @@
     x86))
 
 (def-inst x86-two-byte-movsxd
-  :evex t
 
   ;; Op/En: RM
   ;; [OP REG, R/M]
@@ -628,11 +627,6 @@
   :body
 
   (b* ((ctx 'x86-two-byte-movsxd)
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
@@ -709,7 +703,6 @@
 ;; ======================================================================
 
 (def-inst x86-movzx
-  :evex t
 
   ;; Op/En: RM
   ;; [OP REG, R/M]
@@ -735,11 +728,6 @@
   :body
 
   (b* ((ctx 'x86-movzx)
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
@@ -801,7 +789,6 @@
 ;; ======================================================================
 
 (def-inst x86-mov-control-regs-Op/En-MR
-  :evex t
 
   ;; Move control register to GPR
 
@@ -839,11 +826,6 @@
   :body
 
   (b* ((ctx 'x86-mov-control-regs-Op/En-MR)
-
-       ((when (or (not (equal vex-prefixes 0))
-                  (not (equal evex-prefixes 0))))
-        ;; VEX/EVEX encoding illegal.
-        (!!fault-fresh :ud nil :vex/evex-prefixes vex-prefixes evex-prefixes))
 
        ;; The r/m field specifies the GPR (destination).
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))

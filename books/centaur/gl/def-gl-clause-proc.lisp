@@ -537,7 +537,9 @@
                                              (:ruleset ,ev-rules)
                                              ;; ,apply-concrete
                                              ,(incat ev (symbol-name ev)
-                                                     "-OF-FNCALL-ARGS")))))))
+                                                     "-OF-FNCALL-ARGS")
+                                             ,(incat ev (symbol-name ev)
+                                                     "-OF-NONSYMBOL-ATOM")))))))
 
          ;; Prove correctness of the clause processor.
          (defthm ,correct-thm
