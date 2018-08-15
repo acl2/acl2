@@ -2942,8 +2942,11 @@
          (mv nil nil ttree))
         ((flambda-applicationp term)
 
-; We don't use (and-orp (lambda-body (ffn-symb term)) bool) here because that
-; approach ignores nested lambdas.
+; Legacy comment, before adding lambda-okp argument to and-orp after v8-0 (the ACL2
+; bdd package is used so rarely that we don't rethink this):
+
+;   We don't use (and-orp (lambda-body (ffn-symb term)) bool) here because that
+;   approach ignores nested lambdas.
 
          (mv-let (hitp lst ttree0)
                  (expand-and-or-simple

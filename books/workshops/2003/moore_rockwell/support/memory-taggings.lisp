@@ -1317,9 +1317,10 @@
   :hints
 
 ; Subgoal numbers changed by Matt K. for v2-9 (probably needed because of
-; change to call-stack).  Removed subgoal hints entirely after v8-0, to fix a
-; failure that occurred when no longer expanding away LETs on right-hand sides
-; of rewrite rules when storing the rules.
+; change to call-stack).  Removed two identical subgoal :expand hints entirely
+; after v8-0 in favor of a single "Goal" hint, to fix a failure that occurred
+; when no longer expanding away LETs on right-hand sides of rewrite rules when
+; storing the rules.
 
   (("Goal" :expand (SEQ-INT (+ I PTR) 1))))
 
