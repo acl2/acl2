@@ -286,6 +286,34 @@
 
    '(J (:modr/m? . nil) (:vex? . nil))
 
+   ;; Important: Addressing info with "K-" prefix below does not appear in the
+   ;; Intel Manuals (dated May, 2018).  The Intel manuals do not define a Z
+   ;; addressing method for AVX512 instructions yet, so until they do, I am
+   ;; going to use my own encoding for specifying opmask registers.
+
+   ;; Source: Section 2.6.3 (Opmask Register Encoding), specifically, Table
+   ;; 2-33 (Opmask Register Specifier Encoding), Intel Vol. 2
+
+   ;; K-reg: modr/m.reg is used to access opmask registers k0-k7 (common
+   ;; usages: source).
+
+   '(K-reg (:modr/m? . t) (:vex? . nil))
+
+   ;; K-vex: VEX.vvvv is used to access opmask registers k0-k7 (common usages:
+   ;; 2nd source).
+
+   '(K-vex (:modr/m? . nil) (:vex? . t))
+
+   ;; K-r/m: modr/m.r/m is used to access opmask registers k0-k7 (common
+   ;; usages: 1st source).
+
+   '(K-r/m (:modr/m? . t) (:vex? . nil))
+
+   ;; K-evex: EVEX.aaa is used to access opmask registers k0-k4 (common usages:
+   ;; Opmask).
+
+   '(K-evex (:modr/m? . nil) (:vex? . nil) (:evex? . t))
+
    ;; L The upper 4 bits of the 8-bit immediate selects a 128-bit XMM
    ;; register or a 256-bit YMM register determined by operand
    ;; type. (the MSB is ignored in 32-bit mode)
@@ -764,7 +792,44 @@
 	     row-prop
 	     (compute-prop-for-an-opcode-map prop (cdr map) 64-bit-modep :k k))))
       (er hard? 'compute-prop-for-an-opcode-map
-	  "Ill-formed opcode map: ~x0~%" map))))
+	  "Ill-formed opcode map: ~x0~%" map)))
+
+  (define compute-modr/m-for-vex-encoded-instructions-1
+    ((vex-opcodes true-list-listp)
+     (64-bit-modep booleanp))
+
+    (if (endp vex-opcodes)
+	nil
+      (b* ((cell (car vex-opcodes)))
+	(cons
+	 (compute-prop-for-an-opcode-cell :modr/m? cell 64-bit-modep)
+	 (compute-modr/m-for-vex-encoded-instructions-1
+	  (cdr vex-opcodes) 64-bit-modep)))))
+
+  (define compute-modr/m-for-vex-encoded-instructions
+    ((vex-map (avx-maps-well-formed-p vex-map t))
+     (64-bit-modep booleanp))
+    :guard-hints (("Goal" :in-theory (e/d (avx-maps-well-formed-p) ())))
+
+    (if (atom vex-map)
+	nil
+      (b* ((row (car vex-map))
+	   (opcode (car row))
+	   (cells-pre (cdr row))
+	   ((unless (alistp cells-pre))
+	    (er hard? 'compute-modr/m-for-vex-encoded-instructions
+		"Ill-formed VEX opcode row (it's not alistp): ~x0~%" row))
+	   (cells (acl2::flatten (strip-cdrs cells-pre)))
+	   ((unless (true-list-listp cells))
+	    (er hard? 'compute-modr/m-for-vex-encoded-instructions
+		"Ill-formed VEX opcode row (it's not true-list-listp): ~x0~%" row))
+	   ;; (- (cw "~% Cells: ~p0 ~%" cells))
+	   )
+	(cons
+	 (cons opcode
+	       (list (compute-modr/m-for-vex-encoded-instructions-1 cells 64-bit-modep)))
+	 (compute-modr/m-for-vex-encoded-instructions
+	  (cdr vex-map) 64-bit-modep))))))
 
 ;; ----------------------------------------------------------------------
 
@@ -1561,7 +1626,6 @@
 			(quote ,computed-table))))))
 
 
-
   (with-output
     :off :all
     :gag-mode nil
@@ -1589,6 +1653,8 @@
       (define one-byte-opcode-ModR/M-p
 	((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
 	 (opcode           :type (unsigned-byte 8)))
+	:short "Returns @('t') if a one-byte opcode requires a ModR/M byte;
+	@('nil') otherwise"
 	:inline t
 	:returns (bool booleanp :hyp (n08p opcode))
 	(if (equal proc-mode #.*64-bit-mode*)
@@ -1664,22 +1730,15 @@
 
       (define two-byte-opcode-ModR/M-p
 	((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
-	 (vex-prefixes     :type (unsigned-byte 24))
-	 (evex-prefixes    :type (unsigned-byte 32))
 	 (mandatory-prefix :type (unsigned-byte 8))
 	 (opcode           :type (unsigned-byte 8)
 			   "Second byte of the two-byte opcode"))
+	:short "Returns @('t') if a two-byte opcode requires a ModR/M byte;
+	@('nil') otherwise. Doesn't account for AVX/AVX2/AVX512 instructions."
 	:inline t
 	:returns (bool booleanp :hyp (n08p opcode))
 
-	(cond ((or (not (equal vex-prefixes 0))
-		   (not (equal evex-prefixes 0)))
-	       ;; All VEX- and EVEX-encoded instructions require a ModR/M byte.
-	       ;; Reference: Intel Manual, Vol. 2, Figure 2-8 (Instruction
-	       ;; Encoding Format with VEX Prefix) and Figure 2-10 (AVX-512
-	       ;; Instruction Format and the EVEX Prefix)
-	       t)
-	      ((equal proc-mode #.*64-bit-mode*)
+	(cond ((equal proc-mode #.*64-bit-mode*)
 	       (64-bit-mode-two-byte-opcode-ModR/M-p
 		mandatory-prefix opcode))
 	      (t
@@ -1846,27 +1905,20 @@
 
       (define three-byte-opcode-ModR/M-p
 	((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
-	 (vex-prefixes     :type (unsigned-byte 24))
-	 (evex-prefixes    :type (unsigned-byte 32))
 	 (mandatory-prefix :type (unsigned-byte 8))
 	 (escape-byte      :type (unsigned-byte 8)
 			   "Second byte of the three-byte opcode --- either
 			   @('#x38') or @('#x3A')")
 	 (opcode           :type (unsigned-byte 8)
 			   "Third byte of the three-byte opcode"))
+	:short "Returns @('t') if a three-byte opcode requires a ModR/M byte;
+	@('nil') otherwise. Doesn't account for AVX/AVX2/AVX512 instructions."
 	:inline t
 	:guard (or (equal escape-byte #x38)
 		   (equal escape-byte #x3A))
 	:returns (bool booleanp :hyp (n08p opcode))
 
-	(cond ((or (not (equal vex-prefixes 0))
-		   (not (equal evex-prefixes 0)))
-	       ;; All VEX- and EVEX-encoded instructions require a ModR/M byte.
-	       ;; Reference: Intel Manual, Vol. 2, Figure 2-8 (Instruction
-	       ;; Encoding Format with VEX Prefix) and Figure 2-10 (AVX-512
-	       ;; Instruction Format and the EVEX Prefix)
-	       t)
-	      ((equal escape-byte #x38)
+	(cond ((equal escape-byte #x38)
 	       (if (equal proc-mode #.*64-bit-mode*)
 		   (64-bit-mode-0F-38-three-byte-opcode-ModR/M-p
 		    mandatory-prefix opcode)
@@ -1880,6 +1932,78 @@
 		 ;; TODO: Other modes here eventually.
 		 (32-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
 		  mandatory-prefix opcode)))))))
+
+
+  ;; ModR/M Detection Check for VEX-encoded instructions:
+
+  (local
+   (encapsulate
+     ()
+
+     (local
+      (defun all-ones-p (lst)
+	(if (atom lst)
+	    (equal lst nil)
+	  (and (equal (car lst) 1)
+	       (all-ones-p (cdr lst))))))
+
+     (local
+      (defun check-vex-map-modr/m-detection (lst 0f-map?)
+	;; lst: output of compute-modr/m-for-vex-encoded-instructions
+	(if (atom lst)
+	    (equal lst nil)
+	  (b* ((opcode-info (car lst))
+	       ((unless (true-listp opcode-info))
+		nil)
+	       (opcode (car opcode-info))
+	       (cells  (acl2::flatten (cdr opcode-info))))
+	    (if (all-ones-p cells)
+		(check-vex-map-modr/m-detection (cdr lst) 0f-map?)
+	      (if 0f-map?
+		  (and (equal opcode #x77)
+		       ;; VZEROALL/VZEROUPPER don't expect a ModR/M.  Everything
+		       ;; else that's VEX-encoded does.
+		       (check-vex-map-modr/m-detection (cdr lst) 0f-map?))
+		nil))))))
+
+     (assert-event
+      ;; Check: VZEROALL/VZEROUPPER are the only VEX-encoded opcodes that do NOT
+      ;; expect a ModR/M byte.
+      (and
+       (check-vex-map-modr/m-detection
+	(compute-modr/m-for-vex-encoded-instructions *vex-0F-opcodes*   t)
+	t)
+       (check-vex-map-modr/m-detection
+	(compute-modr/m-for-vex-encoded-instructions *vex-0F38-opcodes*   t)
+	nil)
+       (check-vex-map-modr/m-detection
+	(compute-modr/m-for-vex-encoded-instructions *vex-0F3A-opcodes*   t)
+	nil)
+       (check-vex-map-modr/m-detection
+	(compute-modr/m-for-vex-encoded-instructions *vex-0F-opcodes*   nil)
+	t)
+       (check-vex-map-modr/m-detection
+	(compute-modr/m-for-vex-encoded-instructions *vex-0F38-opcodes*   nil)
+	nil)
+       (check-vex-map-modr/m-detection
+	(compute-modr/m-for-vex-encoded-instructions *vex-0F3A-opcodes*   nil)
+	nil)))))
+
+  (define vex-opcode-ModR/M-p
+    ((vex-prefixes     :type (unsigned-byte 24))
+     (opcode           :type (unsigned-byte 8)))
+    :short "Returns @('t') if a VEX-encoded opcode requires a ModR/M byte;
+	@('nil') otherwise."
+    :inline t
+    :returns (bool booleanp)
+    :guard (vex-prefixes-byte0-p vex-prefixes)
+    (if (not (equal opcode #x77))
+	t
+      ;; VZEROALL/VZEROUPPER are the only two VEX-encoded instructions that do
+      ;; not require a ModR/M byte.  These have the opcode #ux0F_77.
+      ;; Also see compute-modr/m-for-vex-encoded-instructions above for more
+      ;; details.
+      (vex-prefixes-map-p #x0F vex-prefixes)))
 
   ;; We assume ModR/M is an unsigned-byte 8.
   (defmacro mrm-r/m (ModR/M)

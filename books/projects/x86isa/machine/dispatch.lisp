@@ -875,6 +875,9 @@
 	 `()))
     (case (car prefix-case)
       (:REG   `((equal (mrm-reg modr/m) ,(cdr prefix-case))))
+      (:MOD    (if (equal (cdr prefix-case) :mem)
+                   `((not (equal (mrm-mod modr/m) #b11)))
+                 `((equal (mrm-mod modr/m) #b11))))
       (otherwise
        ;; Should be unreachable.
        `()))))
