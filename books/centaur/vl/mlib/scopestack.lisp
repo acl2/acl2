@@ -39,6 +39,10 @@
 ; Matt K.: Avoid ACL2(p) error (the job died after vl-maybe-scopeitem-p).
 (set-waterfall-parallelism nil)
 
+; Matt K. addition: Important for speed, given the change after v8-0 to keep
+; LET expressions in right-hand sides of rewrite rules.
+(add-default-hints '('(:do-not '(preprocess))) :at-end t)
+
 (defxdoc scopestack
   :parents (mlib)
   :short "Scopestacks deal with namespaces in SystemVerilog by tracking the
@@ -967,6 +971,10 @@ be very cheap in the single-threaded case.</p>"
                  (or ,@(template-proj '(equal (tag x) :vl-__type__) subst)
                      (equal (tag x) :vl-scopeinfo)))
         :rule-classes :forward-chaining))))
+
+; Matt K. addition: Undo the added add-default-hints above to avoid failure in
+; next event.
+(remove-default-hints '('(:do-not '(preprocess))))
 
 (define vl-scope->scopetype ((x vl-scope-p))
   :returns (type vl-scopetype-p

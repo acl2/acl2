@@ -1317,10 +1317,12 @@
   :hints
 
 ; Subgoal numbers changed by Matt K. for v2-9 (probably needed because of
-; change to call-stack).
+; change to call-stack).  Removed two identical subgoal :expand hints entirely
+; after v8-0 in favor of a single "Goal" hint, to fix a failure that occurred
+; when no longer expanding away LETs on right-hand sides of rewrite rules when
+; storing the rules.
 
-  (("Subgoal *1/2.7''" :expand (SEQ-INT (+ I PTR) 1))
-   ("Subgoal *1/1.7''" :expand (SEQ-INT (+ I PTR) 1))))
+  (("Goal" :expand (SEQ-INT (+ I PTR) 1))))
 
 (defthm weird-optimization-corollary
   (implies (and (not (zp ptr))
