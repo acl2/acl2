@@ -95,7 +95,7 @@
                           beta-reduce-full-correct
                           (beta-eval gen-eval)
                           (beta-eval-list gen-eval-lst)))
-            :in-theory (enable gen-eval-constraint-0)))))
+            :in-theory (enable gen-eval-of-fncall-args)))))
 
 (local
  (defthm beta-reduce-full-list-correct-for-gen-eval
@@ -106,7 +106,7 @@
                           beta-reduce-full-list-correct
                           (beta-eval gen-eval)
                           (beta-eval-list gen-eval-lst)))
-            :in-theory (enable gen-eval-constraint-0)))))
+            :in-theory (enable gen-eval-of-fncall-args)))))
 
 
 
@@ -148,7 +148,7 @@
     (implies (pseudo-termp x)
              (equal (gen-eval (beta-reduce-introduce-vars x) a)
                     (gen-eval x a)))
-    :hints ('(:in-theory (enable gen-eval-constraint-0)))
+    :hints ('(:in-theory (enable gen-eval-of-fncall-args)))
     :flag term)
   (defthm beta-reduce-introduce-vars-list-correct
     (implies (pseudo-term-listp x)

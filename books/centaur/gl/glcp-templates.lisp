@@ -70,24 +70,27 @@
   (is-prof :type interp-profiler)
   )
 
+(define backchain-limit-decrement ((limit (or (natp limit) (not limit))))
+  :returns (mv (old-limit (or (natp old-limit) (not old-limit)) :rule-classes :type-prescription)
+               (new-limit (or (natp new-limit) (not new-limit)) :rule-classes :type-prescription))
+  (b* ((limit (mbe :logic (and limit (nfix limit)) :exec limit)))
+    (mv limit
+        (if (and limit (not (eql 0 limit)))
+            (+ -1 limit)
+          limit))))
+       
+
 (define is-decrement-backchain-limit (interp-st)
   ;; Note: returns the old limit so that it can be restored after backchaining,
   ;; and also so that you can check whether it's equal to 0 -- this says
   ;; whether to allow rewriting or not.
   :returns (mv (old-limit (or (natp old-limit) (equal old-limit nil)) :rule-classes :type-prescription)
                (new-interp-st))
+  :enabled t
   (b* ((limit (is-backchain-limit interp-st))
-       (limit (mbe :logic (and limit (nfix limit))
-                   :exec limit))
-       ((unless (and limit (not (eql 0 limit))))
-        (mv limit interp-st))
-       (interp-st (update-is-backchain-limit (1- limit) interp-st)))
-    (mv limit interp-st))
-  ///
-  (std::defret is-decrement-backchain-limit-frame
-    (implies (not (equal n *is-backchain-limit*))
-             (equal (nth n new-interp-st)
-                    (nth n interp-st)))))
+       ((mv old-limit new-limit) (backchain-limit-decrement limit))
+       (interp-st (update-is-backchain-limit new-limit interp-st)))
+    (mv old-limit interp-st)))
 
 (defconst *glcp-common-inputs*
   '(pathcond clk config interp-st bvar-db state))
@@ -927,7 +930,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
              ((when (eql 0 backchain-limit))
               (glcp-value nil nil nil))
              (fn-rewrites (getprop fn 'acl2::lemmas nil 'current-acl2-world (w state)))
-             ((glcp-er successp term bindings)
+             ((glcp-er successp term bindings :nvals 3)
               (rewrite-apply-rules
                fn-rewrites rules fn actuals contexts . ,*glcp-common-inputs*))
              (interp-st (update-is-backchain-limit backchain-limit interp-st)))

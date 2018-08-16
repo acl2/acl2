@@ -245,7 +245,7 @@
                   (not (member x a)))))
 
 
-
+(local (in-theory (enable base-ev-of-nonsymbol-atom)))
 
 ;; (local (defthm member-of-union
 ;;          (iff (member x (union-eq a b))
@@ -262,8 +262,7 @@
 (defthm-simple-term-vars-flag
   (defthm base-ev-when-eval-alists-agree
     (implies (and (eval-alists-agree vars a1 a2)
-                  (subsetp (simple-term-vars x) vars)
-                  (pseudo-termp x))
+                  (subsetp (simple-term-vars x) vars))
              (equal (base-ev x a1)
                     (base-ev x a2)))
     :hints ('(:expand ((simple-term-vars x)))
@@ -272,8 +271,7 @@
     :flag simple-term-vars)
   (defthm base-ev-lst-when-eval-alists-agree
     (implies (and (eval-alists-agree vars a1 a2)
-                  (subsetp (simple-term-vars-lst x) vars)
-                  (pseudo-term-listp x))
+                  (subsetp (simple-term-vars-lst x) vars))
              (equal (base-ev-lst x a1)
                     (base-ev-lst x a2)))
     :hints ('(:expand ((simple-term-vars-lst x))))
@@ -282,22 +280,19 @@
 
 (defthm-simple-term-vars-flag
   (defthm base-ev-when-eval-alist-equiv
-    (implies (and (eval-alist-equiv a1 a2)
-                  (pseudo-termp x))
+    (implies (eval-alist-equiv a1 a2)
              (equal (base-ev x a1)
                     (base-ev x a2)))
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable base-ev-of-fncall-args))))
-    :flag simple-term-vars)
+    :flag simple-term-vars
+    :rule-classes :congruence)
   (defthm base-ev-lst-when-eval-alist-equiv
-    (implies (and (eval-alist-equiv a1 a2)
-                  (pseudo-term-listp x))
+    (implies (eval-alist-equiv a1 a2)
              (equal (base-ev-lst x a1)
                     (base-ev-lst x a2)))
-    :flag simple-term-vars-lst))
-
-(in-theory (disable base-ev-when-eval-alist-equiv
-                    base-ev-lst-when-eval-alist-equiv))
+    :flag simple-term-vars-lst
+    :rule-classes :congruence))
 
 
 

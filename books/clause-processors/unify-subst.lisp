@@ -152,13 +152,12 @@
     (all-keys-bound nil x)))
 
 
-
+(local (in-theory (enable unify-ev-of-nonsymbol-atom)))
 
 (defthm-simple-term-vars-flag
   (defthm unify-ev-of-acons-when-all-vars-bound
     (implies (and (all-keys-bound (simple-term-vars x) a)
-                  (not (assoc k a))
-                  (pseudo-termp x))
+                  (not (assoc k a)))
              (equal (unify-ev x (cons (cons k v) a))
                     (unify-ev x a)))
     :hints ('(:expand ((simple-term-vars x)))
@@ -167,8 +166,7 @@
     :flag simple-term-vars)
   (defthm unify-ev-lst-of-acons-when-all-vars-bound
     (implies (and (all-keys-bound (simple-term-vars-lst x) a)
-                  (not (assoc k a))
-                  (pseudo-term-listp x))
+                  (not (assoc k a)))
              (equal (unify-ev-lst x (cons (cons k v) a))
                     (unify-ev-lst x a)))
     :hints ('(:expand ((simple-term-vars-lst x))))
@@ -184,8 +182,9 @@
                            (pseudo-term-substp al))
                  :hints ((and stable-under-simplificationp
                               '(:expand ((pseudo-termp x))))))
-    (cond ((null x) nil)
-          ((atom x) (cdr (assoc-equal x al)))
+    (cond ((atom x)
+           (and x (mbt (symbolp x))
+                (cdr (assoc-equal x al))))
           ((eq (car x) 'quote) x)
           (t (cons (car x) (substitute-into-list (cdr x) al)))))
   (define substitute-into-list ((x pseudo-term-listp)
@@ -202,21 +201,16 @@
 
   (defthm-substitute-into-term-flag
     substitute-into-term-correct-lemma
-    (substitute-into-term
-     (implies
-      (pseudo-termp x)
+    (defthm substitute-into-term-correct
       (equal (unify-ev (substitute-into-term x subst) a)
-             (unify-ev x (unify-ev-alist subst a))))
-     :name substitute-into-term-correct)
-    (substitute-into-list
-     (implies
-      (pseudo-term-listp x)
-      (equal (unify-ev-lst (substitute-into-list x subst) a)
-             (unify-ev-lst x (unify-ev-alist subst a))))
-     :name substitute-into-list-correct)
-    :hints (("goal" :induct (substitute-into-term-flag flag x subst))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable unify-ev-of-fncall-args)))))
+             (unify-ev x (unify-ev-alist subst a)))
+      :hints ((and stable-under-simplificationp
+                   '(:in-theory (enable unify-ev-of-fncall-args))))
+      :flag substitute-into-term)
+    (defthm substitute-into-list-correct
+     (equal (unify-ev-lst (substitute-into-list x subst) a)
+            (unify-ev-lst x (unify-ev-alist subst a)))
+     :flag substitute-into-list ))
 
   (defthm substitute-into-list-of-cons
     (equal (substitute-into-list (cons x y) a)
@@ -240,21 +234,21 @@
                                         (pseudo-term-substp alist)))
                         (equal (alistp al)
                                (alistp alist)))))
-  (cond ((null pat)
-         (if (eq const nil)
-             (mv t alist)
-           (mv nil alist)))
-        ((variablep pat)
-         (let ((pair (assoc pat alist)))
-           (if pair
-               (let ((term (cdr pair)))
-                 (if (and (quotep term)
-                          (consp (cdr term))
-                          (equal (unquote term) const)
-                          (null (cddr term)))
-                     (mv t alist)
-                   (mv nil alist)))
-             (mv t (cons (cons pat (kwote const)) alist)))))
+  (cond ((atom pat)
+         (if (and pat (mbt (symbolp pat)))
+             (let ((pair (assoc pat alist)))
+               (if pair
+                   (let ((term (cdr pair)))
+                     (if (and (quotep term)
+                              (consp (cdr term))
+                              (equal (unquote term) const)
+                              (null (cddr term)))
+                         (mv t alist)
+                       (mv nil alist)))
+                 (mv t (cons (cons pat (kwote const)) alist))))
+           (if (eq const nil)
+               (mv t alist)
+             (mv nil alist))))
         ((eq (car pat) 'quote)
          (if (equal (unquote pat) const)
              (mv t alist)
@@ -336,7 +330,6 @@
     (mv-let (ok subst)
       (unify-const pat const alist)
       (implies (and ok
-                    (pseudo-termp term2)
                     (all-keys-bound (simple-term-vars term2) alist))
                (equal (unify-ev term2 (unify-ev-alist subst a))
                       (unify-ev term2 (unify-ev-alist alist a))))))
@@ -345,7 +338,6 @@
     (mv-let (ok subst)
       (unify-const pat const alist)
       (implies (and ok
-                    (pseudo-term-listp term2)
                     (all-keys-bound (simple-term-vars-lst term2) alist))
                (equal (unify-ev-lst term2 (unify-ev-alist subst a))
                       (unify-ev-lst term2 (unify-ev-alist alist a))))))
@@ -354,8 +346,7 @@
   (defthm unify-const-correct
     (mv-let (ok subst)
       (unify-const pat const alist)
-      (implies (and ok
-                    (pseudo-termp pat))
+      (implies (and ok)
                (equal (unify-ev pat (unify-ev-alist subst a))
                       const)))
     :hints (("goal" :induct t)
@@ -369,26 +360,6 @@
 
 
 
-
-(defthm-simple-term-vars-flag
-  (defthm unify-ev-of-acons-when-all-vars-bound
-    (implies (and (all-keys-bound (simple-term-vars x) a)
-                  (not (assoc k a))
-                  (pseudo-termp x))
-             (equal (unify-ev x (cons (cons k v) a))
-                    (unify-ev x a)))
-    :hints ((and stable-under-simplificationp
-                 '(:in-theory (enable unify-ev-of-fncall-args))))
-    :flag simple-term-vars)
-  (defthm unify-ev-lst-of-acons-when-all-vars-bound
-    (implies (and (all-keys-bound (simple-term-vars-lst x) a)
-                  (not (assoc k a))
-                  (pseudo-term-listp x))
-             (equal (unify-ev-lst x (cons (cons k v) a))
-                    (unify-ev-lst x a)))
-    :flag simple-term-vars-lst))
-
-
 (defines simple-one-way-unify
   :flag-local nil
   :verify-guards nil
@@ -400,18 +371,18 @@
                     :hyp (and (pseudo-termp term)
                               (pseudo-termp pat)
                               (pseudo-term-substp alist))))
-    (cond ((null pat)
-           (if (or (eq term nil)
-                   (equal term *nil*))
-               (mv t alist)
-             (mv nil alist)))
-          ((atom pat)
-           (let ((pair (assoc-equal pat alist)))
-             (if pair
-                 (if (equal term (cdr pair))
-                     (mv t alist)
-                   (mv nil alist))
-               (mv t (cons (cons pat term) alist)))))
+    (cond ((atom pat)
+           (if (and pat (mbt (symbolp pat)))
+               (let ((pair (assoc-equal pat alist)))
+                 (if pair
+                     (if (equal term (cdr pair))
+                         (mv t alist)
+                       (mv nil alist))
+                   (mv t (cons (cons pat term) alist))))
+             (if (or (eq term nil)
+                     (equal term *nil*))
+                 (mv t alist)
+               (mv nil alist))))
           ((atom term)
            (mv nil alist))
           ((eq (car pat) 'quote)
@@ -604,7 +575,6 @@
       (mv-let (ok subst)
         (simple-one-way-unify pat term alist)
         (implies (and ok
-                      (pseudo-termp term2)
                       (all-keys-bound (simple-term-vars term2) alist))
                  (equal (unify-ev term2 (unify-ev-alist subst a))
                         (unify-ev term2 (unify-ev-alist alist a)))))
@@ -615,7 +585,6 @@
       (mv-let (ok subst)
         (simple-one-way-unify-lst pat term alist)
         (implies (and ok
-                      (pseudo-termp term2)
                       (all-keys-bound (simple-term-vars term2) alist))
                  (equal (unify-ev term2 (unify-ev-alist subst a))
                         (unify-ev term2 (unify-ev-alist alist a)))))
@@ -627,7 +596,6 @@
       (mv-let (ok subst)
         (simple-one-way-unify pat term alist)
         (implies (and ok
-                      (pseudo-term-listp term2)
                       (all-keys-bound (simple-term-vars-lst term2) alist))
                  (equal (unify-ev-lst term2 (unify-ev-alist subst a))
                         (unify-ev-lst term2 (unify-ev-alist alist a)))))
@@ -638,7 +606,6 @@
       (mv-let (ok subst)
         (simple-one-way-unify-lst pat term alist)
         (implies (and ok
-                      (pseudo-term-listp term2)
                       (all-keys-bound (simple-term-vars-lst term2) alist))
                  (equal (unify-ev-lst term2 (unify-ev-alist subst a))
                         (unify-ev-lst term2 (unify-ev-alist alist a)))))
@@ -649,9 +616,7 @@
     (defthm simple-one-way-unify-correct
       (mv-let (ok subst)
         (simple-one-way-unify pat term alist)
-        (implies (and ok
-                      (pseudo-termp term)
-                      (pseudo-termp pat))
+        (implies (and ok)
                  (equal (unify-ev pat (unify-ev-alist subst a))
                         (unify-ev term a))))
       :hints ('(:expand ((:free (term) (simple-one-way-unify pat term alist))
@@ -662,9 +627,7 @@
     (defthm simple-one-way-unify-lst-correct
       (mv-let (ok subst)
         (simple-one-way-unify-lst pat term alist)
-        (implies (and ok
-                      (pseudo-term-listp term)
-                      (pseudo-term-listp pat))
+        (implies (and ok)
                  (equal (unify-ev-lst pat (unify-ev-alist subst a))
                         (unify-ev-lst term a))))
       :hints ('(:expand (simple-one-way-unify-lst pat term alist)))
@@ -834,9 +797,7 @@
                               `(mv-nth '0 (simple-one-way-unify ,pat ,term ,alist))
                               '(unify-ev unify-ev-lst unify-ev-alist)
                               mfc state)
-                             (envs))
-                  (pseudo-termp term)
-                  (pseudo-termp pat))
+                             (envs)))
              (iff ok
                   (and (unify-succeeded pat term alist)
                        (unify-ev-simple-one-way-unify-equalities
@@ -955,9 +916,7 @@
                                    `(mv-nth '0 (simple-one-way-unify ,pat ,term ,alist))
                                    '(new-ev new-ev-lst new-ev-alist)
                                    mfc state)
-                                  (envs))
-                       (pseudo-termp term)
-                       (pseudo-termp pat))
+                                  (envs)))
                   (iff ok
                        (and (unify-succeeded pat term alist)
                             (new-ev-simple-one-way-unify-equalities
@@ -1124,9 +1083,7 @@
 (defthm simple-one-way-unify-usage-for-id-nest-ev
   (mv-let (ok subst)
     (simple-one-way-unify template term alist)
-    (implies (and ok
-                  (pseudo-termp term)
-                  (pseudo-termp template))
+    (implies (and ok)
              (equal (id-nest-ev term a)
                     (id-nest-ev template (id-nest-ev-alist subst a)))))
   :hints (("goal" :use ((:functional-instance
@@ -1138,9 +1095,8 @@
                '(:in-theory (enable id-nest-ev-constraint-0)))))
 
 (defthm nest-of-ids-meta-correct
-  (implies (pseudo-termp term)
-           (equal (id-nest-ev term a)
-                  (id-nest-ev (nest-of-ids-meta term) a))))
+  (equal (id-nest-ev term a)
+         (id-nest-ev (nest-of-ids-meta term) a)))
 
 
 

@@ -1105,7 +1105,8 @@
                        (partial-ev x nil)))
        :hints ('(:expand (simple-term-vars x))
                (and stable-under-simplificationp
-                    '(:in-theory (enable partial-ev-constraint-0)
+                    '(:in-theory (enable partial-ev-constraint-0
+                                         partial-ev-constraint-6)
                       :use ((:instance partial-ev-constraint-0 (a nil))))))
        :flag simple-term-vars)
 

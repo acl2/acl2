@@ -146,13 +146,15 @@
 ;;                   (equal (assoc k (append a b))
 ;;                          (or (assoc k a) (assoc k b))))))
 
-
+(local (in-theory (enable unify-ev-of-nonsymbol-atom)))
 
 (defines unify-ev-ind
   :flag-local nil
   (define unify-ev-ind (x)
     :flag term
-    (cond ((atom x) t)
+    (cond ((not x) t)
+          ((symbolp x) t)
+          ((atom x) t)
           ((eq (car x) 'quote) nil)
           (t (unify-ev-lst-of-alist-fix-ind (cdr x)))))
   (define unify-ev-lst-of-alist-fix-ind (x)
@@ -164,30 +166,26 @@
   ///
   (defthm-unify-ev-ind-flag
     (defthm unify-ev-of-alist-fix
-      (implies (pseudo-termp x) ;; argh
-               (equal (unify-ev x (alist-fix a))
-                      (unify-ev x a)))
+      (equal (unify-ev x (alist-fix a))
+             (unify-ev x a))
       :hints ((and stable-under-simplificationp
                    '(:in-theory (enable unify-ev-of-fncall-args))))
       :flag term)
     (defthm unify-ev-lst-of-alist-fix
-      (implies (pseudo-term-listp x)
-               (equal (unify-ev-lst x (alist-fix a))
-                      (unify-ev-lst x a)))
+      (equal (unify-ev-lst x (alist-fix a))
+             (unify-ev-lst x a))
       :flag list))
 
   (defthm-unify-ev-ind-flag
     (defthm unify-ev-of-append-alist-fix
-      (implies (pseudo-termp x) ;; argh
-               (equal (unify-ev x (append (alist-fix a) a))
-                      (unify-ev x a)))
+      (equal (unify-ev x (append (alist-fix a) a))
+             (unify-ev x a))
       :hints ((and stable-under-simplificationp
                    '(:in-theory (enable unify-ev-of-fncall-args))))
       :flag term)
     (defthm unify-ev-lst-of-append-alist-fix
-      (implies (pseudo-term-listp x)
-               (equal (unify-ev-lst x (append (alist-fix a) a))
-                      (unify-ev-lst x a)))
+      (equal (unify-ev-lst x (append (alist-fix a) a))
+             (unify-ev-lst x a))
       :flag list)))
 
 (local (defthm true-listp-when-symbol-listp
@@ -325,10 +323,11 @@
                                 (acc symbol-listp))
     :returns (vars symbol-listp :hyp :guard)
     :verify-guards nil
-    (cond ((null x) acc)
-          ((atom x) (if (member-eq x bound-vars)
-                        acc
-                      (add-to-set-eq x acc)))
+    (cond ((atom x)
+           (if (and x (mbt (symbolp x))
+                    (not (member-eq x bound-vars)))
+               (add-to-set-eq x acc)
+             acc))
           ((eq (car x) 'quote) acc)
           (t (simple-free-vars-lst-acc (cdr x) bound-vars acc))))
   (define simple-free-vars-lst-acc ((x pseudo-term-listp)
@@ -351,8 +350,12 @@
   (define simple-free-vars ((x pseudo-termp)
                             (bound-vars symbol-listp))
     :returns (vars symbol-listp :hyp :guard)
-    (mbe :logic (cond ((null x) nil)
-                      ((atom x) (if (member-eq x bound-vars) nil (list x)))
+    (mbe :logic (cond ((atom x)
+                       (and x
+                            (mbt (symbolp x))
+                            (not (member-eq x bound-vars))
+                            (list x)))
+                      ((null x) nil)
                       ((eq (car x) 'quote) nil)
                       (t (simple-free-vars-lst (cdr x) bound-vars)))
          :exec (simple-free-vars-acc x bound-vars nil)))
@@ -480,8 +483,7 @@
             (new-alist (append (pairlis$ free-vars (repeat (len free-vars) nil))
                                (pairlis$ reduced-formals (unify-ev-lst reduced-actuals a))
                                a)))
-         (implies (and (pseudo-termp x) ;; argh
-                       (double-rewrite (not (intersectp free-vars formals)))
+         (implies (and (double-rewrite (not (intersectp free-vars formals)))
                        (double-rewrite (subsetp (set-difference-eq (simple-term-vars x) formals) free-vars)))
                 (equal (unify-ev x new-alist)
                        (unify-ev x orig-alist))))
@@ -496,8 +498,7 @@
             (new-alist (append (pairlis$ free-vars (repeat (len free-vars) nil))
                                (pairlis$ reduced-formals (unify-ev-lst reduced-actuals a))
                                a)))
-         (implies (and (pseudo-term-listp x) ;; argh
-                       (double-rewrite (not (intersectp free-vars formals)))
+         (implies (and (double-rewrite (not (intersectp free-vars formals)))
                        (double-rewrite (subsetp (set-difference-eq (simple-term-vars-lst x) formals) free-vars))) ;; argh
                   (equal (unify-ev-lst x new-alist)
                          (unify-ev-lst x orig-alist))))
@@ -534,9 +535,8 @@
              (lambda-nest-to-bindinglist-correct-ind body1 new-a))))
 
   (defret lambda-nest-to-bindinglist-correct
-    (implies (pseudo-termp x)
-             (equal (unify-ev body (unify-ev-bindinglist bindings a))
-                    (unify-ev x a)))
+    (equal (unify-ev body (unify-ev-bindinglist bindings a))
+           (unify-ev x a))
     :hints (("goal" :induct (lambda-nest-to-bindinglist-correct-ind x a)
              :expand (<call>)
              :in-theory (enable unify-ev-bindinglist)))))
@@ -547,12 +547,15 @@
                   (symbol-listp (union-eq x y)))))
 
 
+(local (include-book "std/lists/take" :dir :system))
+(local (in-theory (disable take-redefinition)))
+
 (define bindinglist-free-vars ((x bindinglist-p))
   :verify-guards nil
-  :returns (vars symbol-listp :hyp :guard)
+  :returns (vars symbol-listp)
   (if (atom x)
       nil
-    (mbe :logic (union-eq (simple-term-vars-lst (cdar x))
+    (mbe :logic (union-eq (simple-term-vars-lst (take (len (caar x)) (cdar x)))
                           (set-difference-eq (bindinglist-free-vars (cdr x))
                                              (caar x)))
          :exec (acl2::simple-term-vars-lst-acc (cdar x)
@@ -585,8 +588,7 @@
 
 (defthm unify-ev-when-eval-alists-agree
   (implies (and (eval-alists-agree vars a1 a2)
-                (subsetp (simple-term-vars x) vars)
-                (pseudo-termp x))
+                (subsetp (simple-term-vars x) vars))
            (equal (unify-ev x a1)
                   (unify-ev x a2)))
   :hints (("goal" :use ((:functional-instance base-ev-when-eval-alists-agree
@@ -595,8 +597,7 @@
 
 (defthm unify-ev-lst-when-eval-alists-agree
   (implies (and (eval-alists-agree vars a1 a2)
-                (subsetp (simple-term-vars-lst x) vars)
-                (pseudo-term-listp x))
+                (subsetp (simple-term-vars-lst x) vars))
            (equal (unify-ev-lst x a1)
                   (unify-ev-lst x a2)))
   :hints (("goal" :use ((:functional-instance base-ev-lst-when-eval-alists-agree
@@ -633,13 +634,18 @@
          (implies (true-listp x)
                   (equal (set-difference-equal x nil) x))))
 
+(local (defthm pairlis-of-unify-ev-lst-when-eval-alists-agree-of-take
+         (implies (eval-alists-agree (simple-term-vars-lst (take (len vars) vals)) a b)
+                  (equal (pairlis$ vars (unify-ev-lst vals a))
+                         (pairlis$ vars (unify-ev-lst vals b))))
+         :hints(("Goal" :induct (pairlis$ vars vals)
+                 :in-theory (enable pairlis$ acl2::take-redefinition simple-term-vars-lst)))))
+
 
 (defthm unify-ev-bindinglist-when-eval-alists-agree-on-free-vars
   (implies (and (eval-alists-agree (bindinglist-free-vars x) a b)
                 (eval-alists-agree (set-difference-eq (simple-term-vars body)
-                                                 (bindinglist-bound-vars x)) a b)
-                (bindinglist-p x)
-                (pseudo-termp body))
+                                                 (bindinglist-bound-vars x)) a b))
            (equal (unify-ev body (unify-ev-bindinglist x a))
                   (unify-ev body (unify-ev-bindinglist x b))))
   :hints(("Goal" :in-theory (enable unify-ev-bindinglist
@@ -647,7 +653,8 @@
                                     bindinglist-bound-vars
                                     eval-alists-agree-by-bad-guy
                                     lookup-when-eval-alists-agree)
-          :induct (unify-ev-bindinglist-when-alists-agree-on-free-vars-ind x a b))))
+          :induct (unify-ev-bindinglist-when-alists-agree-on-free-vars-ind x a b)
+          :expand ((:free (a) (unify-ev-bindinglist x a))))))
 
 ;; (local (defthm pseudo-term-listp-of-set-diff
 ;;          (implies (pseudo-term-listp x)
@@ -682,6 +689,8 @@
   :verify-guards nil
   (b* (((when (atom x)) body)
        ((cons formals actuals) (car x))
+       (actuals (mbe :logic (take (len formals) actuals)
+                     :exec actuals))
        (free-vars (union-eq (bindinglist-free-vars (cdr x))
                             (set-difference-eq (simple-term-vars body)
                                                (bindinglist-bound-vars (cdr x)))))
@@ -726,12 +735,10 @@
            :hints(("Goal" :in-theory (enable set-difference-eq)))))
 
   (defret free-vars-of-bindinglist-to-lambda-nest
-    (implies (and (bindinglist-p x)
-                  (pseudo-termp body))
-             (set-equiv (simple-term-vars term)
-                        (union-eq (bindinglist-free-vars x)
-                                  (set-difference-eq (simple-term-vars body)
-                                                     (bindinglist-bound-vars x)))))
+    (set-equiv (simple-term-vars term)
+               (union-eq (bindinglist-free-vars x)
+                         (set-difference-eq (simple-term-vars body)
+                                            (bindinglist-bound-vars x))))
     :hints(("Goal" :in-theory (enable simple-term-vars
                                       bindinglist-free-vars
                                       bindinglist-bound-vars)
@@ -758,19 +765,32 @@
                        (hons-assoc-equal k a))
                 (hons-assoc-equal k a))))
 
+
+  (local (defthm lookup-in-pairlis$-append-not-first
+           (implies (and (not (member v vars))
+                         (equal (len vars) (len vals)))
+                    (equal (hons-assoc-equal v (pairlis$ (append vars vars1) (append vals vals1)))
+                           (hons-assoc-equal v (pairlis$ vars1 vals1))))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal pairlis$)))))
+
   ;; (local (in-theory (disable alists-agree-by-witness)))
 
+  (local (defthm pairlis$-of-unify-ev-lst-take
+           (equal (pairlis$ vars (unify-ev-lst (take (len vars) vals) a))
+                  (pairlis$ vars (unify-ev-lst vals a)))
+           :hints(("Goal" :in-theory (enable pairlis$ acl2::take-redefinition)
+                   :induct (pairlis$ vars vals)))))
+
   (defret bindinglist-to-lambda-nest-correct
-    (implies (and (bindinglist-p x)
-                  (pseudo-termp body))
-             (equal (unify-ev term a)
-                    (unify-ev body (unify-ev-bindinglist x a))))
+    (equal (unify-ev term a)
+           (unify-ev body (unify-ev-bindinglist x a)))
     :hints (("goal" :induct (unify-ev-bindinglist x a)
              :in-theory (e/d (unify-ev-bindinglist
                                 eval-alists-agree-by-bad-guy)
                              (unify-ev-when-eval-alists-agree)))
             (acl2::use-termhint
              (b* (((cons formals actuals) (car x))
+                  (actuals (take (len formals) actuals))
                   (free-vars (union-eq (bindinglist-free-vars (cdr x))
                                        (set-difference-eq (simple-term-vars body)
                                                           (bindinglist-bound-vars (cdr x)))))
@@ -795,6 +815,8 @@
        ((mv rest-body free-vars)
         (bindinglist-to-lambda-nest-aux (cdr x) body))
        ((cons formals actuals) (car x))
+       (actuals (mbe :logic (take (len formals) actuals)
+                     :exec actuals))
        (missing-vars (set-difference-eq free-vars formals))
        (full-formals (append formals missing-vars))
        (full-actuals (append actuals missing-vars))
@@ -846,6 +868,8 @@
                   ((mv rest-body free-vars)
                    (bindinglist-to-lambda-nest-aux (cdr x) body))
                   ((cons formals actuals) (car x))
+                  (actuals (mbe :logic (take (len formals) actuals)
+                                :exec actuals))
                   (missing-vars (set-difference-eq free-vars formals))
                   (full-formals (append formals missing-vars))
                   (full-actuals (append actuals missing-vars)))

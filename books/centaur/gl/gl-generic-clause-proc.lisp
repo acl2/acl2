@@ -112,7 +112,7 @@
 ;; redundant but included only locally
 (make-event
  (b* (((er &) (in-theory nil))
-      ((er thm) (get-guard-verification-theorem 'glcp-generic-interp-term state)))
+      ((er thm) (get-guard-verification-theorem 'glcp-generic-interp-term nil state)))
    (value
     `(with-output :off (prove event)
        (progn
@@ -158,25 +158,25 @@
                (subsetp-equal b c)))
      :hints ((acl2::set-reasoning)))
 
+   (local (in-theory (enable glcp-generic-geval-ev-of-nonsymbol-atom)))
+
    (defthm-simple-term-vars-flg
      glcp-generic-geval-ev-norm-alist-simple-term-vars-lemma
-     (simple-term-vars
-      (implies (and (pseudo-termp x)
-                    (subsetp-equal (simple-term-vars x) vars))
+     (defthm glcp-generic-geval-ev-norm-alist-simple-term-vars1
+      (implies (subsetp-equal (simple-term-vars x) vars)
                (equal (glcp-generic-geval-ev x (norm-alist vars alist))
                       (glcp-generic-geval-ev x alist)))
       :hints ((and stable-under-simplificationp
                    '(:in-theory (enable glcp-generic-geval-ev-of-fncall-args)
                      :expand ((Simple-term-vars x)))))
-      :name glcp-generic-geval-ev-norm-alist-simple-term-vars1)
-     (simple-term-vars-lst
-      (implies (and (pseudo-term-listp x)
-                    (subsetp-equal (simple-term-vars-lst x) vars))
+      :flag simple-term-vars)
+     (defthm glcp-generic-geval-ev-lst-norm-alist-simple-term-vars-lst1
+      (implies (subsetp-equal (simple-term-vars-lst x) vars)
                (equal (glcp-generic-geval-ev-lst x (norm-alist vars alist))
                       (glcp-generic-geval-ev-lst x alist)))
       :hints ((and stable-under-simplificationp
                    '(:expand ((simple-term-vars-lst x)))))
-      :name glcp-generic-geval-ev-lst-norm-alist-simple-term-vars-lst1)
+      :flag simple-term-vars-lst)
      :hints (("goal" :induct (simple-term-vars-flg flag x)
               :in-theory (enable subsetp-equal))))
 
@@ -1263,10 +1263,6 @@
                     (conjoin-clauses
                      (acl2::interp-defs-alist-clauses out-obligs)))
                    (not erp)
-                   (acl2::interp-defs-alistp obligs)
-                   (acl2::interp-defs-alistp (glcp-config->overrides config))
-                   (pseudo-termp concl)
-                   (pseudo-termp hyp)
                    (equal vars (simple-term-vars concl))
                    (glcp-generic-geval-ev-meta-extract-global-facts :state state1)
                    (equal (w state) (w state1))
@@ -1294,10 +1290,6 @@
                     (conjoin-clauses
                      (acl2::interp-defs-alist-clauses out-obligs)))
                    (not erp)
-                   (acl2::interp-defs-alistp obligs)
-                   (acl2::interp-defs-alistp (glcp-config->overrides config))
-                   (pseudo-termp concl)
-                   (pseudo-termp hyp)
                    (equal vars (simple-term-vars concl))
                    (glcp-generic-geval-ev-meta-extract-global-facts :state state1)
                    (equal (w state) (w state1))
@@ -1543,10 +1535,6 @@
                      (glcp-generic-geval-ev (disjoin (strip-cars param-alist))
                                       a)
                      (not erp)
-                     (acl2::interp-defs-alistp obligs)
-                     (acl2::interp-defs-alistp (glcp-config->overrides config))
-                     (pseudo-termp concl)
-                     (pseudo-term-listp (strip-cars param-alist))
                      (equal vars (simple-term-vars concl))
                      (glcp-generic-geval-ev-meta-extract-global-facts :state state1)
                      (equal (w state) (w state1)))
@@ -1616,10 +1604,6 @@
                        (acl2::interp-defs-alist-clauses out-obligs)))
                      (not erp)
                      (glcp-generic-geval-ev hyp alist)
-                     (acl2::interp-defs-alistp obligs)
-                     (acl2::interp-defs-alistp (glcp-config->overrides config))
-                     (pseudo-termp concl)
-                     (pseudo-termp hyp)
                      (equal vars (simple-term-vars concl))
                      (glcp-generic-geval-ev-meta-extract-global-facts :state state1)
                      (equal (w st) (w state1))
@@ -1647,10 +1631,6 @@
                      (glcp-generic-geval-ev (disjoin (strip-cars param-alist))
                                       a)
                      (not erp)
-                     (acl2::interp-defs-alistp obligs)
-                     (acl2::interp-defs-alistp (glcp-config->overrides config))
-                     (pseudo-termp concl)
-                     (pseudo-term-listp (strip-cars param-alist))
                      (equal vars (simple-term-vars concl))
                      (glcp-generic-geval-ev-meta-extract-global-facts :state state1)
                      (equal (w st) (w state1)))

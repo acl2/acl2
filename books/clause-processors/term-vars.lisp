@@ -55,15 +55,17 @@
 (defines simple-term-vars-acc
   (define simple-term-vars-acc ((x pseudo-termp)
                                 (acc symbol-listp))
-    :returns (vars symbol-listp :hyp :guard)
+    :returns (vars symbol-listp :hyp (symbol-listp acc))
     :verify-guards nil
-    (cond ((null x) acc)
-          ((atom x) (add-to-set-eq x acc))
+    (cond ((atom x)
+           (if (and x (mbt (symbolp x)))
+               (add-to-set-eq x acc)
+             acc))
           ((eq (car x) 'quote) acc)
           (t (simple-term-vars-lst-acc (cdr x) acc))))
   (define simple-term-vars-lst-acc ((x pseudo-term-listp)
                                     (acc symbol-listp))
-    :returns (vars symbol-listp :hyp :guard)
+    :returns (vars symbol-listp :hyp (symbol-listp acc))
     (if (atom x)
         acc
       (simple-term-vars-lst-acc (cdr x)
@@ -77,14 +79,15 @@
   :verify-guards nil
   :flag-local nil
   (define simple-term-vars ((x pseudo-termp))
-    :returns (vars symbol-listp :hyp :guard)
-    (mbe :logic (cond ((null x) nil)
-                      ((atom x) (list x))
+    :returns (vars symbol-listp)
+    (mbe :logic (cond ((atom x)
+                       (and x (mbt (symbolp x))
+                            (list x)))
                       ((eq (car x) 'quote) nil)
                       (t (simple-term-vars-lst (cdr x))))
          :exec (simple-term-vars-acc x nil)))
   (define simple-term-vars-lst ((x pseudo-term-listp))
-    :returns (vars symbol-listp :hyp :guard)
+    :returns (vars symbol-listp)
     (mbe :logic (if (atom x)
                     nil
                   (union-eq (simple-term-vars-lst (cdr x))
