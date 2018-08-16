@@ -1005,9 +1005,14 @@
                 (= (tiny) 0)
 		(= (ovfl2) 0)
 		(= (ovfl) 0))
-	   (and (<= 0 (expshft)) (<= (expshft) 2046)))
+	   (and (integerp (expshft)) ; added by Matt K after tau bug fix 8/16/18
+                (<= 0 (expshft))
+                (<= (expshft) 2046)))
   :hints (("Goal" :in-theory (enable unfl-6 informax)
                   :use (ovfl-17 ovfl-107 ovfl-106 ovfl-denorm expshft=0-sumshft expo-sumshft))))
+
+; Added by Matt K after tau bug fix 8/16/18:
+(local (in-theory (disable INT-EXPSHFT)))
 
 (local-defthmd norm-30
   (implies (and (= (isspecial) 0)
