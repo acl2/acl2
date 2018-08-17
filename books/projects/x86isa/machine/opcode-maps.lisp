@@ -3982,7 +3982,8 @@
 		(((:opcode . #ux0F_AE)
 		  (:prefix . :F3)
 		  (:mod    . #b11)
-		  (:reg    . #b000)) .
+		  (:reg    . #b000)
+                  (:mode   . :o64)) .
 		  ("RDFSBASE" 1 (R y) :1a))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
@@ -3992,7 +3993,8 @@
 		(((:opcode . #ux0F_AE)
 		  (:prefix . :F3)
 		  (:mod    . #b11)
-		  (:reg    . #b001)) .
+		  (:reg    . #b001)
+                  (:mode   . :o64)) .
 		  ("RDGSBASE" 1 (R y) :1a))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
@@ -4003,7 +4005,8 @@
 		(((:opcode . #ux0F_AE)
 		  (:prefix . :F3)
 		  (:mod    . #b11)
-		  (:reg    . #b010)) .
+		  (:reg    . #b010)
+                  (:mode   . :o64)) .
 		  ("WRFSBASE" 1 (R y) :1a))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
@@ -4014,7 +4017,8 @@
 		(((:opcode . #ux0F_AE)
 		  (:prefix . :F3)
 		  (:mod    . #b11)
-		  (:reg    . #b011)) .
+		  (:reg    . #b011)
+                  (:mode   . :o64)) .
 		  ("WRGSBASE" 1 (R y) :1a))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
