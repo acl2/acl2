@@ -3632,8 +3632,9 @@
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b111)
-		 (:r/m    . #b000)) .
-		 ("SWAPGS" 0 :1a))
+		 (:r/m    . #b000)
+                 (:mode   . :o64)) .
+                 ("SWAPGS" 0 :1a))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b111)
@@ -6619,7 +6620,7 @@
 	 (len-of-each-row-okay-p (cdr x)))))
 
 (defconst *opcode-descriptor-legal-keys*
-  '(:opcode :reg :prefix :mod :r/m :vex :evex))
+  '(:opcode :reg :prefix :mod :r/m :vex :evex :mode))
 
 (define opcode-descriptor-p (opcode-descriptor)
   (if (consp opcode-descriptor)

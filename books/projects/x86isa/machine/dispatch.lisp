@@ -245,6 +245,7 @@
 	 (opcode-cell (cdr opcode-descriptor))
 	 ;; (vex         (cdr (assoc-equal :vex opcode-identifier)))
 	 ;; (evex        (cdr (assoc-equal :evex opcode-identifier)))
+	 (mode        (cdr (assoc-equal :mode opcode-identifier)))
 	 (reg         (cdr (assoc-equal :reg opcode-identifier)))
 	 (prefix      (cdr (assoc-equal :prefix opcode-identifier)))
 	 (mod         (cdr (assoc-equal :mod opcode-identifier)))
@@ -257,6 +258,10 @@
 	    ;; ,@(if vex
 	    ;;       `((not (equal vex-prefixes 0)))
 	    ;;     `((equal vex-prefixes 0)))
+	    ,@(and mode
+		   (if (equal mode :o64)
+		       `((equal proc-mode #.*64-bit-mode*))
+		     `((not (equal proc-mode #.*64-bit-mode*)))))
 	    ,@(and reg
 		   `((equal (mrm-reg modr/m) ,reg)))
 	    ,@(and mod
@@ -278,6 +283,7 @@
 			   (str::pretty
 			    `(;; ,@(and evex   `((:EVEX ,evex)))
 			      ;; ,@(and vex    `((:VEX  ,vex)))
+			      ,@(and mode   `((:MODE ,mode)))
 			      ,@(and prefix `((:PFX  ,prefix)))
 			      ,@(and reg    `((:REG  ,reg)))
 			      ,@(and mod    `((:MOD  ,mod)))
@@ -876,8 +882,8 @@
     (case (car prefix-case)
       (:REG   `((equal (mrm-reg modr/m) ,(cdr prefix-case))))
       (:MOD    (if (equal (cdr prefix-case) :mem)
-                   `((not (equal (mrm-mod modr/m) #b11)))
-                 `((equal (mrm-mod modr/m) #b11))))
+		   `((not (equal (mrm-mod modr/m) #b11)))
+		 `((equal (mrm-mod modr/m) #b11))))
       (otherwise
        ;; Should be unreachable.
        `()))))

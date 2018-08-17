@@ -2003,7 +2003,7 @@
       ;; not require a ModR/M byte.  These have the opcode #ux0F_77.
       ;; Also see compute-modr/m-for-vex-encoded-instructions above for more
       ;; details.
-      (vex-prefixes-map-p #x0F vex-prefixes)))
+      (not (vex-prefixes-map-p #x0F vex-prefixes))))
 
   ;; We assume ModR/M is an unsigned-byte 8.
   (defmacro mrm-r/m (ModR/M)
