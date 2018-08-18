@@ -260,6 +260,14 @@
                           fmt-args)))))
 ||#
 
+(defxdoc identity-macro
+  :parents (system-utilities)
+  :short "The most trivial macro imaginable"
+  :long "<p>@('(Identity-macro x)') macroexpands to @('x').</p>")
+
+(defmacro identity-macro (x)
+  x)
+
 (mutual-recursion
 
 (defun report-event-when-error-fn (ctx event)
@@ -281,6 +289,8 @@
                (report-event-when-error-fn-lst ctx (cdr event))))
         ((eq (car event) 'on-failure)
          event)
+        ((eq (car event) 'identity-macro)
+         (cadr event))
         ((eq (car event) 'encapsulate)
          (list* 'encapsulate
                 (cadr event)
