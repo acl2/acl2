@@ -3593,6 +3593,19 @@
                                    (glmc-generic-mcheck-main-interps-env))))))
                                        
 
+(defthm glmc-syntax-checks-of-glmc-config-update-rewrites
+  (equal (glmc-syntax-checks (glmc-config-update-rewrites config rewrites branch-merges))
+         (glmc-syntax-checks config))
+  :hints(("Goal" :in-theory (e/d (glmc-syntax-checks glmc-config-update-rewrites
+                                    glcp-config-update-rewrites)
+                                 (not
+                                  acl2::subsetp-member
+                                  vars-subset-of-bound-by-glmc-syntax-checks
+                                  union-equal
+                                  append
+                                  shape-specs-duplicate-free-by-glmc-syntax-checks))
+          :do-not '(preprocess))))
+
 (defsection glmc-generic-mcheck-main-interps
   (local (in-theory (enable glmc-generic-mcheck-main-interps)))
   (local (std::set-define-current-function glmc-generic-mcheck-main-interps))
@@ -6094,13 +6107,19 @@
   :verify-guards nil
   (b* (((mv ?nextst-obj ?prop-bfr ?fsm-constr-bfr ?initst-bfr ?st-hyp-bfr ?hyp-bfr ?st-hyp-next-bfr ?hyp-max-bvar
             ?er interp-st bvar-db state)
-        (glmc-generic-mcheck-main-interps config nil nil state))
+        (b* ((config (b* (((glmc-config+ config1) config))
+                          (glmc-config-update-rewrites
+                           config config1.main-rewrite-rules config1.main-branch-merge-rules))))
+          (glmc-generic-mcheck-main-interps config nil nil state)))
        (interp-st (is-prof-report interp-st))
        (interp-st (is-prof-reset interp-st))
        ((when er) (mv nil er interp-st bvar-db state))
 
        ((mv ?nextst-bfrs ?er interp-st ?bvar-db ?state)
-        (glmc-generic-next-state nextst-obj hyp-bfr config interp-st bvar-db state)))
+        (b* ((config (b* (((glmc-config+ config1) config))
+                          (glmc-config-update-rewrites
+                           config config1.extract-rewrite-rules config1.extract-branch-merge-rules))))
+          (glmc-generic-next-state nextst-obj hyp-bfr config interp-st bvar-db state))))
     interp-st))
 
 
@@ -6140,7 +6159,10 @@
   :non-executable t
   :verify-guards nil
   (b* (((glmc-config+ config))
-       (env1 (glmc-cov-env config alist)))
+       (env1 (glmc-cov-env config alist))
+       (config (b* (((glmc-config+ config1) config))
+                          (glmc-config-update-rewrites
+                           config config1.main-rewrite-rules config1.main-branch-merge-rules))))
     (glmc-generic-mcheck-main-interps-env env1 config state)))
        
     ;;    ((mv & & & & hyp-bvar-db &)
@@ -6291,11 +6313,79 @@
            :in-theory (disable glmc-generic-ev-bindinglist-when-eval-alists-agree-on-free-vars)
            :do-not-induct t)))
 
+(define glmc-hyp-bvar-db ((config glmc-config-p) state)
+  :non-executable t
+  :verify-guards nil
+  :returns (new-bvar-db)
+  (b* ((config (b* (((glmc-config+ config1) config))
+                 (glmc-config-update-rewrites
+                  config config1.main-rewrite-rules config1.main-branch-merge-rules))))
+    (mv-nth 4 (glmc-generic-interp-hyps config nil nil state)))
+  ///
+  (std::defret glmc-generic-mcheck-main-interps-hyp-env-ok-under-config-change
+    :pre-bind ((orig-config config)
+               (config (b* (((glmc-config+ config1) config))
+                         (glmc-config-update-rewrites
+                          config config1.main-rewrite-rules config1.main-branch-merge-rules))))
+    (b* (((glmc-config+ config1))
+         (fix-env (glmc-generic-mcheck-main-interps-env env config state)))
+      (implies (and (glcp-generic-geval-ev-theoremp
+                     (conjoin-clauses (acl2::interp-defs-alist-clauses (is-obligs new-interp-st))))
+                    (not (glmc-syntax-checks config))
+                    (glmc-config-p config)
+                    ;; (assoc config.st-var config.shape-spec-alist)
+                    (glcp-generic-geval-ev-meta-extract-global-facts :state state0)
+                    (equal (w state0) (w state))
+                    (not er)
+                    (bfr-mode))
+               (glcp-generic-bvar-db-env-ok
+                (glmc-hyp-bvar-db orig-config state)
+                t hyp-max-bvar fix-env)))
+    :hints(("Goal" :use ((:instance glmc-generic-mcheck-main-interps-hyp-env-ok
+                          (config (b* (((glmc-config+ config1) config))
+                                    (glmc-config-update-rewrites
+                                     config config1.main-rewrite-rules config1.main-branch-merge-rules)))))))
+    :fn glmc-generic-mcheck-main-interps)
+
+  (std::defret get-bvar->term-below-hyp-bound-of-glcp-generic-main-interps-under-config-change
+      :pre-bind ((orig-config config)
+               (config (b* (((glmc-config+ config1) config))
+                         (glmc-config-update-rewrites
+                          config config1.main-rewrite-rules config1.main-branch-merge-rules))))
+      (implies (and (<= (base-bvar$a new-bvar-db) (nfix n))
+                    (< (nfix n) hyp-max-bvar))
+               (equal (get-bvar->term$a n new-bvar-db)
+                      (gobj-to-param-space
+                       (get-bvar->term$a n (glmc-hyp-bvar-db orig-config state))
+                       hyp-bfr)))
+      :hints (("goal" :use ((:instance get-bvar->term-below-hyp-bound-of-glcp-generic-main-interps
+                             (config (b* (((glmc-config+ config1) config))
+                                    (glmc-config-update-rewrites
+                                     config config1.main-rewrite-rules config1.main-branch-merge-rules)))))))
+      :fn glmc-generic-mcheck-main-interps)
+
+  (std::defret base-bvar-of-<fn>
+    (equal (base-bvar$a new-bvar-db)
+           (b* (((glmc-config+ config)))
+             (shape-spec-max-bvar-list
+              (shape-spec-bindings->sspecs config.shape-spec-alist))))))
+
+
 (defsection glmc-generic-mcheck-to-fsm
   (local (in-theory (enable glmc-generic-mcheck-to-fsm)))
   (local (std::set-define-current-function glmc-generic-mcheck-to-fsm))
   (verify-guards glmc-generic-mcheck-to-fsm
     :guard-debug t)
+
+  (defthm glmc-generic-extract-state-bits-of-glmc-config-update-rewrites
+    (equal (glmc-generic-extract-state-bits nextst (glmc-config-update-rewrites config rewrites branch-merges) bvar-db)
+           (glmc-generic-extract-state-bits nextst config bvar-db))
+    :hints(("Goal" :in-theory (enable glmc-generic-extract-state-bits))))
+
+  (defthm glmc-generic-state-bvars-of-glmc-config-update-rewrites
+    (equal (glmc-generic-state-bvars (glmc-config-update-rewrites config rewrites branch-merges) bvar-db)
+           (glmc-generic-state-bvars config bvar-db))
+    :hints(("Goal" :in-theory (enable glmc-generic-state-bvars))))
 
   (std::defret glmc-fsm-p-of-glmc-mcheck-to-fsm
     (b* (((glmc-config+ config)))
@@ -6348,8 +6438,8 @@
 ;;   ///
   (defthm glmc-generic-mcheck-to-fsm-normalize
     (implies (syntaxp (not (equal bvar-db ''nil)))
-             (equal (glmc-generic-mcheck-to-fsm config bvar-db state)
-                    (glmc-generic-mcheck-to-fsm config nil state))))
+             (equal (glmc-generic-mcheck-to-fsm config bvar-db interp-st state)
+                    (glmc-generic-mcheck-to-fsm config nil nil state))))
 
   (local (defthm subsetp-of-set-difference
            (iff (subsetp-equal (set-difference-equal a b) c)
@@ -6381,7 +6471,7 @@
                     (equal (bfr-eval fsm.st-hyp (car env))
                            (bool-fix (glcp-generic-geval-ev config.st-hyp alist)))
                     (glcp-generic-bvar-db-env-ok
-                     (mv-nth 4 (glmc-generic-interp-hyps config nil nil state))
+                     (glmc-hyp-bvar-db config state)
                      t fsm.hyp-var-bound env)
                     (implies (and (glcp-generic-geval-ev config.in-hyp alist)
                                   (glcp-generic-geval-ev config.st-hyp alist))
@@ -6526,7 +6616,7 @@
                     (equal (w state0) (w state))
                     (bfr-mode))
                (glcp-generic-bvar-db-env-ok
-                     (mv-nth 4 (glmc-generic-interp-hyps config nil nil state))
+                (glmc-hyp-bvar-db config state)
                      t fsm.hyp-var-bound env)))
     :hints(("Goal" :in-theory (disable glmc-generic-mcheck-to-fsm)))
     :otf-flg t)
@@ -7134,7 +7224,7 @@
                  (subsetp-equal '((not (integerp (bfr-varname-fix n)))
                                   (not (< (bfr-varname-fix N)
                                           (NEXT-BVAR$A (MV-NTH '2
-                                                               (GLMC-GENERIC-MCHECK-TO-FSM CONFIG 'NIL
+                                                               (GLMC-GENERIC-MCHECK-TO-FSM CONFIG 'NIL 'NIL
                                                                                            STATE)))))
                                   (< (bfr-varname-fix N)
                                      (SHAPE-SPEC-MAX-BVAR-LIST
@@ -7145,9 +7235,9 @@
                      '(:use ((:instance glmc-generic-mcheck-env-correct-for-glmc-generic-mcheck-to-fsm)
                              (:instance glcp-generic-bvar-db-env-ok-necc
                               (n (bfr-varname-fix n))
-                              (bvar-db (mv-nth 2 (glmc-generic-mcheck-to-fsm config bvar-db state)))
+                              (bvar-db (mv-nth 2 (glmc-generic-mcheck-to-fsm config bvar-db nil state)))
                               (p t)
-                              (bound (next-bvar$a (mv-nth 2 (glmc-generic-mcheck-to-fsm config bvar-db state))))
+                              (bound (next-bvar$a (mv-nth 2 (glmc-generic-mcheck-to-fsm config bvar-db nil state))))
                               (env (glmc-generic-mcheck-env alist config state))))
                        :in-theory (disable glmc-generic-mcheck-env-correct-for-glmc-generic-mcheck-to-fsm))))
     :otf-flg t)
@@ -7160,8 +7250,7 @@
                     (< (nfix n) fsm.hyp-var-bound))
                (equal (get-bvar->term$a n new-bvar-db)
                       (gobj-to-param-space
-                       (get-bvar->term$a n
-                                         (mv-nth 4 (glmc-generic-interp-hyps config nil nil state)))
+                       (get-bvar->term$a n (glmc-hyp-bvar-db config state))
                        fsm.hyp))))
     :hints(("Goal" :in-theory (enable glmc-generic-mcheck-to-fsm))))
 
@@ -7169,15 +7258,16 @@
     (b* (((glmc-fsm fsm)))
       (implies (not er)
                (equal fsm.hyp-var-bound
-                      (next-bvar$a (mv-nth 4 (glmc-generic-interp-hyps config nil nil state))))))
+                      (next-bvar$a (glmc-hyp-bvar-db config state)))))
     :hints(("Goal" :in-theory (enable glmc-generic-mcheck-to-fsm
-                                      glmc-generic-mcheck-main-interps))))
+                                      glmc-generic-mcheck-main-interps
+                                      glmc-hyp-bvar-db))))
 
   (std::defret lookup-in-glmc-generic-mcheck-env-hyp
     (b* (((glmc-config+ config))
          ((glmc-fsm fsm))
          (env (glmc-generic-mcheck-env alist config state))
-         (hyp-bvar-db (mv-nth 4 (glmc-generic-interp-hyps config nil nil state))))
+         (hyp-bvar-db (glmc-hyp-bvar-db config state)))
       (implies (and (not er)
                     (glmc-config-p config)
                     (glcp-generic-geval-ev-theoremp
@@ -7211,9 +7301,9 @@
                      '(:use ((:instance glmc-generic-mcheck-env-correct-for-glmc-generic-mcheck-to-fsm-hyp)
                              (:instance glcp-generic-bvar-db-env-ok-necc
                               (n (bfr-varname-fix n))
-                              (bvar-db (mv-nth 4 (glmc-generic-interp-hyps config nil nil state)))
+                              (bvar-db (glmc-hyp-bvar-db config state))
                               (p t)
-                              (bound (next-bvar$a (mv-nth 4 (glmc-generic-interp-hyps config nil nil state))))
+                              (bound (next-bvar$a (glmc-hyp-bvar-db config state)))
                               (env (glmc-generic-mcheck-env alist config state))))
                        :in-theory (disable glmc-generic-mcheck-env-correct-for-glmc-generic-mcheck-to-fsm-hyp))))
     :otf-flg t)
@@ -7416,10 +7506,11 @@
   
   (std::defret glmc-generic-mcheck-to-fsm-var-bound-gte-hyp-var-bound
     (implies (not er)
-             (<= (next-bvar$a (mv-nth 4 (glmc-generic-interp-hyps config nil nil state)))
+             (<= (next-bvar$a (glmc-hyp-bvar-db config state))
                  (next-bvar$A new-bvar-db)))
     :hints(("Goal" :in-theory (enable glmc-generic-mcheck-to-fsm
-                                      glmc-generic-mcheck-main-interps)))
+                                      glmc-generic-mcheck-main-interps
+                                      glmc-hyp-bvar-db)))
     :rule-classes :linear)
 
   ;; BOZO.  We need to prove the following theorem in order to add the st-hyp
@@ -8085,7 +8176,7 @@
 ;;     (mv (msg "SAT check for state hyp inductiveness failed; aborting") state)))
   (defthm glmc-check-st-hyp-inductive-correct
     (b* (((mv (glmc-fsm fsm) mcheck-er & &)
-          (glmc-generic-mcheck-to-fsm config nil state1))
+          (glmc-generic-mcheck-to-fsm config nil nil state1))
          ((mv er &) (glmc-check-st-hyp-inductive config fsm bvar-db2 state2))
          ((glmc-config+ config)))
       (implies (and (not er)
@@ -8110,7 +8201,7 @@
                                                     config.bindings alist)))))))
     :hints (("goal" :use ((:instance bfr-sat-unsat
                            (prop (b* (((mv (glmc-fsm fsm) ?mcheck-er & &)
-                                       (glmc-generic-mcheck-to-fsm config bvar-db1 state1)))
+                                       (glmc-generic-mcheck-to-fsm config bvar-db1 nil state1)))
                                    (bfr-and (bfr-to-param-space fsm.hyp fsm.hyp)
                                             (bfr-not fsm.st-hyp-next))))
                            (env (car (glmc-generic-mcheck-env alist config state1)))))
@@ -8352,7 +8443,7 @@
 
   (local (defthm st-hyp-next-by-all-possibilities
            (b* (((glmc-config+ config))
-                ((mv (glmc-fsm fsm) er ?new-bvar-db &) (glmc-generic-mcheck-to-fsm config bvar-db state))
+                ((mv (glmc-fsm fsm) er ?new-bvar-db &) (glmc-generic-mcheck-to-fsm config bvar-db interp-st state))
                 ;; (envs (glmc-mcrun-alists-to-envs config curr-st alists state))
                 )
              (implies (and (not er)
@@ -8397,7 +8488,7 @@
 
   (defthm glmc-generic-mcheck-to-fsm-translate-runs-correct
     (b* (((glmc-config+ config))
-         ((mv (glmc-fsm fsm) er new-bvar-db &) (glmc-generic-mcheck-to-fsm config bvar-db state))
+         ((mv (glmc-fsm fsm) er new-bvar-db &) (glmc-generic-mcheck-to-fsm config bvar-db interp-st state))
          (envs (glmc-mcrun-alists-to-envs config curr-st alists state)))
       (implies (and (not (glmc-generic-term-level-mcrun config curr-st alists))
                     (not er)
@@ -8505,7 +8596,7 @@
                                            (mv-nth '1 (glmc-config-load-overrides config state))
                                            (mv-nth '2 (glmc-generic-mcheck-to-fsm
                                                        (mv-nth '1 (glmc-config-load-overrides config state))
-                                                       'nil state)))
+                                                       'nil 'nil state)))
                                           'nil))
                               (ins . (glmc-mcrun-alists-to-envs
                                       (mv-nth '1 (glmc-config-load-overrides config state))
@@ -8615,7 +8706,7 @@
 
   (local (defthm fsm-var-bound-is-bvar-db-next
            (b* (((mv (glmc-fsm fsm) er new-bvar-db &)
-                 (glmc-generic-mcheck-to-fsm config bvar-db state)))
+                 (glmc-generic-mcheck-to-fsm config bvar-db interp-st state)))
              (implies (not er)
                       (equal fsm.var-bound (next-bvar$a new-bvar-db))))
            :hints(("Goal" :in-theory (enable glmc-generic-mcheck-to-fsm)))))
@@ -8671,7 +8762,7 @@
                   (glcp-generic-geval-ev-theoremp
                    (conjoin-clauses
                     (acl2::clauses-result
-                     (glmc-generic clause config state)))))
+                     (glmc-generic clause config interp-st state)))))
              (glcp-generic-geval-ev (disjoin clause) a))
     ;; :hints (("goal" :cases ((CONSP (GLMC-GENERIC-TERM-LEVEL-ALISTS CONFIG A)))))
     :otf-flg t

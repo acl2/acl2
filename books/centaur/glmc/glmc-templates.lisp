@@ -216,7 +216,6 @@
                   er new-interp-st new-bvar-db new-state)
      (b* (((acl2::local-stobjs hyp-bvar-db)
            (mv nextst prop-bfr constraint-bfr initstp-bfr st-hyp-bfr hyp-bfr st-hyp-next-bfr hyp-max-bvar er interp-st bvar-db hyp-bvar-db state))
-          
           ((glmc-config+ config))
           (bvar-db (init-bvar-db 0 bvar-db)) ;; nonsense
 
@@ -350,7 +349,8 @@
                                   (pseudo-termp x))
                          :hints(("Goal" :in-theory (enable pseudo-termp))))))
      
-     (b* (((glmc-config+ config) (glmc-config-update-param hyp-bfr config))
+     (b* ((config (glmc-config-update-param hyp-bfr config))
+          ((glmc-config+ config))
           ((acl2::local-stobjs pathcond)
            (mv updates er pathcond interp-st bvar-db state))
 
@@ -427,36 +427,41 @@
 (defconst *glmc-mcheck-to-fsm-template*
   '(define glmc-mcheck-to-fsm ((config glmc-config-p)
                                bvar-db
+                               interp-st
                                state)
      :returns (mv fsm
-                  er new-bvar-db new-state)
+                  er new-bvar-db new-interp-st new-state)
      :guard (b* (((glmc-config+ config)))
               (acl2::interp-defs-alistp config.overrides))
 
-     (b* (((acl2::local-stobjs interp-st)
-           (mv fsm er interp-st bvar-db state))
-
-          ((glmc-config+ config))
+     (b* (((glmc-config+ config))
+          (interp-st (reset-interp-st interp-st))
 
           (bvar-db (init-bvar-db 0 bvar-db))
           (er (glmc-syntax-checks config))
-          ((when er) (mv nil er interp-st bvar-db state))
+          ((when er) (mv nil er bvar-db interp-st state))
 
           ((mv nextst-obj prop-bfr fsm-constr-bfr initst-bfr st-hyp-bfr hyp-bfr st-hyp-next-bfr ?hyp-max-bvar
                er interp-st bvar-db state)
-           (time$ (glmc-mcheck-main-interps config interp-st bvar-db state)
-                  :msg "; ~s0: ~st seconds, ~sa bytes.~%"
-                  :args '(glmc-mcheck-main-interps)))
+           (b* ((config (b* (((glmc-config+ config1) config))
+                          (glmc-config-update-rewrites
+                           config config1.main-rewrite-rules config1.main-branch-merge-rules))))
+             (time$ (glmc-mcheck-main-interps config interp-st bvar-db state)
+                    :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+                    :args '(glmc-mcheck-main-interps))))
           (interp-st (is-prof-report interp-st))
           (interp-st (is-prof-reset interp-st))
-          ((when er) (mv nil er interp-st bvar-db state))
+          ((when er) (mv nil er bvar-db interp-st state))
 
           ((mv nextst-bfrs er interp-st bvar-db state)
-           (time$ (glmc-next-state nextst-obj hyp-bfr config interp-st bvar-db state)
-                  :msg "; ~s0: ~st seconds, ~sa bytes.~%"
-                  :args '(glmc-next-state)))
+           (b* ((config (b* (((glmc-config+ config1) config))
+                          (glmc-config-update-rewrites
+                           config config1.extract-rewrite-rules config1.extract-branch-merge-rules))))
+             (time$ (glmc-next-state nextst-obj hyp-bfr config interp-st bvar-db state)
+                    :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+                    :args '(glmc-next-state))))
           (interp-st (is-prof-report interp-st))
-          ((when er) (mv nil er interp-st bvar-db state))
+          ((when er) (mv nil er bvar-db interp-st state))
 
           (bit-constr-bfr (bfr-constr->bfr (is-constraint interp-st))))
 
@@ -471,44 +476,46 @@
                           :hyp-var-bound hyp-max-bvar
                           :interp-clauses (acl2::interp-defs-alist-clauses (is-obligs interp-st))
                           :var-bound (next-bvar bvar-db))
-           nil interp-st bvar-db state))))
+           nil bvar-db interp-st state))))
 
 
 (defconst *glmc-template*
   '(define glmc ((clause pseudo-term-listp)
                  config
+                 interp-st
                  state)
      :returns (mv er
                   new-clauses
+                  new-interp-st
                   new-state)
      (b* (((unless (glmc-config-p config))
-           (mv "Bad GLMC config" nil state))
+           (mv "Bad GLMC config" nil interp-st state))
           ((mv er config state) (glmc-config-load-overrides config state))
-          ((when er) (mv er nil state))
+          ((when er) (mv er nil interp-st state))
           ((glmc-config+ config))
           ((unless (acl2::interp-defs-alistp config.overrides))
-           (mv "Bad overrides in GLMC config" nil state))
+           (mv "Bad overrides in GLMC config" nil interp-st state))
           (er (glmc-clause-syntax-checks config))
           ((when er)
-           (mv er nil state))
+           (mv er nil interp-st state))
           ((unless (bfr-mode))
-           (mv "Glmc only works in AIG mode" nil state))
+           (mv "Glmc only works in AIG mode" nil interp-st state))
           ((acl2::local-stobjs bvar-db)
-           (mv er clauses bvar-db state))
-          ((mv (glmc-fsm fsm) er bvar-db state)
-           (time$ (glmc-mcheck-to-fsm config bvar-db state)
+           (mv er clauses bvar-db interp-st state))
+          ((mv (glmc-fsm fsm) er bvar-db interp-st state)
+           (time$ (glmc-mcheck-to-fsm config bvar-db interp-st state)
                   :msg "; ~s0: ~st seconds, ~sa bytes.~%"
                   :args '(glmc-mcheck-to-fsm)))
           ((when er)
-           (mv er nil bvar-db state))
+           (mv er nil bvar-db interp-st state))
 
           ((mv er state) (glmc-check-st-hyp-inductive config fsm bvar-db state))
           ((when er)
-           (mv er nil bvar-db state))
+           (mv er nil bvar-db interp-st state))
 
           ((mv er state) (glmc-fsm-perform-mcheck config fsm bvar-db state))
           ((when er)
-           (mv er nil bvar-db state))
+           (mv er nil bvar-db interp-st state))
 
           (clause-clauses (glmc-clause-check clause config))
           (cov-clause (glmc-cov-clause config)))
@@ -516,7 +523,7 @@
            (cons cov-clause
                  (append clause-clauses
                          (glmc-fsm->interp-clauses fsm)))
-           bvar-db state))))
+           bvar-db interp-st state))))
 
 
 (defconst *glmc-fnnames*

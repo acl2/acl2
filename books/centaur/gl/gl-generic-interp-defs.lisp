@@ -45,7 +45,7 @@
 (include-book "glcp-geval")
 (include-book "constraint-db-deps")
 (include-book "prof")
-
+(include-book "rewrite-tables")
 (verify-termination acl2::evisc-tuple)
 (verify-guards acl2::evisc-tuple)
 
@@ -56,12 +56,12 @@
 
 (set-state-ok t)
 
-(defun glcp-error-fn (msg state)
-  (declare (xargs :guard t))
-  (mv msg nil state))
+(defun glcp-error-fn (msg interp-st state)
+  (declare (xargs :guard t :stobjs (state interp-st)))
+  (mv msg nil interp-st state))
 
 (defmacro glcp-error (msg)
-  `(glcp-error-fn ,msg state))
+  `(glcp-error-fn ,msg interp-st state))
 
 (add-macro-alias glcp-error glcp-error-fn)
 
@@ -73,44 +73,49 @@
           (preferred-defs-to-overrides (cdr alist) state))
          ((cons fn defname) (car alist))
          ((unless (and (symbolp fn) (symbolp defname) (not (eq fn 'quote))))
-          (glcp-error
+          (mv
            (acl2::msg "~
 The GL preferred-defs table contains an invalid entry ~x0.
 The key and value of each entry should both be function symbols."
-                      (car alist))))
+                      (car alist))
+           nil state))
          (rule (ec-call (fgetprop defname 'theorem nil (w state))))
          ((unless rule)
-          (glcp-error
+          (mv
            (acl2::msg "~
 The preferred-defs table contains an invalid entry ~x0.
 The :definition rule ~x1 was not found in the ACL2 world."
-                      (car alist) defname)))
+                      (car alist) defname)
+           nil state))
          ((unless (case-match rule
                     (('equal (rulefn . &) &) (equal fn rulefn))))
-          (glcp-error
+          (mv
            (acl2::msg "~
 The preferred-defs table contains an invalid entry ~x0.
 The :definition rule ~x1 is not suitable as a GL override.
 Either it is a conditional definition rule, it uses a non-EQUAL
 equivalence relation, or its format is unexpected.  The rule
-found is ~x2." (car alist) defname rule)))
+found is ~x2." (car alist) defname rule)
+           nil state))
          (formals (cdadr rule))
          (body (caddr rule))
          ((unless (and (nonnil-symbol-listp formals)
                        (acl2::no-duplicatesp formals)))
-          (glcp-error
+          (mv
            (acl2::msg "~
 The preferred-defs table contains an invalid entry ~x0.
 The formals used in :definition rule ~x1 either are not all
 variable symbols or have duplicates, making this an unsuitable
 definition for use in a GL override.  The formals listed are
-~x2." (car alist) defname formals)))
+~x2." (car alist) defname formals)
+           nil state))
          ((unless (pseudo-termp body))
-          (glcp-error
+          (mv
            (acl2::msg "~
 The preferred-defs table contains an invalid entry ~x0.
 The definition body, ~x1, is not a pseudo-term."
-                      (car alist) body)))
+                      (car alist) body)
+           nil state))
          ((er rest) (preferred-defs-to-overrides (cdr alist) state)))
       (value (hons-acons fn (list* formals body defname)
                          rest)))))

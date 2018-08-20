@@ -106,7 +106,11 @@
    (constr pseudo-termp)
    (prop pseudo-termp)
    (st-hyp-method st-hyp-method-p :default 'nil)
-   (hints)))
+   (hints)
+   (main-rewrite-rules :default ':default)
+   (main-branch-merge-rules :default ':default)
+   (extract-rewrite-rules :default ':default)
+   (extract-branch-merge-rules :default ':default)))
 
 (acl2::def-b*-binder glmc-config+
   :decls ((declare (xargs :guard (symbolp (car args)))))
@@ -158,6 +162,88 @@
     (equal (glmc-config->glcp-config (glmc-config-update-param hyp-bfr config))
            (glcp-config-update-param  hyp-bfr (glmc-config->glcp-config config)))
     :hints(("Goal" :in-theory (enable glmc-config-update-param)))))
+
+
+(define glcp-config-update-rewrites ((config glcp-config-p)
+                                     (rewrites)
+                                     (branch-merges))
+  :returns (new-config glcp-config-p :hyp :guard)
+  (b* (((glcp-config config)))
+    (change-glcp-config config
+                        :rewrite-rule-table (if (eq rewrites :default)
+                                                config.rewrite-rule-table
+                                              rewrites)
+                        :branch-merge-rules (if (eq branch-merges :default)
+                                                config.branch-merge-rules
+                                              branch-merges)))
+  ///
+  (std::defret glcp-config->overrides-of-glcp-config-update-rewrites
+    (equal (glcp-config->overrides new-config)
+           (glcp-config->overrides config)))
+
+  (std::defret glcp-config->shape-spec-alist-of-glcp-config-update-rewrites
+    (equal (glcp-config->shape-spec-alist new-config)
+           (glcp-config->shape-spec-alist config))))
+
+(define glmc-config-update-rewrites ((config glmc-config-p)
+                                     (rewrites)
+                                     (branch-merges))
+  :returns (new-config glmc-config-p :hyp :guard) 
+  (b* (((glmc-config config))
+       (glcp-config (glcp-config-update-rewrites config.glcp-config rewrites branch-merges)))
+    (change-glmc-config config :glcp-config glcp-config))
+  ///
+
+  (std::defret other-fields-of-glmc-config-update-rewrites
+    (b* (((glmc-config+ new-config))
+         ((glmc-config+ config)))
+      (and (equal new-config.st-hyp config.st-hyp)
+           (equal new-config.in-hyp config.in-hyp)
+           (equal new-config.prop config.prop)
+           (equal new-config.initstp config.initstp)
+           (equal new-config.constr config.constr)
+           (equal new-config.nextst config.nextst)
+           (equal new-config.st-var config.st-var)
+           (equal new-config.bindings config.bindings))))
+
+  (std::defret glcp-config-of-glmc-config-update-rewrites
+    (equal (glmc-config->glcp-config new-config)
+           (glcp-config-update-rewrites (glmc-config->glcp-config config) rewrites branch-merges))
+    :hints(("Goal" :in-theory (enable glmc-config-update-rewrites)))))
+
+
+(define reset-interp-st (interp-st)
+  :returns (new-interp-st (equal new-interp-st (create-interp-st)))
+  :prepwork ((local (defthmd take-open
+                      (implies (syntaxp (quotep n))
+                               (equal (take n x)
+                                      (if (zp n)
+                                          nil
+                                        (cons (car x) (take (1- n) (cdr x))))))))
+             (local (defthm cddddddr-of-take-6
+                      (equal (cddr (cddddr (take 6 x))) nil)
+                      :hints(("Goal" :in-theory (enable take-open))))))
+  (b* ((interp-st (mbe :logic (non-exec (take 6 interp-st))
+                       :exec interp-st))
+       (interp-st (update-is-obligs nil interp-st))
+       (interp-st (update-is-constraint nil interp-st))
+       (interp-st (update-is-constraint-db nil interp-st))
+       (interp-st (update-is-add-bvars-allowed nil interp-st))
+       (interp-st (update-is-backchain-limit nil interp-st)))
+    (acl2::stobj-let
+     ((interp-profiler (is-prof interp-st)))
+     (interp-profiler)
+     (b* ((interp-profiler (mbe :logic (non-exec (take 6 interp-profiler))
+                                :exec interp-profiler))
+          (interp-profiler (update-prof-enabledp nil interp-profiler))
+          (interp-profiler (update-prof-indextable nil interp-profiler))
+          (interp-profiler (update-prof-totalcount 0 interp-profiler))
+          (interp-profiler (update-prof-nextindex 0 interp-profiler))
+          (interp-profiler (resize-prof-array 0 interp-profiler))
+          (interp-profiler (update-prof-stack nil interp-profiler)))
+       interp-profiler)
+     interp-st)))
+       
 
 
 (define init-interp-st (interp-st (config glmc-config-p) state)
@@ -882,7 +968,10 @@
         (preferred-defs-to-overrides
          (table-alist 'preferred-defs (w state)) state))
        ((glmc-config+ config))
-       (glcp-config (change-glcp-config config.glcp-config :overrides overrides)))
+       (glcp-config (change-glcp-config config.glcp-config
+                                        :overrides overrides
+                                        :rewrite-rule-table (table-alist 'gl-rewrite-rules (w state))
+                                        :branch-merge-rules (gl-branch-merge-rules (w state)))))
     (value (change-glmc-config config :glcp-config glcp-config))))
 
 

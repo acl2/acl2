@@ -639,14 +639,13 @@ but its arity is ~x3.  Its formal parameters are ~x4."
              (fn (if (eq (tag then) :g-apply)
                      (g-apply->fn then)
                    'cons))
-             (rules (glcp-get-branch-merge-rules fn (w state)))
-             (runes (rewrite-rules->runes rules))
+             (rules (fn-branch-merge-rules fn (glcp-config->branch-merge-rules config) (w state)))
              ((mv backchain-limit interp-st) (is-decrement-backchain-limit interp-st))
              ((glcp-er successp term bindings)
               (if (eql 0 backchain-limit)
                   (glcp-value nil nil nil)
                 (rewrite-apply-rules
-                 rules runes 'if (list (g-boolean test-bfr) then else)
+                 rules 'if (list (g-boolean test-bfr) then else)
                  contexts . ,*glcp-common-inputs*)))
              (interp-st (update-is-backchain-limit backchain-limit interp-st))
              ((when successp)
@@ -921,27 +920,22 @@ but its arity is ~x3.  Its formal parameters are ~x4."
 
         ;; (mv erp obligs1 successp term bindings bvar-db state)
         (b* ((pathcond (lbfr-hyp-fix pathcond))
-             (rules (cdr (hons-assoc-equal fn (table-alist 'gl-rewrite-rules (w state)))))
-             ;; or perhaps we should pass the table in the obligs? see if this is
-             ;; expensive
-             ((unless (and rules (true-listp rules))) ;; optimization (important?)
-              (glcp-value nil nil nil))
              ((mv backchain-limit interp-st) (is-decrement-backchain-limit interp-st))
              ((when (eql 0 backchain-limit))
               (glcp-value nil nil nil))
-             (fn-rewrites (getprop fn 'acl2::lemmas nil 'current-acl2-world (w state)))
+             (fn-rewrites (fn-rewrite-rules fn (glcp-config->rewrite-rule-table config) (w state)))
              ((glcp-er successp term bindings :nvals 3)
               (rewrite-apply-rules
-               fn-rewrites rules fn actuals contexts . ,*glcp-common-inputs*))
+               fn-rewrites fn actuals contexts . ,*glcp-common-inputs*))
              (interp-st (update-is-backchain-limit backchain-limit interp-st)))
           (glcp-value successp term bindings)))
 
 
       (defun rewrite-apply-rules
-        (fn-rewrites rules fn actuals contexts . ,*glcp-common-inputs*)
+        (fn-rewrites fn actuals contexts . ,*glcp-common-inputs*)
         (declare (xargs :stobjs ,*glcp-stobjs*
-                        :guard (and (true-listp rules)
-                                    (posp clk)
+                        :guard (and (posp clk)
+                                    (pseudo-rewrite-rule-listp fn-rewrites)
                                     (symbolp fn)
                                     (not (eq fn 'quote))
                                     (contextsp contexts)
@@ -952,25 +946,18 @@ but its arity is ~x3.  Its formal parameters are ~x4."
               ;; no more rules, fail
               (glcp-value nil nil nil))
              (rule (car fn-rewrites))
-             ((unless (acl2::weak-rewrite-rule-p rule))
-              (cw "malformed rewrite rule?? ~x0~%" rule)
-              (rewrite-apply-rules
-               (cdr fn-rewrites) rules fn actuals contexts . ,*glcp-common-inputs*))
-             ((unless (member-equal (acl2::rewrite-rule->rune rule) rules))
-              (rewrite-apply-rules
-               (cdr fn-rewrites) rules fn actuals contexts . ,*glcp-common-inputs*))
              ((glcp-er successp term bindings :nvals 3)
               (rewrite-apply-rule
                rule fn actuals contexts . ,*glcp-common-inputs*))
              ((when successp)
               (glcp-value successp term bindings)))
           (rewrite-apply-rules
-           (cdr fn-rewrites) rules fn actuals contexts . ,*glcp-common-inputs*)))
+           (cdr fn-rewrites) fn actuals contexts . ,*glcp-common-inputs*)))
 
       (defun rewrite-apply-rule
         (rule fn actuals contexts . ,*glcp-common-inputs*)
         (declare (xargs :stobjs ,*glcp-stobjs*
-                        :guard (and (acl2::weak-rewrite-rule-p rule)
+                        :guard (and (pseudo-rewrite-rule-p rule)
                                     (posp clk)
                                     (symbolp fn)
                                     (not (eq fn 'quote))
@@ -979,11 +966,11 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                         :measure (list (pos-fix clk) 44 0 0)))
         (b* ((pathcond (lbfr-hyp-fix pathcond))
              ((rewrite-rule rule) rule)
-             ((unless (and (symbolp rule.equiv)
-                           (not (eq rule.equiv 'quote))
-                           ;; (ensure-equiv-relationp rule.equiv (w state))
-                           (not (eq rule.subclass 'acl2::meta))
-                           (pseudo-termp rule.lhs)
+             ((unless (and (mbt (and (symbolp rule.equiv)
+                                     (not (eq rule.equiv 'quote))
+                                     ;; (ensure-equiv-relationp rule.equiv (w state))
+                                     (not (eq rule.subclass 'acl2::meta))
+                                     (pseudo-termp rule.lhs)))
                            (consp rule.lhs)
                            (eq (car rule.lhs) fn)))
               (cw "malformed gl rewrite rule (lhs)?? ~x0~%" rule)
@@ -995,7 +982,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
              ((mv unify-ok gobj-bindings)
               (glcp-unify-term/gobj-list (cdr rule.lhs) actuals nil))
              ((unless unify-ok) (glcp-value nil nil nil))
-             ((unless (pseudo-term-listp rule.hyps))
+             ((unless (mbt (pseudo-term-listp rule.hyps)))
               (cw "malformed gl rewrite rule (hyps)?? ~x0~%" rule)
               (glcp-value nil nil nil))
              (interp-st (is-prof-push rule.rune interp-st))
@@ -1007,7 +994,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
              ((unless hyps-ok)
               (b* ((interp-st (is-prof-pop-increment nil interp-st)))
                 (glcp-value nil nil nil)))
-             ((unless (pseudo-termp rule.rhs))
+             ((unless (mbt (pseudo-termp rule.rhs)))
               (cw "malformed gl rewrite rule (rhs)?? ~x0~%" rule)
               (b* ((interp-st (is-prof-pop-increment nil interp-st)))
                 (glcp-value nil nil nil)))
@@ -1202,21 +1189,21 @@ but its arity is ~x3.  Its formal parameters are ~x4."
 (defconst *glcp-clause-proc-template*
   `(progn
      (defun run-parametrized
-       (hyp concl vars bindings id obligs config state)
+       (hyp concl vars bindings id obligs config interp-st state)
+       (declare (xargs :stobjs (state interp-st)
+                       :verify-guards nil))
        (b* ((bound-vars (strip-cars bindings))
             ((glcp-config config) config)
-            ((er hyp)
-             (if (pseudo-termp hyp)
-                 (let ((hyp-unbound-vars
-                        (set-difference-eq (simple-term-vars hyp)
-                                           bound-vars)))
-                   (if hyp-unbound-vars
-                       (prog2$ (flush-hons-get-hash-table-link obligs)
-                               (glcp-error (acl2::msg "~
+            ((unless (pseudo-termp hyp))
+             (glcp-error "The hyp is not a pseudo-term.~%"))
+            (hyp-unbound-vars
+             (set-difference-eq (simple-term-vars hyp)
+                                bound-vars))
+            ((when hyp-unbound-vars)
+             (prog2$ (flush-hons-get-hash-table-link obligs)
+                     (glcp-error (acl2::msg "~
 In ~@0: The hyp contains the following unbound variables: ~x1~%"
-                                                      id hyp-unbound-vars)))
-                     (value hyp)))
-               (glcp-error "The hyp is not a pseudo-term.~%")))
+                                            id hyp-unbound-vars))))
             ((unless (shape-spec-bindingsp bindings))
              (flush-hons-get-hash-table-link obligs)
              (glcp-error
@@ -1257,8 +1244,8 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
                    (shape-spec-list-oblig-term
                     obj
                     (strip-cars bindings))))
-            ((acl2::local-stobjs bvar-db bvar-db1 interp-st)
-             (mv erp val state bvar-db bvar-db1 interp-st))
+            ((acl2::local-stobjs bvar-db bvar-db1)
+             (mv erp val bvar-db bvar-db1 interp-st state))
             (interp-st (update-is-obligs obligs interp-st))
             (interp-st (update-is-constraint (bfr-constr-init) interp-st))
             (interp-st (update-is-constraint-db constraint-db interp-st))
@@ -1273,7 +1260,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
             ((when er)
              (flush-hons-get-hash-table-link (is-obligs interp-st))
              (gbc-db-free (is-constraint-db interp-st))
-             (mv er nil state bvar-db bvar-db1 interp-st))
+             (mv er nil bvar-db bvar-db1 interp-st state))
             ((mv erp val-clause state)
              (glcp-analyze-interp-result
               hyp-bfr concl-bfr (bfr-constr->bfr (is-constraint interp-st))
@@ -1281,101 +1268,116 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
             ((when erp)
              (flush-hons-get-hash-table-link (is-obligs interp-st))
              (gbc-db-free (is-constraint-db interp-st))
-             (mv erp nil state bvar-db bvar-db1 interp-st))
-            ((mv erp val state)
-             (value (list val-clause cov-clause (is-obligs interp-st)))))
+             (mv erp nil bvar-db bvar-db1 interp-st state))
+            (val (list val-clause cov-clause (is-obligs interp-st))))
          (gbc-db-free (is-constraint-db interp-st))
-         (mv erp val state bvar-db bvar-db1 interp-st)))
+         (mv erp val bvar-db bvar-db1 interp-st state)))
 
      ;; abort-unknown abort-ctrex exec-ctrex abort-vacuous nexamples hyp-clk concl-clk
      ;; clause-proc-name overrides  run-before run-after case-split-override
 
 
      ,'(defun run-cases
-         (param-alist concl vars obligs config state)
+         (param-alist concl vars obligs config interp-st state)
+         (declare (xargs :stobjs (state interp-st)
+                         :verify-guards nil))
          (if (atom param-alist)
-             (value (cons nil obligs))
-           (b* (((er (cons rest obligs))
+             (mv nil (cons nil obligs) interp-st state)
+           (b* (((mv err (cons rest obligs) interp-st state)
                  (run-cases
-                  (cdr param-alist) concl vars obligs config state))
+                  (cdr param-alist) concl vars obligs config interp-st state))
+                ((when err)
+                 (mv err nil interp-st state))
                 (hyp (caar param-alist))
                 (id (cadar param-alist))
                 (g-bindings (cddar param-alist))
                 (- (glcp-cases-wormhole (glcp-config->run-before-cases config) id))
-                ((er (list val-clause cov-clause obligs))
+                ((mv err (list val-clause cov-clause obligs) interp-st state)
                  (run-parametrized
-                  hyp concl vars g-bindings id obligs config state))
+                  hyp concl vars g-bindings id obligs config interp-st state))
+                ((when err)
+                 (mv err nil interp-st state))
                 (- (glcp-cases-wormhole (glcp-config->run-after-cases config) id)))
-             (value (cons (list* val-clause cov-clause rest) obligs)))))
+             (mv nil (cons (list* val-clause cov-clause rest) obligs) interp-st state))))
 
 
-     ,'(defun clause-proc (clause hints state)
+     ,'(defun clause-proc (clause hints interp-st state)
+         (declare (xargs :stobjs (state interp-st)
+                         :verify-guards nil))
          (b* (;; ((unless (sym-counterparts-ok (w state)))
               ;;  (glcp-error "The installed symbolic counterparts didn't satisfy all our checks"))
               ((list bindings param-bindings hyp param-hyp concl ?untrans-concl config) hints)
-              ((er overrides)
+              ((mv err overrides state)
                (preferred-defs-to-overrides
                 (table-alist 'preferred-defs (w state)) state))
-              (config (change-glcp-config config :overrides overrides))
-              ((er hyp)
-               (if (pseudo-termp hyp)
-                   (value hyp)
-                 (glcp-error "The hyp is not a pseudo-term.~%")))
+              ((when err) (mv err nil interp-st state))
+              (config (change-glcp-config config
+                                          :overrides overrides
+                                          :rewrite-rule-table (table-alist 'gl-rewrite-rules (w state))
+                                          :branch-merge-rules (gl-branch-merge-rules (w state))))
+              ((unless (pseudo-termp hyp))
+               (glcp-error "The hyp is not a pseudo-term.~%"))
               (hyp-clause (cons '(not (gl-cp-hint 'hyp))
                                 (append clause (list hyp))))
-              ((er concl)
-               (if (pseudo-termp concl)
-                   (value concl)
-                 (glcp-error "The concl is not a pseudo-term.~%")))
+              ((unless (pseudo-termp concl))
+               (glcp-error "The concl is not a pseudo-term.~%"))
               (concl-clause (cons '(not (gl-cp-hint 'concl))
-                                  (append clause (list (list 'not concl))))))
-           (if param-bindings
-               ;; Case splitting.
-               (b* (((er param-hyp)
-                     (if (pseudo-termp param-hyp)
-                         (value param-hyp)
-                       (glcp-error "The param-hyp is not a pseudo-term.~%")))
-                    (full-hyp (conjoin (list param-hyp hyp)))
-                    (param-alist (param-bindings-to-alist
-                                  full-hyp param-bindings))
-                    ;; If the hyp holds, then one of the cases in the
-                    ;; param-alist holds.
-                    (params-cov-term (disjoin (strip-cars param-alist)))
-                    (params-cov-vars (simple-term-vars params-cov-term))
-                    (- (cw "Checking case split coverage ...~%"))
-                    ((er (list params-cov-res-clause
-                               params-cov-cov-clause obligs0))
-                     (if (glcp-config->case-split-override config)
-                         (value (list `((not (gl-cp-hint 'casesplit))
-                                        (not ,hyp)
-                                        ,params-cov-term)
-                                      '('t)
-                                      'obligs))
-                       (run-parametrized
-                        hyp params-cov-term params-cov-vars bindings
-                        "case-split coverage" 'obligs config state)))
-                    (- (cw "Case-split coverage OK~%"))
-                    ((er (cons cases-res-clauses obligs1))
-                     (run-cases
-                      param-alist concl (simple-term-vars concl) obligs0 config state)))
+                                  (append clause (list (list 'not concl)))))
+              ((unless param-bindings)
+               ;; No case splitting.
+               (b* (((mv err (list res-clause cov-clause obligs) interp-st state)
+                     (run-parametrized
+                      hyp concl (simple-term-vars concl) bindings
+                      "main theorem" nil config interp-st state))
+                    ((when err) (mv err nil interp-st state)))
+                 (cw "GL symbolic simulation OK~%")
                  (clear-memoize-table 'glcp-get-branch-merge-rules)
-                 (value (list* hyp-clause concl-clause
-                               (append cases-res-clauses
-                                       (list* params-cov-res-clause
-                                              params-cov-cov-clause
-                                              (acl2::interp-defs-alist-clauses
-                                               (flush-hons-get-hash-table-link obligs1)))))))
-             ;; No case-splitting.
-             (b* (((er (list res-clause cov-clause obligs))
-                   (run-parametrized
-                    hyp concl (simple-term-vars concl) bindings
-                    "main theorem" nil config state)))
-               (cw "GL symbolic simulation OK~%")
-               (clear-memoize-table 'glcp-get-branch-merge-rules)
-               (value (list* hyp-clause concl-clause
-                             res-clause cov-clause
-                             (acl2::interp-defs-alist-clauses
-                              (flush-hons-get-hash-table-link obligs))))))))))
+                 (mv nil (list* hyp-clause concl-clause
+                                res-clause cov-clause
+                                (acl2::interp-defs-alist-clauses
+                                 (flush-hons-get-hash-table-link obligs)))
+                     interp-st state)))
+              ;; Case splitting.
+              ((unless (pseudo-termp param-hyp))
+               (glcp-error "The param-hyp is not a pseudo-term.~%"))
+              (full-hyp (conjoin (list param-hyp hyp)))
+              (param-alist (param-bindings-to-alist
+                            full-hyp param-bindings))
+              ;; If the hyp holds, then one of the cases in the
+              ;; param-alist holds.
+              (params-cov-term (disjoin (strip-cars param-alist)))
+              (params-cov-vars (simple-term-vars params-cov-term))
+              (- (cw "Checking case split coverage ...~%"))
+              ((mv err (list params-cov-res-clause
+                             params-cov-cov-clause obligs0)
+                   interp-st state)
+               (if (glcp-config->case-split-override config)
+                   (mv nil
+                       (list `((not (gl-cp-hint 'casesplit))
+                               (not ,hyp)
+                               ,params-cov-term)
+                             '('t)
+                             'obligs)
+                       interp-st state)
+                 (run-parametrized
+                  hyp params-cov-term params-cov-vars bindings
+                  "case-split coverage" 'obligs config interp-st state)))
+              ((when err) (mv err nil interp-st state))
+              (- (cw "Case-split coverage OK~%"))
+              ((mv err (cons cases-res-clauses obligs1) interp-st state)
+               (run-cases
+                param-alist concl (simple-term-vars concl) obligs0 config interp-st state))
+              ((when err) (mv err nil interp-st state)))
+           (clear-memoize-table 'glcp-get-branch-merge-rules)
+           (mv nil
+               (list* hyp-clause concl-clause
+                      (append cases-res-clauses
+                              (list* params-cov-res-clause
+                                     params-cov-cov-clause
+                                     (acl2::interp-defs-alist-clauses
+                                      (flush-hons-get-hash-table-link obligs1)))))
+               interp-st
+               state)))))
 
 
 (defconst *glcp-fnnames*

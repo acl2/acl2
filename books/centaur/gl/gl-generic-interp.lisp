@@ -39,6 +39,7 @@
 (include-book "clause-processors/find-subterms" :dir :system)
 (include-book "glcp-unify-thms")
 (include-book "glcp-geval-thms")
+(include-book "glcp-rewrite-tables")
 (local (include-book "bfr-reasoning"))
 (local (include-book "data-structures/no-duplicates" :dir :system))
 (local (include-book "general-object-thms"))
@@ -383,7 +384,7 @@
     (rules
      (mv ?successp ?term ?bindings . ,*glcp-ind-retvals*)
      (glcp-generic-rewrite-apply-rules
-      fn-rewrites rules fn actuals contexts . ,*glcp-ind-inputs*))
+      fn-rewrites fn actuals contexts . ,*glcp-ind-inputs*))
     (rule
      (mv ?successp ?term ?bindings . ,*glcp-ind-retvals*)
      (glcp-generic-rewrite-apply-rule
@@ -523,10 +524,10 @@
      (defthm alistp-glcp-generic-apply-rules
        (b* (((mv ?successp ?term ?bindings ?erp ?pathcond1 ?interp-st1 ?bvar-db1 ?state1)
              (glcp-generic-rewrite-apply-rules
-              fn-rewrites rules fn actuals contexts pathcond clk config interp-st bvar-db st)))
+              fn-rewrites fn actuals contexts pathcond clk config interp-st bvar-db st)))
          (alistp bindings))
        :hints ('(:expand ((glcp-generic-rewrite-apply-rules
-                           fn-rewrites rules fn actuals contexts pathcond clk config interp-st bvar-db st))))
+                           fn-rewrites fn actuals contexts pathcond clk config interp-st bvar-db st))))
        :flag rules)
      (defthm alistp-glcp-generic-apply-rule
        (b* (((mv ?successp ?term ?bindings ?erp ?pathcond1 ?interp-st1 ?bvar-db1 ?state1)
@@ -854,151 +855,7 @@
                   (true-listp x))
          :rule-classes :forward-chaining))
 
-(defsection glcp-branch-merge-formula-to-rule
 
-  (defthm conjunction-to-list-correct
-    (iff (glcp-generic-geval-ev (conjoin (conjunction-to-list x)) a)
-         (glcp-generic-geval-ev x a))
-    :hints(("Goal" :in-theory (enable conjunction-to-list))))
-
-  (local (in-theory (disable acl2::beta-reduce-full
-                             pseudo-termp)))
-
-  (local (in-theory (enable glcp-branch-merge-formula-to-rule)))
-
-  (defthm glcp-branch-merge-formula-to-rule-wfp
-    (b* (((mv ok rule)
-          (glcp-branch-merge-formula-to-rule name wrld)))
-      (implies ok
-               (acl2::weak-rewrite-rule-p rule)))
-    :hints(("Goal" :in-theory (disable acl2::weak-rewrite-rule-p))))
-
-  (local (defthmd beta-reduce-full-correct-for-glcp-generic-geval-ev
-           (implies (pseudo-termp x)
-                    (equal (glcp-generic-geval-ev (acl2::beta-reduce-full x) a)
-                           (glcp-generic-geval-ev x a)))
-           :hints (("goal" :use ((:instance
-                                  (:functional-instance
-                                   acl2::beta-reduce-full-correct
-                                   (acl2::beta-eval glcp-generic-geval-ev)
-                                   (acl2::beta-eval-list
-                                    glcp-generic-geval-ev-lst))))
-                    :in-theory (enable glcp-generic-geval-ev-of-fncall-args)))))
-
-
-  (defthmd rewrite-rule-term-alt-def
-    (equal (acl2::rewrite-rule-term x)
-           (if (eq (acl2::rewrite-rule->subclass x) 'acl2::meta)
-               ''t
-             `(implies ,(conjoin (acl2::rewrite-rule->hyps x))
-                       (,(acl2::rewrite-rule->equiv x)
-                        ,(acl2::rewrite-rule->lhs x)
-                        ,(acl2::rewrite-rule->rhs x)))))
-    :hints(("Goal" :in-theory (enable acl2::rewrite-rule->subclass
-                                      acl2::rewrite-rule->hyps
-                                      acl2::rewrite-rule->equiv
-                                      acl2::rewrite-rule->lhs
-                                      acl2::rewrite-rule->rhs))))
-
-  (local (in-theory (disable acl2::rewrite-rule-term)))
-
-  ; (local (include-book "arithmetic/top-with-meta" :dir :system))
-
-  (local (defthm equal-of-len
-           (implies (syntaxp (quotep n))
-                    (equal (equal (len x) n)
-                           (and (natp n)
-                                (if (equal n 0)
-                                    (atom x)
-                                  (and (consp x)
-                                       (equal (len (cdr x)) (1- n)))))))))
-
-
-
-  (defthm glcp-branch-merge-formula-to-rule-correct
-    (b* (((mv ok rule)
-          (glcp-branch-merge-formula-to-rule name wrld)))
-      (implies (and (glcp-generic-geval-ev-meta-extract-global-facts)
-                    (equal wrld (w state))
-                    ok)
-               (glcp-generic-geval-ev-theoremp (acl2::rewrite-rule-term rule))))
-    :hints (("goal" :use ((:instance glcp-generic-geval-ev-falsify
-                           (x (acl2::meta-extract-formula-w name wrld))
-                           (a (glcp-generic-geval-ev-falsify
-                               (acl2::rewrite-rule-term
-                                (mv-nth 1 (glcp-branch-merge-formula-to-rule
-                                           name wrld))))))
-                          (:instance
-                           beta-reduce-full-correct-for-glcp-generic-geval-ev
-                           (x (acl2::meta-extract-formula-w name wrld))
-                           (a (glcp-generic-geval-ev-falsify
-                               (acl2::rewrite-rule-term
-                                (mv-nth 1 (glcp-branch-merge-formula-to-rule
-                                           name wrld)))))))
-             :expand ((glcp-branch-merge-formula-to-rule name wrld))
-             :in-theory (e/d (glcp-generic-geval-ev-of-fncall-args
-                              rewrite-rule-term-alt-def)
-                             (equal-of-booleans-rewrite
-                              default-car default-cdr
-                              set::double-containment
-                              len kwote-lst
-                              w))))))
-
-(defun good-rewrite-rulesp (rules)
-  (if (atom rules)
-      t
-    (and (glcp-generic-geval-ev-theoremp (acl2::rewrite-rule-term (car rules)))
-         (good-rewrite-rulesp (cdr rules)))))
-
-(defsection glcp-branch-merge-formulas-to-rules
-
-  (local (in-theory (enable glcp-branch-merge-formulas-to-rules)))
-
-  (defthm good-rewrite-rulesp-of-glcp-branch-merge-formulas-to-rules
-    (implies (and (glcp-generic-geval-ev-meta-extract-global-facts)
-                  (equal wrld (w state)))
-             (good-rewrite-rulesp
-              (glcp-branch-merge-formulas-to-rules names wrld)))
-    :hints(("Goal" :in-theory (e/d (good-rewrite-rulesp)
-                                   (acl2::rewrite-rule-term
-                                    rewrite-rule-term-alt-def)))))
-
-  (defthm weak-rewrite-rule-listp-of-glcp-branch-merge-formulas-to-rules
-    (weak-rewrite-rule-listp
-     (glcp-branch-merge-formulas-to-rules names wrld))))
-
-(defsection good-rewrite-rulesp-of-get-lemmas
-  (local (defthmd good-rewrite-rulesp-of-get-lemmas1
-           (implies (and (glcp-generic-geval-ev-meta-extract-global-facts)
-                         (subsetp rules (getprop fn 'acl2::lemmas nil
-                                                 'current-acl2-world (w state))))
-                    (good-rewrite-rulesp rules))
-           :hints(("Goal" :in-theory (e/d (subsetp-equal
-                                           good-rewrite-rulesp)
-                                          (acl2::rewrite-rule-term
-                                           rewrite-rule-term-alt-def
-                                           w))))))
-  (defthm good-rewrite-rulesp-of-get-lemmas
-    (implies (and (glcp-generic-geval-ev-meta-extract-global-facts)
-                  (equal wrld (w state)))
-             (good-rewrite-rulesp
-              (getprop fn 'acl2::lemmas nil
-                       'current-acl2-world (w state))))
-    :hints (("goal" :use ((:instance good-rewrite-rulesp-of-get-lemmas1
-                           (rules
-                            (getprop fn 'acl2::lemmas nil
-                                     'current-acl2-world (w state)))))))))
-
-(defthm good-rewrite-rules-of-glcp-get-branch-merge-rules
-  (implies (and (glcp-generic-geval-ev-meta-extract-global-facts)
-                (equal wrld (w state)))
-           (good-rewrite-rulesp (glcp-get-branch-merge-rules fn wrld)))
-  :hints(("Goal" :in-theory (enable glcp-get-branch-merge-rules))))
-
-(defthm weak-rewrite-rule-listp-of-glcp-get-branch-merge-rules
-  (weak-rewrite-rule-listp
-   (glcp-get-branch-merge-rules fn wrld))
-  :hints(("Goal" :in-theory (enable glcp-get-branch-merge-rules))))
 
 (defsection glcp-generic-interp-guards-ok
   (local (defthm len-0
@@ -1673,6 +1530,22 @@
              :expand ((glcp-generic-eval-context-equiv* '(iff) a b)
                       (glcp-generic-eval-context-equiv* '(iff) a nil)
                       (glcp-generic-eval-context-equiv* '(iff) nil b))))))
+
+(defthmd rewrite-rule-term-alt-def
+  (equal (acl2::rewrite-rule-term x)
+         (if (eq (acl2::rewrite-rule->subclass x) 'acl2::meta)
+             ''t
+           `(implies ,(conjoin (acl2::rewrite-rule->hyps x))
+                     (,(acl2::rewrite-rule->equiv x)
+                      ,(acl2::rewrite-rule->lhs x)
+                      ,(acl2::rewrite-rule->rhs x)))))
+  :hints(("Goal" :in-theory (enable acl2::rewrite-rule->subclass
+                                    acl2::rewrite-rule->hyps
+                                    acl2::rewrite-rule->equiv
+                                    acl2::rewrite-rule->lhs
+                                    acl2::rewrite-rule->rhs))))
+
+(local (in-theory (disable acl2::rewrite-rule-term)))
 
 (defthm glcp-generic-eval-context-equiv-of-rewrites
   (implies (and (glcp-generic-geval-ev-theoremp (acl2::rewrite-rule-term rule))
@@ -2962,6 +2835,14 @@
              (implies (and (bind-free '((env . (car env))) (env))
                            (bfr-eval pathcond env))
                       pc-sat))))
+
+  (local (defthm good-rewrite-rulesp-when-consp
+           (implies (consp rules)
+                    (equal (good-rewrite-rulesp rules)
+                           (and (glcp-generic-geval-ev-theoremp
+                                 (acl2::rewrite-rule-term (car rules)))
+                                (good-rewrite-rulesp (cdr rules)))))
+           :hints(("Goal" :in-theory (enable good-rewrite-rulesp)))))
 
   (with-output :off (prove)
     (def-glcp-interp-thm glcp-generic-interp-correct

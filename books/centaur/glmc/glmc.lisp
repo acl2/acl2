@@ -126,7 +126,7 @@
                 (glcp-generic-geval-ev-theoremp
                  (conjoin-clauses
                   (acl2::clauses-result
-                   (glmc-generic clause config state)))))
+                   (glmc-generic clause config interp-st state)))))
            (glcp-generic-geval-ev (disjoin clause) a))
   :rule-classes :clause-processor)
 
@@ -233,8 +233,12 @@
     (:state-hyp-method st-hyp-method :mcheck :st-hyp-method)
     (:constraint term t :constr)
     (:check-vacuity boolean t (:check-vacuous))
-    (:prof-enabledp boolean t (:prof-enabledp))
-    (:ctrex-transform function (lambda (x) x) (:ctrex-transform))))
+    (:prof-enabledp boolean nil (:prof-enabledp))
+    (:ctrex-transform function (lambda (x) x) (:ctrex-transform))
+    (:main-rewrite-rules rule-table :default :main-rewrite-rules)
+    (:main-branch-merge-rules rule-list :default :main-branch-merge-rules)
+    (:extract-rewrite-rules rule-table :default :extract-rewrite-rules)
+    (:extract-branch-merge-rules rule-list :default :extract-branch-merge-rules)))
 
 (defun glmc-hint-translate-bindings (bindings ctx state)
   (declare (xargs :stobjs state :mode :program))
@@ -316,6 +320,12 @@
                       user-kwd user-val)
                  nil state)))
 
+          (rule-table
+           (mv nil `(,(car config-kwds) ,user-val) state))
+
+          (rule-list
+           (mv nil `(,(car config-kwds) ,user-val) state))
+
           ((nil) ;;ignore
            (mv nil nil state))
 
@@ -395,6 +405,7 @@
         (make-glmc-config
          :glcp-config (make-glcp-config . ,glcp-kwds)
          . ,glmc-kwds)
+        interp-st
         state)
        :do-not-induct t))))
 

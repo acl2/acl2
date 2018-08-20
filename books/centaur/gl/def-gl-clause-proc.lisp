@@ -548,11 +548,11 @@
                          (,meta-facts)
                          (,ev (conjoin-clauses
                                (acl2::clauses-result
-                                (,clause-proc clause hints state)))
+                                (,clause-proc clause hints interp-st state)))
                               (,falsify
                                (conjoin-clauses
                                 (acl2::clauses-result
-                                 (,clause-proc clause hints state))))))
+                                 (,clause-proc clause hints interp-st state))))))
                     (,ev (disjoin clause) alist))
            :hints (("goal" :do-not-induct t
                     :in-theory (e/d** (,ctrex-thm))
@@ -937,7 +937,7 @@ bindings:
                (call `(,(if test-side-goals 'glcp-side-goals-clause-proc clause-proc)
                        clause (list ',bindings ',param-bindings ',trhyp
                                     ',trparam ',trconcl ',concl ',config)
-                       state)))
+                       interp-st state)))
             (value (glcp-combine-hints call cov-hints hyp-hints result-hints case-split-hints)))))))
 
 
