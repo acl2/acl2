@@ -4239,8 +4239,8 @@
 
   (if (eq domain 'INTEGERP)
       (mv-let (k1 neg-evgs1)
-              (delete-consecutive-integers-downward k neg-evgs)
-              (mv nil k1 neg-evgs1))
+        (delete-consecutive-integers-downward k neg-evgs)
+        (mv nil k1 neg-evgs1))
 
 ; If we're over a more general domain, we strengthen the relation if it is weak
 ; and the specified endpoint is excluded by neg-evgs, and then we return the
@@ -4253,10 +4253,24 @@
 ; the endpoint; if the endpoint was not in neg-evgs in the first place, then of
 ; course it is still not in it.
 
+; There used to be a bug here!  The bug had us strengthen x <= 0 to x < 0 when
+; 0 was in the neg-evgs.  I.e., if the interval was the non-positives but 0 is
+; explicitly excluded, then the interval became the negatives.  But this is
+; only correct for intervals over numbers!  If the domain is unrestricted then
+; x <= 0 and x/=0 doesn't imply x < 0 because x might be a non-number.  Since
+; the neg-evgs can't possibly include all non-numbers, we can't strengthen the
+; relation.  In fact, if the domain is unrestricted and we've got x <= 0 then
+; we can't do anything whether 0 is excluded or not so we return without
+; changing anything. The bug fix was to add the next three lines (the if test
+; and mv return).
+
+    (if (and (null domain)
+             (eql k 0))
+        (mv rel k neg-evgs)
       (let ((new-rel (or rel (if (assoc-equal k neg-evgs) t nil))))
         (mv new-rel
             k
-            (collect-<?-x-k new-rel k neg-evgs)))))
+            (collect-<?-x-k new-rel k neg-evgs))))))
 
 (defun adjust-lower-bound-with-neg-evgs (domain rel k neg-evgs)
 
@@ -4270,8 +4284,8 @@
 
   (if (eq domain 'INTEGERP)
       (mv-let (k1 neg-evgs1)
-              (delete-consecutive-integers-upward k neg-evgs)
-              (mv nil k1 neg-evgs1))
+        (delete-consecutive-integers-upward k neg-evgs)
+        (mv nil k1 neg-evgs1))
 
 ; If we're over a more general domain, we strengthen the relation if it is weak
 ; and the specified endpoint is excluded by neg-evgs, and then we return the
@@ -4284,10 +4298,16 @@
 ; the endpoint; if the endpoint was not in neg-evgs in the first place, then of
 ; course it is still not in it.
 
+; There used to be a bug here.  See the corresponding comment in
+; adjust-upper-bound-with-neg-evgs.
+
+    (if (and (null domain)
+             (eql k 0))
+        (mv rel k neg-evgs)
       (let ((new-rel (or rel (if (assoc-equal k neg-evgs) t nil))))
         (mv new-rel
             k
-            (collect-<?-k-x new-rel k neg-evgs)))))
+            (collect-<?-k-x new-rel k neg-evgs))))))
 
 (defun squeeze-k (upper-boundp rel k)
 
@@ -4588,7 +4608,7 @@
          ((access tau tau :pos-evg)
           (if (equal recog (access tau tau :pos-evg))
               tau
-              *tau-contradiction*))
+            *tau-contradiction*))
          ((member-neg-evgs recog (access tau tau :neg-evgs))
           *tau-contradiction*)
          ((not (eval-tau-interval (access tau tau :interval) (car recog)))
@@ -4628,7 +4648,7 @@
          ((access tau tau :pos-evg)
           (if (equal recog (access tau tau :pos-evg))
               *tau-contradiction*
-              tau))
+            tau))
          ((member-neg-evgs recog (access tau tau :neg-evgs))
           tau)
          ((not (eval-tau-interval (access tau tau :interval) (car recog)))
@@ -4657,7 +4677,24 @@
 
           (let ((interval (access tau tau :interval)))
             (cond
-             ((and interval
+
+; There used to be a bug here!  In general a weak relation on an interval can
+; be strengthened if a new negative equality excludes the existing bound.
+; E.g., if we know x <= 1/2 and we get the new fact x /= 1/2 we can change it
+; to x < 1/2.  (We have already dealt with strengthening integral bounds).
+; But this strengthening is only legal if either (a) the domain of the
+; interval is numeric or (b) the new constant is non-0.  E.g., if we have an
+; rational interval bounded above with <= 0 and we get /= 0, we can change the
+; bound to < 0, or if we have an unrestricted domain bounded above by <= k and
+; we get /= k, we can change the bound to < k only if k/=0.  In particular, if
+; the domain is unrestricted and the interval is bounded above by <= 0 and we
+; get /=0 it is unsound to change the bound to < 0, since all non-numbers are
+; in the interval and are <= 0 but not < 0.  The fix to this bug was to add
+; the disjunction below as a new conjunct to the test.
+
+             ((and (or (access tau-interval interval :domain) ; numeric
+                       (not (eql (car recog) 0)))
+                   interval
                    (rationalp (car recog)))
               (cond
                ((and (null (access tau-interval interval :lo-rel))
@@ -4709,20 +4746,20 @@
 ; :lessp-k-x    nil                       (<= x k)
 
         (mv-let
-         (upper-boundp rel)
-         (if (eq discriminator :lessp-x-k)
-             (if sign
-                 (mv t   t)
-                 (mv nil nil))
-             (if sign
-                 (mv nil t)
-                 (mv t   nil)))
-         (tighten-bound tau
-                        nil ; new domain = ``no change''
-                        upper-boundp
-                        rel
-                        k
-                        ens wrld))))
+          (upper-boundp rel)
+          (if (eq discriminator :lessp-x-k)
+              (if sign
+                  (mv t   t)
+                (mv nil nil))
+            (if sign
+                (mv nil t)
+              (mv t   nil)))
+          (tighten-bound tau
+                         nil ; new domain = ``no change''
+                         upper-boundp
+                         rel
+                         k
+                         ens wrld))))
 
 ; That completes the code for adding a signed :lessp-x-k or :lessp-k-x.
 
@@ -4778,7 +4815,7 @@
        ((tau-pair-member recog
                          (if sign
                              (access tau tau :pos-pairs)
-                             (access tau tau :neg-pairs)))
+                           (access tau tau :neg-pairs)))
 
 ; If recog is already in the appropriate pairs list, there is nothing to
 
@@ -4786,7 +4823,7 @@
        ((tau-pair-member recog
                          (if sign
                              (access tau tau :neg-pairs)
-                             (access tau tau :pos-pairs)))
+                           (access tau tau :pos-pairs)))
 
 ; If recog is in the other pairs list, we have a contradiction.
 
@@ -4810,34 +4847,34 @@
 ; Premise.
 
         (mv-let
-         (changedp new-neg-evgs)
-         (delete-bad-vals1 (access tau tau :neg-evgs)
-                           sign
-                           recog
-                           ens
-                           wrld)
-         (let ((tau1
-                (if sign
-                    (if changedp
-                        (change tau tau
-                                :neg-evgs new-neg-evgs
-                                :pos-pairs (insert-tau-pair
-                                            recog
-                                            (access tau tau :pos-pairs)))
-                        (change tau tau
-                                :pos-pairs (insert-tau-pair
-                                            recog
-                                            (access tau tau :pos-pairs))))
-                    (if changedp
-                        (change tau tau
-                                :neg-evgs new-neg-evgs
-                                :neg-pairs (insert-tau-pair
-                                            recog
-                                            (access tau tau :neg-pairs)))
-                        (change tau tau
-                                :neg-pairs (insert-tau-pair
-                                            recog
-                                            (access tau tau :neg-pairs)))))))
+          (changedp new-neg-evgs)
+          (delete-bad-vals1 (access tau tau :neg-evgs)
+                            sign
+                            recog
+                            ens
+                            wrld)
+          (let ((tau1
+                 (if sign
+                     (if changedp
+                         (change tau tau
+                                 :neg-evgs new-neg-evgs
+                                 :pos-pairs (insert-tau-pair
+                                             recog
+                                             (access tau tau :pos-pairs)))
+                       (change tau tau
+                               :pos-pairs (insert-tau-pair
+                                           recog
+                                           (access tau tau :pos-pairs))))
+                   (if changedp
+                       (change tau tau
+                               :neg-evgs new-neg-evgs
+                               :neg-pairs (insert-tau-pair
+                                           recog
+                                           (access tau tau :neg-pairs)))
+                     (change tau tau
+                             :neg-pairs (insert-tau-pair
+                                         recog
+                                         (access tau tau :neg-pairs)))))))
 
 ; Tau1 now has the recog in :pos-pairs or :neg-pairs as per sign and the
 ; :neg-evgs of tau1 is consistent with the new recog (and all the old ones).
@@ -4899,54 +4936,54 @@
 ; Just form the tau for (equal e 1/2).  It gives a tau with :pos-evg
 ; 1/2 and the singleton RATIONALP interval on 1/2.
 
-           (cond
-            (sign
-             (case discriminator
-               (NATP (tighten-bound tau1 'INTEGERP nil nil 0 ens wrld))
-               (POSP (tighten-bound tau1 'INTEGERP nil t 0 ens wrld))
-               (INTEGERP (tighten-bound tau1 'INTEGERP nil nil nil ens wrld))
-               (RATIONALP (tighten-bound tau1 'RATIONALP nil nil nil ens wrld))
-               (ACL2-NUMBERP (tighten-bound tau1 'ACL2-NUMBERP nil nil nil ens wrld))
-               (MINUSP (tighten-bound tau1 'ACL2-NUMBERP t t 0 ens wrld))
-               (otherwise tau1)))
-            (t
-             (let ((domain
-                    (access tau-interval (access tau tau1 :interval) :domain)))
-               (case discriminator
-                 (ACL2-NUMBERP
+            (cond
+             (sign
+              (case discriminator
+                (NATP (tighten-bound tau1 'INTEGERP nil nil 0 ens wrld))
+                (POSP (tighten-bound tau1 'INTEGERP nil t 0 ens wrld))
+                (INTEGERP (tighten-bound tau1 'INTEGERP nil nil nil ens wrld))
+                (RATIONALP (tighten-bound tau1 'RATIONALP nil nil nil ens wrld))
+                (ACL2-NUMBERP (tighten-bound tau1 'ACL2-NUMBERP nil nil nil ens wrld))
+                (MINUSP (tighten-bound tau1 'ACL2-NUMBERP t t 0 ens wrld))
+                (otherwise tau1)))
+             (t
+              (let ((domain
+                     (access tau-interval (access tau tau1 :interval) :domain)))
+                (case discriminator
+                  (ACL2-NUMBERP
 ; If we are adding nil/ACL2-NUMBERP and the interval has a non-nil domain, then
 ; it contradicts nil/ACL2-NUMBERP.  Otherwise, we change the interval to be 0
 ; <= ... <= 0 with the unrestricted domain.  To set this interval we
 ; do two successive tighten-bounds, first (innermost) on the lower bound
 ; bound and then on the upper.
-                  (cond
-                   ((eq domain nil)
+                   (cond
+                    ((eq domain nil)
 ; Args to tighten-bound: tau domain upper-boundp rel k wrld.
-                    (tighten-bound
-                     (tighten-bound tau1 nil nil nil 0 ens wrld)
-                     nil t nil 0 ens wrld))
-                   (t *tau-contradiction*)))
-                 (RATIONALP
-                  (if (or (eq domain 'RATIONALP)
-                          (eq domain 'INTEGERP))
-                      *tau-contradiction*
-                      tau1))
-                 (INTEGERP
-                  (if (eq domain 'INTEGERP)
-                      *tau-contradiction*
-                      tau1))
-                 (MINUSP (tighten-bound tau1 nil nil nil 0 ens wrld))
-                 (NATP
-                  (cond
-                   ((eq domain 'INTEGERP)
-                    (tighten-bound tau1 'INTEGERP t t 0 ens wrld))
-                   (t tau1)))
-                 (POSP
-                  (cond
-                   ((eq domain 'INTEGERP)
-                    (tighten-bound tau1 nil t nil 0 ens wrld))
-                   (t tau1)))
-                 (otherwise tau1)))))))))))))
+                     (tighten-bound
+                      (tighten-bound tau1 nil nil nil 0 ens wrld)
+                      nil t nil 0 ens wrld))
+                    (t *tau-contradiction*)))
+                  (RATIONALP
+                   (if (or (eq domain 'RATIONALP)
+                           (eq domain 'INTEGERP))
+                       *tau-contradiction*
+                     tau1))
+                  (INTEGERP
+                   (if (eq domain 'INTEGERP)
+                       *tau-contradiction*
+                     tau1))
+                  (MINUSP (tighten-bound tau1 nil nil nil 0 ens wrld))
+                  (NATP
+                   (cond
+                    ((eq domain 'INTEGERP)
+                     (tighten-bound tau1 'INTEGERP t t 0 ens wrld))
+                    (t tau1)))
+                  (POSP
+                   (cond
+                    ((eq domain 'INTEGERP)
+                     (tighten-bound tau1 nil t nil 0 ens wrld))
+                    (t tau1)))
+                  (otherwise tau1)))))))))))))
 
 (defun add-recogs-to-tau1 (sign recog-lst tau ens wrld)
 
