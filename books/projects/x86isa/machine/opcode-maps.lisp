@@ -125,6 +125,56 @@
 
 ;; ----------------------------------------------------------------------
 
+;; Definitions related to exceptions:
+
+;; TODO regarding exceptions:
+
+;; --- Only exceptions for the protected, compatibility, and 64-bit mode have
+;;     been specified.
+
+;; --- VMX, SMM instructions' exceptions have not been listed yet.
+
+;; --- What's the exception scenario for RESERVEDNOP (Group 16, #ux0F_18)?
+
+(defconst *ud-Lock-used*
+  `(eql #.*lock* (prefixes-slice :lck prefixes)))
+
+(defconst *ud-Opr-used*
+  `(eql #.*operand-size-override* (prefixes-slice :opr prefixes)))
+
+(defconst *ud-Reps-used*
+  `(or (eql #.*repe* (prefixes-slice :rep prefixes))
+       (eql #.*repne* (prefixes-slice :rep prefixes))))
+
+(defconst *ud-ModR/M.Mod-indicates-Register*
+  `(eql (mrm-mod modr/m) #b11))
+
+(defconst *ud-Lock-used-mod-indicates-register*
+  ;; For now, we check this only for instructions that require a modr/m byte.
+  ;; There are some instructions that do not take a modr/m byte but that throw
+  ;; a #UD when lock occurs and the destination is a register operand (e.g.,
+  ;; ADC opcodes 0x14 and 0x15).  For those cases, use *ud-Lock-used* instead.
+  `(and
+    ;; ModR/M.mod = #b11 means that the modr/m byte points to a register, and
+    ;; not to a memory operand.  See Table 2-2 (32-bit Addressing Forms with
+    ;; the ModR/M byte) in Intel Vol. 2.
+    ,*ud-ModR/M.Mod-indicates-Register*
+    (eql #.*lock* (prefixes-slice :lck prefixes))))
+
+(defconst *ud-Lock-used-Dest-not-Memory-Op*
+  *ud-Lock-used-mod-indicates-register*)
+
+(defconst *ud-source-operand-is-a-register*
+  *ud-ModR/M.Mod-indicates-Register*)
+
+(defconst *ud-second-operand-is-a-register*
+  *ud-ModR/M.Mod-indicates-Register*)
+
+(defconst *ud-cpl-is-not-zero*
+  `(not (eql (cpl x86) 0)))
+
+;; ----------------------------------------------------------------------
+
 ;; A note about our annotations of the opcode maps:
 
 ;; We annotate each opcode in our representation of the opcode maps with the
@@ -181,7 +231,6 @@
 ;;        <appropriate call for bar>
 ;;        <appropriate call for foo>)
 
-
 (defconst *one-byte-opcode-map-lst*
   ;; Source: Intel Volume 2, Table A-2.
 
@@ -190,130 +239,146 @@
 
     #| 00 |# (("ADD" 2 (E b)  (G b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-ADD*))))
+		       (operation . #.*OP-ADD*)))
+	       (:ud . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("ADD" 2 (E v)  (G v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-ADD*))))
+		       (operation . #.*OP-ADD*)))
+	       (:ud . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("ADD" 2 (G b)  (E b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-ADD*))))
+		       (operation . #.*OP-ADD*)))
+	       (:ud . (*ud-Lock-used*)))
 	      ("ADD" 2 (G v)  (E v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-ADD*))))
+		       (operation . #.*OP-ADD*)))
+	       (:ud . (*ud-Lock-used*)))
 	      ("ADD" 2 (:AL)  (I b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-ADD*))))
+		       (operation . #.*OP-ADD*)))
+	       (:ud . (*ud-Lock-used*)))
 	      ("ADD" 2 (:rAX) (I z)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-ADD*))))
+		       (operation . #.*OP-ADD*)))
+	       (:ud . (*ud-Lock-used*)))
 	      ((:i64 . ("PUSH ES" 0
-			(:fn . (x86-push-segment-register
-				(vex-prefixes  . 0)
-				(evex-prefixes . 0)))))
+			(:fn . (x86-push-segment-register))
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "PUSH ES is illegal in the 64-bit mode!"))))))
-	      ((:i64 . ("POP ES"  0))
+	      ((:i64 . ("POP ES"  0
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD"  0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "POP ES is illegal in the 64-bit mode!"))))))
 	      ("OR" 2 (E b)  (G b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-OR*))))
+		       (operation . #.*OP-OR*)))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("OR" 2 (E v)  (G v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-OR*))))
+		       (operation . #.*OP-OR*)))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("OR" 2 (G b)  (E b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-OR*))))
+		       (operation . #.*OP-OR*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("OR" 2 (G v)  (E v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-OR*))))
+		       (operation . #.*OP-OR*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("OR" 2 (:AL)  (I b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-OR*))))
+		       (operation . #.*OP-OR*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("OR" 2 (:rAX) (I z)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-OR*))))
+		       (operation . #.*OP-OR*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ((:i64 . ("PUSH CS" 0
-			(:fn . (x86-push-segment-register
-				(vex-prefixes  . 0)
-				(evex-prefixes . 0)))))
+			(:fn . (x86-push-segment-register))
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "PUSH CS is illegal in the 64-bit mode!"))))))
 	      (:2-byte-escape
 	       (:fn . (two-byte-opcode-decode-and-execute
-		       ;; vex-prefixes is 0 here because we won't ever transfer
-		       ;; to the two- or three-byte opcode maps from the
-		       ;; one-byte opcode map in the presence of vex prefixes.
-		       ;; See x86-fetch-decode-execute and
-		       ;; vex-decode-and-execute for details.
-		       (vex-prefixes . 0)
-		       (evex-prefixes . 0)
 		       (escape-byte . opcode)))))
 
     #| 10 |# (("ADC" 2 (E b) (G b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-ADC*))))
+		       (operation . #.*OP-ADC*)))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("ADC" 2 (E v) (G v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-ADC*))))
+		       (operation . #.*OP-ADC*)))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("ADC" 2 (G b) (E b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-ADC*))))
+		       (operation . #.*OP-ADC*)))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("ADC" 2 (G v) (E v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-ADC*))))
+		       (operation . #.*OP-ADC*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("ADC" 2 (:AL) (I b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-ADC*))))
+		       (operation . #.*OP-ADC*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("ADC" 2 (:rAX) (I z)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-ADC*))))
+		       (operation . #.*OP-ADC*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ((:i64 . ("PUSH SS" 0
-			(:fn . (x86-push-segment-register
-				(vex-prefixes  . 0)
-				(evex-prefixes . 0)))))
+			(:fn . (x86-push-segment-register))
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "PUSH SS is illegal in the 64-bit mode!"))))))
-	      ((:i64 . ("POP SS" 0))
+	      ((:i64 . ("POP SS" 0
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "POP SS is illegal in the 64-bit mode!"))))))
 	      ("SBB" 2 (E b) (G b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-SBB*))))
+		       (operation . #.*OP-SBB*)))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("SBB" 2 (E v) (G v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-SBB*))))
+		       (operation . #.*OP-SBB*)))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("SBB" 2 (G b) (E b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-SBB*))))
+		       (operation . #.*OP-SBB*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SBB" 2 (G v) (E v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-SBB*))))
+		       (operation . #.*OP-SBB*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SBB" 2 (:AL) (I b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-SBB*))))
+		       (operation . #.*OP-SBB*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SBB" 2 (:rAX) (I z)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-SBB*))))
+		       (operation . #.*OP-SBB*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ((:i64 . ("PUSH DS" 0
-			(:fn . (x86-push-segment-register
-				(vex-prefixes  . 0)
-				(evex-prefixes . 0)))))
+			(:fn . (x86-push-segment-register))
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "PUSH DS is illegal in the 64-bit mode!"))))))
-	      ((:i64 . ("POP DS" 0))
+	      ((:i64 . ("POP DS" 0
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
@@ -321,50 +386,64 @@
 
     #| 20 |# (("AND" 2 (E b) (G b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-AND*))))
+		       (operation . #.*OP-AND*)))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("AND" 2 (E v) (G v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-AND*))))
+		       (operation . #.*OP-AND*)))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("AND" 2 (G b) (E b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-AND*))))
+		       (operation . #.*OP-AND*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("AND" 2 (G v) (E v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-AND*))))
+		       (operation . #.*OP-AND*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("AND" 2 (:AL) (I b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-AND*))))
+		       (operation . #.*OP-AND*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("AND" 2 (:rAX) (I z)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-AND*))))
+		       (operation . #.*OP-AND*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      (:prefix-ES
 	       (:fn . (:no-instruction)))
-	      ((:i64 . ("DAA" 0))
+	      ((:i64 . ("DAA" 0
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "DAA is illegal in the 64-bit mode!"))))))
 	      ("SUB" 2 (E b) (G b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-SUB*))))
+		       (operation . #.*OP-SUB*)))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("SUB" 2 (E v) (G v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-SUB*))))
+		       (operation . #.*OP-SUB*)))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("SUB" 2 (G b) (E b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-SUB*))))
+		       (operation . #.*OP-SUB*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SUB" 2 (G v) (E v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-SUB*))))
+		       (operation . #.*OP-SUB*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SUB" 2 (:AL) (I b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-SUB*))))
+		       (operation . #.*OP-SUB*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SUB" 2 (:rAX) (I z)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-SUB*))))
+		       (operation . #.*OP-SUB*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      (:prefix-CS
 	       (:fn . (:no-instruction)))
-	      ((:i64 . ("DAS" 0))
+	      ((:i64 . ("DAS" 0
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
@@ -372,50 +451,64 @@
 
     #| 30 |# (("XOR" 2 (E b) (G b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-XOR*))))
+		       (operation . #.*OP-XOR*)))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("XOR" 2 (E v) (G v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-XOR*))))
+		       (operation . #.*OP-XOR*)))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("XOR" 2 (G b) (E b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-XOR*))))
+		       (operation . #.*OP-XOR*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("XOR" 2 (G v) (E v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-XOR*))))
+		       (operation . #.*OP-XOR*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("XOR" 2 (:AL) (I b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-XOR*))))
+		       (operation . #.*OP-XOR*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("XOR" 2 (:rAX) (I z)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-XOR*))))
+		       (operation . #.*OP-XOR*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      (:prefix-SS
 	       (:fn . (:no-instruction)))
-	      ((:i64 . ("AAA" 0))
+	      ((:i64 . ("AAA" 0
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "AAA is illegal in the 64-bit mode!"))))))
 	      ("CMP" 2 (E b) (G b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-CMP*))))
+		       (operation . #.*OP-CMP*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMP" 2 (E v) (G v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-		       (operation . #.*OP-CMP*))))
+		       (operation . #.*OP-CMP*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMP" 2 (G b) (E b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-CMP*))))
+		       (operation . #.*OP-CMP*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMP" 2 (G v) (E v)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
-		       (operation . #.*OP-CMP*))))
+		       (operation . #.*OP-CMP*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMP" 2 (:AL) (I b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-CMP*))))
+		       (operation . #.*OP-CMP*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMP" 2 (:rAX) (I z)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-CMP*))))
+		       (operation . #.*OP-CMP*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      (:prefix-DS
 	       (:fn . (:no-instruction)))
-	      ((:i64 . ("AAS" 0))
+	      ((:i64 . ("AAS" 0
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
@@ -423,99 +516,135 @@
 
     #| 40 |# (((:o64  . (:rex (:fn . (:no-instruction))))
 	       (:i64 . ("INC"  1 (:eAX)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-b (:fn . (:no-instruction))))
 	       (:i64 . ("INC"  1 (:eCX)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-x (:fn . (:no-instruction))))
 	       (:i64 . ("INC"  1 (:eDX)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-xb (:fn . (:no-instruction))))
 	       (:i64 . ("INC"  1 (:eBX)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-r (:fn . (:no-instruction))))
 	       (:i64 . ("INC"  1 (:eSP)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-rb (:fn . (:no-instruction))))
 	       (:i64 . ("INC"  1 (:eBP)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-rx (:fn . (:no-instruction))))
 	       (:i64 . ("INC"  1 (:eSI)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-rxb (:fn . (:no-instruction))))
 	       (:i64 . ("INC"  1 (:eDI)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-w (:fn . (:no-instruction))))
 	       (:i64 . ("DEC"  1 (:eAX)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-wb (:fn . (:no-instruction))))
 	       (:i64 . ("DEC"  1 (:eCX)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-wx (:fn . (:no-instruction))))
 	       (:i64 . ("DEC"  1 (:eDX)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-wxb (:fn . (:no-instruction))))
 	       (:i64 . ("DEC"  1 (:eBX)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-wr (:fn . (:no-instruction))))
 	       (:i64 . ("DEC"  1 (:eSP)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-wrb (:fn . (:no-instruction))))
 	       (:i64 . ("DEC"  1 (:eBP)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-wrx (:fn . (:no-instruction))))
 	       (:i64 . ("DEC"  1 (:eSI)
-			(:fn . (x86-inc/dec-4x)))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*)))))
 	      ((:o64  . (:rex-wrxb (:fn . (:no-instruction))))
 	       (:i64 . ("DEC"  1 (:eDI)
-			(:fn . (x86-inc/dec-4x))))))
+			(:fn . (x86-inc/dec-4x))
+			(:ud  . (*ud-Lock-used*))))))
 
     #| 50 |# (("PUSH" 1 (:rAX/r8)   :d64
-	       (:fn . (x86-push-general-register)))
+	       (:fn . (x86-push-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("PUSH" 1 (:rCX/r9)   :d64
-	       (:fn . (x86-push-general-register)))
+	       (:fn . (x86-push-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("PUSH" 1 (:rDX/r10)  :d64
-	       (:fn . (x86-push-general-register)))
+	       (:fn . (x86-push-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("PUSH" 1 (:rBX/r11)  :d64
-	       (:fn . (x86-push-general-register)))
+	       (:fn . (x86-push-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("PUSH" 1 (:rSP/r11)  :d64
-	       (:fn . (x86-push-general-register)))
+	       (:fn . (x86-push-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("PUSH" 1 (:rBP/r13)  :d64
-	       (:fn . (x86-push-general-register)))
+	       (:fn . (x86-push-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("PUSH" 1 (:rSI/r14)  :d64
-	       (:fn . (x86-push-general-register)))
+	       (:fn . (x86-push-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("PUSH" 1 (:rDI/r15)  :d64
-	       (:fn . (x86-push-general-register)))
+	       (:fn . (x86-push-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("POP"  1 (:rAX/r8)   :d64
-	       (:fn . (x86-pop-general-register)))
+	       (:fn . (x86-pop-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("POP"  1 (:rCX/r9)   :d64
-	       (:fn . (x86-pop-general-register)))
+	       (:fn . (x86-pop-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("POP"  1 (:rDX/r10)  :d64
-	       (:fn . (x86-pop-general-register)))
+	       (:fn . (x86-pop-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("POP"  1 (:rBX/r11)  :d64
-	       (:fn . (x86-pop-general-register)))
+	       (:fn . (x86-pop-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("POP"  1 (:rSP/r11)  :d64
-	       (:fn . (x86-pop-general-register)))
+	       (:fn . (x86-pop-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("POP"  1 (:rBP/r13)  :d64
-	       (:fn . (x86-pop-general-register)))
+	       (:fn . (x86-pop-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("POP"  1 (:rSI/r14)  :d64
-	       (:fn . (x86-pop-general-register)))
+	       (:fn . (x86-pop-general-register))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("POP"  1 (:rDI/r15)  :d64
-	       (:fn . (x86-pop-general-register))))
+	       (:fn . (x86-pop-general-register))
+	       (:ud  . (*ud-Lock-used*))))
 
     #| 60 |# (((:i64 . ("PUSHA/PUSHAD" 0
-			(:fn . (x86-pusha))))
+			(:fn . (x86-pusha))
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "PUSHA is illegal in the 64-bit mode!"))))))
 	      ((:i64 . ("POPA/POPAD"   0
-			(:fn . (x86-popa))))
+			(:fn . (x86-popa))
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "POPA is illegal in the 64-bit mode!"))))))
-	      ((:i64 . ("BOUND"  2 (G v) (M a)))
+	      ((:i64 . ("BOUND"  2 (G v) (M a)
+			(:ud  . (*ud-Lock-used*
+				 *ud-second-operand-is-a-register*))))
 	       (:o64 . (:evex-byte0 (:fn . (:no-instruction)))
 		     ;; ("#UD" 0
 		     ;;  (:fn . (x86-illegal-instruction
@@ -523,8 +652,10 @@
 		     ;;                   "BOUND is illegal in the 64-bit mode!"))))
 		     ))
 	      ((:o64 . ("MOVSXD" 2 (G v) (E v)
-			(:fn . (x86-one-byte-movsxd))))
-	       (:i64 . ("ARPL"   2 (E w) (G w))))
+			(:fn . (x86-one-byte-movsxd))
+			(:ud  . (*ud-Lock-used*))))
+	       (:i64 . ("ARPL"   2 (E w) (G w)
+			(:ud  . (*ud-Lock-used*)))))
 	      (:prefix-FS
 	       (:fn . (:no-instruction)))
 	      (:prefix-GS
@@ -534,50 +665,74 @@
 	      (:prefix-AddrSize
 	       (:fn . (:no-instruction)))
 	      ("PUSH" 1 (I z) :d64
-	       (:fn . (x86-push-I)))
+	       (:fn . (x86-push-I))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("IMUL"  3 (G v) (E v) (I z)
-	       (:fn . (x86-imul-Op/En-RMI)))
+	       (:fn . (x86-imul-Op/En-RMI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("PUSH" 1 (I b) :d64
-	       (:fn . (x86-push-I)))
+	       (:fn . (x86-push-I))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("IMUL"  3 (G v) (E v) (I b)
-	       (:fn . (x86-imul-Op/En-RMI)))
-	      ("INS/INSB" 2 (Y b) (:DX))
-	      ("INS/INSW/INSD" 2 (Y z) (:DX))
-	      ("OUTS/OUTSB" 2 (Y b) (:DX))
-	      ("OUTS/OUTSW/OUTSD" 2 (Y z) (:DX)))
+	       (:fn . (x86-imul-Op/En-RMI))
+	       (:ud  . (*ud-Lock-used*)))
+	      ("INS/INSB" 2 (Y b) (:DX)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("INS/INSW/INSD" 2 (Y z) (:DX)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("OUTS/OUTSB" 2 (Y b) (:DX)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("OUTS/OUTSW/OUTSD" 2 (Y z) (:DX)
+	       (:ud  . (*ud-Lock-used*))))
 
     #| 70 |# (("JO" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JNO" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JB/NAE/C" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JNB/AE/NC" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JZ/E" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JNZ/NE" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JBE/NA" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JNBE/A" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JS" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JNS" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JP/PE" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JNP/PO" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JL/NGE" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JNL/GE" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JLE/NG" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc)))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JNLE/G" 1 (J b) :f64
-	       (:fn . (x86-one-byte-jcc))))
+	       (:fn . (x86-one-byte-jcc))
+	       (:ud  . (*ud-Lock-used*))))
 
     #| 80 |#  ((:Group-1 2 (E b) (I b) :1a)
 	       (:Group-1 2 (E v) (I z) :1a)
@@ -589,133 +744,217 @@
 	       (:Group-1 2 (E v) (I b) :1a)
 	       ("TEST" 2 (E b) (G b)
 		(:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-			(operation .  #.*OP-TEST*))))
+			(operation .  #.*OP-TEST*)))
+		(:ud  . (*ud-Lock-used*)))
 	       ("TEST" 2 (E v) (G v)
 		(:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-			(operation .  #.*OP-TEST*))))
+			(operation .  #.*OP-TEST*)))
+		(:ud  . (*ud-Lock-used*)))
 	       ("XCHG" 2 (E b) (G b)
-		(:fn . (x86-xchg)))
+		(:fn . (x86-xchg))
+		(:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	       ("XCHG" 2 (E v) (G v)
-		(:fn . (x86-xchg)))
+		(:fn . (x86-xchg))
+		(:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	       ("MOV" 2 (E b) (G b)
-		(:fn . (x86-mov-Op/En-MR)))
+		(:fn . (x86-mov-Op/En-MR))
+		(:ud  . (*ud-Lock-used*)))
 	       ("MOV" 2 (E v) (G v)
-		(:fn . (x86-mov-Op/En-MR)))
+		(:fn . (x86-mov-Op/En-MR))
+		(:ud  . (*ud-Lock-used*)))
 	       ("MOV" 2 (G b) (E b)
-		(:fn . (x86-mov-Op/En-RM)))
+		(:fn . (x86-mov-Op/En-RM))
+		(:ud  . (*ud-Lock-used*)))
 	       ("MOV" 2 (G v) (E v)
-		(:fn . (x86-mov-Op/En-RM)))
-	       ("MOV" 2 (E v) (S w))
+		(:fn . (x86-mov-Op/En-RM))
+		(:ud  . (*ud-Lock-used*)))
+	       ;; TODO: For (S w) operands, sensible modr/m.reg values are 0-5
+	       ;; because there are 6 segment registers.  Will these
+	       ;; instructions #UD when modr/m.reg = 6 or 7? E.g., when modr/m
+	       ;; is #x30 or #x38.
+	       ("MOV" 2 (E v) (S w)
+		(:ud  . (*ud-Lock-used*)))
 	       ("LEA" 2 (G v) (M)
-		(:fn . (x86-lea)))
-	       ("MOV" 2 (S w) (E w))
+		(:fn . (x86-lea))
+		(:ud  . (*ud-source-operand-is-a-register*
+			 *ud-Lock-used*)))
+	       ("MOV" 2 (S w) (E w)
+		(:ud  . (`(equal (mrm-reg modr/m) #.*cs*)
+			 *ud-Lock-used*)))
 	       ;; in Table A-6, Grp 1A only contains POP,
 	       ;; so we leave the latter implicit here:
 	       (:Group-1A 1 (E v) :1a :d64))
 
     #| 90 |# (("XCHG" 1 (:r8)
-	       (:fn . (x86-xchg)))
+	       (:fn . (x86-xchg))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("XCHG" 2 (:rCX/r9)  (:rAX)
-	       (:fn . (x86-xchg)))
+	       (:fn . (x86-xchg))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("XCHG" 2 (:rDX/r10) (:rAX)
-	       (:fn . (x86-xchg)))
+	       (:fn . (x86-xchg))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("XCHG" 2 (:rBX/r11) (:rAX)
-	       (:fn . (x86-xchg)))
+	       (:fn . (x86-xchg))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("XCHG" 2 (:rSP/r12) (:rAX)
-	       (:fn . (x86-xchg)))
+	       (:fn . (x86-xchg))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("XCHG" 2 (:rBP/r13) (:rAX)
-	       (:fn . (x86-xchg)))
+	       (:fn . (x86-xchg))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("XCHG" 2 (:rSI/r14) (:rAX)
-	       (:fn . (x86-xchg)))
+	       (:fn . (x86-xchg))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("XCHG" 2 (:rDI/r15) (:rAX)
-	       (:fn . (x86-xchg)))
+	       (:fn . (x86-xchg))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CBW/CWDE/CDQE" 0
-	       (:fn . (x86-cbw/cwd/cdqe)))
+	       (:fn . (x86-cbw/cwd/cdqe))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CWD/CDQ/CQO" 0
-	       (:fn . (x86-cwd/cdq/cqo)))
-	      ((:i64 . ("CALL" 1 (A p)))
+	       (:fn . (x86-cwd/cdq/cqo))
+	       (:ud  . (*ud-Lock-used*)))
+	      ((:i64 . ("CALL" 1 (A p)
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "far CALL is illegal in the 64-bit mode!"))))))
-	      ("FWAIT/WAIT" 0)
+	      ("FWAIT/WAIT" 0
+	       (:ud  . (*ud-Lock-used*)))
 	      ("PUSHF/D/Q"  1 (F v) :d64
-	       (:fn . (x86-pushf)))
+	       (:fn . (x86-pushf))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("POPF/D/Q"   1 (F v) :d64
-	       (:fn . (x86-popf)))
+	       (:fn . (x86-popf))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SAHF" 0
-	       (:fn . (x86-sahf)))
+	       (:fn . (x86-sahf))
+	       (:ud  . (*ud-Lock-used*
+			(:o64 .
+			      (`(equal
+				 ;; CPUID.80000001H.ECX[0]
+				 (cpuid-flag
+				  :value #ux_8000_0001
+				  :ecx t
+				  :bit 0)
+				 0))))))
 	      ("LAHF" 0
-	       (:fn . (x86-lahf))))
+	       (:fn . (x86-lahf))
+	       (:ud  . (*ud-Lock-used*
+			(:o64 .
+			      (`(equal
+				 ;; CPUID.80000001H:ECX.LAHF-SAHF[bit 0]
+				 (cpuid-flag
+				  :value #ux_8000_0001
+				  :ecx t
+				  :bit 0)
+				 0)))))))
 
     #| a0 |# (("MOV" 2 (:AL) (O b)
-	       (:fn . (x86-mov-Op/En-FD)))
+	       (:fn . (x86-mov-Op/En-FD))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2 (:rAX) (O v)
-	       (:fn . (x86-mov-Op/En-FD)))
-	      ("MOV" 2 (O b) (:AL))
-	      ("MOV" 2 (O v) (:rAX))
+	       (:fn . (x86-mov-Op/En-FD))
+	       (:ud  . (*ud-Lock-used*)))
+	      ("MOV" 2 (O b) (:AL)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("MOV" 2 (O v) (:rAX)
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOVS/B" 2 (Y b) (X b)
-	       (:fn . (x86-movs)))
+	       (:fn . (x86-movs))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOVS/W/D/Q" 2 (Y v) (X v)
-	       (:fn . (x86-movs)))
+	       (:fn . (x86-movs))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMPS/B"   2 (X b) (Y b)
 	       (:fn . (x86-cmps)))
 	      ("CMPS/W/D" 2 (X v) (Y v)
-	       (:fn . (x86-cmps)))
+	       (:fn . (x86-cmps))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("TEST" 2 (:AL) (I b)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-TEST*))))
+		       (operation . #.*OP-TEST*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("TEST" 2 (:rAX) (I z)
 	       (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
-		       (operation . #.*OP-TEST*))))
+		       (operation . #.*OP-TEST*)))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("STOS/B" 2 (Y b) (:AL)
-	       (:fn . (x86-stos)))
+	       (:fn . (x86-stos))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("STOS/W/D/Q" 2 (Y v) (:rAX)
-	       (:fn . (x86-stos)))
-	      ("LODS/B" 2 (:AL) (X b))
-	      ("LODS/W/D/Q" 2 (:rAX) (X v))
-	      ("SCAS/B" 2 (:AL) (Y b))
-	      ("SCAS/W/D/Q" 2 (:rAX) (Y v)))
+	       (:fn . (x86-stos))
+	       (:ud  . (*ud-Lock-used*)))
+	      ("LODS/B" 2 (:AL) (X b)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("LODS/W/D/Q" 2 (:rAX) (X v)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("SCAS/B" 2 (:AL) (Y b)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("SCAS/W/D/Q" 2 (:rAX) (Y v)
+	       (:ud  . (*ud-Lock-used*))))
 
     #| b0 |# (("MOV" 2  (:AL/r8L)  (I b)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:CL/r9L)  (I b)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:DL/r10L) (I b)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:BL/r11L) (I b)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:AH/r12L) (I b)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:CH/r13L) (I b)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:DH/r14L) (I b)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:BH/r15L) (I b)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:rAX/r8)  (I v)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:rCX/r9)  (I v)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:rDX/r10) (I v)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:rBX/r11) (I v)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:rSP/r12) (I v)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:rBP/r13) (I v)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:rSI/r14) (I v)
-	       (:fn . (x86-mov-Op/En-OI)))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOV" 2  (:rDI/r15) (I v)
-	       (:fn . (x86-mov-Op/En-OI))))
+	       (:fn . (x86-mov-Op/En-OI))
+	       (:ud  . (*ud-Lock-used*))))
 
     #| c0 |# ((:Group-2 2 (E b) (I b) :1a)
 	      (:Group-2 2 (E v) (I b) :1a)
 	      ("RET" 1 (I w) :f64
-	       (:fn . (x86-ret)))
+	       (:fn . (x86-ret))
+	       ;; No UD Exception
+	       )
 	      ("RET" 0 :f64
-	       (:fn . (x86-ret)))
+	       (:fn . (x86-ret))
+	       ;; No UD Exception
+	       )
 	      ;; C4 and C5 are first bytes of the vex prefixes, both
 	      ;; in 32-bit and IA-32e modes.  However, in the 32-bit
 	      ;; and compatibility modes, the second byte determines
@@ -726,42 +965,59 @@
 	      ;; we shouldn't be looking up modr/m info. for these
 	      ;; opcodes in the 64-bit mode.
 	      ((:o64 . (:vex3-byte0 (:fn . (:no-instruction))))
-	       (:i64 . ("LES" 2 (G z) (M p))))
+	       (:i64 . ("LES" 2 (G z) (M p)
+			(:ud  . (*ud-Lock-used*
+				 *ud-source-operand-is-a-register*)))))
 	      ((:o64 . (:vex2-byte0 (:fn . (:no-instruction))))
-	       (:i64 . ("LDS" 2 (G z) (M p))))
+	       (:i64 . ("LDS" 2 (G z) (M p)
+			(:ud  . (*ud-Lock-used*
+				 *ud-source-operand-is-a-register*)))))
 	      (:Group-11 2 (E b) (I b) :1a)
 	      (:Group-11 2 (E v) (I z) :1a)
-	      ("ENTER" 2 (I w) (I b))
+	      ("ENTER" 2 (I w) (I b)
+	       (:ud  . (*ud-Lock-used*)))
 	      ("LEAVE" 0 :d64
-	       (:fn . (x86-leave)))
-	      ("RET" 1 (I w))
-	      ("RET" 0)
-	      ("INT3" 0)
-	      ("INT" 1 (I b))
-	      ((:i64 . ("INTO" 0))
+	       (:fn . (x86-leave))
+	       (:ud  . (*ud-Lock-used*)))
+	      ("RET" 1 (I w)
+	       ;; No UD Exception
+	       )
+	      ("RET" 0
+	       ;; No UD Exception
+	       )
+	      ("INT3" 0
+	       (:ud  . (*ud-Lock-used*)))
+	      ("INT" 1 (I b)
+	       (:ud  . (*ud-Lock-used*)))
+	      ((:i64 . ("INTO" 0
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "INTO is illegal in the 64-bit mode!"))))))
-	      ("IRET/D/Q" 0))
+	      ("IRET/D/Q" 0
+	       (:ud  . (*ud-Lock-used*))))
 
     #| d0 |# ((:Group-2 2 (E b) (1) :1a)
 	      (:Group-2 2 (E v) (1) :1a)
 	      (:Group-2 2 (E b) (:CL) :1a)
 	      (:Group-2 2 (E v) (:CL) :1a)
-	      ((:i64 . ("AAM" 1 (I b)))
+	      ((:i64 . ("AAM" 1 (I b)
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "AAM is illegal in the 64-bit mode!"))))))
-	      ((:i64 . ("AAD" 1 (I b)))
+	      ((:i64 . ("AAD" 1 (I b)
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD" 0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "AAD is illegal in the 64-bit mode!"))))))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      ("XLAT/XLATB" 0)
+	      ("XLAT/XLATB" 0
+	       (:ud  . (*ud-Lock-used*)))
 	      (:esc) ;; Escape to co-processor instruction set
 	      (:esc) ;; Escape to co-processor instruction set
 	      (:esc) ;; Escape to co-processor instruction set
@@ -773,61 +1029,88 @@
 	      )
 
     #| e0 |# (("LOOPNE/LOOPNZ" 1 (J b) :f64
-	       (:fn . (x86-loop)))
+	       (:fn . (x86-loop))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("LOOPE/LOOPZ" 1 (J b) :f64
-	       (:fn . (x86-loop)))
+	       (:fn . (x86-loop))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("LOOP" 1 (J b) :f64
-	       (:fn . (x86-loop)))
+	       (:fn . (x86-loop))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JrCXZ" 1 (J b) :f64
-	       (:fn . (x86-jrcxz)))
-	      ("IN" 2 (:AL) (I b))
-	      ("IN" 2 (:eAX) (I b))
-	      ("OUT" 2 (I b) (:AL))
-	      ("OUT" 2 (I b) (:eAX))
+	       (:fn . (x86-jrcxz))
+	       (:ud  . (*ud-Lock-used*)))
+	      ("IN" 2 (:AL) (I b)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("IN" 2 (:eAX) (I b)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("OUT" 2 (I b) (:AL)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("OUT" 2 (I b) (:eAX)
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CALL" 1 (J z) :f64
-	       (:fn . (x86-call-E8-Op/En-M)))
+	       (:fn . (x86-call-E8-Op/En-M))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("JMP"  1 (J z) :f64
-	       (:fn . (x86-near-jmp-Op/En-D)))
-	      ((:i64 . ("JMP"  1 (A p)))
+	       (:fn . (x86-near-jmp-Op/En-D))
+	       (:ud  . (*ud-Lock-used*)))
+	      ((:i64 . ("JMP"  1 (A p)
+			(:ud  . (*ud-Lock-used*))))
 	       (:o64 . ("#UD"  0
 			(:fn . (x86-illegal-instruction
 				(message .
 					 "JMP is illegal in the 64-bit mode!"))))))
 	      ("JMP"  1 (J b) :f64
-	       (:fn . (x86-near-jmp-Op/En-D)))
-	      ("IN" 2  (:AL) (:DX))
-	      ("IN" 2  (:eAX) (:DX))
-	      ("OUT" 2 (:DX) (:AL))
-	      ("OUT" 2 (:DX) (:eAX)))
+	       (:fn . (x86-near-jmp-Op/En-D))
+	       (:ud  . (*ud-Lock-used*)))
+	      ("IN" 2  (:AL) (:DX)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("IN" 2  (:eAX) (:DX)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("OUT" 2 (:DX) (:AL)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("OUT" 2 (:DX) (:eAX)
+	       (:ud  . (*ud-Lock-used*))))
 
     #| f0 |# ((:prefix-Lock
 	       (:fn . (:no-instruction)))
-	      ("INT1" 0)
+	      ("INT1" 0
+	       (:ud  . (*ud-Lock-used*)))
 	      (:prefix-REPNE
 	       (:fn . (:no-instruction)))
 	      (:prefix-REP/REPE
 	       (:fn . (:no-instruction)))
 	      ("HLT" 0
-	       (:fn . (x86-hlt)))
+	       (:fn . (x86-hlt))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMC" 0
-	       (:fn . (x86-cmc/clc/stc/cld/std)))
+	       (:fn . (x86-cmc/clc/stc/cld/std))
+	       (:ud  . (*ud-Lock-used*)))
 	      (:Group-3 1 (E b) :1a)
 	      (:Group-3 1 (E v) :1a)
 	      ("CLC" 0
-	       (:fn . (x86-cmc/clc/stc/cld/std)))
+	       (:fn . (x86-cmc/clc/stc/cld/std))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("STC" 0
-	       (:fn . (x86-cmc/clc/stc/cld/std)))
-	      ("CLI" 0)
-	      ("STI" 0)
+	       (:fn . (x86-cmc/clc/stc/cld/std))
+	       (:ud  . (*ud-Lock-used*)))
+	      ("CLI" 0
+	       (:ud  . (*ud-Lock-used*)))
+	      ("STI" 0
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CLD" 0
 	       (:fn . (x86-cmc/clc/stc/cld/std)))
 	      ("STD" 0
-	       (:fn . (x86-cmc/clc/stc/cld/std)))
+	       (:fn . (x86-cmc/clc/stc/cld/std))
+	       (:ud  . (*ud-Lock-used*)))
 	      (:Group-4 1 (E b) :1a)
 	      (:Group-5 1 (E v) :1a))
 
     #|       -------------------------------        |#
     ))
+
+
+;; TODO: Didn't do FP instructions yet.
 
 (defconst *two-byte-opcode-map-lst*
   ;; First byte is 0x0F.
@@ -838,27 +1121,48 @@
 
     #| 00 |# ((:Group-6 0 :1a)
 	      (:Group-7 0 :1a)
-	      ("LAR" 2 (G v) (E w))
-	      ("LSL" 2 (G v) (E w))
+	      ("LAR" 2 (G v) (E w)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("LSL" 2 (G v) (E w)
+	       (:ud  . (*ud-Lock-used*)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ((:o64 . ("SYSCALL" 0
-			(:fn . (x86-syscall-both-views))))
+			(:fn . (x86-syscall-both-views))
+			(:ud  . (*ud-Lock-used*
+				 `(equal
+				   (ia32_efer-slice
+				    :ia32_efer-sce
+				    (n12 (msri *ia32_efer-idx* x86)))
+				   0)))))
 	       (:i64 . (:none
 			(:fn . (:no-instruction)))))
-	      ("CLTS" 0)
+	      ("CLTS" 0
+	       (:ud  . (*ud-Lock-used*)))
 	      ((:o64 . ("SYSRET" 0
-			(:fn . (x86-sysret))))
+			(:fn . (x86-sysret))
+			(:ud  . (*ud-Lock-used*
+				 `(equal
+				   (ia32_efer-slice
+				    :ia32_efer-sce
+				    (n12 (msri *ia32_efer-idx* x86)))
+				   0)))))
 	       (:i64 . (:none
 			(:fn . (:no-instruction)))))
-    #| 08 |#  ("INVD" 0)
-	      ("WBINVD" 0)
+    #| 08 |#  ("INVD" 0
+	       (:ud  . (*ud-Lock-used*)))
+	      ("WBINVD" 0
+	       (:ud  . (*ud-Lock-used*)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      ("UD2" 0 :1b)
+	      ("UD2" 0 :1b
+	       ;; (:fn . (x86-illegal-instruction
+	       ;;         (message . "UD2 encountered!")))
+	       (:ud  . (t)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      ("prefetchw(/1)" 1 (E v))
+	      ("prefetchw(/1)" 1 (E v)
+	       (:ud  . (*ud-Lock-used*)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -944,13 +1248,40 @@
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ("NOP" 1 (E v)
-	       (:fn . (x86-two-byte-nop))))
+	       (:fn . (x86-two-byte-nop))
+	       (:ud  . (*ud-Lock-used*))))
 
     #| 20 |# (("MOV" 2 (R d) (C d)
-	       (:fn . (x86-mov-control-regs-Op/En-MR)))
-	      ("MOV" 2 (R d) (D d))
-	      ("MOV" 2 (C d) (R d))
-	      ("MOV" 2 (D d) (R d))
+	       (:fn . (x86-mov-control-regs-Op/En-MR))
+	       (:ud  . (*ud-Lock-used*
+			`(let ((reg (mrm-reg modr/m)))
+			   (if (and (equal proc-mode #.*64-bit-mode*)
+				    (logbitp #.*r* rex-byte))
+			       (not (equal reg 0))
+			     (or (equal reg #.*cr1*)
+				 (equal reg #.*cr5*)
+				 (equal reg #.*cr6*)
+				 (equal reg #.*cr7*)))))))
+	      ("MOV" 2 (R d) (D d)
+	       (:ud  . (*ud-Lock-used*
+			`(and (equal (cr4-slice :cr4-de (ctri #.*cr4* x86)) 1)
+			      (or (equal (mrm-reg modr/m) #.*dr4*)
+				  (equal (mrm-reg modr/m) #.*dr5*))))))
+	      ("MOV" 2 (C d) (R d)
+	       (:ud  . (*ud-Lock-used*
+			`(let ((reg (mrm-reg modr/m)))
+			   (if (and (equal proc-mode #.*64-bit-mode*)
+				    (logbitp #.*r* rex-byte))
+			       (not (equal reg 0))
+			     (or (equal reg #.*cr1*)
+				 (equal reg #.*cr5*)
+				 (equal reg #.*cr6*)
+				 (equal reg #.*cr7*)))))))
+	      ("MOV" 2 (D d) (R d)
+	       (:ud  . (*ud-Lock-used*
+			`(and (equal (cr4-slice :cr4-de (ctri #.*cr4* x86)) 1)
+			      (or (equal (mrm-reg modr/m) #.*dr4*)
+				  (equal (mrm-reg modr/m) #.*dr5*))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -1022,12 +1353,18 @@
 				      (operation . #.*OP-UCOMI*)
 				      (sp/dp . #.*OP-DP*)))))))
 
-    #| 30 |# (("WRMSR" 0)
-	      ("RDTSC" 0)
-	      ("RDMSR" 0)
-	      ("RDPMC" 0)
-	      ("SYSENTER" 0)
-	      ("SYSEXIT" 0)
+    #| 30 |# (("WRMSR" 0
+	       (:ud  . (*ud-Lock-used*)))
+	      ("RDTSC" 0
+	       (:ud  . (*ud-Lock-used*)))
+	      ("RDMSR" 0
+	       (:ud  . (*ud-Lock-used*)))
+	      ("RDPMC" 0
+	       (:ud  . (*ud-Lock-used*)))
+	      ("SYSENTER" 0
+	       (:ud  . (*ud-Lock-used*)))
+	      ("SYSEXIT" 0
+	       (:ud  . (*ud-Lock-used*)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ("GETSEC" 0)
@@ -1051,37 +1388,53 @@
 	       (:fn . (:no-instruction))))
 
     #| 40 |# (("CMOVO" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVNO" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVB/C/NAE" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVAE/NB/NC" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVE/Z" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVNE/NZ" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVBE/NA" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVA/NBE" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
     #| 48 |#  ("CMOVS" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVNS" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVP/PE" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVNP/PO" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVL/NGE" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVNL/GE" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVLE/NG" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc)))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("CMOVNLE/G" 2 (G v) (E v)
-	       (:fn . (x86-cmovcc))))
+	       (:fn . (x86-cmovcc))
+	       (:ud  . (*ud-Lock-used*))))
 
     #| 50 |# (((:no-prefix . ("VMOVMSKPS"  2 (G y)  (U ps)))
 	       (:66        . ("VMOVMSKPD"  2 (G y)  (U pd))))
@@ -1334,93 +1687,137 @@
 			      (:fn . (x86-movups/movupd/movdqu-Op/En-MR))))))
 
     #| 80 |#  (("JO" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JNO" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JB/NAE/C" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JNB/AE/NC" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JZ/E" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JNZ/NE" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JBE/NA" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JNBE/A" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
     #| 88 |#   ("JS" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JNS" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JP/PE" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JNP/PO" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JL/NGE" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JNL/GE" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JLE/NG" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc)))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*)))
 	       ("JNLE/G" 1 (J z) :f64
-		(:fn . (x86-two-byte-jcc))))
+		(:fn . (x86-two-byte-jcc))
+		(:ud  . (*ud-Lock-used*))))
 
     #| 90 |# (("SETO" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETNO" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETB/NAE/C" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETNB/AE/NC" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETZ/E" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETNZ/NE" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETBE/NA" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETNBE/A" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
     #| 98 |#  ("SETS" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETNS" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETP/PE" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETNP/PO" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETL/NGE" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETNL/GE" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETLE/NG" 1 (E b)
-	       (:fn . (x86-setcc)))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("SETNLE/G" 1 (E b)
-	       (:fn . (x86-setcc))))
+	       (:fn . (x86-setcc))
+	       (:ud  . (*ud-Lock-used*))))
 
     #| a0 |# (("PUSH"  1 (:FS) :d64
-	       (:fn . (x86-push-segment-register)))
-	      ("POP"   1 (:FS) :d64)
-	      ("CPUID" 0)
+	       (:fn . (x86-push-segment-register))
+	       (:ud  . (*ud-Lock-used*)))
+	      ("POP"   1 (:FS) :d64
+	       (:ud  . (*ud-Lock-used*)))
+	      ("CPUID" 0
+	       (:ud  . (*ud-Lock-used*)))
 	      ("BT" 2 (E v) (G v)
-	       (:fn . (x86-bt-0f-a3)))
-	      ("SHLD" 3 (E v) (G v) (I b))
-	      ("SHLD" 3 (E v) (G v) (:CL))
+	       (:fn . (x86-bt-0f-a3))
+	       (:ud  . (*ud-Lock-used*)))
+	      ("SHLD" 3 (E v) (G v) (I b)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("SHLD" 3 (E v) (G v) (:CL)
+	       (:ud  . (*ud-Lock-used*)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
     #| a8 |#  ("PUSH"  1 (:GS) :d64
-	       (:fn . (x86-push-segment-register)))
-	      ("POP"   1 (:GS) :d64)
+	       (:fn . (x86-push-segment-register))
+	       (:ud  . (*ud-Lock-used*)))
+	      ("POP"   1 (:GS) :d64
+	       (:ud  . (*ud-Lock-used*)))
 	      ("RSM" 0)
-	      ("BTS" 2 (E v) (G v))
-	      ("SHRD" 3 (E v) (G v) (I b))
-	      ("SHRD" 3 (E v) (G v) (:CL))
+	      ("BTS" 2 (E v) (G v)
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
+	      ("SHRD" 3 (E v) (G v) (I b)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("SHRD" 3 (E v) (G v) (:CL)
+	       (:ud  . (*ud-Lock-used*)))
 	      (:Group-15 0 :1a :1c)
 	      ("IMUL" 2 (G v) (E v)
-	       (:fn . (x86-imul-Op/En-RM))))
+	       (:fn . (x86-imul-Op/En-RM))
+	       (:ud  . (*ud-Lock-used*))))
 
     #| b0 |# (("CMPXCHG" 2 (E b) (G b)
 	       (:fn . (x86-cmpxchg)))
@@ -2378,9 +2775,9 @@
 	       (:v66        . ("VPERM2F128" 4 (V qq) (H qq) (W qq) (I b))))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| 08 |#  ((:no-prefix . (:none
-			      (:fn . (:no-instruction))))
-	       (:66        . ("VROUNDPS" 3 (V x)  (W x)  (I b))))
+	      #| 08 |#  ((:no-prefix . (:none
+					(:fn . (:no-instruction))))
+			 (:66        . ("VROUNDPS" 3 (V x)  (W x)  (I b))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . ("VROUNDPD" 3 (V x)  (W x)  (I b))))
@@ -2426,9 +2823,9 @@
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . ("VEXTRACTPS"  3 (E d)  (V dq)  (I b))))
-    #| 18 |#  ((:no-prefix . (:none
-			      (:fn . (:no-instruction))))
-	       (:v66        . ("VINSERTF128"  4 (V qq) (H qq) (W qq) (I b))))
+	      #| 18 |#  ((:no-prefix . (:none
+					(:fn . (:no-instruction))))
+			 (:v66        . ("VINSERTF128"  4 (V qq) (H qq) (W qq) (I b))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VEXTRACTF128" 3 (W dq) (V qq) (I b))))
@@ -2469,8 +2866,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| 28 |#  (:none
-	       (:fn . (:no-instruction)))
+	      #| 28 |#  (:none
+			 (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2502,9 +2899,9 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| 38 |#  ((:no-prefix . (:none
-			      (:fn . (:no-instruction))))
-	       (:v66        . ("VINSERTI128"  4 (V qq) (H qq) (W qq) (I b))))
+	      #| 38 |#  ((:no-prefix . (:none
+					(:fn . (:no-instruction))))
+			 (:v66        . ("VINSERTI128"  4 (V qq) (H qq) (W qq) (I b))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VEXTRACTI128" 3 (W dq) (V qq) (I b))))
@@ -2542,8 +2939,8 @@
 	       (:v66        . ("VPERM2I128" 4 (V qq) (H qq) (W qq) (I b))))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| 48 |#  (:none
-	       (:fn . (:no-instruction)))
+	      #| 48 |#  (:none
+			 (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ((:no-prefix . (:none
@@ -2578,8 +2975,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| 58 |#  (:none
-	       (:fn . (:no-instruction)))
+	      #| 58 |#  (:none
+			 (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2615,8 +3012,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| 68 |#  (:none
-	       (:fn . (:no-instruction)))
+	      #| 68 |#  (:none
+			 (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2648,8 +3045,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| 78 |#  (:none
-	       (:fn . (:no-instruction)))
+	      #| 78 |#  (:none
+			 (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2666,37 +3063,37 @@
 	       (:fn . (:no-instruction))))
 
     #| 80 |#  ((:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction)))
-    #| 88 |#   (:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
+	       #| 88 |#   (:none
+			   (:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction)))
+		(:fn . (:no-instruction)))
 	       (:none
-	       (:fn . (:no-instruction))))
+		(:fn . (:no-instruction))))
 
     #| 90 |# ((:none
 	       (:fn . (:no-instruction)))
@@ -2714,8 +3111,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| 98 |#  (:none
-	       (:fn . (:no-instruction)))
+	      #| 98 |#  (:none
+			 (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2747,8 +3144,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| a8 |#  (:none
-	       (:fn . (:no-instruction)))
+	      #| a8 |#  (:none
+			 (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2780,8 +3177,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| b8 |#  (:none
-	       (:fn . (:no-instruction)))
+	      #| b8 |#  (:none
+			 (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2813,8 +3210,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| c8 |#  (:none
-	       (:fn . (:no-instruction)))
+	      #| c8 |#  (:none
+			 (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2845,8 +3242,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| d8 |#  (:none
-	       (:fn . (:no-instruction)))
+	      #| d8 |#  (:none
+			 (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2879,8 +3276,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| e8 |#  (:none
-	       (:fn . (:no-instruction)))
+	      #| e8 |#  (:none
+			 (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2913,8 +3310,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| f8 |#  (:none
-	       (:fn . (:no-instruction)))
+	      #| f8 |#  (:none
+			 (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2930,8 +3327,8 @@
 	      (:none
 	       (:fn . (:no-instruction))))
 
-  #|       -------------------------------        |#
-  ))
+    #|       -------------------------------        |#
+    ))
 
 (defconst *opcode-extensions-by-group-number*
   ;; Source: Intel Volume 2, Table A-6.
@@ -2947,171 +3344,204 @@
 		 (:reg    . #b000)) .
 		 ("ADD" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-ADD*)))))
+			  (operation . #.*OP-ADD*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x80)
 		 (:reg    . #b001)) .
 		 ("OR" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-OR*)))))
+			  (operation . #.*OP-OR*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x80)
 		 (:reg    . #b010)) .
 		 ("ADC" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-ADC*)))))
+			  (operation . #.*OP-ADC*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x80)
 		 (:reg    . #b011)) .
 		 ("SBB" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-SBB*)))))
+			  (operation . #.*OP-SBB*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x80)
 		 (:reg    . #b100)) .
 		 ("AND" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-AND*)))))
+			  (operation . #.*OP-AND*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x80)
 		 (:reg    . #b101)) .
 		 ("SUB" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-SUB*)))))
+			  (operation . #.*OP-SUB*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x80)
 		 (:reg    . #b110)) .
 		 ("XOR" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-XOR*)))))
+			  (operation . #.*OP-XOR*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x80)
 		 (:reg    . #b111)) .
 		 ("CMP" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-CMP*)))))
+			  (operation . #.*OP-CMP*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 
 	       (((:opcode . #x81)
 		 (:reg    . #b000)) .
 		 ("ADD" 2 (E v) (I z) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-ADD*)))))
+			  (operation . #.*OP-ADD*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x81)
 		 (:reg    . #b001)) .
 		 ("OR" 2 (E v) (I z) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-OR*)))))
+			  (operation . #.*OP-OR*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x81)
 		 (:reg    . #b010)) .
 		 ("ADC" 2 (E v) (I z) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-ADC*)))))
+			  (operation . #.*OP-ADC*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x81)
 		 (:reg    . #b011)) .
 		 ("SBB" 2 (E v) (I z) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-SBB*)))))
+			  (operation . #.*OP-SBB*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x81)
 		 (:reg    . #b100)) .
 		 ("AND" 2 (E v) (I z) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-AND*)))))
+			  (operation . #.*OP-AND*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x81)
 		 (:reg    . #b101)) .
 		 ("SUB" 2 (E v) (I z) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-SUB*)))))
+			  (operation . #.*OP-SUB*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x81)
 		 (:reg    . #b110)) .
 		 ("XOR" 2 (E v) (I z) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-XOR*)))))
+			  (operation . #.*OP-XOR*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x81)
 		 (:reg    . #b111)) .
 		 ("CMP" 2 (E v) (I z) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-CMP*)))))
+			  (operation . #.*OP-CMP*)))
+		  (:ud  . (*ud-Lock-used*))))
 
 	       (((:opcode . #x82)
 		 (:reg    . #b000)) .
 		 ("ADD" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-ADD*)))))
+			  (operation . #.*OP-ADD*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x82)
 		 (:reg    . #b001)) .
 		 ("OR" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-OR*)))))
+			  (operation . #.*OP-OR*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x82)
 		 (:reg    . #b010)) .
 		 ("ADC" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-ADC*)))))
+			  (operation . #.*OP-ADC*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x82)
 		 (:reg    . #b011)) .
 		 ("SBB" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-SBB*)))))
+			  (operation . #.*OP-SBB*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x82)
 		 (:reg    . #b100)) .
 		 ("AND" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-AND*)))))
+			  (operation . #.*OP-AND*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x82)
 		 (:reg    . #b101)) .
 		 ("SUB" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-SUB*)))))
+			  (operation . #.*OP-SUB*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x82)
 		 (:reg    . #b110)) .
 		 ("XOR" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-XOR*)))))
+			  (operation . #.*OP-XOR*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x82)
 		 (:reg    . #b111)) .
 		 ("CMP" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-CMP*)))))
+			  (operation . #.*OP-CMP*)))
+		  (:ud  . (*ud-Lock-used*))))
 
 	       (((:opcode . #x83)
 		 (:reg    . #b000)) .
 		 ("ADD" 2 (E v) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-ADD*)))))
+			  (operation . #.*OP-ADD*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x83)
 		 (:reg    . #b001)) .
 		 ("OR" 2 (E v) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-OR*)))))
+			  (operation . #.*OP-OR*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x83)
 		 (:reg    . #b010)) .
 		 ("ADC" 2 (E v) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-ADC*)))))
+			  (operation . #.*OP-ADC*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x83)
 		 (:reg    . #b011)) .
 		 ("SBB" 2 (E v) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-SBB*)))))
+			  (operation . #.*OP-SBB*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x83)
 		 (:reg    . #b100)) .
 		 ("AND" 2 (E v) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-AND*)))))
+			  (operation . #.*OP-AND*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x83)
 		 (:reg    . #b101)) .
 		 ("SUB" 2 (E v) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-SUB*)))))
+			  (operation . #.*OP-SUB*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x83)
 		 (:reg    . #b110)) .
 		 ("XOR" 2 (E v) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-XOR*)))))
+			  (operation . #.*OP-XOR*)))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #x83)
 		 (:reg    . #b111)) .
 		 ("CMP" 2 (E v) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-CMP*)))))))
+			  (operation . #.*OP-CMP*)))
+		  (:ud  . (*ud-Lock-used*))))))
 
     (:Group-1A . ;; Covers opcode 8F.
 	       ((((:opcode . #x8F)
 		  (:reg    . #b000)) .
 		  ("POP" 1 (E v) :1a :d64
-		   (:fn . (x86-pop-Ev))))
+		   (:fn . (x86-pop-Ev))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #x8F)
 		  (:reg    . #b001)) .
 		  (:none
@@ -3149,27 +3579,33 @@
 	       ((((:opcode . #xC0)
 		  (:reg    . #b000)) .
 		  ("ROL" 2 (E b) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC0)
 		  (:reg    . #b001)) .
 		  ("ROR" 2 (E b) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC0)
 		  (:reg    . #b010)) .
 		  ("RCL" 2 (E b) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC0)
 		  (:reg    . #b011)) .
 		  ("RCR" 2 (E b) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC0)
 		  (:reg    . #b100)) .
 		  ("SHL/SAL" 2 (E b) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC0)
 		  (:reg    . #b101)) .
 		  ("SHR" 2 (E b) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC0)
 		  (:reg    . #b110)) .
 		  (:none
@@ -3177,32 +3613,39 @@
 		(((:opcode . #xC0)
 		  (:reg    . #b111)) .
 		  ("SAR" 2 (E b) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 
 		(((:opcode . #xC1)
 		  (:reg    . #b000)) .
 		  ("ROL" 2 (E v) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC1)
 		  (:reg    . #b001)) .
 		  ("ROR" 2 (E v) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC1)
 		  (:reg    . #b010)) .
 		  ("RCL" 2 (E v) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC1)
 		  (:reg    . #b011)) .
 		  ("RCR" 2 (E v) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC1)
 		  (:reg    . #b100)) .
 		  ("SHL/SAL" 2 (E v) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC1)
 		  (:reg    . #b101)) .
 		  ("SHR" 2 (E v) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC1)
 		  (:reg    . #b110)) .
 		  (:none
@@ -3210,32 +3653,39 @@
 		(((:opcode . #xC1)
 		  (:reg    . #b111)) .
 		  ("SAR" 2 (E v) (I b) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 
 		(((:opcode . #xD0)
 		  (:reg    . #b000)) .
 		  ("ROL" 2 (E b) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD0)
 		  (:reg    . #b001)) .
 		  ("ROR" 2 (E b) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD0)
 		  (:reg    . #b010)) .
 		  ("RCL" 2 (E b) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD0)
 		  (:reg    . #b011)) .
 		  ("RCR" 2 (E b) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD0)
 		  (:reg    . #b100)) .
 		  ("SHL/SAL" 2 (E b) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD0)
 		  (:reg    . #b101)) .
 		  ("SHR" 2 (E b) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD0)
 		  (:reg    . #b110)) .
 		  (:none
@@ -3243,32 +3693,39 @@
 		(((:opcode . #xD0)
 		  (:reg    . #b111)) .
 		  ("SAR" 2 (E b) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 
 		(((:opcode . #xD1)
 		  (:reg    . #b000)) .
 		  ("ROL" 2 (E v) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD1)
 		  (:reg    . #b001)) .
 		  ("ROR" 2 (E v) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD1)
 		  (:reg    . #b010)) .
 		  ("RCL" 2 (E v) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD1)
 		  (:reg    . #b011)) .
 		  ("RCR" 2 (E v) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD1)
 		  (:reg    . #b100)) .
 		  ("SHL/SAL" 2 (E v) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD1)
 		  (:reg    . #b101)) .
 		  ("SHR" 2 (E v) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD1)
 		  (:reg    . #b110)) .
 		  (:none
@@ -3276,32 +3733,39 @@
 		(((:opcode . #xD1)
 		  (:reg    . #b111)) .
 		  ("SAR" 2 (E v) (1) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 
 		(((:opcode . #xD2)
 		  (:reg    . #b000)) .
 		  ("ROL" 2 (E b) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD2)
 		  (:reg    . #b001)) .
 		  ("ROR" 2 (E b) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD2)
 		  (:reg    . #b010)) .
 		  ("RCL" 2 (E b) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD2)
 		  (:reg    . #b011)) .
 		  ("RCR" 2 (E b) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD2)
 		  (:reg    . #b100)) .
 		  ("SHL/SAL" 2 (E b) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD2)
 		  (:reg    . #b101)) .
 		  ("SHR" 2 (E b) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD2)
 		  (:reg    . #b110)) .
 		  (:none
@@ -3309,32 +3773,39 @@
 		(((:opcode . #xD2)
 		  (:reg    . #b111)) .
 		  ("SAR" 2 (E b) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 
 		(((:opcode . #xD3)
 		  (:reg    . #b000)) .
 		  ("ROL" 2 (E v) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD3)
 		  (:reg    . #b001)) .
 		  ("ROR" 2 (E v) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD3)
 		  (:reg    . #b010)) .
 		  ("RCL" 2 (E v) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD3)
 		  (:reg    . #b011)) .
 		  ("RCR" 2 (E v) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD3)
 		  (:reg    . #b100)) .
 		  ("SHL/SAL" 2 (E v) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD3)
 		  (:reg    . #b101)) .
 		  ("SHR" 2 (E v) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xD3)
 		  (:reg    . #b110)) .
 		  (:none
@@ -3342,14 +3813,16 @@
 		(((:opcode . #xD3)
 		  (:reg    . #b111)) .
 		  ("SAR" 2 (E v) (:CL) :1a
-		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))))))
+		   (:fn . (x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
+		   (:ud  . (*ud-Lock-used*))))))
 
     (:Group-3 . ;; Covers opcodes F6 and F7.
 	      ((((:opcode . #xF6)
 		 (:reg    . #b000)) .
 		 ("TEST" 1 (E b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-TEST*)))))
+			  (operation . #.*OP-TEST*)))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #xF6)
 		 (:reg    . #b001)) .
 		 (:none
@@ -3357,33 +3830,40 @@
 	       (((:opcode . #xF6)
 		 (:reg    . #b010)) .
 		 ("NOT" 1 (E b) :1a
-		  (:fn . (x86-not/neg-F6-F7))))
+		  (:fn . (x86-not/neg-F6-F7))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #xF6)
 		 (:reg    . #b011)) .
 		 ("NEG" 1 (E b) :1a
-		  (:fn . (x86-not/neg-F6-F7))))
+		  (:fn . (x86-not/neg-F6-F7))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #xF6)
 		 (:reg    . #b100)) .
 		 ("MUL" 1 (E b) :1a
-		  (:fn . (x86-mul))))
+		  (:fn . (x86-mul))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #xF6)
 		 (:reg    . #b101)) .
 		 ("IMUL" 1 (E b) :1a
-		  (:fn . (x86-imul-Op/En-M))))
+		  (:fn . (x86-imul-Op/En-M))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #xF6)
 		 (:reg    . #b110)) .
 		 ("DIV" 1 (E b) :1a
-		  (:fn . (x86-div))))
+		  (:fn . (x86-div))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #xF6)
 		 (:reg    . #b111)) .
 		 ("IDIV" 1 (E b) :1a
-		  (:fn . (x86-idiv))))
+		  (:fn . (x86-idiv))
+		  (:ud  . (*ud-Lock-used*))))
 
 	       (((:opcode . #xF7)
 		 (:reg    . #b000)) .
 		 ("TEST" 1 (E b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
-			  (operation . #.*OP-TEST*)))))
+			  (operation . #.*OP-TEST*)))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #xF7)
 		 (:reg    . #b001)) .
 		 (:none
@@ -3391,37 +3871,45 @@
 	       (((:opcode . #xF7)
 		 (:reg    . #b010)) .
 		 ("NOT" 1 (E b) :1a
-		  (:fn . (x86-not/neg-F6-F7))))
+		  (:fn . (x86-not/neg-F6-F7))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #xF7)
 		 (:reg    . #b011)) .
 		 ("NEG" 1 (E b) :1a
-		  (:fn . (x86-not/neg-F6-F7))))
+		  (:fn . (x86-not/neg-F6-F7))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #xF7)
 		 (:reg    . #b100)) .
 		 ("MUL" 1 (E b) :1a
-		  (:fn . (x86-mul))))
+		  (:fn . (x86-mul))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #xF7)
 		 (:reg    . #b101)) .
 		 ("IMUL" 1 (E b) :1a
-		  (:fn . (x86-imul-Op/En-M))))
+		  (:fn . (x86-imul-Op/En-M))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #xF7)
 		 (:reg    . #b110)) .
 		 ("DIV" 1 (E b) :1a
-		  (:fn . (x86-div))))
+		  (:fn . (x86-div))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #xF7)
 		 (:reg    . #b111)) .
 		 ("IDIV" 1 (E b) :1a
-		  (:fn . (x86-idiv))))))
+		  (:fn . (x86-idiv))
+		  (:ud  . (*ud-Lock-used*))))))
 
     (:Group-4 . ;; Covers opcode FE.
 	      ((((:opcode . #xFE)
 		 (:reg    . #b000)) .
 		 ("INC" 1 (E b) :1a
-		  (:fn . (x86-inc/dec-FE-FF))))
+		  (:fn . (x86-inc/dec-FE-FF))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #xFE)
 		 (:reg    . #b001)) .
 		 ("DEC" 1 (E b) :1a
-		  (:fn . (x86-inc/dec-FE-FF))))
+		  (:fn . (x86-inc/dec-FE-FF))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #xFE)
 		 (:reg    . #b010)) .
 		 (:none
@@ -3451,60 +3939,72 @@
 	      ((((:opcode . #xFF)
 		 (:reg    . #b000)) .
 		 ("INC" 1 (E v) :1a
-		  (:fn . (x86-inc/dec-FE-FF))))
+		  (:fn . (x86-inc/dec-FE-FF))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #xFF)
 		 (:reg    . #b001)) .
 		 ("DEC" 1 (E v) :1a
-		  (:fn . (x86-inc/dec-FE-FF))))
+		  (:fn . (x86-inc/dec-FE-FF))
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #xFF)
 		 (:reg    . #b010)) .
 		 ("near CALL"  1 (E v) :1a :f64
-		  (:fn . (x86-call-FF/2-Op/En-M))))
+		  (:fn . (x86-call-FF/2-Op/En-M))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #xFF)
 		 (:reg    . #b011)) .
-		 ("far CALL"  1 (E p) :1a))
+		 ("far CALL"  1 (E p) :1a
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #xFF)
 		 (:reg    . #b100)) .
 		 ("near JMP"  1 (E v) :1a :f64
-		  (:fn . (x86-near-jmp-Op/En-M))))
+		  (:fn . (x86-near-jmp-Op/En-M))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #xFF)
 		 (:reg    . #b101)) .
 		 ("far JMP"  1 (M p) :1a
-		  (:fn . (x86-far-jmp-Op/En-D))))
+		  (:fn . (x86-far-jmp-Op/En-D))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #xFF)
 		 (:reg    . #b110)) .
 		 ("PUSH"  1 (E v) :1a :d64
-		  (:fn . (x86-push-Ev))))
+		  (:fn . (x86-push-Ev))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #xFF)
 		 (:reg    . #b111)) .
 		 (:none
 		  (:fn . (:no-instruction))))))
-
 
     (:Group-6 . ;; Covers opcode 0F 00.
 	      ((((:opcode . #ux0F_00)
 		 (:reg    . #b000)) .
 		 (:ALT
 		  (("SLDT" 1 (R v) :1a)
-		   ("SLDT" 1 (M w) :1a))))
+		   ("SLDT" 1 (M w) :1a))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_00)
 		 (:reg    . #b001)) .
 		 (:ALT
 		  (("STR" 1 (R v) :1a)
-		   ("STR" 1 (M w) :1a))))
+		   ("STR" 1 (M w) :1a))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_00)
 		 (:reg    . #b010)) .
 		 ("LLDT" 1 (E w) :1a
-		  (:fn . (x86-lldt))))
+		  (:fn . (x86-lldt))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_00)
 		 (:reg    . #b011)) .
-		 ("LTR" 1 (E w) :1a))
+		 ("LTR" 1 (E w) :1a
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_00)
 		 (:reg    . #b100)) .
-		 ("VERR" 1 (E w) :1a))
+		 ("VERR" 1 (E w) :1a
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_00)
 		 (:reg    . #b101)) .
-		 ("VERW" 1 (E w) :1a))
+		 ("VERW" 1 (E w) :1a
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_00)
 		 (:reg    . #b110)) .
 		 (:none
@@ -3518,7 +4018,8 @@
 	      ((((:opcode . #ux0F_01)
 		 (:mod    . :mem)
 		 (:reg    . #b000)) .
-		 ("SGDT" 1 (M s) :1a))
+		 ("SGDT" 1 (M s) :1a
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b000)
@@ -3542,27 +4043,64 @@
 	       (((:opcode . #ux0F_01)
 		 (:mod    . :mem)
 		 (:reg    . #b001)) .
-		 ("SIDT" 1 (M s) :1a))
+		 ("SIDT" 1 (M s) :1a
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b001)
 		 (:r/m    . #b000)) .
-		 ("MONITOR" 0 :1a))
+		 ("MONITOR" 0 :1a
+		  (:ud  . (*ud-cpl-is-not-zero*
+			   `(equal
+			     ;; CPUID.01H:ECX.MONITOR[bit 3]
+			     (cpuid-flag
+			      :value #ux_01
+			      :ecx t
+			      :bit 3)
+			     0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b001)
 		 (:r/m    . #b001)) .
-		 ("MWAIT" 0 :1a))
+		 ("MWAIT" 0 :1a
+		  (:ud  . (*ud-cpl-is-not-zero*
+			   `(equal
+			     ;; CPUID.01H:ECX.MONITOR[bit 3]
+			     (cpuid-flag
+			      :value #ux_01
+			      :ecx t
+			      :bit 3)
+			     0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b001)
 		 (:r/m    . #b010)) .
-		 ("CLAC" 0 :1a))
+		 ("CLAC" 0 :1a
+		  (:ud  . (*ud-Lock-used*
+			   *ud-cpl-is-not-zero*
+			   `(equal
+			     ;; CPUID.(EAX=07H, ECX=0H):EBX.SMAP[bit 20]
+			     (cpuid-flag
+			      :eax #ux_07
+			      :ecx #ux_00
+			      :ebx t
+			      :bit 20)
+			     0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b001)
 		 (:r/m    . #b011)) .
-		 ("STAC" 0 :1a))
+		 ("STAC" 0 :1a
+		  (:ud  . (*ud-Lock-used*
+			   *ud-cpl-is-not-zero*
+			   `(equal
+			     ;; CPUID.(EAX=07H, ECX=0H):EBX.SMAP[bit 20]
+			     (cpuid-flag
+			      :eax #ux_07
+			      :ecx #ux_00
+			      :ebx t
+			      :bit 20)
+			     0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b001)
@@ -3572,22 +4110,48 @@
 		 (:mod    . :mem)
 		 (:reg    . #b010)) .
 		 ("LGDT" 1 (M s) :1a
-		  (:fn . (x86-lgdt))))
+		  (:fn . (x86-lgdt))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . :mem)
 		 (:reg    . #b011)) .
 		 ("LIDT" 1 (M s) :1a
-		  (:fn . (x86-lidt))))
+		  (:fn . (x86-lidt))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b011)
 		 (:r/m    . #b000)) .
-		 ("XGETBV" 0 :1a))
+		 ("XGETBV" 0 :1a
+		  (:ud  . (*ud-Lock-used*
+			   `(equal
+			     ;; CR4.OSXSAVE[bit 18]
+			     (cr4-slice :cr4-osxsave (ctri #.*cr4* x86))
+			     0)
+			   `(equal
+			     ;; CPUID.01H:ECX.XSAVE[bit 26]
+			     (cpuid-flag
+			      :value #ux_01
+			      :ecx t
+			      :bit 26)
+			     0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b011)
 		 (:r/m    . #b001)) .
-		 ("XSETBV" 0 :1a))
+		 ("XSETBV" 0 :1a
+		  (:ud  . (*ud-Lock-used*
+			   `(equal
+			     ;; CR4.OSXSAVE[bit 18]
+			     (cr4-slice :cr4-osxsave (ctri #.*cr4* x86))
+			     0)
+			   `(equal
+			     ;; CPUID.01H:ECX.XSAVE[bit 26]
+			     (cpuid-flag
+			      :value #ux_01
+			      :ecx t
+			      :bit 26)
+			     0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b011)
@@ -3597,12 +4161,38 @@
 		 (:mod    . #b11)
 		 (:reg    . #b011)
 		 (:r/m    . #b101)) .
-		 ("XEND" 0 :1a))
+		 ("XEND" 0 :1a
+		  (:ud  . (*ud-Lock-used*
+			   *ud-Opr-used*
+			   *ud-Reps-used*
+			   `(equal
+			     ;; CPUID.(EAX=7, ECX=0):EBX.RTM[bit 11]
+			     (cpuid-flag
+			      :eax #ux_07
+			      :eax #ux_00
+			      :ebx t
+			      :bit 11)
+			     0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b011)
 		 (:r/m    . #b110)) .
-		 ("XTEST" 0 :1a))
+		 ("XTEST" 0 :1a
+		  (:ud  . (*ud-Lock-used*
+			   ;; CPUID.(EAX=7, ECX=0):EBX.HLE[bit 4] = 0 and
+			   ;; CPUID.(EAX=7, ECX=0):EBX.RTM[bit 11] = 0.
+			   `(and (equal (cpuid-flag
+					 :eax #ux_07
+					 :ecx #ux_00
+					 :ebx t
+					 :bit 7)
+					0)
+				 (equal (cpuid-flag
+					 :eax #ux_07
+					 :ecx #ux_00
+					 :ebx t
+					 :bit 11)
+					0))))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b011)
@@ -3612,7 +4202,8 @@
 		 (:reg    . #b100)) .
 		 (:ALT
 		  (("SMSW" 1 (M w) :1a)
-		   ("SMSW" 1 (R v) :1a))))
+		   ("SMSW" 1 (R v) :1a))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_01)
 		 (:reg    . #b100)
 		 (:r/m    . #b11)) .
@@ -3624,22 +4215,34 @@
 		  (:fn . (:no-instruction))))
 	       (((:opcode . #ux0F_01)
 		 (:reg    . #b110)) .
-		 ("LMSW" 1 (E w) :1a))
+		 ("LMSW" 1 (E w) :1a
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_01)
 		 (:reg    . #b111)
 		 (:mod    . :mem)) .
-		 ("INVLPG" 1 (M b) :1a))
+		 ("INVLPG" 1 (M b) :1a
+		  (:ud  . (*ud-Lock-used*
+			   *ud-ModR/M.Mod-indicates-Register*))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b111)
 		 (:r/m    . #b000)
-                 (:mode   . :o64)) .
-                 ("SWAPGS" 0 :1a))
+		 (:mode   . :o64)) .
+		 ("SWAPGS" 0 :1a
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b111)
 		 (:r/m    . #b001)) .
-		 ("RDTSCP" 0 :1a))))
+		 ("RDTSCP" 0 :1a
+		  (:ud  . (*ud-Lock-used*
+			   `(equal
+			     ;; CPUID.80000001H:EDX.RDTSCP[bit 27]
+			     (cpuid-flag
+			      :value #ux8000_0001
+			      :edx t
+			      :bit 27)
+			     0)))))))
 
     (:Group-8 . ;; Covers opcode 0F BA.
 	      ((((:opcode . #ux0F_BA)
@@ -3745,7 +4348,8 @@
 	       ((((:opcode . #xC6)
 		  (:reg    . #b000)) .
 		  ("MOV" 2 (E b) (I b) :1a
-		   (:fn . (x86-mov-Op/En-MI))))
+		   (:fn . (x86-mov-Op/En-MI))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC6)
 		  (:reg    . #b001)) .
 		  (:none
@@ -3779,12 +4383,23 @@
 		  (:mod    . #b11)
 		  (:reg    . #b111)
 		  (:r/m    . #b000)) .
-		  ("XABORT" 1 (I b) :1a))
+		  ("XABORT" 1 (I b) :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal
+			      ;; CPUID.(EAX=7, ECX=0):EBX.RTM[bit 11]
+			      (cpuid-flag
+			       :eax 7
+			       :ecx 0
+			       :ebx t
+			       :bit 11 ;; RTM
+			       )
+			      0)))))
 
 		(((:opcode . #xC7)
 		  (:reg    . #b000)) .
 		  ("MOV" 2 (E v) (I z) :1a
-		   (:fn . (x86-mov-Op/En-MI))))
+		   (:fn . (x86-mov-Op/En-MI))
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #xC7)
 		  (:reg    . #b001)) .
 		  (:none
@@ -3818,7 +4433,17 @@
 		  (:mod    . #b11)
 		  (:reg    . #b111)
 		  (:r/m    . #b000)) .
-		  ("XBEGIN" 1 (J z) :1a))))
+		  ("XBEGIN" 1 (J z) :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal
+			      ;; CPUID.(EAX=7, ECX=0):EBX.RTM[bit 11]
+			      (cpuid-flag
+			       :eax 7
+			       :ecx 0
+			       :ebx t
+			       :bit 11 ;; RTM
+			       )
+			      0)))))))
 
     (:Group-12 . ;; Covers opcode 0F 71.
 	       ((((:opcode . #ux0F_71)
@@ -3978,24 +4603,60 @@
 		  (:prefix . nil)
 		  (:mod    . :mem)
 		  (:reg    . #b000)) .
-		  ("FXSAVE" 0 :1a))
+		  ("FXSAVE" 0 :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal
+			      ;; CPUID.01H:EDX.FXSR[bit 24]
+			      (cpuid-flag
+			       :value #ux_01
+			       :edx t
+			       :bit 24)
+			      0)))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . :F3)
 		  (:mod    . #b11)
 		  (:reg    . #b000)
-                  (:mode   . :o64)) .
-		  ("RDFSBASE" 1 (R y) :1a))
+		  (:mode   . :o64)) .
+		  ("RDFSBASE" 1 (R y) :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal (cr4-slice :cr4-fsgsbase (ctri #.*cr4* x86)) 0)
+			    `(equal
+			      ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
+			      (cpuid-flag
+			       :value #ux_07
+			       :value2 #ux_00
+			       :ebx t
+			       :bit 0)
+			      0)))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
 		  (:mod    . :mem)
 		  (:reg    . #b001)) .
-		  ("FXRSTOR" 0 :1a))
+		  ("FXRSTOR" 0 :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal
+			      ;; CPUID.01H:EDX.FXSR[bit 24]
+			      (cpuid-flag
+			       :value #ux_01
+			       :edx t
+			       :bit 24)
+			      0)))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . :F3)
 		  (:mod    . #b11)
 		  (:reg    . #b001)
-                  (:mode   . :o64)) .
-		  ("RDGSBASE" 1 (R y) :1a))
+		  (:mode   . :o64)) .
+		  ("RDGSBASE" 1 (R y) :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal (cr4-slice :cr4-fsgsbase (ctri #.*cr4* x86)) 0)
+			    `(equal
+			      ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
+			      (cpuid-flag
+			       :value #ux_07
+			       :value2 #ux_00
+			       :ebx t
+			       :bit 0)
+			      0)))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
 		  (:mod    . :mem)
@@ -4006,8 +4667,18 @@
 		  (:prefix . :F3)
 		  (:mod    . #b11)
 		  (:reg    . #b010)
-                  (:mode   . :o64)) .
-		  ("WRFSBASE" 1 (R y) :1a))
+		  (:mode   . :o64)) .
+		  ("WRFSBASE" 1 (R y) :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal (cr4-slice :cr4-fsgsbase (ctri #.*cr4* x86)) 0)
+			    `(equal
+			      ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
+			      (cpuid-flag
+			       :value #ux_07
+			       :value2 #ux_00
+			       :ebx t
+			       :bit 0)
+			      0)))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
 		  (:mod    . :mem)
@@ -4018,52 +4689,143 @@
 		  (:prefix . :F3)
 		  (:mod    . #b11)
 		  (:reg    . #b011)
-                  (:mode   . :o64)) .
-		  ("WRGSBASE" 1 (R y) :1a))
+		  (:mode   . :o64)) .
+		  ("WRGSBASE" 1 (R y) :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal (cr4-slice :cr4-fsgsbase (ctri #.*cr4* x86)) 0)
+			    `(equal
+			      ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
+			      (cpuid-flag
+			       :value #ux_07
+			       :value2 #ux_00
+			       :ebx t
+			       :bit 0)
+			      0)))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
 		  (:mod    . :mem)
 		  (:reg    . #b100)) .
-		  ("XSAVE" 0 :1a))
+		  ("XSAVE" 0 :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal (cr4-slice :cr4-osxsave (ctri #.*cr4* x86)) 0)
+			    `(equal
+			      ;; CPUID.01H:ECX.XSAVE[bit 26]
+			      (cpuid-flag
+			       :value #ux_01
+			       :ecx t
+			       :bit 26)
+			      0)))))
+		(((:opcode . #ux0F_AE)
+		  (:prefix . nil)
+		  (:mod    . :mem)
+		  (:reg    . #b101)) .
+		  ("XRSTOR" 0 :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal (cr4-slice :cr4-osxsave (ctri #.*cr4* x86)) 0)
+			    `(equal
+			      ;; CPUID.01H:ECX.XSAVE[bit 26]
+			      (cpuid-flag
+			       :value #ux_01
+			       :ecx t
+			       :bit 26)
+			      0)))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
 		  (:mod    . #b11)
 		  (:reg    . #b101)) .
-		  (:ALT
-		   (("XRSTOR" 0 :1a)
-		    ("LFENCE" 0 :1a))))
+		  ("LFENCE" 0 :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal
+			      ;; CPUID.01H:EDX.SSE2[bit 26]
+			      (cpuid-flag
+			       :value #ux_01
+			       :edx t
+			       :bit 26)
+			      0)))))
+		(((:opcode . #ux0F_AE)
+		  (:prefix . nil)
+		  (:mod    . :mem)
+		  (:reg    . #b110)) .
+		  ("XSAVEOPT" 0 :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal (cr4-slice :cr4-osxsave (ctri #.*cr4* x86)) 0)
+			    `(or
+			      (equal
+			       ;; CPUID.01H:ECX.XSAVE[bit 26]
+			       (cpuid-flag
+				:value #ux_01
+				:ecx t
+				:bit 26)
+			       0)
+			      (equal
+			       ;; CPUID.(EAX=0DH,ECX=1):EAX.XSAVEOPT[bit 0]
+			       (cpuid-flag
+				:eax #ux_0D
+				:ecx #ux_01
+				:eax t
+				:bit 0)
+			       0))))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
-		  (:ALT
-		   (("XSAVEOPT" 0 :1a)
-		    ("MFENCE" 0 :1a))))
+		  ("MFENCE" 0 :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal
+			      ;; CPUID.01H:EDX.SSE2[bit 26]
+			      (cpuid-flag
+			       :value #ux_01
+			       :edx t
+			       :bit 26)
+			      0)))))
+		(((:opcode . #ux0F_AE)
+		  (:prefix . nil)
+		  (:mod    . :mem)
+		  (:reg    . #b111)) .
+		  ("CLFLUSH" 0 :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal
+			      ;; CPUID.01H:EDX.CLFSH[bit 19]
+			      (cpuid-flag
+			       :value #ux_01
+			       :edx t
+			       :bit 19)
+			      0)))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
 		  (:mod    . #b11)
 		  (:reg    . #b111)) .
-		  (:ALT
-		   (("CLFLUSH" 0 :1a)
-		    ("SFENCE"  0 :1a))))))
+		  ("SFENCE" 0 :1a
+		   (:ud  . (*ud-Lock-used*
+			    `(equal
+			      ;; CPUID.01H:EDX.SSE[bit 25]
+			      (cpuid-flag
+			       :value #ux_01
+			       :edx t
+			       :bit 25)
+			      0)))))))
 
     (:Group-16 . ;; Covers opcode 0F 18.
 	       ((((:opcode . #ux0F_18)
 		  (:mod    . :mem)
 		  (:reg    . #b000)) .
-		  ("PREFETCHNTA" 0 :1a))
+		  ("PREFETCHNTA" 0 :1a
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #ux0F_18)
 		  (:mod    . :mem)
 		  (:reg    . #b001)) .
-		  ("PREFETCHT0" 0 :1a))
+		  ("PREFETCHT0" 0 :1a
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #ux0F_18)
 		  (:mod    . :mem)
 		  (:reg    . #b010)) .
-		  ("PREFETCHT1" 0 :1a))
+		  ("PREFETCHT1" 0 :1a
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #ux0F_18)
 		  (:mod    . :mem)
 		  (:reg    . #b011)) .
-		  ("PREFETCHT2" 0 :1a))
+		  ("PREFETCHT2" 0 :1a
+		   (:ud  . (*ud-Lock-used*))))
 		(((:opcode . #ux0F_18)
 		  (:reg    . #b100)) .
 		  ("RESERVEDNOP" 0))
@@ -6428,6 +7190,47 @@
 	     (semantic-function-info-p (get-semantic-function-info-p info)))
     :hints (("Goal" :in-theory (e/d (semantic-function-info-p) ())))))
 
+(define ud-info-p (info)
+  :short "Information about #UD exception during decode"
+  (or
+   ;; Either no info. is present...
+   (equal info nil)
+   ;; ... but if it is, it is well-formed.
+   (and (consp info)
+	(equal (car info) :UD)
+	(true-listp (cdr info)))))
+
+(define remove-ud-info-p ((info true-listp))
+  (if (endp info)
+      nil
+    (b* ((elem (car info))
+	 (rest (cdr info)))
+      (if (and (consp elem)
+	       (equal (car elem) :UD))
+	  rest
+	(cons elem (remove-ud-info-p rest)))))
+
+  ///
+
+  (defthm true-listp-remove-ud-info-p
+    (implies (true-listp info)
+	     (true-listp (remove-ud-info-p info)))))
+
+(define get-ud-info-p ((info true-listp))
+  (if (endp info)
+      nil
+    (b* ((elem (car info))
+	 (rest (cdr info)))
+      (if (ud-info-p elem)
+	  elem
+	(get-ud-info-p rest))))
+  ///
+
+  (defthm ud-info-p-of-get-ud-info-p
+    (implies (true-listp info)
+	     (ud-info-p (get-ud-info-p info)))
+    :hints (("Goal" :in-theory (e/d (ud-info-p) ())))))
+
 (define simple-cell-addressing-info-p ((info true-listp))
   (and
    ;; Number of operands
@@ -6476,14 +7279,18 @@
       (b* (((unless (true-listp cell)) nil)
 	   (first (car cell))
 	   (rest (cdr cell))
-	   (new-rest (remove-semantic-function-info-p rest))
-	   (semantic-info (get-semantic-function-info-p rest)))
+	   (ud-info (get-ud-info-p rest))
+	   (semantic-info (get-semantic-function-info-p rest))
+	   (new-rest (remove-ud-info-p rest))
+	   (new-rest (remove-semantic-function-info-p new-rest)))
 	(cond ((equal first :ALT)
 	       (and
-		(true-listp new-rest)
+		(consp new-rest)
+		;; (true-listp new-rest)
 		(basic-simple-cells-p (car new-rest))
 		(equal (cdr new-rest) nil)
-		(semantic-function-info-p semantic-info)))
+		(semantic-function-info-p semantic-info)
+		(ud-info-p ud-info)))
 	      (t nil))))
   ///
   (defthm simple-cell-p-implies-true-listp
