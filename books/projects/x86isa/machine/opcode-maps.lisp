@@ -1110,8 +1110,6 @@
     ))
 
 
-;; TODO: Didn't do FP instructions yet.
-
 (defconst *two-byte-opcode-map-lst*
   ;; First byte is 0x0F.
   ;; Source: Intel Volume 2, Table A-3.
@@ -1156,8 +1154,8 @@
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ("UD2" 0 :1b
-	       ;; (:fn . (x86-illegal-instruction
-	       ;;         (message . "UD2 encountered!")))
+	       (:fn . (x86-illegal-instruction
+		       (message . "UD2 encountered!")))
 	       (:ud  . (t)))
 	      (:none
 	       (:fn . (:no-instruction)))
@@ -1820,42 +1818,64 @@
 	       (:ud  . (*ud-Lock-used*))))
 
     #| b0 |# (("CMPXCHG" 2 (E b) (G b)
-	       (:fn . (x86-cmpxchg)))
+	       (:fn . (x86-cmpxchg))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ("CMPXCHG" 2 (E v) (G v)
-	       (:fn . (x86-cmpxchg)))
-	      ("LSS" 2 (G v) (M p))
-	      ("BTR" 2 (E v) (G v))
-	      ("LFS" 2 (G v) (M p))
-	      ("LGS" 2 (G v) (M p))
+	       (:fn . (x86-cmpxchg))
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
+	      ("LSS" 2 (G v) (M p)
+	       (:ud  . (*ud-Lock-used*
+			*ud-source-operand-is-a-register*)))
+	      ("BTR" 2 (E v) (G v)
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
+	      ("LFS" 2 (G v) (M p)
+	       (:ud  . (*ud-Lock-used*
+			*ud-source-operand-is-a-register*)))
+	      ("LGS" 2 (G v) (M p)
+	       (:ud  . (*ud-Lock-used*
+			*ud-source-operand-is-a-register*)))
 	      ("MOVZX" 2 (G v) (E b)
-	       (:fn . (x86-movzx)))
+	       (:fn . (x86-movzx))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOVZX" 2 (G v) (E w)
-	       (:fn . (x86-movzx)))
-    #| b8 |#  ((:no-prefix . ("JMPE"   0))
-	       (:F3        . ("POPCNT" 2 (G v) (E v))))
-
+	       (:fn . (x86-movzx))
+	       (:ud  . (*ud-Lock-used*)))
+    #| b8 |#  ((:no-prefix . ("JMPE"   0
+			      ;; Reserved for emulator on IPF (Itanium
+			      ;; Processor Family).
+			      ))
+	       (:F3        . ("POPCNT" 2 (G v) (E v)
+			      (:ud  . (*ud-Lock-used*
+				       `(equal
+					 ;; CPUID.01H:ECX.POPCNT [Bit 23]
+					 (cpuid-flag
+					  :value #ux_01
+					  :ecx t
+					  :bit 23)
+					 0))))))
 	      (:Group-10 0 :1a :1b)
-
 	      (:Group-8 2 (E v) (I b) :1a)
-
-	      ("BTC" 2 (E v) (G v))
-
+	      ("BTC" 2 (E v) (G v)
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ((:no-prefix . ("BSF"   2 (G v) (E v)
-			      (:fn . (x86-bsf-Op/En-RM))))
+			      (:fn . (x86-bsf-Op/En-RM))
+			      (:ud  . (*ud-Lock-used*))))
 	       (:F3        . ("TZCNT" 2 (G v) (E v))))
-
-	      ((:no-prefix . ("BSR"   2 (G v) (E v)))
-	       (:F3        . ("LZCNT" 2 (G v) (E v))))
-
+	      ((:no-prefix . ("BSR"   2 (G v) (E v)
+			      (:ud  . (*ud-Lock-used*))))
+	       (:F3        . ("LZCNT" 2 (G v) (E v)
+			      (:ud  . (*ud-Lock-used*)))))
 	      ("MOVSX" 2 (G v) (E b)
-	       (:fn . (x86-two-byte-movsxd)))
+	       (:fn . (x86-two-byte-movsxd))
+	       (:ud  . (*ud-Lock-used*)))
 	      ("MOVSX" 2 (G v) (E w)
-	       (:fn . (x86-two-byte-movsxd))))
+	       (:fn . (x86-two-byte-movsxd))
+	       (:ud  . (*ud-Lock-used*))))
 
-    #| c0 |# (("XADD"     2 (E b)  (G b))
-
-	      ("XADD"     2 (E v)  (G v))
-
+    #| c0 |# (("XADD"     2 (E b)  (G b)
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
+	      ("XADD"     2 (E v)  (G v)
+	       (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*)))
 	      ((:no-prefix . ("VCMPPS"     4 (V ps)  (H ps)  (W ps)  (I b)
 			      (:fn . (x86-cmpps-Op/En-RMI))))
 	       (:66        . ("VCMPPD"     4 (V pd)  (H pd)  (W pd)  (I b)
@@ -1867,7 +1887,15 @@
 			      (:fn . (x86-cmpss/cmpsd-Op/En-RMI
 				      (sp/dp . #.*OP-DP*))))))
 
-	      ("MOVNTI"     2 (M y)   (G y))
+	      ("MOVNTI"     2 (M y)   (G y)
+	       (:ud  . (*ud-Lock-used*
+			`(equal
+			  ;; CPUID.01H:EDX.SSE2[bit 26]
+			  (cpuid-flag
+			   :value #ux_01
+			   :edx t
+			   :bit 26)
+			  0))))
 
 	      ((:no-prefix . ("PINSRW"     3 (P q)   (R y)  (I b)))
 	       (:no-prefix . ("PINSRW"     3 (P q)   (M w)  (I b)))
@@ -1884,14 +1912,22 @@
 
 	      (:Group-9 0 :1a)
 
-    #| c8 |#  ("BSWAP" 1 (:RAX/EAX/R8/R8D))
-	      ("BSWAP" 1 (:RCX/ECX/R9/R9D))
-	      ("BSWAP" 1 (:RDX/EDX/R10/R10D))
-	      ("BSWAP" 1 (:RBX/EBX/R11/R11D))
-	      ("BSWAP" 1 (:RSP/ESP/R12/R12D))
-	      ("BSWAP" 1 (:RBP/EBP/R13/R13D))
-	      ("BSWAP" 1 (:RSI/ESI/R14/R14D))
-	      ("BSWAP" 1 (:RDI/EDI/R15/R15D)))
+    #| c8 |#  ("BSWAP" 1 (:RAX/EAX/R8/R8D)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("BSWAP" 1 (:RCX/ECX/R9/R9D)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("BSWAP" 1 (:RDX/EDX/R10/R10D)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("BSWAP" 1 (:RBX/EBX/R11/R11D)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("BSWAP" 1 (:RSP/ESP/R12/R12D)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("BSWAP" 1 (:RBP/EBP/R13/R13D)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("BSWAP" 1 (:RSI/ESI/R14/R14D)
+	       (:ud  . (*ud-Lock-used*)))
+	      ("BSWAP" 1 (:RDI/EDI/R15/R15D)
+	       (:ud  . (*ud-Lock-used*))))
 
   #| d0 |# (((:66        . ("VADDSUBPD"  3 (V pd)  (H pd)  (W pd)))
 	     (:F2        . ("VADDSUBPS"  3 (V ps)  (H ps)  (W ps))))
@@ -4264,16 +4300,20 @@
 	       (((:opcode . #ux0F_BA)
 		 (:reg    . #b100)) .
 		 ("BT" 2 (E v) (I b) :1a
-		  (:fn . (x86-bt-0f-ba))))
+		  (:fn . (x86-bt-0f-ba))
+		  (:ud  . (*ud-Lock-used*))))
 	       (((:opcode . #ux0F_BA)
 		 (:reg    . #b101)) .
-		 ("BTS" 2 (E b) (I b) :1a))
+		 ("BTS" 2 (E b) (I b) :1a
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #ux0F_BA)
 		 (:reg    . #b110)) .
-		 ("BTR" 2 (E b) (I b) :1a))
+		 ("BTR" 2 (E b) (I b) :1a
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))
 	       (((:opcode . #ux0F_BA)
 		 (:reg    . #b111)) .
-		 ("BTC" 2 (E b) (I b) :1a))))
+		 ("BTC" 2 (E b) (I b) :1a
+		  (:ud  . (*ud-Lock-used-Dest-not-Memory-Op*))))))
 
     (:Group-9 . ;; Covers opcode 0F C7.
 	      ((((:opcode . #ux0F_C7)
@@ -4286,7 +4326,8 @@
 		 (:reg    . #b001)) .
 		 (:ALT
 		  (("CMPXCH8B" 1 (M q) :1a)
-		   ("CMPXCHG16B" 1 (M dq) :1a))))
+		   ("CMPXCHG16B" 1 (M dq) :1a))
+		  (:ud  . (*ud-ModR/M.Mod-indicates-Register*))))
 	       (((:opcode . #ux0F_C7)
 		 (:mod    . #b11)
 		 (:reg    . #b001)) .
@@ -4328,21 +4369,52 @@
 		 (:mod    . #b11)
 		 (:reg    . #b110)) .
 		 ("RDRAND" 1 (R v) :1a
-		  (:fn . (x86-rdrand))))
+		  (:fn . (x86-rdrand))
+		  (:ud  . (*ud-Lock-used*
+			   *ud-Reps-used*
+			   `(equal
+			     ;; CPUID.01H:ECX.RDRAND[bit 30]
+			     (cpuid-flag
+			      :value #ux_01
+			      :ecx t
+			      :bit 30)
+			     t)))))
 	       (((:opcode . #ux0F_C7)
 		 (:prefix . nil)
 		 (:reg    . #b111)) .
-		 ("RDSEED" 1 (R v) :1a))
+		 ("RDSEED" 1 (R v) :1a
+		  (:ud  . (*ud-Lock-used*
+			   *ud-Reps-used*
+			   `(equal
+			     ;; CPUID.(EAX=07H, ECX=0H):EBX.RDSEED[bit 18]
+			     (cpuid-flag
+			      :eax #ux_07
+			      :ecx #ux_00
+			      :ebx t
+			      :bit 18)
+			     0)))))
 	       (((:opcode . #ux0F_C7)
 		 (:prefix . :F3)
 		 (:reg    . #b111)) .
 		 (:ALT
 		  (("RDPID" 1 (R d) :1a)
-		   ("RDPID" 1 (R q) :1a))))))
+		   ("RDPID" 1 (R q) :1a))
+		  (:ud  . (*ud-Lock-used*
+			   `(equal
+			     ;; CPUID.7H.0:ECX.RDPID[bit 22]
+			     (cpuid-flag
+			      :value #ux_07
+			      :value2 #ux_0
+			      :ecx t
+			      :bit 22)
+			     0)))))))
 
     (:Group-10 . ;; Covers opcode 0F B9.
 	       ((((:opcode . #ux0F_B9)) .
-		 ("UD1" 0 :1a))))
+		 ("UD1" 0 :1a
+		  (:fn . (x86-illegal-instruction
+			  (message . "UD1 encountered!")))
+		  (:ud  . (t))))))
 
     (:Group-11 . ;; Covers opcodes C6 and C7.
 	       ((((:opcode . #xC6)
