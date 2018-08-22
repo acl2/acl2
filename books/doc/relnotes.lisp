@@ -184,6 +184,8 @@
 
  <p>Started a new library for <a href=\"https://ethereum.org\">Ethereum</a>.</p>
 
+ <p>Started a new library for <a href=\"https://bitcoin.org\">Bitcoin</a>.</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <p>The behavior and code for the expander (see @(see defthm?)) have been
