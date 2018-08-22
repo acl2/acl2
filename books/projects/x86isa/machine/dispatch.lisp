@@ -147,62 +147,77 @@
   (defthm true-listp-of-replace-formals-with-arguments
     (true-listp (replace-formals-with-arguments fn bindings world))))
 
+(define create-ud-exceptions-check ((info ud-info-p))
+  :guard-hints (("Goal" :in-theory (e/d (ud-info-p) ())))
+  (if info
+      (b* ((ud-list (cdr info)))
+        `(or ,@ud-list))
+    nil))
+
 (define create-call-from-semantic-info ((info semantic-function-info-p)
+                                        (ud-info ud-info-p)
                                         (world plist-worldp))
   :guard-hints (("Goal" :in-theory (e/d (semantic-function-info-p) ())))
 
   ;; (create-call-from-semantic-info
   ;;  '(:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
   ;;           (operation . #.*OP-ADD*)))
+  ;;     '(:ud  . ((ud-Lock-used)
+  ;;               (equal
+  ;;                (cpuid-flag
+  ;;                 #ux_01
+  ;;                 :reg #.*ecx*
+  ;;                 :bit 23)
+  ;;                0)))
   ;;  (w state))
-  (if (equal info nil)
-      (mv "Unimplemented"
-          (replace-formals-with-arguments
-           'x86-step-unimplemented
-           '((message . "Opcode Unimplemented in x86isa!"))
-           world))
-    (b* ((rest (cdr info)))
-      (if (equal (car rest) :no-instruction)
+
+  (b* ((ud-check       (create-ud-exceptions-check ud-info))
+       (illegal        (replace-formals-with-arguments
+                        'x86-illegal-instruction
+                        '((message . "#UD Encountered!"))
+                        world))
+       (unimplemented  (replace-formals-with-arguments
+                        'x86-step-unimplemented
+                        '((message . "Opcode Unimplemented in x86isa!"))
+                        world)))
+
+    (if (equal info nil)
+        (mv "Unimplemented"
+            (if ud-check
+                `(if ,ud-check ,illegal ,unimplemented)
+              unimplemented))
+
+      (b* ((rest (cdr info)))
+        (if (equal (car rest) :no-instruction)
+            (mv "Reserved" illegal)
           (mv
-           "Reserved"
-           (replace-formals-with-arguments
-            'x86-illegal-instruction
-            '((message . "Reserved or Illegal Opcode!"))
-            world))
-        (mv
-         (concatenate
-          'string
-          "@(tsee "
-          (str::pretty (car rest) :config *x86isa-printconfig*)
-          ")"
-          (if (cdr rest)
-              (concatenate
-               'string " -- <br/> "
-               (str::pretty (cdr rest) :config *x86isa-printconfig*))
-            ""))
-         (replace-formals-with-arguments
-          (car rest) (cdr rest) world)))))
+           (concatenate
+            'string
+            "@(tsee "
+            (str::pretty (car rest) :config *x86isa-printconfig*)
+            ")"
+            (if (cdr rest)
+                (concatenate
+                 'string " -- <br/> "
+                 (str::pretty (cdr rest) :config *x86isa-printconfig*))
+              ""))
+           (if ud-check
+               `(if ,ud-check
+                    ,illegal
+                  ,(replace-formals-with-arguments
+                    (car rest) (cdr rest) world))
+             (replace-formals-with-arguments
+              (car rest) (cdr rest) world)))))))
   ///
 
   (defthm stringp-of-mv-nth-0-create-call-from-semantic-info
     (stringp
-     (mv-nth 0 (create-call-from-semantic-info info world))))
+     (mv-nth 0 (create-call-from-semantic-info info ud-info world))))
 
   (defthm true-listp-of-mv-nth-1-create-call-from-semantic-info
     (true-listp
-     (mv-nth 1 (create-call-from-semantic-info info world)))))
+     (mv-nth 1 (create-call-from-semantic-info info ud-info world)))))
 
-;; ;; TODO: process ud-list:
-;; ;;  -- what do I do about cpuid-flag?
-;; ;;  -- o64/i64 stuff.
-;; ;;  -- Use :ud instead of (:fn . (x86-illegal-instruction ...))?
-
-;; (define create-ud-exceptions-check ((info ud-info-p))
-;;   :guard-hints (("Goal" :in-theory (e/d (ud-info-p) ())))
-;;   (if info
-;;       (b* ((ud-list (cdr info)))
-;;         `(or ,@ud-list))
-;;     nil))
 
 (define create-dispatch-from-no-extensions-simple-cell
   ((cell simple-cell-p)
@@ -213,8 +228,9 @@
                 "~%We don't expect groups here: ~p0~%"
                 cell)))
        (rest (cdr cell))
+       (ud-info (get-ud-info-p rest))
        (semantic-info (get-semantic-function-info-p rest)))
-    (create-call-from-semantic-info semantic-info world))
+    (create-call-from-semantic-info semantic-info ud-info world))
 
   ///
 
@@ -244,7 +260,10 @@
 
       (b* (((mv & dispatch)
             ;; This is a catch-all case --- so we ignore the doc here.
-            (create-call-from-semantic-info '(:fn . (:no-instruction)) world)))
+            (create-call-from-semantic-info
+             '(:fn . (:no-instruction))
+             nil ;; No Exceptions
+             world)))
         (mv ""
             `((t ,dispatch))))
 

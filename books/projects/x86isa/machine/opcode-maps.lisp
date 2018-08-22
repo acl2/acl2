@@ -211,23 +211,43 @@
   `(ud-ModR/M.Mod-indicates-Register))
 
 (defmacro ud-cpl-is-not-zero ()
-  `(not (eql (cpl) 0)))
+  `(not (eql (cplx86) 0)))
 
 ;; Some x86isa-specific definitions:
-(defmacro cpl ()
+
+(defmacro cplx86 ()
   `(cpl x86))
 
 (defmacro cr4 ()
-  `(ctri #.*cr4* x86))
+  `(the (unsigned-byte 22)
+     (loghead 22 (ctri #.*cr4* x86))))
 
 (defmacro ia32_efer ()
   `(msri #.*ia32_efer-idx* x86))
 
-;; (defmacro cpuid-flag (eax &key ecx
-;;                           reg ;; Index of the output register
-;;                           bit ;; Relevant bit of the output register
-;;                           )
-;;   )
+
+(defmacro cpuid-flag (eax &key ecx
+                          reg ;; Index of the output register
+                          bit ;; Relevant bit of the output register
+                          )
+  (declare (ignore eax ecx reg bit))
+  ;; CPUID:
+  ;; 64-bit input:   32 bits each of eax and ecx
+  ;; 128-bit output: 32 bits each of eax, ebx, ecx, edx
+
+  ;; For now, this function always returns 1, which means that all features are
+  ;; enabled in this model right now.  Of course, this isn't accurate --- this
+  ;; is just a stop gap.
+
+  ;; Later, here's one way we could store the CPUID information: we could
+  ;; define a stobj called "cpuid", whose fields' names would be (or would
+  ;; indicate) the input eax values.  If an eax input (or "leaf") also expects
+  ;; an ecx input (or "subleaf"), that field would be an array, with the ecx
+  ;; subleaf being the index to the first of four 32-bit output values.  If an
+  ;; eax leaf does not expect an ecx subleaf, then that field simply contains 4
+  ;; 32-bit values.  This "cpuid" stobj can be a field of our main "x86" stobj.
+
+  1)
 
 ;; ----------------------------------------------------------------------
 
@@ -321,12 +341,14 @@
                         (:fn . (x86-push-segment-register))
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "PUSH ES is illegal in the 64-bit mode!"))))))
               ((:i64 . ("POP ES"  0
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD"  0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "POP ES is illegal in the 64-bit mode!"))))))
@@ -358,6 +380,7 @@
                         (:fn . (x86-push-segment-register))
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "PUSH CS is illegal in the 64-bit mode!"))))))
@@ -393,12 +416,14 @@
                         (:fn . (x86-push-segment-register))
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "PUSH SS is illegal in the 64-bit mode!"))))))
               ((:i64 . ("POP SS" 0
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "POP SS is illegal in the 64-bit mode!"))))))
@@ -430,12 +455,14 @@
                         (:fn . (x86-push-segment-register))
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "PUSH DS is illegal in the 64-bit mode!"))))))
               ((:i64 . ("POP DS" 0
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "POP DS is illegal in the 64-bit mode!")))))))
@@ -469,6 +496,7 @@
               ((:i64 . ("DAA" 0
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "DAA is illegal in the 64-bit mode!"))))))
@@ -501,6 +529,7 @@
               ((:i64 . ("DAS" 0
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "DAS is illegal in the 64-bit mode!")))))))
@@ -534,6 +563,7 @@
               ((:i64 . ("AAA" 0
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "AAA is illegal in the 64-bit mode!"))))))
@@ -566,6 +596,7 @@
               ((:i64 . ("AAS" 0
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "AAS is illegal in the 64-bit mode!")))))))
@@ -688,6 +719,7 @@
                         (:fn . (x86-pusha))
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "PUSHA is illegal in the 64-bit mode!"))))))
@@ -695,6 +727,7 @@
                         (:fn . (x86-popa))
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "POPA is illegal in the 64-bit mode!"))))))
@@ -702,6 +735,9 @@
                         (:ud  . ((ud-Lock-used)
                                  (ud-second-operand-is-a-register)))))
                (:o64 . (:evex-byte0 (:fn . (:no-instruction)))
+                     ;; TODO: Check CPUID feature flags for AVX support. If it
+                     ;; doesn't exist, throw a #UD here.
+
                      ;; ("#UD" 0
                      ;;  (:fn . (x86-illegal-instruction
                      ;;          (message .
@@ -794,6 +830,7 @@
                (:Group-1 2 (E v) (I z) :1a)
                ((:i64 . (:Group-1 2 (E b) (I b) :1a))
                 (:o64 . ("#UD" 0
+                         (:ud  . (t))
                          (:fn . (x86-illegal-instruction
                                  (message .
                                           "Opcode 0x82 is illegal in the 64-bit mode!"))))))
@@ -874,6 +911,7 @@
               ((:i64 . ("CALL" 1 (A p)
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "far CALL is illegal in the 64-bit mode!"))))))
@@ -888,25 +926,25 @@
               ("SAHF" 0
                (:fn . (x86-sahf))
                (:ud  . ((ud-Lock-used)
-                        (:o64 .
-                              ((equal
-                                ;; CPUID.80000001H.ECX[0]
-                                (cpuid-flag
-                                 #ux_8000_0001
-                                 :reg #.*ecx*
-                                 :bit 0)
-                                0))))))
+                        (and (equal proc-mode #.*64-bit-mode*)
+                             (equal
+                              ;; CPUID.80000001H.ECX[0]
+                              (cpuid-flag
+                               #ux_8000_0001
+                               :reg #.*ecx*
+                               :bit 0)
+                              0)))))
               ("LAHF" 0
                (:fn . (x86-lahf))
                (:ud  . ((ud-Lock-used)
-                        (:o64 .
-                              ((equal
-                                 ;; CPUID.80000001H:ECX.LAHF-SAHF[bit 0]
-                                 (cpuid-flag
-                                  #ux_8000_0001
-                                  :reg #.*ecx*
-                                  :bit 0)
-                                 0)))))))
+                        (and (equal proc-mode #.*64-bit-mode*)
+                             (equal
+                              ;; CPUID.80000001H:ECX.LAHF-SAHF[bit 0]
+                              (cpuid-flag
+                               #ux_8000_0001
+                               :reg #.*ecx*
+                               :bit 0)
+                              0))))))
 
     #| a0 |# (("MOV" 2 (:AL) (O b)
                (:fn . (x86-mov-Op/En-FD))
@@ -1048,6 +1086,7 @@
               ((:i64 . ("INTO" 0
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "INTO is illegal in the 64-bit mode!"))))))
@@ -1061,12 +1100,14 @@
               ((:i64 . ("AAM" 1 (I b)
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "AAM is illegal in the 64-bit mode!"))))))
               ((:i64 . ("AAD" 1 (I b)
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD" 0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "AAD is illegal in the 64-bit mode!"))))))
@@ -1113,6 +1154,7 @@
               ((:i64 . ("JMP"  1 (A p)
                         (:ud  . ((ud-Lock-used)))))
                (:o64 . ("#UD"  0
+                        (:ud  . (t))
                         (:fn . (x86-illegal-instruction
                                 (message .
                                          "JMP is illegal in the 64-bit mode!"))))))
@@ -1210,9 +1252,9 @@
               (:none
                (:fn . (:no-instruction)))
               ("UD2" 0 :1b
+               (:ud  . (t))
                (:fn . (x86-illegal-instruction
-                       (message . "UD2 encountered!")))
-               (:ud  . (t)))
+                       (message . "UD2 encountered!"))))
               (:none
                (:fn . (:no-instruction)))
               ("prefetchw(/1)" 1 (E v)
@@ -4468,9 +4510,9 @@
     (:Group-10 . ;; Covers opcode 0F B9.
                ((((:opcode . #ux0F_B9)) .
                  ("UD1" 0 :1a
+                  (:ud  . (t))
                   (:fn . (x86-illegal-instruction
-                          (message . "UD1 encountered!")))
-                  (:ud  . (t))))))
+                          (message . "UD1 encountered!")))))))
 
     (:Group-11 . ;; Covers opcodes C6 and C7.
                ((((:opcode . #xC6)
