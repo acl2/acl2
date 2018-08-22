@@ -225,6 +225,32 @@
                 (cons (car candidates) acc)
               acc)))))
 
+(defun congruence-runes (lst acc)
+  (cond ((endp lst) acc)
+        (t (congruence-runes (cdr lst)
+                             (if (member-eq (caar lst)
+                                            '(:congruence :equivalence))
+                                 (cons (car lst) acc)
+                               acc)))))
+
+(defun congruence-theory-fn (logical-name wrld)
+  (declare (xargs :mode :program))
+  (congruence-runes (current-theory-fn logical-name wrld)
+                    nil))
+
+(defmacro congruence-theory (logical-name)
+
+; Unlike current-theory, the result might not be a runic theory.
+
+  (list 'congruence-theory-fn logical-name 'world))
+
+(defun congruence-theory-extension (equiv world theory)
+  (declare (xargs :mode :program))
+  (cond ((eq equiv 'equal)
+         theory)
+        (t (append (congruence-theory :here)
+                   theory))))
+
 (defun copy-def-event (fn hyps-fn hyps-preserved-thm-names equiv flag-name wrld)
   (declare (xargs :mode :program))
   (let* ((hyps-fn[-alist] hyps-fn)
@@ -247,8 +273,11 @@
       `(encapsulate
          ()
          ,encap
-         (local (in-theory '(,@(and recp `((:induction ,fn)))
-                             ,@runes
+         (local (in-theory (congruence-theory-extension
+                            ',equiv
+                            world
+                            '(,@(and recp `((:induction ,fn)))
+                              ,@runes
 
 ; We have seen an example in which copy-def fails unless return-last is
 ; explicity enabled.  This presumably has something to do with :normalize nil,
@@ -257,7 +286,7 @@
 ; list of guard-holders comes from inspecting the definition of
 ; remove-guard-holders1.
 
-                             return-last mv-list cons-with-hint the-check)))
+                              return-last mv-list cons-with-hint the-check))))
          ,(fn-is-fn-copy fn hyps-fn hyps-preserved-thm-names equiv nil
                          wrld)))
      (t
@@ -275,9 +304,12 @@
            ()
            (local (make-flag ,flag-name ,fn :last-body t))
            ,encap
-           (local (in-theory '((:induction ,flag-name)
-                               ,(flag::equivalences-name flag-name)
-                               ,@runes)))
+           (local (in-theory (congruence-theory-extension
+                              ',equiv
+                              world
+                              '((:induction ,flag-name)
+                                ,(flag::equivalences-name flag-name)
+                                ,@runes))))
            ,@(and hyps-preserved-thm-names
                   `((local (set-default-hints
                             '('(:use (,@hyps-preserved-thm-names)))))))

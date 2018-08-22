@@ -14,6 +14,7 @@
 (include-book "abnf/examples") ; they have XDOC topics for the manual
 (include-book "apt/top")
 (include-book "auto-termination/top") ; omits some books (see file for why)
+(include-book "bitcoin/top")
 (include-book "ethereum/top")
 (include-book "soft/top")
 (include-book "utilities/top")

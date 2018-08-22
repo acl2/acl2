@@ -184,6 +184,8 @@
 
  <p>Started a new library for <a href=\"https://ethereum.org\">Ethereum</a>.</p>
 
+ <p>Started a new library for <a href=\"https://bitcoin.org\">Bitcoin</a>.</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <p>The behavior and code for the expander (see @(see defthm?)) have been
@@ -325,9 +327,10 @@
  using lemma instances (via @(':use')) efficiently.</p>
 
  <p>Improved the @('copy-def') utility (community book
- @('kestrel/utilities/copy-def.lisp')) by adding an @(':expand') hint in the
- recursive case, as is sometimes necessary.  Also improved it to work better
- with @(tsee mutual-recursion).</p>
+ @('kestrel/utilities/copy-def.lisp')) in several ways: added an @(':expand')
+ hint in the recursive case (as is sometimes necessary), improved it to work
+ better with @(tsee mutual-recursion), and improved it to work better with an
+ @(':equiv') argument.</p>
 
  <p>Fixed the utility, @(tsee orelse), so that @(':quiet t') pushes the output
  stack, as per existing documentation.</p>
