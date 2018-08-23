@@ -1,4 +1,4 @@
-; Character Utilities -- Tests
+; String Utilities -- Conversions between Characters and Codes -- Tests
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -12,15 +12,16 @@
 
 (include-book "kestrel/utilities/testing" :dir :system)
 
-(include-book "characters")
+(include-book "chars-codes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (ubyte8s=>hexchars nil)
-              nil)
+(assert-equal (nats=>chars nil) nil)
 
-(assert-equal (ubyte8s=>hexchars '(0 1 2 3))
-              '(#\0 #\0 #\0 #\1 #\0 #\2 #\0 #\3))
+(assert-equal (nats=>chars '(65 99 46)) '(#\A #\c #\.))
 
-(assert-equal (ubyte8s=>hexchars '(240 15 169))
-              '(#\F #\0 #\0 #\F #\A #\9))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (chars=>nats nil) nil)
+
+(assert-equal (chars=>nats '(#\a #\5 #\~)) '(97 53 126))
