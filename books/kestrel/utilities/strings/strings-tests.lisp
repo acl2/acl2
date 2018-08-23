@@ -10,8 +10,9 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/utilities/testing" :dir :system)
+
 (include-book "strings")
-(include-book "testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
