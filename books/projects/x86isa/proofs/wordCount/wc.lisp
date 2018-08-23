@@ -231,7 +231,7 @@
   (natp (clock str-bytes x86))
   :rule-classes (:type-prescription :rewrite))
 
-(in-theory (e/d* () 
+(in-theory (e/d* ()
                  (gc-clk-main-before-call
                   (gc-clk-main-before-call)
                   gc-clk
@@ -1090,77 +1090,79 @@
                      (WB
                       4 (+ -32 (XR :RGF *RSP* X86))
                       :W 1
-                      (!FLGI
-                       *RF* 0
                        (!FLGI
-                        *VM* 0
-                        (MV-NTH
-                         1
-                         (WB
-                          1 (+ -25 (XR :RGF *RSP* X86))
-                          :W
-                          (COMBINE-BYTES
-                           (GRAB-BYTES
-                            (TAKE
-                             1
-                             (NTHCDR
-                              (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                              (STRING-TO-BYTES
-                               (CDR
-                                (ASSOC-EQUAL
-                                 :CONTENTS
-                                 (READ-X86-FILE-CONTENTS
-                                  (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                  X86))))))))
+                        *PF* 0
+                        (!FLGI
+                         *RF* 0
+                         (!FLGI
+                          *VM* 0
                           (MV-NTH
                            1
                            (WB
-                            8 (+ -48 (XR :RGF *RSP* X86))
+                            1 (+ -25 (XR :RGF *RSP* X86))
                             :W
-                            (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
-                            (MV-NTH
-                             1
-                             (WB
-                              8 (+ -24 (XR :RGF *RSP* X86))
-                              :W (LOGHEAD 64 (XR :RGF *RBX* X86))
-                              (MV-NTH
-                               1
-                               (WB
-                                8 (+ -16 (XR :RGF *RSP* X86))
-                                :W (LOGHEAD 64 (XR :RGF *RBP* X86))
+                             (COMBINE-BYTES
+                              (GRAB-BYTES
+                               (TAKE
+                                1
+                                (NTHCDR
+                                 (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                 (STRING-TO-BYTES
+                                  (CDR
+                                   (ASSOC-EQUAL
+                                    :CONTENTS
+                                     (READ-X86-FILE-CONTENTS
+                                      (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                      X86))))))))
+                             (MV-NTH
+                              1
+                              (WB
+                               8 (+ -48 (XR :RGF *RSP* X86))
+                               :W
+                                (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
                                 (MV-NTH
                                  1
                                  (WB
-                                  8 (+ -8 (XR :RGF *RSP* X86))
-                                  :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
-                                  (WRITE-X86-FILE-DES
-                                   0
-                                   (PUT-ASSOC-EQUAL
-                                    :OFFSET
-                                    (+
-                                     1
-                                     (CDR
-                                      (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
-                                    (READ-X86-FILE-DES 0 X86))
-                                   (!FLGI-UNDEFINED
-                                    4
-                                    (!FLGI
-                                     *CF* 0
-                                     (!FLGI
-                                      *PF* 1
-                                      (!FLGI
-                                       *AF*
-                                       (BITOPS::LOGSQUASH
-                                        -3
-                                        (LOGHEAD
-                                         1
-                                         (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
-                                       (!FLGI
-                                        *ZF* 1
-                                        (!FLGI
-                                         *SF* 0
-                                         (!FLGI *OF*
-                                                0 X86))))))))))))))))))))))))))))))))))
+                                  8 (+ -24 (XR :RGF *RSP* X86))
+                                  :W (LOGHEAD 64 (XR :RGF *RBX* X86))
+                                   (MV-NTH
+                                    1
+                                    (WB
+                                     8 (+ -16 (XR :RGF *RSP* X86))
+                                     :W (LOGHEAD 64 (XR :RGF *RBP* X86))
+                                      (MV-NTH
+                                       1
+                                       (WB
+                                        8 (+ -8 (XR :RGF *RSP* X86))
+                                        :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
+                                         (WRITE-X86-FILE-DES
+                                          0
+                                          (PUT-ASSOC-EQUAL
+                                           :OFFSET
+                                            (+
+                                             1
+                                             (CDR
+                                              (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
+                                            (READ-X86-FILE-DES 0 X86))
+                                          (!FLGI-UNDEFINED
+                                           4
+                                           (!FLGI
+                                            *CF* 0
+                                            (!FLGI
+                                             *PF* 1
+                                             (!FLGI
+                                              *AF*
+                                              (BITOPS::LOGSQUASH
+                                               -3
+                                               (LOGHEAD
+                                                1
+                                                (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
+                                              (!FLGI
+                                               *ZF* 1
+                                               (!FLGI
+                                                *SF* 0
+                                                (!FLGI *OF*
+                                                       0 X86)))))))))))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (syscall-read
                              syscall-read-logic
