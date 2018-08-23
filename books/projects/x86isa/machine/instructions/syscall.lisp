@@ -204,10 +204,11 @@
         (!!ms-fresh :x86-syscall (ms x86)))
 
        ;; Clear RF, VM. Reserved bits retain their fixed values. Set
-       ;; bit 2.
+       ;; bit 2 (PF).
 
        (x86 (!flgi #.*rf* 0 x86))
        (x86 (!flgi #.*vm* 0 x86)) ;; SYSRET
+       (x86 (!flgi #.*pf* 0 x86))
 
        ;; SYSCALL loads a new rip from the ia32_lstar (64-bit
        ;; mode). Upon return, SYSRET copies the value saved in rcx to
