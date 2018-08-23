@@ -61,7 +61,7 @@
 (include-book "prove-interface")
 (include-book "set-size")
 (include-book "skip-in-book")
-(include-book "strings/strings")
+(include-book "strings/top")
 (include-book "symbol-symbol-alists")
 (include-book "symbol-true-list-alists")
 (include-book "symbols")

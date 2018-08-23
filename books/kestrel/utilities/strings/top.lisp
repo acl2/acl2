@@ -10,15 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "centaur/fty/top" :dir :system)
-(include-book "std/util/defrule" :dir :system)
-(include-book "system/kestrel" :dir :system)
-
 (include-book "char-kinds")
-(include-book "chars-codes")
-(include-book "hexchars")
-(include-book "hexstrings")
 (include-book "string-kinds")
+(include-book "hexstrings")
 (include-book "strings-codes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -4,4 +4,4 @@
 
 (in-package "ACL2")
 
-(include-book "strings/strings")
+(include-book "strings/top")
