@@ -18,32 +18,13 @@
 (include-book "chars-codes")
 (include-book "hexchars")
 (include-book "hexstrings")
+(include-book "string-kinds")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc string-utilities
   :parents (kestrel-utilities)
   :short "Utilities for @(see strings).")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define nonempty-stringp (x)
-  :returns (yes/no booleanp)
-  :parents (string-utilities)
-  :short "Recognize non-empty strings."
-  (not (equal (str-fix x) ""))
-  ///
-
-  (defrule stringp-when-nonempty-stringp
-    (implies (nonempty-stringp x)
-             (stringp x))))
-
-(std::deflist nonempty-string-listp (x)
-  (nonempty-stringp x)
-  :parents (string-utilities)
-  :short "Recognize true lists of nonempty strings."
-  :true-listp t
-  :elementp-of-nil nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
