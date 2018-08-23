@@ -19,36 +19,10 @@
 (include-book "hexchars")
 (include-book "hexstrings")
 (include-book "string-kinds")
+(include-book "strings-codes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc string-utilities
   :parents (kestrel-utilities)
   :short "Utilities for @(see strings).")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define nats=>string ((nats (unsigned-byte-listp 8 nats)))
-  :returns (string stringp)
-  :parents (string-utilities)
-  :short "Convert a true list of natural numbers below 256
-          to the corresponding string."
-  (implode (nats=>chars nats)))
-
-(define string=>nats ((string stringp))
-  :returns (nats (unsigned-byte-listp 8 nats))
-  :parents (string-utilities)
-  :short "Convert a string
-          to the corresponding true list of natural numbers below 256."
-  (chars=>nats (explode string))
-  ///
-
-  (more-returns
-   (nats nat-listp
-         :name nat-listp-of-string=>nats)
-   (nats integer-listp))
-
-  (defrule len-of-string=>nats
-    (implies (stringp string)
-             (equal (len (string=>nats string))
-                    (length string)))))

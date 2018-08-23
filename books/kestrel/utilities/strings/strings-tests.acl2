@@ -1,2 +1,0 @@
-; Allow fms-to-string, which depends on with-local-state:
-(set-parallel-execution nil)

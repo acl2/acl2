@@ -1,6 +1,6 @@
-; String Utilities -- Tests
+; String Utilities -- Conversions between Strings and Character Codes -- Tests
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)s
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,7 +12,7 @@
 
 (include-book "kestrel/utilities/testing" :dir :system)
 
-(include-book "strings")
+(include-book "strings-codes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
