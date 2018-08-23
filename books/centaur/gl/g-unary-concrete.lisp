@@ -49,7 +49,7 @@
                                     gobject-hierarchy-lite))))
 
 (program)
-(defun def-g-unary-concrete-fn (fn number-case boolean-case cons-case
+(defun def-g-unary-concrete-fn (fn integer-case boolean-case cons-case
                                    hints world)
   (let ((x (car (wgetprop fn 'formals))))
     `(progn
@@ -69,7 +69,7 @@
                          (,gfn else . ,params))))
                 ((g-apply & &) (gret (g-apply ',fn (gl-list ,x))))
                 ((g-var &) (gret (g-apply ',fn (gl-list ,x))))
-                ((g-number &) ,',number-case)
+                ((g-integer &) ,',integer-case)
                 ((g-boolean &) ,',boolean-case)
                 (& ,',cons-case)))))
        ;; (def-gobjectp-thm ,fn
@@ -97,9 +97,9 @@
                             (:with eval-g-base (eval-g-base ,',x env))))
                   . ,',hints)))))
 
-(defmacro def-g-unary-concrete (fn &key number-case boolean-case
+(defmacro def-g-unary-concrete (fn &key integer-case boolean-case
                                    cons-case hints)
-  `(make-event (def-g-unary-concrete-fn ',fn ',number-case ',boolean-case
+  `(make-event (def-g-unary-concrete-fn ',fn ',integer-case ',boolean-case
                  ',cons-case ',hints(w state))))
 
 (logic)
@@ -108,6 +108,10 @@
          (implies (and (not (pbfr-depends-on k p x1))
                        (not (pbfr-list-depends-on k p x2)))
                   (not (pbfr-list-depends-on k p (cons x1 x2))))
+         :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
+
+(local (defthm pbfr-list-depends-on-of-nil
+         (not (pbfr-list-depends-on k p nil))
          :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
 
 (local (defthm bfr-list->s-of-cons
@@ -125,24 +129,26 @@
                  :in-theory (enable scdr s-endp)))))
 
 (def-g-unary-concrete acl2::bool->bit$inline
-  :number-case (gret 1)
-  :boolean-case (gret (mk-g-number (list (g-boolean->bool x) nil)))
+  :integer-case (gret 1)
+  :boolean-case (gret (mk-g-integer (list (g-boolean->bool x) nil)))
   :cons-case (gret 1)
   :hints((and stable-under-simplificationp
               '(:in-theory (enable bool->bit)))))
 
 (def-g-unary-concrete bool->sign
-  :number-case (gret -1)
-  :boolean-case (gret (mk-g-number (list (g-boolean->bool x))))
-  :cons-case (gret -1))
+  :integer-case (gret -1)
+  :boolean-case (gret (mk-g-integer (list (g-boolean->bool x))))
+  :cons-case (gret -1)
+  :hints ((and stable-under-simplificationp
+               '(:cases ((eval-g-base (g-ite->test x) env))))))
 
 (def-g-unary-concrete symbol-name
-  :number-case (gret "")
+  :integer-case (gret "")
   :boolean-case (g-if (gret x) (gret "T") (gret "NIL"))
   :cons-case (gret ""))
 
 (def-g-unary-concrete symbol-package-name
-  :number-case (gret "")
+  :integer-case (gret "")
   :boolean-case (gret "COMMON-LISP")
   :cons-case (gret "")
   :hints ((and stable-under-simplificationp
@@ -155,9 +161,16 @@
 
 
 (def-g-unary-concrete char-code
-  :number-case (gret 0)
+  :integer-case (gret 0)
   :boolean-case (gret 0)
   :cons-case (gret 0))
+
+(def-g-unary-concrete code-char
+  :integer-case (gret (g-apply 'code-char (list x)))
+  :boolean-case (gret (code-char 0))
+  :cons-case (gret (code-char 0))
+  :hints((and stable-under-simplificationp
+              '(:in-theory (enable eval-g-base-list)))))
 
 (local
  (defthm pkg-witness-of-non-stringp
@@ -170,27 +183,19 @@
                           (acl2::s2 (pkg-witness x))))))))
 
 (def-g-unary-concrete pkg-witness
-  :number-case (gret (mk-g-concrete (pkg-witness "ACL2")))
+  :integer-case (gret (mk-g-concrete (pkg-witness "ACL2")))
   :boolean-case (gret (mk-g-concrete (pkg-witness "ACL2")))
   :cons-case (gret (mk-g-concrete (pkg-witness "ACL2"))))
 
 
 
 (def-g-unary-concrete realpart
-  :number-case
-  (mv-let (rn rd in id)
-    (break-g-number (g-number->num x))
-    (declare (ignore in id))
-    (gret (mk-g-number (list-fix rn) (list-fix rd))))
+  :integer-case (gret x)
   :boolean-case (gret 0)
   :cons-case (gret 0))
 
 (def-g-unary-concrete imagpart
-  :number-case
-  (mv-let (rn rd in id)
-    (break-g-number (g-number->num x))
-    (declare (ignore rn rd))
-    (gret (mk-g-number (list-fix in) (list-fix id))))
+  :integer-case (gret 0)
   :boolean-case (gret 0)
   :cons-case (gret 0))
 

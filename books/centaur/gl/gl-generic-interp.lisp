@@ -2655,7 +2655,7 @@
 
   (local (defthmd glcp-generic-geval-of-consp
            (implies (and (NOT (EQUAL (TAG X) :G-BOOLEAN))
-                         (NOT (EQUAL (TAG X) :G-NUMBER))
+                         (NOT (EQUAL (TAG X) :G-INTEGER))
                          (NOT (EQUAL (TAG X) :G-CONCRETE))
                          (NOT (EQUAL (TAG X) :G-VAR))
                          (NOT (EQUAL (TAG X) :G-ITE))
@@ -3016,7 +3016,8 @@
                                  ;;          (glcp-generic-geval else env)))
                                  )
                   :hints ((and stable-under-simplificationp
-                               '(:in-theory (enable glcp-generic-geval-g-apply-p)))))
+                               '(:in-theory (enable glcp-generic-geval-g-apply-p
+                                                    glcp-generic-geval-general-consp-correct)))))
 
        (merge-list :add-hyps (equal (len then) (len else))
                    :body (implies (and (not erp)

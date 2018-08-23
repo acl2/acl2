@@ -352,10 +352,10 @@ numbers.  If it runs into a call of @('(* 1/3 x)'), it may represent the result
 abstractly, as a term-like symbolic object:</p>
 
 @({
-    (:g-apply binary-*  1/3  (:g-number ...))
+    (:g-apply binary-*  1/3  (:g-integer ...))
 })
 
-<p>(assuming @('x') is represented as a @(':g-number') object).  This sort of
+<p>(assuming @('x') is represented as a @(':g-integer) object).  This sort of
 abstraction can help to avoid creating potentially very-expensive symbolic
 objects, and is an important part of GL's @(see term-level-reasoning).</p>
 
@@ -553,26 +553,13 @@ construction and its evaluation.</p>
 the evaluation of @('<bdd>') using the list of Booleans in the
 environment.</dd>
 
-<dt>Representation: (:G-NUMBER . list-of-lists-of-bdds)</dt>
-<dt>Constructor: (G-NUMBER list-of-lists-of-bdds)</dt>
+<dt>Representation: (:G-INTEGER . list-of-bfrs)</dt>
+<dt>Constructor: (G-INTEGER list-of-bfrs)</dt>
 
-<dd>Evaluates to a (complex rational) number.  @('<list-of-lists-of-bdds>')
-should be a list containing four or fewer lists of UBDDs, which represent (in
-order):
-
-<ul>
-<li>the numerator of the real part  (two's-complement, default 0)</li>
-<li>the denominator of the real part (unsigned, default 1)</li>
-<li>the numerator of the imaginary part (two's-complement, default 0)</li>
-<li>the denominator of the imaginary part (unsigned, default 1).</li>
-</ul>
-
-It is most common to represent an integer, for which only the first list need
-be included.  In both the two's-complement and unsigned representations, the
-bits are ordered from least to most significant, with the last bit in the two's
-complement representation giving the sign.  Two's complement lists may be
-sign-extended by repeating the final bit, and unsigned lists may be
-zero-extended by appending NILs after the final bit.</dd>
+<dd>Evaluates to an integer.  @('<list-of-bfrs>') gives the bits of the
+integer, least significant first.  The representation is two's-complement,
+i.e. the last bit represents 0 if false or -1 if true.  The enpty list
+represents 0.</dd>
 
 <dt>Representation (:G-CONCRETE . object)</dt>
 <dt>Constructor: (G-CONCRETE object)</dt>
@@ -611,7 +598,7 @@ object.  If the evaluator recognizes @('<fn>') and @('<arglist>') evaluates to
 <dt>Representation: atom</dt>
 
 <dd>Every atom evaluates to itself.  However, the keyword symbols
-:G-BOOLEAN, :G-NUMBER, :G-CONCRETE, :G-VAR, :G-ITE, and :G-APPLY are not
+:G-BOOLEAN, :G-INTEGER, :G-CONCRETE, :G-VAR, :G-ITE, and :G-APPLY are not
 themselves well-formed symbolic objects.</dd>
 
 <dt>Representation: @('(car . cdr)')</dt>
@@ -633,7 +620,7 @@ G-CONCRETE forms.</li>
 
 <li>Most ACL2 objects are themselves well-formed symbolic objects which
 evaluate to themselves.  The exceptions are ones which contain the special
-keyword symbolis :G-BOOLEAN, :G-NUMBER, :G-CONCRETE, :G-VAR,
+keyword symbolis :G-BOOLEAN, :G-INTEGER :G-CONCRETE, :G-VAR,
 :G-ITE, and :G-APPLY.  These atoms (and out of all atoms, only these)
 are not well-formed symbolic objects.  Since a cons of any two
 well-formed symbolic objects is itself a well-formed symbolic objects,
@@ -732,7 +719,7 @@ follows.  The initial goal is as follows:</p>
 <p>The coverage heuristics proceed by repeatedly opening up the
 @('GL::SHAPE-SPEC-OBJ-IN-RANGE') function.  This effectively splits the proof
 into cases for each component of each variable; for example, if one variable's
-shape specifier binding is a cons of two :G-NUMBER forms, then its CAR and CDR
+shape specifier binding is a cons of two :G-INTEGER forms, then its CAR and CDR
 will be considered separately.  Eventually, this results in several subgoals,
 each with conjunction of requirements for some component of some input.</p>
 
@@ -1078,7 +1065,7 @@ performance.</p>
 <p>This is somewhat involved.  Generally, such a function operates by cases on
 what kinds of symbolic objects it has been given.  Most of these cases are
 easy; for instance, the symbolic counterpart for @(see consp) just returns
-@('nil') when given a @(':g-boolean') or @(':g-number').  But in other cases
+@('nil') when given a @(':g-boolean') or @(':g-integer').  But in other cases
 the operation can require combining the Boolean expressions making up the
 arguments in some way, e.g., the symbolic counterpart for @(see binary-*)
 implements a simple binary multiplier.</p>
@@ -1439,7 +1426,7 @@ the form:</p>
 <p>These are called coverage obligations.  Shape-spec-obj-in-range says that the
 value var is expressible by the given shape-spec; that is, the shape-spec
 covers all possible values of var satisfying the hyps.  For example, if the
-shape-spec is the :g-number construct for a 10-bit integer, then the
+shape-spec is the :g-integer construct for a 10-bit integer, then the
 shape-spec-obj-in-range term reduces to:</p>
 
 @({

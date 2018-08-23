@@ -310,7 +310,7 @@
     (pattern-match x
       ((g-concrete &) 0)
       ((g-boolean b) (max-depth b))
-      ((g-number n) (max-max-max-depth n))
+      ((g-integer n) (acl2::max-max-depth n))
       ((g-ite if then else)
        (max (gobj-max-depth if)
             (max (gobj-max-depth then)
@@ -717,32 +717,6 @@
            (pbfr-list-vars-bounded k p (bfr-logapp-nus n x y)))
   :hints (("goal" :in-theory (enable pbfr-list-vars-bounded-in-terms-of-witness))))
 
-(defthm pbfr-list-vars-bounded-of-break-g-number
-  (and (implies (<= (nat-list-max (car num)) (nfix n))
-                (pbfr-list-vars-bounded
-                 n t (mv-nth 0 (break-g-number (num-spec-to-num-gobj num)))))
-       (implies (<= (nat-list-max (cadr num)) (nfix n))
-                (pbfr-list-vars-bounded
-                 n t (mv-nth 1 (break-g-number (num-spec-to-num-gobj num)))))
-       (implies (<= (nat-list-max (caddr num)) (nfix n))
-                (pbfr-list-vars-bounded
-                 n t (mv-nth 2 (break-g-number (num-spec-to-num-gobj num)))))
-       (implies (<= (nat-list-max (cadddr num)) (nfix n))
-                (pbfr-list-vars-bounded
-                 n t (mv-nth 3 (break-g-number (num-spec-to-num-gobj num))))))
-  :hints(("Goal" :in-theory (enable break-g-number num-spec-to-num-gobj))))
-
-(defthm pbfr-list-vars-bounded-of-break-g-number-int
-  (implies (pbfr-list-vars-bounded k p int)
-           (and (pbfr-list-vars-bounded
-                 k p (mv-nth 0 (break-g-number (list int))))
-                (pbfr-list-vars-bounded
-                 k p (mv-nth 1 (break-g-number (list int))))
-                (pbfr-list-vars-bounded
-                 k p (mv-nth 2 (break-g-number (list int))))
-                (pbfr-list-vars-bounded
-                 k p (mv-nth 3 (break-g-number (list int))))))
-  :hints(("Goal" :in-theory (enable break-g-number))))
 
 
 

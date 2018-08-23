@@ -307,8 +307,8 @@ symbolic-objects)</b> when @('spec1') is being executed!  In particular, we
 will see, in @(see gl-satlink-mode):</p>
 
 @({
-     Note: X is (:G-NUMBER (0 1 2 NIL) (T) NIL) and Y is
-     (:G-NUMBER (4 5 6 NIL) (T) NIL).
+     Note: X is (:G-INTEGER 0 1 2 NIL) and Y is
+     (:G-NUMBER 4 5 6 NIL).
 })
 
 <p>The numbers 0-6 here are AIG variables.  If we were instead in @(see

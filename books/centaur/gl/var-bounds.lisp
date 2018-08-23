@@ -408,20 +408,14 @@
 
 (defsection gobj-vars-bounded
 
-  (local (in-theory (disable break-g-number)))
-
   (mutual-recursion
    (defun gobj-vars-bounded (k p x)
      (if (atom x)
          t
        (pattern-match x
          ((g-boolean b) (pbfr-vars-bounded k p b))
-         ((g-number n)
-          (b* (((mv rn rd in id) (break-g-number n)))
-            (and (pbfr-list-vars-bounded k p rn)
-                 (pbfr-list-vars-bounded k p rd)
-                 (pbfr-list-vars-bounded k p in)
-                 (pbfr-list-vars-bounded k p id))))
+         ((g-integer bits)
+          (pbfr-list-vars-bounded k p bits))
          ((g-ite test then else)
           (and (gobj-vars-bounded k p test)
                (gobj-vars-bounded k p then)
@@ -444,12 +438,8 @@
        (pattern-match x
          ((g-boolean b) (and (not (pbfr-vars-bounded k p b))
                              (pbfr-vars-bounded-witness k p b)))
-         ((g-number n)
-          (b* (((mv rn rd in id) (break-g-number n)))
-            (or (pbfr-list-vars-bounded-witness k p rn)
-                (pbfr-list-vars-bounded-witness k p rd)
-                (pbfr-list-vars-bounded-witness k p in)
-                (pbfr-list-vars-bounded-witness k p id))))
+         ((g-integer bits) (and (not (pbfr-list-vars-bounded k p bits))
+                                (pbfr-list-vars-bounded-witness k p bits)))
          ((g-ite test then else)
           (or (gobj-vars-bounded-witness k p test)
               (gobj-vars-bounded-witness k p then)
@@ -581,7 +571,7 @@
     (implies (and (gobj-vars-bounded k p x)
                   (NOT (EQUAL (TAG X) :G-CONCRETE))
                   (NOT (EQUAL (TAG X) :G-BOOLEAN))
-                  (NOT (EQUAL (TAG X) :G-NUMBER))
+                  (NOT (EQUAL (TAG X) :G-INTEGER))
                   (NOT (EQUAL (TAG X) :G-ITE))
                   (NOT (EQUAL (TAG X) :G-VAR))
                   (NOT (EQUAL (TAG X) :G-APPLY)))
@@ -591,7 +581,7 @@
     (implies (and (gobj-vars-bounded k p x)
                   (NOT (EQUAL (TAG X) :G-CONCRETE))
                   (NOT (EQUAL (TAG X) :G-BOOLEAN))
-                  (NOT (EQUAL (TAG X) :G-NUMBER))
+                  (NOT (EQUAL (TAG X) :G-INTEGER))
                   (NOT (EQUAL (TAG X) :G-ITE))
                   (NOT (EQUAL (TAG X) :G-VAR))
                   (NOT (EQUAL (TAG X) :G-APPLY)))
@@ -602,25 +592,10 @@
                   (eq (tag x) :g-boolean))
              (pbfr-vars-bounded k p (g-boolean->bool x))))
 
-  (defthm gobj-vars-bounded-of-g-number->num-0
+  (defthm gobj-vars-bounded-of-g-integer->bits
     (implies (and (gobj-vars-bounded k p x)
-                  (eq (tag x) :g-number))
-             (pbfr-list-vars-bounded k p (mv-nth 0 (break-g-number (g-number->num x))))))
-
-  (defthm gobj-vars-bounded-of-g-number->num-1
-    (implies (and (gobj-vars-bounded k p x)
-                  (eq (tag x) :g-number))
-             (pbfr-list-vars-bounded k p (mv-nth 1 (break-g-number (g-number->num x))))))
-
-  (defthm gobj-vars-bounded-of-g-number->num-2
-    (implies (and (gobj-vars-bounded k p x)
-                  (eq (tag x) :g-number))
-             (pbfr-list-vars-bounded k p (mv-nth 2 (break-g-number (g-number->num x))))))
-
-  (defthm gobj-vars-bounded-of-g-number->num-3
-    (implies (and (gobj-vars-bounded k p x)
-                  (eq (tag x) :g-number))
-             (pbfr-list-vars-bounded k p (mv-nth 3 (break-g-number (g-number->num x))))))
+                  (eq (tag x) :g-integer))
+             (pbfr-list-vars-bounded k p (g-integer->bits x))))
 
   (defthm-gobj-flag
     (defthm generic-geval-of-set-var-when-gobj-vars-bounded
@@ -678,13 +653,9 @@
                 (gobj-vars-bounded k p then)
                 (gobj-vars-bounded k p else))))
 
-  (defthm gobj-vars-bounded-of-g-number
-    (equal (gobj-vars-bounded k p (g-number num))
-           (b* (((mv rn rd in id) (break-g-number num)))
-             (and (pbfr-list-vars-bounded k p rn)
-                  (pbfr-list-vars-bounded k p rd)
-                  (pbfr-list-vars-bounded k p in)
-                  (pbfr-list-vars-bounded k p id)))))
+  (defthm gobj-vars-bounded-of-g-integer
+    (equal (gobj-vars-bounded k p (g-integer bits))
+           (pbfr-list-vars-bounded k p bits)))
 
   (defthm gobj-vars-bounded-of-g-boolean
     (equal (gobj-vars-bounded k p (g-boolean bool))
@@ -726,13 +697,10 @@
            (boolean-listp (n2v n))
            :hints(("Goal" :in-theory (e/d (bfr-ucons) (logcar logcdr))))))
 
-  (defthm gobj-vars-bounded-of-mk-g-number
-    (implies (and (pbfr-list-vars-bounded k p rn)
-                  (pbfr-list-vars-bounded k p rd)
-                  (pbfr-list-vars-bounded k p in)
-                  (pbfr-list-vars-bounded k p id))
-             (gobj-vars-bounded k p (mk-g-number rn rd in id)))
-    :hints(("Goal" :in-theory (e/d (mk-g-number-fn)
+  (defthm gobj-vars-bounded-of-mk-g-integer
+    (implies (pbfr-list-vars-bounded k p bits)
+             (gobj-vars-bounded k p (mk-g-integer bits)))
+    :hints(("Goal" :in-theory (e/d (mk-g-integer)
                                    (i2v n2v
                                         equal-of-booleans-rewrite
                                         set::double-containment)))))
@@ -747,7 +715,7 @@
                 :in-theory (enable mk-g-ite
                                    mk-g-boolean
                                    ; mk-g-number
-                                   gnumber-to-param-space)))
+                                   )))
       :flag gobj)
     (defthm gobj-list-vars-bounded-of-gobj-list-to-param-space
       (implies (gobj-list-vars-bounded k t x)

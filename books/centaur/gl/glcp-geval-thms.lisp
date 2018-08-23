@@ -42,6 +42,20 @@
             :expand ((generic-geval x env))))
    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
+(defmacro def-glcp-generic-geval-thm-instance (new-name orig-name &key (rule-classes 'nil rule-classes-p))
+  `(acl2::def-functional-instance
+     ,new-name ,orig-name
+     ((generic-geval-ev glcp-generic-geval-ev)
+      (generic-geval-ev-lst glcp-generic-geval-ev-lst)
+      (generic-geval glcp-generic-geval)
+      (generic-geval-list glcp-generic-geval-list))
+     :hints ('(:in-theory (e/d* (glcp-generic-geval-ev-of-fncall-args
+                                 glcp-generic-geval-apply-agrees-with-glcp-generic-geval-ev)
+                                (glcp-generic-geval-apply))
+               :expand ((:with glcp-generic-geval (glcp-generic-geval x env))
+                        (glcp-generic-geval-list x env))))
+     . ,(and rule-classes-p `(:rule-classes ,rule-classes))))
+
 
 (defsection glcp-generic-geval
 
@@ -53,118 +67,54 @@
     :hints(("Goal" :in-theory (enable gl-eval-of-atom)))
     :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-  (acl2::def-functional-instance
+  (def-glcp-generic-geval-thm-instance
    glcp-generic-geval-mk-g-boolean-correct
-   mk-g-boolean-correct
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list))
-   :hints ('(:in-theory (e/d* (glcp-generic-geval-ev-of-fncall-args
-                               glcp-generic-geval-apply-agrees-with-glcp-generic-geval-ev)
-                              (glcp-generic-geval-apply))
-             :expand ((glcp-generic-geval x env)
-                      (glcp-generic-geval-list x env)))))
+   mk-g-boolean-correct)
 
-  (acl2::def-functional-instance
-   glcp-generic-geval-mk-g-number-correct
-   mk-g-number-correct
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list))
-   :hints ('(:in-theory (e/d* (glcp-generic-geval-ev-of-fncall-args
-                               glcp-generic-geval-apply-agrees-with-glcp-generic-geval-ev)
-                              (glcp-generic-geval-apply))
-             :expand ((glcp-generic-geval x env)
-                      (glcp-generic-geval-list x env)))))
+  (def-glcp-generic-geval-thm-instance
+   glcp-generic-geval-mk-g-integer-correct
+   mk-g-integer-correct)
 
-  (acl2::def-functional-instance
+  (def-glcp-generic-geval-thm-instance
    glcp-generic-geval-cons
-   generic-geval-cons
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list))
-   :hints ('(:in-theory (e/d* (glcp-generic-geval-ev-of-fncall-args
-                               glcp-generic-geval-apply-agrees-with-glcp-generic-geval-ev)
-                              (glcp-generic-geval-apply))
-             :expand ((glcp-generic-geval x env)
-                      (glcp-generic-geval-list x env)))))
+   generic-geval-cons)
 
-  (acl2::def-functional-instance
+  (def-glcp-generic-geval-thm-instance
    glcp-generic-geval-g-apply-p
-   generic-geval-g-apply-p
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list))
-   :hints ('(:in-theory (e/d* (glcp-generic-geval-ev-of-fncall-args
-                               glcp-generic-geval-apply-agrees-with-glcp-generic-geval-ev)
-                              (glcp-generic-geval-apply))
-             :expand ((glcp-generic-geval x env)
-                      (glcp-generic-geval-list x env)))))
+   generic-geval-g-apply-p)
 
   (in-theory (disable glcp-generic-geval-g-apply-p))
 
 
 
-  (acl2::def-functional-instance
+  (def-glcp-generic-geval-thm-instance
    glcp-generic-geval-mk-g-ite-correct
-   mk-g-ite-correct
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list)))
+   mk-g-ite-correct)
 
-  (acl2::def-functional-instance
+  (def-glcp-generic-geval-thm-instance
    glcp-generic-geval-mk-g-concrete-correct
-   mk-g-concrete-correct
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list)))
+   mk-g-concrete-correct)
 
-  (acl2::def-functional-instance
+  (def-glcp-generic-geval-thm-instance
    glcp-generic-geval-g-concrete-quote-correct
-   g-concrete-quote-correct
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list)))
+   g-concrete-quote-correct)
 
-  (acl2::def-functional-instance
+  (def-glcp-generic-geval-thm-instance
    glcp-generic-geval-general-concrete-obj-correct
-   general-concrete-obj-correct
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list)))
+   general-concrete-obj-correct)
 
 
-  (acl2::def-functional-instance
+  (def-glcp-generic-geval-thm-instance
    glcp-generic-geval-of-gl-cons
-   generic-geval-gl-cons
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list)))
+   generic-geval-gl-cons)
 
-  (acl2::def-functional-instance
+  (def-glcp-generic-geval-thm-instance
    glcp-generic-geval-g-apply
-   generic-geval-g-apply
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list)))
+   generic-geval-g-apply)
 
-  (acl2::def-functional-instance
+  (def-glcp-generic-geval-thm-instance
    glcp-generic-geval-alt-def
    generic-geval-alt-def
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list))
    ;; :do-not-induct
    ;;   t
    ;;   :expand ((glcp-generic-geval x env))))
@@ -172,46 +122,36 @@
 
   (in-theory (disable glcp-generic-geval-alt-def))
 
-  (acl2::def-functional-instance
+  (def-glcp-generic-geval-thm-instance
    glcp-generic-geval-general-consp-car-correct
-   general-consp-car-correct
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list)))
+   general-consp-car-correct)
 
-  (acl2::def-functional-instance
-   glcp-generic-geval-general-consp-cdr-correct
-   general-consp-cdr-correct
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list)))
+  (def-glcp-generic-geval-thm-instance
+    glcp-generic-geval-general-consp-correct
+   general-consp-correct)
 
-  (acl2::def-functional-instance
+  (in-theory (disable glcp-generic-geval-general-consp-correct))
+
+  (def-glcp-generic-geval-thm-instance
+    glcp-generic-geval-general-consp-cdr-correct
+   general-consp-cdr-correct)
+
+  (def-glcp-generic-geval-thm-instance
    glcp-generic-geval-consp-general-consp
-   consp-general-consp
-   ((generic-geval-ev glcp-generic-geval-ev)
-    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list)))
+   consp-general-consp)
+
+  (in-theory (disable glcp-generic-geval-general-consp-cdr-correct
+                      glcp-generic-geval-general-consp-car-correct
+                      glcp-generic-geval-consp-general-consp))
 
 
-   (acl2::def-functional-instance
+   (def-glcp-generic-geval-thm-instance
     bfr-assume-of-gtests-possibly-true-for-glcp-generic-geval
-    bfr-assume-of-gtests-possibly-true
-    ((generic-geval-ev glcp-generic-geval-ev)
-     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-     (generic-geval glcp-generic-geval)
-     (generic-geval-list glcp-generic-geval-list)))
+    bfr-assume-of-gtests-possibly-true)
 
-   (acl2::def-functional-instance
+   (def-glcp-generic-geval-thm-instance
     bfr-assume-of-gtests-possibly-false-for-glcp-generic-geval
-    bfr-assume-of-gtests-possibly-false
-    ((generic-geval-ev glcp-generic-geval-ev)
-     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-     (generic-geval glcp-generic-geval)
-     (generic-geval-list glcp-generic-geval-list))))
+    bfr-assume-of-gtests-possibly-false))
 
 
 

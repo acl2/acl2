@@ -369,7 +369,7 @@
            (implies (and (consp x)
                          (not (equal (tag x) :g-concrete))
                          (not (equal (tag x) :g-boolean))
-                         (not (equal (tag x) :g-number))
+                         (not (equal (tag x) :g-integer))
                          (not (equal (tag x) :g-ite))
                          (not (equal (tag x) :g-var))
                          (not (equal (tag x) :g-apply)))

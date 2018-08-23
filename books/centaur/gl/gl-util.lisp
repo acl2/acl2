@@ -256,6 +256,7 @@ passed to ~x2 in that theorem.~%"
          '(g-boolean
            g-boolean-p g-boolean->bool
            g-number g-number-p g-number->num
+           g-integer g-integer-p g-integer->bits
            g-concrete g-concrete-p g-concrete->obj
            g-ite g-ite-p g-ite->test g-ite->then g-ite->else
            g-apply g-apply-p g-apply->fn g-apply->args

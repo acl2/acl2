@@ -29,71 +29,48 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-(include-book "generic-geval")
-(include-book "symbolic-arithmetic")
-;; (include-book "defapply")
 
+(defun binary-and* (a b)
+  (declare (xargs :guard t))
+  (and a b))
 
-(def-eval-g eval-g-base
-  (BINARY-*
-   cons if
-   BINARY-+
-   PKG-WITNESS
-;   UNARY-/
-   UNARY--
-   COMPLEX-RATIONALP
-;   BAD-ATOM<=
-   ACL2-NUMBERP
-   SYMBOL-PACKAGE-NAME
-   INTERN-IN-PACKAGE-OF-SYMBOL
-   CODE-CHAR
-   DENOMINATOR
-   CDR
-;   COMPLEX
-   CAR
-   CONSP
-   SYMBOL-NAME
-   CHAR-CODE
-   IMAGPART
-   SYMBOLP
-   REALPART
-   NUMERATOR
-   EQUAL
-   STRINGP
-   RATIONALP
-   CONS
-   INTEGERP
-   CHARACTERP
-   <
-   COERCE
-   booleanp
-   logbitp
-   binary-logand
-   binary-logior
-   acl2::binary-logxor
-   acl2::binary-logeqv
-   lognot
-   ash
-   integer-length
-   floor
-   mod
-   truncate
-   rem
-   acl2::bool-fix$inline
-   acl2::bool->bit$inline
-   bool->sign
-   hons-assoc-equal
+(defun and*-macro (lst)
+  (if (atom lst)
+      t
+    (if (atom (cdr lst))
+        (car lst)
+      (list 'binary-and* (car lst)
+            (and*-macro (cdr lst))))))
 
-   ;; these are from the constant *expandable-boot-strap-non-rec-fns*.
-   NOT IMPLIES
-   EQ ATOM EQL = /= NULL ENDP ZEROP ;; SYNP
-   PLUSP MINUSP LISTP ;; RETURN-LAST causes guard violation
-   ;; FORCE CASE-SPLIT
-   ;; DOUBLE-REWRITE
+(defmacro and* (&rest lst)
+  (and*-macro lst))
 
-   logapp int-set-sign maybe-integer
-   binary-minus-for-gl))
+(add-binop and* binary-and*)
 
+(defcong iff equal (and* a b) 1)
 
-(in-theory (disable eval-g-base))
+(defcong iff iff (and* a b) 2)
 
+(defthm and*-rem-first
+  (implies a
+           (equal (and* a b) b)))
+
+(defthm and*-rem-second
+  (implies b
+           (iff (and* a b) a)))
+
+(defthm and*-nil-first
+  (equal (and* nil b) nil))
+
+(defthm and*-nil-second
+  (equal (and* a nil) nil))
+
+(defthm and*-forward
+  (implies (and* a b) (and a b))
+  :rule-classes :forward-chaining)
+
+(defmacro and** (&rest lst)
+  `(mbe :logic (and* . ,lst)
+        :exec (and . ,lst)))
+
+(in-theory (disable and*))
