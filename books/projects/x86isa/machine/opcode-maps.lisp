@@ -213,19 +213,79 @@
 (defmacro ud-cpl-is-not-zero ()
   `(not (eql (cplx86) 0)))
 
-;; (defmacro ud-legacy-sse-exceptions-type-4 ()
-;;   ;; Source: Section 2.4.4 (Exceptions Type 4, 4 (>=16 Byte mem arg no
-;;   ;; alignment, no floating-point exceptions)), Chapter 2, Intel Vol. 2
+(defmacro ud-sse-specification (feature-flag)
+  ;; Source: Section 2.4 (AVX and SSE Exception Specification), Chapter 2,
+  ;; Intel Vol. 2
+  ;; This macro is applicable to non-AVX instructions in only
+  ;; protected/compatibility and 64-bit modes.
 
-;;   ;; This applies across both protected/compatibility and 64-bit modes.
-;;   `(or (equal (cr0-slice :cr0-em (cr0)) 1)
-;;        (equal (cr4-slice :cr4-osfxsr (cr4)) 0)
-;;        (ud-lock-used)
-;;        ;; If a corresponding CPUID feature flag is 0.
+  ;; This definition for UD is applicable to the following:
 
-;; (i-am-here)
+  ;; Exceptions Type 1 (Section 2.4.1)
 
-;;        ))
+  ;; Exceptions Type 2 (Section 2.4.2)
+
+  ;; Exceptions Type 3 (Section 2.4.3)
+
+  ;; Exceptions Type 4 (Section 2.4.4)
+
+  ;; Exceptions Type 5 (Section 2.4.5)
+
+  ;; Exceptions Type 7 (Section 2.4.7)
+
+  ;; Note that we don't check for "If an unmasked SIMD floating-point exception
+  ;; and CR4.OSXMMEXCPT[bit 10] = 0."  here (which shows up in Types 2 and 3)
+  ;; --- this is because this condition can't be checked at decode time and
+  ;; must be detected in the instruction's semantic function.
+
+  `(or (equal (cr0-slice :cr0-em (cr0)) 1)
+       (equal (cr4-slice :cr4-osfxsr (cr4)) 0)
+       (ud-lock-used)
+       ;; If a corresponding CPUID feature flag is 0.
+       ;; Source: Intel Vol. 2 (May 2018 edition)
+       ;; Figure 3-7 (Feature Information Returned in the ECX register)
+       ;; Table 3-10 (Feature Information Returned in the ECX register)
+       ;; Figure 3-8 (Feature Information Returned in the EDX register)
+       ;; Table 3-11 (More on Feature Information Returned in the EDX register)
+       ,(case feature-flag
+          (:sse
+           `(equal (cpuid-flag
+                    #ux_01
+                    :reg #.*edx*
+                    :bit 25)
+                   0))
+          (:sse2
+           `(equal (cpuid-flag
+                    #ux_01
+                    :reg #.*edx*
+                    :bit 26)
+                   0))
+          (:sse3
+           `(equal (cpuid-flag
+                    #ux_01
+                    :reg #.*ecx*
+                    :bit 0)
+                   0))
+          (:ssse3
+           `(equal (cpuid-flag
+                    #ux_01
+                    :reg #.*ecx*
+                    :bit 9)
+                   0))
+          (:sse4.1
+           `(equal (cpuid-flag
+                    #ux_01
+                    :reg #.*ecx*
+                    :bit 19)
+                   0))
+          (:sse4.2
+           `(equal (cpuid-flag
+                    #ux_01
+                    :reg #.*ecx*
+                    :bit 20)
+                   0))
+          (otherwise
+           `nil))))
 
 ;; Some x86isa-specific definitions:
 
@@ -1283,15 +1343,19 @@
                (:fn . (:no-instruction))))
 
     #| 10 |# (((:no-prefix . ("VMOVUPS"    2 (V ps) (W ps)
-                              (:fn . (x86-movups/movupd/movdqu-Op/En-RM))))
+                              (:fn . (x86-movups/movupd/movdqu-Op/En-RM))
+                              (:ud . ((ud-sse-specification :sse)))))
                (:66        . ("VMOVUPD"    2 (V pd) (W pd)
-                              (:fn . (x86-movups/movupd/movdqu-Op/En-RM))))
+                              (:fn . (x86-movups/movupd/movdqu-Op/En-RM))
+                              (:ud . ((ud-sse-specification :sse2)))))
                (:F3        . ("VMOVSS"     3 (V x)  (H x)  (W ss)
                               (:fn . (x86-movss/movsd-Op/En-RM
-                                      (sp/dp . #.*OP-SP*)))))
+                                      (sp/dp . #.*OP-SP*)))
+                              (:ud . ((ud-sse-specification :sse)))))
                (:F2        . ("VMOVSD"     3 (V x)  (H x)  (W sd)
                               (:fn . (x86-movss/movsd-Op/En-RM
-                                      (sp/dp . #.*OP-DP*))))))
+                                      (sp/dp . #.*OP-DP*)))
+                              (:ud . ((ud-sse-specification :sse2))))))
 
               ((:no-prefix . ("VMOVUPS"    2 (W ps) (V ps)
                               (:fn . (x86-movups/movupd/movdqu-Op/En-MR))))
