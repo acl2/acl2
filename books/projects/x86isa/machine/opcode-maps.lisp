@@ -213,10 +213,28 @@
 (defmacro ud-cpl-is-not-zero ()
   `(not (eql (cplx86) 0)))
 
+;; (defmacro ud-legacy-sse-exceptions-type-4 ()
+;;   ;; Source: Section 2.4.4 (Exceptions Type 4, 4 (>=16 Byte mem arg no
+;;   ;; alignment, no floating-point exceptions)), Chapter 2, Intel Vol. 2
+
+;;   ;; This applies across both protected/compatibility and 64-bit modes.
+;;   `(or (equal (cr0-slice :cr0-em (cr0)) 1)
+;;        (equal (cr4-slice :cr4-osfxsr (cr4)) 0)
+;;        (ud-lock-used)
+;;        ;; If a corresponding CPUID feature flag is 0.
+
+;; (i-am-here)
+
+;;        ))
+
 ;; Some x86isa-specific definitions:
 
 (defmacro cplx86 ()
   `(cpl x86))
+
+(defmacro cr0 ()
+  `(the (unsigned-byte 32)
+     (loghead 32 (ctri #.*cr0* x86))))
 
 (defmacro cr4 ()
   `(the (unsigned-byte 22)

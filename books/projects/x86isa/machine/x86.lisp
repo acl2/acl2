@@ -882,10 +882,8 @@
        ((when flg) (!!ms-fresh :increment-error flg))
 
        ((the (unsigned-byte 8) mandatory-prefix)
-        (case (prefixes-slice :last-prefix prefixes)
-          (#.*rep-pfx* (prefixes-slice :rep prefixes)) ;; F3 or F2
-          (#.*opr-pfx* (prefixes-slice :opr prefixes)) ;; 66
-          (otherwise 0)))
+        (compute-mandatory-prefix-for-three-byte-opcode
+         proc-mode second-escape-byte opcode prefixes))
 
        (modr/m?
         (three-byte-opcode-ModR/M-p
@@ -1060,10 +1058,8 @@
        ((when flg) (!!ms-fresh :increment-error flg))
 
        ((the (unsigned-byte 8) mandatory-prefix)
-        (case (prefixes-slice :last-prefix prefixes)
-          (#.*rep-pfx* (prefixes-slice :rep prefixes)) ;; F3 or F2
-          (#.*opr-pfx* (prefixes-slice :opr prefixes)) ;; 66
-          (otherwise 0)))
+        (compute-mandatory-prefix-for-two-byte-opcode
+         proc-mode opcode prefixes))
 
        (modr/m?
         (two-byte-opcode-ModR/M-p
