@@ -522,10 +522,6 @@
   ;;       MOVSXD r32, r/m32 (Move doubleword to doubleword)
   ;;       MOVSXD r64, r/m32 (Move doubleword to quadword with sign-extension)
 
-  ;; I am not very confident about MOVSX's second operand being r/m16.
-  ;; I haven't yet come across this instruction used with an
-  ;; address-size override prefix.
-
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
