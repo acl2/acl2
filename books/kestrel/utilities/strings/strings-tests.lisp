@@ -35,17 +35,3 @@
 (assert-equal (string=>nats "") nil)
 
 (assert-equal (string=>nats "#if") '(35 105 102))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (ubyte8s=>hexstring nil)
-              "")
-
-(assert-equal (ubyte8s=>hexstring '(0))
-              "00")
-
-(assert-equal (ubyte8s=>hexstring '(1 2 3))
-              "010203")
-
-(assert-equal (ubyte8s=>hexstring '(70 160 180 255 11))
-              "46A0B4FF0B")

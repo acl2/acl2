@@ -17,6 +17,7 @@
 (include-book "char-kinds")
 (include-book "chars-codes")
 (include-book "hexchars")
+(include-book "hexstrings")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,19 +71,3 @@
     (implies (stringp string)
              (equal (len (string=>nats string))
                     (length string)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ubyte8s=>hexstring ((bytes (unsigned-byte-listp 8 bytes)))
-  :returns (string stringp)
-  :parents (string-utilities)
-  :short "Convert a list of natural numbers below 256
-          to a string of hexadecimal digits."
-  :long
-  "<p>
-   Each input natural number is converted to two hexadecimal digits,
-   with a leading 0 digit if needed.
-   The hexadecimal digits above 9 are upper case letters.
-   The result is the string of all these digits.
-   </p>"
-  (implode (ubyte8s=>hexchars bytes)))
