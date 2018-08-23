@@ -14,7 +14,9 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "system/kestrel" :dir :system)
 
-(include-book "characters")
+(include-book "char-kinds")
+(include-book "chars-codes")
+(include-book "hexchars")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

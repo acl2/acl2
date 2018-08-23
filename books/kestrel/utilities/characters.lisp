@@ -4,4 +4,6 @@
 
 (in-package "ACL2")
 
-(include-book "strings/characters")
+(include-book "strings/char-kinds")
+(include-book "strings/chars-codes")
+(include-book "strings/hexchars")

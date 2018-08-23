@@ -1,4 +1,4 @@
-; Character Utilities -- Tests
+; String Utilities -- Conversions from 8-Bit Bytes to Hex Characters -- Tests
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -12,7 +12,7 @@
 
 (include-book "kestrel/utilities/testing" :dir :system)
 
-(include-book "characters")
+(include-book "hexchars")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
