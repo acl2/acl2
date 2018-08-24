@@ -35,7 +35,7 @@
 
 (std::deflist nonempty-string-listp (x)
   (nonempty-stringp x)
-  :parents (string-kinds)
+  :parents (string-kinds nonempty-stringp)
   :short "Recognize true lists of nonempty strings."
   :true-listp t
   :elementp-of-nil nil)
