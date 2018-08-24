@@ -58,6 +58,8 @@
 (include-book "def-gl-clause-proc")
 (include-book "gify-thms")
 (include-book "auto-bindings")
+(include-book "secondary-types")
+
 ;;; Matt K., 2/22/13: Sol Swords suggested commenting out the following
 ;;; include-book form, in order to avoid dependence on ttag :COUNT-BRANCHES-TO
 ;;; from centaur/aig/bddify.lisp.

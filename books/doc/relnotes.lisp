@@ -416,6 +416,15 @@
  <p>Added optional accumulated-persistence-style profiling of attempted rule
  applications, available with keyword argument @(':prof-enabledp t').</p>
 
+ <p>Changed the representation of symbolic objects, removing the @(':g-number')
+ form which could represent complex rationals and replacing it with a simpler
+ @(':g-integer') form.  (Complex rationals may still be supported using
+ rewriting.  Also, the @(':g-number') shape specifier is still supported for
+ backward compatibility, though it is restricted to only represent integers and
+ translates directly into @(':g-integer') symbolic objects.)  Removed some
+ native symbolic counterparts for functions that can be dealt with more cleanly
+ via rewrite rules.</p>
+
  <h4><see topic='@(url gl::glmc)'>GLMC</see></h4>
  <p>Added option to bind some variables that can be used by the nextstate, property,
  constraint, and initstate terms.  These bindings will be symbolically evaluated once,

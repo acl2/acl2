@@ -53,7 +53,7 @@
    case-split-override
    (split-conses booleanp :default nil)
    (split-fncalls booleanp :default nil)
-   (lift-ifsp booleanp :default nil)
+   (lift-ifsp booleanp :default t)
    (prof-enabledp booleanp :default nil)
    (rewrite-rule-table :default nil)
    (branch-merge-rules :default nil)
