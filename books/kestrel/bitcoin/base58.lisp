@@ -33,7 +33,7 @@
      Base58 encoding is part of Base58Check encoding.")
    (xdoc::p
     "Base58 decoding is the inverse of Base58 encoding."))
-  :order-subtopic t
+  :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
