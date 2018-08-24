@@ -71,7 +71,17 @@
   (defrule nats=>chars-of-append
     (equal (nats=>chars (append nats1 nats2))
            (append (nats=>chars nats1)
-                   (nats=>chars nats2)))))
+                   (nats=>chars nats2))))
+
+  (defrule nats=>chars-of-repeat
+    (equal (nats=>chars (repeat n char))
+           (repeat n (code-char char)))
+    :enable repeat)
+
+  (defrule nth-of-nats=>chars
+    (implies (integer-range-p 0 (len chars) i)
+             (equal (nth i (nats=>chars chars))
+                    (code-char (nth i chars))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -129,4 +139,14 @@
   (defrule chars=>nats-of-append
     (equal (chars=>nats (append chars1 chars2))
            (append (chars=>nats chars1)
-                   (chars=>nats chars2)))))
+                   (chars=>nats chars2))))
+
+  (defrule chars=>nats-of-repeat
+    (equal (chars=>nats (repeat n char))
+           (repeat n (char-code char)))
+    :enable repeat)
+
+  (defrule nth-of-chars=>nats
+    (implies (integer-range-p 0 (len chars) i)
+             (equal (nth i (chars=>nats chars))
+                    (char-code (nth i chars))))))
