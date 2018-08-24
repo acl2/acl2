@@ -17,12 +17,13 @@
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
+(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "utilities/print-specifiers")
 (include-book "utilities/transformation-table")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection restrict-implementation
+(defxdoc+ restrict-implementation
   :parents (implementation restrict)
   :short "Implementation of @(tsee restrict)."
   :long
@@ -104,13 +105,12 @@
    <p>
    The parameters of implementation functions that are not listed above
    are described in, or clear from, those functions' documentation.
-   </p>")
-
-(xdoc::order-subtopics restrict-implementation nil t)
+   </p>"
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc restrict-input-processing
+(defxdoc+ restrict-input-processing
   :parents (restrict-implementation)
   :short "Input processing performed by @(tsee restrict)."
   :long
@@ -119,11 +119,9 @@
    When validation fails, <see topic='@(url er)'>soft errors</see> occur.
    Thus, generally the input processing functions return
    <see topic='@(url acl2::error-triple)'>error triples</see>.
-   </p>")
-
-(xdoc::order-subtopics restrict-input-processing nil t)
-
-(local (xdoc::set-default-parents restrict-input-processing))
+   </p>"
+  :order-subtopics t
+  :default-parent t)
 
 (define restrict-process-old (old verify-guards ctx state)
   :returns (mv erp
@@ -507,7 +505,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc restrict-event-generation
+(defxdoc+ restrict-event-generation
   :parents (restrict-implementation)
   :short "Event generation performed by @(tsee restrict)."
   :long
@@ -524,11 +522,9 @@
    These have automatically generated fresh names:
    the names used so far
    are threaded through the event generation functions below.
-   </p>")
-
-(xdoc::order-subtopics restrict-event-generation nil t)
-
-(local (xdoc::set-default-parents restrict-event-generation))
+   </p>"
+  :order-subtopics t
+  :default-parent t)
 
 (define restrict-gen-restriction-of-rec-calls-consequent-term
   ((old$ symbolp)

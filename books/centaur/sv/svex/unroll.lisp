@@ -443,13 +443,13 @@
                   nil)
            :hints(("Goal" :in-theory (enable svex-env-to-cycle-envs-starting)))))
 
-  
+
 
   (local (Defthm alist-keys-of-append
            (equal (alist-keys (append a b))
                   (append (alist-keys a) (alist-keys b)))
            :hints(("Goal" :in-theory (enable alist-keys)))))
-  
+
   (local (defret svarlist-no-cycle-vars-below-of-svex-cycle-envs-to-single-env
            (implies (and (<= (nfix n) (nfix curr-cycle))
                          (not (svarlist-has-svex-cycle-var (alist-keys (svex-env-fix rest)))))
@@ -626,7 +626,7 @@
 (defines svex-eval-unroll-multienv
   :prepwork ((local (Defthm svex-env-p-nth-of-envlist
                       (implies (svex-envlist-p x)
-                               (svex-env-p (nth n x)))))) 
+                               (svex-env-p (nth n x))))))
   :flag-local nil
   (define svex-eval-unroll-multienv ((x svex-p)
                                      (cycle natp)
@@ -801,7 +801,15 @@
     (equal (svex-lookup v sub-alist)
            (and (member (svar-fix v) (svarlist-fix keys))
                 (or (svex-lookup v alist) (svex-x))))
-    :hints(("Goal" :in-theory (enable svex-lookup hons-assoc-equal svarlist-fix)))))
+    :hints(("Goal"
+            :in-theory
+            (e/d (svex-lookup hons-assoc-equal svarlist-fix)
+
+; Matt K.:  The following rewrite rule made the proof fail after introducing
+; the change, after v8-0, to keep LET expressions on right-hand-sides of
+; rewrite rules, like this one.
+
+                 (hons-assoc-equal-of-svex-alist-fix))))))
 
 
 

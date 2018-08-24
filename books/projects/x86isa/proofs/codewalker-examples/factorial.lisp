@@ -105,6 +105,7 @@
  )
 
 (local (in-theory (e/d* (instruction-decoding-and-spec-rules
+                         x86-operation-mode
                          
                          shr-spec
                          shr-spec-32
@@ -118,7 +119,7 @@
                          imul-spec-32
                          gpr-sub-spec-4
 
-                         top-level-opcode-execute
+                         one-byte-opcode-execute
                          !rgfi-size
                          x86-operand-to-reg/mem
                          x86-operand-to-reg/mem$

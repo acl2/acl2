@@ -10,11 +10,12 @@
 
 (in-package "SOFT")
 
-(include-book "kestrel/utilities/xdoc-constructors" :dir :system)
+(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
+(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc soft
+(defxdoc+ soft
 
   :parents (acl2::kestrel-books acl2::macro-libraries acl2::projects)
 
@@ -76,13 +77,13 @@
      and the contents of the Workshop paper and presentation
      are described <see topic='@(url updates-to-workshop-material)'>here</see>.
      Also see <see topic='@(url soft-future-work)'>here</see>
-     for an up-to-date description of future work.")))
+     for an up-to-date description of future work."))
 
-(xdoc::order-subtopics soft nil t)
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc soft-notions
+(defxdoc+ soft-notions
 
   :parents (soft)
 
@@ -92,13 +93,13 @@
 
   (xdoc::p
    "The macros provided by SOFT are based on the notions
-    defined in the sub-topics below."))
+    defined in the sub-topics below.")
 
-(xdoc::order-subtopics soft-notions nil t)
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc soft-macros
+(defxdoc+ soft-macros
 
   :parents (soft)
 
@@ -126,9 +127,9 @@
    (xdoc::p
     "@(tsee defthm-inst) provides the ability to
      concisely generate and automatically prove theorems,
-     by specifying replacements of function variables.")))
+     by specifying replacements of function variables."))
 
-(xdoc::order-subtopics soft-macros nil t)
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -155,7 +156,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc second-order-functions
+(defxdoc+ second-order-functions
 
   :parents (soft-notions)
 
@@ -179,9 +180,9 @@
      may be replaced by functions of matching arities,
      obtaining a new function that is an
      <see topic='@(url second-order-function-instances)'>instance</see>
-     of the second-order function.")))
+     of the second-order function."))
 
-(xdoc::order-subtopics second-order-functions nil t)
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

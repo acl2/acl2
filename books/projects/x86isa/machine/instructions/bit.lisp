@@ -52,7 +52,6 @@
 ;; INSTRUCTION: BT
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-bt-0F-BA
 
   ;; 0F BA/4: BT r/m16/32/64, imm8
@@ -69,9 +68,6 @@
 
   :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08)))
 
-  :implemented
-  (add-to-implemented-opcodes-table 'BT #x0FBA '(:reg 4) 'x86-bt-0F-BA)
-
   :body
 
   ;; Note: opcode is the second byte of the two-byte opcode.
@@ -81,17 +77,17 @@
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 1 8) operand-size)
-        (select-operand-size nil rex-byte nil prefixes x86))
+        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -99,32 +95,25 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
-                                                operand-size
-                                                inst-ac?
-                                                nil ;; Not a memory pointer operand
-                                                seg-reg
-                                                p4?
-                                                temp-rip
-                                                rex-byte
-                                                r/m
-                                                mod
-                                                sib
-                                                1 ;; One-byte immediate data
-                                                x86))
+        (x86-operand-from-modr/m-and-sib-bytes$
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         1 ;; One-byte immediate data
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        ((mv flg1 (the (unsigned-byte 8) bitOffset) x86)
-        (rme-size 1 temp-rip *cs* :x nil x86))
+        (rme-size proc-mode 1 temp-rip *cs* :x nil x86))
        ((when flg1) (!!ms-fresh :rme-size-error flg1))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip 1 x86))
+        (add-to-*ip proc-mode temp-rip 1 x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -147,10 +136,9 @@
                (x86 (!flgi-undefined #.*of* x86)))
           x86))
 
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-bt-0F-A3
   ;; TO-DO: Speed this up!
 
@@ -176,9 +164,6 @@
                     (acl2::mod-minus
                      unsigned-byte-p)))))
 
-  :implemented
-  (add-to-implemented-opcodes-table 'BT #x0FA3 '(:nil nil) 'x86-bt-0F-A3)
-
   :body
 
   ;; Note: opcode is the second byte of the two-byte opcode.
@@ -189,17 +174,17 @@
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        ((the (integer 1 8) operand-size)
-        (select-operand-size nil rex-byte nil prefixes x86))
+        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
        (bitOffset (rgfi-size operand-size
                              (reg-index reg rex-byte #.*r*)
@@ -213,8 +198,8 @@
         (if (equal mod #b11)
             (mv nil 0 0 x86)
           (let ((p4? (equal #.*addr-size-override*
-                            (prefixes-slice :group-4-prefix prefixes))))
-            (x86-effective-addr p4?
+                            (prefixes-slice :adr prefixes))))
+            (x86-effective-addr proc-mode p4?
                                 temp-rip
                                 rex-byte
                                 r/m
@@ -225,7 +210,7 @@
        ((when flg0) (!!ms-fresh :x86-effective-addr-error flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -255,7 +240,7 @@
                (inst-ac? t)
                ((mv flg byte x86)
                 (if (signed-byte-p 64 byte-addr)
-                    (rme-size 1 byte-addr seg-reg :r inst-ac? x86)
+                    (rme-size proc-mode 1 byte-addr seg-reg :r inst-ac? x86)
                   (mv (cons 'effective-address-error byte-addr) 0 x86))))
             (mv flg bitNumber byte x86))))
        ((when flg2)
@@ -272,7 +257,7 @@
                (x86 (!flgi-undefined #.*sf* x86))
                (x86 (!flgi-undefined #.*of* x86)))
           x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================

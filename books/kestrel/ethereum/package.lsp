@@ -16,6 +16,7 @@
 
 (defpkg "ETHEREUM" (append *std-pkg-symbols*
                            '(bendian=>nat
+                             defxdoc+
                              lnfix
                              nat=>bendian
                              nat=>bendian*

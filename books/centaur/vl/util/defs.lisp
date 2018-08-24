@@ -39,15 +39,11 @@
 ; about general concepts which the ordinary ACL2 user may have written
 ; other, conflicting theorems about.
 
+(include-book "centaur/fty/deftypes" :dir :system)
 (include-book "std/util/top" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
-(include-book "std/lists/list-defuns" :dir :system)
 (include-book "centaur/misc/alist-equiv" :dir :system)
-(include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "std/strings/top" :dir :system)
-(include-book "std/strings/cat" :dir :system)
-(include-book "misc/assert" :dir :system)
-(include-book "misc/definline" :dir :system) ;; bozo
 (include-book "std/system/non-parallel-book" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
@@ -123,19 +119,6 @@ typical example is:</p>
      (implies (and (not (member-equal nil x))
                    (vl-maybe-nat-listp x))
               (nat-listp x)))))
-
-
-(deflist vl-maybe-string-listp (x)
-  (maybe-stringp x)
-  :elementp-of-nil t
-  :parents (utilities)
-  :rest
-  ((defrule string-listp-when-no-nils-in-vl-maybe-string-listp
-     (implies (and (not (member-equal nil x))
-                   (vl-maybe-string-listp x))
-              (equal (string-listp x)
-                     (true-listp x))))))
-
 
 
 (defsection debuggable-and
@@ -846,3 +829,20 @@ versions of the standard.  We currently have some support for:</p>
   (defrefinement maybe-string-equiv streqv
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable streqv))))))
+
+(fty::deflist vl-maybe-string-list
+  :elt-type maybe-string
+  :elementp-of-nil t
+  :parents (utilities)
+  ///
+  ;; BOZO backward-compatibility hack for the pre-FTY name
+  (defmacro vl-maybe-string-listp (x) `(vl-maybe-string-list-p ,x))
+
+  (add-macro-alias vl-maybe-string-listp vl-maybe-string-list-p)
+
+  (defrule string-listp-when-no-nils-in-vl-maybe-string-listp
+    (implies (and (not (member-equal nil x))
+                  (vl-maybe-string-listp x))
+             (equal (string-listp x)
+                    (true-listp x)))))
+

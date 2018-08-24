@@ -1467,9 +1467,9 @@
 ; code and have state as a formal:
 
 ;;; (initialize-invariant-risk-1
-;;;  *primitive-program-fns-with-raw-code*
+;;;  *initial-program-fns-with-raw-code*
 ;;;  (initialize-invariant-risk-1
-;;;   *primitive-logic-fns-with-raw-code*
+;;;   *initial-logic-fns-with-raw-code*
 ;;;   wrld
 ;;;   wrld)
 ;;;  wrld)
@@ -1489,7 +1489,7 @@
 ;;;
 ;;; ; For robustness we do not call formals here, because it causes an error in
 ;;; ; the case that it is not given a known function symbol, as can happen (for
-;;; ; example) with a member of the list *primitive-program-fns-with-raw-code*.
+;;; ; example) with a member of the list *initial-program-fns-with-raw-code*.
 ;;; ; In that case, the following getprop will return nil, in which case the
 ;;; ; above member-eq test is false, which works out as expected.
 ;;;
@@ -3193,6 +3193,25 @@
 ; expression into a theory and then load it into the global enabled
 ; structure.
 
+(defun get-in-theory-redundant-okp (state)
+  (declare (xargs ; :mode :logic ;
+                  :stobjs state
+                  :guard
+                  (alistp (table-alist 'acl2-defaults-table (w state)))))
+  (let ((pair (assoc-eq :in-theory-redundant-okp
+                        (table-alist 'acl2-defaults-table (w state)))))
+    (cond (pair (cdr pair))
+          (t ; default
+           nil))))
+
+(defmacro set-in-theory-redundant-okp (val)
+  (declare (xargs :guard ; note: table event enforces ttag if val is nil
+                  (booleanp val)))
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :in-theory-redundant-okp ,val)
+            (table acl2-defaults-table :in-theory-redundant-okp))))
+
 (defun in-theory-fn (expr state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
@@ -3214,43 +3233,48 @@
                           (list 'in-theory expr))))
       (er-let*
        ((theory0 (translate-in-theory-hint expr t ctx wrld state)))
-       (let* ((ens1 (ens state))
-              (force-xnume-en1 (enabled-numep *force-xnume* ens1))
-              (imm-xnume-en1 (enabled-numep *immediate-force-modep-xnume* ens1))
-              (wrld1 (update-current-theory theory0 wrld))
-              (val (if (f-get-global 'script-mode state)
-                       :CURRENT-THEORY-UPDATED
-                     (list :NUMBER-OF-ENABLED-RUNES (length theory0)))))
+       (cond
+        ((and (get-in-theory-redundant-okp state)
+              (equal theory0 (current-theory-fn :here wrld)))
+         (stop-redundant-event ctx state))
+        (t
+         (let* ((ens1 (ens state))
+                (force-xnume-en1 (enabled-numep *force-xnume* ens1))
+                (imm-xnume-en1 (enabled-numep *immediate-force-modep-xnume* ens1))
+                (wrld1 (update-current-theory theory0 wrld))
+                (val (if (f-get-global 'script-mode state)
+                         :CURRENT-THEORY-UPDATED
+                       (list :NUMBER-OF-ENABLED-RUNES (length theory0)))))
 
 ; Note:  We do not permit IN-THEORY to be made redundant.  If this
 ; is changed, change the text of the :doc for redundant-events.
 
-         (er-let*
-          ((val ; same as input val, if successful
-            (install-event val
-                           event-form
-                           'in-theory
-                           0
-                           nil
-                           nil
-                           :protect
-                           nil
-                           wrld1 state)))
-          (pprogn (if (member-equal
-                       expr
-                       '((enable (:EXECUTABLE-COUNTERPART
-                                  force))
-                         (disable (:EXECUTABLE-COUNTERPART
-                                   force))
-                         (enable (:EXECUTABLE-COUNTERPART
-                                  immediate-force-modep))
-                         (disable (:EXECUTABLE-COUNTERPART
-                                   immediate-force-modep))))
-                      state
-                    (maybe-warn-about-theory
-                     ens1 force-xnume-en1 imm-xnume-en1
-                     (ens state) ctx wrld state))
-                  (value val)))))))))
+           (er-let*
+               ((val ; same as input val, if successful
+                 (install-event val
+                                event-form
+                                'in-theory
+                                0
+                                nil
+                                nil
+                                :protect
+                                nil
+                                wrld1 state)))
+             (pprogn (if (member-equal
+                          expr
+                          '((enable (:EXECUTABLE-COUNTERPART
+                                     force))
+                            (disable (:EXECUTABLE-COUNTERPART
+                                      force))
+                            (enable (:EXECUTABLE-COUNTERPART
+                                     immediate-force-modep))
+                            (disable (:EXECUTABLE-COUNTERPART
+                                      immediate-force-modep))))
+                         state
+                       (maybe-warn-about-theory
+                        ens1 force-xnume-en1 imm-xnume-en1
+                        (ens state) ctx wrld state))
+                     (value val)))))))))))
 
 (defun in-arithmetic-theory-fn (expr state event-form)
 
@@ -24348,8 +24372,8 @@
 ; That's fine; we essentially do our own memoization via the cl-cache.
 
                   (if (eq key-class :program)
-                      (member-eq key *primitive-program-fns-with-raw-code*)
-                    (member-eq key *primitive-logic-fns-with-raw-code*)))
+                      (member-eq key *initial-program-fns-with-raw-code*)
+                    (member-eq key *initial-logic-fns-with-raw-code*)))
              (er hard ctx
                  "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
                   code, hence is illegal to memoize unless :RECURSIVE is nil."
@@ -29107,7 +29131,15 @@
      :stack :push :off :all
      (progn (with-output :stack :pop (defun ,@def))
             ,@(and (not (program-declared-p def))
-                   `((in-theory (disable ,(car def)))))
+                   `((with-output
+                       :stack :pop
+
+; We never want to see the summary here.  But we do want to see a redundancy
+; message, which is printed in stop-redundant-event with (io? event ...) --
+; unless event output is inhibited at the start of the defund call.
+
+                       :off summary
+                       (in-theory (disable ,(car def))))))
             (value-triple ',(xd-name 'defund (car def))
                           :on-skip-proofs t))))
 

@@ -55,7 +55,6 @@
 ;; INSTRUCTION: SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-sal/sar/shl/shr/rcl/rcr/rol/ror
   :guard (not (equal (mrm-reg modr/m) 6))
 
@@ -120,135 +119,35 @@
   D3/7: SAR r/m16 r/m32 or r/m64 CL<br/>
   </p>"
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ROL #xC0 '(:reg 0)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'ROR #xC0 '(:reg 1)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'RCL #xC0 '(:reg 2)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'RCR #xC0 '(:reg 3)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SAL #xC0 '(:reg 4)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SHR #xC0 '(:reg 5)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SAR #xC0 '(:reg 7)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-
-    (add-to-implemented-opcodes-table 'ROL #xC1 '(:reg 0)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'ROR #xC1 '(:reg 1)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'RCL #xC1 '(:reg 2)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'RCR #xC1 '(:reg 3)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SAL #xC1 '(:reg 4)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SHR #xC1 '(:reg 5)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SAR #xC1 '(:reg 7)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-
-    (add-to-implemented-opcodes-table 'ROL #xD0 '(:reg 0)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'ROR #xD0 '(:reg 1)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'RCL #xD0 '(:reg 2)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'RCR #xD0 '(:reg 3)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SAL #xD0 '(:reg 4)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SHR #xD0 '(:reg 5)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SAR #xD0 '(:reg 7)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-
-    (add-to-implemented-opcodes-table 'ROL #xD1 '(:reg 0)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'ROR #xD1 '(:reg 1)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'RCL #xD1 '(:reg 2)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'RCR #xD1 '(:reg 3)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SAL #xD1 '(:reg 4)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SHR #xD1 '(:reg 5)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SAR #xD1 '(:reg 7)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-
-    (add-to-implemented-opcodes-table 'ROL #xD2 '(:reg 0)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'ROR #xD2 '(:reg 1)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'RCL #xD2 '(:reg 2)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'RCR #xD2 '(:reg 3)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SAL #xD2 '(:reg 4)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SHR #xD2 '(:reg 5)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SAR #xD2 '(:reg 7)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-
-    (add-to-implemented-opcodes-table 'ROL #xD3 '(:reg 0)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'ROR #xD3 '(:reg 1)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'RCL #xD3 '(:reg 2)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'RCR #xD3 '(:reg 3)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SAL #xD3 '(:reg 4)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SHR #xD3 '(:reg 5)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-    (add-to-implemented-opcodes-table 'SAR #xD3 '(:reg 7)
-                                      'x86-sal/sar/shl/shr/rcl/rcr/rol/ror))
-
   :body
 
   (b* ((ctx 'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
 
-       (lock (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
        (reg (mrm-reg modr/m))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (byte-operand? (or (equal opcode #xC0)
                           (equal opcode #xD0)
                           (equal opcode #xD2)))
        ((the (integer 0 8) ?reg/mem-size)
-        (select-operand-size byte-operand? rex-byte nil prefixes x86))
+        (select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg0 ?reg/mem (the (unsigned-byte 3) increment-RIP-by) addr x86)
         (x86-operand-from-modr/m-and-sib-bytes$
-         #.*gpr-access*
-         reg/mem-size
-         inst-ac?
+         proc-mode #.*gpr-access* reg/mem-size inst-ac?
          nil ;; Not a memory pointer operand
-         seg-reg
-         p4?
-         temp-rip
-         rex-byte
-         r/m
-         mod
-         sib
+         seg-reg p4? temp-rip rex-byte r/m mod sib
          ;; Bytes of immediate data (only relevant when RIP-relative
          ;; addressing is done to get ?reg/mem operand)
          (if (or (equal opcode #xC0)
@@ -260,7 +159,7 @@
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ((mv flg1 shift/rotate-by x86)
@@ -270,7 +169,7 @@
           ((#xD2 #xD3)
            (mv nil (rr08 *rcx* rex-byte x86) x86))
           ((#xC0 #xC1)
-           (rme-size 1 temp-rip *cs* :x nil x86))
+           (rme-size proc-mode 1 temp-rip *cs* :x nil x86))
           (otherwise ;; will not be reached
            (mv nil 0 x86))))
        ((when flg1)
@@ -284,7 +183,7 @@
        ((mv flg (the (signed-byte #.*max-linear-address-size+1*) temp-rip))
         (if (or (equal opcode #xC0)
                 (equal opcode #xC1))
-            (add-to-*ip temp-rip 1 x86)
+            (add-to-*ip proc-mode temp-rip 1 x86)
           (mv nil temp-rip)))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
@@ -330,7 +229,7 @@
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
        ((mv flg2 x86)
-        (x86-operand-to-reg/mem$ reg/mem-size
+        (x86-operand-to-reg/mem$ proc-mode reg/mem-size
                                  inst-ac?
                                  nil ;; Not a memory pointer operand
                                  ;; TO-DO@Shilpi: Remove this trunc.
@@ -345,7 +244,7 @@
        ((when flg2)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
 
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================

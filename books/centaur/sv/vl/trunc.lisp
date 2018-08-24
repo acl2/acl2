@@ -95,9 +95,9 @@ We basically don't want to complain about things like</p>
 
 
 
-(define vl-okay-to-truncate-expr ((width natp "Width being truncated to.")
-                                  (x vl-expr-p "Expression being truncated.")
-                                  (ss vl-scopestack-p))
+(define vl-okay-to-truncate-expr ((width natp       "Width being truncated to.")
+                                  (x     vl-expr-p  "Expression being truncated.")
+                                  (ss    vl-scopestack-p))
   :short "Heuristic for deciding whether to issue truncation warnings."
   :measure (vl-expr-count x)
   (let* ((width (nfix width))
@@ -134,11 +134,28 @@ We basically don't want to complain about things like</p>
       ;; BOZO probably we should be doing something more clever here to
       ;; actually check the bounds of the parameter.
       (vl-unsized-index-p x ss)
+      :vl-binary
+      ;; Recognize expressions like A % K, and don't warn if the width we are
+      ;; assigning to allows us to represent numbers through K-1.  This isn't
+      ;; necessarily sensible for signed numbers, but should probably be a
+      ;; pretty good heuristic in general.
+      (and (vl-binaryop-equiv x.op :vl-binary-rem)
+           (b* ((k   (and (vl-expr-resolved-p x.right)
+                          (vl-resolved->val x.right)))
+                (max (ash 1 width)))
+             ;;(cw "Dealing with ~s0: k is ~x1 and max value for this width is ~x2~%"
+             ;;    (vl-pps-expr x) k max)
+             (and k (<= k max))))
       :vl-qmark
       ;; Recognize as okay nests of (A ? B : C) where all of the final branches
       ;; are okay to truncate.
       (and (vl-okay-to-truncate-expr width x.then ss)
            (vl-okay-to-truncate-expr width x.else ss))
+      :vl-call
+      ;; $test$plusargs always returns 0 or 1, but returns it as an integer, so
+      ;; it looks like it's 32 bits but we don't want to warn about it.
+      (vl-unary-syscall-p "$test$plusargs" x)
+
       :otherwise nil))
   ///
   (local (assert!
@@ -166,6 +183,9 @@ We basically don't want to complain about things like</p>
       (:otherwise nil))
     :vl-index
     (vl-unsized-index-p x ss)
+    :vl-call
+    ;; 0 or 1 as an integer -- basically like an unsized atom.
+    (vl-unary-syscall-p "$test$plusargs" x)
     :otherwise nil))
 
 (define vl-some-unsized-atom-p ((x  vl-exprlist-p)
@@ -333,12 +353,22 @@ minor warning for assignments where the rhs is a constant.</p>"
       ;; Extension integers like '0 are meant to be extended, so don't give
       ;; any warning here.
       :vl-extint nil
-      ;; Plain integers like 0 or 5 probably shouldn't cause any extension
-      ;; warnings.  BOZO might also not want to warn about other special
-      ;; cases like 0?
-      :vl-constint (if x.val.wasunsized
-                       nil
-                     :vl-warn-extension)
+      :vl-constint (cond (x.val.wasunsized
+                          ;; Plain integers like 0 or 5 probably shouldn't
+                          ;; cause any extension warnings.
+                          nil)
+                         ((eql x.val.value 0)
+                          ;; Zero seems like a good special case, because
+                          ;; it's horribly nitpicky to complain about things
+                          ;; like wire [1:0] = 1'b0, or wire [3:0] = 2'b0,
+                          ;; because the designer pretty clearly just wants
+                          ;; a zero here and the zero-extension isn't going
+                          ;; to change that.
+                          nil)
+                         (t
+                          ;; Otherwise go ahead and warn since it isn't the
+                          ;; right size?
+                          :vl-warn-extension))
       ;; For any other literals go ahead and warn?
       :otherwise :vl-warn-extension)
     :otherwise
@@ -530,24 +560,46 @@ minor warning for assignments where the rhs is a constant.</p>"
 ;; cast means no compatibility is required.  Assign means we check for
 ;; assignment compatibility, equiv means check for equivalence.
 
+(define vl-dimension-compare-sizes ((a vl-dimension-p)
+                                    (b vl-dimension-p))
+  (vl-dimension-case a
+    :unsized (vl-dimension-case b :unsized)
+    :range   (vl-dimension-case b
+               :range (and (vl-range-resolved-p a.range)
+                           (vl-range-resolved-p b.range)
+                           (equal (vl-range-size a.range) (vl-range-size b.range)))
+               :otherwise nil)
+    ;; BOZO for now, don't regard any of these as type compatible.
+    ;; They don't have fixed sizes anyway.  If this is the right behavior,
+    ;; is it not also the right behavior for unsized dimensions?  If it
+    ;; is not the right behavior, then the right behavior might be
+    ;; something like the commented out code below.
+    :datatype nil
+    :star nil
+    :queue nil
 
-(define vl-packeddimension-compare-sizes ((a vl-packeddimension-p)
-                                          (b vl-packeddimension-p))
-  (vl-packeddimension-case a
-    :unsized (vl-packeddimension-case b :unsized)
-    :range (vl-packeddimension-case b
-             :range (and (vl-range-resolved-p a.range)
-                         (vl-range-resolved-p b.range)
-                         (equal (vl-range-size a.range) (vl-range-size b.range)))
-             :otherwise nil)))
+    ;; Possibly instead we should do something like...
+    ;; :datatype nil ;; bozo??
+    ;; :star     (vl-dimension-case b :star)
+    ;; :queue    (vl-dimension-case b
+    ;;             :queue (or (and (not a.maxsize)
+    ;;                             (not b.maxsize))
+    ;;                        (and a.maxsize
+    ;;                             b.maxsize
+    ;;                             (vl-expr-resolved-p a.maxsize)
+    ;;                             (vl-expr-resolved-p b.maxsize)
+    ;;                             (equal (vl-resolved->val a.maxsize)
+    ;;                                    (vl-resolved->val b.maxsize))))
+    ;;             :otherwise nil)
+    ))
 
-(define vl-packeddimensionlist-compare-sizes ((a vl-packeddimensionlist-p)
-                                              (b vl-packeddimensionlist-p))
+(define vl-dimensionlist-compare-sizes ((a vl-dimensionlist-p)
+                                        (b vl-dimensionlist-p))
   (if (atom a)
       (atom b)
     (and (consp b)
-         (vl-packeddimension-compare-sizes (car a) (car b))
-         (vl-packeddimensionlist-compare-sizes (cdr a) (cdr b)))))
+         (vl-dimension-compare-sizes (car a) (car b))
+         (vl-dimensionlist-compare-sizes (cdr a) (cdr b)))))
 
 
 (define vl-check-datatype-equivalence ((a vl-datatype-p)
@@ -561,9 +613,8 @@ minor warning for assignments where the rhs is a constant.</p>"
                       :hints(("Goal" :in-theory (enable vl-maybe-exprsign-p
                                                         vl-exprsign-p))))))
   :returns (msg (iff (vl-msg-p msg) msg))
-  (b* ((udims-compatible (vl-packeddimensionlist-compare-sizes
-                          (vl-datatype->udims a)
-                          (vl-datatype->udims b)))
+  (b* ((udims-compatible (vl-dimensionlist-compare-sizes (vl-datatype->udims a)
+                                                         (vl-datatype->udims b)))
        ((unless udims-compatible)
         (vmsg "Unpacked dimensions mismatch"))
        (a-core (vl-maybe-usertype-resolve (vl-datatype-update-udims nil a)))

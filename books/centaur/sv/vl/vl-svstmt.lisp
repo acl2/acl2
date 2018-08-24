@@ -497,7 +497,7 @@ because... (BOZO)</p>
 
 
 (define vl-assignstmt->svstmts ((lhs vl-expr-p)
-                                (rhs vl-expr-p)
+                                (rhs vl-rhs-p)
                                 (blockingp booleanp)
                                 (ss vl-scopestack-p)
                                 (scopes vl-elabscopes-p))
@@ -506,8 +506,14 @@ because... (BOZO)</p>
                             (sv::svarlist-addr-p (sv::constraintlist-vars (vttree->constraints vttree)))))
                (res sv::svstmtlist-p))
   (b* ((vttree nil)
+       ((unless (vl-rhs-case rhs :vl-rhsexpr))
+        (mv nil
+            (vfatal :type :vl-assignstmt-fail
+                    :msg "Not yet supported: 'new' instances: ~a0"
+                    :args (list (vl-rhs-fix rhs)))
+            nil))
        (lhs (vl-expr-fix lhs))
-       (rhs (vl-expr-fix rhs)))
+       (rhs (vl-rhsexpr->guts rhs)))
     (vl-expr-case lhs
       :vl-index
       ;; If it's an index expression we can look up its type and just process a
@@ -923,7 +929,7 @@ because... (BOZO)</p>
   (defret vars-of-vttree-constraints-to-svstmts
     (implies (not (member v (sv::constraintlist-vars (vttree->constraints x))))
              (not (member v (sv::svstmtlist-vars svstmts))))))
-      
+
 (defines vl-stmt->svstmts
   :prepwork ((local (in-theory (disable not))))
   (define vl-stmt->svstmts ((x vl-stmt-p)
@@ -973,7 +979,7 @@ because... (BOZO)</p>
                                  :args (list x))
                          (ok)))
              ((vwmv ok vttree res)
-              (vl-assignstmt->svstmts x.lvalue x.expr blockingp ss scopes))
+              (vl-assignstmt->svstmts x.lvalue x.rhs blockingp ss scopes))
              (constraints (vttree-constraints-to-svstmts vttree)))
           (mv ok warnings (append-without-guard constraints res)))
         :vl-ifstmt
@@ -996,6 +1002,23 @@ because... (BOZO)</p>
           (mv ok warnings
               (append-without-guard constraints
                                     (list (sv::make-svstmt-while :cond cond :body body :next nil)))))
+        :vl-dostmt
+        ;; This is effectively just transforming:
+        ;;     do { body } while (condition);
+        ;;   -->
+        ;;     body;
+        ;;     while(condition) { body }
+        (b* (((vwmv vttree cond ?type ?size)
+              (vl-expr-to-svex-untyped x.condition ss scopes))
+             (constraints (vttree-constraints-to-svstmts vttree))
+             ((wmv ok warnings body)
+              (vl-stmt->svstmts x.body ss scopes config fnname))
+             (while-loop (sv::make-svstmt-while :cond cond :body body :next nil)))
+          (mv ok warnings
+              (append-without-guard constraints
+                                    body
+                                    (list while-loop))))
+
         :vl-forstmt
         (b* (;; (warnings (if (consp x.initdecls)
              ;;               (warn :type :vl-stmt-unsupported
@@ -1098,7 +1121,7 @@ because... (BOZO)</p>
                            :args (list x))))
              ((vwmv ok vttree assignstmts)
               (if x.val
-                  (vl-assignstmt->svstmts fnname x.val t ss scopes)
+                  (vl-assignstmt->svstmts fnname (make-vl-rhsexpr :guts x.val) t ss scopes)
                 (mv t nil nil)))
              (constraints (vttree-constraints-to-svstmts vttree)))
           (mv ok warnings
@@ -1289,7 +1312,7 @@ because... (BOZO)</p>
         (if (vl-range-resolved-p x.range)
             (mv warnings nil
                 (make-vl-coretype :name :vl-logic
-                                  :pdims (list (vl-range->packeddimension x.range))
+                                  :pdims (list (vl-range->dimension x.range))
                                   :signedp (eq x.sign :vl-signed)))
           (mv warnings (vmsg "Unresolved range") nil)))
        ((wmv warnings size) (vl-expr-selfsize override ss scopes))
@@ -1297,7 +1320,7 @@ because... (BOZO)</p>
         (mv warnings
             (vmsg "Unsized or zero-size parameter override: ~a0" override)
             nil))
-       (dims (list (vl-range->packeddimension
+       (dims (list (vl-range->dimension
                     (make-vl-range :msb (vl-make-index (1- size)) :lsb (vl-make-index 0)))))
        ((when x.sign)
         (mv warnings nil
@@ -1335,9 +1358,6 @@ because... (BOZO)</p>
                            acl2::subsetp-append1
                            (:t append)
                            default-car default-cdr not)))
-
-
-(defconst *vl-svstmt-compile-reclimit* 100000)
 
 (fty::defvisitor-template strip-nullstmts ((x :object))
   :type-fns ((vl-stmtlist vl-stmtlist-strip-nullstmts))
@@ -1399,7 +1419,7 @@ because... (BOZO)</p>
                                                                    :body (append-without-guard varstmts svstmts)))))
        ((wmv ok warnings svstate constraints blk-masks nonblk-masks)
         (time$ (sv::svstmtlist-compile-top svstmts
-                                           :reclimit *vl-svstmt-compile-reclimit*
+                                           :sclimit config.sc-limit
                                            :nb-delayp nil)
                :mintime 1/2
                :msg "; vl-fundecl-to-svex: compiling ~s0: ~st sec, ~sa bytes"
@@ -2377,7 +2397,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
        ;; Only use the nonblocking-delay strategy for flops, not latches
        (locstring (vl-location-string x.loc))
        ((wmv ok warnings st constraints blkst-write-masks nbst-write-masks :ctx x)
-        (time$ (sv::svstmtlist-compile-top svstmts :reclimit *vl-svstmt-compile-reclimit*
+        (time$ (sv::svstmtlist-compile-top svstmts
+                                           :sclimit config.sc-limit
                                            :nb-delayp nil)
                :mintime 1/2
                :msg "; vl-always->svex: compiling statement at ~s0: ~st sec, ~sa bytes~%"
@@ -2569,8 +2590,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
 
 (define vl-final-size-warnings ((x vl-final-p)
-                                  (ss vl-scopestack-p)
-                                  (scopes vl-elabscopes-p))
+                                (ss vl-scopestack-p)
+                                (scopes vl-elabscopes-p))
   :short "Generate any sizing warnings for an final statement."
   :returns (warnings vl-warninglist-p)
   (b* (((vl-final x) (vl-final-fix x))
@@ -2584,8 +2605,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
     warnings))
 
 (define vl-finallist-size-warnings ((x vl-finallist-p)
-                                      (ss vl-scopestack-p)
-                                      (scopes vl-elabscopes-p))
+                                    (ss vl-scopestack-p)
+                                    (scopes vl-elabscopes-p))
   :returns (warnings vl-warninglist-p)
   (if (atom x)
       nil

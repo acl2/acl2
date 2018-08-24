@@ -91,7 +91,7 @@
        ;; constructs that we can't handle.
        (good          (xf-cwtime (vl-design-eliminitial good)))
        ;;(- (sneaky-save :pre-unparam good))
-       (good          (xf-cwtime (vl-design-elaborate good)))
+       (good          (xf-cwtime (vl-design-elaborate good config)))
        ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
 
@@ -176,7 +176,6 @@
    (local (in-theory (disable (:executable-counterpart tau-system)
                               acl2::mv-nth-cons-meta)))
    (set-default-hints '('(:do-not '(preprocess))))))
-
 
 (define vl-to-svex-main ((topmods string-listp)
                          (x vl-design-p)

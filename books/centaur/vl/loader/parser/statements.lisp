@@ -87,6 +87,7 @@
     :vl-ashleq
     :vl-ashreq))
 
+
 (define vl-assign-op-expr ((var vl-expr-p)
                            (op (member op *vl-assignment-operators*))
                            (rhs vl-expr-p))
@@ -169,12 +170,12 @@
        (type := (vl-match-some-token '(:vl-equalsign :vl-lte)))
        (when (vl-is-some-token? '(:vl-pound :vl-atsign :vl-kwd-repeat))
          (delay := (vl-parse-delay-or-event-control)))
-       (expr := (vl-parse-expression))
+       (rhs := (vl-parse-rhs))
        (return (make-vl-assignstmt :type (if (eq (vl-token->type type) :vl-equalsign)
                                              :vl-blocking
                                            :vl-nonblocking)
                                    :lvalue lvalue
-                                   :expr expr
+                                   :rhs rhs
                                    :ctrl delay
                                    :atts atts
                                    :loc loc))))
@@ -213,7 +214,7 @@
                                                 :vl-assign
                                               :vl-force)
                                       :lvalue lvalue
-                                      :expr expr
+                                      :rhs (make-vl-rhsexpr :guts expr)
                                       :ctrl nil
                                       :atts atts
                                       :loc (vl-token->loc type))))
@@ -225,6 +226,11 @@
                                       :lvalue lvalue
                                       :atts atts))))
 
+
+(local (defthm vl-maybe-exprlist-p-when-vl-exprlist-p
+         (implies (vl-exprlist-p x)
+                  (vl-maybe-exprlist-p x))
+         :hints(("Goal" :induct (len x)))))
 
 (defparser vl-parse-task-enable (atts)
   :short "Parse a @('task_enable').  Verilog-2005 Only."
@@ -318,7 +324,7 @@
          ;; Bugfix 2016-02-18: the first expression is also optional, so if
          ;; we see (), that's fine; don't parse any arguments.
          (unless (vl-is-token? :vl-rparen)
-           (args := (vl-parse-1+-expressions-separated-by-commas)))
+           (args := (vl-parse-sysfuncall-args)))
          (:= (vl-match-token :vl-rparen)))
        (:= (vl-match-token :vl-semi))
        (return
@@ -487,7 +493,6 @@
       (implies (not err)
                (equal (vl-stmt-kind stmt) :vl-callstmt)))))
 
-
 (defparser vl-parse-system-tf-call ()
   :short "Parse a @('system_tf_call').  SystemVerilog-2012 only."
   :long "<p>Original grammar rules:</p>
@@ -520,7 +525,10 @@
              (typearg := (vl-parse-simple-type)))
            (when (vl-is-token? :vl-comma)
              (:= (vl-match))
-             (args := (vl-parse-1+-expressions-separated-by-commas))))
+             ;; The grammar suggests that we need to have real expressions here.
+             ;; However, commercial tools seem to support blank arguments to
+             ;; functions like $display.
+             (args := (vl-parse-sysfuncall-args))))
          (:= (vl-match-token :vl-rparen)))
        (return
         (let* ((fname (vl-sysidtoken->name fn))
@@ -801,7 +809,7 @@
   (seq tokstream
        (id := (vl-match-token :vl-idtoken))
        (:= (vl-match-token :vl-equalsign))
-       (initval := (vl-parse-expression))
+       (initval := (vl-parse-rhs))
        (return-raw
         (b* ((vardecl1 (make-vl-vardecl :name (vl-idtoken->name id)
                                         :type type
@@ -859,7 +867,7 @@
        (return (cons (make-vl-assignstmt
                       :type :vl-blocking
                       :lvalue lvalue
-                      :expr expr
+                      :rhs (make-vl-rhsexpr :guts expr)
                       :loc loc)
                      rest))))
 
@@ -905,7 +913,7 @@
        (return (cons (make-vl-assignstmt
                       :type :vl-blocking
                       :lvalue lvalue
-                      :expr expr
+                      :rhs (make-vl-rhsexpr :guts expr)
                       :loc loc)
                      rest))))
 
@@ -985,6 +993,70 @@
     :otherwise
     (vl-stmt-fix stmt)))
 
+
+(defparser vl-parse-foreach-statement-array-part ()
+
+; This is meant to match the ps_or_hierarchical_array_identifier that occurs
+; in a foreach loop_statement, e.g.,
+;
+; loop_statement ::= ...
+;                  | 'foreach' '(' ps_or_hierarchical_array_identifier '[' loop_variables ']' ')' statement
+;
+; The rules are:
+;
+; ps_or_hierarchical_array_identifier ::= [implicit_class_handle '.' | class_scope | package_scope]
+;                                         hierarchical_array_identifier
+;
+; hierarchical_array_identifier ::= hierarchical_identifier
+
+  :result (vl-scopeexpr-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (scopes := (vl-parse-0+-scope-prefixes))
+       (hid    := (vl-parse-hierarchical-identifier nil))
+       (return (vl-tack-scopes-onto-hid scopes hid))))
+
+(defparser vl-parse-foreach-loop-variables ()
+
+; The loop_variables are just a comma-separated list of identifiers, except
+; that oddly this is allowed to be the empty list and any elements are allowed
+; to have spurious commas.
+;
+; loop_variables ::= [index_variable_identifier] { ',' [index_variable_identifier] }
+;
+; index_variable_identifier ::= identifier
+
+  :result (vl-maybe-string-list-p val)
+  :resultp-of-nil t
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (when (vl-is-token? :vl-idtoken)
+         (first := (vl-match)))
+       (unless (vl-is-token? :vl-comma)
+         (return (list (and first (vl-idtoken->name first)))))
+       (:= (vl-match))
+       (rest := (vl-parse-foreach-loop-variables))
+       (return (cons (and first
+                          (vl-idtoken->name first))
+                     rest))))
+
+(define vl-foreach-vardecls-from-loopvars ((loc      vl-location-p)
+                                           (loopvars vl-maybe-string-list-p))
+  :returns (vardecls vl-vardecllist-p)
+  (cond ((atom loopvars)
+         nil)
+        ((atom (car loopvars))
+         (vl-foreach-vardecls-from-loopvars loc (cdr loopvars)))
+        (t
+         (cons (make-vl-vardecl :name (car loopvars)
+                                :loc loc
+                                :type *vl-plain-old-integer-type*)
+               (vl-foreach-vardecls-from-loopvars loc (cdr loopvars))))))
+
+
 (local (in-theory (disable
 
                    (:t acl2-count)
@@ -1029,8 +1101,6 @@
                    acl2::member-equal-when-all-equalp
                    member-equal-when-member-equal-of-cdr-under-iff
                    )))
-
-
 
 
 (defparsers vl-parse-statement
@@ -1172,15 +1242,17 @@
 ;  | 'while' '(' expression ')' statement
 ;  | 'for' '(' variable_assignment ';' expression ';' variable_assignment ')'
 ;      statement
+;  | 'do' statement_or_null 'while' '(' expression ')' ';'
+;  | 'foreach' '(' ps_or_hierarchical_array_identifier '[' loop_variables ']' ')' statement
 
  (defparser vl-parse-loop-statement (atts)
-   ;; Returns a vl-foreverstmt-p, vl-repeatstmt-p, vl-whilestmt-p, or vl-forstmt-p
+   ;; Returns a vl-foreverstmt-p, vl-repeatstmt-p, vl-whilestmt-p, ...
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (vl-tokstream-measure) 0)
    (seq tokstream
 
          (when (vl-is-token? :vl-kwd-forever)
-           (:= (vl-match-token :vl-kwd-forever))
+           (:= (vl-match))
            (stmt :s= (vl-parse-statement))
            (return (make-vl-foreverstmt :body stmt
                                         :atts atts)))
@@ -1198,6 +1270,34 @@
                      (:vl-kwd-while  (make-vl-whilestmt :condition expr
                                                         :body stmt
                                                         :atts atts)))))
+
+         (when (vl-is-token? :vl-kwd-do)
+           (:= (vl-match))
+           (stmt :s= (vl-parse-statement))
+           (:= (vl-match-token :vl-kwd-while))
+           (:= (vl-match-token :vl-lparen))
+           (expr := (vl-parse-expression))
+           (:= (vl-match-token :vl-rparen))
+           (:= (vl-match-token :vl-semi))
+           (return (make-vl-dostmt :body stmt
+                                   :condition expr
+                                   :atts atts)))
+
+         (when (vl-is-token? :vl-kwd-foreach)
+           (type := (vl-match))
+           (:= (vl-match-token :vl-lparen))
+           (array := (vl-parse-foreach-statement-array-part))
+           (:= (vl-match-token :vl-lbrack))
+           (loopvars := (vl-parse-foreach-loop-variables))
+           (:= (vl-match-token :vl-rbrack))
+           (:= (vl-match-token :vl-rparen))
+           (stmt :s= (vl-parse-statement))
+           (return (make-vl-foreachstmt :array    array
+                                        :loopvars loopvars
+                                        :vardecls (vl-foreach-vardecls-from-loopvars (vl-token->loc type)
+                                                                                     loopvars)
+                                        :body     stmt
+                                        :atts     atts)))
 
          (:= (vl-match-token :vl-kwd-for))
          (:= (vl-match-token :vl-lparen))
@@ -1655,7 +1755,7 @@
                    (:= (vl-match-token :vl-semi))
                    (return (make-vl-assignstmt :type :vl-blocking
                                                :lvalue lvalue
-                                               :expr expr
+                                               :rhs (make-vl-rhsexpr :guts expr)
                                                :loc loc))))
              ((unless erp)
               (mv erp val tokstream))
@@ -1735,10 +1835,8 @@
         (vl-parse-event-trigger atts))
 
        ;; -- loop_statement
-       ((:vl-kwd-forever :vl-kwd-repeat :vl-kwd-while :vl-kwd-for)
+       ((:vl-kwd-forever :vl-kwd-repeat :vl-kwd-while :vl-kwd-for :vl-kwd-foreach :vl-kwd-do)
         (vl-parse-loop-statement atts))
-       ((:vl-kwd-do :vl-kwd-foreach)
-        (vl-parse-error "BOZO not yet implemented: do and foreach loops."))
 
        ;; -- jump_statement ::= 'return' [expression] ';'
        ;;                     | 'break' ';'
@@ -1835,7 +1933,7 @@
                    (return (make-vl-assignstmt
                             :type :vl-blocking
                             :lvalue lvalue
-                            :expr expr
+                            :rhs (make-vl-rhsexpr :guts expr)
                             :loc loc))))
              ((unless erp)
               (mv erp val tokstream))
@@ -1850,10 +1948,9 @@
        (vl-parse-statement-2005-aux atts)
      (vl-parse-statement-2012-aux atts)))
 
- (defparser vl-parse-statement ()
-   :short "Top level function for parsing a @('statement') into a @(see
-           vl-stmt)."
-   :measure (two-nats-measure (vl-tokstream-measure) 100)
+ (defparser vl-parse-statement-wrapped (null-okp)
+   :short "Parse a statement or null, possibly with a label."
+   :measure (two-nats-measure (vl-tokstream-measure) 80)
    :long "<p>This mainly handles SystemVerilog-2012 style statement labels; see
           Section 9.3.5 (Page 178).  We treat these labels as if they just
           create named blocks around the statement that they label.  Note that
@@ -1875,7 +1972,12 @@
           (blockid := (vl-match))
           (:= (vl-match)))
         (atts :w= (vl-parse-0+-attribute-instances))
-        (core := (vl-parse-statement-aux atts))
+        (core :s= (if (and null-okp
+                           (vl-is-token? :vl-semi))
+                      (seq tokstream
+                           (:= (vl-match-token :vl-semi))
+                           (return (make-vl-nullstmt :atts atts)))
+                    (vl-parse-statement-aux atts)))
         (unless blockid
           (return core))
         ;; Need to "install" the block ID.
@@ -1908,6 +2010,15 @@
                                      :atts nil)
                   tokstream)))))))
 
+
+ (defparser vl-parse-statement ()
+   :short "Top level function for parsing a (non-null) @('statement') into a
+           @(see vl-stmt)."
+   :measure (two-nats-measure (vl-tokstream-measure) 100)
+   (seq tokstream
+        (stmt :s= (vl-parse-statement-wrapped nil))
+        (return stmt)))
+
  (defparser vl-parse-statement-or-null ()
    :short "Parse a @('statement_or_null') into a @(see vl-stmt), which is
            possible since we allow a @(see vl-nullstmt) as a @(see vl-stmt)."
@@ -1919,12 +2030,8 @@
           })"
    :measure (two-nats-measure (vl-tokstream-measure) 150)
    (seq tokstream
-         (atts :w= (vl-parse-0+-attribute-instances))
-         (when (vl-is-token? :vl-semi)
-           (:= (vl-match-token :vl-semi))
-           (return (make-vl-nullstmt :atts atts)))
-         (ret := (vl-parse-statement-aux atts))
-         (return ret)))
+        (stmt :s= (vl-parse-statement-wrapped t))
+        (return stmt)))
 
  (defparser vl-parse-statements-until-join ()
    :measure (two-nats-measure (vl-tokstream-measure) 160)
@@ -1973,11 +2080,14 @@
         ,(vl-val-when-error-claim vl-parse-statement-2005-aux :args (atts))
         ,(vl-val-when-error-claim vl-parse-statement-2012-aux :args (atts))
         ,(vl-val-when-error-claim vl-parse-statement-aux :args (atts))
+        ,(vl-val-when-error-claim vl-parse-statement-wrapped :args (null-okp))
         ,(vl-val-when-error-claim vl-parse-statement)
         ,(vl-val-when-error-claim vl-parse-statement-or-null)
         ,(vl-val-when-error-claim vl-parse-statements-until-end)
         ,(vl-val-when-error-claim vl-parse-statements-until-join)
-        :hints((expand-only-the-flag-function-hint clause state))))))
+        :hints((expand-only-the-flag-function-hint clause state)
+               (and stable-under-simplificationp
+                    '(:expand ((:free (null-okp) (vl-parse-statement-wrapped null-okp))))))))))
 
 
 (defsection warning
@@ -2003,11 +2113,14 @@
         ,(vl-warning-claim vl-parse-statement-2005-aux :args (atts))
         ,(vl-warning-claim vl-parse-statement-2012-aux :args (atts))
         ,(vl-warning-claim vl-parse-statement-aux :args (atts))
+        ,(vl-warning-claim vl-parse-statement-wrapped :args (null-okp))
         ,(vl-warning-claim vl-parse-statement)
         ,(vl-warning-claim vl-parse-statement-or-null)
         ,(vl-warning-claim vl-parse-statements-until-end)
         ,(vl-warning-claim vl-parse-statements-until-join)
-        :hints((expand-only-the-flag-function-hint clause state))))))
+        :hints((expand-only-the-flag-function-hint clause state)
+               (and stable-under-simplificationp
+                    '(:expand ((:free (null-okp) (vl-parse-statement-wrapped null-okp))))))))))
 
 
 (defsection progress
@@ -2033,6 +2146,7 @@
         ,(vl-progress-claim vl-parse-statement-2005-aux :args (atts))
         ,(vl-progress-claim vl-parse-statement-2012-aux :args (atts))
         ,(vl-progress-claim vl-parse-statement-aux :args (atts))
+        ,(vl-progress-claim vl-parse-statement-wrapped :args (null-okp))
         ,(vl-progress-claim vl-parse-statement)
         ,(vl-progress-claim vl-parse-statement-or-null)
 
@@ -2054,7 +2168,9 @@
                           (vl-tokstream-measure))))
          :rule-classes ((:rewrite) (:linear)))
 
-        :hints((expand-only-the-flag-function-hint clause state))))))
+        :hints((expand-only-the-flag-function-hint clause state)
+               (and stable-under-simplificationp
+                    '(:expand ((:free (null-okp) (vl-parse-statement-wrapped null-okp))))))))))
 
 
 
@@ -2146,6 +2262,9 @@
                         (vl-stmt-p val)
                         :args (atts)
                         :extra-hyps ((force (vl-atts-p atts))))
+        ,(vl-stmt-claim vl-parse-statement-wrapped
+                        (vl-stmt-p val)
+                        :args (null-okp))
         ,(vl-stmt-claim vl-parse-statement
                         (vl-stmt-p val))
         ,(vl-stmt-claim vl-parse-statement-or-null
@@ -2156,7 +2275,9 @@
         ,(vl-stmt-claim vl-parse-statements-until-join
                         (vl-stmtlist-p val)
                         :true-listp t)
-        :hints((expand-only-the-flag-function-hint clause state))))))
+        :hints((expand-only-the-flag-function-hint clause state)
+               (and stable-under-simplificationp
+                    '(:expand ((:free (null-okp) (vl-parse-statement-wrapped null-okp))))))))))
 
 (with-output
   :off prove

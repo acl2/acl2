@@ -106,6 +106,7 @@ it.</p>")
    :regular-file
    :directory
    :symbolic-link
+   :broken-symbolic-link
    :pipe
    :socket
    :character-device
@@ -136,11 +137,12 @@ handled using @(':follow-symlinks').</p>
 <p>By default, @(':follow-symlinks') is @('t').  In this case, the idea is to
 tell you what kind of file is ultimately pointed to after resolving all the
 symlinks.  Since we are following all links, we will never return
-@(':symbolic-link') in this case.  We treat any broken links as errors.</p>
+@(':symbolic-link') in this case.  However, we may return
+@(':broken-symbolic-link') if there is a problem following the symlinks.</p>
 
 <p>For finer-grained handling of symlinks, you can set @(':follow-symlinks') to
-@('nil').  In this case, we return @(':symbolic-link') for symbolic links, no
-matter whether they are valid or broken.  Unless you're doing something very
+@('nil').  In this case, we return @(':symbolic-link') for all symbolic links,
+no matter whether they are valid or broken.  Unless you're doing something very
 fancy with symlinks, this is almost surely not what you want.</p>"
   :ignore-ok t
   (b* ((- (raise "Raw Lisp definition not installed?"))
@@ -159,14 +161,21 @@ fancy with symlinks, this is almost surely not what you want.</p>"
   :parents (file-types)
   :short "Does a path exist?  After following symlinks, does it refer to
 <i>any</i> \"file\" at all (a regular file, a directory, a device, ...)?"
+
+  :long "<p>Note that we return @('nil') in the case of a broken symbolic link.
+This behavior matches shell tools such as @('test -e') and seems pretty
+reasonable.</p>"
+
   :returns (mv (err "NIL on success, or an error @(see msg) on failure.")
                (ans booleanp :rule-classes :type-prescription
                     "Meaningful only when there is no error.")
                (state state-p1 :hyp (force (state-p1 state))))
   (b* (((mv err ans state) (file-kind path))
        ((when err)
-        (mv err nil state)))
-    (mv err (not (null ans)) state)))
+        (mv err nil state))
+       (exists-p (and (not (null ans))
+                      (not (eq ans :broken-symbolic-link)))))
+    (mv err exists-p state)))
 
 
 (define paths-all-exist-p ((paths string-listp) &key (state 'state))

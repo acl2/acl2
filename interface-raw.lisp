@@ -7753,11 +7753,11 @@
                                collect tuple)
                        (set-difference-eq x y))))
        (let ((bad-macros (my-diff macros-found
-                                  *primitive-macros-with-raw-code*))
+                                  *initial-macros-with-raw-code*))
              (bad-program (my-diff program-found
-                                   *primitive-program-fns-with-raw-code*))
+                                   *initial-program-fns-with-raw-code*))
              (bad-logic (my-diff logic-found
-                                 *primitive-logic-fns-with-raw-code*)))
+                                 *initial-logic-fns-with-raw-code*)))
          (when (or bad-macros bad-program bad-logic)
            (format t "Failed check for coverage of functions with acl2-loop-only code
 differences!  Please send this error message to the ACL2 implementors.
@@ -7768,16 +7768,16 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ~s:
   ~a"
 
-; We need to update *primitive-macros-with-raw-code*,
-; *primitive-program-fns-with-raw-code*, or
-; *primitive-logic-fns-with-raw-code*, respectively according to the non-nil
+; We need to update *initial-macros-with-raw-code*,
+; *initial-program-fns-with-raw-code*, or
+; *initial-logic-fns-with-raw-code*, respectively according to the non-nil
 ; fields in the error message.
 
-                   (list (list '*primitive-macros-with-raw-code*
+                   (list (list '*initial-macros-with-raw-code*
                                bad-macros)
-                         (list '*primitive-program-fns-with-raw-code*
+                         (list '*initial-program-fns-with-raw-code*
                                bad-program)
-                         (list '*primitive-logic-fns-with-raw-code*
+                         (list '*initial-logic-fns-with-raw-code*
                                bad-logic))
                    '(lisp-implementation-type)
                    (lisp-implementation-type)
@@ -7792,31 +7792,31 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; when such features are present.  We may think more about this later.
 
 ;   (let ((undefined-macros
-;          (loop for x in *primitive-macros-with-raw-code*
+;          (loop for x in *initial-macros-with-raw-code*
 ;                when (not (or (macro-function x) (symbol-function x)))
 ;                collect x))
 ;         (undefined-program-fns
-;          (loop for x in *primitive-program-fns-with-raw-code*
+;          (loop for x in *initial-program-fns-with-raw-code*
 ;                when (not (fboundp x))
 ;                collect x))
 ;         (undefined-logic-fns
-;          (loop for x in *primitive-logic-fns-with-raw-code*
+;          (loop for x in *initial-logic-fns-with-raw-code*
 ;                when (not (fboundp x))
 ;                collect x)))
 ;     (when undefined-macros
 ;       (format
 ;        t
-;        "Undefined macros in *primitive-macros-with-raw-code*:~%~s~%"
+;        "Undefined macros in *initial-macros-with-raw-code*:~%~s~%"
 ;        undefined-macros))
 ;     (when undefined-program-fns
 ;       (format
 ;        t
-;        "Undefined macros in *primitive-program-fns-with-raw-code*:~%~s~%"
+;        "Undefined macros in *initial-program-fns-with-raw-code*:~%~s~%"
 ;        undefined-program-fns))
 ;     (when undefined-logic-fns
 ;       (format
 ;        t
-;        "Undefined macros in *primitive-logic-fns-with-raw-code*:~%~s~%"
+;        "Undefined macros in *initial-logic-fns-with-raw-code*:~%~s~%"
 ;        undefined-logic-fns))
 ;     (when (or undefined-macros undefined-program-fns undefined-logic-fns)
 ;       (error "Check failed!")))
@@ -8313,9 +8313,35 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                      "~&************ ABORTING from raw Lisp ***********")
              (format t
                      "~&********** (see :DOC raw-lisp-error) **********")
-             (format t
-                     "~&Error:  ~A"
-                     condition)))
+
+; In CCL we can get information about the function currently being executed.
+; Consider for example what happens if, during a computation, the evaluation of
+; (ash 1 (expt 2 48)) causes the error "Memory allocation request failed".
+; That is not very helpful, but it could be helpful to see the following extra
+; information about when this occurred:
+
+; "While executing: CCL::BIGNUM-ASHIFT-LEFT-DIGITS."
+
+; This extra information is a bit dodgy, since it comes from the low-level
+; definition of function ccl::%break-message in CCL source file
+; level-1/l1-readloop-lds.lisp (circa late 2017).  It is also may be unhelpful
+; in many cases, or not ideal; for example, the same function as above,
+; CCL::BIGNUM-ASHIFT-LEFT-DIGITS, is reported when attempting to evaluate (expt
+; 2 (expt 2 48)).  However, you get what you get with raw Lisp errors, and we
+; are happy to make them a bit more useful in some cases.
+
+             (cond
+              #+ccl
+              ((and (fboundp 'ccl::%real-err-fn-name)
+                    (boundp 'ccl::*top-error-frame*))
+               (format t
+                       "~&Error:  ~A~&While executing: ~S"
+                       condition
+                       (ccl::%real-err-fn-name ccl::*top-error-frame*)))
+              (t
+               (format t
+                       "~&Error:  ~A"
+                       condition)))))
            (when btp (format t "~%NOTE: See above for backtrace.~%"))
            (format t
                    "~&***********************************************~&")
@@ -8475,7 +8501,17 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
   (lw:start-tty-listener))
 
-(defconstant *our-standard-io*
+(#+allegro
+
+; Builds with Allegro CL warn that this constant is redefined, when using
+; defconstant.  We could probably use defparameter in all Lisps, but we really
+; want this to be a constant; in particular, there is no reason to let-bind
+; it.  In order to avoid the warning in Allegro CL, we conditionalize here.
+
+ defparameter
+ #-allegro
+ defconstant
+ *our-standard-io*
 
 ; We bind *debug-io* to this constant inside LP to ensure that when the
 ; debugger is invoked, it will write to the standard output rather than to the

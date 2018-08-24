@@ -1630,3 +1630,191 @@
     (directed-untranslate uterm tterm tterm nil nil (w state))
     uterm)))
 )
+
+; ------------------------------
+
+; Example 10: Preserving b*
+
+; First let's re-do the mv-let test just above.
+
+(local-test
+
+(local (include-book "std/util/bstar" :dir :system))
+
+(defstub drone-choose-and-execute-plan.1 (* * *) => (mv * *))
+(defstub drones-choose-and-execute-plans.1 (* * *) => (mv * *))
+(defstub replace-dr-st (* *) => *)
+(assert!
+ (let ((uterm '(b* (((mv drn-st-new coord-st-1)
+                     (drone-choose-and-execute-plan.1 plans drn-st coord-st))
+                    ((mv drn-sts-new coord-st-2)
+                     (drones-choose-and-execute-plans.1
+                      (rest drn-plan-pairs)
+                      (replace-dr-st drn-sts drn-st-new)
+                      coord-st-1)))
+                 (mv drn-sts-new coord-st-2)))
+       (tterm '((lambda
+                  (mv drn-sts drn-plan-pairs)
+                  ((lambda
+                     (drn-st-new coord-st-1 drn-sts drn-plan-pairs)
+                     ((lambda (mv)
+                        ((lambda (drn-sts-new coord-st-2)
+                           (cons drn-sts-new (cons coord-st-2 'nil)))
+                         (mv-nth '0 mv)
+                         (mv-nth '1 mv)))
+                      (drones-choose-and-execute-plans.1
+                       (cdr drn-plan-pairs)
+                       (replace-dr-st drn-sts drn-st-new)
+                       coord-st-1)))
+                   (mv-nth '0 mv)
+                   (mv-nth '1 mv)
+                   drn-sts drn-plan-pairs))
+                (drone-choose-and-execute-plan.1 plans drn-st coord-st)
+                drn-sts drn-plan-pairs)))
+   (equal
+    (directed-untranslate uterm tterm tterm nil nil (w state))
+    uterm)))
+)
+
+; Here's a simple test involving different kinds of bindings.
+
+(local-test
+
+(local (include-book "std/util/bstar" :dir :system))
+
+(defstub foo (x y) (mv x y))
+
+(assert!
+ (let ((uterm '(b* (((mv x y) (foo y x))
+                    (x (+ (car x) (car y)))
+                    ((mv u v) (foo x x)))
+                 (+ 0 u v)))
+       (tterm '((lambda (mv)
+                  ((lambda (x y)
+                     ((lambda (x)
+                        ((lambda (mv)
+                           ((lambda (u v)
+                              (binary-+ '0 (binary-+ u v)))
+                            (mv-nth '0 mv)
+                            (mv-nth '1 mv)))
+                         (foo x x)))
+                      (binary-+ (car x) (car y))))
+                   (mv-nth '0 mv)
+                   (mv-nth '1 mv)))
+                (foo y x)))
+       (sterm '((lambda (mv)
+                  ((lambda (x y)
+                     ((lambda (x)
+                        ((lambda (mv)
+                           ((lambda (u v) (binary-+ u v))
+                            (mv-nth '0 mv)
+                            (mv-nth '1 mv)))
+                         (foo x x)))
+                      (binary-+ (car x) (car y))))
+                   (mv-nth '0 mv)
+                   (mv-nth '1 mv)))
+                (foo y x))))
+   (equal
+    (directed-untranslate uterm tterm sterm nil nil (w state))
+    '(b* (((mv x y) (foo y x))
+          (x (+ (car x) (car y)))
+          ((mv u v) (foo x x)))
+       (+ u v)))))
+)
+
+; As above, but with a binding of - .
+
+(local-test
+
+(local (include-book "std/util/bstar" :dir :system))
+
+(defstub foo (x y) (mv x y))
+
+(assert!
+ (let ((uterm '(b* (((mv x y) (foo y x))
+                    (- (cw "Hello!~%"))
+                    (x (+ (car x) (car y)))
+                    ((mv u v) (foo x x)))
+                 (+ 0 u v)))
+       (tterm '((lambda
+                  (mv)
+                  ((lambda
+                     (x y)
+                     (return-last 'progn
+                                  (fmt-to-comment-window
+                                   '"Hello!~%"
+                                   (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                             'nil)
+                                   '0
+                                   'nil
+                                   'nil)
+                                  ((lambda (x)
+                                     ((lambda (mv)
+                                        ((lambda (u v)
+                                           (binary-+ '0 (binary-+ u v)))
+                                         (mv-nth '0 mv)
+                                         (mv-nth '1 mv)))
+                                      (foo x x)))
+                                   (binary-+ (car x) (car y)))))
+                   (mv-nth '0 mv)
+                   (mv-nth '1 mv)))
+                (foo y x)))
+       (sterm '((lambda (mv)
+                  ((lambda (x y)
+                     ((lambda (x)
+                        ((lambda (mv)
+                           ((lambda (u v) (binary-+ u v))
+                            (mv-nth '0 mv)
+                            (mv-nth '1 mv)))
+                         (foo x x)))
+                      (binary-+ (car x) (car y))))
+                   (mv-nth '0 mv)
+                   (mv-nth '1 mv)))
+                (foo y x))))
+   (equal
+    (directed-untranslate uterm tterm sterm nil nil (w state))
+    '(b* (((mv x y) (foo y x))
+          (x (+ (car x) (car y)))
+          ((mv u v) (foo x x)))
+       (+ u v)))))
+
+; Again, but preserving cw.
+
+(assert!
+ (let* ((uterm '(b* (((mv x y) (foo y x))
+                     (- (cw "Hello!~%"))
+                     (x (+ (car x) (car y)))
+                     ((mv u v) (foo x x)))
+                  (+ 0 u v)))
+        (tterm '((lambda
+                   (mv)
+                   ((lambda
+                      (x y)
+                      (return-last 'progn
+                                   (fmt-to-comment-window
+                                    '"Hello!~%"
+                                    (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                              'nil)
+                                    '0
+                                    'nil
+                                    'nil)
+                                   ((lambda (x)
+                                      ((lambda (mv)
+                                         ((lambda (u v)
+                                            (binary-+ '0 (binary-+ u v)))
+                                          (mv-nth '0 mv)
+                                          (mv-nth '1 mv)))
+                                       (foo x x)))
+                                    (binary-+ (car x) (car y)))))
+                    (mv-nth '0 mv)
+                    (mv-nth '1 mv)))
+                 (foo y x)))
+        (sterm tterm))
+   (equal
+    (directed-untranslate uterm tterm sterm nil nil (w state))
+    '(b* (((mv x y) (foo y x))
+          (- (cw "Hello!~%"))
+          (x (+ (car x) (car y)))
+          ((mv u v) (foo x x)))
+       (+ 0 u v)))))
+)

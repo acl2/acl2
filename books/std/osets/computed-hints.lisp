@@ -136,12 +136,12 @@
 
 (defun rewriting-goal-lit (mfc state)
   (declare (xargs :stobjs state)
-	   (ignore state))
+           (ignore state))
   (null (mfc-ancestors mfc)))
 
 (defun rewriting-conc-lit (term mfc state)
   (declare (xargs :stobjs state)
-	   (ignore state))
+           (ignore state))
   (let ((clause (mfc-clause mfc)))
     (member-equal term (last clause))))
 
@@ -289,16 +289,16 @@
 
 
 (defun build-hint (trigger                ; list, the actual trigger to use
-		   generic-theorem        ; symbol, the name of generic-theorem
-		   generic-hyps           ; symbol, the name of (hyps)
-		   generic-collection     ; symbol, the name of (collection)
-		   generic-predicate      ; symbol, the name of predicate
-		   generic-collection-P   ; symbol, the name of collection-P
-		   collection-P-sub       ; symbol, name of actual collection-P
-		   hyps-sub               ; the computed substitution for hyps
-		   predicate-rewrite)     ; rewrite rule for predicate
+                   generic-theorem        ; symbol, the name of generic-theorem
+                   generic-hyps           ; symbol, the name of (hyps)
+                   generic-collection     ; symbol, the name of (collection)
+                   generic-predicate      ; symbol, the name of predicate
+                   generic-collection-P   ; symbol, the name of collection-P
+                   collection-P-sub       ; symbol, name of actual collection-P
+                   hyps-sub               ; the computed substitution for hyps
+                   predicate-rewrite)     ; rewrite rule for predicate
   (let* ((base-pred (cons generic-predicate (cons '?x (cddr trigger))))
-	 (pred-sub  (instance-rewrite base-pred predicate-rewrite)))
+         (pred-sub  (instance-rewrite base-pred predicate-rewrite)))
     `(:functional-instance
       ,generic-theorem
       (,generic-hyps
@@ -311,42 +311,35 @@
        (lambda (?x) ,pred-sub)))))
 
 (defun build-hints (triggers
-		    generic-theorem
-		    generic-hyps
-		    generic-collection
-		    generic-predicate
-		    generic-collection-P
-		    collection-P-sub
-		    hyps-sub
-		    predicate-rewrite)
+                    generic-theorem
+                    generic-hyps
+                    generic-collection
+                    generic-predicate
+                    generic-collection-P
+                    collection-P-sub
+                    hyps-sub
+                    predicate-rewrite)
   (if (endp triggers)
       nil
     (cons (build-hint (car triggers)
-		      generic-theorem
-		      generic-hyps
-		      generic-collection
-		      generic-predicate
-		      generic-collection-P
-		      collection-P-sub
-		      hyps-sub
-		      predicate-rewrite)
-	  (build-hints (cdr triggers)
-		       generic-theorem
-		       generic-hyps
-		       generic-collection
-		       generic-predicate
-		       generic-collection-P
-		       collection-P-sub
-		       hyps-sub
-		       predicate-rewrite))))
+                      generic-theorem
+                      generic-hyps
+                      generic-collection
+                      generic-predicate
+                      generic-collection-P
+                      collection-P-sub
+                      hyps-sub
+                      predicate-rewrite)
+          (build-hints (cdr triggers)
+                       generic-theorem
+                       generic-hyps
+                       generic-collection
+                       generic-predicate
+                       generic-collection-P
+                       collection-P-sub
+                       hyps-sub
+                       predicate-rewrite))))
 
-
-(defconst *message*
- "~|~%We suspect this conjecture should be proven by functional ~
-  instantiation of ~x0.  This suspicion is caused by ~x2, so ~
-  if this is not what you want to do, then you should disable ~
-  ~x2.  Accordingly, we suggest the following hint: ~
-  ~%~%~x1~%")
 
 
 
@@ -354,44 +347,43 @@
 ; actually provide these hints and install the computed hint function.
 
 (defun automate-instantiation-fn (new-hint-name
-				  generic-theorem
-				  generic-hyps
-				  generic-collection
-				  generic-predicate
-				  generic-collection-P
-				  collection-P-sub
-				  predicate-rewrite
-				  trigger-symbol
-				  tagging-theorem)
+                                  generic-theorem
+                                  generic-hyps
+                                  generic-collection
+                                  generic-predicate
+                                  generic-collection-P
+                                  collection-P-sub
+                                  predicate-rewrite
+                                  trigger-symbol
+                                  tagging-theorem)
   `(encapsulate ()
 
      (defun ,new-hint-name (id clause world stable)
        (declare (xargs :mode :program)
-	        (ignore world))
+                (ignore id world))
        (if (not stable)
-	   nil
-	 (let ((triggers (harvest-trigger clause ,trigger-symbol)))
-	   (if (not triggers)
-	       nil
-	     (let* ((others   (set-difference-equal clause triggers))
-		    (hyps     (others-to-hyps others))
-		    (phrase   (string-for-tilde-@-clause-id-phrase id))
-		    (fi-hints (build-hints triggers
-					   ,generic-theorem
-					   ,generic-hyps
-					   ,generic-collection
-					   ,generic-predicate
-					   ,generic-collection-P
-					   ,collection-P-sub
-					   hyps
-					   ,predicate-rewrite))
-		    (hints    (list :use fi-hints
-				    :expand triggers)))
-	       (prog2$ (cw *message*
-			   ,generic-theorem
-			   (list phrase hints)
-			   ,tagging-theorem)
-		       hints))))))
+           nil
+         (let ((triggers (harvest-trigger clause ,trigger-symbol)))
+           (if (not triggers)
+               nil
+             (let* ((others   (set-difference-equal clause triggers))
+                    (hyps     (others-to-hyps others))
+                    (fi-hints (build-hints triggers
+                                           ,generic-theorem
+                                           ,generic-hyps
+                                           ,generic-collection
+                                           ,generic-predicate
+                                           ,generic-collection-P
+                                           ,collection-P-sub
+                                           hyps
+                                           ,predicate-rewrite))
+                    (hints    (list :use fi-hints
+                                    :expand triggers)))
+               (prog2$ (cw "~|~%Attempting to discharge subgoal by a ~
+                            pick-a-point strategy; disable ~x0 to ~
+                            prevent this.~%~%"
+                           ,tagging-theorem)
+                       hints))))))
 
      (add-default-hints!
       '((,new-hint-name id clause world stable-under-simplificationp)))
@@ -402,23 +394,22 @@
 
 
 (defmacro automate-instantiation (&key new-hint-name
-				       generic-theorem
+                                       generic-theorem
                                        generic-hyps
-				       generic-collection
-				       generic-predicate
-				       generic-collection-predicate
-				       actual-collection-predicate
-				       predicate-rewrite
-				       actual-trigger
-				       tagging-theorem)
+                                       generic-collection
+                                       generic-predicate
+                                       generic-collection-predicate
+                                       actual-collection-predicate
+                                       predicate-rewrite
+                                       actual-trigger
+                                       tagging-theorem)
   (automate-instantiation-fn new-hint-name
-			     (list 'quote generic-theorem)
-			     (list 'quote generic-hyps)
-			     (list 'quote generic-collection)
-			     (list 'quote generic-predicate)
-			     (list 'quote generic-collection-predicate)
-			     (list 'quote actual-collection-predicate)
-			     (list 'quote predicate-rewrite)
-			     (list 'quote actual-trigger)
-			     (list 'quote tagging-theorem)))
-
+                             (list 'quote generic-theorem)
+                             (list 'quote generic-hyps)
+                             (list 'quote generic-collection)
+                             (list 'quote generic-predicate)
+                             (list 'quote generic-collection-predicate)
+                             (list 'quote actual-collection-predicate)
+                             (list 'quote predicate-rewrite)
+                             (list 'quote actual-trigger)
+                             (list 'quote tagging-theorem)))

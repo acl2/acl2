@@ -544,6 +544,7 @@ e.g. bitselects, partselects, and nonconstant array selects.</p>"
               (:vl-genarray        (mv nil 1))
               (:vl-blockstmt       (mv nil 0))
               (:vl-forstmt         (mv nil 0))
+              (:vl-foreachstmt     (mv nil 0))
 
               ;; bozo -- this was 1 but I think it should be 0 for the same
               ;; reasons as blockstmt/forstmt.
@@ -777,7 +778,7 @@ ignored.</p>"
 (trace$ #!vl (vl-datatype-field-shift-amount
               :entry (list 'vl-datatype-field-shift-amount
                            (with-local-ps (vl-pp-datatype x))
-                           (with-local-ps (vl-pp-packeddimensionlist
+                           (with-local-ps (vl-pp-dimensionlist
                                            (vl-datatype->udims x)))
                            field)
               :exit (list 'vl-datatype-field-shift-amount
@@ -822,7 +823,7 @@ ignored.</p>"
               :entry (list 'vl-datatype-index-shift-amount
 
                            (with-local-ps (vl-pp-datatype x))
-                           (with-local-ps (vl-pp-packeddimensionlist
+                           (with-local-ps (vl-pp-dimensionlist
                                            (vl-datatype->udims x)))
                            idx)
               :exit (list 'vl-datatype-index-shift-amount
@@ -843,15 +844,14 @@ ignored.</p>"
        ((mv err size) (vl-datatype-size slottype))
        ((when err) (mv err 0 0 0))
        ((unless size) (mv (vmsg "Couldn't size array slot type ~a0" slottype) 0 0 0))
-       ((when (vl-packeddimension-case dim :unsized))
-        (mv (vmsg "unsized packed dimension on array type ~a0" x) 0 0 0))
-       ((vl-range range) (vl-packeddimension->range dim))
+       ((unless (vl-dimension-case dim :range))
+        (mv (vmsg "unsupported dimension on ~a0" x) 0 0 0))
+       ((vl-range range) (vl-dimension->range dim))
        ((unless (vl-range-resolved-p range))
-        (mv (vmsg "unresolved packed dimension on array type ~a0" x) 0 0 0))
+        (mv (vmsg "unresolved dimension on array type ~a0" x) 0 0 0))
        (msb (vl-resolved->val range.msb))
        (lsb (vl-resolved->val range.lsb)))
     (mv nil size msb lsb)))
-  
 
 (define vl-index-shift-amount ((size natp)
                                (msb integerp)
@@ -1684,7 +1684,7 @@ the way.</li>
                                          (type vl-datatype-p))
   :guard (vl-datatype-resolved-p type)
   :returns (mv (err (iff (vl-msg-p err) err))
-               (final-dim (implies (not err) (vl-packeddimension-p final-dim))))
+               (final-dim (implies (not err) (vl-dimension-p final-dim))))
   :measure (nfix n)
   (b* (((mv err ?caveat new-type dim)
         (vl-datatype-remove-dim type))
@@ -1746,15 +1746,15 @@ the way.</li>
            (b* (((mv err dim)
                  (vl-datatype-syscall-remove-dims (if index (1- index) 0) type))
                 ((when (or err
-                           ;; BOZO some of these might work for unsized dimensions
-                           (vl-packeddimension-case dim :unsized)
-                           (not (vl-range-resolved-p (vl-packeddimension->range dim)))))
+                           ;; BOZO some of these might work for more exotic kinds of dimensions
+                           (not (vl-dimension-case dim :range))
+                           (not (vl-range-resolved-p (vl-dimension->range dim)))))
                  (mv (fatal :type :vl-expr-to-svex-fail
                             :msg "Couldn't resolve outermost dimension for ~a0: ~@1"
                             :args (list orig-x
                                         (or err "unresolved dimension")))
                      (svex-x)))
-                (dim.range (vl-packeddimension->range dim))
+                (dim.range (vl-dimension->range dim))
                 ((vl-range dim) dim.range))
              (cond ((equal fn "$left")  (mv nil (svex-int (vl-resolved->val dim.msb))))
                    ((equal fn "$right") (mv nil (svex-int (vl-resolved->val dim.lsb))))
@@ -2493,7 +2493,7 @@ the way.</li>
 (define vl-size-to-unsigned-logic ((x posp))
   :returns (type vl-datatype-p)
   (hons-copy (make-vl-coretype :name :vl-logic
-                               :pdims (list (vl-range->packeddimension
+                               :pdims (list (vl-range->dimension
                                              (make-vl-range
                                               :msb (vl-make-index (1- (pos-fix x)))
                                               :lsb (vl-make-index 0))))))
@@ -2809,8 +2809,107 @@ the way.</li>
     :hints(("Goal" :in-theory (e/d () (vl-funcall-args-to-ordered))
             :expand ((vl-expr-count x))))
     :rule-classes (:rewrite :linear)))
-       
+
 (local (in-theory (disable acl2::hons-dups-p)))
+
+
+(define vl-$test$plusargs-p ((arg      stringp)
+                             (plusargs string-listp "Plusses removed"))
+  ;; See SystemVerilog-2012 21.6.  Search for a particular plusarg among the
+  ;; given plusargs.  The search is by string prefix.
+  (cond ((atom plusargs)
+         nil)
+        ((str::strprefixp arg (car plusargs))
+         t)
+        (t
+         (vl-$test$plusargs-p arg (cdr plusargs)))))
+
+
+(define vl-value-to-string-aux ((value natp)
+                                (acc character-listp))
+  :returns (acc character-listp)
+  (if (zp value)
+      (character-list-fix acc)
+    (vl-value-to-string-aux (ash (lnfix value) -8)
+                            (cons (code-char (logand value #xFF))
+                                  acc)))
+  :prepwork
+  ((local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+   (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+   (local (in-theory (enable acl2-count)))
+   (local (defthm l0
+            (implies (posp x)
+                     (< (acl2::logcdr x) x))
+            :rule-classes :linear
+            :hints(("Goal" :in-theory (enable acl2::logcdr)))))
+   (local (defthm l1
+            (implies (and (posp x)
+                          (posp n))
+                     (< (acl2::logtail n x) x))
+            :rule-classes :linear
+            :hints(("Goal" :in-theory (enable bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs
+                                              )))))
+   (local (defthm l2
+            (implies (posp n)
+                     (< (acl2::loghead n x) (ash 1 n)))
+            :rule-classes :linear
+            :hints(("Goal" :in-theory (enable bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs
+                                              )))))))
+
+(define vl-integer-to-string ((val vl-value-p))
+  :guard (vl-value-case val :vl-constint)
+  ;; Interpret an integer value as a string of ascii characters
+  (str::implode (vl-value-to-string-aux (vl-constint->value val) nil))
+  ///
+  (assert!
+   (b* ((str "Hello")
+        (int (+ (ash (char-code #\H) (* 4 8))
+                (ash (char-code #\e) (* 3 8))
+                (ash (char-code #\l) (* 2 8))
+                (ash (char-code #\l) (* 1 8))
+                (ash (char-code #\o) (* 0 8))))
+        (interp (vl-integer-to-string
+                 (vl-literal->val (vl-make-index int)))))
+     (equal str interp))))
+
+(define vl-$test$plusargs-to-svex ((expr vl-expr-p)
+                                   (design vl-design-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (svex (and (sv::svex-p svex)
+                          (sv::svarlist-addr-p (sv::svex-vars svex)))))
+  ;; SystemVerilog-2012 21.6 suggests that $test$plusargs(...) should work on
+  ;; arguments other than string literals, but it seems horrible to try to
+  ;; support that because we'd basically need to implement SVEX based string
+  ;; prefix comparisons against the full list of all plusargs that have been
+  ;; supplied, which seems really horrible.  On the other hand, supporting
+  ;; $test$plusargs("foo") seems pretty straightforward so let's do that.
+  (b* ((expr (vl-expr-fix expr))
+       (arg-str (vl-expr-case expr
+                  :vl-literal (vl-value-case expr.val
+                                :vl-constint (vl-integer-to-string expr.val)
+                                :vl-string expr.val.value
+                                :otherwise nil)
+                  :otherwise nil))
+       ((unless arg-str)
+        (mv (fatal :type :vl-expr-to-svex-fail
+                   :msg "Unsupported $test$plusargs(...) call.  We only ~
+                         support literal strings like ~
+                         $test$plusargs(\"foo\"). but found ~
+                         $test$plusargs(~a0)."
+                   :args (list expr)
+                   :acc nil)
+            (svex-x)))
+       (ans-svex
+        ;; SystemVerilog-2012 21.6 only says that we should return a nonzero or
+        ;; zero integer.  It seems like other tools return 1 or 0, which seems
+        ;; like the most sensible thing to do.
+        (if (vl-$test$plusargs-p arg-str (vl-design->plusargs design))
+            ;; BOZO ugly way to write these
+            (sv::svex-quote (sv::4vec 1 1))
+          (sv::svex-quote (sv::4vec 0 0)))))
+    (mv nil ans-svex)))
 
 #!sv
 (define constraintlist-subst-memo ((x constraintlist-p)
@@ -3180,7 +3279,6 @@ a cons of two vttrees.</p>"
     (equal (vttree->constraints new-vttree)
            (vttree->constraints vttree))))
   
-
 
 (defines vl-expr-to-svex
   :ruler-extenders :all
@@ -3981,11 +4079,21 @@ functions can assume all bits of it are good.</p>"
                     (mv vttree
                         (sv::svcall sv::onehot0 arg-svex))))
 
+                 ((when (vl-unary-syscall-p "$test$plusargs" x))
+                  (b* ((design (vl-scopestack->design ss))
+                       ((unless design)
+                        (mv (vfatal :type :vl-expr-to-svex-fail
+                                    :msg "Can't look up plusargs without a design."
+                                    :args (list x))
+                            (svex-x)))
+                       ((mv warnings svex)
+                        (vl-$test$plusargs-to-svex (car x.plainargs) design))
+                       (vttree (vttree-add-warnings warnings vttree)))
+                    (mv vttree svex)))
+
                  ;; It happens that almost all the system functions we support
                  ;; basically act on datatypes, and if an expression is given
                  ;; instead, they run on the type of the expression.
-
-
                  ((vmv args-ok vttree type index)
                   (vl-typequery-syscall-args-extract x ss scopes))
 
@@ -4560,13 +4668,13 @@ functions can assume all bits of it are good.</p>"
           (b* (((mv ?err ?caveat slottype dim)
                 (vl-datatype-remove-dim type))
                ;; Never an error because we have dims.
-               ((when (vl-packeddimension-case dim :unsized))
+               ((unless (vl-dimension-case dim :range))
                 (mv (vfatal :type :vl-expr-to-svex-fail
-                            :msg "unsized dimension in type of assignment pattern ~a0"
+                            :msg "unsupported dimension in type of assignment pattern ~a0"
                             :args (list orig-x))
                     nil
                     (svex-x)))
-               (range (vl-packeddimension->range dim))
+               (range (vl-dimension->range dim))
                ((unless (vl-range-resolved-p range))
                 (mv (vfatal :type :vl-expr-to-svex-fail
                             :msg "unresolved dimension in type of assignment pattern ~a0"
@@ -4965,7 +5073,7 @@ functions can assume all bits of it are good.</p>"
         (mv (vfatal :type :vl-expr-to-svex-fail
                     :msg "Couldn't size the datatype ~a0 of ~
                                     LHS expression ~a1: ~@2"
-                    :args (list type (vl-expr-fix x) err))
+                    :args (list type (vl-expr-fix x) (or err (vmsg "unsizeable"))))
             nil nil))
        (lhssvex (sv::svex-concat size
                                  (sv::svex-lhsrewrite svex size)

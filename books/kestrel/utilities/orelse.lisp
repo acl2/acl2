@@ -42,8 +42,8 @@
  expansion for @('(orelse form1 form2 ...)') when evaluation of the first event
  form succeeds.</p>
 
- <p>See community book @('kestrel/utilities/orelse.lisp') for an utility,
- @('encapsulate-report-errors'), that employs @('orelse').</p>")
+ <p>See community book @('kestrel/utilities/orelse.lisp') for a utility, @(tsee
+ encapsulate-report-errors), that employs @('orelse').</p>")
 
 (defxdoc orelse*
   :parents (system-utilities)
@@ -61,6 +61,104 @@
           :expansion? e ; default nil
  })")
 
+(defxdoc on-failure
+  :parents (system-utilities)
+  :short "Run an event, printing a custom error message if it fails."
+  :long "
+ @({
+ General Form:
+
+ (on-failure event
+             :ctx ctx ; default \"event processing\"
+             :erp erp ; default t
+             :val val ; default nil
+             :msg msg ; default nil
+             )
+ })
+
+ <p>where @('event') is an @(see embedded-event-form), and the other arguments
+ are passed to @(tsee fail-event) as explained below.  Thus, none of the
+ arguments is evaluated.  The General Form above expands to the following.</p>
+
+ @({
+ (ORELSE EVENT
+         (FAIL-EVENT CTX ERP VAL MSG))
+ })
+
+ <p>Thus, first @('event') is evaluated &mdash; see @(see orelse) &mdash; and
+ either it succeeds or else the indicated error occurs &mdash; see @(see
+ fail-event).</p>
+
+ <p>Consider the following example.</p>
+
+ @({
+ (on-failure (defund f (x) x)
+             :ctx (defund . f) ; see :doc ctx
+             :erp t   ; see :doc er-soft+
+             :val nil ; see :doc er-soft+
+             :msg (\"Failed:~|~%~x0\" (#\\0 . (defun f (x) x))))
+ })
+
+ <p>If @('f') is not already defined, then this is essentially equivalent to
+ @('(defund f (x) x)').  But if @('f') currently has a conflicting definition,
+ then the event will fail and the final error message, unless error output is
+ inhibited (see @(see set-inhibit-output-lst)), will be the following.</p>
+
+ @({
+ ACL2 Error in (DEFUND F ...):  Failed:
+
+ (DEFUN F (X) X)
+ })
+
+ <p>For another example of the use of @('on-failure'), which uses the macro
+ @(tsee msg) to construct a @(see msgp), see the definition of function
+ @('report-event-when-error-fn') in @(see community-book)
+ @('books/kestrel/utilities/orelse.lisp').</p>")
+
+(defxdoc encapsulate-report-errors
+  :parents (system-utilities)
+  :short "Run @(tsee encapsulate), but with a helpful error at the first
+ failure of one of its top-level events (if any)."
+  :long "<p>This macro is equivalent to @(see encapsulate) except that it takes
+ an extra argument, which is a @(see context), that goes in the first
+ position.  Unlike @('encapsulate'), it provides a helpful error if any of its
+ given @(see events) fails.  It uses that extra `context' argument in reporting
+ that error.  (But the error itself is reported by the event, with the usual
+ context constructed for that event.)</p>
+
+ @({
+ General Form:
+
+ (encapsulate-report-errors ctx signature-list event1 event2 ... eventk)
+ })
+
+ <p>where @('ctx') is a context, @('signature-list') is a list of @(see
+ signature)s, and each @('eventi') is an @(see embedded-event-form).  Note that
+ none of these arguments is evaluated.  Thus, a typical call might be laid down
+ as follows.</p>
+
+ @({
+ `(encapsulate-report-errors ,ctx () ,@events)
+ })
+
+ <p>Normally, if if any of the given events (shown above as ``@('event1 event2
+ ... eventk')'') fails, then the output will conclude as follows, where here we
+ write @('<CTX>') to denote the formatted context and @('<EV>') to denote the
+ failed event printed in abbreviated form.</p>
+
+ @({
+ ACL2 Error in <CTX>:  The following event has caused an
+ unexpected error:
+
+ <EV>
+
+ Please contact the implementor of the tool that you are using.
+ })
+
+ <p>However, if the event is of the form @('(on-failure ...)'), then the
+ specified failure message is printed instead of this generic one.  See @(see
+ on-failure).</p>")
+
 (defun orelse-fn (form-list quiet no-error expansion?p)
   (declare (xargs :guard (true-listp form-list)))
   (let ((ev `(make-event '(:or ,@form-list
@@ -69,7 +167,7 @@
                                 `(:expansion? ,(car form-list)))
                          :on-behalf-of :quiet!)))
     (cond (quiet `(with-output
-                    ,@(and (eq quiet :stack-push) '(:stack :push))
+                    ,@(and quiet '(:stack :push))
                     :gag-mode nil
                     :off :all
                     ,ev))
@@ -96,36 +194,41 @@
 ; encapsulate.  It replaces each event of the encapsulate with an orelse form
 ; when a given function supplies the alternative.
 
-(defun formal-map (fn lst)
+(defun formal-map (fn ctx lst)
   (declare (xargs :guard (true-listp lst)))
   (cond ((endp lst) nil)
-        (t (cons `(,fn ,(car lst))
-                 (formal-map fn (cdr lst))))))
+        (t (cons `(,fn ,ctx ,(car lst))
+                 (formal-map fn ctx (cdr lst))))))
 
-(defmacro on-failure (event &optional (erp 't) val str &rest fmt-args)
+(defmacro on-failure (event &key
+                            (ctx '"event processing")
+                            (erp 't)
+                            val msg)
 
-; This macro generates an event.  The effect of that event is to try event
-; first, stopping if that succeeds, but otherwise failing.  In the failure case
-; we return (mv erp val state) and print the input string, str, with fmt
-; arguments (cons event fmt-args).  Except, if str is omitted (or nil) then we
-; print a default message as shown below.
+; This macro generates an event.  The effect of that event is to try the given
+; event first, stopping if that succeeds, but otherwise failing.  In the
+; failure case we return (mv erp val state) and print the input string, str,
+; with fmt arguments (cons event fmt-args).  Except, if str is omitted (or nil)
+; then we print a default message as shown below.
 
-; All optional arguments are evaluated.
+; None of the arguments is evaluated; rather, each is passed as is to suitable
+; actuals for calls of orelse and fail-event.
 
-  (mv-let (str fmt-args)
-    (cond (str (mv str (cons event fmt-args)))
-          (t (mv "The following event failed:~%~X01"
+  (let ((msg (or msg
+                 (msg "The following event failed:~%~X01"
 ; The use of 12 below is quite arbitrary.  The goal is to print the entire
 ; event unless it's truly huge.
-                 (list event (evisc-tuple 12 12 nil nil)))))
-    `(orelse ,event
-             (make-event
-              (er-soft+ "event processing"
-                ,erp   ; erp
-                ,val   ; val
-                ,str
-                ,@(kwote-lst fmt-args))
-              :on-behalf-of :quiet))))
+                      event
+                      (evisc-tuple 12 12 nil nil)))))
+    `(orelse (with-output :stack :pop
+               ,event)
+             (with-output :stack :pop
+               (fail-event
+                ,ctx
+                ,erp ; erp
+                ,val ; val
+                ,msg))
+             :quiet t)))
 
 ; Below is alternate code that takes advantage of the existing implementation
 ; of try-event.  It seems to me that the code above is a bit simpler; plus, it
@@ -157,9 +260,17 @@
                           fmt-args)))))
 ||#
 
+(defxdoc identity-macro
+  :parents (system-utilities)
+  :short "The most trivial macro imaginable"
+  :long "<p>@('(Identity-macro x)') macroexpands to @('x').</p>")
+
+(defmacro identity-macro (x)
+  x)
+
 (mutual-recursion
 
-(defun report-event-when-error-fn (event)
+(defun report-event-when-error-fn (ctx event)
 
 ; Consider improving this to give special handling to make-event.  Also consider
 ; single-step macroexpansion on macros (to expose local, progn, encapsulate, or
@@ -172,35 +283,51 @@
          event)
         ((eq (car event) 'local)
          (list 'local
-               (report-event-when-error-fn (cadr event))))
+               (report-event-when-error-fn ctx (cadr event))))
         ((eq (car event) 'progn)
          (cons 'progn
-               (report-event-when-error-fn-lst (cdr event))))
+               (report-event-when-error-fn-lst ctx (cdr event))))
         ((eq (car event) 'on-failure)
          event)
+        ((eq (car event) 'identity-macro)
+         (cadr event))
         ((eq (car event) 'encapsulate)
          (list* 'encapsulate
                 (cadr event)
-                (report-event-when-error-fn-lst (cddr event))))
-        (t `(on-failure ,event))))
+                (report-event-when-error-fn-lst ctx (cddr event))))
+        (t `(on-failure ,event
+                        :ctx ,ctx
+                        :msg ,(msg "The following event has caused an ~
+                                    unexpected error:~|~%~x0.~|~%Please ~
+                                    contact the implementor of the tool that ~
+                                    you are using."
+                                   event)))))
 
-(defun report-event-when-error-fn-lst (lst)
+(defun report-event-when-error-fn-lst (ctx lst)
   (cond ((atom lst) nil)
-        (t (cons (report-event-when-error-fn (car lst))
-                 (report-event-when-error-fn-lst (cdr lst))))))
+        (t (cons (report-event-when-error-fn ctx (car lst))
+                 (report-event-when-error-fn-lst ctx (cdr lst))))))
 )
 
-(defmacro report-event-when-error (event)
-  (report-event-when-error-fn event))
+(defmacro report-event-when-error (ctx event)
+  (report-event-when-error-fn ctx event))
 
-(defun encapsulate-orelse-fn (fn signature events)
+(defun encapsulate-orelse-fn (fn ctx signature events)
   (declare (xargs :guard (true-listp events)))
-  `(make-event (let ((events (formal-map ',fn ',events)))
+  `(make-event (let ((events (formal-map ',fn ',ctx ',events)))
                  (list* 'encapsulate ,signature events))
                :on-behalf-of :quiet!))
 
-(defmacro encapsulate-orelse (fn signature &rest events)
-  (encapsulate-orelse-fn fn signature events))
+(defmacro encapsulate-orelse (fn ctx signature &rest events)
+  (encapsulate-orelse-fn fn ctx signature events))
 
-(defmacro encapsulate-report-errors (signature &rest events)
-  `(encapsulate-orelse report-event-when-error ,signature ,@events))
+(defmacro encapsulate-report-errors (ctx signature &rest events)
+
+; A typical call could be laid down as follows, where call might be
+; (my-utility arg1 arg2 ...).
+
+; `(encapsulate-report-errors ,ctx () ,@events)
+
+; Note that ctx is not evaluated.
+
+  `(encapsulate-orelse report-event-when-error ,ctx ,signature ,@events))

@@ -317,8 +317,23 @@
    (make-exprtest :input "$foo(1, 2)"
                   :expect '(:vl-syscall nil "$foo" 1 2))
 
+   (make-exprtest :input "$random"
+                  :expect '(:vl-syscall nil "$random"))
+
+   (make-exprtest :input "$urandom"
+                  :expect '(:vl-syscall nil "$urandom"))
+
+   (make-exprtest :input "$random()"
+                  :expect '(:vl-syscall nil "$random"))
+
+   (make-exprtest :input "$urandom()"
+                  :expect '(:vl-syscall nil "$urandom"))
+
    (make-exprtest :input "$foo()"
-                  :successp nil)
+                  ;; Historically we thought this should be an error.  However, Verilog
+                  ;; simulators appear to accept input like $random(), so I guess it's
+                  ;; supposed to work.
+                  :expect '(:vl-syscall nil "$foo"))
 
    ;; These next three are important for property parsing to work correctly.
    (make-exprtest :input "a[*]"
@@ -333,6 +348,18 @@
                   :expect '(id "a")
                   :remainder "[ -> ]")
 
+
+   (make-exprtest :input "$rose(foo, @(posedge clock))"
+                  :expect '(:vl-syscall nil "$rose"
+                            (id "foo")
+                            (:event nil (:vl-posedge (id "clock")))))
+
+   (make-exprtest :input "$rose(foo, @(posedge clock or negedge top.reset))"
+                  :expect '(:vl-syscall nil "$rose"
+                            (id "foo")
+                            (:event nil
+                             (:vl-posedge (id "clock"))
+                             (:vl-negedge (:index nil (:dot "top" "reset") nil nil)))))
    ))
 
 (defconst *basic-precedence-tests*
@@ -1393,6 +1420,7 @@
                  :config (make-vl-loadconfig :edition :verilog-2005
                                              :strictp t))
   '(value-triple :success))))
+
 
 
 

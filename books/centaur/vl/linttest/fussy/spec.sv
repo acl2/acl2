@@ -147,6 +147,33 @@ module top ;
   //@VL LINT_IGNORE_FUSSY
   wire [3:0] supp_normal3 = xx0 & yy0;
 
+  // A right shift followed by an AND seems like a reasonable thing to do.  We won't
+  // warn about any of these.
+  wire shift_mask_normal1 = (xx0 >> 2) & 1'b1;
+  wire shift_mask_normal2 = (xx0 >> 2) & 2'b1;
+  wire shift_mask_normal3 = (xx0 >> 2) & yy0[1:0];
+  wire shift_mask_normal4 = (xx0 >> 2) & yy0[0];
 
+  // For shifts combined with other operators besides and (for masking), we
+  // will check for a more strict agreement
+  wire shift_xor_warn1 = (xx0 >> 2) ^ 1'b1;   // warn because the "intuitive size" of (xx >> 2) is 2
+  wire shift_xor_warn2 = (xx0 >> 2) ^ yy0[0];
+  wire shift_xor_normal1 = (xx0 >> 2) ^ 2'b1; // don't warn because the "intuitive size" matches
+  wire shift_xor_normal2 = (xx0 >> 2) ^ yy0[1:0];
+
+
+endmodule
+
+
+module a0;
+
+   // [Jared] this file isn't the right place to test this, but previously we
+   // failed to parse these expressions, so I'd like to keep them somewhere to
+   // make sure the fix works.
+
+   wire rand1 = $random % 2;
+   wire rand2 = $urandom % 2;
+   wire rand3 = $random() % 2;
+   wire rand4 = $urandom() % 2;
 
 endmodule

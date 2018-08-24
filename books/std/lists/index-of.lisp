@@ -92,10 +92,20 @@ and is not (logically) tail-recursive."
 
   (local (in-theory (enable index-of)))
 
+; Matt K. mod: Beta-reduced the right-hand side; then the first occurrence of
+; index-of may be rewritten maintaining IFF.  In community books
+; books/centaur/vl2014/util/position.lisp, the lemma
+; position-equal-upper-bound-weak-when-stringp failed after ACL2 no longer
+; expanded away LETs on right-hand sides of rewrite rules (after v8-0).  That
+; seemed to be because ACL2 no longer used an IFF rule,
+; acl2::index-of-iff-member, to rewrite (and (index-of k x) ...) to (and
+; (member-equal k x) ...) for specific values of k and x.
   (defthm index-of-aux-removal
     (equal (index-of-aux k x acc)
-           (let ((res (index-of k x)))
-             (and res (+ res (ifix acc))))))
+;          (let ((res (index-of k x)))
+;            (and res (+ res (ifix acc))))
+           (and (index-of k x)
+                (+ (index-of k x) (ifix acc)))))
 
   (verify-guards index-of)
 

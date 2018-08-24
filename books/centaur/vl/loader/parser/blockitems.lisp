@@ -88,10 +88,11 @@ out some duplication and indirection:</p>
        | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
        | identifier [ '=' class_new ]
 
-    dynamic_array_new ::= new [ expression ] [ ( expression ) ]
+    dynamic_array_new ::= 'new' '[' expression ']' [ '(' expression ')' ]
 
-    class_new ::= [ class_scope ] new [ ( list_of_arguments ) ]
-                | new expression
+    class_new ::= [ class_scope ] 'new' [ '(' list_of_arguments ')' ]
+                | 'new' expression
+
 
     variable_dimension ::= unsized_dimension
                          | unpacked_dimension
@@ -128,7 +129,7 @@ out some duplication and indirection:</p>
         nil)
        ((vl-vardeclassign temp1) (car temps))
        (decl1 (make-vl-vardecl :name     temp1.id
-                               :initval  temp1.expr
+                               :initval  temp1.rhs
                                :constp   constp
                                :varp     varp
                                :lifetime lifetime
@@ -144,9 +145,9 @@ out some duplication and indirection:</p>
                              :atts     atts
                              :loc      loc))))
 
-(defprojection vl-ranges->packeddimensions ((x vl-rangelist-p))
-  :returns (dims vl-packeddimensionlist-p)
-  (vl-range->packeddimension x))
+(defprojection vl-ranges->dimensions ((x vl-rangelist-p))
+  :returns (dims vl-dimensionlist-p)
+  (vl-range->dimension x))
 
 
 (defparser vl-parse-variable-type ()
@@ -167,11 +168,11 @@ out some duplication and indirection:</p>
           (expr := (vl-parse-expression))
           (return (make-vl-vardeclassign :id (vl-idtoken->name id)
                                          :dims nil
-                                         :expr expr)))
+                                         :rhs (make-vl-rhsexpr :guts expr))))
         (arrdims := (vl-parse-0+-ranges))
         (return (make-vl-vardeclassign :id (vl-idtoken->name id)
-                                       :dims (vl-ranges->packeddimensions arrdims)
-                                       :expr nil))))
+                                       :dims (vl-ranges->dimensions arrdims)
+                                       :rhs nil))))
 
 (defparser vl-parse-list-of-variable-identifiers ()
   :short "Match @('list_of_variable_identifiers') for Verilog-2005."
@@ -316,7 +317,7 @@ out some duplication and indirection:</p>
                                           (make-vl-coretype :name :vl-reg
                                                             :signedp signedp
                                                             :pdims (if range
-                                                                       (list (vl-range->packeddimension range))
+                                                                       (list (vl-range->dimension range))
                                                                      nil)))
                                    :atts atts
                                    :loc (vl-token->loc kwd)))))
@@ -339,12 +340,14 @@ out some duplication and indirection:</p>
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
           (rest := (vl-parse-list-of-event-identifiers atts)))
-        (return (cons (make-vl-vardecl :type (make-vl-coretype :name :vl-event
-                                                               :udims (vl-ranges->packeddimensions arrdims))
-                                       :name (vl-idtoken->name id)
-                                       :loc (vl-token->loc id)
-                                       :atts atts)
-                      rest))))
+        (return
+         (b* ((udims-from-arrdims (vl-ranges->dimensions arrdims)))
+           (cons (make-vl-vardecl :type (make-vl-coretype :name :vl-event
+                                                          :udims udims-from-arrdims)
+                                  :name (vl-idtoken->name id)
+                                  :loc (vl-token->loc id)
+                                  :atts atts)
+                 rest)))))
 
 (defparser vl-parse-event-declaration (atts)
   :short "Match @('event_declaration') for Verilog-2005."

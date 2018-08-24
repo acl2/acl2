@@ -88,10 +88,8 @@
     :rule-classes :linear))
 
 (def-inst x86-bsf-Op/En-RM
-
+  
   :parents (two-byte-opcodes fp-opcodes)
-  :implemented
-  (add-to-implemented-opcodes-table 'BSF #x0FBC '(:nil nil) 'x86-bsf-Op/En-RM)
 
   :short "Bit scan forward"
 
@@ -107,16 +105,21 @@
 
   :body
   (b* ((ctx 'x86-bsf-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+       
+       (lock (eql #.*lock*
+                  (prefixes-slice :lck prefixes)))
+       ((when lock)
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock*
-                  (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
 
        (p3 (equal #.*operand-size-override*
-                  (prefixes-slice :group-3-prefix prefixes)))
+                  (prefixes-slice :opr prefixes)))
 
        ((the (integer 2 8) operand-size)
         (if (logbitp *w* rex-byte)
@@ -129,17 +132,17 @@
        ((the (unsigned-byte 4) rgf-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
 
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
        (inst-acc? t)
        ((mv flg0 reg/mem
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*gpr-access* operand-size inst-acc?
+         proc-mode #.*gpr-access* operand-size inst-acc?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand

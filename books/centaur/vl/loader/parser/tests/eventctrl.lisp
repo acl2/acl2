@@ -92,3 +92,18 @@
 
 (test-vl-parse-delay-or-eventcontrol :input "@(posedge bar or)"
                                      :successp nil)
+
+
+(test-vl-parse-delay-or-eventcontrol :input "@((posedge foo))"
+                                     :expect '((:vl-posedge (id "foo"))))
+
+(test-vl-parse-delay-or-eventcontrol :input "@((posedge foo) or ((posedge bar) or (posedge baz)))"
+                                     :expect '((:vl-posedge (id "foo"))
+                                               (:vl-posedge (id "bar"))
+                                               (:vl-posedge (id "baz"))
+                                               ))
+
+(test-vl-parse-delay-or-eventcontrol
+ :input "@((foo & bar) or (foo & baz))"
+ :expect '((:vl-noedge (:vl-binary-bitand nil (id "foo") (id "bar")))
+           (:vl-noedge (:vl-binary-bitand nil (id "foo") (id "baz")))))

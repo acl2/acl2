@@ -276,6 +276,11 @@ complete.</p>"
            ;; SystemVerilog 20.15.1 -- return type is a signed integer.
            ',(vl-coretypename->info :vl-integer))
 
+          ((vl-unary-syscall-p "$test$plusargs" x)
+           ;; SystemVerilog 21.6 -- returns "... a nonzero integer ... or the
+           ;; integer value zero", so that seems like an integer.
+           ',(vl-coretypename->info :vl-integer))
+
           (t
            ;; BOZO.  Eventually it would be good (for linting especially)
            ;; to expand this with other SystemVerilog functions.  For now,

@@ -743,7 +743,16 @@ Our version of VCS says this isn't yet implemented.</li>
        ((when (or (eq tag :vl-initial)
                   (eq tag :vl-final)
                   (eq tag :vl-always)
-                  (eq tag :vl-dpiexport)))
+                  (eq tag :vl-dpiexport)
+
+                  ;; BOZO not sure how these are scoped yet.
+                  (eq tag :vl-clkdecl)
+                  (eq tag :vl-gclkdecl)
+                  (eq tag :vl-bind)
+                  (eq tag :vl-class)
+                  (eq tag :vl-covergroup)
+                  (eq tag :vl-elabtask)
+                  ))
         ;; These don't declare any names, nothing to do.
         (mv (ok) st impitems))
 

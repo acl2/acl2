@@ -117,7 +117,7 @@ def match_warning(mod, type, substring)
   if ok
     puts "#{mod}: OK: matched #{type}, #{substring}"
   else
-    puts "ERROR: failed to match required warning: #{mod}, #{type}, #{substring}"
+    raise "ERROR: failed to match required warning: #{mod}, #{type}, #{substring}"
   end
 end
 
@@ -126,7 +126,7 @@ def outlaw_warning(mod, type, substring)
   wlist = WARNINGS[mod] || []
   found = some_warning_matches(type, substring, wlist)
   if found
-    puts "ERROR: found outlawed warning: #{mod}, #{type}, #{substring}:\n     #{found[:type]} -- #{found[:text]}"
+    raise "ERROR: found outlawed warning: #{mod}, #{type}, #{substring}:\n     #{found[:type]} -- #{found[:text]}"
   else
     puts "#{mod}: OK: none match #{type}, #{substring}"
   end
@@ -148,6 +148,45 @@ def outlaw_bad_warnings()
   outlaw_warning_global("VL-BAD-VARIABLES")
   outlaw_warning_global("VL-BAD-INSTANCE")
   outlaw_warning_global("VL-TRICKY-SCOPE")
+end
+
+
+# -----------------------------------------------------------------------------
+
+# Alternatives to the above, where you can give a substring of the type, e.g.,
+# using these with "VL-LUCID-UNSET" will match "VL-LUCID-UNSET" and also
+# "VL-LUCID-UNSET-VARIABLE", etc.
+
+def some_warning_matches_ss(type_substring, substring, wlist)
+  wlist.each do |w|
+    if ((type_substring == "*" or w[:type].include?(type_substring)) and
+        (substring == "*" or w[:text].include?(substring)))
+      return w
+    end
+  end
+  return false
+end
+
+def match_warning_ss(mod, type_substring, substring)
+  raise "Invalid description name: #{mod}" unless WARNINGS.has_key?(mod) or LOCATIONS.has_key?(mod)
+  wlist = WARNINGS[mod] || []
+  ok = some_warning_matches_ss(type_substring, substring, wlist)
+  if ok
+    puts "#{mod}: OK: matched #{type_substring}, #{substring}"
+  else
+    raise "ERROR: failed to match required warning: #{mod}, #{type_substring}, #{substring}"
+  end
+end
+
+def outlaw_warning_ss(mod, type_substring, substring)
+  raise "Invalid description name: #{mod}" unless WARNINGS.has_key?(mod) or LOCATIONS.has_key?(mod)
+  wlist = WARNINGS[mod] || []
+  found = some_warning_matches_ss(type_substring, substring, wlist)
+  if found
+    raise "ERROR: found outlawed warning: #{mod}, #{type_substring}, #{substring}:\n     #{found[:type]} -- #{found[:text]}"
+  else
+    puts "#{mod}: OK: none match #{type_substring}, #{substring}"
+  end
 end
 
 

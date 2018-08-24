@@ -32,6 +32,7 @@
                          defun-sk-strengthen
                          defun-sk-witness
                          defun-sk-quantifier-p
+                         defxdoc+
                          er-soft+
                          fail-event
                          fargs

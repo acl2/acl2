@@ -122,7 +122,7 @@
   ((addressing-method-code addressing-method-code-p)
    (operand-type-code      operand-type-code-p)
    (rex-byte               :type (unsigned-byte  8))
-   (prefixes               :type (unsigned-byte 44)))
+   (prefixes               :type (unsigned-byte 55)))
 
   :parents (decoding-and-spec-utils)
 
@@ -189,7 +189,7 @@
     (b* ((imm? (equal addressing-method-code 'I))
          (op-size-override?
           (eql #.*operand-size-override*
-               (prefixes-slice :group-3-prefix prefixes)))
+               (prefixes-slice :opr prefixes)))
          (rex.w (logbitp #.*w* rex-byte)))
 
       (cond

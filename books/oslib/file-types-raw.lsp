@@ -40,8 +40,7 @@
          (osicat::file-kind path :follow-symlinks follow-symlinks)
        (cond ((and follow-symlinks broken)
               (assert (eq main-kind :symbolic-link))
-              (mv (msg "Error in file-kind for ~x0: broken symlink." path)
-                  nil))
+              (mv nil :broken-symbolic-link))
              ((file-kind-p main-kind)
               (mv nil main-kind))
              (t

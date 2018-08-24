@@ -167,7 +167,6 @@
 ;; add, adc, sub, sbb, or, and, sub, xor, cmp, test
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
 
   :parents (one-byte-opcodes)
@@ -211,7 +210,7 @@
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
 
-       (lock? (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when (and lock? (or (eql operation #.*OP-CMP*)
                              (eql operation #.*OP-TEST*))))
         ;; CMP and TEST do not allow a LOCK prefix.
@@ -220,21 +219,21 @@
         ;; Only memory operands allow a LOCK prefix.
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
 
        (byte-operand? (eql 0 (the (unsigned-byte 1)
-                                  (logand 1 opcode))))
+                               (logand 1 opcode))))
        ((the (integer 1 8) operand-size)
-        (select-operand-size byte-operand? rex-byte nil prefixes x86))
+        (select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
 
        (G (rgfi-size operand-size
                      (the (unsigned-byte 4)
                        (reg-index reg rex-byte #.*r*))
                      rex-byte x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -242,7 +241,7 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) E-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
                                                 operand-size
                                                 inst-ac?
                                                 nil ;; Not a memory pointer operand
@@ -259,7 +258,7 @@
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -284,7 +283,7 @@
                 (eql operation #.*OP-TEST*))
             ;; CMP and TEST modify just the flags.
             (mv nil x86)
-          (x86-operand-to-reg/mem$ operand-size
+          (x86-operand-to-reg/mem$ proc-mode operand-size
                                    inst-ac?
                                    nil ;; Not a memory pointer operand
                                    result
@@ -298,50 +297,10 @@
         (!!ms-fresh :x86-operand-to-reg/mem flg1))
 
        (x86 (write-user-rflags output-rflags undefined-flags x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
-    x86)
+    x86))
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADD #x00 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'ADD #x01 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'OR #x08 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'OR #x09 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'ADC #x10 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'ADC #x11 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'SBB #x18 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'SBB #x19 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'AND #x20 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'AND #x21 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'SUB #x28 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'SUB #x29 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'XOR #x30 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'XOR #x31 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'CMP #x38 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'CMP #x39 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'TEST #x84 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-    (add-to-implemented-opcodes-table 'TEST #x85 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)))
-
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
 
   :parents (one-byte-opcodes)
@@ -377,41 +336,6 @@
                 :hints (("Goal" :in-theory (e/d* ()
                                                  (unsigned-byte-p
                                                   signed-byte-p)))))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADD #x02 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'ADD #x03 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'OR #x0A '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'OR #x0B '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'ADC #x12 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'ADC #x13 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'SBB #x1A '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'SBB #x1B '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'AND #x22 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'AND #x23 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'SUB #x2A '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'SUB #x2B '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'XOR #x32 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'XOR #x33 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'CMP #x3A '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-    (add-to-implemented-opcodes-table 'CMP #x3B '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E))
-
   :body
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
@@ -423,24 +347,24 @@
        ;; Since the destination is a general-purpose register and not memory,
        ;; the LOCK prefix cannot be used for ADD, ADC, SUB, SBB, OR, AND, and
        ;; XOR. In general, the LOCK prefix cannot be used for CMP and TEST.
-       (lock? (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
 
        (byte-operand? (eql 0 (the (unsigned-byte 1)
                                (logand 1 opcode))))
        ((the (integer 1 8) operand-size)
-        (select-operand-size byte-operand? rex-byte nil prefixes x86))
+        (select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
 
        (G (rgfi-size operand-size
                      (the (unsigned-byte 4)
                        (reg-index reg rex-byte #.*r*))
                      rex-byte x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -448,7 +372,7 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) E-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
                                                 operand-size
                                                 inst-ac?
                                                 nil ;; Not a memory pointer operand
@@ -465,7 +389,7 @@
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -493,11 +417,10 @@
                       rex-byte x86)))
 
        (x86 (write-user-rflags output-rflags undefined-flags x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
 
   :parents (one-byte-opcodes)
@@ -551,88 +474,6 @@
                                                   select-operand-size
                                                   unsigned-byte-p
                                                   signed-byte-p)))))
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADD #x80 '(:reg 0)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'ADD #x81 '(:reg 0)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'ADD #x82 '(:reg 0)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'ADD #x83 '(:reg 0)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    ;; [Shilpi]: Thanks to Dmitry Nadezhin for spotting typos in the
-    ;; :reg field for the OR opcode.
-    (add-to-implemented-opcodes-table 'OR #x80 '(:reg 1)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'OR #x81 '(:reg 1)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'OR #x82 '(:reg 1)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'OR #x83 '(:reg 1)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'ADC #x80 '(:reg 2)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'ADC #x81 '(:reg 2)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'ADC #x82 '(:reg 2)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'ADC #x83 '(:reg 2)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'SBB #x80 '(:reg 3)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'SBB #x81 '(:reg 3)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'SBB #x82 '(:reg 3)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'SBB #x83 '(:reg 3)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'AND #x80 '(:reg 4)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'AND #x81 '(:reg 4)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'AND #x82 '(:reg 4)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'AND #x83 '(:reg 4)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'SUB #x80 '(:reg 5)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'SUB #x81 '(:reg 5)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'SUB #x82 '(:reg 5)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'SUB #x83 '(:reg 5)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'XOR #x80 '(:reg 6)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'XOR #x81 '(:reg 6)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'XOR #x82 '(:reg 6)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'XOR #x83 '(:reg 6)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'CMP #x80 '(:reg 7)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'CMP #x81 '(:reg 7)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'CMP #x82 '(:reg 7)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'CMP #x83 '(:reg 7)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-    (add-to-implemented-opcodes-table 'TEST #xF6 '(:reg 0)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-    (add-to-implemented-opcodes-table 'TEST #xF7 '(:reg 0)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I))
-
   :body
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
@@ -640,13 +481,13 @@
        ;; The opcode 82H is an alternative encoding that generates #UD in
        ;; 64-bit mode; see AMD manual, Dec'17, Volume 3, Appendix B.3.
        ((when (and (eql opcode #x82)
-                   (64-bit-modep x86)))
+                   (equal proc-mode #.*64-bit-mode*)))
         (!!fault-fresh :ud nil))
 
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
 
-       (lock? (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when (and lock? (or (eql operation #.*OP-CMP*)
                              (eql operation #.*OP-TEST*))))
         ;; CMP and TEST do not allow a LOCK prefix.
@@ -655,24 +496,24 @@
         ;; Only memory operands allow a LOCK prefix.
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
 
        (E-byte-operand? (or (eql opcode #x80)
                             (eql opcode #x82)
                             (eql opcode #xF6)))
        ((the (integer 1 8) E-size)
-        (select-operand-size E-byte-operand? rex-byte nil prefixes x86))
+        (select-operand-size proc-mode E-byte-operand? rex-byte nil prefixes x86))
 
        (imm-byte-operand? (or (eql opcode #x80)
                               (eql opcode #x82)
                               (eql opcode #x83)
                               (eql opcode #xF6)))
        ((the (integer 1 4) imm-size)
-        (select-operand-size imm-byte-operand? rex-byte t prefixes x86))
+        (select-operand-size proc-mode imm-byte-operand? rex-byte t prefixes x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -680,7 +521,7 @@
             increment-RIP-by
             (the (signed-byte 64) E-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
                                                 E-size
                                                 inst-ac?
                                                 nil ;; Not a memory pointer operand
@@ -697,11 +538,11 @@
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ((mv ?flg1 (the (unsigned-byte 32) imm) x86)
-        (rme-size imm-size temp-rip *cs* :x nil x86))
+        (rme-size proc-mode imm-size temp-rip *cs* :x nil x86))
        ((when flg1)
         (!!ms-fresh :rme-size-error flg1))
 
@@ -729,7 +570,7 @@
                              (t 0)))))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size+1*) temp-rip))
-        (add-to-*ip temp-rip imm-size x86))
+        (add-to-*ip proc-mode temp-rip imm-size x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -754,7 +595,7 @@
                 (eql operation #.*OP-TEST*))
             ;; CMP and TEST modify just the flags.
             (mv nil x86)
-          (x86-operand-to-reg/mem$ E-size
+          (x86-operand-to-reg/mem$ proc-mode E-size
                                    inst-ac?
                                    nil ;; Not a memory pointer operand
                                    result
@@ -770,11 +611,10 @@
         (!!ms-fresh :x86-operand-to-reg/mem flg1))
 
        (x86 (write-user-rflags output-rflags undefined-flags x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
   :parents (one-byte-opcodes)
 
@@ -815,63 +655,24 @@
                                                         gpr-arith/logic-spec-2
                                                         gpr-arith/logic-spec-1
                                                         unsigned-byte-p)))))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADD #x04 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'ADD #x05 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'OR #x0C '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'OR #x0D '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'ADC #x14 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'ADC #x15 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'SBB #x1C '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'SBB #x1D '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'AND #x24 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'AND #x25 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'SUB #x2C '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'SUB #x2D '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'XOR #x34 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'XOR #x35 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'CMP #x3C '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'CMP #x3D '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'TEST #xA8 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-    (add-to-implemented-opcodes-table 'TEST #xA9 '(:nil nil)
-                                      'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I))
-
   :body
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ;; rAX is not a memory operand:
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (byte-operand? (equal 0 (logand 1 opcode)))
        ((the (integer 1 8) operand-size)
-        (select-operand-size byte-operand? rex-byte t prefixes x86))
+        (select-operand-size proc-mode byte-operand? rex-byte t prefixes x86))
        (rAX-size (if (logbitp #.*w* rex-byte)
                      8
                    operand-size))
 
        (rAX (rgfi-size rAX-size *rax* rex-byte x86))
        ((mv ?flg imm x86)
-        (rme-size operand-size temp-rip *cs* :x nil x86))
+        (rme-size proc-mode operand-size temp-rip *cs* :x nil x86))
        ((when flg)
         (!!ms-fresh :rme-size-error flg))
 
@@ -887,7 +688,7 @@
           (the (unsigned-byte 32) imm)))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size+1*) temp-rip))
-        (add-to-*ip temp-rip operand-size x86))
+        (add-to-*ip proc-mode temp-rip operand-size x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -915,7 +716,7 @@
           (!rgfi-size rAX-size *rax* result rex-byte x86)))
 
        (x86 (write-user-rflags output-rflags undefined-flags x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
 
@@ -931,7 +732,6 @@
    :hints (("Goal" :in-theory (e/d (bitops::logsquash)
                                    (bitops::logand-with-negated-bitmask))))))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-inc/dec-FE-FF
 
   ;; FE/0,1: INC/DEC r/m8
@@ -941,17 +741,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'INC #xFE '(:reg 0)
-                                      'x86-inc/dec-FE-FF)
-    (add-to-implemented-opcodes-table 'DEC #xFE '(:reg 1)
-                                      'x86-inc/dec-FE-FF)
-    (add-to-implemented-opcodes-table 'INC #xFF '(:reg 0)
-                                      'x86-inc/dec-FE-FF)
-    (add-to-implemented-opcodes-table 'DEC #xFF '(:reg 1)
-                                      'x86-inc/dec-FE-FF))
-
   :body
 
   (b* ((ctx 'x86-inc/dec-FE-FF)
@@ -961,20 +750,20 @@
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
 
        ;; the LOCK prefix cannot be used with a register operand:
-       (lock? (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when (and lock? (eql mod 3)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (select-byte-operand (equal 0 (logand 1 opcode)))
 
        ((the (integer 1 8) r/mem-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -982,7 +771,7 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
                                                 r/mem-size
                                                 inst-ac?
                                                 nil ;; Not a memory pointer operand
@@ -999,7 +788,7 @@
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -1026,7 +815,7 @@
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
        ((mv flg1 x86)
-        (x86-operand-to-reg/mem$ r/mem-size
+        (x86-operand-to-reg/mem$ proc-mode r/mem-size
                                  inst-ac?
                                  nil ;; Not a memory pointer operand
                                  result
@@ -1038,10 +827,9 @@
                                  x86))
        ((when flg1)
         (!!ms-fresh :x86-operand-to-reg/mem flg1))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-inc/dec-4x
 
   ;; 40 + rw: INC r16
@@ -1053,42 +841,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'INC #x40 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x41 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x42 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x43 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x44 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x45 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x46 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'INC #x47 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x48 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x49 '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x4A '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x4B '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x4C '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x4D '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x4E '(:nil nil)
-                                      'x86-inc/dec-4x)
-    (add-to-implemented-opcodes-table 'DEC #x4F '(:nil nil)
-                                      'x86-inc/dec-4x))
-
   :body
 
   (b* ((ctx 'x86-inc/dec-4x)
@@ -1098,7 +850,7 @@
        ;; point in the code, we know that we are in 32-bit mode.
 
        ((the (integer 2 4) operand-size)
-        (select-operand-size nil 0 nil prefixes x86))
+        (select-operand-size proc-mode nil 0 nil prefixes x86))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -1126,14 +878,13 @@
                            (!rflags-slice :cf old-cf output-rflags)))
        (x86 (write-user-rflags output-rflags undefined-flags x86))
        (x86 (!rgfi-size operand-size reg result 0 x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: NOT/NEG
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-not/neg-F6-F7
 
   ;; F6/2: NOT r/m8
@@ -1146,16 +897,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'NOT #xF6 '(:reg 2)
-                                      'x86-not/neg-F6-F7)
-    (add-to-implemented-opcodes-table 'NOT #xF6 '(:reg 3)
-                                      'x86-not/neg-F6-F7)
-    (add-to-implemented-opcodes-table 'NEG #xF7 '(:reg 2)
-                                      'x86-not/neg-F6-F7)
-    (add-to-implemented-opcodes-table 'NEG #xF7 '(:reg 3)
-                                      'x86-not/neg-F6-F7))
   :body
 
   (b* ((ctx 'x86-not/neg-F6-F7)
@@ -1164,15 +905,15 @@
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (select-byte-operand (equal 0 (logand 1 opcode)))
        ((the (integer 0 8) r/mem-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -1180,7 +921,7 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
+        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
                                                 r/mem-size
                                                 inst-ac?
                                                 nil ;; Not a memory pointer operand
@@ -1197,7 +938,7 @@
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -1230,7 +971,7 @@
               x86)
           x86))
        ((mv flg1 x86)
-        (x86-operand-to-reg/mem$ r/mem-size
+        (x86-operand-to-reg/mem$ proc-mode r/mem-size
                                  inst-ac?
                                  nil ;; Not a memory pointer operand
                                  result
@@ -1242,7 +983,7 @@
                                  x86))
        ((when flg1)
         (!!ms-fresh :x86-operand-to-reg/mem flg1))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================

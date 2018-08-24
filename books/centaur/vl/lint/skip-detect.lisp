@@ -193,54 +193,16 @@ wire name, and accumulates them into @('acc')."
 
 
 
-(defsection sd-patalist-p
-  :short "@(call sd-patalist-p) recognizes alists that bind strings to @(see
-sd-keylist-p)s."
- 
-  (fty::defalist sd-patalist :key-type string :val-type sd-keylist)
-  ;; (defund sd-patalist-p (x)
-  ;;   (declare (xargs :guard t))
-  ;;   (if (atom x)
-  ;;       t
-  ;;     (and (consp (car x))
-  ;;          (stringp (caar x))
-  ;;          (sd-keylist-p (cdar x))
-  ;;          (sd-patalist-p (cdr x)))))
-
-  ;; (local (in-theory (enable sd-patalist-p)))
-
-  ;; (defthm sd-patalist-p-when-not-consp
-  ;;   (implies (not (consp x))
-  ;;            (equal (sd-patalist-p x)
-  ;;                   t)))
-
-  ;; (defthm sd-patalist-p-of-cons
-  ;;   (equal (sd-patalist-p (cons a x))
-  ;;          (and (consp a)
-  ;;               (stringp (car a))
-  ;;               (sd-keylist-p (cdr a))
-  ;;               (sd-patalist-p x))))
-
-  ;; (defthm sd-keylist-p-of-cdr-of-hons-assoc-equal-when-sd-patalist-p
-  ;;   (implies (force (sd-patalist-p x))
-  ;;            (sd-keylist-p (cdr (hons-assoc-equal a x)))))
-
-  ;; (defthm sd-patalist-p-of-hons-shrink-alist
-  ;;   (implies (and (sd-patalist-p x)
-  ;;                 (sd-patalist-p y))
-  ;;            (sd-patalist-p (hons-shrink-alist x y)))
-  ;;   :hints(("Goal" :in-theory (enable (:i hons-shrink-alist)))))
-  )
+(fty::defalist sd-patalist :key-type string :val-type sd-keylist)
 
 
-
-(defsection sd-patalist
-  :short "@(call sd-patalist) separates a @(see sd-keylist-p) by their
+(defsection make-sd-patalist
+  :short "@(call make-sd-patalist) separates a @(see sd-keylist-p) by their
 patterns, producing a @(see sd-patalist-p)."
 
   :long "<p>We return a fast alist which has no shadowed pairs.</p>"
 
-  (defund sd-patalist-aux (x acc)
+  (defund make-sd-patalist-aux (x acc)
     (declare (xargs :guard (and (sd-keylist-p x)
                                 (sd-patalist-p acc))))
     (if (atom x)
@@ -249,34 +211,34 @@ patterns, producing a @(see sd-patalist-p)."
              (pat   (sd-key->pat key))
              (entry (cdr (hons-get pat acc)))
              (acc   (hons-acons pat (cons key entry) acc)))
-        (sd-patalist-aux (cdr x) acc))))
+        (make-sd-patalist-aux (cdr x) acc))))
 
-  (local (in-theory (enable sd-patalist-aux)))
+  (local (in-theory (enable make-sd-patalist-aux)))
 
-  (defthm alistp-of-sd-patalist-aux
+  (defthm alistp-of-make-sd-patalist-aux
     (implies (alistp acc)
-             (alistp (sd-patalist-aux x acc))))
+             (alistp (make-sd-patalist-aux x acc))))
 
-  (defthm sd-patalist-p-of-sd-patalist-aux
+  (defthm sd-patalist-p-of-make-sd-patalist-aux
     (implies (and (force (sd-keylist-p x))
                   (force (sd-patalist-p acc)))
-             (sd-patalist-p (sd-patalist-aux x acc))))
+             (sd-patalist-p (make-sd-patalist-aux x acc))))
 
-  (defund sd-patalist (x)
+  (defund make-sd-patalist (x)
     (declare (xargs :guard (sd-keylist-p x)))
-    (b* ((unclean (sd-patalist-aux x nil))
+    (b* ((unclean (make-sd-patalist-aux x nil))
          (clean   (hons-shrink-alist unclean nil))
          (-       (flush-hons-get-hash-table-link unclean)))
         clean))
 
-  (local (in-theory (enable sd-patalist)))
+  (local (in-theory (enable make-sd-patalist)))
 
-  (defthm sd-patalist-p-of-sd-patalist
+  (defthm sd-patalist-p-of-make-sd-patalist
     (implies (force (sd-keylist-p x))
-             (sd-patalist-p (sd-patalist x))))
+             (sd-patalist-p (make-sd-patalist x))))
 
-  (defthm alistp-of-sd-patalist
-    (alistp (sd-patalist x))))
+  (defthm alistp-of-make-sd-patalist
+    (alistp (make-sd-patalist x))))
 
 
 (defprod sd-problem
@@ -510,7 +472,7 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
     (b* (((vl-ctxexpr x1) (car ctxexprs))
          (expr-names (vl-expr-varnames x1.expr))
          (expr-keys  (sd-keygen-list expr-names nil))
-         (expr-pats  (sd-patalist expr-keys))
+         (expr-pats  (make-sd-patalist expr-keys))
          (dom        (strip-cars expr-pats))
          (report1    (sd-patalist-compare dom expr-pats global-pats x1.ctx))
          (-          (flush-hons-get-hash-table-link expr-pats)))
@@ -544,7 +506,7 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
        (all-keys  (cwtime (mergesort (sd-keygen-list all-names nil))
                           :mintime 1/2
                           :name sd-make-global-keys))
-       (global-pats (cwtime (sd-patalist all-keys)
+       (global-pats (cwtime (make-sd-patalist all-keys)
                             :mintime 1/2
                             :name sd-make-global-pats))
        (report (cwtime (sd-analyze-ctxexprs ctxexprs global-pats)

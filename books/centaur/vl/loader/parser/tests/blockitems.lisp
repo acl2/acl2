@@ -90,7 +90,7 @@
        ((vl-vardecl v1) v1))
     (debuggable-and (not (cw "Inspecting ~x0.~%" (car vars)))
                     (equal (car names)    v1.name)
-                    (equal (car initvals) (and v1.initval (vl-pretty-expr v1.initval)))
+                    (equal (car initvals) (and v1.initval (vl-pretty-rhs v1.initval)))
                     (equal constp         v1.constp)
                     (equal varp           v1.varp)
                     (equal lifetime       v1.lifetime)

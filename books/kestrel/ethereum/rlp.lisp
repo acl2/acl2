@@ -19,17 +19,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc rlp
+(defxdoc+ rlp
   :parents (ethereum)
   :short "Recursive Length Prefix (RLP)."
   :long
-  "<p>
-   RLP is a serialization (encoding) method for Ethereum,
-   described in YP:B and in the `RLP' page of Wiki
-   (which we refer to as `Wiki:RLP').
-   </p>")
-
-(xdoc::order-subtopics rlp nil t)
+  (xdoc::topp
+   "RLP is a serialization (encoding) method for Ethereum,
+    described in YP:B and in the `RLP' page of Wiki
+    (which we refer to as `Wiki:RLP').")
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -37,13 +35,12 @@
   :parents (rlp)
   :short "Big-endian representation of scalars in RLP."
   :long
-  "<p>
-   The library function @(tsee nat=>bendian*),
-   when the @('base') argument is 256,
-   corresponds to the function @($\\mathtt{BE}$), defined by YP:(181).
-   Note that no leading 0 is allowed, even for representing 0,
-   which is thus represented by the empty list of digits.
-   </p>")
+  (xdoc::topp
+   "The library function @(tsee nat=>bendian*),
+    when the @('base') argument is 256,
+    corresponds to the function @($\\mathtt{BE}$), defined by YP:(181).
+    Note that no leading 0 is allowed, even for representing 0,
+    which is thus represented by the empty list of digits."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -155,31 +152,30 @@
                                   (width 8)))))
   :short "RLP encoding of a byte array."
   :long
-  "<p>
-   This corresponds to the function @($R_{\\mathrm{b}}$), defined by YP:(180).
-   </p>
-   <p>
-   That equation does not explicitly say that the byte array
-   can be encoded only if its length is below @($2^{64}$).
-   This can be inferred from the fact that, according to YP:(183),
-   encodings whose first byte is 192 or higher
-   are used for non-leaf trees.
-   In order for the encoding to be unambiguous
-   (in particular, to distinguish leaf trees from non-leaf trees),
-   the first byte that encodes a byte array must be below 192.
-   Thus, the length of the base-256 big-endian representation
-   of the length of the byte array,
-   which is added to 183, can be at most 8
-   (reaching 191 for the first byte of the encoding).
-   This means that the base-256 big-endian representation
-   of the length of the byte array
-   must have at most 8 digits,
-   i.e. it must be below @($256^8$), which is @($2^{64}$).
-   The encoding code in Wiki:RLP confirms this, via an explicit check.
-   </p>
-   <p>
-   If a byte array cannot be encoded, we return @(':error').
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "This corresponds to the function @($R_{\\mathrm{b}}$),
+     defined by YP:(180).")
+   (xdoc::p
+    "That equation does not explicitly say that the byte array
+     can be encoded only if its length is below @($2^{64}$).
+     This can be inferred from the fact that, according to YP:(183),
+     encodings whose first byte is 192 or higher
+     are used for non-leaf trees.
+     In order for the encoding to be unambiguous
+     (in particular, to distinguish leaf trees from non-leaf trees),
+     the first byte that encodes a byte array must be below 192.
+     Thus, the length of the base-256 big-endian representation
+     of the length of the byte array,
+     which is added to 183, can be at most 8
+     (reaching 191 for the first byte of the encoding).
+     This means that the base-256 big-endian representation
+     of the length of the byte array
+     must have at most 8 digits,
+     i.e. it must be below @($256^8$), which is @($2^{64}$).
+     The encoding code in Wiki:RLP confirms this, via an explicit check.")
+   (xdoc::p
+    "If a byte array cannot be encoded, we return @(':error')."))
   (b* ((bytes (ubyte8-list-fix bytes)))
     (cond ((and (= (len bytes) 1)
                 (< (car bytes) 128)) bytes)
@@ -198,45 +194,42 @@
   :parents (rlp)
   :short "RLP encoding of a tree."
   :long
-  "<p>
-   This corresponds to
-   the function @($\\mathtt{RLP}$) defined by YP:(179),
-   the function @($R_{\\mathrm{l}}$) defined by YP:(183),
-   and the function @($s$) defined by YP:(184).
-   More precisely,
-   @(tsee rlp-encode-tree) corresponds to @($\\mathtt{RLP}$),
-   the non-leaf case of @(tsee rlp-encode-tree)
-   corresponds to @($R_{\\mathrm{l}}$),
-   and @(tsee rlp-encode-tree-list) corresponds to @($s$).
-   </p>
-   <p>
-   YP:(183) does not explicitly say that the tree can be encoded
-   only if the length of its encoded subtrees is below @($2^{64}$).
-   This can be inferred from the fact that the first byte, being a byte,
-   cannot exceed 255.
-   Thus, the length of the base-256 big-endian representation
-   of the length of the encoded subtrees,
-   which is added to 247, can be at most 8
-   (reaching 255 for the first byte of the encoding).
-   This means that the base-256 big-endian representation
-   of the length of the encoded subtrees
-   must have at most 8 digits,
-   i.e. it must be below @($256^8$), which is @($2^{64}$).
-   The encoding code in Wiki:RLP confirms this, via an explicit check.
-   </p>
-   <p>
-   Similarly, YP:(184) does not explicitly say that
-   the concatenation of the encoded subtrees
-   cannot be encoded if any subtree cannot be encoded.
-   This can be inferred from the fact that if a subtree encoding is too long,
-   the supertree encoding is also even longer.
-   The encoding code in Wiki:RLP confirms this, by propagating exceptions.
-   </p>
-   <p>
-   If a tree cannot be encoded, we return @(':error').
-   </p>
-   @(def rlp-encode-tree)
-   @(def rlp-encode-tree-list)"
+  (xdoc::topapp
+   (xdoc::p
+    "This corresponds to
+     the function @($\\mathtt{RLP}$) defined by YP:(179),
+     the function @($R_{\\mathrm{l}}$) defined by YP:(183),
+     and the function @($s$) defined by YP:(184).
+     More precisely,
+     @(tsee rlp-encode-tree) corresponds to @($\\mathtt{RLP}$),
+     the non-leaf case of @(tsee rlp-encode-tree)
+     corresponds to @($R_{\\mathrm{l}}$),
+     and @(tsee rlp-encode-tree-list) corresponds to @($s$).")
+   (xdoc::p
+    "YP:(183) does not explicitly say that the tree can be encoded
+     only if the length of its encoded subtrees is below @($2^{64}$).
+     This can be inferred from the fact that the first byte, being a byte,
+     cannot exceed 255.
+     Thus, the length of the base-256 big-endian representation
+     of the length of the encoded subtrees,
+     which is added to 247, can be at most 8
+     (reaching 255 for the first byte of the encoding).
+     This means that the base-256 big-endian representation
+     of the length of the encoded subtrees
+     must have at most 8 digits,
+     i.e. it must be below @($256^8$), which is @($2^{64}$).
+     The encoding code in Wiki:RLP confirms this, via an explicit check.")
+   (xdoc::p
+    "Similarly, YP:(184) does not explicitly say that
+     the concatenation of the encoded subtrees
+     cannot be encoded if any subtree cannot be encoded.
+     This can be inferred from the fact that if a subtree encoding is too long,
+     the supertree encoding is also even longer.
+     The encoding code in Wiki:RLP confirms this, by propagating exceptions.")
+   (xdoc::p
+    "If a tree cannot be encoded, we return @(':error').")
+   (xdoc::def "rlp-encode-tree")
+   (xdoc::def "rlp-encode-tree-list"))
   :verify-guards nil ; done below
 
   (define rlp-encode-tree ((tree rlp-treep))
@@ -291,13 +284,12 @@
   :parents (rlp)
   :short "RLP encoding of a scalar."
   :long
-  "<p>
-   This corresponds to the function @($\\mathtt{RLP}$) defined by YP:(185).
-   </p>
-   <p>
-   Note that @(':error') is returned if the scalar is so large that
-   its big-endian representation exceeds @($2^{64}$) in length.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "This corresponds to the function @($\\mathtt{RLP}$) defined by YP:(185).")
+   (xdoc::p
+    "Note that @(':error') is returned if the scalar is so large that
+     its big-endian representation exceeds @($2^{64}$) in length."))
   (rlp-encode-bytes (nat=>bendian* 256 (lnfix nat)))
   :hooks (:fix))
 
@@ -308,12 +300,11 @@
   :parents (rlp)
   :short "Recognize RLP encodings of trees."
   :long
-  "<p>
-   This is a declarative, non-executable definition,
-   which characterizes the image of @(tsee rlp-encode-tree)
-   (over trees that can be encoded,
-   i.e. such that @(tsee rlp-encode-tree) does not return @(':error')).
-   </p>"
+  (xdoc::topp
+   "This is a declarative, non-executable definition,
+    which characterizes the image of @(tsee rlp-encode-tree)
+    (over trees that can be encoded,
+    i.e. such that @(tsee rlp-encode-tree) does not return @(':error')).")
   (exists (tree)
           (and (rlp-treep tree)
                (equal (rlp-encode-tree tree)
@@ -329,38 +320,36 @@
   :parents (rlp)
   :short "RLP decoding of a tree."
   :long
-  "<p>
-   If the byte array encodes some tree, we return that tree.
-   Otherwise, we return @(':error').
-   </p>
-   <p>
-   This is a declarative, non-executable definition,
-   which says that decoding is the inverse of encoding.
-   This is the intention of YP:B, which only specifies encoding,
-   leaving decoding implicit.
-   </p>
-   <p>
-   More precisely, we define decoding as the right inverse of encoding
-   (over byte arrays that are valid encodings of trees),
-   as explicated by the theorem @('rlp-encode-tree-of-rlp-decode-tree').
-   To prove that decoding is left inverse of encoding
-   (over trees that can be encoded),
-   we need to show that encoding is injective over trees that can be encoded.
-   We conjecture that the proof of this property
-   may be a by-product of deriving an executable implementation of decoding
-   via stepwise refinement (e.g. using <see topic='@(url apt::apt)'>APT</see>):
-   if there were two different trees whose encodings are equal,
-   an executable implementation of decoding, which returns a unique tree,
-   could not be shown to be equal to @('rlp-tree-endoding-witness'),
-   which is introduced by a @(tsee defchoose) inside @(tsee defun-sk)
-   and therefore could be either tree.
-   Thus, we defer the injectivity and left inverse proofs for now.
-   </p>
-   <p>
-   The decoding code in Wiki:RLP provides a reference implementation.
-   Note that it is considerably more complicated than the encoding code.
-   Thus, our high-level specification of decoding seems appropriate.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "If the byte array encodes some tree, we return that tree.
+     Otherwise, we return @(':error').")
+   (xdoc::p
+    "This is a declarative, non-executable definition,
+     which says that decoding is the inverse of encoding.
+     This is the intention of YP:B, which only specifies encoding,
+     leaving decoding implicit.")
+   (xdoc::p
+    "More precisely, we define decoding as the right inverse of encoding
+     (over byte arrays that are valid encodings of trees),
+     as explicated by the theorem @('rlp-encode-tree-of-rlp-decode-tree').
+     To prove that decoding is left inverse of encoding
+     (over trees that can be encoded),
+     we need to show that encoding is injective over trees that can be encoded.
+     We conjecture that the proof of this property
+     may be a by-product of deriving an executable implementation of decoding
+     via stepwise refinement
+     (e.g. using <see topic='@(url apt::apt)'>APT</see>):
+     if there were two different trees whose encodings are equal,
+     an executable implementation of decoding, which returns a unique tree,
+     could not be shown to be equal to @('rlp-tree-endoding-witness'),
+     which is introduced by a @(tsee defchoose) inside @(tsee defun-sk)
+     and therefore could be either tree.
+     Thus, we defer the injectivity and left inverse proofs for now.")
+   (xdoc::p
+    "The decoding code in Wiki:RLP provides a reference implementation.
+     Note that it is considerably more complicated than the encoding code.
+     Thus, our high-level specification of decoding seems appropriate."))
   (b* ((bytes (ubyte8-list-fix bytes)))
     (if (rlp-tree-encoding-p bytes)
         (rlp-tree-encoding-witness bytes)
@@ -381,14 +370,13 @@
   :parents (rlp)
   :short "Recognize RLP encodings of byte arrays."
   :long
-  "<p>
-   This is analogous to @(tsee rlp-tree-encoding-p).
-   </p>
-   <p>
-   The encoding of a byte array
-   is also the encoding of a tree consisting of a single leaf
-   with that byte array.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "This is analogous to @(tsee rlp-tree-encoding-p).")
+   (xdoc::p
+    "The encoding of a byte array
+     is also the encoding of a tree consisting of a single leaf
+     with that byte array."))
   (exists (bytes)
           (and (ubyte8-listp bytes)
                (equal (rlp-encode-bytes bytes)
@@ -412,18 +400,17 @@
   :parents (rlp)
   :short "RLP decoding of a byte array."
   :long
-  "<p>
-   This is analogous to @(tsee rlp-decode-tree).
-   An analogous remark about left inverse and injectivity applies here.
-   </p>
-   <p>
-   The encoding of a leaf tree via @(tsee rlp-encode-tree) is the same as
-   the encoding of the byte array at the leaf via @(tsee rlp-encode-bytes).
-   To show the corresponding relationship about the decoding functions,
-   we need the injectivity of encoding;
-   otherwise, the two witness functions could yield ``incompatible'' values.
-   Thus, we defer the proof of this relationship for now.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "This is analogous to @(tsee rlp-decode-tree).
+     An analogous remark about left inverse and injectivity applies here.")
+   (xdoc::p
+    "The encoding of a leaf tree via @(tsee rlp-encode-tree) is the same as
+     the encoding of the byte array at the leaf via @(tsee rlp-encode-bytes).
+     To show the corresponding relationship about the decoding functions,
+     we need the injectivity of encoding;
+     otherwise, the two witness functions could yield ``incompatible'' values.
+     Thus, we defer the proof of this relationship for now."))
   (b* ((bytes (ubyte8-list-fix bytes)))
     (if (rlp-bytes-encoding-p bytes)
         (rlp-bytes-encoding-witness bytes)
@@ -444,9 +431,8 @@
   :parents (rlp)
   :short "Recognize RLP encodings of scalars."
   :long
-  "<p>
-   This is analogous to @(tsee rlp-tree-encoding-p).
-   </p>"
+  (xdoc::topp
+   "This is analogous to @(tsee rlp-tree-encoding-p).")
   (exists (nat)
           (and (natp nat)
                (equal (rlp-encode-scalar nat)
@@ -462,18 +448,17 @@
   :parents (rlp)
   :short "RLP decoding of a scalar."
   :long
-  "<p>
-   This is analogous to @(tsee rlp-decode-tree).
-   An analogous remark about left inverse and injectivity applies here.
-   </p>
-   <p>
-   The encoding of a scalar via @(tsee rlp-encode-scalar) is the same as
-   the encoding of the big-endian byte array via @(tsee rlp-encode-bytes).
-   To show the corresponding relationship about the decoding functions,
-   we need the injectivity of encoding;
-   otherwise, the two witness functions could yield ``incompatible'' values.
-   Thus, we defer the proof of this relationship for now.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "This is analogous to @(tsee rlp-decode-tree).
+     An analogous remark about left inverse and injectivity applies here.")
+   (xdoc::p
+    "The encoding of a scalar via @(tsee rlp-encode-scalar) is the same as
+     the encoding of the big-endian byte array via @(tsee rlp-encode-bytes).
+     To show the corresponding relationship about the decoding functions,
+     we need the injectivity of encoding;
+     otherwise, the two witness functions could yield ``incompatible'' values.
+     Thus, we defer the proof of this relationship for now."))
   (b* ((bytes (ubyte8-list-fix bytes)))
     (if (rlp-scalar-encoding-p bytes)
         (rlp-scalar-encoding-witness bytes)

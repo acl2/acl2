@@ -64,9 +64,9 @@
 
 ;; ======================================================================
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
 (define segment-base-and-bounds
-  ((seg-reg (integer-range-p 0 *segment-register-names-len* seg-reg))
+  ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+   (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
    x86)
   :returns (mv (base n64p :hyp (x86p x86))
                (lower-bound n33p)
@@ -146,40 +146,50 @@
    this function returns 0 as the upper bound;
    the caller must ignore this result in 64-bit mode.
    </p>"
-  (if (64-bit-modep x86)
-      (cond ((eql seg-reg *fs*)
-             (mv (msri *ia32_fs_base-idx* x86) 0 0))
-            ((eql seg-reg *gs*)
-             (mv (msri *ia32_gs_base-idx* x86) 0 0))
-            (t (mv 0 0 0)))
-    (b* ((hidden (xr :seg-hidden seg-reg x86))
-         (base (hidden-seg-reg-layout-slice :base-addr hidden))
-         (limit (hidden-seg-reg-layout-slice :limit hidden))
-         (attr (hidden-seg-reg-layout-slice :attr hidden))
-         (d/b (data-segment-descriptor-attributes-layout-slice :d/b attr))
-         (e (data-segment-descriptor-attributes-layout-slice :e attr))
-         (lower (if (= e 1) (1+ limit) 0))
-         (upper (if (= e 1) (if (= d/b 1) #xffffffff #xffff) limit)))
-      (mv (n32 base) lower upper)))
+
+  (case proc-mode
+
+    (#.*64-bit-mode*
+     (cond ((eql seg-reg *fs*)
+            (mv (msri *ia32_fs_base-idx* x86) 0 0))
+           ((eql seg-reg *gs*)
+            (mv (msri *ia32_gs_base-idx* x86) 0 0))
+           (t (mv 0 0 0))))
+
+    (#.*compatibility-mode*
+     (b* ((hidden (xr :seg-hidden seg-reg x86))
+          (base (hidden-seg-reg-layout-slice :base-addr hidden))
+          (limit (hidden-seg-reg-layout-slice :limit hidden))
+          (attr (hidden-seg-reg-layout-slice :attr hidden))
+          (d/b (data-segment-descriptor-attributes-layout-slice :d/b attr))
+          (e (data-segment-descriptor-attributes-layout-slice :e attr))
+          (lower (if (= e 1) (1+ limit) 0))
+          (upper (if (= e 1) (if (= d/b 1) #xffffffff #xffff) limit)))
+       (mv (n32 base) lower upper)))
+
+    (otherwise
+     ;; Unimplemented!
+     (mv 0 0 0)))
+
   :inline t
   ///
 
   (defthm-usb segment-base-is-n64p
     :hyp (x86p x86)
     :bound 64
-    :concl (mv-nth 0 (segment-base-and-bounds seg-reg x86))
+    :concl (mv-nth 0 (segment-base-and-bounds proc-mode seg-reg x86))
     :gen-type t
     :gen-linear t)
 
   (defthm-usb segment-lower-bound-is-n33p
     :bound 33
-    :concl (mv-nth 1 (segment-base-and-bounds seg-reg x86))
+    :concl (mv-nth 1 (segment-base-and-bounds proc-mode seg-reg x86))
     :gen-type t
     :gen-linear t)
 
   (defthm-usb segment-upper-bound-is-n32p
     :bound 32
-    :concl (mv-nth 2 (segment-base-and-bounds seg-reg x86))
+    :concl (mv-nth 2 (segment-base-and-bounds proc-mode seg-reg x86))
     :gen-type t
     :gen-linear t)
 
@@ -187,12 +197,12 @@
     (implies
      (and (not (equal fld :msr))
           (not (equal fld :seg-hidden)))
-     (equal (segment-base-and-bounds seg-reg (xw fld index value x86))
-            (segment-base-and-bounds seg-reg x86)))))
+     (equal (segment-base-and-bounds proc-mode seg-reg (xw fld index value x86))
+            (segment-base-and-bounds proc-mode seg-reg x86)))))
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
-(define ea-to-la ((eff-addr i64p)
-                  (seg-reg (integer-range-p 0 *segment-register-names-len* seg-reg))
+(define ea-to-la ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+                  (eff-addr  :type (signed-byte 64))
+                  (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
                   x86)
   :returns (mv flg
                (lin-addr i64p :hyp (i64p eff-addr)))
@@ -270,32 +280,44 @@
    a non-@('nil') error flag is returned,
    which provides some information about the failure.
    </p>"
-  (if (64-bit-modep x86)
-      (if (or (eql seg-reg *fs*)
-              (eql seg-reg *gs*))
-          (b* (((mv base & &) (segment-base-and-bounds seg-reg x86))
-               (lin-addr (i64 (+ base (n64 eff-addr)))))
-            (if (canonical-address-p lin-addr)
-                (mv nil lin-addr)
-              (mv (list :non-canonical-address lin-addr) 0)))
-        (mv nil eff-addr))
-    (b* (((mv base
-              lower-bound
-              upper-bound) (segment-base-and-bounds seg-reg x86))
-         ((unless (and (<= lower-bound eff-addr)
-                       (<= eff-addr upper-bound)))
-          (mv (list :segment-limit-fail
-                    (list seg-reg eff-addr lower-bound upper-bound))
-              0))
-         (lin-addr (n32 (+ base eff-addr))))
-      (mv nil lin-addr)))
+
+  (case proc-mode
+
+    (#.*64-bit-mode*
+     (if (or (eql seg-reg *fs*)
+             (eql seg-reg *gs*))
+         (b* (((mv base & &)
+               (segment-base-and-bounds #.*64-bit-mode* seg-reg x86))
+              (lin-addr (i64 (+ base (n64 eff-addr)))))
+           (if (canonical-address-p lin-addr)
+               (mv nil lin-addr)
+             (mv (list :non-canonical-address lin-addr) 0)))
+       (mv nil eff-addr)))
+
+    (#.*compatibility-mode* ;; Maybe also *protected-mode*?
+     (b* (((mv base
+               lower-bound
+               upper-bound)
+           (segment-base-and-bounds proc-mode seg-reg x86))
+          ((unless (and (<= lower-bound eff-addr)
+                        (<= eff-addr upper-bound)))
+           (mv (list :segment-limit-fail
+                     (list seg-reg eff-addr lower-bound upper-bound))
+               0))
+          (lin-addr (n32 (+ base eff-addr))))
+       (mv nil lin-addr)))
+
+    (otherwise
+     ;; Unimplemented!
+     (mv (list :unimplemented-proc-mode proc-mode) 0)))
+
   :inline t
   ///
 
   (defthm-sb ea-to-la-is-i64p
     :hyp (i64p eff-addr)
     :bound 64
-    :concl (mv-nth 1 (ea-to-la eff-addr seg-reg x86))
+    :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg x86))
     :gen-type t
     :gen-linear t)
 
@@ -303,23 +325,24 @@
     (implies
      (and (not (equal fld :msr))
           (not (equal fld :seg-hidden)))
-     (equal (ea-to-la eff-addr seg-reg (xw fld index value x86))
-            (ea-to-la eff-addr seg-reg x86))))
+     (equal (ea-to-la proc-mode eff-addr seg-reg (xw fld index value x86))
+            (ea-to-la proc-mode eff-addr seg-reg x86))))
 
   (defrule ea-to-la-when-64-bit-modep-and-not-fs/gs
-    (implies (and (64-bit-modep x86)
-                  (not (equal seg-reg *fs*))
-                  (not (equal seg-reg *gs*)))
-             (and (equal (mv-nth 0 (ea-to-la eff-addr seg-reg x86))
-                         nil)
-                  (equal (mv-nth 1 (ea-to-la eff-addr seg-reg x86))
-                         eff-addr)))))
+    (implies
+     (and (not (equal seg-reg *fs*))
+          (not (equal seg-reg *gs*)))
+     (and (equal
+           (mv-nth 0 (ea-to-la #.*64-bit-mode* eff-addr seg-reg x86))
+           nil)
+          (equal
+           (mv-nth 1 (ea-to-la #.*64-bit-mode* eff-addr seg-reg x86))
+           eff-addr)))))
 
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
-(define eas-to-las ((n natp)
-                    (eff-addr i64p)
-                    (seg-reg (integer-range-p
-                              0 *segment-register-names-len* seg-reg))
+(define eas-to-las ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+                    (n natp)
+                    (eff-addr  :type (signed-byte 64))
+                    (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
                     x86)
   :returns (mv flg
                (lin-addrs "A @('nil')-terminated list of @(tsee i64p)s."))
@@ -336,10 +359,10 @@
    </p>"
   (if (zp n)
       (mv nil nil)
-    (b* (((mv flg lin-addr) (ea-to-la eff-addr seg-reg x86))
+    (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
          ((when flg) (mv flg nil))
          (eff-addr+1 (i64 (1+ eff-addr)))
-         ((mv flg lin-addrs) (eas-to-las (1- n) eff-addr+1 seg-reg x86))
+         ((mv flg lin-addrs) (eas-to-las proc-mode (1- n) eff-addr+1 seg-reg x86))
          ((when flg) (mv flg nil)))
       (mv nil (cons lin-addr lin-addrs)))))
 

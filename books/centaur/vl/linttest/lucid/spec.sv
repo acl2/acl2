@@ -757,3 +757,47 @@ module cosim_gen7 ( input logic [127:0] in, output wire [127:0] out);
   assign aa1_unused = foo.bb1_unset;
 
 endmodule
+
+
+
+module typotest ;
+
+   wire [3:0] eventsFromNearby;
+   wire [3:0] eventsFromAfar;
+
+   assign eventsFromNarby = 30;
+   assign eventsFromAjar = 20;
+
+   wire [4:0] totalEvents = eventsFromNearby + eventsFromAfar;
+
+   wire [3:0] kindsOfSoda;
+   wire [3:0] kindsOfFruit;
+
+   wire [3:0] kindsOfSda = kindsOfSoda;
+   wire [3:0] kindsOfFrut = kindsOfFruit;
+
+
+endmodule
+
+
+primitive awful_flop(out, data, clock);
+
+   // total nonsense sequential UDP -- shouldn't have any warnings
+
+   output     out;
+   input      data, clock;
+
+   reg 	      out;
+   table
+      0   r  :  ?  :  0 ;
+   endtable
+endprimitive
+
+
+module enumtest;
+
+   enum { FOO = 1, BAR = 2 } a, b;
+
+   assign a = b ? FOO : BAR;
+
+endmodule

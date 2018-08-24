@@ -141,11 +141,15 @@
 ;; Prefixes (Intel manual, Mar'17, Vol. 2A, Section 2.1.1):
 
 ;; Group 1:
+(defconst *lck-pfx*               #b001)
 (defconst *lock*                  #xF0)
+
+(defconst *rep-pfx*               #b010)
 (defconst *repe*                  #xF3)
 (defconst *repne*                 #xF2)
 
 ;; Group 2:
+(defconst *seg-pfx*               #b011)
 (defconst *es-override*           #x26)
 (defconst *cs-override*           #x2E)
 (defconst *ss-override*           #x36)
@@ -154,9 +158,11 @@
 (defconst *gs-override*           #x65)
 
 ;; Group 3:
+(defconst *opr-pfx*               #b100)
 (defconst *operand-size-override* #x66)
 
 ;; Group 4:
+(defconst *adr-pfx*               #b101)
 (defconst *addr-size-override*    #x67)
 
 ;; SIMD Prefixes:
@@ -167,6 +173,19 @@
 ;; VEX Prefix:
 (defconst *vex2-byte0*            #xC5) ;; First byte of the 2-byte VEX prefix
 (defconst *vex3-byte0*            #xC4) ;; First byte of the 3-byte VEX prefix
+;; EVEX Prefix:
+(defconst *evex-byte0*            #x62) ;; First byte of the 4-byte EVEX prefix
+
+;; The following constants apply to both VEX and EVEX prefixes.
+
+;; Two-bit values of the PP field:
+(defconst *v66*                   #b01)
+(defconst *vF3*                   #b10)
+(defconst *vF2*                   #b11)
+;; 4-bit values of the M-MMMM field:
+(defconst *v0F*                   #b00001)
+(defconst *v0F38*                 #b00010)
+(defconst *v0F3A*                 #b00011)
 
 ;; ======================================================================
 
@@ -533,6 +552,123 @@
 
 ;; ======================================================================
 
+;; Instruction Sets:
+
+;; Floating-Point:
+(defconst *fpu*    0)
+(defconst *mmx*    1)
+(defconst *sse*    2)
+(defconst *sse2*   3)
+(defconst *sse3*   4)
+(defconst *avx*    5)
+(defconst *avx2*   6)
+(defconst *avx512* 7)
+
+;; ======================================================================
+
+;; Constants related to modes of operation of an x86 processor:
+
+;; IA-32e Mode, introduced by Intel 64(R) Architecture, has the following two
+;; sub-modes:
+(defconst *64-bit-mode*        0)
+(defconst *compatibility-mode* 1)
+
+;; IA-32 architecture supports the following modes:
+(defconst *protected-mode*     2) ;; Virtual-8086 mode is built into it
+(defconst *real-address-mode*  3)
+(defconst *smm-mode*           4) ;; System Management Mode
+
+;; Total Number of Processor Modes:
+(defconst *num-proc-modes*     5)
+(defconst *num-proc-modes-1*   (1- *num-proc-modes*))
+
+;; ======================================================================
+
+;; Exceptions and Interrupts
+;; Reference: Table 6-1, Chapter 6 (Interrupts and Exceptions), Intel Vol. 1
+
+;     Mnemonic    Vector     Description &
+;                            Source
+
+(defconst *#DE*     0)  ;    Divide Error
+                        ;    DIV and IDIV instructions.
+
+(defconst *#DB*     1)  ;    Debug
+                        ;    Any code or data reference.
+
+(defconst *#NMI*    2)  ;    Reserved: NMI Interrupt
+                        ;    Non-maskable external interrupt.
+
+(defconst *#BP*     3)  ;    Breakpoint
+                        ;    INT3 instruction.
+
+(defconst *#OF*     4)  ;    Overflow
+                        ;    INTO instruction.
+
+(defconst *#BR*     5)  ;    BOUND Range Exceeded
+                        ;    BOUND instruction.
+
+(defconst *#NM*     7)  ;    Device Not Available (No Math Coprocessor)
+                        ;    Floating-point or WAIT/FWAIT instruction.
+
+(defconst *#DF*     8)  ;    Double Fault
+                        ;    Any instruction that can generate an exception, an
+                        ;    NMI, or an INTR.
+
+(defconst *#resMF*  9)  ;    CoProcessor Segment Overrun (reserved)
+                        ;    Floating-point instruction.
+                        ;    NOTE: IA-32 processors after the Intel386
+                        ;    processor do not generate this exception.
+
+(defconst *#TS*     10) ;    Invalid TSS
+                        ;    Task switch or TSS access.
+
+(defconst *#NP*     11) ;    Segment Not Present
+                        ;    Loading segment registers or accessing system segments.
+
+(defconst *#SS*     12) ;    Stack Segment Fault
+                        ;    Stack operations and SS register loads.
+
+(defconst *#GP*     13) ;    General Protection
+                        ;    Any memory reference and other protection checks.
+
+(defconst *#PF*     14) ;    Page Fault
+                        ;    Any memory reference
+
+(defconst *#res15*  15) ;    Reserved
+
+(defconst *#MF*     16) ;    Floating-Point Error (Math Fault)
+                        ;    Floating-point or WAIT/FWAIT instruction.
+
+(defconst *#AC*     17) ;    Alignment Check
+                        ;    Any data reference in memory.
+                        ;    This exception was introduced in the Intel486 processor.
+
+(defconst *#MC*     18) ;    Machine Check
+                        ;    Error codes (if any) and source are model dependent.
+                        ;    This exception was introduced in the Pentium
+                        ;    processor and enhanced in the P6 family
+                        ;    processors.
+
+(defconst *#XM*     19) ;    SIMD Floating-Point Exception
+                        ;    SIMD Floating-Point Instruction
+                        ;    This exception was introduced in the Pentium III
+                        ;    processor.
+
+
+(defconst *#VE*     20) ;    Virtualization Exception
+                        ;    EPT violations
+                        ;    This exception can occur only on processors that
+                        ;    support the 1-setting of the “EPT-violation #VE”
+                        ;    VM-execution control.
+
+;; 21-31   Reserved
+;;
+;; 32-255  Maskable Interrupts
+;;         External interrupt from INTR pin or INT n instruction.
+
+;; ======================================================================
+
 ;; Indices and length of fields in the x86 state (see
 ;; machine/state-concrete.lisp):
 
@@ -544,6 +680,14 @@
      ,(b* ((lst (gl-int 0 1 16))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
+
+(defun define-32-bit-general-purpose-registers ()
+
+  `(defconsts (*EAX* *ECX* *EDX* *EBX* *ESP* *EBP* *ESI* *EDI*
+                     *R8d*  *R9d*  *R10d* *R11d* *R12d* *R13d* *R14d* *R15d*)
+     ,(b* ((lst (gl-int 0 1 15))
+           (len  (len lst)))
+        (cons 'mv (append lst (list len))))))
 
 (defun define-segment-registers ()
 
@@ -678,6 +822,10 @@
           (cons 'mv (append lst (list len)))))))
 
 (defun define-model-specific-registers ()
+
+  ;; Source: Section 2.1 (Architectural MSRs), Intel Vol. 4, Model-Specific
+  ;; Registers
+
   ;; At this point, we only model the MSRs that we need.  Remember,
   ;; these are Intel-specific registers, and may or may not be
   ;; available on AMD machines.
@@ -723,6 +871,9 @@
                *IA32_FMASK*
                *IA32_FMASK-IDX*
 
+               *IA32_MISC_ENABLE*
+               *IA32_MISC_ENABLE-IDX*
+
                *model-specific-register-names-len*)
 
      ,(b* ((lst (list #uxC000_0080 ;; ia32_efer and idx
@@ -739,21 +890,36 @@
                       5
                       #uxC000_0084 ;; ia32_fmask and idx
                       6
+                      #ux01_a0     ;; ia32_misc_enable and idx
+                      7
                       ))
            (len  (/ (len lst) 2)))
           (cons 'mv (append lst (list len))))))
 
 (make-event (define-general-purpose-registers))
+(make-event (define-32-bit-general-purpose-registers))
+
 (make-event (define-segment-registers))
+(defconst *segment-register-names-len-1* (1- *segment-register-names-len*))
+
 (make-event (define-gdtr/idtr-registers))
+
 (make-event (define-ldtr/tr-registers))
+
 (make-event (define-control-registers))
+
 (make-event (define-debug-registers))
+
 (make-event (define-fp-registers))
+
 (make-event (define-mmx-registers))
+
 (make-event (define-xmm-registers))
+
 (make-event (define-ymm-registers))
+
 (make-event (define-zmm-registers))
+
 (make-event (define-model-specific-registers))
 
 ;; ======================================================================

@@ -819,12 +819,12 @@
              (:REWRITE PAIRLIS$-OF-CONS)
              (:REWRITE REV-OF-CONS)
              (:REWRITE REVAPPEND-REMOVAL)
-             (:REWRITE STV-DECOMP-EV-CONSTRAINT-15)
-             (:REWRITE STV-DECOMP-EV-CONSTRAINT-16)
+             (:REWRITE STV-DECOMP-EV-constraint-16)
+             (:REWRITE STV-DECOMP-EV-constraint-17)
              (:REWRITE STV-DECOMP-EV-CONSTRAINT-2)
-             (:REWRITE STV-DECOMP-EV-CONSTRAINT-7)
-             (:REWRITE STV-DECOMP-EV-CONSTRAINT-8)
-             (:REWRITE STV-DECOMP-EV-CONSTRAINT-9)))))
+             (:REWRITE STV-DECOMP-EV-constraint-8)
+             (:REWRITE STV-DECOMP-EV-constraint-9)
+             (:REWRITE STV-DECOMP-EV-constraint-10)))))
 
 (def-ruleset stv-decomp-rules
   '(stv-run-fn

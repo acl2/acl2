@@ -67,6 +67,12 @@ outlaw_warning(:m1, "VL-WARN-TRUNCATION", "normal3")
 match_warning(:m1, "VL-WARN-TRUNCATION", "trunc1")
 
 
+outlaw_warning(:a0, "VL-WARN-TRUNCATION", "mod1")
+outlaw_warning(:a0, "VL-WARN-TRUNCATION", "mod2")
+outlaw_warning(:a0, "VL-WARN-TRUNCATION", "mod3")
+
+match_warning(:a0, "VL-WARN-TRUNCATION", "mod4")
+match_warning(:a0, "VL-WARN-TRUNCATION", "mod5")
 
 test_passed()
 

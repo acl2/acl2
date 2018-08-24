@@ -22,7 +22,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc semantics
+(defxdoc+ semantics
   :parents (abnf)
   :short "Semantics of ABNF."
   :long
@@ -37,16 +37,15 @@
    These concepts are analogous to the ones
    for the typical notion of formal grammar in textbooks,
    but because ABNF is more complex, its semantics are more complex.
-   </p>")
-
-(xdoc::order-subtopics semantics nil t)
+   </p>"
+  :order-subtopics t)
 
 (fty::defflexsum symbol
   :parents (semantics)
   :short "Symbols."
   :long
   "<p>
-   As explained in RFC.2.3, the terminal values of ABNF are natural numbers.
+   As explained in RFC:2.3, the terminal values of ABNF are natural numbers.
    </p>
    <p>
    Rule names are the nonterminal symbols of ABNF.
@@ -61,10 +60,10 @@
    we put them together without tags.
    </p>"
   (:terminal :fields ((get :type nat :acc-body x))
-             :ctor-body get
-             :cond (natp x))
+   :ctor-body get
+   :cond (natp x))
   (:nonterminal :fields ((get :type rulename :acc-body x))
-                :ctor-body get)
+   :ctor-body get)
   :pred symbolp
   ///
 
@@ -146,11 +145,11 @@
      the element instances of the corresponding repetition.
      An empty inner list is used for a repetition of no elements.
      An empty outer list is used for an empty concatenation,
-     which is disallowed by RFC.4 but allowed by our abstract syntax;
-     an empty outer list is also used for an option (RFC.3.8) that is absent.
+     which is disallowed by RFC:4 but allowed by our abstract syntax;
+     an empty outer list is also used for an option [RFC:3.8] that is absent.
      </p>
      <p>
-     Since, via groups (RFC.3.5) and options (RFC.3.8),
+     Since, via groups [RFC:3.5] and options [RFC:3.8],
      an element may recursively be an alternation,
      if a branch in an inner list under a rule name is an alternation,
      that branch recursively has a list of lists of branches.
@@ -560,7 +559,8 @@
   ///
 
   (defrule 0-when-match-repeat-range-0
-    (implies (equal range (repeat-range 0 (nati-finite 0)))
+    (implies (and (equal range (repeat-range 0 (nati-finite 0)))
+                  (acl2-numberp n)) ; added by Matt K after tau bug fix 8/16/18
              (equal (numrep-match-repeat-range-p n range)
                     (equal n 0)))
     :enable numrep-match-repeat-range-p))
@@ -858,7 +858,8 @@
     :parents (tree-list-match-repetition-p)
     (implies (and (tree-list-match-repetition-p trees
                                                 (repetition
-                                                 (repeat-range 0 (nati-infinity))
+                                                 (repeat-range 0
+                                                               (nati-infinity))
                                                  element)
                                                 rules)
                   (consp trees))
@@ -900,7 +901,7 @@
    that matches the rule name (viewed as an element)
    and such that the string is the one at the leaves of the tree.
    A parse tree describes
-   how a string is an &ldquo;instance&rdquo; of the rule name,
+   how a string is an ``instance'' of the rule name,
    given the rules.
    </p>"
   (and (treep tree)
@@ -983,8 +984,8 @@
                            (string-parsablep-witness string rulename rules))))
     :enable string-parsablep
     :use (:instance at-most-one-parse-tree-when-not-string-ambiguousp
-                    (tree1 tree)
-                    (tree2 (string-parsablep-witness string rulename rules))))
+          (tree1 tree)
+          (tree2 (string-parsablep-witness string rulename rules))))
 
   (defrule treep-of-string-parsablep-witness-when-string-unambiguousp
     (implies (string-unambiguousp string rulename rules)
@@ -1021,8 +1022,8 @@
              (equal (parse-trees-of-string-p trees string rulename rules)
                     (equal trees nil)))
     :use (:instance at-most-one-parse-tree-set-of-string
-                    (trees1 trees)
-                    (trees2 nil)))
+          (trees1 trees)
+          (trees2 nil)))
 
   (defrule not-string-parsablep-when-parse-trees-of-string-p-of-nil
     (implies (parse-trees-of-string-p nil string rulename rules)
@@ -1030,8 +1031,8 @@
     :enable string-parsablep
     :disable parse-trees-of-string-p-necc
     :use (:instance parse-trees-of-string-p-necc
-                    (trees nil)
-                    (tree (string-parsablep-witness string rulename rules))))
+          (trees nil)
+          (tree (string-parsablep-witness string rulename rules))))
 
   (defrule parse-trees-of-string-p-when-string-unambiguousp
     (implies (and (string-unambiguousp string rulename rules)
@@ -1042,10 +1043,10 @@
                             (string-parsablep-witness string rulename rules)
                             nil))))
     :use (:instance at-most-one-parse-tree-set-of-string
-                    (trees1 trees)
-                    (trees2 (insert
-                             (string-parsablep-witness string rulename rules)
-                             nil))))
+          (trees1 trees)
+          (trees2 (insert
+                   (string-parsablep-witness string rulename rules)
+                   nil))))
 
   (defrule string-unambiguousp-when-parse-trees-of-string-p-of-one
     (implies (parse-trees-of-string-p
@@ -1055,24 +1056,24 @@
     :enable (string-unambiguousp string-ambiguousp)
     :disable parse-trees-of-string-p-necc
     :use ((:instance parse-trees-of-string-p-necc
-                     (trees (insert
-                             (string-parsablep-witness string rulename rules)
-                             nil))
-                     (tree (string-parsablep-witness string rulename rules)))
+           (trees (insert
+                   (string-parsablep-witness string rulename rules)
+                   nil))
+           (tree (string-parsablep-witness string rulename rules)))
           (:instance parse-trees-of-string-p-necc
-                     (trees (insert
-                             (string-parsablep-witness string rulename rules)
-                             nil))
-                     (tree (mv-nth 0 (string-ambiguousp-witness
-                                      string rulename rules))))
+           (trees (insert
+                   (string-parsablep-witness string rulename rules)
+                   nil))
+           (tree (mv-nth 0 (string-ambiguousp-witness
+                            string rulename rules))))
           (:instance parse-trees-of-string-p-necc
-                     (trees (insert
-                             (string-parsablep-witness string rulename rules)
-                             nil))
-                     (tree (mv-nth 1 (string-ambiguousp-witness
-                                      string rulename rules)))))))
+           (trees (insert
+                   (string-parsablep-witness string rulename rules)
+                   nil))
+           (tree (mv-nth 1 (string-ambiguousp-witness
+                            string rulename rules)))))))
 
-(define-sk finite-parse-trees-p
+(define-sk string-has-finite-parse-trees-p
   ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (semantics)
@@ -1087,58 +1088,63 @@
                (parse-trees-of-string-p trees string rulename rules)))
   ///
 
-  (defrule tree-setp-of-finite-parse-trees-p-witness-when-finite-parse-trees-p
-    (implies (finite-parse-trees-p string rulename rules)
-             (tree-setp (finite-parse-trees-p-witness string rulename rules))))
+  (defrule tree-setp-of-witness-when-string-has-finite-parse-trees-p
+    (implies (string-has-finite-parse-trees-p string rulename rules)
+             (tree-setp
+              (string-has-finite-parse-trees-p-witness string rulename rules))))
 
-  (defrule finite-parse-trees-p-when-not-string-parsablep
+  (defrule string-has-finite-parse-trees-p-when-not-string-parsablep
     (implies (not (string-parsablep string rulename rules))
-             (finite-parse-trees-p string rulename rules))
-    :use (:instance finite-parse-trees-p-suff (trees nil)))
+             (string-has-finite-parse-trees-p string rulename rules))
+    :use (:instance string-has-finite-parse-trees-p-suff (trees nil)))
 
-  (defrule finite-parse-trees-p-when-string-unambiguousp
+  (defrule string-has-finite-parse-trees-p-when-string-unambiguousp
     (implies (string-unambiguousp string rulename rules)
-             (finite-parse-trees-p string rulename rules))
-    :use (:instance finite-parse-trees-p-suff
-                    (trees (insert (string-parsablep-witness
-                                    string rulename rules)
-                                   nil))))
+             (string-has-finite-parse-trees-p string rulename rules))
+    :use (:instance string-has-finite-parse-trees-p-suff
+          (trees (insert (string-parsablep-witness
+                          string rulename rules)
+                         nil))))
 
-  (defrule finite-parse-trees-p-witness-when-not-string-parsablep
+  (defrule string-has-finite-parse-trees-p-witness-when-not-string-parsablep
     (implies (not (string-parsablep string rulename rules))
-             (equal (finite-parse-trees-p-witness string rulename rules)
+             (equal (string-has-finite-parse-trees-p-witness
+                     string rulename rules)
                     nil))
-    :disable finite-parse-trees-p-when-not-string-parsablep
-    :use finite-parse-trees-p-when-not-string-parsablep)
+    :disable string-has-finite-parse-trees-p-when-not-string-parsablep
+    :use string-has-finite-parse-trees-p-when-not-string-parsablep)
 
-  (defrule finite-parse-trees-p-witness-when-string-unambiguousp
+  (defrule string-has-finite-parse-trees-p-witness-when-string-unambiguousp
     (implies (string-unambiguousp string rulename rules)
-             (equal (finite-parse-trees-p-witness string rulename rules)
+             (equal (string-has-finite-parse-trees-p-witness
+                     string rulename rules)
                     (insert (string-parsablep-witness string rulename rules)
                             nil)))
-    :disable finite-parse-trees-p-when-string-unambiguousp
-    :use finite-parse-trees-p-when-string-unambiguousp)
+    :disable string-has-finite-parse-trees-p-when-string-unambiguousp
+    :use string-has-finite-parse-trees-p-when-string-unambiguousp)
 
-  (defrule not-string-parsablep-when-finite-parse-trees-p-nil
-    (implies (and (finite-parse-trees-p string rulename rules)
-                  (equal (finite-parse-trees-p-witness string rulename rules)
+  (defrule not-string-parsablep-when-string-has-finite-parse-trees-p-nil
+    (implies (and (string-has-finite-parse-trees-p string rulename rules)
+                  (equal (string-has-finite-parse-trees-p-witness
+                          string rulename rules)
                          nil))
              (not (string-parsablep string rulename rules))))
 
-  (defrule string-unambiguousp-when-finite-parse-trees-p-one
-    (implies (and (finite-parse-trees-p string rulename rules)
-                  (equal (finite-parse-trees-p-witness string rulename rules)
+  (defrule string-unambiguousp-when-string-has-finite-parse-trees-p-one
+    (implies (and (string-has-finite-parse-trees-p string rulename rules)
+                  (equal (string-has-finite-parse-trees-p-witness
+                          string rulename rules)
                          (insert
                           (string-parsablep-witness string rulename rules)
                           nil)))
              (string-unambiguousp string rulename rules)))
 
   (defruled string-ambiguousp-when-infinite-parse-trees
-    (implies (not (finite-parse-trees-p string rulename rules))
+    (implies (not (string-has-finite-parse-trees-p string rulename rules))
              (string-ambiguousp string rulename rules))
     :cases ((string-parsablep string rulename rules))
-    :use ((:instance finite-parse-trees-p-suff (trees nil))
-          finite-parse-trees-p-when-string-unambiguousp)
+    :use ((:instance string-has-finite-parse-trees-p-suff (trees nil))
+          string-has-finite-parse-trees-p-when-string-unambiguousp)
     :enable (string-unambiguousp
              string-parsablep-suff
              parse-trees-of-string-p)))
@@ -1146,7 +1152,9 @@
 (define parse ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (result (or (tree-setp result)
                        (equal result :infinite))
-                   :hints (("Goal" :in-theory (enable finite-parse-trees-p))))
+                   :hints (("Goal"
+                            :in-theory
+                            (enable string-has-finite-parse-trees-p))))
   :parents (semantics)
   :short "Parse a string."
   :long
@@ -1156,8 +1164,8 @@
    Otherwise, return @(':infinite') to indicate that
    the string has an infinite number of parse trees.
    </p>"
-  (if (finite-parse-trees-p string rulename rules)
-      (finite-parse-trees-p-witness string rulename rules)
+  (if (string-has-finite-parse-trees-p string rulename rules)
+      (string-has-finite-parse-trees-p-witness string rulename rules)
     :infinite)
   :no-function t
   ///
@@ -1208,14 +1216,43 @@
                     (insert (parse! string rulename rules) nil)))
     :enable string-unambiguousp))
 
-(define-sk languagep (nats (rules rulelistp))
+(define-sk languagep (nats (rulenames rulename-setp) (rules rulelistp))
   :returns (yes/no booleanp)
   :parents (semantics)
   :short "Notion of language."
   :long
   "<p>
    The language defined by a list of rules consists of
-   the sequences of natural numbers that form parsable strings.
+   the sequences of natural numbers that form parsable strings
+   for given rule names.
+   An ABNF @(see grammar) does not include any explicit axiom (or start symbol);
+   thus, the top-level symbols of interest (one or more) are specified
+   as an additional parameter of this predicate.
+   </p>
+   <p>
+   Note that the condition that
+   the existentially quantified @('rulename') be defined by @('rules')
+   would be superfluous,
+   because if @('rulename') is not defined then no parse trees
+   with only terminal leaves can originate from it.
+   </p>"
+  (exists (rulename)
+          (and (nat-listp nats)
+               (in rulename rulenames)
+               (string-parsablep nats rulename rules))))
+
+(define-sk terminal-string-for-rules-p (nats (rules rulelistp))
+  :returns (yes/no booleanp)
+  :parents (semantics)
+  :short "Recognize terminal strings generated by a grammar."
+  :long
+  "<p>
+   This predicate recognizes all the sequences of natural numbers
+   that form parsable strings, for any rule names.
+   This is equivalent to @(tsee languagep)
+   when all the rule names are passed as second argument of that predicates.
+   </p>
+   <p>
    Note that the condition that
    the existentially quantified @('rulename') be defined by @('rules')
    would be superfluous,

@@ -2125,7 +2125,8 @@
                 (clause-max-var-1 (cdr clause))))))
 
 (defthm clause-max-var-is-clause-max-var-1
-  (implies (and (<= 0 acc)
+  (implies (and (integerp acc)
+                (<= 0 acc)
                 (clausep clause))
            (equal (clause-max-var clause acc)
                   (max acc (clause-max-var-1 clause)))))

@@ -1,6 +1,6 @@
 ; ABNF Library -- Examples
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,7 +27,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc examples
+(defxdoc+ examples
   :parents (abnf)
   :short "Some real-world examples of ABNF grammars."
   :long
@@ -38,22 +38,20 @@
    <see topic='@(url grammar-parser)'>parser</see> and
    <see topic='@(url concrete-to-abstract-syntax)'>abstractor</see>.
    We also demonstrate the use of some @(see operations) on these grammars.
-   </p>")
-
-(xdoc::order-subtopics examples nil t)
+   </p>"
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc uri-example
+(defxdoc+ uri-example
   :parents (examples)
   :short "The ABNF grammar of the URI (Uniform Resource Identifier) syntax."
   :long
   "<p>
    The URI syntax is specified by
    <a href=\"https://www.rfc-editor.org/info/rfc3986\">RFC 3968</a>.
-   </p>")
-
-(xdoc::order-subtopics uri-example nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection *uri-grammar-rules*
   :parents (uri-example)
@@ -94,7 +92,7 @@
    </p>
    <p>
    The resulting rules are well-formed and closed.
-   They generate a language consisting only of ASCII codes;
+   They generate terminal strings consisting only of ASCII codes;
    more precisely, the ASCII codes of
    all the visible characters (i.e. @('VCHAR') in the ABNF core rules)
    except
@@ -139,7 +137,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc http-example
+(defxdoc+ http-example
   :parents (examples)
   :short "The ABNF grammar of
           the HTTP (Hypertext Transfer Protocol) 1.1 syntax."
@@ -147,9 +145,8 @@
   "<p>
    The HTTP 1.1 syntax is specified by
    <a href=\"https://www.rfc-editor.org/info/rfc7230\">RFC 7230</a>.
-   </p>")
-
-(xdoc::order-subtopics http-example nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection *http-grammar-rules*
   :parents (http-example)
@@ -199,7 +196,7 @@
    </p>
    <p>
    The resulting rules are well-formed and closed,
-   and generate a language consisting only of octets.
+   and generate terminal strings consisting only of octets.
    </p>
    <p>
    Section 1.2 of RFC 7230 lists a number of ABNF core rules
@@ -265,7 +262,7 @@
    a first-level definition of messages.
    According to these rules, strings of terminals (octets)
    are parsed into trees rooted at @('HTTP-message').
-   In these parse trees, field values are &ldquo;opaque&rdquo;,
+   In these parse trees, field values are ``opaque'',
    i.e. they are essentially unstructured sequences of certain octets,
    according to the @('field-content') rule.
    These field values can be parsed further according to the other rules.
@@ -273,7 +270,7 @@
    <p>
    The rules reached starting from @('HTTP-message') are well-formed and closed.
    Since they are a subset of @(tsee *all-http-grammar-rules*),
-   they also generate a language consisting only of octets.
+   they also generate terminal strings consisting only of octets.
    </p>"
   (trans-rules-of-names (list (rulename "HTTP-message"))
                         *all-http-grammar-rules*)
@@ -287,16 +284,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc imf-example
+(defxdoc+ imf-example
   :parents (examples)
   :short "The ABNF grammar of the IMF (Internet Message Format) syntax."
   :long
   "<p>
    The IMF syntax is specified by
    <a href=\"https://www.rfc-editor.org/info/rfc5322\">RFC 5322</a>.
-   </p>")
-
-(xdoc::order-subtopics imf-example nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection *imf-grammar-rules*
   :parents (imf-example)
@@ -330,16 +326,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc smtp-example
+(defxdoc+ smtp-example
   :parents (examples)
   :short "The ABNF grammar of the SMTP (Simple Mail Transfer Protocol) syntax."
   :long
   "<p>
    The SMTP syntax is specified by
    <a href=\"smtps://www.rfc-editor.org/info/rfc5321\">RFC 5321</a>.
-   </p>")
-
-(xdoc::order-subtopics smtp-example nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection *smtp-grammar-rules*
   :parents (smtp-example)
@@ -373,7 +368,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc imap-example
+(defxdoc+ imap-example
   :parents (examples)
   :short "The ABNF grammar of
           the IMAP (Internet Message Access Protocol) 4rev1 syntax."
@@ -381,9 +376,8 @@
   "<p>
    The IMAP 4rev1 syntax is specified by
    <a href=\"https://www.rfc-editor.org/info/rfc3501\">RFC 3501</a>.
-   </p>")
-
-(xdoc::order-subtopics imap-example nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection *imap-grammar-rules*
   :parents (imap-example)
@@ -417,16 +411,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc json-example
+(defxdoc+ json-example
   :parents (examples)
   :short "The ABNF grammar of the JSON (JavaScript Object Notation) syntax."
   :long
   "<p>
    The JSON syntax is specified by
    <a href=\"https://www.rfc-editor.org/info/rfc7159\">RFC 7159</a>.
-   </p>")
-
-(xdoc::order-subtopics json-example nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection *json-grammar-rules*
   :parents (json-example)
@@ -469,7 +462,7 @@
    These rules are well-formed and closed.
    </p>
    <p>
-   These rules generate a language consisting only of Unicode codes,
+   These rules generate terminal strings consisting only of Unicode codes,
    i.e. natural numbers between 0 and @('x10FFFF').
    However, running this proof currently takes a long time
    due to the inefficient definition of @(tsee rulelist-in-termset-p)

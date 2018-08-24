@@ -417,7 +417,19 @@ tests at the bottom of this file.</p>")
   :count strong
   (seq tokstream
         (:= (vl-match-token :vl-pound))
-        (:= (vl-match-token :vl-lparen))
+
+        (unless (vl-is-token? :vl-lparen)
+          ;; Surprisingly, even though the grammar seems to clearly require
+          ;; parentheses, other tools accept things like myadder #3 (o, a,
+          ;; b).  So, we'll also try to tolerate a single expression that comes
+          ;; immediately after a pound here.  In this case there shouldn't be
+          ;; any closing paren.
+          (expr := (vl-parse-expression))
+          (return (make-vl-paramargs-plain :args
+                                           (list (make-vl-paramvalue-expr :expr expr)))))
+
+        ;; Otherwise we found #(, so match the arguments and so on.
+        (:= (vl-match))
 
         (when (and (vl-is-token? :vl-rparen)
                    (not (eq (vl-loadconfig->edition config) :verilog-2005)))
@@ -700,4 +712,102 @@ tests at the bottom of this file.</p>")
     (mv (vl-udp/modinst-pick-error-to-report m-err u-err)
         nil tokstream)))
 
+
+
+; Bind directives
+
+; SystemVerilog-2012 Grammar:
+;
+;   bind_directive ::=
+;      'bind' bind_target_scope [ ':' bind_target_instance_list ] bind_instantiation ';'
+;    | 'bind' bind_target_instance bind_instantiation ';'
+;
+;   bind_target_scope ::= module_identifier | interface_identifier
+;
+;   bind_target_instance ::= hierarchical_identifier constant_bit_select
+;
+;   bind_target_instance_list ::= bind_target_instance { ',' bind_target_instance }
+;
+;   bind_instantiation ::= program_instantiation
+;                        | module_instantiation
+;                        | interface_instantiation
+;                        | checker_instantiation
+;
+; But we make some simplifications:
+;
+;   - A bind_target_scope is really just an identifier.
+;
+;   - The rule for bind_target_instance seems wrong: SystemVerilog-2012 Section 23.11
+;     shows examples where they don't have constant_bit_select, etc.  So we just match
+;     expressions instead.
+;
+;   - The rules for bind directives seem wrong -- they have a semicolon but if
+;     you look at module_instantiation, program_instantiation,
+;     interface_instantiation, and checker_instantiation, they all have their
+;     own semicolon.  So we think bind_directive should NOT have a semicolon
+;     and we do not eat one.
+;
+;   - We don't distinguish program/module/interface/checker instantiation and just
+;     try to parse modinsts.
+;
+; With these in place we have:
+;
+;    bind_directive ::=
+;       'bind' identifier [ ':' expression_list ] module_instantiation
+;     | 'bind' expression module_instantiation
+;
+; These are ambiguous so I'll just try to handle them with backtracking.
+
+
+(defparser vl-parse-bind-directive-scoped (atts)
+  ;; Matches 'bind' identifier [ ':' expression_list ] module_instantiation
+  :guard (vl-atts-p atts)
+  :result (vl-bind-p val)
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (:= (vl-match-token :vl-kwd-bind))
+       (target := (vl-match-token :vl-idtoken))
+       (when (vl-is-token? :vl-colon)
+         (:= (vl-match))
+         (addto := (vl-parse-1+-expressions-separated-by-commas)))
+       (modinsts := (vl-parse-module-instantiation nil)) ;; atts??
+       (return (make-vl-bind :scope (vl-idtoken->name target)
+                             :addto addto
+                             :modinsts modinsts
+                             :loc (vl-token->loc target)
+                             :atts atts))))
+
+(defparser vl-parse-bind-directive-scopeless (atts)
+  ;; Matches 'bind' expression module_instantiation
+  :guard (vl-atts-p atts)
+  :result (vl-bind-p val)
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (kwd := (vl-match-token :vl-kwd-bind))
+       (addto := (vl-parse-expression))
+       (modinsts := (vl-parse-module-instantiation nil)) ;; atts??
+       (return (make-vl-bind :scope nil
+                             :addto (list addto)
+                             :modinsts modinsts
+                             :loc (vl-token->loc kwd)
+                             :atts atts))))
+
+(defparser vl-parse-bind-directive (atts)
+  :guard (vl-atts-p atts)
+  :result (vl-bind-p val)
+  :fails gracefully
+  :count strong
+  (b* ((backup (vl-tokstream-save))
+       ((mv m-err val tokstream) (vl-parse-bind-directive-scoped atts))
+       ((unless m-err)
+        (mv m-err val tokstream))
+       (tokstream (vl-tokstream-restore backup))
+       ((mv u-err val tokstream) (vl-parse-bind-directive-scopeless atts))
+       ((unless u-err)
+        (mv u-err val tokstream))
+       (tokstream (vl-tokstream-restore backup)))
+    (mv (vl-udp/modinst-pick-error-to-report m-err u-err)
+        nil tokstream)))
 

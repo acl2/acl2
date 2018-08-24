@@ -293,10 +293,13 @@ encoding.</p>"
                 (vl-println? "}"))))
 
 
-(defmacro def-vl-jp-list (type &key newlines)
+(defmacro def-vl-jp-list (type &key
+                               list-p
+                               newlines)
   (declare (xargs :guard (maybe-natp newlines)))
   (b* ((mksym-package-symbol 'vl::foo)
-       (list-p         (mksym 'vl- type 'list-p))
+       (list-p         (or list-p
+                           (mksym 'vl- type 'list-p)))
        (elem-print     (mksym 'vl-jp- type))
        (list-print-aux (mksym 'vl-jp- type 'list-aux))
        (list-print     (mksym 'vl-jp- type 'list))
@@ -325,8 +328,10 @@ encoding.</p>"
                     (vl-println? "]")))
        (add-json-encoder ,list-p ,list-print))))
 
-
-(define vl-jp-warning ((x vl-warning-p) &key (ps 'ps))
+(define vl-jp-warning ((x vl-warning-p)
+                       &key
+                       (no-html)
+                       (ps 'ps))
   :parents (json-encoders)
   :short "Special, custom JSON encoder for warnings."
 
@@ -341,6 +346,15 @@ TEXT versions of the message.</p>"
        (text (with-local-ps (if x.context
                                 (vl-cw-obj "~a0: ~@1" (list x.context (vl-msg x.msg x.args)))
                               (vl-cw-obj x.msg x.args))))
+       ((when no-html)
+        ;; Suppressing HTML output can be useful for reducing file sizes of
+        ;; vl-warnings.json in VL Lint.
+        (jp-object :tag    (vl-print "\"warning\"")
+                   :fatalp (jp-bool x.fatalp)
+                   :type   (jp-str (symbol-name x.type))
+                   :fn     (jp-str (symbol-name x.fn))
+                   :text   (jp-str text)))
+       ;; Including HTML output can be useful for the module browser.
        (html (with-local-ps
                (vl-ps-update-htmlp t)
                ;; For the module browser, the warnings get word wrapped by the
@@ -358,8 +372,27 @@ TEXT versions of the message.</p>"
                :html   (jp-str html))))
 
 (add-json-encoder vl-warning-p jp-warning)
-(def-vl-jp-list warning :newlines 4)
 
+(define vl-jp-warninglist-aux ((x vl-warninglist-p) &key no-html (ps 'ps))
+  :parents (vl-jp-warninglist)
+  :short "Prints out the elements of a @(see vl-warninglist-p) without the enclosing brackets."
+         (if (atom x)
+             ps
+           (vl-ps-seq (vl-jp-warning (car x) :no-html no-html)
+                      (if (atom (cdr x))
+                          ps
+                        (vl-ps-seq (vl-println ",")
+                                   (vl-indent 4)))
+                      (vl-jp-warninglist-aux (cdr x) :no-html no-html))))
+
+(define vl-jp-warninglist ((x vl-warninglist-p) &key no-html (ps 'ps))
+  :parents (json-encoders)
+  :short "Prints out the elements of a @(see vl-warninglist-p) with the enclosing brackets."
+  (vl-ps-seq (vl-print "[")
+             (vl-jp-warninglist-aux x :no-html no-html)
+             (vl-println? "]")))
+
+(add-json-encoder vl-warninglist-p vl-jp-warninglist)
 
 
 
@@ -1180,8 +1213,14 @@ which could not hold such large values.</p>")
                   :body      (vl-jp-stmt x.body)
                   :atts      (vl-jp-atts x.atts))
 
+       :vl-dostmt
+       (jp-object :tag       (jp-sym kind)
+                  :condition (vl-jp-expr x.condition)
+                  :body      (vl-jp-stmt x.body)
+                  :atts      (vl-jp-atts x.atts))
+
        :vl-forstmt
-       (jp-object :tag      (jp-sym kind)
+       (jp-object :tag         (jp-sym kind)
                   :initdecls   (vl-jp-vardecllist x.initdecls)
                   :initassigns (vl-jp-stmtlist x.initassigns)
                   :test        (vl-jp-expr x.test)

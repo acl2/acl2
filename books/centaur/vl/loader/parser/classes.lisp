@@ -33,7 +33,6 @@
 (include-book "../../parsetree")
 (local (include-book "../../util/arithmetic"))
 
-
 (defparser vl-maybe-parse-lifetime ()
   :parents (parser)
   :short "Match an optional @('lifetime') for SystemVerilog-2012."
@@ -53,7 +52,6 @@
           (:= (vl-match))
           (return :vl-automatic))
         (return nil)))
-
 
 (defparser vl-parse-class-declaration-aux ()
   :result (vl-endinfo-p val)
@@ -87,24 +85,24 @@
        (:= (vl-match-token :vl-kwd-class))
        (lifetime := (vl-maybe-parse-lifetime))
        (name := (vl-match-token :vl-idtoken))
-        (endinfo := (vl-parse-class-declaration-aux))
-        (when (and (vl-endinfo->name endinfo)
-                   (not (equal (vl-idtoken->name name)
-                               (vl-endinfo->name endinfo))))
-          (return-raw
-           (vl-parse-error
-            (cat "Mismatched class/endclass pair: expected "
-                 (vl-idtoken->name name) " but found "
-                 (vl-endinfo->name endinfo)))))
-        (return
-         (make-vl-class
-          :name (vl-idtoken->name name)
-          :atts atts
-          :virtualp (and virtual t)
-          :lifetime lifetime
-          :warnings (fatal :type :vl-warn-class
-                           :msg "Classes are not supported."
-                           :args nil
-                           :acc nil)
-          :minloc (vl-token->loc name)
-          :maxloc (vl-endinfo->loc endinfo)))))
+       (endinfo := (vl-parse-class-declaration-aux))
+       (when (and (vl-endinfo->name endinfo)
+                  (not (equal (vl-idtoken->name name)
+                              (vl-endinfo->name endinfo))))
+         (return-raw
+          (vl-parse-error
+           (cat "Mismatched class/endclass pair: expected "
+                (vl-idtoken->name name) " but found "
+                (vl-endinfo->name endinfo)))))
+       (return
+        (make-vl-class
+         :name (vl-idtoken->name name)
+         :atts atts
+         :virtualp (and virtual t)
+         :lifetime lifetime
+         :warnings (fatal :type :vl-warn-class
+                          :msg "Classes are not supported."
+                          :args nil
+                          :acc nil)
+         :minloc (vl-token->loc name)
+         :maxloc (vl-endinfo->loc endinfo)))))

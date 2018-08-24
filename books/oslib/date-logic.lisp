@@ -70,7 +70,7 @@ figure out the current time in seconds since the start of 1900.</p>
 
 <p>This is, for whatever reason, a different starting date than the Unix
 epoch (which records time since the start of 1970).  You should therefore be
-careful if you need to compare this timestamp against any those produced by
+careful if you need to compare this timestamp against those produced by
 external tools.</p>"
 
   (b* ((- (raise "Raw Lisp definition not installed?"))
@@ -79,4 +79,3 @@ external tools.</p>"
              (natp val))
         (mv val state)
       (mv 0 state))))
-

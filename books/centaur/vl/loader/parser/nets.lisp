@@ -288,6 +288,7 @@
 (define vl-build-netdecls-aux ((x          vl-vardeclassignlist-p)
                                (basedecl   vl-vardecl-p)
                                (baseassign vl-assign-p))
+  :guard (vl-vardeclassignlist-newfree-p x)
   :returns (mv (nets vl-vardecllist-p)
                (assigns vl-assignlist-p))
   (b* (((when (atom x))
@@ -304,12 +305,12 @@
        (vardecl (change-vl-vardecl basedecl
                                    :name x1.id
                                    :type type
-                                   :delay (and (not x1.expr)
+                                   :delay (and (not x1.rhs)
                                                (vl-assign->delay baseassign))))
-       (assign  (and x1.expr
+       (assign  (and x1.rhs
                      (change-vl-assign baseassign
                                        :lvalue (vl-idexpr x1.id)
-                                       :expr x1.expr)))
+                                       :expr (vl-rhsexpr->guts x1.rhs))))
        ((mv rest-decls rest-assigns)
         (vl-build-netdecls-aux (cdr x) basedecl baseassign)))
       (mv (cons vardecl rest-decls)
@@ -318,7 +319,6 @@
             rest-assigns)))
   ///
   (defmvtypes vl-build-netdecls-aux (true-listp true-listp)))
-                
 
 (define vl-build-netdecls
   ((loc         vl-location-p)
@@ -331,6 +331,7 @@
    (delay       vl-maybe-gatedelay-p)
    (cstrength   vl-maybe-cstrength-p)
    (gstrength   vl-maybe-gatestrength-p))
+  :guard (vl-vardeclassignlist-newfree-p x)
   :returns (mv (nets vl-vardecllist-p)
                (assigns vl-assignlist-p))
   :guard-hints (("goal" :in-theory (disable (force))))
@@ -365,7 +366,7 @@
                       :cstrength cstrength))
 
        ((when (and (atom (cdr x))
-                   (not x1.expr)))
+                   (not x1.rhs)))
         ;; Avoid creating an assignment if there's only a single variable
         ;; declaration and it doesn't need one.
         (mv (list base-vardecl) nil))
@@ -433,7 +434,7 @@
   ;; Checks that there is no declaration that has both dimensions and an expression.
   (b* (((when (atom x)) nil)
        ((vl-vardeclassign x1) (car x))
-       ((when (and x1.dims x1.expr))
+       ((when (and x1.dims x1.rhs))
         "We don't support the combination of a declaration assignment and unpacked
          dimensions on a net declaration."))
     (vl-netdeclassigns-check-array-assigns (cdr x))))
@@ -443,16 +444,21 @@
   (b* (((when (atom x)) nil)
        ((vl-vardeclassign x1) (car x))
        (rest (vl-netdeclassigns-characterize (cdr x)))
-       (first (if x1.expr :all-assigns :no-assigns))
+       (first (if x1.rhs :all-assigns :no-assigns))
        ((when (or (not rest) (eq first rest))) first))
     :both))
 
-(defund vl-netdecls-error (nettype cstrength gstrength vectoredp scalaredp type delay assigns)
+(define vl-netdecls-error (nettype
+                           cstrength
+                           gstrength
+                           vectoredp
+                           scalaredp
+                           (type vl-datatype-p)
+                           delay
+                           (assigns vl-vardeclassignlist-p))
   ;; Semantic checks for okay net declarations.  These were part of
   ;; vl-parse-net-declaration before, but now I pull them out to reduce the
   ;; number of cases in its proofs.
-  (declare (xargs :guard (and (vl-datatype-p type)
-                              (vl-vardeclassignlist-p assigns))))
   (cond ((and (not (eq nettype :vl-trireg)) cstrength)
          "A non-trireg net illegally has a charge strength.")
         ((and vectoredp (not (vl-datatype->pdims type)))
@@ -463,9 +469,8 @@
         ;; assignment.  In ncv, it seems to be an error if at least the first
         ;; decl doesn't have an assignment; in vcs, seems to be an error if not
         ;; all do.
-
         ((and (or (atom assigns)
-                  (not (vl-vardeclassign->expr (car assigns))))
+                  (not (vl-vardeclassign->rhs (car assigns))))
               gstrength)
          "A drive strength has been given to a net declaration, but is only
           valid on assignments.")
@@ -474,8 +479,16 @@
          "A delay has been given to a multiple net declaration where some of the
           nets have assignments and some do not; we don't know what this
           means.  Should the delay be on the nets or the assignments?")
+        ((not (vl-vardeclassignlist-newfree-p assigns))
+         "The 'new' keyword is used on the right-hand side of a net declaration,
+          but this is a continuous assignment so new should not be used here.")
         (t
-         nil)))
+         nil))
+  ///
+  (defthm vl-vardeclassignlist-newfree-p-unless-vl-netdecls-error
+    (implies (not (vl-netdecls-error nettype cstrength gstrength vectoredp scalaredp
+                                     type delay assigns))
+             (vl-vardeclassignlist-newfree-p assigns))))
 
 
 ;; (encapsulate
@@ -582,16 +595,15 @@
 ; are assignments, then the delay is ONLY about the assignments and NOT to
 ; be given to the decls.
 
-             ((mv decls assigns)
-              (vl-build-netdecls loc declassigns nettype type atts vectoredp
-                                 scalaredp delay cstrength gstrength))
-
              (errorstr    (vl-netdecls-error nettype cstrength gstrength
                                              vectoredp scalaredp type delay
-                                             declassigns)))
-          (if errorstr
-              (vl-parse-error errorstr)
-            (mv nil (cons assigns decls) tokstream))))))
+                                             declassigns))
+             ((when errorstr)
+              (vl-parse-error errorstr))
+             ((mv decls assigns)
+              (vl-build-netdecls loc declassigns nettype type atts vectoredp
+                                 scalaredp delay cstrength gstrength)))
+          (mv nil (cons assigns decls) tokstream)))))
 
 
 (local (in-theory (enable vl-parse-drive-strength-or-charge-strength-forward)))

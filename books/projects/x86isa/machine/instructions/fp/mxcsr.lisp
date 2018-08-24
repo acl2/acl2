@@ -65,16 +65,23 @@
 
   :body
   (b* ((ctx 'x86-ldmxcsr/stmxcsr-Op/En-M)
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
+       ((when lock) (!!fault-fresh :ud nil :lock prefixes))
+       (rep  (or (eql #.*repe* (prefixes-slice :rep prefixes))
+                 (eql #.*repne* (prefixes-slice :rep prefixes))))
+       ((when rep) (!!fault-fresh :ud nil :rep/repne prefixes))
+       (opr  (eql #.*operand-size-override* (prefixes-slice :opr prefixes)))
+       ((when opr) (!!fault-fresh :ud nil :opr prefixes))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
        (inst-ac? ;; Exceptions Type 5
         t)
 
@@ -83,7 +90,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) v-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*gpr-access* 4 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -131,15 +138,6 @@
            x86)))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'LDMXCSR #x0FAE
-                                      '(:misc (eql (mrm-reg modr/m) 2))
-                                      'x86-ldmxcsr/stmxcsr-Op/En-M)
-    (add-to-implemented-opcodes-table 'STMXCSR #x0FAE
-                                      '(:misc (eql (mrm-reg modr/m) 3))
-                                      'x86-ldmxcsr/stmxcsr-Op/En-M)))
+    x86))
 
 ;; ======================================================================

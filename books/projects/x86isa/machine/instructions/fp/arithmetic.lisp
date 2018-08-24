@@ -84,12 +84,16 @@
 
   :body
   (b* ((ctx 'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 4 8) operand-size)
         (if (equal sp/dp #.*OP-DP*) 8 4))
@@ -97,14 +101,14 @@
         (reg-index reg rex-byte #.*r*))
        (xmm (xmmi-size operand-size xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        (inst-ac?
         ;; Exceptions Type 3
         t)
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* operand-size inst-ac?
+         proc-mode #.*xmm-access* operand-size inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
@@ -132,8 +136,8 @@
 
        ((when flg1)
         (if (equal sp/dp #.*OP-DP*)
-            (!!ms-fresh :dp-sse-add/sub/mul/div/max/min flg1)
-          (!!ms-fresh :sp-sse-add/sub/mul/div/max/min flg1)))
+            (!!fault-fresh :fp-exception :dp-sse-add/sub/mul/div/max/min flg1)
+          (!!fault-fresh :fp-exception :sp-sse-add/sub/mul/div/max/min flg1)))
 
        ;; Update the x86 state:
        (x86 (!mxcsr mxcsr x86))
@@ -141,48 +145,7 @@
        (x86 (!xmmi-size operand-size xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADDSS #x0F58
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MULSS #x0F59
-                                      '(:misc (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'SUBSS #x0F5C
-                                      '(:misc (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MINSS #x0F5D
-                                      '(:misc (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'DIVSS #x0F5E
-                                      '(:misc (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MAXSS #x0F5F
-                                      '(:misc (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'ADDSD #x0F58
-                                      '(:misc (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MULSD #x0F59
-                                      '(:misc (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'SUBSD #x0F5C
-                                      '(:misc (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MINSD #x0F5D
-                                      '(:misc (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'DIVSD #x0F5E
-                                      '(:misc (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MAXSD #x0F5F
-                                      '(:misc (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)))
+      x86))
 
 (def-inst x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
 
@@ -205,12 +168,16 @@
 
   :body
   (b* ((ctx 'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
@@ -218,9 +185,9 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
 
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
 
        (inst-ac?
         ;; Exceptions Type 2
@@ -230,7 +197,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac?
+         proc-mode #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
@@ -323,28 +290,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADDPS #x0F58
-                                      '(:nil nil)
-                                      'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MULPS #x0F59
-                                      '(:nil nil)
-                                      'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)
-    (add-to-implemented-opcodes-table 'SUBPS #x0F5C
-                                      '(:nil nil)
-                                      'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MINPS #x0F5D
-                                      '(:nil nil)
-                                      'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)
-    (add-to-implemented-opcodes-table 'DIVPS #x0F5E
-                                      '(:nil nil)
-                                      'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MAXPS #x0F5F
-                                      '(:nil nil)
-                                      'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)))
+    x86))
 
 (def-inst x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
 
@@ -367,10 +313,14 @@
 
   :body
   (b* ((ctx 'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)
+       
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -380,9 +330,9 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
 
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
 
        (inst-ac?
         ;; Exceptions Type 2
@@ -392,7 +342,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac?
+         proc-mode #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
@@ -463,34 +413,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ADDPD #x0F58
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'SUBPD #x0F5C
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MULPD #x0F59
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'DIVPD #x0F5E
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MAXPD #x0F5F
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MINPD #x0F5D
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)))
+    x86))
 
 ;; ======================================================================
 
@@ -511,10 +434,14 @@
 
   :body
   (b* ((ctx 'x86-sqrts?-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -524,16 +451,16 @@
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
 
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
 
        (inst-ac?
         ;; Exceptions Type 3
         t)
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* operand-size inst-ac?
+         proc-mode #.*xmm-access* operand-size inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
@@ -572,18 +499,7 @@
        (x86 (!xmmi-size operand-size xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'SQRTSS #x0F51
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-sqrts?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'SQRTSD #x0F51
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-sqrts?-Op/En-RM)))
+      x86))
 
 (def-inst x86-sqrtps-Op/En-RM
 
@@ -599,19 +515,23 @@
 
   :body
   (b* ((ctx 'x86-sqrtps-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
 
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
 
        (inst-ac?
         ;; Exceptions Type 2
@@ -621,7 +541,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac?
+         proc-mode #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
@@ -710,12 +630,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'SQRTPS #x0F51
-                                    '(:nil nil)
-                                    'x86-sqrtps-Op/En-RM))
+    x86))
 
 (def-inst x86-sqrtpd-Op/En-RM
 
@@ -731,19 +646,23 @@
 
   :body
   (b* ((ctx 'x86-sqrtpd-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
 
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        (inst-ac?
         ;; Exceptions Type 2
         nil)
@@ -752,7 +671,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         #.*xmm-access* 16 inst-ac?
+         proc-mode #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand
@@ -817,12 +736,6 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'SQRTPD #x0F51
-                                    '(:misc
-                                      (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                    'x86-sqrtpd-Op/En-RM))
+    x86))
 
 ;; ======================================================================

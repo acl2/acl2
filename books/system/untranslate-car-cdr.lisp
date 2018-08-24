@@ -70,7 +70,7 @@
 ; constraints on evad are exactly analogous to what defevaluator generates.
 ; For example,
 
-; (DEFTHM EVAD-CONSTRAINT-10
+; (DEFTHM EVAD-constraint-11
 ;   (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CADDR))
 ;            (EQUAL (EVAD X A)
 ;                   (CADDR (EVAD (CADR X) A)))))
@@ -245,10 +245,8 @@
                 ((EQUAL FN 'CDDR) (CDDR (CAR ARGS)))
                 ((EQUAL FN 'CADDR) (CADDR (CAR ARGS)))
                 ((EQUAL FN 'CDDDR) (CDDDR (CAR ARGS)))
-                ((EQUAL FN 'CADDDR)
-                 (CADDDR (CAR ARGS)))
-                ((EQUAL FN 'CDDDDR)
-                 (CDDDDR (CAR ARGS)))
+                ((EQUAL FN 'CADDDR) (CADDDR (CAR ARGS)))
+                ((EQUAL FN 'CDDDDR) (CDDDDR (CAR ARGS)))
                 (T NIL))))
  (LOCAL
   (MUTUAL-RECURSION
@@ -267,11 +265,11 @@
            ((ATOM X) NIL)
            ((EQ (CAR X) 'QUOTE) (CAR (CDR X)))
            (T (LET ((ARGS (EVAD-LST (CDR X) A)))
-                (COND ((CONSP (CAR X))
-                       (EVAD (CAR (CDR (CDR (CAR X))))
-                             (PAIRLIS$ (CAR (CDR (CAR X))) ARGS)))
-                      (T (APPLY-FOR-DEFEVALUATOR (CAR X)
-                                                 ARGS)))))))
+                   (COND ((CONSP (CAR X))
+                          (EVAD (CAR (CDR (CDR (CAR X))))
+                                (PAIRLIS$ (CAR (CDR (CAR X))) ARGS)))
+                         (T (APPLY-FOR-DEFEVALUATOR (CAR X)
+                                                    ARGS)))))))
    (DEFUN-NX EVAD-LST (X-LST A)
      (DECLARE (XARGS :MEASURE (ACL2-COUNT X-LST)
                      :WELL-FOUNDED-RELATION O<))
@@ -316,7 +314,7 @@
    :HINTS (("Goal" :EXPAND ((:FREE (X) (HIDE X))
                             (EVAD X A)
                             (:FREE (ARGS)
-                                   (EVAD (CONS (CAR X) ARGS) NIL)))
+                             (EVAD (CONS (CAR X) ARGS) NIL)))
             :IN-THEORY '(EVAL-LIST-KWOTE-LST FIX-TRUE-LIST-EV-LST
                                              CAR-CONS CDR-CONS))))
  (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-0)))
@@ -351,86 +349,91 @@
                          (EVAD-LST (CDR X-LST) A))))
    :HINTS (("Goal" :EXPAND ((EVAD-LST X-LST A)))))
  (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-5)))
+ (DEFTHMD EVAD-CONSTRAINT-6
+   (IMPLIES (AND (NOT (CONSP X)) (NOT (SYMBOLP X)))
+            (EQUAL (EVAD X A) NIL))
+   :HINTS (("Goal" :EXPAND ((EVAD X A)))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-6)))
  (DEFTHM
-   EVAD-CONSTRAINT-6
+   EVAD-CONSTRAINT-7
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CAR))
             (EQUAL (EVAD X A)
                    (CAR (EVAD (CADR X) A))))
    :HINTS (("Goal" :EXPAND ((EVAD X A)
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
-                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-6)))
+                             (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-7)))
  (DEFTHM
-   EVAD-CONSTRAINT-7
+   EVAD-CONSTRAINT-8
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CDR))
             (EQUAL (EVAD X A)
                    (CDR (EVAD (CADR X) A))))
    :HINTS (("Goal" :EXPAND ((EVAD X A)
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
-                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-7)))
+                             (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-8)))
  (DEFTHM
-   EVAD-CONSTRAINT-8
+   EVAD-CONSTRAINT-9
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CADR))
             (EQUAL (EVAD X A)
                    (CADR (EVAD (CADR X) A))))
    :HINTS (("Goal" :EXPAND ((EVAD X A)
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
-                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-8)))
+                             (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-9)))
  (DEFTHM
-   EVAD-CONSTRAINT-9
+   EVAD-CONSTRAINT-10
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CDDR))
             (EQUAL (EVAD X A)
                    (CDDR (EVAD (CADR X) A))))
    :HINTS (("Goal" :EXPAND ((EVAD X A)
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
-                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-9)))
+                             (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-10)))
  (DEFTHM
-   EVAD-CONSTRAINT-10
+   EVAD-CONSTRAINT-11
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CADDR))
             (EQUAL (EVAD X A)
                    (CADDR (EVAD (CADR X) A))))
    :HINTS (("Goal" :EXPAND ((EVAD X A)
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
-                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-10)))
+                             (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-11)))
  (DEFTHM
-   EVAD-CONSTRAINT-11
+   EVAD-CONSTRAINT-12
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CDDDR))
             (EQUAL (EVAD X A)
                    (CDDDR (EVAD (CADR X) A))))
    :HINTS (("Goal" :EXPAND ((EVAD X A)
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
-                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-11)))
+                             (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-12)))
  (DEFTHM
-   EVAD-CONSTRAINT-12
+   EVAD-CONSTRAINT-13
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CADDDR))
             (EQUAL (EVAD X A)
                    (CADDDR (EVAD (CADR X) A))))
    :HINTS (("Goal" :EXPAND ((EVAD X A)
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
-                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-12)))
+                             (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-13)))
  (DEFTHM
-   EVAD-CONSTRAINT-13
+   EVAD-CONSTRAINT-14
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CDDDDR))
             (EQUAL (EVAD X A)
                    (CDDDDR (EVAD (CADR X) A))))
    :HINTS (("Goal" :EXPAND ((EVAD X A)
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
-                                   (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-13))))
+                             (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-14))))
 
 ; We are actually only interested in ADR lists whose lengths lie between 2 and
 ; 5, and there are only a finite number of them.  Proofs are easier if we just

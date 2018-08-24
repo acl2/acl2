@@ -80,6 +80,14 @@ def normal(modname, wirename)
   outlaw_warning(modname, "VL-WARN-UNDECLARED", wirename)
 end
 
+def typo(modname, wirename)
+  match_warning(modname, "VL-WARN-POSSIBLE-TYPO", wirename)
+end
+
+def notypo(modname, wirename)
+  outlaw_warning(modname, "VL-WARN-POSSIBLE-TYPO", wirename)
+end
+
 # We no longer expect to support top-level unset parameters
 #spurious(:"Design Root", "top_spurious ")
 #unset(:"Design Root", "top_unset ")
@@ -337,6 +345,24 @@ normal(:cosim_gen7, "mode")
 # and marking all possible candidates that we find.
 
 #unset(:cosim_gen7, "Variable bb1_unset")
+
+
+typo(:typotest, "eventsFromNarby")
+typo(:typotest, "eventsFromAjar")
+notypo(:typotest, "kindsOfSda")
+notypo(:typotest, "kindsOfFrut")
+
+
+# Previously we caused nonsensical warnings for sequential UDPs.  Make
+# sure we're filtering them out correctly.
+normal(:awful_flop, "out")
+normal(:awful_flop, "data")
+normal(:awful_flop, "clock")
+
+normal(:enumtest, "FOO")
+normal(:enumtest, "BAR")
+unused(:enumtest, "a")
+unset(:enumtest, "b")
 
 
 

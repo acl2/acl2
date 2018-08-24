@@ -251,6 +251,7 @@
            (equal (rgfi *rax* (x86-run 15 x86))
                   (logcount (xr :rgf *rdi* x86))))
   :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
+                                    x86-operation-mode
 
                                     shr-spec
                                     shr-spec-32
@@ -264,7 +265,7 @@
                                     imul-spec-32
                                     gpr-sub-spec-4
 
-                                    top-level-opcode-execute
+                                    one-byte-opcode-execute
                                     !rgfi-size
                                     x86-operand-to-reg/mem
                                     x86-operand-to-reg/mem$
@@ -899,6 +900,7 @@
             (equal (rgfi *rax* (x86-run 16 (x86-run 18 x86)))
                    (logcount n)))
    :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
+                                     x86-operation-mode
 
                                      shr-spec
                                      shr-spec-32
@@ -918,7 +920,7 @@
                                      ;; imul-spec-32
                                      gpr-sub-spec-4
 
-                                     top-level-opcode-execute
+                                     one-byte-opcode-execute
                                      !rgfi-size
                                      x86-operand-to-reg/mem
                                      x86-operand-to-reg/mem$

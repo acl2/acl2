@@ -99,10 +99,14 @@
 
   :body
   (b* ((ctx 'x86-shufps-Op/En-RMI)
+       
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -111,9 +115,9 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
        ;; non 16-byte aligned addresses on a real machine.
@@ -125,7 +129,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -189,12 +193,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'SHUFPS #x0FC6
-                                    '(:nil nil)
-                                    'x86-shufps-Op/En-RMI))
+    x86))
 
 (def-inst x86-shufpd-Op/En-RMI
 
@@ -210,10 +209,14 @@
 
   :body
   (b* ((ctx 'x86-shufpd-Op/En-RMI)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock) (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
@@ -221,8 +224,8 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
        ;; non 16-byte aligned addresses on a real machine.
@@ -234,7 +237,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -286,13 +289,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'SHUFPD #x0FC6
-                                    '(:misc
-                                      (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                    'x86-shufpd-Op/En-RMI))
+    x86))
 
 (def-inst x86-unpck?ps-Op/En-RM
 
@@ -328,10 +325,14 @@
 
   :body
   (b* ((ctx 'x86-unpck?ps-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -341,8 +342,8 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
        ;; non 16-byte aligned addresses on a real machine.
@@ -354,7 +355,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -416,15 +417,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'UNPCKLPS #x0F14
-                                      '(:nil nil)
-                                      'x86-unpck?ps-Op/En-RM)
-    (add-to-implemented-opcodes-table 'UNPCKHPS #x0F15
-                                      '(:nil nil)
-                                      'x86-unpck?ps-Op/En-RM)))
+    x86))
 
 (def-inst x86-unpck?pd-Op/En-RM
 
@@ -460,10 +453,14 @@
 
   :body
   (b* ((ctx 'x86-unpck?pd-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -473,8 +470,8 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
        ;; non 16-byte aligned addresses on a real machine.
@@ -486,7 +483,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -534,17 +531,6 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'UNPCKLPD #x0F14
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-unpck?pd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'UNPCKHPD #x0F15
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-unpck?pd-Op/En-RM)))
+    x86))
 
 ;; ======================================================================

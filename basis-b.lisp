@@ -2022,7 +2022,7 @@
   (fchecksum-obj obj))
 
 ; ; To use old check-sum-obj code, but then add check-sum-obj to
-; ; *PRIMITIVE-PROGRAM-FNS-WITH-RAW-CODE* if doing this for a build:
+; ; *INITIAL-PROGRAM-FNS-WITH-RAW-CODE* if doing this for a build:
 ; (defun check-sum-obj (obj)
 ;   #-acl2-loop-only
 ;   (return-from check-sum-obj

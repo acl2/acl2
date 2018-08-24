@@ -43,6 +43,9 @@
 
 ;; Misc. tools
 (include-book "tools/execution/top" :ttags :all)
+;; Examples of concrete simulations
+(include-book "tools/execution/examples/top" :ttags :all)
+
 
 ;; General-purpose code libraries: note that we don't include
 ;; proofs/top here --- the proofs of correctness of various programs
@@ -63,24 +66,11 @@
   at UT Austin"
   :long "<p><img src='res/images/x86isa.png' /></p>")
 
-(xdoc::order-subtopics
- X86ISA
- (Introduction
-  x86isa-build-instructions
-  utils
-  machine
-  program-execution
-  model-validation
-  proof-utilities
-  debugging-code-proofs
-  Contributors
-  Publications
-  TO-DO))
-
 (defsection Introduction
   :parents (x86isa)
 
-  :short "A Formal and Executable Model of the x86 Instruction Set Architecture"
+  :short "A Formal and Executable Model of the x86 Instruction Set
+  Architecture"
 
   :long "<p>These books contain the specification of x86 instruction
  set architecture \(ISA\); we characterize x86 machine instructions and
@@ -117,40 +107,11 @@
  and ambiguities were resolved by cross-referencing <a
  href='http://developer.amd.com/resources/documentation-articles/developer-guides-manuals/'>AMD
  manuals</a> and running tests on real machines to understand processor
- behavior.  </p>
+ behavior. </p>
 
- <p>There are a multitude of features in the x86 ISA that include those
- left over from its early days to ensure backward
- compatibility. Although formally specifying the x86 ISA in its
- entirety would be ideal, the focus of these books is the <b>64-bit
- sub-mode of Intel's IA-32e mode</b> --- most modern software relies on
- 64-bit computing anyway. Some components of the x86 ISA state that
- need to be modeled are as follows:</p>
-
- <ul>
-
- <li>General-purpose registers \(e.g., @('rax'), @('rbx'), etc.\),
- segment registers \(e.g., @('cs'), @('ss'), etc.\), machine-specific
- registers \(e.g., @('ia32\_efer'), @('ia32\_fs\_base'), etc.\),
- etc.</li>
-
- <li>64-bit instruction pointer @('rip')</li>
-
- <li>64-bit flags @('rflags')</li>
-
- <li>Memory management registers \(e.g., @('ldtr'), @('gdtr')\)</li>
-
- <li>Physical and linear memory address space</li>
-
- </ul>
-
- <p>Other capabilities that are supported include all the addressing
- modes, memory management via paging and segmentation, and the
- instruction fetch-decode-execute cycle.</p>
-
- <p>The model is being extended to support 32-bit mode, both as the legacy
- protected mode and as the compatibility sub-mode of Intel's IA-32e mode.  This
- extension is still experimental; it has not been thoroughly tested yet.</p>
+ <p>The current focus of these books is Intel's <b>IA-32e mode</b>, which
+ includes 64-bit and Compatibility sub-modes, and the <b>32-bit protected
+ mode</b>.</p>
 
  <p>To see a list of opcodes implemented in these books, see @(see
  implemented-opcodes).</p>
@@ -256,16 +217,22 @@
   :short "Building books related to the x86 ISA and the machine-code
   analysis framework"
 
-  :long "<p>Two ways of building the @('x86isa') books are:</p>
+  :long "<p>Some ways of building the @('x86isa') books are:</p>
 
  <ol>
 
  <li>
- <p>Using the Makefile provided with the @('x86isa') books: Users of
- these books who wish to simulate x86 programs with non-deterministic
- computations like @('SYSCALL') \(in @(see app-view)\)
- should use this Makefile and run make with @('X86ISA_EXEC') set to
- @('t') \(which is the default value\).</p>
+ <p>Using @('cert.pl top'): This @(see build::cert.pl) option should work well
+ for most users.  Users who want to execute programs that utilize @('SYSCALL'),
+ @('RDRAND'), etc. should consider the option listed below.</p>
+ </li>
+
+ <li>
+ <p>Using the Makefile provided with the @('x86isa') books: Users of these
+ books who wish to simulate x86 programs with non-deterministic computations
+ like @('SYSCALL') \(in @(see app-view)\) should use the Makefile provided with
+ @('x86isa') and run make with @('X86ISA_EXEC') set to @('t') \(which is the
+ default value\).</p>
 
  <code>
  make JOBS=8 \\
@@ -324,14 +291,14 @@
   :short "How do we trust that our x86 ISA model is faithful to the
   real machine?"
 
-  :long "<p>Doc topic coming soon!  For now, here's an illustrative
+  :long "<p>Doc. topic coming soon!  For now, here's an illustrative
   image.</p>
 
-<p><img src='res/images/cosim.png' /></p>")
+ <p><img src='res/images/cosim.png' /></p>")
 
 (defxdoc Publications
   :parents (x86isa)
-  :short "Technical publications related to the work done during this project"
+  :short "Technical publications related to @('x86isa')"
   :long "<p>From the oldest to the newest:</p>
  <ol>
 
@@ -461,124 +428,47 @@
 
  <ul>
 
- <li>Generate the dispatch function using
- @('implemented-opcodes-table') in @('machine/x86.lisp').</li>
-
  <li>Save memory by loading either the elf or mach-o stobj as
  necessary, as opposed to loading both by default in
  @('tools/execution/top.lisp').</li>
 
  </ul>")
 
+;; ----------------------------------------------------------------------
 
-(defun implemented-opcodes-table-entry-p (e)
-  (declare (xargs :guard t))
-  ;; Maybe extend this to other fields too?
-  (and (consp e)
-       (consp (car e))
-       ;; Opcode
-       (natp (caar e))))
+(xdoc::order-subtopics
+ X86ISA
+ (Introduction
+  implemented-opcodes
+  x86isa-build-instructions
+  utils
+  machine
+  program-execution
+  model-validation
+  proof-utilities
+  debugging-code-proofs
+  Contributors
+  Publications
+  TO-DO))
 
-(defun implemented-opcodes-table-alist-p (l)
-  (declare (xargs :guard t))
-  (cond ((not (consp l)) (eq l nil))
-        (t (and (implemented-opcodes-table-entry-p (car l))
-                (implemented-opcodes-table-alist-p (cdr l))))))
-
-(assert-event
- (equal (implemented-opcodes-table-alist-p
-         (table-alist 'implemented-opcodes-table (w state)))
-        t))
-
-(defun x86-opcode-< (x y)
-  (declare (xargs :guard (and (implemented-opcodes-table-entry-p x)
-                              (implemented-opcodes-table-entry-p y))))
-  (b* ((x-opcode (caar x))
-       (y-opcode (caar y)))
-    (< x-opcode y-opcode)))
-
-(acl2::defsort sort-by-x86-opcodes<
-               :prefix x86-sort-by-opcode
-               :compare< x86-opcode-<
-               :comparablep implemented-opcodes-table-entry-p
-               :comparable-listp implemented-opcodes-table-alist-p
-               :true-listp t
-               :weak t)
-
-;; (sort-by-x86-opcodes< (table-alist 'implemented-opcodes-table (w state)))
-
-(defun print-implemented-opcodes-table (op-table)
-  (declare (xargs :mode :program))
-  ;; (print-implemented-opcodes-table (table-alist 'implemented-opcodes-table (w state)))
-  (if (endp op-table)
-      nil
-    (b* ((t-entry           (car op-table))
-         (ins-name          (symbol-name (car (cdr t-entry))))
-         (semantic-fn-name  (symbol-name (cdr (cdr t-entry))))
-         (t-opcode-info     (car t-entry))
-         (t-opcode          (car t-opcode-info))
-         (opcode-string     (cond
-                             ((n04p t-opcode)
-                              (string-append "0" (str::natstr16 t-opcode)))
-                             ((n08p t-opcode)
-                              (str::natstr16 t-opcode))
-                             ((n12p t-opcode)
-                              (string-append "0" (str::natstr16 t-opcode)))
-                             (t
-                              (str::natstr16 t-opcode))))
-         (opcode-extns      (cdr t-opcode-info))
-         (opcode-extns      (if (equal (car opcode-extns) :nil)
-                                nil
-                              opcode-extns))
-
-         (table-info-string
-          (fms-to-string
-           "<li>Opcode: ~s0 Extension: ~y1 Mnemonic: <b>~s2</b> <br/> Semantic Function: @(see ~s3)</li>"
-           (list (cons #\0 opcode-string)
-                 (cons #\1 opcode-extns)
-                 (cons #\2 ins-name)
-                 (cons #\3 semantic-fn-name)))))
-      (concatenate
-       'string
-       table-info-string
-       (print-implemented-opcodes-table (cdr op-table))))))
-
-(define generate-implemented-opcodes-section (state)
-  :mode :program
-  ;; TO-DO: Link to relevant sections in the Intel manuals?
-  (b* ((long-section
-        (string-append-lst
-         (list
-          "<p>In the list below, <i>opcode</i> refers to the x86
-  opcode (one- or two-byte) in hexadecimal, <i>extension</i> refers to
-  the opcode extension (e.g., an implementation of the CMP instruction
-  is identified by both the opcode 0x80 and the extension 3, which is
-  the value of the REG field in the ModR/M byte of the instruction),
-  <i>mnemonic</i> refers to the name of the instruction, and
-  <i>semantic function</i> refers to the specification function of
-  that opcode in the <tt>x86isa</tt> books.</p>
-
-  <ul>"
-          (print-implemented-opcodes-table
-           (sort-by-x86-opcodes< (table-alist 'implemented-opcodes-table (w state))))
-
-          "</ul>"))))
-
-    `(defsection implemented-opcodes
-       :parents (instructions)
-       :short "Opcodes supported by the x86 model"
-       :long ,long-section)))
-
-(make-event (generate-implemented-opcodes-section state))
+(xdoc::order-subtopics
+ implemented-opcodes
+ (one-byte-opcodes-table
+  two-byte-opcodes-table
+  0f-38-three-byte-opcodes-table
+  0f-3a-three-byte-opcodes-table))
 
 (xdoc::order-subtopics
  instructions
  (implemented-opcodes
+  opcode-maps
   instruction-semantic-functions
   one-byte-opcodes
   two-byte-opcodes
   fp-opcodes
-  privileged-opcodes))
+  privileged-opcodes
+  x86-illegal-instruction
+  x86-step-unimplemented))
 
 (xdoc::order-subtopics
  machine

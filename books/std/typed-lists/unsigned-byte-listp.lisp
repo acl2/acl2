@@ -119,7 +119,14 @@
     (implies (and (unsigned-byte-listp n l)
                   (< key (len l)))
              (equal (unsigned-byte-listp n (update-nth key val l))
-                    (unsigned-byte-p n val)))))
+                    (unsigned-byte-p n val))))
 
+  (defthm unsigned-byte-listp-of-rev
+    (equal (unsigned-byte-listp n (rev bytes))
+           (unsigned-byte-listp n (list-fix bytes)))
+    :hints (("goal" :in-theory (enable rev))))
 
-
+  (defthm unsigned-byte-p-of-nth-when-unsigned-byte-p
+    (implies (unsigned-byte-listp bits l)
+             (iff (unsigned-byte-p bits (nth n l))
+                  (< (nfix n) (len l))))))

@@ -51,7 +51,6 @@
 ;; INSTRUCTION: CBW/CWDE/CDQE/CLTQ
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cbw/cwd/cdqe
 
   ;; Op/En: NP
@@ -68,23 +67,15 @@
                                          n32-to-i32
                                          n64-to-i64)
                                         ())))
-  :implemented
-  (add-to-implemented-opcodes-table 'CBW #x98 '(:nil nil)
-                                    'x86-cbw/cwd/cdqe)
-
   :body
 
   (b* ((ctx 'x86-cbw/cwd/cdqe)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
        ((the (integer 1 8) register-size)
-        (select-operand-size nil rex-byte nil prefixes x86))
+        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
        ((the (integer 1 4) src-size) (ash register-size -1))
 
        ((the (unsigned-byte 32) src)
@@ -108,7 +99,7 @@
 
        ;; Update the x86 state:
        (x86 (!rgfi-size register-size *rax* dst rex-byte x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
 
@@ -116,7 +107,6 @@
 ;; INSTRUCTION: CWD/CDQ/CQO
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cwd/cdq/cqo
 
   ;; Op/En: NP
@@ -129,22 +119,15 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'CWD #x99 '(:nil nil) 'x86-cwd/cdq/cqo)
-
   :body
 
   (b* ((ctx 'x86-cwd/cdq/cqo)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
        ((the (integer 1 8) src-size)
-        (select-operand-size nil rex-byte nil prefixes x86))
+        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
        (src (rgfi-size src-size *rax* rex-byte x86))
 
@@ -154,7 +137,7 @@
 
        ;; Update the x86 state:
        (x86 (!rgfi-size src-size *rdx* rDX rex-byte x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
       x86))
 

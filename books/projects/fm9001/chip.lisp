@@ -36,7 +36,7 @@
 ;;                           held low to avoid spurious writes to the RAM.
 ;;
 ;;    TEST-REGFILE-    --  Normally high.  When low, forces the register file
-;;                         output mux to pass data directly from the register 
+;;                         output mux to pass data directly from the register
 ;;                         file RAM.
 ;;
 ;;    PC-REG-IN[0..3]    --  The PC-REG inputs.
@@ -68,7 +68,7 @@
 
 (module-generator
  chip-module* ()
- 
+
  'chip-module
 
  (list* 'clk 'ti 'te 'dtack- 'reset- 'hold-
@@ -86,7 +86,7 @@
  '(regs cvnz-flags a-reg b-reg i-reg data-out addr-out
         reset-latch dtack-latch hold-latch
         pc-reg cntl-state)
- 
+
  (list
 
   ;; The sequential modules, in specification order except for CNTL-STATE,
@@ -236,7 +236,7 @@
   ;;  computation.
 
   (list 'timing-gate '(timing) 'id (list (si 'alu-bus 2)))
- 
+
   ;;  Rename the scan out
 
   (list 'scanout '(to) 'id (list (si 'pc-reg 3))))
@@ -693,7 +693,7 @@
 ;;    TO      --  Test Output (Scan out)
 ;;    TIMING  --  The net corresponding to the longest combinational path.
 ;;                Used to verify the speed of the device.
-             
+
 ;;    HDACK-   --  Hold Acknowledge
 
 ;;    RW-      --  Memory control lines  (Tristate)
@@ -715,16 +715,16 @@
         (append (sis 'pc-reg-in 0 4)
                 (sis 'data-bus 0 32)))
 
- (list* 'po 'to 'timing 'hdack- 'rw- 'strobe- 
+ (list* 'po 'to 'timing 'hdack- 'rw- 'strobe-
         (append (sis 'addr-out 0 32)
                 (append (sis 'data-bus 0 32)
                         (append (sis 'flags 0 4)
                                 (append (sis 'cntl-state 0 5)
                                         (sis 'i-reg 28 4))))))
 
- ;;  The processor state 
+ ;;  The processor state
  '(body)
- 
+
  (list
 
   ;;  The processor core.
@@ -916,7 +916,7 @@
                         (fv-if (f-nand data-in-select
                                        (f-not (car last-dtack-)))
                                reg-bus
-                               (v-wire data-in 
+                               (v-wire data-in
                                        (vft-buf (f-not rw-)
                                                 (v-threefix
                                                  (strip-cars data-out)))))))
@@ -1035,7 +1035,7 @@
                          (fv-if (f-nand data-in-select
                                         (f-not (car last-dtack-)))
                                 reg-bus
-                                (v-wire data-in 
+                                (v-wire data-in
                                         (vft-buf (f-not (f-buf rw-))
                                                  (v-threefix
                                                   (strip-cars data-out)))))))
@@ -1144,7 +1144,7 @@
  (list
   ;;  The FM9001
   (list 'fm9001
-        (list* 'po 'to 'timing 'hdack- 'rw- 'strobe- 
+        (list* 'po 'to 'timing 'hdack- 'rw- 'strobe-
                (append (sis 'addr-out 0 32)
                        (append (sis 'fm9001-data 0 32)
                                (append (sis 'flags 0 4)
@@ -1164,7 +1164,7 @@
         (sis 'addr-bus 0 32)
         (si 'v-pullup 32)
         (sis 'addr-out 0 32))
-  
+
   ;;  Memory
   (list 'mem
         (list* 'dtack- (sis 'mem-data 0 32))
@@ -1613,7 +1613,12 @@
   :hints (("Goal"
            :in-theory (e/d (map-up-1-input)
                            (car-cdr-elim
-                            fm9001-state-as-a-list))
+                            fm9001-state-as-a-list
+
+; The following rule was disabled by Matt K. after v8-0, due to ACL2 changes
+; based on keeping LET-expressions on right-hand sides of rewrite rules.
+
+                            acl2::cons-car-cdr))
            :use ((:instance fm9001-state-as-a-list
                             (st sts))
                  (:instance
@@ -1655,7 +1660,7 @@
                 (fm9001-state-structure sts)
                 (chip-system-invariant sts)
                 (chip-system-operating-inputs-p inputs n)
-                (equal fm9001-inputs (map-up-inputs inputs))) 
+                (equal fm9001-inputs (map-up-inputs inputs)))
            (equal (de-sim-n 'chip-system inputs sts netlist n)
                   (run-fm9001 sts fm9001-inputs n)))
   :hints (("Goal"

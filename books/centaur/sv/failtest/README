@@ -44,12 +44,32 @@ assignexpr5.v -- assignment expression in gate instance (vcs crash)
 
 bigwire1.v -- negative indices in wire bounds
 
+bind1.v -- trying to bind to module instance inside a generate
+bind2.v -- trying to bind mymod : myinst where mymod is wrong for myinst
+bind3.v -- trying to bind mymod : myinst where myinst isn't defined
+bind4.v -- trying to use wires from superior module in bind instances
+bind5.v -- trying to bind to myinst, which is a gate instance (other tools crash or reject)
+
+clocking1.v -- clocking block has bad parens
+clocking2.v -- clocking myclocking @(b) where b isn't declared anywhere
+clocking3.v -- clocking myclocking @(b) where b isn't declared previously (some tools reject)
+clocking4.v -- clocking block lists "input a" twice (some tools reject)
+clocking5.v -- clocking block with "input a; output a" (some tools reject, seems like it should be OK?)
+clocking6.v -- clocking block with "input b" where b isn't declared
+clocking7.v -- clocking block has "input b", later attempt to use b in module
+clocking8.v -- non-default clocking block without a name
+clocking9.v -- default clocking block with "input a" (some tools reject, seems possibly OK?)
+
+define1.v -- define macro with equal sign but no default value (some tools reject only if used)
+define2.v -- define macro default arguments do not depend on earlier arguments (other tools reject)
+
 elab1.v -- crazy parameter/generate dependency loop
 elab2.v -- hid into generate of submodule
 elab3.v -- parameter argument to submodule calls function from that submodule that depends on parameters
 elab6.v -- hierarchical reference into generate block before wire declaration
 
 enum1.v -- enum tries to have member foo[0] (explicitly forbidden)
+enum2.v -- redeclaration of enum parameters
 
 fn1.v -- shadowing too hard in function
 fn2.v -- function input names duplicated (ansi syntax)
@@ -214,6 +234,12 @@ param2.v -- multiple (identical) actuals for same named parameter
 param3.v -- named parameter value for a parameter that does not exist
 param4.v -- too many positional parameters
 param5.v -- explicit parameter value given to local parameter
+param6.v -- instantiating parameters with #1,2 instead of #(1,2)
+param7.v -- instantiate array of 3 parameters with 4-element pattern
+param8.v -- instantiate array of 3 parameters with scalar
+param9.v -- default value for parameter array is the wrong size (but never used; some other tools accept, some reject)
+param10.v -- default value for parameter array is a scalar (both reject)
+param11.v -- plain parameter (no signedness, range) with udims (both reject)
 
 port1.v  -- interfaces (locally declared) given to submodule in wrong order (interface connection type error)
 port1b.v -- interfaces (interface ports)  given to submodule in wrong order (interface connection type error)

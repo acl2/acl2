@@ -1115,7 +1115,8 @@ explicit declarations.</p>")
     :vl-inside nil
     :vl-tagged nil
     :vl-pattern x.pattype
-    :vl-special nil)
+    :vl-special nil
+    :vl-eventexpr nil)
   ///
   (defret vl-maybe-datatype-count-of-vl-expr->maybe-subtype
     (< (vl-maybe-datatype-count subtype)
@@ -1196,22 +1197,22 @@ explicit declarations.</p>")
          (warnings (vl-warninglist-fix warnings)))
       (vl-datatype-case x
         :vl-coretype
-        (b* (((mv st warnings) (vl-shadowcheck-packeddimensionlist x.pdims ctx st warnings))
-             ((mv st warnings) (vl-shadowcheck-packeddimensionlist x.udims ctx st warnings)))
+        (b* (((mv st warnings) (vl-shadowcheck-dimensionlist x.pdims ctx st warnings))
+             ((mv st warnings) (vl-shadowcheck-dimensionlist x.udims ctx st warnings)))
           (mv st warnings))
         :vl-struct
-        (b* (((mv st warnings) (vl-shadowcheck-packeddimensionlist x.pdims ctx st warnings))
-             ((mv st warnings) (vl-shadowcheck-packeddimensionlist x.udims ctx st warnings))
+        (b* (((mv st warnings) (vl-shadowcheck-dimensionlist x.pdims ctx st warnings))
+             ((mv st warnings) (vl-shadowcheck-dimensionlist x.udims ctx st warnings))
              ((mv st warnings) (vl-shadowcheck-structmemberlist x.members ctx st warnings)))
           (mv st warnings))
         :vl-union
-        (b* (((mv st warnings) (vl-shadowcheck-packeddimensionlist x.pdims ctx st warnings))
-             ((mv st warnings) (vl-shadowcheck-packeddimensionlist x.udims ctx st warnings))
+        (b* (((mv st warnings) (vl-shadowcheck-dimensionlist x.pdims ctx st warnings))
+             ((mv st warnings) (vl-shadowcheck-dimensionlist x.udims ctx st warnings))
              ((mv st warnings) (vl-shadowcheck-structmemberlist x.members ctx st warnings)))
           (mv st warnings))
         :vl-enum
-        (b* (((mv st warnings) (vl-shadowcheck-packeddimensionlist x.pdims ctx st warnings))
-             ((mv st warnings) (vl-shadowcheck-packeddimensionlist x.udims ctx st warnings))
+        (b* (((mv st warnings) (vl-shadowcheck-dimensionlist x.pdims ctx st warnings))
+             ((mv st warnings) (vl-shadowcheck-dimensionlist x.udims ctx st warnings))
              ((mv st warnings) (vl-shadowcheck-enumitemlist x.items ctx st warnings))
              ((mv st warnings) (vl-shadowcheck-datatype x.basetype ctx st warnings)))
           (mv st warnings))
@@ -1220,8 +1221,8 @@ explicit declarations.</p>")
               (if (vl-idscope-p x.name)
                   (vl-shadowcheck-reference-name (vl-idscope->name x.name) ctx st warnings)
                 (mv st warnings)))
-             ((mv st warnings) (vl-shadowcheck-packeddimensionlist x.pdims ctx st warnings))
-             ((mv st warnings) (vl-shadowcheck-packeddimensionlist x.udims ctx st warnings)))
+             ((mv st warnings) (vl-shadowcheck-dimensionlist x.pdims ctx st warnings))
+             ((mv st warnings) (vl-shadowcheck-dimensionlist x.udims ctx st warnings)))
           (mv st warnings)))))
 
   (define vl-shadowcheck-maybe-datatype ((x        vl-maybe-datatype-p)
@@ -1266,32 +1267,35 @@ explicit declarations.</p>")
          ((mv st warnings) (vl-shadowcheck-maybe-expr x.rhs ctx st warnings)))
       (mv st warnings)))
 
-  (define vl-shadowcheck-packeddimensionlist ((x        vl-packeddimensionlist-p)
-                                              (ctx      any-p)
-                                              (st       vl-shadowcheck-state-p)
-                                              (warnings vl-warninglist-p))
+  (define vl-shadowcheck-dimensionlist ((x        vl-dimensionlist-p)
+                                        (ctx      any-p)
+                                        (st       vl-shadowcheck-state-p)
+                                        (warnings vl-warninglist-p))
     :returns (mv (st       vl-shadowcheck-state-p)
                  (warnings vl-warninglist-p))
-    :measure (vl-packeddimensionlist-count x)
+    :measure (vl-dimensionlist-count x)
     (b* ((st       (vl-shadowcheck-state-fix st))
          (warnings (vl-warninglist-fix warnings))
          ((when (atom x))
           (mv st warnings))
-         ((mv st warnings) (vl-shadowcheck-packeddimension (car x) ctx st warnings)))
-      (vl-shadowcheck-packeddimensionlist (cdr x) ctx st warnings)))
+         ((mv st warnings) (vl-shadowcheck-dimension (car x) ctx st warnings)))
+      (vl-shadowcheck-dimensionlist (cdr x) ctx st warnings)))
 
-  (define vl-shadowcheck-packeddimension ((x        vl-packeddimension-p)
-                                          (ctx      any-p)
-                                          (st       vl-shadowcheck-state-p)
-                                          (warnings vl-warninglist-p))
+  (define vl-shadowcheck-dimension ((x        vl-dimension-p)
+                                    (ctx      any-p)
+                                    (st       vl-shadowcheck-state-p)
+                                    (warnings vl-warninglist-p))
     :returns (mv (st       vl-shadowcheck-state-p)
                  (warnings vl-warninglist-p))
-    :measure (vl-packeddimension-count x)
+    :measure (vl-dimension-count x)
     (b* ((st       (vl-shadowcheck-state-fix st))
          (warnings (vl-warninglist-fix warnings)))
-      (vl-packeddimension-case x
-        :unsized (mv st warnings)
-        :range (vl-shadowcheck-range x.range ctx st warnings))))
+      (vl-dimension-case x
+        :unsized  (mv st warnings)
+        :star     (mv st warnings)
+        :range    (vl-shadowcheck-range x.range ctx st warnings)
+        :queue    (vl-shadowcheck-maybe-expr x.maxsize ctx st warnings)
+        :datatype (vl-shadowcheck-datatype x.type ctx st warnings))))
 
   (define vl-shadowcheck-range ((x        vl-range-p)
                                 (ctx      any-p)
@@ -1524,6 +1528,14 @@ explicit declarations.</p>")
                (st               (vl-shadowcheck-pop-scope st)))
             (mv st warnings)))
 
+         ((when (eq (vl-stmt-kind x) :vl-foreachstmt))
+          (b* (((vl-foreachstmt x))
+               ((mv st warnings) (vl-shadowcheck-push-scope (vl-foreachstmt->blockscope x) st warnings))
+               ((mv st warnings) (vl-shadowcheck-blockitemlist x.vardecls st warnings))
+               ((mv st warnings) (vl-shadowcheck-stmt x.body ctx st warnings))
+               (st               (vl-shadowcheck-pop-scope st)))
+            (mv st warnings)))
+
          ;; No other statement has a scope, but compound statements might have
          ;; block statements inside of them.  See vl-stmt-check-undeclared.  We
          ;; don't use vl-stmt-allexprs here because it grabs exprs from
@@ -1737,8 +1749,14 @@ explicit declarations.</p>")
        ((when (eq tag :vl-cassertion)) (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-property))   (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-sequence))   (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-clkdecl))    (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-gclkdecl))   (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-dpiexport))  (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-fwdtypedef)) (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-bind))       (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-class))      (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-covergroup)) (mv st warnings)) ;; BOZO figure out what we want to do here.
+       ((when (eq tag :vl-elabtask))   (mv st warnings)) ;; BOZO figure out what we want to do here.
        )
     (impossible)
     (mv st warnings)))

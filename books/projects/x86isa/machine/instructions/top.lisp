@@ -82,22 +82,27 @@
 
 (defsection instructions
   :parents (machine)
+  :short "Umbrella topic for specification of Intel's x86 instructions"
   )
 
 (defsection one-byte-opcodes
   :parents (instructions)
-  )
+  :short "Instruction semantic functions for Intel's instructions with a
+  one-byte opcode" )
 
 (defsection two-byte-opcodes
   :parents (instructions)
-  )
+  :short "Instruction semantic functions for Intel's instructions with two-byte
+  opcodes" )
 
 (defsection fp-opcodes
   :parents (instructions)
+  :short "Instruction semantic functions for Intel's floating-point instructions"
   )
 
 (defsection privileged-opcodes
   :parents (instructions)
+  :short "Instruction semantic functions for Intel's privileged instructions"
   )
 
 (defsection instruction-semantic-functions
@@ -135,11 +140,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; INSTRUCTION: HLT
 ;; ======================================================================
 
-;; [Shilpi]: I haven't specified the halt instruction accurately --- halt can
-;; be called only in the supervisor mode.  For now, we use the HALT instruction
-;; for convenience, e.g., when we want to stop program execution.
-
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-hlt
 
   ;; Op/En: NP
@@ -150,14 +150,15 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'HLT #xF4 '(:nil nil) 'x86-hlt)
-
   :body
 
   (b* ((ctx 'x86-hlt)
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       (cpl (cpl x86))
+       ((unless (eql cpl 0))
+        (!!fault-fresh :gp 0 :lock-prefix prefixes)) ;; #GP(0)
 
        ;; Update the x86 state:
 
@@ -165,14 +166,13 @@ writes the final value of the instruction pointer into RIP.</p>")
        ;; "If an interrupt ... is used to resume execution after a HLT
        ;; instruction, the saved instruction pointer points to the instruction
        ;; following the HLT instruction."
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     (!!ms-fresh :legal-halt :hlt)))
 
 ;; ======================================================================
 ;; INSTRUCTION: CMC/CLC/STC/CLD/STD
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cmc/clc/stc/cld/std
 
   ;; Op/En: NP
@@ -187,24 +187,11 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CMC #xF5 '(:nil nil)
-                                      'x86-cmc/clc/stc/cld/std)
-    (add-to-implemented-opcodes-table 'CLC #xF8 '(:nil nil)
-                                      'x86-cmc/clc/stc/cld/std)
-    (add-to-implemented-opcodes-table 'STC #xF9 '(:nil nil)
-                                      'x86-cmc/clc/stc/cld/std)
-    (add-to-implemented-opcodes-table 'CLD #xFC '(:nil nil)
-                                      'x86-cmc/clc/stc/cld/std)
-    (add-to-implemented-opcodes-table 'STD #xFD '(:nil nil)
-                                      'x86-cmc/clc/stc/cld/std))
-
   :body
 
   (b* ((ctx 'x86-cmc/clc/stc/cld/std)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (x86 (case opcode
@@ -222,14 +209,13 @@ writes the final value of the instruction pointer into RIP.</p>")
               (otherwise ;; #xFD STD
                (!flgi #.*df* 1 x86))))
 
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
       x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: SAHF
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-sahf
 
   ;; Opcode: #x9E
@@ -242,13 +228,10 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'SAHF #x9E '(:nil nil) 'x86-sahf)
-
   :body
 
   (b* ((ctx 'x86-sahf)
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        ((the (unsigned-byte 16) ax)
         (mbe :logic (rgfi-size 2 *rax* rex-byte x86)
@@ -259,14 +242,13 @@ writes the final value of the instruction pointer into RIP.</p>")
        ((the (unsigned-byte 8) ah) (logand #b11010111 (logior #b10 ah)))
        ;; Update the x86 state:
        (x86 (!rflags ah x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
       x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: LAHF
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-lahf
 
   ;; Opcode: #x9F
@@ -279,13 +261,10 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'LAHF #x9F '(:nil nil) 'x86-lahf)
-
   :body
 
   (b* ((ctx 'x86-lahf)
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        ((the (unsigned-byte 8) ah)
         (logand #xff (the (unsigned-byte 32) (rflags x86))))
@@ -296,14 +275,13 @@ writes the final value of the instruction pointer into RIP.</p>")
        ;; Update the x86 state:
        (x86 (mbe :logic (!rgfi-size 2 *rax* ax rex-byte x86)
                  :exec (wr16 *rax* ax x86)))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
       x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: RDRAND
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-rdrand
 
   ;; 0F C7:
@@ -318,42 +296,39 @@ writes the final value of the instruction pointer into RIP.</p>")
                 :hints (("Goal" :in-theory (e/d (hw_rnd_gen
                                                  hw_rnd_gen-logic)
                                                 (force (force))))))
-  :implemented
-  (add-to-implemented-opcodes-table 'RDRAND #x0FC7 '(:reg 6 :mod 3)
-                                    'x86-rdrand)
 
   :long
   "<p>Note from the Intel Manual (March 2017, Vol. 1, Section 7.3.17):</p>
 
-<p><em>Under heavy load, with multiple cores executing RDRAND in
-parallel, it is possible, though unlikely, for the demand of random
-numbers by software processes or threads to exceed the rate at which
-the random number generator hardware can supply them. This will lead
-to the RDRAND instruction returning no data transitorily. The RDRAND
-instruction indicates the occurrence of this rare situation by
-clearing the CF flag.</em></p>
+ <p><em>Under heavy load, with multiple cores executing RDRAND in parallel, it
+ is possible, though unlikely, for the demand of random numbers by software
+ processes or threads to exceed the rate at which the random number generator
+ hardware can supply them. This will lead to the RDRAND instruction returning
+ no data transitorily. The RDRAND instruction indicates the occurrence of this
+ rare situation by clearing the CF flag.</em></p>
 
-<p>See <a
-href='http://software.intel.com/en-us/articles/intel-digital-random-number-generator-drng-software-implementation-guide/'>Intel's
-Digital Random Number Generator Guide</a> for more details.</p>"
+ <p>See <a
+ href='http://software.intel.com/en-us/articles/intel-digital-random-number-generator-drng-software-implementation-guide/'>Intel's
+ Digital Random Number Generator Guide</a> for more details.</p>"
 
   :body
 
   (b* ((ctx 'x86-rdrand)
+
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
        ;; TODO: throw #UD if CPUID.01H:ECX.RDRAND[bit 30] = 0
        ;; (see Intel manual, Mar'17, Vol 2, RDRAND)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       (rep (prefixes-slice :group-2-prefix prefixes))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (rep (prefixes-slice :seg prefixes))
        (rep-p (or (equal #.*repe* rep)
                   (equal #.*repne* rep)))
        ((when (or lock? rep-p))
         (!!fault-fresh :ud nil :lock-prefix-or-rep-p prefixes)) ;; #UD
 
        ((the (integer 1 8) operand-size)
-        (select-operand-size nil rex-byte nil prefixes x86))
+        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
        ((mv cf rand x86)
         (HW_RND_GEN operand-size x86))
@@ -380,8 +355,44 @@ Digital Random Number Generator Guide</a> for more details.</p>"
                    (x86 (!flgi #.*sf* 0 x86))
                    (x86 (!flgi #.*of* 0 x86)))
               x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
       x86))
+
+;; ----------------------------------------------------------------------
+
+(define x86-step-unimplemented (message x86)
+  :parents (instructions)
+  :short "Semantic function corresponding to Intel's instructions unsupported
+  in the @('x86isa') books"
+  :long "<p>Note that the @('ms') field is populated with @('message') here
+  because this function is called when a model-related error occurs.</p>"
+  :returns (x86 x86p :hyp :guard)
+  (b* ((ctx 'x86-step-unimplemented))
+    (!!ms-fresh :message message)))
+
+(define x86-illegal-instruction
+  (message
+   (start-rip :type (signed-byte   #.*max-linear-address-size*))
+   (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
+   x86)
+  :parents (instructions)
+  :short "Semantic function corresponding to opcodes that Intel deems to be
+  illegal or reserved"
+  :long "<p>Note that the @('#UD') (undefined operation) exception should be
+  thrown here, which is why the @('fault') field is populated with
+  @('message').</p>"
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
+  (b* ((ctx 'x86-illegal-instruction)
+       ;; We update the RIP to point to the next instruction --- in case we
+       ;; ever get to the point that we can recover from #UD exceptions, this
+       ;; may be the right thing to do.
+       (x86 (!rip temp-rip x86)))
+    (!!fault-fresh :ud message :instruction-address start-rip)))
+
+(add-to-ruleset instruction-decoding-and-spec-rules
+                '(x86-step-unimplemented
+                  x86-illegal-instruction))
 
 ;; ======================================================================
 

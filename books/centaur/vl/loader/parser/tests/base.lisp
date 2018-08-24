@@ -308,7 +308,10 @@
         :vl-pattern (list* :pattern
                            (vl-pretty-atts atts)
                            (vl-pretty-maybe-datatype x.pattype)
-                           (vl-pretty-assignpat x.pat)))))
+                           (vl-pretty-assignpat x.pat))
+        :vl-eventexpr (list* :event
+                             (vl-pretty-atts x.atts)
+                             (vl-pretty-evatomlist x.atoms)))))
 
   (define vl-pretty-atts ((x vl-atts-p))
     :measure (vl-atts-count x)
@@ -384,23 +387,26 @@
         (vl-pretty-range x)
       '(no-range)))
 
-  (define vl-pretty-packeddimension ((x vl-packeddimension-p))
-    :measure (vl-packeddimension-count x)
-    (vl-packeddimension-case x
+  (define vl-pretty-dimension ((x vl-dimension-p))
+    :measure (vl-dimension-count x)
+    (vl-dimension-case x
       :unsized :vl-unsized-dimension
-      :range   (vl-pretty-range x.range)))
+      :star    :vl-star-dimension
+      :range   (vl-pretty-range x.range)
+      :datatype (list :vl-type-dimension (vl-pretty-datatype x.type))
+      :queue    (list :vl-queue-dimension (vl-pretty-maybe-expr x.maxsize))))
 
-  (define vl-pretty-packeddimensionlist ((x vl-packeddimensionlist-p))
-    :measure (vl-packeddimensionlist-count x)
+  (define vl-pretty-dimensionlist ((x vl-dimensionlist-p))
+    :measure (vl-dimensionlist-count x)
     (if (atom x)
         nil
-      (cons (vl-pretty-packeddimension (car x))
-            (vl-pretty-packeddimensionlist (cdr x)))))
+      (cons (vl-pretty-dimension (car x))
+            (vl-pretty-dimensionlist (cdr x)))))
 
-  (define vl-pretty-maybe-packeddimension ((x vl-maybe-packeddimension-p))
-    :measure (vl-maybe-packeddimension-count x)
+  (define vl-pretty-maybe-dimension ((x vl-maybe-dimension-p))
+    :measure (vl-maybe-dimension-count x)
     (if x
-        (vl-pretty-packeddimension x)
+        (vl-pretty-dimension x)
       nil))
 
   (define vl-pretty-datatype ((x vl-datatype-p))
@@ -411,16 +417,16 @@
       (:vl-coretype
        (append (list x.name
                      (if x.signedp 'signed 'unsigned))
-               (and x.pdims (vl-pretty-packeddimensionlist x.pdims))
-               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))
+               (and x.pdims (vl-pretty-dimensionlist x.pdims))
+               (and x.udims (cons :udims (vl-pretty-dimensionlist x.udims)))))
 
       (:vl-struct
        (append '(:vl-struct)
                (if x.packedp '(packed) nil)
                (if x.signedp '(signed) nil)
                (vl-pretty-structmemberlist x.members)
-               (and x.pdims (cons :dims (vl-pretty-packeddimensionlist x.pdims)))
-               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))
+               (and x.pdims (cons :dims (vl-pretty-dimensionlist x.pdims)))
+               (and x.udims (cons :udims (vl-pretty-dimensionlist x.udims)))))
 
       (:vl-union
        (append '(:vl-union)
@@ -428,21 +434,21 @@
                (if x.packedp '(packed) nil)
                (if x.signedp '(signed) nil)
                (vl-pretty-structmemberlist x.members)
-               (and x.pdims (cons :dims (vl-pretty-packeddimensionlist x.pdims)))
-               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))
+               (and x.pdims (cons :dims (vl-pretty-dimensionlist x.pdims)))
+               (and x.udims (cons :udims (vl-pretty-dimensionlist x.udims)))))
 
       (:vl-enum
        (append '(:vl-enum)
                (vl-pretty-datatype x.basetype)
                (vl-pretty-enumitemlist x.items)
-               (and x.pdims (cons :dims (vl-pretty-packeddimensionlist x.pdims)))
-               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))
+               (and x.pdims (cons :dims (vl-pretty-dimensionlist x.pdims)))
+               (and x.udims (cons :udims (vl-pretty-dimensionlist x.udims)))))
 
       (:vl-usertype
        (append '(:vl-usertype)
                (list (vl-pretty-scopeexpr x.name))
-               (and x.pdims (cons :dims (vl-pretty-packeddimensionlist x.pdims)))
-               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))))
+               (and x.pdims (cons :dims (vl-pretty-dimensionlist x.pdims)))
+               (and x.udims (cons :udims (vl-pretty-dimensionlist x.udims)))))))
 
   (define vl-pretty-structmemberlist ((x vl-structmemberlist-p))
     :measure (vl-structmemberlist-count x)
@@ -464,7 +470,20 @@
     :measure (vl-maybe-datatype-count x)
     (if x
         (vl-pretty-datatype x)
-      nil)))
+      nil))
+
+  (define vl-pretty-evatom ((x vl-evatom-p))
+    :measure (vl-evatom-count x)
+    (b* (((vl-evatom x)))
+      (list x.type (vl-pretty-expr x.expr))))
+
+  (define vl-pretty-evatomlist ((x vl-evatomlist-p))
+    :measure (vl-evatomlist-count x)
+    (if (atom x)
+        nil
+      (cons (vl-pretty-evatom (car x))
+            (vl-pretty-evatomlist (cdr x))))))
+
 
 (define vl-pretty-range-list ((x vl-rangelist-p))
   (if (atom x)
@@ -521,16 +540,6 @@
       (vl-pretty-fwdtypedef x)
     (vl-pretty-typedef x)))
 
-
-(define vl-pretty-evatom ((x vl-evatom-p))
-  (b* (((vl-evatom x)))
-    (list x.type (vl-pretty-expr x.expr))))
-
-(define vl-pretty-evatomlist ((x vl-evatomlist-p))
-  (if (atom x)
-      nil
-    (cons (vl-pretty-evatom (car x))
-          (vl-pretty-evatomlist (cdr x)))))
 
 (define vl-pretty-eventcontrol ((x vl-eventcontrol-p))
   (b* (((vl-eventcontrol x)))
@@ -734,6 +743,11 @@
     (:vl-forkjoinany  :fork-join-any)
     (:vl-forkjoinnone :fork-join-none)))
 
+(define vl-pretty-rhs ((x vl-rhs-p))
+  (vl-rhs-case x
+    (:vl-rhsexpr (vl-pretty-expr x.guts))
+    (:vl-rhsnew (list* :new x.arrsize (vl-pretty-exprlist x.args)))))
+
 (defines vl-pretty-stmt
 
   (define vl-pretty-stmt ((x vl-stmt-p))
@@ -742,7 +756,7 @@
       :vl-nullstmt :null
       :vl-assignstmt (list* (vl-pretty-expr x.lvalue)
                             (vl-pretty-assign-type x.type)
-                            (vl-pretty-expr x.expr)
+                            (vl-pretty-rhs x.rhs)
                             (append (and x.ctrl (list :ctrl (vl-pretty-delayoreventcontrol x.ctrl))
                                     (and x.atts (list :atts (vl-pretty-atts x.atts))))))
       :vl-deassignstmt (list* (vl-pretty-deassign-type x.type)
@@ -751,7 +765,7 @@
       :vl-callstmt (list* :call
                           (vl-pretty-scopeexpr x.id)
                           (append (and x.typearg (list (vl-pretty-datatype x.typearg)))
-                                  (vl-pretty-exprlist x.args)
+                                  (vl-pretty-maybe-exprlist x.args)
                                   (and x.systemp (list :system))
                                   (and x.voidp (list :void))
                                   (and x.atts (list :atts (vl-pretty-atts x.atts)))))
@@ -781,7 +795,15 @@
                            (vl-pretty-expr x.condition)
                            (vl-pretty-stmt x.body)
                            (and x.atts (list :atts (vl-pretty-atts x.atts))))
+      :vl-dostmt (list* :do (vl-pretty-stmt x.body)
+                        :while (vl-pretty-expr x.condition)
+                        (and x.atts (list :atts (vl-pretty-atts x.atts))))
       :vl-forstmt (list* :for :bozo-for-loops)
+      :vl-foreachstmt (list* :foreach
+                             (vl-pretty-scopeexpr x.array)
+                             :vars x.loopvars
+                             :body (vl-pretty-stmt x.body)
+                             (and x.atts (list :atts (vl-pretty-atts x.atts))))
       :vl-breakstmt (list* :break
                            (and x.atts (list :atts (vl-pretty-atts x.atts))))
       :vl-continuestmt (list* :continue

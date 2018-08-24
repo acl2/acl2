@@ -91,10 +91,14 @@
 
   :body
   (b* ((ctx 'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -104,9 +108,9 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
        (inst-ac? ;; Exceptions Type 4
         nil)
 
@@ -114,7 +118,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -155,57 +159,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'ANDPS #x0F54
-                                      '(:nil nil)
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'ANDNPS #x0F55
-                                      '(:nil nil)
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'ORPS #x0F56
-                                      '(:nil nil)
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'XORPS #x0F57
-                                      '(:nil nil)
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'ANDPD #x0F54
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'ANDNPD #x0F55
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'ORPD #x0F56
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'XORPD #x0F57
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'PAND #x0FDB
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'PANDN #x0FDF
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'POR #x0FEB
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-    (add-to-implemented-opcodes-table 'PXOR #x0FEF
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: SSE/SSE2 Comparison Instructions
@@ -228,10 +182,14 @@
 
   :body
   (b* ((ctx 'x86-cmpss/cmpsd-Op/En-RMI)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -243,14 +201,14 @@
 
        (xmm (xmmi-size operand-size xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
        (inst-ac? ;; Exceptions Type 3
         t)
 
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* operand-size inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -305,18 +263,7 @@
        (x86 (!xmmi-size operand-size xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CMPSS #x0FC2
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cmpss/cmpsd-Op/En-RMI)
-    (add-to-implemented-opcodes-table 'CMPSD #x0FC2
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-cmpss/cmpsd-Op/En-RMI)))
+      x86))
 
 (def-inst x86-cmpps-Op/En-RMI
 
@@ -332,10 +279,14 @@
 
   :body
   (b* ((ctx 'x86-cmpps-Op/En-RMI)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -344,9 +295,9 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
        (inst-ac? ;; Exceptions Type 2
         nil)
 
@@ -354,7 +305,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -474,12 +425,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'CMPPS #x0FC2
-                                    '(:nil nil)
-                                    'x86-cmpps-Op/En-RMI))
+    x86))
 
 (def-inst x86-cmppd-Op/En-RMI
 
@@ -495,10 +441,14 @@
 
   :body
   (b* ((ctx 'x86-cmppd-Op/En-RMI)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -507,8 +457,8 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        (inst-ac? ;; Exceptions Type 2
         nil)
 
@@ -516,7 +466,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -606,13 +556,7 @@
        (x86 (!xmmi-size 16 xmm-index result x86))
 
        (x86 (!rip temp-rip x86)))
-      x86)
-
-  :implemented
-  (add-to-implemented-opcodes-table 'CMPPD #x0FC2
-                                    '(:misc
-                                      (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                    'x86-cmppd-Op/En-RMI))
+      x86))
 
 (def-inst x86-comis?/ucomis?-Op/En-RM
 
@@ -637,10 +581,14 @@
 
   :body
   (b* ((ctx 'x86-comis?/ucomis?-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -651,14 +599,14 @@
         (reg-index reg rex-byte #.*r*))
        (xmm (xmmi-size operand-size xmm-index x86))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
        (inst-ac? ;; Exceptions Type 3
         t)
 
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* operand-size inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -729,24 +677,6 @@
              x86))))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'COMISS #x0F2F
-                                      '(:nil nil)
-                                      'x86-comis?/ucomis?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'UCOMISS #x0F2E
-                                      '(:nil nil)
-                                      'x86-comis?/ucomis?-Op/En-RM)
-
-    (add-to-implemented-opcodes-table 'COMISD #x0F2F
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-comis?/ucomis?-Op/En-RM)
-    (add-to-implemented-opcodes-table 'UCOMISD #x0F2E
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-comis?/ucomis?-Op/En-RM)))
+    x86))
 
 ;; ======================================================================

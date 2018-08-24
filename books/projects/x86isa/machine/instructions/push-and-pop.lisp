@@ -95,7 +95,6 @@
 ;; push
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-general-register
   :parents (one-byte-opcodes)
 
@@ -117,14 +116,14 @@
 
   (b* ((ctx 'x86-push-general-register)
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
+                 (prefixes-slice :opr prefixes)))
 
        ((the (integer 1 8) operand-size)
-        (if (64-bit-modep x86)
+        (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
           (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
@@ -134,8 +133,8 @@
                 (if p3? 2 4)
               (if p3? 4 2)))))
 
-       (rsp (read-*sp x86))
-       ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
+       (rsp (read-*sp proc-mode x86))
+       ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ;; See "Z" in http://ref.x86asm.net/geek.html#x50
@@ -152,7 +151,7 @@
 
        ;; Update the x86 state:
        ((mv flg x86)
-        (wme-size
+        (wme-size proc-mode
          operand-size
          (the (signed-byte #.*max-linear-address-size*) new-rsp)
          *ss*
@@ -171,31 +170,11 @@
          (t ;; Unclassified error!
           (!!fault-fresh flg))))
 
-       (x86 (write-*sp new-rsp x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*sp proc-mode new-rsp x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
-    x86)
+    x86))
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'PUSH #x50 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x51 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x52 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x53 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x54 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x55 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x56 '(:nil nil)
-                                      'x86-push-general-register)
-    (add-to-implemented-opcodes-table 'PUSH #x57 '(:nil nil)
-                                      'x86-push-general-register)))
-
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-Ev
   :parents (one-byte-opcodes)
 
@@ -216,27 +195,24 @@
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
-  :implemented
-  (progn (add-to-implemented-opcodes-table 'PUSH #xFF '(:reg 6) 'x86-push-Ev))
-
   :body
 
   (b* ((ctx 'x86-push-Ev)
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
+                 (prefixes-slice :opr prefixes)))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
 
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
 
        ((the (integer 1 8) operand-size)
-        (if (64-bit-modep x86)
+        (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
           (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
@@ -246,31 +222,25 @@
                 (if p3? 2 4)
               (if p3? 4 2)))))
 
-       (rsp (read-*sp x86))
+       (rsp (read-*sp proc-mode x86))
 
-       ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by) ?E-addr x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
-                                                operand-size
-                                                t ; do alignment checking
-                                                nil ;; Not a memory pointer operand
-                                                seg-reg
-                                                p4?
-                                                temp-rip
-                                                rex-byte
-                                                r/m
-                                                mod
-                                                sib
-                                                0 ;; No immediate operand
-                                                x86))
+        (x86-operand-from-modr/m-and-sib-bytes$
+         proc-mode #.*gpr-access* operand-size
+         t   ; do alignment checking
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -280,7 +250,7 @@
        ;; Update the x86 state:
 
        ((mv flg x86)
-        (wme-size operand-size
+        (wme-size proc-mode operand-size
                   (the (signed-byte #.*max-linear-address-size*) new-rsp)
                   *ss*
                   E
@@ -298,12 +268,11 @@
          (t ;; Unclassified error!
           (!!fault-fresh flg))))
 
-       (x86 (write-*sp new-rsp x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*sp proc-mode new-rsp x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-I
 
   :parents (one-byte-opcodes)
@@ -330,29 +299,22 @@
 
   :guard-hints (("Goal" :in-theory (enable rime-size)))
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'PUSH #x68 '(:nil nil)
-                                      'x86-push-I)
-    (add-to-implemented-opcodes-table 'PUSH #x6A '(:nil nil)
-                                      'x86-push-I))
-
   :body
 
   (b* ((ctx 'x86-push-I)
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
+                 (prefixes-slice :opr prefixes)))
 
        (byte-imm? (eql opcode #x6A))
        ((the (integer 1 8) imm-size)
-        (select-operand-size byte-imm? rex-byte t prefixes x86))
+        (select-operand-size proc-mode byte-imm? rex-byte t prefixes x86))
 
        ((the (integer 1 8) operand-size)
-        (if (64-bit-modep x86)
+        (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
           (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
@@ -362,17 +324,17 @@
                 (if p3? 2 4)
               (if p3? 4 2)))))
 
-       (rsp (read-*sp x86))
-       ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
+       (rsp (read-*sp proc-mode x86))
+       ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((mv flg0 (the (signed-byte 32) imm) x86)
-        (rime-size imm-size temp-rip *cs* :x nil x86))
+        (rime-size proc-mode imm-size temp-rip *cs* :x nil x86))
        ((when flg0)
         (!!ms-fresh :imm-rime-size-error flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip imm-size x86))
+        (add-to-*ip proc-mode temp-rip imm-size x86))
        ((when flg)
         (!!fault-fresh :gp 0 :temp-rip-not-canonical temp-rip)) ;; #GP(0)
 
@@ -382,7 +344,7 @@
 
        ;; Update the x86 state:
        ((mv flg1 x86)
-        (wme-size operand-size
+        (wme-size proc-mode operand-size
                   new-rsp
                   *ss*
                   (mbe :logic (loghead (ash operand-size 3) imm)
@@ -406,12 +368,11 @@
          (t ;; Unclassified error!
           (!!fault-fresh flg1))))
 
-       (x86 (write-*sp new-rsp x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*sp proc-mode new-rsp x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-push-segment-register
   :parents (one-byte-opcodes two-byte-opcodes)
 
@@ -437,38 +398,24 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'PUSH #x0E '(:nil nil)
-                                      'x86-push-segment-register)
-    (add-to-implemented-opcodes-table 'PUSH #x16 '(:nil nil)
-                                      'x86-push-segment-register)
-    (add-to-implemented-opcodes-table 'PUSH #x1E '(:nil nil)
-                                      'x86-push-segment-register)
-    (add-to-implemented-opcodes-table 'PUSH #x06 '(:nil nil)
-                                      'x86-push-segment-register)
-    (add-to-implemented-opcodes-table 'PUSH #x0FA0 '(:nil nil)
-                                      'x86-push-segment-register)
-    (add-to-implemented-opcodes-table 'PUSH #x0FA8 '(:nil nil)
-                                      'x86-push-segment-register))
 
   :body
 
   (b* ((ctx 'x86-push-general-register)
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ;; PUSH CS/SS/DS/ES are invalid in 64-bit mode:
-       ((when (and (64-bit-modep x86)
+       ((when (and (equal proc-mode #.*64-bit-mode*)
                    (member opcode '(#x0E #x16 #x1E #x06))))
         (!!fault-fresh :ud nil :push-segment-64-bit-mode opcode)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
+                 (prefixes-slice :opr prefixes)))
 
        ((the (integer 1 8) operand-size)
-        (if (64-bit-modep x86)
+        (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
           (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
@@ -478,8 +425,8 @@
                 (if p3? 2 4)
               (if p3? 4 2)))))
 
-       (rsp (read-*sp x86))
-       ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
+       (rsp (read-*sp proc-mode x86))
+       ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((the (unsigned-byte 16) val)
@@ -499,7 +446,7 @@
        ;; Update the x86 state:
 
        ((mv flg x86)
-        (wme-size operand-size
+        (wme-size proc-mode operand-size
                   (the (signed-byte #.*max-linear-address-size*) new-rsp)
                   *ss*
                   ;; If operand-size is 64, val is zero-extended here
@@ -519,8 +466,8 @@
          (t ;; Unclassified error!
           (!!fault-fresh flg))))
 
-       (x86 (write-*sp new-rsp x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*sp proc-mode new-rsp x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
 
@@ -529,7 +476,6 @@
 ;; pop
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-pop-general-register
   :parents (one-byte-opcodes)
 
@@ -549,14 +495,14 @@
 
   (b* ((ctx 'x86-pop-general-register)
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :group-3-prefix prefixes)))
+                 (prefixes-slice :opr prefixes)))
 
        ((the (integer 1 8) operand-size)
-        (if (64-bit-modep x86)
+        (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
           (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
@@ -566,13 +512,13 @@
                 (if p3? 2 4)
               (if p3? 4 2)))))
 
-       (rsp (read-*sp x86))
+       (rsp (read-*sp proc-mode x86))
 
-       ((mv flg new-rsp) (add-to-*sp rsp operand-size x86))
+       ((mv flg new-rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
        ((mv flg0 val x86)
-        (rme-size operand-size rsp *ss* :r (alignment-checking-enabled-p x86) x86
+        (rme-size proc-mode operand-size rsp *ss* :r (alignment-checking-enabled-p x86) x86
                   :mem-ptr? nil))
        ((when flg0)
         (cond
@@ -598,29 +544,17 @@
        ;; that a POP SP/ESP/RSP instruction increments the stack pointer
        ;; before the popped data is written into the stack pointer,
        ;; so the order of the following two bindings is important)
-       (x86 (write-*sp new-rsp x86))
+       (x86 (write-*sp proc-mode new-rsp x86))
        (x86
         ;; See Intel Table 3.1, p.3-3, Vol. 2-A
         (!rgfi-size operand-size (reg-index reg rex-byte #.*b*)
                     val rex-byte x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86)
 
-  :guard-hints (("Goal" :in-theory (enable rme-size)))
+  :guard-hints (("Goal" :in-theory (enable rme-size))))
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'POP #x58 '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x59 '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5A '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5B '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5C '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5D '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5E '(:nil nil) 'x86-pop-general-register)
-    (add-to-implemented-opcodes-table 'POP #x5F '(:nil nil) 'x86-pop-general-register)))
-
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-pop-Ev
   :parents (one-byte-opcodes)
 
@@ -640,28 +574,24 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-
-  :implemented
-  (add-to-implemented-opcodes-table 'POP #x8F '(:reg 0) 'x86-pop-Ev)
-
   :body
 
   (b* ((ctx 'x86-pop-Ev)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
+                   (prefixes-slice :opr prefixes)))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
 
        ((the (integer 1 8) operand-size)
-        (if (64-bit-modep x86)
+        (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
           (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
@@ -671,14 +601,14 @@
                 (if p3? 2 4)
               (if p3? 4 2)))))
 
-       (rsp (read-*sp x86))
+       (rsp (read-*sp proc-mode x86))
 
-       ((mv flg new-rsp) (add-to-*sp rsp operand-size x86))
+       ((mv flg new-rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
        (check-alignment? (alignment-checking-enabled-p x86))
        ((mv flg0 val x86)
-        (rme-size operand-size rsp *ss* :r check-alignment? x86
+        (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86
                   :mem-ptr? nil))
        ((when flg0)
         (cond
@@ -697,15 +627,15 @@
             x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+          (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
                               0 ;; No immediate operand
                               x86)))
        ((when flg1) ;; #SS exception?
         (!!ms-fresh :x86-effective-addr-error flg1))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
-       ((mv flg temp-rip) (add-to-*ip temp-rip increment-RIP-by x86))
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -719,10 +649,10 @@
        ;; before the popped data is written into the stack pointer.
        ;; Thus, we must write to the stack pointer before the operand.
 
-       (x86 (write-*sp new-rsp x86))
+       (x86 (write-*sp proc-mode new-rsp x86))
 
        ((mv flg3 x86)
-        (x86-operand-to-reg/mem$ operand-size
+        (x86-operand-to-reg/mem$ proc-mode operand-size
                                  check-alignment?
                                  nil ;; Not a memory pointer operand
                                  val
@@ -735,7 +665,7 @@
        ((when flg3)
         (!!ms-fresh :x86-operand-to-reg/mem flg3))
 
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86)
 
@@ -771,7 +701,7 @@
 ;;   :body
 
 ;;   (b* ((ctx 'x86-pop-Ev)
-;;        (lock (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+;;        (lock (equal #.*lock* (prefixes-slice :lck prefixes)))
 ;;        ((when lock)
 ;;         (!!ms-fresh :lock-prefix prefixes))
 ;;        (p2 (prefixes-slice :group-2-prefix prefixes))
@@ -798,7 +728,7 @@
 ;;         (!!ms-fresh :new-rsp-not-canonical new-rsp))
 
 ;;        ((mv flg0 val x86)
-;;         (rme-size operand-size rsp *ss* :r x86))
+;;         (rme-size proc-mode operand-size rsp *ss* :r x86))
 ;;        ((when flg0) ;; #SS exception?
 ;;         (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; #SS(0)
 
@@ -807,7 +737,7 @@
 ;;        ((mv flg1 v-addr (the (unsigned-byte 3) increment-RIP-by) x86)
 ;;         (if (equal mod #b11)
 ;;             (mv nil 0 0 x86)
-;;           (x86-effective-addr p4 temp-rip rex-byte r/m mod sib 0 x86)))
+;;           (x86-effective-addr proc-mode p4 temp-rip rex-byte r/m mod sib 0 x86)))
 ;;        ((when flg1) ;; #SS exception?
 ;;         (!!ms-fresh :x86-effective-addr-error flg1))
 
@@ -862,7 +792,6 @@
 ;; INSTRUCTION: PUSHF/PUSHFQ
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-pushf
 
   ;; #x9C: Op/En: NP
@@ -871,21 +800,19 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'PUSHF #x9C '(:nil nil) 'x86-pushf)
 
   :body
 
   (b* ((ctx 'x86-pushf)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
+                   (prefixes-slice :opr prefixes)))
 
        ((the (integer 1 8) operand-size)
-        (if (64-bit-modep x86)
+        (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
           (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
@@ -895,8 +822,8 @@
                 (if p3? 2 4)
               (if p3? 4 2)))))
 
-       (rsp (read-*sp x86))
-       ((mv flg new-rsp) (add-to-*sp rsp (- operand-size) x86))
+       (rsp (read-*sp proc-mode x86))
+       ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((the (unsigned-byte 32) eflags) (rflags x86))
@@ -918,7 +845,7 @@
 
        ;; Update the x86 state:
        ((mv flg x86)
-        (wme-size operand-size
+        (wme-size proc-mode operand-size
                   (the (signed-byte #.*max-linear-address-size*) new-rsp)
                   *ss*
                   eflags
@@ -935,15 +862,14 @@
           (!!fault-fresh :ac 0 :memory-access-unaligned flg)) ;; #AC(0)
          (t ;; Unclassified error!
           (!!fault-fresh flg))))
-       (x86 (write-*sp new-rsp x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*sp proc-mode new-rsp x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: POPF/POPFQ
 ;; ======================================================================
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-popf
 
   ;; #x9D
@@ -1007,21 +933,19 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-  :implemented
-  (add-to-implemented-opcodes-table 'POPF #x9D '(:nil nil) 'x86-popf)
 
   :body
 
   (b* ((ctx 'x86-popf)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :group-3-prefix prefixes)))
+                   (prefixes-slice :opr prefixes)))
 
        ((the (integer 1 8) operand-size)
-        (if (64-bit-modep x86)
+        (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
           (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
@@ -1031,13 +955,13 @@
                 (if p3? 2 4)
               (if p3? 4 2)))))
 
-       (rsp (read-*sp x86))
+       (rsp (read-*sp proc-mode x86))
 
-       ((mv flg new-rsp) (add-to-*sp rsp operand-size x86))
+       ((mv flg new-rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((mv flg0 val x86)
-        (rme-size operand-size rsp *ss* :r (alignment-checking-enabled-p x86) x86
+        (rme-size proc-mode operand-size rsp *ss* :r (alignment-checking-enabled-p x86) x86
                   :mem-ptr? nil))
        ((when flg0)
         (cond
@@ -1056,7 +980,7 @@
         (logior 2 (the (unsigned-byte 32) (logand #x3f7fd7 val))))
 
        ;; Update the x86 state:
-       (x86 (write-*sp new-rsp x86))
+       (x86 (write-*sp proc-mode new-rsp x86))
        (x86
         (case operand-size
           (2
@@ -1081,14 +1005,12 @@
        ;; caught in x86-fetch-decode-execute, that is, before control
        ;; reaches this function.
 
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: PUSHA/PUSHAD
 ;; ======================================================================
-
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
 
 (def-inst x86-pusha
 
@@ -1116,8 +1038,6 @@
    It may be possible to optimize it by pushing all the registers in one shot.
    </p>"
 
-  :implemented
-  (add-to-implemented-opcodes-table 'pusha #x60 '(:nil nil) 'x86-pusha)
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -1128,15 +1048,15 @@
 
   (b* ((ctx 'x86-pusha)
 
-       ((when (64-bit-modep x86)) (!!fault-fresh :ud nil)) ;; #UD
+       ((when (equal proc-mode #.*64-bit-mode*)) (!!fault-fresh :ud nil)) ;; #UD
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 2 4) operand-size)
-        (select-operand-size nil 0 nil prefixes x86))
+        (select-operand-size proc-mode nil 0 nil prefixes x86))
 
-       (rsp (read-*sp x86))
+       (rsp (read-*sp proc-mode x86))
 
        (eax/ax (rgfi-size operand-size *rax* 0 x86))
        (ecx/cx (rgfi-size operand-size *rcx* 0 x86))
@@ -1152,9 +1072,9 @@
        ;; the second call of wme-size onwards.
        (check-alignment? (alignment-checking-enabled-p x86))
 
-       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size operand-size rsp *ss* eax/ax check-alignment? x86 :mem-ptr? nil))
+       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* eax/ax check-alignment? x86 :mem-ptr? nil))
        ((when flg)
         (cond
          ;; FIXME? The non-canonical-address error won't come up here
@@ -1168,51 +1088,49 @@
 
        (check-alignment? nil)
 
-       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size operand-size rsp *ss* ecx/cx check-alignment? x86 :mem-ptr? nil))
-       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-
-       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
-       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size operand-size rsp *ss* edx/dx check-alignment? x86 :mem-ptr? nil))
+       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* ecx/cx check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
-       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size operand-size rsp *ss* ebx/bx check-alignment? x86 :mem-ptr? nil))
-       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-
-       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
-       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size operand-size rsp *ss* esp/sp check-alignment? x86 :mem-ptr? nil))
+       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* edx/dx check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
-       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size operand-size rsp *ss* ebp/bp check-alignment? x86 :mem-ptr? nil))
-       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-
-       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
-       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size operand-size rsp *ss* esi/si check-alignment? x86 :mem-ptr? nil))
+       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* ebx/bx check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
-       ((mv flg rsp) (add-to-*sp rsp (- operand-size) x86))
+       ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size operand-size rsp *ss* edi/di check-alignment? x86 :mem-ptr? nil))
+       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* esp/sp check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
-       (x86 (write-*sp rsp x86))
-       (x86 (write-*ip temp-rip x86)))
+       ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* ebp/bp check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* esi/si check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* edi/di check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
+
+       (x86 (write-*sp proc-mode rsp x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: POPA/POPAD
 ;; ======================================================================
-
-;; Added by Alessandro Coglio <coglio@kestrel.edu>
 
 (def-inst x86-popa
 
@@ -1229,9 +1147,6 @@
    It may be possible to optimize it by popping all the registers in one shot.
    </p>"
 
-  :implemented
-  (add-to-implemented-opcodes-table 'popa #x61 '(:nil nil) 'x86-popa)
-
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
 
@@ -1243,7 +1158,7 @@
     (defthm integerp-of-rme16-value
       (implies (x86p x86)
                (b* (((mv ?flg ?word ?x86-new)
-                     (rme16 eff-addr
+                     (rme16 proc-mode eff-addr
                             seg-reg r-x check-alignment? x86)))
                  (integerp word)))))
 
@@ -1251,7 +1166,7 @@
     (defthm integerp-of-rme32-value
       (implies (x86p x86)
                (b* (((mv ?flg ?dword ?x86-new)
-                     (rme32 eff-addr seg-reg
+                     (rme32 proc-mode eff-addr seg-reg
                             r-x check-alignment? x86 :mem-ptr? mem-ptr?)))
                  (integerp dword)))))
 
@@ -1262,22 +1177,22 @@
   :body
   (b* ((ctx 'x86-popa)
 
-       ((when (64-bit-modep x86)) (!!fault-fresh :ud nil)) ;; #UD
+       ((when (equal proc-mode #.*64-bit-mode*)) (!!fault-fresh :ud nil)) ;; #UD
 
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 2 4) operand-size)
-        (select-operand-size nil 0 nil prefixes x86))
+        (select-operand-size proc-mode nil 0 nil prefixes x86))
 
-       (rsp (read-*sp x86))
+       (rsp (read-*sp proc-mode x86))
 
        ;; Because it suffices to check the initial stack pointer for
        ;; alignment just once here, we bypass alignment checking from
        ;; the second call of rme-size onwards.
        (check-alignment? (alignment-checking-enabled-p x86))
 
-       ((mv flg edi/di x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((mv flg edi/di x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
        ((when flg)
         (cond
          ((and (consp flg) (eql (car flg) :non-canonical-address))
@@ -1286,44 +1201,44 @@
           (!!fault-fresh :ac 0 :pop flg)) ;; #AC(0)
          (t                               ;; Unclassified error!
           (!!fault-fresh flg))))
-       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
        (check-alignment? nil)
 
-       ((mv flg esi/si x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((mv flg esi/si x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
-       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
-       ((mv flg ebp/bp x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((mv flg ebp/bp x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
-       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
        ;; pushed ESP/SP is not actually read (see pseudocode in
        ;; Intel manual, Mar'17, Volume 2, POPA/POPAD reference):
-       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
-       ((mv flg ebx/bx x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((mv flg ebx/bx x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
-       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
-       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
-
-       ((mv flg edx/dx x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
-       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
-       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
-       ((mv flg ecx/cx x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((mv flg edx/dx x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
-       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
-       ((mv flg eax/ax x86) (rme-size operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((mv flg ecx/cx x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
-       ((mv flg rsp) (add-to-*sp rsp operand-size x86))
+       ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ((mv flg eax/ax x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
        (x86 (!rgfi-size operand-size *rdi* edi/di 0 x86))
@@ -1336,8 +1251,8 @@
        (x86 (!rgfi-size operand-size *rcx* ecx/cx 0 x86))
        (x86 (!rgfi-size operand-size *rax* eax/ax 0 x86))
 
-       (x86 (write-*sp rsp x86))
-       (x86 (write-*ip temp-rip x86)))
+       (x86 (write-*sp proc-mode rsp x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
 

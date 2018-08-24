@@ -69,10 +69,14 @@
 
   :body
   (b* ((ctx 'x86-movss/movsd-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+       
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -81,13 +85,13 @@
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        (inst-ac? ;; Exceptions Type 5
         t)
 
        ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* operand-size inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -123,18 +127,7 @@
        (x86 (!xmmi-size operand-size xmm-index xmm/mem x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVSS #x0F10
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-movss/movsd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MOVSD #x0F10
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-movss/movsd-Op/En-RM)))
+    x86))
 
 (def-inst x86-movss/movsd-Op/En-MR
 
@@ -153,10 +146,14 @@
 
   :body
   (b* ((ctx 'x86-movss/movsd-Op/En-MR)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -166,7 +163,7 @@
         (reg-index reg rex-byte #.*r*))
        (xmm (xmmi-size operand-size xmm-index x86))
 
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
 
        ((mv flg0
             (the (signed-byte 64) v-addr)
@@ -174,7 +171,7 @@
             x86)
         (if (int= mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+          (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
                               0 ;; No immediate operand
                               x86)))
 
@@ -207,18 +204,7 @@
        ((when flg1)
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVSS #x0F11
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-movss/movsd-Op/En-MR)
-    (add-to-implemented-opcodes-table 'MOVSD #x0F11
-                                      '(:misc
-                                        (eql #.*mandatory-f2h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-movss/movsd-Op/En-MR)))
+    x86))
 
 (def-inst x86-movaps/movapd-Op/En-RM
 
@@ -235,18 +221,22 @@
 
   :body
   (b* ((ctx 'x86-movaps/movapd-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        (inst-ac? ;; Exceptions Type 1
         t)
 
@@ -255,7 +245,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -283,17 +273,7 @@
        (x86 (!xmmi-size 16 xmm-index xmm/mem x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVAPS #x0F28
-                                      '(:nil nil)
-                                      'x86-movaps/movapd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MOVAPD #x0F28
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movaps/movapd-Op/En-RM)))
+    x86))
 
 (def-inst x86-movaps/movapd-Op/En-MR
 
@@ -310,10 +290,14 @@
 
   :body
   (b* ((ctx 'x86-movaps/movapd-Op/En-MR)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -322,14 +306,14 @@
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        ((mv flg0
             (the (signed-byte 64) v-addr)
             (the (unsigned-byte 3) increment-RIP-by)
             x86)
         (if (int= mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+          (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
                               0 ;; No immediate operand
                               x86)))
        ((when flg0)
@@ -362,17 +346,7 @@
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVAPS #x0F29
-                                      '(:nil nil)
-                                      'x86-movaps/movapd-Op/En-MR)
-    (add-to-implemented-opcodes-table 'MOVAPD #x0F29
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movaps/movapd-Op/En-MR)))
+    x86))
 
 (def-inst x86-movups/movupd/movdqu-Op/En-RM
 
@@ -396,18 +370,22 @@
 
   :body
   (b* ((ctx 'x86-movups/movupd/movdqu-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        (inst-ac?
         ;; Exceptions Type 4 but treatment of #AC varies. For now, we
         ;; check the alignment.
@@ -418,7 +396,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 16 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -446,21 +424,7 @@
        (x86 (!xmmi-size 16 xmm-index xmm/mem x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVUPS #x0F10
-                                      '(:nil nil)
-                                      'x86-movups/movupd/movdqu-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MOVUPD #x0F10
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movups/movupd/movdqu-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MOVDQU #x0F6F
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-movups/movupd/movdqu-Op/En-RM)))
+    x86))
 
 
 (def-inst x86-movups/movupd/movdqu-Op/En-MR
@@ -477,10 +441,14 @@
 
   :body
   (b* ((ctx 'x86-movups/movupd/movdqu-Op/En-MR)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -491,7 +459,7 @@
         (xmmi-size 16 xmm-index x86))
 
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
 
        ((mv flg0
             (the (signed-byte 64) v-addr)
@@ -499,7 +467,7 @@
             x86)
         (if (int= mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+          (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
                               0 ;; No immediate operand
                               x86)))
        ((when flg0)
@@ -534,21 +502,7 @@
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVUPS #x0F11
-                                      '(:nil nil)
-                                      'x86-movups/movupd/movdqu-Op/En-MR)
-    (add-to-implemented-opcodes-table 'MOVUPD #x0F11
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movups/movupd/movdqu-Op/En-MR)
-    (add-to-implemented-opcodes-table 'MOVDQU #x0F7F
-                                      '(:misc
-                                        (eql #.*mandatory-f3h* (prefixes-slice :group-1-prefix prefixes)))
-                                      'x86-movups/movupd/movdqu-Op/En-MR)))
+    x86))
 
 
 (def-inst x86-movlps/movlpd-Op/En-RM
@@ -566,19 +520,23 @@
 
   :body
   (b* ((ctx 'x86-movlps/movlpd-Op/En-RM)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
 
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        (inst-ac? ;; Exceptions Type 5
         t)
 
@@ -587,7 +545,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 8 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -615,17 +573,7 @@
        (x86 (!xmmi-size 8 xmm-index mem x86))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVLPS #x0F12
-                                      '(:nil nil)
-                                      'x86-movlps/movlpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MOVLPD #x0F12
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movlps/movlpd-Op/En-RM)))
+    x86))
 
 
 (def-inst x86-movlps/movlpd-Op/En-MR
@@ -643,10 +591,14 @@
 
   :body
   (b* ((ctx 'x86-movlps/movlpd-Op/En-MR)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -655,12 +607,12 @@
        ((the (unsigned-byte 64) xmm)
         (xmmi-size 8 xmm-index x86))
 
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        ((mv flg0
             (the (signed-byte 64) v-addr)
             (the (unsigned-byte 3) increment-RIP-by)
             x86)
-        (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+        (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
                             0 ;; No immediate operand
                             x86))
        ((when flg0)
@@ -692,17 +644,7 @@
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVLPS #x0F13
-                                      '(:nil nil)
-                                      'x86-movlps/movlpd-Op/En-MR)
-    (add-to-implemented-opcodes-table 'MOVLPD #x0F13
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movlps/movlpd-Op/En-MR)))
+    x86))
 
 
 (def-inst x86-movhps/movhpd-Op/En-RM
@@ -720,18 +662,22 @@
 
   :body
   (b* ((ctx 'x86-movhps/movhpd-Op/En-RM)
+       
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+       
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
        (inst-ac? ;; Exceptions Type 5
         t)
 
@@ -740,7 +686,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
          #.*xmm-access* 8 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
@@ -770,17 +716,7 @@
        (result (merge-2-u64s mem low-qword))
        (x86 (!xmmi-size 16 xmm-index result x86))
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVHPS #x0F16
-                                      '(:nil nil)
-                                      'x86-movhps/movhpd-Op/En-RM)
-    (add-to-implemented-opcodes-table 'MOVHPD #x0F16
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movhps/movhpd-Op/En-RM)))
+    x86))
 
 (def-inst x86-movhps/movhpd-Op/En-MR
 
@@ -797,10 +733,14 @@
 
   :body
   (b* ((ctx 'x86-movhps/movhpd-Op/En-MR)
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :unimplemented-in-32-bit-mode))
+
        (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -816,13 +756,13 @@
                                          (ash xmm -64)))))
 
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :group-4-prefix prefixes)))
+                 (prefixes-slice :adr prefixes)))
 
        ((mv flg0
             (the (signed-byte 64) v-addr)
             (the (unsigned-byte 3) increment-RIP-by)
             x86)
-        (x86-effective-addr p4? temp-rip rex-byte r/m mod sib
+        (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
                             0 ;; No immediate operand
                             x86))
        ((when flg0)
@@ -854,16 +794,6 @@
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
 
        (x86 (!rip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVLPS #x0F17
-                                      '(:nil nil)
-                                      'x86-movhps/movhpd-Op/En-MR)
-    (add-to-implemented-opcodes-table 'MOVLPD #x0F17
-                                      '(:misc
-                                        (eql #.*mandatory-66h* (prefixes-slice :group-3-prefix prefixes)))
-                                      'x86-movhps/movhpd-Op/En-MR)))
+    x86))
 
 ;; ======================================================================

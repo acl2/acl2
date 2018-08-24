@@ -80,37 +80,44 @@
 
   :returns (x86 x86p
                 :hyp (and (x86p x86)
-                          (canonical-address-p temp-rip)))
+                          (canonical-address-p temp-rip))
+                :hints
+                (("Goal" :in-theory (e/d ()
+                                         (rme-size
+                                          !rgfi-size
+                                          unsigned-byte-p
+                                          signed-byte-p)))
+                 (if (and (consp id)
+                          (consp (car id))
+                          (equal (caar id) 1))
+                     ;; Top-level goals in a forcing round:
+                     '(:in-theory (e/d ()
+                                       (rme-size
+                                        !rgfi-size
+                                        unsigned-byte-p)))
+                   nil)))
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'MOVS #xA4 '(:nil nil) 'x86-movs)
-    (add-to-implemented-opcodes-table 'MOVS #xA5 '(:nil nil) 'x86-movs))
-
-  :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08
-                                           rme-size-of-2-to-rme16
-                                           rme-size-of-4-to-rme32
-                                           rme-size-of-8-to-rme64
-                                           select-address-size)))
+  :prepwork
+  ((local (in-theory (e/d (rme-size select-address-size)
+                          (not (tau-system))))))
 
   :body
 
   (b* ((ctx 'x86-movs)
 
-       (group-1-prefix (the (unsigned-byte 8)
-                            (prefixes-slice :group-1-prefix prefixes)))
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (lock? (equal #.*lock* group-1-prefix))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       (group-1-prefix (prefixes-slice :rep prefixes))
 
        ;; TODO: is the following already checked by GET-PREFIXES?
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
@@ -118,11 +125,11 @@
        ((the (unsigned-byte 1) df) (flgi #.*df* x86))
 
        ((the (integer 2 8) counter/addr-size)
-        (select-address-size p4? x86)) ; CX or ECX or RCX
+        (select-address-size proc-mode p4? x86)) ; CX or ECX or RCX
 
        (select-byte-operand (equal #xA4 opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
        (counter/addr-size-2/4? (or (eql counter/addr-size 2)
                                    (eql counter/addr-size 4)))
@@ -137,10 +144,10 @@
 
        (inst-ac? (alignment-checking-enabled-p x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        ((mv flg0 src x86)
-        (rme-size
+        (rme-size proc-mode
          operand-size (the (signed-byte 64) src-addr) seg-reg :r inst-ac? x86))
        ((when flg0)
         (!!ms-fresh :src-rme-size-error flg0))
@@ -195,7 +202,7 @@
                (mv (+ -4 (the (signed-byte #.*max-linear-address-size*)
                            src-addr))
                    (+ -4 (the (signed-byte #.*max-linear-address-size*)
-                              dst-addr)))))
+                           dst-addr)))))
 
           (otherwise (if (equal df 0)
                          (mv (+ 8 (the (signed-byte #.*max-linear-address-size*)
@@ -209,7 +216,7 @@
 
        ;; Update the x86 state:
        ((mv flg1 x86)
-        (wme-size operand-size original-dst-addr *es* src inst-ac? x86))
+        (wme-size proc-mode operand-size original-dst-addr *es* src inst-ac? x86))
        ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
        ((when flg1)
         (!!ms-fresh :wme-size-error flg1))
@@ -227,7 +234,7 @@
                        x86)
                    (let* ((x86 (!rgfi-size
                                 counter/addr-size *rcx* counter rex-byte x86))
-                          (x86 (write-*ip temp-rip x86)))
+                          (x86 (write-*ip proc-mode temp-rip x86)))
                      x86))))
               (#.*repne*
                (let* ((counter (rgfi-size counter/addr-size *rcx* rex-byte x86))
@@ -236,13 +243,13 @@
                          (equal (the (unsigned-byte 1) (flgi #.*zf* x86)) 1))
                      (let* ((x86 (!rgfi-size
                                   counter/addr-size *rcx* counter rex-byte x86))
-                            (x86 (write-*ip temp-rip x86)))
+                            (x86 (write-*ip proc-mode temp-rip x86)))
                        x86)
                    (let* ((x86 (!rgfi-size
                                 counter/addr-size *rcx* counter rex-byte x86)))
                      x86))))
               (otherwise ;; no rep prefix present
-               (write-*ip temp-rip x86))))
+               (write-*ip proc-mode temp-rip x86))))
 
        ;; Updating rSI and rDI:
        (x86 (case counter/addr-size
@@ -260,28 +267,28 @@
                              x86))
               (t (!rgfi *rsi*
                         (the (signed-byte
-                                    #.*max-linear-address-size+1*)
-                             src-addr)
+                              #.*max-linear-address-size+1*)
+                          src-addr)
                         x86))))
        (x86 (case counter/addr-size
               (2 (!rgfi-size 2
                              *rdi*
                              (n16 (the
-                                   (signed-byte
-                                    #.*max-linear-address-size+1*) dst-addr))
+                                      (signed-byte
+                                       #.*max-linear-address-size+1*) dst-addr))
                              rex-byte
                              x86))
               (4 (!rgfi-size 4
                              *rdi*
                              (n32 (the
-                                   (signed-byte
-                                    #.*max-linear-address-size+1*) dst-addr))
+                                      (signed-byte
+                                       #.*max-linear-address-size+1*) dst-addr))
                              rex-byte
                              x86))
               (t (!rgfi *rdi*
                         (the (signed-byte
                               #.*max-linear-address-size+1*)
-                             dst-addr)
+                          dst-addr)
                         x86)))))
 
     x86))
@@ -315,37 +322,47 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CMPS #xA6 '(:nil nil) 'x86-cmps)
-    (add-to-implemented-opcodes-table 'CMPS #xA7 '(:nil nil) 'x86-cmps))
+  :returns (x86 x86p
+                :hyp (and (x86p x86)
+                          (canonical-address-p temp-rip))
+                :hints
+                (("Goal" :in-theory (e/d ()
+                                         (rme-size
+                                          !rgfi-size
+                                          unsigned-byte-p
+                                          signed-byte-p)))
+                 (if (and (consp id)
+                          (consp (car id))
+                          (equal (caar id) 1))
+                     ;; Top-level goals in a forcing round:
+                     '(:in-theory (e/d ()
+                                       (rme-size
+                                        !rgfi-size
+                                        unsigned-byte-p)))
+                   nil)))
 
-  :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08
-                                           rme-size-of-2-to-rme16
-                                           rme-size-of-4-to-rme32
-                                           rme-size-of-8-to-rme64
-                                           select-address-size)))
+  :prepwork
+  ((local (in-theory (e/d (rme-size select-address-size)
+                          (not (tau-system))))))
 
   :body
 
   (b* ((ctx 'x86-cmps)
 
-       (group-1-prefix (the (unsigned-byte 8)
-                            (prefixes-slice :group-1-prefix prefixes)))
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (lock? (equal #.*lock* group-1-prefix))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       (group-1-prefix (the (unsigned-byte 8)
+                         (prefixes-slice :rep prefixes)))
 
        ;; TODO: is the following already checked by GET-PREFIXES?
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
@@ -353,11 +370,11 @@
        ((the (unsigned-byte 1) df) (flgi #.*df* x86))
 
        ((the (integer 2 8) counter/addr-size)
-        (select-address-size p4? x86)) ; CX or ECX or RCX
+        (select-address-size proc-mode p4? x86)) ; CX or ECX or RCX
 
        (select-byte-operand (equal #xA6 opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
        (counter/addr-size-2/4? (or (eql counter/addr-size 2)
                                    (eql counter/addr-size 4)))
@@ -372,10 +389,10 @@
 
        (inst-ac? (alignment-checking-enabled-p x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        ((mv flg0 src x86)
-        (rme-size operand-size src-addr seg-reg :r inst-ac? x86))
+        (rme-size proc-mode operand-size src-addr seg-reg :r inst-ac? x86))
        ((when flg0)
         (!!ms-fresh :src-rme-size-error flg0))
 
@@ -388,7 +405,7 @@
         (!!ms-fresh :dst-addr-not-canonical dst-addr))
 
        ((mv flg0 dst x86)
-        (rme-size operand-size dst-addr *es* :r inst-ac? x86))
+        (rme-size proc-mode operand-size dst-addr *es* :r inst-ac? x86))
        ((when flg0)
         (!!ms-fresh :dst-rme-size-error flg0))
 
@@ -465,7 +482,7 @@
                        x86)
                    (let* ((x86 (!rgfi-size
                                 counter/addr-size *rcx* counter rex-byte x86))
-                          (x86 (write-*ip temp-rip x86)))
+                          (x86 (write-*ip proc-mode temp-rip x86)))
                      x86))))
               (#.*repne*
                (let* ((counter (rgfi-size counter/addr-size *rcx* rex-byte x86))
@@ -474,13 +491,13 @@
                          (equal (the (unsigned-byte 1) (flgi #.*zf* x86)) 1))
                      (let* ((x86 (!rgfi-size
                                   counter/addr-size *rcx* counter rex-byte x86))
-                            (x86 (write-*ip temp-rip x86)))
+                            (x86 (write-*ip proc-mode temp-rip x86)))
                        x86)
                    (let* ((x86 (!rgfi-size
                                 counter/addr-size *rcx* counter rex-byte x86)))
                      x86))))
               (otherwise ;; no rep prefix present
-               (write-*ip temp-rip x86))))
+               (write-*ip proc-mode temp-rip x86))))
 
        ;; Updating rSI and rDI:
 
@@ -536,27 +553,38 @@
   ;; AB STOSW/STOSD/STOSQ: Store AX/EAX/RDX at address DI or EDI or RDI
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08
-                                         riml32
-                                         select-address-size)
-                                        ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p
+                :hyp (and (x86p x86)
+                          (canonical-address-p temp-rip))
+                :hints
+                (("Goal" :in-theory (e/d ()
+                                         (rme-size
+                                          !rgfi-size
+                                          unsigned-byte-p
+                                          signed-byte-p)))
+                 (if (and (consp id)
+                          (consp (car id))
+                          (equal (caar id) 1))
+                     ;; Top-level goals in a forcing round:
+                     '(:in-theory (e/d ()
+                                       (rme-size
+                                        !rgfi-size
+                                        unsigned-byte-p)))
+                   nil)))
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'STOS #xAA '(:nil nil) 'x86-stos)
-    (add-to-implemented-opcodes-table 'STOS #xAB '(:nil nil) 'x86-stos))
+  :prepwork
+  ((local (in-theory (e/d (rme-size select-address-size)
+                          (not (tau-system))))))
 
   :body
 
   (b* ((ctx 'x86-stos)
 
-       (group-1-prefix (the (unsigned-byte 8)
-                            (prefixes-slice :group-1-prefix prefixes)))
-       (lock? (equal #.*lock* group-1-prefix))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       (group-1-prefix (prefixes-slice :seg prefixes))
 
        ;; TODO: is the following already checked by GET-PREFIXES?
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -564,12 +592,12 @@
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        ((the (unsigned-byte 1) df) (flgi #.*df* x86))
 
        ((the (integer 2 8) counter/addr-size)
-        (select-address-size p4? x86)) ; CX or ECX or RCX
+        (select-address-size proc-mode p4? x86)) ; CX or ECX or RCX
 
        (counter/addr-size-2/4? (or (eql counter/addr-size 2)
                                    (eql counter/addr-size 4)))
@@ -585,7 +613,7 @@
 
        (select-byte-operand (equal #xAA opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
        (rAX (rgfi-size operand-size *rax* rex-byte x86))
 
@@ -594,7 +622,7 @@
        ;; Writing rAX to the memory:
        (inst-ac? (alignment-checking-enabled-p x86))
        ((mv flg0 x86)
-        (wme-size operand-size dst-addr *es* rAX inst-ac? x86))
+        (wme-size proc-mode operand-size dst-addr *es* rAX inst-ac? x86))
        ((when flg0)
         (!!ms-fresh :wme-size-error flg0))
 
@@ -640,7 +668,7 @@
                                            counter
                                            rex-byte
                                            x86))
-                          (x86 (write-*ip temp-rip x86)))
+                          (x86 (write-*ip proc-mode temp-rip x86)))
                      x86))))
               (#.*repne*
                (let* ((counter (rgfi-size counter/addr-size *rcx* rex-byte x86))
@@ -652,7 +680,7 @@
                                              counter
                                              rex-byte
                                              x86))
-                            (x86 (write-*ip temp-rip x86)))
+                            (x86 (write-*ip proc-mode temp-rip x86)))
                        x86)
                    (let* ((x86 (!rgfi-size counter/addr-size
                                            *rcx*
@@ -661,30 +689,30 @@
                                            x86)))
                      x86))))
               (otherwise ;; no rep prefix present
-               (write-*ip temp-rip x86))))
+               (write-*ip proc-mode temp-rip x86))))
 
        ;; Updating rDI:
        (x86 (case counter/addr-size
               (2 (!rgfi-size 2
                              *rdi*
                              (n16 (the
-                                   (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                   dst-addr))
+                                      (signed-byte
+                                       #.*max-linear-address-size+1*)
+                                    dst-addr))
                              rex-byte
                              x86))
               (4 (!rgfi-size 4
                              *rdi*
                              (n32 (the
-                                   (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                   dst-addr))
+                                      (signed-byte
+                                       #.*max-linear-address-size+1*)
+                                    dst-addr))
                              rex-byte
                              x86))
               (t (!rgfi *rdi*
                         (the (signed-byte
                               #.*max-linear-address-size+1*)
-                             dst-addr)
+                          dst-addr)
                         x86)))))
 
     x86))

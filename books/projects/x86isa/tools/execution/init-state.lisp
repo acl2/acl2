@@ -329,14 +329,13 @@
 ;; ======================================================================
 
 (define init-x86-state
-  (status start-addr halt-addr
+  (status start-addr
           gprs ctrs msrs seg-visibles seg-hiddens flags mem x86)
 
   :parents (initialize-x86-state)
   :short "A convenient function to populate the x86 state's
   instruction pointer, registers, and memory"
   :guard (and (canonical-address-p start-addr)
-              (canonical-address-p halt-addr)
               (rgfi-alistp gprs)
               (ctri-alistp ctrs)
               (msri-alistp msrs)
@@ -356,23 +355,18 @@
         (load-program-into-memory mem x86))
        ((when flg0)
         (mv (cons 'load-program-into-memory flg0) x86))
-       ((mv flg1 x86)
-        (wml08 halt-addr #xF4 x86)) ;; "Fake" halt address
-       ((when flg1)
-        (mv (cons 'halt-addr flg0) x86))
        (x86 (!rgfi-from-alist gprs x86)) ;; General-Purpose Registers
        (x86 (!msri-from-alist msrs x86)) ;; Model-Specific Registers
        (x86 (!ctri-from-alist ctrs x86)) ;; Control Registers
        (x86 (!seg-visiblei-from-alist seg-visibles x86)) ;; Segment ...
-       (x86 (!seg-hiddeni-from-alist seg-hiddens x86)) ;; ... Registers
-       (x86 (!rflags (n32 flags) x86)))  ;; Initial Flags
+       (x86 (!seg-hiddeni-from-alist seg-hiddens x86))   ;; ... Registers
+       (x86 (!rflags (n32 flags) x86)))                  ;; Initial Flags
     (mv nil x86)))
 
 ;; ======================================================================
 
 (define init-x86-state-64 (status
                            (start-addr canonical-address-p)
-                           (halt-addr canonical-address-p)
                            (gprs rgfi-alistp)
                            (ctrs ctri-alistp)
                            (msrs msri-alistp)
@@ -402,7 +396,7 @@
    But we find this function convenient for now.
    </p>"
   (b* (((mv flg x86)
-        (init-x86-state status start-addr halt-addr gprs ctrs msrs
+        (init-x86-state status start-addr gprs ctrs msrs
                         seg-visibles seg-hiddens flags mem x86))
        ((when flg) (mv t x86))
        ;; set IA32_EFER.LMA to 1:
@@ -419,7 +413,7 @@
   ///
 
   (defrule 64-bit-modep-of-init-x86-state-64
-    (b* (((mv flg x86-new) (init-x86-state-64 status start-addr halt-addr
+    (b* (((mv flg x86-new) (init-x86-state-64 status start-addr
                                               gprs ctrs msrs
                                               seg-visibles seg-hiddens
                                               flags mem x86)))

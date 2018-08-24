@@ -653,6 +653,7 @@
                               (base-geval-ev _geval_-ev)
                               (base-geval-ev-lst _geval_-ev-lst)))
                 :in-theory (e/d* (_geval_-ev-of-fncall-args
+                                  _geval_-ev-of-nonsymbol-atom
                                   _geval_-apply-agrees-with-_geval_-ev
                                   eq atom
                                   _geval_

@@ -164,7 +164,6 @@
       (otherwise ;; will not be reached
        nil))))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-one-byte-jcc
 
   ;; Jump (short) if condition is met
@@ -200,46 +199,11 @@
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip))
                 :hints (("Goal" :in-theory (enable rime-size))))
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'JO #x70 '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNO #x71 '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JC #x72 '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNC #x73 '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JZ #x74 '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNZ #x75 '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JBE #x76 '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNBE #x77 '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JS #x78 '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNS #x79 '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JP #x7A '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNP #x7B '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JL #x7C '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNL #x7D '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JLE #x7E '(:nil nil)
-                                      'x86-one-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNLE #x7F '(:nil nil)
-                                      'x86-one-byte-jcc))
-
   :body
 
   (b* ((ctx 'x86-one-byte-jcc)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ;; temp-rip right now points to the rel8 byte.  Add 1 to
@@ -255,25 +219,24 @@
 
         ;; branch condition is true:
         (b* (;; read rel8 (a value between -128 and +127):
-             ((mv flg rel8 x86) (rime-size 1 temp-rip *cs* :x nil x86))
+             ((mv flg rel8 x86) (rime-size proc-mode 1 temp-rip *cs* :x nil x86))
              ((when flg) (!!ms-fresh :rime-size-error flg))
              ;; add rel8 to the address of the next instruction,
              ;; which is one past temp-rip to take the rel8 byte into account:
-             ((mv flg next-rip) (add-to-*ip temp-rip (1+ rel8) x86))
+             ((mv flg next-rip) (add-to-*ip proc-mode temp-rip (1+ rel8) x86))
              ((when flg) (!!ms-fresh :rip-increment-error flg))
              ;; set instruction pointer to new value:
-             (x86 (write-*ip next-rip x86)))
+             (x86 (write-*ip proc-mode next-rip x86)))
           x86)
 
       ;; branch condition is false:
       (b* (;; go to the next instruction,
            ;; which starts just after the rel8 byte:
-           ((mv flg next-rip) (add-to-*ip temp-rip 1 x86))
+           ((mv flg next-rip) (add-to-*ip proc-mode temp-rip 1 x86))
            ((when flg) (!!ms-fresh :rip-increment-error flg))
-           (x86 (write-*ip next-rip x86)))
+           (x86 (write-*ip proc-mode next-rip x86)))
         x86))))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-two-byte-jcc
 
   ;; Jump (near) if condition is met
@@ -313,58 +276,23 @@
                                (canonical-address-p temp-rip))
                 :hints (("Goal" :in-theory (enable rime-size))))
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'JO #x0F80 '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNO #x0F81 '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JC #x0F82 '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNC #x0F83 '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JZ #x0F84 '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNZ #x0F85 '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JBE #x0F86 '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNBE #x0F87 '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JS #x0F88 '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNS #x0F89 '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JP #x0F8A '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNP #x0F8B '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JL #x0F8C '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNL #x0F8D '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JLE #x0F8E '(:nil nil)
-                                      'x86-two-byte-jcc)
-    (add-to-implemented-opcodes-table 'JNLE #x0F8F '(:nil nil)
-                                      'x86-two-byte-jcc))
-
   :body
 
   ;; Note: Here opcode is the second byte of the two byte opcode.
 
   (b* ((ctx 'x86-two-byte-jcc)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 0 4) offset-size)
-        (if (64-bit-modep x86)
+        (if (equal proc-mode #.*64-bit-mode*)
             4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
           (b* ((cs-hidden (xr :seg-hidden *cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
                (p3? (eql #.*operand-size-override*
-                         (prefixes-slice :group-3-prefix prefixes))))
+                         (prefixes-slice :opr prefixes))))
             ;; 16 or 32 bits (rel16 or rel32):
             (if (= cs.d 1)
                 (if p3? 2 4)
@@ -384,27 +312,26 @@
         ;; branch condition is true:
         (b* (;; read rel16/rel32 (as a signed value):
              ((mv flg offset x86)
-              (rime-size offset-size temp-rip *cs* :x nil x86))
+              (rime-size proc-mode offset-size temp-rip *cs* :x nil x86))
              ((when flg) (!!ms-fresh :rime-size-error flg))
              ;; add rel16/rel32 to the address of the next instruction,
              ;; which is 2 or 4 past temp-rip to take the rel16/32 into
              ;; account:
              ((mv flg next-rip)
-              (add-to-*ip temp-rip (+ offset-size offset) x86))
+              (add-to-*ip proc-mode temp-rip (+ offset-size offset) x86))
              ((when flg) (!!ms-fresh :rip-increment-error flg))
              ;; set instruction pointer to new value:
-             (x86 (write-*ip next-rip x86)))
+             (x86 (write-*ip proc-mode next-rip x86)))
           x86)
 
       ;; branch condition is false:
       (b* (;; fo to the next instruction,
            ;; which starts just after the rel16/rel32:
-           ((mv flg next-rip) (add-to-*ip temp-rip offset-size x86))
+           ((mv flg next-rip) (add-to-*ip proc-mode temp-rip offset-size x86))
            ((when flg) (!!ms-fresh :rip-increment-error flg))
-           (x86 (write-*ip next-rip x86)))
+           (x86 (write-*ip proc-mode next-rip x86)))
         x86))))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-jrcxz
 
   ;; Jump (short) if condition is met
@@ -429,14 +356,11 @@
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip))
                 :hints (("Goal" :in-theory (enable rime-size))))
-  :implemented
-  (add-to-implemented-opcodes-table 'JRCXZ #xE3 '(:nil nil) 'x86-jrcxz)
-
   :body
 
   (b* ((ctx 'x86-jrcxz)
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ;; temp-rip right now points to the rel8 byte.  Add 1 to
@@ -447,8 +371,8 @@
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
-       (register-size (select-address-size p4? x86))
+                   (prefixes-slice :adr prefixes)))
+       (register-size (select-address-size proc-mode p4? x86))
 
        (branch-cond
         (equal (rgfi-size register-size *rcx* rex-byte x86) 0)))
@@ -457,25 +381,24 @@
 
         ;; branch condition is true:
         (b* (;; read rel8 (a value between -128 and +127):
-             ((mv flg rel8 x86) (rime-size 1 temp-rip *cs* :x nil x86))
+             ((mv flg rel8 x86) (rime-size proc-mode 1 temp-rip *cs* :x nil x86))
              ((when flg) (!!ms-fresh :rime-size-error flg))
              ;; add rel8 to the address of the next instruction,
              ;; which is one past temp-rip to take the rel8 byte into account:
-             ((mv flg next-rip) (add-to-*ip temp-rip (1+ rel8) x86))
+             ((mv flg next-rip) (add-to-*ip proc-mode temp-rip (1+ rel8) x86))
              ((when flg) (!!ms-fresh :rip-increment-error flg))
              ;; set instruction pointer to new value:
-             (x86 (write-*ip next-rip x86)))
+             (x86 (write-*ip proc-mode next-rip x86)))
           x86)
 
       ;; branch condition is false:
       (b* (;; go to the next instruction,
            ;; which starts just after the rel8 byte:
-           ((mv flg next-rip) (add-to-*ip temp-rip 1 x86))
+           ((mv flg next-rip) (add-to-*ip proc-mode temp-rip 1 x86))
            ((when flg) (!!ms-fresh :rip-increment-error flg))
-           (x86 (write-*ip next-rip x86)))
+           (x86 (write-*ip proc-mode next-rip x86)))
         x86))))
 
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-cmovcc
 
   ;; Op/En: RM
@@ -511,21 +434,22 @@
 
   (b* ((ctx 'x86-cmovcc)
 
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
        (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (p2 (prefixes-slice :seg prefixes))
 
        ((the (integer 1 8) operand-size)
-        (select-operand-size nil rex-byte nil prefixes x86))
+        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
-       (seg-reg (select-segment-register p2 p4? mod  r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod  r/m x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -533,24 +457,17 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ #.*gpr-access*
-                                                operand-size
-                                                inst-ac?
-                                                nil ;; Not a memory pointer operand
-                                                seg-reg
-                                                p4?
-                                                temp-rip
-                                                rex-byte
-                                                r/m
-                                                mod
-                                                sib
-                                                0 ;; No immediate operand
-                                                x86))
+        (x86-operand-from-modr/m-and-sib-bytes$
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -568,45 +485,9 @@
                         rex-byte
                         x86)
           x86))
-       (x86 (write-*ip temp-rip x86)))
-    x86)
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
 
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'CMOVO #x0F40 '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVNO #x0F41 '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVC #x0F42 '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVNC #x0F43 '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVZ #x0F44 '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVNZ #x0F45 '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVBE #x0F46 '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVNBE #x0F47 '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVS #x0F48 '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVNS #x0F49 '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVP #x0F4A '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVNP #x0F4B '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVL #x0F4C '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVNL #x0F4D '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVLE #x0F4E '(:nil nil)
-                                      'x86-cmovcc)
-    (add-to-implemented-opcodes-table 'CMOVNLE #x0F4F '(:nil nil)
-                                      'x86-cmovcc)))
-
-; Extended to 32-bit mode by Alessandro Coglio <coglio@kestrel.edu>
 (def-inst x86-setcc
 
   ;; Op/En: M
@@ -642,15 +523,14 @@
 
   (b* ((ctx 'x86-setcc)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :group-2-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
+       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
+       (p2 (prefixes-slice :seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :group-4-prefix prefixes)))
+                   (prefixes-slice :adr prefixes)))
 
        ((mv flg0
             (the (signed-byte 64) addr)
@@ -658,7 +538,7 @@
             x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
-          (x86-effective-addr p4?
+          (x86-effective-addr proc-mode p4?
                               temp-rip
                               rex-byte
                               r/m
@@ -670,7 +550,7 @@
         (!!ms-fresh :x86-effective-addr-error flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip temp-rip increment-RIP-by x86))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -679,13 +559,13 @@
 
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
 
-       (seg-reg (select-segment-register p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        ;; Update the x86 state:
        (inst-ac? t)
        (val (if branch-cond 1 0))
        ((mv flg2 x86)
-        (x86-operand-to-reg/mem$ 1
+        (x86-operand-to-reg/mem$ proc-mode 1
                                  inst-ac?
                                  nil ;; Not a memory pointer operand
                                  val
@@ -698,42 +578,7 @@
        ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
        ((when flg2)
         (!!ms-fresh :x86-operand-to-reg/mem flg2))
-       (x86 (write-*ip temp-rip x86)))
-    x86)
-
-  :implemented
-  (progn
-    (add-to-implemented-opcodes-table 'SETO #x0F90 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNO #x0F91 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETC #x0F92 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNC #x0F93 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETZ #x0F94 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNZ #x0F95 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETBE #x0F96 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNBE #x0F97 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETS #x0F98 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNS #x0F99 '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETP #x0F9A '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNP #x0F9B '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETL #x0F9C '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNL #x0F9D '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETLE #x0F9E '(:nil nil)
-                                      'x86-setcc)
-    (add-to-implemented-opcodes-table 'SETNLE #x0F9F '(:nil nil)
-                                      'x86-setcc)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
 
 ;; ======================================================================

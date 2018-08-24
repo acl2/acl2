@@ -248,12 +248,13 @@
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             x86-operation-mode
 
                              jcc/cmovcc/setcc-spec
                              gpr-and-spec-8
                              gpr-xor-spec-4
 
-                             top-level-opcode-execute
+                             one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
@@ -300,12 +301,13 @@
            :do-not-induct t
            :cases (equal (rgfi *rdi* x86) 0)
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             x86-operation-mode
 
                              jcc/cmovcc/setcc-spec
                              gpr-and-spec-8
                              gpr-xor-spec-4
 
-                             top-level-opcode-execute
+                             one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$

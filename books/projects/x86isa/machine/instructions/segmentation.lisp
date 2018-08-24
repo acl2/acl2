@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2018, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,6 +36,8 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author(s):
+; Alessandro Coglio   <coglio@kestrel.edu>
 
 (in-package "X86ISA")
 
@@ -52,25 +55,24 @@
 ;; ======================================================================
 
 (def-inst x86-lgdt
-
   :parents (privileged-opcodes two-byte-opcodes)
 
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :long "<h3>Op/En = M: \[OP m16@('&')m64\]</h3>
+  :long
 
-  <p>In 64-bit mode, the instruction's operand size is fixed at 8+2
-  bytes (an 8-byte base and a 2-byte limit).</p>
+  "<h3>Op/En = M: \[OP m16@('&')m32\]</h3>
+   <h3>Op/En = M: \[OP m16@('&')m64\]</h3>
 
-  <p>\[OP  M\]<br/>
-  0F 01/2: LGDT m16@('&')64</p>
+   <p>In 64-bit mode, the instruction's operand size is fixed at 8+2
+   bytes (an 8-byte base and a 2-byte limit).</p>
 
-  <p><b>TO-DO:</b> If a memory address referencing the SS segment is in
-  a non-canonical form, raise the SS exception.</p>"
+   <p>\[OP  M\]<br/>
+   0F 01/2: LGDT m16@('&')32<br/>
+   0F 01/2: LGDT m16@('&')64</p>
 
-  :implemented
-  (add-to-implemented-opcodes-table 'LGDT #x0F01 '(:reg 2)
-                                    'x86-lgdt)
+   <p><b>TO-DO:</b> If a memory address referencing the SS segment is in
+   a non-canonical form, raise the SS exception.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -80,50 +82,91 @@
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* ((ctx 'x86-lgdt)
+
+       ((when (app-view x86))
+        (!!ms-fresh :lgdt-unimplemented))
+
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
+
        ;; If the current privilege level is not 0, the #GP exception
        ;; is raised.
        (cpl (cpl x86))
        ((when (not (equal cpl 0)))
-        (!!ms-fresh :cpl-not-zero cpl))
-       ;; If the source operand is not a memory location, then #GP is
-       ;; raised.
+        (!!fault-fresh :gp 0 :cpl-not-zero cpl)) ;; #GP(0)
+
+       ;; If the source operand is not a memory location, then #UD is raised.
+       ;; This is not explicitly said in the May'18 version of the Intel manual,
+       ;; but it is in the Dec'16 version.
        ((when (equal mod #b11))
-        (!!ms-fresh :source-operand-not-memory-location mod))
+        (!!fault-fresh :ud nil :source-operand-not-memory-location mod)) ;; #UD
+
        ;; If the lock prefix is used, then the #UD exception is
        ;; raised.
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes-slice :adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+
+       ((the (integer 4 8) base-size)
+        (if (64-bit-modep x86) 8 4))
+
+       ((the (integer 6 10) base-size+2) (+ 2 base-size))
 
        ;; Fetch the memory operand:
        (inst-ac? nil)
-       ((mv flg0 mem (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         0 10 inst-ac?
-         t ;; Memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       ((mv flg0
+            mem
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode 0
+                                                base-size+2
+                                                inst-ac?
+                                                t ;; Memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; The operand size attribute is needed because, according to Intel
+       ;; manual, May'18, specification of LGDT, only 24 bits from the base are
+       ;; copied into GDTR when the operand size attribute is 16 bits.
+       (p3? (eql #.*operand-size-override*
+                 (prefixes-slice :opr prefixes)))
+       (operand-size
+        (if (eql base-size 8)
+            8
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d
+                (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
+       (base-bits (case operand-size
+                    (8 64)
+                    (4 32)
+                    (t 24)))
 
        ;; Load the memory operand in the GDTR register.
        (gdtr-limit
@@ -132,12 +175,12 @@
                                  0))
        (gdtr
         (!gdtr/idtr-layout-slice :base-addr
-                                 (part-select mem :low 16 :width 64)
+                                 (part-select mem :low 16 :width base-bits)
                                  gdtr-limit))
 
        ;; Update the x86 state:
        (x86 (!stri *gdtr* gdtr x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================
@@ -145,25 +188,24 @@
 ;; ======================================================================
 
 (def-inst x86-lidt
-
   :parents (privileged-opcodes two-byte-opcodes)
 
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :long "<h3>Op/En = M: \[OP m16@('&')m64\]</h3>
+  :long
 
-  <p>In 64-bit mode, the instruction's operand size is fixed at 8+2
-  bytes (an 8-byte base and a 2-byte limit).</p>
+  "<h3>Op/En = M: \[OP m16@('&')m32\]</h3>
+   <h3>Op/En = M: \[OP m16@('&')m64\]</h3>
 
-  <p>\[OP  M\]<br/>
-  0F 01/3: LIDT m16@('&')64</p>
+   <p>In 64-bit mode, the instruction's operand size is fixed at 8+2
+   bytes (an 8-byte base and a 2-byte limit).</p>
 
-  <p><b>TO-DO:</b> If a memory address referencing the SS segment is in
-  a non-canonical form, raise the SS exception.</p>"
+   <p>\[OP  M\]<br/>
+   0F 01/3: LIDT m16@('&')32<br/>
+   0F 01/3: LIDT m16@('&')64</p>
 
-  :implemented
-  (add-to-implemented-opcodes-table 'LIDT #x0F01 '(:reg 3)
-                                    'x86-lidt)
+   <p><b>TO-DO:</b> If a memory address referencing the SS segment is in
+   a non-canonical form, raise the SS exception.</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -173,50 +215,91 @@
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* ((ctx 'x86-lidt)
+
+       ((when (app-view x86))
+        (!!ms-fresh :lidt-unimplemented))
+
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
+
        ;; If the current privilege level is not 0, the #GP exception
        ;; is raised.
        (cpl (cpl x86))
        ((when (not (equal cpl 0)))
-        (!!ms-fresh :cpl-not-zero cpl))
-       ;; If the source operand is not a memory location, then #GP is
-       ;; raised.
+        (!!fault-fresh :gp 0 :cpl-not-zero cpl)) ;; #GP(0)
+
+       ;; If the source operand is not a memory location, then #UD is raised.
+       ;; This is not explicitly said in the May'18 version of the Intel manual,
+       ;; but it is in the Dec'16 version.
        ((when (equal mod #b11))
-        (!!ms-fresh :source-operand-not-memory-location mod))
+        (!!fault-fresh :ud nil :source-operand-not-memory-location mod)) ;; #UD
+
        ;; If the lock prefix is used, then the #UD exception is
        ;; raised.
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
-        (!!ms-fresh :lock-prefix prefixes))
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+        (!!fault-fresh :ud nil :lock-prefix prefixes))
+
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes-slice :adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+
+       ((the (integer 4 8) base-size)
+        (if (64-bit-modep x86) 8 4))
+
+       ((the (integer 6 10) base-size+2) (+ 2 base-size))
 
        ;; Fetch the memory operand:
        (inst-ac? nil)
-       ((mv flg0 mem (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         0 10 inst-ac?
-         t ;; Memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+       ((mv flg0
+            mem
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode 0
+                                                base-size+2
+                                                inst-ac?
+                                                t ;; Memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :virtual-memory-error temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; The operand size attribute is needed because, according to Intel
+       ;; manual, May'18, specification of LGDT, only 24 bits from the base are
+       ;; copied into GDTR when the operand size attribute is 16 bits.
+       (p3? (eql #.*operand-size-override*
+                 (prefixes-slice :opr prefixes)))
+       (operand-size
+        (if (eql base-size 8)
+            8
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d
+                (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
+       (base-bits (case operand-size
+                    (8 64)
+                    (4 32)
+                    (t 24)))
 
        ;; Load the memory operand in the IDTR register.
        (idtr-limit
@@ -225,12 +308,12 @@
                                  0))
        (idtr
         (!gdtr/idtr-layout-slice :base-addr
-                                 (part-select mem :low 16 :width 64)
+                                 (part-select mem :low 16 :width base-bits)
                                  idtr-limit))
 
        ;; Update the x86 state:
        (x86 (!stri *idtr* idtr x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================
@@ -238,16 +321,12 @@
 ;; ======================================================================
 
 (def-inst x86-lldt
-
   :parents (privileged-opcodes two-byte-opcodes)
 
   :guard-hints (("Goal" :in-theory (e/d (riml08
                                          riml32
                                          ia32e-valid-ldt-segment-descriptor-p)
                                         ())))
-  :implemented
-  (add-to-implemented-opcodes-table 'LLDT #x0F00 '(:reg 2) 'x86-lldt)
-
   :long "<h3>Op/En = M: \[OP r/m16\]</h3>
   \[OP  M\]<br/>
   0F 00/2: LLDT r/m16<br/>
@@ -275,6 +354,11 @@ a non-canonical form, raise the SS exception.</p>"
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* ((ctx 'x86-lldt)
+
+       ((when (or (app-view x86)
+                  (not (equal proc-mode #.*64-bit-mode*))))
+        (!!ms-fresh :lldt-unimplemented))
+       
        (r/m (mrm-r/m modr/m))
        (mod (mrm-mod modr/m))
        ;; If the current privilege level is not 0, the #GP exception
@@ -284,18 +368,18 @@ a non-canonical form, raise the SS exception.</p>"
         (!!ms-fresh :cpl-not-zero cpl))
        ;; If the lock prefix is used, then the #UD exception is
        ;; raised.
-       (lock? (equal #.*lock* (prefixes-slice :group-1-prefix prefixes)))
+       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
-       (p2 (prefixes-slice :group-2-prefix prefixes))
-       (p4? (equal #.*addr-size-override* (prefixes-slice :group-4-prefix prefixes)))
+       (p2 (prefixes-slice :seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes-slice :adr prefixes)))
 
        ;; Fetch the memory operand:
        (inst-ac? nil)
        ((mv flg0 selector (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte #.*max-linear-address-size*) v-addr) x86)
         (x86-operand-from-modr/m-and-sib-bytes
-         0 2 inst-ac?
+         proc-mode 0 2 inst-ac?
          nil ;; Not a memory pointer operand
          p2 p4? temp-rip rex-byte r/m mod sib
          0 ;; No immediate operand

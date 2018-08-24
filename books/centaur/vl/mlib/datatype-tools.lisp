@@ -30,12 +30,11 @@
 ;      (this file) Sol Swords <sswords@centtech.com>
 
 (in-package "VL")
-
-
 (include-book "expr-tools")
 (include-book "../util/warnings")
 (include-book "coretypes")
 (include-book "../util/sum-nats")
+(local (include-book "arithmetic/top" :dir :system))
 (local (include-book "../util/default-hints"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -173,56 +172,6 @@
     :hints(("Goal" :in-theory (enable vl-datatype-update-dims)))))
 
 
-
-
-
-
-
-(define vl-packeddimensionlist-resolved-p ((x vl-packeddimensionlist-p))
-  :short "Returns true if all sized packed dimensions are resolved."
-  (b* (((when (atom x)) t)
-       (x1 (car x)))
-    (and (vl-packeddimension-case x1
-           :unsized t
-           :range (vl-range-resolved-p x1.range))
-         (vl-packeddimensionlist-resolved-p (cdr x)))))
-
-(define vl-packeddimensionlist-total-size ((x vl-packeddimensionlist-p))
-  :short "Given a packeddimensionlist like [5:0][3:1][0:8], multiplies the
-dimensions together to get the total number of bits, or returns nil if there
-are unsized dimensions."
-  :guard (vl-packeddimensionlist-resolved-p x)
-  :verify-guards nil
-  :returns (size maybe-posp :rule-classes :type-prescription)
-  (b* (((when (atom x)) 1)
-       (rest (vl-packeddimensionlist-total-size (cdr x)))
-       ((unless rest) nil)
-       (first (car x))
-       ((when (vl-packeddimension-case first :unsized)) nil)
-       (range (vl-packeddimension->range first)))
-    (* (vl-range-size range) rest))
-  ///
-  (verify-guards vl-packeddimensionlist-total-size
-    :hints (("goal" :in-theory (enable vl-packeddimensionlist-resolved-p)))))
-
-
-(define vl-packeddimension-size ((x vl-packeddimension-p))
-  :returns (mv (unresolved-flg)
-               (size maybe-posp :rule-classes :type-prescription))
-  (if (vl-packeddimension-case x :unsized)
-      (mv nil nil)
-    (b* ((range (vl-packeddimension->range x)))
-      (if (vl-range-resolved-p range)
-          (mv nil (vl-range-size range))
-        (mv t nil)))))
-
-(define vl-maybe-packeddimension-size ((x vl-maybe-packeddimension-p))
-  :returns (mv (unresolved-flg)
-               (size maybe-posp :rule-classes :type-prescription))
-  (if x
-      (vl-packeddimension-size x)
-    (mv nil nil)))
-
 (fty::deflist maybe-nat-list :elt-type maybe-natp
   ///
   (defthm nat-listp-when-maybe-nat-list-and-no-nils
@@ -231,6 +180,98 @@ are unsized dimensions."
              (nat-listp x))
     :hints(("Goal" :in-theory (enable maybe-nat-list-p member nat-listp)))))
 
+(define vl-dimension-size ((x vl-dimension-p))
+  :returns (mv (unresolved-flg)
+               (size maybe-posp :rule-classes :type-prescription))
+  (vl-dimension-case x
+    :unsized  (mv nil nil) ;; Dynamic array, not unresolved, but has no sensible size
+    :star     (mv nil nil) ;; Sparse associative array, similar
+    :datatype (mv nil nil) ;; Sparse associative array, similar
+    :queue
+    (cond ((not x.maxsize)
+           ;; An unbounded queue -- resolved but sizeless, like an unsized dimension
+           (mv nil nil))
+          ((vl-expr-resolved-p x.maxsize)
+           ;; Possibly we could regard bounded queues as having a particular
+           ;; size, but I'm not sure what size makes sense.  For now I'm going
+           ;; to say they have no size.
+           (mv nil nil))
+          (t
+           ;; The queue has a max size that isn't resolved.  Should we treat
+           ;; these as having unresolved size?  What does unresolved-flg even
+           ;; mean?  For now I'm going to still regard these as resolved, but
+           ;; simply size-less.
+           (mv t nil)))
+    :range
+    (if (vl-range-resolved-p x.range)
+        (mv nil (vl-range-size x.range))
+      (mv t nil))))
+
+(define vl-maybe-dimension-size ((x vl-maybe-dimension-p))
+  :returns (mv (unresolved-flg)
+               (size maybe-posp :rule-classes :type-prescription))
+  (if x
+      (vl-dimension-size x)
+    (mv nil nil)))
+
+(define vl-dimensionlist-resolved-p ((x vl-dimensionlist-p))
+  :short "Returns true if all sized dimensions are resolved."
+  (b* (((when (atom x)) t)
+       ((mv unresolved ?size) (vl-dimension-size (car x))))
+    (and (not unresolved)
+         (vl-dimensionlist-resolved-p (cdr x))))
+  ///
+
+  (defthm vl-dimensionlist-resolved-p-when-atom
+    (implies (atom x)
+             (vl-dimensionlist-resolved-p x)))
+
+  (defthm vl-dimensionlist-resolved-p-of-cons
+    (equal (vl-dimensionlist-resolved-p (cons a x))
+           (and (b* (((mv unresolved ?size) (vl-dimension-size a)))
+                  (not unresolved))
+                (vl-dimensionlist-resolved-p x))))
+
+  (defthm vl-dimensionlist-resolved-p-of-cdr
+    (implies (vl-dimensionlist-resolved-p x)
+             (vl-dimensionlist-resolved-p (cdr x))))
+
+  (defthm vl-dimensionlist-resolved-p-of-append
+    (equal (vl-dimensionlist-resolved-p (append x y))
+           (and (vl-dimensionlist-resolved-p x)
+                (vl-dimensionlist-resolved-p y)))))
+
+(define vl-dimensionlist-total-size ((x vl-dimensionlist-p))
+  :short "Given a dimensionlist like [5:0][3:1][0:8], multiplies the
+dimensions together to get the total number of bits, or returns nil if there
+are unsized dimensions (e.g., associative dimensions, queue dimensions, or
+dynamic array dimensions)."
+  :guard (vl-dimensionlist-resolved-p x)
+  :verify-guards nil
+  :returns (size maybe-posp :rule-classes :type-prescription)
+  (b* (((when (atom x)) 1)
+       (rest-size (vl-dimensionlist-total-size (cdr x)))
+       ((unless rest-size) nil)
+       ((mv first-unresolved first-size) (vl-dimension-size (car x)))
+       ((when (or first-unresolved
+                  (not first-size)))
+        nil))
+    (* first-size rest-size))
+  ///
+  (verify-guards vl-dimensionlist-total-size
+    :hints (("goal" :in-theory (enable vl-dimensionlist-resolved-p))))
+
+  (defthm vl-dimensionlist-total-size-of-cdr
+    (implies (vl-dimensionlist-total-size x)
+             (vl-dimensionlist-total-size (cdr x)))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm vl-dimensionlist-total-size-of-append
+    (equal (vl-dimensionlist-total-size (append x y))
+           (and (vl-dimensionlist-total-size x)
+                (vl-dimensionlist-total-size y)
+                (* (vl-dimensionlist-total-size x)
+                   (vl-dimensionlist-total-size y))))))
 
 (defines vl-datatype-size
   :prepwork ((local (in-theory (disable all-equalp
@@ -256,16 +297,14 @@ if unresolved dimensions are present.</p>"
     (b* ((x (vl-datatype-fix x))
          (udims (vl-datatype->udims x))
          (pdims (vl-datatype->pdims x))
-         ((unless (vl-packeddimensionlist-resolved-p udims))
-          (mv (vmsg "Unresolved unpacked dimensions: ~a0"
-                    (vl-datatype-update-dims nil (append-without-guard udims pdims)
-                                             x))
+         ((unless (vl-dimensionlist-resolved-p udims))
+          (mv (vmsg "Unresolved unpacked dimensions: ~a0" x)
               nil))
-         ((unless (vl-packeddimensionlist-resolved-p pdims))
+         ((unless (vl-dimensionlist-resolved-p pdims))
           (mv (vmsg "Unresolved packed dimensions: ~a0" x)
               nil))
-         (udim-size (vl-packeddimensionlist-total-size udims))
-         (pdim-size (vl-packeddimensionlist-total-size pdims))
+         (udim-size (vl-dimensionlist-total-size udims))
+         (pdim-size (vl-dimensionlist-total-size pdims))
          (dim-size (and udim-size pdim-size (* udim-size pdim-size))))
 
       (vl-datatype-case x
@@ -337,7 +376,7 @@ if unresolved dimensions are present.</p>"
                  (not err)))
       :hints ('(:expand ((vl-structmemberlist-sizes x))))
       :flag vl-structmemberlist-sizes))
-    
+
 
   (verify-guards vl-datatype-size)
   (deffixequiv-mutual vl-datatype-size))
@@ -420,3 +459,4 @@ such as @('logic') are packed but not selectable.</p>"
       :vl-union x.packedp
       :vl-enum t
       :vl-usertype (impossible))))
+

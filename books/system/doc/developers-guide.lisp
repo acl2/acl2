@@ -1432,12 +1432,13 @@
 
  <ul>
 
- <li>Small examples help when testing new features or bug fixes.  Ideally, if
- there is a bug you will have a small example that exhibits the bug, which you
- can run after your patch is complete.  It is often easier to read the output
- from tracing functions or debugger backtraces to the extent that the example
- is small.  Consider adding your tests to @('books/system/tests/') or perhaps,
- if appropriate, @('books/demos/').</li>
+ <li>Small examples help when testing new features or bug fixes.  For a bug fix
+ it is important to have an example that exhibits the bug, both to guarantee
+ that there really is a problem and to use to test your patch.  Ideally the
+ example will be small, as this is useful for reading the output from tracing
+ functions or debugger backtraces, and small examples are often helpful for
+ understanding the problem.  Consider adding one or more relevant tests to
+ @('books/system/tests/') or perhaps, if appropriate, @('books/demos/').</li>
 
  <li>Often it is best to avoid making a more sweeping change than necessary,
  instead waiting for users to complain.  This process has several advantages:

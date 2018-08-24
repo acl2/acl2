@@ -490,16 +490,34 @@
 
 )
 
-(defun and-orp (term bool)
+(defun and-orp (term bool lambda-okp)
 
-; We return t or nil according to whether term is a disjunction
-; (if bool is t) or conjunction (if bool is nil).
+; We return t or nil according to whether term is a disjunction (if bool is t)
+; or conjunction (if bool is nil).
+
+; After v8-0 we made a change to preserve lambdas on right-hand sides of
+; rewrite rules.  At that time we added the clause for lambdas below, to
+; preserve the old behavior of find-and-or-lemma.  However, in general it seems
+; a good idea to open up lambdas slowly, so we keep the old behavior of and-orp
+; -- not diving into lambda bodies -- in other places, which also helps with
+; backward compatibility (one example is the proof of lemma
+; aignet-marked-copies-in-bounds-of-empty-bitarr in community book
+; books/centaur/aignet/rewrite.lisp).  Parameter lambda-okp is true when we
+; allow exploration of lambda bodies, else nil.  When we tried on 8/14/2018
+; calling and-orp with lambda-okp = t in the case (flambda-applicationp term)
+; of expand-and-or -- that is, to dive into lambda-bodies of lambda-bodies --
+; we got 19 failures when trying an "everything" regression, which (of course)
+; almost surely undercounts failures, since certification wasn't attempted for
+; books depending on failed books.
 
   (case-match term
               (('if & c2 c3)
                (if bool
                    (or (equal c2 *t*) (equal c3 *t*))
-                 (or (equal c2 *nil*) (equal c3 *nil*))))))
+                 (or (equal c2 *nil*) (equal c3 *nil*))))
+              ((('lambda & body) . &)
+               (and lambda-okp
+                    (and-orp body bool lambda-okp)))))
 
 (defun find-and-or-lemma (term bool lemmas ens wrld)
 
@@ -519,7 +537,7 @@
               (geneqv-refinementp (access rewrite-rule (car lemmas) :equiv)
                                  *geneqv-iff*
                                  wrld)
-              (and-orp (access rewrite-rule (car lemmas) :rhs) bool))
+              (and-orp (access rewrite-rule (car lemmas) :rhs) bool t))
          (mv-let
              (wonp unify-subst)
            (one-way-unify (access rewrite-rule (car lemmas) :lhs) term)
@@ -567,7 +585,7 @@
         ((member-equal (ffn-symb term) fns-to-be-ignored-by-rewrite)
          (mv step-limit nil term ttree))
         ((flambda-applicationp term)
-         (cond ((and-orp (lambda-body (ffn-symb term)) bool)
+         (cond ((and-orp (lambda-body (ffn-symb term)) bool nil)
                 (sl-let
                  (term ttree)
                  (expand-abbreviations
@@ -591,8 +609,7 @@
                              '(equal iff))
                   (enabled-numep (access def-body def-body :nume)
                                  ens)
-                  (and-orp (access def-body def-body :concl)
-                           bool))
+                  (and-orp (access def-body def-body :concl) bool nil))
              (sl-let
               (term ttree)
               (with-accumulated-persistence

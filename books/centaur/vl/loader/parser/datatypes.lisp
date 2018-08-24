@@ -61,11 +61,9 @@
                            member-equal-when-member-equal-of-cdr-under-iff)))
 
 
-; BOZO eventually need variable_dimension stuff
-
 ;    variable_dimension ::= unsized_dimension
 ;                         | unpacked_dimension
-;                         | associative_dimension
+;                         | associative_dimension       // mutually recursive with datatypes
 ;                         | queue_dimension
 ;
 ;    unsized_dimension ::= '[' ']'
@@ -73,11 +71,10 @@
 ;    unpacked_dimension ::= '[' constant_range ']'
 ;                         | '[' constant_expression ']'
 ;
-;    associative_dimension ::= '[' data_type ']'
+;    associative_dimension ::= '[' data_type ']'        // mutually recursive with datatypes
 ;                            | '[' '*' ']'
 ;
 ;    queue_dimension ::= '[' '$' [ ':' constant_expression ] ']'
-
 
 
 
@@ -85,7 +82,7 @@
 ;; packed_dimension ::= '[' constant_range ']' | unsized_dimension
 
 (defparser vl-parse-packeddimension ()
-  :result (vl-packeddimension-p val)
+  :result (vl-dimension-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
@@ -98,11 +95,11 @@
         (:= (vl-match-token :vl-colon))
         (lsb := (vl-parse-expression))
         (:= (vl-match-token :vl-rbrack))
-        (return (vl-range->packeddimension (make-vl-range :msb msb :lsb lsb)))))
+        (return (vl-range->dimension (make-vl-range :msb msb :lsb lsb)))))
 
 (defparser vl-parse-0+-packed-dimensions ()
   ;; Match { packed_dimension }
-  :result (vl-packeddimensionlist-p val)
+  :result (vl-dimensionlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -120,7 +117,7 @@
   ;;
   ;; Note (SystemVerilog-2012 page 109): unpacked dimensions like [size] are
   ;; the same as [0:size-1].  We therefore convert them into
-  ;; vl-packeddimension-p structures like [0:size-1].
+  ;; vl-dimension-p structures like [0:size-1].
   :result (vl-range-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -131,7 +128,7 @@
         ;; The grammar appears to require a range or expression here.
         ;; (when (vl-is-token? :vl-rbrack)
         ;;   (:= (vl-match))
-        ;;   (return (make-vl-packeddimension-unsized)))
+        ;;   (return (make-vl-dimension-unsized)))
         (msb := (vl-parse-expression))
         (when (vl-is-token? :vl-colon)
           (:= (vl-match))
@@ -148,12 +145,12 @@
                          :left msb
                          :right (vl-make-index 1))))))
   ///
-  (defthm vl-packeddimension-p-of-vl-parse-unpacked-dimension
+  (defthm vl-dimension-p-of-vl-parse-unpacked-dimension
     ;; Gross, for compatibility with older code
     (b* (((mv err val ?tokstream) (vl-parse-unpacked-dimension)))
       (implies (not err)
-               (vl-packeddimension-p val)))
-    :hints(("Goal" :in-theory (enable vl-packeddimension-p)))))
+               (vl-dimension-p val)))
+    :hints(("Goal" :in-theory (enable vl-dimension-p)))))
 
 (defparser vl-parse-0+-unpacked-dimensions ()
   ;; Match { unpacked_dimension }
@@ -169,46 +166,24 @@
         (rest  := (vl-parse-0+-unpacked-dimensions))
         (return (cons first rest)))
   ///
-  (defthm vl-packeddimensionlist-p-of-vl-parse-0+-unpacked-dimensions
+  (defthm vl-dimensionlist-p-of-vl-parse-0+-unpacked-dimensions
     (b* (((mv ?err val ?tokstream) (vl-parse-0+-unpacked-dimensions)))
-      (vl-packeddimensionlist-p val))))
+      (vl-dimensionlist-p val))))
 
-
-(defparser vl-parse-variable-dimension ()
-  ;; Matches  variable_dimension ::= unsized_dimension
-  ;;                               | unpacked_dimension
-  ;;                               | associative_dimension
-  ;;                               | queue_dimension
-  ;;
-  ;; Except that BOZO so far we only implement unsized_dimension and
-  ;; unpacked_dimension.
-  :result (vl-packeddimension-p val)
+(defparser vl-parse-queue-dimension ()
+  ;; queue_dimension ::= '[' '$' [ ':' constant_expression ] ']'
+  :result (vl-dimension-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seq tokstream
-       ;; unsized_dimension ::= '[' ']'
-       (when (and (vl-is-token? :vl-lbrack)
-                  (vl-lookahead-is-token? :vl-rbrack (cdr (vl-tokstream->tokens))))
+       (:= (vl-match-token :vl-lbrack))
+       (:= (vl-match-token :vl-$))
+       (when (vl-is-token? :vl-colon)
          (:= (vl-match))
-         (:= (vl-match))
-         (return (make-vl-packeddimension-unsized)))
-       (ans := (vl-parse-unpacked-dimension))
-       (return ans)))
-
-(defparser vl-parse-0+-variable-dimensions ()
-  ;; Match { variable_dimension }
-  :result (vl-packeddimensionlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong-on-value
-  (seq tokstream
-        (unless (vl-is-token? :vl-lbrack)
-          (return nil))
-        (first := (vl-parse-variable-dimension))
-        (rest  := (vl-parse-0+-variable-dimensions))
-        (return (cons first rest))))
+         (maxsize := (vl-parse-expression)))
+       (:= (vl-match-token :vl-rbrack))
+       (return (make-vl-dimension-queue :maxsize maxsize))))  
 
 
   ;; data_type ::=
@@ -426,7 +401,6 @@
         (return (cons first rest))))
 
 
-
 ;; variable_decl_assignment ::=
 ;;       variable_identifier { variable_dimension } [ '=' expression ]
 ;;     | dynamic_array_variable_identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
@@ -445,8 +419,8 @@
   :short "Temporary structure used when parsing variable declarations."
   :layout :fulltree
   ((id   stringp :rule-classes :type-prescription)
-   (dims vl-packeddimensionlist-p "BOZO not sufficiently general.")
-   (expr vl-maybe-expr-p          "BOZO not sufficiently general."))
+   (dims vl-dimensionlist-p)
+   (rhs  vl-maybe-rhs-p           "BOZO not sufficiently general."))
 
 :long "<p>This captures something like a @('variable_type') from
 Verilog-2005:</p>
@@ -456,79 +430,132 @@ Verilog-2005:</p>
                     | identifier '=' expression
 })
 
-<p>Or @('variable_decl_assignment') from SystemVerilog-2012, except that
-<b>BOZO</b> we don't yet support @('new') sorts of stuff or certain kinds of
-dimensions.</p>
+<p>Or @('variable_decl_assignment') from SystemVerilog-2012, which is
+richer and supports @('new') invocations,</p>
 
 @({
     variable_decl_assignment ::=
          identifier { variable_dimension } [ '=' expression ]
        | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
        | identifier [ '=' class_new ]
-})")
+
+    dynamic_array_new ::= 'new' '[' expression ']' [ '(' expression ')' ]
+
+    class_new ::= [ class_scope ] 'new' [ '(' list_of_arguments ')' ]
+                | 'new' expression
+})
+
+<p>Except that <b>BOZO</b> we currently don't support @('class_scope') or some
+kinds of @('list_of_arguments').</p>")
 
 (deflist vl-vardeclassignlist-p (x)
   (vl-vardeclassign-p x)
   :elementp-of-nil nil)
 
-(defparser vl-parse-variable-decl-assignment ()
-  ;; SystemVerilog-2012 Only.
-  :result (vl-vardeclassign-p val)
+(defparser vl-parse-rhs ()
+  :result (vl-rhs-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seq tokstream
-        (id := (vl-match-token :vl-idtoken))
-        (when (vl-is-token? :vl-lbrack)
-          ;; BOZO this doesn't yet support all the possible variable_dimension things, but
-          ;; we'll at least support arbitrary lists of packed dimensions.
-          (dims := (vl-parse-0+-variable-dimensions)))
+       ;; BOZO implement class_scope
+       (unless (vl-is-token? :vl-kwd-new)
+         (expr := (vl-parse-expression))
+         (return (make-vl-rhsexpr :guts expr)))
+       (:= (vl-match)) ;; eat the 'new'
 
-        (when (vl-is-token? :vl-equalsign)
-          (:= (vl-match))
-          (expr := (vl-parse-expression))
-          (when (or (vl-is-token? :vl-kwd-new)
-                    (and (vl-is-token? :vl-scope)
-                         (vl-lookahead-is-token? :vl-kwd-new (cdr (vl-tokstream->tokens)))))
-            (return-raw (vl-parse-error "Implement support for 'new' in struct/union members!"))))
+       (when (vl-is-token? :vl-lbrack)
+         ;; dynamic_array_new ::= 'new' '[' expression ']' [ '(' expression ')' ]
+         (:= (vl-match))
+         (arrsize := (vl-parse-expression))
+         (:= (vl-match-token :vl-rbrack))
+         (when (vl-is-token? :vl-lparen)
+           (:= (vl-match))
+           (arg1 := (vl-parse-expression))
+           (:= (vl-match-token :vl-rparen))
+           (return (make-vl-rhsnew :arrsize arrsize :args (list arg1))))
+         (return (make-vl-rhsnew :arrsize arrsize)))
 
-        (return (make-vl-vardeclassign
-                 :id (vl-idtoken->name id)
-                 :dims dims
-                 :expr expr))))
+       ;; class_new ::= [ class_scope ] 'new' [ '(' list_of_arguments ')' ]
+       ;;             | 'new' expression
+       ;;
+       ;; This is a bit tricky/ambiguous.
+       ;;
+       ;;  - Since it's legal to nest parens in an expression, if we write "new
+       ;;    (5)" is that supposed to be a list_of_arguments or an expression?
+       ;;    Strategy: always try to parse a list_of_arguments, but then fall
+       ;;    back on parsing a single expression if that fails.
+       ;;
+       ;;  - The list_of_arguments is itself optional, so there's really a case
+       ;;    of just "new" all by itself to support.  Strategy: if we fail to
+       ;;    parse either of the above, fall back and assume it's an empty "new"
+       (return-raw
+        (b* ((backup (vl-tokstream-save))
+             ;; Try parsing a list_of_arguments.  BOZO we currently only
+             ;; handle plain expression lists.
+             ((mv err1 args tokstream)
+              (seq tokstream
+                   (:= (vl-match-token :vl-lparen))
+                   (args := (vl-parse-1+-expressions-separated-by-commas))
+                   (:= (vl-match-token :vl-rparen))
+                   (return args)))
+             ((unless err1)
+              (mv nil (make-vl-rhsnew :arrsize nil :args args) tokstream))
 
-(defparser vl-parse-1+-variable-decl-assignments-separated-by-commas ()
-  ;; SystemVerilog-2012 Only.
-  ;;
-  ;;   list_of_variable_decl_assignments ::= variable_decl_assignment { ',' variable_decl_assignment }
-  :result (vl-vardeclassignlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (first := (vl-parse-variable-decl-assignment))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (rest := (vl-parse-1+-variable-decl-assignments-separated-by-commas)))
-        (return (cons first rest))))
+             ;; Else, try parsing a plain expression.
+             (tokstream (vl-tokstream-restore backup))
+             ((mv err2 arg1 tokstream) (vl-parse-expression))
+             ((unless err2)
+              (mv nil (make-vl-rhsnew :arrsize nil :args (list arg1)) tokstream))
+
+             ;; Else, must just be a plain "new" with no arguments.
+             (tokstream (vl-tokstream-restore backup)))
+          (mv nil (make-vl-rhsnew :arrsize nil :args nil) tokstream)))))
+
+
+
+;; Curiously the grammar allows for the use of 'new' right-hand-sides in struct
+;; member initializers.  But this appears to be illegal (probably?), since per
+;; SystemVerilog-2012 section 7.2.2, "the assigned expression shall be a
+;; constant expression."  We will explicitly check for use of "new" here at
+;; parse time and cause an error.  This behavior allows us to keep vl-rhs out
+;; of the datatype/expression mutual recursion, which seems nice.
+
+(define vl-vardeclassignlist-newfree-p ((x vl-vardeclassignlist-p))
+  (or (atom x)
+      (and (let ((rhs1 (vl-vardeclassign->rhs (car x))))
+             (or (not rhs1)
+                 (vl-rhs-case rhs1 :vl-rhsexpr)))
+           (vl-vardeclassignlist-newfree-p (cdr x))))
+  ///
+  (defthm vl-vardeclassignlist-newfree-p-when-atom
+    (implies (atom x)
+             (vl-vardeclassignlist-newfree-p x)))
+  (defthm vl-vardeclassignlist-newfree-p-of-cons
+    (equal (vl-vardeclassignlist-newfree-p (cons a x))
+           (and (let ((rhs1 (vl-vardeclassign->rhs a)))
+                  (or (not rhs1)
+                      (vl-rhs-case rhs1 :vl-rhsexpr)))
+                (vl-vardeclassignlist-newfree-p x)))))
+
+
 
 (define vl-make-structmembers ((atts vl-atts-p)
                                (rand vl-randomqualifier-p)
                                (type vl-datatype-p)
                                (decls vl-vardeclassignlist-p))
-  :returns (decls vl-structmemberlist-p :hyp :fguard)
-  (b* (((when (atom decls)) nil)
+  :guard (vl-vardeclassignlist-newfree-p decls)
+  :returns (decls vl-structmemberlist-p)
+  :prepwork ((local (in-theory (enable vl-vardeclassignlist-newfree-p))))
+  (b* (((when (atom decls))
+        nil)
        ((vl-vardeclassign decl) (car decls)))
     (cons (make-vl-structmember :atts atts
                                 :rand rand
                                 :type (vl-datatype-update-udims decl.dims type)
                                 :name decl.id
-                                :rhs  decl.expr)
+                                :rhs  (and decl.rhs (vl-rhsexpr->guts decl.rhs)))
           (vl-make-structmembers atts rand type (cdr decls)))))
-
-
-
 
 (local (defthm narrow-down-to-union
          (equal (EQUAL (VL-TYPE-OF-MATCHED-TOKEN '(:VL-KWD-STRUCT :VL-KWD-UNION)
@@ -537,6 +564,8 @@ dimensions.</p>
                 (vl-is-token? :vl-kwd-union))
          :hints(("Goal" :in-theory (enable vl-type-of-matched-token
                                            vl-is-token?)))))
+
+
 
 
 (defparsers parse-datatype
@@ -691,11 +720,101 @@ dimensions.</p>
           (type :s= (vl-parse-datatype-or-void))
           (decls := (vl-parse-1+-variable-decl-assignments-separated-by-commas))
           (:= (vl-match-token :vl-semi))
+          (unless (vl-vardeclassignlist-newfree-p decls)
+            (return-raw
+             (vl-parse-error "Illegal use of 'new' in a struct or union member initial value")))
           (return
            (let ((rand (and rand (case (vl-token->type rand)
                                    (:vl-kwd-rand  :vl-rand)
                                    (:vl-kwd-randc :vl-randc)))))
-             (vl-make-structmembers atts rand type decls))))))
+             (vl-make-structmembers atts rand type decls)))))
+
+
+  (defparser vl-parse-variable-dimension ()
+    :measure (two-nats-measure (vl-tokstream-measure) 10)
+    ;; Matches variable_dimension ::= unsized_dimension
+    ;;                              | unpacked_dimension
+    ;;                              | associative_dimension
+    ;;                              | queue_dimension
+    (seq tokstream
+         ;; unsized_dimension ::= '[' ']'
+         (when (and (vl-is-token? :vl-lbrack)
+                    (vl-lookahead-is-token? :vl-rbrack (cdr (vl-tokstream->tokens))))
+           (:= (vl-match))
+           (:= (vl-match))
+           (return (make-vl-dimension-unsized)))
+
+         ;; queue_dimension ::= '[' '$' [ ':' constant_expression ] ']'
+         (when (and (vl-is-token? :vl-lbrack)
+                    (vl-lookahead-is-token? :vl-$ (cdr (vl-tokstream->tokens))))
+           (ans := (vl-parse-queue-dimension))
+           (return ans))
+
+         (return-raw
+          ;; Use backtracking to resolve either an unpacked_dimension or an
+          ;; associative_dimension.  Almost always it will be an
+          ;; unpacked_dimension, so try that first.
+          (b* ((backup (vl-tokstream-save))
+               ((mv erp val tokstream)
+                (vl-parse-unpacked-dimension))
+               ((unless erp)
+                (mv erp val tokstream))
+               ;; Failed to parse an unpacked_dimension, so try an
+               ;; associative_dimension instead.
+               (tokstream (vl-tokstream-restore backup)))
+            (vl-parse-associative-dimension)))))
+
+  (defparser vl-parse-associative-dimension ()
+    :measure (two-nats-measure (vl-tokstream-measure) 9)
+    ;;    associative_dimension ::= '[' data_type ']'
+    ;;                            | '[' '*' ']'
+    (seq tokstream
+         (:= (vl-match-token :vl-lbrack))
+         (when (vl-is-token? :vl-times)
+           (:= (vl-match))
+           (:= (vl-match-token :vl-rbrack))
+           (return (make-vl-dimension-star)))
+         (type := (vl-parse-datatype))
+         (:= (vl-match-token :vl-rbrack))
+         (return (make-vl-dimension-datatype :type type))))
+
+  (defparser vl-parse-0+-variable-dimensions ()
+    :measure (two-nats-measure (vl-tokstream-measure) 11)
+    ;; Match { variable_dimension }
+    (seq tokstream
+         (unless (vl-is-token? :vl-lbrack)
+           (return nil))
+         (first :s= (vl-parse-variable-dimension))
+         (rest  := (vl-parse-0+-variable-dimensions))
+         (return (cons first rest))))
+
+  (defparser vl-parse-variable-decl-assignment ()
+    ;; SystemVerilog-2012 Only.
+    :measure (two-nats-measure (vl-tokstream-measure) 12)
+    (seq tokstream
+         (id := (vl-match-token :vl-idtoken))
+         (when (vl-is-token? :vl-lbrack)
+           (dims := (vl-parse-0+-variable-dimensions)))
+         (when (vl-is-token? :vl-equalsign)
+           (:= (vl-match))
+           (rhs := (vl-parse-rhs)))
+         (return (make-vl-vardeclassign
+                  :id (vl-idtoken->name id)
+                  :dims dims
+                  :rhs rhs))))
+
+  (defparser vl-parse-1+-variable-decl-assignments-separated-by-commas ()
+    :measure (two-nats-measure (vl-tokstream-measure) 13)
+    ;; SystemVerilog-2012 Only.
+    ;;
+    ;;   list_of_variable_decl_assignments ::= variable_decl_assignment { ',' variable_decl_assignment }
+    (seq tokstream
+         (first :s= (vl-parse-variable-decl-assignment))
+         (when (vl-is-token? :vl-comma)
+           (:= (vl-match))
+           (rest := (vl-parse-1+-variable-decl-assignments-separated-by-commas)))
+         (return (cons first rest))))
+  )
 
 
 
@@ -710,6 +829,11 @@ dimensions.</p>
         ,(vl-val-when-error-claim vl-parse-datatype)
         ,(vl-val-when-error-claim vl-parse-structmembers)
         ,(vl-val-when-error-claim vl-parse-structmember)
+        ,(vl-val-when-error-claim vl-parse-variable-dimension)
+        ,(vl-val-when-error-claim vl-parse-associative-dimension)
+        ,(vl-val-when-error-claim vl-parse-0+-variable-dimensions)
+        ,(vl-val-when-error-claim vl-parse-variable-decl-assignment)
+        ,(vl-val-when-error-claim vl-parse-1+-variable-decl-assignments-separated-by-commas)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
@@ -725,40 +849,15 @@ dimensions.</p>
         ,(vl-warning-claim vl-parse-datatype)
         ,(vl-warning-claim vl-parse-structmembers)
         ,(vl-warning-claim vl-parse-structmember)
+        ,(vl-warning-claim vl-parse-variable-dimension)
+        ,(vl-warning-claim vl-parse-associative-dimension)
+        ,(vl-warning-claim vl-parse-0+-variable-dimensions)
+        ,(vl-warning-claim vl-parse-variable-decl-assignment)
+        ,(vl-warning-claim vl-parse-1+-variable-decl-assignments-separated-by-commas)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
                      ',(flag::get-clique-members 'vl-parse-datatype-fn (w state)))))))))
-
-;; (defsection tokenlist
-;;   (with-output
-;;     :off prove
-;;     :gag-mode :goals
-;;     (make-event
-;;      `(defthm-parse-datatype-flag vl-parse-datatype-tokenlist
-;;         ,(vl-tokenlist-claim vl-parse-datatype-or-void)
-;;         ,(vl-tokenlist-claim vl-parse-datatype)
-;;         ,(vl-tokenlist-claim vl-parse-structmembers)
-;;         ,(vl-tokenlist-claim vl-parse-structmember)
-;;         :hints((and acl2::stable-under-simplificationp
-;;                     (flag::expand-calls-computed-hint
-;;                      acl2::clause
-;;                      ',(flag::get-clique-members 'vl-parse-datatype-fn (w state)))))))))
-
-;; (defsection parsestate
-;;   (with-output
-;;     :off prove
-;;     :gag-mode :goals
-;;     (make-event
-;;      `(defthm-parse-datatype-flag vl-parse-datatype-parsestate
-;;         ,(vl-parsestate-claim vl-parse-datatype-or-void)
-;;         ,(vl-parsestate-claim vl-parse-datatype)
-;;         ,(vl-parsestate-claim vl-parse-structmembers)
-;;         ,(vl-parsestate-claim vl-parse-structmember)
-;;         :hints((and acl2::stable-under-simplificationp
-;;                     (flag::expand-calls-computed-hint
-;;                      acl2::clause
-;;                      ',(flag::get-clique-members 'vl-parse-datatype-fn (w state)))))))))
 
 (defsection progress
   (with-output
@@ -770,6 +869,11 @@ dimensions.</p>
         ,(vl-progress-claim vl-parse-datatype)
         ,(vl-progress-claim vl-parse-structmembers)
         ,(vl-progress-claim vl-parse-structmember)
+        ,(vl-progress-claim vl-parse-variable-dimension)
+        ,(vl-progress-claim vl-parse-associative-dimension)
+        ,(vl-progress-claim vl-parse-0+-variable-dimensions :strongp nil)
+        ,(vl-progress-claim vl-parse-variable-decl-assignment)
+        ,(vl-progress-claim vl-parse-1+-variable-decl-assignments-separated-by-commas)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
@@ -798,6 +902,11 @@ dimensions.</p>
                     (consp tokens))
            :rule-classes :forward-chaining))
 
+  (local (defthm crock5
+           (implies (not (vl-is-token? :vl-lbrack))
+                    (mv-nth 0 (vl-parse-unpacked-dimension)))
+           :hints(("Goal" :in-theory (enable vl-parse-unpacked-dimension)))))
+
   (with-output
     :off prove
     :gag-mode :goals
@@ -807,6 +916,11 @@ dimensions.</p>
         ,(vl-eof-claim vl-parse-datatype :error)
         ,(vl-eof-claim vl-parse-structmembers :error)
         ,(vl-eof-claim vl-parse-structmember :error)
+        ,(vl-eof-claim vl-parse-variable-dimension :error)
+        ,(vl-eof-claim vl-parse-associative-dimension :error)
+        ,(vl-eof-claim vl-parse-0+-variable-dimensions nil)
+        ,(vl-eof-claim vl-parse-variable-decl-assignment :error)
+        ,(vl-eof-claim vl-parse-1+-variable-decl-assignments-separated-by-commas :error)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
@@ -841,6 +955,27 @@ dimensions.</p>
          (implies (force (not (mv-nth 0 (vl-parse-structmember))))
                   (vl-structmemberlist-p (mv-nth 1 (vl-parse-structmember)))))
 
+        (vl-parse-variable-dimension
+         (implies (force (not (mv-nth 0 (vl-parse-variable-dimension))))
+                  (vl-dimension-p (mv-nth 1 (vl-parse-variable-dimension)))))
+
+        (vl-parse-associative-dimension
+         (implies (force (not (mv-nth 0 (vl-parse-associative-dimension))))
+                  (vl-dimension-p (mv-nth 1 (vl-parse-associative-dimension)))))
+
+        (vl-parse-0+-variable-dimensions
+         (implies (force (not (mv-nth 0 (vl-parse-0+-variable-dimensions))))
+                  (vl-dimensionlist-p (mv-nth 1 (vl-parse-0+-variable-dimensions)))))
+
+        (vl-parse-variable-decl-assignment
+         (implies (force (not (mv-nth 0 (vl-parse-variable-decl-assignment))))
+                  (vl-vardeclassign-p (mv-nth 1 (vl-parse-variable-decl-assignment)))))
+
+        (vl-parse-1+-variable-decl-assignments-separated-by-commas
+         (implies (force (not (mv-nth 0 (vl-parse-1+-variable-decl-assignments-separated-by-commas))))
+                  (vl-vardeclassignlist-p
+                   (mv-nth 1 (vl-parse-1+-variable-decl-assignments-separated-by-commas)))))
+
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
@@ -860,6 +995,14 @@ dimensions.</p>
                                 :rule-classes :type-prescription)
         (vl-parse-structmember (true-listp (mv-nth 1 (vl-parse-structmember)))
                                :rule-classes :type-prescription)
+        (vl-parse-variable-dimension t :rule-classes nil)
+        (vl-parse-associative-dimension t :rule-classes nil)
+        (vl-parse-0+-variable-dimensions (true-listp (mv-nth 1 (vl-parse-0+-variable-dimensions)))
+                                         :rule-classes :type-prescription)
+        (vl-parse-variable-decl-assignment t :rule-classes nil)
+        (vl-parse-1+-variable-decl-assignments-separated-by-commas
+         (true-listp (mv-nth 1 (vl-parse-1+-variable-decl-assignments-separated-by-commas)))
+         :rule-classes :type-prescription)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause

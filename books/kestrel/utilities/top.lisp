@@ -17,7 +17,6 @@
 (include-book "assert")
 (include-book "auto-instance")
 (include-book "auto-termination")
-(include-book "characters")
 (include-book "copy-def")
 (include-book "defchoose-queries")
 (include-book "define-sk")
@@ -60,8 +59,9 @@
 (include-book "paired-names")
 (include-book "proof-builder-macros")
 (include-book "prove-interface")
+(include-book "set-size")
 (include-book "skip-in-book")
-(include-book "strings")
+(include-book "strings/top")
 (include-book "symbol-symbol-alists")
 (include-book "symbol-true-list-alists")
 (include-book "symbols")
@@ -77,7 +77,7 @@
 (include-book "verify-guards-program")
 (include-book "world-queries")
 (include-book "world-theorems")
-(include-book "xdoc-constructors")
+(include-book "xdoc/top")
 (include-book "zp-lists")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

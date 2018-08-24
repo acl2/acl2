@@ -105,6 +105,15 @@
    '(if x (cdr (assoc-equal x a)) 'nil)
    (fgetprop ev 'lemmas nil world)))
 
+(defun ev-find-nonsymbol-atom-rule (ev world)
+  (find-matching-rule
+   '((not (consp x))
+     (not (symbolp x)))
+   'equal
+   `(,ev x a)
+   ''nil
+   (fgetprop ev 'lemmas nil world)))
+
 (defun ev-find-quote-rule (ev world)
   (find-matching-rule
    '((consp x) (equal (car x) 'quote))

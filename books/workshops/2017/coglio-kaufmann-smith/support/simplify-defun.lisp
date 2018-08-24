@@ -509,18 +509,6 @@
         fn-body
         (body fn nil wrld))))
 
-(defun congruence-runes (lst acc)
-  (cond ((endp lst) acc)
-        (t (congruence-runes (cdr lst)
-                             (if (member-eq (caar lst)
-                                            '(:congruence :equivalence))
-                                 (cons (car lst) acc)
-                               acc)))))
-
-(defun congruence-theory (wrld)
-  (congruence-runes (current-theory-fn :here wrld)
-                    nil))
-
 (defun clique-runic-designators (clique)
   (cond ((endp clique) nil)
         (t (append (let ((fn (car clique)))
@@ -1218,7 +1206,7 @@
          ,simp-body)
        (make-event (let ((thy (union-equal
                                ',runes
-                               (congruence-theory (w state)))))
+                               (congruence-theory-fn :here (w state)))))
                      (list 'defconst ',fn-runes
                            (list 'quote thy))))
        ,@(and simplify-body
@@ -1528,7 +1516,7 @@
 ; that didn't suffice; search for "congruence-theory" in
 ; simplify-defun-tests.lisp.
 
-                 (union-theories (congruence-theory world)
+                 (union-theories (congruence-theory :here)
                                  (theory 'minimal-theory)))
                 '(:use (,@before-vs-after-names
                         ,@used-names))))))

@@ -221,7 +221,12 @@
 
   (defrule 64-bit-modep-of-page-fault-exception
     (equal (64-bit-modep (mv-nth 2 (page-fault-exception addr err-no x86)))
-           (64-bit-modep x86))))
+           (64-bit-modep x86)))
+
+  (defrule x86-operation-mode-of-page-fault-exception
+    (equal (x86-operation-mode (mv-nth 2 (page-fault-exception addr err-no x86)))
+           (x86-operation-mode x86))
+    :enable x86-operation-mode))
 
 (define page-present
   ((entry :type (unsigned-byte 64)))
@@ -1163,7 +1168,15 @@ accesses.</p>
                                     structure-type lin-addr entry
                                     u/s-acc r/w-acc x/d-acc
                                     wp smep smap ac nxe r-w-x cpl x86)))
-           (64-bit-modep x86))))
+           (64-bit-modep x86)))
+
+  (defrule x86-operation-mode-of-paging-entry-no-page-fault-p
+    (equal (x86-operation-mode (mv-nth 2 (paging-entry-no-page-fault-p
+                                    structure-type lin-addr entry
+                                    u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+           (x86-operation-mode x86))
+    :enable x86-operation-mode))
 
 ;; ======================================================================
 
@@ -1427,7 +1440,15 @@ accesses.</p>
                                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
                                     wp smep smap ac nxe r-w-x cpl x86)))
            (64-bit-modep x86))
-    :enable (wm-low-32 wm-low-64)))
+    :enable (wm-low-32 wm-low-64))
+
+  (defrule x86-operation-mode-of-ia32e-la-to-pa-page-table
+    (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-page-table
+                                          lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe r-w-x cpl x86)))
+           (x86-operation-mode x86))
+    :enable x86-operation-mode
+    :disable ia32e-la-to-pa-page-table))
 
 ;; ----------------------------------------------------------------------
 
@@ -1748,7 +1769,15 @@ accesses.</p>
                                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
                                     wp smep smap ac nxe r-w-x cpl x86)))
            (64-bit-modep x86))
-    :enable (wm-low-32 wm-low-64)))
+    :enable (wm-low-32 wm-low-64))
+
+  (defrule x86-operation-mode-of-ia32e-la-to-pa-page-directory
+    (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-page-directory
+                                          lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe r-w-x cpl x86)))
+           (x86-operation-mode x86))
+    :enable x86-operation-mode
+    :disable ia32e-la-to-pa-page-directory))
 
 ;; ----------------------------------------------------------------------
 
@@ -2071,7 +2100,15 @@ accesses.</p>
                                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
                                     wp smep smap ac nxe r-w-x cpl x86)))
            (64-bit-modep x86))
-    :enable (wm-low-32 wm-low-64)))
+    :enable (wm-low-32 wm-low-64))
+
+  (defrule x86-operation-mode-of-ia32e-la-to-pa-page-dir-ptr-table
+    (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+                                          lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe r-w-x cpl x86)))
+           (x86-operation-mode x86))
+    :enable x86-operation-mode
+    :disable ia32e-la-to-pa-page-dir-ptr-table))
 
 ;; ----------------------------------------------------------------------
 
@@ -2317,13 +2354,22 @@ accesses.</p>
                                     lin-addr base-addr
                                     wp smep smap ac nxe r-w-x cpl x86)))
            (64-bit-modep x86))
-    :enable (wm-low-32 wm-low-64)))
+    :enable (wm-low-32 wm-low-64))
+
+  (defrule x86-operation-mode-of-ia32e-la-to-pa-pml4-table
+    (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-pml4-table
+                                          lin-addr base-addr
+                                          wp smep smap ac nxe r-w-x cpl x86)))
+           (x86-operation-mode x86))
+    :enable x86-operation-mode
+    :disable ia32e-la-to-pa-pml4-table))
 
 ;; ----------------------------------------------------------------------
 
 (defabbrev cpl (x86)
   (the (unsigned-byte 2)
-       (seg-sel-layout-slice :rpl (the (unsigned-byte 16) (xr :seg-visible *cs* x86)))))
+    (seg-sel-layout-slice
+     :rpl (the (unsigned-byte 16) (xr :seg-visible *cs* x86)))))
 
 (define ia32e-la-to-pa
   ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
@@ -2374,7 +2420,7 @@ accesses.</p>
              (ash (cr3-slice :cr3-pdb cr3) 12)
              :exec
              (the (unsigned-byte 52)
-                  (ash (the (unsigned-byte 40) (cr3-slice :cr3-pdb cr3)) 12)))))
+               (ash (the (unsigned-byte 40) (cr3-slice :cr3-pdb cr3)) 12)))))
         (ia32e-la-to-pa-pml4-table lin-addr pml4-table-base-addr wp smep smap ac nxe r-w-x cpl x86))
 
     (mv t 0 x86))
@@ -2558,7 +2604,13 @@ accesses.</p>
   (defrule 64-bit-modep-of-ia32e-la-to-pa
     (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
            (64-bit-modep x86))
-    :enable 64-bit-modep))
+    :enable 64-bit-modep)
+
+  (defrule x86-operation-mode-of-ia32e-la-to-pa
+    (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
+           (x86-operation-mode x86))
+    :enable x86-operation-mode
+    :disable ia32e-la-to-pa))
 
 ;; ======================================================================
 

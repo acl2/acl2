@@ -157,20 +157,11 @@
  from previously-proved theorems.  It does this by generating suitable @(see
  hints) using the new utility, @(see previous-subsumer-hints).</p>
 
- <p>A new book, @('kestrel/utilities/proof-builder-macros.lisp'), is a place to
- define @(see proof-builder) macros.  This book currently defines a simple
- macro, @('when-not-proved') (see @(tsee acl2-pc::when-not-proved)), for
- skipping instructions when all goals have been proved.  It also defines two
- (more complex) macros, @('prove-guard') (see @(tsee acl2-pc::prove-guard)) and
- @('prove-termination') (see @(tsee acl2-pc::prove-termination)), for
- (respectively) using previously-proved @(see guard) or termination theorems
- efficiently, as well as a more general macro, @(tsee acl2-pc::fancy-use), for
- using lemma instances (via @(':use')) efficiently.</p>
-
- <p>Added <see topic='@(url xdoc::xdoc-constructors)'>the XDOC
- constructors</see>, which are utilities to construct well-tagged XDOC strings
- via ACL2 function calls whose nesting structure mirrors the nesting of the
- XML.</p>
+ <p>Added some <see topic='@(url xdoc-utilities)'>utilities for building XDOC
+ documentation</see>.  The <see topic='@(url xdoc::constructors)'>XDOC
+ constructors</see> are utilities to construct well-tagged XDOC strings via
+ ACL2 function calls whose nesting structure mirrors the nesting of the XML.
+ @(tsee defxdoc+) extends @(tsee defxdoc) with additional conveniences.</p>
 
  <p>A new event, @(tsee defunt), is a variant of @(tsee defun) that uses
  termination theorems from a large set of @(see community-books) &mdash;
@@ -183,6 +174,17 @@
  all maps from a domain to a range; @(tsee strict-merge-sort-<), which sorts without
  duplicates; and @(tsee subsetp-eq-linear), which is a linear-time subset test
  for sorted lists of symbols.</p>
+
+ <p>Added a new macro @(tsee defbyte) for introducing fixtypes for unsigned and
+ signed bytes of specified sizes, as well as fixtypes of lists of such bytes,
+ along with theorems relating the fixtype recognizers to the built-in binary
+ predicates @(tsee unsigned-byte-p) and @(tsee signed-byte-p) and to the
+ library binary predicates @(tsee unsigned-byte-listp) and @(tsee
+ signed-byte-listp).</p>
+
+ <p>Started a new library for <a href=\"https://ethereum.org\">Ethereum</a>.</p>
+
+ <p>Started a new library for <a href=\"https://bitcoin.org\">Bitcoin</a>.</p>
 
  <h3>Changes to Existing Libraries</h3>
 
@@ -238,11 +240,6 @@
  to specify using the most recent @(see definition) rule for a function symbol
  instead of its original definition.</p>
 
- <p>Improved the @('copy-def') utility (community book
- @('kestrel/utilities/copy-def.lisp')) by adding an @(':expand') hint in the
- recursive case, as is sometimes necessary.  Also improved it to work better
- with @(tsee mutual-recursion).</p>
-
  <p>Extended and simplified the <see topic='@(url
  defun-sk-queries)'>@('defun-sk') query utilities</see>.  The utilities now
  handle the recently introduced @(':constrain') option.  The utilities no
@@ -254,12 +251,12 @@
  utilities</see> with a recognizer for symbols that name @(tsee defchoose)
  functions.</p>
 
- <p>Made several improvements to @(tsee directed-untranslate), including: one
- to avoid assertion errors that could occur when using @(tsee declare) forms
- with @(tsee let), @(tsee let*), or @(tsee mv-let) expressions: one to enhance
- insertion of appropriate @(tsee mv) calls; one to extend dropping of
- unused @(tsee let) bindings; and one to avoid an assertion error with
- @('mv-let') expressions.</p>
+ <p>Made several improvements to @(tsee directed-untranslate), including: avoid
+ assertion errors that could occur when using @(tsee declare) forms with @(tsee
+ let), @(tsee let*), or @(tsee mv-let) expressions: enhance insertion of
+ appropriate @(tsee mv) calls; extend dropping of unused @(tsee let) bindings;
+ avoid an assertion error with @('mv-let') expressions; and preserve basic uses
+ of @(tsee b*).</p>
 
  <p>Removed the @('keywords-of-keyword-value-list') utility, because it is
  subsumed by the built-in @(tsee evens) utility.</p>
@@ -297,16 +294,13 @@
  <p>Added a <see topic='@(url theorems-about-string-lists)'>theorem about lists
  of strings</see>.</p>
 
- <p>Extended the <see topic='@(url character-utilities)'>character
- utilities</see> with some theorems about the pre-existing functions, and with
- some new functions to check if (lists of) characters are all of specified
- kinds and to convert a list of unsigned 8-bit bytes to a corresponding list of
- hex digit characters.</p>
-
- <p>Extended the <see topic='@(url string-utilities)'>string utilities</see>
- with some theorems about the pre-existing functions, and with a new function
- to convert a list of unsigned 8-bit bytes to a corresponding string of hex
- digit characters.</p>
+ <p>Merged the utilities in @('[books]/kestrel/utilities/characters.lisp') into
+ the <see topic='@(url string-utilities)'>string utilities</see>.  Extended the
+ combined utilities with some theorems about the pre-existing functions and
+ with new functions to check if (lists of) characters are all of specified
+ kinds, to convert a list of unsigned 8-bit bytes to a corresponding list or
+ string of hex digit characters.  Refactored all the old and new utilities into
+ separate files to reduce dependencies.</p>
 
  <p>Extended the <see topic='@(url symbol-utilities)'>symbol utilities</see>
  with a utility that lifts @(tsee symbol-package-name) to lists.</p>
@@ -318,6 +312,28 @@
  <p>Moved @(tsee msg-downcase-first) and @(tsee msg-upcase-first) from the <see
  topic='@(url string-utilities)'>string utilities</see> to the <see
  topic='@(url message-utilities)'>message utilities</see>.</p>
+
+ <p>A new book, @('kestrel/utilities/proof-builder-macros.lisp'), is a place to
+ define @(see proof-builder) macros.  This book currently defines a simple
+ macro, @('when-not-proved') (see @(tsee acl2-pc::when-not-proved)), for
+ skipping instructions when all goals have been proved.  It also defines two
+ (more complex) macros, @('prove-guard') (see @(tsee acl2-pc::prove-guard)) and
+ @('prove-termination') (see @(tsee acl2-pc::prove-termination)), for
+ (respectively) using previously-proved @(see guard) or termination theorems
+ efficiently, as well as a more general macro, @(tsee acl2-pc::fancy-use), for
+ using lemma instances (via @(':use')) efficiently.</p>
+
+ <p>Improved the @('copy-def') utility (community book
+ @('kestrel/utilities/copy-def.lisp')) in several ways: added an @(':expand')
+ hint in the recursive case (as is sometimes necessary), improved it to work
+ better with @(tsee mutual-recursion), and improved it to work better with an
+ @(':equiv') argument.</p>
+
+ <p>Fixed the utility, @(tsee orelse), so that @(':quiet t') pushes the output
+ stack, as per existing documentation.</p>
+
+ <p>Fixed a few books that broke due to the change in @(tsee defevaluator) (see
+ @(see note-8-1) for details).</p>
 
  <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
 
@@ -332,14 +348,15 @@
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>The model includes more support for 32-bit mode.  In particular: (some
- variants of) the PUSH, PUSHF, POP, POPF, MOV, LEA, XCHG, CMPXCHG, ADD, ADC,
- SUB, SBB, OR, AND, XOR, NEG, NOT, CMP, TEST, MUL, IMUL, DIV, IDIV, INC with
- opcodes FEh-FFh, DEC with opcodes FEh-FFh, CBW, CWDE, CDQE, CWD, CDQ, CQO,
- ROL, ROR, RCL, RCR, SAL, SAR, SHL, SHR, BT, JMP, Jcc, JCXZ, JECXZ, JRCXZ,
- CMOVcc, SETcc, MOVS, CMPS, STOS, LOOP, LOOPcc, CALL, RET, CMC, CLC, STC, CLD,
- STD, SAHF, LAHF, RDRAND, HLT, and NOP instructions also work in 32-bit mode
- now; the 32-bit instructions PUSHA, POPA, INC with opcodes 40h-47h, DEC with
- opcodes 48h-4Fh, and PUSH CS/SS/DS/ES are now part of the model.</p>
+ variants of) the PUSH, PUSHF, POP, POPF, MOV, MOVZX, MOVSX, MOVSXD, LEA, XCHG,
+ CMPXCHG, ADD, ADC, SUB, SBB, OR, AND, XOR, NEG, NOT, CMP, TEST, MUL, IMUL,
+ DIV, IDIV, INC with opcodes FEh-FFh, DEC with opcodes FEh-FFh, CBW, CWDE,
+ CDQE, CWD, CDQ, CQO, ROL, ROR, RCL, RCR, SAL, SAR, SHL, SHR, BT, JMP, Jcc,
+ JCXZ, JECXZ, JRCXZ, CMOVcc, SETcc, MOVS, CMPS, STOS, LOOP, LOOPcc, CALL, RET,
+ CMC, CLC, STC, CLD, STD, SAHF, LAHF, RDRAND, LGDT,LIDT, HLT, and NOP
+ instructions also work in 32-bit mode now; the 32-bit instructions PUSHA,
+ POPA, INC with opcodes 40h-47h, DEC with opcodes 48h-4Fh, and PUSH CS/SS/DS/ES
+ are now part of the model.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
@@ -352,6 +369,14 @@
  @('page-structure-marking-mode') field of the state stobj to the shorter
  @('app-view') and @('marking-view'), and also renaming some functions and
  theorems acccordingly.</p>
+
+ <p>The instruction decoder has been extended to detect VEX- and EVEX-encoded
+ (AVX, AVX2, AVX512) instructions, in both 64- and 32-bit modes of operation.
+ However, semantic functions of many of these instructions are still
+ unimplemented.</p>
+
+ <p>Annotated opcode maps are now used to generate opcode dispatch functions
+ and instruction coverage information.</p>
 
  <h4><see topic='@(url apt::apt)'>APT</see></h4>
 
@@ -366,6 +391,9 @@
  <p>Improved @(tsee apt::restrict) transformation to wrap the restriction test
  with @(tsee mbt); added an applicability condition to ensure that the
  restriction test is boolean-valued.</p>
+
+ <p>Imported more symbols from the @('\"ACL2\"') package into the @('\"APT\"')
+ package.</p>
 
  <h4><see topic='@(url acl2::bitops)'>Bitops</see></h4>
 
@@ -384,6 +412,11 @@
  <p>Added a utility, @(see xdoc::archive-xdoc), that saves the documentation
  generated by a series of local events, partially preprocessing it to avoid
  references to definitions that might only be locally available.</p>
+
+ <p>The @(tsee defpointer) utility for @(see xdoc) now accepts names that have
+ special characters such as @('<').</p>
+
+ <h4><see topic='@(url acl2::std)'>STD</see></h4>
 
  <p>The @('std/typed-lists/unsigned-byte-listp.lisp') book now includes
   @('std/lists/take') locally. As a result,
@@ -415,9 +448,6 @@
  <p>A Developer's Guide (see @(see developers-guide)) has been added, to assist
  those who may wish to become ACL2 Developers.  It replaces the much smaller
  ``system-development'' topic.</p>
-
- <p>The @(tsee defpointer) utility for @(see xdoc) now accepts names that have
- special characters such as @('<').</p>
 
  <p>The download button now works in the web-based manual.</p>
 
@@ -621,11 +651,11 @@
  easier to reason about than its tail-recursive definition for execution (which
  has not changed).</p>
 
- <p>The <see topic='@(url world-queries)'>world query</see>, <see topic='@(url
- term-utilities)'>term</see>, <see topic='@(url
- string-utilities)'>string</see>, and <see topic='@(url
- character-utilities)'>character</see> utilities have undergone several
- improvements and extensions.</p>
+ <p>The <see topic='@(url world-queries)'>world query utilities</see>, <see
+ topic='@(url term-utilities)'>term utilities</see>, <see topic='@(url
+ string-utilities)'>string utilities</see>, and character
+ utilities (@('[books]/kestrel/utilities/characters.lisp')) have undergone
+ several improvements and extensions.</p>
 
  <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
  about world-related functions</see> and <see topic='@(url

@@ -10,9 +10,10 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
-(include-book "zp-lists")
+(include-book "kestrel/utilities/zp-lists" :dir :system)
 
 (local (include-book "kestrel/utilities/typed-list-theorems" :dir :system))
 
@@ -23,20 +24,18 @@
   :short "Conversions between natural numbers
           and their representations as digits in arbitrary bases."
   :long
-  "<p>
-   In these utilities, the digits are natural numbers below the base.
-   The base (a natural number above 1) is supplied as argument.
-   </p>
-   <p>
-   There are conversions for big-endian and little-endian representations.
-   There are conversions to represent natural numbers as lists of digits
-   of fixed length, of minimum length, and of minimum non-zero length.
-   </p>
-   <p>
-   The name of some functions in these utilities start with @('dab'),
-   which stands for `digits any base'.
-   Without this prefix, the names seem too ``general''.
-   </p>")
+  (xdoc::topapp
+   (xdoc::p
+    "In these utilities, the digits are natural numbers below the base.
+     The base (a natural number above 1) is supplied as argument.")
+   (xdoc::p
+    "There are conversions for big-endian and little-endian representations.
+     There are conversions to represent natural numbers as lists of digits
+     of fixed length, of minimum length, and of minimum non-zero length.")
+   (xdoc::p
+    "The name of some functions in these utilities start with @('dab'),
+     which stands for `digits any base'.
+     Without this prefix, the names seem too ``general''.")))
 
 (local (xdoc::set-default-parents digits-any-base))
 
@@ -46,14 +45,13 @@
   :returns (yes/no booleanp)
   :short "Recognize valid bases for representing natural numbers as digits."
   :long
-  "<p>
-   The fixing function for this predicate is @(tsee dab-base-fix)
-   and the fixtype for this predicate is @('dab-base').
-   </p>
-   <p>
-   Any integer above 1 raised to a positive power is a valid base,
-   e.g. binary, octal, and hexadecimal bases.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "The fixing function for this predicate is @(tsee dab-base-fix)
+     and the fixtype for this predicate is @('dab-base').")
+   (xdoc::p
+    "Any integer above 1 raised to a positive power is a valid base,
+     e.g. binary, octal, and hexadecimal bases."))
   (and (natp x)
        (>= x 2))
   ///
@@ -102,9 +100,9 @@
   :short "Recognize valid digits
           for representing natural numbers as digits in the specified base."
   :long
-  "<p>
-   The fixing function for this predicate is @(tsee dab-digit-fix).
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "The fixing function for this predicate is @(tsee dab-digit-fix)."))
   (and (natp x)
        (< x (dab-base-fix base)))
   :hooks (:fix)
@@ -116,7 +114,10 @@
     :rule-classes :forward-chaining)
 
   (defrule dab-digitp-of-0
-    (dab-digitp base 0)))
+    (dab-digitp base 0))
+
+  (defrule dab-digitp-of-1
+    (dab-digitp base 1)))
 
 (define dab-digit-fix ((base dab-basep) (x (dab-digitp base x)))
   :returns (fixed-x (dab-digitp base fixed-x))
@@ -238,16 +239,15 @@
   :short "Tail-recursive code for the execution of
           @(tsee bendian=>nat) and @(tsee lendian=>nat)."
   :long
-  "<p>
-   This interprets the digits in big-endian order.
-   Thus, @(tsee bendian=>nat) calls this function on the digits directly,
-   while @(tsee lendian=>nat) calls this function on the reversed digits.
-   </p>
-   <p>
-   This definition is used for execution.
-   For reasoning, the logic definitions of
-   @(tsee bendian=>nat) and @(tsee lendian=>nat) should be used.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "This interprets the digits in big-endian order.
+     Thus, @(tsee bendian=>nat) calls this function on the digits directly,
+     while @(tsee lendian=>nat) calls this function on the reversed digits.")
+   (xdoc::p
+    "This definition is used for execution.
+     For reasoning, the logic definitions of
+     @(tsee bendian=>nat) and @(tsee lendian=>nat) should be used."))
   (cond ((endp digits) current-nat)
         (t (digits=>nat-exec base
                              (cdr digits)
@@ -266,20 +266,18 @@
           @(tsee nat=>bendian*) and @(tsee nat=>lendian*)
           (and, indirectly, of their variants)."
   :long
-  "<p>
-   This calculates the digits in big-endian order.
-   Thus, @(tsee nat=>bendian*) returns the resulting digits directly,
-   while @(tsee nat=>lendian*) returns the reversed resulting digits.
-   </p>
-   <p>
-   The fixing of the @('base') divisor of @(tsee floor)
-   serves to prove termination.
-   </p>
-   <p>
-   This definition is used for execution.
-   For reasoning, the logic definitions of
-   @(tsee nat=>bendian*) and @(tsee nat=>lendian*) should be used.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "This calculates the digits in big-endian order.
+     Thus, @(tsee nat=>bendian*) returns the resulting digits directly,
+     while @(tsee nat=>lendian*) returns the reversed resulting digits.")
+   (xdoc::p
+    "The fixing of the @('base') divisor of @(tsee floor)
+     serves to prove termination.")
+   (xdoc::p
+    "This definition is used for execution.
+     For reasoning, the logic definitions of
+     @(tsee nat=>bendian*) and @(tsee nat=>lendian*) should be used."))
   (cond ((zp nat) current-digits)
         (t (nat=>digits-exec base
                              (floor nat (mbe :logic (dab-base-fix base)
@@ -342,6 +340,10 @@
   (verify-guards lendian=>nat
     :hints (("Goal" :in-theory (enable digits=>nat-exec-to-lendian=>nat))))
 
+  (defrule lendian=>nat-of-nil
+    (equal (lendian=>nat base nil)
+           0))
+
   (defrule lendian=>nat-of-all-zeros
     (equal (lendian=>nat base (repeat n 0))
            0)
@@ -360,25 +362,23 @@
   :short "Convert a natural number to
           its minimum-length little-endian list of digits."
   :long
-  "<p>
-   The resulting list is empty if @('nat') is 0.
-   The @('*') in the name of this function can be read as `zero or more'
-   (as in typical regular expression notation).
-   </p>
-   <p>
-   See also @(tsee nat=>lendian+) and @(tsee nat=>lendian).
-   </p>
-   <p>
-   The theorem @('len-of-nat=>lendian*-leq-width') is proved
-   from a variant of it where @('width') is universally quantified.
-   This variant is proved via an induction scheme
-   similar to @('nat=>lendian*') but without @('width').
-   Base case and induction step are proved individually;
-   the induction step uses an arithmetic lemma.
-   The @('arithmetic-5') library is needed for several of these proofs.
-   There might be a simpler proof that, in particular,
-   does not involve introducing a @(tsee defun-sk).
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "The resulting list is empty if @('nat') is 0.
+     The @('*') in the name of this function can be read as `zero or more'
+     (as in typical regular expression notation).")
+   (xdoc::p
+    "See also @(tsee nat=>lendian+) and @(tsee nat=>lendian).")
+   (xdoc::p
+    "The theorem @('len-of-nat=>lendian*-leq-width') is proved
+     from a variant of it where @('width') is universally quantified.
+     This variant is proved via an induction scheme
+     similar to @('nat=>lendian*') but without @('width').
+     Base case and induction step are proved individually;
+     the induction step uses an arithmetic lemma.
+     The @('arithmetic-5') library is needed for several of these proofs.
+     There might be a simpler proof that, in particular,
+     does not involve introducing a @(tsee defun-sk)."))
   (mbe :exec (rev (nat=>digits-exec base nat nil))
        :logic (cond ((zp nat) nil)
                     (t (cons (mod nat (dab-base-fix base))
@@ -513,14 +513,13 @@
   :short "Convert a natural number to
           its non-empty minimum-length little-endian list of digits."
   :long
-  "<p>
-   The resulting list is never empty; it is @('(0)') if @('nat') is 0.
-   The @('+') in the name of this function can be read as `one or more'
-   (as in typical regular expression notation).
-   </p>
-   <p>
-   See also @(tsee nat=>lendian*) and @(tsee nat=>lendian).
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "The resulting list is never empty; it is @('(0)') if @('nat') is 0.
+     The @('+') in the name of this function can be read as `one or more'
+     (as in typical regular expression notation).")
+   (xdoc::p
+    "See also @(tsee nat=>lendian*) and @(tsee nat=>lendian)."))
   (b* ((digits (nat=>lendian* base nat)))
     (or digits (list 0)))
   :hooks (:fix)
@@ -541,13 +540,12 @@
   :short "Convert a natural number to
           its little-endian list of digits of specified length."
   :long
-  "<p>
-   The number must be representable in the specified number of digits.
-   The resulting list starts with zero or more 0s.
-   </p>
-   <p>
-   See also @(tsee nat=>lendian*) and @(tsee nat=>lendian+).
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "The number must be representable in the specified number of digits.
+     The resulting list starts with zero or more 0s.")
+   (xdoc::p
+    "See also @(tsee nat=>lendian*) and @(tsee nat=>lendian+)."))
   (b* ((width (mbe :logic (nfix width)
                    :exec width))
        (nat (mbe :logic (mod (nfix nat) (expt (dab-base-fix base) width))
@@ -619,6 +617,10 @@
               (bendian=>nat base lodigits)))
     :enable lendian=>nat-of-append)
 
+  (defrule bendian=>nat-of-nil
+    (equal (bendian=>nat base nil)
+           0))
+
   (defrule bendian=>nat-of-all-zeros
     (equal (bendian=>nat base (repeat n 0))
            0))
@@ -642,14 +644,13 @@
   :short "Convert a natural number to
           its minimum-length big-endian list of digits."
   :long
-  "<p>
-   The resulting list is empty if @('nat') is 0.
-   The @('*') in the name of this function can be read as `zero or more'
-   (as in typical regular expression notation).
-   </p>
-   <p>
-   See also @(tsee nat=>bendian+) and @(tsee nat=>bendian).
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "The resulting list is empty if @('nat') is 0.
+     The @('*') in the name of this function can be read as `zero or more'
+     (as in typical regular expression notation).")
+   (xdoc::p
+    "See also @(tsee nat=>bendian+) and @(tsee nat=>bendian)."))
   (mbe :exec (nat=>digits-exec base nat nil)
        :logic (rev (nat=>lendian* base nat)))
   :guard-hints (("Goal"
@@ -700,14 +701,13 @@
   :short "Convert a natural number to
           its non-empty minimum-length big-endian list of digits."
   :long
-  "<p>
-   The resulting list is never empty; it is @('(0)') if @('nat') is 0.
-   The @('+') in the name of this function can be read as `one or more'
-   (as in typical regular expression notation).
-   </p>
-   <p>
-   See also @(tsee nat=>bendian*) and @(tsee nat=>bendian).
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "The resulting list is never empty; it is @('(0)') if @('nat') is 0.
+     The @('+') in the name of this function can be read as `one or more'
+     (as in typical regular expression notation).")
+   (xdoc::p
+    "See also @(tsee nat=>bendian*) and @(tsee nat=>bendian)."))
   (b* ((digits (nat=>bendian* base nat)))
     (or digits (list 0)))
   :hooks (:fix)
@@ -728,13 +728,12 @@
   :short "Convert a natural number to
           its big-endian list of digits of specified length."
   :long
-  "<p>
-   The number must be representable in the specified number of digits.
-   The resulting list starts with zero or more 0s.
-   </p>
-   <p>
-   See also @(tsee nat=>bendian*) and @(tsee nat=>bendian+).
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "The number must be representable in the specified number of digits.
+     The resulting list starts with zero or more 0s.")
+   (xdoc::p
+    "See also @(tsee nat=>bendian*) and @(tsee nat=>bendian+)."))
   (rev (nat=>lendian base width nat))
   :hooks (:fix)
   ///
@@ -768,22 +767,20 @@
 (defsection nat=>digits=>nat-inversion-theorems
   :short "Theorems about converting natural numbers to digits and back."
   :long
-  "<p>
-   @(tsee lendian=>nat) is left inverse of
-   @(tsee nat=>lendian*), @(tsee nat=>lendian+), and @(tsee nat=>lendian),
-   over natural numbers.
-   </p>
-   <p>
-   @(tsee bendian=>nat) is left inverse of
-   @(tsee nat=>bendian*), @(tsee nat=>bendian+), and @(tsee nat=>bendian),
-   over natural numbers.
-   </p>
-   <p>
-   That is, converting a natural number to digits
-   (whether zero or more, one or more, or of given width),
-   and then converting the digits to a number,
-   yields the starting natural number.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "@(tsee lendian=>nat) is left inverse of
+     @(tsee nat=>lendian*), @(tsee nat=>lendian+), and @(tsee nat=>lendian),
+     over natural numbers.")
+   (xdoc::p
+    "@(tsee bendian=>nat) is left inverse of
+     @(tsee nat=>bendian*), @(tsee nat=>bendian+), and @(tsee nat=>bendian),
+     over natural numbers.")
+   (xdoc::p
+    "That is, converting a natural number to digits
+     (whether zero or more, one or more, or of given width),
+     and then converting the digits to a number,
+     yields the starting natural number."))
 
   (defrule lendian=>nat-of-nat=>lendian*
     (equal (lendian=>nat base (nat=>lendian* base nat))
@@ -829,13 +826,13 @@
   :short "Theorems about the injectivity of
           the conversions from natural numbers to digits."
   :long
-  "<p>
-   The conversions from natural numbers to digits
-   are injective over natural numbers.
-   These are simple consequences of the
-   <see topic='@(url nat=>digits=>nat-inversion-theorems)'>theorems about
-   converting natural numbers to digits and back</see>.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "The conversions from natural numbers to digits
+     are injective over natural numbers.
+     These are simple consequences of the
+     <see topic='@(url nat=>digits=>nat-inversion-theorems)'>theorems about
+     converting natural numbers to digits and back</see>."))
 
   (defrule nat=>lendian*-injectivity
     (equal (equal (nat=>lendian* base nat1)
@@ -928,17 +925,15 @@
   :short "Remove all the most significant zero digits
           from a big-endian representation."
   :long
-  "<p>
-   This produces a minimal-length representation with the same value.
-   </p>
-   <p>
-   This operation does not depend on a base.
-   It maps lists of natural numbers to lists of natural numbers,
-   where the natural numbers may be digit in any suitable base.
-   </p>
-   <p>
-   See also @(tsee trim-bendian+).
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "This produces a minimal-length representation with the same value.")
+   (xdoc::p
+    "This operation does not depend on a base.
+     It maps lists of natural numbers to lists of natural numbers,
+     where the natural numbers may be digit in any suitable base.")
+   (xdoc::p
+    "See also @(tsee trim-bendian+)."))
   (cond ((endp digits) nil)
         ((zp (car digits)) (trim-bendian* (cdr digits)))
         (t (mbe :logic (nat-list-fix digits) :exec digits)))
@@ -980,17 +975,15 @@
   :short "Remove all the most significant zero digits
           from a little-endian representation."
   :long
-  "<p>
-   This produces a minimal-length representation with the same value.
-   </p>
-   <p>
-   This operation does not depend on a base.
-   It maps lists of natural numbers to lists of natural numbers,
-   where the natural numbers may be digit in any suitable base.
-   </p>
-   <p>
-   See also @(tsee trim-lendian+).
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "This produces a minimal-length representation with the same value.")
+   (xdoc::p
+    "This operation does not depend on a base.
+     It maps lists of natural numbers to lists of natural numbers,
+     where the natural numbers may be digit in any suitable base.")
+   (xdoc::p
+    "See also @(tsee trim-lendian+)."))
   (rev (trim-bendian* (rev digits)))
   :hooks (:fix)
   ///
@@ -1052,17 +1045,16 @@
           from a big-endian representation,
           but leave one zero if all the digits are zero."
   :long
-  "<p>
-   This produces a minimal-length non-empty representation with the same value.
-   </p>
-   <p>
-   This operation does not depend on a base.
-   It maps lists of natural numbers to lists of natural numbers,
-   where the natural numbers may be digit in any suitable base.
-   </p>
-   <p>
-   See also @(tsee trim-bendian*).
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "This produces a minimal-length non-empty representation
+     with the same value.")
+   (xdoc::p
+    "This operation does not depend on a base.
+     It maps lists of natural numbers to lists of natural numbers,
+     where the natural numbers may be digit in any suitable base.")
+   (xdoc::p
+    "See also @(tsee trim-bendian*)."))
   (b* ((digits (trim-bendian* digits)))
     (or digits (list 0)))
   :hooks (:fix)
@@ -1091,17 +1083,16 @@
           from a little-endian representation,
           but leave one zero if all the digits are zero."
   :long
-  "<p>
-   This produces a minimal-length non-empty representation with the same value.
-   </p>
-   <p>
-   This operation does not depend on a base.
-   It maps lists of natural numbers to lists of natural numbers,
-   where the natural numbers may be digit in any suitable base.
-   </p>
-   <p>
-   See also @(tsee trim-lendian*).
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "This produces a minimal-length non-empty representation
+     with the same value.")
+   (xdoc::p
+    "This operation does not depend on a base.
+     It maps lists of natural numbers to lists of natural numbers,
+     where the natural numbers may be digit in any suitable base.")
+   (xdoc::p
+    "See also @(tsee trim-lendian*)."))
   (b* ((digits (trim-lendian* digits)))
     (or digits (list 0)))
   :hooks (:fix)
@@ -1127,24 +1118,23 @@
 (defsection digits=>nat=>digits-inversion-theorems
   :short "Theorems about converting digits to natural numbers and back."
   :long
-  "<p>
-   @(tsee lendian=>nat) is right inverse of
-   @(tsee nat=>lendian*), @(tsee nat=>lendian+), and @(tsee nat=>lendian),
-   over digits without superfluous zeros in the most significant positions.
-   </p>
-   <p>
-   @(tsee bendian=>nat) is right inverse of
-   @(tsee nat=>bendian*), @(tsee nat=>bendian+), and @(tsee nat=>bendian),
-   over digits without superfluous zeros in the most significant positions.
-   </p>
-   <p>
-   That is, converting digits to a natural number,
-   and then converting the number to digits,
-   yields the original digits,
-   but without superfluous zeros in the most significant positions.
-   We remove those superfluous zeros, in the right hand sides of the equalities,
-   via the trimming functions, as appropriate.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "@(tsee lendian=>nat) is right inverse of
+     @(tsee nat=>lendian*), @(tsee nat=>lendian+), and @(tsee nat=>lendian),
+      over digits without superfluous zeros in the most significant positions.")
+   (xdoc::p
+    "@(tsee bendian=>nat) is right inverse of
+     @(tsee nat=>bendian*), @(tsee nat=>bendian+), and @(tsee nat=>bendian),
+     over digits without superfluous zeros in the most significant positions.")
+   (xdoc::p
+    "That is, converting digits to a natural number,
+     and then converting the number to digits,
+     yields the original digits,
+     but without superfluous zeros in the most significant positions.
+     We remove those superfluous zeros,
+     in the right hand sides of the equalities,
+     via the trimming functions, as appropriate."))
 
   (defrule nat=>lendian*-of-lendian=>nat
     (equal (nat=>lendian* base (lendian=>nat base digits))
@@ -1213,25 +1203,23 @@
   :short "Theorems about the injectivity of
           the conversions from digits to natural numbers."
   :long
-  "<p>
-   The conversions from digits to natural numbers are injective
-   over digits without superfluous zeros in the most significant positions.
-   These are simple consequences of the
-   <see topic='@(url digits=>nat=>digits-inversion-theorems)'>theorems about
-   converting digits to natural numbers and back</see>.
-   The absence of suprfluous digits can be expressed by saying that
-   the digits, fixed with @(tsee dab-digit-list-fix),
-   are invariant under @(tsee trim-lendian*) or @(tsee trim-lendian+).
-   </p>
-   <p>
-   Another formulation of the inejctivity theorems is that
-   the conversions from digits to natural numbers are injective
-   over lists of digits of the same length.
-   </p>
-   <p>
-   Note that each formulation of the injectivity theorem
-   is proved via a ``corresponding'' inversion theorem.
-   </p>"
+  (xdoc::topapp
+   (xdoc::p
+    "The conversions from digits to natural numbers are injective
+     over digits without superfluous zeros in the most significant positions.
+     These are simple consequences of the
+     <see topic='@(url digits=>nat=>digits-inversion-theorems)'>theorems about
+     converting digits to natural numbers and back</see>.
+     The absence of suprfluous digits can be expressed by saying that
+     the digits, fixed with @(tsee dab-digit-list-fix),
+     are invariant under @(tsee trim-lendian*) or @(tsee trim-lendian+).")
+   (xdoc::p
+    "Another formulation of the inejctivity theorems is that
+     the conversions from digits to natural numbers are injective
+     over lists of digits of the same length.")
+   (xdoc::p
+    "Note that each formulation of the injectivity theorem
+     is proved via a ``corresponding'' inversion theorem."))
 
   (defrule lendian=>nat-injectivity*
     (implies (and (equal (trim-lendian* (dab-digit-list-fix base digits1))

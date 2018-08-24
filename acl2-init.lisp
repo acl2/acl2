@@ -664,10 +664,10 @@ implementations.")
 
   #+gcl
   (or (probe-file filename)
-      (equal filename "")
-      (let ((x (cond ((eql (char filename (1- (length filename))) #\/)
-                      filename)
-                     (t (concatenate 'string filename "/")))))
+      (let ((x (cond ((and (not (equal filename ""))
+                           (eql (char filename (1- (length filename))) #\/))
+                      (subseq filename 0 (1- (length filename))))
+                     (t filename))))
         (directory x)))
   #-gcl
   (probe-file filename))
@@ -1075,6 +1075,24 @@ implementations.")
   (cond ((null s) "")
         (t (concatenate 'string " " s))))
 
+(defconstant *thisscriptdir-def*
+
+; Thanks to Eric Smith for the idea of providing this sort of support for using
+; a relative pathname to allow some movability of the saved script, to Sol
+; Swords for pointing out issues with the initial solution when there is a
+; symlink living in another directory, and to the website
+; https://serverfault.com/questions/40144/how-can-i-retrieve-the-absolute-filename-in-a-shell-script-on-mac-os-x
+; for completing the current solution.
+
+  "absdir=`perl -e 'use Cwd \"abs_path\";print abs_path(shift)' $0`
+THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
+")
+
+(defun use-thisscriptdir-p (sysout-name core-name)
+  (and (equal sysout-name core-name) ; perhaps not necessary
+       (not (position (symbol-value '*directory-separator*)
+                      core-name))))
+
 #+gcl
 (defvar *saved-system-banner*
 
@@ -1128,7 +1146,8 @@ implementations.")
           #+mswindows "gcl.exe"
           #-mswindows "gcl")
          (gcl-exec-file
-          (unix-full-pathname gcl-exec-name ext+)))
+          (unix-full-pathname gcl-exec-name ext+))
+         (use-thisscriptdir-p (use-thisscriptdir-p sysout-name gcl-exec-name)))
     (if write-worklispext
         (with-open-file (str "worklispext" :direction :output)
                         (format str ext+)))
@@ -1136,11 +1155,21 @@ implementations.")
         (delete-file sysout-name))
     (if (probe-file gcl-exec-file)
         (delete-file gcl-exec-file))
-    (with-open-file (str sysout-name :direction :output)
-                    (write-exec-file str nil "~s~s ~a~%"
-                                     gcl-exec-file
-                                     (insert-string host-lisp-args)
-                                     (user-args-string inert-args)))
+    (with-open-file
+      (str sysout-name :direction :output)
+      (write-exec-file str
+                       ("~a"
+                        (if use-thisscriptdir-p *thisscriptdir-def* ""))
+                       "~s~s ~a~%"
+                       (if use-thisscriptdir-p
+                           (concatenate 'string
+                                        "$THISSCRIPTDIR/"
+                                        gcl-exec-name
+                                        "."
+                                        ext+)
+                         gcl-exec-file)
+                       (insert-string host-lisp-args)
+                       (user-args-string inert-args)))
     (cond ((and set-optimize-maximum-pages
                 (boundp 'si::*optimize-maximum-pages*))
 
@@ -1556,6 +1585,7 @@ implementations.")
 
           #+mswindows "lw.exe"
           #-mswindows "lw")
+         (use-thisscriptdir-p (use-thisscriptdir-p sysout-name eventual-sysout-name))
          (lw-exec-file
           (unix-full-pathname sysout-name ext+))
          (eventual-lw-exec-file
@@ -1566,8 +1596,14 @@ implementations.")
         (delete-file sysout-name))
     (if (probe-file lw-exec-file)
         (delete-file lw-exec-file))
+    (when use-thisscriptdir-p
+      (setq eventual-lw-exec-file
+            (concatenate 'string "$THISSCRIPTDIR/" eventual-sysout-name "." ext+)))
     (with-open-file (str sysout-name :direction :output)
-                    (write-exec-file str nil
+      (write-exec-file
+       str
+       ("~a"
+        (if use-thisscriptdir-p *thisscriptdir-def* ""))
 
 ; We pass options "-init -" and "-siteinit -" to inhibit loading init and patch
 ; files because because we assume that whatever such files were to be loaded,
@@ -1577,10 +1613,10 @@ implementations.")
 ; changing the underlying Lisp implementation before building ACL2 (again,
 ; presumably based on knowledge of the host Lisp implementation).
 
-                                     "~s -init - -siteinit -~a ~a~%"
-                                     eventual-lw-exec-file
-                                     (insert-string host-lisp-args)
-                                     (user-args-string inert-args)))
+       "~s -init - -siteinit -~a ~a~%"
+       eventual-lw-exec-file
+       (insert-string host-lisp-args)
+       (user-args-string inert-args)))
     (chmod-executable sysout-name)
     (cond ((and system::*init-file-loaded*
                 system::*complain-about-init-file-loaded*)
@@ -1592,7 +1628,7 @@ implementations.")
 
            (format t
                    "Warning: Overriding LispWorks hesitation to save an image~%~
-                  after init-file has been loaded.~%")
+                    after init-file has been loaded.~%")
            (let ((system::*complain-about-init-file-loaded* nil))
              (system::save-image lw-exec-file
                                  :restart-function 'acl2-default-restart
@@ -1627,14 +1663,25 @@ implementations.")
 #+cmu
 (defun save-acl2-in-cmulisp-aux (sysout-name core-name
                                              host-lisp-args inert-args)
-  (let ((eventual-sysout-core
-         (unix-full-pathname core-name "core"))
-        (sysout-core
-         (unix-full-pathname sysout-name "core")))
+
+; Warning: This function was modified 8/2018 in support of the change described
+; in :doc note-8-1: "The save-exec utility now utilizes a relative pathname in
+; the saved_acl2 script, which can allow it and a corresponding image file to
+; be moved, even across filesystems...."  Once save-exec is again tested
+; successfully and adequately in CMUCL, this warning should be removed.
+
+  (let* ((use-thisscriptdir-p (use-thisscriptdir-p sysout-name core-name))
+         (eventual-sysout-core
+          (unix-full-pathname core-name "core"))
+         (sysout-core
+          (unix-full-pathname sysout-name "core")))
     (if (probe-file sysout-name)
         (delete-file sysout-name))
     (if (probe-file eventual-sysout-core)
         (delete-file eventual-sysout-core))
+    (when use-thisscriptdir-p
+      (setq eventual-sysout-core
+            (concatenate 'string "$THISSCRIPTDIR/" core-name ".core")))
     (with-open-file ; write to nsaved_acl2
      (str sysout-name :direction :output)
      (let* ((prog1 (car extensions::*command-line-strings*))
@@ -1655,7 +1702,8 @@ implementations.")
                           (concatenate 'string prog1 "/lisp"))
                          (t prog1))))
        (write-exec-file str
-                        nil
+                        ("~a"
+                         (if use-thisscriptdir-p *thisscriptdir-def* ""))
                         "~s -core ~s -dynamic-space-size ~s -eval ~
                          '(acl2::cmulisp-restart)'~a ~a~%"
                         prog2
@@ -1850,21 +1898,26 @@ implementations.")
 ; Note that host-lisp-args specifies what the SBCL manual calls "runtime
 ; options", while toplevel-args is what it calls "toplevel options".
 
-  (declaim (optimize (sb-ext:inhibit-warnings 3)))
-  (let ((eventual-sysout-core
-         (unix-full-pathname core-name "core"))
-        (sysout-core
-         (unix-full-pathname sysout-name "core")))
+  (declare (optimize (sb-ext:inhibit-warnings 3)))
+  (let* ((use-thisscriptdir-p (use-thisscriptdir-p sysout-name core-name))
+         (eventual-sysout-core
+          (unix-full-pathname core-name "core"))
+         (sysout-core
+          (unix-full-pathname sysout-name "core")))
     (if (probe-file sysout-name)
         (delete-file sysout-name))
     (if (probe-file eventual-sysout-core)
         (delete-file eventual-sysout-core))
+    (when use-thisscriptdir-p
+      (setq eventual-sysout-core
+            (concatenate 'string "$THISSCRIPTDIR/" core-name ".core")))
     (with-open-file ; write to nsaved_acl2
       (str sysout-name :direction :output)
       (let* ((prog (car sb-ext:*posix-argv*)))
         (write-exec-file
          str
-         ("~a~%"
+         ("~a~a~%"
+          (if use-thisscriptdir-p *thisscriptdir-def* "")
           (format nil
                   "export SBCL_HOME='~a'"
                   *sbcl-home-dir*))
@@ -1949,14 +2002,23 @@ implementations.")
 ; saved_acl2 executable is then a one-line script that makes this Lisp
 ; invocation.  Note that :checkpoint is no longer supported starting in 5.0.
 
-      (let* ((eventual-sysout-dxl
+      (let* ((use-thisscriptdir-p
+              (use-thisscriptdir-p sysout-name dxl-name))
+             (eventual-sysout-dxl
               (if dxl-name
                   (unix-full-pathname dxl-name "dxl")
                 (error "An image file must be specified when building ACL2 in ~
                         Allegro 5.0 or later.")))
              (sysout-dxl
               (unix-full-pathname sysout-name "dxl")))
-        (write-acl2rc
+    (if (probe-file eventual-sysout-dxl)
+        (delete-file eventual-sysout-dxl))
+    (if (probe-file sysout-dxl)
+        (delete-file sysout-dxl))
+    (when use-thisscriptdir-p
+      (setq eventual-sysout-dxl
+            (concatenate 'string "$THISSCRIPTDIR/" dxl-name ".dxl")))
+    (write-acl2rc
          (our-truename ; our-pwd, without converting to ACL2/Unix pathname
           ""
           "NOTE: Calling OUR-TRUENAME from save-acl2-in-allegro-aux"))
@@ -1964,7 +2026,8 @@ implementations.")
          (str sysout-name :direction :output)
          (write-exec-file
           str
-          nil
+          ("~a"
+           (if use-thisscriptdir-p *thisscriptdir-def* ""))
 
 ; We use ~s instead of ~a below because John Cowles has told us that in Windows
 ; 98, the string quotes seem necessary for the first string and desirable for
@@ -2107,10 +2170,7 @@ implementations.")
                                 ccl-program0
                                 os
                                 *the-live-state*))
-         (use-thisscriptdir-p
-          (and (equal sysout-name core-name)
-               (not (position (symbol-value '*directory-separator*)
-                              core-name))))
+         (use-thisscriptdir-p (use-thisscriptdir-p sysout-name core-name))
          (core-name-given core-name)
          (core-name (unix-full-pathname core-name
                                         (pathname-name ccl-program)))
@@ -2148,13 +2208,8 @@ implementations.")
 ; So we make an effort to set CCL_DEFAULT_DIRECTORY correctly so that the above
 ; truename will be correct.
 
-                      ("~a~%~a~%"
-                       (if use-thisscriptdir-p
-
-; Thanks to Eric Smith for supplying the following command.
-
-                           "THISSCRIPTDIR=\"$( cd \"$( dirname \"$0\" )\" && pwd -P )\""
-                         "")
+                      ("~a~a~%"
+                       (if use-thisscriptdir-p *thisscriptdir-def* "")
                        (let ((default-dir
                                (or (ccl::getenv "CCL_DEFAULT_DIRECTORY")
                                    (let ((path (our-truename "ccl:")))

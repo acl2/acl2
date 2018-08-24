@@ -1,6 +1,6 @@
 ; ABNF Library -- Core Rules
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -23,27 +23,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc core-rules
+(defxdoc+ core-rules
   :parents (abnf)
   :short "Core rules of ABNF."
   :long
   "<p>
-   These rules are specified in RFC.B.
+   These rules are specified in RFC:B.
    They are a set of rules commonly used
    as part of the definition of the concrete syntax of languages in ABNF.
    In particular, they are used
-   as part of the definition of the concrete syntax of ABNF itself in RFC.4.
+   as part of the definition of the concrete syntax of ABNF itself in RFC:4.
    </p>
    <p>
-   Since the concrete syntax of ABNF is specified, in RFC.4,
+   Since the concrete syntax of ABNF is specified, in RFC:4,
    using ABNF concrete syntax,
    and since that definition of the concrete syntax of ABNF
    uses the core rules,
    we break the circularity by formalizing the core rules
    using the abstract syntax of ABNF.
-   </p>")
-
-(xdoc::order-subtopics core-rules nil t)
+   </p>"
+  :order-subtopics t)
 
 (defsection core-rule-names
   :parents (core-rules)

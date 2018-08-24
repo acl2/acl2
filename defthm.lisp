@@ -142,33 +142,41 @@
   (cond ((variablep term) (mv 'iff term *t* nil))
         ((fquotep term) (mv 'iff term *t* nil))
         ((member-eq (ffn-symb term) *equality-aliases*)
-         (mv 'equal (fargn term 1) (fargn term 2) nil))
+         (mv 'equal (remove-lambdas (fargn term 1)) (fargn term 2) nil))
+        ((flambdap (ffn-symb term))
+         (interpret-term-as-rewrite-rule1
+          (subcor-var (lambda-formals (ffn-symb term))
+                      (fargs term)
+                      (lambda-body (ffn-symb term)))
+          equiv-okp ens wrld))
         ((if equiv-okp
              (equivalence-relationp (ffn-symb term) wrld)
            (member-eq (ffn-symb term) '(equal iff)))
-         (mv-let (equiv ttree)
-                 (cond ((eq (ffn-symb term) 'iff)
-                        (mv-let
-                         (ts ttree)
-                         (type-set (fargn term 1) nil nil nil ens wrld nil
-                                   nil nil)
-                         (cond ((ts-subsetp ts *ts-boolean*)
-                                (mv-let
-                                 (ts ttree)
-                                 (type-set (fargn term 2) nil nil nil ens
-                                           wrld ttree nil nil)
-                                 (cond ((ts-subsetp ts *ts-boolean*)
-                                        (mv 'equal ttree))
-                                       (t (mv 'iff nil)))))
-                               (t (mv 'iff nil)))))
-                       (t (mv (ffn-symb term) nil)))
-                 (mv equiv (fargn term 1) (fargn term 2) ttree)))
-        ((eq (ffn-symb term) 'not) (mv 'equal (fargn term 1) *nil* nil))
+         (let ((lhs (remove-lambdas (fargn term 1))))
+           (mv-let (equiv ttree)
+             (cond ((eq (ffn-symb term) 'iff)
+                    (mv-let
+                      (ts ttree)
+                      (type-set lhs nil nil nil ens wrld nil
+                                nil nil)
+                      (cond ((ts-subsetp ts *ts-boolean*)
+                             (mv-let
+                               (ts ttree)
+                               (type-set (fargn term 2) nil nil nil ens
+                                         wrld ttree nil nil)
+                               (cond ((ts-subsetp ts *ts-boolean*)
+                                      (mv 'equal ttree))
+                                     (t (mv 'iff nil)))))
+                            (t (mv 'iff nil)))))
+                   (t (mv (ffn-symb term) nil)))
+             (mv equiv lhs (fargn term 2) ttree))))
+        ((eq (ffn-symb term) 'not)
+         (mv 'equal (remove-lambdas (fargn term 1)) *nil* nil))
         (t (mv-let (ts ttree)
-                   (type-set term nil nil nil ens wrld nil nil nil)
-                   (cond ((ts-subsetp ts *ts-boolean*)
-                          (mv 'equal term *t* ttree))
-                         (t (mv 'iff term *t* nil)))))))
+             (type-set term nil nil nil ens wrld nil nil nil)
+             (cond ((ts-subsetp ts *ts-boolean*)
+                    (mv 'equal (remove-lambdas term) *t* ttree))
+                   (t (mv 'iff (remove-lambdas term) *t* nil)))))))
 
 (defun interpret-term-as-rewrite-rule (name hyps term ens wrld)
 
@@ -181,13 +189,12 @@
 ; (eqv lhs rhs) is propositionally equivalent to term; and the last is an
 ; 'assumption-free ttree justifying the claim.
 
-  (let ((term (remove-lambdas term)))
-    (mv-let
-     (eqv lhs rhs ttree)
-     (interpret-term-as-rewrite-rule1 term t ens wrld)
-     (let ((msg (interpret-term-as-rewrite-rule2 name hyps lhs rhs wrld)))
-       (cond
-        (msg
+  (mv-let
+    (eqv lhs rhs ttree)
+    (interpret-term-as-rewrite-rule1 term t ens wrld)
+    (let ((msg (interpret-term-as-rewrite-rule2 name hyps lhs rhs wrld)))
+      (cond
+       (msg
 
 ; We try again, this time with equiv-okp = nil to avoid errors for a form such
 ; as the following.  Its evaluation caused a hard Lisp error in Version_4.3
@@ -205,14 +212,14 @@
 ;    (defthm my-equivp-reflexive
 ;      (my-equivp x x)))
 
-         (mv-let
+        (mv-let
           (eqv2 lhs2 rhs2 ttree2)
           (interpret-term-as-rewrite-rule1 term nil ens wrld)
           (cond
            ((interpret-term-as-rewrite-rule2 name hyps lhs2 rhs2 wrld)
             (mv msg eqv lhs rhs ttree))
            (t (mv nil eqv2 lhs2 rhs2 ttree2)))))
-        (t (mv nil eqv lhs rhs ttree)))))))
+       (t (mv nil eqv lhs rhs ttree))))))
 
 ; We inspect the lhs and some hypotheses with the following functions to
 ; determine if non-recursive defuns will present a problem to the user.
@@ -403,34 +410,37 @@
 
 (defun loop-stopper (lhs rhs)
 
-; If lhs and rhs are variants, we return the "expansion" (see next
-; paragraph) of the subset of the unifying substitution containing
-; those pairs (x . y) in which a variable symbol (y) is being moved
-; forward (to the position of x) in the print representation of the
-; term.  For example, suppose lhs is (foo x y z) and rhs is (foo y z
-; x).  Then both y and z are moved forward, so the loop-stopper is the
-; "expansion" of '((y . z) (x . y)).  This function exploits the fact
-; that all-vars returns the set of variables listed in reverse
-; print-order.
+; If lhs and rhs are variants (possibly after expanding lambdas in rhs; see
+; below), we return the "expansion" (see next paragraph) of the subset of the
+; unifying substitution containing those pairs (x . y) in which a variable
+; symbol (y) is being moved forward (to the position of x) in the print
+; representation of the term.  For example, suppose lhs is (foo x y z) and rhs
+; is (foo y z x).  Then both y and z are moved forward, so the loop-stopper is
+; the "expansion" of '((y . z) (x . y)).  This function exploits the fact that
+; all-vars returns the set of variables listed in reverse print-order.
 
-; In the paragraph above, the "expansion" of a substitution ((x1 .
-; y1) ... (xn . yn)) is the list ((x1 y1 . fns-1) ... (xn yn .
-; fns-n)), where fns-i is the list of function symbols of subterms of
-; lhs that contain xi or yi (or both) as a top-level argument.
-; Exception: If any such "function symbol" is a LAMBDA, then fns-i is
-; nil.
+; In the paragraph above, the "expansion" of a substitution ((x1 .  y1) ... (xn
+; . yn)) is the list ((x1 y1 . fns-1) ... (xn yn .  fns-n)), where fns-i is the
+; list of function symbols of subterms of lhs that contain xi or yi (or both)
+; as a top-level argument.  Exception: If any such "function symbol" is a
+; LAMBDA, then fns-i is nil.
 
-; Note: John Cowles first suggested the idea that led to the idea of
-; invisible function symbols as implemented here.  Cowles observation
-; was that it would be very useful if x and (- x) were moved into
-; adjacency by permutative rules.  His idea was to redefine term-order
-; so that those two terms were of virtually equal weight.  Our notion
-; of invisible function symbols and the handling of loop-stopper is
-; meant to address Cowles original concern without complicating
+; Note: John Cowles first suggested the idea that led to the idea of invisible
+; function symbols as implemented here.  Cowles observation was that it would
+; be very useful if x and (- x) were moved into adjacency by permutative rules.
+; His idea was to redefine term-order so that those two terms were of virtually
+; equal weight.  Our notion of invisible function symbols and the handling of
+; loop-stopper is meant to address Cowles original concern without complicating
 ; term-order, which is used in places besides permutative rewriting.
 
   (mv-let (ans unify-subst)
-    (variantp lhs rhs)
+    (variantp lhs
+
+; We expect lhs and rhs to be the left- and right-hand sides of rewrite rules.
+; Thus lhs was created by expanding lambdas, but not rhs.  We thus expand
+; lambdas here.
+
+              (remove-lambdas rhs))
     (cond (ans (loop-stopper1 unify-subst (all-vars lhs) lhs))
           (t nil))))
 
@@ -3361,6 +3371,7 @@
 ; clauses.  (One of the five fixed clauses below is about only
 ; evfn-lst and not about evfn and hence wouldn't be among the
 ; constraints of evfn.)  If this changes, change chk-evaluator.
+; (Note there are now at least 6 constraints about each evaluator.)
 
 ; The functions guess-fn-args-lst-for-evfn and guess-evfn-lst-for-evfn take the
 ; known constraints on an evfn and guess the evfn-lst and list of fns for which
@@ -3433,7 +3444,10 @@
                     ((not (consp x-lst))
                      (equal (evfn-lst x-lst a)
                             (cons (evfn (car x-lst) a)
-                                  (evfn-lst (cdr x-lst) a))))))
+                                  (evfn-lst (cdr x-lst) a))))
+                    ((consp x)
+                     (symbolp x)
+                     (equal (evfn x a) 'nil))))
           (evaluator-clauses1 evfn fn-args-lst)))
 
 ; The function above describes the constraints on an evaluator
@@ -3741,11 +3755,11 @@
 
 (defun defevaluator-form/defthm-name (evfn evfn-lst namedp prefix i clause)
 
-; This function generates the name of the ith constraint for evaluator function
+; This function generates the name of constraint i for evaluator function
 ; evfn.  Namedp is t or nil and indicates whether we generate a name like
 ; evfn-OF-fn-CALL or like evfn-CONSTRAINT-i.  Prefix is a string and is either
-; of the form "evfn-OF-" or "evfn-CONSTRAINT-"; see namedp-prefix. I is 0-based
-; the number of the constraint and clause is the clausal form of the
+; of the form "evfn-OF-" or "evfn-CONSTRAINT-"; see namedp-prefix. I is the
+; 0-based number of the constraint and clause is the clausal form of the
 ; constraint.  But when namedp is non-nil we have to solve two problems: (a)
 ; give special names to the first few constraints (which do not concern one of
 ; the function symbols to be interpreted) and (b) figure out the function
@@ -3755,17 +3769,18 @@
 ; by evaluator-clauses and we solve (b) by looking into those clauses
 ; corresponding to calls of functions to be interpreted.
 
-; i             name of defthm when namedp
+; i             name of defthm when namedp         name when not namedp
 
-; 0             evfn-OF-FNCALL-ARGS
-; 1             evfn-OF-VARIABLE
-; 2             evfn-of-QUOTE
-; 3             evfn-of-LAMBDA
+; 0             evfn-OF-FNCALL-ARGS                evfn-constraint-0
+; 1             evfn-OF-VARIABLE                   evfn-constraint-1
+; 2             evfn-of-QUOTE                      evfn-constraint-2
+; 3             evfn-of-LAMBDA                     ...
 ; 4             evfn-lst-OF-ATOM
 ; 5             evfn-lst-OF-CONS
-; 6 ...         evfn-OF-fn-CALL, ... for each interpreted fn
+; 6             evfn-of-nonsymbol-atom
+; 7 ...         evfn-OF-fn-CALL, ... for each interpreted fn
 
-; When i>5, clause is always of the form:
+; When i>6, clause is always of the form:
 ; ((NOT (CONSP X)) (NOT (EQUAL (CAR X) 'fn)) (EQUAL (evfn X A) (fn ...)))
 ; and we recover fn from the second literal as shown in the binding of
 ; fn below.
@@ -3784,6 +3799,14 @@
         (5 (genvar evfn
                    (concatenate 'string (symbol-name evfn-lst) "-OF-CONS")
                    nil nil))
+        (6 (genvar evfn
+
+; Perhaps "NON-SYMBOL-ATOM" is more aesthetic.  But its meaning is perhaps less
+; clear than "NONSYMBOL-ATOM": a non-symbol that is an atom, rather than, say,
+; something that is not a symbol or an atom.
+
+                   (concatenate 'string prefix "NONSYMBOL-ATOM")
+                   nil nil))
         (otherwise
          (genvar evfn
                  (concatenate 'string prefix (symbol-name fn) "-CALL")
@@ -3800,7 +3823,7 @@
 ; for which suitable i would be 0, 1, ..., 8.
 
   (cond
-   ((> i 5)
+   ((> i 6)
     `(("Goal" :expand
        ((,evfn X A)
         (:free (x) (HIDE x))
@@ -3816,17 +3839,17 @@
             :in-theory '(eval-list-kwote-lst
                          fix-true-list-ev-lst
                          car-cons cdr-cons))))
-      ((1 2 3) `(("Goal" :expand ((,evfn X A)))))
+      ((1 2 3 6) `(("Goal" :expand ((,evfn X A)))))
       (otherwise
        `(("Goal" :expand ((,evfn-lst X-LST A)))))))))
 
 (defun defevaluator-form/defthm (evfn evfn-lst namedp prefix i clause)
 
 ; We generate the defthm event for the ith constraint, given the clause
-; expressing that constraint.  The 0th constraint is disabled; the
+; expressing that constraint.  Constraints 0 and 6 are disabled; the
 ; others are only locally disabled.
 
-  (let* ((defthm (if (zp i) 'defthmd 'defthm))
+  (let* ((defthm (if (or (eql i 0) (eql i 6)) 'defthmd 'defthm))
          (name (defevaluator-form/defthm-name
                  evfn evfn-lst namedp prefix i clause))
          (formula (prettyify-clause clause nil nil))
@@ -4050,7 +4073,8 @@
          state))
       (value '(value-triple nil))))))
 
-(defmacro defevaluator (&whole x evfn evfn-lst fn-args-lst &key skip-checks namedp)
+(defmacro defevaluator (&whole x evfn evfn-lst fn-args-lst
+                               &key skip-checks namedp)
 
 ; Note: It might be nice to allow defevaluator to take a :DOC string, but that
 ; would require allowing encapsulate to take such a string!

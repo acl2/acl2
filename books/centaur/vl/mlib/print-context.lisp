@@ -212,6 +212,28 @@
                                  (vl-print-loc (vl-sequence->loc x)))
                     ps)))
 
+      (:vl-clkdecl
+       (vl-ps-seq (if (vl-clkdecl->name x)
+                      (vl-ps-seq (vl-print "Clocking block ")
+                                 (vl-print-str (vl-clkdecl->name x))
+                                 (if withloc
+                                     (vl-ps-seq (vl-print " at ")
+                                                (vl-print-loc (vl-clkdecl->loc x)))
+                                   ps))
+                    (vl-ps-seq (vl-print "Clocking block at ")
+                               (vl-print-loc (vl-clkdecl->loc x))))))
+
+      (:vl-gclkdecl
+       (vl-ps-seq (if (vl-gclkdecl->name x)
+                      (vl-ps-seq (vl-print "Global clocking block ")
+                                 (vl-print-str (vl-gclkdecl->name x))
+                                 (if withloc
+                                     (vl-ps-seq (vl-print " at ")
+                                                (vl-print-loc (vl-gclkdecl->loc x)))
+                                   ps))
+                    (vl-ps-seq (vl-print "Global clocking block at ")
+                               (vl-print-loc (vl-gclkdecl->loc x))))))
+
       (:vl-assertion
        (vl-ps-seq (vl-print "Assertion ")
                   (vl-print-str (or (vl-assertion->name x) ""))
@@ -242,6 +264,34 @@
                   (if withloc
                       (vl-ps-seq (vl-print " at ")
                                  (vl-print-loc (vl-dpiexport->loc x)))
+                    ps)))
+
+      (:vl-bind
+       (vl-ps-seq (vl-print "Bind construct at ")
+                  (vl-print-loc (vl-bind->loc x))))
+
+      (:vl-class
+       (vl-ps-seq (vl-print "Class ")
+                  (vl-print-str (vl-class->name x))
+                  (if withloc
+                      (vl-ps-seq (vl-print " at ")
+                                 (vl-print-loc (vl-class->loc x)))
+                    ps)))
+
+      (:vl-covergroup
+       (vl-ps-seq (vl-print "Covergroup ")
+                  (vl-print-str (vl-covergroup->name x))
+                  (if withloc
+                      (vl-ps-seq (vl-print " at ")
+                                 (vl-print-loc (vl-covergroup->loc x)))
+                    ps)))
+
+      (:vl-elabtask
+       (vl-ps-seq (vl-print "Elaboration system task ")
+                  (vl-pp-stmt (vl-elabtask->stmt x))
+                  (if withloc
+                      (vl-ps-seq (vl-print " at ")
+                                 (vl-print-loc (vl-elabtask->loc x)))
                     ps)))
 
       ((:vl-genif :vl-genloop :vl-gencase :vl-genbegin :vl-genarray :vl-genbase)
@@ -298,8 +348,14 @@ quick summary instead, see @(see vl-pp-ctxelement-summary).</p>"
       (:vl-import        (vl-pp-import x))
       (:vl-property      (vl-pp-property x))
       (:vl-sequence      (vl-pp-sequence x))
+      (:vl-clkdecl       (vl-pp-clkdecl x))
+      (:vl-gclkdecl      (vl-pp-gclkdecl x))
       (:vl-dpiimport     (vl-pp-dpiimport x))
       (:vl-dpiexport     (vl-pp-dpiexport x))
+      (:vl-bind          (vl-pp-bind x nil))
+      (:vl-class         (vl-pp-class x))
+      (:vl-covergroup    (vl-pp-covergroup x))
+      (:vl-elabtask      (vl-pp-elabtask x))
       (:vl-assertion     (vl-pp-assertion x :include-name t))
       (:vl-cassertion    (vl-pp-cassertion x :include-name t))
       ((:vl-genif :vl-genloop :vl-gencase :vl-genbegin :vl-genarray :vl-genbase)

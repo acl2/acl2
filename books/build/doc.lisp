@@ -641,7 +641,7 @@ that these instructions that were picked up from the @('.acl2') file:</p>
 
 <p>Furthermore, if you inspect @('mybook.cert'), you'll see that defpkg form
 replicated in the portcullis section of the certificate.  In fact, all the
-books that includes your book (transitively) or that also load the same package
+books that include your book (transitively) or that also load the same package
 will also replicate this form in their portculli.  This can be a problem
 because including multiple books depending on this package requires checking
 many times that this defpkg form is redundant, which can actually add up to a
