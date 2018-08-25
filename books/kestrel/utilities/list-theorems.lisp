@@ -4,6 +4,6 @@
 
 (in-package "ACL2")
 
-(include-book "lists/len-const-theorems")
 (include-book "lists/last-theorems")
-(include-book "lists/theorems")
+(include-book "lists/len-const-theorems")
+(include-book "lists/primitive-theorems")

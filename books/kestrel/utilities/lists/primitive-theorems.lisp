@@ -1,4 +1,4 @@
-; Theorems about Lists
+; List Utilities -- Theorems about Primitives
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -15,11 +15,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection theorems-about-lists
-
+(defsection list-primitive-theorems
   :parents (list-utilities)
-
-  :short "Some theorems about lists."
+  :short "Some theorems about the list primitive functions
+          (i.e. @(tsee car), @(tsee cdr), @(tsee cons), and @(tsee consp))."
 
   (defrule list-of-car-when-one
     (implies (and (consp list)
