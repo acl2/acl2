@@ -1,6 +1,6 @@
 ; Theorems about Sets Represented as Lists
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,9 +16,9 @@
 
 (defsection theorems-about-sets-represented-as-lists
 
-  :parents (theorems-about-non-kestrel-books)
+  :parents (list-utilities)
 
-  :short "Theorems about sets represented as lists."
+  :short "Some theorems about sets represented as lists."
 
   (defrule true-listp-of-add-to-set-equal
     :parents (add-to-set)
