@@ -1,4 +1,4 @@
-; Theorems about LAST
+; List Utilities -- Theorems about LAST
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;

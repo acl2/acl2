@@ -1,4 +1,4 @@
-; Theorems about Lists with Lengths Equal/Above Constants
+; List Utilities -- Theorems about Lengths Equal/Above Constants
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
