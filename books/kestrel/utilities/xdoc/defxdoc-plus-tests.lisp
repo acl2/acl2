@@ -119,3 +119,20 @@
                       :no-override t)
                     (xdoc::order-subtopics topic nil t)
                     (local (set-default-parents topic)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail ; malformed keyed options
+ (defxdoc+ topic 88))
+
+(must-fail ; malforemed keyed options
+ (defxdoc+ topic :malformed))
+
+(must-fail ; malformed keyed options
+ (defxdoc+ topic :short))
+
+(must-fail ; unrecognized keyed options
+ (defxdoc+ topic :unknown "a"))
+
+(must-fail ; unrecognized keyed options
+ (defxdoc+ topic :parents (legit) :shorter #\c :longer 'doc))

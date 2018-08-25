@@ -514,17 +514,13 @@
 
 ; AT&T mnemonic: MOVSLQ
 
-(def-inst x86-one-byte-movsxd
+(def-inst x86-movsx
 
   ;; Op/En: RM
   ;; [OP REG, R/M]
   ;; #x63: MOVSXD r16, r/m16 (Move word to word)
   ;;       MOVSXD r32, r/m32 (Move doubleword to doubleword)
   ;;       MOVSXD r64, r/m32 (Move doubleword to quadword with sign-extension)
-
-  ;; I am not very confident about MOVSX's second operand being r/m16.
-  ;; I haven't yet come across this instruction used with an
-  ;; address-size override prefix.
 
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
@@ -533,7 +529,7 @@
                                (canonical-address-p temp-rip)))
   :body
 
-  (b* ((ctx 'x86-one-byte-movsxd)
+  (b* ((ctx 'x86-movsx)
 
        (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
        (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
@@ -596,7 +592,7 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-(def-inst x86-two-byte-movsxd
+(def-inst x86-movsxd
 
   ;; Op/En: RM
   ;; [OP REG, R/M]
@@ -626,7 +622,7 @@
                                (canonical-address-p temp-rip)))
   :body
 
-  (b* ((ctx 'x86-two-byte-movsxd)
+  (b* ((ctx 'x86-movsxd)
 
        (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD

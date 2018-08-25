@@ -184,6 +184,8 @@
 
  <p>Started a new library for <a href=\"https://ethereum.org\">Ethereum</a>.</p>
 
+ <p>Started a new library for <a href=\"https://bitcoin.org\">Bitcoin</a>.</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <p>The behavior and code for the expander (see @(see defthm?)) have been
@@ -292,16 +294,13 @@
  <p>Added a <see topic='@(url theorems-about-string-lists)'>theorem about lists
  of strings</see>.</p>
 
- <p>Extended the <see topic='@(url character-utilities)'>character
- utilities</see> with some theorems about the pre-existing functions, and with
- some new functions to check if (lists of) characters are all of specified
- kinds and to convert a list of unsigned 8-bit bytes to a corresponding list of
- hex digit characters.</p>
-
- <p>Extended the <see topic='@(url string-utilities)'>string utilities</see>
- with some theorems about the pre-existing functions, and with a new function
- to convert a list of unsigned 8-bit bytes to a corresponding string of hex
- digit characters.</p>
+ <p>Merged the utilities in @('[books]/kestrel/utilities/characters.lisp') into
+ the <see topic='@(url string-utilities)'>string utilities</see>.  Extended the
+ combined utilities with some theorems about the pre-existing functions and
+ with new functions to check if (lists of) characters are all of specified
+ kinds, to convert a list of unsigned 8-bit bytes to a corresponding list or
+ string of hex digit characters.  Refactored all the old and new utilities into
+ separate files to reduce dependencies.</p>
 
  <p>Extended the <see topic='@(url symbol-utilities)'>symbol utilities</see>
  with a utility that lifts @(tsee symbol-package-name) to lists.</p>
@@ -325,9 +324,10 @@
  using lemma instances (via @(':use')) efficiently.</p>
 
  <p>Improved the @('copy-def') utility (community book
- @('kestrel/utilities/copy-def.lisp')) by adding an @(':expand') hint in the
- recursive case, as is sometimes necessary.  Also improved it to work better
- with @(tsee mutual-recursion).</p>
+ @('kestrel/utilities/copy-def.lisp')) in several ways: added an @(':expand')
+ hint in the recursive case (as is sometimes necessary), improved it to work
+ better with @(tsee mutual-recursion), and improved it to work better with an
+ @(':equiv') argument.</p>
 
  <p>Fixed the utility, @(tsee orelse), so that @(':quiet t') pushes the output
  stack, as per existing documentation.</p>
@@ -651,11 +651,11 @@
  easier to reason about than its tail-recursive definition for execution (which
  has not changed).</p>
 
- <p>The <see topic='@(url world-queries)'>world query</see>, <see topic='@(url
- term-utilities)'>term</see>, <see topic='@(url
- string-utilities)'>string</see>, and <see topic='@(url
- character-utilities)'>character</see> utilities have undergone several
- improvements and extensions.</p>
+ <p>The <see topic='@(url world-queries)'>world query utilities</see>, <see
+ topic='@(url term-utilities)'>term utilities</see>, <see topic='@(url
+ string-utilities)'>string utilities</see>, and character
+ utilities (@('[books]/kestrel/utilities/characters.lisp')) have undergone
+ several improvements and extensions.</p>
 
  <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
  about world-related functions</see> and <see topic='@(url

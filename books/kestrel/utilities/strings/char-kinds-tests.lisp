@@ -1,4 +1,4 @@
-; Character Utilities -- Tests
+; String Utilities -- Kinds of Characters -- Tests
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,8 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "characters")
-(include-book "testing")
+(include-book "kestrel/utilities/testing" :dir :system)
+
+(include-book "char-kinds")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,26 +127,3 @@
 (assert! (printable-char-listp '(#\u #\7 #\! #\-)))
 
 (assert! (not (printable-char-listp '(#\r #\Return))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (nats=>chars nil) nil)
-
-(assert-equal (nats=>chars '(65 99 46)) '(#\A #\c #\.))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (chars=>nats nil) nil)
-
-(assert-equal (chars=>nats '(#\a #\5 #\~)) '(97 53 126))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (ubyte8s=>hexchars nil)
-              nil)
-
-(assert-equal (ubyte8s=>hexchars '(0 1 2 3))
-              '(#\0 #\0 #\0 #\1 #\0 #\2 #\0 #\3))
-
-(assert-equal (ubyte8s=>hexchars '(240 15 169))
-              '(#\F #\0 #\0 #\F #\A #\9))
