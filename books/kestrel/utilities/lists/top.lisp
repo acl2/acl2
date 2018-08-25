@@ -13,6 +13,7 @@
 (include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 
 (include-book "len-const-theorems")
+(include-book "last-theorems")
 (include-book "theorems")
 (include-book "set-theorems")
 
