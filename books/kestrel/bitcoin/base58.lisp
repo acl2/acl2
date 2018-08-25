@@ -29,8 +29,11 @@
    (xdoc::p
     "Base58 encoding is specified in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding\"
-     >Page `Base58Check encoding' of Wiki</a>.
-     Base58 encoding is part of Base58Check encoding.")
+     >Page `Base58Check encoding' of Wiki</a>;
+     Base58 encoding is part of Base58Check encoding.
+     Base58 is also specified
+     in Section `Base58 and Base58Check Encoding' of MB.
+     WP does not mention Base58 encoding.")
    (xdoc::p
     "Base58 decoding is the inverse of Base58 encoding."))
   :order-subtopics t
