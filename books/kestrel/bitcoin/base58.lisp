@@ -57,6 +57,17 @@
 
   (assert-event (no-duplicatesp *base58-characters*)))
 
+(defval *base58-zero*
+  :short "Character that encodes 0 in the Base58 encoding."
+  :long
+  "<p>
+   This is the first character of @(tsee *base58-characters*).
+   </p>"
+  (car *base58-characters*)
+  ///
+
+  (assert-event (equal *base58-zero* #\1)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define base58-characterp (x)
@@ -75,7 +86,7 @@
   :returns (fixed-x base58-characterp)
   :parents (base58-character)
   :short "Fixer for @(tsee base58-character)."
-  (mbe :logic (if (base58-characterp x) x #\1)
+  (mbe :logic (if (base58-characterp x) x *base58-zero*)
        :exec x)
   ///
 
@@ -372,7 +383,7 @@
                            (len (trim-bendian*
                                  (mbe :logic (ubyte8-list-fix bytes)
                                       :exec bytes)))))
-       (chars (append (repeat number-of-zeros #\1)
+       (chars (append (repeat number-of-zeros *base58-zero*)
                       (base58-vals=>chars vals))))
     chars)
   :guard-hints (("Goal"
