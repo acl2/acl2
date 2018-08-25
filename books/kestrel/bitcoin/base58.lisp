@@ -29,7 +29,7 @@
    (xdoc::p
     "Base58 encoding is specified in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding\"
-     >Topic `Base58Check encoding' of Wiki</a>.
+     >Page `Base58Check encoding' of Wiki</a>.
      Base58 encoding is part of Base58Check encoding.")
    (xdoc::p
     "Base58 decoding is the inverse of Base58 encoding."))
@@ -44,7 +44,7 @@
   "<p>
    These characters are specified in the table in
    <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding#Base58_symbol_chart\"
-   >Section `Base58 symbol chart' of Topic `Base58Check encoding' of Wiki</a>,
+   >Section `Base58 symbol chart' of Page `Base58Check encoding' of Wiki</a>,
    along with their corresponding values in base 58.
    This list is ordered according to increasing values.
    </p>"
@@ -243,7 +243,7 @@
    "The correspondence is given
     in the table
     in Section `Base58 symbol chart'
-    of Topic `Base58Check encoding'
+    of Page `Base58Check encoding'
     of Wiki.
     Since the list @(tsee *base58-characters*)
     is ordered according to increasing values,
@@ -353,7 +353,7 @@
    (xdoc::p
     "This is specified in bullets 4, 5, and 6 in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding#Creating_a_Base58Check_string\"
-     >Section `Creating a Base58Check string' of Topic `Base58Check encoding'
+     >Section `Creating a Base58Check string' of Page `Base58Check encoding'
      of Wiki</a>.")
    (xdoc::p
     "The bytes are treated as big bendian digits in base 256
