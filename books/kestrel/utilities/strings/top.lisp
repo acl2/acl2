@@ -18,5 +18,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc string-utilities
-  :parents (kestrel-utilities)
-  :short "Utilities for @(see strings).")
+  :parents (kestrel-utilities strings)
+  :short "Some utilities for @(see strings) (and @(tsee characters)).")
