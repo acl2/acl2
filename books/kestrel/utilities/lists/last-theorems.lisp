@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection last-theorems
-  :parents (list-utilities)
+  :parents (list-utilities last)
   :short "Some theorems about the built-in function @(tsee last)."
 
   (defrule last-of-cdr
