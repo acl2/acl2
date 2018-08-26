@@ -4,4 +4,5 @@
 
 (in-package "ACL2")
 
+(include-book "lists/add-to-set-theorems")
 (include-book "lists/set-theorems")

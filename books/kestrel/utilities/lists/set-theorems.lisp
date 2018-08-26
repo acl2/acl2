@@ -20,17 +20,6 @@
 
   :short "Some theorems about sets represented as lists."
 
-  (defrule true-listp-of-add-to-set-equal
-    :parents (add-to-set)
-    (equal (true-listp (add-to-set-equal a x))
-           (true-listp x)))
-
-  (defrule true-listp-of-add-to-set-equal-type
-    :parents (add-to-set)
-    (implies (true-listp x)
-             (true-listp (add-to-set-equal a x)))
-    :rule-classes :type-prescription)
-
   (defrule true-listp-of-union-equal
     :parents (union$)
     (equal (true-listp (union-equal x y))
