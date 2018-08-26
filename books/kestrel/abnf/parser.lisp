@@ -12,7 +12,8 @@
 
 (include-book "concrete-syntax")
 
-(local (include-book "kestrel/utilities/list-theorems" :dir :system))
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
+(local (include-book "kestrel/utilities/lists/primitive-theorems" :dir :system))
 (local (include-book "kestrel/utilities/oset-theorems" :dir :system))
 (local (include-book "kestrel/utilities/true-list-listp-theorems" :dir :system))
 (local (include-book "kestrel/utilities/typed-list-theorems" :dir :system))
