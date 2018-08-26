@@ -6,5 +6,5 @@
 
 (include-book "lists/add-to-set-theorems")
 (include-book "lists/intersection-theorems")
+(include-book "lists/set-difference-theorems")
 (include-book "lists/union-theorems")
-(include-book "lists/set-theorems")

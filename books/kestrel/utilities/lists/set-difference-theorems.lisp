@@ -1,4 +1,4 @@
-; Theorems about Sets Represented as Lists
+; List Utilities -- Theorems about SET-DIFFERENCE-EQUAL
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -14,13 +14,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection theorems-about-sets-represented-as-lists
-
-  :parents (list-utilities)
-
-  :short "Some theorems about sets represented as lists."
+(defsection set-difference-equal-theorems
+  :parents (list-utilities set-difference$)
+  :short "Some theorems about the built-in function @(tsee set-difference$)."
 
   (defrule true-listp-of-set-difference-equal
-    :parents (set-difference$)
     (true-listp (set-difference-equal x y))
     :rule-classes (:rewrite :type-prescription)))
