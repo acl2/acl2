@@ -409,7 +409,7 @@
    but not have an @('unnormalized-body') property.
    </p>
    <p>
-   See @(tsee ubody) for a logic-friendly variant of this utility.
+   See @(tsee ubody+) for a logic-friendly variant of this utility.
    </p>"
   (cond ((symbolp fn) (getpropc fn 'unnormalized-body nil wrld))
         (t (lambda-body fn)))
