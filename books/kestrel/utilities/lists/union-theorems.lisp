@@ -19,12 +19,10 @@
   :short "Some theorems about the built-in function @(tsee union$)."
 
   (defrule true-listp-of-union-equal
-    :parents (union$)
     (equal (true-listp (union-equal x y))
            (true-listp y)))
 
   (defrule true-listp-of-union-equal-type
-    :parents (union$)
     (implies (true-listp y)
              (true-listp (union-equal x y)))
     :rule-classes :type-prescription))

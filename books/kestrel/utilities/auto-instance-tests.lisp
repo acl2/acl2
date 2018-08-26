@@ -186,10 +186,10 @@
               'NIL)
          (w state))
         '(:USE
-          ((:INSTANCE TRUE-LISTP-OF-UNION-EQUAL-TYPE (X A)
-                      (Y B))
-           (:INSTANCE TRUE-LISTP-OF-INTERSECTION-EQUAL (Y V)
-                      (X U)))
+          ((:INSTANCE TRUE-LISTP-OF-INTERSECTION-EQUAL (Y V)
+            (X U))
+           (:INSTANCE TRUE-LISTP-OF-UNION-EQUAL-TYPE (X A)
+                      (Y B)))
           :IN-THEORY (THEORY 'MINIMAL-THEORY)
           :DO-NOT *ALL-BUT-SIMPLIFY*)))
 
