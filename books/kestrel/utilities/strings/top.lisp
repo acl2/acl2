@@ -21,7 +21,7 @@
 
 (defxdoc string-utilities
   :parents (kestrel-utilities strings)
-  :short "Some utilities for @(see strings) (and @(tsee characters))."
+  :short "Some utilities for @(see strings) (and @(see characters))."
   :long
   (xdoc::topp
    "These utilities may be eventually integrated into @(see std/strings)."))
