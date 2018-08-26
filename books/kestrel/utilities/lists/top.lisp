@@ -16,6 +16,7 @@
 (include-book "last-theorems")
 (include-book "len-const-theorems")
 (include-book "primitive-theorems")
+(include-book "union-theorems")
 (include-book "set-theorems")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
