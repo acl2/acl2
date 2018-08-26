@@ -658,8 +658,8 @@
  several improvements and extensions.</p>
 
  <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
- about world-related functions</see> and <see topic='@(url
- theorems-about-lists)'>theorems about lists</see> have been added.</p>
+ about world-related functions</see> and theorems about lists (in
+ @('kestrel/utilities/list-theorems.lisp')) have been added.</p>
 
  <p>A new @(see logic)-mode utility, @(tsee magic-macroexpand), performs
  macroexpansion when all macros to be expanded are in logic mode.</p>
