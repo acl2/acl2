@@ -27,12 +27,12 @@
   :long
   (xdoc::topapp
    (xdoc::p
-    "Base58 encoding is specified in
+    "Base58 encoding is described in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding\"
      >Page `Base58Check encoding' of Wiki</a>;
      Base58 encoding is part of Base58Check encoding.
-     Base58 is also specified
-     in Section `Base58 and Base58Check Encoding' of MB.
+     Base58 encoding is also described
+     in Section `Base58 and Base58Check Encoding' of Chapter 4 of MB.
      WP does not mention Base58 encoding.")
    (xdoc::p
     "Base58 decoding is the inverse of Base58 encoding."))
@@ -45,7 +45,7 @@
   :short "List of characters used in Base58 encoding."
   :long
   "<p>
-   These characters are specified in the table in
+   These characters are listed in the table in
    <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding#Base58_symbol_chart\"
    >Section `Base58 symbol chart' of Page `Base58Check encoding' of Wiki</a>,
    along with their corresponding values in base 58.
@@ -350,11 +350,12 @@
 
 (define base58-encode ((bytes ubyte8-listp))
   :returns (chars base58-character-listp)
-  :short "Base58 encoding."
+  :short "Turn a list of bytes into
+          the corresponding list of Base58 characters."
   :long
   (xdoc::topapp
    (xdoc::p
-    "This is specified in bullets 4, 5, and 6 in
+    "This is described in bullets 4, 5, and 6 in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding#Creating_a_Base58Check_string\"
      >Section `Creating a Base58Check string' of Page `Base58Check encoding'
      of Wiki</a>.")
@@ -410,21 +411,23 @@
 
 (define base58-decode ((chars base58-character-listp))
   :returns (bytes ubyte8-listp)
-  :short "Base58 decoding."
+  :short "Turn a list of Base58 characters
+          into the corresponding list of bytes."
   :long
   (xdoc::topapp
    (xdoc::p
-    "This is implicitly specified as the inverse of encoding.")
+    "This is not explicitly described in Wiki or MB,
+     but is, implicitly, the inverse of encoding.")
    (xdoc::p
-    "From a specification perspective,
+    "From a formal specification perspective,
      we could define this function as the inverse of @(tsee base58-encode).
      But since decoding is quite analogous to encoding,
      and not more complicated than encoding,
      instead we define it in an executable way,
      and prove that it is indeed the inverse of encoding.
-     This way, the specification of decoding is executable.")
+     This way, the formal specification of decoding is executable.")
    (xdoc::p
-    "This executable specification of decoding essentially runs
+    "This executable formal specification of decoding essentially runs
      the encoding steps ``in reverse''.
      Instead of counting
      the number of leading ``zero'' (i.e. @('1')) characters
