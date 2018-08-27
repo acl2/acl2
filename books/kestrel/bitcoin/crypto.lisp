@@ -59,10 +59,10 @@
      >FIPS PUB 180-4 standard</a>.")
    (xdoc::p
     "According to FIPS PUB 180-4,
-     the input of SHA-256 is a sequence of at most @($2^{64}$) bits.
+     the input of SHA-256 is a sequence of less than @($2^{64}$) bits.
      Since Bitcoin uses SHA-256 on unsigned 8-bit byte sequences,
      our SHA-256 interface function operates on these bytes directly,
-     by taking as input a list of at most @($2^{61}$) such bytes.
+     by taking as input a list of less than @($2^{61}$) such bytes.
      This is formalized by the guard of the constrained function.")
    (xdoc::p
     "According to FIPS PUB 180-4,
