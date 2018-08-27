@@ -14,6 +14,7 @@
 ; the order of the subtopics of the BITCOIN topic below:
 (include-book "crypto")
 (include-book "base58")
+(include-book "base58check")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
