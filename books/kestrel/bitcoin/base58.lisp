@@ -269,7 +269,7 @@
 (defsection base58-val<=>char-inversion-theorems
   :parents (base58-val=>char base58-char=>val)
   :short "@(tsee base58-val=>char) and @(tsee base58-char=>val)
-          are each other's inverses."
+          are mutual inverses."
 
   (defrule base58-char=>val=>char
     (equal (base58-val=>char (base58-char=>val char))
@@ -334,7 +334,7 @@
 (defsection base58-vals<=>chars-inversion-theorems
   :parents (base58-vals=>chars base58-chars=>vals)
   :short "@(tsee base58-vals=>chars) and @(tsee base58-chars=>vals)
-          are each other's inverses."
+          are mutual inverses."
 
   (defrule base58-chars=>vals=>chars
     (equal (base58-vals=>chars (base58-chars=>vals chars))
@@ -462,7 +462,7 @@
 (defsection base58-encode/decode-inversion-theorems
   :parents (base58-encode base58-decode)
   :short "@(tsee base58-encode) and @(tsee base58-decode)
-          are each other's inverses."
+          are mutual inverses."
 
   (defrule base58-decode-of-base58-encode
     (equal (base58-decode (base58-encode bytes))
