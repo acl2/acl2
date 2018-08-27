@@ -44,12 +44,12 @@
    (xdoc::p
     "We start with just a function for SHA-256,
      and we will add others as needed."))
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection sha-256
-  :parents (crypto-interface)
   :short "SHA-256 interface."
   :long
   (xdoc::topapp
