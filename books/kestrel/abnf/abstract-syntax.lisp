@@ -17,7 +17,6 @@
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "kestrel/utilities/nati" :dir :system)
 (include-book "kestrel/utilities/osets" :dir :system)
-;(include-book "kestrel/utilities/strings" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "misc/seq" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
