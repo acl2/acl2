@@ -12,27 +12,13 @@
 
 (include-book "kestrel/utilities/digits-any-base-pow2" :dir :system)
 (include-book "kestrel/utilities/lists/index-of-theorems" :dir :system)
+(include-book "kestrel/utilities/lists/rev-theorems" :dir :system)
 (include-book "std/basic/inductions" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; These will be moved to the appropriate libraries.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled car-of-rev-rewrite-car-of-last
-  (equal (car (rev x))
-         (car (last x)))
-  :enable rev)
-
-(defruled car-of-last-rewrite-car-of-rev
-  (equal (car (last x))
-         (car (rev x)))
-  :enable rev)
-
-(theory-invariant (incompatible (:rewrite car-of-rev-rewrite-car-of-last)
-                                (:rewrite car-of-last-rewrite-car-of-rev)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

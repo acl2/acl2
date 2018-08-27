@@ -18,6 +18,7 @@
 (include-book "last-theorems")
 (include-book "len-const-theorems")
 (include-book "primitive-theorems")
+(include-book "rev-theorems")
 (include-book "set-difference-theorems")
 (include-book "union-theorems")
 
