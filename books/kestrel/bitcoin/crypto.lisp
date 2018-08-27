@@ -54,7 +54,9 @@
   :long
   (xdoc::topapp
    (xdoc::p
-    "SHA-256 is specified in the FIPS PUB 180-4 standard.")
+    "SHA-256 is specified in the
+     <a href=\"https://csrc.nist.gov/publications/detail/fips/180/4/final\"
+     >FIPS PUB 180-4 standard</a>.")
    (xdoc::p
     "According to FIPS PUB 180-4,
      the input of SHA-256 is a sequence of at most @($2^{64}$) bits.
