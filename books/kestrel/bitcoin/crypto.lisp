@@ -35,15 +35,15 @@
      a cryptographic interface for (i.e. used by) Bitcoin.")
    (xdoc::p
     "Of course,
-     complete specifications and/or implementations of those functions
+     complete specifications and/or implementations of these functions
      are needed to obtain
      a complete specification and/or implementation of Bitcoin.
      Such complete specifications/implementations can replace,
      or be <see topic='@(url defattach)'>attached</see> to,
-     the constrained ones introduced here.")
+     the constrained functions introduced here.")
    (xdoc::p
-    "We start with just a function for SHA-256,
-     and we will add others as needed."))
+    "We start with just a function for SHA-256.
+     We will add others as needed."))
   :order-subtopics t
   :default-parent t)
 
@@ -72,7 +72,7 @@
    (xdoc::p
     "We assume that the SHA-256 function fixes its argument to its guard.
      This involves not only fixing it to a true list of unsigned 8-bit bytes,
-     but also capping its length to @($2^{61}$).")
+     but also capping its length to be below @($2^{61}$).")
    (xdoc::def "sha-256"))
 
   (encapsulate
@@ -107,5 +107,5 @@
              (sha-256 bytes)))
 
     (defrule sha-256-fixes-input-length
-      (equal (sha-256 (take (expt 2 61) bytes))
+      (equal (sha-256 (take (1- (expt 2 61)) bytes))
              (sha-256 bytes)))))
