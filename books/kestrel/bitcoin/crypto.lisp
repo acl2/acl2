@@ -90,14 +90,6 @@
     (defrule ubyte8-listp-of-sha-256
       (ubyte8-listp (sha-256 bytes)))
 
-    (defrule true-listp-of-sha-256
-      (true-listp (sha-256 bytes))
-      :rule-classes :type-prescription)
-
-    (defrule consp-of-sha-256
-      (consp (sha-256 bytes))
-      :rule-classes :type-prescription)
-
     (defrule len-of-sha-256
       (equal (len (sha-256 bytes))
              32))
@@ -108,4 +100,14 @@
 
     (defrule sha-256-fixes-input-length
       (equal (sha-256 (take (1- (expt 2 61)) bytes))
-             (sha-256 bytes)))))
+             (sha-256 bytes))))
+
+  (defrule true-listp-of-sha-256
+    (true-listp (sha-256 bytes))
+    :rule-classes :type-prescription)
+
+  (defrule consp-of-sha-256
+    (consp (sha-256 bytes))
+    :rule-classes :type-prescription
+    :use len-of-sha-256
+    :disable len-of-sha-256))
