@@ -43,10 +43,6 @@
 
 (local (in-theory (enable simple-term-vars simple-term-vars-lst)))
 
-(local (defthm symbol-<-merge-under-set-equiv
-         (set-equiv (symbol-<-merge x y)
-                    (append x y))
-         :hints ((witness))))
 
 (mutual-recursion
  (defun let-abstract-term-rec (x subterms bindings)
@@ -837,8 +833,7 @@
 
   (defthm term-list-vars-of-symbol-list
     (implies (symbol-listp x)
-             (set-equiv (simple-term-vars-lst x) (remove nil x)))
-    :hints(("Goal" :in-theory (enable symbol-<-merge))))
+             (set-equiv (simple-term-vars-lst x) (remove nil x))))
 
   (local (in-theory (disable set-equiv)))
 

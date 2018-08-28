@@ -12,7 +12,10 @@
 
 (include-book "semantics")
 
-(local (include-book "kestrel/utilities/list-theorems" :dir :system))
+(include-book "kestrel/utilities/strings/char-kinds" :dir :system)
+(include-book "kestrel/utilities/strings/chars-codes" :dir :system)
+
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
 (local (include-book "kestrel/utilities/oset-theorems" :dir :system))
 (local (include-book "kestrel/utilities/typed-list-theorems" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))

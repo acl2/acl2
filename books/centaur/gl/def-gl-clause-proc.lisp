@@ -548,11 +548,11 @@
                          (,meta-facts)
                          (,ev (conjoin-clauses
                                (acl2::clauses-result
-                                (,clause-proc clause hints state)))
+                                (,clause-proc clause hints interp-st state)))
                               (,falsify
                                (conjoin-clauses
                                 (acl2::clauses-result
-                                 (,clause-proc clause hints state))))))
+                                 (,clause-proc clause hints interp-st state))))))
                     (,ev (disjoin clause) alist))
            :hints (("goal" :do-not-induct t
                     :in-theory (e/d** (,ctrex-thm))
@@ -856,6 +856,7 @@ See :DOC GL::COVERAGE-PROOFS.
     :abort-ctrex
     :exec-ctrex
     :abort-vacuous
+    :prof-enabledp
     :case-split-override
     :test-side-goals))
 
@@ -918,7 +919,7 @@ See :DOC GL::COVERAGE-PROOFS.
                                  state))
                ((er trconcl)
                 (acl2::translate concl t t nil 'gl-hint-fn (w state) state))
-               (vars (collect-vars trconcl))
+               (vars (simple-term-vars trconcl))
                (missing-vars (set-difference-eq vars (strip-cars g-bindings)))
                (- (and missing-vars
                        (let ((msg (acl2::msg "~
@@ -936,7 +937,7 @@ bindings:
                (call `(,(if test-side-goals 'glcp-side-goals-clause-proc clause-proc)
                        clause (list ',bindings ',param-bindings ',trhyp
                                     ',trparam ',trconcl ',concl ',config)
-                       state)))
+                       interp-st state)))
             (value (glcp-combine-hints call cov-hints hyp-hints result-hints case-split-hints)))))))
 
 
@@ -1000,6 +1001,9 @@ descriptions of each keyword argument:</p>
 
           ;; abort if a hypothesis is discovered to be unsatisfiable.
           :abort-vacuous           t
+
+          ;; enable accumulated-persistence-like rule profiling
+          :prof-enabledp           nil
 
           ;; To perform case-splitting, set this argument:
           :param-bindings          nil

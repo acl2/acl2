@@ -520,6 +520,16 @@ which are typically owned by @('root') (see comments above about this).
 Run the Z3 example in Python described in the instructions above,
 to confirm that the installation was successful.
 </li>
-</ol>")
+</ol>
+
+<h3>Allow the Build System to Find Z3</h3>
+<p>To make sure ACL2's build system can find Z3, Z3 should be installed in
+one's path.  One way of achieving this purpose is to generate below bash script
+called ``Z3'' and put it in one's path:</p>
+@({
+#!/bin/bash
+/path to z3 executable/z3 \"$@\"
+})
+")
 
 ;; (xdoc::save "./manual" :redef-okp t)  ;; write the manual

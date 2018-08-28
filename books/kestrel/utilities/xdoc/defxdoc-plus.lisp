@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "std/util/bstar" :dir :system)
 (include-book "xdoc/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -39,15 +40,33 @@
    @(def defxdoc+)"
 
   (defmacro defxdoc+ (&rest args)
-    (let* ((name (car args))
-           (keyargs (cdr args))
-           (parents (cadr (assoc-keyword :parents keyargs)))
-           (short (cadr (assoc-keyword :short keyargs)))
-           (long (cadr (assoc-keyword :long keyargs)))
-           (pkg (cadr (assoc-keyword :pkg keyargs)))
-           (no-override (cadr (assoc-keyword :no-override keyargs)))
-           (order-subtopics (cadr (assoc-keyword :order-subtopics keyargs)))
-           (default-parent (cadr (assoc-keyword :default-parent keyargs))))
+    (b* ((name (car args))
+         (keyargs (cdr args))
+         ((unless (keyword-value-listp keyargs))
+          `(with-output :gag-mode nil :off :all :on error
+             (make-event (er soft 'defxdoc+
+                             "Malformed keyed options: ~x0" ',keyargs)
+                         :on-behalf-of :quiet!)))
+         (must-be-nil (set-difference-eq (evens keyargs)
+                                         '(:parents
+                                           :short
+                                           :long
+                                           :pkg
+                                           :no-override
+                                           :order-subtopics
+                                           :default-parent)))
+         ((when must-be-nil)
+          `(with-output :gag-mode nil :off :all :on error
+             (make-event (er soft 'defxdoc+
+                             "Unrecognized keyed options: ~x0" ',must-be-nil)
+                         :on-behalf-of :quiet!)))
+         (parents (cadr (assoc-keyword :parents keyargs)))
+         (short (cadr (assoc-keyword :short keyargs)))
+         (long (cadr (assoc-keyword :long keyargs)))
+         (pkg (cadr (assoc-keyword :pkg keyargs)))
+         (no-override (cadr (assoc-keyword :no-override keyargs)))
+         (order-subtopics (cadr (assoc-keyword :order-subtopics keyargs)))
+         (default-parent (cadr (assoc-keyword :default-parent keyargs))))
       `(progn
          (defxdoc ,name
            :parents ,parents

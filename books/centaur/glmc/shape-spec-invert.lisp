@@ -1190,29 +1190,41 @@
   ;;                        (shape-spec-list-invert x terms)
   ;;                        (shape-spec-list-indices x))))
   ;;     :flag shape-spec-list-invert))
-  
-  (local (defthm collect-vars-list-of-append
-           (acl2::set-equiv (collect-vars-list (append a b))
-                            (append (collect-vars-list a) (collect-vars-list b)))
-           :hints(("Goal" :in-theory (enable collect-vars-list append)))))
+  (local (defthm open-simple-term-vars
+           (equal (simple-term-vars (cons fn args))
+                  (and (not (eq fn 'quote))
+                       (simple-term-vars-lst args)))
+           :hints(("Goal" :in-theory (enable simple-term-vars)))))
 
-  (local (defthm collect-vars-list-of-make-nth-terms
-           (implies (not (member v (collect-vars x)))
-                    (not (member v (collect-vars-list (make-nth-terms x start n)))))
+  (local (defthm simple-term-vars-lst-of-consp
+           (implies (consp x)
+                    (equal (simple-term-vars-lst x)
+                           (union-eq (simple-term-vars-lst (cdr x))
+                                     (simple-term-vars (car x)))))
+           :hints(("Goal" :in-theory (enable simple-term-vars-lst)))))
+
+  (local (defthm simple-term-vars-lst-of-append
+           (acl2::set-equiv (simple-term-vars-lst (append a b))
+                            (append (simple-term-vars-lst a) (simple-term-vars-lst b)))
+           :hints(("Goal" :in-theory (enable simple-term-vars-lst append)))))
+
+  (local (defthm simple-term-vars-lst-of-make-nth-terms
+           (implies (not (member v (simple-term-vars x)))
+                    (not (member v (simple-term-vars-lst (make-nth-terms x start n)))))
            :hints(("Goal" :in-theory (enable make-nth-terms)))))
 
   (local (defthm member-vars-of-car-term
-           (implies (not (member v (collect-vars x)))
-                    (not (member v (collect-vars (car-term x)))))
+           (implies (not (member v (simple-term-vars x)))
+                    (not (member v (simple-term-vars (car-term x)))))
            :hints(("Goal" :in-theory (enable car-term)))))
   (local (defthm member-vars-of-cdr-term
-           (implies (not (member v (collect-vars x)))
-                    (not (member v (collect-vars (cdr-term x)))))
+           (implies (not (member v (simple-term-vars x)))
+                    (not (member v (simple-term-vars (cdr-term x)))))
            :hints(("Goal" :in-theory (enable cdr-term)))))
 
   (defthm vars-of-integer-bits-shape-spec-invert
-    (implies (not (member v (collect-vars term)))
-             (not (member v (collect-vars-list (alist-vals (integer-bits-shape-spec-invert idx bits term))))))
+    (implies (not (member v (simple-term-vars term)))
+             (not (member v (simple-term-vars-lst (alist-vals (integer-bits-shape-spec-invert idx bits term))))))
     :hints(("Goal" :in-theory (enable integer-bits-shape-spec-invert alist-vals))))
 
   (local (defthm ss-unary-function-fix-not-equal-quote
@@ -1227,42 +1239,42 @@
 
   (defthm-shape-spec-invert-flag
     (defthm vars-of-shape-spec-invert-bvars
-      (implies (not (member v (collect-vars term)))
-               (not (member v (collect-vars-list (alist-vals (mv-nth 0 (shape-spec-invert x term)))))))
+      (implies (not (member v (simple-term-vars term)))
+               (not (member v (simple-term-vars-lst (alist-vals (mv-nth 0 (shape-spec-invert x term)))))))
       :hints ('(:expand ((shape-spec-invert x term))
                 :in-theory (enable g-number-shape-spec-invert)))
       :flag shape-spec-invert)
     (defthm vars-of-shape-spec-invert-iff-bvars
-      (implies (not (member v (collect-vars term)))
-               (not (member v (collect-vars-list (alist-vals (mv-nth 0 (shape-spec-invert-iff x term)))))))
+      (implies (not (member v (simple-term-vars term)))
+               (not (member v (simple-term-vars-lst (alist-vals (mv-nth 0 (shape-spec-invert-iff x term)))))))
       :hints ('(:expand ((shape-spec-invert-iff x term))
                 :in-theory (enable car-term cdr-term
                                    g-number-shape-spec-invert)))
       :flag shape-spec-invert-iff)
     (defthm vars-of-shape-spec-list-invert-bvars
-      (implies (not (member v (collect-vars-list terms)))
-               (not (member v (collect-vars-list (alist-vals (mv-nth 0 (shape-spec-list-invert x terms)))))))
+      (implies (not (member v (simple-term-vars-lst terms)))
+               (not (member v (simple-term-vars-lst (alist-vals (mv-nth 0 (shape-spec-list-invert x terms)))))))
       :hints ('(:expand ((shape-spec-list-invert x terms))))
       :flag shape-spec-list-invert))
 
 
   (defthm-shape-spec-invert-flag
     (defthm vars-of-shape-spec-invert-gvars
-      (implies (not (member v (collect-vars term)))
-               (not (member v (collect-vars-list (alist-vals (mv-nth 1 (shape-spec-invert x term)))))))
+      (implies (not (member v (simple-term-vars term)))
+               (not (member v (simple-term-vars-lst (alist-vals (mv-nth 1 (shape-spec-invert x term)))))))
       :hints ('(:expand ((shape-spec-invert x term))
                 :in-theory (enable g-number-shape-spec-invert)))
       :flag shape-spec-invert)
     (defthm vars-of-shape-spec-invert-iff-gvars
-      (implies (not (member v (collect-vars term)))
-               (not (member v (collect-vars-list (alist-vals (mv-nth 1 (shape-spec-invert-iff x term)))))))
+      (implies (not (member v (simple-term-vars term)))
+               (not (member v (simple-term-vars-lst (alist-vals (mv-nth 1 (shape-spec-invert-iff x term)))))))
       :hints ('(:expand ((shape-spec-invert-iff x term))
                 :in-theory (enable car-term cdr-term
                                    g-number-shape-spec-invert)))
       :flag shape-spec-invert-iff)
     (defthm vars-of-shape-spec-list-invert-gvars
-      (implies (not (member v (collect-vars-list terms)))
-               (not (member v (collect-vars-list (alist-vals (mv-nth 1 (shape-spec-list-invert x terms)))))))
+      (implies (not (member v (simple-term-vars-lst terms)))
+               (not (member v (simple-term-vars-lst (alist-vals (mv-nth 1 (shape-spec-list-invert x terms)))))))
       :hints ('(:expand ((shape-spec-list-invert x terms))))
       :flag shape-spec-list-invert))
 

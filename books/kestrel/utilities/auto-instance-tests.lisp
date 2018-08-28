@@ -21,10 +21,11 @@
 ; For testing:
 (include-book "misc/eval" :dir :system)
 
-; We include the following book in order to add more theorems to the world.  We
-; pick a book that uses defrule, just to test that previous theorems can be
+; We include the following books in order to add more theorems to the world.  We
+; pick books that uses defrule, just to test that previous theorems can be
 ; introduced via macros.
-(include-book "kestrel/utilities/list-set-theorems" :dir :system)
+(include-book "kestrel/utilities/lists/intersection-theorems" :dir :system)
+(include-book "kestrel/utilities/lists/union-theorems" :dir :system)
 
 (defmacro local-test (&rest args)
   `(local (encapsulate () (local (progn ,@args)))))
@@ -186,10 +187,10 @@
               'NIL)
          (w state))
         '(:USE
-          ((:INSTANCE TRUE-LISTP-OF-UNION-EQUAL-TYPE (X A)
-                      (Y B))
-           (:INSTANCE TRUE-LISTP-OF-INTERSECTION-EQUAL (Y V)
-                      (X U)))
+          ((:INSTANCE TRUE-LISTP-OF-INTERSECTION-EQUAL (Y V)
+            (X U))
+           (:INSTANCE TRUE-LISTP-OF-UNION-EQUAL-TYPE (X A)
+                      (Y B)))
           :IN-THEORY (THEORY 'MINIMAL-THEORY)
           :DO-NOT *ALL-BUT-SIMPLIFY*)))
 

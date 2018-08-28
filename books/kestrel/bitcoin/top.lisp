@@ -10,7 +10,11 @@
 
 (in-package "BITCOIN")
 
+; the order of the following INCLUDE-BOOKs determines
+; the order of the subtopics of the BITCOIN topic below:
+(include-book "crypto")
 (include-book "base58")
+(include-book "base58check")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

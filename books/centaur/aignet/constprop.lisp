@@ -791,7 +791,7 @@
   ((gatesimp gatesimp-p :default (default-gatesimp)
              "Gate simplification parameters")
    (iterations posp :default 1
-               "Number of times to run the transform."))
+               "Number of times to repeat the transform."))
   :parents (constprop comb-transform)
   :short "Configuration object for the @(see constprop) aignet transform."
   :tag :constprop-config)
@@ -849,7 +849,8 @@
   :measure (lposfix iters)
   :verify-guards nil
   (b* (((when (eql (lposfix iters) 1))
-        (constprop-once aignet gatesimp aignet2))
+        (time$ (constprop-once aignet gatesimp aignet2)
+               :msg "   - constprop-once: ~st seconds, ~sa bytes.~%"))
        ((acl2::local-stobjs aignet-tmp)
         (mv aignet-tmp aignet2))
        ;; Doing it this way is awkward, but makes it so that we don't keep
@@ -858,7 +859,10 @@
        ;; aignet2 as its last step, and all the previous transforms are done
        ;; in a recursive call that writes to an empty local aignet.
        (aignet-tmp (constprop-iter (1- (lposfix iters)) aignet gatesimp aignet-tmp))
-       (aignet2 (constprop-once aignet-tmp gatesimp aignet2)))
+       (- (cw "Constprop iteration ~x0:" (1- (lposfix iters)))
+          (print-aignet-stats "" aignet-tmp))
+       (aignet2 (time$ (constprop-once aignet-tmp gatesimp aignet2)
+                       :msg "   - constprop-once: ~st seconds, ~sa bytes.~%")))
     (mv aignet-tmp aignet2))
   ///
   (defret stype-count-of-<fn>

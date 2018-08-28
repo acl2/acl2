@@ -509,7 +509,7 @@
 ;;          :rule-classes nil
 ;;          :otf-flg t))
 
-(defun get-guard-verification-theorem (name state)
+(defun get-guard-verification-theorem (name guard-debug state)
   (declare (xargs :mode :program
                   :stobjs state))
   (b* (((er &) (acl2::in-theory-fn nil state '(in-theory nil)))
@@ -520,13 +520,13 @@
        (ens (acl2::ens state))
        ((mv clauses &)
         (acl2::guard-obligation-clauses
-         names nil ens wrld state))
+         names guard-debug ens wrld state))
        (term (acl2::termify-clause-set clauses)))
     (value term)))
 
 (make-event
  (b* (((er thm) (get-guard-verification-theorem
-                 'base-geval state)))
+                 'base-geval nil state)))
    (value `(defthm base-geval-guards-ok
              ,thm
              :hints (("goal" :do-not-induct t))

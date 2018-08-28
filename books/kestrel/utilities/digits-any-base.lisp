@@ -16,6 +16,7 @@
 (include-book "kestrel/utilities/zp-lists" :dir :system)
 
 (local (include-book "kestrel/utilities/typed-list-theorems" :dir :system))
+(local (include-book "std/basic/inductions" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -397,6 +398,10 @@
            :name consp-of-nat=>lendian*
            :rule-classes :type-prescription))
 
+  (defrule consp-of-nat=>lendian*-iff-not-zp
+    (equal (consp (nat=>lendian* base nat))
+           (not (zp nat))))
+
   (defruled nat=>digits-exec-to-nat=>lendian*
     (implies (and (dab-basep base)
                   (natp nat)
@@ -404,8 +409,7 @@
              (equal (nat=>digits-exec base nat current-digits)
                     (append (rev (nat=>lendian* base nat))
                             current-digits)))
-    :enable (nat=>digits-exec dab-basep dab-digitp)
-    :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+    :enable (nat=>digits-exec dab-basep dab-digitp))
 
   (defrule nat=>lendian*-of-0
     (equal (nat=>lendian* base 0)
@@ -415,11 +419,14 @@
     (implies (and (natp nat)
                   (dab-basep base))
              (< nat (expt base (len (nat=>lendian* base nat)))))
-    :rule-classes :linear
-    :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+    :rule-classes :linear)
 
   (verify-guards nat=>lendian*
     :hints (("Goal" :in-theory (enable nat=>digits-exec-to-nat=>lendian*))))
+
+  (defrule nat=>lendian*-does-not-end-with-0
+    (not (equal (car (last (nat=>lendian* base nat)))
+                0)))
 
   (defruled len-of-nat=>lendian*-leq-width
     (implies (and (natp nat)
@@ -450,8 +457,6 @@
                                (< nat
                                   (expt base width)))))
        :rewrite :direct)
-
-     (local (include-book "arithmetic-5/top" :dir :system))
 
      (defun induction-scheme (base nat)
        (if (zp nat)
@@ -503,8 +508,7 @@
                             nil
                           (list x))
                       (cons x (nat=>lendian* base y)))))
-    :enable dab-digitp
-    :prep-books ((include-book "arithmetic-5/top" :dir :system))))
+    :enable dab-digitp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -665,6 +669,10 @@
            :name consp-of-nat=>bendian*
            :rule-classes :type-prescription))
 
+  (defrule consp-of-nat=>bendian*-iff-not-zp
+    (equal (consp (nat=>bendian* base nat))
+           (not (zp nat))))
+
   (defrule nat=>bendian*-of-0
     (equal (nat=>bendian* base 0)
            nil))
@@ -674,6 +682,13 @@
                   (dab-basep base))
              (< nat (expt base (len (nat=>bendian* base nat)))))
     :rule-classes :linear)
+
+  (defrule nat=>bendian*-does-not-start-with-0
+    (not (equal (car (nat=>bendian* base nat))
+                0))
+    :enable (nat=>bendian* car-of-rev-rewrite-car-of-last)
+    :prep-books
+    ((include-book "kestrel/utilities/lists/rev-theorems" :dir :system)))
 
   (defruled len-of-nat=>bendian*-leq-width
     (implies (and (natp nat)
@@ -950,6 +965,28 @@
              (equal (trim-bendian* digits)
                     nil)))
 
+  (defrule trim-bendian*-of-append-zeros
+    (implies (zp-listp zeros)
+             (equal (trim-bendian* (append zeros digits))
+                    (trim-bendian* digits)))
+    :induct (dec-induct n))
+
+  (defrule trim-bendian*-when-no-starting-0
+    (implies (not (zp (car digits)))
+             (equal (trim-bendian* digits)
+                    (nat-list-fix digits))))
+
+  (defrule trim-bendian*-of-nat=>bendian*
+    (equal (trim-bendian* (nat=>bendian* base nat))
+           (nat=>bendian* base nat))
+    :use (nat=>bendian*-does-not-start-with-0
+          consp-of-nat=>bendian*-iff-not-zp
+          (:instance trim-bendian*-when-no-starting-0
+           (digits (nat=>bendian* base nat))))
+    :disable (nat=>bendian*-does-not-start-with-0
+              trim-bendian*-when-no-starting-0
+              consp-of-nat=>bendian*-iff-not-zp))
+
   (defrule bendian=>nat-of-trim-bendian*
     (equal (bendian=>nat base (trim-bendian* digits))
            (bendian=>nat base digits))
@@ -996,6 +1033,26 @@
     (implies (zp-listp digits)
              (equal (trim-lendian* digits)
                     nil)))
+
+  (defrule trim-lendian*-of-append-zeros
+    (implies (zp-listp zeros)
+             (equal (trim-lendian* (append digits zeros))
+                    (trim-lendian* digits)))
+    :induct (dec-induct n))
+
+  (defrule trim-lendian*-when-no-ending-0
+    (implies (not (zp (car (last digits))))
+             (equal (trim-lendian* digits)
+                    (nat-list-fix digits)))
+    :enable car-of-last-rewrite-car-of-rev
+    :prep-books
+    ((include-book "kestrel/utilities/typed-list-theorems" :dir :system)
+     (include-book "kestrel/utilities/lists/rev-theorems" :dir :system)))
+
+  (defrule trim-lendian*-of-nat=>lendian*
+    (equal (trim-lendian* (nat=>lendian* base nat))
+           (nat=>lendian* base nat))
+    :use nat=>bendian*)
 
   (defrule lendian=>nat-of-trim-lendian*
     (equal (lendian=>nat base (trim-lendian* digits))

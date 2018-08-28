@@ -151,6 +151,8 @@
 
                  conjoin-clauses conjoin disjoin disjoin-lst
                  pseudo-term-list-listp
+                 simple-term-vars
+                 simple-term-vars-lst
 
                  two-nats-measure
 
