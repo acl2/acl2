@@ -162,6 +162,11 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   :short "Functions to collect legacy prefix bytes from an x86 instruction"
 
+  :long "<p>The field @(':num-prefixes') of @('*prefixes-layout*') not only
+  includes the number of legacy prefixes present in an instruction, but also
+  the number of REX bytes, even though REX bytes are not stored in this
+  structure.  See @(tsee get-prefixes) for details.</p>"
+
   (defconst *prefixes-layout*
     '((:num-prefixes      0  4) ;; Number of prefixes
       (:lck               4  8) ;; Lock prefix
@@ -170,44 +175,17 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
       (:opr              28  8) ;; Operand-Size Override prefix
       (:adr              36  8) ;; Address-Size Override prefix
       (:next-byte        44  8) ;; Byte immediately following the prefixes
-      (:last-prefix      52  3) ;; Last prefix byte:
-                                ;; 001b: lck (*lck-pfx*)
-                                ;; 010b: rep (*rep-pfx*)
-                                ;; 011b: seg (*seg-pfx*)
-                                ;; 100b: opr (*opr-pfx*)
-                                ;; 101b: adr (*adr-pfx*)
-                                ;; otherwise: none
       ))
 
-  ;; Comment about why we need the :last-prefix field:
-
-  ;; The :last-prefix field stores the last prefix byte (if any) that comes
-  ;; immediately before the escape/opcode/rex byte (or, the last prefix to appear
-  ;; in the instruction stream).  That the position of prefix bytes is irrelevant
-  ;; is a myth; case in point: mandatory prefixes.  Here's an example: if both 66
-  ;; and F2 are present, then the byte which is present later in the instruction
-  ;; stream is the mandatory prefix and the earlier byte is simply a modifier
-  ;; prefix.  Also see
-  ;; http://lists.llvm.org/pipermail/llvm-dev/2010-December/037102.html
-
-  ;; More accurately, :last-prefix helps in distinguishing between instructions
-  ;; with the same opcode bytes but different mandatory prefixes in the two-
-  ;; and three-byte opcode maps: if, for certain opcodes (see function
-  ;; compute-compound-cell-for-an-opcode-map), the last prefix is 0x66, 0xF2,
-  ;; or 0xF3, then it is a mandatory prefix (see @(see
-  ;; detecting-compound-cells-and-legal-mandatory-prefixes) for details),
-  ;; otherwise, it is a usual modifier.  All prefixes before a mandatory prefix
-  ;; also act as the usual modifiers or cause errors when appropriate.
-
   (defthm prefixes-table-ok
-    (layout-constant-alistp *prefixes-layout* 0 55)
+    (layout-constant-alistp *prefixes-layout* 0 52)
     :rule-classes nil)
 
   (defmacro prefixes-slice (flg prefixes)
-    (slice flg prefixes 55 *prefixes-layout*))
+    (slice flg prefixes 52 *prefixes-layout*))
 
   (defmacro !prefixes-slice (flg val reg)
-    (!slice flg val reg 55 *prefixes-layout*)))
+    (!slice flg val reg 52 *prefixes-layout*)))
 
 (defsection vex-prefixes-layout-structures
 

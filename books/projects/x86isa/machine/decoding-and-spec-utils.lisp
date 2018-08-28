@@ -2048,7 +2048,7 @@ reference made from privilege level 3.</blockquote>"
 	  (proc-mode     :type (integer 0     #.*num-proc-modes-1*))
 	  (start-rip     :type (signed-byte   #.*max-linear-address-size*))
 	  (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
-	  (prefixes      :type (unsigned-byte 55))
+	  (prefixes      :type (unsigned-byte 52))
 	  (rex-byte      :type (unsigned-byte 8))
 	  ,@(if evex
 		`((vex-prefixes   :type (unsigned-byte 24))
@@ -2104,7 +2104,7 @@ reference made from privilege level 3.</blockquote>"
    (byte-operand? :type (or t nil))
    (rex-byte      :type (unsigned-byte  8))
    (imm?          :type (or t nil))
-   (prefixes      :type (unsigned-byte 55))
+   (prefixes      :type (unsigned-byte 52))
    (x86 x86p))
 
   :inline t

@@ -89,7 +89,8 @@
     that a hypothesis involving @(see get-prefixes) was not rewritten
     to @('t'): <br/>
     Monitor
-    @('get-prefixes-opener-lemma-no-prefix-byte'). <br/>
+    @('get-prefixes-opener-lemma-no-prefix-byte') or
+    @('get-prefixes-opener-lemma-no-legacy-prefix-but-rex-prefix'). <br/>
     Note that if the instruction under consideration has prefix
     bytes, you should monitor one of these rules instead: <br/>
     @('get-prefixes-opener-lemma-group-1-prefix') <br/>
@@ -171,6 +172,8 @@
 
  @(def get-prefixes-opener-lemma-no-prefix-byte)
 
+ @(def get-prefixes-opener-lemma-no-legacy-prefix-but-rex-prefix)
+
  @(def get-prefixes-opener-lemma-group-1-prefix)
 
  @(def get-prefixes-opener-lemma-group-2-prefix)
@@ -202,6 +205,7 @@
 ;; (acl2::why x86-run-opener-not-ms-not-zp-n)
 ;; (acl2::why x86-fetch-decode-execute-opener)
 ;; (acl2::why get-prefixes-opener-lemma-no-prefix-byte)
+;; (acl2::why get-prefixes-opener-lemma-no-legacy-prefix-but-rex-prefix)
 ;; (acl2::why ia32e-la-to-pa-values-and-mv-nth-1-wb)
 ;; (acl2::why one-read-with-rb-from-program-at-in-non-marking-view)
 ;; (acl2::why combine-bytes-many-reads-with-rb-from-program-at-in-non-marking-view)

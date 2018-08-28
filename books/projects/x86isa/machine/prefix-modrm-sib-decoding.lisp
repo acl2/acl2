@@ -737,92 +737,196 @@
 
 (defsection mandatory-prefixes-computation
 
-  :short "Functions to compute legal mandatory prefixes"
+  :short "Functions to pick legal mandatory prefixes"
 
-  :long "<p><b>When should we interpret a SIMD prefix (@('66'), @('F2'), and
- @('F3')) as a mandatory prefix for a given opcode in the two- and three-byte
- opcode maps?</b></p>
+  :long "<p><b>When should we interpret (@('66'), @('F2'), and @('F3')) as a
+ mandatory prefix for a given opcode in the two- and three-byte opcode
+ maps?</b></p>
 
- <p>Suppose an opcode has @('F2') as the @('last-prefix') byte (see @(see
- legacy-prefixes-layout-structure)), but this opcode only has the following
- allowed variants: @('NP') (no prefix) and @('66').  Then @('F2') should be
- interpreted as a modifier to the @('NP') case and the instruction should not
- @('#UD').</p>
+ <p>Here are some decoding rules for SIMD mandatory prefixes; note that these
+ don't apply for VEX/EVEX-encoded instructions because the mandatory prefixes
+ are explicitly stated there.  All the examples listed below are from Intel's
+ XED (x86 Encoder Decoder: https://intelxed.github.io/).</p>
 
- <p>Example: @('F2 0F 6B') maps to the @('NP') variant of @('0F 6B (PACKSSDW)')
- because this opcode only has the @('NP') variant and @('66') as the allowed
- mandatory prefix.</p>
+ <ol>
 
- <p>What if an opcode does not have the @('NP') variant but has a SIMD prefix
- that is not a supported variant as its @('last-prefix')?  Then the instruction
- should @('#UD').</p>
+ <li> <p> For opcodes that can take mandatory prefixes, @('66') is ignored when
+ @('F2')/@('F3') are present. Also, a mandatory prefix does not have to
+ <b>immediately</b> precede the opcode byte --- see (4) below.</p>
 
- <p>Example: @('F2 0F 6C') will @('#UD') because @('0F 6C') has no @('NP')
- variant and only has @('66') as the allowed mandatory prefix.</p>"
+ <p> <b> Examples: </b> </p>
+
+ <code>
+
+ (1) xed -64 -d   660f6f00     ;; movdqa xmm0, xmmword ptr [rax]
+ (2) xed -64 -d   f30f6f00     ;; movdqu xmm0, xmmword ptr [rax]
+ (3) xed -64 -d 66f30f6f00     ;; movdqu xmm0, xmmword ptr [rax] (same as (2))
+ (4) xed -64 -d f3660f6f00     ;; movdqu xmm0, xmmword ptr [rax] (same as (2))
+
+ </code>
+
+ </li>
+
+ <li> <p> For opcodes that can take mandatory prefixes, the presence of an
+ unsupported SIMD prefix translates to a reserved instruction; such a prefix
+ does NOT act as a modifier prefix. </p>
+
+ <p> <b> Examples: </b> Opcode @('0f 6b') has a no-prefix form and @('66')
+ mandatory prefix form.  When used with @('f3'), it leads to an error; see (3)
+ below.</p>
+
+ <code>
+
+ (1) xed -64 -d     0f6b00     ;; packssdw mmx0, qword ptr [rax]
+ (2) xed -64 -d   660f6b00     ;; packssdw xmm0, xmmword ptr [rax]
+ (3) xed -64 -d f3660f6b00     ;; GENERAL_ERROR Could not decode...
+
+ </code>
+
+ </li>
+
+ </ol>"
 
   (local (xdoc::set-default-parents mandatory-prefixes-computation))
 
   (define 64-bit-compute-mandatory-prefix-for-two-byte-opcode
-    ((opcode        :type (unsigned-byte 8))
-     (prefixes      :type (unsigned-byte 55)))
+    ((opcode        :type (unsigned-byte 8)
+                    "Second byte of a two-byte opcode")
+     (prefixes      :type (unsigned-byte 52)))
 
-    :returns (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
+    :returns (mv
+              err-flg
+              (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix)))
 
-    (case (prefixes-slice :last-prefix prefixes)
-      (#.*rep-pfx*
-       (let ((rep-pfx (prefixes-slice :rep prefixes)))
-         (cond
-          ((or (and (equal rep-pfx  #.*mandatory-f3h*)
-                    (aref1 '64-bit-mode-two-byte-F3-ok
-                           *64-bit-mode-two-byte-F3-ok-ar* opcode))
-               (and
-                (equal rep-pfx #.*mandatory-f2h*)
-                (aref1 '64-bit-mode-two-byte-F2-ok
-                       *64-bit-mode-two-byte-F2-ok-ar* opcode)))
-           rep-pfx)
-          (t 0))))
-      (#.*opr-pfx*
-       (if (aref1 '64-bit-mode-two-byte-66-ok
-                  *64-bit-mode-two-byte-66-ok-ar* opcode)
-           (prefixes-slice :opr prefixes)
-         0))
-      (otherwise 0)))
+    (b* ((compound-opcode?
+          (aref1 '64-bit-mode-two-byte-compound-opcodes
+                 *64-bit-mode-two-byte-compound-opcodes-ar*
+                 opcode))
+         ((unless compound-opcode?)
+          ;; Return 0 if the opcode is not allowed to have any mandatory
+          ;; prefixes.  In this case, if 66/F3/F2 are present, they assume
+          ;; their normal roles as modifier prefixes.
+          (mv nil 0)))
+
+      (let ((rep-pfx (prefixes-slice :rep prefixes)))
+
+        ;; We first check for F2/F3 prefixes, because they have precedence over
+        ;; 66.
+        (if (not (eql rep-pfx 0))
+
+            (if (or (and (equal rep-pfx  #.*mandatory-f3h*)
+                         (aref1 '64-bit-mode-two-byte-F3-ok
+                                *64-bit-mode-two-byte-F3-ok-ar* opcode))
+                    (and
+                     (equal rep-pfx #.*mandatory-f2h*)
+                     (aref1 '64-bit-mode-two-byte-F2-ok
+                            *64-bit-mode-two-byte-F2-ok-ar* opcode)))
+
+                ;; If the opcode is allowed to have F2/F3, then rep-pfx is the
+                ;; mandatory-prefix.
+
+                (mv nil rep-pfx)
+
+              ;; If F2/F3 is used with an opcode that does not support these
+              ;; prefixes as mandatory prefixes, then we return 0 --- this is a
+              ;; reserved/non-existent instruction.
+
+              (mv (list :illegal-use-of-mandatory-prefix rep-pfx
+                        :opcode (cons #x0F opcode))
+                  0))
+
+          ;; If F2/F3 are not present, then we check for 66 prefix.
+          (let ((opr-pfx  (prefixes-slice :opr prefixes)))
+            (if (and (eql opr-pfx #.*mandatory-66h*)
+                     (aref1 '64-bit-mode-two-byte-66-ok
+                            *64-bit-mode-two-byte-66-ok-ar* opcode))
+
+                (mv nil opr-pfx)
+
+              ;; If 66 is used with an opcode that does not support it as a
+              ;; mandatory prefix, then we return 0 --- this is a
+              ;; reserved/non-existent instruction.
+
+              (mv (list :illegal-use-of-mandatory-prefix opr-pfx
+                        :opcode (cons #x0F opcode))
+                  0)))))))
 
   (define 32-bit-compute-mandatory-prefix-for-two-byte-opcode
     ((opcode        :type (unsigned-byte 8))
-     (prefixes      :type (unsigned-byte 55)))
+     (prefixes      :type (unsigned-byte 52)))
 
-    :returns (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
+    :returns (mv err-flg
+                 (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix)))
 
-    (case (prefixes-slice :last-prefix prefixes)
-      (#.*rep-pfx*
-       (let ((rep-pfx (prefixes-slice :rep prefixes)))
-         (cond
-          ((or (and (equal rep-pfx  #.*mandatory-f3h*)
-                    (aref1 '32-bit-mode-two-byte-F3-ok
-                           *32-bit-mode-two-byte-F3-ok-ar* opcode))
-               (and
-                (equal rep-pfx #.*mandatory-f2h*)
-                (aref1 '32-bit-mode-two-byte-F2-ok
-                       *32-bit-mode-two-byte-F2-ok-ar* opcode)))
-           rep-pfx)
-          (t 0))))
-      (#.*opr-pfx*
-       (if (aref1 '32-bit-mode-two-byte-66-ok
-                  *32-bit-mode-two-byte-66-ok-ar* opcode)
-           (prefixes-slice :opr prefixes)
-         0))
-      (otherwise 0)))
+    (b* ((compound-opcode?
+          (aref1 '32-bit-mode-two-byte-compound-opcodes
+                 *32-bit-mode-two-byte-compound-opcodes-ar*
+                 opcode))
+         ((unless compound-opcode?)
+          ;; Return 0 if the opcode is not allowed to have any mandatory
+          ;; prefixes.  In this case, if 66/F3/F2 are present, they assume
+          ;; their normal roles as modifier prefixes.
+          (mv nil 0)))
+
+      (let ((rep-pfx (prefixes-slice :rep prefixes)))
+
+        ;; We first check for F2/F3 prefixes, because they have precedence over
+        ;; 66.
+        (if (not (eql rep-pfx 0))
+
+            (if (or (and (equal rep-pfx  #.*mandatory-f3h*)
+                         (aref1 '32-bit-mode-two-byte-F3-ok
+                                *32-bit-mode-two-byte-F3-ok-ar* opcode))
+                    (and
+                     (equal rep-pfx #.*mandatory-f2h*)
+                     (aref1 '32-bit-mode-two-byte-F2-ok
+                            *32-bit-mode-two-byte-F2-ok-ar* opcode)))
+
+                ;; If the opcode is allowed to have F2/F3, then rep-pfx is the
+                ;; mandatory-prefix.
+
+                (mv nil rep-pfx)
+
+              ;; If F2/F3 is used with an opcode that does not support these
+              ;; prefixes as mandatory prefixes, then we return 0 --- this is a
+              ;; reserved/non-existent instruction.
+
+              (mv
+               (list :illegal-use-of-mandatory-prefix rep-pfx
+                     :opcode (cons #x0F opcode))
+               0))
+
+          ;; If F2/F3 are not present, then we check for 66 prefix.
+          (let ((opr-pfx  (prefixes-slice :opr prefixes)))
+            (if (and (eql opr-pfx #.*mandatory-66h*)
+                     (aref1 '32-bit-mode-two-byte-66-ok
+                            *32-bit-mode-two-byte-66-ok-ar* opcode))
+
+                (mv nil opr-pfx)
+
+              ;; If 66 is used with an opcode that does not support it as a
+              ;; mandatory prefix, then we return 0 --- this is a
+              ;; reserved/non-existent instruction.
+
+              (mv
+               (list :illegal-use-of-mandatory-prefix opr-pfx
+                     :opcode (cons #x0F opcode))
+               0)))))))
 
   (define compute-mandatory-prefix-for-two-byte-opcode
     ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
-     (opcode        :type (unsigned-byte 8))
-     (prefixes      :type (unsigned-byte 55)))
+     (opcode        :type (unsigned-byte 8)
+                    "Second byte of a two-byte opcode")
+     (prefixes      :type (unsigned-byte 52)))
 
     :inline t
-    :returns (mandatory-prefix
-              (unsigned-byte-p 8 mandatory-prefix)
-              :hints (("Goal" :in-theory (e/d () (unsigned-byte-p)))))
+    :returns (mv
+              err-flg
+              (mandatory-prefix
+               (unsigned-byte-p 8 mandatory-prefix)
+               :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))))
+    :short "Two-byte Opcodes: picks the appropriate SIMD prefix as the
+    mandatory prefix, if applicable"
 
     (case proc-mode
       (#.*64-bit-mode*
@@ -835,65 +939,139 @@
 
   (define 64-bit-compute-mandatory-prefix-for-0F-38-three-byte-opcode
     ((opcode             :type (unsigned-byte 8))
-     (prefixes           :type (unsigned-byte 55)))
+     (prefixes           :type (unsigned-byte 52)))
 
-    :returns (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
+    :returns (mv
+              err-flg
+              (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix)))
 
-    (case (prefixes-slice :last-prefix prefixes)
-      (#.*rep-pfx*
-       (let ((rep-pfx (prefixes-slice :rep prefixes)))
-         (cond
-          ((or (and (equal rep-pfx  #.*mandatory-f3h*)
-                    (aref1 '64-bit-mode-0f-38-three-byte-F3-ok
-                           *64-bit-mode-0f-38-three-byte-F3-ok-ar* opcode))
-               (and
-                (equal rep-pfx #.*mandatory-f2h*)
-                (aref1 '64-bit-mode-0f-38-three-byte-F2-ok
-                       *64-bit-mode-0f-38-three-byte-F2-ok-ar* opcode)))
-           rep-pfx)
-          (t 0))))
-      (#.*opr-pfx*
-       (if (aref1 '64-bit-mode-0f-38-three-byte-66-ok
-                  *64-bit-mode-0f-38-three-byte-66-ok-ar* opcode)
-           (prefixes-slice :opr prefixes)
-         0))
-      (otherwise 0)))
+    (b* ((compound-opcode?
+          (aref1 '64-bit-mode-0F-38-three-byte-compound-opcodes
+                 *64-bit-mode-0F-38-three-byte-compound-opcodes-ar*
+                 opcode))
+         ((unless compound-opcode?)
+          ;; Return 0 if the opcode is not allowed to have any mandatory
+          ;; prefixes.  In this case, if 66/F3/F2 are present, they assume
+          ;; their normal roles as modifier prefixes.
+          (mv nil 0)))
+
+      (let ((rep-pfx (prefixes-slice :rep prefixes)))
+
+        ;; We first check for F2/F3 prefixes, because they have precedence over
+        ;; 66.
+        (if (not (eql rep-pfx 0))
+
+            (if (or (and (equal rep-pfx  #.*mandatory-f3h*)
+                         (aref1 '64-bit-mode-0F-38-three-byte-F3-ok
+                                *64-bit-mode-0F-38-three-byte-F3-ok-ar* opcode))
+                    (and
+                     (equal rep-pfx #.*mandatory-f2h*)
+                     (aref1 '64-bit-mode-0F-38-three-byte-F2-ok
+                            *64-bit-mode-0F-38-three-byte-F2-ok-ar* opcode)))
+
+                ;; If the opcode is allowed to have F2/F3, then rep-pfx is the
+                ;; mandatory-prefix.
+
+                (mv nil rep-pfx)
+
+              ;; If F2/F3 is used with an opcode that does not support these
+              ;; prefixes as mandatory prefixes, then we return 0 --- this is a
+              ;; reserved/non-existent instruction.
+
+              (mv
+               (list :illegal-use-of-mandatory-prefix rep-pfx
+                     :opcode (cons #x0F38 opcode))
+               0))
+
+          ;; If F2/F3 are not present, then we check for 66 prefix.
+          (let ((opr-pfx  (prefixes-slice :opr prefixes)))
+            (if (and (eql opr-pfx #.*mandatory-66h*)
+                     (aref1 '64-bit-mode-0F-38-three-byte-66-ok
+                            *64-bit-mode-0F-38-three-byte-66-ok-ar* opcode))
+
+                (mv nil opr-pfx)
+
+              ;; If 66 is used with an opcode that does not support it as a
+              ;; mandatory prefix, then we return 0 --- this is a
+              ;; reserved/non-existent instruction.
+
+              (mv
+               (list :illegal-use-of-mandatory-prefix opr-pfx
+                     :opcode (cons #x0F38 opcode))
+               0)))))))
 
   (define 32-bit-compute-mandatory-prefix-for-0F-38-three-byte-opcode
     ((opcode             :type (unsigned-byte 8))
-     (prefixes           :type (unsigned-byte 55)))
+     (prefixes           :type (unsigned-byte 52)))
 
-    :returns (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
+    :returns (mv err-flg
+                 (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix)))
 
-    (case (prefixes-slice :last-prefix prefixes)
-      (#.*rep-pfx*
-       (let ((rep-pfx (prefixes-slice :rep prefixes)))
-         (cond
-          ((or (and (equal rep-pfx  #.*mandatory-f3h*)
-                    (aref1 '32-bit-mode-0f-38-three-byte-F3-ok
-                           *32-bit-mode-0f-38-three-byte-F3-ok-ar* opcode))
-               (and
-                (equal rep-pfx #.*mandatory-f2h*)
-                (aref1 '32-bit-mode-0f-38-three-byte-F2-ok
-                       *32-bit-mode-0f-38-three-byte-F2-ok-ar* opcode)))
-           rep-pfx)
-          (t 0))))
-      (#.*opr-pfx*
-       (if (aref1 '32-bit-mode-0f-38-three-byte-66-ok
-                  *32-bit-mode-0f-38-three-byte-66-ok-ar* opcode)
-           (prefixes-slice :opr prefixes)
-         0))
-      (otherwise 0)))
+    (b* ((compound-opcode?
+          (aref1 '32-bit-mode-0F-38-three-byte-compound-opcodes
+                 *32-bit-mode-0F-38-three-byte-compound-opcodes-ar*
+                 opcode))
+         ((unless compound-opcode?)
+          ;; Return 0 if the opcode is not allowed to have any mandatory
+          ;; prefixes.  In this case, if 66/F3/F2 are present, they assume
+          ;; their normal roles as modifier prefixes.
+          (mv nil 0)))
+
+      (let ((rep-pfx (prefixes-slice :rep prefixes)))
+
+        ;; We first check for F2/F3 prefixes, because they have precedence over
+        ;; 66.
+        (if (not (eql rep-pfx 0))
+
+            (if (or (and (equal rep-pfx  #.*mandatory-f3h*)
+                         (aref1 '32-bit-mode-0F-38-three-byte-F3-ok
+                                *32-bit-mode-0F-38-three-byte-F3-ok-ar* opcode))
+                    (and
+                     (equal rep-pfx #.*mandatory-f2h*)
+                     (aref1 '32-bit-mode-0F-38-three-byte-F2-ok
+                            *32-bit-mode-0F-38-three-byte-F2-ok-ar* opcode)))
+
+                ;; If the opcode is allowed to have F2/F3, then rep-pfx is the
+                ;; mandatory-prefix.
+
+                (mv nil rep-pfx)
+
+              ;; If F2/F3 is used with an opcode that does not support these
+              ;; prefixes as mandatory prefixes, then we return 0 --- this is a
+              ;; reserved/non-existent instruction.
+
+              (mv (list :illegal-use-of-mandatory-prefix rep-pfx
+                        :opcode (cons #x0F38 opcode))
+                  0))
+
+          ;; If F2/F3 are not present, then we check for 66 prefix.
+          (let ((opr-pfx  (prefixes-slice :opr prefixes)))
+            (if (and (eql opr-pfx #.*mandatory-66h*)
+                     (aref1 '32-bit-mode-0F-38-three-byte-66-ok
+                            *32-bit-mode-0F-38-three-byte-66-ok-ar* opcode))
+
+                (mv nil opr-pfx)
+
+              ;; If 66 is used with an opcode that does not support it as a
+              ;; mandatory prefix, then we return 0 --- this is a
+              ;; reserved/non-existent instruction.
+
+              (mv
+               (list :illegal-use-of-mandatory-prefix opr-pfx
+                     :opcode (cons #x0F38 opcode))
+               0)))))))
 
   (define compute-mandatory-prefix-for-0F-38-three-byte-opcode
     ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
      (opcode             :type (unsigned-byte 8))
-     (prefixes           :type (unsigned-byte 55)))
+     (prefixes           :type (unsigned-byte 52)))
     :inline t
-    :returns (mandatory-prefix
-              (unsigned-byte-p 8 mandatory-prefix)
-              :hints (("Goal" :in-theory (e/d ()
-                                              (unsigned-byte-p)))))
+    :returns (mv
+              err-flg
+              (mandatory-prefix
+               (unsigned-byte-p 8 mandatory-prefix)
+               :hints (("Goal" :in-theory (e/d ()
+                                               (unsigned-byte-p))))))
 
     (case proc-mode
       (#.*64-bit-mode*
@@ -905,66 +1083,140 @@
 
   (define 64-bit-compute-mandatory-prefix-for-0F-3A-three-byte-opcode
     ((opcode             :type (unsigned-byte 8))
-     (prefixes           :type (unsigned-byte 55)))
+     (prefixes           :type (unsigned-byte 52)))
 
-    :returns (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
+    :returns
+    (mv err-flg
+        (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix)))
 
-    (case (prefixes-slice :last-prefix prefixes)
-      (#.*rep-pfx*
-       (let ((rep-pfx (prefixes-slice :rep prefixes)))
-         (cond
-          ((or (and (equal rep-pfx  #.*mandatory-f3h*)
-                    (aref1 '64-bit-mode-0f-3A-three-byte-F3-ok
-                           *64-bit-mode-0f-3A-three-byte-F3-ok-ar* opcode))
-               (and
-                (equal rep-pfx #.*mandatory-f2h*)
-                (aref1 '64-bit-mode-0f-3A-three-byte-F2-ok
-                       *64-bit-mode-0f-3A-three-byte-F2-ok-ar* opcode)))
-           rep-pfx)
-          (t 0))))
-      (#.*opr-pfx*
-       (if (aref1 '64-bit-mode-0f-3A-three-byte-66-ok
-                  *64-bit-mode-0f-3A-three-byte-66-ok-ar* opcode)
-           (prefixes-slice :opr prefixes)
-         0))
-      (otherwise 0)))
+    (b* ((compound-opcode?
+          (aref1 '64-bit-mode-0F-3A-three-byte-compound-opcodes
+                 *64-bit-mode-0F-3A-three-byte-compound-opcodes-ar*
+                 opcode))
+         ((unless compound-opcode?)
+          ;; Return 0 if the opcode is not allowed to have any mandatory
+          ;; prefixes.  In this case, if 66/F3/F2 are present, they assume
+          ;; their normal roles as modifier prefixes.
+          (mv nil 0)))
+
+      (let ((rep-pfx (prefixes-slice :rep prefixes)))
+
+        ;; We first check for F2/F3 prefixes, because they have precedence over
+        ;; 66.
+        (if (not (eql rep-pfx 0))
+
+            (if (or (and (equal rep-pfx  #.*mandatory-f3h*)
+                         (aref1 '64-bit-mode-0F-3A-three-byte-F3-ok
+                                *64-bit-mode-0F-3A-three-byte-F3-ok-ar* opcode))
+                    (and
+                     (equal rep-pfx #.*mandatory-f2h*)
+                     (aref1 '64-bit-mode-0F-3A-three-byte-F2-ok
+                            *64-bit-mode-0F-3A-three-byte-F2-ok-ar* opcode)))
+
+                ;; If the opcode is allowed to have F2/F3, then rep-pfx is the
+                ;; mandatory-prefix.
+
+                (mv nil rep-pfx)
+
+              ;; If F2/F3 is used with an opcode that does not support these
+              ;; prefixes as mandatory prefixes, then we return 0 --- this is a
+              ;; reserved/non-existent instruction.
+
+              (mv
+               (list :illegal-use-of-mandatory-prefix rep-pfx
+                     :opcode (cons #x0F3A opcode))
+               0))
+
+          ;; If F2/F3 are not present, then we check for 66 prefix.
+          (let ((opr-pfx  (prefixes-slice :opr prefixes)))
+            (if (and (eql opr-pfx #.*mandatory-66h*)
+                     (aref1 '64-bit-mode-0F-3A-three-byte-66-ok
+                            *64-bit-mode-0F-3A-three-byte-66-ok-ar* opcode))
+
+                (mv nil opr-pfx)
+
+              ;; If 66 is used with an opcode that does not support it as a
+              ;; mandatory prefix, then we return 0 --- this is a
+              ;; reserved/non-existent instruction.
+
+              (mv
+               (list :illegal-use-of-mandatory-prefix opr-pfx
+                     :opcode (cons #x0F3A opcode))
+               0)))))))
 
   (define 32-bit-compute-mandatory-prefix-for-0F-3A-three-byte-opcode
     ((opcode             :type (unsigned-byte 8))
-     (prefixes           :type (unsigned-byte 55)))
+     (prefixes           :type (unsigned-byte 52)))
 
-    :returns (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
+    :returns (mv err-flg
+                 (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix)))
 
-    (case (prefixes-slice :last-prefix prefixes)
-      (#.*rep-pfx*
-       (let ((rep-pfx (prefixes-slice :rep prefixes)))
-         (cond
-          ((or (and (equal rep-pfx  #.*mandatory-f3h*)
-                    (aref1 '32-bit-mode-0f-3A-three-byte-F3-ok
-                           *32-bit-mode-0f-3A-three-byte-F3-ok-ar* opcode))
-               (and
-                (equal rep-pfx #.*mandatory-f2h*)
-                (aref1 '32-bit-mode-0f-3A-three-byte-F2-ok
-                       *32-bit-mode-0f-3A-three-byte-F2-ok-ar* opcode)))
-           rep-pfx)
-          (t 0))))
-      (#.*opr-pfx*
-       (if (aref1 '32-bit-mode-0f-3A-three-byte-66-ok
-                  *32-bit-mode-0f-3A-three-byte-66-ok-ar* opcode)
-           (prefixes-slice :opr prefixes)
-         0))
-      (otherwise 0)))
+    (b* ((compound-opcode?
+          (aref1 '32-bit-mode-0F-3A-three-byte-compound-opcodes
+                 *32-bit-mode-0F-3A-three-byte-compound-opcodes-ar*
+                 opcode))
+         ((unless compound-opcode?)
+          ;; Return 0 if the opcode is not allowed to have any mandatory
+          ;; prefixes.  In this case, if 66/F3/F2 are present, they assume
+          ;; their normal roles as modifier prefixes.
+          (mv nil 0)))
+
+      (let ((rep-pfx (prefixes-slice :rep prefixes)))
+
+        ;; We first check for F2/F3 prefixes, because they have precedence over
+        ;; 66.
+        (if (not (eql rep-pfx 0))
+
+            (if (or (and (equal rep-pfx  #.*mandatory-f3h*)
+                         (aref1 '32-bit-mode-0F-3A-three-byte-F3-ok
+                                *32-bit-mode-0F-3A-three-byte-F3-ok-ar* opcode))
+                    (and
+                     (equal rep-pfx #.*mandatory-f2h*)
+                     (aref1 '32-bit-mode-0F-3A-three-byte-F2-ok
+                            *32-bit-mode-0F-3A-three-byte-F2-ok-ar* opcode)))
+
+                ;; If the opcode is allowed to have F2/F3, then rep-pfx is the
+                ;; mandatory-prefix.
+
+                (mv nil rep-pfx)
+
+              ;; If F2/F3 is used with an opcode that does not support these
+              ;; prefixes as mandatory prefixes, then we return 0 --- this is a
+              ;; reserved/non-existent instruction.
+
+              (mv
+               (list :illegal-use-of-mandatory-prefix rep-pfx
+                     :opcode (cons #x0F3A opcode))
+               0))
+
+          ;; If F2/F3 are not present, then we check for 66 prefix.
+          (let ((opr-pfx  (prefixes-slice :opr prefixes)))
+            (if (and (eql opr-pfx #.*mandatory-66h*)
+                     (aref1 '32-bit-mode-0F-3A-three-byte-66-ok
+                            *32-bit-mode-0F-3A-three-byte-66-ok-ar* opcode))
+
+                (mv nil opr-pfx)
+
+              ;; If 66 is used with an opcode that does not support it as a
+              ;; mandatory prefix, then we return 0 --- this is a
+              ;; reserved/non-existent instruction.
+
+              (mv
+               (list :illegal-use-of-mandatory-prefix opr-pfx
+                     :opcode (cons #x0F3A opcode))
+               0)))))))
 
   (define compute-mandatory-prefix-for-0F-3A-three-byte-opcode
     ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
      (opcode             :type (unsigned-byte 8))
-     (prefixes           :type (unsigned-byte 55)))
+     (prefixes           :type (unsigned-byte 52)))
 
     :inline t
-    :returns (mandatory-prefix
-              (unsigned-byte-p 8 mandatory-prefix)
-              :hints (("Goal" :in-theory (e/d ()
-                                              (unsigned-byte-p)))))
+    :returns (mv err-flg
+                 (mandatory-prefix
+                  (unsigned-byte-p 8 mandatory-prefix)
+                  :hints (("Goal" :in-theory (e/d ()
+                                                  (unsigned-byte-p))))))
 
     (case proc-mode
       (#.*64-bit-mode*
@@ -976,17 +1228,24 @@
 
   (define compute-mandatory-prefix-for-three-byte-opcode
     ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
-     (second-escape-byte :type (unsigned-byte 8))
-     (opcode             :type (unsigned-byte 8))
-     (prefixes           :type (unsigned-byte 55)))
+     (second-escape-byte :type (unsigned-byte 8)
+                         "Second byte of the three-byte opcode; either
+                         @('0x38') or @('0x3A')")
+     (opcode             :type (unsigned-byte 8)
+                         "Third byte of the three-byte opcode")
+     (prefixes           :type (unsigned-byte 52)))
 
     :inline t
     :guard (or (equal second-escape-byte #x38)
                (equal second-escape-byte #x3A))
 
-    :returns (mandatory-prefix
-              (unsigned-byte-p 8 mandatory-prefix)
-              :hints (("Goal" :in-theory (e/d () (unsigned-byte-p)))))
+    :returns (mv err-flg
+                 (mandatory-prefix
+                  (unsigned-byte-p 8 mandatory-prefix)
+                  :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))))
+
+    :short "Three-byte opcodes: picks the appropriate SIMD prefix as the
+    mandatory prefix, if applicable"
 
     (case second-escape-byte
       (#x38
@@ -995,7 +1254,8 @@
       (#x3A
        (compute-mandatory-prefix-for-0F-3A-three-byte-opcode
         proc-mode opcode prefixes))
-      (otherwise 0))))
+      (otherwise
+       (mv nil 0)))))
 
 ;; ----------------------------------------------------------------------
 
@@ -2117,30 +2377,24 @@
             the given opcode in the two-byte opcode map expects a ModR/M byte."
         :returns (bool booleanp :hyp (n08p opcode))
 
-        (b* ((compound-opcode?
-              (aref1 '64-bit-mode-two-byte-compound-opcodes
-                     *64-bit-mode-two-byte-compound-opcodes-ar* opcode))
-             ((unless compound-opcode?)
-              (aref1 '64-bit-mode-two-byte-no-prefix-has-modr/m
-                     *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode)))
+        (case mandatory-prefix
 
-          (case mandatory-prefix
+          (#.*mandatory-66h*
+           (aref1 '64-bit-mode-two-byte-66-has-modr/m
+                  *64-bit-mode-two-byte-66-has-modr/m-ar* opcode))
 
-            (#.*mandatory-66h*
-             (aref1 '64-bit-mode-two-byte-66-has-modr/m
-                    *64-bit-mode-two-byte-66-has-modr/m-ar* opcode))
+          (#.*mandatory-F3h*
+           (aref1 '64-bit-mode-two-byte-F3-has-modr/m
+                  *64-bit-mode-two-byte-F3-has-modr/m-ar* opcode))
 
-            (#.*mandatory-F3h*
-             (aref1 '64-bit-mode-two-byte-F3-has-modr/m
-                    *64-bit-mode-two-byte-F3-has-modr/m-ar* opcode))
+          (#.*mandatory-F2h*
+           (aref1 '64-bit-mode-two-byte-F2-has-modr/m
+                  *64-bit-mode-two-byte-F2-has-modr/m-ar* opcode))
 
-            (#.*mandatory-F2h*
-             (aref1 '64-bit-mode-two-byte-F2-has-modr/m
-                    *64-bit-mode-two-byte-F2-has-modr/m-ar* opcode))
-
-            (t
-             (aref1 '64-bit-mode-two-byte-no-prefix-has-modr/m
-                    *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode)))))
+          (t
+           ;; Applies to simple cells as well as NP compound cells.
+           (aref1 '64-bit-mode-two-byte-no-prefix-has-modr/m
+                  *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))))
 
       (define 32-bit-mode-two-byte-opcode-ModR/M-p
         ((mandatory-prefix :type (unsigned-byte 8))
@@ -2150,30 +2404,24 @@
             the given opcode in the two-byte opcode map expects a ModR/M byte."
         :returns (bool booleanp :hyp (n08p opcode))
 
-        (b* ((compound-opcode?
-              (aref1 '32-bit-mode-two-byte-compound-opcodes
-                     *32-bit-mode-two-byte-compound-opcodes-ar* opcode))
-             ((unless compound-opcode?)
-              (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
-                     *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode)))
+        (case mandatory-prefix
 
-          (case mandatory-prefix
+          (#.*mandatory-66h*
+           (aref1 '32-bit-mode-two-byte-66-has-modr/m
+                  *32-bit-mode-two-byte-66-has-modr/m-ar* opcode))
 
-            (#.*mandatory-66h*
-             (aref1 '32-bit-mode-two-byte-66-has-modr/m
-                    *32-bit-mode-two-byte-66-has-modr/m-ar* opcode))
+          (#.*mandatory-F3h*
+           (aref1 '32-bit-mode-two-byte-F3-has-modr/m
+                  *32-bit-mode-two-byte-F3-has-modr/m-ar* opcode))
 
-            (#.*mandatory-F3h*
-             (aref1 '32-bit-mode-two-byte-F3-has-modr/m
-                    *32-bit-mode-two-byte-F3-has-modr/m-ar* opcode))
+          (#.*mandatory-F2h*
+           (aref1 '32-bit-mode-two-byte-F2-has-modr/m
+                  *32-bit-mode-two-byte-F2-has-modr/m-ar* opcode))
 
-            (#.*mandatory-F2h*
-             (aref1 '32-bit-mode-two-byte-F2-has-modr/m
-                    *32-bit-mode-two-byte-F2-has-modr/m-ar* opcode))
-
-            (t
-             (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
-                    *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode)))))
+          (t
+           ;; Applies to simple cells as well as NP compound cells.
+           (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
+                  *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))))
 
       (define two-byte-opcode-ModR/M-p
         ((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
@@ -2204,33 +2452,25 @@
             opcode in the first three-byte opcode map expects a ModR/M byte."
         :returns (bool booleanp :hyp (n08p opcode))
 
-        (b* ((compound-opcode?
-              (aref1 '64-bit-mode-0F-38-three-byte-compound-opcodes
-                     *64-bit-mode-0F-38-three-byte-compound-opcodes-ar*
-                     opcode))
-             ((unless compound-opcode?)
-              (aref1 '64-bit-mode-0F-38-three-byte-no-prefix-has-modr/m
-                     *64-bit-mode-0F-38-three-byte-no-prefix-has-modr/m-ar*
-                     opcode)))
+        (case mandatory-prefix
 
-          (case mandatory-prefix
+          (#.*mandatory-66h*
+           (aref1 '64-bit-mode-0F-38-three-byte-66-has-modr/m
+                  *64-bit-mode-0F-38-three-byte-66-has-modr/m-ar* opcode))
 
-            (#.*mandatory-66h*
-             (aref1 '64-bit-mode-0F-38-three-byte-66-has-modr/m
-                    *64-bit-mode-0F-38-three-byte-66-has-modr/m-ar* opcode))
+          (#.*mandatory-F3h*
+           (aref1 '64-bit-mode-0F-38-three-byte-F3-has-modr/m
+                  *64-bit-mode-0F-38-three-byte-F3-has-modr/m-ar* opcode))
 
-            (#.*mandatory-F3h*
-             (aref1 '64-bit-mode-0F-38-three-byte-F3-has-modr/m
-                    *64-bit-mode-0F-38-three-byte-F3-has-modr/m-ar* opcode))
+          (#.*mandatory-F2h*
+           (aref1 '64-bit-mode-0F-38-three-byte-F2-has-modr/m
+                  *64-bit-mode-0F-38-three-byte-F2-has-modr/m-ar* opcode))
 
-            (#.*mandatory-F2h*
-             (aref1 '64-bit-mode-0F-38-three-byte-F2-has-modr/m
-                    *64-bit-mode-0F-38-three-byte-F2-has-modr/m-ar* opcode))
-
-            (t
-             (aref1 '64-bit-mode-0F-38-three-byte-no-prefix-has-modr/m
-                    *64-bit-mode-0F-38-three-byte-no-prefix-has-modr/m-ar*
-                    opcode)))))
+          (t
+           ;; Applies to simple cells as well as NP compound cells.
+           (aref1 '64-bit-mode-0F-38-three-byte-no-prefix-has-modr/m
+                  *64-bit-mode-0F-38-three-byte-no-prefix-has-modr/m-ar*
+                  opcode))))
 
       (define 32-bit-mode-0F-38-three-byte-opcode-ModR/M-p
         ((mandatory-prefix :type (unsigned-byte 8))
@@ -2240,33 +2480,25 @@
             opcode in the first three-byte opcode map expects a ModR/M byte."
         :returns (bool booleanp :hyp (n08p opcode))
 
-        (b* ((compound-opcode?
-              (aref1 '32-bit-mode-0F-38-three-byte-compound-opcodes
-                     *32-bit-mode-0F-38-three-byte-compound-opcodes-ar*
-                     opcode))
-             ((unless compound-opcode?)
-              (aref1 '32-bit-mode-0F-38-three-byte-no-prefix-has-modr/m
-                     *32-bit-mode-0F-38-three-byte-no-prefix-has-modr/m-ar*
-                     opcode)))
+        (case mandatory-prefix
 
-          (case mandatory-prefix
+          (#.*mandatory-66h*
+           (aref1 '32-bit-mode-0F-38-three-byte-66-has-modr/m
+                  *32-bit-mode-0F-38-three-byte-66-has-modr/m-ar* opcode))
 
-            (#.*mandatory-66h*
-             (aref1 '32-bit-mode-0F-38-three-byte-66-has-modr/m
-                    *32-bit-mode-0F-38-three-byte-66-has-modr/m-ar* opcode))
+          (#.*mandatory-F3h*
+           (aref1 '32-bit-mode-0F-38-three-byte-F3-has-modr/m
+                  *32-bit-mode-0F-38-three-byte-F3-has-modr/m-ar* opcode))
 
-            (#.*mandatory-F3h*
-             (aref1 '32-bit-mode-0F-38-three-byte-F3-has-modr/m
-                    *32-bit-mode-0F-38-three-byte-F3-has-modr/m-ar* opcode))
+          (#.*mandatory-F2h*
+           (aref1 '32-bit-mode-0F-38-three-byte-F2-has-modr/m
+                  *32-bit-mode-0F-38-three-byte-F2-has-modr/m-ar* opcode))
 
-            (#.*mandatory-F2h*
-             (aref1 '32-bit-mode-0F-38-three-byte-F2-has-modr/m
-                    *32-bit-mode-0F-38-three-byte-F2-has-modr/m-ar* opcode))
-
-            (t
-             (aref1 '32-bit-mode-0F-38-three-byte-no-prefix-has-modr/m
-                    *32-bit-mode-0F-38-three-byte-no-prefix-has-modr/m-ar*
-                    opcode)))))
+          (t
+           ;; Applies to simple cells as well as NP compound cells.
+           (aref1 '32-bit-mode-0F-38-three-byte-no-prefix-has-modr/m
+                  *32-bit-mode-0F-38-three-byte-no-prefix-has-modr/m-ar*
+                  opcode))))
 
       (define 64-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
         ((mandatory-prefix :type (unsigned-byte 8))
@@ -2276,33 +2508,25 @@
             opcode in the second three-byte opcode map expects a ModR/M byte."
         :returns (bool booleanp :hyp (n08p opcode))
 
-        (b* ((compound-opcode?
-              (aref1 '64-bit-mode-0F-3A-three-byte-compound-opcodes
-                     *64-bit-mode-0F-3A-three-byte-compound-opcodes-ar*
-                     opcode))
-             ((unless compound-opcode?)
-              (aref1 '64-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m
-                     *64-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m-ar*
-                     opcode)))
+        (case mandatory-prefix
 
-          (case mandatory-prefix
+          (#.*mandatory-66h*
+           (aref1 '64-bit-mode-0F-3A-three-byte-66-has-modr/m
+                  *64-bit-mode-0F-3A-three-byte-66-has-modr/m-ar* opcode))
 
-            (#.*mandatory-66h*
-             (aref1 '64-bit-mode-0F-3A-three-byte-66-has-modr/m
-                    *64-bit-mode-0F-3A-three-byte-66-has-modr/m-ar* opcode))
+          (#.*mandatory-F3h*
+           (aref1 '64-bit-mode-0F-3A-three-byte-F3-has-modr/m
+                  *64-bit-mode-0F-3A-three-byte-F3-has-modr/m-ar* opcode))
 
-            (#.*mandatory-F3h*
-             (aref1 '64-bit-mode-0F-3A-three-byte-F3-has-modr/m
-                    *64-bit-mode-0F-3A-three-byte-F3-has-modr/m-ar* opcode))
+          (#.*mandatory-F2h*
+           (aref1 '64-bit-mode-0F-3A-three-byte-F2-has-modr/m
+                  *64-bit-mode-0F-3A-three-byte-F2-has-modr/m-ar* opcode))
 
-            (#.*mandatory-F2h*
-             (aref1 '64-bit-mode-0F-3A-three-byte-F2-has-modr/m
-                    *64-bit-mode-0F-3A-three-byte-F2-has-modr/m-ar* opcode))
-
-            (t
-             (aref1 '64-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m
-                    *64-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m-ar*
-                    opcode)))))
+          (t
+           ;; Applies to simple cells as well as NP compound cells.
+           (aref1 '64-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m
+                  *64-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m-ar*
+                  opcode))))
 
       (define 32-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
         ((mandatory-prefix :type (unsigned-byte 8))
@@ -2312,33 +2536,25 @@
             opcode in the second three-byte opcode map expects a ModR/M byte."
         :returns (bool booleanp :hyp (n08p opcode))
 
-        (b* ((compound-opcode?
-              (aref1 '32-bit-mode-0F-3A-three-byte-compound-opcodes
-                     *32-bit-mode-0F-3A-three-byte-compound-opcodes-ar*
-                     opcode))
-             ((unless compound-opcode?)
-              (aref1 '32-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m
-                     *32-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m-ar*
-                     opcode)))
+        (case mandatory-prefix
 
-          (case mandatory-prefix
+          (#.*mandatory-66h*
+           (aref1 '32-bit-mode-0F-3A-three-byte-66-has-modr/m
+                  *32-bit-mode-0F-3A-three-byte-66-has-modr/m-ar* opcode))
 
-            (#.*mandatory-66h*
-             (aref1 '32-bit-mode-0F-3A-three-byte-66-has-modr/m
-                    *32-bit-mode-0F-3A-three-byte-66-has-modr/m-ar* opcode))
+          (#.*mandatory-F3h*
+           (aref1 '32-bit-mode-0F-3A-three-byte-F3-has-modr/m
+                  *32-bit-mode-0F-3A-three-byte-F3-has-modr/m-ar* opcode))
 
-            (#.*mandatory-F3h*
-             (aref1 '32-bit-mode-0F-3A-three-byte-F3-has-modr/m
-                    *32-bit-mode-0F-3A-three-byte-F3-has-modr/m-ar* opcode))
+          (#.*mandatory-F2h*
+           (aref1 '32-bit-mode-0F-3A-three-byte-F2-has-modr/m
+                  *32-bit-mode-0F-3A-three-byte-F2-has-modr/m-ar* opcode))
 
-            (#.*mandatory-F2h*
-             (aref1 '32-bit-mode-0F-3A-three-byte-F2-has-modr/m
-                    *32-bit-mode-0F-3A-three-byte-F2-has-modr/m-ar* opcode))
-
-            (t
-             (aref1 '32-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m
-                    *32-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m-ar*
-                    opcode)))))
+          (t
+           ;; Applies to simple cells as well as NP compound cells.
+           (aref1 '32-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m
+                  *32-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m-ar*
+                  opcode))))
 
       (define three-byte-opcode-ModR/M-p
         ((proc-mode        :type (integer 0 #.*num-proc-modes-1*))

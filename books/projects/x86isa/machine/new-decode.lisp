@@ -122,7 +122,7 @@
   ((addressing-method-code addressing-method-code-p)
    (operand-type-code      operand-type-code-p)
    (rex-byte               :type (unsigned-byte  8))
-   (prefixes               :type (unsigned-byte 55)))
+   (prefixes               :type (unsigned-byte 52)))
 
   :parents (decoding-and-spec-utils)
 

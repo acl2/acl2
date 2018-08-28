@@ -457,139 +457,6 @@
     (loghead
      32
      (+
-      (loghead
-       8
-       (logtail
-        24
-        (*
-         16843009
-         (logand
-          252645135
-          (logext
-           32
-           (+
-            (loghead
-             32
-             (+
-              (logand
-               858993459
-               (loghead 32 (+ (logext 32 rdi) (- (logand 1431655765 (logext 32 (loghead 31 (logtail 1 rdi))))))))
-              (logand
-               858993459
-               (loghead
-                30
-                (logtail
-                 2
-                 (+
-                  (logext 32 rdi)
-                  (- (logand 1431655765 (logext 32 (loghead 31 (logtail 1 rdi)))))))))))
-            (loghead
-             28
-             (logtail
-              4
-              (+
-               (logand
-                858993459
-                (loghead
-                 32
-                 (+
-                  (logext 32 rdi)
-                  (-
-                   (logand
-                    1431655765
-                    (logext 32
-                            (loghead 31
-                                     (logtail 1 rdi))))))))
-               (logand
-                858993459
-                (loghead 30 (logtail 2 (+ (logext 32 rdi)
-                                          (- (logand 1431655765
-                                                     (logext 32 (loghead 31 (logtail 1 rdi))))))))))))))))))
-      (loghead
-       8
-       (logtail
-        24
-        (*
-         16843009
-         (logand
-          252645135
-          (logext
-           32
-           (+
-            (loghead
-             32
-             (+
-              (logand
-               858993459
-               (loghead
-                32
-                (+
-                 (logtail 32 rdi)
-                 (-
-                  (logand
-                   1431655765
-                   (logext 32
-                           (loghead 31
-                                    (logtail 33 rdi))))))))
-              (logand
-               858993459
-               (loghead
-                30
-                (logtail
-                 2
-                 (+
-                  (logtail 32 rdi)
-                  (-
-                   (logand
-                    1431655765
-                    (logext 32
-                            (loghead 31
-                                     (logtail 33 rdi)))))))))))
-            (loghead
-             28
-             (logtail
-              4
-              (+
-               (logand
-                858993459
-                (loghead
-                 32
-                 (+
-                  (logtail 32 rdi)
-                  (-
-                   (logand
-                    1431655765
-                    (logext 32
-                            (loghead 31
-                                     (logtail 33 rdi))))))))
-               (logand
-                858993459
-                (loghead
-                 30
-                 (logtail
-                  2
-                  (+
-                   (logtail 32 rdi)
-                   (-
-                    (logand
-                     1431655765
-                     (logext
-                      32
-                      (loghead 31
-                               (logtail 33 rdi))))))))))))))))))))
-    (logcount (loghead 64 rdi)))
-
-   :g-bindings
-   `((rdi    (:g-number ,(gl-int 0 1 65))))))
-
-(local
- (def-gl-thm x86-popcount-64-symbolic-simulation-helper-2
-   :hyp (signed-byte-p 64 rdi)
-   :concl
-   (equal
-    (loghead
-     32
-     (+
       (ifix
        (logtail
         24
@@ -743,7 +610,7 @@
    `((rdi    (:g-number ,(gl-int 0 1 65))))))
 
 (local
- (def-gl-thm x86-popcount-64-symbolic-simulation-helper-3
+ (def-gl-thm x86-popcount-64-symbolic-simulation-helper-2
    :hyp (signed-byte-p 64 rdi)
    :concl
    (equal (loghead 32 (logcount (loghead 64 rdi)))
@@ -876,15 +743,13 @@
                    (:rewrite rb-returns-x86-in-non-marking-view-if-no-error)
                    (:definition marking-view$inline)
                    (:linear acl2::logext-bounds)
-                   (:meta acl2::mv-nth-cons-meta)
                    (:rewrite acl2::natp-when-integerp)
                    (:rewrite acl2::natp-when-gte-0)
                    (:rewrite acl2::reduce-integerp-+-constant)
                    (:linear mv-nth-1-imul-spec-32)
                    (:type-prescription booleanp-marking-view-type)))))
 
-;; The following takes ~600s. Sigh.
-;; (acl2::why x86-run-opener-not-ms-not-zp-n)
+;; The following takes ~250s. Sigh.
 (local
  (defthm x86-popcount-64-symbolic-simulation-snorkeling
    (implies (and (x86p x86)
@@ -946,7 +811,8 @@
                                      x86-effective-addr
                                      subset-p
                                      ;; Flags
-                                     write-user-rflags)
+                                     write-user-rflags
+                                     mv-nth)
 
                                     (unsigned-byte-p
                                      las-to-pas-values-and-!flgi
@@ -957,7 +823,7 @@
                                      get-prefixes-opener-lemma-group-3-prefix
                                      get-prefixes-opener-lemma-group-4-prefix)))
            (if (equal (car id) '(1))
-               '(:in-theory (e/d* (signed-byte-p) ()))
+               '(:in-theory (e/d* (signed-byte-p mv-nth) ()))
              nil))))
 
 (defthm x86-popcount-64-symbolic-simulation

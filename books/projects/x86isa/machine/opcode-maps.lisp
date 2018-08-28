@@ -1358,7 +1358,8 @@
                               (:ud . ((ud-sse-specification :sse2))))))
 
               ((:no-prefix . ("VMOVUPS"    2 (W ps) (V ps)
-                              (:fn . (x86-movups/movupd/movdqu-Op/En-MR))))
+                              (:fn . (x86-movups/movupd/movdqu-Op/En-MR))
+                              (:ud . ((ud-sse-specification :sse)))))
                (:66        . ("VMOVUPD"    2 (W pd) (V pd)
                               (:fn . (x86-movups/movupd/movdqu-Op/En-MR))))
                (:F3        . ("VMOVSS"     3 (W ss) (H x)  (V ss)
