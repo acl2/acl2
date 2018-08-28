@@ -15,6 +15,7 @@
 (include-book "add-to-set-theorems")
 (include-book "index-of-theorems")
 (include-book "intersection-theorems")
+(include-book "intersectp-theorems")
 (include-book "last-theorems")
 (include-book "len-const-theorems")
 (include-book "primitive-theorems")
