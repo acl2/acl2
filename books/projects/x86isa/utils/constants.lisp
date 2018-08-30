@@ -178,14 +178,14 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
       ))
 
   (defthm prefixes-table-ok
-    (layout-constant-alistp *prefixes-layout* 0 52)
+    (layout-constant-alistp *prefixes-layout* 0 #.*prefixes-width*)
     :rule-classes nil)
 
   (defmacro prefixes-slice (flg prefixes)
-    (slice flg prefixes 52 *prefixes-layout*))
+    (slice flg prefixes #.*prefixes-width* *prefixes-layout*))
 
   (defmacro !prefixes-slice (flg val reg)
-    (!slice flg val reg 52 *prefixes-layout*)))
+    (!slice flg val reg #.*prefixes-width* *prefixes-layout*)))
 
 (defsection vex-prefixes-layout-structures
 
@@ -199,16 +199,16 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
       ))
 
   (defthm vex-prefixes-table-ok
-    (layout-constant-alistp *vex-prefixes-layout* 0 24)
+    (layout-constant-alistp *vex-prefixes-layout* 0 #.*vex-width*)
     :rule-classes nil)
 
   (defmacro vex-prefixes-slice (flg vex-prefixes)
-    (slice flg vex-prefixes 24 *vex-prefixes-layout*))
+    (slice flg vex-prefixes #.*vex-width* *vex-prefixes-layout*))
 
   (defmacro !vex-prefixes-slice (flg val reg)
-    (!slice flg val reg 24 *vex-prefixes-layout*))
+    (!slice flg val reg #.*vex-width* *vex-prefixes-layout*))
 
-  (define vex-prefixes-byte0-p ((vex-prefixes :type (unsigned-byte 24)))
+  (define vex-prefixes-byte0-p ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Returns @('t') if byte0 of the @('vex-prefixes') structure is
     either @('*vex2-byte0*') or @('*vex3-byte0*'); returns @('nil') otherwise"
     :returns (ok booleanp)
@@ -346,7 +346,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (!slice flg val reg 8 *vex3-byte2-layout*))
 
   (define vex-prefixes-map-p ((bytes        :type (unsigned-byte 16))
-                              (vex-prefixes :type (unsigned-byte 24)))
+                              (vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :guard (and (vex-prefixes-byte0-p vex-prefixes)
                 (or (equal bytes #ux0F)
                     (equal bytes #ux0F38)
@@ -371,7 +371,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   ;; Some convenient accessor functions for those fields of the VEX prefixes
   ;; that are common to both the two- and three-byte forms:
 
-  (define vex-vvvv-slice ((vex-prefixes :type (unsigned-byte 24)))
+  (define vex-vvvv-slice ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Get the @('VVVV') field of @('vex-prefixes'); cognizant of the two-
     or three-byte VEX prefixes form"
     :guard (vex-prefixes-byte0-p vex-prefixes)
@@ -386,7 +386,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
        (vex3-byte2-slice :vvvv (vex-prefixes-slice :byte2 vex-prefixes)))
       (otherwise -1)))
 
-  (define vex-l-slice ((vex-prefixes :type (unsigned-byte 24)))
+  (define vex-l-slice ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Get the @('L') field of @('vex-prefixes'); cognizant of the two- or
     three-byte VEX prefixes form"
     :guard (vex-prefixes-byte0-p vex-prefixes)
@@ -401,7 +401,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
        (vex3-byte2-slice :l (vex-prefixes-slice :byte2 vex-prefixes)))
       (otherwise -1)))
 
-  (define vex-pp-slice ((vex-prefixes :type (unsigned-byte 24)))
+  (define vex-pp-slice ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Get the @('PP') field of @('vex-prefixes'); cognizant of the two- or
     three-byte VEX prefixes form"
     :guard (vex-prefixes-byte0-p vex-prefixes)
@@ -416,7 +416,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
        (vex3-byte2-slice :pp (vex-prefixes-slice :byte2 vex-prefixes)))
       (otherwise -1)))
 
-  (define vex-w-slice ((vex-prefixes :type (unsigned-byte 24)))
+  (define vex-w-slice ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Get the @('W') field of @('vex-prefixes'); cognizant of the two- or
     three-byte VEX prefixes form"
     :guard (vex-prefixes-byte0-p vex-prefixes)
@@ -453,14 +453,14 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
       ))
 
   (defthm evex-prefixes-table-ok
-    (layout-constant-alistp *evex-prefixes-layout* 0 32)
+    (layout-constant-alistp *evex-prefixes-layout* 0 #.*evex-width*)
     :rule-classes nil)
 
   (defmacro evex-prefixes-slice (flg evex-prefixes)
-    (slice flg evex-prefixes 32 *evex-prefixes-layout*))
+    (slice flg evex-prefixes #.*evex-width* *evex-prefixes-layout*))
 
   (defmacro !evex-prefixes-slice (flg val reg)
-    (!slice flg val reg 32 *evex-prefixes-layout*))
+    (!slice flg val reg #.*evex-width* *evex-prefixes-layout*))
 
   (defconst *evex-byte1-layout*
     '((:mm                0  2) ;; Identical to low two bits of VEX.m-mmmm.
@@ -528,31 +528,31 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   ;; Some wrapper functions to the macros above to make the EVEX dispatch
   ;; functions' guard proofs simpler:
 
-  (define evex-vvvv-slice ((evex-prefixes :type (unsigned-byte 32)))
+  (define evex-vvvv-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('VVVV') field of @('evex-prefixes')"
     :inline t
     :returns (vvvv (unsigned-byte-p 4 vvvv) :hyp :guard)
     (evex-byte2-slice :vvvv (evex-prefixes-slice :byte2 evex-prefixes)))
 
-  (define evex-v-prime-slice ((evex-prefixes :type (unsigned-byte 32)))
+  (define evex-v-prime-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('v-prime') field of @('evex-prefixes')"
     :inline t
     :returns (v-prime (unsigned-byte-p 1 v-prime) :hyp :guard)
     (evex-byte3-slice :v-prime (evex-prefixes-slice :byte3 evex-prefixes)))
 
-  (define evex-vl/rc-slice ((evex-prefixes :type (unsigned-byte 32)))
+  (define evex-vl/rc-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('vl/rc') field of @('evex-prefixes')"
     :inline t
     :returns (vl/rc (unsigned-byte-p 2 vl/rc) :hyp :guard)
     (evex-byte3-slice :vl/rc (evex-prefixes-slice :byte3 evex-prefixes)))
 
-  (define evex-pp-slice ((evex-prefixes :type (unsigned-byte 32)))
+  (define evex-pp-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('PP') field of @('evex-prefixes')"
     :inline t
     :returns (pp (unsigned-byte-p 2 pp) :hyp :guard)
     (evex-byte2-slice :pp (evex-prefixes-slice :byte2 evex-prefixes)))
 
-  (define evex-w-slice ((evex-prefixes :type (unsigned-byte 32)))
+  (define evex-w-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('W') field of @('evex-prefixes')"
     :inline t
     :returns (w (unsigned-byte-p 1 w) :hyp :guard)

@@ -1337,26 +1337,27 @@
      (natp (mv-nth 2 (get-prefixes-alt start-rip prefixes rex-byte cnt x86))))
     :rule-classes :type-prescription)
 
-  (defthm-usb n52p-get-prefixes-alt
-    :hyp (and (n52p prefixes)
+  (defthm-usb prefixes-width-p-of-get-prefixes.new-prefixes-alt
+    :hyp (and (unsigned-byte-p #.*prefixes-width* prefixes)
               (x86p x86))
-    :bound 52
+    :bound #.*prefixes-width*
     :concl (mv-nth 1 (get-prefixes-alt start-rip prefixes rex-byte cnt x86))
     :hints (("Goal"
-             :use ((:instance n52p-get-prefixes (proc-mode #.*64-bit-mode*)))
-             :in-theory (e/d () (n52p-get-prefixes))))
+             :use ((:instance prefixes-width-p-of-get-prefixes.new-prefixes 
+                              (proc-mode #.*64-bit-mode*)))
+             :in-theory (e/d () (prefixes-width-p-of-get-prefixes.new-prefixes))))
     :gen-linear t)
 
-  (defthm-usb n08p-rex-byte-get-prefixes-alt
-    :hyp (and (n08p rex-byte)
+  (defthm-usb byte-p-of-get-prefixes.new-rex-byte-alt
+    :hyp (and (unsigned-byte-p 8 rex-byte)
               (natp prefixes)
               (x86p x86))
     :bound 8
     :concl (mv-nth 2 (get-prefixes-alt start-rip prefixes rex-byte cnt x86))
     :hints (("Goal"
-             :use ((:instance n08p-rex-byte-get-prefixes
+             :use ((:instance byte-p-of-get-prefixes.new-rex-byte
                               (proc-mode #.*64-bit-mode*)))
-             :in-theory (e/d () (n08p-rex-byte-get-prefixes))))
+             :in-theory (e/d () (byte-p-of-get-prefixes.new-rex-byte))))
     :gen-linear t)
 
   (defthm x86p-get-prefixes-alt
@@ -2300,7 +2301,7 @@
                (:rewrite subset-p-cdr-x)
                (:type-prescription n52p-mv-nth-1-ia32e-la-to-pa)
                (:linear <=-logior)
-               (:linear n52p-get-prefixes)
+               (:linear prefixes-width-p-of-get-prefixes.new-prefixes)
                (:rewrite get-prefixes-opener-lemma-group-4-prefix)
                (:rewrite get-prefixes-opener-lemma-group-3-prefix)
                (:rewrite get-prefixes-opener-lemma-group-2-prefix)
