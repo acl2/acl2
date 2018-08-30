@@ -649,7 +649,7 @@
   :prepwork
   ((local (include-book "std/typed-lists/string-listp" :dir :system))
    (local (include-book "kestrel/utilities/typed-list-theorems" :dir :system))
-   (local (include-book "kestrel/utilities/list-set-theorems" :dir :system)))
+   (local (include-book "kestrel/utilities/lists/union-theorems" :dir :system)))
 
   ///
 
