@@ -13,6 +13,8 @@
 (include-book "base58")
 (include-book "crypto")
 
+(local (include-book "library-extensions"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ base58check
@@ -35,8 +37,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define base58check-encode ((version ubyte8-listp) (payload ubyte8-listp))
-  :guard (< (+ (len version) (len payload))
-            (expt 2 61))
+  :guard (and (consp version)
+              (< (+ (len version) (len payload))
+                 (expt 2 61)))
   :returns (chars base58-character-listp)
   :short "Encode a payload, with a version prefix, in Base58Check."
   :long
@@ -65,9 +68,22 @@
    (xdoc::p
     "The combined length of version prefix and payload
      must not exceed the (large) limit for SHA-256.
-     See the guard of @(tsee sha-256)."))
-  (b* ((version+payload (append version payload))
+     See the guard of @(tsee sha-256).")
+   (xdoc::p
+    "We require the version to be non-empty.
+     A version that is the empty list of bytes does not seem to make sense.
+     We allow the payload to be empty,
+     even though this may never happen in Bitcoin."))
+  (b* ((version (mbe :logic (if (consp version) version (list 0))
+                     :exec version))
+       (version+payload (append version payload))
        (hash (sha-256 (sha-256 version+payload)))
        (checksum (take 4 hash))
        (version+payload+checksum (append version+payload checksum)))
-    (base58-encode version+payload+checksum)))
+    (base58-encode version+payload+checksum))
+  :hooks (:fix)
+  ///
+
+  (defruled base58check-encode-fixes-version-nonempty
+    (equal (base58check-encode nil payload)
+           (base58check-encode (list 0) payload))))

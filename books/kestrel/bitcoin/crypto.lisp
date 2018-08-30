@@ -110,4 +110,11 @@
     (consp (sha-256 bytes))
     :rule-classes :type-prescription
     :use len-of-sha-256
-    :disable len-of-sha-256))
+    :disable len-of-sha-256)
+
+  (defcong ubyte8-list-equiv equal (sha-256 bytes) 1
+    :hints (("Goal"
+             :use (sha-256-fixes-input-type
+                   (:instance sha-256-fixes-input-type
+                    (bytes acl2::bytes-equiv)))
+             :in-theory (disable sha-256-fixes-input-type)))))

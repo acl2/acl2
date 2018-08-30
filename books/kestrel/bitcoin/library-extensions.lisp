@@ -32,3 +32,7 @@
   :enable (dab-digit-list-fix
            ubyte8-list-fix
            ubyte8-fix-rewrite-dab-digit-fix-256))
+
+(defcong ubyte8-list-equiv ubyte8-list-equiv (append x y) 1)
+
+(defcong ubyte8-list-equiv ubyte8-list-equiv (append x y) 2)

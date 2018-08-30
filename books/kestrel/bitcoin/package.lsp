@@ -27,6 +27,7 @@
                             nat=>bendian*
                             trim-bendian*
                             ubyte8-fix
+                            ubyte8-list-equiv
                             ubyte8-list-fix
                             ubyte8-listp
                             ubyte8p)))
