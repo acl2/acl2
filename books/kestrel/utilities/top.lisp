@@ -58,7 +58,6 @@
 (include-book "paired-names")
 (include-book "proof-builder-macros")
 (include-book "prove-interface")
-(include-book "set-size")
 (include-book "skip-in-book")
 (include-book "strings/top")
 (include-book "symbol-symbol-alists")
