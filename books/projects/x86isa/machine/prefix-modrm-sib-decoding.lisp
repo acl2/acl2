@@ -1540,7 +1540,7 @@
        `(define ,name
           ((opcode        :type (unsigned-byte 8)
                           "Relevant opcode byte")
-           (prefixes      :type (unsigned-byte 52)))
+           (prefixes      :type (unsigned-byte #.*prefixes-width*)))
 
           :returns (mv
                     err-flg
@@ -1628,7 +1628,7 @@
     ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
      (opcode        :type (unsigned-byte 8)
                     "Second byte of a two-byte opcode")
-     (prefixes      :type (unsigned-byte 52)))
+     (prefixes      :type (unsigned-byte #.*prefixes-width*)))
 
     :inline t
     :returns (mv
@@ -1651,7 +1651,7 @@
   (define compute-mandatory-prefix-for-0F-38-three-byte-opcode
     ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
      (opcode             :type (unsigned-byte 8))
-     (prefixes           :type (unsigned-byte 52)))
+     (prefixes           :type (unsigned-byte #.*prefixes-width*)))
     :inline t
     :returns (mv
               err-flg
@@ -1671,7 +1671,7 @@
   (define compute-mandatory-prefix-for-0F-3A-three-byte-opcode
     ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
      (opcode             :type (unsigned-byte 8))
-     (prefixes           :type (unsigned-byte 52)))
+     (prefixes           :type (unsigned-byte #.*prefixes-width*)))
 
     :inline t
     :returns (mv err-flg
@@ -1695,7 +1695,7 @@
                          @('0x38') or @('0x3A')")
      (opcode             :type (unsigned-byte 8)
                          "Third byte of the three-byte opcode")
-     (prefixes           :type (unsigned-byte 52)))
+     (prefixes           :type (unsigned-byte #.*prefixes-width*)))
 
     :inline t
     :guard (or (equal second-escape-byte #x38)

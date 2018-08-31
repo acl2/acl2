@@ -140,6 +140,11 @@
 ;; ======================================================================
 ;; Prefixes (Intel manual, Mar'17, Vol. 2A, Section 2.1.1):
 
+(defconst *prefixes-width* 
+  ;; Width of the prefixes layout structure; see :doc
+  ;; legacy-prefixes-layout-structure.
+  52)
+
 ;; Group 1:
 (defconst *lock*                  #xF0)
 (defconst *repe*                  #xF3)
@@ -165,9 +170,22 @@
 (defconst *mandatory-f3h*         #xF3)
 
 ;; VEX Prefix:
+
+(defconst *vex-width*
+  ;; Width of the vex prefixes layout structure; see :doc
+  ;; vex-prefixes-layout-structures.
+  24)
+
 (defconst *vex2-byte0*            #xC5) ;; First byte of the 2-byte VEX prefix
 (defconst *vex3-byte0*            #xC4) ;; First byte of the 3-byte VEX prefix
+
 ;; EVEX Prefix:
+
+(defconst *evex-width*
+  ;; Width of the evex prefixes layout structure; see :doc
+  ;; evex-prefixes-layout-structures.
+  32)
+
 (defconst *evex-byte0*            #x62) ;; First byte of the 4-byte EVEX prefix
 
 ;; The following constants apply to both VEX and EVEX prefixes.
