@@ -358,7 +358,7 @@
  DIV, IDIV, INC with opcodes FEh-FFh, DEC with opcodes FEh-FFh, CBW, CWDE,
  CDQE, CWD, CDQ, CQO, ROL, ROR, RCL, RCR, SAL, SAR, SHL, SHR, BT, JMP, Jcc,
  JCXZ, JECXZ, JRCXZ, CMOVcc, SETcc, MOVS, CMPS, STOS, LOOP, LOOPcc, CALL, RET,
- CMC, CLC, STC, CLD, STD, SAHF, LAHF, RDRAND, LGDT,LIDT, HLT, and NOP
+ CMC, CLC, STC, CLD, STD, SAHF, LAHF, RDRAND, LGDT, LIDT, LLDT, HLT, and NOP
  instructions also work in 32-bit mode now; the 32-bit instructions PUSHA,
  POPA, INC with opcodes 40h-47h, DEC with opcodes 48h-4Fh, and PUSH CS/SS/DS/ES
  are now part of the model.</p>
