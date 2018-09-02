@@ -314,12 +314,22 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
         (!!ms-fresh :source-operand-not-memory-location mod))
 
        (p2 (prefixes-slice :seg prefixes))
+       (p3? (eql #.*operand-size-override*
+                 (prefixes-slice :opr prefixes)))
        (p4? (equal #.*addr-size-override*
                    (prefixes-slice :adr prefixes)))
 
-       (offset-size
+       ((the (integer 2 8) offset-size)
         ;; Offset size can be 2, 4, or 8 bytes.
-        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
+        (if (equal proc-mode #.*64-bit-mode*)
+            8
+          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+               (cs.d
+                (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+            (if (= cs.d 1)
+                (if p3? 2 4)
+              (if p3? 4 2)))))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
