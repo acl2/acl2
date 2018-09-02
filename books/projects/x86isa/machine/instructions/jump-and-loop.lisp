@@ -381,13 +381,19 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
         (if (equal sel-ti 0)
             ;; Selector references the GDT.
             (b* ((gdtr (the (unsigned-byte 80) (stri *gdtr* x86)))
-                 (gdtr-base (gdtr/idtr-layout-slice :base-addr gdtr))
+                 (gdtr-base (if (eql proc-mode #.*64-bit-mode*)
+                                (gdtr/idtr-layout-slice :base-addr gdtr)
+                              (n32 (gdtr/idtr-layout-slice :base-addr gdtr))))
                  (gdtr-limit (gdtr/idtr-layout-slice :limit gdtr)))
               (mv gdtr-base gdtr-limit))
           ;; Selector references the LDT whose base address is in
           ;; LDTR.
           (b* ((ldtr-hidden (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86)))
-               (ldtr-base (hidden-seg-reg-layout-slice :base-addr ldtr-hidden))
+               (ldtr-base (if (eql proc-mode #.*64-bit-mode*)
+                              (hidden-seg-reg-layout-slice
+                               :base-addr ldtr-hidden)
+                            (n32 (hidden-seg-reg-layout-slice
+                                  :base-addr ldtr-hidden))))
                (ldtr-limit (hidden-seg-reg-layout-slice :limit ldtr-hidden)))
             (mv ldtr-base ldtr-limit))))
 
