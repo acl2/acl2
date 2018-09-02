@@ -426,11 +426,13 @@ a non-canonical form, raise the SS exception.</p>"
 
        ;; Is the limit of the selector within the GDTR limit?
        ;; Getting the GDTR base and limit
-       ;; (in 32-bit mode, the high 32 bits of the base are expected to be 0):
+       ;; (in 32-bit mode, we take the low 32 bits of the base address):
        ((the (unsigned-byte 80) gdtr)
         (stri *gdtr* x86))
        ((the (unsigned-byte 64) gdtr-base)
-        (gdtr/idtr-layout-slice  :base-addr gdtr))
+        (if (eql proc-mode #.*64-bit-mode*)
+            (gdtr/idtr-layout-slice :base-addr gdtr)
+          (n32 (gdtr/idtr-layout-slice :base-addr gdtr))))
        ((the (unsigned-byte 16) gdtr-limit)
         (gdtr/idtr-layout-slice :limit gdtr))
        ;; Source: Intel Vol. 3A, Section 3.5.1:
