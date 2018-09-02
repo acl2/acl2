@@ -456,8 +456,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
             ;; Conforming Code Segment:
 
-            (b* ((current-cs-register (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-                 (cpl (seg-sel-layout-slice :rpl current-cs-register))
+            (b* ((cpl (cpl x86))
                  (dpl (code-segment-descriptor-layout-slice
                        :dpl descriptor))
                  ;; Access is allowed to a conforming code segment
@@ -509,8 +508,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
           ;; Non-Conforming Code Segment:
 
-          (b* ((current-cs-register (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-               (cpl (seg-sel-layout-slice :rpl current-cs-register))
+          (b* ((cpl (cpl x86))
                (dpl (code-segment-descriptor-layout-slice
                      :dpl descriptor))
                ;; Access is allowed to a conforming code segment
