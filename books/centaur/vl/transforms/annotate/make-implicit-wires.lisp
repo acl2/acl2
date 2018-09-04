@@ -748,6 +748,7 @@ Our version of VCS says this isn't yet implemented.</li>
                   ;; BOZO not sure how these are scoped yet.
                   (eq tag :vl-clkdecl)
                   (eq tag :vl-gclkdecl)
+                  (eq tag :vl-defaultdisable)
                   (eq tag :vl-bind)
                   (eq tag :vl-class)
                   (eq tag :vl-covergroup)

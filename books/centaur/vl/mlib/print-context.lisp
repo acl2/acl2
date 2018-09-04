@@ -234,6 +234,10 @@
                     (vl-ps-seq (vl-print "Global clocking block at ")
                                (vl-print-loc (vl-gclkdecl->loc x))))))
 
+      (:vl-defaultdisable
+       (vl-ps-seq (vl-print "Default disable statement at ")
+                  (vl-print-loc (vl-defaultdisable->loc x))))
+
       (:vl-assertion
        (vl-ps-seq (vl-print "Assertion ")
                   (vl-print-str (or (vl-assertion->name x) ""))
@@ -350,6 +354,7 @@ quick summary instead, see @(see vl-pp-ctxelement-summary).</p>"
       (:vl-sequence      (vl-pp-sequence x))
       (:vl-clkdecl       (vl-pp-clkdecl x))
       (:vl-gclkdecl      (vl-pp-gclkdecl x))
+      (:vl-defaultdisable (vl-pp-defaultdisable x))
       (:vl-dpiimport     (vl-pp-dpiimport x))
       (:vl-dpiexport     (vl-pp-dpiexport x))
       (:vl-bind          (vl-pp-bind x nil))

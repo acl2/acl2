@@ -62,7 +62,8 @@ FAILING_TEST_TARGETS := \
   clocking3.svok \
   clocking4.svok \
   clocking5.svok \
-  clocking6.svok
+  clocking6.svok \
+  clocking9.svok
 
 $(CORE):
 	cd $(COSIM_DIR); $(MAKE) cosim-core

@@ -922,6 +922,7 @@ elements.")
     (:vl-sequence      (vl-sequence-immdeps x ans))
     (:vl-clkdecl       ans) ;; BOZO figure out what to do here -- also update module-immdeps!!
     (:vl-gclkdecl      ans) ;; BOZO figure out what to do here -- also update module-immdeps!!
+    (:vl-defaultdisable ans) ;; BOZO figure out what to do here -- also update module-immdeps!!
     (:vl-dpiimport     ans) ;; I don't think we care?
     (:vl-dpiexport     ans) ;; I don't think we care?
     (:vl-bind          ans) ;; BOZO figure out what to do here -- also update module/interface-immdeps!!
@@ -1166,7 +1167,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
        (ans (vl-typedeflist-immdeps    x.typedefs   ans))
        (ans (vl-propertylist-immdeps   x.properties ans))
        (ans (vl-sequencelist-immdeps   x.sequences  ans))
-       ;; BOZO clkdecls, gclkdecls
+       ;; BOZO clkdecls, gclkdecls, defaultdisables
        (ans (vl-assertionlist-immdeps  x.assertions ans))
        (ans (vl-cassertionlist-immdeps x.cassertions ans))
        (ans (vl-genelementlist-immdeps x.generates  ans)))
@@ -1250,7 +1251,7 @@ depends on.  The format is compatible with @(see depgraph::toposort)."
        (ans (vl-typedeflist-immdeps    x.typedefs   ans))
        (ans (vl-propertylist-immdeps   x.properties ans))
        (ans (vl-sequencelist-immdeps   x.sequences  ans))
-       ;; BOZO clkdecls, gclkdecls
+       ;; BOZO clkdecls, gclkdecls, defaultdisables
        (ans (vl-modinstlist-immdeps    x.modinsts   ans))
        (ans (vl-assignlist-immdeps     x.assigns    ans))
        (ans (vl-aliaslist-immdeps      x.aliases    ans))
