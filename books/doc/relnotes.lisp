@@ -358,7 +358,7 @@
  DIV, IDIV, INC with opcodes FEh-FFh, DEC with opcodes FEh-FFh, CBW, CWDE,
  CDQE, CWD, CDQ, CQO, ROL, ROR, RCL, RCR, SAL, SAR, SHL, SHR, BT, JMP, Jcc,
  JCXZ, JECXZ, JRCXZ, CMOVcc, SETcc, MOVS, CMPS, STOS, LOOP, LOOPcc, CALL, RET,
- CMC, CLC, STC, CLD, STD, SAHF, LAHF, RDRAND, LGDT,LIDT, HLT, and NOP
+ CMC, CLC, STC, CLD, STD, SAHF, LAHF, RDRAND, LGDT, LIDT, LLDT, HLT, and NOP
  instructions also work in 32-bit mode now; the 32-bit instructions PUSHA,
  POPA, INC with opcodes 40h-47h, DEC with opcodes 48h-4Fh, and PUSH CS/SS/DS/ES
  are now part of the model.</p>
@@ -415,6 +415,15 @@
  <h4><see topic='@(url gl::gl)'>GL</see></h4>
  <p>Added optional accumulated-persistence-style profiling of attempted rule
  applications, available with keyword argument @(':prof-enabledp t').</p>
+
+ <p>Changed the representation of symbolic objects, removing the @(':g-number')
+ form which could represent complex rationals and replacing it with a simpler
+ @(':g-integer') form.  (Complex rationals may still be supported using
+ rewriting.  Also, the @(':g-number') shape specifier is still supported for
+ backward compatibility, though it is restricted to only represent integers and
+ translates directly into @(':g-integer') symbolic objects.)  Removed some
+ native symbolic counterparts for functions that can be dealt with more cleanly
+ via rewrite rules.</p>
 
  <h4><see topic='@(url gl::glmc)'>GLMC</see></h4>
  <p>Added option to bind some variables that can be used by the nextstate, property,

@@ -512,7 +512,8 @@
                                             (is-obligs interp-st)
                                             (glcp-config->overrides config)
                                             (w state)))
-             ((when erp) (glcp-interp-error erp))
+             ((when erp)
+              (glcp-value (g-apply fn actuals)))
              (interp-st (update-is-obligs obligs1 interp-st))
              ((unless (equal (len formals) (len actuals)))
               (glcp-interp-error

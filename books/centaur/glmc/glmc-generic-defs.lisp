@@ -352,7 +352,7 @@
     (if (atom x)
         nil
       (case (tag x)
-        ((:g-number :g-boolean :g-concrete) nil)
+        ((:g-integer :g-boolean :g-concrete) nil)
         (:g-var (set::insert (g-var->name x) nil))
         (:g-apply (gobj-list-vars (g-apply->args x)))
         (:g-ite (set::union (gobj-vars (g-ite->test x))
@@ -378,8 +378,8 @@
       (case (tag x)
         (:g-boolean
          (mv "contained a symbolic Boolean" '<symbolic-bool>))
-        (:g-number
-         (mv "contained a symbolic number" '<symbolic-num>))
+        (:g-integer
+         (mv "contained a symbolic integer" '<symbolic-num>))
         (:g-var (b* ((name (g-var->name x)))
                   (if (and (symbolp name) name)
                       (mv nil name)

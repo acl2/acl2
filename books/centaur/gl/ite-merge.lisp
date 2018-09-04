@@ -49,29 +49,24 @@
          '(and (consp x) (not (or (g-concrete-p x) (concrete-gobjectp x)))))
 
 
-(defn merge-general-numbers (c x y)
-  (declare (xargs :guard (and (general-numberp x)
-                              (general-numberp y))))
-  (b* (((mv xrn xrd xin xid)
-        (general-number-components x))
-       ((mv yrn yrd yin yid)
-        (general-number-components y)))
-    (mk-g-number (bfr-ite-bss-fn c xrn yrn)
-                 (bfr-ite-bvv-fn c xrd yrd)
-                 (bfr-ite-bss-fn c xin yin)
-                 (bfr-ite-bvv-fn c xid yid))))
+(defn merge-general-integers (c x y)
+  (declare (xargs :guard (and (general-integerp x)
+                              (general-integerp y))))
+  (b* ((xbits (general-integer-bits x))
+       (ybits (general-integer-bits y)))
+    (mk-g-integer (bfr-ite-bss-fn c (acl2::list-fix xbits) (acl2::list-fix ybits)))))
 
-(defthm gobj-depends-on-of-merge-general-numbers
+(defthm gobj-depends-on-of-merge-general-integers
   (implies (and (not (pbfr-depends-on k p c))
                 (not (gobj-depends-on k p x))
                 (not (gobj-depends-on k p y))
-                (general-numberp x)
-                (general-numberp y))
-           (not (gobj-depends-on k p (merge-general-numbers c x y))))
-  :hints(("Goal" :in-theory (enable merge-general-numbers
+                (general-integerp x)
+                (general-integerp y))
+           (not (gobj-depends-on k p (merge-general-integers c x y))))
+  :hints(("Goal" :in-theory (enable merge-general-integers
                                     gobj-depends-on))))
 
-(in-theory (disable merge-general-numbers))
+(in-theory (disable merge-general-integers))
 
 
 
@@ -114,7 +109,7 @@
 (defun ite-merge-ordering (x y)
   (declare (xargs :guard t
                   :guard-hints (("goal" :in-theory (e/d (general-booleanp
-                                                         general-numberp
+                                                         general-integerp
                                                          general-concrete-atom
                                                          general-concrete-atom-val
                                                          general-consp)
@@ -125,11 +120,11 @@
              'booleans
            '<))
         ((general-booleanp y) '>)
-        ((general-numberp x)
-         (if (general-numberp y)
-             'numbers
+        ((general-integerp x)
+         (if (general-integerp y)
+             'integers
            '<))
-        ((general-numberp y) '>)
+        ((general-integerp y) '>)
         ((general-concrete-atom x)
          (if (general-concrete-atom y)
              (if (alphorder (general-concrete-atom-val x)
@@ -220,10 +215,10 @@
                (and (not (equal x y))
                     (general-booleanp x)
                     (general-booleanp y)))
-        (equal (equal (ite-merge-ordering x y) 'numbers)
+        (equal (equal (ite-merge-ordering x y) 'integers)
                (and (not (equal x y))
-                    (general-numberp x)
-                    (general-numberp y)))
+                    (general-integerp x)
+                    (general-integerp y)))
         (equal (equal (ite-merge-ordering x y) 'conses)
                (and (not (equal x y))
                     (general-consp x)
@@ -235,7 +230,7 @@
                     (equal (g-apply->fn x) (g-apply->fn y))
                     (equal (len (g-apply->args x))
                            (len (g-apply->args y))))))
-   :hints (("goal" :in-theory (enable general-booleanp general-numberp
+   :hints (("goal" :in-theory (enable general-booleanp general-integerp
                                       general-consp general-concrete-atom
                                       tag ite-merge-ordering)))))
 
@@ -411,7 +406,7 @@
      (case ordersym
        (equal (mv 'merged x hyp))
        (booleans (mv 'merged (merge-general-booleans c x y) hyp))
-       (numbers (mv 'merged (merge-general-numbers c x y) hyp))
+       (integers (mv 'merged (merge-general-integers c x y) hyp))
        (conses (b* (((mv contra hyp undo)
                      (bfr-assume (hf (bfr-ite c xhyp yhyp)) hyp))
                     ((when contra)
@@ -520,9 +515,9 @@
                      (equal (bfr-eval-list x env)
                             x))))
 
-   (defthm merge-general-numbers-correct
-     (implies (and (general-numberp a) (general-numberp b))
-              (equal (generic-geval (merge-general-numbers c a b) env)
+   (defthm merge-general-integers-correct
+     (implies (and (general-integerp a) (general-integerp b))
+              (equal (generic-geval (merge-general-integers c a b) env)
                      (if (bfr-eval c (car env))
                          (generic-geval a env)
                        (generic-geval b env))))
@@ -530,8 +525,8 @@
               :in-theory
               (e/d ;boolean-listp-bfr-ite-bvv-fn-v2n-bind-env-car-env
 ;boolean-listp-bfr-ite-bss-fn-v2i-bind-env-car-env
-               (merge-general-numbers)
-               (general-number-components))
+               (merge-general-integers)
+               (general-integer-bits))
               :do-not-induct t)))))
 
 
@@ -795,14 +790,14 @@
    (local (in-theory (e/d* (generic-geval-g-apply-p)
                            ((force) member-equal
                             ite-merge merge-rest maybe-merge
-                            general-number-components-ev
+                            general-integer-bits-correct
 
                             boolean-list-bfr-eval-list
                             mv-nth
                             default-car default-cdr
                             hons-assoc-equal
                             (:rewrite bfr-eval-booleanp)
-                            break-g-number
+                            ;; break-g-number
                             generic-geval
                             hyp-fix-of-hyp-fixedp
                             eval-concrete-gobjectp

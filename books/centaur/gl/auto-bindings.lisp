@@ -46,14 +46,14 @@ shape-specs) in an easy way.  Here is an example:</p>
  (def-gl-thm foo
    ...
    :g-bindings (auto-bindings                          ; expands to:
-                (:nat opcode 8)                        ; g-number with indices 0-8
-                (:int multiplier 16)                   ; g-number with indices 9-25
+                (:nat opcode 8)                        ; g-integer with indices 0-8
+                (:int multiplier 16)                   ; g-integer with indices 9-25
                 (:bool enable)                         ; g-boolean with index 26
-                (:mix (:nat a-bus 128)                 ; }  g-numbers whose indices are interleaved,
+                (:mix (:nat a-bus 128)                 ; }  g-integers whose indices are interleaved,
                       (:nat b-bus 128)                 ; }  27 to 414 -- see below
                       (:rev (:seq (:nat c-bus 64)      ; } 
                                   (:skip 64))))   ; }
-                (:rev (:nat fixup-bits 4))       ; g-number with indices 420-415
+                (:rev (:nat fixup-bits 4))       ; g-integer with indices 420-415
                 ))
 })
 
@@ -95,8 +95,8 @@ interleave a shorter variable with part of a longer variable.  E.g.:</p>
  })
 <p>produces</p>
 @({
- ((A (:G-NUMBER (0 2 4 6 8 9 10)))
-  (B (:G-NUMBER (1 3 5 7))))
+ ((A (:G-INTEGER 0 2 4 6 8 9 10))
+  (B (:G-INTEGER 1 3 5 7)))
  })
 <p>That is, the first part of @('a') is mixed with @('b') but once the bits of
 @('b') run out, the rest of the bits of @('a') are simply in sequence.</p>
@@ -122,7 +122,7 @@ each segment independently.</p>
                               (:int b1 13)))
                   (:int b2 10))
                  :arrange         ;; generate shape spec bindings from the indices
-                 ((:int a a1 a2)  ;; a is a g-number, indices are a1's appended to a2's
+                 ((:int a a1 a2)  ;; a is a g-integer, indices are a1's appended to a2's
                   (:int b b1 b2)))) 
 })
 
@@ -465,7 +465,7 @@ mentioned in the auto-bindings.</p>")
       (:int  (b* ((len (len args))
                   (varname (car args))
                   (auto-vars (if (eql len 1) args (cdr args))))
-               (list varname (g-number (list (flex-bindings-append-auto-vars auto-vars auto-alist))))))
+               (list varname (g-integer (flex-bindings-append-auto-vars auto-vars auto-alist)))))
       (otherwise (er hard? 'flex-bindings-arrange
                      "Invalid arrange-list entry: ~x0 -- must begin with :bool or :int.")))))
                   
@@ -499,11 +499,11 @@ mentioned in the auto-bindings.</p>")
   ;; list of indices.   Arrange is a list contiaining the following forms:
   ;; (:bool a)       --> generate `(a ,(g-boolean (cadr (assoc 'a auto-binding-alist))))
   ;; (:bool a b)     --> generate `(a ,(g-boolean (cadr (assoc 'b auto-binding-alist))))
-  ;; (:int a)        --> generate `(a ,(g-number (list (cdr (assoc 'a auto-binding-alist)))))
-  ;; (:int a b)      --> generate `(a ,(g-number (list (cdr (assoc 'b auto-binding-alist)))))
-  ;; (:int a b c d)  --> generate `(a ,(g-number (list (append (cdr (assoc 'b auto-binding-alist))
-  ;;                                                           (cdr (assoc 'c auto-binding-alist))
-  ;;                                                           (cdr (assoc 'd auto-binding-alist))))))
+  ;; (:int a)        --> generate `(a ,(g-integer (cdr (assoc 'a auto-binding-alist))))
+  ;; (:int a b)      --> generate `(a ,(g-integer (cdr (assoc 'b auto-binding-alist))))
+  ;; (:int a b c d)  --> generate `(a ,(g-integer (append (cdr (assoc 'b auto-binding-alist))
+  ;;                                                     (cdr (assoc 'c auto-binding-alist))
+  ;;                                                     (cdr (assoc 'd auto-binding-alist)))))
   ;; This last form is the point of the whole exercise -- to allow shape-spec
   ;; variables to be composed of multiple slices that are each placed
   ;; independently in the index ordering.
@@ -547,13 +547,13 @@ mentioned in the auto-bindings.</p>")
 
 
 #||
-(auto-bindings (:nat opcode 8)             ; g-number with indices 0-8
-               (:int multiplier 16)        ; g-number with indices 9-24
+(auto-bindings (:nat opcode 8)             ; g-integer with indices 0-8
+               (:int multiplier 16)        ; g-integer with indices 9-24
                (:bool enable)              ; g-boolean with index 25
-               (:mix (:nat a-bus 128)      ; }  g-numbers whose indicies
+               (:mix (:nat a-bus 128)      ; }  g-integers whose indicies
                      (:nat b-bus 128)      ; }  are interleaved, 26 to 412
                      (:nat c-bus 128))     ; }
-               (:nat fixup-bits 4)         ; g-number with indices 413-417
+               (:nat fixup-bits 4)         ; g-integer with indices 413-417
                )
 
 
@@ -561,14 +561,14 @@ mentioned in the auto-bindings.</p>")
                      (:seq (:skip 7) (:nat bar 9) (:skip 4))))
 
 (auto-bindings                          ; expands to:
-                (:nat opcode 8)                        ; g-number with indices 0-8
-                (:int multiplier 16)                   ; g-number with indices 9-24
+                (:nat opcode 8)                        ; g-integer with indices 0-8
+                (:int multiplier 16)                   ; g-integer with indices 9-24
                 (:bool enable)                         ; g-boolean with index 25
-                (:mix (:nat a-bus 128)                 ; }  g-numbers whose indices are interleaved,
+                (:mix (:nat a-bus 128)                 ; }  g-integers whose indices are interleaved,
                       (:nat b-bus 128)                 ; }  27 to 412 -- see below
                       (:rev (:seq (:nat c-bus 64)      ; } 
                                   (:nat dummy 63))))   ; }
-                (:rev (:nat fixup-bits 4))       ; g-number with indices 417-413
+                (:rev (:nat fixup-bits 4))       ; g-integer with indices 417-413
                 )
 
 (flex-bindings ((:int daz 1)

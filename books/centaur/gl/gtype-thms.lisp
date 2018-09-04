@@ -42,7 +42,7 @@
       x
     (and (not (g-concrete-p x))
          (not (g-boolean-p x))
-         (not (g-number-p x))
+         (not (g-integer-p x))
          (not (g-ite-p x))
          (not (g-apply-p x))
          (not (g-var-p x))
@@ -63,7 +63,7 @@
              t
            (and (not (g-concrete-p x))
                 (not (g-boolean-p x))
-                (not (g-number-p x))
+                (not (g-integer-p x))
                 (not (g-ite-p x))
                 (not (g-apply-p x))
                 (not (g-var-p x))
@@ -170,40 +170,6 @@
 ;;            (n2v x))
 ;;   :hints(("Goal" :in-theory (e/d (n2v bfr-ucons) (logcar logcdr)))))
 
-(in-theory (enable components-to-number))
-
-(encapsulate nil
-  (local (include-book "arithmetic/top-with-meta" :dir :system))
-  
-  (defthm components-to-number-norm-zeros1
-    (implies (syntaxp (not (equal iden ''1)))
-             (equal (components-to-number rnum rden 0 iden)
-                    (components-to-number rnum rden 0  1))))
-
-  (defthm components-to-number-norm-zeros2
-    (implies (syntaxp (not (equal inum ''0)))
-             (equal (components-to-number rnum rden inum 0)
-                    (components-to-number rnum rden 0    1))))
-
-  (defthm components-to-number-norm-zeros3
-    (implies (syntaxp (not (equal rden ''1)))
-             (equal (components-to-number 0 rden inum iden)
-                    (components-to-number 0 1    inum iden))))
-  (defthm components-to-number-norm-zeros4
-    (implies (syntaxp (not (equal rnum ''0)))
-             (equal (components-to-number rnum 0    inum iden)
-                    (components-to-number 0    1    inum iden))))
-
-  (defthm components-to-number-correct
-    (implies (acl2-numberp x)
-             (equal (components-to-number (numerator (realpart x))
-                                          (denominator (realpart x))
-                                          (numerator (imagpart x))
-                                          (denominator (imagpart x)))
-                    x))
-    :hints (("goal" :in-theory (enable components-to-number)))))
-
-
 
 (defthm bfr-eval-booleanp
   (implies (booleanp x)
@@ -212,142 +178,29 @@
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 
+(local (defthm bfr-list->s-when-boolean-list
+         (implies (and (syntaxp (not (equal env ''nil)))
+                       (boolean-listp bits))
+                  (equal (bfr-list->s bits env)
+                         (bfr-list->s bits nil)))
+         :hints(("Goal" :in-theory (enable bfr-list->s boolean-listp scdr)))))
 
-;; (defthm generic-geval-non-gobjectp
-;;   (implies (not (gobjectp x))
-;;            (equal (generic-geval x env) x))
-;;   :hints(("Goal" :in-theory (enable gobj-fix))))
+(defthm mk-g-integer-correct
+  (equal (generic-geval (mk-g-integer bits) env)
+         (bfr-list->s bits (car env)))
+  :hints(("Goal" :in-theory (enable mk-g-integer))))
 
-;; (defthm generic-geval-gobj-fix
-;;   (equal (generic-geval (gobj-fix x) env)
-;;          (generic-geval x env))
-;;   :hints(("Goal" :in-theory (enable gobj-fix))))
+(local (defthm pbfr-list-depends-on-of-boolean-list
+         (implies (boolean-listp x)
+                  (not (pbfr-list-depends-on k p x)))
+         :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
 
-
-
-(encapsulate nil
-  (local (include-book "arithmetic/top-with-meta" :dir :system))
-  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-  (local (in-theory
-          (e/d*
-           (boolean-list-bfr-eval-list)
-           (generic-geval mk-g-number
-; (components-to-number)
-                          components-to-number
-                          bfr-eval bfr-eval-list natp
-                          n2v i2v default-car default-cdr
-                          (:rules-of-class :type-prescription :here)
-                          acl2::cancel_times-equal-correct
-                          acl2::cancel_plus-equal-correct
-                          equal-of-booleans-rewrite
-                          default-+-2 default-+-1 acl2::natp-rw
-                          len)
-           ((:type-prescription g-number$inline)
-            (:t bfr-list->s)
-            (:t bfr-list->u)))))
-
-  (local (defthm len-open-cons
-           (equal (len (cons x y))
-                  (+ 1 (len y)))
-           :hints(("Goal" :in-theory (enable len)))))
-
-  (local (defthm boolean-listp-scdr
-           (implies (boolean-listp x)
-                    (boolean-listp (scdr x)))
-           :hints(("Goal" :in-theory (enable scdr)))))
-
-  (local (defthm bfr-list->s-of-boolean-list-norm
-           (implies (and (syntaxp (not (equal env ''nil)))
-                         (boolean-listp x))
-                    (equal (bfr-list->s x env)
-                           (bfr-list->s x nil)))))
-
-  (local (defthm bfr-list->u-of-boolean-list-norm
-           (implies (and (syntaxp (not (equal env ''nil)))
-                         (boolean-listp x))
-                    (equal (bfr-list->u x env)
-                           (bfr-list->u x nil)))))
-  
-  (local (defthm consp-n2v
-           (equal (consp (n2v x))
-                  (posp x))
-           :hints(("Goal" :in-theory (e/d (n2v bfr-ucons)
-                                          (logcar logcdr))))))
+(defthm gobj-depends-on-of-mk-g-integer
+  (equal (gobj-depends-on k p (mk-g-integer x))
+         (pbfr-list-depends-on k p x))
+  :hints(("Goal" :in-theory (enable mk-g-integer))))
 
 
-  ;; (local (defthm bfr-list->u-of-list-fix
-  ;;          (equal (bfr-list->u (acl2::list-fix x) env)
-  ;;                 (bfr-list->u x env))))
-
-  ;; (local (defthm bfr-list->s-of-list-fix
-  ;;          (equal (bfr-list->s (acl2::list-fix x) env)
-  ;;                 (bfr-list->s x env))))
-
-  (defthm mk-g-number-correct
-    (flet ((to-nat (n env) (if (natp n) n (bfr-list->u n (car env))))
-           (to-int (n env) (if (integerp n) n (bfr-list->s n (car env)))))
-      (equal (generic-geval (mk-g-number rnum rden inum iden) env)
-             (components-to-number (to-int rnum env)
-                                   (to-nat rden env)
-                                   (to-int inum env)
-                                   (to-nat iden env))))
-    :hints (("Goal" :do-not preprocess)
-            ;; '(:cases ((and (integerp rnum) (natp rden)
-            ;;                (integerp inum) (natp iden))))
-            '(:expand ((:free (a c d f)
-                              (mk-g-number a c d f))))
-            '(:expand ((:free (a b)
-                              (generic-geval
-                               (complex a b) env))
-                       (:free (x)
-                              (generic-geval
-                               (g-number x) env))))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (components-to-number natp))))))
-
-  (defthm pbfr-depends-on-list-of-boolean-listp
-    (implies (and (syntaxp (quotep lst))
-                  (boolean-listp lst))
-             (not (pbfr-list-depends-on k p lst)))
-    :hints(("Goal" :in-theory (enable pbfr-list-depends-on))))
-
-  (local (defthm gobj-depends-on-of-g-number
-           (equal (gobj-depends-on k p (g-number n))
-                  (or (pbfr-list-depends-on k p (car n))
-                      (pbfr-list-depends-on k p (cadr n))
-                      (pbfr-list-depends-on k p (caddr n))
-                      (pbfr-list-depends-on k p (cadddr n))))
-           :hints(("Goal" :in-theory (e/d (break-g-number
-                                           default-car default-cdr)
-                                          ((pbfr-list-depends-on)))))))
-
-  (local (in-theory (disable gobj-depends-on
-                             set::double-containment
-                             default-<-1
-                             default-<-2)))
-
-  (defthm gobj-depends-on-of-mk-g-number
-    (implies (and (or (integerp rnum)
-                      (not (pbfr-list-depends-on k p rnum)))
-                  (or (natp rden)
-                      (not (pbfr-list-depends-on k p rden)))
-                  (or (integerp inum)
-                      (not (pbfr-list-depends-on k p inum)))
-                  (or (natp iden)
-                      (not (pbfr-list-depends-on k p iden))))
-             (not (gobj-depends-on k p (mk-g-number-fn rnum rden inum iden))))
-    :hints(("Goal" :in-theory (e/d (mk-g-number-fn
-                                    (:t components-to-number-fn))
-                                   ((pbfr-list-depends-on) max
-                                    gobj-depends-on
-                                    bfr-list->s
-                                    bfr-list->u
-                                    norm-bvec-s
-                                    norm-bvec-u))
-            :expand ((:free (a b c d)
-                      (gobj-depends-on k p
-                       (components-to-number-fn a b c d)))
-                     (mk-g-number-fn rnum rden inum iden))))))
 
 
 
@@ -533,7 +386,7 @@
     (implies (and (not (gobj-depends-on k p x))
                   (NOT (EQUAL (TAG X) :G-CONCRETE))
                   (NOT (EQUAL (TAG X) :G-BOOLEAN))
-                  (NOT (EQUAL (TAG X) :G-NUMBER))
+                  (NOT (EQUAL (TAG X) :G-INTEGER))
                   (NOT (EQUAL (TAG X) :G-ITE))
                   (NOT (EQUAL (TAG X) :G-VAR))
                   (NOT (EQUAL (TAG X) :G-APPLY)))
@@ -543,7 +396,7 @@
     (implies (and (not (gobj-depends-on k p x))
                   (NOT (EQUAL (TAG X) :G-CONCRETE))
                   (NOT (EQUAL (TAG X) :G-BOOLEAN))
-                  (NOT (EQUAL (TAG X) :G-NUMBER))
+                  (NOT (EQUAL (TAG X) :G-INTEGER))
                   (NOT (EQUAL (TAG X) :G-ITE))
                   (NOT (EQUAL (TAG X) :G-VAR))
                   (NOT (EQUAL (TAG X) :G-APPLY)))
@@ -554,26 +407,10 @@
                   (eq (tag x) :g-boolean))
              (not (pbfr-depends-on k p (g-boolean->bool x)))))
 
-  (defthm gobj-depends-on-of-g-number->num-0
+  (defthm gobj-depends-on-of-g-integer->bits
     (implies (and (not (gobj-depends-on k p x))
-                  (eq (tag x) :g-number))
-             (not (pbfr-list-depends-on k p (mv-nth 0 (break-g-number (g-number->num x)))))))
-
-  (defthm gobj-depends-on-of-g-number->num-1
-    (implies (and (not (gobj-depends-on k p x))
-                  (eq (tag x) :g-number))
-             (not (pbfr-list-depends-on k p (mv-nth 1 (break-g-number (g-number->num x)))))))
-
-  (defthm gobj-depends-on-of-g-number->num-2
-    (implies (and (not (gobj-depends-on k p x))
-                  (eq (tag x) :g-number))
-             (not (pbfr-list-depends-on k p (mv-nth 2 (break-g-number (g-number->num x)))))))
-
-  (defthm gobj-depends-on-of-g-number->num-3
-    (implies (and (not (gobj-depends-on k p x))
-                  (eq (tag x) :g-number))
-             (not (pbfr-list-depends-on k p (mv-nth 3 (break-g-number
-                                                       (g-number->num x)))))))
+                  (eq (tag x) :g-integer))
+             (not (pbfr-list-depends-on k p (g-integer->bits x)))))
 
   (defthm-gobj-flag
     (defthm generic-geval-of-set-var-when-gobj-depends-on
@@ -620,14 +457,6 @@
            (not (and (not (gobj-depends-on k p test))
                      (not (gobj-depends-on k p then))
                      (not (gobj-depends-on k p else))))))
-
-  (defthm gobj-depends-on-of-g-number
-    (equal (gobj-depends-on k p (g-number num))
-           (not (b* (((mv rn rd in id) (break-g-number num)))
-                  (and (not (pbfr-list-depends-on k p rn))
-                       (not (pbfr-list-depends-on k p rd))
-                       (not (pbfr-list-depends-on k p in))
-                       (not (pbfr-list-depends-on k p id)))))))
 
   (defthm gobj-depends-on-of-g-boolean
     (equal (gobj-depends-on k p (g-boolean bool))

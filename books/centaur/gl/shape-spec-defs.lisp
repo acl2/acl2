@@ -35,26 +35,7 @@
 ; cert_param: (non-acl2r)
 
 
-
-;; An shape spec is an object that is similar to a g object, but a) where there
-;; would be BDDs in a g object, there are natural numbers in an shape spec, and
-;; b) no G-APPLY constructs are allowed in an shape spec.
-
-(defund number-specp (nspec)
-  (declare (xargs :guard t))
-  (and (true-listp nspec)
-       (<= (len nspec) 4)
-       (nat-listp (car nspec))
-       (nat-listp (cadr nspec))
-       (nat-listp (caddr nspec))
-       (nat-listp (cadddr nspec))
-       (or (not (cdr nspec))
-           (consp (cadr nspec)))
-       (or (not (cdddr nspec))
-           (consp (cadddr nspec)))))
-
-(defagg g-integer (sign bits var))
-(defagg g-integer? (sign bits var intp))
+(defagg g-number (num))
 (defagg g-call (fn args inverse))
 
 (defund ss-unary-functionp (x)
@@ -85,16 +66,11 @@
     :measure (acl2-count x)
     (if (atom x)
         (and (not (g-keyword-symbolp x))
-             (not (member x '(:g-integer :g-integer? :g-call))))
+             (not (member x '(:g-number :g-call))))
       (case (tag x)
-        (:g-number (number-specp (g-number->num x)))
-        (:g-integer (and (natp (g-integer->sign x))
-                         (nat-listp (g-integer->bits x))
-                         (variablep (g-integer->var x))))
-        (:g-integer? (and (natp (g-integer?->sign x))
-                          (nat-listp (g-integer?->bits x))
-                          (natp (g-integer?->intp x))
-                          (variablep (g-integer?->var x))))
+        (:g-integer (nat-listp (g-integer->bits x)))
+        (:g-number (and (consp (g-number->num x))
+                        (nat-listp (car (g-number->num x)))))
         (:g-boolean (natp (g-boolean->bool x)))
         (:g-concrete t)
         (:g-var (variablep (g-var->name x)))
@@ -114,30 +90,20 @@
       (implies (atom x)
                (equal (shape-specp x)
                       (and (not (g-keyword-symbolp x))
-                           (not (member x '(:g-integer :g-integer? :g-call))))))
+                           (not (member x '(:g-number :g-call))))))
       :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
     (defthm shape-specp-when-g-number
       (implies (equal (tag x) :g-number)
                (equal (shape-specp x)
-                      (number-specp (g-number->num x))))
+                      (and (consp (g-number->num x))
+                           (nat-listp (car (g-number->num x))))))
       :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
     (defthm shape-specp-when-g-integer
       (implies (equal (tag x) :g-integer)
                (equal (shape-specp x)
-                       (and (natp (g-integer->sign x))
-                            (nat-listp (g-integer->bits x))
-                            (variablep (g-integer->var x)))))
-      :rule-classes ((:rewrite :backchain-limit-lst 0)))
-
-    (defthm shape-specp-when-g-integer?
-      (implies (equal (tag x) :g-integer?)
-               (equal (shape-specp x)
-                      (and (natp (g-integer?->sign x))
-                           (nat-listp (g-integer?->bits x))
-                           (natp (g-integer?->intp x))
-                           (variablep (g-integer?->var x)))))
+                      (nat-listp (g-integer->bits x))))
       :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
     (defthm shape-specp-when-g-boolean
@@ -179,7 +145,6 @@
                     (not (equal (tag x) :g-number))
                     (not (equal (tag x) :g-boolean))
                     (not (equal (tag x) :g-integer))
-                    (not (equal (tag x) :g-integer?))
                     (not (equal (tag x) :g-concrete))
                     (not (equal (tag x) :g-var))
                     (not (equal (tag x) :g-ite))
@@ -221,7 +186,7 @@
    (if (atom x)
        x
      (case (tag x)
-       ((:g-number :g-integer :g-integer? :g-boolean :g-concrete :g-var) x)
+       ((:g-integer :g-number :g-boolean :g-concrete :g-var) x)
        (:g-ite (list (shape-spec-ind (g-ite->test x))
                      (shape-spec-ind (g-ite->then x))
                      (shape-spec-ind (g-ite->else x))))
@@ -249,10 +214,8 @@
   (if (atom x)
       (iff x obj)
     (pattern-match x
-      ((g-number &)
-       (bool-fix obj))
-      ((g-integer & & &) (bool-fix obj))
-      ((g-integer? & & & &) t)
+      ((g-integer &) (bool-fix obj))
+      ((g-number &) (bool-fix obj))
       ((g-boolean &) t)
       ((g-var &) t)
       ((g-ite if then else)
@@ -274,35 +237,14 @@
          (and (<= (- (ash 1 (len (cdr vlist)))) obj)
               (< obj (ash 1 (len (cdr vlist))))))))
 
-(defund natural-in-range (vlist obj)
-  (declare (xargs :guard t))
-  (and (natp obj)
-       (and (<= 0 obj)
-            (< obj (ash 1 (len vlist))))))
-
-(defund number-spec-in-range (nspec obj)
-  (declare (xargs :guard (number-specp nspec)
-                  :guard-hints(("Goal" :in-theory (enable number-specp)))))
-  (and (acl2-numberp obj)
-       (integer-in-range (car nspec) (numerator (realpart obj)))
-       (if (consp (cdr nspec))
-           (natural-in-range (cadr nspec) (denominator (realpart obj)))
-         (integerp obj))
-       (integer-in-range (caddr nspec) (numerator (imagpart obj)))
-       (if (consp (cdddr nspec))
-           (natural-in-range
-            (cadddr nspec) (denominator (imagpart obj)))
-         (integerp (imagpart obj)))))
-
 (defund shape-spec-obj-in-range (x obj)
   (declare (xargs :guard (shape-specp x)
                   :guard-hints(("Goal" :in-theory (enable shape-specp)))))
   (if (atom x)
       (equal x obj)
     (pattern-match x
-      ((g-number n) (number-spec-in-range n obj))
-      ((g-integer & & &) (integerp obj))
-      ((g-integer? & & & &) t)
+      ((g-integer bits) (integer-in-range bits obj))
+      ((g-number num) (integer-in-range (car num) obj))
       ((g-boolean &) (booleanp obj))
       ((g-var &) t)
       ((g-concrete y) (equal y obj))
@@ -342,47 +284,6 @@
     (true-listp alist)
     :rule-classes :type-prescription))
 
-
-
-(define number-spec-env-slice ((nspec number-specp)
-                               obj)
-  :guard-hints (("goal" :in-theory (enable number-specp)))
-  :returns (alist alistp)
-  (b* ((obj (fix obj))
-       (rn-bspec
-        (integer-env-slice (car nspec) (numerator (realpart obj))))
-       (rd-bspec
-        (integer-env-slice (cadr nspec) (denominator (realpart obj))))
-       (in-bspec
-        (integer-env-slice (caddr nspec) (numerator (imagpart obj))))
-       (id-bspec
-        (integer-env-slice (cadddr nspec) (denominator (imagpart obj)))))
-    (append rn-bspec rd-bspec in-bspec id-bspec))
-  ///
-  (std::defret true-listp-number-spec-env-slice
-    (true-listp alist)
-    :rule-classes :type-prescription))
-
-(define g-integer-env-slice ((sign natp)
-                             (bits nat-listp)
-                             var obj)
-  :returns (mv (bvar-alist alistp)
-               (gvar-alist alistp))
-  (b* ((obj (ifix obj))
-       (slice (integer-env-slice bits (loghead (len bits) obj)))
-       (rest (logtail (len bits) obj))
-       (signval (< rest 0)))
-    (mv (cons (cons sign signval)
-              slice)
-        (list (cons var rest))))
-  ///
-  (std::defret true-listp-of-g-integer-env-slice-bvar-alist
-    (true-listp bvar-alist)
-    :rule-classes :type-prescription)
-  (std::defret true-listp-of-g-integer-env-slice-gvar-alist
-    (true-listp gvar-alist)
-    :rule-classes :type-prescription))
-
 (defines shape-spec-arbitrary-slice
   :verify-guards nil
   (define shape-spec-arbitrary-slice ((x shape-specp))
@@ -392,13 +293,9 @@
         (mv nil nil)
       (pattern-match x
         ((g-number nspec)
-         (mv (number-spec-env-slice nspec 0) nil))
-        ((g-integer sign bits var)
-         (g-integer-env-slice sign bits var 0))
-        ((g-integer? sign bits var intp)
-         (mv-let (bsl vsl)
-           (g-integer-env-slice sign bits var 0)
-           (mv (cons (cons intp t) bsl) vsl)))
+         (mv (integer-env-slice (car nspec) 0) nil))
+        ((g-integer bits)
+         (mv (integer-env-slice bits 0) nil))
         ((g-boolean n) (mv (list (cons n nil)) nil))
         ((g-var v) (mv nil (list (cons v nil))))
         ((g-ite if then else)
@@ -464,17 +361,10 @@
   (if (atom x)
       (mv nil nil)
     (pattern-match x
+      ((g-integer bits)
+       (mv (integer-env-slice bits 0) nil))
       ((g-number nspec)
-       (mv (number-spec-env-slice nspec 0) nil))
-      ((g-integer sign bits var)
-       (g-integer-env-slice sign bits var 0))
-      ((g-integer? sign bits var intp)
-       (mv-let (bsl vsl)
-         (g-integer-env-slice sign bits var 0)
-         (if obj
-             (mv (cons (cons intp t) bsl) vsl)
-           (mv (cons (cons intp nil) bsl)
-               (list (cons var nil))))))
+       (mv (integer-env-slice (car nspec) 0) nil))
       ((g-boolean n) (mv (list (cons n (bool-fix obj))) nil))
       ((g-var v) (mv nil (list (cons v (bool-fix obj)))))
       ((g-ite if then else)
@@ -517,17 +407,10 @@
   (if (atom x)
       (mv nil nil)
     (pattern-match x
+      ((g-integer bits)
+       (mv (integer-env-slice bits (ifix obj)) nil))
       ((g-number nspec)
-       (mv (number-spec-env-slice nspec obj) nil))
-      ((g-integer sign bits var)
-       (g-integer-env-slice sign bits var obj))
-      ((g-integer? sign bits var intp)
-       (mv-let (bsl vsl)
-         (g-integer-env-slice sign bits var obj)
-         (if (integerp obj)
-             (mv (cons (cons intp t) bsl) vsl)
-           (mv (cons (cons intp nil) bsl)
-               (list (cons var obj))))))
+       (mv (integer-env-slice (car nspec) (ifix obj)) nil))
       ((g-boolean n)
        (mv (list (cons n obj))
            nil))
@@ -586,15 +469,6 @@
    :rule-classes (:rewrite :forward-chaining)))
 
 
-(defund number-spec-indices (nspec)
-  (declare (xargs :guard (number-specp nspec)
-                  :guard-hints (("goal" :in-theory (enable number-specp)))))
-  (append (car nspec)
-          (cadr nspec)
-          (caddr nspec)
-          (cadddr nspec)))
-
-
 (mutual-recursion
  (defun shape-spec-indices (x)
    (declare (xargs :guard (shape-specp x)
@@ -602,12 +476,8 @@
    (if (atom x)
        nil
      (pattern-match x
-       ((g-number nspec)
-        (number-spec-indices nspec))
-       ((g-integer sign bits &)
-        (cons sign bits))
-       ((g-integer? sign bits & intp)
-        (list* intp sign bits))
+       ((g-number nspec) (car nspec))
+       ((g-integer bits) bits)
        ((g-boolean n) (list n))
        ((g-var &) nil)
        ((g-ite if then else)
@@ -634,18 +504,6 @@
     (cons (bfr-var (lnfix (car lst)))
           (numlist-to-vars (cdr lst)))))
 
-(defund num-spec-to-num-gobj (nspec)
-  (declare (xargs :guard (number-specp nspec)
-                  :guard-hints (("goal" :in-theory (enable number-specp)))))
-  (cons (numlist-to-vars (car nspec))
-        (and (consp (cdr nspec))
-             (cons (numlist-to-vars (cadr nspec))
-                   (and (consp (cddr nspec))
-                        (cons (numlist-to-vars (caddr nspec))
-                              (and (consp (cdddr nspec))
-                                   (list (numlist-to-vars
-                                          (cadddr nspec))))))))))
-
 (mutual-recursion
  (defun shape-spec-to-gobj (x)
    (declare (xargs :guard (shape-specp x)
@@ -655,27 +513,8 @@
        x
      (pattern-match x
        ((g-number nspec)
-        (g-number (num-spec-to-num-gobj nspec)))
-       ((g-integer sign bits var)
-        (g-apply 'logapp
-                 (list (len bits)
-                       (g-number (list (bfr-logapp-nus
-                                        (len bits) (numlist-to-vars bits) nil)))
-                       (g-apply 'int-set-sign
-                                (list (g-boolean (bfr-var (lnfix sign)))
-                                      (g-var var))))))
-       ((g-integer? sign bits var intp)
-        (g-apply 'maybe-integer
-                 (list
-                  (g-apply 'logapp
-                           (list (len bits)
-                                 (g-number (list (bfr-logapp-nus
-                                                  (len bits) (numlist-to-vars bits) nil)))
-                                 (g-apply 'int-set-sign
-                                          (list (g-boolean (bfr-var (lnfix sign)))
-                                                (g-var var)))))
-                  (g-var var)
-                  (g-boolean (bfr-var (lnfix intp))))))
+        (g-integer (numlist-to-vars (car nspec))))
+       ((g-integer bits) (g-integer (numlist-to-vars bits)))
        ((g-boolean n) (g-boolean (bfr-var (lnfix n))))
        ((g-var &) x)
        ((g-ite if then else)
@@ -710,17 +549,9 @@
     (if (atom x)
         0
       (case (tag x)
-        (:g-number (b* ((num (g-number->num x))
-                        ((list rn rd in id) num))
-                     (max (nat-list-max rn)
-                          (max (nat-list-max rd)
-                               (max (nat-list-max in)
-                                    (nat-list-max id))))))
-        (:g-integer (max (+ 1 (lnfix (g-integer->sign x)))
-                         (nat-list-max (g-integer->bits x))))
-        (:g-integer? (max (+ 1 (lnfix (g-integer?->sign x)))
-                          (max (+ 1 (lnfix (g-integer?->intp x)))
-                               (nat-list-max (g-integer?->bits x)))))
+        (:g-number (b* ((num (g-number->num x)))
+                     (nat-list-max (car num))))
+        (:g-integer (nat-list-max (g-integer->bits x)))
         (:g-boolean (+ 1 (lnfix (g-boolean->bool x))))
         (:g-concrete 0)
         (:g-var 0)
@@ -739,8 +570,7 @@
   ///
   (verify-guards shape-spec-max-bvar
     :hints (("goal" :expand ((shape-specp x)
-                             (shape-spec-listp x))
-             :in-theory (enable number-specp)))))
+                             (shape-spec-listp x))))))
 
 
 

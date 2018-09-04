@@ -66,16 +66,8 @@
           (gret (g-apply 'integer-length (gl-list x))))
          ((g-boolean &) (gret 0))
          ((g-concrete obj) (gret (ec-call (integer-length obj))))
-         ((g-number num)
-          (mv-let (arn ard ain aid)
-            (break-g-number num)
-            (g-if (gret (mk-g-boolean (hyp-fix (bfr-or (bfr-=-uu aid nil)
-                                                       (bfr-=-ss ain nil)) hyp)))
-                  (g-if (gret (equal ard '(t)))
-                        (let ((res (list-fix (bfr-integer-length-s arn))))
-                          (gret (mk-g-number res 1 0 1)))
-                        (gret (g-apply 'integer-length (gl-list x))))
-                  (gret 0))))
+         ((g-integer bits)
+          (gret (mk-g-integer (bfr-integer-length-s (list-fix bits)))))
          (& (gret 0))))))
 
 ;; (local (defthm gobjectp-integer-length
@@ -128,7 +120,7 @@
 
 
 (def-g-correct-thm integer-length eval-g-base
-  :hints `(("Goal" :in-theory (e/d (components-to-number)
+  :hints `(("Goal" :in-theory (e/d ()
                                    ((:definition ,gfn)
                                     general-concretep-def
                                     eval-g-base-alt-def

@@ -40,89 +40,38 @@
 (local (include-book "clause-processors/just-expand" :dir :system))
 (set-inhibit-warnings "theory")
 
-(defun g-ash-of-numbers (i c)
-  (declare (xargs :guard (and (general-numberp i)
-                              (general-numberp c))))
-  (b* (((mv irn ird iin iid)
-        (general-number-components i))
-       ((mv crn crd cin cid)
-        (general-number-components c))
-       ((mv iintp iintp-known)
-        (if (equal ird '(t))
-            (mv (bfr-or (bfr-=-ss iin nil) (bfr-=-uu iid nil)) t)
-          (mv nil nil)))
-       ((mv cintp cintp-known)
-        (if (equal crd '(t))
-            (mv (bfr-or (bfr-=-ss cin nil) (bfr-=-uu cid nil)) t)
-          (mv nil nil))))
-    (if (and cintp-known iintp-known)
-        (mk-g-number
-         (list-fix
-          (bfr-ash-ss 1 (bfr-ite-bss-fn iintp irn nil)
-                  (bfr-ite-bss-fn cintp crn nil))))
-      (g-apply 'ash (gl-list i c)))))
+(defun g-ash-of-integers (i c)
+  (declare (xargs :guard (and (general-integerp i)
+                              (general-integerp c))))
+  (mk-g-integer (bfr-ash-ss 1 (general-integer-bits i)
+                            (general-integer-bits c))))
 
-(in-theory (disable (g-ash-of-numbers)))
+(in-theory (disable (g-ash-of-integers)))
 
-(defthm deps-of-g-ash-of-numbers
+(defthm deps-of-g-ash-of-integers
   (implies (and (not (gobj-depends-on k p i))
                 (not (gobj-depends-on k p c))
-                (general-numberp i)
-                (general-numberp c))
-           (not (gobj-depends-on k p (g-ash-of-numbers i c)))))
-
-(local
- (progn
-   ;; (defthmd not-integerp-bfr-listp
-   ;;   (implies (bfr-listp x)
-   ;;            (not (integerp x)))
-   ;;   :hints(("Goal" :in-theory (enable bfr-listp))))
+                (general-integerp i)
+                (general-integerp c))
+           (not (gobj-depends-on k p (g-ash-of-integers i c)))))
 
 
-   ;; (defthm not-integerp-bfr-ash-ss
-   ;;   (not (integerp (bfr-ash-ss place n shamt)))
-   ;;   :hints(("Goal" :in-theory (enable bfr-ash-ss))))
 
-
-   (defthm ash-complex-1
-     (implies (not (equal (imagpart n) 0))
-              (equal (ash n shamt) (ash 0 shamt)))
-     :hints(("Goal" :in-theory (enable ash))))
-
-   (defthm ash-complex-2
-     (implies (not (equal (imagpart shamt) 0))
-              (equal (ash n shamt) (ash n 0)))
-     :hints(("Goal" :in-theory (enable ash))))
-
-   ;; (defthm gobjectp-g-ash-of-numbers
-   ;;   (implies (and (gobjectp x)
-   ;;                 (general-numberp x)
-   ;;                 (gobjectp y)
-   ;;                 (general-numberp y))
-   ;;            (gobjectp (g-ash-of-numbers x y)))
-   ;;   :hints(("Goal" :in-theory (disable general-numberp
-   ;;                                      general-number-components))))
-
-   (include-book "arithmetic/top-with-meta" :dir :system)
-
-   (defthm g-ash-of-numbers-correct
-     (implies (and (general-numberp x)
-                   (general-numberp y))
-              (equal (eval-g-base (g-ash-of-numbers x y) env)
-                     (ash (eval-g-base x env)
-                          (eval-g-base y env))))
-     :hints (("goal" :in-theory (e/d* ((:ruleset general-object-possibilities))
-                                      (general-numberp
-                                       general-number-components))
-              :do-not-induct t)))))
-
-(in-theory (disable g-ash-of-numbers))
+(defthm g-ash-of-integers-correct
+  (implies (and (general-integerp x)
+                (general-integerp y))
+           (equal (eval-g-base (g-ash-of-integers x y) env)
+                  (ash (eval-g-base x env)
+                       (eval-g-base y env))))
+  :hints (("goal" :in-theory (e/d* ((:ruleset general-object-possibilities))
+                                   (general-integerp))
+           :do-not-induct t)))
 
 
 (def-g-binary-op ash
-  (b* ((i-num (if (general-numberp i) i 0))
-       (c-num (if (general-numberp c) c 0)))
-    (gret (g-ash-of-numbers i-num c-num))))
+  (b* ((i-num (if (general-integerp i) i 0))
+       (c-num (if (general-integerp c) c 0)))
+    (gret (g-ash-of-integers i-num c-num))))
 
 
 ;; (def-gobjectp-thm ash
@@ -144,14 +93,10 @@
  :hints `(("Goal" :in-theory (disable ,gfn))))
 
 
-
-
-(local (defthm ash-when-not-numberp
-         (and (implies (not (acl2-numberp x))
-                       (equal (ash x y) (ash 0 y)))
-              (implies (not (acl2-numberp y))
-                       (equal (ash x y) (ash x 0))))
-         :hints(("Goal" :in-theory (enable ash)))))
+(local (defthm pbfr-list-depends-on-of-empty
+         (not (pbfr-list-depends-on k p '(nil)))
+         :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
+         
 
 (def-gobj-dependency-thm ash
   :hints `(("goal" :in-theory (e/d ((:i ,gfn))
@@ -159,36 +104,20 @@
                                     gobj-depends-on)))
            (acl2::just-induct-and-expand ,gcall)))
 
+
+(local (defthm ash-of-non-integers
+         (and (implies (not (integerp i))
+                       (equal (ash i c) (ash 0 c)))
+              (implies (not (integerp c))
+                       (equal (ash i c) (ash i 0))))))
+
+(local (in-theory (disable ash)))
+
+
 (def-g-correct-thm ash eval-g-base
   :hints
-  `(("goal" :in-theory (e/d* (general-concretep-atom
-                              (:ruleset general-object-possibilities))
-                             ((:definition ,gfn)
-                              general-numberp-eval-to-numberp
-                              general-boolean-value-correct
-                              bool-cond-itep-eval
-                              general-consp-car-correct-for-eval-g-base
-                              general-consp-cdr-correct-for-eval-g-base
-                              boolean-listp
-                              components-to-number
-                              member-equal
-                              general-number-components-ev
-                              general-concretep-def
-                              general-concretep-def
-                              rationalp-implies-acl2-numberp
-                              ash
-                              logcons
-                              default-car default-cdr
-                              equal-of-booleans-rewrite
-                              bfr-list->s
-                              bfr-list->u
-                              hons-assoc-equal
-                              ;; eval-g-base-alt-def
-                              set::double-containment
-                              (:rules-of-class :type-prescription :here))
-                             ((:type-prescription bfr-eval)))
-     :do-not-induct t)
-    (acl2::just-induct-and-expand ,gcall)
-    (and stable-under-simplificationp
-         (flag::expand-calls-computed-hint
-          clause '(eval-g-base)))))
+  `(("goal" 
+     :in-theory (enable eval-g-base-list)
+     :induct ,gcall
+     :expand (,gcall)
+     :do-not-induct t)))

@@ -5607,9 +5607,7 @@
       :hints ('(:expand ((shape-spec-indices x)
                          (shape-spec-max-bvar x)
                          (bfr-varlist-bounded n nil)
-                         (:free (a b) (bfr-varlist-bounded n (cons a b))))
-                :in-theory (enable number-spec-indices
-                                   number-specp)))
+                         (:free (a b) (bfr-varlist-bounded n (cons a b))))))
       :flag ss)
     (defthm bfr-varlist-bounded-of-shape-spec-list-indices-by-shape-spec-max-bvar-list
       (implies (and (<= (shape-spec-max-bvar-list x) (nfix n))
@@ -6730,8 +6728,7 @@
              :hints ('(:expand ((shape-spec-indices x)
                                 (shape-spec-max-bvar x)
                                 (:free (x) (hide x)))
-                       :in-theory (enable number-spec-indices number-specp
-                                          acl2::natp-when-member-equal-of-nat-listp)))
+                       :in-theory (enable acl2::natp-when-member-equal-of-nat-listp)))
              :flag ss)
            (defthm member-shape-spec-list-indices-implies-less-than-max
              (implies (and (shape-spec-listp x))
@@ -8767,24 +8764,3 @@
     ;; :hints (("goal" :cases ((CONSP (GLMC-GENERIC-TERM-LEVEL-ALISTS CONFIG A)))))
     :otf-flg t
     :rule-classes :clause-processor))
-
-
-
-
-
-
-
-
-
-
-
-
-             
-       
-       
-                    
-
-
-
-
-

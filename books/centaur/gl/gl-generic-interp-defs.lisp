@@ -936,12 +936,12 @@ The definition body, ~x1, is not a pseudo-term."
        ;; The rest is just a heuristic determination of which should rewrite to
        ;; the other.
        (a-goodp (or (atom a)
-                    (member (tag a) '(:g-number :g-boolean))
+                    (member (tag a) '(:g-integer :g-boolean))
                     (general-concretep a)))
        ((when a-goodp)
         (add-term-equiv b bvar bvar-db))
        (b-goodp (or (atom b)
-                    (member (tag b) '(:g-number :g-boolean))
+                    (member (tag b) '(:g-integer :g-boolean))
                     (general-concretep b)))
        ((when b-goodp)
         (add-term-equiv a bvar bvar-db)))
