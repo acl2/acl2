@@ -464,15 +464,15 @@
                    (EQUAL (UNHIDE-EVAL2-LIST X-LST A)
                           (CONS (UNHIDE-EVAL2 (CAR X-LST) A)
                                 (UNHIDE-EVAL2-LIST (CDR X-LST) A)))))
-  (DEFTHM UNHIDE-EVAL2-constraint-7
+  (DEFTHM UNHIDE-EVAL2-constraint-8
           (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'HIDE))
                    (EQUAL (UNHIDE-EVAL2 X A)
                           (HIDE (UNHIDE-EVAL2 (CADR X) A)))))
-  (DEFTHM UNHIDE-EVAL2-constraint-8
+  (DEFTHM UNHIDE-EVAL2-constraint-9
           (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'UNHIDE))
                    (EQUAL (UNHIDE-EVAL2 X A)
                           (UNHIDE (UNHIDE-EVAL2 (CADR X) A)))))
-  (DEFTHM UNHIDE-EVAL2-constraint-9
+  (DEFTHM UNHIDE-EVAL2-constraint-10
           (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'FN))
                    (EQUAL (UNHIDE-EVAL2 X A)
                           (FN (UNHIDE-EVAL2 (CAR (CDR X)) A)

@@ -474,15 +474,15 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                 (:META MV-NTH-CONS-META)
                 (:REWRITE EVMETA-EV-CONSTRAINT-0)
                 (:REWRITE EVMETA-EV-CONSTRAINT-1)
-                (:REWRITE EVMETA-EV-constraint-15)
-                (:REWRITE EVMETA-EV-constraint-17)
-                (:REWRITE EVMETA-EV-constraint-20)
+                (:REWRITE EVMETA-EV-constraint-16)
+                (:REWRITE EVMETA-EV-constraint-18)
+                (:REWRITE EVMETA-EV-constraint-21)
                 (:REWRITE EVMETA-EV-CONSTRAINT-2)
-                (:REWRITE EVMETA-EV-constraint-23)
+                (:REWRITE EVMETA-EV-constraint-24)
                 (:REWRITE EVMETA-EV-CONSTRAINT-4)
                 (:REWRITE EVMETA-EV-CONSTRAINT-5)
-                (:REWRITE EVMETA-EV-constraint-7)
-                (:REWRITE EVMETA-EV-constraint-10)
+                (:REWRITE EVMETA-EV-constraint-8)
+                (:REWRITE EVMETA-EV-constraint-11)
                 (:REWRITE EVMETA-EV-EV-APPLY-ARGLIST)
                 (:REWRITE EVMETA-EV-LST-TERM-LIST-OF-NTHS)
                 (:REWRITE EVMETA-EV-THEOREMP-CONJOIN-CLAUSES-CONS)
@@ -804,6 +804,7 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                  (caddar x)
                  (pairlis$ (cadar x) args)
                  appalist))
+               ((unless (mbt (symbolp (car x)))) nil)
                ((mv ok val)
                 (_name_-apply (car x) args))
                ((when ok) val))
@@ -859,6 +860,7 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                                    kwote nfix
                                    _name_-ev-of-fncall-args
                                    _name_-ev-of-nonsymbol-atom
+                                   _name_-ev-of-bad-fncall
                                    (cons) (equal) (member-equal) (eql)
                                    car-cons cdr-cons _name_-eval-nth-kwote-lst
                                    list-fix-when-true-listp

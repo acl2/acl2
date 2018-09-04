@@ -645,7 +645,8 @@
                     ,(ev-find-quote-rule 'evfn (w state))
                     ,(ev-find-variable-rule 'evfn (w state))
                     ,(ev-find-lambda-rule 'evfn (w state))
-                    ,(ev-find-nonsymbol-atom-rule 'evfn (w state))))))
+                    ,(ev-find-nonsymbol-atom-rule 'evfn (w state))
+                    ,(ev-find-bad-fncall-rule 'evfn (w state))))))
 
      (def-functional-instance
        evfn-meta-extract-typeset

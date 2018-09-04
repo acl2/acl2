@@ -80,6 +80,7 @@
                         (evfn (car (cdr (cdr (car x))))
                               (pairlis$ (car (cdr (car x)))
                                         args)))
+                       ((not (symbolp (car x))) nil)
                        (t (apply-for-defevaluator (car x) args)))))))
                 (defun-nx evfn-lst (x-lst a)
                   (declare (xargs :measure (acl2-count x-lst)

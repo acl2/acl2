@@ -539,7 +539,9 @@
                                              ,(incat ev (symbol-name ev)
                                                      "-OF-FNCALL-ARGS")
                                              ,(incat ev (symbol-name ev)
-                                                     "-OF-NONSYMBOL-ATOM")))))))
+                                                     "-OF-NONSYMBOL-ATOM")
+                                             ,(incat ev (symbol-name ev)
+                                                     "-OF-BAD-FNCALL")))))))
 
          ;; Prove correctness of the clause processor.
          (defthm ,correct-thm
