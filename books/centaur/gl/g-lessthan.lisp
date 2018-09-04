@@ -33,38 +33,33 @@
 (include-book "g-primitives-help")
 (include-book "symbolic-arithmetic")
 (include-book "eval-g-base")
-
+(include-book "and-star")
 (local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix"))
 
-(defun g-<-of-numbers (a b)
-  (declare (xargs :guard (and (general-numberp a)
-                              (general-numberp b))))
-  (b* (((mv arn ard ain aid)
-        (general-number-components a))
-       ((mv brn brd bin bid)
-        (general-number-components b)))
+(defun g-<-of-integers (a b)
+  (declare (xargs :guard (and (general-integerp a)
+                              (general-integerp b))))
+  (mk-g-boolean (bfr-<-ss (general-integer-bits a)
+                          (general-integer-bits b))))
 
-    (if (and (equal ard brd)
-             (equal aid bid))
-        (mk-g-boolean
-         (bfr-ite (bfr-=-uu ard nil)
-                  (bfr-and (bfr-not (bfr-=-uu aid nil))
-                           (bfr-<-ss ain bin))
-                  (bfr-or (bfr-<-ss arn brn)
-                          (bfr-and (bfr-not (bfr-=-uu aid nil))
-                                   (bfr-<-ss ain bin)
-                                   (bfr-=-ss arn brn)))))
-      (g-apply '< (gl-list a b)))))
-
-(defthm deps-of-g-<-of-numbers
+(defthm deps-of-g-<-of-integers
   (implies (and (not (gobj-depends-on k p a))
                 (not (gobj-depends-on k p b))
-                (general-numberp a)
-                (general-numberp b))
-           (not (gobj-depends-on k p (g-<-of-numbers a b)))))
+                (general-integerp a)
+                (general-integerp b))
+           (not (gobj-depends-on k p (g-<-of-integers a b)))))
 
-(in-theory (disable (g-<-of-numbers)))
+(in-theory (disable (g-<-of-integers)))
+
+(defthm g-<-of-integers-correct
+     (implies (and (general-integerp a)
+                   (general-integerp b))
+              (equal (eval-g-base (g-<-of-integers a b) env)
+                     (< (eval-g-base a env)
+                        (eval-g-base b env))))
+     :hints (("goal" :do-not-induct t
+              :in-theory (e/d* ((:ruleset general-object-possibilities))))))
 
 (local
  (encapsulate nil
@@ -106,39 +101,116 @@
      :hints (("goal" :use ((:instance completion-of-<
                             (x a) (y (complex b c)))))))))
 
-(local
- (progn
-   ;; (defthm gobjectp-g-<-of-numbers
-   ;;   (implies (and (gobjectp a)
-   ;;                 (general-numberp a)
-   ;;                 (gobjectp b)
-   ;;                 (general-numberp b))
-   ;;            (gobjectp (g-<-of-numbers a b))))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
-   (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (defthm foo
+         (implies (and (< n d)
+                       (natp n)
+                       (posp d))
+                  (< (/ n d) 1))
+         :hints (("goal" :nonlinearp t))
+         :rule-classes nil))
 
-   (defthm g-<-of-numbers-correct
-     (implies (and (general-numberp a)
-                   (general-numberp b))
-              (equal (eval-g-base (g-<-of-numbers a b) env)
-                     (< (eval-g-base a env)
-                        (eval-g-base b env))))
-     :hints (("goal" :do-not-induct t
-              :in-theory (e/d* ((:ruleset general-object-possibilities))))))))
+(local (defun nonnegative-integer-quotient-preserves-<-ind (x i j)
+         (if (or (= (nfix j) 0) (< (ifix i) j))
+             x
+           (nonnegative-integer-quotient-preserves-<-ind (+ -1 x) (- i j) j))))
 
-(in-theory (disable g-<-of-numbers))
+(local (defthm nonnegative-integer-quotient-preserves-<
+         (implies (and (natp n)
+                       (posp d)
+                       (integerp x))
+                  (iff (< (nonnegative-integer-quotient n d) x)
+                       (< (/ n d) x)))
+         :hints(("Goal" :in-theory (enable nonnegative-integer-quotient)
+                 :induct (nonnegative-integer-quotient-preserves-<-ind x n d))
+                (and stable-under-simplificationp
+                     '(:nonlinearp t)))))
+
+(local (defthm nonnegative-integer-quotient-preserves->
+         (implies (and (natp n)
+                       (posp d)
+                       (integerp x))
+                  (iff (< x (nonnegative-integer-quotient n d))
+                       (if (integerp (/ n d))
+                           (< x (/ n d))
+                         (< x (+ -1 (/ n d))))))
+         :hints(("Goal" :in-theory (enable nonnegative-integer-quotient)
+                 :induct (nonnegative-integer-quotient-preserves-<-ind x n d))
+                (and stable-under-simplificationp
+                     '(:use foo
+                       :in-theory (disable ACL2::<-*-/-LEFT-COMMUTED))))))
+
+(local (defthm switch-minus-quotient
+         (and (iff (< (- (nonnegative-integer-quotient n d)) x)
+                   (> (nonnegative-integer-quotient n d) (- x)))
+              (iff (> (- (nonnegative-integer-quotient n d)) x)
+                   (< (nonnegative-integer-quotient n d) (- x))))))
+
+(local (defthm switch-quotient+1
+         (and (iff (< (+ 1 (nonnegative-integer-quotient n d)) x)
+                   (< (nonnegative-integer-quotient n d) (+ -1 x)))
+              (iff (> (+ 1 (nonnegative-integer-quotient n d)) x)
+                   (> (nonnegative-integer-quotient n d) (+ -1 x))))))
+
+
+
+(local (defthm switch-quotient-minus1
+         (and (iff (< (+ -1 (- (nonnegative-integer-quotient n d))) x)
+                   (> (nonnegative-integer-quotient n d) (- (+ 1 x))))
+              (iff (> (+ -1 (- (nonnegative-integer-quotient n d))) x)
+                   (< (nonnegative-integer-quotient n d) (- (+ 1 x)))))))
+
+(defun ceil (x)
+  (declare (xargs :guard (acl2-numberp x)))
+  (if (integerp (realpart x))
+      (if (< 0 (imagpart x))
+          (+ 1 (realpart x))
+        (realpart x))
+    (ceiling (realpart x) 1)))
+
+(local (defthm <-of-ceil
+         (implies (and (integerp x))
+                  (equal (< x (ceil y))
+                         (< x y)))
+         :hints (("goal" :use completion-of-<))))
+
+(defun flo (x)
+  (declare (xargs :guard (acl2-numberp x)))
+  (if (integerp (realpart x))
+      (if (< (imagpart x) 0)
+          (+ -1 (realpart x))
+        (realpart x))
+    (floor (realpart x) 1)))
+
+(local (defthm <-of-flo
+         (implies (and (integerp y))
+                  (equal (< (flo x) y)
+                         (< x y)))
+         :hints (("goal" :use completion-of-<))))
+
+
+(in-theory (disable g-<-of-integers))
 
 (def-g-binary-op <
-  (b* ((x-num (if (general-numberp x) x 0))
-       (y-num (if (general-numberp y) y 0)))
-    (gret (g-<-of-numbers x-num y-num))))
+  (b* ((x (general-number-fix x))
+       (y (general-number-fix y))
+       (x-concretep (general-concretep x))
+       (y-concretep (general-concretep y))
+       ((when (and** x-concretep y-concretep)) (gret (ec-call (< (general-concrete-obj x)
+                                                               (general-concrete-obj y)))))
+       ((when (and** (not x-concretep) (not y-concretep)))
+        (gret (g-<-of-integers x y)))
+       (xval (if x-concretep (flo (general-concrete-obj x)) x))
+       (yval (if y-concretep (ceil (general-concrete-obj y)) y)))
+    (gret (g-<-of-integers xval yval))))
 
 ;; (def-gobjectp-thm <
 ;; :hints `(("Goal" :in-theory (e/d* (booleanp-gobjectp
 ;;                                    boolean-listp-bfr-listp
 ;;                                    gobjectp-of-atomic-constants)
 ;;                                   ((:definition ,gfn)
-;;                                    number-to-components
+;;                                    integer-to-components
 ;;                                    general-concretep-def
 ;;                                    gobj-fix-when-not-gobjectp
 ;;                                    gobj-fix-when-gobjectp
@@ -148,27 +220,55 @@
 ;;           :induct (,gfn x y hyp clk)
 ;;           :expand ((,gfn x y hyp clk)))))
 
+; (local (in-theory (disable general-concrete-obj-when-atom)))
+(local (in-theory (disable flo ceil)))
+
 (verify-g-guards
- < :hints `(("Goal" :in-theory (disable* ,gfn general-concretep-def))))
+ < :hints `(("Goal" :in-theory (e/d* ((:ruleset general-object-possibilities))
+                                     (,gfn general-concretep-def)))))
+
+;; (local (defthm general-integerp-when-no-other-possibilities
+;;          (implies (and (not (equal (tag x) :g-ite))
+;;                        (not (equal (tag x) :g-var))
+;;                        (not (equal (tag x) :g-apply))
+;;                        (not (general-concretep x))
+;;                        (not (general-consp x))
+;;                        (not (general-booleanp x)))
+;;                   (general-integerp x))
+;;          :hints(("Goal" :in-theory (enable* (:ruleset general-object-possibilities))))))
 
 (def-gobj-dependency-thm <
   :hints `(("goal" :induct ,gcall
-            :expand (,gcall)
-            :in-theory (disable (:d ,gfn)))))
+            :expand (,gcall))))
 
+(local (defcong number-equiv equal (< a b) 1))
+(local (defcong number-equiv equal (< a b) 2))
+
+(local (defthm integerp-of-eval-g-base-when-general-number-fix-not-concrete
+         (implies (not (general-concretep (general-number-fix x)))
+                  (integerp (eval-g-base x env)))
+         :hints(("Goal" :in-theory (enable general-number-fix)
+                 :expand ((:with eval-g-base (eval-g-base x env)))))))
+                       
 
 (def-g-correct-thm < eval-g-base
-  :hints `(("Goal" :in-theory (e/d* ((:ruleset general-object-possibilities)
-                                     not-general-numberp-not-acl2-numberp)
-                                    ((:definition ,gfn)
-                                     (:rules-of-class :type-prescription :here)
-                                     number-to-components
-                                     general-concretep-def
-                                     components-to-number
-                                     eval-g-base-non-cons
-                                     acl2::/r-when-abs-numerator=1
-                                     default-unary-/
-                                     default-car default-cdr
-                                     hons-assoc-equal))
+  :hints `(("Goal" :in-theory (e/d* (;; (:ruleset general-object-possibilities)
+                                     eval-g-base-list)
+                                    ;; ((:definition ,gfn)
+                                    ;;  (:rules-of-class :type-prescription :here)
+                                    ;;  general-concretep-def
+                                    ;;  ; eval-g-base-alt-def
+                                    ;;  ;; eval-g-base-non-cons
+                                    ;;  acl2::/r-when-abs-numerator=1
+                                    ;;  default-unary-/
+                                    ;;  default-car default-cdr
+                                    ;;  hons-assoc-equal)
+                                    ;; ((:t ceil) (:t flo)
+                                    ;;  (:t bfr-list->s)
+                                    ;;  general-consp-implies-eval-g-base
+                                    ;;  (:t bfr-eval)
+                                    ;;  general-concrete-obj-when-atom
+                                    ;;  )
+                                    )
             :induct ,gcall
             :expand (,gcall))))

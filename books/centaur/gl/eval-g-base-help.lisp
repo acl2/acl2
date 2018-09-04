@@ -37,219 +37,77 @@
 
 (set-ignore-ok t)
 
-(acl2::def-functional-instance
- eval-g-base-alt-def
- generic-geval-alt-def
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list))
- :hints ('(:in-theory (e/d* (eval-g-base-ev-of-fncall-args
-                             eval-g-base-apply-agrees-with-eval-g-base-ev)
-                            (eval-g-base-apply))
-           :expand ((eval-g-base x env)
-                    (eval-g-base-list x env))))
-         ;; :do-not-induct
-         ;;   t
-         ;;   :expand ((eval-g-base x env))))
- :rule-classes ((:definition :clique (eval-g-base))))
 
+(defmacro def-eval-g-base-thm-instance (new-name orig-name &key (rule-classes 'nil rule-classes-p))
+  `(acl2::def-functional-instance
+     ,new-name ,orig-name
+     ((generic-geval-ev eval-g-base-ev)
+      (generic-geval-ev-lst eval-g-base-ev-lst)
+      (generic-geval eval-g-base)
+      (generic-geval-list eval-g-base-list))
+     :hints ('(:in-theory (e/d* (eval-g-base-ev-of-fncall-args
+                                 eval-g-base-apply-agrees-with-eval-g-base-ev)
+                                (eval-g-base-apply))
+               :expand ((:with eval-g-base (eval-g-base x env))
+                        (eval-g-base-list x env))))
+     . ,(and rule-classes-p `(:rule-classes ,rule-classes))))
 
-(acl2::def-functional-instance
- mk-g-boolean-correct-for-eval-g-base
- mk-g-boolean-correct
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
+(def-eval-g-base-thm-instance eval-g-base-alt-def generic-geval-alt-def
+  :rule-classes ((:definition :clique (eval-g-base) :controller-alist ((eval-g-base t nil)))))
 
+(in-theory (disable eval-g-base-alt-def eval-g-base))
 
+(def-eval-g-base-thm-instance general-boolean-value-correct-for-eval-g-base general-boolean-value-correct)
+(def-eval-g-base-thm-instance mk-g-boolean-correct-for-eval-g-base mk-g-boolean-correct)
+(def-eval-g-base-thm-instance booleanp-of-geval-for-eval-g-base booleanp-of-geval)
+(def-eval-g-base-thm-instance gtests-obj-correct-for-eval-g-base gtests-obj-correct)
+(def-eval-g-base-thm-instance gtests-nonnil-correct-for-eval-g-base gtests-nonnil-correct)
+(def-eval-g-base-thm-instance bfr-assume-of-gtests-possibly-true-for-eval-g-base bfr-assume-of-gtests-possibly-true)
+(def-eval-g-base-thm-instance bfr-assume-of-gtests-possibly-false-for-eval-g-base bfr-assume-of-gtests-possibly-false)
+(def-eval-g-base-thm-instance general-integer-bits-correct-for-eval-g-base general-integer-bits-correct)
+(def-eval-g-base-thm-instance integerp-of-geval-for-eval-g-base integerp-of-geval)
+(def-eval-g-base-thm-instance general-consp-correct-for-eval-g-base general-consp-correct)
+(def-eval-g-base-thm-instance not-consp-implies-not-general-consp-for-eval-g-base not-consp-implies-not-general-consp
+  :rule-classes :forward-chaining)
+(def-eval-g-base-thm-instance consp-of-geval-for-eval-g-base consp-of-geval)
 
-(acl2::def-functional-instance
- gtests-obj-correct-for-eval-g-base
- gtests-obj-correct
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
- gtests-nonnil-correct-for-eval-g-base
- gtests-nonnil-correct
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
- bfr-assume-of-gtests-possibly-true-for-eval-g-base
- bfr-assume-of-gtests-possibly-true
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
- bfr-assume-of-gtests-possibly-false-for-eval-g-base
- bfr-assume-of-gtests-possibly-false
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
+(def-eval-g-base-thm-instance general-consp-car-when-concretep-for-eval-g-base general-consp-car-when-concretep)
+(def-eval-g-base-thm-instance general-consp-cdr-when-concretep-for-eval-g-base general-consp-car-when-concretep)
 
 ;; (local
 ;;  (progn
 
 ;;    ;; These should only be necessary to prove the meta rules for g-if.
 
-(acl2::def-functional-instance
-  g-if-fn-correct-for-eval-g-base
-  g-if-fn-correct
-  ((generic-geval-ev eval-g-base-ev)
-   (generic-geval-ev-lst eval-g-base-ev-lst)
-   (generic-geval eval-g-base)
-   (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
-  g-or-fn-correct-for-eval-g-base
-  g-or-fn-correct
-  ((generic-geval-ev eval-g-base-ev)
-   (generic-geval-ev-lst eval-g-base-ev-lst)
-   (generic-geval eval-g-base)
-   (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
-  mk-g-ite-correct-for-eval-g-base
-  mk-g-ite-correct
-  ((generic-geval-ev eval-g-base-ev)
-   (generic-geval-ev-lst eval-g-base-ev-lst)
-   (generic-geval eval-g-base)
-   (generic-geval-list eval-g-base-list)))
-
-
-(acl2::def-functional-instance
-  gobj-ite-merge-correct-for-eval-g-base
-  gobj-ite-merge-correct
-  ((generic-geval-ev eval-g-base-ev)
-   (generic-geval-ev-lst eval-g-base-ev-lst)
-   (generic-geval eval-g-base)
-   (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
-  mk-g-bdd-ite-correct-for-eval-g-base
-  mk-g-bdd-ite-correct
-  ((generic-geval-ev eval-g-base-ev)
-   (generic-geval-ev-lst eval-g-base-ev-lst)
-   (generic-geval eval-g-base)
-   (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
- eval-g-base-g-apply
- generic-geval-g-apply
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
- general-consp-car-correct-for-eval-g-base
- general-consp-car-correct
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
- general-consp-cdr-correct-for-eval-g-base
- general-consp-cdr-correct
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
+(def-eval-g-base-thm-instance g-if-fn-correct-for-eval-g-base g-if-fn-correct)
+(def-eval-g-base-thm-instance g-or-fn-correct-for-eval-g-base g-or-fn-correct)
+(def-eval-g-base-thm-instance mk-g-ite-correct-for-eval-g-base mk-g-ite-correct)
+(def-eval-g-base-thm-instance gobj-ite-merge-correct-for-eval-g-base gobj-ite-merge-correct)
+(def-eval-g-base-thm-instance mk-g-bdd-ite-correct-for-eval-g-base mk-g-bdd-ite-correct)
+(def-eval-g-base-thm-instance eval-g-base-g-apply generic-geval-g-apply)
+(def-eval-g-base-thm-instance general-consp-car-correct-for-eval-g-base general-consp-car-correct)
+(def-eval-g-base-thm-instance general-consp-cdr-correct-for-eval-g-base general-consp-cdr-correct)
 
 (in-theory (disable general-consp-car-correct-for-eval-g-base
                     general-consp-cdr-correct-for-eval-g-base))
 
-(acl2::def-functional-instance
- eval-g-base-cons
- generic-geval-cons
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
- eval-g-base-non-cons
- generic-geval-non-cons
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
+(def-eval-g-base-thm-instance eval-g-base-cons generic-geval-cons)
+(def-eval-g-base-thm-instance eval-g-base-non-cons generic-geval-non-cons)
 
 (in-theory (disable eval-g-base-non-cons))
 
-;; (acl2::def-functional-instance
-;;  eval-g-base-gobj-fix
-;;  generic-geval-gobj-fix
-;;  ((apply-stub eval-g-base-apply)
-;;   (generic-geval-apply eval-g-base-apply)
-;;   (generic-geval eval-g-base)
+;; (def-eval-g-base-thm-instance general-concrete-obj-when-consp-for-eval-g-base general-concrete-obj-when-consp)
+(def-eval-g-base-thm-instance general-number-fix-correct-for-eval-g-base general-number-fix-correct)
+(def-eval-g-base-thm-instance geval-when-general-concretep-of-number-fix-for-eval-g-base geval-when-general-concretep-of-number-fix)
 
-(acl2::def-functional-instance
- general-concrete-obj-when-consp-for-eval-g-base
- general-concrete-obj-when-consp
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
- not-general-numberp-not-acl2-numberp-for-eval-g-base
- not-general-numberp-not-acl2-numberp
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
- mk-g-number-correct-for-eval-g-base
- mk-g-number-correct
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
- mk-g-concrete-correct-for-eval-g-base
- mk-g-concrete-correct
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
- g-concrete-quote-correct-for-eval-g-base
- g-concrete-quote-correct
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
- eval-g-base-of-gl-cons
- generic-geval-gl-cons
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
-
-(acl2::def-functional-instance
- eval-g-base-list-of-gl-cons
- generic-geval-list-gl-cons
- ((generic-geval-ev eval-g-base-ev)
-  (generic-geval-ev-lst eval-g-base-ev-lst)
-  (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))
+(def-eval-g-base-thm-instance not-general-integerp-not-integerp-for-eval-g-base not-general-integerp-not-integerp)
+(def-eval-g-base-thm-instance mk-g-integer-correct-for-eval-g-base mk-g-integer-correct)
+(def-eval-g-base-thm-instance mk-g-concrete-correct-for-eval-g-base mk-g-concrete-correct)
+(def-eval-g-base-thm-instance g-concrete-quote-correct-for-eval-g-base g-concrete-quote-correct)
+(def-eval-g-base-thm-instance eval-g-base-of-gl-cons generic-geval-gl-cons)
+(def-eval-g-base-thm-instance eval-g-base-list-of-gl-cons generic-geval-list-gl-cons)
+(def-eval-g-base-thm-instance generic-geval-of-g-ite-branches-for-eval-g-base generic-geval-of-g-ite-branches)
+(def-eval-g-base-thm-instance general-concrete-obj-correct-for-eval-g-base general-concrete-obj-correct)
 
 
 

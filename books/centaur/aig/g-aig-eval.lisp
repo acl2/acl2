@@ -61,7 +61,7 @@
           (implies (not (g-keyword-symbolp (car x)))
                    (and (not (g-concrete-p x))
                         (not (g-boolean-p x))
-                        (not (g-number-p x))
+                        (not (g-integer-p x))
                         (not (g-ite-p x))
                         (not (g-apply-p x))
                         (not (g-var-p x))))
@@ -90,7 +90,7 @@
                                       member-eq
                                       ;; gl::gobjectp-car-cdr-when-cons
 ; gl::generic-geval-when-g-var-tag
-                                      gl::general-number-components-ev))
+                                      ))
               :induct (hons-assoc-equal key x))))))
 
 (define gobj-alist-to-bfr-alist ((x atom-key-gobj-val-alistp)
@@ -187,7 +187,6 @@
                (hons-assoc-equal
                 gl::not-keyword-symbolp-car-impl)
                (member-eq hons-assoc-equal
-                          gl::general-number-components-ev
                           (:definition atom-key-gobj-val-alistp)
                           gl::general-concrete-obj-correct)))
            (and stable-under-simplificationp
@@ -219,7 +218,6 @@
                 gobj-alist-to-bfr-alist
                 gl::not-keyword-symbolp-car-impl)
                (member-eq hons-assoc-equal
-                          gl::general-number-components-ev
                           atom-key-gobj-val-alistp
                           gl::general-concrete-obj-correct))
               :do-not-induct t
@@ -645,9 +643,9 @@
    (gl::eval-g-prove-f-i aig-eval-ev-f-i-generic-geval aig-eval-ev
                          gl::generic-geval)
 
-   (gl::eval-g-functional-instance
-    gl::generic-geval-g-boolean
-    aig-eval-ev gl::generic-geval)
+   ;; (gl::eval-g-functional-instance
+   ;;  gl::generic-geval-g-boolean
+   ;;  aig-eval-ev gl::generic-geval)
 
    (gl::eval-g-functional-instance
     gl::general-concrete-obj-correct
@@ -703,7 +701,7 @@
                                     aig-eval-list-symbolic)
                                    (member-eq atom-key-gobj-val-alistp
                                               member-equal eval-bdd-list
-                                              gl-thm::generic-geval-g-boolean-for-aig-eval-ev
+                                              ;; gl-thm::generic-geval-g-boolean-for-aig-eval-ev
                                               aig-bddify-list))
             :do-not-induct t))))
 

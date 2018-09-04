@@ -88,44 +88,29 @@
 
 
 
-(defn general-numberp (x)
+(defn general-integerp (x)
   (declare (xargs :guard t))
-  (or (acl2-numberp x)
+  (or (integerp x)
       (and (consp x)
-           (or (eq (tag x) :g-number)
+           (or (eq (tag x) :g-integer)
                (and (eq (tag x) :g-concrete)
-                    (acl2-numberp (g-concrete->obj x)))))))
+                    (integerp (g-concrete->obj x)))))))
 
-(in-theory (disable (general-numberp)))
+(in-theory (disable (general-integerp)))
 
-(defthm general-numberp-of-atomic-constants
+(defthm general-integerp-of-atomic-constants
   (implies (and (syntaxp (quotep x))
                 (atom x))
-           (equal (general-numberp x)
-                  (acl2-numberp x))))
+           (equal (general-integerp x)
+                  (integerp x))))
 
-
-(defun number-to-components (n)
-  (declare (xargs :guard (acl2-numberp n)))
-  (let* ((real (realpart n))
-         (rnum (numerator real))
-         (rden (denominator real))
-         (imag (imagpart n))
-         (inum (numerator imag))
-         (iden (denominator imag)))
-    (mv (i2v rnum) (n2v rden) (i2v inum) (n2v iden))))
-
-
-(defn general-number-components (x)
-  (declare (xargs :guard (general-numberp x)
-                  :guard-hints (("goal" :in-theory (enable general-numberp)))))
+(defn general-integer-bits (x)
+  (declare (xargs :guard (general-integerp x)))
   (if (atom x)
-      (number-to-components x)
+      (i2v x)
     (if (eq (tag x) :g-concrete)
-        (number-to-components (g-concrete->obj x))
-      (break-g-number (g-number->num x)))))
-
-(acl2::defmvtypes general-number-components (true-listp true-listp true-listp true-listp))
+        (i2v (g-concrete->obj x))
+      (acl2::list-fix (g-integer->bits x)))))
 
 
 ;; Note that, as in the case of general-number and general-boolean, it could
@@ -202,3 +187,12 @@
 
 
 
+(defund general-number-fix (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (fix x)
+    (case (tag x)
+      (:g-boolean 0)
+      (:g-integer x)
+      (:g-concrete (mk-g-concrete (fix (g-concrete->obj x))))
+      (t 0))))

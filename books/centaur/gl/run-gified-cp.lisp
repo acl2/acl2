@@ -30,7 +30,6 @@
 
 (in-package "GL")
 (include-book "bfr")
-(include-book "gobjectp")
 (include-book "gtypes")
 (include-book "tools/mv-nth" :dir :system)
 (include-book "std/util/bstar" :dir :system)

@@ -542,64 +542,43 @@
 
 (include-book "ctrex-utils")
 
-(defun always-equal-of-numbers (a b hyp config bvar-db state)
+(defun always-equal-of-integers (a b hyp config bvar-db state)
   (declare (xargs :guard (and (not (bfr-mode))
                               (glcp-config-p config)
-                              (general-numberp a)
-                              (general-numberp b))
+                              (general-integerp a)
+                              (general-integerp b))
                   :stobjs (hyp bvar-db state)))
-  (b* (((mv arn ard ain aid)
-        (general-number-components a))
-       ((mv brn brd bin bid)
-        (general-number-components b))
-       ((unless (and (equal ard '(T))
-                     (equal aid '(T))
-                     (equal brd '(T))
-                     (equal bid '(T))))
-        (prog2$ (cw "Bad denominators: ~x0~%"
-                    (list (equal ard '(T))
-                          (equal aid '(T))
-                          (equal brd '(T))
-                          (equal bid '(T))))
-                (g-apply 'equal (gl-list a b))))
+  (b* ((abits (general-integer-bits a))
+       (bbits (general-integer-bits b))
        (uhyp (acl2::ubdd-fix (bfr-hyp->bfr hyp)))
        ((mv requal rctrex)
-        (always-equal-ss-under-hyp arn brn uhyp))
+        (always-equal-ss-under-hyp abits bbits uhyp))
        ((unless requal)
         (ec-call
          (glcp-print-single-ctrex rctrex
                                   "Error:"
                                   "ALWAYS-EQUAL violation"
                                   config bvar-db state))
-        (g-apply 'equal (gl-list a b)))
-       ((mv iequal ictrex)
-        (always-equal-ss-under-hyp ain bin uhyp))
-       ((unless iequal)
-        (ec-call
-         (glcp-print-single-ctrex ictrex
-                                  "Error:"
-                                  "ALWAYS-EQUAL violation"
-                                  config bvar-db state))
         (g-apply 'equal (gl-list a b))))
     t))
 
-(defthm deps-of-always-equal-of-numbers
+(defthm deps-of-always-equal-of-integers
   (implies (and (not (gobj-depends-on k p a))
                 (not (gobj-depends-on k p b))
-                (general-numberp a)
-                (general-numberp b))
+                (general-integerp a)
+                (general-integerp b))
            (not (gobj-depends-on
-                 k p (always-equal-of-numbers a b hyp config bvar-db state))))
-  :hints(("Goal" :in-theory (enable always-equal-of-numbers))))
+                 k p (always-equal-of-integers a b hyp config bvar-db state))))
+  :hints(("Goal" :in-theory (enable always-equal-of-integers))))
 
-;; (local (defthm always-equal-of-numbers-gobjectp
+;; (local (defthm always-equal-of-integers-gobjectp
 ;;          (implies (and (not (bfr-mode))
 ;;                        (gobjectp a)
-;;                        (general-numberp a)
+;;                        (general-integerp a)
 ;;                        (gobjectp b)
-;;                        (general-numberp b)
+;;                        (general-integerp b)
 ;;                        (bfr-p hyp))
-;;                   (gobjectp (always-equal-of-numbers a b hyp)))))
+;;                   (gobjectp (always-equal-of-integers a b hyp)))))
 
 
 
@@ -616,15 +595,6 @@
                                 a)
                 (equal x y))))
 
-(local (defthm equal-of-components-to-number-fn
-         (implies (and (integerp arn) (integerp ain)
-                       (integerp brn) (integerp bin))
-                  (equal (equal (components-to-number-fn
-                                 arn 1 ain 1)
-                                (components-to-number-fn
-                                 brn 1 bin 1))
-                         (and (equal arn brn)
-                              (equal ain bin))))))
 
 (local (defthm bfr-eval-of-ubdd-fix
          (implies (not (bfr-mode))
@@ -632,12 +602,12 @@
                          (bfr-eval x env)))
          :hints(("Goal" :in-theory (enable bfr-eval)))))
 
-(local (defthm always-equal-of-numbers-correct
+(local (defthm always-equal-of-integers-correct
          (implies (and (not (bfr-mode))
-                       (general-numberp a)
-                       (general-numberp b)
+                       (general-integerp a)
+                       (general-integerp b)
                        (bfr-hyp-eval hyp (car env)))
-                  (equal (eval-g-base (always-equal-of-numbers
+                  (equal (eval-g-base (always-equal-of-integers
                                        a b hyp config bvar-db state) env)
                          (equal (eval-g-base a env)
                                 (eval-g-base b env))))
@@ -646,7 +616,7 @@
                                           boolean-list-bfr-eval-list)
                                          (bfr-sat-bdd-unsat bfr-list->s))))))
 
-(in-theory (disable always-equal-of-numbers))
+(in-theory (disable always-equal-of-integers))
 
 
 (defun always-equal-of-booleans (a b hyp config bvar-db state)
@@ -745,20 +715,22 @@
            (gret (hons-equal (general-concrete-obj a) (general-concrete-obj b))))
           ((zp clk)
            (gret (g-apply 'equal (gl-list a b))))
-          ((or (atom a)
-               (not (member-eq (tag a) '(:g-ite :g-var :g-apply))))
-           (cond ((or (atom b)
-                      (not (member-eq (tag b) '(:g-ite :g-var :g-apply))))
+          ((mbe :logic (not (member-eq (tag a) '(:g-ite :g-var :g-apply)))
+                :exec (or (atom a)
+                          (not (member-eq (tag a) '(:g-ite :g-var :g-apply)))))
+           (cond ((mbe :logic (not (member-eq (tag b) '(:g-ite :g-var :g-apply)))
+                       :exec (or (atom b)
+                                 (not (member-eq (tag b) '(:g-ite :g-var :g-apply)))))
                   (cond
                    ((general-booleanp a)
                     (gret (and (general-booleanp b)
                                (always-equal-of-booleans a b hyp config bvar-db state))))
                    ((general-booleanp b) (gret nil))
-                   ((general-numberp a)
+                   ((general-integerp a)
                     (gret (and
-                           (general-numberp b)
-                           (always-equal-of-numbers a b hyp config bvar-db state))))
-                   ((general-numberp b) (gret nil))
+                           (general-integerp b)
+                           (always-equal-of-integers a b hyp config bvar-db state))))
+                   ((general-integerp b) (gret nil))
                    ((general-consp a)
                     (if (general-consp b)
                         (b* (((gret car-equal)
@@ -775,7 +747,8 @@
                                       (gret (g-apply 'equal (gl-list a b)))
                                       (gret nil))))
                       (gret nil)))
-                   (t (gret nil))))
+                   (t (mbe :logic (if (general-consp b) (gret nil) (gret nil))
+                           :exec (gret nil)))))
                  ((eq (tag b) :g-ite)
                   (if (zp clk)
                       (gret (g-apply 'equal (gl-list a b)))
@@ -798,7 +771,7 @@
           (t (gret (g-apply 'equal (gl-list a b))))))
   ///
   (def-hyp-congruence g-always-equal-core
-    :hints(("Goal" :in-theory (disable always-equal-of-numbers
+    :hints(("Goal" :in-theory (disable always-equal-of-integers
                                        always-equal-of-booleans
                                        (:d g-always-equal-core))
             :induct (g-always-equal-core a b hyp clk config bvar-db state)
@@ -816,7 +789,7 @@
                            (:type-prescription true-under-hyp)
                            (:type-prescription false-under-hyp)
                            (:type-prescription general-booleanp)
-                           (:type-prescription general-numberp)
+                           (:type-prescription general-integerp)
                            (:type-prescription acl2::ubddp)
                            (:type-prescription general-concretep)
                            ;; (:type-prescription assume-true-under-hyp2)
@@ -832,8 +805,7 @@
                            ctrex-for-always-equal
                            hyp-fix
                            (:rules-of-class :type-prescription :here)
-                           not)
-                          ((:type-prescription general-number-components)))))
+                           not))))
   (verify-guards g-always-equal-core))
 
 
@@ -843,46 +815,33 @@
            (not (gobj-depends-on
                  k p (mv-nth 0 (g-always-equal-core x y hyp clk config bvar-db state)))))
   :hints('(:in-theory (e/d ((:i g-always-equal-core))
-                           (gobj-depends-on
-                            general-concrete-obj-when-consp-for-eval-g-base)))
+                           (gobj-depends-on)))
          (acl2::just-induct-and-expand
           (g-always-equal-core x y hyp clk config bvar-db state))))
+
+(local (include-book "std/util/termhints" :dir :system))
 
 (encapsulate nil
 
   (local (include-book "clause-processors/just-expand" :dir :system))
-  (local
-   (in-theory (e/d* (possibilities-for-x-1
-                      possibilities-for-x-2
-                      possibilities-for-x-3
-                      possibilities-for-x-4
-                      possibilities-for-x-5
-                      possibilities-for-x-6
-                      possibilities-for-x-7
-                      ;; possibilities-for-x-8
-                      possibilities-for-x-9
-                      (:i g-always-equal-core)
-                      eval-g-base-non-cons
-                      general-concretep-atom
-                      (:rules-of-class :executable-counterpart :here))
-                     ((general-concrete-obj)
-                      (general-concretep)
-                      (kwote-lst)
-                      kwote kwote-lst
-                      acl2::member-of-cons
-                      always-equal-of-numbers
-                      always-equal-of-booleans
-                      eval-g-base-alt-def
-                      member-equal
-                      eval-g-base-ev-of-equal-call
-                      eval-g-base-ev-of-variable
-                      eval-g-base-list
-                      bfr-list->s
-                      bfr-list->u
-                      bfr-eval-booleanp
-                      acl2::subsetp-member
-                      components-to-number
-                      general-concretep-def))))
+  (local (in-theory (enable (:i g-always-equal-core))))
+  (local (in-theory (enable possibilities-for-x-10-strong)))
+  (local (include-book "tools/trivial-ancestors-check" :dir :system))
+  (local (acl2::use-trivial-ancestors-check))
+
+
+  (local (defthm general-consp-implies-general-consp
+           (implies (general-consp x)
+                    (general-consp x))))
+
+  (local (defthm equal-bfr-list->s-when-not-integerp
+           (implies (not (integerp x))
+                    (not (equal x (bfr-list->s bits env))))))
+
+  (local (defthm equal-bfr-eval-when-not-booleanp
+           (implies (not (booleanp x))
+                    (not (equal x (bfr-eval bits env))))))
+
 
   (defthm g-always-equal-core-correct
     (implies (and (not (bfr-mode))
@@ -897,11 +856,20 @@
                             (g-always-equal-core x x hyp clk config bvar-db state)
                             (g-always-equal-core x y hyp clk config bvar-db state)
                             (g-always-equal-core x x hyp clk config bvar-db state)
-                            (eval-g-base x env)
-                            (eval-g-base y env)
-                            (eval-g-base nil env)
-                            (eval-g-base t env)
-                            (eval-g-base-list nil env))
-                   :do-not-induct t)))))
+                            ;; (eval-g-base x env)
+                            ;; (eval-g-base y env)
+                            ;; (eval-g-base nil env)
+                            ;; (eval-g-base t env)
+                            (eval-g-base-list nil env)
+                            )
+                   :do-not-induct t))
+            (acl2::use-termhint
+             (acl2::termhint-seq
+              (if (equal (tag x) :g-ite)
+                  ''(:cases ((eval-g-base (g-ite->test x) env)))
+                ''(:no-op t))
+              (and (equal (tag y) :g-ite)
+                   ''(:cases ((eval-g-base (g-ite->test y) env)))))))))
 
 (in-theory (disable g-always-equal-core))
+

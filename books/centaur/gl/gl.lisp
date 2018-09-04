@@ -37,24 +37,18 @@
 (include-book "g-always-equal")
 (include-book "g-integer-length")
 (include-book "g-lessthan")
-(include-book "g-logand")
-(include-book "g-logior")
-(include-book "g-logeqv")
-(include-book "g-lognot")
+(include-book "g-logops")
 (include-book "g-logbitp")
 (include-book "g-unary--")
 (include-book "g-hide")
 (include-book "g-predicates")
 (include-book "g-binary-mult")
-(include-book "g-floor")
 (include-book "g-make-fast-alist")
-(include-book "g-mod")
 (include-book "g-truncate")
-(include-book "g-rem")
 (include-book "g-unary-concrete")
-(include-book "g-coerce")
-(include-book "g-code-char")
-(include-book "g-intern")
+;; (include-book "g-coerce")
+;; (include-book "g-code-char")
+;; (include-book "g-intern")
 ;(include-book "centaur/aig/g-aig-eval" :dir :system)
 ;(include-book "g-make-fast-alist")
 
@@ -64,6 +58,8 @@
 (include-book "def-gl-clause-proc")
 (include-book "gify-thms")
 (include-book "auto-bindings")
+(include-book "secondary-types")
+
 ;;; Matt K., 2/22/13: Sol Swords suggested commenting out the following
 ;;; include-book form, in order to avoid dependence on ttag :COUNT-BRANCHES-TO
 ;;; from centaur/aig/bddify.lisp.

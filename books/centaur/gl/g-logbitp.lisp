@@ -38,56 +38,51 @@
 (local (include-book "hyp-fix"))
 (set-inhibit-warnings "theory")
 
-(defun g-logbitp-of-numbers (a b)
-  (declare (xargs :guard (and (general-numberp a)
-                              (general-numberp b))))
-  (b* (((mv arn ard ain aid)
-        (general-number-components a))
-       ((mv brn brd bin bid)
-        (general-number-components b))
-       ((mv aintp aintp-known)
-        (if (equal ard '(t))
-            (mv (bfr-or (bfr-=-ss ain nil) (bfr-=-uu aid nil)) t)
-          (mv nil nil)))
-       ((mv bintp bintp-known)
-        (if (equal brd '(t))
-            (mv (bfr-or (bfr-=-ss bin nil) (bfr-=-uu bid nil)) t)
-          (mv nil nil))))
-    (if (and bintp-known aintp-known)
-        (mk-g-boolean
-         (bfr-logbitp-n2v 1
-                      (bfr-ite-bvv-fn (bfr-and
-                                     aintp (bfr-not (bfr-sign-s arn)))
-                                    arn nil)
-                      (bfr-ite-bss-fn bintp brn nil)))
-      (g-apply 'logbitp (gl-list a b)))))
+(defun g-logbitp-of-integers (a b)
+  (declare (xargs :guard (and (general-integerp a)
+                              (general-integerp b))))
+  (b* ((abits (general-integer-bits a)))
+    (mk-g-boolean (bfr-logbitp-n2v
+                   1
+                   (bfr-ite-bvv-fn (bfr-sign-s abits) nil abits)
+                   (general-integer-bits b)))))
 
-(in-theory (disable (g-logbitp-of-numbers)))
+(in-theory (disable (g-logbitp-of-integers)))
 
 
-(defthm deps-of-g-logbitp-of-numbers
+(local (defthm pbfr-list-depends-on-of-nil
+         (not (pbfr-list-depends-on k p nil))
+         :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
+
+(defthm deps-of-g-logbitp-of-integers
   (implies (and (not (gobj-depends-on k p x))
                 (not (gobj-depends-on k p y))
-                (general-numberp x)
-                (general-numberp y))
-           (not (gobj-depends-on k p (g-logbitp-of-numbers x y)))))
+                (general-integerp x)
+                (general-integerp y))
+           (not (gobj-depends-on k p (g-logbitp-of-integers x y)))))
 
 ;; (local
-;;  (defthm gobjectp-g-logbitp-of-numbers
+;;  (defthm gobjectp-g-logbitp-of-integers
 ;;    (implies (and (gobjectp a)
-;;                  (general-numberp a)
+;;                  (general-integerp a)
 ;;                  (gobjectp b)
-;;                  (general-numberp b))
-;;             (gobjectp (g-logbitp-of-numbers a b)))))
+;;                  (general-integerp b))
+;;             (gobjectp (g-logbitp-of-integers a b)))))
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (defthm logbitp-when-not-integers
-         (and (implies (not (natp a))
-                       (equal (logbitp a b) (logbitp 0 b)))
-              (implies (not (integerp b))
-                       (equal (logbitp a b) (logbitp a 0))))
-         :hints(("Goal" :in-theory (enable logbitp)))))
+(local (defthm logbitp-when-zp
+         (implies (and (syntaxp (not (equal x ''0)))
+                       (zp x))
+                  (equal (logbitp x y) (logbitp 0 y)))))
+                  
+
+;; (local (defthm logbitp-when-not-integers
+;;          (and (implies (not (natp a))
+;;                        (equal (logbitp a b) (logbitp 0 b)))
+;;               (implies (not (integerp b))
+;;                        (equal (logbitp a b) (logbitp a 0))))
+;;          :hints(("Goal" :in-theory (enable logbitp)))))
 
 (local (defthm bfr-list->s-when-positive
          (implies (<= 0 (bfr-list->s x env))
@@ -100,24 +95,24 @@
                                         (acl2::bfix-bitp))))))
 
 (local
- (defthm g-logbitp-of-numbers-correct
-   (implies (and (general-numberp a)
-                 (general-numberp b))
-            (equal (eval-g-base (g-logbitp-of-numbers a b) env)
+ (defthm g-logbitp-of-integers-correct
+   (implies (and (general-integerp a)
+                 (general-integerp b))
+            (equal (eval-g-base (g-logbitp-of-integers a b) env)
                    (logbitp (eval-g-base a env)
                             (eval-g-base b env))))
    :hints (("goal" :in-theory (e/d* ((:ruleset general-object-possibilities))
-                                    (general-numberp
-                                     general-number-components
+                                    (general-integerp
+                                     general-integer-bits
                                      logbitp))
             :do-not-induct t))))
 
-(in-theory (disable g-logbitp-of-numbers))
+(in-theory (disable g-logbitp-of-integers))
 
 (def-g-binary-op logbitp
-  (b* ((i-num (if (general-numberp i) i 0))
-       (j-num (if (general-numberp j) j 0)))
-    (gret (g-logbitp-of-numbers i-num j-num))))
+  (b* ((i-num (if (general-integerp i) i 0))
+       (j-num (if (general-integerp j) j 0)))
+    (gret (g-logbitp-of-integers i-num j-num))))
 
 ;; (def-gobjectp-thm logbitp
 ;;   :hints `(("Goal" :in-theory
@@ -147,27 +142,33 @@
             :expand (,gcall)
             :in-theory (disable (:d ,gfn)))))
 
-(local (defthm logbitp-when-not-numbers
-         (and (implies (not (acl2-numberp a))
+(local (defthm logbitp-when-not-integers
+         (and (implies (not (integerp a))
                        (equal (logbitp a b) (logbitp 0 b)))
-              (implies (not (acl2-numberp b))
+              (implies (not (integerp b))
                        (equal (logbitp a b) (logbitp a 0))))
          :hints(("Goal" :in-theory (enable logbitp)))))
+
+
+
+;; (local (defthm bfr-list->s-of-empty
+;;          (Equal (bfr-list->s '(nil) env) 0)
+;;          :hints(("Goal" :in-theory (enable bfr-list->s)))))
 
 (def-g-correct-thm logbitp eval-g-base
    :hints `(("Goal" :in-theory (e/d* (general-concretep-atom
                                       (:ruleset general-object-possibilities))
                                      ((:definition ,gfn)
-                                      general-numberp-eval-to-numberp
+                                      general-integerp-eval-to-integerp
                                       general-boolean-value-correct
                                       bool-cond-itep-eval
                                       boolean-listp
-                                      components-to-number
                                       member-equal
-                                      general-number-components-ev
+                                      ;; general-integer-components-ev
                                       general-concretep-def
                                       general-concretep-def
-                                      rationalp-implies-acl2-numberp
+                                      ;; rationalp-implies-acl2-integerp
+                                      equal-of-booleans-rewrite
                                       hons-assoc-equal
                                       default-car default-cdr
                                       mv-nth-cons-meta

@@ -294,24 +294,7 @@
        ;; Boolean
        ((g-boolean bool) (mv nil (bfr-eval bool (car env))))
 
-       ;; Number.  This is the hairy case.  Can represent all ACL2-NUMBERPs,
-       ;; but naturals are more compact than integers, which are more compact
-       ;; than rationals, which are more compact than complexes.  Denominators
-       ;; are coerced to 1 if they evaluate to 0 -- ugly.
-       ((g-number num)
-        (b* (((mv real-num
-                  real-denom
-                  imag-num
-                  imag-denom)
-              (break-g-number num)))
-          (flet ((uval (n env)
-                       (bfr-list->u n (car env)))
-                 (sval (n env)
-                       (bfr-list->s n (car env))))
-            (mv nil (components-to-number (sval real-num env)
-                                          (uval real-denom env)
-                                          (sval imag-num env)
-                                          (uval imag-denom env))))))
+       ((g-integer bits) (mv nil (bfr-list->s (acl2::list-fix bits) (car env))))
 
        ;; If-then-else.
        ((g-ite test then else)
@@ -402,9 +385,9 @@
        (:g-boolean (b* (((mv bit bfr-alist n)
                          (gl-bit-abstract (g-boolean->bool x) bfr-alist n)))
                      (mv (g-boolean bit) bfr-alist n)))
-       (:g-number (b* (((mv bits bfr-alist n)
-                        (gl-bitlistlist-abstract (g-number->num x) bfr-alist n)))
-                    (mv (g-number bits) bfr-alist n)))
+       (:g-integer (b* (((mv bits bfr-alist n)
+                         (gl-bitlist-abstract (g-integer->bits x) bfr-alist n)))
+                     (mv (g-integer bits) bfr-alist n)))
        (:g-concrete (mv x bfr-alist (lnfix n)))
        (:g-ite (b* (((mv test bfr-alist n)
                      (gobj-abstract (g-ite->test x) bfr-alist n))
@@ -489,7 +472,7 @@
     (pattern-match x
       ((g-concrete &) x)
       ((g-boolean b) (g-boolean (nth b lst)))
-      ((g-number n) (g-number (nth-list-list-bits n lst)))
+      ((g-integer bits) (g-integer (nth-list-bits bits lst)))
       ((g-ite if then else)
        (g-ite (inspec-show-assign-spec if lst)
               (inspec-show-assign-spec then lst)
@@ -559,21 +542,7 @@
      (pattern-match x
        ((g-boolean bool) (kwote (bfr-eval bool bfr-env)))
 
-       ((g-number num)
-        (b* (((mv real-num
-                  real-denom
-                  imag-num
-                  imag-denom)
-              (break-g-number num)))
-          (flet ((uval (n env)
-                       (bfr-list->u n env))
-                 (sval (n env)
-                       (bfr-list->s n env)))
-            (kwote
-             (components-to-number (sval real-num bfr-env)
-                                   (uval real-denom bfr-env)
-                                   (sval imag-num bfr-env)
-                                   (uval imag-denom bfr-env))))))
+       ((g-integer bits) (kwote (bfr-list->s (acl2::list-fix bits) bfr-env)))
 
        ((g-ite test then else)
         (list 'if
