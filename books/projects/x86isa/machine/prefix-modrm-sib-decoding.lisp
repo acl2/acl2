@@ -3128,17 +3128,34 @@
       ;; details.
       (not (vex-prefixes-map-p #x0F vex-prefixes))))
 
-  ;; We assume ModR/M is an unsigned-byte 8.
-  (defmacro mrm-r/m (ModR/M)
-    `(n03 ,ModR/M))
+  (define mrm-r/m ((ModR/M :type (unsigned-byte 8)))
+    :returns (r/m (unsigned-byte-p 3 r/m))
+    :inline t
+    (n03 ModR/M)
+    ///
+    (defret mrm-r/m-linear-bound
+      (< r/m 8)
+      :rule-classes :linear))
 
-  (defmacro mrm-reg (ModR/M)
-    `(mbe :logic (part-select ,ModR/M :low 3 :width 3)
-	  :exec (logand 7 (ash ,ModR/M -3))))
+  (define mrm-reg ((ModR/M :type (unsigned-byte 8)))
+    :returns (reg (unsigned-byte-p 3 reg))
+    :inline t
+    (mbe :logic (part-select ModR/M :low 3 :width 3)
+	 :exec (logand 7 (ash ModR/M -3)))
+    ///
+    (defret mrm-reg-linear-bound
+      (< reg 8)
+      :rule-classes :linear))
 
-  (defmacro mrm-mod (ModR/M)
-    `(mbe :logic (part-select ,ModR/M :low 6 :width 2)
-	  :exec (ash ,ModR/M -6))))
+  (define mrm-mod ((ModR/M :type (unsigned-byte 8)))
+    :returns (mod (unsigned-byte-p 2 mod))
+    :inline t
+    (mbe :logic (part-select ModR/M :low 6 :width 2)
+	 :exec (ash ModR/M -6))
+    ///
+    (defret mrm-mod-linear-bound
+      (< mod 4)
+      :rule-classes :linear)))
 
 ;; ----------------------------------------------------------------------
 
@@ -3170,22 +3187,38 @@
      In 32-bit mode, this argument may be @('t') or @('nil').
      </p>"
     (and (not 16-bit-addressp)
-	 (let* ((r/m (mrm-r/m ModR/M))
-		(mod (mrm-mod ModR/M)))
-	   (declare (type (unsigned-byte 8) r/m mod))
+	 (b* (((the (unsigned-byte 3) r/m) (mrm-r/m ModR/M))
+	      ((the (unsigned-byte 2) mod) (mrm-mod ModR/M)))
 	   (and (int= r/m 4)
 		(not (int= mod 3))))))
 
-  ;; We assume sib is an unsigned-byte 8.
-  (defmacro sib-base (sib)
-    `(n03 ,sib))
+  (define sib-base ((sib :type (unsigned-byte 8)))
+    :inline t
+    :returns (base (unsigned-byte-p 3 base))
+    (n03 sib)
+    ///
+    (defret sib-base-linear-bound
+      (< base 8)
+      :rule-classes :linear))
 
-  (defmacro sib-index (sib)
-    `(mbe :logic (part-select ,sib :low 3 :width 3)
-	  :exec (logand 7 (ash ,sib -3))))
+  (define sib-index ((sib :type (unsigned-byte 8)))
+    :inline t
+    :returns (index (unsigned-byte-p 3 index))
+    (mbe :logic (part-select sib :low 3 :width 3)
+	 :exec (logand 7 (ash sib -3)))
+    ///
+    (defret sib-index-linear-bound
+      (< index 8)
+      :rule-classes :linear))
 
-  (defmacro sib-scale (sib)
-    `(mbe :logic (part-select ,sib :low 6 :width 2)
-	  :exec (ash ,sib -6))))
+  (define sib-scale ((sib :type (unsigned-byte 8)))
+    :inline t
+    :returns (scale (unsigned-byte-p 2 scale))
+    (mbe :logic (part-select sib :low 6 :width 2)
+	 :exec (ash sib -6))
+    ///
+    (defret sib-scale-linear-bound
+      (< scale 4)
+      :rule-classes :linear)))
 
 ;; ----------------------------------------------------------------------

@@ -214,14 +214,14 @@
     (otherwise       0)))
 
 (defmacro ud-Lock-used ()
-  `(eql #.*lock* (prefixes-slice :lck prefixes)))
+  `(eql #.*lock* (lck-pfx prefixes)))
 
 (defmacro ud-Opr-used ()
-  `(eql #.*operand-size-override* (prefixes-slice :opr prefixes)))
+  `(eql #.*operand-size-override* (opr-pfx prefixes)))
 
 (defmacro ud-Reps-used ()
-  `(or (eql #.*repe* (prefixes-slice :rep prefixes))
-       (eql #.*repne* (prefixes-slice :rep prefixes))))
+  `(or (eql #.*repe* (rep-pfx prefixes))
+       (eql #.*repne* (rep-pfx prefixes))))
 
 (defmacro ud-ModR/M.Mod-indicates-Register ()
   `(eql (mrm-mod modr/m) #b11))
@@ -236,7 +236,7 @@
     ;; not to a memory operand.  See Table 2-2 (32-bit Addressing Forms with
     ;; the ModR/M byte) in Intel Vol. 2.
     (ud-ModR/M.Mod-indicates-Register)
-    (eql #.*lock* (prefixes-slice :lck prefixes))))
+    (eql #.*lock* (lck-pfx prefixes))))
 
 (defmacro ud-Lock-used-Dest-not-Memory-Op ()
   `(ud-Lock-used-mod-indicates-register))
@@ -1406,7 +1406,7 @@
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ("UD2" 0 :1b
-	       (:ud  . (t))
+	       ;; (:ud  . (t))
 	       (:fn . (x86-illegal-instruction
 		       (message . "UD2 encountered!"))))
 	      (:none
@@ -2059,7 +2059,7 @@
 				      (equal (cr0-slice :cr0-em (cr0)) 1)))))
 	       (:v         . ("VZEROUPPER/VZEROALL"  0)))
 
-	      #| 78 |#  ("VMREAD" 2  (E y)  (G y))
+    #| 78 |#  ("VMREAD" 2  (E y)  (G y))
 
 	      ("VMWRITE" 2  (E y)  (G y))
 
@@ -4940,7 +4940,7 @@
     (:Group-10 . ;; Covers opcode 0F B9.
 	       ((((:opcode . #ux0F_B9)) .
 		 ("UD1" 0 :1a
-		  (:ud  . (t))
+		  ;; (:ud  . (t))
 		  (:fn . (x86-illegal-instruction
 			  (message . "UD1 encountered!")))))))
 
@@ -5058,12 +5058,14 @@
 		  (:prefix . nil)
 		  (:mod    . #b11)
 		  (:reg    . #b010)) .
-		  ("PSRLW" 2 (N q) (I b) :1a))
+		  ("PSRLW" 2 (N q) (I b) :1a
+		   (:ud . ((ud-exc-22-7 :mmx)))))
 		(((:opcode . #ux0F_71)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b010)) .
-		  ("VPSRLW" 3 (H x) (U x) (I b) :1a))
+		  ("VPSRLW" 3 (H x) (U x) (I b) :1a
+		   (:ud . ((ud-exc-type-7 :sse2)))))
 		(((:opcode . #ux0F_71)
 		  (:reg    . #b011)) .
 		  (:none
@@ -5072,12 +5074,14 @@
 		  (:prefix . nil)
 		  (:mod    . #b11)
 		  (:reg    . #b100)) .
-		  ("PSRAW" 2 (N q) (I b) :1a))
+		  ("PSRAW" 2 (N q) (I b) :1a
+		   (:ud . ((ud-exc-22-7 :mmx)))))
 		(((:opcode . #ux0F_71)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b100)) .
-		  ("VPSRAW" 3 (H x) (U x) (I b) :1a))
+		  ("VPSRAW" 3 (H x) (U x) (I b) :1a
+		   (:ud . ((ud-exc-type-7 :sse2)))))
 		(((:opcode . #ux0F_71)
 		  (:reg    . #b101)) .
 		  (:none
@@ -5086,12 +5090,14 @@
 		  (:prefix . nil)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
-		  ("PSLLW" 2 (N q) (I b) :1a))
+		  ("PSLLW" 2 (N q) (I b) :1a
+		   (:ud . ((ud-exc-22-7 :mmx)))))
 		(((:opcode . #ux0F_71)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
-		  ("VPSLLW" 3 (H x) (U x) (I b) :1a))
+		  ("VPSLLW" 3 (H x) (U x) (I b) :1a
+		   (:ud . ((ud-exc-type-7 :sse2)))))
 		(((:opcode . #ux0F_71)
 		  (:reg    . #b111)) .
 		  (:none
@@ -5110,12 +5116,14 @@
 		  (:prefix . nil)
 		  (:mod    . #b11)
 		  (:reg    . #b010)) .
-		  ("PSRLD" 2 (N q) (I b) :1a))
+		  ("PSRLD" 2 (N q) (I b) :1a
+		   (:ud . ((ud-exc-22-7 :mmx)))))
 		(((:opcode . #ux0F_72)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b010)) .
-		  ("VPSRLD" 3 (H x) (U x) (I b) :1a))
+		  ("VPSRLD" 3 (H x) (U x) (I b) :1a
+		   (:ud . ((ud-exc-type-7 :sse2)))))
 		(((:opcode . #ux0F_72)
 		  (:reg    . #b011)) .
 		  (:none
@@ -5124,12 +5132,14 @@
 		  (:prefix . nil)
 		  (:mod    . #b11)
 		  (:reg    . #b100)) .
-		  ("PSRAD" 2 (N q) (I b) :1a))
+		  ("PSRAD" 2 (N q) (I b) :1a
+		   (:ud . ((ud-exc-22-7 :mmx)))))
 		(((:opcode . #ux0F_72)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b100)) .
-		  ("VPSRAD" 3 (H x) (U x) (I b) :1a))
+		  ("VPSRAD" 3 (H x) (U x) (I b) :1a
+		   (:ud . ((ud-exc-type-7 :sse2)))))
 		(((:opcode . #ux0F_72)
 		  (:reg    . #b101)) .
 		  (:none
@@ -5138,12 +5148,14 @@
 		  (:prefix . nil)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
-		  ("PSLLD" 2 (N q) (I b) :1a))
+		  ("PSLLD" 2 (N q) (I b) :1a
+		   (:ud . ((ud-exc-22-7 :mmx)))))
 		(((:opcode . #ux0F_72)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
-		  ("VPSLLD" 3 (H x) (U x) (I b) :1a))
+		  ("VPSLLD" 3 (H x) (U x) (I b) :1a
+		   (:ud . ((ud-exc-type-7 :sse2)))))
 		(((:opcode . #ux0F_72)
 		  (:reg    . #b111)) .
 		  (:none
@@ -5162,17 +5174,20 @@
 		  (:prefix . nil)
 		  (:mod    . #b11)
 		  (:reg    . #b010)) .
-		  ("PSRLQ" 2 (N q) (I b) :1a))
+		  ("PSRLQ" 2 (N q) (I b) :1a
+		   (:ud . ((ud-exc-22-7 :mmx)))))
 		(((:opcode . #ux0F_73)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b010)) .
-		  ("VPSRLQ" 3 (H x) (U x) (I b) :1a))
+		  ("VPSRLQ" 3 (H x) (U x) (I b) :1a
+		   (:ud . ((ud-exc-type-7 :sse2)))))
 		(((:opcode . #ux0F_73)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b011)) .
-		  ("VPSRLDQ" 3 (H x) (U x) (I b) :1a))
+		  ("VPSRLDQ" 3 (H x) (U x) (I b) :1a
+		   (:ud . ((ud-exc-type-7 :sse2)))))
 		(((:opcode . #ux0F_73)
 		  (:prefix . nil)
 		  (:reg    . #b100)) .
@@ -5186,17 +5201,20 @@
 		  (:prefix . nil)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
-		  ("PSLLQ" 2 (N q) (I b) :1a))
+		  ("PSLLQ" 2 (N q) (I b) :1a
+		   (:ud . ((ud-exc-22-7 :mmx)))))
 		(((:opcode . #ux0F_73)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
-		  ("VPSLLQ" 3 (H x) (U x) (I b) :1a))
+		  ("VPSLLQ" 3 (H x) (U x) (I b) :1a
+		   (:ud . ((ud-exc-type-7 :sse2)))))
 		(((:opcode . #ux0F_73)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b111)) .
-		  ("VPSLLDQ" 3 (H x) (U x) (I b) :1a))))
+		  ("VPSLLDQ" 3 (H x) (U x) (I b) :1a
+		   (:ud . ((ud-exc-type-7 :sse2)))))))
 
     (:Group-15 . ;; Covers opcode 0F AE.
 	       ((((:opcode . #ux0F_AE)

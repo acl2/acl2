@@ -1111,10 +1111,10 @@
 
 ;; ----------------------------------------------------------------------
 
-;; Increasing the rewrite stack limit by a 1000 to help the guard proofs of
+;; Increasing the rewrite stack limit to help the guard proofs of
 ;; two-byte-opcode-execute and one-byte-opcode-execute go through; note that
 ;; this is local to this book.
-(set-rewrite-stack-limit (+ 1000 acl2::*default-rewrite-stack-limit*))
+(set-rewrite-stack-limit (+ 4000 acl2::*default-rewrite-stack-limit*))
 
 ;; ----------------------------------------------------------------------
 
