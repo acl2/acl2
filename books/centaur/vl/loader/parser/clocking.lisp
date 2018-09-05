@@ -299,41 +299,6 @@
        (rest := (vl-parse-clocking-block-items-until-endclocking))
        (return (append first rest))))
 
-(defparser vl-parse-clocking-block-name ()
-  :result (and (consp val)
-               (maybe-stringp (car val))
-               (vl-evatomlist-p (cdr val))) ;; clocking_event
-  :fails gracefully
-  :count strong
-  :short "Match @('[identifier] clocking_event ';')."
-  :long "<p>This is tricky because an identifier can be a clocking event.  We
-         use backtracking to figure out which case we're in.</p>"
-  (b* ((backup (vl-tokstream-save))
-       ((mv err ans tokstream)
-        ;; Option 1: suppose the leading identifier is part of the
-        ;; clocking_event and this is an unnamed clocking block.  This is
-        ;; probably less common but it may help to provide a more useful error
-        ;; message in case of a real parse error.
-        (seq tokstream
-             (event := (vl-parse-clocking-event))
-             (:= (vl-match-token :vl-semi))
-             (return (cons nil event))))
-
-       ((unless err)
-        ;; We got to the semicolon OK, so it must have been option 1.
-        (mv err ans tokstream))
-
-       (tokstream (vl-tokstream-restore backup)))
-    ;; The only other option is that the leading identifier is the clocking
-    ;; block's name.
-    (seq tokstream
-         (id := (vl-match-token :vl-idtoken))
-         (event := (vl-parse-clocking-event))
-         (:= (vl-match-token :vl-semi))
-         (return (cons (and id (vl-idtoken->name id))
-                       event)))))
-
-
 (fty::deflist vl-defaultskew-item-list
   :elt-type vl-defaultskew-item)
 
@@ -368,23 +333,13 @@
        (if (eq tag :vl-property) (cons item properties) properties)
        (if (eq tag :vl-sequence) (cons item sequences) sequences)))))
 
-(local (defthm stringp-when-maybe-stringp ;; sigh
-         (implies (maybe-stringp x)
-                  (equal (stringp x)
-                         (if x t nil)))))
-
-(local (defthm stringp-of-vl-parse-clocking-block-name
-         (b* (((mv ?err val ?tokstream) (vl-parse-clocking-block-name)))
-           (implies (not err)
-                    (equal (stringp (car val))
-                           (if (car val) t nil))))))
-
 (defparser vl-parse-normal-clocking-declaration (atts)
   :result (vl-clkdecl-p val)
   :guard (vl-atts-p atts)
   :resultp-of-nil nil
   :fails :gracefully
   :count strong
+  :guard-debug t
   :short "Match a single, non-global @('clocking_declaration')."
   :long "<p>SystemVerilog-2012 Grammar:</p>
          @({
@@ -397,14 +352,17 @@
        (when (vl-is-token? :vl-kwd-default)
          (default := (vl-match)))
        (kwd := (vl-match-token :vl-kwd-clocking))
-       ((name . event) := (vl-parse-clocking-block-name)) ;; eats the semicolon too
+       (when (vl-is-token? :vl-idtoken)
+         (name := (vl-match)))
+       (event := (vl-parse-clocking-event))
+       (:= (vl-match-token :vl-semi))
        (unless (or name default)
          ;; Required by SystemVerilog-2012 14.3
          (return-raw (vl-parse-error "Only default clocking blocks may be unnamed.")))
        (items := (vl-parse-clocking-block-items-until-endclocking))
        (:= (vl-match-token :vl-kwd-endclocking))
        (when name
-         (:= (vl-parse-endblock-name name "clocking")))
+         (:= (vl-parse-endblock-name (and name (vl-idtoken->name name)) "clocking")))
        (return-raw
         (b* (((mv idefaults odefaults clkassigns properties sequences)
               (vl-sort-clocking-block-items items nil nil nil nil nil))
@@ -414,7 +372,8 @@
               (vl-parse-error "Multiple default output clock skews"))
              (ans (make-vl-clkdecl
                    :defaultp (if default t nil)
-                   :name name
+                   :name  (and name
+                               (vl-idtoken->name name))
                    :event event
                    :iskew (and (consp idefaults)
                                (vl-defaultskew-item->skew (car idefaults)))
@@ -443,13 +402,35 @@
   (seq tokstream
        (:= (vl-match-token :vl-kwd-global))
        (clk := (vl-match-token :vl-kwd-clocking))
-       ((name . event) := (vl-parse-clocking-block-name)) ;; eats the semicolon too
+       (when (vl-is-token? :vl-idtoken)
+         (name := (vl-match)))
+       (event := (vl-parse-clocking-event))
        (:= (vl-match-token :vl-kwd-endclocking))
        (when name
-         (:= (vl-parse-endblock-name name "clocking")))
-       (return (make-vl-gclkdecl :name name
+         (:= (vl-parse-endblock-name (and name (vl-idtoken->name name)) "clocking")))
+       (return (make-vl-gclkdecl :name (and name (vl-idtoken->name name))
                                  :event event
                                  :loc (vl-token->loc clk)
                                  :atts atts))))
 
-
+(defparser vl-parse-defaultdisable (atts)
+  :result (vl-defaultdisable-p val)
+  :guard (vl-atts-p atts)
+  :resultp-of-nil nil
+  :fails :gracefully
+  :count strong
+  :short "Match a single @('default disable iff ...') construct"
+  :long "<p>SystemVerilog-2012 Grammar:</p>
+         @({
+              module_or_generate_item_declaration ::= ...
+                  | 'default' 'disable' 'iff' expression_or_dist ';'
+         })"
+  (seq tokstream
+       (disable := (vl-match-token :vl-kwd-default))
+       (:= (vl-match-token :vl-kwd-disable))
+       (:= (vl-match-token :vl-kwd-iff))
+       (exprdist := (vl-parse-expression-or-dist))
+       (:= (vl-match-token :vl-semi))
+       (return (make-vl-defaultdisable :exprdist exprdist
+                                       :loc      (vl-token->loc disable)
+                                       :atts     atts))))

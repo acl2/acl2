@@ -48,3 +48,10 @@ module m3 ();
    wire another_spurious_wire;
 
 endmodule
+
+module m4 (input clock, input reset);
+
+   default clocking my_clock @(posedge clock); endclocking
+   default disable iff (reset);
+
+endmodule

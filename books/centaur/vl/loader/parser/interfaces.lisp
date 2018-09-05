@@ -104,6 +104,7 @@ interface_ansi_header ::=
                                               :vl-sequence
                                               :vl-clkdecl
                                               :vl-gclkdecl
+                                              :vl-defaultdisable
                                               :vl-dpiimport
                                               :vl-dpiexport
                                               :vl-bind
@@ -138,6 +139,7 @@ interface_ansi_header ::=
                         :sequences   c.sequences
                         :clkdecls    c.clkdecls
                         :gclkdecls   c.gclkdecls
+                        :defaultdisables c.defaultdisables
                         :binds       c.binds
                         :classes     c.classes
                         :elabtasks   c.elabtasks
