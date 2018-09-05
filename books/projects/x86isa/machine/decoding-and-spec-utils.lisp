@@ -756,7 +756,7 @@ the @('fault') field instead.</li>
 	   When the address size is 16 bits, there is no SIB byte:
 	   See Intel Vol. 2 Table 2-1.</p>
 	   <p>The displacement is read as a signed values:
-	   see AMD manual, Dec'17, Volume 3, Section 1.5.</p>"
+	   see AMD manual, Dec'17, Volume 3, Section 1.5.</p>"    
 
     :returns (mv flg
 		 (non-truncated-memory-address
@@ -767,9 +767,10 @@ the @('fault') field instead.</li>
 		 (increment-RIP-by natp :rule-classes :type-prescription)
 		 (x86 x86p :hyp (force (x86p x86))))
 
-    :prepwork ((local (in-theory (e/d (rime-size riml-size) ()))))
+    :prepwork ((local (in-theory (e/d (rime-size riml-size) 
+                                      (unsigned-byte-p)))))
 
-    (b* ((b (sib-base sib))
+    (b* (((the (unsigned-byte 3) b) (sib-base sib))
 	 (check-alignment? nil)
 	 ((mv flg base displacement nrip-bytes x86)
 
