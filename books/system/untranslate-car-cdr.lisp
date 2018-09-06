@@ -70,7 +70,7 @@
 ; constraints on evad are exactly analogous to what defevaluator generates.
 ; For example,
 
-; (DEFTHM EVAD-constraint-11
+; (DEFTHM EVAD-constraint-12
 ;   (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CADDR))
 ;            (EQUAL (EVAD X A)
 ;                   (CADDR (EVAD (CADR X) A)))))
@@ -268,6 +268,7 @@
                    (COND ((CONSP (CAR X))
                           (EVAD (CAR (CDR (CDR (CAR X))))
                                 (PAIRLIS$ (CAR (CDR (CAR X))) ARGS)))
+                         ((NOT (SYMBOLP (CAR X))) NIL)
                          (T (APPLY-FOR-DEFEVALUATOR (CAR X)
                                                     ARGS)))))))
    (DEFUN-NX EVAD-LST (X-LST A)
@@ -354,8 +355,13 @@
             (EQUAL (EVAD X A) NIL))
    :HINTS (("Goal" :EXPAND ((EVAD X A)))))
  (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-6)))
+ (DEFTHMD EVAD-CONSTRAINT-7
+   (IMPLIES (AND (CONSP X) (NOT (CONSP (CAR X))) (NOT (SYMBOLP (CAR X))))
+            (EQUAL (EVAD X A) NIL))
+   :HINTS (("Goal" :EXPAND ((EVAD X A)))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-7)))
  (DEFTHM
-   EVAD-CONSTRAINT-7
+   EVAD-CONSTRAINT-8
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CAR))
             (EQUAL (EVAD X A)
                    (CAR (EVAD (CADR X) A))))
@@ -363,9 +369,9 @@
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
                              (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-7)))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-8)))
  (DEFTHM
-   EVAD-CONSTRAINT-8
+   EVAD-CONSTRAINT-9
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CDR))
             (EQUAL (EVAD X A)
                    (CDR (EVAD (CADR X) A))))
@@ -373,9 +379,9 @@
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
                              (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-8)))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-9)))
  (DEFTHM
-   EVAD-CONSTRAINT-9
+   EVAD-CONSTRAINT-10
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CADR))
             (EQUAL (EVAD X A)
                    (CADR (EVAD (CADR X) A))))
@@ -383,9 +389,9 @@
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
                              (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-9)))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-10)))
  (DEFTHM
-   EVAD-CONSTRAINT-10
+   EVAD-CONSTRAINT-11
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CDDR))
             (EQUAL (EVAD X A)
                    (CDDR (EVAD (CADR X) A))))
@@ -393,9 +399,9 @@
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
                              (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-10)))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-11)))
  (DEFTHM
-   EVAD-CONSTRAINT-11
+   EVAD-CONSTRAINT-12
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CADDR))
             (EQUAL (EVAD X A)
                    (CADDR (EVAD (CADR X) A))))
@@ -403,9 +409,9 @@
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
                              (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-11)))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-12)))
  (DEFTHM
-   EVAD-CONSTRAINT-12
+   EVAD-CONSTRAINT-13
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CDDDR))
             (EQUAL (EVAD X A)
                    (CDDDR (EVAD (CADR X) A))))
@@ -413,9 +419,9 @@
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
                              (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-12)))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-13)))
  (DEFTHM
-   EVAD-CONSTRAINT-13
+   EVAD-CONSTRAINT-14
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CADDDR))
             (EQUAL (EVAD X A)
                    (CADDDR (EVAD (CADR X) A))))
@@ -423,9 +429,9 @@
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
                              (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-13)))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-14)))
  (DEFTHM
-   EVAD-CONSTRAINT-14
+   EVAD-CONSTRAINT-15
    (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CDDDDR))
             (EQUAL (EVAD X A)
                    (CDDDDR (EVAD (CADR X) A))))
@@ -433,7 +439,7 @@
                             (:FREE (X) (HIDE X))
                             (:FREE (FN ARGS)
                              (APPLY-FOR-DEFEVALUATOR FN ARGS))))))
- (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-14))))
+ (LOCAL (IN-THEORY (DISABLE EVAD-CONSTRAINT-15))))
 
 ; We are actually only interested in ADR lists whose lengths lie between 2 and
 ; 5, and there are only a finite number of them.  Proofs are easier if we just

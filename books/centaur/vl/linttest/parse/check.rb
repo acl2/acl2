@@ -41,4 +41,6 @@ match_warning(:m2, "VL-PARSE-ERROR", "")
 # Make sure we still process m3 even though it comes after and instantiates a module with a parse error
 match_warning_ss(:m3, "VL-LUCID-SPURIOUS", "another_spurious_wire")
 
+outlaw_warning(:m4, "VL-PARSE-ERROR", "")
+
 test_passed()

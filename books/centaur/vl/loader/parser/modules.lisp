@@ -80,6 +80,7 @@
                                               :vl-sequence
                                               :vl-clkdecl
                                               :vl-gclkdecl
+                                              :vl-defaultdisable
                                               :vl-dpiimport
                                               :vl-dpiexport
                                               :vl-bind
@@ -121,6 +122,7 @@
                     :sequences   c.sequences
                     :clkdecls    c.clkdecls
                     :gclkdecls   c.gclkdecls
+                    :defaultdisables c.defaultdisables
                     :assertions  c.assertions
                     :cassertions c.cassertions
                     :dpiimports  c.dpiimports

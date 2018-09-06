@@ -723,8 +723,8 @@
                               len mk-list-term kwote-lst get-mv-nths
                               pairlis$ true-listp
                               done-retval-next-from-body
+                              partial-ev-constraint-10
                               partial-ev-constraint-9
-                              partial-ev-constraint-8
                               symbol-listp pseudo-termp
                               (:type-prescription kwote-lst)
                               (:type-prescription pseudo-termp)
@@ -1142,11 +1142,11 @@
    (encapsulate nil
      (local (in-theory (disable fsubst-into-tail-recursion-body
                                 done-retval-next-from-body
+                                partial-ev-constraint-11
                                 partial-ev-constraint-10
                                 partial-ev-constraint-9
-                                partial-ev-constraint-8
+                                partial-ev-constraint-13
                                 partial-ev-constraint-12
-                                partial-ev-constraint-11
                                 partial-ev-constraint-0-rewrite
                                 default-car default-cdr len
                                 append-to-nil

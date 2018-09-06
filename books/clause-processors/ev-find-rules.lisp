@@ -114,6 +114,16 @@
    ''nil
    (fgetprop ev 'lemmas nil world)))
 
+(defun ev-find-bad-fncall-rule (ev world)
+  (find-matching-rule
+   '((consp x)
+     (not (consp (car x)))
+     (not (symbolp (car x))))
+   'equal
+   `(,ev x a)
+   ''nil
+   (fgetprop ev 'lemmas nil world)))
+
 (defun ev-find-quote-rule (ev world)
   (find-matching-rule
    '((consp x) (equal (car x) 'quote))

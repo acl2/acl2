@@ -981,6 +981,8 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                  _oldgeval_-ev-of-fncall-args
                  _newgeval_-ev-of-nonsymbol-atom
                  _oldgeval_-ev-of-nonsymbol-atom
+                 _newgeval_-ev-of-bad-fncall
+                 _oldgeval_-ev-of-bad-fncall
                  car-cons cdr-cons nth-0-cons (nfix)))
     :expand (; (_oldgeval_ x env)
              (:with _newgeval_ (_newgeval_ x env))

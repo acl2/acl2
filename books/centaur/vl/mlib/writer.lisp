@@ -4088,6 +4088,20 @@ expression into a string."
     (vl-ps-seq (vl-pp-clkdecl (car x))
                (vl-pp-clkdecllist (cdr x)))))
 
+(define vl-pp-defaultdisable ((x vl-defaultdisable-p) &key (ps 'ps))
+  (b* (((vl-defaultdisable x)))
+    (vl-ps-seq (vl-progindent)
+               (vl-ps-span "vl_key"
+                           (vl-print "default disable iff "))
+               (vl-pp-exprdist x.exprdist)
+               (vl-println ";"))))
+
+(define vl-pp-defaultdisablelist ((x vl-defaultdisablelist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-defaultdisable (car x))
+               (vl-pp-defaultdisablelist (cdr x)))))
+
 (define vl-pp-gclkdecl ((x vl-gclkdecl-p) &key (ps 'ps))
   (b* (((vl-gclkdecl x)))
     (vl-ps-seq (vl-progindent)
@@ -4184,6 +4198,7 @@ expression into a string."
       (:vl-sequence   (vl-pp-sequence x))
       (:vl-clkdecl    (vl-pp-clkdecl x))
       (:vl-gclkdecl   (vl-pp-gclkdecl x))
+      (:vl-defaultdisable (vl-pp-defaultdisable x))
       (:vl-dpiimport  (vl-pp-dpiimport x))
       (:vl-dpiexport  (vl-pp-dpiexport x))
       (:vl-bind       (vl-pp-bind x nil))
@@ -4340,6 +4355,7 @@ expression into a string."
                (vl-pp-sequencelist x.sequences)
                (vl-pp-clkdecllist x.clkdecls)
                (vl-pp-gclkdecllist x.gclkdecls)
+               (vl-pp-defaultdisablelist x.defaultdisables)
                (vl-pp-assertionlist x.assertions)
                (vl-pp-cassertionlist x.cassertions)
                (vl-pp-bindlist x.binds ss)
