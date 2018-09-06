@@ -54,6 +54,39 @@
 
 
 ;; Misc stuff needed for guards
+(defthm logbit-at-zero-is-loghead-of-1
+  ;; [Shilpi] For guard proofs of accessors of fields of width 1.
+  (equal (bool->bit (logbitp 0 x))
+	 (loghead 1 x))
+  :hints ((logbitp-reasoning)))
+
+(defthmd part-select-width-low-in-terms-of-loghead-and-logtail
+  ;; [Shilpi] For the accessor guard proofs.
+  (implies (syntaxp (atom x))
+	   (equal (bitops::part-select-width-low x width low)
+		  (loghead width (logtail low x))))
+  :hints (("Goal" :in-theory (e/d (bitops::part-select-width-low) ()))))
+
+(defthmd part-install-width-low-in-terms-of-logior-logmask-ash
+  ;; [Shilpi] For the updater guard proofs.
+  (implies (syntaxp (and (or (atom val)
+			     (and (consp val)
+				  (eql (car val) 'acl2::bool->bit$inline)))
+			 (atom x)))
+	   (equal (bitops::part-install-width-low val x width low)
+		  (logior (logand (lognot (ash (logmask width) (nfix low))) x)
+			  (ash (loghead width val) (nfix low)))))
+  :hints (("Goal" :in-theory (e/d (bitops::part-install-width-low) ()))))
+
+(defthm unsigned-byte-p-of-bool->bit
+  (implies (and (<= 1 n) (natp n))
+	   (unsigned-byte-p n (bool->bit b))))
+
+(defthm signed-byte-p-of-bool->bit
+  (implies (and (<= 2 n) (natp n))
+	   (signed-byte-p n (bool->bit b)))
+  :hints (("Goal" :in-theory (e/d (signed-byte-p) ()))))
+
 (defthm unsigned-byte-p-of-part-select
   (implies (natp n)
            (unsigned-byte-p n (part-select x :width n :low low)))
@@ -507,6 +540,22 @@
   (implies (unsigned-byte-p 1 x)
            (bitp x))
   :hints(("Goal" :in-theory (enable unsigned-byte-p bitp))))
+
+(defthm signed-byte-p-2-when-bitp
+  (implies (bitp x)
+	   (signed-byte-p 2 x))
+  :hints (("Goal" :in-theory (e/d (signed-byte-p bitp) ()))))
+
+(defthmd signed-byte-p-+1
+  ;; A less general version of bitops::signed-byte-p-incr.
+  (implies (signed-byte-p (1- n) x)
+	   (signed-byte-p n x))
+  :hints (("Goal" :in-theory (e/d (signed-byte-p) ()))))
+
+(defthmd signed-byte-p-one-bigger-when-unsigned-byte-p
+  (implies (unsigned-byte-p (1- n) x)
+	   (signed-byte-p n x))
+  :hints (("Goal" :in-theory (e/d (signed-byte-p unsigned-byte-p) ()))))
 
 (defthm part-select-width-1-type
   (bitp (part-select x :low n :width 1))

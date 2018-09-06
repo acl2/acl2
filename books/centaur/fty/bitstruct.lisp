@@ -68,7 +68,7 @@
    fullp
    kwd-alist
    orig-fields
-   signedp
+   signedp inline
    defs-ruleset
    r-o-w-ruleset
    update-to-ctor-ruleset
@@ -76,7 +76,7 @@
    equiv-under-mask))
 
 (defconst *defbitstruct-keywords*
-  '(:pred :fix :equiv :xvar :signedp :fullp
+  '(:pred :fix :equiv :xvar :signedp :inline :fullp
     :parents :short :long))
 
 (define lookup-bitstruct (name bitstruct-table)
@@ -262,6 +262,7 @@
        (equiv (getarg! :equiv (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV") name) kwd-alist))
        (fullp (getarg :fullp t kwd-alist))
        (signedp (getarg :signedp nil kwd-alist))
+       (inline (getarg :inline nil kwd-alist))
        (xvar (or (getarg :xvar nil kwd-alist)
                  (intern-in-package-of-symbol "X" name)))
 
@@ -276,6 +277,7 @@
                     :fields fields
                     :xvar xvar
                     :signedp signedp
+                    :inline inline
                     :kwd-alist (list* (cons :///-events post-///)
                                     kwd-alist)
                     :orig-fields orig-fields
@@ -298,15 +300,38 @@
           (field.signedp `(acl2::logext ,field.width ,logic-form-base))
           (t logic-form-base))))
 
-(define bitstruct-accessor-term-exec-form (field xvar)
-  (b* (((bitstruct-field field)))
-    (if (eql field.width 1)
-        (if (eq field.pred 'booleanp)
-            `(logbitp ,field.lsb ,xvar)
-          (if field.signedp
-              `(acl2::logext 1 (acl2::logbit ,field.lsb ,xvar))
-            `(acl2::logbit ,field.lsb ,xvar)))
-      (bitstruct-accessor-term-logic-form field xvar))))
+;; (define bitstruct-accessor-term-exec-form (field xvar)
+;;   (b* (((bitstruct-field field)))
+;;     (if (eql field.width 1)
+;;         (if (eq field.pred 'booleanp)
+;;             `(logbitp ,field.lsb ,xvar)
+;;           (if field.signedp
+;;               `(acl2::logext 1 (acl2::logbit ,field.lsb ,xvar))
+;;             `(acl2::logbit ,field.lsb ,xvar)))
+;;       (bitstruct-accessor-term-logic-form field xvar))))
+
+(define bitstruct-accessor-term-exec-form (fullwidth fullsigned field xvar)
+  (b* (((bitstruct-field field))
+       (widthleft (- fullwidth field.lsb))
+       (field-type (if field.signedp 'signed-byte 'unsigned-byte))
+       (full-type (if fullsigned 'signed-byte 'unsigned-byte))
+       (exec-form-base
+	(if (eql field.lsb 0)
+	    `(the (,full-type ,fullwidth) ,xvar)
+	  `(the (,full-type ,widthleft)
+	     (ash
+	      (the (,full-type ,fullwidth) ,xvar)
+	      ,(- field.lsb)))))
+       (exec-form
+	`(the (,field-type ,field.width)
+	   ,(if field.signedp
+		`(fast-logext ,field.width ,exec-form-base)
+	      `(logand (the (,field-type ,field.width)
+			 ,(1- (expt 2 field.width)))
+		       ,exec-form-base)))))
+    (if (eq field.pred 'booleanp)
+	`(bit->bool ,exec-form)
+      exec-form)))
 
 (define bitstruct-field-preds (fields xvar)
   ;; Returns the list of predicates applied to non-fullp fields.
@@ -524,7 +549,8 @@
                    " field of a @(see " (xdoc::full-escape-symbol x.name)
                    ") bit structure."))
        (logic-form (bitstruct-accessor-term-logic-form field x.xvar))
-       (exec-form (bitstruct-accessor-term-exec-form field x.xvar))
+       ;; (exec-form (bitstruct-accessor-term-exec-form field x.xvar))
+       (exec-form (bitstruct-accessor-term-exec-form x.width x.signedp field x.xvar))
        (logic-form (cond (field.subfield-hierarchy
                           (bitstruct-subfield-accessor-form field.subfield-hierarchy x.xvar))
                          ;; (field.fullp logic-form)
@@ -539,15 +565,23 @@
                                                (enable ,x.fix
                                                        part-select-at-0-of-unsigned-byte-identity
                                                        logext-part-select-at-0-identity))))))
+       :inline ,x.inline
        :parents (,x.name)
        :short ,short
        ;; :progn t
        ,@(and field.subfield-hierarchy '(:enabled t))
-       ,@(cond ((eql field.width 1)
-                `(:guard-hints (("goal" :in-theory (enable part-select-is-logbit
-                                                           . ,subfield-accs)))))
-               ((not field.fullp)
-                `(:guard-hints (("goal" :in-theory (enable ,x.pred))))))
+       :guard-hints
+       (("goal" :in-theory
+	 (enable
+	  ,@(and (not field.fullp) `(,x.pred))
+	  ,@(and (eql field.width 1) '(part-select-is-logbit))
+	  part-select-width-low-in-terms-of-loghead-and-logtail
+	  . ,subfield-accs)))
+       ;; ,@(cond ((eql field.width 1)
+       ;;          `(:guard-hints (("goal" :in-theory (enable part-select-is-logbit
+       ;;                                                     . ,subfield-accs)))))
+       ;;         ((not field.fullp)
+       ;;          `(:guard-hints (("goal" :in-theory (enable ,x.pred))))))
 
        (mbe :logic (let ((,x.xvar (,x.fix ,x.xvar)))
                      ,logic-form)
@@ -709,6 +743,49 @@
     (cons field.updater
           (bitstruct-subfield-updater-fns (cdr hier)))))
 
+(define bitstruct-updater-term-exec-form (fullwidth fullsignedp field xvar)
+  (b* (((bitstruct-field field))
+       (field-type (if field.signedp 'signed-byte 'unsigned-byte))
+       (full-type (if fullsignedp 'signed-byte 'unsigned-byte))
+       (mask (lognot (ash (logmask field.width) field.lsb)))
+       (field-msb (+ field.lsb field.width))
+       (mask-size (+ 1 field-msb))
+       (fname (if (eq field.pred 'booleanp)
+		  `(bool->bit ,field.name)
+		field.name))
+       (exec-form-ash-base
+	(cond
+	 ((eql field.lsb 0)
+	  (if field.signedp
+	      `(the (unsigned-byte ,field.width)
+		 (logand ,(1- (expt 2 field.width))
+			 (the (,field-type ,field.width) ,fname)))
+	    `(the (,field-type ,field.width) ,fname)))
+	 (field.signedp
+	  `(the (unsigned-byte ,field-msb)
+	     (ash
+	      (the (unsigned-byte ,field.width)
+		(logand ,(1- (expt 2 field.width))
+			(the (,field-type ,field.width) ,fname)))
+	      ,field.lsb)))
+	 (t
+	  `(the (,field-type ,field-msb)
+	     (ash (the (,field-type ,field.width) ,fname)
+		  ,field.lsb)))))
+       (exec-form
+	(let ((new-fullwidth
+	       (if fullsignedp
+		   (max fullwidth mask-size)
+		 fullwidth)))
+	  `(the (,full-type ,new-fullwidth)
+	     (logior
+	      (the (,full-type ,new-fullwidth)
+		(logand
+		 (the (,full-type ,fullwidth) ,xvar)
+		 (the (signed-byte ,mask-size) ,mask)))
+	      ,exec-form-ash-base)))))
+    exec-form))
+
 (define bitstruct-field-updater (field x)
   (b* (((bitstruct x))
        ((bitstruct-field field))
@@ -733,13 +810,15 @@
        ;;                        (acl2::logapp ,field.width ,field.name
        ;;                                      (acl2::logtail ,(+ field.width field.lsb) ,x.xvar))))))
        (logic-form-base `(bitops::part-install ,field.name ,x.xvar :width ,field.width :low ,field.lsb))
-       (exec-form-base (if (eql field.width 1)
-                           `(install-bit ,field.lsb ,field.name ,x.xvar)
-                         logic-form-base))
-       (exec-form (if (eq field.pred 'booleanp)
-                      `(let ((,field.name (acl2::bool->bit ,field.name)))
-                         ,exec-form-base)
-                    exec-form-base))
+       ;; (exec-form-base (if (eql field.width 1)
+       ;;                     `(install-bit ,field.lsb ,field.name ,x.xvar)
+       ;;                   logic-form-base))
+       ;; (exec-form (if (eq field.pred 'booleanp)
+       ;;                `(let ((,field.name (acl2::bool->bit ,field.name)))
+       ;;                   ,exec-form-base)
+       ;;              exec-form-base))
+       (exec-form
+	(bitstruct-updater-term-exec-form x.width x.signedp field x.xvar))
 
        (body (if field.subfield-hierarchy
                  `(mbe :logic ,(bitstruct-subfield-updater-form  field.subfield-hierarchy field.name x.xvar)
@@ -760,7 +839,33 @@
                              (bitstruct-subfield-updater-fns field.subfield-hierarchy)))
 
 
-       (new-x (intern-in-package-of-symbol (cat "NEW-" (symbol-name x.xvar)) x.name)))
+       (new-x (intern-in-package-of-symbol (cat "NEW-" (symbol-name x.xvar)) x.name))
+       (type-incr-rule (if x.signedp
+			   'bitops::signed-byte-p-incr
+			 'bitops::unsigned-byte-p-incr))
+       (type-incr-use-hint-1
+	`((:instance ,type-incr-rule
+                     (a ,(if (and x.signedp (eql field.width 1))
+                             (+ 1 field.width)
+                           field.width))
+                     (x ,(if (eq field.pred 'booleanp)
+                             `(bool->bit ,field.name)
+                           field.name))
+                     (b ,(- x.width field.lsb)))))
+       (type-incr-use-hint-2
+	`((:instance ,type-incr-rule
+                     (a ,(if (and x.signedp (eql field.width 1))
+                             (+ 1 field.width)
+                           field.width))
+                     (x ,(if (eq field.pred 'booleanp)
+                             `(bool->bit ,field.name)
+                           field.name))
+                     (b ,x.width))))
+       (type-incr-use-hint-3
+	`((:instance ,type-incr-rule
+                     (a ,x.width)
+                     (x ,x.xvar)
+                     (b ,(+ 1 x.width))))))
     `(define ,field.updater ((,field.name ,field.pred)
                              (,x.xvar ,x.pred))
        :returns (,new-x ,x.pred
@@ -768,15 +873,40 @@
                                `(:hints (("goal" :in-theory (enable ,x.pred ,x.fix
                                                                     part-select-at-0-of-unsigned-byte-identity
                                                                     logext-part-select-at-0-identity))))))
+       :inline ,x.inline
        :parents (,x.name)
        :short ,short
        :progn t
        ,@(and field.subfield-hierarchy '(:enabled t))
-       :guard-hints ,(if field.subfield-hierarchy
-                         `(("goal" :in-theory (enable part-select-at-0-of-unsigned-byte-is-x
-                                                      install-bit-is-part-install
-                                                      . ,subfield-fns)))
-                       `(("goal" :in-theory (enable install-bit-is-part-install))))
+       :guard-hints ;; ,(if field.subfield-hierarchy
+                    ;;      `(("goal" :in-theory (enable part-select-at-0-of-unsigned-byte-is-x
+                    ;;                                   install-bit-is-part-install
+                    ;;                                   . ,subfield-fns)))
+                    ;;    `(("goal" :in-theory (enable install-bit-is-part-install))))
+       (("goal"
+	 :in-theory
+	 (e/d
+	  (part-install-width-low-in-terms-of-logior-logmask-ash
+	   ,@(and (or x.signedp field.signedp)
+		  '(signed-byte-p-+1
+		    signed-byte-p-one-bigger-when-unsigned-byte-p))
+	   ,@(and field.subfield-hierarchy
+		  subfield-fns))
+	  (,type-incr-rule
+	   bitops::logand-with-negated-bitmask
+	   ,@(and (eql field.width 1)
+		  (if x.signedp
+		      '(signed-byte-p-2-when-bitp)
+		    '(unsigned-byte-p-1-when-bitp)))))
+	 :use
+	 (,@type-incr-use-hint-1
+	  ,@type-incr-use-hint-2
+	  ,@type-incr-use-hint-3
+	  ,@(and (eql field.width 1)
+		 `((:instance
+		    ,@(if x.signedp
+			  `(signed-byte-p-2-when-bitp (x ,field.name))
+			`(unsigned-byte-p-1-when-bitp (x ,field.name)))))))))
        ,body
        ///
        (acl2::add-to-ruleset ,x.defs-ruleset ,field.updater)
