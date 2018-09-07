@@ -1114,7 +1114,7 @@
 ;; Increasing the rewrite stack limit to help the guard proofs of
 ;; two-byte-opcode-execute and one-byte-opcode-execute go through; note that
 ;; this is local to this book.
-(set-rewrite-stack-limit (+ 4000 acl2::*default-rewrite-stack-limit*))
+(set-rewrite-stack-limit (+ 6000 acl2::*default-rewrite-stack-limit*))
 
 ;; ----------------------------------------------------------------------
 
@@ -1282,6 +1282,11 @@
 ;; ----------------------------------------------------------------------
 
 ;; One-byte Opcode Map:
+
+;; BOZO Rob -- for some reason, we now need this to get the guard theorem through..
+
+(local (defthm unsigned-byte-p-bool->bit
+         (unsigned-byte-p 1 (bool->bit x))))
 
 (make-event
 
