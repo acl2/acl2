@@ -116,11 +116,11 @@
 
   (b* ((ctx 'x86-push-general-register)
 
-       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+       ((when (eql #.*lock* (prefixes->lck prefixes)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :opr prefixes)))
+                 (prefixes->opr prefixes)))
 
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
@@ -199,17 +199,17 @@
 
   (b* ((ctx 'x86-push-Ev)
 
-       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+       ((when (eql #.*lock* (prefixes->lck prefixes)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :opr prefixes)))
+                 (prefixes->opr prefixes)))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :adr prefixes)))
+                 (prefixes->adr prefixes)))
 
-       (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
@@ -303,11 +303,11 @@
 
   (b* ((ctx 'x86-push-I)
 
-       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+       ((when (eql #.*lock* (prefixes->lck prefixes)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :opr prefixes)))
+                 (prefixes->opr prefixes)))
 
        (byte-imm? (eql opcode #x6A))
        ((the (integer 1 8) imm-size)
@@ -403,7 +403,7 @@
 
   (b* ((ctx 'x86-push-general-register)
 
-       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+       ((when (eql #.*lock* (prefixes->lck prefixes)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ;; PUSH CS/SS/DS/ES are invalid in 64-bit mode:
@@ -412,7 +412,7 @@
         (!!fault-fresh :ud nil :push-segment-64-bit-mode opcode)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :opr prefixes)))
+                 (prefixes->opr prefixes)))
 
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
@@ -495,11 +495,11 @@
 
   (b* ((ctx 'x86-pop-general-register)
 
-       ((when (eql #.*lock* (prefixes-slice :lck prefixes)))
+       ((when (eql #.*lock* (prefixes->lck prefixes)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :opr prefixes)))
+                 (prefixes->opr prefixes)))
 
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
@@ -578,17 +578,17 @@
 
   (b* ((ctx 'x86-pop-Ev)
 
-       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+       ((when (equal #.*lock* (prefixes->lck prefixes)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :opr prefixes)))
+                   (prefixes->opr prefixes)))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
-       (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
@@ -701,15 +701,15 @@
 ;;   :body
 
 ;;   (b* ((ctx 'x86-pop-Ev)
-;;        (lock (equal #.*lock* (prefixes-slice :lck prefixes)))
+;;        (lock (equal #.*lock* (prefixes->lck prefixes)))
 ;;        ((when lock)
 ;;         (!!ms-fresh :lock-prefix prefixes))
 ;;        (p2 (prefixes-slice :group-2-prefix prefixes))
 ;;        (p3 (equal #.*operand-size-override*
 ;;               (prefixes-slice :group-3-prefix prefixes)))
 
-;;        (r/m (mrm-r/m modr/m))
-;;        (mod (mrm-mod modr/m))
+;;        (r/m (modr/m->r/m modr/m))
+;;        (mod (modr/m->mod modr/m))
 
 ;;        ((the (integer 1 8) operand-size)
 ;;         (if p3
@@ -805,11 +805,11 @@
 
   (b* ((ctx 'x86-pushf)
 
-       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+       ((when (equal #.*lock* (prefixes->lck prefixes)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :opr prefixes)))
+                   (prefixes->opr prefixes)))
 
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
@@ -938,11 +938,11 @@
 
   (b* ((ctx 'x86-popf)
 
-       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+       ((when (equal #.*lock* (prefixes->lck prefixes)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :opr prefixes)))
+                   (prefixes->opr prefixes)))
 
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
@@ -1050,7 +1050,7 @@
 
        ((when (equal proc-mode #.*64-bit-mode*)) (!!fault-fresh :ud nil)) ;; #UD
 
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
+       (lock (eql #.*lock* (prefixes->lck prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 2 4) operand-size)
@@ -1179,7 +1179,7 @@
 
        ((when (equal proc-mode #.*64-bit-mode*)) (!!fault-fresh :ud nil)) ;; #UD
 
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
+       (lock (eql #.*lock* (prefixes->lck prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 2 4) operand-size)

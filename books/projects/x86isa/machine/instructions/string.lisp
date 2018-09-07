@@ -105,22 +105,22 @@
 
   (b* ((ctx 'x86-movs)
 
-       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+       ((when (equal #.*lock* (the (unsigned-byte 8) (prefixes->lck prefixes))))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (group-1-prefix (prefixes-slice :rep prefixes))
+       (group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
 
        ;; TODO: is the following already checked by GET-PREFIXES?
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       (p2 (prefixes-slice :seg prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+       (p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
+       (p4? (equal #.*addr-size-override* 
+                   (the (unsigned-byte 8) (prefixes->adr prefixes))))
 
-       (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
+       (r/m (modr/m->r/m modr/m))
+       (mod (modr/m->mod modr/m))
 
        ((the (unsigned-byte 1) df) (flgi #.*df* x86))
 
@@ -349,23 +349,22 @@
 
   (b* ((ctx 'x86-cmps)
 
-       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+       ((when (equal #.*lock* (the (unsigned-byte 8) (prefixes->lck prefixes))))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (group-1-prefix (the (unsigned-byte 8)
-                         (prefixes-slice :rep prefixes)))
+       (group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
 
        ;; TODO: is the following already checked by GET-PREFIXES?
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (the (unsigned-byte 8) (prefixes->adr prefixes))))
 
-       (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
+       (r/m (modr/m->r/m modr/m))
+       (mod (modr/m->mod modr/m))
 
        ((the (unsigned-byte 1) df) (flgi #.*df* x86))
 
@@ -581,10 +580,10 @@
 
   (b* ((ctx 'x86-stos)
 
-       ((when (equal #.*lock* (prefixes-slice :lck prefixes)))
+       ((when (equal #.*lock* (the (unsigned-byte 8) (prefixes->lck prefixes))))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (group-1-prefix (prefixes-slice :seg prefixes))
+       (group-1-prefix (the (unsigned-byte 8) (prefixes->seg prefixes)))
 
        ;; TODO: is the following already checked by GET-PREFIXES?
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -592,7 +591,7 @@
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (the (unsigned-byte 8) (prefixes->adr prefixes))))
 
        ((the (unsigned-byte 1) df) (flgi #.*df* x86))
 

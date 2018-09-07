@@ -438,7 +438,7 @@
   (defun create-x86-stobj-1 (x86$c-model)
     `(DEFSTOBJ X86$C
        ,@x86$c-model
-       :INLINE t
+       :INLINE t       
        :RENAMING ((x86$cp x86$cp-pre)
                   ,@(create-stobj-renaming-fn x86$c-model))
        :NON-MEMOIZABLE T))

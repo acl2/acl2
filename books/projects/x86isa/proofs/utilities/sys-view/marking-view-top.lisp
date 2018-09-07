@@ -1306,7 +1306,7 @@
            (canonical-address-p start-rip)
            ;; In the following two conditions below, if we're being
            ;; really precise, cnt should really be
-           ;; (1+ (prefixes-slice :num-prefixes prefixes)).
+           ;; (1+ (prefixes->num prefixes)).
            (disjoint-p
             (mv-nth 1 (las-to-pas cnt start-rip :x x86))
             (open-qword-paddr-list
@@ -1556,10 +1556,10 @@
         (equal new-flg nil)
         (equal new-prefixes
                (let ((prefixes
-                      (!prefixes-slice :next-byte
-                                       (mv-nth 1 (rb-alt 1 start-rip :x x86))
-                                       prefixes)))
-                 (!prefixes-slice :num-prefixes (- 15 cnt) prefixes)))
+                      (!prefixes->nxt
+                       (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                       prefixes)))
+                 (!prefixes->num (- 15 cnt) prefixes)))
         (equal new-rex-byte rex-byte))))
     :hints (("Goal"
              :use ((:instance get-prefixes-opener-lemma-no-prefix-byte
@@ -1640,8 +1640,8 @@
        (equal (get-prefixes-alt start-rip prefixes rex-byte cnt x86)
               (get-prefixes-alt (+ 1 start-rip)
                                 (if (equal prefix-byte #.*lock*)
-                                    (!prefixes-slice :lck prefix-byte prefixes)
-                                  (!prefixes-slice :rep prefix-byte prefixes))
+                                    (!prefixes->lck prefix-byte prefixes)
+                                  (!prefixes->rep prefix-byte prefixes))
                                 0
                                 (+ -1 cnt)
                                 new-x86))))
@@ -1656,12 +1656,10 @@
                                (if (equal
                                     (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                     *lock*)
-                                   (!prefixes-slice
-                                    :lck
+                                   (!prefixes->lck
                                     (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                     prefixes)
-                                 (!prefixes-slice
-                                  :rep
+                                 (!prefixes->rep
                                   (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                   prefixes)))
                               (rex-byte 0)
@@ -1707,7 +1705,7 @@
                       (equal prefix-byte #.*gs-override*))
                   (get-prefixes-alt
                    (1+ start-rip)
-                   (!prefixes-slice :seg prefix-byte prefixes)
+                   (!prefixes->seg prefix-byte prefixes)
                    0
                    (1- cnt)
                    new-x86)
@@ -1728,8 +1726,8 @@
                                        (equal
                                         (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                         *gs-override*))
-                                   (!prefixes-slice
-                                    :seg (mv-nth 1 (rb-alt 1 start-rip :x x86))
+                                   (!prefixes->seg
+                                    (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                     prefixes)
                                  prefixes))
                               (rex-byte 0)
@@ -1771,8 +1769,7 @@
         (not (mv-nth 0 (las-to-pas cnt start-rip :x x86))))
        (equal (get-prefixes-alt start-rip prefixes rex-byte cnt x86)
               (get-prefixes-alt (+ 1 start-rip)
-                                (!prefixes-slice
-                                 :opr
+                                (!prefixes->opr
                                  prefix-byte
                                  prefixes)
                                 0
@@ -1785,8 +1782,7 @@
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt)
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt
                               (start-rip (1+ start-rip))
-                              (prefixes (!prefixes-slice
-                                         :opr
+                              (prefixes (!prefixes->opr
                                          (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                          prefixes))
                               (rex-byte 0)
@@ -1828,7 +1824,7 @@
         (not (mv-nth 0 (las-to-pas cnt start-rip :x x86))))
        (equal (get-prefixes-alt start-rip prefixes rex-byte cnt x86)
               (get-prefixes-alt (+ 1 start-rip)
-                                (!prefixes-slice :adr prefix-byte prefixes)
+                                (!prefixes->adr prefix-byte prefixes)
                                 0
                                 (+ -1 cnt)
                                 new-x86))))
@@ -1840,8 +1836,7 @@
                    (:instance rewrite-get-prefixes-to-get-prefixes-alt
                               (start-rip (1+ start-rip))
                               (prefixes
-                               (!prefixes-slice
-                                :adr
+                               (!prefixes->adr
                                 (mv-nth 1 (rb-alt 1 start-rip :x x86))
                                 prefixes))
                               (rex-byte 0)
@@ -2803,8 +2798,8 @@
     (equal rex-byte (mv-nth 2 four-vals-of-get-prefixes))
     (equal x86-1 (mv-nth 3 four-vals-of-get-prefixes))
 
-    (equal opcode/vex/evex-byte (prefixes-slice :next-byte prefixes))
-    (equal prefix-length (prefixes-slice :num-prefixes prefixes))
+    (equal opcode/vex/evex-byte (prefixes->nxt prefixes))
+    (equal prefix-length (prefixes->num prefixes))
     (equal temp-rip0 (+ prefix-length start-rip 1))
 
     ;; *** No VEX prefixes ***

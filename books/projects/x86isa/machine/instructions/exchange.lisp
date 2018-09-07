@@ -82,20 +82,20 @@
 
   (b* ((ctx 'x86-xchg)
 
-       (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
-       (reg (mrm-reg modr/m))
+       (r/m (modr/m->r/m modr/m))
+       (mod (modr/m->mod modr/m))
+       (reg (modr/m->reg modr/m))
 
-       (lock (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock (equal #.*lock* (prefixes->lck prefixes)))
        ;; only memory operands allow a LOCK prefix:
        ((when (and lock
                    (or (eql (ash opcode -4) 9) ;; #x90+rw/rd ; 90H through 97H
                        (eql mod 3)))) ;; register operand
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :adr prefixes)))
+                 (prefixes->adr prefixes)))
 
        (select-byte-operand (equal opcode #x86))
        (reg/mem-size
@@ -201,10 +201,10 @@
 
   (b* ((ctx 'x86-cmpxchg)
 
-       (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
-       (reg (mrm-reg modr/m))
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (r/m (modr/m->r/m modr/m))
+       (mod (modr/m->mod modr/m))
+       (reg (modr/m->reg modr/m))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ;; If the lock prefix is used but the destination is not a memory
        ;; operand, then the #UD exception is raised.
        ((when (and lock? (equal mod #b11)))
@@ -212,9 +212,9 @@
          :ud nil ;; #UD
          :lock-prefix-but-destination-not-a-memory-operand prefixes))
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        (select-byte-operand (equal opcode #xB0))
        ((the (integer 1 8) reg/mem-size)
@@ -310,18 +310,18 @@
 
   (b* ((ctx 'x86-two-byte-nop)
 
-       (reg (mrm-reg modr/m))
+       (reg (modr/m->reg modr/m))
        ((when (not (equal reg 0)))
         (!!fault-fresh :ud nil :illegal-reg modr/m))
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
+       (r/m (modr/m->r/m modr/m))
+       (mod (modr/m->mod modr/m))
 
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        ((mv flg0
             (the (signed-byte 64) ?addr)

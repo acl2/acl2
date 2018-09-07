@@ -372,6 +372,7 @@
 (define convert-rc-to-mode ((rc natp))
   :enabled t
   :inline t
+  :no-function t
   (case rc
     (#.*RC-RN* 'RTL::RNE)
     (#.*RC-RD* 'RTL::RDN)

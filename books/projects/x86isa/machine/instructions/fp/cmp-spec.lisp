@@ -157,11 +157,10 @@
                  (mxcsr :type (unsigned-byte 32))
                  (exp-width posp)
                  (frac-width posp))
-  :prepwork ((local (in-theory (e/d* () (bitops::logand-with-negated-bitmask
-
+  :prepwork ((local (in-theory (e/d* ()
+                                     (bitops::logand-with-negated-bitmask
 ; Matt K. mod April 2016 for addition of type-set bit for the set {1}.
-
-                                         (:t BOOL->BIT))))))
+                                      (:t BOOL->BIT))))))
   (b* ((mxcsr (mbe :logic (loghead 32 mxcsr)
                    :exec mxcsr))
        ((mv kind1 sign1 exp1 ?implicit1 frac1)

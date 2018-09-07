@@ -334,13 +334,13 @@
 		       `((equal proc-mode #.*64-bit-mode*))
 		     `((not (equal proc-mode #.*64-bit-mode*)))))
 	    ,@(and reg
-		   `((equal (mrm-reg modr/m) ,reg)))
+		   `((equal (modr/m->reg modr/m) ,reg)))
 	    ,@(and mod
 		   (if (equal mod :mem)
-		       `((not (equal (mrm-mod modr/m) #b11)))
-		     `((equal (mrm-mod modr/m) #b11))))
+		       `((not (equal (modr/m->mod modr/m) #b11)))
+		     `((equal (modr/m->mod modr/m) #b11))))
 	    ,@(and r/m
-		   `((equal (mrm-r/m modr/m) ,r/m)))
+		   `((equal (modr/m->r/m modr/m) ,r/m)))
 	    ,@(and prefix
 		   `((equal mandatory-prefix ,prefix)))))
 	 ((mv doc-string dispatch)
@@ -961,10 +961,10 @@
 	 ;; :LIG, :WIG, :V, etc.
 	 `()))
     (case (car prefix-case)
-      (:REG   `((equal (mrm-reg modr/m) ,(cdr prefix-case))))
+      (:REG   `((equal (modr/m->reg modr/m) ,(cdr prefix-case))))
       (:MOD    (if (equal (cdr prefix-case) :mem)
-		   `((not (equal (mrm-mod modr/m) #b11)))
-		 `((equal (mrm-mod modr/m) #b11))))
+		   `((not (equal (modr/m->mod modr/m) #b11)))
+		 `((equal (modr/m->mod modr/m) #b11))))
       (otherwise
        ;; Should be unreachable.
        `()))))
@@ -992,7 +992,7 @@
 	 ;; :LIG, :WIG, :EV, etc.
 	 `()))
     (case (car prefix-case)
-      (:REG   `((equal (mrm-reg modr/m) ,(cdr prefix-case))))
+      (:REG   `((equal (modr/m->reg modr/m) ,(cdr prefix-case))))
       (otherwise
        ;; Should be unreachable.
        `()))))

@@ -102,11 +102,10 @@
 
   (b* ((ctx 'x86-call-E8-Op/En-M)
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :opr prefixes)))
+       (p3? (equal #.*operand-size-override* (prefixes->opr prefixes)))
 
        ((the (integer 0 4) offset-size)
         (if (equal proc-mode #.*64-bit-mode*)
@@ -195,17 +194,15 @@
 
   (b* ((ctx ' x86-call-FF/2-Op/En-M)
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
-       (p3? (equal #.*operand-size-override*
-                   (prefixes-slice :opr prefixes)))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p3? (equal #.*operand-size-override* (prefixes->opr prefixes)))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
-       (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
+       (r/m (modr/m->r/m modr/m))
+       (mod (modr/m->mod modr/m))
 
        ((the (integer 2 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
@@ -334,7 +331,7 @@
 
   (b* ((ctx 'x86-ret)
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (rsp (read-*sp proc-mode x86))
@@ -456,11 +453,10 @@
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :leave-unimplemented-in-32-bit-mode))
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-       (p3 (equal #.*operand-size-override*
-                  (prefixes-slice :opr prefixes)))
+       (p3 (equal #.*operand-size-override* (prefixes->opr prefixes)))
        ((the (integer 2 8) pop-bytes)
         (if p3
             2

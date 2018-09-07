@@ -42,7 +42,11 @@
 (in-package "X86ISA")
 
 (include-book "utilities")
+(include-book "centaur/fty/bitstruct" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+;; [Shilpi] The following rule from bitstruct-theory breaks quite a lot of
+;; proofs.  Maybe it should be removed from that book too.
+(in-theory (e/d () (fty::unsigned-byte-p-1-when-bitp)))
 
 ;; ======================================================================
 
@@ -101,7 +105,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   )
 
-(local (xdoc::set-default-parents x86-layout-constants))
+(local (xdoc::set-default-parents x86-constants))
 
 ;; ======================================================================
 
@@ -118,9 +122,9 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (defun keep-symbols-info (alst names indices)
   (declare (xargs :guard (and (alistp alst)
-			      (true-listp names)
-			      (true-listp indices))
-		  :verify-guards nil))
+                              (true-listp names)
+                              (true-listp indices))
+                  :verify-guards nil))
   ;; the output list is reversed w.r.t. the input list,
   ;; but the result is only used
   ;; in DEFCONSTS  (where order does not really matter)
@@ -128,31 +132,31 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   (if (endp alst)
       (mv names indices)
     (if (symbolp (caar alst))
-	(b* ((name (mk-name "*" (caar alst) "*"))
-	     (index (if (and (consp (cdar alst))
-			     (consp (cddar alst)))
-			(nfix (cadar alst)) ;; Position
-		      (cw "~%~%Input not a well-formed layout-constant-alistp?!~%~%"))))
-	    (keep-symbols-info (cdr alst)
-			       (cons name names)
-			       (cons index indices)))
+        (b* ((name (mk-name "*" (caar alst) "*"))
+             (index (if (and (consp (cdar alst))
+                             (consp (cddar alst)))
+                        (nfix (cadar alst)) ;; Position
+                      (cw "~%~%Input not a well-formed layout-constant-alistp?!~%~%"))))
+            (keep-symbols-info (cdr alst)
+                               (cons name names)
+                               (cons index indices)))
       (keep-symbols-info (cdr alst) names indices))))
 
 (defun define-layout-constants (layout)
   (b* (((mv names indices)
-	(keep-symbols-info layout nil nil)))
+        (keep-symbols-info layout nil nil)))
 
       `(defconsts ,names
-	 ,(cons 'mv indices))))
+         ,(cons 'mv indices))))
 
 
 (defun layout-names (name layout)
   (b* (((mv names &)
-	(keep-symbols-info layout nil nil))
+        (keep-symbols-info layout nil nil))
        (names (reverse names)))
 
       `(defconst ,(mk-name "*" name "*")
-	 ,(cons 'list names))))
+         ,(cons 'list names))))
 
 ;; ======================================================================
 
@@ -162,65 +166,28 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   :short "Functions to collect legacy prefix bytes from an x86 instruction"
 
-  :long "<p>The field @(':num-prefixes') of @('*prefixes-layout*') not only
-  includes the number of legacy prefixes present in an instruction, but also
-  the number of REX bytes, even though REX bytes are not stored in this
-  structure.  See @(tsee get-prefixes) for details.</p>"
+  :long "<p>The field @('num') of @('prefixes') not only includes the number of
+  legacy prefixes present in an instruction, but also the number of REX bytes,
+  even though REX bytes are not stored in this structure.  See @(tsee
+  get-prefixes) for details.</p>"
 
-  (defconst *prefixes-layout*
-    '((:num-prefixes      0  4) ;; Number of prefixes
-      (:lck               4  8) ;; Lock prefix
-      (:rep              12  8) ;; Repeat prefix
-      (:seg              20  8) ;; Segment Override prefix
-      (:opr              28  8) ;; Operand-Size Override prefix
-      (:adr              36  8) ;; Address-Size Override prefix
-      (:next-byte        44  8) ;; Byte immediately following the prefixes
-      ))
+  (defbitstruct num-prefixes 4)
+  (defbitstruct lck          8)
+  (defbitstruct rep          8)
+  (defbitstruct seg          8)
+  (defbitstruct opr          8)
+  (defbitstruct adr          8)
+  (defbitstruct next-byte    8)
 
-  (defthm prefixes-table-ok
-    (layout-constant-alistp *prefixes-layout* 0 #.*prefixes-width*)
-    :rule-classes nil)
-
-  (defmacro prefixes-slice (flg prefixes)
-    (slice flg prefixes #.*prefixes-width* *prefixes-layout*))
-
-  (defmacro !prefixes-slice (flg val reg)
-    (!slice flg val reg #.*prefixes-width* *prefixes-layout*))
-
-  (define num-pfx ((prefixes :type (unsigned-byte #.*prefixes-width*)))
-    :inline t
-    :returns (num (unsigned-byte-p 4 num) :hyp :guard)
-    (prefixes-slice :num-prefixes prefixes))
-
-  (define lck-pfx ((prefixes :type (unsigned-byte #.*prefixes-width*)))
-    :inline t
-    :returns (lck (unsigned-byte-p 8 lck) :hyp :guard)
-    (prefixes-slice :lck prefixes))
-
-  (define rep-pfx ((prefixes :type (unsigned-byte #.*prefixes-width*)))
-    :inline t
-    :returns (rep (unsigned-byte-p 8 rep) :hyp :guard)
-    (prefixes-slice :rep prefixes))
-
-  (define seg-pfx ((prefixes :type (unsigned-byte #.*prefixes-width*)))
-    :inline t
-    :returns (seg (unsigned-byte-p 8 seg) :hyp :guard)
-    (prefixes-slice :seg prefixes))
-
-  (define opr-pfx ((prefixes :type (unsigned-byte #.*prefixes-width*)))
-    :inline t
-    :returns (opr (unsigned-byte-p 8 opr) :hyp :guard)
-    (prefixes-slice :opr prefixes))
-
-  (define adr-pfx ((prefixes :type (unsigned-byte #.*prefixes-width*)))
-    :inline t
-    :returns (adr (unsigned-byte-p 8 adr) :hyp :guard)
-    (prefixes-slice :adr prefixes))
-
-  (define next-byte-pfx ((prefixes :type (unsigned-byte #.*prefixes-width*)))
-    :inline t
-    :returns (next (unsigned-byte-p 8 next) :hyp :guard)
-    (prefixes-slice :next-byte prefixes)))
+  (defbitstruct prefixes
+    ((num         num-prefixes-p)
+     (lck         lck-p)
+     (rep         rep-p)
+     (seg         seg-p)
+     (opr         opr-p)
+     (adr         adr-p)
+     (nxt         next-byte-p))
+    :inline t))
 
 (defsection vex-prefixes-layout-structures
 
@@ -277,27 +244,27 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   (defconst *vex2-byte1-layout*
     '((:pp                0  2) ;; opcode extension providing
-				;; equivalent functionality of a SIMD
-				;; prefix
-				;; #b00: None
-				;; #b01: #x66
-				;; #b10: #xF3
-				;; #b11: #xF2
+                                ;; equivalent functionality of a SIMD
+                                ;; prefix
+                                ;; #b00: None
+                                ;; #b01: #x66
+                                ;; #b10: #xF3
+                                ;; #b11: #xF2
 
       (:l                 2  1) ;; Vector Length
-				;; 0: scalar or 128-bit vector
-				;; 1: 256-bit vector
+                                ;; 0: scalar or 128-bit vector
+                                ;; 1: 256-bit vector
 
       (:vvvv              3  4) ;; a register specifier (in 1's
-				;; complement form) or 1111 if unused.
+                                ;; complement form) or 1111 if unused.
 
       (:r                 7  1) ;; REX.R in 1's complement (inverted) form
-				;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
-				;; 0: Same as REX.R=1 (64-bit mode only)
-				;; In protected and compatibility
-				;; modes the bit must be set to '1'
-				;; otherwise the instruction is LES or
-				;; LDS.
+                                ;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
+                                ;; 0: Same as REX.R=1 (64-bit mode only)
+                                ;; In protected and compatibility
+                                ;; modes the bit must be set to '1'
+                                ;; otherwise the instruction is LES or
+                                ;; LDS.
       ))
 
   (defthm vex2-byte1-table-ok
@@ -312,29 +279,29 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   (defconst *vex3-byte1-layout*
     '((:m-mmmm            0  5) ;; 00000: Reserved for future use (will #UD)
-				;; 00001: implied 0F leading opcode byte
-				;; 00010: implied 0F 38 leading opcode bytes
-				;; 00011: implied 0F 3A leading opcode bytes
-				;; 00100-11111: Reserved for future use (will #UD)
+                                ;; 00001: implied 0F leading opcode byte
+                                ;; 00010: implied 0F 38 leading opcode bytes
+                                ;; 00011: implied 0F 3A leading opcode bytes
+                                ;; 00100-11111: Reserved for future use (will #UD)
 
       (:b                 5  1) ;; REX.B in 1's complement (inverted) form
-				;; 1: Same as REX.B=0 (Ignored in 32-bit mode).
-				;; 0: Same as REX.B=1 (64-bit mode only)
+                                ;; 1: Same as REX.B=0 (Ignored in 32-bit mode).
+                                ;; 0: Same as REX.B=1 (64-bit mode only)
 
       (:x                 6  1) ;; REX.X in 1's complement (inverted) form
-				;; 1: Same as REX.X=0 (must be 1 in 32-bit mode)
-				;; 0: Same as REX.X=1 (64-bit mode only)
-				;; In 32-bit modes, this bit must be
-				;; set to '1', otherwise the
-				;; instruction is LES or LDS.
+                                ;; 1: Same as REX.X=0 (must be 1 in 32-bit mode)
+                                ;; 0: Same as REX.X=1 (64-bit mode only)
+                                ;; In 32-bit modes, this bit must be
+                                ;; set to '1', otherwise the
+                                ;; instruction is LES or LDS.
 
       (:r                 7  1) ;; REX.R in 1's complement (inverted) form
-				;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
-				;; 0: Same as REX.R=1 (64-bit mode only)
-				;; In protected and compatibility
-				;; modes the bit must be set to '1'
-				;; otherwise the instruction is LES or
-				;; LDS.
+                                ;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
+                                ;; 0: Same as REX.R=1 (64-bit mode only)
+                                ;; In protected and compatibility
+                                ;; modes the bit must be set to '1'
+                                ;; otherwise the instruction is LES or
+                                ;; LDS.
 
       ))
 
@@ -350,24 +317,24 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   (defconst *vex3-byte2-layout*
     '((:pp                0  2)  ;; opcode extension providing
-				 ;; equivalent functionality of a SIMD
-				 ;; prefix
-				 ;; #b00: None
-				 ;; #b01: #x66
-				 ;; #b10: #xF3
-				 ;; #b11: #xF2
+                                 ;; equivalent functionality of a SIMD
+                                 ;; prefix
+                                 ;; #b00: None
+                                 ;; #b01: #x66
+                                 ;; #b10: #xF3
+                                 ;; #b11: #xF2
 
       (:l                 2  1)  ;; Vector Length
-				 ;; 0: scalar or 128-bit vector
-				 ;; 1: 256-bit vector
+                                 ;; 0: scalar or 128-bit vector
+                                 ;; 1: 256-bit vector
 
       (:vvvv              3  4)  ;; a register specifier (in 1's
-				 ;; complement form) or 1111 if unused.
+                                 ;; complement form) or 1111 if unused.
 
       (:w                 7   1) ;; opcode specific (use like REX.W,
-				 ;; or used for opcode extension, or
-				 ;; ignored, depending on the opcode
-				 ;; byte)
+                                 ;; or used for opcode extension, or
+                                 ;; ignored, depending on the opcode
+                                 ;; byte)
       ))
 
   (defthm vex3-byte2-table-ok
@@ -381,27 +348,27 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (!slice flg val reg 8 *vex3-byte2-layout*))
 
   (define vex-prefixes-map-p ((bytes        :type (unsigned-byte 16))
-			      (vex-prefixes :type (unsigned-byte #.*vex-width*)))
+                              (vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :guard (and (vex-prefixes-byte0-p vex-prefixes)
-		(or (equal bytes #ux0F)
-		    (equal bytes #ux0F38)
-		    (equal bytes #ux0F3A)))
+                (or (equal bytes #ux0F)
+                    (equal bytes #ux0F38)
+                    (equal bytes #ux0F3A)))
     :returns (ok booleanp)
     :short "Returns @('t') if the @('vex-prefixes'), irrespective of whether
     they are two- or three-byte form, indicate the map that begins with the
     escape bytes @('bytes')"
     (b* ((byte0 (vex-prefixes-slice :byte0 vex-prefixes))
-	 (byte1 (vex-prefixes-slice :byte1 vex-prefixes)))
+         (byte1 (vex-prefixes-slice :byte1 vex-prefixes)))
       (case bytes
-	(#ux0F
-	 (or (equal byte0 #.*vex2-byte0*)
-	     (and (equal byte0 #.*vex3-byte0*)
-		  (equal (vex3-byte1-slice :m-mmmm byte1) #.*v0F*))))
-	(otherwise
-	 (and (equal byte0 #.*vex3-byte0*)
-	      (if (equal bytes #ux0F38)
-		  (equal (vex3-byte1-slice :m-mmmm byte1) #.*v0F38*)
-		(equal (vex3-byte1-slice :m-mmmm byte1) #.*v0F3A*)))))))
+        (#ux0F
+         (or (equal byte0 #.*vex2-byte0*)
+             (and (equal byte0 #.*vex3-byte0*)
+                  (equal (vex3-byte1-slice :m-mmmm byte1) #.*v0F*))))
+        (otherwise
+         (and (equal byte0 #.*vex3-byte0*)
+              (if (equal bytes #ux0F38)
+                  (equal (vex3-byte1-slice :m-mmmm byte1) #.*v0F38*)
+                (equal (vex3-byte1-slice :m-mmmm byte1) #.*v0F3A*)))))))
 
   ;; Some convenient accessor functions for those fields of the VEX prefixes
   ;; that are common to both the two- and three-byte forms:
@@ -411,9 +378,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     or three-byte VEX prefixes form"
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :inline t
+    :no-function t
     :returns (vvvv (unsigned-byte-p 4 vvvv)
-		   :hyp (vex-prefixes-byte0-p vex-prefixes)
-		   :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                   :hyp (vex-prefixes-byte0-p vex-prefixes)
+                   :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
     (case (vex-prefixes-slice :byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1-slice :vvvv (vex-prefixes-slice :byte1 vex-prefixes)))
@@ -426,9 +394,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     three-byte VEX prefixes form"
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :inline t
+    :no-function t
     :returns (l (unsigned-byte-p 1 l)
-		:hyp (vex-prefixes-byte0-p vex-prefixes)
-		:hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                :hyp (vex-prefixes-byte0-p vex-prefixes)
+                :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
     (case (vex-prefixes-slice :byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1-slice :l (vex-prefixes-slice :byte1 vex-prefixes)))
@@ -441,9 +410,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     three-byte VEX prefixes form"
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :inline t
+    :no-function t
     :returns (pp (unsigned-byte-p 2 pp)
-		 :hyp (vex-prefixes-byte0-p vex-prefixes)
-		 :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                 :hyp (vex-prefixes-byte0-p vex-prefixes)
+                 :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
     (case (vex-prefixes-slice :byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1-slice :pp (vex-prefixes-slice :byte1 vex-prefixes)))
@@ -456,10 +426,11 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     three-byte VEX prefixes form"
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :inline t
+    :no-function t
     :returns (w (unsigned-byte-p 1 w)
-		:hyp (and (vex-prefixes-byte0-p vex-prefixes)
-			  (equal (vex-prefixes-slice :byte0 vex-prefixes) #.*vex3-byte0*))
-		:hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                :hyp (and (vex-prefixes-byte0-p vex-prefixes)
+                          (equal (vex-prefixes-slice :byte0 vex-prefixes) #.*vex3-byte0*))
+                :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
     (case (vex-prefixes-slice :byte0 vex-prefixes)
       (#.*vex3-byte0*
        (vex3-byte2-slice :w (vex-prefixes-slice :byte2 vex-prefixes)))
@@ -469,7 +440,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
     (defret error-vex-w-slice
       (implies (not (equal (vex-prefixes-slice :byte0 vex-prefixes) #.*vex3-byte0*))
-	       (equal (vex-w-slice vex-prefixes) -1)))))
+               (equal (vex-w-slice vex-prefixes) -1)))))
 
 (defsection evex-prefixes-layout-structures
 
@@ -501,16 +472,16 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     '((:mm                0  2) ;; Identical to low two bits of VEX.m-mmmm.
       (:res               2  2) ;; Must be zero.
       (:r-prime           4  1) ;; High-16 register specifier modifier
-				;; -- combine with EVEX.R and ModR/M.reg.
+                                ;; -- combine with EVEX.R and ModR/M.reg.
 
-				;; R, X, B are the next-8 register specifier
-				;; modifiers --- combine with ModR/M.reg,
-				;; ModR/M.r/m (base, index/vidx).
+                                ;; R, X, B are the next-8 register specifier
+                                ;; modifiers --- combine with ModR/M.reg,
+                                ;; ModR/M.r/m (base, index/vidx).
       (:b                 5  1)
       (:x                 6  1) ;; Must be set to '1' in 32-bit mode,
-				;; otherwise instruction is BOUND.
+                                ;; otherwise instruction is BOUND.
       (:r                 7  1) ;; Must be set to '1' in 32-bit mode.
-				;; otherwise instruction is BOUND.
+                                ;; otherwise instruction is BOUND.
       ))
 
   (defthm evex-byte1-table-ok
@@ -525,7 +496,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   (defconst *evex-byte2-layout*
     '((:pp                0  2) ;; Compressed legacy escape -- identical to low
-				;; two bits of VEX.pp.
+                                ;; two bits of VEX.pp.
       (:res               2  1) ;; Must be one.
       (:vvvv              3  4) ;; NDS register specifier --- same as VEX.vvvv
       (:w                 7  1) ;; Osize promotion/opcode extension
@@ -544,7 +515,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   (defconst *evex-byte3-layout*
     '((:aaa               0  3) ;; Embedded opmask register specifier
       (:v-prime           3  1) ;; High-16 NDS/VIDX register specifier --
-				;; combine with EVEX.vvvv or when VSIB present
+                                ;; combine with EVEX.vvvv or when VSIB present
       (:b                 4  1) ;; Broadcast/RC/SAE Context
       (:vl/rc             5  2) ;; Vector length/RC (denoted as L'L in the Intel manuals)
       (:z                 7  1) ;; Zeroing/Merging
@@ -566,30 +537,35 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   (define evex-vvvv-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('VVVV') field of @('evex-prefixes')"
     :inline t
+    :no-function t
     :returns (vvvv (unsigned-byte-p 4 vvvv) :hyp :guard)
     (evex-byte2-slice :vvvv (evex-prefixes-slice :byte2 evex-prefixes)))
 
   (define evex-v-prime-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('v-prime') field of @('evex-prefixes')"
     :inline t
+    :no-function t
     :returns (v-prime (unsigned-byte-p 1 v-prime) :hyp :guard)
     (evex-byte3-slice :v-prime (evex-prefixes-slice :byte3 evex-prefixes)))
 
   (define evex-vl/rc-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('vl/rc') field of @('evex-prefixes')"
     :inline t
+    :no-function t
     :returns (vl/rc (unsigned-byte-p 2 vl/rc) :hyp :guard)
     (evex-byte3-slice :vl/rc (evex-prefixes-slice :byte3 evex-prefixes)))
 
   (define evex-pp-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('PP') field of @('evex-prefixes')"
     :inline t
+    :no-function t
     :returns (pp (unsigned-byte-p 2 pp) :hyp :guard)
     (evex-byte2-slice :pp (evex-prefixes-slice :byte2 evex-prefixes)))
 
   (define evex-w-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('W') field of @('evex-prefixes')"
     :inline t
+    :no-function t
     :returns (w (unsigned-byte-p 1 w) :hyp :guard)
     (evex-byte2-slice :w (evex-prefixes-slice :byte2 evex-prefixes))))
 
@@ -679,11 +655,11 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:cr4-smxe       14  1) ;; SMX Enable Bit
     (0               15  1) ;; 0 (Reserved)
     (:cr4-fsgsbase   16  1) ;; FSGSBase-Enable Bit (Enables the
-			    ;; instructions RDFSBASE, RDGSBASE,
-			    ;; WRFSBASE, and WRGSBASE.)
+                            ;; instructions RDFSBASE, RDGSBASE,
+                            ;; WRFSBASE, and WRGSBASE.)
     (:cr4-pcide      17  1) ;; PCID-Enable Bit
     (:cr4-osxsave    18  1) ;; XSAVE and Processor Extended States
-			    ;; Enable Bit
+                            ;; Enable Bit
     (0               19  1) ;; 0 (Reserved)
     (:cr4-smep       20  1) ;; Supervisor Mode Execution Prevention
     (:cr4-smap       21  1)
@@ -695,9 +671,9 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (defthm cr4-layout-ok
   (layout-constant-alistp *cr4-layout* 0 ;; 64
-		   ;; A lesser value here avoids
-		   ;; bignum creation.
-		   22)
+                   ;; A lesser value here avoids
+                   ;; bignum creation.
+                   22)
   :rule-classes nil)
 
 ; Intel manual, Mar'17, Vol. 3A, Section 10.8.6
@@ -718,10 +694,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (defthm cr8-layout-ok
   (layout-constant-alistp *cr8-layout* 0 ;; 64
-		   ;; A lesser value here avoids
-		   ;; bignum creation.
-		   4
-		   )
+                   ;; A lesser value here avoids
+                   ;; bignum creation.
+                   4
+                   )
   :rule-classes nil)
 
 ; Intel manual, May'18, Vol. 3A, Figure 2-8
@@ -731,8 +707,8 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   ;; is also readable as CPUID.01H:ECX.OSXSAVE[bit 27].)
 
   '((:xcr0-fpu/mmx-state   0  1) ;; This bit must be 1.  An attempt
-				 ;; to write 0 to this bit causes a
-				 ;; #GP exception.
+                                 ;; to write 0 to this bit causes a
+                                 ;; #GP exception.
     (:xcr0-sse-state       1  1)
     (:xcr0-avx-state       2  1)
     (:xcr0-bndreg-state    3  1)
@@ -757,9 +733,9 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (0                9  1) ;; Reserved?
     (:ia32_efer-lma  10  1) ;; Long Mode Active (R)
     (:ia32_efer-nxe  11  1) ;; Execute Disable Bit Enable (R/W)
-			    ;; (Enables page access restriction by
-			    ;; preventing instruction fetches from
-			    ;; PAE pages with the XD bit set)
+                            ;; (Enables page access restriction by
+                            ;; preventing instruction fetches from
+                            ;; PAE pages with the XD bit set)
 ;   (0               12 52) ;; Reserved (must be zero)
     ))
 
@@ -904,17 +880,17 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:p                47  1)
     (:limit19-16       48  4)  ;; Ignored in 64-bit mode
     (:avl              52  1)  ;; Ignored in 64-bit mode
-			       ;; As per AMD manuals, this is ignored
-			       ;; in 64-bit mode but the Intel manuals
-			       ;; say it's not.  We're following the
-			       ;; Intel manuals.
+                               ;; As per AMD manuals, this is ignored
+                               ;; in 64-bit mode but the Intel manuals
+                               ;; say it's not.  We're following the
+                               ;; Intel manuals.
     (:l                53  1)
     (:d                54  1)
     (:g                55  1)  ;; Ignored in 64-bit mode
-			       ;; As per AMD manuals, this is ignored
-			       ;; in 64-bit mode but the Intel manuals
-			       ;; say it's not.  We're following the
-			       ;; Intel manuals.
+                               ;; As per AMD manuals, this is ignored
+                               ;; in 64-bit mode but the Intel manuals
+                               ;; say it's not.  We're following the
+                               ;; Intel manuals.
     (:base31-24        56  8)) ;; Ignored in 64-bit mode
   )
 
@@ -1003,7 +979,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:base63-32        64 32)
     (0                 96  8)
     (:all-zeroes?     104  5) ;; Check whether these are all zeroes or
-			      ;; not.
+                              ;; not.
     (0                109  19)
     ))
 
@@ -1037,7 +1013,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:offset63-32      64 32)
     (0                 96  8)
     (:all-zeroes?      104 5) ;; Check whether these are all zeroes or
-			      ;; not.
+                              ;; not.
     (0                109 19)
     ))
 
@@ -1070,7 +1046,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:offset63-32      64 32)
     (0                 96  8)
     (:all-zeros?      104  5) ;; Check whether these are all zeroes or
-			      ;; not.
+                              ;; not.
     (0                109 19)
     ))
 
@@ -1145,15 +1121,15 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pml4e-pwt      3  1)   ;; Page-level Write-Through
     (:pml4e-pcd      4  1)   ;; Page-level Cache-Disable
     (:pml4e-a        5  1)   ;; Accessed (whether this entry has been
-			     ;; used for LA translation)
+                             ;; used for LA translation)
     (0               6  1)   ;; Ignored
     (:pml4e-ps       7  1)   ;; Page size (Must be zero)
     (0               8  4)   ;; Ignored
     (:pml4e-pdpt     12 40)  ;; Address of page-directory pointer
-			     ;; table
+                             ;; table
     (0               52  11) ;; Ignored and/or Reserved
     (:pml4e-xd       63  1)) ;; If IA32_EFER.NXE = 1, Execute disable;
-			     ;; otherwise 0 (reserved)
+                             ;; otherwise 0 (reserved)
   )
 
 (defthm ia32e-pml4e-layout-ok
@@ -1162,7 +1138,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (make-event (define-layout-constants *ia32e-pml4e-layout*))
 (make-event (layout-names 'ia32e-pml4e-names
-			  *ia32e-pml4e-layout*))
+                          *ia32e-pml4e-layout*))
 
 (defconst *ia32e-pdpte-1GB-page-layout*
   '((:pdpte-p        0  1)   ;; Page present (must be 1)
@@ -1171,9 +1147,9 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pdpte-pwt      3  1)   ;; Page-level Write-Through
     (:pdpte-pcd      4  1)   ;; Page-level Cache-Disable
     (:pdpte-a        5  1)   ;; Accessed (whether this entry has been
-			     ;; used for LA translation)
+                             ;; used for LA translation)
     (:pdpte-d        6  1)   ;; Dirty (whether s/w has written to the
-			     ;; 1 GB page referenced by this entry)
+                             ;; 1 GB page referenced by this entry)
     (:pdpte-ps       7  1)   ;; Page size (Must be 1 for 1GB pages)
     (:pdpte-g        8  1)   ;; Global translation
     (0               9  3)   ;; Ignored
@@ -1182,7 +1158,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pdpte-page     30 22)  ;; Address of 1 GB page
     (0               52 11)  ;; Ignored and/or Reserved
     (:pdpte-xd       63  1))  ;; If IA32_EFER.NXE = 1, Execute disable;
-			      ;; otherwise 0 (reserved)
+                              ;; otherwise 0 (reserved)
   )
 
 (defthm ia32e-pdpte-1GB-page-layout-ok
@@ -1191,7 +1167,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (make-event (define-layout-constants *ia32e-pdpte-1GB-page-layout*))
 (make-event (layout-names 'ia32e-pdpte-1GB-page-names
-			  *ia32e-pdpte-1GB-page-layout*))
+                          *ia32e-pdpte-1GB-page-layout*))
 
 (defconst *ia32e-pdpte-pg-dir-layout*
   '((:pdpte-p        0  1)   ;; Page present (must be 1)
@@ -1200,15 +1176,15 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pdpte-pwt      3  1)   ;; Page-level Write-Through
     (:pdpte-pcd      4  1)   ;; Page-level Cache-Disable
     (:pdpte-a        5  1)   ;; Accessed (whether this entry has been
-			     ;; used for LA translation)
+                             ;; used for LA translation)
     (0               6  1)   ;; Ignored
     (:pdpte-ps       7  1)   ;; Page size (Must be 0)
     (0               8  4)   ;; Ignored
     (:pdpte-pd      12 40)   ;; Physical addres of 4-K aligned PD
-			     ;; referenced by this entry
+                             ;; referenced by this entry
     (0              52  11)  ;; Ignored and/or Reserved
     (:pdpte-xd      63  1))  ;; If IA32_EFER.NXE = 1, Execute disable;
-			     ;; otherwise 0 (reserved)
+                             ;; otherwise 0 (reserved)
   )
 
 (defthm ia32e-pdpte-pg-dir-layout-ok
@@ -1217,7 +1193,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (make-event (define-layout-constants *ia32e-pdpte-pg-dir-layout*))
 (make-event (layout-names 'ia32e-pdpte-pg-dir-names
-			  *ia32e-pdpte-pg-dir-layout*))
+                          *ia32e-pdpte-pg-dir-layout*))
 
 (defconst *ia32e-pde-2MB-page-layout*
   '((:pde-p        0  1)    ;; Page present (must be 1)
@@ -1233,10 +1209,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pde-pat      12 1)    ;; PAT
     (0             13 8)    ;; Reserved
     (:pde-page     21 31)   ;; Physical addres of the 2MB page
-			    ;; referenced by this entry
+                            ;; referenced by this entry
     (0             52 11)   ;; Ignored and/or Reserved
     (:pde-xd       63  1))  ;; If IA32_EFER.NXE = 1, Execute
-			    ;; disable; otherwise 0 (reserved)
+                            ;; disable; otherwise 0 (reserved)
   )
 
 (defthm ia32e-pde-2MB-page-layout-ok
@@ -1245,7 +1221,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (make-event (define-layout-constants *ia32e-pde-2MB-page-layout*))
 (make-event (layout-names 'ia32e-pde-2MB-page-names
-			  *ia32e-pde-2MB-page-layout*))
+                          *ia32e-pde-2MB-page-layout*))
 
 (defconst *ia32e-pde-pg-table-layout*
   '((:pde-p        0  1)    ;; Page present (must be 1)
@@ -1258,10 +1234,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pde-ps       7  1)    ;; Page size (Must be 0)
     (0             8  4)    ;; Ignored
     (:pde-pt       12 40)   ;; Physical addres of the 4K-aligned
-			    ;; page table referenced by this entry
+                            ;; page table referenced by this entry
     (0             52 11)   ;; Ignored and/or Reserved
     (:pde-xd       63  1))  ;; If IA32_EFER.NXE = 1, Execute
-			    ;; disable; otherwise 0 (reserved)
+                            ;; disable; otherwise 0 (reserved)
   )
 
 (defthm ia32e-pde-pg-table-layout-ok
@@ -1270,7 +1246,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (make-event (define-layout-constants *ia32e-pde-pg-table-layout*))
 (make-event (layout-names 'ia32e-pde-pg-table-names
-			  *ia32e-pde-pg-table-layout*))
+                          *ia32e-pde-pg-table-layout*))
 
 
 (defconst *ia32e-pte-4K-page-layout*
@@ -1285,10 +1261,10 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:pte-g        8  1)    ;; Global translation
     (0             9  3)    ;; Ignored
     (:pte-page    12 40)    ;; Physical address of the 4K page
-			    ;; referenced by this entry
+                            ;; referenced by this entry
     (0            52  11)   ;; Ignored
     (:pte-xd      63  1))   ;; If IA32_EFER.NXE = 1, Execute
-			    ;; disable; otherwise 0 (reserved)
+                            ;; disable; otherwise 0 (reserved)
   )
 
 (defthm ia32e-pte-4k-page-layout-ok
@@ -1297,7 +1273,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (make-event (define-layout-constants *ia32e-pte-4k-page-layout*))
 (make-event (layout-names 'ia32e-pte-4k-page-names
-			  *ia32e-pte-4k-page-layout*))
+                          *ia32e-pte-4k-page-layout*))
 
 
 ;; Some parts of page tables are consistent across paging modes ---
@@ -1340,27 +1316,27 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (defmacro mxcsr-slice (flg mxcsr)
   (slice flg mxcsr
-	 32
-	 *mxcsr-layout*))
+         32
+         *mxcsr-layout*))
 
 (defmacro !mxcsr-slice (flg val mxcsr)
   (!slice flg val mxcsr
-	  32
-	  *mxcsr-layout*))
+          32
+          *mxcsr-layout*))
 
 (defmacro ia32_efer-slice (flg ia32_efer)
   (slice flg ia32_efer
-	 ;; 64
-	 12 ;; Top bits are reserved.  A lesser value here avoids
-	    ;; bignum creation.
-	 *ia32_efer-layout*))
+         ;; 64
+         12 ;; Top bits are reserved.  A lesser value here avoids
+            ;; bignum creation.
+         *ia32_efer-layout*))
 
 (defmacro !ia32_efer-slice (flg val ia32_efer)
   (!slice flg val ia32_efer
-	  ;; 64
-	  12 ;; Top bits are reserved.  A lesser value here avoids
-	     ;; bignum creation.
-	  *ia32_efer-layout*))
+          ;; 64
+          12 ;; Top bits are reserved.  A lesser value here avoids
+             ;; bignum creation.
+          *ia32_efer-layout*))
 
 (defmacro cr0-slice (flg cr0)
   (slice flg cr0 32 *cr0-layout*))
@@ -1376,15 +1352,15 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 (defmacro cr4-slice (flg cr4)
   (slice flg cr4 ;; 64
-	 22      ;; Top bits are reserved.  A lesser value here avoids
-		 ;; bignum creation.
-	 *cr4-layout*))
+         22      ;; Top bits are reserved.  A lesser value here avoids
+                 ;; bignum creation.
+         *cr4-layout*))
 
 (defmacro !cr4-slice (flg val cr4)
   (!slice flg val cr4 ;; 64
-	  22          ;; Top bits are reserved. A lesser value here avoids
-		      ;; bignum creation.
-	  *cr4-layout*))
+          22          ;; Top bits are reserved. A lesser value here avoids
+                      ;; bignum creation.
+          *cr4-layout*))
 
 (defmacro hidden-seg-reg-layout-slice (flg segment-selector-layout)
   (slice flg segment-selector-layout 112 *hidden-segment-register-layout*))

@@ -458,25 +458,28 @@
   (implies (disjoint-p (list index-2) (addr-range 4 index-1))
            (equal (rm-low-32 index-1 (xw :mem index-2 val-2 x86))
                   (rm-low-32 index-1 x86)))
-  :hints (("Goal" :in-theory (e/d* (rm-low-32) ()))))
+  :hints (("Goal" :in-theory (e/d* (rm-low-32) (force (force))))))
 
 (defthm rm-low-64-and-xw-mem-disjoint
   (implies (disjoint-p (list index-2) (addr-range 8 index-1))
            (equal (rm-low-64 index-1 (xw :mem index-2 val-2 x86))
                   (rm-low-64 index-1 x86)))
-  :hints (("Goal" :in-theory (e/d* (rm-low-64 rm-low-32) ()))))
+  :hints (("Goal" :in-theory (e/d* (rm-low-64 rm-low-32)
+                                   (force (force))))))
 
 (defthm xw-mem-and-wm-low-32-commute
   (implies (disjoint-p (list index-1) (addr-range 4 index-2))
            (equal (xw :mem index-1 val-1 (wm-low-32 index-2 val-2 x86))
                   (wm-low-32 index-2 val-2 (xw :mem index-1 val-1 x86))))
-  :hints (("Goal" :in-theory (e/d* (wm-low-32) ()))))
+  :hints (("Goal" :in-theory (e/d* (wm-low-32)
+                                   (force (force))))))
 
 (defthm xw-mem-and-wm-low-64-commute
   (implies (disjoint-p (list index-1) (addr-range 8 index-2))
            (equal (xw :mem index-1 val-1 (wm-low-64 index-2 val-2 x86))
                   (wm-low-64 index-2 val-2 (xw :mem index-1 val-1 x86))))
-  :hints (("Goal" :in-theory (e/d* (wm-low-64 wm-low-32) ()))))
+  :hints (("Goal" :in-theory (e/d* (wm-low-64 wm-low-32)
+                                   (force (force))))))
 
 (defthm read-from-physical-memory-and-write-to-physical-memory-disjoint
   (implies (disjoint-p p-addrs-1 p-addrs-2)
@@ -484,7 +487,8 @@
                    p-addrs-1
                    (write-to-physical-memory p-addrs-2 value x86))
                   (read-from-physical-memory p-addrs-1 x86)))
-  :hints (("Goal" :in-theory (e/d* (disjoint-p) ()))))
+  :hints (("Goal" :in-theory (e/d* (disjoint-p)
+                                   (force (force))))))
 
 (defthm read-from-physical-memory-and-write-to-physical-memory-equal
   (implies (and (no-duplicates-p p-addrs)
@@ -497,7 +501,7 @@
   :hints (("Goal"
            :induct (read-from-physical-memory
                     p-addrs (write-to-physical-memory p-addrs value x86))
-           :in-theory (e/d* () ()))))
+           :in-theory (e/d* () (force (force))))))
 
 ;; ======================================================================
 
@@ -513,7 +517,7 @@
            :in-theory (e/d* (write-to-physical-memory
                              wm-low-64
                              wm-low-32)
-                            ()))))
+                            (force (force))))))
 
 (local
  (defthmd rewrite-read-from-physical-memory-to-rm-low-64-helper
@@ -526,10 +530,10 @@
             :in-theory (e/d* (read-from-physical-memory
                               rm-low-64 rm-low-32 addr-range
                               rm-low-64-and-write-to-physical-memory-equal-helper-1)
-                             ())))))
+                             (force (force)))))))
 
 (defthmd rewrite-read-from-physical-memory-to-rm-low-64
-  (implies (and (equal p-addrs (addr-range 8 index))                
+  (implies (and (equal p-addrs (addr-range 8 index))
                 (not (app-view x86))
                 (physical-address-p index)
                 (x86p x86))
@@ -542,6 +546,6 @@
            :in-theory (e/d* (create-physical-address-list
                              physical-address-listp
                              unsigned-byte-p)
-                            ()))))
+                            (force (force))))))
 
 ;; ======================================================================

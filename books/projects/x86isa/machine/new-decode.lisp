@@ -124,6 +124,8 @@
    (rex-byte               :type (unsigned-byte  8))
    (prefixes               :type (unsigned-byte #.*prefixes-width*)))
 
+  :guard (prefixes-p prefixes)
+
   :parents (decoding-and-spec-utils)
 
   ;; TODO: What about AVX512?  Do the Intel descriptions of
@@ -189,7 +191,7 @@
     (b* ((imm? (equal addressing-method-code 'I))
          (op-size-override?
           (eql #.*operand-size-override*
-               (prefixes-slice :opr prefixes)))
+               (the (unsigned-byte 8) (prefixes->opr prefixes))))
          (rex.w (logbitp #.*w* rex-byte)))
 
       (cond

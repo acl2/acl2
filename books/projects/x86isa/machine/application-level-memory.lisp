@@ -122,6 +122,7 @@ memory.</p>" )
 (define canonical-address-p (lin-addr)
   :parents (linear-memory-in-app-view)
   :inline t
+  :no-function t
   :enabled t
   ;; In 64-bit mode, an address is considered to be in canonical form
   ;; if address bits 63 through to the most-significant implemented
@@ -150,6 +151,7 @@ memory.</p>" )
    (x86))
   :enabled t
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
 
   (mbe :logic (if (canonical-address-p addr)
@@ -192,6 +194,7 @@ memory.</p>" )
    (x86))
   :enabled t
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
 
   (if (mbt (canonical-address-p addr))
@@ -263,6 +266,7 @@ memory.</p>" )
    (x86))
   :enabled t
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
 
   (if (mbt (canonical-address-p addr))
@@ -353,6 +357,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (rml48-guard-proof-helper) ())))
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
 
   (if (mbt (canonical-address-p addr))
@@ -432,6 +437,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d () (rvm32))))
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
 
   (if (mbt (canonical-address-p addr))
@@ -513,6 +519,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d () (rvm32))))
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
 
   (if (mbt (canonical-address-p addr))
@@ -592,6 +599,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d () (rvm64))))
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
 
   (if (mbt (canonical-address-p addr))
@@ -677,6 +685,7 @@ memory.</p>" )
    (x86))
   :enabled t
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
 
   (mbe :logic (if (canonical-address-p addr)
@@ -719,6 +728,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
 
   (if (mbt (canonical-address-p addr))
@@ -780,6 +790,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
 
   (if (mbt (canonical-address-p addr))
@@ -851,6 +862,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
 
   (if (mbt (canonical-address-p addr))
@@ -913,6 +925,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
 
   (if (mbt (canonical-address-p addr))
@@ -975,6 +988,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
 
   (if (mbt (canonical-address-p addr))
@@ -1037,6 +1051,7 @@ memory.</p>" )
   :enabled t
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :inline t
+  :no-function t
   :parents (linear-memory-in-app-view)
   :prepwork ((local (in-theory (e/d () (wvm64)))))
   (if (mbt (canonical-address-p addr))

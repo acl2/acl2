@@ -205,6 +205,7 @@
   ((local (in-theory (e/d () (unsigned-byte-p)))))
 
   :inline t
+  :no-function t
   :parents (instruction-semantic-functions)
   :short "Specification for the @('DIV') (unsigned divide) instruction"
 
@@ -346,6 +347,7 @@
   ((local (in-theory (e/d () (unsigned-byte-p)))))
 
   :inline t
+  :no-function t
   :parents (instruction-semantic-functions)
   :short "Specification for the @('IDIV') (unsigned idivide) instruction"
 

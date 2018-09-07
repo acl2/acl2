@@ -66,6 +66,7 @@
 (define convert-arith-operation-to-rtl-op
   ((operation natp))
   :inline t
+  :no-function t
   (case operation
     (#.*OP-ADD* 'RTL::ADD)
     (#.*OP-SUB* 'RTL::SUB)

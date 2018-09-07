@@ -71,17 +71,17 @@
 
   (b* ((ctx 'x86-mov-Op/En-MR)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (the (unsigned-byte 8) (prefixes-slice :seg prefixes)))
+       (p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        (byte-operand? (equal opcode #x88))
        ((the (integer 1 8) operand-size)
@@ -148,17 +148,17 @@
 
   (b* ((ctx 'x86-mov-Op/En-RM)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        (byte-operand? (equal opcode #x8A))
        ((the (integer 1 8) operand-size)
@@ -212,12 +212,12 @@
        ;; This instruction does not require a ModR/M byte.
 
        ;; Get prefixes:
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        ;; The Intel manual says the following:
 
@@ -302,7 +302,7 @@
 
   (b* ((ctx 'x86-mov-Op/En-OI)
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -358,15 +358,15 @@
 
   (b* ((ctx 'x86-mov-Op/En-MI)
 
-       (mod (mrm-mod modr/m))
-       (r/m (mrm-r/m modr/m))
+       (mod (modr/m->mod modr/m))
+       (r/m (modr/m->r/m modr/m))
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        (byte-operand? (eql opcode #xC6))
        ((the (integer 1 8) imm-size)
@@ -460,15 +460,15 @@
 
   (b* ((ctx 'x86-lea)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        ;; this is the operand size
        ;; in Intel manual, Mar'17, Vol 2, Tables 3-53 and 3-54:
@@ -531,17 +531,17 @@
 
   (b* ((ctx 'x86-movsx)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
 
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size proc-mode nil rex-byte t prefixes x86))
@@ -624,16 +624,16 @@
 
   (b* ((ctx 'x86-movsxd)
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
@@ -725,17 +725,17 @@
 
   (b* ((ctx 'x86-movzx)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
@@ -814,7 +814,8 @@
   ;; data and limits.
 
   :parents (two-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d () ())))
+  :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+  :guard-debug t
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
@@ -824,12 +825,12 @@
   (b* ((ctx 'x86-mov-control-regs-Op/En-MR)
 
        ;; The r/m field specifies the GPR (destination).
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        ;; MOD field is ignored.
        ;; The reg field specifies the control register (source).
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (cpl (cpl x86))

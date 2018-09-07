@@ -419,6 +419,7 @@
                                            member-equal
                                            not))))
     :inline t
+    :no-function t
 
     (if (mbt (and (unsigned-byte-p *physical-address-size* base-addr)
                   (equal (loghead 12 base-addr) 0)))
@@ -475,6 +476,7 @@
                                            member-equal
                                            not))))
     :inline t
+    :no-function t
 
     (if (mbt (and (unsigned-byte-p *physical-address-size* base-addr)
                   (equal (loghead 12 base-addr) 0)))
@@ -537,6 +539,7 @@
                                            member-equal
                                            not))))
     :inline t
+    :no-function t
 
     (if (mbt (and (unsigned-byte-p *physical-address-size* base-addr)
                   (equal (loghead 12 base-addr) 0)))
@@ -597,6 +600,7 @@
                                            member-equal
                                            not))))
     :inline t
+    :no-function t
 
     (if (mbt (and (unsigned-byte-p *physical-address-size* base-addr)
                   (equal (loghead 12 base-addr) 0)))
@@ -693,7 +697,6 @@
      "@('0'): Explicit; @('1'): Implicit")
     ;; Default value is 0.
     '0))
-  :inline t
   :short "Determining access rights and detecting page faults"
   :long "<p>Source for determining the access rights: Section 4.6 in
    the Intel Manuals, Vol. 3A.</p>
@@ -3195,6 +3198,7 @@ accesses.</p>
    (x86 "x86 state"))
 
   :inline t
+  :no-function t
   :enabled t
 
   :guard (not (app-view x86))

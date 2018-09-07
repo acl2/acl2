@@ -206,11 +206,11 @@
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       (lock? (eql #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (eql #.*lock* (prefixes->lck prefixes)))
        ((when (and lock? (or (eql operation #.*OP-CMP*)
                              (eql operation #.*OP-TEST*))))
         ;; CMP and TEST do not allow a LOCK prefix.
@@ -219,9 +219,9 @@
         ;; Only memory operands allow a LOCK prefix.
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :adr prefixes)))
+                 (prefixes->adr prefixes)))
 
        (byte-operand? (eql 0 (the (unsigned-byte 1)
                                (logand 1 opcode))))
@@ -340,19 +340,19 @@
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
        ;; Since the destination is a general-purpose register and not memory,
        ;; the LOCK prefix cannot be used for ADD, ADC, SUB, SBB, OR, AND, and
        ;; XOR. In general, the LOCK prefix cannot be used for CMP and TEST.
-       (lock? (eql #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (eql #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :adr prefixes)))
+                 (prefixes->adr prefixes)))
 
        (byte-operand? (eql 0 (the (unsigned-byte 1)
                                (logand 1 opcode))))
@@ -484,10 +484,10 @@
                    (equal proc-mode #.*64-bit-mode*)))
         (!!fault-fresh :ud nil))
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
-       (lock? (eql #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (eql #.*lock* (prefixes->lck prefixes)))
        ((when (and lock? (or (eql operation #.*OP-CMP*)
                              (eql operation #.*OP-TEST*))))
         ;; CMP and TEST do not allow a LOCK prefix.
@@ -496,9 +496,9 @@
         ;; Only memory operands allow a LOCK prefix.
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :adr prefixes)))
+                 (prefixes->adr prefixes)))
 
        (E-byte-operand? (or (eql opcode #x80)
                             (eql opcode #x82)
@@ -659,7 +659,7 @@
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
 
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
+       (lock (eql #.*lock* (prefixes->lck prefixes)))
        ;; rAX is not a memory operand:
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
@@ -745,18 +745,18 @@
 
   (b* ((ctx 'x86-inc/dec-FE-FF)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
        ;; the LOCK prefix cannot be used with a register operand:
-       (lock? (eql #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (eql #.*lock* (prefixes->lck prefixes)))
        ((when (and lock? (eql mod 3)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        (select-byte-operand (equal 0 (logand 1 opcode)))
 
@@ -901,13 +901,13 @@
 
   (b* ((ctx 'x86-not/neg-F6-F7)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        (select-byte-operand (equal 0 (logand 1 opcode)))
        ((the (integer 0 8) r/mem-size)

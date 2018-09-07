@@ -1228,12 +1228,8 @@
         (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
         (get-prefixes #.*64-bit-mode* (+ 1 start-rip)
                       (if (equal byte #.*lock*)
-                          (!prefixes-slice
-                           :lck byte
-                           prefixes)
-                        (!prefixes-slice
-                         :rep byte
-                         prefixes))
+                          (!prefixes->lck byte prefixes)
+                        (!prefixes->rep byte prefixes))
                       0
                       (+ -1 cnt)
                       new-x86))))
@@ -1264,7 +1260,7 @@
                         (equal byte #.*gs-override*))
                     (get-prefixes #.*64-bit-mode*
                                   (1+ start-rip)
-                                  (!prefixes-slice :seg byte prefixes)
+                                  (!prefixes->seg byte prefixes)
                                   0
                                   (1- cnt)
                                   new-x86)
@@ -1298,7 +1294,7 @@
         (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
         (get-prefixes #.*64-bit-mode*
                       (1+ start-rip)
-                      (!prefixes-slice :opr byte prefixes)
+                      (!prefixes->opr byte prefixes)
                       0
                       (1- cnt)
                       new-x86))))
@@ -1326,7 +1322,7 @@
                (equal
                 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
                 (get-prefixes #.*64-bit-mode* (1+ start-rip)
-                              (!prefixes-slice :adr byte prefixes)
+                              (!prefixes->adr byte prefixes)
                               0
                               (1- cnt)
                               new-x86))))
@@ -1397,9 +1393,9 @@
              ;; Storing the number of prefixes seen and the first byte
              ;; following the prefixes in "prefixes":
              (let ((prefixes
-                    (!prefixes-slice :next-byte byte prefixes)))
+                    (!prefixes->nxt byte prefixes)))
                (mv nil
-                   (!prefixes-slice :num-prefixes (- 15 cnt) prefixes)
+                   (!prefixes->num (- 15 cnt) prefixes)
                    rex-byte ;; Preserving rex-byte
                    x86-1 x86-2))))
 
@@ -1413,8 +1409,8 @@
                      prefixes rex-byte x86-1 x86-2))
                 (prefixes
                  (if (equal byte #.*lock*)
-                     (!prefixes-slice :lck byte prefixes)
-                   (!prefixes-slice :rep byte prefixes))))
+                     (!prefixes->lck byte prefixes)
+                   (!prefixes->rep byte prefixes))))
              ;; Storing the group 1 prefix (possibly overwriting a
              ;; previously seen group 1 prefix) and going on...
              (get-prefixes-two-x86-induct-hint
@@ -1438,7 +1434,7 @@
                  ;; previously seen group 2 prefix) and going on...
                  (get-prefixes-two-x86-induct-hint
                   next-rip
-                  (!prefixes-slice :seg byte prefixes)
+                  (!prefixes->seg byte prefixes)
                   0 ;; Nullify a previously read REX prefix, if any
                   (the (integer 0 15) (1- cnt))
                   x86-1 x86-2)
@@ -1463,7 +1459,7 @@
              ;; previously seen group 3 prefix) and going on...
              (get-prefixes-two-x86-induct-hint
               next-rip
-              (!prefixes-slice :opr byte prefixes)
+              (!prefixes->opr byte prefixes)
               0 ;; Nullify a previously read REX prefix, if any
               (the (integer 0 15) (1- cnt))
               x86-1 x86-2)))
@@ -1480,7 +1476,7 @@
              ;; previously seen group 4 prefix) and going on...
              (get-prefixes-two-x86-induct-hint
               next-rip
-              (!prefixes-slice :adr byte prefixes)
+              (!prefixes->adr byte prefixes)
               0 ;; Nullify a previously read REX prefix, if any
               (the (integer 0 15) (1- cnt))
               x86-1 x86-2)))

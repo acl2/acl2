@@ -153,7 +153,7 @@ writes the final value of the instruction pointer into RIP.</p>")
   :body
 
   (b* ((ctx 'x86-hlt)
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (cpl (cpl x86))
@@ -191,7 +191,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   (b* ((ctx 'x86-cmc/clc/stc/cld/std)
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (x86 (case opcode
@@ -231,7 +231,7 @@ writes the final value of the instruction pointer into RIP.</p>")
   :body
 
   (b* ((ctx 'x86-sahf)
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        ((the (unsigned-byte 16) ax)
         (mbe :logic (rgfi-size 2 *rax* rex-byte x86)
@@ -264,7 +264,7 @@ writes the final value of the instruction pointer into RIP.</p>")
   :body
 
   (b* ((ctx 'x86-lahf)
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
        ((the (unsigned-byte 8) ah)
         (logand #xff (the (unsigned-byte 32) (rflags x86))))
@@ -315,13 +315,13 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   (b* ((ctx 'x86-rdrand)
 
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ;; TODO: throw #UD if CPUID.01H:ECX.RDRAND[bit 30] = 0
        ;; (see Intel manual, Mar'17, Vol 2, RDRAND)
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       (rep (prefixes-slice :seg prefixes))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
+       (rep (prefixes->seg prefixes))
        (rep-p (or (equal #.*repe* rep)
                   (equal #.*repne* rep)))
        ((when (or lock? rep-p))

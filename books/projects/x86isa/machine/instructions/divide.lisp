@@ -79,7 +79,7 @@
                                (canonical-address-p temp-rip))
                 :hints (("Goal" :in-theory (e/d () (force (force))))))
 
-  :guard (equal (mrm-reg modr/m) 6)
+  :guard (equal (modr/m->reg modr/m) 6)
 
   :long
   "<h4>Op/En: M</h4>
@@ -95,15 +95,15 @@
 
   (b* ((ctx 'x86-div)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        (select-byte-operand (equal opcode #xF6))
        ((the (integer 1 8) reg/mem-size)
@@ -205,7 +205,7 @@
                                (canonical-address-p temp-rip))
                 :hints (("Goal" :in-theory (e/d () (force (force))))))
 
-  :guard (equal (mrm-reg modr/m) 7)
+  :guard (equal (modr/m->reg modr/m) 7)
 
   :long
   "<h4>Op/En: M</h4>
@@ -222,15 +222,15 @@
 
   (b* ((ctx 'x86-idiv)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        (select-byte-operand (equal opcode #xF6))
        ((the (integer 1 8) reg/mem-size)

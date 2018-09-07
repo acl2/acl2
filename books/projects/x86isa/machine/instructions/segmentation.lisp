@@ -86,8 +86,8 @@
        ((when (app-view x86))
         (!!ms-fresh :lgdt-unimplemented))
 
-       (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
+       (r/m (modr/m->r/m modr/m))
+       (mod (modr/m->mod modr/m))
 
        ;; If the current privilege level is not 0, the #GP exception
        ;; is raised.
@@ -103,12 +103,12 @@
 
        ;; If the lock prefix is used, then the #UD exception is
        ;; raised.
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
-       (p4? (equal #.*addr-size-override* (prefixes-slice :adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
@@ -152,7 +152,7 @@
        ;; manual, May'18, specification of LGDT, only 24 bits from the base are
        ;; copied into GDTR when the operand size attribute is 16 bits.
        (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :opr prefixes)))
+                 (prefixes->opr prefixes)))
        (operand-size
         (if (eql base-size 8)
             8
@@ -219,8 +219,8 @@
        ((when (app-view x86))
         (!!ms-fresh :lidt-unimplemented))
 
-       (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
+       (r/m (modr/m->r/m modr/m))
+       (mod (modr/m->mod modr/m))
 
        ;; If the current privilege level is not 0, the #GP exception
        ;; is raised.
@@ -236,12 +236,12 @@
 
        ;; If the lock prefix is used, then the #UD exception is
        ;; raised.
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes))
 
-       (p2 (prefixes-slice :seg prefixes))
-       (p4? (equal #.*addr-size-override* (prefixes-slice :adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
@@ -284,8 +284,7 @@
        ;; The operand size attribute is needed because, according to Intel
        ;; manual, May'18, specification of LGDT, only 24 bits from the base are
        ;; copied into GDTR when the operand size attribute is 16 bits.
-       (p3? (eql #.*operand-size-override*
-                 (prefixes-slice :opr prefixes)))
+       (p3? (eql #.*operand-size-override* (prefixes->opr prefixes)))
        (operand-size
         (if (eql base-size 8)
             8
@@ -358,8 +357,8 @@ a non-canonical form, raise the SS exception.</p>"
        ((when (app-view x86))
         (!!ms-fresh :lldt-unimplemented))
 
-       (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
+       (r/m (modr/m->r/m modr/m))
+       (mod (modr/m->mod modr/m))
 
        ;; If the current privilege level is not 0, the #GP exception
        ;; is raised.
@@ -369,12 +368,12 @@ a non-canonical form, raise the SS exception.</p>"
 
        ;; If the lock prefix is used, then the #UD exception is
        ;; raised.
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?)
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (p2 (prefixes-slice :seg prefixes))
-       (p4? (equal #.*addr-size-override* (prefixes-slice :adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 

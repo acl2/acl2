@@ -56,7 +56,7 @@
 ;; ======================================================================
 
 (def-inst x86-sal/sar/shl/shr/rcl/rcr/rol/ror
-  :guard (not (equal (mrm-reg modr/m) 6))
+  :guard (not (equal (modr/m->reg modr/m) 6))
 
   :parents (one-byte-opcodes)
 
@@ -123,16 +123,16 @@
 
   (b* ((ctx 'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
 
-       (lock (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
-       (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
-       (reg (mrm-reg modr/m))
+       (r/m (modr/m->r/m modr/m))
+       (mod (modr/m->mod modr/m))
+       (reg (modr/m->reg modr/m))
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+                   (prefixes->adr prefixes)))
 
        (byte-operand? (or (equal opcode #xC0)
                           (equal opcode #xD0)

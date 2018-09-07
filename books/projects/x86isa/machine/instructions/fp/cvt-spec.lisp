@@ -78,6 +78,7 @@
 (define rat-round-to-int ((rat rationalp)
                           (rc natp))
   :inline t
+  :no-function t
   :returns (r integerp :rule-classes :type-prescription)
   (rc-cases
    :rn (rat-round-to-int-rn rat)

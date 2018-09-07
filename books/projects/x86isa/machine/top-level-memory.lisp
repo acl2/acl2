@@ -60,6 +60,8 @@
   ((addr :type (signed-byte #.*max-linear-address-size*))
    (operand-size :type (member 1 2 4 6 8 10 16))
    (memory-ptr? booleanp))
+  :inline t
+  :no-function t
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check the alignment of a linear address."
   :long
@@ -106,7 +108,7 @@
          (equal (logand addr
                         (the (integer 0 15) (- operand-size 1)))
                 0)))))
-  :inline t
+  
   ///
 
   (defthm memory-byte-accesses-are-always-aligned
@@ -127,6 +129,8 @@
                (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
                (r-x       :type (member :r :x))
                x86)
+  :inline t
+  :no-function t
   :returns (mv flg
                (byte (unsigned-byte-p 8 byte) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
@@ -141,7 +145,6 @@
        ((unless (canonical-address-p lin-addr))
         (mv (list :non-canonical-address lin-addr) 0 x86)))
     (rml08 lin-addr r-x x86))
-  :inline t
   ///
 
   (defthm-usb n08p-of-mv-nth-1-rme08
@@ -253,6 +256,8 @@
    (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
    (r-x       :type (member :r :x))
    x86)
+  :inline t
+  :no-function t
   :returns (mv flg
                (byte (signed-byte-p 8 byte) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
@@ -269,8 +274,7 @@
        ((when flg) (mv flg 0 x86))
        ((unless (canonical-address-p lin-addr))
         (mv (list :non-canonical-address lin-addr) 0 x86)))
-    (riml08 lin-addr r-x x86))
-  :inline t
+    (riml08 lin-addr r-x x86))  
   ///
 
   (defthm-sb i08p-of-mv-nth-1-rime08
@@ -293,6 +297,8 @@
    (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
    (val       :type (unsigned-byte 8))
    x86)
+  :inline t
+  :no-function t
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
   :parents (top-level-memory)
@@ -309,7 +315,7 @@
        ((unless (canonical-address-p lin-addr))
         (mv (list :non-canonical-address lin-addr) x86)))
     (wml08 lin-addr val x86))
-  :inline t
+  
   ///
 
   (defrule wme08-when-64-bit-modep-and-not-fs/gs
@@ -325,6 +331,8 @@
    (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
    (val       :type (signed-byte 8))
    x86)
+  :inline t
+  :no-function t
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
   :parents (top-level-memory)
@@ -341,7 +349,7 @@
        ((unless (canonical-address-p lin-addr))
         (mv (list :non-canonical-address lin-addr) x86)))
     (wiml08 lin-addr val x86))
-  :inline t
+  
   ///
 
   (defrule wime08-when-64-bit-modep-and-not-fs/gs
@@ -362,6 +370,8 @@
    (r-x       :type (member :r :x))
    (check-alignment? booleanp)
    x86)
+  :inline t
+  :no-function t
   :returns (mv flg
                (word (unsigned-byte-p 16 word) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
@@ -380,7 +390,7 @@
                     (address-aligned-p lin-addr 2 nil)))
         (mv (list :unaligned-linear-address lin-addr) 0 x86)))
     (rml16 lin-addr r-x x86))
-  :inline t
+  
   ///
 
   (defthm-usb n16p-of-mv-nth-1-rme16
@@ -407,6 +417,9 @@
    (r-x :type (member :r :x))
    (check-alignment? booleanp)
    x86)
+
+  :inline t
+  :no-function t
   :returns (mv flg
                (byte (signed-byte-p 16 byte) :hyp (x86p x86))
                (x86-new x86p :hyp (x86p x86)))
@@ -425,7 +438,7 @@
                     (address-aligned-p lin-addr 2 nil)))
         (mv (list :unaligned-linear-address lin-addr) 0 x86)))
     (riml16 lin-addr r-x x86))
-  :inline t
+  
   ///
 
   (defthm-sb i16p-of-mv-nth-1-rime16
@@ -470,6 +483,7 @@
         (mv (list :unaligned-linear-address lin-addr) x86)))
     (wml16 lin-addr val x86))
   :inline t
+  :no-function t
   ///
 
   (defrule wme16-when-64-bit-modep-and-not-fs/gs
@@ -507,6 +521,7 @@
         (mv (list :unaligned-linear-address lin-addr) x86)))
     (wiml16 lin-addr val x86))
   :inline t
+  :no-function t
   ///
 
   (defrule wime16-when-64-bit-modep-and-not-fs/gs
@@ -554,6 +569,7 @@
         (mv (list :unaligned-linear-address lin-addr) 0 x86)))
     (rml32 lin-addr r-x x86))
   :inline t
+  :no-function t
   ///
 
   (defthm-usb n32p-of-mv-nth-1-rme32
@@ -608,6 +624,7 @@
         (mv (list :unaligned-linear-address lin-addr) 0 x86)))
     (riml32 lin-addr r-x x86))
   :inline t
+  :no-function t
   ///
 
   (defthm-sb i32p-of-mv-nth-1-rime32
@@ -661,6 +678,7 @@
         (mv (list :unaligned-linear-address lin-addr) x86)))
     (wml32 lin-addr val x86))
   :inline t
+  :no-function t
   ///
 
   (defrule wme32-when-64-bit-modep-and-not-fs/gs
@@ -703,6 +721,7 @@
         (mv (list :unaligned-linear-address lin-addr) x86)))
     (wiml32 lin-addr val x86))
   :inline t
+  :no-function t
   ///
 
   (defrule wime32-when-64-bit-modep-and-not-fs/gs
@@ -747,6 +766,7 @@
         (mv (list :unaligned-linear-address lin-addr) 0 x86)))
     (rml48 lin-addr r-x x86))
   :inline t
+  :no-function t
   ///
 
   (defthm-usb n48p-of-mv-nth-1-rme48
@@ -792,6 +812,7 @@
         (mv (list :unaligned-linear-address lin-addr) x86)))
     (wml48 lin-addr val x86))
   :inline t
+  :no-function t
   ///
 
   (defrule wme48-when-64-bit-modep-and-not-fs/gs
@@ -835,6 +856,7 @@
         (mv (list :unaligned-linear-address lin-addr) 0 x86)))
     (rml64 lin-addr r-x x86))
   :inline t
+  :no-function t
   ///
 
   (defthm-usb n64p-of-mv-nth-1-rme64
@@ -881,6 +903,7 @@
         (mv (list :unaligned-linear-address lin-addr) 0 x86)))
     (riml64 lin-addr r-x x86))
   :inline t
+  :no-function t
   ///
 
   (defthm-sb i64p-of-mv-nth-1-rime64
@@ -926,6 +949,7 @@
         (mv (list :unaligned-linear-address lin-addr) x86)))
     (wml64 lin-addr val x86))
   :inline t
+  :no-function t
   ///
 
   (defrule wme64-when-64-bit-modep-and-not-fs/gs
@@ -964,6 +988,7 @@
         (mv (list :unaligned-linear-address lin-addr) x86)))
     (wiml64 lin-addr val x86))
   :inline t
+  :no-function t
   ///
 
   (defrule wime64-when-64-bit-modep-and-not-fs/gs
@@ -1007,6 +1032,7 @@
         (mv (list :unaligned-linear-address lin-addr) 0 x86)))
     (rml80 lin-addr r-x x86))
   :inline t
+  :no-function t
   ///
 
   (defthm-usb n80p-of-mv-nth-1-rme80
@@ -1052,6 +1078,7 @@
         (mv (list :unaligned-linear-address lin-addr) x86)))
     (wml80 lin-addr val x86))
   :inline t
+  :no-function t
   ///
 
   (defrule wme80-when-64-bit-modep-and-not-fs/gs
@@ -1098,6 +1125,7 @@
         (mv (list :unaligned-linear-address lin-addr) 0 x86)))
     (rml128 lin-addr r-x x86))
   :inline t
+  :no-function t
   ///
 
   (defthm-usb n128p-of-mv-nth-1-rme128
@@ -1146,6 +1174,7 @@
         (mv (list :unaligned-linear-address lin-addr) x86)))
     (wml128 lin-addr val x86))
   :inline t
+  :no-function t
   ///
 
   (defrule wme128-when-64-bit-modep-and-not-fs/gs
@@ -1194,6 +1223,7 @@
         (mv (list :unaligned-linear-address lin-addr) 0 x86)))
     (rml-size nbytes lin-addr r-x x86))
   :inline t
+  :no-function t
   ///
 
   (defrule rme-size-when-64-bit-modep-and-not-fs/gs
@@ -1282,6 +1312,7 @@
         (mv (list :unaligned-linear-address lin-addr) 0 x86)))
     (riml-size nbytes lin-addr r-x x86))
   :inline t
+  :no-function t
   ///
 
   (defrule rime-size-when-64-bit-modep-and-not-fs/gs
@@ -1355,6 +1386,7 @@
         (mv (list :unaligned-linear-address lin-addr) x86)))
     (wml-size nbytes lin-addr val x86))
   :inline t
+  :no-function t
   ///
 
   (defrule wme-size-when-64-bit-modep-and-not-fs/gs
@@ -1381,6 +1413,8 @@
    ;; Default value for mem-ptr? is nil --- note that this input is
    ;; relevant only for nbytes = 4.
    ((mem-ptr? booleanp) 'nil))
+  :inline t
+  :no-function t
   :guard (case nbytes
            (1  (i08p val))
            (2  (i16p val))
@@ -1404,7 +1438,7 @@
                     (address-aligned-p lin-addr nbytes mem-ptr?)))
         (mv (list :unaligned-linear-address lin-addr) x86)))
     (wiml-size nbytes lin-addr val x86))
-  :inline t
+
   ///
 
   (defrule wime-size-when-64-bit-modep-and-not-fs/gs

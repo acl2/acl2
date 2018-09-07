@@ -278,6 +278,7 @@
                 (otherwise nil)))
 
   :inline t
+  :no-function t
 
   :parents (instruction-semantic-functions)
 
@@ -517,6 +518,7 @@ otherwise, it is set to 1.</p>"
                 (otherwise nil)))
 
   :inline t
+  :no-function t
 
   :parents (instruction-semantic-functions)
 
@@ -759,6 +761,7 @@ set to the most-significant bit of the original operand.</p>"
                 (otherwise nil)))
 
   :inline t
+  :no-function t
 
   :parents (instruction-semantic-functions)
 

@@ -86,7 +86,7 @@
 
   (b* ((ctx 'x86-syscall-app-view)
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((unless (eql proc-mode #.*64-bit-mode*))
@@ -236,7 +236,7 @@
 
   (b* ((ctx 'x86-syscall)
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((unless (eql proc-mode #.*64-bit-mode*))
@@ -478,7 +478,7 @@ REX.W + 0F 07: SYSRET</p>
 
   (b* ((ctx 'x86-sysret)
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((unless (eql proc-mode #.*64-bit-mode*))

@@ -90,6 +90,7 @@ prefix.</p>"
      (rex-byte :type (unsigned-byte 8) "REX prefix")
      (index    :type (unsigned-byte 2) "One of the W, R, X, or B bits of the REX prefix"))
     :inline t
+    :no-function t
     :short "Using the REX prefix to access general-purpose registers"
     :long "<p>In 64-bit mode, in addition to generating 64-bit operand sizes,
     the REX prefix is used to reference registers R8 to R15. Instructions that
@@ -166,6 +167,7 @@ are used to write natural numbers into the GPRs.</p>"
      (rex :type (unsigned-byte 8))
      (x86))
     :inline t
+    :no-function t
     :guard (reg-indexp reg rex)
     :short "Read from byte general-purpose registers"
     :long "<p><i>Source: Intel Manuals, Vol. 1, Section
@@ -211,6 +213,7 @@ are used to write natural numbers into the GPRs.</p>"
     ((reg :type (unsigned-byte 4))
      (x86))
     :inline t
+    :no-function t
     :short "Read from word general-purpose registers"
 
     (n16 (the (signed-byte 64) (rgfi reg x86)))
@@ -228,6 +231,7 @@ are used to write natural numbers into the GPRs.</p>"
     ((reg :type (unsigned-byte 4))
      (x86))
     :inline t
+    :no-function t
     :short "Read from doubleword general-purpose registers"
 
     (n32 (the (signed-byte 64) (rgfi reg x86)))
@@ -245,6 +249,7 @@ are used to write natural numbers into the GPRs.</p>"
     ((reg :type (unsigned-byte 4))
      (x86))
     :inline t
+    :no-function t
     :short "Read from quadword general-purpose registers"
     :long "<p>This function is used only in 64-bit mode.</p>"
 
@@ -265,6 +270,7 @@ are used to write natural numbers into the GPRs.</p>"
      (byte :type (unsigned-byte 8))
      (x86))
     :inline t
+    :no-function t
     :guard (reg-indexp reg rex)
     :guard-hints (("Goal" :in-theory (e/d (
                                            loghead-to-logand
@@ -364,7 +370,8 @@ are used to write natural numbers into the GPRs.</p>"
     :hints (("Goal"
              :in-theory (e/d (n64-to-i64
                               rr08 wr08)
-                             (unsigned-byte-p)))))
+                             (unsigned-byte-p
+                              (force) force)))))
 
   (defthm rr08-wr08-different
     (implies (and (n08p byte)
@@ -374,13 +381,14 @@ are used to write natural numbers into the GPRs.</p>"
                     (rr08 reg1 rex1 x86)))
     :hints (("Goal"
              :in-theory (e/d (n64-to-i64 rr08 wr08)
-                             ()))))
+                             (force (force))))))
 
   (define wr16
     ((reg  :type (unsigned-byte 4))
      (val  :type (unsigned-byte 16))
      (x86))
     :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (e/d (
                                            loghead-to-logand
                                            bitops::logsquash)
@@ -461,6 +469,7 @@ are used to write natural numbers into the GPRs.</p>"
      (val  :type (unsigned-byte 32))
      (x86))
     :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (e/d (
                                            loghead-to-logand
                                            bitops::logsquash)
@@ -529,6 +538,7 @@ are used to write natural numbers into the GPRs.</p>"
      (val  :type (unsigned-byte 64))
      (x86))
     :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (e/d (
                                            loghead-to-logand
                                            bitops::logsquash)
@@ -572,6 +582,7 @@ are used to write natural numbers into the GPRs.</p>"
     :guard (and (reg-indexp index rex)
                 (member nbytes '(1 2 4 8)))
     :inline t
+    :no-function t
     :returns (val natp :rule-classes :type-prescription)
     :short "Read form byte, word, doubleword, or quadword
             general-purpose register"
@@ -599,6 +610,7 @@ are used to write natural numbers into the GPRs.</p>"
                 (unsigned-byte-p (ash nbytes 3) val))
     :returns (x86 x86p :hyp (and (x86p x86) (natp index)))
     :inline t
+    :no-function t
     :short "Write to byte, word, doubleword, or quadword
             general-purpose register"
     (case nbytes
@@ -671,6 +683,7 @@ pointer, or opcode registers\).</em></p>"
     ((i :type (integer 0 7))
      (x86))
     :inline t
+    :no-function t
     (let ((reg80 (the (unsigned-byte 80) (fp-datai i x86))))
       (mbe :logic (part-select reg80 :low 0 :width 64)
            :exec  (logand #.*2^64-1* reg80)))
@@ -689,6 +702,7 @@ pointer, or opcode registers\).</em></p>"
      (v :type (unsigned-byte 64))
      (x86))
     :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (e/d ()
                                           (unsigned-byte-p))))
 
@@ -709,6 +723,7 @@ pointer, or opcode registers\).</em></p>"
 
   (define mmx-instruction-updates (x86)
     :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (e/d ()
                                           ())))
     :short "We set the FPU tag and TOS field to 00B \(valid\) and 000B
@@ -776,6 +791,7 @@ pointer, or opcode registers\).</em></p>"
     ((reg :type (unsigned-byte 5))
      (x86))
     :inline t
+    :no-function t
 
     (n32 (the (unsigned-byte 512) (zmmi reg x86)))
 
@@ -792,6 +808,7 @@ pointer, or opcode registers\).</em></p>"
     ((reg :type (unsigned-byte 5))
      (x86))
     :inline t
+    :no-function t
 
     (n64 (the (unsigned-byte 512) (zmmi reg x86)))
 
@@ -808,6 +825,7 @@ pointer, or opcode registers\).</em></p>"
     ((reg :type (unsigned-byte 5))
      (x86))
     :inline t
+    :no-function t
 
     (n128 (the (unsigned-byte 512) (zmmi reg x86)))
 
@@ -824,6 +842,7 @@ pointer, or opcode registers\).</em></p>"
     ((reg :type (unsigned-byte 5))
      (x86))
     :inline t
+    :no-function t
 
     (n256 (the (unsigned-byte 512) (zmmi reg x86)))
 
@@ -840,6 +859,7 @@ pointer, or opcode registers\).</em></p>"
     ((reg :type (unsigned-byte 5))
      (x86))
     :inline t
+    :no-function t
 
     (n512 (the (unsigned-byte 512) (zmmi reg x86)))
 
@@ -875,6 +895,7 @@ pointer, or opcode registers\).</em></p>"
      @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
      out. For @('*zmm-access*'), no upper bits are zeroed out.</p>"
     :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
                                            bitops::logsquash)
                                           (bitops::logand-with-negated-bitmask
@@ -933,6 +954,7 @@ pointer, or opcode registers\).</em></p>"
      @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
      out. For @('*zmm-access*'), no upper bits are zeroed out.</p>"
     :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
                                            bitops::logsquash)
                                           (bitops::logand-with-negated-bitmask
@@ -990,6 +1012,7 @@ pointer, or opcode registers\).</em></p>"
      @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
      out. For @('*zmm-access*'), no upper bits are zeroed out.</p>"
     :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
                                            bitops::logsquash)
                                           (bitops::logand-with-negated-bitmask
@@ -1047,6 +1070,7 @@ pointer, or opcode registers\).</em></p>"
      512 256)`) bits are zeroed out. For @('*zmm-access*'), no upper
      bits are zeroed out.</p>"
     :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
                                            bitops::logsquash)
                                           (bitops::logand-with-negated-bitmask
@@ -1096,6 +1120,7 @@ pointer, or opcode registers\).</em></p>"
      (x86))
     :short "Write @('val') to 512 bits of a ZMM register."
     :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
                                            bitops::logsquash)
                                           (bitops::logand-with-negated-bitmask
@@ -1138,6 +1163,7 @@ pointer, or opcode registers\).</em></p>"
     :enabled t
     :guard (member nbytes '(4 8 16 32 64))
     :inline t
+    :no-function t
     :returns (val natp :rule-classes :type-prescription)
     (case nbytes
       (4  (rz32  index x86))
@@ -1166,6 +1192,7 @@ pointer, or opcode registers\).</em></p>"
                 (unsigned-byte-p (ash nbytes 3) val))
     :returns (x86 x86p :hyp (and (x86p x86) (natp index)))
     :inline t
+    :no-function t
     (case nbytes
       (4  (wz32  index val x86 :regtype regtype))
       (8  (wz64  index val x86 :regtype regtype))
@@ -1215,6 +1242,7 @@ pointer, or opcode registers\).</em></p>"
     ((reg :type (unsigned-byte 4))
      (x86))
     :inline t
+    :no-function t
     :enabled t
     (rz32 reg x86))
 
@@ -1222,6 +1250,7 @@ pointer, or opcode registers\).</em></p>"
     ((reg :type (unsigned-byte 4))
      (x86))
     :inline t
+    :no-function t
     :enabled t
     (rz64 reg x86))
 
@@ -1229,6 +1258,7 @@ pointer, or opcode registers\).</em></p>"
     ((reg :type (unsigned-byte 4))
      (x86))
     :inline t
+    :no-function t
     :enabled t
     (rz128 reg x86))
 
@@ -1239,6 +1269,7 @@ pointer, or opcode registers\).</em></p>"
     :short "Write @('val') to low 32 bits of a ZMM register; upper
     bits are preserved."
     :inline t
+    :no-function t
     :enabled t
     (wz32 reg val x86 :regtype #.*xmm-access*))
 
@@ -1249,6 +1280,7 @@ pointer, or opcode registers\).</em></p>"
     :short "Write @('val') to low 64 bits of a ZMM register; upper
     bits are preserved."
     :inline t
+    :no-function t
     :enabled t
     (wz64 reg val x86 :regtype #.*xmm-access*))
 
@@ -1259,6 +1291,7 @@ pointer, or opcode registers\).</em></p>"
     :short "Write @('val') to low 128 bits of a ZMM register; upper
     bits are preserved."
     :inline t
+    :no-function t
     :enabled t
     (wz128 reg val x86 :regtype #.*xmm-access*))
 
@@ -1269,6 +1302,7 @@ pointer, or opcode registers\).</em></p>"
     :enabled t
     :guard (member nbytes '(4 8 16))
     :inline t
+    :no-function t
     :returns (val natp :rule-classes :type-prescription)
     (case nbytes
       (4  (rx32  index x86))
@@ -1292,6 +1326,7 @@ pointer, or opcode registers\).</em></p>"
                 (unsigned-byte-p (ash nbytes 3) val))
     :returns (x86 x86p :hyp (and (x86p x86) (natp index)))
     :inline t
+    :no-function t
     (case nbytes
       (4  (wx32  index val x86))
       (8  (wx64  index val x86))
@@ -1413,7 +1448,7 @@ values.</p>"
 (define undef-read (x86)
   ;; TO-DO@Shilpi: I'll need to add more args to this function if I
   ;; need the corresponding raw Lisp function to have more info.
-  :inline nil
+  :inline nil  
   :enabled t
   :returns (mv (unknown natp :rule-classes :type-prescription)
                (x86     x86p :hyp (x86p x86)))
@@ -1611,6 +1646,7 @@ values.</p>"
 
   :prepwork ((local (in-theory (e/d* () (undef-flg)))))
   :inline t
+  :no-function t
   :parents (register-readers-and-writers characterizing-undefined-behavior)
 
   :short "Setting the rflag @('flg') in the x86 state to @('undefined')"
@@ -1664,6 +1700,7 @@ using the @(see undef-read) function.</p>"
    x86)
 
   :inline t
+  :no-function t
   :parents (register-readers-and-writers)
 
   :short "Writing user rflags \(CF, PF, AF, ZF, SF, and OF\),
@@ -1672,8 +1709,11 @@ using the @(see undef-read) function.</p>"
   :long "<p>We set the undefined flags, which are indicated by
   @('mask'), to the value returned by @(see undef-read).</p>"
 
-  :guard-hints (("Goal" :in-theory (e/d (!flgi) (unsigned-byte-p))))
-  :prepwork ((local (in-theory (e/d () (bitops::logand-with-negated-bitmask)))))
+  :guard-hints (("Goal" :in-theory (e/d (!flgi) 
+                                        (unsigned-byte-p))))
+  :prepwork ((local (in-theory (e/d () 
+                                    (bitops::logand-with-negated-bitmask
+                                     fty::unsigned-byte-p-1-when-bitp)))))
 
   :returns (x86 x86p :hyp (x86p x86))
 

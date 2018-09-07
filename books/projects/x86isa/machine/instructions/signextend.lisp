@@ -71,7 +71,7 @@
 
   (b* ((ctx 'x86-cbw/cwd/cdqe)
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 1 8) register-size)
@@ -123,7 +123,7 @@
 
   (b* ((ctx 'x86-cwd/cdq/cqo)
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
+       (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 1 8) src-size)

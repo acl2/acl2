@@ -4359,6 +4359,7 @@
                              X86)
               :PARENTS NIL
               :INLINE T
+              :NO-FUNCTION T
               :ENABLED T
               (MBE :LOGIC (XR ,keyword I X86)
                    :EXEC (,getter* I X86)))
@@ -4368,6 +4369,7 @@
                              X86)
               :PARENTS NIL
               :INLINE T
+              :NO-FUNCTION T
               :ENABLED T
               (MBE :LOGIC (XW ,keyword I V X86)
                    :EXEC (,setter* I V X86))))))
@@ -4388,6 +4390,7 @@
           `((DEFINE ,getter (X86)
               :PARENTS NIL
               :INLINE T
+              :NO-FUNCTION T
               :ENABLED T
               (MBE :LOGIC (XR ,keyword 0 X86)
                    :EXEC (,getter* X86)))
@@ -4395,6 +4398,7 @@
                              X86)
               :PARENTS NIL
               :INLINE T
+              :NO-FUNCTION T
               :ENABLED T
               (MBE :LOGIC (XW ,keyword 0 V X86)
                    :EXEC (,setter* V X86))))))
@@ -4415,6 +4419,7 @@
           `((DEFINE ,getter (X86)
               :PARENTS NIL
               :INLINE T
+              :NO-FUNCTION T
               :ENABLED T
               (MBE :LOGIC (XR ,keyword 0 X86)
                    :EXEC (,getter* X86)))
@@ -4422,6 +4427,7 @@
                              X86)
               :PARENTS NIL
               :INLINE T
+              :NO-FUNCTION T
               :ENABLED T
               (MBE :LOGIC (XW ,keyword 0 V X86)
                    :EXEC (,setter* V X86))))))
@@ -4442,6 +4448,7 @@
           `((DEFINE ,getter (X86)
               :PARENTS NIL
               :INLINE T
+              :NO-FUNCTION T
               :ENABLED T
               (MBE :LOGIC (XR ,keyword 0 X86)
                    :EXEC (,getter* X86)))
@@ -4449,6 +4456,7 @@
                              X86)
               :PARENTS NIL
               :INLINE T
+              :NO-FUNCTION T
               :ENABLED T
               (MBE :LOGIC (XW ,keyword 0 V X86)
                    :EXEC (,setter* V X86))))))
@@ -4467,12 +4475,14 @@
           `((DEFINE ,getter (X86)
               :PARENTS NIL
               :INLINE T
+              :NO-FUNCTION T
               :ENABLED T
               (MBE :LOGIC (XR ,keyword 0 X86)
                    :EXEC (,getter* X86)))
             (DEFINE ,setter (V X86)
               :PARENTS NIL
               :INLINE T
+              :NO-FUNCTION T
               :ENABLED T
               (MBE :LOGIC (XW ,keyword 0 V X86)
                    :EXEC (,setter* V X86)))))))))
