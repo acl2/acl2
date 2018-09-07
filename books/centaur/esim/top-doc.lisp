@@ -38,6 +38,9 @@
    (include-book "centaur/esim/defmodules" :dir :system)
    (include-book "centaur/4v-sexpr/top" :dir :system)))
 
+; Matt K. mod: Added the following to avoid stack overflow on calls of
+; generated function, xdoc::filter-matching-topics, in Allegro CL.
+(set-compile-fns t)
 
 (xdoc::archive-matching-topics
  (or (str::strprefixp "[books]/centaur/esim/" (cdr (assoc :from x)))
