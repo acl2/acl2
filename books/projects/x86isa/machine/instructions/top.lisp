@@ -390,6 +390,44 @@ writes the final value of the instruction pointer into RIP.</p>")
        (x86 (!rip temp-rip x86)))
     (!!fault-fresh :ud message :instruction-address start-rip)))
 
+(define x86-general-protection
+  (message
+   (start-rip :type (signed-byte   #.*max-linear-address-size*))
+   (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
+   x86)
+  :parents (instructions)
+  :short "Semantic function corresponding to a general protection fault"
+  :long "<p>Note that the @('#GP') (general protection) exception should be
+  thrown here, which is why the @('fault') field is populated with
+  @('message').</p>"
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
+  (b* ((ctx 'x86-general-protection)
+       ;; We update the RIP to point to the next instruction --- in case we
+       ;; ever get to the point that we can recover from #GP exceptions, this
+       ;; may be the right thing to do.
+       (x86 (!rip temp-rip x86)))
+    (!!fault-fresh :gp message :instruction-address start-rip)))
+
+(define x86-device-not-available
+  (message
+   (start-rip :type (signed-byte   #.*max-linear-address-size*))
+   (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
+   x86)
+  :parents (instructions)
+  :short "Semantic function corresponding to a device not available (no math coprocessor) fault"
+  :long "<p>Note that the @('#NM') (device not available) exception should be
+  thrown here, which is why the @('fault') field is populated with
+  @('message').</p>"
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
+  (b* ((ctx 'x86-device-not-available)
+       ;; We update the RIP to point to the next instruction --- in case we
+       ;; ever get to the point that we can recover from #NM exceptions, this
+       ;; may be the right thing to do.
+       (x86 (!rip temp-rip x86)))
+    (!!fault-fresh :nm message :instruction-address start-rip)))
+
 (add-to-ruleset instruction-decoding-and-spec-rules
                 '(x86-step-unimplemented
                   x86-illegal-instruction))

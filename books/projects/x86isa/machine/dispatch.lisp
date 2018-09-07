@@ -165,15 +165,20 @@
   (defthm true-listp-of-replace-formals-with-arguments
     (true-listp (replace-formals-with-arguments fn bindings world))))
 
-(define create-ud-exceptions-check ((info ud-info-p))
-  :guard-hints (("Goal" :in-theory (e/d (ud-info-p) ())))
-  (if info
-      (b* ((ud-list (cdr info)))
-	`(or ,@ud-list))
-    nil))
+(define create-exceptions-check ((info exception-info-p))
+  :guard-hints (("Goal" :in-theory (e/d (exception-info-p) ())))
+  (if (atom info) nil
+    (b* ((exception (caar info))
+         (exception-list (cdar info)))
+      `(if (or ,@exception-list) (quote ,exception)
+         ,(create-exceptions-check (cdr info))))))
+
+(local (defthm exception-info-is-alist
+         (implies (exception-info-p x) (alistp x))
+         :hints (("Goal" :in-theory (enable exception-info-p)))))
 
 (define create-call-from-semantic-info ((info semantic-function-info-p)
-					(ud-info ud-info-p)
+					(exception-info exception-info-p)
 					(world plist-worldp))
   :guard-hints (("Goal" :in-theory (e/d (semantic-function-info-p) ())))
 
@@ -189,52 +194,69 @@
   ;;                0)))
   ;;  (w state))
 
-  (b* ((ud-check       (create-ud-exceptions-check ud-info))
-       (illegal        (replace-formals-with-arguments
-			'x86-illegal-instruction
-			'((message . "#UD Encountered!"))
-			world))
-       (unimplemented  (replace-formals-with-arguments
-			'x86-step-unimplemented
-			'((message . "Opcode Unimplemented in x86isa!"))
-			world)))
+  (b* ((exception-check  (create-exceptions-check exception-info))
+       (unimplemented    (replace-formals-with-arguments
+                          'x86-step-unimplemented
+                          '((message . "Opcode Unimplemented in x86isa!"))
+                          world))
+       (illegal          (replace-formals-with-arguments
+                          'x86-illegal-instruction
+                          '((message . "#UD Encountered!"))
+                          world))
+       (exception-cases  (append (and (assoc :ud exception-info)
+                                      (list (list :ud illegal)))
+                                 (and (assoc :gp exception-info)
+                                      (list (list :gp (replace-formals-with-arguments
+                                                       'x86-general-protection
+                                                       '((message . "#GP Encountered!"))
+                                                       world))))
+                                 (and (assoc :nm exception-info)
+                                      (list (list :nm (replace-formals-with-arguments
+                                                       'x86-device-not-available
+                                                       '((message . "#NM Encountered!"))
+                                                       world))))
+                                 (list (list t unimplemented)))))
 
     (if (equal info nil)
-	(mv "Unimplemented"
-	    (if ud-check
-		`(if ,ud-check ,illegal ,unimplemented)
-	      unimplemented))
+        (mv "Unimplemented"
+            (if exception-info
+                `(let ((fault-var ,exception-check)) 
+                   (if fault-var (case fault-var ,@exception-cases) 
+                     ,unimplemented))
+              unimplemented))
 
       (b* ((rest (cdr info)))
-	(if (equal (car rest) :no-instruction)
-	    (mv "Reserved" illegal)
-	  (mv
-	   (concatenate
-	    'string
-	    "@(tsee "
-	    (str::pretty (car rest) :config *x86isa-printconfig*)
-	    ")"
-	    (if (cdr rest)
-		(concatenate
-		 'string " -- <br/> "
-		 (str::pretty (cdr rest) :config *x86isa-printconfig*))
-	      ""))
-	   (if ud-check
-	       `(if ,ud-check
-		    ,illegal
-		  ,(replace-formals-with-arguments
-		    (car rest) (cdr rest) world))
-	     (replace-formals-with-arguments
-	      (car rest) (cdr rest) world)))))))
+        (if (equal (car rest) :no-instruction)
+            (mv "Reserved" illegal)
+          (mv
+           (concatenate
+            'string
+            "@(tsee "
+            (str::pretty (car rest) :config *x86isa-printconfig*)
+            ")"
+            (if (cdr rest)
+                (concatenate
+                 'string " -- <br/> "
+                 (str::pretty (cdr rest) :config *x86isa-printconfig*))
+              ""))
+           (if exception-info
+               `(let ((fault-var ,exception-check))
+                  (if fault-var 
+                      (case fault-var ,@exception-cases)
+                    ,(replace-formals-with-arguments
+                      (car rest) (cdr rest) world)))
+             (replace-formals-with-arguments
+              (car rest) (cdr rest) world)))))))
+
   ///
 
   (defthm stringp-of-mv-nth-0-create-call-from-semantic-info
     (stringp
-     (mv-nth 0 (create-call-from-semantic-info info ud-info world))))
+     (mv-nth 0 (create-call-from-semantic-info info exception-info world))))
 
   (defthm true-listp-of-mv-nth-1-create-call-from-semantic-info
     (true-listp
-     (mv-nth 1 (create-call-from-semantic-info info ud-info world)))))
+     (mv-nth 1 (create-call-from-semantic-info info exception-info world)))))
 
 
 (define create-dispatch-from-no-extensions-simple-cell
@@ -246,9 +268,9 @@
 		"~%We don't expect groups here: ~p0~%"
 		cell)))
        (rest (cdr cell))
-       (ud-info (get-ud-info-p rest))
+       (exception-info (get-exception-info-p rest))
        (semantic-info (get-semantic-function-info-p rest)))
-    (create-call-from-semantic-info semantic-info ud-info world))
+    (create-call-from-semantic-info semantic-info exception-info world))
 
   ///
 

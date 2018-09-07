@@ -137,7 +137,7 @@
 ;;                          (mv-nth 1 (get-prefixes proc-mode start-rip 0 0 15 x86))
 ;;                          Fetched in x86-fetch-decode-execute for all opcodes
 
-;; cpl                      (cpl x86)
+;; cplx86                   (cpl x86)
 
 ;; modr/m                   byte fetched in x86-fetch-decode-execute (for
 ;;                          one-byte opcodes),
@@ -149,6 +149,7 @@
 ;;                          instructions).
 
 ;; cr4                      (ctri #.*cr4* x86)
+;; cr0                      (ctri #.*cr0* x86)
 
 ;; ia32_efer                (msri #.*ia32_efer-idx* x86)
 
@@ -361,6 +362,25 @@
 
 (defmacro ud-exc-22-9 (feature-flag)
   `(ud-simd-specification ,feature-flag :cr4-osfxsr? nil))
+
+
+(defmacro nm-cr0-ts-is-1 ()
+  `(eql (cr0-slice :cr0-ts (cr0)) 1))
+
+(defmacro nm-cr0-em-is-1 ()
+  `(eql (cr0-slice :cr0-em (cr0)) 1))
+
+(defmacro gp-cpl-not-0 ()
+  `(not (eql (cplx86) 0)))
+
+(defmacro gp-cr4-pce-is-0 ()
+  `(eql (cr4-slice :cr4-pce (cr4)) 0))
+
+(defmacro gp-cr4-umip-is-1 ()
+  `(eql (cr4-slice :cr4-umip (cr4)) 0))
+
+(defmacro gp-cr0-pe-is-0 ()
+  `(eql (cr0-slice :cr0-pe (cr0)) 0))
 
 
 ;; Some x86isa-specific definitions:
@@ -1269,14 +1289,30 @@
 	       (:fn . (:no-instruction)))
 	      ("XLAT/XLATB" 0
 	       (:ud  . ((ud-Lock-used))))
-	      (:esc) ;; Escape to co-processor instruction set
-	      (:esc) ;; Escape to co-processor instruction set
-	      (:esc) ;; Escape to co-processor instruction set
-	      (:esc) ;; Escape to co-processor instruction set
-	      (:esc) ;; Escape to co-processor instruction set
-	      (:esc) ;; Escape to co-processor instruction set
-	      (:esc) ;; Escape to co-processor instruction set
-	      (:esc) ;; Escape to co-processor instruction set
+              (:esc ;; Escape to co-processor instruction set
+               (:nm  . ((nm-cr0-ts-is-1)
+                        (nm-cr0-em-is-1))))
+              (:esc ;; Escape to co-processor instruction set
+               (:nm  . ((nm-cr0-ts-is-1)
+                        (nm-cr0-em-is-1))))
+              (:esc ;; Escape to co-processor instruction set
+               (:nm  . ((nm-cr0-ts-is-1)
+                        (nm-cr0-em-is-1))))
+              (:esc ;; Escape to co-processor instruction set
+               (:nm  . ((nm-cr0-ts-is-1)
+                        (nm-cr0-em-is-1))))
+              (:esc ;; Escape to co-processor instruction set
+               (:nm  . ((nm-cr0-ts-is-1)
+                        (nm-cr0-em-is-1))))
+              (:esc ;; Escape to co-processor instruction set
+               (:nm  . ((nm-cr0-ts-is-1)
+                        (nm-cr0-em-is-1))))
+              (:esc ;; Escape to co-processor instruction set
+               (:nm  . ((nm-cr0-ts-is-1)
+                        (nm-cr0-em-is-1))))
+              (:esc ;; Escape to co-processor instruction set
+               (:nm  . ((nm-cr0-ts-is-1)
+                        (nm-cr0-em-is-1))))
 	      )
 
     #| e0 |# (("LOOPNE/LOOPNZ" 1 (J b) :f64
@@ -1388,7 +1424,8 @@
 	       (:i64 . (:none
 			(:fn . (:no-instruction)))))
 	      ("CLTS" 0
-	       (:ud  . ((ud-Lock-used))))
+	       (:ud  . ((ud-Lock-used)))
+               (:gp  . ((gp-cpl-not-0))))
 	      ((:o64 . ("SYSRET" 0
 			(:fn . (x86-sysret))
 			(:ud  . ((ud-Lock-used)
@@ -1396,7 +1433,8 @@
 				   (ia32_efer-slice
 				    :ia32_efer-sce
 				    (n12 (ia32_efer)))
-				   0)))))
+				   0)))
+                        (:gp  . ((gp-cpl-not-0)))))
 	       (:i64 . (:none
 			(:fn . (:no-instruction)))))
     #| 08 |#  ("INVD" 0
@@ -1545,12 +1583,14 @@
 			    (or (equal reg #.*cr1*)
 				(equal reg #.*cr5*)
 				(equal reg #.*cr6*)
-				(equal reg #.*cr7*)))))))
+				(equal reg #.*cr7*))))))
+               (:gp  . ((gp-cpl-not-0))))
 	      ("MOV" 2 (R d) (D d)
 	       (:ud  . ((ud-Lock-used)
 			(and (equal (cr4-slice :cr4-de (cr4)) 1)
 			     (or (equal (mrm-reg modr/m) #.*dr4*)
-				 (equal (mrm-reg modr/m) #.*dr5*))))))
+				 (equal (mrm-reg modr/m) #.*dr5*)))))
+               (:gp  . ((gp-cpl-not-0))))
 	      ("MOV" 2 (C d) (R d)
 	       (:ud  . ((ud-Lock-used)
 			(let ((reg (mrm-reg modr/m)))
@@ -1560,12 +1600,14 @@
 			    (or (equal reg #.*cr1*)
 				(equal reg #.*cr5*)
 				(equal reg #.*cr6*)
-				(equal reg #.*cr7*)))))))
+				(equal reg #.*cr7*))))))
+               (:gp  . ((gp-cpl-not-0))))
 	      ("MOV" 2 (D d) (R d)
 	       (:ud  . ((ud-Lock-used)
 			(and (equal (cr4-slice :cr4-de (cr4)) 1)
 			     (or (equal (mrm-reg modr/m) #.*dr4*)
-				 (equal (mrm-reg modr/m) #.*dr5*))))))
+				 (equal (mrm-reg modr/m) #.*dr5*)))))
+               (:gp  . ((gp-cpl-not-0))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -1666,11 +1708,15 @@
 	      ("RDMSR" 0
 	       (:ud  . ((ud-Lock-used))))
 	      ("RDPMC" 0
-	       (:ud  . ((ud-Lock-used))))
+	       (:ud  . ((ud-Lock-used)))
+               (:gp  . ((and (gp-cpl-not-0) (gp-cr4-pce-is-0)))))
 	      ("SYSENTER" 0
-	       (:ud  . ((ud-Lock-used))))
+	       (:ud  . ((ud-Lock-used)))
+               (:gp  . ((gp-cr0-pe-is-0))))
 	      ("SYSEXIT" 0
-	       (:ud  . ((ud-Lock-used))))
+	       (:ud  . ((ud-Lock-used)))
+               (:gp  . ((gp-cpl-not-0)
+                        (gp-cr0-pe-is-0))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ("GETSEC" 0) ;; TODO: Lock Used?
@@ -2059,9 +2105,11 @@
 				      (equal (cr0-slice :cr0-em (cr0)) 1)))))
 	       (:v         . ("VZEROUPPER/VZEROALL"  0)))
 
-    #| 78 |#  ("VMREAD" 2  (E y)  (G y))
+    #| 78 |#  ("VMREAD" 2  (E y)  (G y)
+               (:gp  . ((gp-cpl-not-0))))
 
-	      ("VMWRITE" 2  (E y)  (G y))
+              ("VMWRITE" 2  (E y)  (G y)
+               (:gp  . ((gp-cpl-not-0))))
 
 	      (:none
 	       (:fn . (:no-instruction)))
@@ -2954,13 +3002,16 @@
 
     #| 80 |#  (((:no-prefix . (:none
 			       (:fn . (:no-instruction))))
-		(:66        . ("INVEPT"  2 (G y) (M dq))))
+		(:66        . ("INVEPT"  2 (G y) (M dq)
+                               (:gp  . ((gp-cpl-not-0))))))
 	       ((:no-prefix . (:none
 			       (:fn . (:no-instruction))))
-		(:66        . ("INVVPID" 2 (G y) (M dq))))
+		(:66        . ("INVVPID" 2 (G y) (M dq)
+                               (:gp  . ((gp-cpl-not-0))))))
 	       ((:no-prefix . (:none
 			       (:fn . (:no-instruction))))
-		(:66        . ("INVPCID" 2 (G y) (M dq))))
+		(:66        . ("INVPCID" 2 (G y) (M dq)
+                               (:gp  . ((gp-cpl-not-0))))))
 	       (:none
 	       (:fn . (:no-instruction)))
 	       (:none
@@ -4545,22 +4596,26 @@
 		 (:ALT
 		  (("SLDT" 1 (R v) :1a)
 		   ("SLDT" 1 (M w) :1a))
-		  (:ud  . ((ud-Lock-used)))))
+		  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((and (gp-cpl-not-0) (gp-cr4-umip-is-1))))))
 	       (((:opcode . #ux0F_00)
 		 (:reg    . #b001)) .
 		 (:ALT
 		  (("STR" 1 (R v) :1a)
 		   ("STR" 1 (M w) :1a))
-		  (:ud  . ((ud-Lock-used)))))
+		  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((and (gp-cpl-not-0) (gp-cr4-umip-is-1))))))
 	       (((:opcode . #ux0F_00)
 		 (:reg    . #b010)) .
 		 ("LLDT" 1 (E w) :1a
 		  (:fn . (x86-lldt))
-		  (:ud  . ((ud-Lock-used)))))
+		  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_00)
 		 (:reg    . #b011)) .
 		 ("LTR" 1 (E w) :1a
-		  (:ud  . ((ud-Lock-used)))))
+		  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_00)
 		 (:reg    . #b100)) .
 		 ("VERR" 1 (E w) :1a
@@ -4583,7 +4638,8 @@
 		 (:mod    . :mem)
 		 (:reg    . #b000)) .
 		 ("SGDT" 1 (M s) :1a
-		  (:ud  . ((ud-Lock-used)))))
+		  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((and (gp-cpl-not-0) (gp-cr4-umip-is-1))))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b000)
@@ -4593,7 +4649,8 @@
 		 (:mod    . #b11)
 		 (:reg    . #b000)
 		 (:r/m    . #b010)) .
-		 ("VMLAUNCH" 0 :1a))
+		 ("VMLAUNCH" 0 :1a
+                  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b000)
@@ -4603,12 +4660,15 @@
 		 (:mod    . #b11)
 		 (:reg    . #b000)
 		 (:r/m    . #b100)) .
-		 ("VMXOFF" 0 :1a))
+		 ("VMXOFF" 0 :1a
+                  ;; BOZO Rob -- following GP only if executed in VMX root operation!
+                  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . :mem)
 		 (:reg    . #b001)) .
 		 ("SIDT" 1 (M s) :1a
-		  (:ud  . ((ud-Lock-used)))))
+		  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((and (gp-cpl-not-0) (gp-cr4-umip-is-1))))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b001)
@@ -4675,13 +4735,15 @@
 		 (:reg    . #b010)) .
 		 ("LGDT" 1 (M s) :1a
 		  (:fn . (x86-lgdt))
-		  (:ud  . ((ud-Lock-used)))))
+		  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . :mem)
 		 (:reg    . #b011)) .
 		 ("LIDT" 1 (M s) :1a
 		  (:fn . (x86-lidt))
-		  (:ud  . ((ud-Lock-used)))))
+		  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b011)
@@ -4761,13 +4823,15 @@
 		 (:mod    . #b11)
 		 (:reg    . #b011)
 		 (:r/m    . #b111)) .
-		 ("ENCLU" 0 :1a))
+		 ("ENCLU" 0 :1a
+                  (:nm . ((nm-cr0-ts-is-1)))))
 	       (((:opcode . #ux0F_01)
 		 (:reg    . #b100)) .
 		 (:ALT
 		  (("SMSW" 1 (M w) :1a)
 		   ("SMSW" 1 (R v) :1a))
-		  (:ud  . ((ud-Lock-used)))))
+		  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((and (gp-cpl-not-0) (gp-cr4-umip-is-1))))))
 	       (((:opcode . #ux0F_01)
 		 (:reg    . #b100)
 		 (:r/m    . #b11)) .
@@ -4780,20 +4844,23 @@
 	       (((:opcode . #ux0F_01)
 		 (:reg    . #b110)) .
 		 ("LMSW" 1 (E w) :1a
-		  (:ud  . ((ud-Lock-used)))))
+		  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_01)
 		 (:reg    . #b111)
 		 (:mod    . :mem)) .
 		 ("INVLPG" 1 (M b) :1a
 		  (:ud  . ((ud-Lock-used)
-			   (ud-ModR/M.Mod-indicates-Register)))))
+			   (ud-ModR/M.Mod-indicates-Register)))
+                  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b111)
 		 (:r/m    . #b000)
 		 (:mode   . :o64)) .
 		 ("SWAPGS" 0 :1a
-		  (:ud  . ((ud-Lock-used)))))
+		  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b111)
@@ -4881,17 +4948,27 @@
 		 (:prefix . nil)
 		 (:mod    . :mem)
 		 (:reg    . #b110)) .
-		 ("VMPTRLD" 1 (M q) :1a))
+		 ("VMPTRLD" 1 (M q) :1a
+                  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_C7)
 		 (:prefix . :66)
 		 (:mod    . :mem)
 		 (:reg    . #b110)) .
-		 ("VMCLEAR" 1 (M q) :1a))
+		 ("VMCLEAR" 1 (M q) :1a
+                  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_C7)
 		 (:prefix . :F3)
 		 (:mod    . :mem)
 		 (:reg    . #b110)) .
-		 ("VMXON" 1 (M q) :1a))
+		 ("VMXON" 1 (M q) :1a
+                  ;; BOZO Rob -- following GP only if executed outside VMX operation!
+                  (:gp  . ((gp-cpl-not-0)))))
+               (((:opcode . #ux0F_C7)
+                 (:prefix . nil)
+                 (:mod    . :mem)
+                 (:reg    . #b111)) .
+                 ("VMPTRLD" 1 (M q) :1a
+                  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_C7)
 		 (:prefix . nil)
 		 (:mod    . #b11)
@@ -5229,7 +5306,9 @@
 			       #ux_01
 			       :reg #.*edx*
 			       :bit 24)
-			      0)))))
+			      0)))
+                   (:nm  . ((nm-cr0-ts-is-1)
+                            (nm-cr0-em-is-1)))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . :F3)
 		  (:mod    . #b11)
@@ -5258,7 +5337,9 @@
 			       #ux_01
 			       :reg #.*edx*
 			       :bit 24)
-			      0)))))
+			      0)))
+                   (:nm  . ((nm-cr0-ts-is-1)
+                            (nm-cr0-em-is-1)))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . :F3)
 		  (:mod    . #b11)
@@ -5332,7 +5413,9 @@
 			       #ux_01
 			       :reg #.*ecx*
 			       :bit 26)
-			      0)))))
+			      0)))
+                   (:gp  . ((gp-cpl-not-0)))
+                   (:nm  . ((nm-cr0-ts-is-1)))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
 		  (:mod    . :mem)
@@ -5346,7 +5429,9 @@
 			       #ux_01
 			       :reg #.*ecx*
 			       :bit 26)
-			      0)))))
+			      0)))
+                   (:gp  . ((gp-cpl-not-0)))
+                   (:nm  . ((nm-cr0-ts-is-1)))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
 		  (:mod    . #b11)
@@ -5382,7 +5467,8 @@
 			       :ecx #ux_01
 			       :reg #.*eax*
 			       :bit 0)
-			      0))))))
+			      0))))
+                   (:nm  . ((nm-cr0-ts-is-1)))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . nil)
 		  (:mod    . #b11)
@@ -7808,46 +7894,50 @@
 	     (semantic-function-info-p (get-semantic-function-info-p info)))
     :hints (("Goal" :in-theory (e/d (semantic-function-info-p) ())))))
 
-(define ud-info-p (info)
-  :short "Information about #UD exception during decode"
-  (or
-   ;; Either no info. is present...
-   (equal info nil)
-   ;; ... but if it is, it is well-formed.
-   (and (consp info)
-	(equal (car info) :UD)
-	(true-listp (cdr info)))))
 
-(define remove-ud-info-p ((info true-listp))
+(define exception-elem-p (x)
+  :enabled t
+  (and (consp x)
+       (member (car x) '(:UD :NM :GP))
+       (true-listp (cdr x))))
+
+(define exception-info-p (info)
+  :short "Information about exceptions during decode"
+  (or (null info)
+      (and (consp info)
+           (exception-elem-p (first info))
+           (exception-info-p (rest info)))))
+
+(define remove-exception-info-p ((info true-listp))
   (if (endp info)
       nil
     (b* ((elem (car info))
-	 (rest (cdr info)))
+         (rest (cdr info)))
       (if (and (consp elem)
-	       (equal (car elem) :UD))
-	  rest
-	(cons elem (remove-ud-info-p rest)))))
+               (member (car elem) '(:UD :NM :GP)))
+          (remove-exception-info-p rest)
+        (cons elem (remove-exception-info-p rest)))))
 
   ///
 
-  (defthm true-listp-remove-ud-info-p
+  (defthm true-listp-remove-exception-info-p
     (implies (true-listp info)
-	     (true-listp (remove-ud-info-p info)))))
+             (true-listp (remove-exception-info-p info)))))
 
-(define get-ud-info-p ((info true-listp))
+(define get-exception-info-p ((info true-listp))
   (if (endp info)
       nil
     (b* ((elem (car info))
-	 (rest (cdr info)))
-      (if (ud-info-p elem)
-	  elem
-	(get-ud-info-p rest))))
+         (rest (cdr info)))
+      (if (exception-elem-p elem)
+          (cons elem (get-exception-info-p rest))
+        (get-exception-info-p rest))))
   ///
 
-  (defthm ud-info-p-of-get-ud-info-p
+  (defthm exception-info-p-of-get-exception-info-p
     (implies (true-listp info)
-	     (ud-info-p (get-ud-info-p info)))
-    :hints (("Goal" :in-theory (e/d (ud-info-p) ())))))
+             (exception-info-p (get-exception-info-p info)))
+    :hints (("Goal" :in-theory (e/d (exception-info-p) ())))))
 
 (define simple-cell-addressing-info-p ((info true-listp))
   (and
@@ -7863,10 +7953,13 @@
   (b* (((unless (true-listp cell)) nil)
        (first (car cell))
        (rest (cdr cell))
-       (new-rest (remove-semantic-function-info-p rest))
-       (semantic-info (get-semantic-function-info-p rest)))
+       (exception-info (get-exception-info-p rest))
+       (semantic-info (get-semantic-function-info-p rest))
+       (new-rest (remove-exception-info-p rest))
+       (new-rest (remove-semantic-function-info-p new-rest)))
     (and
      (semantic-function-info-p semantic-info)
+     (exception-info-p exception-info)
      (or
       (and (or (stringp first)
 	       (member-equal first *group-numbers*))
@@ -7897,9 +7990,9 @@
       (b* (((unless (true-listp cell)) nil)
 	   (first (car cell))
 	   (rest (cdr cell))
-	   (ud-info (get-ud-info-p rest))
+           (exception-info (get-exception-info-p rest))
 	   (semantic-info (get-semantic-function-info-p rest))
-	   (new-rest (remove-ud-info-p rest))
+           (new-rest (remove-exception-info-p rest))
 	   (new-rest (remove-semantic-function-info-p new-rest)))
 	(cond ((equal first :ALT)
 	       (and
@@ -7908,7 +8001,7 @@
 		(basic-simple-cells-p (car new-rest))
 		(equal (cdr new-rest) nil)
 		(semantic-function-info-p semantic-info)
-		(ud-info-p ud-info)))
+                (exception-info-p exception-info)))
 	      (t nil))))
   ///
   (defthm simple-cell-aux-p-implies-true-listp
