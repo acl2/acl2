@@ -673,7 +673,8 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:cr4-pce         8  1) ;; Performance Monitoring Counter Enable
     (:cr4-osfxsr      9  1) ;; OS Support for FXSAVE and FXRSTOR
     (:cr4-osxmmexcpt 10  1) ;; OS Support for unmasked SIMD FP Exceptions
-    (0               11  2) ;; 0 (Reserved)
+    (:cr4-umip       11  1) ;; User-mode instruction prevention
+    (:cr4-la57       12  1) ;; enables 5-level paging
     (:cr4-vmxe       13  1) ;; VMX Enable Bit
     (:cr4-smxe       14  1) ;; SMX Enable Bit
     (0               15  1) ;; 0 (Reserved)
@@ -686,8 +687,9 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (0               19  1) ;; 0 (Reserved)
     (:cr4-smep       20  1) ;; Supervisor Mode Execution Prevention
     (:cr4-smap       21  1)
+;;     (:cr4-pke        22  1) ;; Protection Key Enable
     ;; Bit
-    ;;  (0               21 43) ;; 0 (Reserved)
+    ;;  (0               22 42) ;; 0 (Reserved)
 
     ))
 
