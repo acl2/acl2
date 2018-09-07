@@ -54,7 +54,7 @@
 
 
 ;; Misc stuff needed for guards
-(defthm logbit-at-zero-is-loghead-of-1
+(defthmd logbit-at-zero-is-loghead-of-1
   ;; [Shilpi] For guard proofs of accessors of fields of width 1.
   (equal (bool->bit (logbitp 0 x))
 	 (loghead 1 x))
@@ -78,11 +78,11 @@
 			  (ash (loghead width val) (nfix low)))))
   :hints (("Goal" :in-theory (e/d (bitops::part-install-width-low) ()))))
 
-(defthm unsigned-byte-p-of-bool->bit
+(defthmd unsigned-byte-p-of-bool->bit
   (implies (and (<= 1 n) (natp n))
 	   (unsigned-byte-p n (bool->bit b))))
 
-(defthm signed-byte-p-of-bool->bit
+(defthmd signed-byte-p-of-bool->bit
   (implies (and (<= 2 n) (natp n))
 	   (signed-byte-p n (bool->bit b)))
   :hints (("Goal" :in-theory (e/d (signed-byte-p) ()))))
