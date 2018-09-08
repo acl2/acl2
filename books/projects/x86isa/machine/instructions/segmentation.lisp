@@ -440,12 +440,17 @@ a non-canonical form, raise the SS exception.</p>"
        ;; get the address of the last valid byte. A limit value of 0
        ;; results in exactly one valid byte. Because segment descrip-
        ;; tors are always 8 bytes long, the GDT limit should always be
-       ;; one less than an integral multiple of eight (that is, 8N
-       ;; 1)."
-       ;; TODO: it looks like the selector index should be multiplied by 8
-       ;; before the comparison (and adding either 7 or 15 to it, based on
-       ;; the current mode -- 32-bit or 64-bit):
-       ((when (< gdtr-limit sel-index))
+       ;; one less than an integral multiple of eight (that is, 8N - 1)."
+       ;; To obtain the largest address of the descriptor that we are reading
+       ;; from the GDT, we multiply the selector index by 8 and we add either 7
+       ;; or 15 to it, depending on whether we are in 32-bit or 64-bit mode,
+       ;; because in 32-bit mode the descriptor is 8 bytes long (see AMD
+       ;; manual, Dec'17, Volume 2, Figure 4-16), while in 64-bit mode the
+       ;; descriptor is 16 bytes long (see AMD manual, Dec'17, Volume 2, Figure
+       ;; 4-22).
+       (largest-address (+ (ash sel-index 3)
+                           (if (eql proc-mode *64-bit-mode*) 15 7)))
+       ((when (< gdtr-limit largest-address))
         (!!ms-fresh :gp-selector-limit-check-failed (cons selector gdtr)))
 
        ;; Is the selector a null selector?  A null selector points to
