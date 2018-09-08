@@ -352,16 +352,13 @@
 
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
- <p>The model includes more support for 32-bit mode.  In particular: (some
- variants of) the PUSH, PUSHF, POP, POPF, MOV, MOVZX, MOVSX, MOVSXD, LEA, XCHG,
- CMPXCHG, ADD, ADC, SUB, SBB, OR, AND, XOR, NEG, NOT, CMP, TEST, MUL, IMUL,
- DIV, IDIV, INC with opcodes FEh-FFh, DEC with opcodes FEh-FFh, CBW, CWDE,
- CDQE, CWD, CDQ, CQO, ROL, ROR, RCL, RCR, SAL, SAR, SHL, SHR, BT, JMP, Jcc,
- JCXZ, JECXZ, JRCXZ, CMOVcc, SETcc, MOVS, CMPS, STOS, LOOP, LOOPcc, CALL, RET,
- CMC, CLC, STC, CLD, STD, SAHF, LAHF, RDRAND, LGDT, LIDT, LLDT, HLT, and NOP
- instructions also work in 32-bit mode now; the 32-bit instructions PUSHA,
- POPA, INC with opcodes 40h-47h, DEC with opcodes 48h-4Fh, and PUSH CS/SS/DS/ES
- are now part of the model.</p>
+ <p>Most of the model has been extended to 32-bit mode.  The only instructions
+ that remain to be extended to 32-bit mode are LEAVE, JMP far, and the
+ floating-point instructions.  The 32-bit-only instructions PUSHA, POPA, INC
+ with opcodes 40h-47h, DEC with opcodes 48h-4Fh, and PUSH CS/SS/DS/ES have been
+ added to the model.  Support for the kinds of paging in 32-bit mode is still
+ missing, but this is only needed for the system view of the model, not the
+ application view.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
