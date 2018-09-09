@@ -668,7 +668,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
             (call-gate-descriptor-layout-slice :offset15-0 descriptor))
            (call-gate-offset31-16
             (call-gate-descriptor-layout-slice :offset31-16 descriptor))
-           (call-gate-offset63-32
+           (call-gate-offset63-32 ;; this is 0 in 32-bit mode
             (call-gate-descriptor-layout-slice :offset63-32 descriptor))
            (call-gate-offset31-0
             (mbe :logic (part-install call-gate-offset15-0
