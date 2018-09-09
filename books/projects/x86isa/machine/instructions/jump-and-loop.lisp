@@ -556,8 +556,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
       ;; Call Gate Descriptor:
 
-      (b* ((current-cs-register (the (unsigned-byte 16) (seg-visiblei *cs* x86)))
-           (cpl (seg-sel-layout-slice :rpl current-cs-register))
+      (b* ((cpl (cpl x86))
            (dpl (call-gate-descriptor-layout-slice :dpl descriptor))
 
            ;; Access is allowed when:
