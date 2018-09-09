@@ -721,7 +721,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
            ;; Update x86 state:
            (x86 (!seg-visiblei *cs* new-cs-visible x86))
            (x86 (!seg-hiddeni  *cs* new-cs-hidden  x86))
-           (x86 (!rip jmp-addr x86)))
+           (x86 (write-*ip proc-mode jmp-addr x86)))
         x86))))
 
 ;; ======================================================================
