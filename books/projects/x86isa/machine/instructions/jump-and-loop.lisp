@@ -616,9 +616,17 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                                 (n32 ldtr-base)))
                    (ldtr-limit (hidden-seg-reg-layout-slice :limit ldtr-hidden)))
                 (mv ldtr-base ldtr-limit))))
-           ((when (< cs-dt-limit cs-sel-index))
-            (!!ms-fresh :gp-selector-limit-check-failed
-                        (list cs-selector cs-dt-base-addr cs-dt-limit)))
+           ;; To obtain the largest address of the descriptor that we are
+           ;; reading from the GDT or LDT, we multiply the selector index by 8
+           ;; and we add 7 to it, becausea code descriptor is 8 bytes long (see
+           ;; AMD manual, Dec'17, Volume 2, Figures 4-14 and 4-20).
+           (largest-address (+ (ash cs-sel-index 3) 7))
+           ((when (< cs-dt-limit largest-address))
+            (!!fault-fresh :gp cs-sel-index
+                           :gp-selector-limit-check-failed (list
+                                                            cs-selector
+                                                            cs-dt-base-addr
+                                                            cs-dt-limit)))
 
            ;; Reading the code segment: we check if the code segment
            ;; descriptor is valid.
