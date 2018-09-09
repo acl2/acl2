@@ -591,7 +591,8 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
            ;; #GP(0) is raised.
            ((when (and (equal cs-sel-ti 0)
                        (equal cs-sel-index 0)))
-            (!!ms-fresh :call-gate-code-segment-nullselector 0))
+            (!!fault-fresh :gp 0 ;; #GP(0)
+                           :call-gate-code-segment-nullselector 0))
 
            ;; Is the call gate code segment selector index outside
            ;; the descriptor table limit?  If so, #GP(code segment
