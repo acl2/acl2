@@ -646,8 +646,9 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
             ;; descriptor is 0.
             (ia32e-valid-code-segment-descriptor-p cs-descriptor))
            ((when (not valid?))
-            (!!ms-fresh :call-gate-code-segment-descriptor-invalid
-                        (cons reason cs-descriptor)))
+            (!!fault-fresh
+             :gp cs-sel-index ;; #GP(selector)
+             :call-gate-code-segment-descriptor-invalid (cons reason cs-descriptor)))
 
            ;; Checking the privileges of the code segment:
            (cs-dpl (code-segment-descriptor-layout-slice :dpl cs-descriptor))
@@ -658,10 +659,10 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                       (and ;; Conforming code segment
                        (equal c-bit 0)
                        (not (eql cs-dpl cpl)))))
-            (!!ms-fresh :privilege-check-fail
-                        (acons :c-bit c-bit
-                               (acons :cpl cpl
-                                      (acons :cs-dpl cs-dpl nil)))))
+            (!!fault-fresh :gp cs-sel-index ;; #GP(selector)
+                           :privilege-check-fail (acons :c-bit c-bit
+                                                   (acons :cpl cpl
+                                                     (acons :cs-dpl cs-dpl nil)))))
 
            (call-gate-offset15-0
             (call-gate-descriptor-layout-slice :offset15-0 descriptor))
