@@ -572,10 +572,11 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
            ;; read in the code segment descriptor.
            ((when (not (and (<= cpl dpl)
                             (<= sel-rpl dpl))))
-            (!!ms-fresh :privilege-check-fail
-                        (acons :dpl dpl
-                               (acons :cpl cpl
-                                      (acons :rpl sel-rpl nil)))))
+            (!!fault-fresh
+             :gp sel-index ;; #GP(selector)
+             :privilege-check-fail (acons :dpl dpl
+                                     (acons :cpl cpl
+                                       (acons :rpl sel-rpl nil)))))
 
            (cs-selector
             (call-gate-descriptor-layout-slice :selector descriptor))
