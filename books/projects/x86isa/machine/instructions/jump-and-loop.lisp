@@ -602,12 +602,18 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                 ;; Code Segment Selector references the GDT.
                 (b* ((gdtr (the (unsigned-byte 80) (stri *gdtr* x86)))
                      (gdtr-base (gdtr/idtr-layout-slice :base-addr gdtr))
+                     (gdtr-base (if (eql proc-mode *64-bit-mode*)
+                                    gdtr-base
+                                  (n32 gdtr-base)))
                      (gdtr-limit (gdtr/idtr-layout-slice :limit gdtr)))
                   (mv gdtr-base gdtr-limit))
               ;; Code Segment Selector references the LDT whose base
               ;; address is in LDTR.
               (b* ((ldtr-hidden (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86)))
                    (ldtr-base (hidden-seg-reg-layout-slice :base-addr ldtr-hidden))
+                   (ldtr-base (if (eql proc-mode *64-bit-mode*)
+                                  ldtr-base
+                                (n32 ldtr-base)))
                    (ldtr-limit (hidden-seg-reg-layout-slice :limit ldtr-hidden)))
                 (mv ldtr-base ldtr-limit))))
            ((when (< cs-dt-limit cs-sel-index))
