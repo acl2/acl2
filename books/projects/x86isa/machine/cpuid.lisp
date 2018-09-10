@@ -42,7 +42,7 @@
 ; Shilpi Goel         <shilpi@centtech.com>
 
 (in-package "X86ISA")
-(include-book "abstract-state") ;; Need x86p for get-cpuid-flag
+(include-book "abstract-state") ;; Need x86p for cpuid-flag-fn
 (include-book "cpuid-constants")
 
 ;; Macros and functions used by utilities in dispatch.lisp to create opcode
@@ -55,7 +55,7 @@
 (defsection cpuid
   :parents (machine opcode-maps)
   :short "Determining which CPUID features are supported in @('x86isa')"
-  :long "<p>We introduce a constrained function @(tsee cpuid-flag-fn), which
+  :long "<p>We introduce a constrained function @('cpuid-flag-fn'), which
   takes the following inputs:</p>
 
  <ol>
@@ -80,8 +80,14 @@
  as an attachment --- this function always returns @('1'), i.e., all the
  features are enabled. Feel free, of course, to use your own attachment.</p>
 
- <p>We also provide macros --- @(tsee cpuid-flag) and @(tsee feature-flag) ---
- to access CPUID feature flags conveniently.</p>"
+ <p>We also provide macros the following macros to access CPUID feature flags
+ conveniently.</p>
+
+ @(call cpuid-flag)
+
+ @(call feature-flag)"
+
+  (local (xdoc::set-default-parents cpuid))
 
   (encapsulate
 
