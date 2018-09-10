@@ -110,7 +110,7 @@
        ((the (integer 0 4) offset-size)
         (if (equal proc-mode #.*64-bit-mode*)
             4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d (code-segment-descriptor-attributes-layout-slice
                       :d cs-attr)))
@@ -122,7 +122,7 @@
        ;; AC is not done during code fetches. Fetching rel16 or rel32 from the
        ;; instruction stream still qualifies as a code fetch.
        ((mv flg0 (the (signed-byte 32) rel16/32) x86)
-        (rime-size proc-mode offset-size temp-rip *cs* :x nil x86))
+        (rime-size proc-mode offset-size temp-rip #.*cs* :x nil x86))
        ((when flg0) (!!ms-fresh :rime-size-error flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size+1*) next-rip))
@@ -149,14 +149,14 @@
             (wime-size
              #.*64-bit-mode* addr-size
              (the (signed-byte #.*max-linear-address-size*) new-rsp)
-             *ss*
+             #.*ss*
              next-rip
              (alignment-checking-enabled-p x86)
              x86)
           (wme-size
            proc-mode addr-size
            (the (signed-byte #.*max-linear-address-size*) new-rsp)
-           *ss*
+           #.*ss*
            ;; the following coercions (N16 and N32) should not be
            ;; necessary, but they make the guard proofs easier for now:
            (if (= addr-size 2)
@@ -207,7 +207,7 @@
        ((the (integer 2 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
             8 ; Intel manual, Mar'17, Volume 1, Section 6.3.7
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d (code-segment-descriptor-attributes-layout-slice
                       :d cs-attr)))
@@ -253,7 +253,7 @@
        ;; manual.
        ((unless (if (equal proc-mode #.*64-bit-mode*)
                     (canonical-address-p call-rip)
-                  (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+                  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                        (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
                     (and (<= 0 call-rip) (<= call-rip cs.limit)))))
         (!!fault-fresh :gp 0 :bad-return-address call-rip)) ;; #GP(0)
@@ -271,9 +271,9 @@
         ;; but unsigned in 32-bit mode.
         (if (= operand-size 8)
             (wime-size
-             proc-mode operand-size rsp *ss* call-rip check-alignment? x86)
+             proc-mode operand-size rsp #.*ss* call-rip check-alignment? x86)
           (wme-size
-           proc-mode operand-size rsp *ss* call-rip check-alignment? x86)))
+           proc-mode operand-size rsp #.*ss* call-rip check-alignment? x86)))
        ((when flg) (!!ms-fresh :stack-writing-error flg))
        ;; Update the rip to point to the called procedure.
        (x86 (write-*ip proc-mode call-rip x86))
@@ -339,7 +339,7 @@
        ((the (integer 2 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
             8
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d
                 (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
@@ -358,7 +358,7 @@
           ;; Exception and Interrupt Reference, Interrupt 17 Alignment
           ;; Check Exception (#AC) for details).
           (b* (((mv flg1 (the (unsigned-byte 16) imm16) x86)
-                (rme16 proc-mode temp-rip *cs* :x nil x86))
+                (rme16 proc-mode temp-rip #.*cs* :x nil x86))
                ((when flg1) (mv flg1 0 x86))
                ((mv flg1 new-rsp)
                 (add-to-*sp proc-mode rsp (+ operand-size imm16) x86))
@@ -384,10 +384,10 @@
        ((mv flg (the (signed-byte 64) tos) x86)
         (if (= operand-size 8)
             (rime-size
-             proc-mode operand-size rsp *ss* :r check-alignment? x86
+             proc-mode operand-size rsp #.*ss* :r check-alignment? x86
              :mem-ptr? nil)
           (rme-size
-           proc-mode operand-size rsp *ss* :r check-alignment? x86
+           proc-mode operand-size rsp #.*ss* :r check-alignment? x86
            :mem-ptr? nil)))
        ((when flg)
         (cond
@@ -403,7 +403,7 @@
        ;; manual.
        ((unless (if (equal proc-mode #.*64-bit-mode*)
                     (canonical-address-p tos)
-                  (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+                  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                        (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
                     (and (<= 0 tos) (<= tos cs.limit)))))
         (!!fault-fresh :gp 0 :bad-return-address tos)) ;; #GP(0)

@@ -164,7 +164,7 @@ the @('fault') field instead.</li>
       (case proc-mode
         (#.*64-bit-mode* *ip)
         (#.*compatibility-mode*
-         (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+         (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
               (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
               (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
            (if (= cs.d 1)
@@ -239,7 +239,7 @@ the @('fault') field instead.</li>
            (mv (list :non-canonical-instruction-pointer *ip+delta) 0)))
 
         (#.*compatibility-mode*
-         (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden *cs* x86)))
+         (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden #.*cs* x86)))
               (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
            (if (and (<= 0 *ip+delta)
                     (<= *ip+delta cs.limit))
@@ -400,7 +400,7 @@ the @('fault') field instead.</li>
        (!rip *ip x86))
 
       (#.*compatibility-mode* ;; Maybe *protected-mode* too?
-       (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden *cs* x86)))
+       (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden #.*cs* x86)))
             (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
             (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
          (if (= cs.d 1)
@@ -714,7 +714,7 @@ the @('fault') field instead.</li>
   (case proc-mode
     (#.*64-bit-mode* (if p4? 4 8))
     (otherwise ;; #.*compatibility-mode* or #.*protected-mode*
-     (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden *cs* x86)))
+     (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden #.*cs* x86)))
           (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
           (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
        (if (= cs.d 1) (if p4? 2 4) (if p4? 4 2)))))
@@ -798,7 +798,7 @@ the @('fault') field instead.</li>
             (0 (if (equal b 5)
                    (b* (((mv ?flg0 dword x86)
                          (rime-size
-                          proc-mode 4 temp-RIP *cs* :x check-alignment? x86
+                          proc-mode 4 temp-RIP #.*cs* :x check-alignment? x86
                           :mem-ptr? nil)) ;; sign-extended
                         ((when flg0)
                          (mv (cons flg0 'rime-size-error) 0 0 0 x86)))
@@ -812,7 +812,7 @@ the @('fault') field instead.</li>
                      x86)))
 
             (1 (b* (((mv ?flg1 byte x86)
-                     (rime-size proc-mode 1 temp-RIP *cs* :x check-alignment? x86
+                     (rime-size proc-mode 1 temp-RIP #.*cs* :x check-alignment? x86
                                 :mem-ptr? nil)) ;; sign-extended
                     ((when flg1)
                      (mv (cons flg1 'rime-size-error) 0 0 0 x86)))
@@ -825,7 +825,7 @@ the @('fault') field instead.</li>
                      x86)))
 
             (2 (b* (((mv ?flg2 dword x86)
-                     (rime-size proc-mode 4 temp-RIP *cs* :x check-alignment? x86
+                     (rime-size proc-mode 4 temp-RIP #.*cs* :x check-alignment? x86
                                 :mem-ptr? nil)) ;; sign-extended
                     ((when flg2)
                      (mv (cons flg2 'rime-size-error) 0 0 0 x86)))
@@ -924,11 +924,11 @@ the @('fault') field instead.</li>
     (case mod
       (0 (mv nil 0 0 x86))
       (1 (b* (((mv flg byte x86)
-               (rime-size proc-mode 1 temp-rip *cs* :x nil x86 :mem-ptr? nil))
+               (rime-size proc-mode 1 temp-rip #.*cs* :x nil x86 :mem-ptr? nil))
               ((when flg) (mv flg 0 0 x86)))
            (mv nil byte 1 x86)))
       (2 (b* (((mv flg word x86)
-               (rime-size proc-mode 2 temp-rip *cs* :x nil x86 :mem-ptr? nil))
+               (rime-size proc-mode 2 temp-rip #.*cs* :x nil x86 :mem-ptr? nil))
               ((when flg) (mv flg 0 0 x86)))
            (mv nil word 2 x86)))
       (otherwise ; shouldn't happen
@@ -1009,7 +1009,7 @@ the @('fault') field instead.</li>
            (mv nil (n16 (+ di disp)) increment-rip-by x86)))
       (6 (case mod
            (0 (b* (((mv flg disp x86)
-                    (rime-size proc-mode 2 temp-rip *cs* :x nil x86
+                    (rime-size proc-mode 2 temp-rip #.*cs* :x nil x86
                                :mem-ptr? nil))
                    ((when flg) (mv flg 0 0 x86)))
                 (mv nil (n16 disp) 2 x86)))
@@ -1143,7 +1143,7 @@ the @('fault') field instead.</li>
                           ;; dword is the sign-extended displacement
                           ;; present in the instruction.
                           (rime-size
-                           #.*64-bit-mode* 4 temp-RIP *cs* :x nil x86
+                           #.*64-bit-mode* 4 temp-RIP #.*cs* :x nil x86
                            :mem-ptr? nil))
                          ;; next-rip is the rip of the next instruction.
                          ;; temp-RIP + 4 bytes of the displacement
@@ -1160,7 +1160,7 @@ the @('fault') field instead.</li>
                         ;; dword is the sign-extended displacement
                         ;; present in the instruction.
                         (rime-size
-                         proc-mode 4 temp-RIP *cs* :x nil x86 :mem-ptr? nil))
+                         proc-mode 4 temp-RIP #.*cs* :x nil x86 :mem-ptr? nil))
                        ((when flg) (mv flg 0 0 0 x86)))
                     (mv nil 0 dword 4 x86))))
 
@@ -1183,7 +1183,7 @@ the @('fault') field instead.</li>
 
                (otherwise
                 (b* (((mv ?flg2 byte2 x86)
-                      (rime-size proc-mode 1 temp-RIP *cs* :x nil x86
+                      (rime-size proc-mode 1 temp-RIP #.*cs* :x nil x86
                                  :mem-ptr? nil)) ; sign-extended
                      (reg (if (equal proc-mode #.*64-bit-mode*)
                               (rgfi (reg-index r/m rex-byte #.*b*) x86)
@@ -1200,7 +1200,7 @@ the @('fault') field instead.</li>
 
                (otherwise
                 (b* (((mv ?flg1 dword x86)
-                      (rime-size proc-mode 4 temp-RIP *cs* :x nil x86
+                      (rime-size proc-mode 4 temp-RIP #.*cs* :x nil x86
                                  :mem-ptr? nil)) ; sign-extended
                      (reg (if (equal proc-mode #.*64-bit-mode*)
                               (rgfi (reg-index r/m rex-byte #.*b*) x86)
@@ -2209,7 +2209,7 @@ reference made from privilege level 3.</blockquote>"
             4   ;; Default 32-bit operand size (in 64-bit mode)
             ))
       ;; 32-bit mode or Compatibility Mode:
-      (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+      (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
            (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
            (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
            (p3? (eql #.*operand-size-override*
@@ -2262,22 +2262,22 @@ reference made from privilege level 3.</blockquote>"
    Thus, it may be possible to optimize the overall code.
    </p>"
   (case p2
-    (#x2E *cs*)
-    (#x36 *ss*)
-    (#x3E *ds*)
-    (#x26 *es*)
-    (#x64 *fs*)
-    (#x65 *gs*)
+    (#x2E #.*cs*)
+    (#x36 #.*ss*)
+    (#x3E #.*ds*)
+    (#x26 #.*es*)
+    (#x64 #.*fs*)
+    (#x65 #.*gs*)
     (t (b* ((addr-size (select-address-size proc-mode p4? x86)))
          (if (= addr-size 2)
              (if (and (not (= mod 3))
                       (or (= r/m 2) (= r/m 3)))
-                 *ss*
-               *ds*)
+                 #.*ss*
+               #.*ds*)
            (if (and (or (= mod 1) (= mod 2))
                     (= r/m 5))
-               *ss*
-             *ds*)))))
+               #.*ss*
+             #.*ds*)))))
   ///
 
   (defret range-of-select-segment-register

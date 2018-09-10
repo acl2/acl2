@@ -125,7 +125,7 @@
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d
                 (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
@@ -154,7 +154,7 @@
         (wme-size proc-mode
          operand-size
          (the (signed-byte #.*max-linear-address-size*) new-rsp)
-         *ss*
+         #.*ss*
          val
          (alignment-checking-enabled-p x86)
          x86
@@ -214,7 +214,7 @@
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d
                 (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
@@ -252,7 +252,7 @@
        ((mv flg x86)
         (wme-size proc-mode operand-size
                   (the (signed-byte #.*max-linear-address-size*) new-rsp)
-                  *ss*
+                  #.*ss*
                   E
                   (alignment-checking-enabled-p x86)
                   x86
@@ -316,7 +316,7 @@
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d
                 (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
@@ -329,7 +329,7 @@
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((mv flg0 (the (signed-byte 32) imm) x86)
-        (rime-size proc-mode imm-size temp-rip *cs* :x nil x86))
+        (rime-size proc-mode imm-size temp-rip #.*cs* :x nil x86))
        ((when flg0)
         (!!ms-fresh :imm-rime-size-error flg0))
 
@@ -346,7 +346,7 @@
        ((mv flg1 x86)
         (wme-size proc-mode operand-size
                   new-rsp
-                  *ss*
+                  #.*ss*
                   (mbe :logic (loghead (ash operand-size 3) imm)
                        :exec (logand
                               (case operand-size
@@ -417,7 +417,7 @@
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d
                 (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
@@ -431,12 +431,12 @@
 
        ((the (unsigned-byte 16) val)
         (seg-visiblei (case opcode
-                        (#x0E *CS*)
-                        (#x16 *SS*)
-                        (#x1E *DS*)
-                        (#x06 *ES*)
-                        (#xA0 *FS*)
-                        (t *GS*))
+                        (#x0E #.*CS*)
+                        (#x16 #.*SS*)
+                        (#x1E #.*DS*)
+                        (#x06 #.*ES*)
+                        (#xA0 #.*FS*)
+                        (t #.*GS*))
                       x86))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -448,7 +448,7 @@
        ((mv flg x86)
         (wme-size proc-mode operand-size
                   (the (signed-byte #.*max-linear-address-size*) new-rsp)
-                  *ss*
+                  #.*ss*
                   ;; If operand-size is 64, val is zero-extended here
                   ;; automatically.
                   val
@@ -504,7 +504,7 @@
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d
                 (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
@@ -518,7 +518,7 @@
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
        ((mv flg0 val x86)
-        (rme-size proc-mode operand-size rsp *ss* :r (alignment-checking-enabled-p x86) x86
+        (rme-size proc-mode operand-size rsp #.*ss* :r (alignment-checking-enabled-p x86) x86
                   :mem-ptr? nil))
        ((when flg0)
         (cond
@@ -593,7 +593,7 @@
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d
                 (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
@@ -608,7 +608,7 @@
 
        (check-alignment? (alignment-checking-enabled-p x86))
        ((mv flg0 val x86)
-        (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86
+        (rme-size proc-mode operand-size rsp #.*ss* :r check-alignment? x86
                   :mem-ptr? nil))
        ((when flg0)
         (cond
@@ -814,7 +814,7 @@
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d
                 (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
@@ -847,7 +847,7 @@
        ((mv flg x86)
         (wme-size proc-mode operand-size
                   (the (signed-byte #.*max-linear-address-size*) new-rsp)
-                  *ss*
+                  #.*ss*
                   eflags
                   (alignment-checking-enabled-p x86)
                   x86
@@ -947,7 +947,7 @@
        ((the (integer 1 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
             (if p3? 2 8)
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d
                 (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
@@ -961,7 +961,7 @@
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((mv flg0 val x86)
-        (rme-size proc-mode operand-size rsp *ss* :r (alignment-checking-enabled-p x86) x86
+        (rme-size proc-mode operand-size rsp #.*ss* :r (alignment-checking-enabled-p x86) x86
                   :mem-ptr? nil))
        ((when flg0)
         (cond
@@ -1074,7 +1074,7 @@
 
        ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* eax/ax check-alignment? x86 :mem-ptr? nil))
+       ((mv flg x86) (wme-size proc-mode operand-size rsp #.*ss* eax/ax check-alignment? x86 :mem-ptr? nil))
        ((when flg)
         (cond
          ;; FIXME? The non-canonical-address error won't come up here
@@ -1090,37 +1090,37 @@
 
        ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* ecx/cx check-alignment? x86 :mem-ptr? nil))
+       ((mv flg x86) (wme-size proc-mode operand-size rsp #.*ss* ecx/cx check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* edx/dx check-alignment? x86 :mem-ptr? nil))
+       ((mv flg x86) (wme-size proc-mode operand-size rsp #.*ss* edx/dx check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* ebx/bx check-alignment? x86 :mem-ptr? nil))
+       ((mv flg x86) (wme-size proc-mode operand-size rsp #.*ss* ebx/bx check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* esp/sp check-alignment? x86 :mem-ptr? nil))
+       ((mv flg x86) (wme-size proc-mode operand-size rsp #.*ss* esp/sp check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* ebp/bp check-alignment? x86 :mem-ptr? nil))
+       ((mv flg x86) (wme-size proc-mode operand-size rsp #.*ss* ebp/bp check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* esi/si check-alignment? x86 :mem-ptr? nil))
+       ((mv flg x86) (wme-size proc-mode operand-size rsp #.*ss* esi/si check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-       ((mv flg x86) (wme-size proc-mode operand-size rsp *ss* edi/di check-alignment? x86 :mem-ptr? nil))
+       ((mv flg x86) (wme-size proc-mode operand-size rsp #.*ss* edi/di check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
        (x86 (write-*sp proc-mode rsp x86))
@@ -1192,7 +1192,7 @@
        ;; the second call of rme-size onwards.
        (check-alignment? (alignment-checking-enabled-p x86))
 
-       ((mv flg edi/di x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((mv flg edi/di x86) (rme-size proc-mode operand-size rsp #.*ss* :r check-alignment? x86 :mem-ptr? nil))
        ((when flg)
         (cond
          ((and (consp flg) (eql (car flg) :non-canonical-address))
@@ -1206,12 +1206,12 @@
 
        (check-alignment? nil)
 
-       ((mv flg esi/si x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((mv flg esi/si x86) (rme-size proc-mode operand-size rsp #.*ss* :r check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
        ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
-       ((mv flg ebp/bp x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((mv flg ebp/bp x86) (rme-size proc-mode operand-size rsp #.*ss* :r check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
        ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
@@ -1221,35 +1221,35 @@
        ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
-       ((mv flg ebx/bx x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((mv flg ebx/bx x86) (rme-size proc-mode operand-size rsp #.*ss* :r check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
        ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
-       ((mv flg edx/dx x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((mv flg edx/dx x86) (rme-size proc-mode operand-size rsp #.*ss* :r check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
        ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
-       ((mv flg ecx/cx x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((mv flg ecx/cx x86) (rme-size proc-mode operand-size rsp #.*ss* :r check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
        ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
-       ((mv flg eax/ax x86) (rme-size proc-mode operand-size rsp *ss* :r check-alignment? x86 :mem-ptr? nil))
+       ((mv flg eax/ax x86) (rme-size proc-mode operand-size rsp #.*ss* :r check-alignment? x86 :mem-ptr? nil))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
        ((mv flg rsp) (add-to-*sp proc-mode rsp operand-size x86))
        ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
 
-       (x86 (!rgfi-size operand-size *rdi* edi/di 0 x86))
-       (x86 (!rgfi-size operand-size *rsi* esi/si 0 x86))
-       (x86 (!rgfi-size operand-size *rbp* ebp/bp 0 x86))
+       (x86 (!rgfi-size operand-size #.*rdi* edi/di 0 x86))
+       (x86 (!rgfi-size operand-size #.*rsi* esi/si 0 x86))
+       (x86 (!rgfi-size operand-size #.*rbp* ebp/bp 0 x86))
        ;; ESP/SP is not actually written (see pseudocode in
        ;; Intel manual, Mar'17, Volume 2, POPA/POPAD reference)
-       (x86 (!rgfi-size operand-size *rbx* ebx/bx 0 x86))
-       (x86 (!rgfi-size operand-size *rdx* edx/dx 0 x86))
-       (x86 (!rgfi-size operand-size *rcx* ecx/cx 0 x86))
-       (x86 (!rgfi-size operand-size *rax* eax/ax 0 x86))
+       (x86 (!rgfi-size operand-size #.*rbx* ebx/bx 0 x86))
+       (x86 (!rgfi-size operand-size #.*rdx* edx/dx 0 x86))
+       (x86 (!rgfi-size operand-size #.*rcx* ecx/cx 0 x86))
+       (x86 (!rgfi-size operand-size #.*rax* eax/ax 0 x86))
 
        (x86 (write-*sp proc-mode rsp x86))
        (x86 (write-*ip proc-mode temp-rip x86)))

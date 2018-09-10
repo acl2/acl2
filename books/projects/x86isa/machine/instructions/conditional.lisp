@@ -219,7 +219,7 @@
 
         ;; branch condition is true:
         (b* (;; read rel8 (a value between -128 and +127):
-             ((mv flg rel8 x86) (rime-size proc-mode 1 temp-rip *cs* :x nil x86))
+             ((mv flg rel8 x86) (rime-size proc-mode 1 temp-rip #.*cs* :x nil x86))
              ((when flg) (!!ms-fresh :rime-size-error flg))
              ;; add rel8 to the address of the next instruction,
              ;; which is one past temp-rip to take the rel8 byte into account:
@@ -288,7 +288,7 @@
        ((the (integer 0 4) offset-size)
         (if (equal proc-mode #.*64-bit-mode*)
             4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
                (p3? (eql #.*operand-size-override* (prefixes->opr prefixes))))
@@ -311,7 +311,7 @@
         ;; branch condition is true:
         (b* (;; read rel16/rel32 (as a signed value):
              ((mv flg offset x86)
-              (rime-size proc-mode offset-size temp-rip *cs* :x nil x86))
+              (rime-size proc-mode offset-size temp-rip #.*cs* :x nil x86))
              ((when flg) (!!ms-fresh :rime-size-error flg))
              ;; add rel16/rel32 to the address of the next instruction,
              ;; which is 2 or 4 past temp-rip to take the rel16/32 into
@@ -380,7 +380,7 @@
 
         ;; branch condition is true:
         (b* (;; read rel8 (a value between -128 and +127):
-             ((mv flg rel8 x86) (rime-size proc-mode 1 temp-rip *cs* :x nil x86))
+             ((mv flg rel8 x86) (rime-size proc-mode 1 temp-rip #.*cs* :x nil x86))
              ((when flg) (!!ms-fresh :rime-size-error flg))
              ;; add rel8 to the address of the next instruction,
              ;; which is one past temp-rip to take the rel8 byte into account:

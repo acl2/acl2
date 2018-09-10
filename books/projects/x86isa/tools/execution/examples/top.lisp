@@ -55,6 +55,7 @@
 
 (include-book "factorial" :ttags :all)
 (include-book "fibonacci" :ttags :all)
+(include-book "fibonacci32" :ttags :all)
 (include-book "nop-sequence/nop" :ttags :all)
 (include-book "dataCopy/dataCopy" :ttags :all)
 
