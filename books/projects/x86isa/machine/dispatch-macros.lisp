@@ -42,6 +42,8 @@
 ; Shilpi Goel         <shilpi@centtech.com>
 
 (in-package "X86ISA")
+(include-book "std/util/define" :dir :system)
+(include-book "cpuid-constants")
 
 (local (xdoc::set-default-parents 'opcode-maps))
 
@@ -50,7 +52,7 @@
 
 ;; ----------------------------------------------------------------------
 
-;; Exceptions:
+;; Exception-related definitions:
 
 ;; **************************************************
 ;; Variable bindings related to exceptions
@@ -92,57 +94,6 @@
 
 
 ;; **************************************************
-
-;; TODO:
-
-;; --- Only exceptions for the protected, compatibility, and 64-bit mode have
-;;     been specified.
-
-;; --- VMX, SMM instructions' exceptions have not been listed yet.
-
-;; --- What's the exception scenario for RESERVEDNOP (Group 16, #ux0F_18)?
-
-(defconst *fp-simd-feature-flags*
-  '(:mmx :sse :sse2 :sse3 :ssse3 :sse4.1 :sse4.2))
-
-(defconst *avx512-feature-flags*
-  '(:avx512f
-    :avx512dq :avx512_ifma
-    :avx512pf :avx512er ;; PF and ER only on Intel Xeon Phi
-    :avx512cd :avx512bw :avx512vl :avx512_vbmi))
-
-(defconst *mode-feature-flags*
-  '(:vmx))
-
-(defconst *supported-feature-flags*
-  (append *fp-simd-feature-flags*
-	  (list :avx :avx2)
-	  *avx512-feature-flags*
-	  *mode-feature-flags*))
-
-(defmacro feature-flag (feature-flag)
-  (declare (xargs :guard (member-equal feature-flag *supported-feature-flags*)))
-  (case feature-flag
-    (:vmx           `(cpuid-flag #ux_01             :reg #.*ecx* :bit 5))
-    (:mmx           `(cpuid-flag #ux_01             :reg #.*edx* :bit 23))
-    (:sse           `(cpuid-flag #ux_01             :reg #.*edx* :bit 25))
-    (:sse2          `(cpuid-flag #ux_01             :reg #.*edx* :bit 26))
-    (:sse3          `(cpuid-flag #ux_01             :reg #.*ecx* :bit 0))
-    (:ssse3         `(cpuid-flag #ux_01             :reg #.*ecx* :bit 9))
-    (:sse4.1        `(cpuid-flag #ux_01             :reg #.*ecx* :bit 19))
-    (:sse4.2        `(cpuid-flag #ux_01             :reg #.*ecx* :bit 20))
-    (:avx           `(cpuid-flag #ux_01             :reg #.*ecx* :bit 28))
-    (:avx2          `(cpuid-flag #ux_01 :ecx #ux_00 :reg #.*ebx* :bit 5))
-    (:avx512f       `(cpuid-flag #ux_01 :ecx #ux_00 :reg #.*ebx* :bit 16))
-    (:avx512dq      `(cpuid-flag #ux_01 :ecx #ux_00 :reg #.*ebx* :bit 17))
-    (:avx512_ifma   `(cpuid-flag #ux_01 :ecx #ux_00 :reg #.*ebx* :bit 21))
-    (:avx512pf      `(cpuid-flag #ux_01 :ecx #ux_00 :reg #.*ebx* :bit 26))
-    (:avx512er      `(cpuid-flag #ux_01 :ecx #ux_00 :reg #.*ebx* :bit 27))
-    (:avx512cd      `(cpuid-flag #ux_01 :ecx #ux_00 :reg #.*ebx* :bit 28))
-    (:avx512bw      `(cpuid-flag #ux_01 :ecx #ux_00 :reg #.*ebx* :bit 30))
-    (:avx512vl      `(cpuid-flag #ux_01 :ecx #ux_00 :reg #.*ebx* :bit 31))
-    (:avx512_vbmi   `(cpuid-flag #ux_01 :ecx #ux_00 :reg #.*ecx* :bit 1))
-    (otherwise       0)))
 
 (defmacro ud-Lock-used ()
   `(eql #.*lock* (prefixes->lck prefixes)))
@@ -313,7 +264,7 @@
   `(eql (cr0-slice :cr0-pe (cr0)) 0))
 
 
-;; Some x86isa-specific definitions:
+;; Some x86isa-specific macros:
 
 (defmacro cplx86 ()
   `(cpl x86))
@@ -328,29 +279,5 @@
 
 (defmacro ia32_efer ()
   `(msri #.*ia32_efer-idx* x86))
-
-
-(defmacro cpuid-flag (eax &key ecx
-			  reg ;; Index of the output register
-			  bit ;; Relevant bit of the output register
-			  )
-  (declare (ignore eax ecx reg bit))
-  ;; CPUID:
-  ;; 64-bit input:   32 bits each of eax and ecx
-  ;; 128-bit output: 32 bits each of eax, ebx, ecx, edx
-
-  ;; For now, this function always returns 1, which means that all features are
-  ;; enabled in this model right now.  Of course, this isn't accurate --- this
-  ;; is just a stop gap.
-
-  ;; Later, here's one way we could store the CPUID information: we could
-  ;; define a stobj called "cpuid", whose fields' names would be (or would
-  ;; indicate) the input eax values.  If an eax input (or "leaf") also expects
-  ;; an ecx input (or "subleaf"), that field would be an array, with the ecx
-  ;; subleaf being the index to the first of four 32-bit output values.  If an
-  ;; eax leaf does not expect an ecx subleaf, then that field simply contains 4
-  ;; 32-bit values.  This "cpuid" stobj can be a field of our main "x86" stobj.
-
-  1)
 
 ;; ----------------------------------------------------------------------
