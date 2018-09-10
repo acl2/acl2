@@ -101,7 +101,7 @@
    </p>"
   (b* ((ia32_efer (n12 (xr :msr *ia32_efer-idx* x86)))
        (ia32_efer.lma (ia32_efer-slice :ia32_efer-lma ia32_efer))
-       (cs-hidden (xr :seg-hidden *cs* x86))
+       (cs-hidden (xr :seg-hidden #.*cs* x86))
        (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
        (cs.l (code-segment-descriptor-attributes-layout-slice :l cs-attr)))
     (and (equal ia32_efer.lma 1)

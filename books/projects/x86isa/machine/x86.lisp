@@ -42,6 +42,7 @@
 
 (include-book "instructions/top"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "dispatch-macros")
 (include-book "std/strings/hexify" :dir :system)
 
 (local (include-book "dispatch"))
@@ -439,7 +440,7 @@
 
     (b* ((ctx 'get-prefixes)
          ((mv flg (the (unsigned-byte 8) byte) x86)
-          (rme08 proc-mode start-rip *cs* :x x86))
+          (rme08 proc-mode start-rip #.*cs* :x x86))
          ((when flg)
           (mv (cons ctx flg) byte rex-byte x86))
 
@@ -735,7 +736,7 @@
      ;; This lemma would be used for those instructions which do not have
      ;; any prefix byte.
      (b* (((mv flg byte byte-x86)
-           (rme08 proc-mode start-rip *cs* :x x86))
+           (rme08 proc-mode start-rip #.*cs* :x x86))
           (prefix-byte-group-code
            (get-one-byte-prefix-array-code byte)))
        (implies
@@ -780,7 +781,7 @@
     ;; byte --- either legacy or rex.
     (implies
      (b* (((mv flg byte &)
-           (rme08 proc-mode start-rip *cs* :x x86))
+           (rme08 proc-mode start-rip #.*cs* :x x86))
           (prefix-byte-group-code
            (get-one-byte-prefix-array-code byte)))
        (and (not flg)
@@ -793,12 +794,12 @@
       (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
       (let ((prefixes
              (!prefixes->nxt
-              (mv-nth 1 (rme08 proc-mode start-rip *cs* :x x86))
+              (mv-nth 1 (rme08 proc-mode start-rip #.*cs* :x x86))
               prefixes)))
         (mv nil
             (!prefixes->num (- 15 cnt) prefixes)
             rex-byte ;; Preserving rex-byte
-            (mv-nth 2 (rme08 proc-mode start-rip *cs* :x x86))))))
+            (mv-nth 2 (rme08 proc-mode start-rip #.*cs* :x x86))))))
     :hints (("Goal" :in-theory (e/d (get-prefixes-opener-lemma-no-prefix-byte-pre)
                                     (rme08 get-prefixes)))))
 
@@ -807,7 +808,7 @@
     ;; This lemma is applicable in all the views of the x86isa model.
     (implies
      (b* (((mv flg byte &)
-           (rme08 proc-mode start-rip *cs* :x x86))
+           (rme08 proc-mode start-rip #.*cs* :x x86))
           (prefix-byte-group-code
            (get-one-byte-prefix-array-code byte)))
        (and (equal proc-mode #.*64-bit-mode*)
@@ -818,7 +819,7 @@
      (equal
       (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
       (b* (((mv & byte byte-x86)
-            (rme08 proc-mode start-rip *cs* :x x86))
+            (rme08 proc-mode start-rip #.*cs* :x x86))
            ((mv flg next-rip)
             (add-to-*ip proc-mode start-rip 1 byte-x86)))
         (if flg
@@ -834,7 +835,7 @@
 
   (defthm get-prefixes-opener-lemma-group-1-prefix
     (b* (((mv flg byte x86)
-          (rme08 proc-mode start-rip *cs* :x x86))
+          (rme08 proc-mode start-rip #.*cs* :x x86))
          (prefix-byte-group-code (get-one-byte-prefix-array-code byte)))
       (implies
        (and (or (app-view x86)
@@ -860,7 +861,7 @@
 
   (defthm get-prefixes-opener-lemma-group-2-prefix
     (b* (((mv flg byte byte-x86)
-          (rme08 proc-mode start-rip *cs* :x x86))
+          (rme08 proc-mode start-rip #.*cs* :x x86))
          (prefix-byte-group-code
           (get-one-byte-prefix-array-code
            byte)))
@@ -896,10 +897,10 @@
     (implies (and (or (app-view x86)
                       (and (not (app-view x86))
                            (not (marking-view x86))))
-                  (let* ((flg (mv-nth 0 (rme08 proc-mode start-rip *cs* :x x86)))
+                  (let* ((flg (mv-nth 0 (rme08 proc-mode start-rip #.*cs* :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rme08 proc-mode start-rip *cs* :x x86)))))
+                           (mv-nth 1 (rme08 proc-mode start-rip #.*cs* :x x86)))))
                     (and (not flg) ;; No error in reading a byte
                          (equal prefix-byte-group-code 3)))
                   (not (zp cnt))
@@ -909,7 +910,7 @@
                                   (!prefixes->opr
                                    (mv-nth 1
                                            (rme08
-                                            proc-mode start-rip *cs* :x x86))
+                                            proc-mode start-rip #.*cs* :x x86))
                                    prefixes)
                                   0
                                   (1- cnt) x86)))
@@ -925,10 +926,10 @@
     (implies (and (or (app-view x86)
                       (and (not (app-view x86))
                            (not (marking-view x86))))
-                  (let* ((flg (mv-nth 0 (rme08 proc-mode start-rip *cs* :x x86)))
+                  (let* ((flg (mv-nth 0 (rme08 proc-mode start-rip #.*cs* :x x86)))
                          (prefix-byte-group-code
                           (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rme08 proc-mode start-rip *cs* :x x86)))))
+                           (mv-nth 1 (rme08 proc-mode start-rip #.*cs* :x x86)))))
                     (and (not flg) ;; No error in reading a byte
                          (equal prefix-byte-group-code 4)))
                   (not (zp cnt))
@@ -937,7 +938,7 @@
                     (get-prefixes proc-mode (1+ start-rip)
                                   (!prefixes->adr
                                    (mv-nth 1 (rme08
-                                              proc-mode start-rip *cs* :x x86))
+                                              proc-mode start-rip #.*cs* :x x86))
                                    prefixes)
                                   0
                                   (1- cnt) x86)))
@@ -1146,7 +1147,7 @@
   (b* ((ctx 'three-byte-opcode-decode-and-execute)
 
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
-        (rme08 proc-mode temp-rip *cs* :x x86))
+        (rme08 proc-mode temp-rip #.*cs* :x x86))
        ((when flg0)
         (!!ms-fresh :opcode-byte-access-error flg0))
 
@@ -1170,7 +1171,7 @@
          proc-mode mandatory-prefix second-escape-byte opcode))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
-            (rme08 proc-mode temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip #.*cs* :x x86)
           (mv nil 0 x86)))
        ((when flg1) (!!ms-fresh :modr/m-byte-read-error flg1))
 
@@ -1186,7 +1187,7 @@
                     (x86-decode-SIB-p modr/m 16-bit-addressp))))
        ((mv flg2 (the (unsigned-byte 8) sib) x86)
         (if sib?
-            (rme08 proc-mode temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip #.*cs* :x x86)
           (mv nil 0 x86)))
        ((when flg2)
         (!!ms-fresh :sib-byte-read-error flg2))
@@ -1325,7 +1326,7 @@
   (b* ((ctx 'two-byte-opcode-decode-and-execute)
 
        ((mv flg0 (the (unsigned-byte 8) opcode) x86)
-        (rme08 proc-mode temp-rip *cs* :x x86))
+        (rme08 proc-mode temp-rip #.*cs* :x x86))
        ((when flg0)
         (!!ms-fresh :opcode-byte-access-error flg0))
 
@@ -1354,7 +1355,7 @@
          proc-mode mandatory-prefix opcode))
        ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
-            (rme08 proc-mode temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip #.*cs* :x x86)
           (mv nil 0 x86)))
        ((when flg1) (!!ms-fresh :modr/m-byte-read-error flg1))
 
@@ -1370,7 +1371,7 @@
                     (x86-decode-SIB-p modr/m 16-bit-addressp))))
        ((mv flg2 (the (unsigned-byte 8) sib) x86)
         (if sib?
-            (rme08 proc-mode temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip #.*cs* :x x86)
           (mv nil 0 x86)))
        ((when flg2)
         (!!ms-fresh :sib-byte-read-error flg2))
@@ -1702,7 +1703,7 @@
        ;; next-byte for vex2-prefixes and both byte2 and next-byte for
        ;; vex3-prefix:
        ((mv flg0 (the (unsigned-byte 8) byte2/next-byte) x86)
-        (rme08 proc-mode temp-rip *cs* :x x86))
+        (rme08 proc-mode temp-rip #.*cs* :x x86))
        ((when flg0)
         (!!ms-fresh :vex-byte2/next-byte-read-error flg0))
        ((mv flg1 temp-rip)
@@ -1715,7 +1716,7 @@
           vex-prefixes))
        ((mv flg2 (the (unsigned-byte 8) next-byte) x86)
         (if vex3-prefix?
-            (rme08 proc-mode temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip #.*cs* :x x86)
           (mv nil 0 x86)))
        ((when flg2)
         (!!ms-fresh :next-byte-read-error flg2))
@@ -1733,7 +1734,7 @@
        (modr/m? (vex-opcode-ModR/M-p vex-prefixes opcode))
        ((mv flg4 (the (unsigned-byte 8) modr/m) x86)
         (if modr/m?
-            (rme08 proc-mode temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip #.*cs* :x x86)
           (mv nil 0 x86)))
        ((when flg4)
         (!!ms-fresh :modr/m-byte-read-error flg4))
@@ -1750,7 +1751,7 @@
                     (x86-decode-SIB-p modr/m 16-bit-addressp))))
        ((mv flg6 (the (unsigned-byte 8) sib) x86)
         (if sib?
-            (rme08 proc-mode temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip #.*cs* :x x86)
           (mv nil 0 x86)))
        ((when flg6)
         (!!ms-fresh :sib-byte-read-error flg6))
@@ -1977,7 +1978,7 @@
 
        ;; EVEX Byte 2:
        ((mv flg0 (the (unsigned-byte 8) evex-byte2) x86)
-        (rme08 proc-mode temp-rip *cs* :x x86))
+        (rme08 proc-mode temp-rip #.*cs* :x x86))
        ((when flg0)
         (!!ms-fresh :evex-byte2-read-error flg0))
        ((mv flg1 temp-rip)
@@ -1993,7 +1994,7 @@
 
        ;; EVEX Byte 3:
        ((mv flg2 (the (unsigned-byte 8) evex-byte3) x86)
-        (rme08 proc-mode temp-rip *cs* :x x86))
+        (rme08 proc-mode temp-rip #.*cs* :x x86))
        ((when flg2)
         (!!ms-fresh :evex-byte3-read-error flg2))
        ((mv flg3 temp-rip)
@@ -2003,7 +2004,7 @@
 
        ;; Opcode:
        ((mv flg4 (the (unsigned-byte 8) opcode) x86)
-        (rme08 proc-mode temp-rip *cs* :x x86))
+        (rme08 proc-mode temp-rip #.*cs* :x x86))
        ((when flg4)
         (!!ms-fresh :opcode-read-error flg4))
        ((mv flg5 temp-rip)
@@ -2016,7 +2017,7 @@
        ;; Format with VEX Prefix) and Figure 2-10 (AVX-512 Instruction Format
        ;; and the EVEX Prefix)
        ((mv flg6 (the (unsigned-byte 8) modr/m) x86)
-        (rme08 proc-mode temp-rip *cs* :x x86))
+        (rme08 proc-mode temp-rip #.*cs* :x x86))
        ((when flg6)
         (!!ms-fresh :modr/m-byte-read-error flg6))
        ((mv flg7 temp-rip)
@@ -2030,7 +2031,7 @@
                (x86-decode-SIB-p modr/m 16-bit-addressp)))
        ((mv flg8 (the (unsigned-byte 8) sib) x86)
         (if sib?
-            (rme08 proc-mode temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip #.*cs* :x x86)
           (mv nil 0 x86)))
        ((when flg8)
         (!!ms-fresh :sib-byte-read-error flg8))
@@ -2171,7 +2172,7 @@
        ;; this function for simplicity.
        ((mv flg les/lds-distinguishing-byte x86)
         (if vex-byte0?
-            (rme08 proc-mode temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip #.*cs* :x x86)
           (mv nil 0 x86)))
        ((when flg)
         (!!ms-fresh :les/lds-distinguishing-byte-read-error flg))
@@ -2225,7 +2226,7 @@
        ;; simplicity.
        ((mv flg bound-distinguishing-byte x86)
         (if evex-byte0?
-            (rme08 proc-mode temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip #.*cs* :x x86)
           (mv nil 0 x86)))
        ((when flg)
         (!!ms-fresh :bound-distinguishing-byte-read-error flg))
@@ -2298,7 +2299,7 @@
                 ;; The above will be true only if the instruction is LES or LDS
                 ;; or BOUND in the 32-bit mode.
                 (mv nil les/lds-distinguishing-byte x86)
-              (rme08 proc-mode temp-rip *cs* :x x86))
+              (rme08 proc-mode temp-rip #.*cs* :x x86))
           (mv nil 0 x86)))
        ((when flg)
         (!!ms-fresh :modr/m-byte-read-error flg))
@@ -2318,7 +2319,7 @@
 
        ((mv flg (the (unsigned-byte 8) sib) x86)
         (if sib?
-            (rme08 proc-mode temp-rip *cs* :x x86)
+            (rme08 proc-mode temp-rip #.*cs* :x x86)
           (mv nil 0 x86)))
        ((when flg)
         (!!ms-fresh :sib-byte-read-error flg))
@@ -2371,7 +2372,7 @@
       (equal modr/m?
              (one-byte-opcode-ModR/M-p proc-mode opcode/vex/evex-byte))
       (equal modr/m (if modr/m?
-                        (mv-nth 1 (rme08 proc-mode temp-rip0 *cs* :x x86))
+                        (mv-nth 1 (rme08 proc-mode temp-rip0 #.*cs* :x x86))
                       0))
       (equal temp-rip1 (if modr/m?
                            (mv-nth 1 (add-to-*ip proc-mode temp-rip0 1 x86))
@@ -2379,7 +2380,7 @@
       (equal p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
       (equal 16-bit-addressp (equal 2 (select-address-size proc-mode p4? x86)))
       (equal sib? (and modr/m? (x86-decode-sib-p modr/m 16-bit-addressp)))
-      (equal sib (if sib? (mv-nth 1 (rme08 proc-mode temp-rip1 *cs* :x x86)) 0))
+      (equal sib (if sib? (mv-nth 1 (rme08 proc-mode temp-rip1 #.*cs* :x x86)) 0))
 
       (equal temp-rip2 (if sib?
                            (mv-nth 1 (add-to-*ip proc-mode temp-rip1 1 x86))
@@ -2389,11 +2390,11 @@
       (not (mv-nth 0 (add-to-*ip proc-mode start-rip (1+ prefix-length) x86)))
       (if modr/m?
           (and (not (mv-nth 0 (add-to-*ip proc-mode temp-rip0 1 x86)))
-               (not (mv-nth 0 (rme08 proc-mode temp-rip0 *cs* :x x86))))
+               (not (mv-nth 0 (rme08 proc-mode temp-rip0 #.*cs* :x x86))))
         t)
       (if sib?
           (and (not (mv-nth 0 (add-to-*ip proc-mode temp-rip1 1 x86)))
-               (not (mv-nth 0 (rme08 proc-mode temp-rip1 *cs* :x x86))))
+               (not (mv-nth 0 (rme08 proc-mode temp-rip1 #.*cs* :x x86))))
         t)
       (x86p x86)
       ;; Print the rip and the first opcode byte of the instruction

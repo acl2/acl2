@@ -258,7 +258,7 @@
 
        ;; Get the offset:
        ((mv flg offset x86)
-        (rime-size proc-mode offset-size temp-rip *cs* :x nil x86))
+        (rime-size proc-mode offset-size temp-rip #.*cs* :x nil x86))
        ((when flg) (!!ms-fresh :rime-size-error flg))
 
        ;; Check if the above memory read caused any problems:
@@ -318,7 +318,7 @@
        ;; Exception and Interrupt Reference, Interrupt 17 Alignment
        ;; Check Exception (#AC) for details).
        ((mv flg0 imm x86)
-        (rme-size proc-mode operand-size temp-rip *cs* :x nil x86 :mem-ptr? nil))
+        (rme-size proc-mode operand-size temp-rip #.*cs* :x nil x86 :mem-ptr? nil))
        ((when flg0)
         (!!ms-fresh :imm-rme-size-error flg0))
 
@@ -402,7 +402,7 @@
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        ((mv flg2 imm x86)
-        (rme-size proc-mode imm-size temp-rip *cs* :x nil x86))
+        (rme-size proc-mode imm-size temp-rip #.*cs* :x nil x86))
        ((when flg2)
         (!!ms-fresh :imm-rme-size-error flg2))
 

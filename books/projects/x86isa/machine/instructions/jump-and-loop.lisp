@@ -110,7 +110,7 @@
           ;; opcode = #xE9 -- jump near relative:
           (if (equal proc-mode #.*64-bit-mode*)
               4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
-            (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+            (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                  (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                  (cs.d (code-segment-descriptor-attributes-layout-slice
                         :d cs-attr)))
@@ -119,7 +119,7 @@
                 (if p3? 4 2))))))
 
        ((mv ?flg (the (signed-byte 32) offset) x86)
-        (rime-size proc-mode offset-size temp-rip *cs* :x nil x86))
+        (rime-size proc-mode offset-size temp-rip #.*cs* :x nil x86))
        ((when flg) (!!ms-fresh :rime-size-error flg))
 
        ((mv flg next-rip)
@@ -177,7 +177,7 @@
        ((the (integer 2 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
             8 ; Intel manual, Mar'17, Volume 1, Section 6.3.7
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d (code-segment-descriptor-attributes-layout-slice
                       :d cs-attr)))
@@ -220,7 +220,7 @@
        ;; manual.
        ((unless (if (equal proc-mode #.*64-bit-mode*)
                     (canonical-address-p jmp-addr)
-                  (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+                  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                        (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
                     (and (<= 0 jmp-addr) (<= jmp-addr cs.limit)))))
         (!!fault-fresh :gp 0 :bad-return-address jmp-addr)) ;; #GP(0)
@@ -318,7 +318,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
         ;; Offset size can be 2, 4, or 8 bytes.
         (if (equal proc-mode #.*64-bit-mode*)
             8
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d
                 (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
@@ -496,8 +496,8 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                        0)))))
 
                  ;; Update x86 state:
-                 (x86 (!seg-visiblei *cs* new-cs-visible x86))
-                 (x86 (!seg-hiddeni  *cs* new-cs-hidden  x86))
+                 (x86 (!seg-visiblei #.*cs* new-cs-visible x86))
+                 (x86 (!seg-hiddeni  #.*cs* new-cs-hidden  x86))
                  (x86 (write-*ip proc-mode jmp-addr x86)))
               x86)
 
@@ -549,8 +549,8 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                      0)))))
 
                ;; Update x86 state:
-               (x86 (!seg-visiblei *cs* new-cs-visible x86))
-               (x86 (!seg-hiddeni  *cs* new-cs-hidden  x86))
+               (x86 (!seg-visiblei #.*cs* new-cs-visible x86))
+               (x86 (!seg-hiddeni  #.*cs* new-cs-hidden  x86))
                (x86 (write-*ip proc-mode jmp-addr x86)))
             x86))
 
@@ -719,8 +719,8 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                  0)))))
 
            ;; Update x86 state:
-           (x86 (!seg-visiblei *cs* new-cs-visible x86))
-           (x86 (!seg-hiddeni  *cs* new-cs-hidden  x86))
+           (x86 (!seg-visiblei #.*cs* new-cs-visible x86))
+           (x86 (!seg-hiddeni  #.*cs* new-cs-hidden  x86))
            (x86 (write-*ip proc-mode jmp-addr x86)))
         x86))))
 
@@ -821,7 +821,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
         ;; branch condition is true:
         (b* (;; read rel8 (a value between -128 and +127):
-             ((mv flg rel8 x86) (rime-size proc-mode 1 temp-rip *cs* :x nil x86))
+             ((mv flg rel8 x86) (rime-size proc-mode 1 temp-rip #.*cs* :x nil x86))
              ((when flg) (!!ms-fresh :rime-size-error flg))
              ;; add rel8 to the address of the next instruction,
              ;; which is one past temp-rip to take the rel8 byte into account:

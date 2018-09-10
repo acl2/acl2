@@ -156,7 +156,7 @@
        (operand-size
         (if (eql base-size 8)
             8
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d
                 (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
@@ -288,7 +288,7 @@
        (operand-size
         (if (eql base-size 8)
             8
-          (b* ((cs-hidden (xr :seg-hidden *cs* x86))
+          (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
                (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
                (cs.d
                 (code-segment-descriptor-attributes-layout-slice :d cs-attr)))

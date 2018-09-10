@@ -2372,7 +2372,7 @@ accesses.</p>
 (defabbrev cpl (x86)
   (the (unsigned-byte 2)
     (seg-sel-layout-slice
-     :rpl (the (unsigned-byte 16) (xr :seg-visible *cs* x86)))))
+     :rpl (the (unsigned-byte 16) (xr :seg-visible #.*cs* x86)))))
 
 (define ia32e-la-to-pa
   ((lin-addr :type (signed-byte   #.*max-linear-address-size*)

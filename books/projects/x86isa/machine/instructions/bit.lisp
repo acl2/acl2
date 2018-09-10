@@ -109,7 +109,7 @@
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        ((mv flg1 (the (unsigned-byte 8) bitOffset) x86)
-        (rme-size proc-mode 1 temp-rip *cs* :x nil x86))
+        (rme-size proc-mode 1 temp-rip #.*cs* :x nil x86))
        ((when flg1) (!!ms-fresh :rme-size-error flg1))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
