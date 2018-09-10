@@ -258,30 +258,6 @@ int main (int argc, char *argv[], char *env[]) {
                  input expected (rgfi *eax* x86))
                 t)))))))
 
-(define x86-run-halt-count
-  ((halt-address :type (signed-byte   #.*max-linear-address-size*))
-   (n            :type (unsigned-byte 59))
-   x86
-   (steps        :type (unsigned-byte 59)))
-
-  :prepwork
-  ((local (include-book "centaur/bitops/ihsext-basics" :dir :system)))
-  :short "Run @('n') instructions or till @('halt-address') is
-  reached, whichever comes first.  Also returns the number of steps
-  executed."
-
-  :returns (mv (steps natp :hyp (natp steps)
-                      :rule-classes :type-prescription)
-               (x86 x86p :hyp (x86p x86)))
-
-  (cond ((fault x86) (mv steps x86))
-        ((ms x86) (mv steps x86))
-        ((mbe :logic (zp n) :exec (equal 0 n))
-         (mv steps x86))
-        (t (let* ((x86 (x86-fetch-decode-execute-halt halt-address x86))
-                  (n (the (unsigned-byte 59) (1- n))))
-             (x86-run-halt-count halt-address n x86 (n59 (1+ steps)))))))
-
 (define x86isa-one-fib32-cosim
   ((input         :type (unsigned-byte 8))
    (start-address :type (signed-byte #.*max-linear-address-size*))
