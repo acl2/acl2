@@ -33,9 +33,7 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 
-
-(defund hq (x) x)
-(in-theory (disable (:t hq) (hq)))
+(defstub hq (x) nil)
 
 (defxdoc hq
   :parents (use-termhint)
@@ -79,15 +77,16 @@ where all the commas are accompanied by hq calls; e.g.:</p>
  (:USE MY-THEOREM (A (FOO BAR BAZ)))
 })")
 
-(defund use-termhint-hyp (x)
-  ;; (declare (ignore x))
-  (or x t))
-(in-theory (disable (:t use-termhint-hyp) (use-termhint-hyp)))
-
-(defthm use-termhint-hyp-is-true
-  (use-termhint-hyp x)
-  :hints(("Goal" :in-theory (enable use-termhint-hyp)))
-  :rule-classes nil)
+(set-tau-auto-mode nil)
+(encapsulate
+  (((use-termhint-hyp *) => *))
+  (local (defun use-termhint-hyp (x)
+           (declare (ignore x))
+           t))
+  (defthm use-termhint-hyp-is-true
+    (use-termhint-hyp x)
+    :rule-classes nil))
+(set-tau-auto-mode t)
 
 (defun use-termhint-find-hint (clause)
   (if (atom clause)
@@ -316,13 +315,15 @@ of the @('b*') form after that binder is the second hint.</p>")
 
 
 
-
-(defund mark-clause (x)
-  (declare (ignore x))
-  t)
-(in-theory (Disable (mark-clause) (:t mark-clause)))
-(defthm mark-clause-is-true
-  (mark-clause x)
-  :rule-classes nil)
+(set-tau-auto-mode nil)
+(encapsulate
+  (((mark-clause *) => *))
+  (local (defun mark-clause (x)
+           (declare (ignore x))
+           t))
+  (defthm mark-clause-is-true
+    (mark-clause x)
+    :rule-classes nil))
+(set-tau-auto-mode t)
 
 ;; :use ((:instance mark-clause-is-true (x 'name-of-clause)))
