@@ -277,7 +277,9 @@ differences between ACL2's reader and what raw Lisp code is expecting.</p>")
         ;; events of the include-book are being processed to run this, so that
         ;; our compiled file isn't loaded twice.
         (when (null *hcomp-fn-macro-restore-ht*)
-          (,(if do-not-compile 'raw-load-uncompiled 'raw-load)
-           ,fname ,(not on-load-fail-p) ',on-load-fail state)))
+          (extend-with-raw-code
+           ;; See :doc note-8-1-books re: extend-with-raw-code (Matt K. mod)
+           '(,(if do-not-compile 'raw-load-uncompiled 'raw-load)
+             ,fname ,(not on-load-fail-p) ',on-load-fail state)
+           state)))
       (value-triple ,fname))))
-

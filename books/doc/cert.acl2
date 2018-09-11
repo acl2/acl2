@@ -33,4 +33,5 @@
 (include-book "kestrel/soft/portcullis" :dir :system)
 (include-book "kestrel/apt/portcullis" :dir :system)
 (include-book "centaur/acre/portcullis" :dir :system)
+(include-book "centaur/gl/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all

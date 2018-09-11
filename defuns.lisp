@@ -7463,12 +7463,14 @@
 (defun redundant-predefined-error-msg (name)
   (let ((pkg-name (and (symbolp name) ; probably always true
                        (symbol-package-name name))))
-    (msg "ACL2 is processing a redundant definition of the name ~x0, which is ~
-          ~#1~[already defined using special raw Lisp code~/predefined in the ~
-          ~x2 package~].  For technical reasons, we disallow non-LOCAL ~
-          redundant definitions in such cases; see :DOC redundant-events.  ~
-          Consider wrapping this definition inside a call of LOCAL."
-         name
+    (msg "ACL2 is processing a redundant definition of the name ~s0 (package ~
+          ~s1), which is ~#2~[already defined using special raw Lisp ~
+          code~/predefined in the ~x3 package~].  For technical reasons, we ~
+          disallow non-LOCAL redundant definitions in such cases; see :DOC ~
+          redundant-events.  Consider wrapping this definition inside a call ~
+          of LOCAL."
+         (symbol-name name)
+	 (symbol-package-name name)
          (if (equal pkg-name *main-lisp-package-name*)
              1
            0)

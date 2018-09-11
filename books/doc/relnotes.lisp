@@ -471,6 +471,15 @@
 
  <p>The download button now works in the web-based manual.</p>
 
+ <p>When the @(tsee include-raw) utility with option @(':do-not-compile t') was
+ followed by @(':')@(tsee comp), it was possible for that subsequent
+ compilation to overwrite intended raw Lisp definitions, for a host Lisp that
+ does not compile on-the-fly (i.e., for a host Lisp other than CCL or SBCL).
+ The way to prevent such overwrites is to extend @(see state) globals
+ @('program-fns-with-raw-code') and @('logic-fns-with-raw-code'), which however
+ was not always done.  This is now done automatically, which fixes the
+ overwrite problem.</p>
+
  ")
 
 (defxdoc note-8-0-books

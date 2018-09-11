@@ -3905,6 +3905,15 @@ out of memory before running out of clock.</p>"
 
 (defttag :vl-optimize)
 (progn!
+; Start Matt K. mod: push the about-to-be-smashed function onto the appropriate
+; list, so that (comp t) doesn't undo the smashing.
+ :state-global-bindings
+ ((acl2::temp-touchable-vars t acl2::set-temp-touchable-vars))
+ (f-put-global 'acl2::logic-fns-with-raw-code
+               (cons 'vl-ppst-unsound-nreverse-acc
+                     (@ acl2::logic-fns-with-raw-code))
+               state)
+; End Matt K. mod.
  (set-raw-mode t)
  (defun vl-ppst-unsound-nreverse-acc (ppst)
    (let ((acc (vl-ppst->acc)))

@@ -30213,6 +30213,88 @@
 (defmacro read-file-into-string (filename &key (start '0) bytes)
   `(read-file-into-string2 ,filename ,start ,bytes state))
 
+; The following two functions support the community books utility,
+; include-raw.
+
+(defun sort-fboundps (lst wrld ps ls ms)
+
+; Accumulate, into ps, ls, and ms, the symbols of lst that are program-mode
+; function symbols, logic-mode function symbols, and macro names, respectively.
+
+  (declare (xargs :mode :program))
+  (cond ((endp lst) (mv ps ls ms))
+        (t (let ((s (car lst)))
+             (cond ((getpropc s 'macro-body nil wrld)
+                    (sort-fboundps (cdr lst) wrld ps ls (cons s ms)))
+                   ((member (symbol-class s wrld)
+                            '(:ideal :common-lisp-compliant)
+                            :test 'eq)
+                    (sort-fboundps (cdr lst) wrld ps (cons s ls) ms))
+                   ((not (eq (getpropc s 'formals t wrld)
+                             t))
+                    (sort-fboundps (cdr lst) wrld (cons s ps) ls ms))
+                   (t
+                    (sort-fboundps (cdr lst) wrld ps ls ms)))))))
+
+#-acl2-loop-only
+(defun extend-with-raw-code (form state)
+
+; The popular macro include-raw, defined in community book
+; books/tools/include-raw.lisp, can be used to smash the symbol-functions of
+; ACL2 functions and macros.  If one uses include-raw and then (comp t), one
+; doesn't want to lose those new symbol-functions!  It is thus important, in
+; support of (comp t), to extend the values of state globals
+; 'program-fns-with-raw-code and 'logic-fns-with-raw-code, with those
+; program-mode function symbols whose definitions that have been smashed.  It
+; may be less important to extend the value of state global
+; 'macros-with-raw-code, but that also seems the right thing to do.
+
+; Thus, this function is essentially (eval form), except that instead of
+; returning the value(s) from that evaluation, it retuns a new state where the
+; xxx-with-raw-code state globals are extended, according to the definitions of
+; ACL2 macros and functions that have changed when form is evaluated.
+
+; We considered making such a modification within the definition of the
+; include-raw macro.  However, the do-all-symbols call took well over a half
+; second on a small example when it was run interpreted in LispWorks, and that
+; time was virtually eliminated when running compiled.  The simplest way to
+; compile was to place this definition in the ACL2 sources (so, we added the
+; definition of supporting function, sort-fboundps, as well).
+
+  (let ((ht (make-hash-table :test 'eq)))
+    (do-all-symbols (s)
+      (when (fboundp s)
+        (setf (gethash s ht)
+              (symbol-function s))))
+    (eval form) ; may overwrite some symbol-functions
+    (let (lst)
+      (maphash (lambda (key val)
+                 (when (not (and (fboundp key) ; always true?
+                                 (eq val (symbol-function key))))
+                   (push key lst)))
+               ht)
+      (mv-let (ps ls ms)
+        (sort-fboundps lst (w state) nil nil nil)
+        (pprogn
+         (cond
+          (ps (f-put-global
+               'program-fns-with-raw-code
+               (append ps (f-get-global 'program-fns-with-raw-code state))
+               state))
+          (t state))
+         (cond
+          (ls (f-put-global
+               'logic-fns-with-raw-code
+               (append ls (f-get-global 'logic-fns-with-raw-code state))
+               state))
+          (t state))
+         (cond
+          (ms (f-put-global
+               'macros-with-raw-code
+               (append ms (f-get-global 'macros-with-raw-code state))
+               state))
+          (t state)))))))
+
 ; Below we define two ``acl2-magic-concrete...'' functions whose only uses are
 ; to allow us to introduce concrete-badge-userfn and concrete-apply$-userfn as
 ; partially constrained functions.  See the Essay on the APPLY$ Integration in

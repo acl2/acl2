@@ -33,6 +33,21 @@
 (include-book "tools/include-raw" :dir :system)
 ; (depends-on "fast-cat-raw.lsp")
 
+; Matt K. mod: Include the following three books, which define
+; STR::FAST-STRING-APPEND, STR::FAST-STRING-APPEND-LST, and
+; STR::RCHARS-TO-STRING, before we smash their definitions.  Otherwise, we can
+; get an error when including fast-cat first and then including any of these
+; books (e.g., when including centaur/gl/bfr-satlink, which includes all three
+; of these books).  That's because the three function symbols above all belong
+; to the list (@ logic-fns-with-raw-code).  See :DOC redundant-events,
+; specifically, the paragraph starting with: "Redundancy is restricted for
+; built-in macros and functions that have special raw Lisp code.".  I measured
+; the time using LispWorks for including the original and modified versions of
+; this book, and the increase -- from 0.8 to 1.0 seconds -- seems tolerable.
+(include-book "xdoc/str" :dir :system)
+(include-book "std/strings/defs" :dir :system)
+(include-book "std/strings/defs-program" :dir :system)
+
 ; In CCL, the performance of str::cat is boosted by a factor of 6.6-9.5x by
 ; including this file, according to the stupid benchmarks at the end of this
 ; file.
