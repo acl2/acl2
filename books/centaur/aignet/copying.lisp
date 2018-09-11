@@ -2597,6 +2597,46 @@ aignet when its initial value is the specified vector:</p>
 ;;     :hints ((and stable-under-simplificationp
 ;;                  `(:expand (,(car (last clause))))))))
 
+(encapsulate nil
+  (local (in-theory (disable lookup-id-out-of-bounds)))
+
+  (local (defthm ctype-is-input-fwd
+           (implies (equal (ctype (stype x)) :input)
+                    (or (equal (stype x) :pi)
+                        (equal (stype x) :reg)))
+           :hints(("Goal" :in-theory (enable ctype)))
+           :rule-classes :forward-chaining))
+
+  (local (defthm input-ctype-of-extension-when-stype-counts-preserved
+           (implies (and (aignet-extension-binding)
+                         (equal (stype-count :pi new) (stype-count :pi orig))
+                         (equal (stype-count :reg new) (stype-count :reg orig)))
+                    (equal (equal (ctype (stype (car (lookup-id id new)))) :input)
+                           (equal (ctype (stype (car (lookup-id id orig)))) :input)))
+           :hints(("Goal" :in-theory (enable ;; aignet-extension-p
+                                      lookup-id)
+                   :expand ((stype-count :pi new)
+                            (stype-count :reg new)
+                            (aignet-extension-p new orig))
+                   :induct (lookup-id id new)))))
+
+  (defthm aignet-input-copies-in-bounds-of-extension-1
+    (implies (and (aignet-extension-binding)
+                  (equal (stype-count :pi new) (stype-count :pi orig))
+                  (equal (stype-count :reg new) (stype-count :reg orig)))
+             (iff (aignet-input-copies-in-bounds copy new aignet2)
+                  (aignet-input-copies-in-bounds copy orig aignet2)))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(assoc 'aignet-input-copies-in-bounds clause))))))
+
+  (defthm aignet-input-copies-in-bounds-of-extension-2
+    (implies (and (aignet-extension-binding)
+                  (aignet-input-copies-in-bounds copy aignet orig))
+             (aignet-input-copies-in-bounds copy aignet new))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(assoc 'aignet-input-copies-in-bounds clause)))))))
+
+
 
 (define aignet-copy-dfs-rec ((id natp :type (integer 0 *))
                              aignet
@@ -2722,6 +2762,15 @@ aignet when its initial value is the specified vector:</p>
               strash gatesimp aignet2)))
     :rule-classes :linear)
 
+  
+
+  (defret stype-counts-preserved-of-aignet-copy-dfs-rec
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
+             (equal (stype-count stype new-aignet2)
+                    (stype-count stype aignet2)))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
   ;; (defthm id-in-bounds-when-memo-tablep-bind-free
   ;;   (implies (and (bind-free '((aignet . aignet)) (aignet))
   ;;                 (< (node-count aignet) (len arr))
@@ -2737,13 +2786,13 @@ aignet when its initial value is the specified vector:</p>
   (local (in-theory (enable lit-negate-cond)))
 
   (defret aignet-input-copies-in-bounds-of-aignet-copy-dfs-rec
-    (implies (and (aignet-idp id aignet)
+    (implies (and ;; (aignet-idp id aignet)
                   (aignet-input-copies-in-bounds copy aignet aignet2))
              (aignet-input-copies-in-bounds new-copy aignet new-aignet2))
     :hints ((acl2::just-induct-and-expand <call>)))
 
   (defret aignet-marked-copies-in-bounds-of-aignet-copy-dfs-rec
-    (implies (and (aignet-idp id aignet)
+    (implies (and ;; (aignet-idp id aignet)
                   (aignet-marked-copies-in-bounds copy mark aignet2)
                   (aignet-input-copies-in-bounds copy aignet aignet2))
              (aignet-marked-copies-in-bounds new-copy new-mark new-aignet2))
@@ -2751,13 +2800,13 @@ aignet when its initial value is the specified vector:</p>
 
 
   (defret aignet-copies-in-bounds-of-aignet-copy-dfs-rec
-    (implies (and (aignet-idp id aignet)
+    (implies (and ;; (aignet-idp id aignet)
                   (aignet-copies-in-bounds copy aignet2))
              (aignet-copies-in-bounds new-copy new-aignet2))
     :hints ((acl2::just-induct-and-expand <call>)))
 
   (defret aignet-input-copies-in-bounds-of-aignet-copy-dfs-rec-rw
-    (implies (and (aignet-idp id aignet)
+    (implies (and ;; (aignet-idp id aignet)
                   (equal (id->type n aignet) (in-type))
                   (aignet-input-copies-in-bounds copy aignet aignet2))
              (aignet-litp (nth-lit n new-copy) new-aignet2))
@@ -2770,7 +2819,7 @@ aignet when its initial value is the specified vector:</p>
                               aignet-copy-dfs-rec)))))
 
   (defret aignet-marked-copies-in-bounds-of-aignet-copy-dfs-rec-rw
-    (implies (and (aignet-idp id aignet)
+    (implies (and ;; (aignet-idp id aignet)
                   (bit->bool (nth n new-mark))
                   (aignet-marked-copies-in-bounds copy mark aignet2)
                   (aignet-input-copies-in-bounds copy aignet aignet2))
@@ -2785,14 +2834,7 @@ aignet when its initial value is the specified vector:</p>
                               aignet-copy-dfs-rec)))))
 
   (verify-guards aignet-copy-dfs-rec
-    :hints(("Goal" :in-theory (enable aignet-idp))))
-
-  (defret stype-counts-preserved-of-aignet-copy-dfs-rec
-    (implies (and (not (equal (stype-fix stype) (and-stype)))
-                  (not (equal (stype-fix stype) (xor-stype))))
-             (equal (stype-count stype new-aignet2)
-                    (stype-count stype aignet2)))
-    :hints ((acl2::just-induct-and-expand <call>))))
+    :hints(("Goal" :in-theory (enable aignet-idp)))))
 
 (define input-copy-values ((n natp) invals regvals aignet copy aignet2)
   :verify-guards nil
@@ -3011,7 +3053,7 @@ aignet when its initial value is the specified vector:</p>
 
   (defun-sk dfs-copy-onto-invar (aignet mark copy aignet2)
     (forall (id invals regvals)
-            (implies (and (aignet-idp id aignet)
+            (implies (and ;; (aignet-idp id aignet)
                           (equal 1 (get-bit id mark)))
                      (equal (lit-eval (nth-lit id copy) invals regvals aignet2)
                             (id-eval id
@@ -3030,7 +3072,7 @@ aignet when its initial value is the specified vector:</p>
 
   (local (defthm dfs-copy-onto-invar-implies-id-eval
            (implies (and (dfs-copy-onto-invar aignet mark copy aignet2)
-                         (aignet-idp id aignet)
+                         ;; (aignet-idp id aignet)
                          (equal 1 (get-bit id mark)))
                     (equal (id-eval (lit->var (nth-lit id copy)) invals regvals aignet2)
                            (b-xor (lit->neg (nth-lit id copy))
@@ -3043,7 +3085,7 @@ aignet when its initial value is the specified vector:</p>
 
 
   (defthm dfs-copy-onto-invar-holds-of-aignet-copy-dfs-rec
-    (implies (and (aignet-idp id aignet)
+    (implies (and ;; (aignet-idp id aignet)
                   (dfs-copy-onto-invar aignet mark copy aignet2)
                   (aignet-input-copies-in-bounds copy aignet aignet2)
                   (aignet-marked-copies-in-bounds copy mark aignet2))
@@ -3113,7 +3155,7 @@ aignet when its initial value is the specified vector:</p>
   
 
   (defthm lit-eval-of-aignet-copy-dfs-rec
-    (implies (and (aignet-idp id aignet)
+    (implies (and ;; (aignet-idp id aignet)
                   (dfs-copy-onto-invar aignet mark copy aignet2)
                   (aignet-marked-copies-in-bounds copy mark aignet2)
                   (aignet-input-copies-in-bounds copy aignet aignet2))
