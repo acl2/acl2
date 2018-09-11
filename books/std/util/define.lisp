@@ -998,7 +998,7 @@ examples.</p>")
         (acl2::translate-cmp guard1
                              '(nil) ;; returns single non-stobj
                              nil    ;; execution, not logic-modep
-                             nil    ;; known-stobjs -- probably don't need them?
+                             t    ;; known-stobjs -- probably don't need them?
                              'sort-formal-guards
                              wrld state-vars))
        ((mv rest-simple rest-complex)
