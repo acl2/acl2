@@ -88,12 +88,25 @@ where all the commas are accompanied by hq calls; e.g.:</p>
     :rule-classes nil))
 (set-tau-auto-mode t)
 
+(defun postprocess-one-termhint (hint)
+  (if (and (consp hint) (keywordp (car hint)))
+      (kwote hint)
+    hint))
+
+(defun postprocess-termhint (hint)
+  (case-match hint
+    (('termhint-sequence first ('hide second . &)  . &)
+     (let ((first (postprocess-one-termhint first)))
+       `(termhint-append-hints ,first '(use-termhint ,second))))
+    (& (postprocess-one-termhint hint))))
+           
+
 (defun use-termhint-find-hint (clause)
   (if (atom clause)
       nil
     (case-match clause
       ((('not ('use-termhint-hyp termhint . &) . &) . &)
-       (let ((hint (process-termhint termhint)))
+       (let ((hint (postprocess-termhint (process-termhint termhint))))
          `(:computed-hint-replacement
            (,@(and hint `(,hint)))
            :clause-processor (remove-hyp-cp clause ',(car clause)))))
@@ -259,9 +272,9 @@ used to produce normal hint objects from these; it interprets calls of
 (defmacro termhint-seq (first rest)
   `(b* ((__termhint-seq-hints1 ,first)
         (__termhint-seq-hints2 (hide ,rest)))
-     `(termhint-append-hints
+     `(termhint-sequence
        ,__termhint-seq-hints1
-       '(use-termhint (termhint-unhide ,(hq __termhint-seq-hints2))))))
+       ,(hq __termhint-seq-hints2))))
 
 (def-b*-binder termhint-seq
   :decls
