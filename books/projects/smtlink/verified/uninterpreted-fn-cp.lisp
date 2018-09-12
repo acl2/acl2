@@ -51,7 +51,7 @@
 
 (local (in-theory (enable lambda->formals-fix lambda->actuals-fix)))
 (defprod lambda-binding
-  :parents (SMT-goal-generate)
+  :parents (uninterpreted-fn-cp)
   ((formals symbol-listp
             :default nil
             :reqfix (lambda->formals-fix formals actuals))
@@ -67,7 +67,7 @@
   :true-listp t)
 
 (defprod fhg-single-args
-  :parents (SMT-goal-generate)
+  :parents (uninterpreted-fn-cp)
   ((fn func-p :default nil)
    (actuals pseudo-term-listp :default nil)
    (fn-returns-hint-acc hint-pair-listp :default nil)
@@ -191,7 +191,7 @@
 
 ;; function hypotheses generation arguments
 (defprod fhg-args
-  :parents (SMT-goal-generate)
+  :parents (uninterpreted-fn-cp)
   ((term-lst pseudo-term-listp :default nil)
    (fn-lst func-alistp :default nil)
    (fn-returns-hint-acc hint-pair-listp :default nil)
@@ -321,7 +321,7 @@
 ;;     theorems.
 ;;
 (define generate-fn-hint-lst ((args fhg-args-p))
-  :parents (SMT-goal-generate)
+  :parents (uninterpreted-fn-cp)
   :short "@(call generate-fn-hint-lst) generate auxiliary hypotheses from ~
            function expansion"
   :returns (fn-hint-lst fhg-args-p)
