@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ bitcoin
-  :parents (acl2::kestrel-books acl2::project)
+  :parents (acl2::kestrel-books acl2::projects)
   :short "A library for Bitcoin."
   :long
   (xdoc::topapp
