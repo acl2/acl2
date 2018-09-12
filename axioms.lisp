@@ -9996,6 +9996,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (t ; (equal test 'equal)
     `(delete-assoc-equal ,key ,alist))))
 
+(defun delete-assoc-eq-all (key alist)
+  (declare (xargs :guard (if (symbolp key)
+                             (alistp alist)
+                           (symbol-alistp alist))))
+  (cond ((endp alist) nil)
+        ((eq key (caar alist))
+         (delete-assoc-eq-all key (cdr alist)))
+        (t (cons (car alist)
+                 (delete-assoc-eq-all key (cdr alist))))))
+
 (defun getprops1 (alist)
 
 ; Each element of alist is of the form (key val1 ... valk), i.e., key is bound

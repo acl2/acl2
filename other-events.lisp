@@ -21080,6 +21080,28 @@
   #-acl2-loop-only
   (stobj-let-fn-raw x))
 
+(defun collect-badged-fns (fns wrld)
+
+; Note that executable-badge is not yet defined in the boot-strap, so we work
+; around that issue here.  The result may suffer a bit in performance.
+
+  (cond ((endp fns) nil)
+        ( ;(executable-badge (car fns) wrld)
+         (mv-let (erp val)
+           (ev-fncall-w 'executable-badge
+                        (list (car fns) wrld)
+                        wrld
+                        nil  ; user-stobj-alist
+                        nil  ; safe-mode
+                        nil  ; gc-off
+                        t    ; hard-error-returns-nilp
+                        nil) ; aok
+           (assert$ (not erp)
+                    val))
+         (cons (car fns)
+               (collect-badged-fns (cdr fns) wrld)))
+        (t (collect-badged-fns (cdr fns) wrld))))
+
 (defun push-untouchable-fn (name fn-p state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
@@ -21106,52 +21128,65 @@
       ((subsetp-eq names (global-val untouchable-prop wrld))
        (stop-redundant-event ctx state))
       (t
-       (let ((bad (if fn-p
-                      (collect-never-untouchable-fns-entries
-                       names
-                       (global-val 'never-untouchable-fns wrld))
-                      nil)))
+       (let ((bad1 (if fn-p
+                       (collect-never-untouchable-fns-entries
+                        names
+                        (global-val 'never-untouchable-fns wrld))
+                     nil))
+             (bad2 (if fn-p
+                       (collect-badged-fns names wrld)
+                     nil)))
          (cond
-          ((null bad)
-           (install-event name
-                          event-form
-                          'push-untouchable
-                          0
-                          nil
-                          nil
-                          nil
-                          nil
-                          (global-set
-                           untouchable-prop
-                           (union-eq names (global-val untouchable-prop wrld))
-                           wrld)
-                          state))
-          (t (er soft ctx
-                 "You have tried to make ~&0 an untouchable function.  ~
-                  However, ~#0~[this function is~/these functions are~] ~
-                  sometimes introduced into proofs by one or more ~
-                  metatheorems or clause processors having well-formedness ~
-                  guarantees.   If you insist on making ~#0~[this name~/these ~
-                  names~] untouchable you must redefine the relevant ~
-                  metafunctions and clause processors so they do not create ~
-                  terms involving ~#0~[it~/them~] and prove and cite ~
-                  appropriate :WELL-FORMEDNESS-GUARANTEE theorems.  The ~
-                  following data structure may help you find the relevant ~
-                  events to change.  The data structure is an alist pairing ~
-                  each function name above with information about all the ~
-                  metatheorems or clause processors that may introduce that ~
-                  name.  The information for each metatheorem or clause ~
-                  processor is the name of the correctness theorem, the name ~
-                  of the metafunction or clause processor verified by that ~
-                  metatheorem, the name of the well-formedness guarantee for ~
-                  that metafunction or clause processor, and analogous ~
-                  information about any hypothesis metafunction involved.  ~
-                  All of these events (and possibly their supporting ~
-                  functions and lemmas) must be fixed so that the names you ~
-                  now want to be untouchable are not produced.~%~X12"
-                 (strip-cars bad)
-                 bad
-                 nil)))))))))
+          (bad1 (er soft ctx
+                    "You have tried to make untouchable the ~
+                     function~#0~[~/s~], ~&0.  However, ~#0~[this function ~
+                     is~/these functions are~] sometimes introduced into ~
+                     proofs by one or more metatheorems or clause processors ~
+                     having well-formedness guarantees.   If you insist on ~
+                     making ~#0~[this name~/these names~] untouchable you ~
+                     must redefine the relevant metafunctions and clause ~
+                     processors so they do not create terms involving ~
+                     ~#0~[it~/them~] and prove and cite appropriate ~
+                     :WELL-FORMEDNESS-GUARANTEE theorems.  The following data ~
+                     structure may help you find the relevant events to ~
+                     change.  The data structure is an alist pairing each ~
+                     function name above with information about all the ~
+                     metatheorems or clause processors that may introduce ~
+                     that name.  The information for each metatheorem or ~
+                     clause processor is the name of the correctness theorem, ~
+                     the name of the metafunction or clause processor ~
+                     verified by that metatheorem, the name of the ~
+                     well-formedness guarantee for that metafunction or ~
+                     clause processor, and analogous information about any ~
+                     hypothesis metafunction involved.  All of these events ~
+                     (and possibly their supporting functions and lemmas) ~
+                     must be fixed so that the names you now want to be ~
+                     untouchable are not produced.~%~X12"
+                    (strip-cars bad1)
+                    bad1
+                    nil))
+          (bad2 (er soft ctx
+                    "You have tried to make untouchable the ~
+                     function~#0~[~/s~], ~&0.  However, ~#0~[this function ~
+                     has a badge~/these functions have badges~] (see :DOC ~
+                     apply$).  We do not allow a badged function F to be ~
+                     untouchable because (apply$ 'F (list arg1 arg2 ...)) is ~
+                     still a legal term that, however, is a proxy for (F arg1 ~
+                     arg2 ...)."
+                    bad2))
+          (t (install-event name
+                            event-form
+                            'push-untouchable
+                            0
+                            nil
+                            nil
+                            nil
+                            nil
+                            (global-set
+                             untouchable-prop
+                             (union-eq names (global-val untouchable-prop wrld))
+                             wrld)
+                            state)))))))))
 
 (defun remove-untouchable-fn (name fn-p state event-form)
 
