@@ -9463,6 +9463,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Developer note.  A substantial test suite is stored at this UT CS file:
 ; /projects/acl2/devel-misc/books-devel/examples/defattach/test.lisp
 
+; It may be tempting to allow defattach events to be redundant.  There is at
+; least one good reason not to do so: the value of keyword :attach is not
+; stored in the world, at least not in an easily accessible way.  It seems
+; possible that there are such issues with the :skip-checks keyword too.
+
+; We could add a new macro, (defattach? f g), which skips the defattach when g
+; is already attached to f, regardless of keywords.  But more generally, we
+; would want to support (defattach? (f1 g1) ... (fn gn)), in which case thought
+; would need to be given to the case that some, but not all, fi already have gi
+; as an attachment.  Whatever the decision in that case, the result could be
+; confusing to some.  Also confusing could be the issue described above, of
+; keywords not being checked.  On a more mundane level, attention might be
+; needed to ensure that errors and warnings reference "defattach?" rather than
+; "defattach".
+
+; So, at least until a reasonably convincing case is presented for why
+; redundancy is important for defattach events, we leave things as they are.
+
   (list 'defattach-fn
         (list 'quote args)
         'state
