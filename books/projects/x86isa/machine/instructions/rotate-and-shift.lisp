@@ -169,7 +169,7 @@
           ((#xD2 #xD3)
            (mv nil (rr08 *rcx* rex-byte x86) x86))
           ((#xC0 #xC1)
-           (rme-size proc-mode 1 temp-rip #.*cs* :x nil x86))
+           (rme-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86))
           (otherwise ;; will not be reached
            (mv nil 0 x86))))
        ((when flg1)

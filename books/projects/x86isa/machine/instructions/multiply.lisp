@@ -429,9 +429,9 @@
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        ((mv flg1 (the (unsigned-byte 32) imm) x86)
-        (rme-size proc-mode imm-size temp-rip #.*cs* :x nil x86))
+        (rme-size-opt proc-mode imm-size temp-rip #.*cs* :x nil x86))
        ((when flg1)
-        (!!ms-fresh :rime-size-error flg1))
+        (!!ms-fresh :rme-size-error flg1))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
         (add-to-*ip proc-mode temp-rip imm-size x86))

@@ -105,7 +105,7 @@
  href='http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html'>Intel
  software developer's manuals</a> were used as specification documents,
  and ambiguities were resolved by cross-referencing <a
- href='http://developer.amd.com/resources/documentation-articles/developer-guides-manuals/'>AMD
+ href='https://developer.amd.com/resources/developer-guides-manuals/'>AMD
  manuals</a> and running tests on real machines to understand processor
  behavior. </p>
 

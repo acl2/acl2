@@ -2607,7 +2607,8 @@ accesses.</p>
   (defrule 64-bit-modep-of-ia32e-la-to-pa
     (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
            (64-bit-modep x86))
-    :enable 64-bit-modep)
+    :enable (64-bit-modep)
+    :disable (force (force)))
 
   (defrule x86-operation-mode-of-ia32e-la-to-pa
     (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))

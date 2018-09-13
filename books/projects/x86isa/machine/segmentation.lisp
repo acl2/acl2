@@ -148,25 +148,49 @@
    the caller must ignore this result in 64-bit mode.
    </p>"
 
+  :guard-hints (("Goal" :in-theory (e/d (bitsets::bignum-extract) ())))
+
   (case proc-mode
 
     (#.*64-bit-mode*
-     (cond ((eql seg-reg *fs*)
-	    (mv (msri *ia32_fs_base-idx* x86) 0 0))
-	   ((eql seg-reg *gs*)
-	    (mv (msri *ia32_gs_base-idx* x86) 0 0))
+     (cond ((eql seg-reg #.*fs*)
+	    (mv (msri #.*ia32_fs_base-idx* x86) 0 0))
+	   ((eql seg-reg #.*gs*)
+	    (mv (msri #.*ia32_gs_base-idx* x86) 0 0))
 	   (t (mv 0 0 0))))
 
     (#.*compatibility-mode*
-     (b* ((hidden (xr :seg-hidden seg-reg x86))
-	  (base (hidden-seg-reg-layout-slice :base-addr hidden))
-	  (limit (hidden-seg-reg-layout-slice :limit hidden))
-	  (attr (hidden-seg-reg-layout-slice :attr hidden))
-	  (d/b (data-segment-descriptor-attributes-layout-slice :d/b attr))
-	  (e (data-segment-descriptor-attributes-layout-slice :e attr))
-	  (lower (if (= e 1) (1+ limit) 0))
-	  (upper (if (= e 1) (if (= d/b 1) #xffffffff #xffff) limit)))
-       (mv (n32 base) lower upper)))
+     (mbe
+      :logic
+      (b* ((hidden (xr :seg-hidden seg-reg x86))
+	   (base (hidden-seg-reg-layout-slice :base-addr hidden))
+	   (limit (hidden-seg-reg-layout-slice :limit hidden))
+	   (attr (hidden-seg-reg-layout-slice :attr hidden))
+	   (d/b (data-segment-descriptor-attributes-layout-slice :d/b attr))
+	   (e (data-segment-descriptor-attributes-layout-slice :e attr))
+	   (lower (if (= e 1) (1+ limit) 0))
+	   (upper (if (= e 1) (if (= d/b 1) #xffffffff #xffff) limit)))
+	(mv (n32 base) lower upper))
+      ;; [Shilpi] During execution, include the following book for efficiency
+      ;; (to decrease the bytes allocated on the heap because of all the bignum
+      ;; operations). This is likely most efficient on CCL.
+      ;; (include-book "std/bitsets/bignum-extract-opt" :dir :system)
+      ;; Note that this book requires a trust tag.
+      :exec
+      (b* (((the (unsigned-byte 112) hidden) (xr :seg-hidden seg-reg x86))
+	   ((the (unsigned-byte 32) base)
+	    (bitsets::bignum-extract hidden 0))
+	   ((the (unsigned-byte 32) limit)
+	    (bitsets::bignum-extract hidden 2))
+	   ((the (unsigned-byte 32) attr-32)
+	    (bitsets::bignum-extract hidden 3))
+	   ((the (unsigned-byte 16) attr)
+	    (logand #xFFFF attr-32))
+	   (d/b (data-segment-descriptor-attributes-layout-slice :d/b attr))
+	   (e (data-segment-descriptor-attributes-layout-slice :e attr))
+	   (lower (if (= e 1) (1+ limit) 0))
+	   (upper (if (= e 1) (if (= d/b 1) #xffffffff #xffff) limit)))
+	(mv base lower upper))))
 
     (otherwise
      ;; Unimplemented!
@@ -283,11 +307,13 @@
    which provides some information about the failure.
    </p>"
 
+  :guard-hints (("Goal" :in-theory (e/d (segment-base-and-bounds) ())))
+
   (case proc-mode
 
     (#.*64-bit-mode*
-     (if (or (eql seg-reg *fs*)
-	     (eql seg-reg *gs*))
+     (if (or (eql seg-reg #.*fs*)
+	     (eql seg-reg #.*gs*))
 	 (b* (((mv base & &)
 	       (segment-base-and-bounds #.*64-bit-mode* seg-reg x86))
 	      (lin-addr (i64 (+ base (n64 eff-addr)))))
@@ -297,16 +323,18 @@
        (mv nil eff-addr)))
 
     (#.*compatibility-mode* ;; Maybe also *protected-mode*?
-     (b* (((mv base
-	       lower-bound
-	       upper-bound)
+     (b* (((mv (the (unsigned-byte 32) base)
+	       (the (unsigned-byte 33) lower-bound)
+	       (the (unsigned-byte 33) upper-bound))
 	   (segment-base-and-bounds proc-mode seg-reg x86))
 	  ((unless (and (<= lower-bound eff-addr)
 			(<= eff-addr upper-bound)))
 	   (mv (list :segment-limit-fail
 		     (list seg-reg eff-addr lower-bound upper-bound))
 	       0))
-	  (lin-addr (n32 (+ base eff-addr))))
+	  ((the (unsigned-byte 32) lin-addr)
+	   (n32 (+ (the (unsigned-byte 32) base)
+		   (the (unsigned-byte 33) eff-addr)))))
        (mv nil lin-addr)))
 
     (otherwise
@@ -333,8 +361,8 @@
 
   (defrule ea-to-la-when-64-bit-modep-and-not-fs/gs
     (implies
-     (and (not (equal seg-reg *fs*))
-	  (not (equal seg-reg *gs*)))
+     (and (not (equal seg-reg #.*fs*))
+	  (not (equal seg-reg #.*gs*)))
      (and (equal
 	   (mv-nth 0 (ea-to-la #.*64-bit-mode* eff-addr seg-reg x86))
 	   nil)

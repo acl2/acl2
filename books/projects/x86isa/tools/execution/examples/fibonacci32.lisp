@@ -325,7 +325,7 @@ int main (int argc, char *argv[], char *env[]) {
        ((when flg)
         (let ((x86 (!!ms-fresh :init-x86-state-error flg)))
           (mv nil 0 x86)))
-       ((mv steps x86) (time$ (x86-run-halt-count halt-address xrun-limit x86 0)))
+       ((mv steps x86) (time$ (x86-run-halt-count halt-address xrun-limit x86 xrun-limit)))
        (ok? (check-fib32-output input halt-address x86))
        ((unless ok?) (mv nil 0 x86)))
     (mv t steps x86)))
@@ -354,10 +354,13 @@ int main (int argc, char *argv[], char *env[]) {
 
 ;; ----------------------------------------------------------------------
 
+;; For efficient execution of 64-BIT-MODEP and SEGMENT-BASE-AND-BOUNDS:
+(local (include-book "std/bitsets/bignum-extract-opt" :dir :system))
+
 ;; One run:
 ;; (b* ((start-address #x00001ef7) ;; address of call _fib (in main)
 ;;      (halt-address  #x00001efc) ;; address of instruction following call _fib (in main)
-;;      (input         6)
+;;      (input         30)
 ;;      ((mv flg steps x86)
 ;;       (x86isa-one-fib32-cosim
 ;;        input start-address halt-address *fib32-xrun-limit* sys-view? x86)))

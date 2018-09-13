@@ -49,6 +49,8 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
+(local (in-theory (e/d (segment-base-and-bounds ea-to-la) ())))
+
 ;; ======================================================================
 ;; INSTRUCTION: MOVS/MOVSB/MOVSW/MOVSD/MOVSQ
 ;; ======================================================================
@@ -97,6 +99,10 @@
                                         unsigned-byte-p)))
                    nil)))
 
+  :guard-hints (("Goal" :in-theory (e/d ()
+                                        (unsigned-byte-p
+                                         force (force)))))
+
   :prepwork
   ((local (in-theory (e/d (rme-size select-address-size)
                           (not (tau-system))))))
@@ -116,7 +122,7 @@
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
-       (p4? (equal #.*addr-size-override* 
+       (p4? (equal #.*addr-size-override*
                    (the (unsigned-byte 8) (prefixes->adr prefixes))))
 
        (r/m (modr/m->r/m modr/m))
@@ -147,8 +153,8 @@
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        ((mv flg0 src x86)
-        (rme-size proc-mode
-         operand-size (the (signed-byte 64) src-addr) seg-reg :r inst-ac? x86))
+        (rme-size-opt proc-mode
+                      operand-size (the (signed-byte 64) src-addr) seg-reg :r inst-ac? x86))
        ((when flg0)
         (!!ms-fresh :src-rme-size-error flg0))
 
@@ -341,6 +347,10 @@
                                         unsigned-byte-p)))
                    nil)))
 
+  :guard-hints (("Goal" :in-theory (e/d ()
+                                        (unsigned-byte-p
+                                         force (force)))))
+
   :prepwork
   ((local (in-theory (e/d (rme-size select-address-size)
                           (not (tau-system))))))
@@ -391,7 +401,7 @@
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        ((mv flg0 src x86)
-        (rme-size proc-mode operand-size src-addr seg-reg :r inst-ac? x86))
+        (rme-size-opt proc-mode operand-size src-addr seg-reg :r inst-ac? x86))
        ((when flg0)
         (!!ms-fresh :src-rme-size-error flg0))
 
@@ -404,7 +414,7 @@
         (!!ms-fresh :dst-addr-not-canonical dst-addr))
 
        ((mv flg0 dst x86)
-        (rme-size proc-mode operand-size dst-addr *es* :r inst-ac? x86))
+        (rme-size-opt proc-mode operand-size dst-addr *es* :r inst-ac? x86))
        ((when flg0)
         (!!ms-fresh :dst-rme-size-error flg0))
 
@@ -516,29 +526,29 @@
               (t (!rgfi *rsi*
                         (the (signed-byte
                               #.*max-linear-address-size+1*)
-                             src-addr)
+                          src-addr)
                         x86))))
        (x86 (case counter/addr-size
               (2 (!rgfi-size 2
                              *rdi*
                              (n16 (the
-                                   (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                   dst-addr))
+                                      (signed-byte
+                                       #.*max-linear-address-size+1*)
+                                    dst-addr))
                              rex-byte
                              x86))
               (4 (!rgfi-size 4
                              *rdi*
                              (n32 (the
-                                   (signed-byte
-                                    #.*max-linear-address-size+1*)
-                                   dst-addr))
+                                      (signed-byte
+                                       #.*max-linear-address-size+1*)
+                                    dst-addr))
                              rex-byte
                              x86))
               (t (!rgfi *rdi*
                         (the (signed-byte
                               #.*max-linear-address-size+1*)
-                             dst-addr)
+                          dst-addr)
                         x86)))))
     x86))
 
@@ -571,6 +581,10 @@
                                         !rgfi-size
                                         unsigned-byte-p)))
                    nil)))
+
+  :guard-hints (("Goal" :in-theory (e/d ()
+                                        (unsigned-byte-p
+                                         force (force)))))
 
   :prepwork
   ((local (in-theory (e/d (rme-size select-address-size)
