@@ -66,7 +66,7 @@
 (define defthm-digit-byte-return-types-fn ((n posp))
   :returns (event pseudo-event-formp)
   :verify-guards nil
-  :parents (defthm-digits-any-base-pow2-return-types)
+  :parents (defthm-digit-byte-return-types)
   :short "Event form to introduce return type theorems for
           the conversions from natural numbers
           to digits in a specified power-of-2 base."
