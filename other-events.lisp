@@ -30305,7 +30305,14 @@
     (let (lst)
       (maphash (lambda (key val)
                  (when (not (and (fboundp key) ; always true?
-                                 (eq val (symbol-function key))))
+
+; It is tempting to use eq rather than equal just below.  However, in GCL we
+; found that the symbol-function for a macro need not be EQ to itself (more
+; accurately: fetching the symbol-function twice can give non-EQ results).
+; Should we go further and use EQUALP?  So far, at least, that doesn't seem
+; necessary.
+
+                                 (equal val (symbol-function key))))
                    (push key lst)))
                ht)
       (mv-let (ps ls ms)
