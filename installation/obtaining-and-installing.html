@@ -83,7 +83,8 @@ version of ACL2 (Version 8.0).
 
 The <a href="http://acl2s.ccs.neu.edu/acl2s/doc/">ACL2 Sedan</a>
 (ACL2s) is an Eclipse-based IDE for ACL2 that is distributed with pre-certified
-books and pre-built binaries.  If you
+books and pre-built binaries, though it is not always based on the
+latest ACL2 version.  If you
   use an alternative development environment (such as Emacs), you
 can still <a href="http://acl2s.ccs.neu.edu/acl2s/src/acl2/">fetch a
 tarball</a> for your x86-based Linux/Mac/Windows system that contains a
@@ -174,8 +175,8 @@ by SunOS.  You may want to use the -i option, "<code>tar xpvfi
 8.0.tar</code>", if you have problems with other than Gnu tar.  You
 can see if you have Gnu tar by running "<code>tar -v</code>".)  The
 resulting tarball and its extracted directory will consist of
-less than 80 MB and 240 MB, respectively.  Additional space is
-required to build an executable image, perhaps a bit more than 200 MB
+about 80 MB and 250 MB, respectively.  Additional space is
+required to build an executable image, probably between about 100 MB and 300 MB
 depending on the platform (including the host Lisp); and more will be
 required to <A HREF="using.html#Certifying">certify books</A>.
 
@@ -537,7 +538,7 @@ set environment variables, you might be able to go to the control panel, under
 system, under advanced.  Alternately, you might be able to get there by opening
 <code>My Computer</code> and right-clicking to get to <code>Properties</code>,
 then selecting the <code>Advanced</code> tab.  At one time, when GCL/Windows
-was release as Maxima, Pete Manolios suggested adding the system variable
+was released as Maxima, Pete Manolios suggested adding the system variable
 LD_LIBRARY_PATH with the value "maxima-dir\gcc\i386-mingw32msvc\include"; this
 may or may not be necessary for your GCL installation (and the path would of
 course likely be different).
