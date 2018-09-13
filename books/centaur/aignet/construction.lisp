@@ -200,7 +200,7 @@
 
 
 (defsection maybe-litp
-  :parents (std/basic litp)
+  :parents (litp)
   :short "Recognizer for lits and @('nil')."
   :long "<p>This is like an <a
 href='https://en.wikipedia.org/wiki/Option_type'>option type</a>; when @('x')

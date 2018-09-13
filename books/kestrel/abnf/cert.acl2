@@ -11,3 +11,9 @@
 ; This follows the recommendations in the WORKING-WITH-PACKAGES manual page.
 
 (include-book "portcullis")
+
+; Matt K. mod: Certification fails for semantics.lisp in ACL2(p) with
+; waterfall-parallelism enabled, but the log doesn't seem to show why.  So I'm
+; doing what's easiest, by simply disabling waterfall-parallelism here.
+#+acl2-par
+(set-waterfall-parallelism nil)

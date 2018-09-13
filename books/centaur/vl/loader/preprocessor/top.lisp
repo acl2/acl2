@@ -2098,7 +2098,9 @@ non-arguments pieces.</p>"
 
 
 (define vl-read-define-default-text
-  :parents (vl-read-default-text)
+; Matt K. mod: Deleted non-existent parent, letting set-default-parents take
+; charge here.  (Jared thought this made sense, too.)
+; :parents (vl-read-default-text)
   ((echars       vl-echarlist-p "Text starting just after the equal sign.")
    (starting-loc vl-location-p "Context for error messages.")
    (ppst))
@@ -3905,6 +3907,15 @@ out of memory before running out of clock.</p>"
 
 (defttag :vl-optimize)
 (progn!
+; Start Matt K. mod: push the about-to-be-smashed function onto the appropriate
+; list, so that (comp t) doesn't undo the smashing.
+ :state-global-bindings
+ ((acl2::temp-touchable-vars t acl2::set-temp-touchable-vars))
+ (f-put-global 'acl2::logic-fns-with-raw-code
+               (cons 'vl-ppst-unsound-nreverse-acc
+                     (@ acl2::logic-fns-with-raw-code))
+               state)
+; End Matt K. mod.
  (set-raw-mode t)
  (defun vl-ppst-unsound-nreverse-acc (ppst)
    (let ((acc (vl-ppst->acc)))

@@ -59,7 +59,12 @@
 
 (defsection ia32e-segmentation
   :parents (segmentation)
-  :short "Specification of Segmentation in the 64-bit Mode"
+  :short "Specification of Segmentation in 64-bit Mode"
+  )
+
+(defsection ia32-segmentation
+  :parents (segmentation)
+  :short "Specification of Segmentation in 32-bit Mode"
   )
 
 ;; ======================================================================
@@ -442,7 +447,7 @@
 (define ia32e-valid-code-segment-descriptor-p
   ((descriptor :type (unsigned-byte 64)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid code segment descriptor"
+  :short "Recognizer for a valid code segment descriptor in 64-bit mode"
 
   (b* (((when (not (equal (code-segment-descriptor-layout-slice :msb-of-type
 								descriptor)
@@ -465,6 +470,29 @@
        ;; 64 bits when no error below.
        ((when (not (equal (code-segment-descriptor-layout-slice :d descriptor) 0)))
 	(mv nil (cons :IA32e-Default-Operand-Size-Incorrect descriptor))))
+    (mv t 0)))
+
+(define ia32-valid-code-segment-descriptor-p
+  ((descriptor :type (unsigned-byte 64)))
+  :parents (ia32-segmentation)
+  :short "Recognizer for a valid code segment descriptor in 32-bit mode"
+
+  (b* (((when (not (equal (code-segment-descriptor-layout-slice :msb-of-type
+								descriptor)
+			  1)))
+	(mv nil (cons :Invalid-Segment-Type descriptor)))
+
+       ;; User segment?
+       ((when (not (equal (code-segment-descriptor-layout-slice :s descriptor) 1)))
+	(mv nil (cons :Invalid-Segment-Type descriptor)))
+
+       ;; Segment Present?
+       ((when (not (equal (code-segment-descriptor-layout-slice :p descriptor) 1)))
+	(mv nil (cons :Segment-Not-Present descriptor)))
+
+       ;; IA32e Mode is off?
+       ((when (not (equal (code-segment-descriptor-layout-slice :l descriptor) 0)))
+	(mv nil (cons :IA32e-Mode-Off descriptor))))
     (mv t 0)))
 
 ;; Data Segment Descriptor:

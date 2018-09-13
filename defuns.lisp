@@ -4443,7 +4443,7 @@
                 symbol-class name))))
     (t (let ((fn (deref-macro-name name (macro-aliases wrld))))
          (er-cmp ctx
-                 "~x0 is not a theorem name or a function symbol in the ~
+                 "~x0 is not a function symbol or a theorem name in the ~
                   current ACL2 world.  ~@1"
                  name
                  (cond ((eq fn name) "See :DOC verify-guards.")
@@ -7463,12 +7463,14 @@
 (defun redundant-predefined-error-msg (name)
   (let ((pkg-name (and (symbolp name) ; probably always true
                        (symbol-package-name name))))
-    (msg "ACL2 is processing a redundant definition of the name ~x0, which is ~
-          ~#1~[already defined using special raw Lisp code~/predefined in the ~
-          ~x2 package~].  For technical reasons, we disallow non-LOCAL ~
-          redundant definitions in such cases; see :DOC redundant-events.  ~
-          Consider wrapping this definition inside a call of LOCAL."
-         name
+    (msg "ACL2 is processing a redundant definition of the name ~s0 (package ~
+          ~s1), which is ~#2~[already defined using special raw Lisp ~
+          code~/predefined in the ~x3 package~].  For technical reasons, we ~
+          disallow non-LOCAL redundant definitions in such cases; see :DOC ~
+          redundant-events.  Consider wrapping this definition inside a call ~
+          of LOCAL."
+         (symbol-name name)
+	 (symbol-package-name name)
          (if (equal pkg-name *main-lisp-package-name*)
              1
            0)
@@ -9009,9 +9011,10 @@
        (let ((wrld (w state))
              (channel (standard-co state)))
          (cond
-          ((eq name 'return-last)
-           (pprogn (fms "Special form, basic to ACL2.  See :DOC return-last."
-                        nil channel state nil)
+          ((member-eq name *stobjs-out-invalid*)
+           (pprogn (fms "Special form, basic to ACL2.  See :DOC ~x0.~|~%"
+                        (list (cons #\0 name))
+                        channel state nil)
                    (value name)))
           ((and (symbolp name)
                 (function-symbolp name wrld))
@@ -9082,7 +9085,8 @@
                         nil channel state nil)
                    (value name)))
           (t (er soft :args
-                 "~x0 is neither a function symbol nor a macro name."
+                 "~x0 is neither a function symbol nor a macro name known to ~
+                  ACL2."
                  name))))))
 
 (defmacro args (name)

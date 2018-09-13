@@ -1,0 +1,3 @@
+#+acl2-par
+; computed hints that modify state
+(set-waterfall-parallelism nil)

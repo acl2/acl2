@@ -332,7 +332,7 @@
   :long
   "<p>
    The SMTP syntax is specified by
-   <a href=\"smtps://www.rfc-editor.org/info/rfc5321\">RFC 5321</a>.
+   <a href=\"https://www.rfc-editor.org/info/rfc5321\">RFC 5321</a>.
    </p>"
   :order-subtopics t)
 

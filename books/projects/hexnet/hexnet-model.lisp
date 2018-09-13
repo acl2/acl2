@@ -208,7 +208,7 @@
   :hints (("Goal" :in-theory (enable graphp)))
   :rule-classes :forward-chaining)
 
-           
+
 
 
 ;; Junction recognizer
@@ -629,6 +629,13 @@
 
 ;   7. Current Inputs
 
+; Matt K. addition for ACL2(r):
+#+:non-standard-analysis
+(local
+ (defthm rationalp-implies-realp
+   (implies (rationalp x)
+            (realp x))))
+
 ;; Get-direction is a function that returns the position (north,
 ;; east, west or south) of a junction, junctA, in relation to another
 ;; connected junction, junctB. This is done by comparing either their
@@ -970,10 +977,10 @@
   (if MS
       (mv MS lt ast)
     (let* ((outlink (get-output-link junct dest g)))
-      (if (get-packet outlink lt g)		
+      (if (get-packet outlink lt g)
           (mv MS lt ast)
-        (let* ((stack (remove-equal dest (sources junct g)))  
-               (inputs (current-inputs junct dest stack lt g))) 
+        (let* ((stack (remove-equal dest (sources junct g)))
+               (inputs (current-inputs junct dest stack lt g)))
           (if (endp inputs)
               (mv MS lt ast)
             (mv-let (input new-ast)
@@ -1111,7 +1118,7 @@
 
 ;     13.  Single step
 
-;; The 'Single-step' function is a single cycle of execution in the  
+;; The 'Single-step' function is a single cycle of execution in the
 ;; system.  That is, all packets in the system take at most one step.
 ;; The 'Junct-list' argument is the list of junctions with packets on
 ;; its input links.
@@ -1397,7 +1404,7 @@
 
 ;; To ensure that a packet takes at most one step in a cycle of the
 ;; system, we added a bit to each packet. This bit indicates if the
-;; packet has been processsed in the current single-step cycle or not.       
+;; packet has been processsed in the current single-step cycle or not.
 ;; Therefore, after each cycle, the bit has to be cleared. Note that
 ;; this is only necessary in this current implementation. It would not
 ;; be necessary when looking at packets moving at their own rates.
@@ -1579,7 +1586,7 @@
     (if (endp junct-list)
         inverse-graph
       (let* ((source (car junct-list))
-             (new-inverse-graph (scan-inner source (sources source network) 
+             (new-inverse-graph (scan-inner source (sources source network)
                                             inverse-graph network)))
         (scan-outer (cdr junct-list) new-inverse-graph network))))
   (local (defthm symbol-alistp-pairlis$
