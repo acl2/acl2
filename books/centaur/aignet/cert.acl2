@@ -31,3 +31,8 @@
 (in-package "ACL2")
 (include-book "portcullis")
 ; cert-flags: ? t :ttags :all
+
+; Matt K. mods: avoid ACL2(p) failures in this directory due to computed hints
+; that modify state.
+#+acl2-par
+(set-waterfall-parallelism nil)

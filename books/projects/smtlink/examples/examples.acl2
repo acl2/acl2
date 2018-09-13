@@ -1,0 +1,7 @@
+; From cert.acl2:
+(include-book "../portcullis")
+; cert-flags: ? t :ttags :all :skip-proofs-okp t
+
+#+acl2-par
+; clause-processor that modifies state
+(set-waterfall-parallelism nil)

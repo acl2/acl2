@@ -17690,11 +17690,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (defmacro ,macro-symbol (&rest args)
          (list* 'with-lock ',lock-symbol args)))))
 
-(deflock
-
-; Keep in sync with :DOC topic with-output-lock.
-
-  *output-lock*)
+(deflock *output-lock*) ; Keep in sync with :DOC with-output-lock.
+(deflock *local-state-lock*)
 
 (skip-proofs ; as with open-output-channel
 (defun get-output-stream-string$-fn (channel state-state)
