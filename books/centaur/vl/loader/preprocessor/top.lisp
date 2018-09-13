@@ -2098,7 +2098,9 @@ non-arguments pieces.</p>"
 
 
 (define vl-read-define-default-text
-  :parents (vl-read-default-text)
+; Matt K. mod: Deleted non-existent parent, letting set-default-parents take
+; charge here.  (Jared thought this made sense, too.)
+; :parents (vl-read-default-text)
   ((echars       vl-echarlist-p "Text starting just after the equal sign.")
    (starting-loc vl-location-p "Context for error messages.")
    (ppst))
