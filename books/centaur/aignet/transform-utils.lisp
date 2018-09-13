@@ -40,12 +40,12 @@
 (defstobj-clone aignet-tmp aignet :suffix "TMP")
 
 (define count-xors-rec ((start natp) aignet (acc natp))
-  :guard (<= start (num-nodes aignet))
+  :guard (<= start (num-fanins aignet))
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
-  :measure (nfix (- (num-nodes aignet) (nfix start)))
+  :measure (nfix (- (num-fanins aignet) (nfix start)))
   :returns (count natp :rule-classes :type-prescription)
-  (b* (((when (mbe :logic (zp (- (num-nodes aignet) (nfix start)))
-                   :exec (eql start (num-nodes aignet))))
+  (b* (((when (mbe :logic (zp (- (num-fanins aignet) (nfix start)))
+                   :exec (eql start (num-fanins aignet))))
         (lnfix acc))
        (acc (if (and (eql (id->type start aignet) (gate-type))
                      (eql (id->regp start aignet) 1))
@@ -54,17 +54,25 @@
     (count-xors-rec (+ 1 (lnfix start)) aignet acc))
   ///
 
+  (local (defthm stype-count-of-lookup-fanin-count
+           (implies (not (equal (ctype stype) (out-ctype)))
+                    (equal (stype-count stype (lookup-id (fanin-count aignet) aignet))
+                           (stype-count stype aignet)))
+           :hints(("Goal" :in-theory (enable lookup-id fanin-count fanin-node-p)))))
+
   (local (defthm cdr-of-lookup-id
            (implies (and (posp n)
-                         (< n (num-nodes aignet)))
-                    (equal (cdr (lookup-id n aignet))
-                           (lookup-id (+ -1 n) aignet)))
-           :hints(("Goal" :in-theory (enable lookup-id) :induct t)
+                         (< n (num-fanins aignet))
+                         (not (equal (ctype stype) (out-ctype))))
+                    (equal (stype-count stype (cdr (lookup-id n aignet)))
+                           (stype-count stype (lookup-id (+ -1 n) aignet))))
+           :hints(("Goal" :in-theory (e/d (lookup-id node-list-fix fanin-node-p)
+                                          (lookup-id-in-extension-inverse)) :induct t)
                   (and stable-under-simplificationp
-                       '(:expand ((lookup-id (+ -1 (node-count aignet)) aignet)))))))
+                       '(:expand ((lookup-id (+ -1 (fanin-count aignet)) aignet)))))))
 
   (defret count-xors-rec-value
-    (implies (<= (nfix start) (num-nodes aignet))
+    (implies (<= (nfix start) (num-fanins aignet))
              (equal count
                     (+ (nfix acc)
                        (- (stype-count :xor aignet)
@@ -89,7 +97,7 @@
 (define print-aignet-stats ((name stringp) aignet)
   (b* ((xors (count-xors aignet))
        (gates (num-gates aignet)))
-    (cw "~s0 network: Nodes: ~x8  Max fanin ~x9~%       ~
+    (cw "~s0 network: Nodes: ~x8       ~
          PIs ~x1 regs ~x2~%       ~
          gates ~x3 (ands ~x4 xors ~x5)~%       ~
          nxsts ~x6 POs ~x7~%"
@@ -101,91 +109,180 @@
         xors
         (num-nxsts aignet)
         (num-outs aignet)
-        (num-nodes aignet)
-        (max-fanin aignet))))
+        (num-fanins aignet))))
 
 
 
 
 
-(define aignet-raw-copy-aux ((n natp) aignet aignet2)
-  :guard (and (<= n (num-nodes aignet))
-              (non-exec (equal aignet2 (lookup-id (+ -1 n) aignet))))
-  ;; :measure (nfix (- (num-nodes aignet) (nfix n)))
+(define aignet-raw-copy-fanins ((n posp) aignet aignet2)
+  :guard (and (<= n (num-fanins aignet))
+              (non-exec (equal aignet2 (aignet-fanins (lookup-id (1- n) aignet)))))
+  ;; :measure (nfix (- (num-fanins aignet) (nfix n)))
   :guard-hints (("goal" :in-theory (e/d (aignet-idp fanin co-node->fanin regp
                                                     gate-node->fanin0
                                                     gate-node->fanin1)
                                         (aignet-nodes-ok))
-                 :expand ((:free (n aignet aignet2) (aignet-raw-copy-aux n aignet aignet2)))
+                 :expand ((:free (n aignet aignet2) (aignet-raw-copy-fanins n aignet aignet2))
+                          (aignet-fanins (lookup-id n aignet)))
                  :cases ((equal 0 n))
                  :use ((:instance aignet-nodes-ok (aignet (lookup-id n aignet))))))
   :returns new-aignet2
   :enabled t
-  :prepwork ((local (defthm lookup-id-of-num-nodes
-                      (implies (equal n (node-count aignet))
-                               (equal (lookup-id n aignet)
-                                      (node-list-fix aignet)))
-                      :hints(("Goal" :in-theory (enable lookup-id)))))
-             (local (defthm lookup-id-of-n-minus-1
-                      (implies (and (natp n)
-                                    (<= n (node-count aignet)))
-                               (equal (lookup-id (+ -1 n) aignet)
-                                      (cdr (lookup-id n aignet))))
-                      :hints(("Goal" :in-theory (enable lookup-id)
-                              :induct (lookup-id n aignet)))))
-             (local (defret aignet-litp-in-extension-of-cdr-of-fanin
-                      (implies (aignet-extension-p new (cdr aignet))
-                               (aignet-litp lit new))
-                      :hints(("Goal" :in-theory (enable fanin)))
-                      :fn fanin))
-             (local (defthm stype-is-pi-implies-equal-pi
-                      (implies (node-p node)
-                               (equal (equal (stype node) :pi)
-                                      (equal node '(:pi))))
+  :prepwork ((local (defthm aignet-fanins-under-iff
+                      (iff (aignet-fanins x)
+                           (posp (fanin-count x)))
+                      :hints(("Goal" :in-theory (enable aignet-fanins fanin-count)))))
+             (local (defthm aignet-fanins-of-lookup-fanin-count
+                      (equal (aignet-fanins (lookup-id (fanin-count aignet) aignet))
+                             (aignet-fanins aignet))
+                      :hints(("Goal" :in-theory (enable lookup-id fanin-count fanin-node-p)))))
+             (local (defthm aignet-fanins-of-cdr-lookup-id
+                      (implies (<= (nfix n) (fanin-count aignet))
+                               (equal (aignet-fanins (cdr (lookup-id n aignet)))
+                                      (aignet-fanins (lookup-id (nfix (+ -1 (nfix n))) aignet))))
+                      :hints(("Goal" :in-theory (enable aignet-fanins lookup-id fanin-count)))))
+             (local (defthm node-equal-pi
+                      (implies (node-p x)
+                               (equal (equal x '(:pi))
+                                      (equal (stype x) :pi)))
                       :hints(("Goal" :in-theory (enable node-p stype)))))
-             (local (defthm stype-is-reg-implies-equal-reg
-                      (implies (node-p node)
-                               (equal (equal (stype node) :reg)
-                                      (equal node '(:reg))))
+             (local (defthm node-equal-reg
+                      (implies (node-p x)
+                               (equal (equal x '(:reg))
+                                      (equal (stype x) :reg)))
                       :hints(("Goal" :in-theory (enable node-p stype)))))
-             (local (defthm equal-of-cons-by-components
-                      (implies (and (consp c)
-                                    (equal (car c) a)
-                                    (equal (cdr c) b))
-                               (equal (equal (cons a b) c) t)))))
-  (mbe :logic (non-exec aignet)
-       :exec
-       (b* (((when (mbe :logic (zp (- (num-nodes aignet) (nfix n)))
-                        :exec (eql n (num-nodes aignet))))
-             aignet2)
-            (slot0 (id->slot n 0 aignet))
-            (slot1 (id->slot n 1 aignet))
-            (type (snode->type slot0))
-            (regp (snode->regp slot1))
-            (aignet2 (aignet-case type regp
-                       :xor (aignet-add-xor (snode->fanin slot0)
-                                            (snode->fanin slot1)
-                                            aignet2)
-                       :and (aignet-add-and (snode->fanin slot0)
-                                            (snode->fanin slot1)
-                                            aignet2)
-                       :pi (aignet-add-in aignet2)
-                       :reg (aignet-add-reg aignet2)
-                       :po (aignet-add-out (snode->fanin slot0) aignet2)
-                       :nxst (aignet-set-nxst (snode->fanin slot0)
-                                              (snode->regid slot1)
-                                              aignet2)
-                       :const aignet2)))
-         (aignet-raw-copy-aux (+ 1 (lnfix n)) aignet aignet2))))
+             (local (defthm fanin-count-cdr-lookup-id
+                      (equal (fanin-count (cdr (lookup-id n aignet)))
+                             (if (or (zp n)
+                                     (< (fanin-count aignet) (nfix n)))
+                                 0
+                               (+ -1 (nfix n))))
+                      :hints(("Goal" :in-theory (enable lookup-id fanin-count))))))
+  (mbe :logic (non-exec (aignet-fanins aignet))
+       :exec (b* (((when (mbe :logic (zp (- (num-fanins aignet) (nfix n)))
+                              :exec (eql n (num-fanins aignet))))
+                   aignet2)
+                  (slot0 (id->slot n 0 aignet))
+                  (slot1 (id->slot n 1 aignet))
+                  (type (snode->type slot0))
+                  (regp (snode->regp slot1))
+                  (aignet2 (aignet-case type regp
+                             :xor (aignet-add-xor (snode->fanin slot0)
+                                                  (snode->fanin slot1)
+                                                  aignet2)
+                             :and (aignet-add-and (snode->fanin slot0)
+                                                  (snode->fanin slot1)
+                                                  aignet2)
+                             :pi (aignet-add-in aignet2)
+                             :reg (aignet-add-reg aignet2)
+                             :const aignet2)))
+               (aignet-raw-copy-fanins (+ 1 (lnfix n)) aignet aignet2))))
+
+(local (defthm fanin-count-of-append
+         (equal (fanin-count (append a b))
+                (+ (fanin-count a) (fanin-count b)))))
+(local (defthm stype-count-of-append
+         (equal (stype-count stype (append a b))
+                (+ (stype-count stype a) (stype-count stype b)))))
+
+(define aignet-raw-copy-outputs ((n natp) aignet aignet2)
+  :guard (and (<= n (num-outs aignet))
+              (non-exec (equal aignet2 (append (aignet-outputs-aux n aignet)
+                                               (aignet-fanins aignet)))))
+  :guard-hints(("Goal" :in-theory (enable aignet-idp)
+                :expand ((:free (n aignet2) (aignet-raw-copy-outputs n aignet aignet2))))
+               (and stable-under-simplificationp
+                     '(:expand ((aignet-outputs-aux (+ 1 n) aignet)))))
+
+  :prepwork ((local (in-theory (enable aignet-outputs))))
+  :enabled t
+  (mbe :logic (non-exec (append (aignet-outputs aignet) (aignet-fanins aignet)))
+       :exec (b* (((when (mbe :logic (zp (- (num-outs aignet) (nfix n)))
+                              :exec (eql n (num-outs aignet))))
+                   aignet2)
+                  (fanin (outnum->fanin n aignet))
+                  (aignet2 (aignet-add-out fanin aignet2)))
+               (aignet-raw-copy-outputs (+ 1 (lnfix n)) aignet aignet2))))
+
+
+(define aignet-raw-copy-nxsts ((n natp) aignet aignet2)
+  :guard (and (<= n (num-regs aignet))
+              (non-exec (equal aignet2 (append (aignet-nxsts-aux n aignet)
+                                               (aignet-outputs aignet)
+                                               (aignet-fanins aignet)))))
+  :guard-hints(("Goal" :in-theory (enable aignet-idp)
+                :expand ((:free (n aignet2) (aignet-raw-copy-nxsts n aignet aignet2))))
+               (and stable-under-simplificationp
+                     '(:expand ((aignet-nxsts-aux (+ 1 n) aignet)))))
+  :prepwork ((local (in-theory (enable aignet-nxsts aignet-norm))))
+  :enabled t
+  (mbe :logic (non-exec (aignet-norm aignet))
+       :exec (b* (((when (mbe :logic (zp (- (num-regs aignet) (nfix n)))
+                              :exec (eql n (num-regs aignet))))
+                   aignet2)
+                  (fanin (regnum->nxst n aignet))
+                  (aignet2 (aignet-set-nxst fanin n aignet2)))
+               (aignet-raw-copy-nxsts (+ 1 (lnfix n)) aignet aignet2))))
+
+;; (defthm aignet-raw-copy-fanins-guard-ok
+;;   (equal (aignet-init (num-outs aignet)
+;;                                         (num-regs aignet)
+;;                                         (num-ins aignet)
+;;                                         (num-fanins aignet)
+;;                                         aignet2)
+;;          (aignet-fanins (lookup-id -1 aignet))))
+
+;; (define aignet-raw-copy-start (aignet aignet2)
+;;   :guard-hints (("goal" :in-theory nil))
+;;   (b* ((aignet2 (aignet-init (num-outs aignet)
+;;                              (num-regs aignet)
+;;                              (num-ins aignet)
+;;                              (num-fanins aignet)
+;;                              aignet2)))
+;;     (aignet-raw-copy-fanins 1 aignet aignet2)))
 
 (define aignet-raw-copy (aignet aignet2)
   :enabled t
-  (mbe :logic (non-exec aignet)
+  ;; :guard-debug t
+  :guard-hints (("goal" :in-theory (enable aignet-nxsts-aux aignet-outputs-aux)))
+  (mbe :logic (non-exec (aignet-norm aignet))
        :exec (b* ((aignet2 (aignet-init (num-outs aignet)
                                         (num-regs aignet)
                                         (num-ins aignet)
-                                        (num-nodes aignet)
-                                        aignet2)))
-               (aignet-raw-copy-aux 0 aignet aignet2))))
+                                        (num-fanins aignet)
+                                        aignet2))
+                  (aignet2 (aignet-raw-copy-fanins 1 aignet aignet2))
+                  (aignet2 (aignet-raw-copy-outputs 0 aignet aignet2)))
+               (aignet-raw-copy-nxsts 0 aignet aignet2))))
 
 
+(fty::deffixcong aignet-equiv equal (id-eval id invals regvals aignet) aignet
+  :hints (("goal" :induct (id-eval-ind id aignet)
+           :expand ((:free (aignet) (id-eval id invals regvals aignet)))
+           :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits
+                              aignet-idp))))
+
+(fty::deffixcong aignet-equiv equal (lit-eval lit invals regvals aignet) aignet
+  :hints (("goal" :expand ((:free (aignet) (lit-eval lit invals regvals aignet))))))
+
+(fty::deffixcong aignet-equiv equal (eval-and-of-lits lit1 lit2 invals regvals aignet) aignet
+  :hints(("Goal" :in-theory (enable eval-and-of-lits))))
+
+(fty::deffixcong aignet-equiv equal (eval-xor-of-lits lit1 lit2 invals regvals aignet) aignet
+  :hints(("Goal" :in-theory (enable eval-xor-of-lits))))
+
+(fty::deffixcong aignet-equiv equal (output-eval n invals regvals aignet) aignet
+  :hints(("Goal" :in-theory (enable output-eval))))
+
+(fty::deffixcong aignet-equiv equal (nxst-eval n invals regvals aignet) aignet
+  :hints(("Goal" :in-theory (enable nxst-eval))))
+
+(fty::defrefinement aignet-equiv outs-comb-equiv
+  :hints(("Goal" :in-theory (enable outs-comb-equiv))))
+
+(fty::defrefinement aignet-equiv nxsts-comb-equiv
+  :hints(("Goal" :in-theory (enable nxsts-comb-equiv))))
+
+(fty::defrefinement aignet-equiv comb-equiv
+  :hints(("Goal" :in-theory (enable comb-equiv))))

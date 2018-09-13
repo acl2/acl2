@@ -70,23 +70,25 @@
          :hints(("Goal" :in-theory (enable lit->var)))
          :rule-classes ((:rewrite :backchain-limit-lst (3 nil nil)))))
 
+(local (add-macro-alias aignet-litp aignet-idp))
+
 (local (defthm unsigned-byte-p-of-lit->var-when-aignet-litp
          (implies (and (aignet-litp lit aignet)
-                       (< (node-count aignet) #x1fffffff))
+                       (< (fanin-count aignet) #x1fffffff))
                   (unsigned-byte-p 29 (lit->var lit)))
          :hints(("Goal" :in-theory (enable aignet-litp unsigned-byte-p)))))
 
 (local (defthm unsigned-byte-p-when-aignet-litp
          (implies (and (aignet-litp lit aignet)
                        (litp lit)
-                       (< (node-count aignet) #x1fffffff))
+                       (< (fanin-count aignet) #x1fffffff))
                   (unsigned-byte-p 30 lit))
          :hints(("Goal" :in-theory (enable unsigned-byte-p-of-lit-when-lit->var)))))
 
 (local (defthm unsigned-byte-p-32-when-aignet-litp
          (implies (and (aignet-litp lit aignet)
                        (litp lit)
-                       (< (node-count aignet) #x1fffffff))
+                       (< (fanin-count aignet) #x1fffffff))
                   (unsigned-byte-p 32 lit))
          :hints(("Goal" :use unsigned-byte-p-when-aignet-litp
                  :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
@@ -106,14 +108,14 @@
                                            unsigned-byte-p-when-bit)))))
 
 (local (defthm unsigned-byte-p-of-fanin
-         (implies (< (node-count aignet) #x1fffffff)
+         (implies (< (fanin-count aignet) #x1fffffff)
                   (unsigned-byte-p 30 (fanin type (lookup-id id aignet))))
          :hints(("Goal" :use ((:instance unsigned-byte-p-when-aignet-litp
                                (lit (fanin type (lookup-id id aignet)))))
                  :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
 
 (local (defthm unsigned-byte-p-32-of-fanin
-         (implies (< (node-count aignet) #x1fffffff)
+         (implies (< (fanin-count aignet) #x1fffffff)
                   (unsigned-byte-p 32 (fanin type (lookup-id id aignet))))
          :hints(("Goal" :use ((:instance unsigned-byte-p-of-fanin))
                  :in-theory (disable unsigned-byte-p-of-fanin)))))
@@ -1484,13 +1486,35 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
     (implies (unsigned-byte-p 29 id)
              (unsigned-byte-p 30 (fanin type (lookup-id id aignet))))
     :hints(("Goal" :in-theory (e/d ()
-                                   (fanin-id-lte-node-count-strong
-                                    fanin-id-lte-node-count))
-            :use ((:instance fanin-id-lte-node-count
+                                   (fanin-id-lte-fanin-count-strong
+                                    fanin-id-lte-fanin-count))
+            :use ((:instance fanin-id-lte-fanin-count
                    (aignet (lookup-id id aignet)))))
            (and stable-under-simplificationp
                 '(:cases ((consp (lookup-id id aignet))))))))
 
+
+(local (defthm lit->var-of-gate-fanin0
+         (implies (equal (ctype (stype (car x))) :gate)
+                  (< (lit->var (fanin :gate0 x)) (fanin-count x)))
+         :hints(("Goal" :in-theory (enable fanin aignet-id-fix aignet-idp)))
+         :rule-classes :linear))
+
+(local (defthm lit->var-of-gate-fanin1
+         (implies (equal (ctype (stype (car x))) :gate)
+                  (< (lit->var (fanin :gate1 x)) (fanin-count x)))
+         :hints(("Goal" :in-theory (enable fanin aignet-id-fix aignet-idp)))
+         :rule-classes :linear))
+
+(local (defthm lit->var-of-any-fanin
+         (<= (lit->var (fanin ftype x)) (fanin-count x))
+         :hints(("Goal" :in-theory (enable fanin aignet-id-fix aignet-idp)))
+         :rule-classes :linear))
+
+(local (defthm fanin-count-of-lookup-id-bound
+         (<= (fanin-count (lookup-id n aignet)) (nfix n))
+         :hints (("goal" :cases ((<= (nfix n) (fanin-count aignet)))))
+         :rule-classes :linear))
 
 
 (define reduce-and-gate-when-one-gate ((x0 litp :type (unsigned-byte 30))
@@ -1592,7 +1616,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                              lookup-id-out-of-bounds
                              not
                              default-<-2
-                             fanin-if-co-when-output
+                             ;; fanin-if-co-when-output
                              satlink::equal-of-lit-negate-cond-component-rewrites
                              satlink::equal-of-lit-negate-component-rewrites)))
   (def-gatesimp-thms (x0 x1)
@@ -1733,7 +1757,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                              lookup-id-out-of-bounds
                              not
                              default-<-2
-                             fanin-if-co-when-output
+                             ;; fanin-if-co-when-output
                              satlink::equal-of-lit-negate-cond-component-rewrites
                              satlink::equal-of-lit-negate-component-rewrites)))
   (def-gatesimp-thms (x0 x1)
@@ -2027,14 +2051,14 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
 
     (local (defret unsigned-byte-p-of-strash-lookup-1
              (implies (and found
-                           (< (node-count aignet) #x1fffffff))
+                           (< (fanin-count aignet) #x1fffffff))
                       (unsigned-byte-p 29 id))
              :hints(("Goal" :in-theory (e/d (unsigned-byte-p aignet-idp)
                                             (lookup-id-consp-forward-to-id-bound))))))
 
     (defret unsigned-byte-p-of-strash-lookup
       (implies (and found
-                    (< (node-count aignet) #x1fffffff)
+                    (< (fanin-count aignet) #x1fffffff)
                     (natp n)
                     (<= 29 n))
                (unsigned-byte-p n id))
@@ -2096,7 +2120,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                                       eval-and-of-lits)))))
 
   (defret width-of-<fn>
-    (implies (and (< (node-count aignet) #x1fffffff)
+    (implies (and (< (fanin-count aignet) #x1fffffff)
                   (natp n)
                   (<= 30 n)
                   (unsigned-byte-p 30 (lit-fix x0))
@@ -2136,7 +2160,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
   (defret width-of-<fn>
     (implies (and (unsigned-byte-p 30 (lit-fix x0))
                   (unsigned-byte-p 30 (lit-fix x1))
-                  (< (node-count aignet) #x1fffffff))
+                  (< (fanin-count aignet) #x1fffffff))
              (and (unsigned-byte-p 30 new0)
                   (unsigned-byte-p 30 new1)))))
 
@@ -2172,16 +2196,16 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
   (defret width-of-<fn>
     (implies (and (unsigned-byte-p 30 (lit-fix x0))
                   (unsigned-byte-p 30 (lit-fix x1))
-                  (< (node-count aignet) #x1fffffff))
+                  (< (fanin-count aignet) #x1fffffff))
              (and (unsigned-byte-p 30 new0)
                   (unsigned-byte-p 30 new1)))))
 
 
-(defthm aignet-litp-of-new-node
-  (implies (not (equal (ctype (stype new-node)) (out-ctype)))
-           (aignet-litp (make-lit (+ 1 (node-count aignet)) neg)
-                        (cons new-node aignet)))
-  :hints(("Goal" :in-theory (enable aignet-litp))))
+;; (defthm aignet-litp-of-new-node
+;;   (implies (not (equal (ctype (stype new-node)) (out-ctype)))
+;;            (aignet-litp (make-lit (+ 1 (fanin-count aignet)) neg)
+;;                         (cons new-node aignet)))
+;;   :hints(("Goal" :in-theory (enable aignet-litp))))
 
 
 
@@ -2202,7 +2226,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
        ((when (=b 1 code.identity))
         (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet)) :exec aignet)))
           (mv (lit-negate-cond^ x0 code.neg) strash aignet)))
-       (id (num-nodes aignet))
+       (id (num-fanins aignet))
        (aignet (if (=b 1 code.xor)
                    (aignet-add-xor x0 x1 aignet)
                  (aignet-add-and x0 x1 aignet)))
@@ -2244,12 +2268,12 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
   (defret unsigned-byte-p-of-aignet-install-gate
     (implies (and (unsigned-byte-p 30 x0)
                   (unsigned-byte-p 30 x1)
-                  (< (node-count aignet) #x1fffffff))
+                  (< (fanin-count aignet) #x1fffffff))
              (unsigned-byte-p 30 lit))
     :hints(("Goal" :in-theory (enable unsigned-byte-p-of-lit-when-lit->var))))
 
-  (defret node-count-of-aignet-install-gate
-    (<= (node-count new-aignet) (+ 1 (node-count aignet)))
+  (defret fanin-count-of-aignet-install-gate
+    (<= (fanin-count new-aignet) (+ 1 (fanin-count aignet)))
     :rule-classes :linear))
 
 (local (in-theory (enable lit-eval-of-aignet-lit-fix)))
@@ -2301,7 +2325,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
 
   (local (defthm unsigned-byte-p-when-aignet-litp-of-lit-fix
            (implies (and (aignet-litp lit aignet)
-                         (< (node-count aignet) #x1fffffff))
+                         (< (fanin-count aignet) #x1fffffff))
                     (unsigned-byte-p 30 (lit-fix lit)))
            :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
                                   (lit (lit-fix lit))))
@@ -2311,11 +2335,11 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
            (implies (and (bind-free '((aignet . aignet)))
                          (aignet-litp lit aignet)
                          (litp lit)
-                         (< (node-count aignet) #x1fffffff))
+                         (< (fanin-count aignet) #x1fffffff))
                     (unsigned-byte-p 30 lit))))
 
   (local (defret unsigned-byte-p-of-aignet-hash-and-1
-           (implies (and (< (node-count aignet) #x1fffffff))
+           (implies (and (< (fanin-count aignet) #x1fffffff))
                     (unsigned-byte-p 30 and-lit))
            ;; :hints ((and stable-under-simplificationp
            ;;              '(:use ((:instance unsigned-byte-p-when-aignet-litp
@@ -2324,14 +2348,14 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
            ))
          
   (defret unsigned-byte-p-of-aignet-hash-and
-    (implies (and (< (node-count aignet) #x1fffffff)
+    (implies (and (< (fanin-count aignet) #x1fffffff)
                   (natp n) (<= 30 n))
              (unsigned-byte-p n and-lit))
     :hints (("goal" :use unsigned-byte-p-of-aignet-hash-and-1
              :in-theory (disable unsigned-byte-p-of-aignet-hash-and-1))))
 
-  (defret node-count-of-aignet-hash-and
-    (<= (node-count new-aignet) (+ 1 (node-count aignet)))
+  (defret fanin-count-of-aignet-hash-and
+    (<= (fanin-count new-aignet) (+ 1 (fanin-count aignet)))
     :rule-classes :linear))
 
 
@@ -2499,21 +2523,21 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
 
   (local (defthm unsigned-byte-p-when-aignet-litp-of-lit-fix
            (implies (and (aignet-litp lit aignet)
-                         (< (node-count aignet) #x1fffffff))
+                         (< (fanin-count aignet) #x1fffffff))
                     (unsigned-byte-p 30 (lit-fix lit)))
            :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
                                   (lit (lit-fix lit))))
                     :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
 
   (local (defret unsigned-byte-p-of-aignet-hash-xor-1
-           (implies (and (< (node-count aignet) #x1ffffffd))
+           (implies (and (< (fanin-count aignet) #x1ffffffd))
                     (unsigned-byte-p 30 xor-lit))
            :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
                                   (lit xor-lit) (aignet new-aignet)))
                     :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
 
   (defret unsigned-byte-p-of-aignet-hash-xor
-    (implies (and (< (node-count aignet) #x1ffffffd)
+    (implies (and (< (fanin-count aignet) #x1ffffffd)
                   (natp n) (<= 30 n))
              (unsigned-byte-p n xor-lit))
     :hints (("goal" :use unsigned-byte-p-of-aignet-hash-xor-1
@@ -2524,14 +2548,14 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                                 (strash)
                                 (aignet))
   :returns (new-strash)
-  :guard (<= n (+ 1 (max-fanin aignet)))
-  :measure (nfix (- (+ 1 (max-fanin aignet)) (nfix n)))
+  :guard (<= n (num-fanins aignet))
+  :measure (nfix (- (+ (num-fanins aignet)) (nfix n)))
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
-  (b* (((when (mbe :logic (zp (- (+ 1 (max-fanin aignet)) (nfix n)))
-                   :exec (eql n (+ 1 (max-fanin aignet)))))
+  (b* (((when (mbe :logic (zp (- (num-fanins aignet) (nfix n)))
+                   :exec (eql n (num-fanins aignet))))
         strash)
-       (slot0 (id->slot n 0 aignet))
-       (slot1 (id->slot n 1 aignet))
+       (slot0 (id->slot0 n aignet))
+       (slot1 (id->slot1 n aignet))
        (type (snode->type slot0))
        ((unless (eql type (gate-type)))
         (aignet-populate-strash (+ 1 (lnfix n)) strash aignet))
@@ -2787,28 +2811,28 @@ of the @('b*').</li>
 
   (local (defthm unsigned-byte-p-when-aignet-litp-of-lit-fix
            (implies (and (aignet-litp lit aignet)
-                         (< (node-count aignet) #x1fffffff))
+                         (< (fanin-count aignet) #x1fffffff))
                     (unsigned-byte-p 30 (lit-fix lit)))
            :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
                                   (lit (lit-fix lit))))
                     :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
 
   (local (defret unsigned-byte-p-lemma-1
-           (implies (and (< (node-count aignet) #x1fffffff))
+           (implies (and (< (fanin-count aignet) #x1fffffff))
                     (unsigned-byte-p 30 result))
            :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
                                   (lit result) (aignet new-aignet)))
                     :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
 
   (defret unsigned-byte-p-of-<fn>
-    (implies (and (< (node-count aignet) #x1fffffff)
+    (implies (and (< (fanin-count aignet) #x1fffffff)
                   (natp n) (<= 30 n))
              (unsigned-byte-p n result))
     :hints (("goal" :use unsigned-byte-p-lemma-1
              :in-theory (disable unsigned-byte-p-lemma-1))))
 
-  (defret node-count-of-<fn>
-    (<= (node-count new-aignet) (+ 1 (node-count aignet)))
+  (defret fanin-count-of-<fn>
+    (<= (fanin-count new-aignet) (+ 1 (fanin-count aignet)))
     :rule-classes :linear))
 
 
@@ -2860,21 +2884,21 @@ of the @('b*').</li>
 
   (local (defthm unsigned-byte-p-when-aignet-litp-of-lit-fix
            (implies (and (aignet-litp lit aignet)
-                         (< (node-count aignet) #x1fffffff))
+                         (< (fanin-count aignet) #x1fffffff))
                     (unsigned-byte-p 30 (lit-fix lit)))
            :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
                                   (lit (lit-fix lit))))
                     :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
 
   (local (defret unsigned-byte-p-lemma-1
-           (implies (and (< (node-count aignet) #x1ffffffd))
+           (implies (and (< (fanin-count aignet) #x1ffffffd))
                     (unsigned-byte-p 30 result))
            :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
                                   (lit result) (aignet new-aignet)))
                     :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
 
   (defret unsigned-byte-p-of-<fn>
-    (implies (and (< (node-count aignet) #x1ffffffd)
+    (implies (and (< (fanin-count aignet) #x1ffffffd)
                   (natp n) (<= 30 n))
              (unsigned-byte-p n result))
     :hints (("goal" :use unsigned-byte-p-lemma-1
@@ -2975,25 +2999,25 @@ of the @('b*').</li>
 
   (local (defthm unsigned-byte-p-when-aignet-litp-of-lit-fix
            (implies (and (aignet-litp lit aignet)
-                         (< (node-count aignet) #x1fffffff))
+                         (< (fanin-count aignet) #x1fffffff))
                     (unsigned-byte-p 30 (lit-fix lit)))
            :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
                                   (lit (lit-fix lit))))
                     :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
 
   (local (defthm unsigned-byte-p-when-aignet-litp-of-aignet-lit-fix
-           (implies (< (node-count aignet) #x1fffffff)
+           (implies (< (fanin-count aignet) #x1fffffff)
                     (unsigned-byte-p 30 (aignet-lit-fix lit aignet)))
            :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
                                   (lit (aignet-lit-fix lit aignet))))
                     :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
 
   (local (defret unsigned-byte-p-lemma-1
-           (implies (and (< (node-count aignet) #x1ffffffd))
+           (implies (and (< (fanin-count aignet) #x1ffffffd))
                     (unsigned-byte-p 30 result))))
 
   (defret unsigned-byte-p-of-<fn>
-    (implies (and (< (node-count aignet) #x1ffffffd)
+    (implies (and (< (fanin-count aignet) #x1ffffffd)
                   (natp n) (<= 30 n))
              (unsigned-byte-p n result))
     :hints (("goal" :use unsigned-byte-p-lemma-1
@@ -3033,9 +3057,9 @@ of the @('b*').</li>
                     (pi-node)))
     :hints (("goal" :induct <call> :expand (<call>))))
 
-  (std::defret node-count-of-aignet-add-ins
-    (equal (node-count new-aignet)
-           (+ (nfix n) (node-count aignet))))
+  (std::defret fanin-count-of-aignet-add-ins
+    (equal (fanin-count new-aignet)
+           (+ (nfix n) (fanin-count aignet))))
 
   (std::defret lookup-pi-of-aignet-add-ins
     (implies (< (nfix innum) (+ (nfix n) (stype-count :pi aignet)))
@@ -3050,12 +3074,15 @@ of the @('b*').</li>
             :induct <call>)))
 
   (std::defret lookup-id-of-aignet-add-ins
-    (implies (<= (nfix id) (+ (nfix n) (node-count aignet)))
+    (implies (<= (nfix id) (+ (nfix n) (fanin-count aignet)))
              (equal (lookup-id id new-aignet)
-                    (if (< (nfix id) (node-count aignet))
+                    (if (<= (nfix id) (fanin-count aignet))
                         (lookup-id id aignet)
-                      (aignet-add-ins (- (nfix id) (node-count aignet)) aignet))))
-    :hints(("Goal" :in-theory (enable lookup-id))))
+                      (aignet-add-ins (- (nfix id) (fanin-count aignet)) aignet))))
+    :hints(("Goal" :in-theory (enable lookup-id)
+            :induct t)
+           (and stable-under-simplificationp
+                '(:expand ((aignet-add-ins 1 aignet))))))
 
   (std::defret lookup-other-stype-of-aignet-add-ins
     (implies (not (equal (stype-fix stype) :pi))
@@ -3070,15 +3097,15 @@ of the @('b*').</li>
     :hints (("goal" :induct <call> :expand (<call>))))
 
   (std::defret lit-eval-of-aignet-add-ins
-    (implies (and (<= (+ 1 (node-count aignet)) (nfix id))
-                  (< id (+ 1 (nfix n) (node-count aignet))))
+    (implies (and (<= (+ 1 (fanin-count aignet)) (nfix id))
+                  (< id (+ 1 (nfix n) (fanin-count aignet))))
              (equal (lit-eval (mk-lit id neg) in-vals reg-vals new-aignet)
                     (b-xor neg
                            (nth (+ (num-ins aignet)
                                    (nfix id)
-                                   (- (+ 1 (node-count aignet))))
+                                   (- (+ 1 (fanin-count aignet))))
                                 in-vals))))
-    :hints(("Goal"
+    :hints(("Goal" :in-theory (enable aignet-idp)
             :expand ((:free (aignet) (id-eval id in-vals reg-vals aignet))
                      (:free (aignet) (lit-eval (mk-lit id neg) in-vals reg-vals aignet)))))))
 
@@ -3110,9 +3137,9 @@ of the @('b*').</li>
                     (reg-node)))
     :hints (("goal" :induct <call> :expand (<call>))))
 
-  (std::defret node-count-of-aignet-add-regs
-    (equal (node-count new-aignet)
-           (+ (nfix n) (node-count aignet))))
+  (std::defret fanin-count-of-aignet-add-regs
+    (equal (fanin-count new-aignet)
+           (+ (nfix n) (fanin-count aignet))))
 
   (std::defret lookup-reg-of-aignet-add-regs
     (implies (< (nfix regnum) (+ (nfix n) (stype-count :reg aignet)))
@@ -3128,12 +3155,15 @@ of the @('b*').</li>
   
 
   (std::defret lookup-id-of-aignet-add-regs
-    (implies (<= (nfix id) (+ (nfix n) (node-count aignet)))
+    (implies (<= (nfix id) (+ (nfix n) (fanin-count aignet)))
              (equal (lookup-id id new-aignet)
-                    (if (< (nfix id) (node-count aignet))
+                    (if (<= (nfix id) (fanin-count aignet))
                         (lookup-id id aignet)
-                      (aignet-add-regs (- (nfix id) (node-count aignet)) aignet))))
-    :hints(("Goal" :in-theory (enable lookup-id))))
+                      (aignet-add-regs (- (nfix id) (fanin-count aignet)) aignet))))
+    :hints(("Goal" :in-theory (enable lookup-id)
+            :induct t)
+           (and stable-under-simplificationp
+                '(:expand ((aignet-add-regs 1 aignet))))))
 
   (std::defret lookup-other-stype-of-aignet-add-regs
     (implies (not (equal (stype-fix stype) :reg))
@@ -3141,11 +3171,11 @@ of the @('b*').</li>
                     (lookup-stype typenum stype aignet))))
 
   ;; (local (std::defret fanin-id-range-p-of-aignet-add-regs-lemma
-  ;;          (fanin-id-range-p (+ 1 (node-count aignet)) n new-aignet)
+  ;;          (fanin-id-range-p (+ 1 (fanin-count aignet)) n new-aignet)
   ;;          :hints(("Goal" :in-theory (enable fanin-id-range-p)))))
 
   ;; (std::defret fanin-id-range-p-of-aignet-add-regs
-  ;;   (implies (equal id (+ 1 (node-count aignet)))
+  ;;   (implies (equal id (+ 1 (fanin-count aignet)))
   ;;            (fanin-id-range-p id n new-aignet)))
 
   ;; (std::defret aignet-add-regs-preserves-fanin-id-range-p
@@ -3160,13 +3190,13 @@ of the @('b*').</li>
     :hints (("goal" :induct <call> :expand (<call>))))
 
   (std::defret lit-eval-of-aignet-add-regs
-    (implies (and (<= (+ 1 (node-count aignet)) (nfix id))
-                  (< id (+ 1 (nfix n) (node-count aignet))))
+    (implies (and (<= (+ 1 (fanin-count aignet)) (nfix id))
+                  (< id (+ 1 (nfix n) (fanin-count aignet))))
              (equal (lit-eval (mk-lit id neg) in-vals reg-vals new-aignet)
                     (b-xor neg
                            (nth (+ (num-regs aignet)
                                    (nfix id)
-                                   (- (+ 1 (node-count aignet))))
+                                   (- (+ 1 (fanin-count aignet))))
                                 reg-vals))))
     :hints(("Goal" :in-theory (enable lit-eval aignet-idp)
             :expand ((:free (aignet) (id-eval id in-vals reg-vals aignet))

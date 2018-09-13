@@ -177,12 +177,12 @@
   ;; proven equivalent), we leave its refcounts because they may have already
   ;; affected the cnf generation.
   :returns (new-refcounts)
-  (b* ((aignet-refcounts (if (<= (u32-length aignet-refcounts) (max-fanin aignet))
-                             (resize-u32 (max 16 (* 2 (max-fanin aignet))) aignet-refcounts)
+  (b* ((aignet-refcounts (if (< (u32-length aignet-refcounts) (num-fanins aignet))
+                             (resize-u32 (max 16 (* 2 (num-fanins aignet))) aignet-refcounts)
                            aignet-refcounts))
-       ((unless (< (lnfix prev-count) (max-fanin aignet)))
+       ((unless (< (lnfix prev-count) (num-fanins aignet)))
         aignet-refcounts)
-       (id (max-fanin aignet)))
+       (id (1- (num-fanins aignet))))
     (aignet-case
       (id->type id aignet)
       :gate  (b* ((aignet-refcounts (set-u32 id 0 aignet-refcounts))
@@ -198,7 +198,7 @@
       :out aignet-refcounts))
   ///
   (defret new-refcounts-length-of-aignet-maybe-udpate-refs
-    (< (node-count (find-max-fanin aignet)) (len new-refcounts))
+    (< (fanin-count aignet) (len new-refcounts))
     :rule-classes :linear))
 
     ;; (aignet-count-refs-step n aignet-refcounts aignet)))
@@ -206,7 +206,7 @@
 
 (defthm aignet-copies-ok-implies-linear
   (implies (aignet-copies-in-bounds copy aignet)
-           (<= (lit-id (nth-lit m copy)) (node-count (find-max-fanin aignet))))
+           (<= (lit-id (nth-lit m copy)) (fanin-count aignet)))
   :hints(("Goal" :use ((:instance aignet-copies-in-bounds-necc
                         (n m)))
           :in-theory (disable aignet-copies-in-bounds-necc)))
@@ -221,11 +221,10 @@
         (aignet-hash-and lit0 lit1 gatesimp strash aignet)))
     (implies (and (aignet-litp lit0 aignet)
                   (aignet-litp lit1 aignet))
-             (<= (lit-id and-lit) (node-count (find-max-fanin new-aignet)))))
-  :hints (("goal" :use ((:instance aignet-litp-implies-id-lte-max-fanin
-                         (lit (mv-nth 0 (aignet-hash-and lit0 lit1 gatesimp strash aignet)))
-                         (aignet (mv-nth 2 (aignet-hash-and lit0 lit1 gatesimp strash aignet)))))
-           :in-theory (disable aignet-litp-implies-id-lte-max-fanin)))
+             (<= (lit-id and-lit) (fanin-count new-aignet))))
+  :hints (("goal" :in-theory (e/d (aignet-idp)
+                                  (aignet-litp-of-aignet-hash-and))
+           :use ((:instance aignet-litp-of-aignet-hash-and (lit1 lit0) (lit2 lit1)))))
   :rule-classes (:rewrite :linear))
 
 (defthm aignet-hash-xor-bound-by-max-fanin
@@ -233,11 +232,10 @@
         (aignet-hash-xor lit0 lit1 gatesimp strash aignet)))
     (implies (and (aignet-litp lit0 aignet)
                   (aignet-litp lit1 aignet))
-             (<= (lit-id and-lit) (node-count (find-max-fanin new-aignet)))))
-  :hints (("goal" :use ((:instance aignet-litp-implies-id-lte-max-fanin
-                         (lit (mv-nth 0 (aignet-hash-xor lit0 lit1 gatesimp strash aignet)))
-                         (aignet (mv-nth 2 (aignet-hash-xor lit0 lit1 gatesimp strash aignet)))))
-           :in-theory (disable aignet-litp-implies-id-lte-max-fanin)))
+             (<= (lit-id and-lit) (fanin-count new-aignet))))
+  :hints (("goal" :in-theory (e/d (aignet-idp)
+                                  (aignet-litp-of-aignet-hash-xor))
+           :use ((:instance aignet-litp-of-aignet-hash-xor (lit1 lit0) (lit2 lit1)))))
   :rule-classes (:rewrite :linear))
 
 
@@ -562,9 +560,9 @@
                                     ipasir
                                     ctrex-eval) ;; bitarr
   :measure (nfix id)
-  :guard (and (<= id (max-fanin aignet2))
-              (<= (+ 1 (max-fanin aignet2)) (bits-length ctrex-eval))
-              (<= (+ 1 (max-fanin aignet2)) (bits-length mark))
+  :guard (and (id-existsp id aignet2)
+              (<= (num-fanins aignet2) (bits-length ctrex-eval))
+              (<= (num-fanins aignet2) (bits-length mark))
               (non-exec (eq (ipasir::ipasir$a->status ipasir) :sat))
               (sat-lits-wfp sat-lits aignet2)
               ;; Strong guards. Note: this is useful for debugging this function.
@@ -650,16 +648,16 @@
   (local (in-theory (disable max (tau-system))))
 
   (defret mark-length-of-fraig-record-sat-ctrex-rec
-    (implies (and (<= (+ 1 (max-fanin aignet2)) (len mark))
-                  (<= (nfix id) (max-fanin aignet2)))
+    (implies (and (<= (num-fanins aignet2) (len mark))
+                  (<= (nfix id) (fanin-count aignet2)))
              (equal (len new-mark) (len mark)))
     :hints (("goal" :induct t
              :expand ((fraig-record-sat-ctrex-rec
                        id mark aignet2 sat-lits ipasir ctrex-eval)))))
 
   (defret eval-length-of-fraig-record-sat-ctrex-rec
-    (implies (and (<= (+ 1 (node-count (find-max-fanin aignet2))) (len ctrex-eval))
-                  (<= (nfix id) (max-fanin aignet2)))
+    (implies (and (<= (+ 1 (fanin-count aignet2)) (len ctrex-eval))
+                  (<= (nfix id) (fanin-count aignet2)))
              (equal (len new-ctrex-eval)
                     (len ctrex-eval)))
     :hints (("goal" :induct t
@@ -738,9 +736,9 @@
                                       ctrex-eval
                                       state)
   :measure (nfix id)
-  :guard (and (<= id (max-fanin aignet2))
-              (<= (+ 1 (max-fanin aignet2)) (bits-length ctrex-eval))
-              (<= (+ 1 (max-fanin aignet2)) (bits-length ctrex-relevant))
+  :guard (and (id-existsp id aignet2)
+              (<= (num-fanins aignet2) (bits-length ctrex-eval))
+              (<= (num-fanins aignet2) (bits-length ctrex-relevant))
               ;; (non-exec (eq (ipasir::ipasir$a->status ipasir) :sat))
               ;; (sat-lits-wfp sat-lits aignet2)
               ;; Strong guards. Note: this is useful for debugging this function.
@@ -813,8 +811,8 @@
   (local (in-theory (disable max (tau-system))))
 
   (defret ctrex-relevant-length-of-fraig-minimize-sat-ctrex-rec
-    (implies (and (<= (+ 1 (max-fanin aignet2)) (len ctrex-relevant))
-                  (<= (nfix id) (max-fanin aignet2)))
+    (implies (and (<= (num-fanins aignet2) (len ctrex-relevant))
+                  (<= (nfix id) (fanin-count aignet2)))
              (equal (len new-ctrex-relevant) (len ctrex-relevant)))
     :hints (("goal" :induct t
              :expand ((fraig-minimize-sat-ctrex-rec
@@ -885,7 +883,7 @@
                                            (regvals) ;; write reg vals to here
                                            aignet)
   :returns (new-regvals)
-  :guard (and (<= (+ 1 (max-fanin aignet)) (bits-length vals))
+  :guard (and (<= (num-fanins aignet) (bits-length vals))
               (<= (+ (num-ins aignet) (num-regs aignet)) (bits-length regvals))
               (<= n (num-regs aignet)))
   :measure (nfix (- (num-regs aignet) (nfix n)))
@@ -906,7 +904,7 @@
 (define aignet-vals->in/regvals ((vals) ;; input -- full aignet eval vector
                                  (ctrex-eval) ;; output -- input and register values
                                  (aignet))
-  :guard (and (<= (+ 1 (max-fanin aignet)) (bits-length vals))
+  :guard (and (<= (num-fanins aignet) (bits-length vals))
               (<= (+ (num-ins aignet) (num-regs aignet)) (bits-length ctrex-eval)))
   :returns (new-ctrex-eval)
   :verify-guards nil
@@ -1038,12 +1036,14 @@
                new-packed-vals
                new-packed-relevants
                new-state)
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable aignet-idp))))
   (b* (((acl2::local-stobjs mark ctrex-eval ctrex-relevant in/reg-vals in/reg-relevants)
         (mv mark ctrex-eval ctrex-relevant in/reg-vals in/reg-relevants
             new-ctrex-count packed-vals packed-relevants state))
-       (ctrex-eval     (resize-bits (+ 1 (max-fanin aignet2)) ctrex-eval))
-       (ctrex-relevant (resize-bits (+ 1 (max-fanin aignet2)) ctrex-relevant))
-       (mark           (resize-bits (+ 1 (max-fanin aignet2)) mark))
+       (ctrex-eval     (resize-bits (num-fanins aignet2) ctrex-eval))
+       (ctrex-relevant (resize-bits (num-fanins aignet2) ctrex-relevant))
+       (mark           (resize-bits (num-fanins aignet2) mark))
        ((mv mark ctrex-eval) (fraig-record-sat-ctrex-rec (lit-id lit1) mark aignet2 sat-lits ipasir ctrex-eval))
        ((mv mark ctrex-eval) (fraig-record-sat-ctrex-rec (lit-id lit2) mark aignet2 sat-lits ipasir ctrex-eval))
        ((mv ctrex-relevant state)
@@ -1261,7 +1261,7 @@
   (b* ((ncols (acl2::lposfix ncols))
        (fraig-ctrexes (update-fraig-ctrex-nbits 0 fraig-ctrexes))
        (fraig-ctrexes (update-fraig-ctrex-count 0 fraig-ctrexes))
-       (size (+ 1 (max-fanin aignet)))
+       (size (num-fanins aignet))
        ((acl2::stobj-get s32v bitarr)
         ((s32v (fraig-ctrex-data fraig-ctrexes))
          (bitarr (fraig-ctrex-resim-classes fraig-ctrexes)))
@@ -1290,7 +1290,7 @@
   
   (defret fraig-ctrex-data-rows-of-fraig-ctrexes-init
     (equal (fraig-ctrex-data-rows new-fraig-ctrexes)
-           (+ 1 (max-fanin aignet)))
+           (num-fanins aignet))
     :hints(("Goal" :in-theory (enable fraig-ctrex-data-rows))))
 
   (defret fraig-ctrex-in/reg-rows-of-fraig-ctrexes-init
@@ -1353,7 +1353,7 @@
 ;;                               state)
 ;;   :returns (mv new-fraig-ctrexes new-state)
 ;;   :guard (and (fraig-ctrexes-ok fraig-ctrexes)
-;;               (<= (+ 1 (max-fanin aignet)) (fraig-ctrexes-size fraig-ctrexes)))
+;;               (<= (num-fanins aignet) (fraig-ctrexes-size fraig-ctrexes)))
 ;;   (b* ((fraig-ctrexes (update-fraig-ctrex-bits 0 fraig-ctrexes))
 ;;        ((acl2::stobj-get s32v bitarr state)
 ;;         ((s32v (fraig-ctrex-data fraig-ctrexes))
@@ -1370,14 +1370,14 @@
 ;;     (equal (nth *fraig-nqueued-ctrexes* new-fraig-ctrexes) 0))
 
 ;;   (defret fraig-ctrexes-ok-of-fraig-ctrexes-reinit
-;;     (implies (and (<= (+ 1 (max-fanin aignet))
+;;     (implies (and (<= (num-fanins aignet)
 ;;                       (fraig-ctrexes-size fraig-ctrexes))
 ;;                   (fraig-ctrexes-ok fraig-ctrexes))
 ;;              (fraig-ctrexes-ok new-fraig-ctrexes))
 ;;     :hints(("Goal" :in-theory (enable fraig-ctrexes-ok))))
 
 ;;   (defret fraig-ctrexes-size-of-fraig-ctrexes-reinit
-;;     (implies (and (<= (+ 1 (max-fanin aignet))
+;;     (implies (and (<= (num-fanins aignet)
 ;;                       (fraig-ctrexes-size fraig-ctrexes))
 ;;                   (fraig-ctrexes-ok fraig-ctrexes))
 ;;              (and (equal (len (stobjs::2darr->rows (nth *fraig-ctrex-data* new-fraig-ctrexes)))
@@ -1660,7 +1660,7 @@
               (<= (s32v-ncols s32v) (s32v-ncols packed-relevants))
               (<= (num-ins aignet) (s32v-nrows packed-vals))
               (<= (num-ins aignet) (s32v-nrows packed-relevants))
-              (< (max-fanin aignet) (s32v-nrows s32v)))
+              (<= (num-fanins aignet) (s32v-nrows s32v)))
   :measure (nfix (- (num-ins aignet) (nfix n)))
   (b* (((when (mbe :logic (zp (- (num-ins aignet) (nfix n)))
                    :exec (eql n (num-ins aignet))))
@@ -1670,7 +1670,7 @@
     (fraig-ctrex-invals->vecsim (1+ (lnfix n)) packed-vals packed-relevants s32v aignet))
   ///
   (defret nrows-of-fraig-ctrex-invals->vecsim
-    (implies (< (max-fanin aignet) (s32v-nrows s32v))
+    (implies (<= (num-fanins aignet) (s32v-nrows s32v))
              (equal (len (stobjs::2darr->rows new-s32v))
                     (len (stobjs::2darr->rows s32v)))))
 
@@ -1689,7 +1689,7 @@
               (<= (s32v-ncols s32v) (s32v-ncols packed-relevants))
               (<= (+ (num-ins aignet) (num-regs aignet)) (s32v-nrows packed-vals))
               (<= (+ (num-ins aignet) (num-regs aignet)) (s32v-nrows packed-relevants))
-              (< (max-fanin aignet) (s32v-nrows s32v)))
+              (<= (num-fanins aignet) (s32v-nrows s32v)))
   :measure (nfix (- (num-regs aignet) (nfix n)))
   (b* (((when (mbe :logic (zp (- (num-regs aignet) (nfix n)))
                    :exec (eql n (num-regs aignet))))
@@ -1699,7 +1699,7 @@
     (fraig-ctrex-regvals->vecsim (1+ (lnfix n)) packed-vals packed-relevants s32v aignet))
   ///
   (defret nrows-of-fraig-ctrex-regvals->vecsim
-    (implies (< (max-fanin aignet) (s32v-nrows s32v))
+    (implies (<= (num-fanins aignet) (s32v-nrows s32v))
              (equal (len (stobjs::2darr->rows new-s32v))
                     (len (stobjs::2darr->rows s32v)))))
 
@@ -1716,11 +1716,13 @@
                                  fraig-stats
                                  state)
   :guard-debug t
-  :guard-hints (("goal" :do-not-induct t))
+  :guard-hints (("goal" :do-not-induct t)
+                (and stable-under-simplificationp
+                     '(:in-theory (enable aignet-idp))))
   :guard (and (classes-wellformed classes)
               (fraig-ctrexes-ok fraig-ctrexes)
-              (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet)))
-              (equal (classes-size classes) (+ 1 (max-fanin aignet)))
+              (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet))
+              (equal (classes-size classes) (num-fanins aignet))
               (equal (fraig-ctrex-in/reg-rows fraig-ctrexes)
                      (+ (num-ins aignet) (num-regs aignet))))
   :returns (mv new-classes new-fraig-ctrexes new-fraig-stats new-state)
@@ -1742,7 +1744,7 @@
              ((mv s32v state)         (s32v-randomize-regs 0 s32v aignet state))
              (s32v                    (fraig-ctrex-invals->vecsim 0 packed-vals packed-relevants s32v aignet))
              (s32v                    (fraig-ctrex-regvals->vecsim 0 packed-vals packed-relevants s32v aignet))
-             (s32v                    (aignet-vecsim*-top s32v aignet))
+             (s32v                    (aignet-vecsim-top s32v aignet))
              ((mv classes nclass-lits-refined nconst-lits-refined nclasses-refined)
               (classes-refine s32v classes aignet))
              (fraig-stats (update-fraig-class-lits-refined (+ nclass-lits-refined
@@ -1767,15 +1769,15 @@
 
   (defret fraig-ctrexes-ok-of-fraig-ctrexes-resim-aux
     (implies (and (fraig-ctrexes-ok fraig-ctrexes)
-                  (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet))))
+                  (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet)))
              (fraig-ctrexes-ok new-fraig-ctrexes))
     :hints((and stable-under-simplificationp
                 `(:expand (,(car (last clause)))))))
 
   (defret fraig-ctrex-data-rows-of-fraig-ctrexes-resim-aux
-    (implies (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet)))
+    (implies (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet))
              (equal (fraig-ctrex-data-rows new-fraig-ctrexes)
-                    (+ 1 (max-fanin aignet))))
+                    (num-fanins aignet)))
     :hints(("Goal" :in-theory (enable fraig-ctrex-data-rows))))
 
   (defret fraig-ctrex-in/reg-rows-of-fraig-ctrexes-resim-aux
@@ -1797,8 +1799,8 @@
   :guard-hints (("goal" :do-not-induct t))
   :guard (and (classes-wellformed classes)
               (fraig-ctrexes-ok fraig-ctrexes)
-              (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet)))
-              (equal (classes-size classes) (+ 1 (max-fanin aignet)))
+              (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet))
+              (equal (classes-size classes) (num-fanins aignet))
               (equal (fraig-ctrex-in/reg-rows fraig-ctrexes)
                      (+ (num-ins aignet) (num-regs aignet))))
   :returns (mv new-classes new-fraig-ctrexes new-fraig-stats new-state)
@@ -1816,15 +1818,15 @@
 
   (defret fraig-ctrexes-ok-of-fraig-ctrexes-resim
     (implies (and (fraig-ctrexes-ok fraig-ctrexes)
-                  (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet))))
+                  (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet)))
              (fraig-ctrexes-ok new-fraig-ctrexes))
     :hints((and stable-under-simplificationp
                 `(:expand (,(car (last clause)))))))
 
   (defret fraig-ctrex-data-rows-of-fraig-ctrexes-resim
-    (implies (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet)))
+    (implies (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet))
              (equal (fraig-ctrex-data-rows new-fraig-ctrexes)
-                    (+ 1 (max-fanin aignet)))))
+                    (num-fanins aignet))))
 
   (defret fraig-ctrex-in/reg-rows-of-fraig-ctrexes-resim
     (equal (fraig-ctrex-in/reg-rows new-fraig-ctrexes)
@@ -1852,13 +1854,15 @@
                                    (classes "equiv classes data structure")
                                    (fraig-stats "statistics record")
                                    (state))
-  :guard (and (<= node (max-fanin aignet))
+  :guard (and (id-existsp node aignet)
               (classes-wellformed classes)
               (fraig-ctrexes-ok fraig-ctrexes)
               (equal (fraig-ctrex-data-rows fraig-ctrexes) (classes-size classes))
-              (equal (classes-size classes) (+ 1 (max-fanin aignet)))
+              (equal (classes-size classes) (num-fanins aignet))
               (equal (fraig-ctrex-in/reg-rows fraig-ctrexes) (+ (num-ins aignet) (num-regs aignet))))
   :returns (mv forced-last-chancep new-classes new-fraig-ctrexes new-fraig-stats new-state)
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable aignet-idp))))
   (b* (((fraig-config config))
        (head (node-head node classes))
        (force-resim (and config.ctrex-force-resim
@@ -1891,15 +1895,15 @@
 
   (defret fraig-ctrexes-ok-of-fraig-ctrexes-maybe-resim
     (implies (and (fraig-ctrexes-ok fraig-ctrexes)
-                  (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet))))
+                  (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet)))
              (fraig-ctrexes-ok new-fraig-ctrexes))
     :hints((and stable-under-simplificationp
                 `(:expand (,(car (last clause)))))))
 
   (defret fraig-ctrex-data-rows-of-fraig-ctrexes-maybe-resim
-    (implies (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet)))
+    (implies (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet))
              (equal (fraig-ctrex-data-rows new-fraig-ctrexes)
-                    (+ 1 (max-fanin aignet)))))
+                    (num-fanins aignet))))
 
   (defret fraig-ctrex-in/reg-rows-of-fraig-ctrexes-maybe-resim
     (equal (fraig-ctrex-in/reg-rows new-fraig-ctrexes)
@@ -1942,15 +1946,15 @@
                           (fraig-stats "statistics collection")
                           (config fraig-config-p "options")
                           (state))
-  :guard (and (< (max-fanin aignet) (lits-length copy))
+  :guard (and (<= (num-fanins aignet) (lits-length copy))
               (aignet-copies-in-bounds copy aignet2)
               (classes-wellformed classes)
-              (equal (classes-size classes) (+ 1 (max-fanin aignet)))
+              (equal (classes-size classes) (num-fanins aignet))
               (fraig-ctrexes-ok fraig-ctrexes)
-              (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet)))
+              (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet))
               (equal (fraig-ctrex-in/reg-rows fraig-ctrexes)
                      (+ (num-ins aignet) (num-regs aignet)))
-              (<= node (max-fanin aignet))
+              (id-existsp node aignet)
               (equal (num-ins aignet) (num-ins aignet2))
               (equal (num-regs aignet) (num-regs aignet2))
               (non-exec (and (not (eq (ipasir::ipasir$a->status ipasir) :undef))
@@ -1990,7 +1994,7 @@
            (lit1 (snode->fanin slot1))
            (lit0-copy (lit-copy lit0 copy))
            (lit1-copy (lit-copy lit1 copy))
-           (prev-count (num-nodes aignet2))
+           (prev-count (num-fanins aignet2))
            ((fraig-config config))
            ;; make AND/XOR of the two corresponding lits; this is the new node if
            ;; the candidate equivalent isn't equivalent
@@ -2067,9 +2071,9 @@
            (classes-size classes)))
 
   (defret fraig-ctrex-data-rows-of-fraig-sweep-node
-    (implies (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet)))
+    (implies (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet))
              (equal (fraig-ctrex-data-rows new-fraig-ctrexes)
-                    (+ 1 (max-fanin aignet)))))
+                    (num-fanins aignet))))
 
   (defret fraig-ctrex-in/reg-rows-of-fraig-sweep-node
     (implies (equal (fraig-ctrex-in/reg-rows fraig-ctrexes) (+ (num-ins aignet2) (num-regs aignet2)))
@@ -2083,9 +2087,9 @@
   (defret fraig-ctrexes-ok-of-fraig-sweep-node
     (implies (and (fraig-ctrexes-ok fraig-ctrexes)
                   (classes-wellformed classes)
-                  (equal (classes-size classes) (+ 1 (max-fanin aignet)))
-                  (<= (nfix node) (max-fanin aignet))
-                  (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet)))
+                  (equal (classes-size classes) (num-fanins aignet))
+                  (<= (nfix node) (fanin-count aignet))
+                  (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet))
                   (<= (nfix (fraig-ctrex-nbits fraig-ctrexes))
                       (* 32 (fraig-ctrex-ncols fraig-ctrexes)))
                   (equal (fraig-ctrex-in/reg-rows fraig-ctrexes)
@@ -2106,31 +2110,36 @@
            :hints(("Goal" :in-theory (enable update-nth-lit)))))
 
   (defret copy-len-of-fraig-sweep-node
-    (implies (and (< (node-count (find-max-fanin aignet)) (len copy))
-                  (<= (nfix node) (node-count (find-max-fanin aignet))))
+    (implies (and (< (fanin-count aignet) (len copy))
+                  (<= (nfix node) (fanin-count aignet)))
              (equal (len new-copy) (len copy))))
 
   (defret sat-lits-wfp-of-fraig-sweep-node
     (implies (sat-lits-wfp sat-lits aignet2)
              (sat-lits-wfp new-sat-lits new-aignet2)))
 
+  (local (defthm lit-copy-of-make-lit
+           (equal (lit-copy (make-lit id neg) copy)
+                  (lit-negate-cond (nth-lit id copy) neg))
+           :hints(("Goal" :in-theory (enable lit-copy)))))
+
   (defret ipasir-formula-wfp-of-fraig-sweep-node
     (implies (and (sat-lits-wfp sat-lits aignet2)
                   (aignet-copies-in-bounds copy aignet2)
                   (sat-lit-list-listp (ipasir::ipasir$a->formula ipasir) sat-lits)
-                  (<= (nfix node) (max-fanin aignet)))
+                  (<= (nfix node) (fanin-count aignet)))
              (sat-lit-list-listp (ipasir::ipasir$a->formula new-ipasir) new-sat-lits)))
 
   (defret aignet-copies-ok-of-fraig-sweep-node
     (implies (and (aignet-copies-in-bounds copy aignet2)
-                  (equal n (+ 1 (node-count (find-max-fanin aignet))))
-                  (<= (nfix node) (max-fanin aignet)))
+                  (equal n (+ 1 (fanin-count aignet)))
+                  (<= (nfix node) (fanin-count aignet)))
              (aignet-copies-in-bounds new-copy new-aignet2)))
 
   ;; (local (defthm gate-stype-implies-less-than-max-fanin
   ;;          (implies (and (equal (ctype (stype (car (lookup-id node aignet)))) :gate)
   ;;                        (natp node))
-  ;;                   (<= node (node-count (find-max-fanin aignet))))
+  ;;                   (<= node (fanin-count aignet)))
   ;;          :hints(("Goal" :in-theory (enable find-max-fanin lookup-id)))
   ;;          :rule-classes :forward-chaining))
              
@@ -2142,9 +2151,9 @@
              (cnf-for-aignet new-aignet2 (ipasir::ipasir$a->formula new-ipasir) new-sat-lits)))
 
   (defret aignet-copy-is-comb-equivalent-for-non-gates-of-fraig-sweep-node
-    (implies (and (aignet-copy-is-comb-equivalent-for-non-gates (+ 1 (max-fanin aignet)) aignet copy aignet2)
+    (implies (and (aignet-copy-is-comb-equivalent-for-non-gates (num-fanins aignet) aignet copy aignet2)
                   (aignet-copies-in-bounds copy aignet2))
-             (aignet-copy-is-comb-equivalent-for-non-gates (+ 1 (node-count (find-max-fanin aignet))) aignet new-copy new-aignet2)))
+             (aignet-copy-is-comb-equivalent-for-non-gates (+ 1 (fanin-count aignet)) aignet new-copy new-aignet2)))
 
   (local (defthm lit-eval-of-equal-to-hash-and-preexisting
            (implies (and (aignet-litp lit aignet)
@@ -2194,12 +2203,12 @@
   (defret aignet-copy-is-comb-equivalent-of-fraig-sweep-node
     (implies (and (nat-equiv node1 node)
                   (aignet-copy-is-comb-equivalent node aignet copy aignet2)
-                  (aignet-copy-is-comb-equivalent-for-non-gates (+ 1 (max-fanin aignet)) aignet copy aignet2)
+                  (aignet-copy-is-comb-equivalent-for-non-gates (num-fanins aignet) aignet copy aignet2)
                   (cnf-for-aignet aignet2 (ipasir::ipasir$a->formula ipasir) sat-lits)
                   (sat-lits-wfp sat-lits aignet2)
                   (aignet-copies-in-bounds copy aignet2)
                   (sat-lit-list-listp (ipasir::ipasir$a->formula ipasir) sat-lits)
-                  (< (nfix node) (+ 1 (max-fanin aignet))))
+                  (< (nfix node) (num-fanins aignet)))
              (aignet-copy-is-comb-equivalent
               (+ 1 node1) aignet new-copy new-aignet2))
     :hints (("goal" :expand ((:free (n copy aignet2)
@@ -2258,25 +2267,27 @@
                new-ipasir
                new-fraig-stats
                new-state)
-  :guard (and (< (max-fanin aignet) (lits-length copy))
+  :guard (and (<= (num-fanins aignet) (lits-length copy))
               (aignet-copies-in-bounds copy aignet2)
               (classes-wellformed classes)
-              (equal (classes-size classes) (+ 1 (max-fanin aignet)))
+              (equal (classes-size classes) (num-fanins aignet))
               (fraig-ctrexes-ok fraig-ctrexes)
-              (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet)))
+              (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet))
               (equal (fraig-ctrex-in/reg-rows fraig-ctrexes)
                      (+ (num-ins aignet) (num-regs aignet)))
-              (<= node (+ 1 (max-fanin aignet)))
+              (<= node (num-fanins aignet))
               (equal (num-ins aignet) (num-ins aignet2))
               (equal (num-regs aignet) (num-regs aignet2))
               (non-exec (and (not (eq (ipasir::ipasir$a->status ipasir) :undef))
                              (not (ipasir::ipasir$a->new-clause ipasir))
                              (not (ipasir::ipasir$a->assumption ipasir))))
               (sat-lits-wfp sat-lits aignet2))
-  :guard-hints (("goal" :do-not-induct t))
-  :measure (nfix (+ 1 (max-fanin aignet) (- (nfix node))))
-  (b* (((when (mbe :logic (zp (+ 1 (max-fanin aignet) (- (nfix node))))
-                   :exec (eql (+ 1 (max-fanin aignet)) node)))
+  :guard-hints (("goal" :do-not-induct t)
+                (and stable-under-simplificationp
+                     '(:in-theory (enable aignet-idp))))
+  :measure (nfix (+ (num-fanins aignet) (- (nfix node))))
+  (b* (((when (mbe :logic (zp (+ (num-fanins aignet) (- (nfix node))))
+                   :exec (eql (num-fanins aignet) node)))
         (b* ((ipasir (ipasir::ipasir-cancel-new-clause ipasir))
              (ipasir (ipasir::ipasir-cancel-assumption ipasir))
              (ipasir (ipasir::ipasir-input ipasir)))
@@ -2303,9 +2314,9 @@
            (classes-size classes)))
 
   (defret fraig-ctrex-data-rows-of-fraig-sweep-aux
-    (implies (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet)))
+    (implies (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet))
              (equal (fraig-ctrex-data-rows new-fraig-ctrexes)
-                    (+ 1 (max-fanin aignet)))))
+                    (num-fanins aignet))))
 
   (defret fraig-ctrex-in/reg-rows-of-fraig-sweep-aux
     (implies (equal (fraig-ctrex-in/reg-rows fraig-ctrexes) (+ (num-ins aignet2) (num-regs aignet2)))
@@ -2319,8 +2330,8 @@
   (defret fraig-ctrexes-ok-of-fraig-sweep-aux
     (implies (and (fraig-ctrexes-ok fraig-ctrexes)
                   (classes-wellformed classes)
-                  (equal (classes-size classes) (+ 1 (max-fanin aignet)))
-                  (equal (fraig-ctrex-data-rows fraig-ctrexes) (+ 1 (max-fanin aignet)))
+                  (equal (classes-size classes) (num-fanins aignet))
+                  (equal (fraig-ctrex-data-rows fraig-ctrexes) (num-fanins aignet))
                   (<= (nfix (fraig-ctrex-nbits fraig-ctrexes))
                       (* 32 (fraig-ctrex-ncols fraig-ctrexes)))
                   (equal (fraig-ctrex-in/reg-rows fraig-ctrexes)
@@ -2340,8 +2351,8 @@
            :hints(("Goal" :in-theory (enable update-nth-lit)))))
 
   (defret copy-len-of-fraig-sweep-aux
-    (implies (and (< (node-count (find-max-fanin aignet)) (len copy))
-                  (<= (nfix node) (node-count (find-max-fanin aignet))))
+    (implies (and (< (fanin-count aignet) (len copy))
+                  (<= (nfix node) (fanin-count aignet)))
              (equal (len new-copy) (len copy))))
 
   (defret sat-lits-wfp-of-fraig-sweep-aux
@@ -2352,12 +2363,12 @@
     (implies (and (sat-lits-wfp sat-lits aignet2)
                   (aignet-copies-in-bounds copy aignet2)
                   (sat-lit-list-listp (ipasir::ipasir$a->formula ipasir) sat-lits)
-                  (<= (nfix node) (max-fanin aignet)))
+                  (<= (nfix node) (fanin-count aignet)))
              (sat-lit-list-listp (ipasir::ipasir$a->formula new-ipasir) new-sat-lits)))
 
   (defret aignet-copies-ok-of-fraig-sweep-aux
     (implies (and (aignet-copies-in-bounds copy aignet2)
-                  (equal n (+ 1 (node-count (find-max-fanin aignet)))))
+                  (equal n (+ 1 (fanin-count aignet))))
              (aignet-copies-in-bounds new-copy new-aignet2))
     :hints (("goal" :induct t)
             (and stable-under-simplificationp
@@ -2372,9 +2383,9 @@
              (cnf-for-aignet new-aignet2 (ipasir::ipasir$a->formula new-ipasir) new-sat-lits)))
 
   (defret aignet-copy-is-comb-equivalent-for-non-gates-of-fraig-sweep-aux
-    (implies (and (aignet-copy-is-comb-equivalent-for-non-gates (+ 1 (max-fanin aignet)) aignet copy aignet2)
+    (implies (and (aignet-copy-is-comb-equivalent-for-non-gates (num-fanins aignet) aignet copy aignet2)
                   (aignet-copies-in-bounds copy aignet2))
-             (aignet-copy-is-comb-equivalent-for-non-gates (+ 1 (node-count (find-max-fanin aignet))) aignet new-copy new-aignet2)))
+             (aignet-copy-is-comb-equivalent-for-non-gates (+ 1 (fanin-count aignet)) aignet new-copy new-aignet2)))
 
   (local (defthm aignet-copy-is-comb-equivalent-when-less
            (implies (and (aignet-copy-is-comb-equivalent n aignet copy aignet2)
@@ -2386,13 +2397,13 @@
 
   (defret aignet-copy-is-comb-equivalent-of-fraig-sweep-aux
     (implies (and (aignet-copy-is-comb-equivalent node aignet copy aignet2)
-                  (aignet-copy-is-comb-equivalent-for-non-gates (+ 1 (max-fanin aignet)) aignet copy aignet2)
+                  (aignet-copy-is-comb-equivalent-for-non-gates (num-fanins aignet) aignet copy aignet2)
                   (cnf-for-aignet aignet2 (ipasir::ipasir$a->formula ipasir) sat-lits)
                   (sat-lits-wfp sat-lits aignet2)
                   (aignet-copies-in-bounds copy aignet2)
                   (sat-lit-list-listp (ipasir::ipasir$a->formula ipasir) sat-lits))
              (aignet-copy-is-comb-equivalent
-              (+ 1 (node-count (find-max-fanin aignet))) aignet new-copy new-aignet2))))
+              (+ 1 (fanin-count aignet)) aignet new-copy new-aignet2))))
 
 
 
@@ -2408,17 +2419,17 @@
                new-strash
                new-classes
                new-state)
-  :guard (and (< (max-fanin aignet) (lits-length copy))
+  :guard (and (<= (num-fanins aignet) (lits-length copy))
               (aignet-copies-in-bounds copy aignet2)
               (classes-wellformed classes)
-              (equal (classes-size classes) (+ 1 (max-fanin aignet)))
+              (equal (classes-size classes) (num-fanins aignet))
               (equal (num-ins aignet) (num-ins aignet2))
               (equal (num-regs aignet) (num-regs aignet2)))
   :guard-debug t
   ;; need to ensure:
   ;; (and (equal (classes-size classes) (s32v-nrows s32v))
   ;;             (<= 1 (s32v-ncols s32v))
-  ;;             (<= (+ 1 (max-fanin aignet)) (s32v-nrows s32v))
+  ;;             (<= (num-fanins aignet) (s32v-nrows s32v))
   ;;             (non-exec (and (not (eq (ipasir::ipasir$a->status ipasir) :undef))
   ;;                            (not (ipasir::ipasir$a->new-clause ipasir))
   ;;                            (not (ipasir::ipasir$a->assumption ipasir))))
@@ -2432,7 +2443,7 @@
        (ipasir (ipasir-set-limit ipasir config.ipasir-limit))
        (fraig-ctrexes
         (fraig-ctrexes-init config.sim-words fraig-ctrexes aignet))
-       (sat-lits (resize-aignet->sat (ash (+ 1 (max-fanin aignet)) -1) sat-lits))
+       (sat-lits (resize-aignet->sat (ash (num-fanins aignet) -1) sat-lits))
        ((mv nclasses nconst-lits nclass-lits) (classes-counts classes))
        (fraig-stats (update-fraig-initial-nclasses nclasses fraig-stats))
        (fraig-stats (update-fraig-initial-nconst-lits nconst-lits fraig-stats))
@@ -2461,7 +2472,7 @@
                     (stype-count stype aignet2))))
 
   (defret copy-len-of-fraig-sweep
-    (implies (< (node-count (find-max-fanin aignet)) (len copy))
+    (implies (< (fanin-count aignet) (len copy))
              (equal (len new-copy) (len copy))))
 
   (defret aignet-copies-ok-of-fraig-sweep
@@ -2469,17 +2480,17 @@
              (aignet-copies-in-bounds new-copy new-aignet2)))
 
   (defret aignet-copy-is-comb-equivalent-for-non-gates-of-fraig-sweep
-    (implies (and (aignet-copy-is-comb-equivalent-for-non-gates (+ 1 (max-fanin aignet)) aignet copy aignet2)
+    (implies (and (aignet-copy-is-comb-equivalent-for-non-gates (num-fanins aignet) aignet copy aignet2)
                   (aignet-copies-in-bounds copy aignet2))
-             (aignet-copy-is-comb-equivalent-for-non-gates (+ 1 (node-count (find-max-fanin aignet))) aignet new-copy new-aignet2)))
+             (aignet-copy-is-comb-equivalent-for-non-gates (+ 1 (fanin-count aignet)) aignet new-copy new-aignet2)))
 
 
 
   (defret aignet-copy-is-comb-equivalent-of-fraig-sweep
-    (implies (and (aignet-copy-is-comb-equivalent-for-non-gates (+ 1 (max-fanin aignet)) aignet copy aignet2)
+    (implies (and (aignet-copy-is-comb-equivalent-for-non-gates (num-fanins aignet) aignet copy aignet2)
                   (aignet-copies-in-bounds copy aignet2))
              (aignet-copy-is-comb-equivalent
-              (+ 1 (node-count (find-max-fanin aignet))) aignet new-copy new-aignet2))))
+              (+ 1 (fanin-count aignet)) aignet new-copy new-aignet2))))
 
 (define fraig-initial-sim ((count natp)
                            (s32v)
@@ -2488,13 +2499,13 @@
                            (state))
   :returns (mv new-classes new-s32v new-state)
   :guard (and (classes-wellformed classes)
-              (<= (classes-size classes) (num-nodes aignet))
-              (<= (+ 1 (max-fanin aignet)) (classes-size classes))
+              (<= (classes-size classes) (num-fanins aignet))
+              (<= (num-fanins aignet) (classes-size classes))
               (equal (classes-size classes) (s32v-nrows s32v)))
   (b* (((when (zp count)) (mv classes s32v state))
        ((mv s32v state) (s32v-randomize-inputs 0 s32v aignet state))
        ((mv s32v state) (s32v-randomize-regs 0 s32v aignet state))
-       (s32v (aignet-vecsim*-top s32v aignet))
+       (s32v (aignet-vecsim-top s32v aignet))
        ((mv classes & & &) (classes-refine s32v classes aignet)))
     (fraig-initial-sim (1- count) s32v classes aignet state))
   ///
@@ -2527,7 +2538,7 @@
                      :exec classes))
        (classes (if config.outs-only
                     (classes-init-outs classes aignet)
-                  (classes-init (+ 1 (max-fanin aignet)) classes)))
+                  (classes-init (num-fanins aignet) classes)))
        (s32v (mbe :logic (non-exec (create-s32v))
                   :exec s32v))
        (s32v (s32v-resize-cols config.initial-sim-words s32v))
@@ -2561,7 +2572,7 @@
 
   (defret classes-size-of-fraig-core-aux
     (equal (classes-size new-classes)
-           (+ 1 (max-fanin aignet))))
+           (num-fanins aignet)))
 
   (defthm normalize-input-of-fraig-core-aux
     (implies (syntaxp (not (and (equal aignet2 ''nil)

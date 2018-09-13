@@ -373,11 +373,10 @@
 
 (local
  #!aignet
- (defthm aignet-litp-of-make-lit
-   (implies (and (<= (nfix id) (node-count aignet))
-                 (not (equal (ctype (stype (car (lookup-id id aignet)))) :output)))
-            (aignet-litp (make-lit id neg) aignet))
-   :hints(("Goal" :in-theory (enable aignet-litp)))))
+ (defthm aignet-idp-when-in-bounds
+   (implies (<= (nfix id) (fanin-count aignet))
+            (aignet-idp id aignet))
+   :hints(("Goal" :in-theory (enable aignet-idp)))))
 
 
 (define only-depends-on-aux ((n natp)
@@ -558,7 +557,7 @@
     :hints(("Goal" :in-theory (enable bool->bit acl2::b-not acl2::b-and index-listp)
             :induct <call>
             :expand ((:free (in) (aignet::lit-eval (aignet::mk-lit in 0) invals regvals aignet))
-                     (:free (x) (aignet::id-eval (aignet::node-count x) invals regvals aignet)))
+                     (:free (x) (aignet::id-eval (aignet::fanin-count x) invals regvals aignet)))
             :do-not-induct t)
            (acl2::use-termhint
             (b* (((when (atom indices))
@@ -802,7 +801,7 @@
                       (bool->bit (truth-eval x (truth4-env-from-aignet-invals invals) 4))))
       :hints ('(:expand (<call>
                          (:free (in neg) (aignet::lit-eval (aignet::mk-lit in neg) invals regvals aignet))
-                         (:free (x) (aignet::id-eval (aignet::node-count x) invals regvals aignet)))
+                         (:free (x) (aignet::id-eval (aignet::fanin-count x) invals regvals aignet)))
                 :do-not-induct t
                 :in-theory (enable bool->bit b-not b-and b-xor)))
       :fn aignet-build-truth4-decomp-single-try)
@@ -1287,7 +1286,7 @@
                     (bool->bit (truth-eval truth (truth4-env-from-aignet-invals invals) 4))))
     :hints(("Goal" ;; :in-theory (enable bool->bit acl2::b-not acl2::b-and b-ior bfix)
             :expand ((:free (in val) (aignet::lit-eval (aignet::mk-lit in val) invals regvals aignet))
-                     (:free (x) (aignet::id-eval (aignet::node-count x) invals regvals aignet)))
+                     (:free (x) (aignet::id-eval (aignet::fanin-count x) invals regvals aignet)))
             :do-not-induct t)
             (and stable-under-simplificationp
                  '(:in-theory (enable not-equal-of-negative-negative-cofactor
@@ -1439,7 +1438,7 @@
         (lnfix (dsd4stats-double dsd4stats))
         (lnfix (dsd4stats-both dsd4stats))))
 
-(define dsd4stats-node-count ((snap eqlable-listp) dsd4stats)
+(define dsd4stats-fanin-count ((snap eqlable-listp) dsd4stats)
   (b* (((list ssimple ssingle sdouble sboth) snap)
        (dsd4stats (incr-dsd4stats-node-simple-cond (not (eql ssimple (dsd4stats-simple dsd4stats))) dsd4stats))
        (dsd4stats (incr-dsd4stats-node-single-cond (not (eql ssingle (dsd4stats-single dsd4stats))) dsd4stats))
@@ -1988,7 +1987,7 @@
                                           strash
                                           aignet
                                           dsd4stats))
-       (dsd4stats (dsd4stats-node-count snap dsd4stats))
+       (dsd4stats (dsd4stats-fanin-count snap dsd4stats))
        (lits (remove-duplicates lits))
        (smm (acl2::smm-addblock (len lits) smm))
        (smm (smm-write-lits n 0 lits smm)))
