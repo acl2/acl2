@@ -52,7 +52,7 @@
                             pseudo-term-list-fix)))
 
   (defines extract
-    :parents (SMT-extractor)
+    :parents (SMT-extract)
     :short "Functions for extracting type declarations from clause."
 
     (define extract-disjunct ((term pseudo-termp) (fty-info fty-info-alist-p))

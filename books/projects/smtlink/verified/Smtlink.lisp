@@ -739,13 +739,13 @@
     (remove-duplicates-equal (strip-cdrs *smtlink-options*)))
 
   (define smtlink-option-type-p ((option-type t))
-    :parents (smt-solver-params)
+    :parents (smtlink-hint-syntax)
     :returns (syntax-good? booleanp)
     :short "Recoginizer for smtlink-option-type."
     (if (member-equal option-type *smtlink-option-types*) t nil))
 
   (define smtlink-option-type-fix ((opttype smtlink-option-type-p))
-    :parents (smt-solver-params)
+    :parents (smtlink-hint-syntax)
     :returns (fixed-opttype smtlink-option-type-p
                             :hints (("Goal" :in-theory (enable
                                                         smtlink-option-type-p))))
@@ -754,13 +754,13 @@
          :exec opttype))
 
   (define smtlink-option-name-p ((option-name t))
-    :parents (smt-solver-params)
+    :parents (smtlink-hint-syntax)
     :returns (syntax-good? booleanp)
     :short "Recoginizer for an smtlink-option-name."
     (if (member-equal option-name *smtlink-option-names*) t nil))
 
   (define smtlink-option-name-fix ((option smtlink-option-name-p))
-    :parents (smt-solver-params)
+    :parents (smtlink-hint-syntax)
     :returns (fixed-smtlink-option-name smtlink-option-name-p)
     :short "Fixing function for smtlink-option-name."
     (mbe :logic (if (smtlink-option-name-p option) option ':functions)
@@ -777,7 +777,7 @@
                  :topic smtlink-option-name-p)
 
                (deflist smtlink-option-name-lst
-                 :parents (smtlink-option-name)
+                 :parents (smtlink-option-name-p)
                  :elt-type smtlink-option-name
                  :true-listp t))
 
@@ -823,7 +823,7 @@
     :rule-classes(:congruence))
 
   (define eval-smtlink-option-type ((option-type smtlink-option-type-p) (term t))
-    :parents (smt-solver-params)
+    :parents (smtlink-hint-syntax)
     :returns (type-correct? booleanp)
     :short "Evaluating types for smtlink option body."
     (case option-type
@@ -838,7 +838,7 @@
       (t (natp term))))
 
   (define smtlink-option-syntax-p ((term t) (used smtlink-option-name-lst-p))
-    :parents (smt-solver-params)
+    :parents (smtlink-hint-syntax)
     :returns (mv (ok booleanp)
                  (new-used smtlink-option-name-lst-p
                            :hints (("Goal" :in-theory (enable smtlink-option-name-lst-p smtlink-option-name-p)))))
@@ -890,7 +890,7 @@
                :name smtlink-option-syntax-p--new-used-when-ok)))
 
   (define smtlink-hint-syntax-p-helper ((term t) (used smtlink-option-name-lst-p))
-    :parents (smt-solver-params)
+    :parents (smtlink-hint-syntax)
     :returns (syntax-good? booleanp)
     :short "Helper function for smtlink-hint-syntax-p."
     (b* (((unless (true-listp term)) nil)
@@ -942,14 +942,14 @@
                                              (used nil))))))))
 
   (define smtlink-hint-syntax-p ((term t))
-    :parents (smt-solver-params)
+    :parents (smtlink-hint-syntax)
     :returns (syntax-good? booleanp)
     :short "Recognizer for smtlink-hint-syntax."
     (smtlink-hint-syntax-p-helper term nil))
 
   ;; Strange fixing function.
   (define smtlink-hint-syntax-fix ((term smtlink-hint-syntax-p))
-    :parents (smt-solver-params)
+    :parents (smtlink-hint-syntax)
     :short "Fixing function for smtlink-hint-syntax."
     :returns (fixed-smtlink-hint-syntax smtlink-hint-syntax-p)
     (mbe :logic (if (smtlink-hint-syntax-p term) term nil)
