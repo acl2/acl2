@@ -769,7 +769,6 @@
   (encapsulate ()
                (local (in-theory (enable smtlink-option-name-fix)))
                (deffixtype smtlink-option-name
-                 :parents (smtlink-hint-syntax)
                  :pred  smtlink-option-name-p
                  :fix   smtlink-option-name-fix
                  :equiv smtlink-option-name-equiv
@@ -778,7 +777,7 @@
                  :topic smtlink-option-name-p)
 
                (deflist smtlink-option-name-lst
-                 :parents (smtlink-option-name)
+                 :parents (smtlink-option-name-p)
                  :elt-type smtlink-option-name
                  :true-listp t))
 
