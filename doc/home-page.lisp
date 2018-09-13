@@ -68,11 +68,6 @@
     documentation                       ;;; s
     copyright                           ;;; t
     git-quick-start                     ;;; u
-
-; During development, "v" might not be used, so that we can link to the talks
-; in the "bleeding edge" manual.  At release time we should use this "v" link
-; instead.  See "Talks" below.
-
     talks                               ;;; v
   ))
 
