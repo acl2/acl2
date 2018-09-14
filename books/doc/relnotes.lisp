@@ -353,12 +353,12 @@
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>Most of the model has been extended to 32-bit mode.  The only instructions
- that remain to be extended to 32-bit mode are LEAVE, JMP far, and the
- floating-point instructions.  The 32-bit-only instructions PUSHA, POPA, INC
- with opcodes 40h-47h, DEC with opcodes 48h-4Fh, and PUSH CS/SS/DS/ES have been
- added to the model.  Support for the kinds of paging in 32-bit mode is still
- missing, but this is only needed for the system view of the model, not the
- application view.</p>
+ that remain to be extended to 32-bit mode are JMP far and the floating-point
+ instructions.  The 32-bit-only instructions PUSHA, POPA, INC with opcodes
+ 40h-47h, DEC with opcodes 48h-4Fh, and PUSH CS/SS/DS/ES have been added to the
+ model.  Support for the kinds of paging in 32-bit mode is still missing, but
+ this is only needed for the system view of the model, not the application
+ view.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
