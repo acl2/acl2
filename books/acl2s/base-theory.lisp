@@ -11,6 +11,29 @@
 (include-book "std/alists/top" :dir :system)
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
+; I am enabling some of the functions that std/lists/top disables,
+; since this causes problems where simple theorems do not getting
+; proved.
+
+(in-theory (enable
+            len
+            append
+            revappend
+            no-duplicatesp-equal
+            make-character-list
+            nthcdr
+            subseq-list
+            resize-list
+            last
+            butlast
+            remove
+            member
+            subsetp
+            intersectp
+            union-equal
+            set-difference-equal
+            intersection-equal))
+
 ; I (Pete) went through the built-in functions and added
 ; signature rules where appropriate. This list is not complete
 ; for two reasons. First, there are some cases in which we fail
@@ -122,6 +145,4 @@
            :use ((:instance numerator-1-decreases 
                             (n (+ r (- n) 1))))))
   :rule-classes ((:linear) (:rewrite)))
-
-
 
