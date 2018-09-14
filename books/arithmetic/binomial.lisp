@@ -324,7 +324,11 @@
 ;; what we mean!
 
 (defun n-expt (x n)
-  (declare (xargs :guard (and (acl2-numberp x) (integerp n) (<= n 0))))
+
+; The conjunct (<= 0 n) was formerly (<= n 0), which was wrong (as pointed out
+; in an acl2-help email from Dmitry Nadezhin, Sept. 12, 2018).
+
+  (declare (xargs :guard (and (acl2-numberp x) (integerp n) (<= 0 n))))
   (if (and (integerp n) (< 0 n))
       (* x (n-expt x (1- n)))
     1))
