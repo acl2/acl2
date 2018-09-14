@@ -436,113 +436,69 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
     (if (eql code-or-call-gate? 0) ;; Code Segment:
 
-        (if (equal (code-segment-descriptor-layout-slice :c descriptor)
-                   1)
+        ;; The treatment of Conforming and Non-Conforming code segments here
+        ;; only differs in the privilege check (see pseudocode in Intel manual,
+        ;; May'18, Volume 2, JMP specification). So we use almost the same ACL2
+        ;; code (below) for them.
 
-            ;; Conforming Code Segment:
+        (b* ((cpl (cpl x86))
+             (dpl (code-segment-descriptor-layout-slice
+                   :dpl descriptor))
+             (allowed (if (equal
+                           (code-segment-descriptor-layout-slice :c descriptor)
+                           1) ; conforming
+                          ;; Access is allowed to a conforming code segment
+                          ;; when DPL <= CPL (numerically).  RPL is ignored
+                          ;; for this privilege check.
+                          (<= dpl cpl)
+                        ;; Access is allowed to a conforming code segment
+                        ;; when RPL <= CPL (numerically) and CPL = DPL.
+                        (and (<= sel-rpl cpl)
+                             (equal cpl dpl))))
+             ;; If access is not allowed, #GP(segment-selector) is raised.
+             ((when (not allowed))
+              (!!fault-fresh
+               :gp sel-index ;; #GP(selector)
+               :privilege-check-fail (acons :dpl dpl
+                                       (acons :cpl cpl
+                                         (acons :rpl sel-rpl nil)))))
 
-            (b* ((cpl (cpl x86))
-                 (dpl (code-segment-descriptor-layout-slice
-                       :dpl descriptor))
-                 ;; Access is allowed to a conforming code segment
-                 ;; when DPL <= CPL (numerically).  RPL is ignored
-                 ;; for this privilege check.  If access is not
-                 ;; allowed, #GP(segment-selector) is raised.
-                 ((when (not (<= dpl cpl)))
-                  (!!fault-fresh
-                   :gp sel-index ;; #GP(selector)
-                   :privilege-check-fail (acons :dpl dpl
-                                           (acons :cpl cpl nil))))
+             ;; Trimming the offset based on the operand-size:
+             (jmp-addr
+              (case offset-size
+                (2 (n16 offset))
+                (4 (n32 offset))
+                (t offset)))
 
-                 ;; Trimming the offset based on the operand-size:
-                 (jmp-addr
-                  (case offset-size
-                    (2 (n16 offset))
-                    (4 (n32 offset))
-                    (t offset)))
+             ;; #GP(0) is thrown if the target offset in destination is
+             ;; non-canonical.
+             ((when (not (canonical-address-p jmp-addr)))
+              (!!fault-fresh
+               :gp 0 :target-offset-virtual-memory-error jmp-addr)) ;; #GP(0)
 
-                 ;; #GP(0) is thrown if the target offset in destination is
-                 ;; non-canonical.
-                 ((when (not (canonical-address-p jmp-addr)))
-                  (!!fault-fresh
-                   :gp 0 :target-offset-virtual-memory-error jmp-addr)) ;; #GP(0)
+             (new-cs-visible
+              (!seg-sel-layout-slice :rpl cpl selector))
 
-                 (new-cs-visible
-                  (!seg-sel-layout-slice :rpl cpl selector))
-
-                 (new-cs-hidden
-                  (if (equal sel-ti 1)
-                      ;; Load the hidden portions of the CS segment
-                      ;; from the LDTR's hidden portion.
-                      (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86))
-                    ;; Descriptor was in GDT.
-                    (!hidden-seg-reg-layout-slice
-                     :base-addr dt-base-addr
-                     (!hidden-seg-reg-layout-slice
-                      :limit dt-limit
-                      (!hidden-seg-reg-layout-slice
-                       ;; Get attributes from the descriptor in GDT.
-                       :attr (make-code-segment-attr-field descriptor)
-                       0)))))
-
-                 ;; Update x86 state:
-                 (x86 (!seg-visiblei #.*cs* new-cs-visible x86))
-                 (x86 (!seg-hiddeni  #.*cs* new-cs-hidden  x86))
-                 (x86 (write-*ip proc-mode jmp-addr x86)))
-              x86)
-
-          ;; Non-Conforming Code Segment:
-
-          (b* ((cpl (cpl x86))
-               (dpl (code-segment-descriptor-layout-slice
-                     :dpl descriptor))
-               ;; Access is allowed to a conforming code segment
-               ;; when RPL <= CPL (numerically) and CPL = DPL. If
-               ;; access is not allowed, #GP(segment-selector) is
-               ;; raised.
-               ((when (not (and (<= sel-rpl cpl)
-                                (equal cpl dpl))))
-                (!!fault-fresh
-                 :gp sel-index ;; #GP(selector)
-                 :privilege-check-fail (acons :dpl dpl
-                                         (acons :cpl cpl
-                                           (acons :rpl sel-rpl nil)))))
-
-               ;; Trimming the offset based on the operand-size:
-               (jmp-addr
-                (case offset-size
-                  (2 (n16 offset))
-                  (4 (n32 offset))
-                  (t offset)))
-
-               ;; #GP(0) is thrown if the target offset in destination is
-               ;; non-canonical.
-               ((when (not (canonical-address-p jmp-addr)))
-                (!!ms-fresh :target-offset-virtual-memory-error jmp-addr))
-
-               (new-cs-visible
-                (!seg-sel-layout-slice :rpl cpl selector))
-
-               (new-cs-hidden
-                (if (equal sel-ti 1)
-                    ;; Load the hidden portions of the CS segment
-                    ;; from the LDTR's hidden portion.
-                    (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86))
-                  ;; Descriptor was in GDT.
+             (new-cs-hidden
+              (if (equal sel-ti 1)
+                  ;; Load the hidden portions of the CS segment
+                  ;; from the LDTR's hidden portion.
+                  (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86))
+                ;; Descriptor was in GDT.
+                (!hidden-seg-reg-layout-slice
+                 :base-addr dt-base-addr
                   (!hidden-seg-reg-layout-slice
-                   :base-addr dt-base-addr
-                   (!hidden-seg-reg-layout-slice
-                    :limit dt-limit
+                   :limit dt-limit
                     (!hidden-seg-reg-layout-slice
                      ;; Get attributes from the descriptor in GDT.
                      :attr (make-code-segment-attr-field descriptor)
-                     0)))))
+                      0)))))
 
-               ;; Update x86 state:
-               (x86 (!seg-visiblei #.*cs* new-cs-visible x86))
-               (x86 (!seg-hiddeni  #.*cs* new-cs-hidden  x86))
-               (x86 (write-*ip proc-mode jmp-addr x86)))
-            x86))
+             ;; Update x86 state:
+             (x86 (!seg-visiblei #.*cs* new-cs-visible x86))
+             (x86 (!seg-hiddeni  #.*cs* new-cs-hidden  x86))
+             (x86 (write-*ip proc-mode jmp-addr x86)))
+          x86)
 
       ;; Call Gate Descriptor:
 
