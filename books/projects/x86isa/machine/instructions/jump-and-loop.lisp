@@ -480,19 +480,14 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
               (!seg-sel-layout-slice :rpl cpl selector))
 
              (new-cs-hidden
-              (if (equal sel-ti 1)
-                  ;; Load the hidden portions of the CS segment
-                  ;; from the LDTR's hidden portion.
-                  (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86))
-                ;; Descriptor was in GDT.
+              (!hidden-seg-reg-layout-slice
+               :base-addr dt-base-addr
                 (!hidden-seg-reg-layout-slice
-                 :base-addr dt-base-addr
+                 :limit dt-limit
                   (!hidden-seg-reg-layout-slice
-                   :limit dt-limit
-                    (!hidden-seg-reg-layout-slice
-                     ;; Get attributes from the descriptor in GDT.
-                     :attr (make-code-segment-attr-field descriptor)
-                      0)))))
+                   ;; Get attributes from the descriptor in GDT.
+                   :attr (make-code-segment-attr-field descriptor)
+                    0))))
 
              ;; Update x86 state:
              (x86 (!seg-visiblei #.*cs* new-cs-visible x86))
@@ -650,19 +645,14 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
             (!seg-sel-layout-slice :rpl cpl cs-selector))
 
            (new-cs-hidden
-            (if (equal cs-sel-ti 1)
-                ;; Load the hidden portions of the CS segment
-                ;; from the LDTR's hidden portion.
-                (the (unsigned-byte 112) (ssr-hiddeni *ldtr* x86))
-              ;; Descriptor was in GDT.
+            (!hidden-seg-reg-layout-slice
+             :base-addr cs-dt-base-addr
               (!hidden-seg-reg-layout-slice
-               :base-addr cs-dt-base-addr
-               (!hidden-seg-reg-layout-slice
-                :limit cs-dt-limit
+               :limit cs-dt-limit
                 (!hidden-seg-reg-layout-slice
                  ;; Get attributes from the descriptor in GDT.
                  :attr (make-code-segment-attr-field cs-descriptor)
-                 0)))))
+                  0))))
 
            ;; Update x86 state:
            (x86 (!seg-visiblei #.*cs* new-cs-visible x86))
