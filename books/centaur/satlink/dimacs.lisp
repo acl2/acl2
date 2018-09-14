@@ -44,12 +44,8 @@
   :short "DIMACS format is a standard interface to SAT solvers."
 
   :long "<p>Many SAT solvers accept a common format for input and output that
-is used in SAT solving competititons.  The most canoncial description of this
-format <b>might</b> be the following:</p>
-
-<p><a
-href='ftp://dimacs.rutgers.edu/pub/challenge/satisfiability/doc/satformat.dvi'>satformat.dvi</a>
--- Suggested Satisfiability Format, last revision May 8, 1993.</p>
+is used in SAT solving competititons; <a href=\"http://www.satcompetition.org/2009/format-benchmarks2009.html\">
+this page</a> gives the competitions' official description.</p>
 
 <p>The basic input format is as follows.  At the top you can have <i>comment
 lines</i> that start with a @('c'), like this:</p>
