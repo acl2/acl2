@@ -51,8 +51,6 @@
 ;; proofs/top here --- the proofs of correctness of various programs
 ;; are excluded from the x86isa manual.
 (include-book "proofs/utilities/top" :ttags :all)
-(include-book "std/strings/top" :dir :system)
-(include-book "defsort/defsort" :dir :system)
 
 ;; ======================================================================
 
@@ -351,6 +349,9 @@
  <tt>shigoel@cs.utexas.edu</tt></p>
 
  <h5>Contributors to the x86 ISA Model</h5>
+
+ <p>Thanks to Rob Sumners (Centaur Technology) for adding support for detecting
+ decode-time exceptions.</p>
 
  <p>Thanks to Alessandro Coglio (Kestrel Institute and Kestrel Technology LLC)
  for adding growing support for 32-bit mode and for improving the documentation
