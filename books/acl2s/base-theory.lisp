@@ -12,8 +12,10 @@
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
 ; Pete 9/14/2018: Useful for must-fail
-
 (include-book "misc/eval" :dir :system)
+
+; Pete 9/16/2018: Better range support
+(include-book "tau/bounders/elementary-bounders" :dir :system)
 
 ; Pete 9/14/2018: I am enabling some of the functions that
 ; std/lists/top disables, since this causes problems where simple
