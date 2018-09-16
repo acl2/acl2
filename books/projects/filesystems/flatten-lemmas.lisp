@@ -4,7 +4,7 @@
 
 (in-package "ACL2")
 
-(include-book "file-system-lemmas")
+(local (include-book "file-system-lemmas"))
 (include-book "std/lists/flatten" :dir :system)
 
 (defthm no-duplicatesp-of-member

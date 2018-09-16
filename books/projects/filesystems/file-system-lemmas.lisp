@@ -30,14 +30,19 @@
            (equal (first-n-ac i (binary-append x y) ac)
                   (first-n-ac i x ac))))
 
-(defthm by-slice-you-mean-the-whole-cake
+(defthm by-slice-you-mean-the-whole-cake-1
   (implies (true-listp l)
            (equal (first-n-ac (len l) l ac)
                   (revappend ac l)))
   :hints (("Goal" :induct (revappend l ac)) )
   :rule-classes ((:rewrite :corollary
                            (implies (and (equal i (len l)) (true-listp l))
-                                    (equal (first-n-ac i l ac) (revappend ac l)))) ))
+                                    (equal (first-n-ac i l ac) (revappend ac
+                                                                          l))))))
+
+(defthm by-slice-you-mean-the-whole-cake-2
+  (implies (and (equal i (len l)) (true-listp l))
+           (equal (take i l) l)))
 
 (defthm assoc-after-delete-assoc
   (implies (not (equal name1 name2))
@@ -52,7 +57,7 @@
   (implies (and (character-listp l))
            (character-listp (nthcdr n l))))
 
-(defthm already-a-character-list
+(defthmd already-a-character-list
   (implies (character-listp x) (equal (make-character-list x) x)))
 
 (defthm make-character-list-of-binary-append
@@ -71,25 +76,25 @@
   (equal (revappend x (binary-append y z))
          (binary-append (revappend x y) z)))
 
-(defthm binary-append-take-nthcdr
-  (implies (and (natp i) (<= i (len l)))
-           (equal (binary-append (first-n-ac i l ac) (nthcdr i l))
+(defthm
+  binary-append-first-n-ac-nthcdr
+  (implies (<= i (len l))
+           (equal (binary-append (first-n-ac i l ac)
+                                 (nthcdr i l))
                   (revappend ac l)))
-  :hints (("Goal" :induct (first-n-ac i l ac))
-          ("Subgoal *1/1'''"
-           :use (:instance revappend-is-append-of-rev
-                           (x ac) (y nil) (z l)))))
+  :hints (("goal" :induct (first-n-ac i l ac))
+          ("subgoal *1/1''"
+           :use (:instance revappend-is-append-of-rev (x ac)
+                           (y nil)
+                           (z l)))))
 
-(defthm nth-of-binary-append-1
-  (implies (and (integerp n) (>= n (len x)))
-           (equal (nth n (binary-append x y))
-                  (nth (- n (len x)) y)))
-  :hints (("goal" :induct (nth n x))))
-
-(defthm nth-of-binary-append-2
-  (implies (and (natp n) (< n (len x)))
-           (equal (nth n (binary-append x y))
-                  (nth n x))))
+;; The following is redundant with the definition in std/lists/nth.lisp, from
+;; where it was taken with thanks.
+(defthm nth-of-append
+  (equal (nth n (append x y))
+         (if (< (nfix n) (len x))
+             (nth n x)
+           (nth (- n (len x)) y))))
 
 (defthm binary-append-is-associative
   (equal (binary-append (binary-append a b) c)
@@ -161,10 +166,22 @@
   (implies (and (subsetp-equal x y) (subsetp-equal y z))
            (subsetp-equal x z)))
 
-(defthm member-of-subset
-  (implies (and (subsetp-equal lst1 lst2)
-                (member-equal x lst1))
-           (member-equal x lst2)))
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/sets.lisp, from where it was taken with thanks.
+(defthm
+  subsetp-member
+  (implies (and (member a x) (subsetp x y))
+           (member a y))
+  :rule-classes
+  ((:rewrite)
+   (:rewrite :corollary (implies (and (subsetp x y) (member a x))
+                                 (member a y)))
+   (:rewrite
+    :corollary (implies (and (not (member a y)) (subsetp x y))
+                        (not (member a x))))
+   (:rewrite
+    :corollary (implies (and (subsetp x y) (not (member a y)))
+                        (not (member a x))))))
 
 ;; The following is redundant with the eponymous theorem in
 ;; books/std/lists/nth.lisp, from where it was taken with thanks.
@@ -214,9 +231,12 @@
              (cdr ac)
            (make-list-ac (- n 1) val ac))))
 
-(defthm member-equal-of-nth
-  (implies (and (natp n) (< n (len l)))
-           (member-equal (nth n l) l)))
+;; The following is redundant with the eponymous theorem in
+;; books/data-structures/list-defthms.lisp, from where it was taken with thanks.
+(defthm member-equal-nth
+  (implies (< (nfix n) (len l))
+           (member-equal (nth n l) l))
+  :hints (("Goal" :in-theory (enable nth))))
 
 (encapsulate
   ()
@@ -271,9 +291,9 @@
                   (first-n-ac m l ac)))
   :hints
   (("goal" :do-not-induct t
-    :in-theory (disable binary-append-take-nthcdr
+    :in-theory (disable binary-append-first-n-ac-nthcdr
                         first-n-ac-of-binary-append-1)
-    :use ((:instance binary-append-take-nthcdr (ac nil)
+    :use ((:instance binary-append-first-n-ac-nthcdr (ac nil)
                      (i n))
           (:instance first-n-ac-of-binary-append-1 (i m)
                      (x (first-n-ac n l nil))
@@ -339,7 +359,122 @@
   (let ((sd (assoc-equal x alist)))
     (implies (consp sd) (equal (car sd) x))))
 
-(defthm update-nth-of-update-nth
+(defthm update-nth-of-update-nth-1
   (implies (not (equal (nfix key1) (nfix key2)))
            (equal (update-nth key1 val1 (update-nth key2 val2 l))
                   (update-nth key2 val2 (update-nth key1 val1 l)))))
+
+(defthm update-nth-of-update-nth-2
+  (equal (update-nth key val2 (update-nth key val1 l))
+         (update-nth key val2 l)))
+
+(encapsulate
+  ()
+
+  (local
+   (include-book "ihs/logops-definitions" :dir :system))
+
+  (local
+   (include-book "ihs/logops-lemmas" :dir :system))
+
+  (local
+   (include-book "arithmetic/top-with-meta"
+                 :dir :system))
+
+  (local
+   (defun induction-scheme (bits x)
+     (if (zp bits)
+         x
+       (induction-scheme (- bits 1)
+                         (logcdr x)))))
+
+  (defthmd
+    unsigned-byte-p-alt
+    (implies (natp bits)
+             (equal (unsigned-byte-p bits x)
+                    (and (unsigned-byte-p (+ bits 1) x)
+                         (zp (logand (ash 1 bits) x)))))
+    :hints
+    (("goal" :in-theory (e/d nil (logand ash logcar logcdr)
+                             (logand* ash*))
+      :induct (induction-scheme bits x)))))
+
+;; This can probably be replaced by a functional instantiation.
+(defthm nat-listp-of-remove
+  (implies (nat-listp l)
+           (nat-listp (remove-equal x l))))
+
+;; This should be moved into the community books.
+(defthm subsetp-of-remove
+  (subsetp-equal (remove-equal x l) l))
+
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/sets.lisp, from where it was taken with thanks.
+(defthm member-of-remove
+  (iff (member a (remove b x))
+       (and (member a x)
+            (not (equal a b))))
+  :hints(("goal" :induct (len x))))
+
+(defthm
+  assoc-after-put-assoc
+  (equal (assoc-equal name1 (put-assoc-equal name2 val alist))
+         (if (equal name1 name2)
+             (cons name1 val)
+           (assoc-equal name1 alist))))
+
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/nthcdr.lisp, from where it was taken with thanks.
+(defthm nthcdr-of-cdr
+  (equal (nthcdr i (cdr x))
+         (cdr (nthcdr i x))))
+
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/update-nth.lisp, from where it was taken with thanks.
+(defthm update-nth-of-nth
+  (implies (< (nfix n) (len x))
+           (equal (update-nth n (nth n x) x) x)))
+
+(defthm character-listp-of-make-list-ac
+  (equal (character-listp (make-list-ac n val ac))
+         (and (character-listp ac)
+              (or (zp n) (characterp val)))))
+
+(defthm string-listp-of-append
+  (implies (true-listp x)
+           (equal (string-listp (append x y))
+                  (and (string-listp x)
+                       (string-listp y)))))
+
+(defthm true-listp-when-string-list
+  (implies (string-listp x)
+           (true-listp x)))
+
+;; The following definitions are taken from
+;; books/std/lists/nthcdr.lisp with thanks to Jared
+;; Davis.
+(encapsulate
+  ()
+
+  (local (defthmd l0
+           (implies (< (nfix n) (len x))
+                    (consp (nthcdr n x)))
+           :hints(("Goal" :induct (nthcdr n x)))))
+
+  (local (defthmd l1
+           (implies (not (< (nfix n) (len x)))
+                    (not (consp (nthcdr n x))))
+           :hints(("goal" :induct (nthcdr n x)))))
+
+  (defthm consp-of-nthcdr
+    (equal (consp (nthcdr n x))
+           (< (nfix n) (len x)))
+    :hints(("Goal" :use ((:instance l0)
+                         (:instance l1))))))
+
+(defthm
+  binary-append-take-nthcdr
+  (implies (<= i (len l))
+           (equal (binary-append (take i l)
+                                 (nthcdr i l))
+                  l)))

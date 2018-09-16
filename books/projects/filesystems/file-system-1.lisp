@@ -12,6 +12,7 @@
 
 (include-book "misc/assert" :dir :system)
 (include-book "file-system-lemmas")
+(include-book "insert-text")
 
 (defun l1-fs-p (fs)
   (declare (xargs :guard t))
@@ -92,110 +93,55 @@
 ; More for Mihir to do...
 
 ; Delete file
-(defun l1-unlink (hns fs)
-  (declare (xargs :guard (and (symbol-listp hns)
-                              (l1-fs-p fs))))
-  (if (atom hns)
+(defun
+    l1-unlink (hns fs)
+  (declare (xargs :guard (and (symbol-listp hns) (l1-fs-p fs))))
+  (if
+      (atom hns)
       fs ;;error case, basically
-    (if (atom (cdr hns))
+    (if
+        (atom (cdr hns))
         (delete-assoc (car hns) fs)
-      (if (atom fs)
+      (if
+          (atom fs)
           nil
-        (let ((sd (assoc (car hns) fs)))
+        (let
+            ((sd (assoc (car hns) fs)))
           (if (atom sd)
               fs
             (let ((contents (cdr sd)))
               (if (atom contents)
-                  (and (null (cdr hns))
-                       contents)
-                (cons (cons (car sd) (l1-unlink (cdr hns) contents)) (delete-assoc (car hns) fs))))))))
-    ))
-
-(defund insert-text (oldtext start text)
-  (declare (xargs :guard (and (character-listp oldtext)
-                              (natp start)
-                              (stringp text))))
-  (let* (
-         (end (+ start (length text)))
-         (newtext (append (make-character-list (take start oldtext))
-                          (coerce text 'list)
-                          (nthcdr end oldtext))))
-    newtext))
-
-(defthm insert-text-correctness-1
-  (implies (and (character-listp oldtext)
-                (natp start)
-                (stringp text))
-           (character-listp (insert-text oldtext start text)))
-  :hints (("Goal" :in-theory (enable insert-text)) ))
-
-(defthm insert-text-correctness-2
-  (implies (and (character-listp oldtext)
-                (natp start)
-                (stringp text))
-           (equal (first-n-ac (+ start (- start)
-                                 (len (coerce text 'list)))
-                              (nthcdr start
-                                      (insert-text oldtext start text))
-                              nil)
-                  (coerce text 'list)))
-  :hints (("Goal" :in-theory (enable insert-text)) ))
-
-(defthm insert-text-correctness-3
-  (implies (and (character-listp oldtext)
-                (stringp text)
-                (natp start))
-           (<= (+ start (len (coerce text 'list)))
-               (len (insert-text oldtext start text))))
-  :hints (("Goal" :in-theory (enable insert-text)) )
-  :rule-classes :linear)
-
-(defthmd
-  len-of-insert-text
-  (implies (and (character-listp oldtext)
-                (stringp text)
-                (natp start))
-           (equal (len (insert-text oldtext start text))
-                  (max (+ start (len (coerce text 'list))) (len oldtext))))
-  :hints (("goal" :do-not-induct t
-           :expand (insert-text oldtext start text))))
-
-(defthm
-  insert-text-correctness-4
-  (implies (and (character-listp oldtext)
-                (stringp text)
-                (natp start))
-           (iff (consp (insert-text oldtext start text))
-                (or (> start 0)
-                    (> (len (coerce text 'list)) 0)
-                    (consp oldtext))))
-  :hints (("goal" :use len-of-insert-text)
-          ("subgoal 4'''" :expand (len (insert-text nil 0 text)))
-          ("subgoal 1'4'" :expand (len oldtext))))
+                  (and (null (cdr hns)) contents)
+                (cons (cons (car sd)
+                            (l1-unlink (cdr hns) contents))
+                      (delete-assoc (car hns) fs))))))))))
 
 ; The problem with this definition of l1-wrchs is that it deletes a directory if
 ; it's found where a text file is expected
-(defun l1-wrchs (hns fs start text)
+(defun
+    l1-wrchs (hns fs start text)
   (declare (xargs :guard (and (symbol-listp hns)
                               (or (stringp fs) (l1-fs-p fs))
                               (natp start)
                               (stringp text))))
-  (if (atom hns)
+  (if
+      (atom hns)
       (let ((file fs))
         (if (not (stringp file))
             file ;; error, so leave fs unchanged
-          (coerce
-           (insert-text (coerce file 'list) start text)
-           'string)))
+          (coerce (insert-text (coerce file 'list)
+                               start text)
+                  'string)))
     (if (atom fs)
         fs ;; error, so leave fs unchanged
       (let ((sd (assoc (car hns) fs)))
         (if (atom sd)
             fs ;; error, so leave fs unchanged
           (let ((contents (cdr sd)))
-            (cons (cons (car sd) (l1-wrchs (cdr hns) contents start text))
-                  (delete-assoc (car hns) fs))
-            ))))))
+            (cons (cons (car sd)
+                        (l1-wrchs (cdr hns)
+                                  contents start text))
+                  (delete-assoc (car hns) fs))))))))
 
 (defthm l1-wrchs-returns-fs-lemma-1
   (implies (and (consp (assoc-equal s fs))
