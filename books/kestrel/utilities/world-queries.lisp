@@ -361,6 +361,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define primitivep ((fn symbolp))
+  :returns (yes/no booleanp)
+  :parents (world-queries)
+  :short "Check if a named function is @(see primitive)."
+  :long
+  "<p>
+   See @(tsee primitivep+) for a logic-friendly variant of this utility.
+   </p>"
+  (and (member-eq fn (strip-cars *primitive-formals-and-guards*)) t))
+
+(define primitivep+ ((fn (function-namep fn wrld)) (wrld plist-worldp))
+  :returns (yes/no booleanp)
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee primitivep)."
+  :long
+  "<p>
+   This returns the same result as @(tsee guard-verified-p),
+   but it has a stronger guard.
+   The guard requires an extra @(see world) argument,
+   which is usually available when doing system programming.
+   </p>"
+  (declare (ignore wrld))
+  (primitivep fn))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define guard-verified-p ((fn/thm symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (world-queries)

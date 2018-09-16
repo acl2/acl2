@@ -324,6 +324,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert! (primitivep 'cons))
+
+(assert! (primitivep 'binary-+))
+
+(assert! (not (primitivep 'len)))
+
+(must-succeed*
+ (defun f (x) x)
+ (assert! (not (primitivep 'f))))
+
+(assert! (not (primitivep 'xxxxxxxxxxxxxxxxxxxxxx)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (primitivep+ 'cons (w state)))
+
+(assert! (primitivep+ 'binary-+ (w state)))
+
+(assert! (not (primitivep+ 'len (w state))))
+
+(must-succeed*
+ (defun f (x) x)
+ (assert! (not (primitivep+ 'f (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert! (guard-verified-p 'len (w state)))
 
 (assert! (guard-verified-p 'cons (w state)))
