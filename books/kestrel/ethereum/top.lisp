@@ -21,21 +21,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ethereum
-
   :parents (acl2::kestrel-books acl2::projects)
-
   :short "A library for Ethereum."
-
   :long
-
   (xdoc::topapp
-
    (xdoc::p
     "Currently this library contains a formal model of some aspects of
      the <a href=\"https://ethereum.org\">Ethereum</a> ``world computer''.
      It is expected that this library will be extended with more
      Ethereum-related formalizations and tools.")
-
    (xdoc::p
     "This library is based on
      the <a href=\"https://github.com/ethereum/wiki/wiki\">Ethereum Wiki</a>
@@ -55,5 +49,4 @@
      `YP:(4)' references Equation (4) of YP.
      These references are enclosed in square brackets when used parenthetically,
      as often done with bibliographic references."))
-
   :order-subtopics t)
