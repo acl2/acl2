@@ -1156,9 +1156,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (string-listp (all-pkgs-in-world (w state))))
+(assert! (string-listp (known-packages state)))
 
-(assert! (no-duplicatesp-equal (all-pkgs-in-world (w state))))
+(assert! (no-duplicatesp-equal (known-packages state)))
+
+(assert! (member-equal "ACL2" (known-packages state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (string-listp (known-packages+ state)))
+
+(assert! (no-duplicatesp-equal (known-packages+ state)))
+
+(assert! (member-equal "ACL2" (known-packages+ state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
