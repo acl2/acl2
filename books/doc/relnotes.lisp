@@ -270,8 +270,8 @@
  utilities</see> with several error-checking functions.</p>
 
  <p>Extended the <see topic='@(url world-queries)'>world query utilities</see>
- with a function to collect the names of all the packages in the ACL2 @(see
- world).</p>
+ with functions to collect the names of all the known packages in the ACL2
+ @(see world) and to check if a function is primitive.</p>
 
  <p>Extended the <see topic='@(url term-function-recognizers)'>term function
  recognizers</see> with recognizers for true lists of
@@ -353,12 +353,12 @@
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>Most of the model has been extended to 32-bit mode.  The only instructions
- that remain to be extended to 32-bit mode are LEAVE, JMP far, and the
- floating-point instructions.  The 32-bit-only instructions PUSHA, POPA, INC
- with opcodes 40h-47h, DEC with opcodes 48h-4Fh, and PUSH CS/SS/DS/ES have been
- added to the model.  Support for the kinds of paging in 32-bit mode is still
- missing, but this is only needed for the system view of the model, not the
- application view.</p>
+ that remain to be extended to 32-bit mode are JMP far and the floating-point
+ instructions.  The 32-bit-only instructions PUSHA, POPA, INC with opcodes
+ 40h-47h, DEC with opcodes 48h-4Fh, and PUSH CS/SS/DS/ES have been added to the
+ model.  Support for the kinds of paging in 32-bit mode is still missing, but
+ this is only needed for the system view of the model, not the application
+ view.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>

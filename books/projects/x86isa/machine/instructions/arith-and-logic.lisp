@@ -542,7 +542,7 @@
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ((mv ?flg1 (the (unsigned-byte 32) imm) x86)
-	(rme-size proc-mode imm-size temp-rip #.*cs* :x nil x86))
+	(rme-size-opt proc-mode imm-size temp-rip #.*cs* :x nil x86))
        ((when flg1)
 	(!!ms-fresh :rme-size-error flg1))
 
@@ -672,7 +672,7 @@
 
        (rAX (rgfi-size rAX-size *rax* rex-byte x86))
        ((mv ?flg imm x86)
-	(rme-size proc-mode operand-size temp-rip #.*cs* :x nil x86))
+	(rme-size-opt proc-mode operand-size temp-rip #.*cs* :x nil x86))
        ((when flg)
 	(!!ms-fresh :rme-size-error flg))
 

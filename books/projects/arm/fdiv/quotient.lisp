@@ -174,7 +174,7 @@
                 (not (zp j))
 		(< (quot j) 2))
 	   (<= (* (expt 4 (1- j)) (quot j))
-	       (1- (* 2 (expt 4 (1- j))))))	          
+	       (1- (* 2 (expt 4 (1- j))))))
   :hints (("Goal" :use (int-quot quot-upper-1 quot-upper-2
                         (:instance quot-upper-3 (n (* (expt 4 (1- j)) (quot j))) (m (* 2 (expt 4 (1- j)))))))))
 
@@ -249,7 +249,7 @@
 		(<= k (* 3 (n))))
            (<= (quot k) 2))
   :hints (("Goal" :induct (natp-induct k))
-          ("Subgoal *1/2" :expand ((quot 0) (quot 1)) :use (q1-vals))  
+          ("Subgoal *1/2" :expand ((quot 0) (quot 1)) :use (q1-vals))
           ("Subgoal *1/1" :expand ((quot 0) (quot 1)) :use (q1-vals (:instance quot-upper-12 (j (1- k)))))))
 
 (local-defthmd quot-upper-14
@@ -310,7 +310,7 @@
                 (= (quot (* 3 (n))) 2)
 		(< (sig (a)) (sig (b))))
 	   (<= (r (* 3 (n)))
-	       -9/16)) 
+	       -9/16))
   :hints (("Goal" :use (quot-upper-19 quot-upper-16 p-vals
                         (:instance bvecp-member (x (bits (sigb) 51 49)) (n 3)))
                   :nonlinearp t
@@ -368,7 +368,7 @@
                 (= (quot (* 3 (n))) 2)
 		(>= (sig (a)) (sig (b))))
 	   (<= (r (* 3 (n)))
-	       -9/32)) 
+	       -9/32))
   :hints (("Goal" :use (quot-upper-25 fnum-vals
                         (:instance bvecp-member (x (bits (sigb) 51 49)) (n 3)))
                   :nonlinearp t
@@ -428,21 +428,21 @@
 (local-defund lsbis2 () (log= (false$) (log= (fnum) 1)))
 
 (local-defund inc () (bits (if1 (lsbis2) 4 2) 2 0))
- 
+
 (local-defund q0 () (bits (+ (qp-3n1) (lognot (qn-3n1))) 53 0))
 
 (local-defund qn1inc ()
   (bits (logxor (logxor (qp-3n1) (bits (lognot (qn-3n1)) 53 0))
                 (inc))
         53 0))
-	
+
 (local-defund qp1inc ()
   (bits (ash (logior (logand (qp-3n1) (bits (lognot (qn-3n1)) 53 0))
                      (logand (logior (qp-3n1) (bits (lognot (qn-3n1)) 53 0))
                              (inc)))
              1)
         53 0))
-	
+
 (local-defund q1inc () (bits (+ (+ (qp1inc) (qn1inc)) 1) 53 0))
 
 (local-defund q1low ()
@@ -457,7 +457,7 @@
   (if1 (log= (q1low) 0)
        (setbits (q1low) 54 53 3 (bits (q1inc) 53 3))
        (setbits (q1low) 54 53 3 (bits (q0) 53 3))))
-       
+
 (local-defund q0inc ()
   (if1 (logior1 (log<= (q0inclow) 1) (logand1 (log<= (q0inclow) 3) (lsbis2)))
        (setbits (q0inclow) 54 53 3 (bits (q1inc) 53 3))
@@ -469,7 +469,7 @@
 
 (local-defund qtrunc* ()
   (bits (if1 (lsbis2) (ash (q01) (- 1)) (q01)) 52 0))
-  
+
 (local-defund qinc* ()
   (bits (if1 (lsbis2) (ash (q01inc) (- 1)) (q01inc)) 52 0))
 
@@ -799,7 +799,7 @@
 	          (mod (fl (/ (- (qpf) (qnf)) 8)) (expt 2 51))))
   :hints (("Goal" :use (q1-rewrite-5 q1-rewrite-7
                         (:instance bits-mod-fl (x (+ (qpf) (- (qnf)) (inc))) (i 54) (j 3))))))
-		
+
 (local-defthmd q1-rewrite-9
   (implies (and (not (specialp))
                 (= (divpow2) 0)
@@ -1051,7 +1051,7 @@
   (implies (and (not (specialp))
                 (= (divpow2) 0))
            (equal (bits (q0inc) 2 0)
-                  (bits (mod (+ (qpf) (- (qnf)) (inc) -1) 8) 2 0)))	        
+                  (bits (mod (+ (qpf) (- (qnf)) (inc) -1) 8) 2 0)))
   :hints (("Goal" :in-theory (enable q0inc q0inc-rewrite-11))))
 
 (local-defthmd q0inc-rewrite-13
@@ -1095,7 +1095,7 @@
 	          (mod (fl (/ (+ (- (qpf) (qnf)) (inc) -1) 8)) (expt 2 51))))
   :hints (("Goal" :use (q0inc-rewrite-14 q0inc-rewrite-16
                         (:instance bits-mod-fl (x (+ (qpf) (- (qnf)) (inc))) (i 54) (j 3))))))
-		
+
 (local-defthmd q0inc-rewrite-18
   (implies (and (not (specialp))
                 (= (divpow2) 0)
@@ -1257,7 +1257,7 @@
   :hints (("Goal" :use (r-rp-rn-0
                         (:instance logxor-not-0 (x (rpf)) (y (rnf))))
 		  :in-theory (enable remzero-rewrite-1))))
-                        
+
 (local-defthmd remsign-rewrite-1
   (implies (and (not (specialp))
                 (= (divpow2) 0))
@@ -1287,7 +1287,7 @@
            (integerp (* (expt 2 56) (rf))))
   :hints (("Goal" :in-theory (enable rf)
                   :use ((:instance int-r (j (1+ (* 3 (n)))))))))
-		  
+
 (local-defthmd remsign-rewrite
   (implies (and (not (specialp))
                 (= (divpow2) 0))
@@ -1320,13 +1320,13 @@
            (integerp (* (expt 2 (* 6 (n))) (quotf))))
   :hints (("Goal" :use ((:instance int-quot (j (1+ (* 3 (n))))))
                   :in-theory (enable quotf))))
-		  
+
 (local-defthmd quot-4
   (implies (and (not (specialp))
                 (= (divpow2) 0)
 		(>= (rf) 0))
 	   (equal (fl (* (expt 2 (* 6 (n))) (/ (x) (d))))
-	          (* (expt 2 (* 6 (n))) (quotf))))	          
+	          (* (expt 2 (* 6 (n))) (quotf))))
   :hints (("Goal" :use (quot-1 quot-2 quot-3
                         (:instance fl-unique (x (* (expt 2 (* 6 (n))) (/ (x) (d)))) (n (* (expt 2 (* 6 (n))) (quotf))))))))
 
@@ -1369,8 +1369,8 @@
   (implies (and (not (specialp))
                 (= (divpow2) 0))
 	   (equal (mod (* (expt 2 (* 6 (n))) (- (quotf) (q 1))) (expt 2 (* 6 (n))))
-	          (mod (- (qpf) (qnf)) (expt 2 (* 6 (n)))))) 
-  :hints (("Goal" ::use (quot-8) :in-theory (theory 'minimal-theory))))
+	          (mod (- (qpf) (qnf)) (expt 2 (* 6 (n))))))
+  :hints (("Goal" :use (quot-8) :in-theory (theory 'minimal-theory))))
 
 (local-defthmd quot-10
   (implies (and (not (specialp))
@@ -1418,8 +1418,8 @@
   (implies (and (not (specialp))
                 (= (divpow2) 0))
 	   (equal (mod (+ (inc) (* (expt 2 (* 6 (n))) (- (quotf) (q 1)))) (expt 2 (* 6 (n))))
-	          (mod (+ (- (qpf) (qnf)) (inc)) (expt 2 (* 6 (n)))))) 
-  :hints (("Goal" ::use (quot-14) :in-theory (theory 'minimal-theory))))
+	          (mod (+ (- (qpf) (qnf)) (inc)) (expt 2 (* 6 (n))))))
+  :hints (("Goal" :use (quot-14) :in-theory (theory 'minimal-theory))))
 
 (local-defthmd quot-16
   (implies (and (not (specialp))
@@ -1485,8 +1485,8 @@
   (implies (and (not (specialp))
                 (= (divpow2) 0))
 	   (equal (mod (1- (* (expt 2 (* 6 (n))) (- (quotf) (q 1)))) (expt 2 (* 6 (n))))
-	          (mod (1- (- (qpf) (qnf))) (expt 2 (* 6 (n)))))) 
-  :hints (("Goal" ::use (quot-22) :in-theory (theory 'minimal-theory))))
+	          (mod (1- (- (qpf) (qnf))) (expt 2 (* 6 (n))))))
+  :hints (("Goal" :use (quot-22) :in-theory (theory 'minimal-theory))))
 
 (local-defthmd quot-24
   (implies (and (not (specialp))
@@ -1509,7 +1509,7 @@
 		(< (rf) 0))
            (equal (mod (q01inc) (expt 2 54))
 	          (mod (+ (- (qpf) (qnf)) (inc) -1) (expt 2 54))))
-  :hints (("Goal" :in-theory (enable bits q01inc quot-19)  
+  :hints (("Goal" :in-theory (enable bits q01inc quot-19)
                   :use (q0inc-rewrite-28 (:instance mod-of-mod-cor (x (q0inc)) (a 54) (b 54))))))
 
 (local-defthmd quot-27
@@ -1534,8 +1534,8 @@
   (implies (and (not (specialp))
                 (= (divpow2) 0))
 	   (equal (mod (+ (* (expt 2 (* 6 (n))) (- (quotf) (q 1))) (inc) -1) (expt 2 (* 6 (n))))
-	          (mod (+ (- (qpf) (qnf)) (inc) -1) (expt 2 (* 6 (n)))))) 
-  :hints (("Goal" ::use (quot-28) :in-theory (theory 'minimal-theory))))
+	          (mod (+ (- (qpf) (qnf)) (inc) -1) (expt 2 (* 6 (n))))))
+  :hints (("Goal" :use (quot-28) :in-theory (theory 'minimal-theory))))
 
 (local-defthmd quot-30
   (implies (and (not (specialp))
@@ -1749,7 +1749,7 @@
                 (oddp b))
 	   (oddp (* a b)))
   :hints (("Goal" :in-theory (enable divides) :use ((:instance euclid (p 2))))))
-  
+
 (local-defthm stk-12
   (implies (and (integerp x) (integerp y))
            (integerp (* x y))))
@@ -1762,7 +1762,7 @@
 		(integerp (* 1/2 (s) (sig (b)))))
 	   (integerp (* (s) (sig (b)) (expt 2 (+ -1 (lk))))))
   :hints (("goal" :use ((:instance stk-12 (x (* 1/2 (S) (SIG (B)))) (y (expt 2 (lk))))))))
-	   
+
 (local-defthmd stk-14
   (implies (and (not (specialp))
                 (= (divpow2) 0)

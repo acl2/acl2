@@ -81,14 +81,6 @@
 
   (in-theory (disable aignet-ins-copied))
 
-  (defthm id-eval-of-input-index
-    (implies (< (nfix n) (num-ins aignet))
-             (equal (id-eval (node-count (lookup-stype n (pi-stype) aignet))
-                             invals regvals aignet)
-                    (bfix (nth n invals))))
-    :hints(("Goal"
-            :in-theory (enable* id-eval))))
-
   (defthm aignet-ins-copied-of-aignet-copy-ins
     (implies (equal 0 (num-ins aignet2))
              (b* (((mv copy aignet2)
@@ -123,14 +115,6 @@
     :rewrite :direct)
 
   (in-theory (disable aignet-regs-copied))
-
-  (defthm id-eval-of-reg-index
-    (implies (< (nfix n) (num-regs aignet))
-             (equal (id-eval (node-count (lookup-stype n :reg aignet))
-                             invals regvals aignet)
-                    (bfix (nth n regvals))))
-    :hints(("Goal"
-            :in-theory (enable* id-eval regnum->id))))
 
   (defthm aignet-regs-copied-of-aignet-copy-regs
     (implies (equal 0 (num-regs aignet2))

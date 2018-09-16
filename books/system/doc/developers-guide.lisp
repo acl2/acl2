@@ -1123,13 +1123,12 @@
 (defxdoc developers-guide-maintenance
   :parents (developers-guide)
   :short "Modifying, Testing, and Debugging"
-  :long "<p>Before working on changes to ACL2, consider <a
- href='acl2-devel@utlists.utexas.edu'>sending email to the acl2-devel list</a>
- (@('acl2-devel@utlists.utexas.edu')), explaining what you have in mind.  This
- will avoid duplication and also provide an opportunity for feedback.  In
- particular, you may want to wait for confirmation from Kaufmann or Moore that
- at least one of them will be willing to review your patch; otherwise they make
- no commitment to do so.</p>
+  :long "<p>Before working on changes to ACL2, consider sending email to the
+ acl2-devel list (@('acl2-devel@utlists.utexas.edu')), explaining what you have
+ in mind.  This will avoid duplication and also provide an opportunity for
+ feedback.  In particular, you may want to wait for confirmation from Kaufmann
+ or Moore that at least one of them will be willing to review your patch;
+ otherwise they make no commitment to do so.</p>
 
  <h3>Development</h3>
 

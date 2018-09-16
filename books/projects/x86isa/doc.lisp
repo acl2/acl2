@@ -105,7 +105,7 @@
  href='http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html'>Intel
  software developer's manuals</a> were used as specification documents,
  and ambiguities were resolved by cross-referencing <a
- href='http://developer.amd.com/resources/documentation-articles/developer-guides-manuals/'>AMD
+ href='https://developer.amd.com/resources/developer-guides-manuals/'>AMD
  manuals</a> and running tests on real machines to understand processor
  behavior. </p>
 
@@ -353,8 +353,8 @@
  <h5>Contributors to the x86 ISA Model</h5>
 
  <p>Thanks to Alessandro Coglio (Kestrel Institute and Kestrel Technology LLC)
- for adding growing support for 32-bit mode and for improving the documentation
- of these books.</p>
+ for adding support for 32-bit mode and for improving the documentation of
+ these books.</p>
 
  <p>Thanks to Cuong Kim Chau for implementing the floating point
  instructions and for performing many experiments \(along with Keshav
