@@ -502,9 +502,9 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
               (!!fault-fresh
                :gp 0 :target-offset-virtual-memory-error jmp-addr)) ;; #GP(0)
 
+             ;; Calculate the new contents of the CS register:
              (new-cs-visible
               (!seg-sel-layout-slice :rpl cpl selector))
-
              (new-cs-hidden
               (!hidden-seg-reg-layout-slice
                :base-addr dt-base-addr
