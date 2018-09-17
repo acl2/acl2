@@ -1005,7 +1005,6 @@
       :induct (induction-scheme hns1 hns2 fs)
       :in-theory
       (disable (:definition take)
-               (:rewrite by-slice-you-mean-the-whole-cake)
                (:definition nth)
                (:linear non-nil-nth)
                (:definition make-blocks)
@@ -1198,7 +1197,6 @@
                         l5-wrchs-correctness-1
                         l4-read-after-write-2
                         (:DEFINITION L5-WRCHS)
-                        (:REWRITE BY-SLICE-YOU-MEAN-THE-WHOLE-CAKE)
                         (:DEFINITION NTH)
                         (:LINEAR NON-NIL-NTH)
                         (:DEFINITION UNMAKE-BLOCKS)

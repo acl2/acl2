@@ -10,7 +10,7 @@
 ; for making blocks from text and retrieving text from blocks, with proofs of
 ; their correctness and their one-way inverse relationship.
 
-(include-book "file-system-lemmas")
+(local (include-book "file-system-lemmas"))
 
 ;; I don't think blocks are 8 characters long in any system; I simply set this
 ;; in order to actually get fragmentation without having to make unreasonably
@@ -139,7 +139,7 @@
                                    (len text))
                     text))
     :hints
-    (("goal" :in-theory (enable make-blocks))
+    (("goal" :in-theory (enable make-blocks already-a-character-list))
      ("subgoal *1/3.3'"
       :in-theory (disable first-n-ac-of-make-character-list
                           take-of-too-many)

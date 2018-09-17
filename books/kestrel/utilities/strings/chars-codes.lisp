@@ -146,7 +146,9 @@
            (repeat n (char-code char)))
     :enable repeat)
 
+
   (defrule nth-of-chars=>nats
-    (implies (integer-range-p 0 (len chars) i)
-             (equal (nth i (chars=>nats chars))
-                    (char-code (nth i chars))))))
+    (equal (nth i (chars=>nats chars))
+           (if (< (nfix i) (len chars))
+               (char-code (nth i chars))
+             nil))))
