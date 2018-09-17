@@ -363,7 +363,7 @@ int main (int argc, char *argv[], char *env[]) {
 ;;      (input         30)
 ;;      ((mv flg steps x86)
 ;;       (x86isa-one-fib32-cosim
-;;        input start-address halt-address *fib32-xrun-limit* sys-view? x86)))
+;;        input start-address halt-address *fib32-xrun-limit* x86)))
 ;;   (mv flg steps x86))
 
 ;; Multiple runs:
