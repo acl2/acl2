@@ -497,10 +497,29 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                 (t offset)))
 
              ;; #GP(0) is thrown if the target offset in destination is
-             ;; non-canonical.
-             ((when (not (canonical-address-p jmp-addr)))
+             ;; non-canonical (in 64-bit mode) or outside the segment limit (in
+             ;; 32-bit mode):
+             (jmp-addr-ok
+              (if (eql proc-mode #.*64-bit-mode*)
+                  (canonical-address-p jmp-addr)
+                (b* ((limit15-0 (code-segment-descriptor-layout-slice
+                                 :limit15-0 descriptor))
+                     (limit19-16 (code-segment-descriptor-layout-slice
+                                  :limit19-16 descriptor))
+                     (limit (part-install limit15-0
+                                          (ash limit19-16 16)
+                                          :low 0 :width 16))
+                     (g (code-segment-descriptor-layout-slice :g descriptor))
+                     ;; If G = 1, the limit is the number of 4-Kbyte blocks
+                     ;; (AMD manual, Dec'17, Volume 2, Section 4.7.1):
+                     (max-offset (if (= g 1)
+                                     (1- (ash limit 12))
+                                   limit)))
+                  (< jmp-addr max-offset))))
+             ((unless jmp-addr-ok)
               (!!fault-fresh
-               :gp 0 :target-offset-virtual-memory-error jmp-addr)) ;; #GP(0)
+               :gp 0 ;; #GP(0)
+               :noncanonical-or-outside-segment-limit jmp-addr))
 
              ;; Calculate the new contents of the CS register:
              (new-cs-visible
