@@ -1057,6 +1057,13 @@
   (local (include-book "rtl/rel9/arithmetic/top"
                        :dir :system))
 
+  (local
+   (defthm read-reserved-area-guard-lemma-5
+     (implies (and (unsigned-byte-listp 8 l)
+                   (natp n)
+                   (< n (len l)))
+              (rationalp (nth n l)))))
+
   ;; This must be called after the file is opened.
   (defun
       read-reserved-area (fat32-in-memory str)
@@ -1065,20 +1072,22 @@
       :guard (and (stringp str)
                   (>= (length str) *initialbytcnt*)
                   (fat32-in-memoryp fat32-in-memory))
-      :guard-debug t
       :guard-hints
       (("goal"
         :do-not-induct t
         :in-theory (disable fat32-in-memoryp unsigned-byte-p nth))
-       ("Subgoal 7" :in-theory (disable nth-of-unsigned-byte-list)
+       ("subgoal 7" :in-theory (disable unsigned-byte-p-of-nth-when-unsigned-byte-p)
+        :use ((:instance
+               unsigned-byte-p-of-nth-when-unsigned-byte-p
+               (n 13)
+               (l (get-initial-bytes str))
+               (bits 8))
+              (:instance unsigned-byte-p-forward-to-nonnegative-integerp
+                         (n bits)
+                         (x (nth 13 (get-initial-bytes str))))))
+       ("subgoal 6" :in-theory (disable unsigned-byte-p-of-nth-when-unsigned-byte-p)
         :use (:instance
-              nth-of-unsigned-byte-list
-              (n 13)
-              (l (get-initial-bytes str))
-              (bits 8)))
-       ("Subgoal 6" :in-theory (disable nth-of-unsigned-byte-list)
-        :use (:instance
-              nth-of-unsigned-byte-list
+              unsigned-byte-p-of-nth-when-unsigned-byte-p
               (n 0)
               (l (get-remaining-rsvdbyts str))
               (bits 8))))
