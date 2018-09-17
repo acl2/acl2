@@ -443,13 +443,33 @@
 
   ;; Op/En: NP
   ;; C9
-  ;; RSP := RBP
+  ;; rSP := rBP
   ;; rBP := Pop() (i.e. get bytes from the stack, also considering the
   ;; operand-size override prefix, and put them in rBP, and then
   ;; increment the stack pointer appropriately)
 
+  ;; According to the pseudocode in Intel manual, May'18, Volume 2A, LEAVE
+  ;; specification, the size of rSP and rBP in the assignment rSP := rBP is
+  ;; determined by StackAddressSize, while the size of rBP in the assignment
+  ;; rBP := Pop() is determined by OperandSize. It seems that these two sizes
+  ;; should be the same for this operation to make sense: it is not clear why
+  ;; OperandSize is used in the pseudocode, and why the table shows that a
+  ;; 16-bit stack address size is allowed in 64-bit mode, in which the stack
+  ;; size is always 64 bits. For now we use the operand size for both
+  ;; assignments, implicitly assuming that it is equal to the stack address
+  ;; size. TODO: We should test if a real processor accepts LEAVE instructions
+  ;; whose StackAddressSize and OperandSize differ; we should also test if a
+  ;; real processor allows operations just on BP and SP (i.e. 16-bit size) in
+  ;; 64-bit mode.
+
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (;;riml08
+                                         ;;riml32
+                                         rme-size-of-2-to-rme16
+                                         rme-size-of-4-to-rme32
+                                         rme-size-of-8-to-rme64
+                                         rme64)
+                                        ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
 			       (canonical-address-p temp-rip)))
@@ -457,37 +477,47 @@
   :body
 
   (b* ((ctx 'x86-leave)
-       ((when (not (equal proc-mode #.*64-bit-mode*)))
-	(!!ms-fresh :leave-unimplemented-in-32-bit-mode))
 
        (lock? (equal #.*lock* (prefixes->lck prefixes)))
        ((when lock?)
 	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-       (p3 (equal #.*operand-size-override* (prefixes->opr prefixes)))
-       ((the (integer 2 8) pop-bytes)
-	(if p3
-	    2
-	  8))
-       (rbp (rgfi *rbp* x86))
-       ((when (not (canonical-address-p rbp)))
-	(!!ms-fresh :rbp-not-canonical rbp))
+
+       (p3? (equal #.*operand-size-override* (prefixes->opr prefixes)))
+       ((the (integer 2 8) operand-size)
+        (if (equal proc-mode #.*64-bit-mode*)
+	    (if p3? 2 8)
+	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
+	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	       (cs.d (code-segment-descriptor-attributes-layout-slice
+                      :d cs-attr)))
+	    (if (= cs.d 1)
+		(if p3? 2 4)
+	      (if p3? 4 2)))))
+
+       (rbp/ebp/bp (rgfi-size operand-size *rbp* 0 x86))
+
+       ;; RBP/EBP/BP is the new value of RSP/ESP/SP now, but we cannot write it
+       ;; into the state yet. However, we use it, below, to pop the new value
+       ;; of RBP/EBP/BP: as we do that, we implicitly check it to be canonical
+       ;; (in 64-bit mode) or within the stack segment limits (in 32-bit mode),
+       ;; so there's no need to make these checks explicitly here.
+
        (inst-ac? (alignment-checking-enabled-p x86))
-       ((when (and inst-ac? (not (equal (logand rbp 7) 0))))
-	(!!ms-fresh :memory-access-unaligned rbp))
-       ((mv flg val x86)
-	(rml-size pop-bytes
-		 (the (signed-byte #.*max-linear-address-size*) rbp)
-		 :r x86))
-       ((when flg)
-	(!!ms-fresh :rml-size-error flg))
-       ((the (signed-byte #.*max-linear-address-size+1*) new-rsp)
-	(+ (the (signed-byte #.*max-linear-address-size*) rbp) pop-bytes))
-       ((when (mbe :logic (not (canonical-address-p new-rsp))
-		   :exec (<= #.*2^47*
-			     (the (signed-byte
-				   #.*max-linear-address-size+1*)
-			       new-rsp))))
-	(!!ms-fresh :invalid-rsp new-rsp))
+       ((mv flg val x86) (rme-size-opt
+                          proc-mode
+                          operand-size
+                          (the (signed-byte 64) (i64 rbp/ebp/bp))
+                          #.*ss*
+                          :r
+                           inst-ac?
+                           x86
+                           :mem-ptr? nil
+                           :check-canonicity t))
+       ((when flg) (!!fault-fresh :ss 0 :pop-error flg)) ;; #SS(0)
+
+       ((mv flg (the (signed-byte 64) new-rsp))
+        (add-to-*sp proc-mode (i64 rbp/ebp/bp) operand-size x86))
+       ((when flg) (!!ms-fresh :invalid-rsp new-rsp))
 
        ;; We don't need to check for valid length for one-byte
        ;; instructions.  The length will be more than 15 only if
@@ -495,15 +525,14 @@
        ;; caught in x86-fetch-decode-execute, that is, before control
        ;; reaches this function.
 
-
        ;; Update the x86 state:
        ;; We chose to write the value val into the register using !rgfi-size
        ;; rather than !rgfi since val is a n64p value and !rgfi expects an i64p
        ;; value.
 
-       (x86 (!rgfi-size pop-bytes *rbp* val rex-byte x86))
-       (x86 (!rgfi *rsp* new-rsp x86))
-       (x86 (!rip temp-rip x86)))
+       (x86 (!rgfi-size operand-size *rbp* val rex-byte x86))
+       (x86 (write-*sp proc-mode new-rsp x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================

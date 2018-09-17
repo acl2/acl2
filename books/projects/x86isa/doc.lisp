@@ -354,8 +354,8 @@
  decode-time exceptions.</p>
 
  <p>Thanks to Alessandro Coglio (Kestrel Institute and Kestrel Technology LLC)
- for adding growing support for 32-bit mode and for improving the documentation
- of these books.</p>
+ for adding support for 32-bit mode and for improving the documentation of
+ these books.</p>
 
  <p>Thanks to Cuong Kim Chau for implementing the floating point
  instructions and for performing many experiments \(along with Keshav

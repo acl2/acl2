@@ -1095,6 +1095,9 @@ BOOKS_SKIP_COMP += acl2s/mode-acl2s-dependencies.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/bridge/top.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += doc/top.$(ACL2_COMP_EXT)
 
+# Stack overflow in GCL, Allegro CL, and LispWorks:
+BOOKS_SKIP_COMP += system/tests/apply-timings.$(ACL2_COMP_EXT)
+
 OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
 
 # Avoid trying to make compiled files; target %.$(ACL2_COMP_EXT) still

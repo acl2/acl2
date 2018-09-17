@@ -11,13 +11,42 @@
 (include-book "std/alists/top" :dir :system)
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
-; I (Pete) went through the built-in functions and added
-; signature rules where appropriate. This list is not complete
-; for two reasons. First, there are some cases in which we fail
-; due to the algorithm not being as general as it can be. See the
-; acl2s-issues file. Second, I made one pass through the
-; documentation of ACL2-built-ins. I should check again and I
-; should check functions defined in the books we load 
+; Pete 9/14/2018: Useful for must-fail
+(include-book "misc/eval" :dir :system)
+
+; Pete 9/16/2018: Better range support
+(include-book "tau/bounders/elementary-bounders" :dir :system)
+
+; Pete 9/14/2018: I am enabling some of the functions that
+; std/lists/top disables, since this causes problems where simple
+; theorems do not getting proved.
+
+(in-theory (enable
+            len
+            append
+            revappend
+            no-duplicatesp-equal
+            make-character-list
+            nthcdr
+            subseq-list
+            resize-list
+            last
+            butlast
+            remove
+            member
+            subsetp
+            intersectp
+            union-equal
+            set-difference-equal
+            intersection-equal))
+
+; I (Pete) went through the built-in functions and added signature
+; rules where appropriate. This list is not complete for two
+; reasons. First, there are some cases in which we fail due to the
+; algorithm not being as general as it can be. See the acl2s-issues
+; file. Second, I made one pass through the documentation of
+; ACL2-built-ins. I should check again and I should check functions
+; defined in the books we load.
 
 (sig append ((listof :a) (listof :a)) => (listof :a))
 (sig acl2::rev ((listof :a)) => (listof :a))
@@ -122,6 +151,3 @@
            :use ((:instance numerator-1-decreases 
                             (n (+ r (- n) 1))))))
   :rule-classes ((:linear) (:rewrite)))
-
-
-

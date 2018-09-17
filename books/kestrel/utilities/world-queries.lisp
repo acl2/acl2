@@ -361,6 +361,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define primitivep ((fn symbolp))
+  :returns (yes/no booleanp)
+  :parents (world-queries)
+  :short "Check if a named function is @(see primitive)."
+  :long
+  "<p>
+   See @(tsee primitivep+) for a logic-friendly variant of this utility.
+   </p>"
+  (and (member-eq fn (strip-cars *primitive-formals-and-guards*)) t))
+
+(define primitivep+ ((fn (function-namep fn wrld)) (wrld plist-worldp))
+  :returns (yes/no booleanp)
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee primitivep)."
+  :long
+  "<p>
+   This returns the same result as @(tsee guard-verified-p),
+   but it has a stronger guard.
+   The guard requires an extra @(see world) argument,
+   which is usually available when doing system programming.
+   </p>"
+  (declare (ignore wrld))
+  (primitivep fn))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define guard-verified-p ((fn/thm symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (world-queries)
@@ -1258,37 +1284,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define all-pkgs-in-world ((wrld plist-worldp))
+(define known-packages (state)
   :returns (pkg-names "A @(tsee string-listp).")
-  :mode :program
   :parents (world-queries)
-  :short "List of names of the packages in the ACL2, in chronological order."
+  :short "List of names of the known packages, in chronological order."
   :long
   "<p>
-   We scan the world for @('defpkg') event landmarks,
-   collecting the corresponding names.
-   The tail recursion collects the names in the desired chronological order.
-   </p>
-   <p>
-   The main Lisp package and the @('\"ACL2\"') package are built-in,
-   not introduced via @(tsee defpkg)s.
-   Thus, after scanning the world, we add these two to the front of the list.
+   See @(tsee known-packages+) for a logic-friendly variant of this utility.
    </p>"
-  (cons *main-lisp-package-name* (cons "ACL2" (all-pkgs-in-world-aux wrld nil)))
+  (reverse (strip-cars (known-package-alist state))))
 
-  :prepwork
-  ((define all-pkgs-in-world-aux ((wrld plist-worldp)
-                                  (current-pkg-names string-listp))
-     :returns final-pkg-names ; STRING-LISTP
-     :mode :program
-     (cond ((endp wrld) current-pkg-names)
-           ((and (eq (caar wrld) 'event-landmark)
-                 (eq (cadar wrld) 'global-value)
-                 (eq (access-event-tuple-type (cddar wrld)) 'defpkg))
-            (b* ((pkg-name (access-event-tuple-namex (cddar wrld))))
-              (all-pkgs-in-world-aux (cdr wrld)
-                                     (cons pkg-name current-pkg-names))))
-           (t (all-pkgs-in-world-aux (cdr wrld) current-pkg-names))))))
+(define known-packages+ (state)
+  :returns (pkg-names string-listp)
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee known-packages)."
+  :long
+  "<p>
+   This returns the same result as @(tsee known-packages),
+   but it includes a run-time check (which should always succeed) on the result
+   that allows us to prove the return type theorem
+   without strengthening the guard on @('state').
+   </p>"
+  (b* ((result (known-packages state)))
+    (if (string-listp result)
+        result
+      (raise "Internal error: ~
+              the list of keys ~x0 of the alist of known packages ~
+              is not a true list of strings."
+             result))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
