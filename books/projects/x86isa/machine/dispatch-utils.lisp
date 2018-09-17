@@ -44,7 +44,6 @@
 (in-package "X86ISA")
 
 (include-book "opcode-maps")
-(include-book "std/strings/hexify" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
 
 ;; Utilities to generate opcode dispatch functions from the annotated opcode
