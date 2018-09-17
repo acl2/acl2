@@ -413,27 +413,59 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        ((when flg)
         (!!ms-fresh :rml-size-error flg))
 
-       ;; Check if the descriptor is a code segment descriptor:
-       ((mv code-desc? reason1)
-        ;; Note that the following predicate reports the
-        ;; descriptor to be invalid if the P flag of the
-        ;; descriptor is 0.
-        (ia32e-valid-code-segment-descriptor-p descriptor))
+       ;; Now we look at the descriptor just read to see what kind it is,
+       ;; and to process it according to the cases in the pseudocode in
+       ;; Intel manual, May'18, Volume 2, JMP specification.
 
-       ;; If it is a code segment descriptor, process it accordingly:
-       ((when code-desc?)
+       ;; Read the S bit, which is 0 for system segments and 1 for user segments
+       ;; (AMD manual, Dec'17, Volume 2, Table 4-2).
+       ;; We use CODE-SEGMENT-DESCRIPTOR-LAYOUT-SLICE even though we don't know
+       ;; whether this is a code segment yet; it could be a system segment, or
+       ;; the first half of it in 64-bit mode. But we need to read the S bit
+       ;; somehow, and CODE-SEGMENT-DESCRIPTOR-LAYOUT-SLICE does that.
+       ;; TODO: maybe introduce and use a generic function to read the S bit
+       ;; from a segment descriptor that is not necessarily a code segment?
+       (s (code-segment-descriptor-layout-slice :s descriptor))
+
+       ;; If S = 1, the descriptor is for a user segment. The only kind of user
+       ;; segment valid for JMP is a code segment. So we process this descriptor
+       ;; as a code descriptor segment.
+       ((when (= s 1))
+
+        ;; Process conforming or non-conforming code segment:
 
         ;; The treatment of Conforming and Non-Conforming code segments here
         ;; only differs in the privilege check (see pseudocode in Intel manual,
         ;; May'18, Volume 2, JMP specification). So we use almost the same ACL2
         ;; code (below) for them.
 
-        (b* ((cpl (cpl x86))
-             (dpl (code-segment-descriptor-layout-slice
-                   :dpl descriptor))
-             (allowed (if (equal
-                           (code-segment-descriptor-layout-slice :c descriptor)
-                           1) ; conforming
+        (b* (;; Ensure that the most significant bit of the Type field is 1
+             ;; (i.e. code segment), not 0 (i.e. data segment). See AMD manual,
+             ;; Dec'17, Volume 2, Table 4-3; the bit is referred to as 'Bit 11'
+             ;; there, because it is bit 11 of the high quadword of the
+             ;; descriptor (see Figure 4-14).
+             (msb-of-type
+              (code-segment-descriptor-layout-slice :msb-of-type descriptor))
+             ((unless (= msb-of-type 1))
+              (!!fault-fresh
+               :gp sel-index ;; #GP(selector)
+               :jmp-far-data-segment sel-index))
+
+             ;; Ensure that D = 0 in 64-bit mode:
+             (d (code-segment-descriptor-layout-slice :d descriptor))
+             ;; This condition is equivalent to Intel pseudocode's condition
+             ;; (see 64-BIT-MODEP):
+             ((when (and (eql proc-mode #.*64-bit-mode*) (= d 1)))
+              (!!fault-fresh
+               :gp sel-index ;; #GP(selector)
+               :cs.d=1-in-64-bit-mode sel-index))
+
+             ;; Privilege check (differs for conforming and nonconforming
+             ;; code segments):
+             (cpl (cpl x86))
+             (dpl (code-segment-descriptor-layout-slice :dpl descriptor))
+             (c (code-segment-descriptor-layout-slice :c descriptor))
+             (allowed (if (= c 1) ; conforming
                           ;; Access is allowed to a conforming code segment
                           ;; when DPL <= CPL (numerically).  RPL is ignored
                           ;; for this privilege check.
@@ -482,10 +514,15 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
              (x86 (write-*ip proc-mode jmp-addr x86)))
           x86))
 
-       ;; If it is not a code segment descriptor, it must be 16 bytes long, so
-       ;; we read a 16-byte descriptor from the table, checking the limit
-       ;; (TODO: maybe optimize this by just reading the next 8 bytes and
-       ;; joining them with the already read 8 bytes above):
+       ;; Here S = 0, so the descriptor just read is a system segment,
+       ;; or the first half of it in 64-bit mode.
+
+       ;; We still only support 64-bit mode right now (even though we are
+       ;; extending JMP far towards 32-bit mode). Thus, we have just read the
+       ;; first 8 bytes of a system descriptor (which is always 16 bytes in
+       ;; 64-bit mode). So now we read a 16-byte descriptor from the table,
+       ;; checking the limit (TODO: maybe optimize this by just reading the
+       ;; next 8 bytes and joining them with the already read 8 bytes above):
        (largest-address (+ (ash sel-index 3) 15))
        ((when (< dt-limit largest-address))
         (!!fault-fresh
@@ -678,7 +715,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
     (!!fault-fresh
      :gp sel-index ;; #GP(selector)
      :either-both-code-segment-or-call-gate-are-absent-or-some-other-descriptor-is-present
-      (cons (cons reason1 reason2) descriptor))))
+      (cons reason2 descriptor))))
 
 ;; ======================================================================
 ;; INSTRUCTION: LOOP
