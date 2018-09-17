@@ -482,6 +482,13 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                                        (acons :cpl cpl
                                          (acons :rpl sel-rpl nil)))))
 
+             ;; Ensure that the segment is present:
+             (p (code-segment-descriptor-layout-slice :p descriptor))
+             ((unless (= p 1))
+              (!!fault-fresh
+               :np sel-index ;; #NP(selector)
+               :code-segment-not-present sel-index))
+
              ;; Trimming the offset based on the operand-size:
              (jmp-addr
               (case offset-size
