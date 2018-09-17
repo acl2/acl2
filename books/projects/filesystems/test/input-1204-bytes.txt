@@ -1,0 +1,18 @@
+This is a test for a filesystem model aiming for binary compatibility
+with FAT32 (specifically, the Linux implementation.) The model relies
+on ACL2's single threaded objects (stobjs) in order to slurp FAT32
+disk images into memory quickly by placing their contents in stobj
+arrays, which provide constant time random access. This is in contrast
+to a list representation, which is expensive to construct because
+there are as many cons pairs as there are elements in the
+list. Another performance improvement comes from the use of
+read-file-into-string, which allows us to use a string representation
+of the contents of a file, which again allows us to have constant time
+random access to the characters within the string. This is in contrast
+to the functions described in read-bytes$-n, which use list
+representations for the data read from files and suffer from the same
+drawbacks described above. In this test, we attempt to test the
+ability of our stobj model (and the "cat" implementation which rests
+atop it) to reckon with regular files which span across multiple FAT32
+clusters. This requires a traversal of the file allocation table,
+which contains a linked list of cluster indices for each file.
