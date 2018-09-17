@@ -1,5 +1,5 @@
-; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2017, Regents of the University of Texas
+; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2018, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -912,10 +912,11 @@ implementations.")
 ;       for release instructions.
 
 ; Temporarily, for a release:
-; ""
+  ""
 
 ; Normally:
 
+  #+skip
   (format
    nil
    "
@@ -933,7 +934,7 @@ implementations.")
   (concatenate
    'string
    "~% ~a built ~a.~
-    ~% Copyright (C) 2017, Regents of the University of Texas"
+    ~% Copyright (C) 2018, Regents of the University of Texas"
    "~% ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you~
     ~% are welcome to redistribute it under certain conditions.  For details,~
     ~% see the LICENSE file distributed with ACL2.~%"
