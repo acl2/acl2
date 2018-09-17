@@ -11,239 +11,8 @@
 ; set our cluster size to 1 sector, and our sector size to 8 bytes. This is
 ; based on every character in ACL2 being a byte.
 
-; The following is in file-system-6.acl2, but we include it here as well for
-; when we are doing interactive development, in order to read gl:: symbols.
-(include-book "centaur/gl/portcullis" :dir :system)
-
 (include-book "file-system-4")
-(include-book "centaur/fty/top" :dir :system)
-
-(defconst *expt-2-28* (expt 2 28))
-;; from page 18 of the FAT specification
-(defconst *MS-END-OF-CLUSTERCHAIN* (- *expt-2-28* 1))
-;; from page 14 of the FAT specification
-(defconst *ms-first-data-cluster* 2)
-;; from page 18 of the FAT specification
-(defconst *ms-bad-cluster* 268435447)
-
-;; from include/uapi/asm-generic/errno-base.h
-(defconst *EIO* 5) ;; I/O error
-(defconst *ENOSPC* 28) ;; No space left on device
-(defconst *ENOENT* 2) ;; No such file or directory
-(defconst *EEXIST* 17) ;; File exists
-
-(defund fat32-entry-p (x)
-  (declare (xargs :guard t))
-  (unsigned-byte-p 32 x))
-
-(defund fat32-masked-entry-p (x)
-  (declare (xargs :guard t))
-  (unsigned-byte-p 28 x))
-
-;; 0 is chosen as the default value based on this comment from Microsoft's FAT
-;; overview:
-;; The only time that the high 4 bits of FAT32 FAT entries should ever be
-;; changed is when the volume is formatted, at which time the whole 32-bit FAT
-;; entry should be zeroed, including the high 4 bits.
-(defund fat32-entry-fix (x)
-  (declare (xargs :guard t))
-  (if (fat32-entry-p x)
-      x 0))
-
-(defund fat32-masked-entry-fix (x)
-  (declare (xargs :guard t))
-  (if (fat32-masked-entry-p x)
-      x 0))
-
-(in-theory (enable fat32-entry-p fat32-entry-fix fat32-masked-entry-p fat32-masked-entry-fix))
-
-(defthm fat32-masked-entry-p-correctness-1
-  (implies (fat32-masked-entry-p x)
-           (natp x))
-  :rule-classes :forward-chaining)
-
-;; Use a mask to take the low 28 bits.
-(defund fat32-entry-mask (x)
-  (declare (xargs :guard (fat32-entry-p x)))
-  (logand x (- (ash 1 28) 1)))
-
-(defthm
-  fat32-entry-mask-correctness-1
-  (fat32-masked-entry-p (fat32-entry-mask x))
-  :hints (("goal" :in-theory (e/d (fat32-entry-mask fat32-masked-entry-p)
-                                  (unsigned-byte-p logand-ash-lemma-1))
-           :use (:instance logand-ash-lemma-1 (c 28)
-                           (i x)))))
-
-(fty::deffixtype fat32-entry
-                 :pred   fat32-entry-p
-                 :fix    fat32-entry-fix
-                 :equiv  fat32-entry-equiv
-                 :define t
-                 :forward t
-                 )
-
-(fty::deffixtype fat32-masked-entry
-                 :pred   fat32-masked-entry-p
-                 :fix    fat32-masked-entry-fix
-                 :equiv  fat32-masked-entry-equiv
-                 :define t
-                 :forward t
-                 )
-
-(fty::deflist fat32-entry-list :elt-type fat32-entry-p :true-listp t)
-
-(fty::deflist fat32-masked-entry-list :elt-type fat32-masked-entry-p :true-listp t)
-
-(defthm nat-listp-if-fat32-masked-entry-list-p
-  (implies (fat32-masked-entry-list-p x)
-           (nat-listp x))
-  :rule-classes (:forward-chaining :rewrite))
-
-(in-theory (disable fat32-entry-p fat32-entry-fix fat32-masked-entry-p fat32-masked-entry-fix))
-
-(defthm member-of-fat32-entry-list
-  (implies (and (member-equal x lst)
-                (fat32-entry-list-p lst))
-           (fat32-entry-p x)))
-
-(defthm set-indices-in-fa-table-guard-lemma-1
-  (implies (and (natp key)
-                (< key (len l))
-                (fat32-entry-list-p l)
-                (fat32-entry-p val))
-           (fat32-entry-list-p (update-nth key val l))))
-
-(defthm set-indices-in-fa-table-guard-lemma-2
-  (implies (fat32-entry-p x) (natp x))
-  :hints (("goal" :in-theory (enable fat32-entry-p)))
-  :rule-classes :forward-chaining)
-
-(defthm set-indices-in-fa-table-guard-lemma-3
-  (implies (and (fat32-entry-list-p l)
-                (natp n)
-                (< n (len l)))
-           (fat32-entry-p (nth n l))))
-
-(defund
-  fat32-update-lower-28
-  (entry masked-entry)
-  (declare
-   (xargs
-    :guard-hints
-    (("goal"
-      :in-theory (enable fat32-entry-p fat32-masked-entry-p)))
-    :guard (and (fat32-entry-p entry)
-                (fat32-masked-entry-p masked-entry))))
-  (logior (logand entry (- (ash 1 32) (ash 1 28)))
-          masked-entry))
-
-(encapsulate
-  ()
-
-  (local (include-book "ihs/logops-lemmas" :dir :system))
-
-  (defthm
-    fat32-update-lower-28-correctness-1
-    (implies
-     (and (fat32-entry-p entry)
-          (fat32-masked-entry-p masked-entry))
-     (fat32-entry-p (fat32-update-lower-28 entry masked-entry)))
-    :hints
-    (("goal"
-      :in-theory (e/d nil (unsigned-byte-p logand logior)
-                      (fat32-entry-p fat32-masked-entry-p
-                                     fat32-update-lower-28)))
-     ("goal''" :in-theory (enable unsigned-byte-p)))))
-
-; :Redef helps here for overcoming lemmas that are incompatible here (and
-; finding all such lemmas in the process).
-(encapsulate
-  ()
-
-  (local
-   (include-book "centaur/gl/gl" :dir :system))
-
-  (local
-   (def-gl-thm fat32-update-lower-28-correctness-2
-     :hyp (and (fat32-entry-p entry)
-               (fat32-masked-entry-p masked-entry))
-     :concl (equal (fat32-entry-mask (fat32-update-lower-28 entry
-                                                            masked-entry))
-                   masked-entry)
-     :g-bindings (gl::auto-bindings (:nat entry 33) (:nat masked-entry 29))))
-
-  (defthm
-    fat32-update-lower-28-correctness-2
-    (implies
-     (and (fat32-entry-p entry)
-          (fat32-masked-entry-p masked-entry))
-     (equal
-      (fat32-entry-mask (fat32-update-lower-28 entry masked-entry)) masked-entry))))
-
-(defund
-  set-indices-in-fa-table
-  (fa-table index-list value-list)
-  (declare
-   (xargs :measure (acl2-count index-list)
-          :guard (and (fat32-entry-list-p fa-table)
-                      (nat-listp index-list)
-                      (fat32-masked-entry-list-p value-list)
-                      (equal (len index-list)
-                             (len value-list)))))
-  (if
-   (atom index-list)
-   fa-table
-   (let
-    ((current-index (car index-list)))
-    (if
-     (or (not (natp current-index))
-         (>= current-index (len fa-table)))
-     fa-table
-     (set-indices-in-fa-table
-      (update-nth current-index
-                  (fat32-update-lower-28 (nth current-index fa-table)
-                                         (car value-list))
-                  fa-table)
-      (cdr index-list)
-      (cdr value-list))))))
-
-(defthm
-  set-indices-in-fa-table-correctness-1
-  (implies
-   (and (fat32-entry-list-p fa-table)
-        (bounded-nat-listp index-list (len fa-table))
-        (fat32-masked-entry-list-p value-list)
-        (equal (len index-list)
-               (len value-list)))
-   (fat32-entry-list-p
-    (set-indices-in-fa-table fa-table index-list value-list)))
-  :hints (("Goal" :in-theory (enable set-indices-in-fa-table))))
-
-(defthm
-  set-indices-in-fa-table-correctness-2
-  (equal (len (set-indices-in-fa-table fa-table index-list value-list))
-         (len fa-table))
-  :hints (("goal" :in-theory (enable set-indices-in-fa-table))))
-
-;; Well, it might not be a great idea to borrow a numbering scheme from
-;; set-indices.lisp
-(defthm set-indices-in-fa-table-correctness-3
-  (implies (and (natp n)
-                (nat-listp index-list)
-                (not (member-equal n index-list)))
-           (equal (nth n (set-indices-in-fa-table fa-table index-list value-list))
-                  (nth n fa-table)))
-  :hints (("Goal" :in-theory (enable set-indices-in-fa-table))))
-
-(defthm set-indices-in-fa-table-correctness-4
-  (implies (and (natp key)
-                (< key (len l))
-                (nat-listp index-list)
-                (not (member-equal key index-list)))
-           (equal (set-indices-in-fa-table (update-nth key val l) index-list value-list)
-                  (update-nth key val (set-indices-in-fa-table l index-list value-list))))
-  :hints (("Goal" :in-theory (enable set-indices-in-fa-table))))
+(include-book "fat32")
 
 ;; question: if fat entries are 28 bits long, then how is the maximum size
 ;; determined to be 4 GB?
@@ -366,18 +135,6 @@
                 (not (l6-regular-file-entry-p (cdr (assoc-equal name fs)))))
            (l6-fs-p (cdr (assoc-equal name fs)))))
 
-;; taken from page 18 of the fat overview - the constant 268435448 is written
-;; out as 0xFFFFFF8 therein
-(defund l6-is-eof (fat-content)
-  (declare (xargs :guard (fat32-masked-entry-p fat-content)
-                  :guard-hints (("Goal'" :in-theory (enable fat32-masked-entry-p)))))
-  (>= fat-content 268435448))
-
-(defthm l6-is-eof-correctness-1
-  (implies (< fat-content *ms-bad-cluster*)
-           (not (l6-is-eof fat-content)))
-  :hints (("Goal" :in-theory (enable l6-is-eof)) ))
-
 ;; we have what we need to define a disk traversal to get the contents of the
 ;; file
 
@@ -385,12 +142,12 @@
 ;; element of the mv. that will be 0 if we successfully got a list of indices,
 ;; and -EIO if we did not for reasons shown in the function
 ;; fs/fat/cache.c:fat_get_cluster
-(defun
+(defund
     l6-build-index-list
     (fa-table masked-current-cluster length)
   (declare
    (xargs
-    :measure (acl2-count length)
+    :measure (nfix length)
     :guard (and (fat32-entry-list-p fa-table)
                 (fat32-masked-entry-p masked-current-cluster)
                 (natp length)
@@ -418,7 +175,7 @@
           (mv (list masked-current-cluster)
               (- *eio*))
         (if
-            (or (l6-is-eof masked-next-cluster)
+            (or (fat32-is-eof masked-next-cluster)
                 (>= masked-next-cluster (len fa-table)))
             (mv (list masked-current-cluster) 0)
           (b*
@@ -428,202 +185,14 @@
             (mv (list* masked-current-cluster tail-index-list)
                 tail-error)))))))
 
-(defthm l6-build-index-list-correctness-1
-  (implies (and (equal b (len fa-table))
-                (fat32-masked-entry-p masked-current-cluster)
-                (< masked-current-cluster (len fa-table)))
-           (b* (((mv index-list &)
-                 (l6-build-index-list fa-table
-                                      masked-current-cluster length)))
-             (bounded-nat-listp index-list b))))
-
 (defthm
-  l6-build-index-list-correctness-2
-  (implies
-   (and
-    (fat32-masked-entry-p masked-current-cluster)
-    (>= masked-current-cluster 2)
-    (< masked-current-cluster (len fa-table)))
-   (b* (((mv index-list &)
-         (l6-build-index-list fa-table
-                              masked-current-cluster length)))
-     (fat32-masked-entry-list-p index-list))))
-
-(defthm
-  l6-build-index-list-correctness-3
-  (b* (((mv & error-code)
-        (l6-build-index-list fa-table
-                             masked-current-cluster length)))
-    (and (integerp error-code)
-         (or (equal error-code 0)
-             (equal error-code (- *eio*))))))
-
-(defund find-n-free-clusters-helper (fa-table n start)
-  (declare (xargs :guard (and (fat32-entry-list-p fa-table)
-                              (natp n)
-                              (natp start))))
-  (if (or (atom fa-table) (zp n))
-      nil
-    (if (not (equal (fat32-entry-mask (car fa-table)) 0))
-        ;; this block is taken
-        (find-n-free-clusters-helper (cdr fa-table) n (+ start 1))
-      ;; this block isn't taken
-      (cons start (find-n-free-clusters-helper (cdr fa-table) (- n 1) (+ start 1))))))
-
-(defthmd
-  find-n-free-clusters-helper-correctness-1
-  (implies (and (fat32-entry-list-p fa-table)
-                (natp n)
-                (natp start)
-                (equal b (+ start (len fa-table))))
-           (bounded-nat-listp
-            (find-n-free-clusters-helper fa-table n start)
-            b))
-  :hints
-  (("goal'" :in-theory (enable find-n-free-clusters-helper))))
-
-(defthmd
-  find-n-free-clusters-helper-correctness-2
-  (implies
-   (natp start)
-   (nat-listp (find-n-free-clusters-helper fa-table n start)))
-  :hints
-  (("goal" :in-theory (enable find-n-free-clusters-helper))))
-
-(defthmd
-  find-n-free-clusters-helper-correctness-3
-  (implies
-   (and
-    (natp start)
-    (member-equal x (find-n-free-clusters-helper fa-table n start)))
-   (and (integerp x) (<= start x)))
-  :hints
-  (("goal" :in-theory (enable find-n-free-clusters-helper))))
-
-(defthm
-  find-n-free-clusters-helper-correctness-4
-  (implies
-   (and (fat32-entry-list-p fa-table)
-        (natp n)
-        (natp start)
-        (member-equal
-         x
-         (find-n-free-clusters-helper fa-table n start)))
-   (equal (fat32-entry-mask (nth (- x start) fa-table))
-          0))
-  :hints
-  (("goal" :in-theory (enable find-n-free-clusters-helper)
-    :use find-n-free-clusters-helper-correctness-3)
-   ("subgoal *1/2"
-    :use (:instance find-n-free-clusters-helper-correctness-3
-                    (fa-table (cdr fa-table))
-                    (start (+ 1 start))))))
-
-(defthm find-n-free-clusters-guard-lemma-1
-  (implies (fat32-entry-list-p l)
-           (fat32-entry-list-p (nthcdr n l))))
-
-(defund
-    find-n-free-clusters (fa-table n)
-  (declare (xargs :guard (and (fat32-entry-list-p fa-table)
-                              (natp n))))
-  ;; the first 2 clusters are excluded
-  (find-n-free-clusters-helper
-   (nthcdr *ms-first-data-cluster* fa-table)
-   n *ms-first-data-cluster*))
-
-(defthm
-  find-n-free-clusters-correctness-1
-  (implies (and (fat32-entry-list-p fa-table)
-                (natp n)
-                (equal b (len fa-table))
-                (>= (len fa-table)
-                    *ms-first-data-cluster*))
-           (bounded-nat-listp (find-n-free-clusters fa-table n)
-                              b))
-  :hints
-  (("goal"
-    :in-theory (enable find-n-free-clusters)
-    :use
-    ((:instance
-      find-n-free-clusters-helper-correctness-1
-      (start *ms-first-data-cluster*)
-      (fa-table (nthcdr *ms-first-data-cluster* fa-table))
-      (b (len fa-table))))))
-  :rule-classes
-  (:rewrite
-   (:linear
-    :corollary
-    (implies (and (fat32-entry-list-p fa-table)
-                  (natp n)
-                  (equal b (len fa-table))
-                  (>= (len fa-table)
-                      *ms-first-data-cluster*)
-                  (consp (find-n-free-clusters fa-table n)))
-             (< (car (find-n-free-clusters fa-table n))
-                b)))))
-
-(defthm
-  find-n-free-clusters-correctness-2
-  (nat-listp (find-n-free-clusters fa-table n))
-  :rule-classes
-  (:rewrite
-   (:rewrite
-    :corollary
-    (implies (consp (find-n-free-clusters fa-table n))
-             (and (nat-listp (cdr (find-n-free-clusters fa-table n)))
-                  (integerp (car (find-n-free-clusters fa-table n))))))
-   (:linear
-    :corollary (implies (consp (find-n-free-clusters fa-table n))
-                        (<= 0
-                            (car (find-n-free-clusters fa-table n))))))
-  :hints
-  (("goal"
-    :in-theory (enable find-n-free-clusters
-                       find-n-free-clusters-helper-correctness-2))))
-
-(defthmd
-  find-n-free-clusters-correctness-3
-  (implies (member-equal x (find-n-free-clusters fa-table n))
-           (and (integerp x) (<= *ms-first-data-cluster* x)))
-  :hints
-  (("goal" :in-theory (enable find-n-free-clusters))
-   ("goal'"
-    :use (:instance find-n-free-clusters-helper-correctness-3
-                    (start *ms-first-data-cluster*)
-                    (fa-table (nthcdr *ms-first-data-cluster* fa-table))))))
-
-(defthmd
-  find-n-free-clusters-correctness-4
-  (implies
-   (and (fat32-entry-list-p fa-table)
-        (natp n)
-        (natp start)
-        (member-equal x (find-n-free-clusters fa-table n)))
-   (equal (fat32-entry-mask (nth x fa-table))
-          0))
-  :hints
-  (("goal"
-    :in-theory (enable find-n-free-clusters)
-    :use
-    (:instance
-     find-n-free-clusters-helper-correctness-4
-     (start *ms-first-data-cluster*)
-     (fa-table (nthcdr *ms-first-data-cluster* fa-table))))
-   ("goal''"
-    :in-theory (disable member-of-a-nat-list)
-    :use
-    ((:instance
-      member-of-a-nat-list
-      (lst (find-n-free-clusters-helper
-            (nthcdr *ms-first-data-cluster* fa-table)
-            n *ms-first-data-cluster*)))))
-   ("subgoal 2"
-    :use
-    (:instance
-     find-n-free-clusters-helper-correctness-3
-     (fa-table (nthcdr *ms-first-data-cluster* fa-table))
-     (start *ms-first-data-cluster*)))))
+  l6-build-index-list-alt
+  (equal
+   (l6-build-index-list fa-table masked-current-cluster length)
+   (fat32-build-index-list fa-table masked-current-cluster
+                           length *blocksize*))
+  :rule-classes :definition
+  :hints (("goal" :in-theory (enable l6-build-index-list))))
 
 ;; This function allows a file or directory to be found in a filesystem given a
 ;; path.
@@ -718,20 +287,7 @@
    (and (character-listp text))
    (equal (unmake-blocks-without-feasibility (make-blocks text)
                                              (len text))
-          text))
-  :hints
-  (("subgoal *1/3.2'"
-    :in-theory (disable first-n-ac-of-make-character-list)
-    :use (:instance first-n-ac-of-make-character-list
-                    (i (len text))
-                    (l (first-n-ac 8 text nil))
-                    (ac nil)))
-   ("subgoal *1/3.2'4'"
-    :in-theory (disable take-more)
-    :use (:instance take-more (i *blocksize*)
-                    (l text)
-                    (ac1 nil)
-                    (ac2 nil)))))
+          text)))
 
 (defund
   l6-file-index-list (file fa-table)
@@ -739,7 +295,7 @@
                               (fat32-entry-list-p fa-table))))
   (let
       ((first-cluster (l6-regular-file-first-cluster file)))
-    (if (or (< first-cluster 2)
+    (if (or (< first-cluster *ms-first-data-cluster*)
             (>= first-cluster (len fa-table)))
         (mv nil 0)
       (l6-build-index-list fa-table first-cluster
@@ -774,11 +330,12 @@
   :hints
   (("goal" :in-theory (enable l6-file-index-list))
    ("Goal'''"
-    :in-theory (disable l6-build-index-list-correctness-3)
-    :use (:instance l6-build-index-list-correctness-3
+    :in-theory (disable fat32-build-index-list-correctness-3)
+    :use (:instance fat32-build-index-list-correctness-3
                     (masked-current-cluster
                      (l6-regular-file-first-cluster file))
-                    (length (l6-regular-file-length file))))))
+                    (length (l6-regular-file-length file))
+                    (cluster-size *blocksize*)))))
 
 ;; This function finds a text file given its path and reads a segment of
 ;; that text file.
@@ -821,54 +378,6 @@
      (if (< file-length end)
          (mv nil error-code)
          (mv (subseq file-text start (+ start n)) error-code))))))
-
-(defthm
-  l6-wrchs-guard-lemma-1
-  (implies (and (fat32-masked-entry-p val)
-                (fat32-masked-entry-list-p ac))
-           (fat32-masked-entry-list-p (make-list-ac n val ac))))
-
-(defthm l6-wrchs-guard-lemma-2
-  (implies (true-listp x)
-           (equal (fat32-masked-entry-list-p (binary-append x y))
-                  (and (fat32-masked-entry-list-p x)
-                       (fat32-masked-entry-list-p y)))))
-
-(defthmd
-  l6-wrchs-guard-lemma-3
-  (equal (fat32-masked-entry-list-p x)
-         (bounded-nat-listp x *expt-2-28*))
-  :hints (("goal" :in-theory (enable fat32-masked-entry-p))))
-
-(defthm
-  l6-wrchs-guard-lemma-4
-  (implies (and (fat32-entry-list-p fa-table)
-                (natp n)
-                (>= (len fa-table) *ms-first-data-cluster*)
-                (<= (len fa-table) *ms-bad-cluster*))
-           (fat32-masked-entry-list-p (find-n-free-clusters fa-table n)))
-  :rule-classes
-  (:rewrite
-   (:rewrite
-    :corollary
-    (implies
-     (and (fat32-entry-list-p fa-table)
-          (natp n)
-          (>= (len fa-table) *ms-first-data-cluster*)
-          (<= (len fa-table) *ms-bad-cluster*))
-     (let ((l (find-n-free-clusters fa-table n)))
-       (implies (consp l)
-                (and (fat32-masked-entry-list-p (cdr l))
-                     (fat32-masked-entry-p (car l))))))))
-  :hints (("goal" :in-theory (disable find-n-free-clusters-correctness-1)
-           :use ((:instance find-n-free-clusters-correctness-1
-                            (b (len fa-table)))
-                 (:instance l6-wrchs-guard-lemma-3
-                            (x (find-n-free-clusters fa-table n)))
-                 (:instance bounded-nat-listp-correctness-5
-                            (l (find-n-free-clusters fa-table n))
-                            (x (len fa-table))
-                            (y *expt-2-28*))))))
 
 ;; l6-wrchs and l6-create are in some cases asked to create a zero length file
 ;; or zero the length of an existing file; the following comment from page 17
@@ -1323,16 +832,19 @@
 
 (defthm
   l6-stricter-fs-p-correctness-1-lemma-1
-  (implies (and (fat32-entry-list-p fa-table)
-                (integerp masked-current-cluster)
-                (<= *ms-first-data-cluster* masked-current-cluster)
-                (< masked-current-cluster (len fa-table)))
-           (b* (((mv index-list error-code)
-                 (l6-build-index-list fa-table
-                                      masked-current-cluster length)))
-             (implies (equal error-code 0)
-                      (indices-marked-p index-list
-                                        (fa-table-to-alv fa-table))))))
+  (implies
+   (and (fat32-entry-list-p fa-table)
+        (integerp masked-current-cluster)
+        (<= *ms-first-data-cluster*
+            masked-current-cluster)
+        (< masked-current-cluster (len fa-table)))
+   (b*
+       (((mv index-list error-code)
+         (fat32-build-index-list fa-table masked-current-cluster
+                                 length cluster-size)))
+     (implies (equal error-code 0)
+              (indices-marked-p index-list
+                                (fa-table-to-alv fa-table))))))
 
 (defthm
   l6-stricter-fs-p-correctness-1-lemma-2
@@ -1856,165 +1368,8 @@
   :hints (("goal" :in-theory (enable l6-stricter-fs-p))))
 
 (defthm l6-wrchs-returns-fs-lemma-1
-  (implies (and (l6-fs-p fs))
+  (implies (l6-fs-p fs)
            (l6-fs-p (delete-assoc-equal name fs))))
-
-;; This obviously needs clean up - I'm just trying to get past an infinite loop
-;; in ACL2
-(defthm
-  l6-wrchs-returns-fs-lemma-2
-  (implies
-   (and
-    (consp (assoc-equal name fs))
-    (l6-regular-file-entry-p (cdr (assoc-equal name fs)))
-    (consp (l6-file-index-list (cdr (assoc-equal name fs))
-                               fa-table))
-    (< (car (l6-file-index-list (cdr (assoc-equal name fs))
-                                fa-table))
-       (len disk))
-    (consp
-     (find-n-free-clusters
-      (update-nth
-       (car (l6-file-index-list (cdr (assoc-equal name fs))
-                                fa-table))
-       (fat32-update-lower-28
-        (nth
-         (car (l6-file-index-list (cdr (assoc-equal name fs))
-                                  fa-table))
-         fa-table)
-        0)
-       fa-table)
-      (len
-       (make-blocks
-        (insert-text
-         (unmake-blocks-without-feasibility
-          (fetch-blocks-by-indices
-           disk
-           (l6-file-index-list (cdr (assoc-equal name fs))
-                               fa-table))
-          (l6-regular-file-length (cdr (assoc-equal name fs))))
-         start text)))))
-    (l6-fs-p fs)
-    (integerp start)
-    (<= 0 start)
-    (stringp text)
-    (block-listp disk)
-    (fat32-entry-list-p fa-table)
-    (equal (len disk) (len fa-table))
-    (<= (len fa-table) *ms-bad-cluster*)
-    (<= *ms-first-data-cluster* (len fa-table)))
-   (l6-regular-file-entry-p
-    (l6-make-regular-file
-     (car
-      (find-n-free-clusters
-       (update-nth
-        (car (l6-file-index-list (cdr (assoc-equal name fs))
-                                 fa-table))
-        (fat32-update-lower-28
-         (nth
-          (car (l6-file-index-list (cdr (assoc-equal name fs))
-                                   fa-table))
-          fa-table)
-         0)
-        fa-table)
-       (len
-        (make-blocks
-         (insert-text
-          (unmake-blocks-without-feasibility
-           (fetch-blocks-by-indices
-            disk
-            (l6-file-index-list (cdr (assoc-equal name fs))
-                                fa-table))
-           (l6-regular-file-length (cdr (assoc-equal name fs))))
-          start text)))))
-     (len
-      (insert-text
-       (unmake-blocks-without-feasibility
-        (fetch-blocks-by-indices
-         disk
-         (l6-file-index-list (cdr (assoc-equal name fs))
-                             fa-table))
-        (l6-regular-file-length (cdr (assoc-equal name fs))))
-       start text)))))
-  :hints
-  (("goal"
-    :in-theory (disable l6-make-regular-file-correctness-1
-                        l6-wrchs-guard-lemma-4)
-    :use
-    ((:instance
-      l6-make-regular-file-correctness-1
-      (first-cluster
-       (car
-        (find-n-free-clusters
-         (update-nth
-          (car (l6-file-index-list (cdr (assoc-equal name fs))
-                                   fa-table))
-          (fat32-update-lower-28
-           (nth
-            (car (l6-file-index-list (cdr (assoc-equal name fs))
-                                     fa-table))
-            fa-table)
-           0)
-          fa-table)
-         (len
-          (make-blocks
-           (insert-text
-            (unmake-blocks-without-feasibility
-             (fetch-blocks-by-indices
-              disk
-              (l6-file-index-list (cdr (assoc-equal name fs))
-                                  fa-table))
-             (l6-regular-file-length
-              (cdr (assoc-equal name fs))))
-            start text))))))
-      (length
-       (len
-        (insert-text
-         (unmake-blocks-without-feasibility
-          (fetch-blocks-by-indices
-           disk
-           (l6-file-index-list (cdr (assoc-equal name fs))
-                               fa-table))
-          (l6-regular-file-length (cdr (assoc-equal name fs))))
-         start text))))
-     (:instance
-      l6-wrchs-guard-lemma-4
-      (fa-table
-       (update-nth
-        (car (l6-file-index-list (cdr (assoc-equal name fs))
-                                 fa-table))
-        (fat32-update-lower-28
-         (nth
-          (car (l6-file-index-list (cdr (assoc-equal name fs))
-                                   fa-table))
-          fa-table)
-         0)
-        fa-table))
-      (n
-       (len
-        (make-blocks
-         (insert-text
-          (unmake-blocks-without-feasibility
-           (fetch-blocks-by-indices
-            disk
-            (l6-file-index-list (cdr (assoc-equal name fs))
-                                fa-table))
-           (l6-regular-file-length (cdr (assoc-equal name fs))))
-          start text)))))))
-   ("subgoal 8"
-    :in-theory (disable set-indices-in-fa-table-guard-lemma-1)
-    :use
-    (:instance
-     set-indices-in-fa-table-guard-lemma-1
-     (key (car (l6-file-index-list (cdr (assoc-equal name fs))
-                                   fa-table)))
-     (val
-      (fat32-update-lower-28
-       (nth (car (l6-file-index-list (cdr (assoc-equal name fs))
-                                     fa-table))
-            fa-table)
-       0))
-     (l fa-table)))))
 
 (defthm
   l6-wrchs-returns-fs
@@ -2162,18 +1517,21 @@
 (defthmd
   l6-wrchs-correctness-1-lemma-13
   (implies
-   (and (fat32-entry-list-p fa-table)
-        (fat32-masked-entry-p masked-current-cluster)
-        (natp length)
-        (>= masked-current-cluster *ms-first-data-cluster*)
-        (< masked-current-cluster (len fa-table))
-        (member-equal
-         x
-         (mv-nth 0
-                 (l6-build-index-list fa-table
-                                      masked-current-cluster length))))
-   (and (integerp x) (>= x *ms-first-data-cluster*)))
-  :hints (("goal" :in-theory (enable l6-build-index-list))))
+   (and
+    (fat32-entry-list-p fa-table)
+    (fat32-masked-entry-p masked-current-cluster)
+    (natp length)
+    (>= masked-current-cluster
+        *ms-first-data-cluster*)
+    (< masked-current-cluster (len fa-table))
+    (member-equal
+     x
+     (mv-nth
+      0
+      (fat32-build-index-list fa-table masked-current-cluster
+                              length cluster-size))))
+   (and (integerp x)
+        (>= x *ms-first-data-cluster*))))
 
 (defthmd
   l6-wrchs-correctness-1-lemma-14
@@ -2183,14 +1541,16 @@
         (member-equal
          x
          (mv-nth 0 (l6-file-index-list file fa-table))))
-   (and (integerp x) (>= x 2)))
+   (and (integerp x)
+        (>= x *ms-first-data-cluster*)))
   :hints
   (("goal"
     :in-theory (enable l6-file-index-list)
     :use (:instance l6-wrchs-correctness-1-lemma-13
                     (masked-current-cluster
                      (l6-regular-file-first-cluster file))
-                    (length (l6-regular-file-length file))))))
+                    (length (l6-regular-file-length file))
+                    (cluster-size *blocksize*)))))
 
 (defthm
   l6-wrchs-correctness-1-lemma-15
@@ -2220,33 +1580,6 @@
    (l3-regular-file-entry-p
     (cdr (assoc-equal name
                       (l6-to-l4-fs-helper fs fa-table))))))
-
-;; We cannot reason with find-n-free-clusters and find-n-free clusters-helper
-;; here. We're going to have to abstract away its properties and treat it like
-;; a list of integers, all greater than equal to 2, all less than the length of
-;; the disk.
-
-;; This might also be a good time to add a constant in place of 2. I don't like
-;; the idea of considering 2 to be special here.
-
-(defund lower-bounded-integer-listp (l b)
-  (declare (xargs :guard (integerp b)))
-  (if (atom l)
-      (equal l nil)
-    (and (integerp (car l)) (>= (car l) b) (lower-bounded-integer-listp (cdr l) b))))
-
-(defthm lower-bounded-integer-listp-correctness-2
-  (implies (true-listp x)
-           (equal (lower-bounded-integer-listp (binary-append x y)
-                                     b)
-                  (and (lower-bounded-integer-listp x b)
-                       (lower-bounded-integer-listp y b))))
-  :hints (("Goal" :in-theory (enable lower-bounded-integer-listp))))
-
-(defthmd lower-bounded-integer-listp-correctness-5
-  (implies (and (<= y x) (lower-bounded-integer-listp l x))
-           (lower-bounded-integer-listp l y))
-  :hints (("Goal" :in-theory (enable lower-bounded-integer-listp))))
 
 (defthm
   l6-wrchs-correctness-1-lemma-17
@@ -2379,12 +1712,11 @@
         (< masked-current-cluster (len fa-table)))
    (lower-bounded-integer-listp
     (mv-nth 0
-            (l6-build-index-list
-             fa-table masked-current-cluster length))
+            (fat32-build-index-list
+             fa-table masked-current-cluster length cluster-size))
     *ms-first-data-cluster*))
   :hints
-  (("goal" :in-theory (enable l6-build-index-list
-                              lower-bounded-integer-listp))))
+  (("goal" :in-theory (enable lower-bounded-integer-listp))))
 
 (defthm
   l6-wrchs-correctness-1-lemma-23
@@ -2490,77 +1822,6 @@
                                              fa-table)))))))
 
 (defthm
-  l6-wrchs-correctness-1-lemma-25
-  (implies (integerp start)
-           (lower-bounded-integer-listp
-            (find-n-free-clusters-helper fa-table n start)
-            start))
-  :hints
-  (("goal" :in-theory (enable lower-bounded-integer-listp
-                              find-n-free-clusters-helper))
-   ("subgoal *1/5.1'"
-    :use
-    (:instance lower-bounded-integer-listp-correctness-5
-               (l (find-n-free-clusters-helper (cdr fa-table)
-                                               (+ -1 n)
-                                               (+ 1 start)))
-               (x (+ 1 start))
-               (y start)))
-   ("subgoal *1/3''"
-    :use
-    (:instance lower-bounded-integer-listp-correctness-5
-               (l (find-n-free-clusters-helper (cdr fa-table)
-                                               n (+ 1 start)))
-               (x (+ 1 start))
-               (y start)))))
-
-(defthm
-  l6-wrchs-correctness-1-lemma-26
-  (lower-bounded-integer-listp (find-n-free-clusters fa-table n)
-                               *ms-first-data-cluster*)
-  :rule-classes
-  (:rewrite
-   (:rewrite
-    :corollary
-    (implies
-     (consp (find-n-free-clusters fa-table n))
-     (lower-bounded-integer-listp (cdr (find-n-free-clusters fa-table n))
-                                  *ms-first-data-cluster*))
-    :hints (("goal" :in-theory (enable lower-bounded-integer-listp))))
-   (:linear
-    :corollary (implies (consp (find-n-free-clusters fa-table n))
-                        (<= *ms-first-data-cluster*
-                            (car (find-n-free-clusters fa-table n))))
-    :hints (("goal" :in-theory (enable lower-bounded-integer-listp)))))
-  :hints (("goal" :in-theory (enable find-n-free-clusters))))
-
-(defthm
-  l6-wrchs-correctness-1-lemma-27
-  (implies
-   (fat32-masked-entry-p masked-current-cluster)
-   (mv-let
-     (index-list error-code)
-     (l6-build-index-list fa-table masked-current-cluster length)
-     (implies
-      (and (fat32-masked-entry-p key)
-           (< key (len fa-table))
-           (not (member-equal key index-list))
-           (equal error-code 0))
-      (equal
-       (l6-build-index-list (update-nth key val fa-table)
-                            masked-current-cluster length)
-       (l6-build-index-list fa-table
-                            masked-current-cluster length)))))
-  :hints
-  (("goal" :in-theory (enable l6-build-index-list)
-    :induct (l6-build-index-list
-             fa-table masked-current-cluster length))
-   ("subgoal *1/3.2"
-    :expand
-    (l6-build-index-list (update-nth key val fa-table)
-                         masked-current-cluster length))))
-
-(defthm
   l6-wrchs-correctness-1-lemma-28
   (implies
    (and (bounded-nat-listp file-index-list (len fa-table))
@@ -2585,15 +1846,13 @@
 
   (local
    (defun
-       induction-scheme
-       (file-index-list file-length)
-     (if
-         (or (not (integerp file-length))
+     induction-scheme
+     (file-index-list file-length)
+     (if (or (not (integerp file-length))
              (<= file-length 0))
          file-index-list
-       (induction-scheme (cdr file-index-list)
-                         (nfix (- file-length *blocksize*)))))
-   )
+         (induction-scheme (cdr file-index-list)
+                           (nfix (- file-length *blocksize*))))))
 
   (defthm
     l6-wrchs-correctness-1-lemma-29
@@ -2602,7 +1861,8 @@
           (no-duplicatesp-equal file-index-list)
           (feasible-file-length-p (len file-index-list)
                                   file-length)
-          (lower-bounded-integer-listp file-index-list *ms-first-data-cluster*)
+          (lower-bounded-integer-listp
+           file-index-list *ms-first-data-cluster*)
           (bounded-nat-listp file-index-list (len fa-table))
           (<= (len file-index-list)
               (count-free-blocks (fa-table-to-alv fa-table)))
@@ -2610,80 +1870,68 @@
           (fat32-entry-list-p fa-table)
           (<= (len fa-table) *ms-bad-cluster*)
           (<= *ms-first-data-cluster* (len fa-table)))
-     (equal
-      (l6-build-index-list
-       (set-indices-in-fa-table fa-table file-index-list
-                                (append (cdr file-index-list)
-                                        (list *ms-end-of-clusterchain*)))
-       (car file-index-list)
-       file-length)
-      (mv file-index-list 0)))
+     (equal (fat32-build-index-list
+             (set-indices-in-fa-table
+              fa-table file-index-list
+              (append (cdr file-index-list)
+                      (list *ms-end-of-clusterchain*)))
+             (car file-index-list)
+             file-length *blocksize*)
+            (mv file-index-list 0)))
     :hints
-    (("goal" :in-theory (enable l6-build-index-list
-                                set-indices-in-fa-table
-                                lower-bounded-integer-listp)
+    (("goal"
+      :in-theory (enable set-indices-in-fa-table
+                         lower-bounded-integer-listp)
       :induct (induction-scheme file-index-list file-length))
-     ("subgoal *1/2.25'" :in-theory (enable feasible-file-length-p))
-     ("subgoal *1/2.22'" :in-theory (enable feasible-file-length-p))
+     ("subgoal *1/2.25'"
+      :in-theory (enable feasible-file-length-p))
+     ("subgoal *1/2.22'"
+      :in-theory (enable feasible-file-length-p))
      ("subgoal *1/2.19'"
       :in-theory (disable fat32-update-lower-28-correctness-2)
       :use (:instance fat32-update-lower-28-correctness-2
                       (entry (nth (car file-index-list) fa-table))
                       (masked-entry (cadr file-index-list))))
-     ("subgoal *1/2.19.2" :in-theory (enable fat32-masked-entry-p))
+     ("subgoal *1/2.19.2"
+      :in-theory (enable fat32-masked-entry-p))
      ("subgoal *1/2.19.1"
-      :expand (set-indices-in-fa-table fa-table file-index-list
-                                       (cons (cadr file-index-list)
-                                             (append (cddr file-index-list)
-                                                     '(268435455))))
+      :expand (set-indices-in-fa-table
+               fa-table file-index-list
+               (cons (cadr file-index-list)
+                     (append (cddr file-index-list)
+                             '(268435455))))
       :in-theory (disable set-indices-in-fa-table-correctness-4
                           set-indices-in-fa-table-correctness-3
-                          nth-update-nth
-                          l6-wrchs-correctness-1-lemma-27
                           l6-wrchs-correctness-1-lemma-28
                           fat32-update-lower-28-correctness-2)
       :use
-      ((:instance
-        set-indices-in-fa-table-correctness-4
-        (key (car file-index-list))
-        (val (fat32-update-lower-28 (nth (car file-index-list) fa-table)
-                                    (cadr file-index-list)))
-        (l fa-table)
-        (index-list (cdr file-index-list))
-        (value-list (append (cddr file-index-list)
-                            '(268435455))))
+      ((:instance set-indices-in-fa-table-correctness-4
+                  (key (car file-index-list))
+                  (val (fat32-update-lower-28
+                        (nth (car file-index-list) fa-table)
+                        (cadr file-index-list)))
+                  (l fa-table)
+                  (index-list (cdr file-index-list))
+                  (value-list (append (cddr file-index-list)
+                                      '(268435455))))
        (:instance
         set-indices-in-fa-table-correctness-3
         (n (car file-index-list))
-        (fa-table (update-nth
-            (car file-index-list)
-            (fat32-update-lower-28 (nth (car file-index-list) fa-table)
-                                   (cadr file-index-list))
-            fa-table))
+        (fa-table
+         (update-nth (car file-index-list)
+                     (fat32-update-lower-28
+                      (nth (car file-index-list) fa-table)
+                      (cadr file-index-list))
+                     fa-table))
         (index-list (cdr file-index-list))
         (value-list (append (cddr file-index-list)
                             '(268435455))))
-       (:instance
-        nth-update-nth (m (car file-index-list))
-        (n (car file-index-list))
-        (val (fat32-update-lower-28 (nth (car file-index-list) fa-table)
-                                    (cadr file-index-list)))
-        (l fa-table))
-       (:instance
-        l6-wrchs-correctness-1-lemma-27
-        (key (car file-index-list))
-        (val (fat32-update-lower-28 (nth (car file-index-list) fa-table)
-                                    (cadr file-index-list)))
-        (fa-table (set-indices-in-fa-table fa-table (cdr file-index-list)
-                                           (append (cddr file-index-list)
-                                                   '(268435455))))
-        (masked-current-cluster (cadr file-index-list))
-        (length (+ -8 file-length)))
        l6-wrchs-correctness-1-lemma-28
        (:instance fat32-update-lower-28-correctness-2
                   (entry (nth (car file-index-list) fa-table))
                   (masked-entry (cadr file-index-list)))))
-     ("subgoal *1/1'''" :in-theory (enable feasible-file-length-p)))))
+     ("subgoal *1/1'''"
+      :in-theory (enable feasible-file-length-p)))))
 
 (defthm
   l6-wrchs-correctness-1-lemma-30
@@ -2702,8 +1950,9 @@
      (len
       (mv-nth
        0
-       (l6-build-index-list fa-table
-                            masked-current-cluster length)))
+       (fat32-build-index-list fa-table
+                               masked-current-cluster length
+                               *blocksize*)))
      length)
     (fat32-entry-list-p fa-table)
     (not
@@ -2711,20 +1960,22 @@
       disjoint-index-list
       (mv-nth
        0
-       (l6-build-index-list fa-table
-                            masked-current-cluster length))))
+       (fat32-build-index-list fa-table
+                               masked-current-cluster length
+                               *blocksize*))))
     (equal (mv-nth 1
-                   (l6-build-index-list
-                    fa-table masked-current-cluster length))
+                   (fat32-build-index-list
+                    fa-table masked-current-cluster length
+                    *blocksize*))
            0))
-   (equal (l6-build-index-list
+   (equal (fat32-build-index-list
            (set-indices-in-fa-table
             fa-table disjoint-index-list value-list)
-           masked-current-cluster length)
-          (l6-build-index-list fa-table
-                               masked-current-cluster length)))
-  :hints (("goal" :in-theory (enable l6-build-index-list
-                                     lower-bounded-integer-listp
+           masked-current-cluster length *blocksize*)
+          (fat32-build-index-list fa-table
+                                  masked-current-cluster length
+                                  *blocksize*)))
+  :hints (("goal" :in-theory (enable lower-bounded-integer-listp
                                      set-indices-in-fa-table))))
 
 (defthm
@@ -2803,21 +2054,6 @@
   :hints (("goal" :in-theory (enable l6-stricter-fs-p
                                      l6-list-all-ok-indices))
           ("goal'" :induct t)))
-
-(defthm
-  l6-wrchs-correctness-1-lemma-34
-  (implies
-   (and (fat32-masked-entry-p masked-current-cluster)
-        (<= *ms-first-data-cluster*
-            masked-current-cluster))
-   (lower-bounded-integer-listp
-    (mv-nth 0
-            (l6-build-index-list
-             fa-table masked-current-cluster length))
-    *ms-first-data-cluster*))
-  :hints
-  (("goal" :in-theory (enable l6-build-index-list
-                              lower-bounded-integer-listp))))
 
 (defthm
   l6-wrchs-correctness-1-lemma-35
