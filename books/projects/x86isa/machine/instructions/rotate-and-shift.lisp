@@ -57,12 +57,23 @@
 
 (def-inst x86-sal/sar/shl/shr/rcl/rcr/rol/ror
   :guard (not (equal (modr/m->reg modr/m) 6))
+  :guard-hints (("Goal"
+                 :in-theory (e/d () (unsigned-byte-p
+                                     not force (force)))))
 
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip))
-                :hints (("Goal" :in-theory (e/d () (force (force))))))
+                :hints (("Goal" :in-theory
+                         (e/d ()
+                              (trunc
+                               select-operand-size
+                               mv-nth-0-of-add-to-*ip-when-64-bit-modep
+                               mv-nth-1-of-add-to-*ip-when-64-bit-modep
+                               signed-byte-p
+                               unsigned-byte-p
+                               not force (force))))))
 
   :long
   "<p>
