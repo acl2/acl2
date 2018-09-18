@@ -12,8 +12,7 @@
 (include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "std/io/read-ints" :dir :system)
 (local (include-book "ihs/logops-lemmas" :dir :system))
-(local (include-book "rtl/rel9/arithmetic/top"
-                     :dir :system))
+(local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 (include-book "kestrel/utilities/strings" :dir :system)
 
 (include-book "insert-text")
