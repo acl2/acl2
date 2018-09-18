@@ -234,6 +234,21 @@
    (implies (x86p x86)
             (unsigned-byte-p 128 (xr :str i x86)))))
 
+(local
+ (defthmd signed-byte-p-64-when-unsigned-byte-p-48
+   (implies (unsigned-byte-p 48 x)
+            (signed-byte-p 64 x))))
+
+(local
+ (defthmd signed-byte-p-64-when-unsigned-byte-p-32
+   (implies (unsigned-byte-p 32 x)
+            (signed-byte-p 64 x))))
+
+(local
+ (defthmd signed-byte-p-48-when-unsigned-byte-p-32
+   (implies (unsigned-byte-p 32 x)
+            (signed-byte-p 48 x))))
+
 (def-inst x86-far-jmp-Op/En-D
 
   :parents (one-byte-opcodes)
@@ -274,13 +289,15 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip))
-                :hints (("Goal" :in-theory (e/d* ()
-                                                 (unsigned-byte-p
-                                                  member-equal
-                                                  acl2::logtail-identity
-                                                  not rml-size
-                                                  signed-byte-p
-                                                  select-operand-size)))))
+                :hints (("Goal" :in-theory (e/d*
+                                            (signed-byte-p-64-when-unsigned-byte-p-32
+                                             signed-byte-p-48-when-unsigned-byte-p-32
+                                             )
+                                            (unsigned-byte-p
+                                             member-equal
+                                             acl2::logtail-identity
+                                             not rml-size
+                                             signed-byte-p)))))
 
   :prepwork
   ((local (in-theory (e/d* (far-jump-guard-helpers)
@@ -289,11 +306,14 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                             acl2::logtail-identity
                             not
                             signed-byte-p)))))
+
+  :guard-hints (("Goal" :in-theory (enable
+                                    signed-byte-p-64-when-unsigned-byte-p-48
+                                    signed-byte-p-64-when-unsigned-byte-p-32)))
+
   :body
 
   (b* ((ctx 'x86-far-jmp-Op/En-M)
-       ((when (not (equal proc-mode #.*64-bit-mode*)))
-        (!!ms-fresh :far-jmp-unimplemented-in-32-bit-mode))
 
        ((when (equal #.*lock* (prefixes->lck prefixes)))
         (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
@@ -489,12 +509,13 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                :np sel-index ;; #NP(selector)
                :code-segment-not-present sel-index))
 
-             ;; Trimming the offset based on the operand-size:
+             ;; Trimming the offset based on the operand-size,
+             ;; and changing the sign in 64-bit mode:
              (jmp-addr
               (case offset-size
                 (2 (n16 offset))
                 (4 (n32 offset))
-                (t offset)))
+                (t (i64 offset))))
 
              ;; #GP(0) is thrown if the target offset in destination is
              ;; non-canonical (in 64-bit mode) or outside the segment limit (in
@@ -543,12 +564,21 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        ;; Here S = 0, so the descriptor just read is a system segment,
        ;; or the first half of it in 64-bit mode.
 
-       ;; We still only support 64-bit mode right now (even though we are
-       ;; extending JMP far towards 32-bit mode). Thus, we have just read the
-       ;; first 8 bytes of a system descriptor (which is always 16 bytes in
-       ;; 64-bit mode). So now we read a 16-byte descriptor from the table,
-       ;; checking the limit (TODO: maybe optimize this by just reading the
-       ;; next 8 bytes and joining them with the already read 8 bytes above):
+       ;; In 32-bit mode, we only support JMP far in the application-level
+       ;; view, not in the system-level view of 32-bit mode. Only code
+       ;; segments, handled above, are used in the application-level view; call
+       ;; gates, handled below, are used in the system-level view. Thus, at
+       ;; this point we stop if we are in 32-bit mode. Support for system
+       ;; segments in 32-bit mode will be added eventually.
+
+       ((when (not (equal proc-mode #.*64-bit-mode*)))
+        (!!ms-fresh :far-jmp-system-unimplemented-in-32-bit-mode))
+
+       ;; Here we know we are in 64-bit mode. Thus, we have just read the first
+       ;; 8 bytes of a system descriptor (which is always 16 bytes in 64-bit
+       ;; mode). So now we read a 16-byte descriptor from the table, checking
+       ;; the limit (TODO: maybe optimize this by just reading the next 8 bytes
+       ;; and joining them with the already read 8 bytes above):
        (largest-address (+ (ash sel-index 3) 15))
        ((when (< dt-limit largest-address))
         (!!fault-fresh
