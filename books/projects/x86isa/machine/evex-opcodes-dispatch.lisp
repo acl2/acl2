@@ -73,10 +73,13 @@
 
 (make-event
  `(define evex-0F-execute
-    ((start-rip              :type (signed-byte   #.*max-linear-address-size*))
+    ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))
+     (start-rip              :type (signed-byte   #.*max-linear-address-size*))
      (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
 			     "@('temp-rip') points to the byte following the
 			      opcode byte")
+     (prefixes               :type (unsigned-byte #.*prefixes-width*))
+     (rex-byte               :type (unsigned-byte 8))
      (evex-prefixes           :type (unsigned-byte #.*evex-width*)
 			      "Completely populated when this function is
 			      called")
@@ -106,14 +109,20 @@
 						      signed-byte-p)))))
 
     (case opcode
-      ,@(avx-case-gen *evex-0F-opcodes* nil state))))
+      ,@(avx-case-gen *evex-0F-opcodes*
+                      *evex-0F-exc-types*
+                      *evex-0F-op-features*
+                      nil state))))
 
 (make-event
  `(define evex-0F38-execute
-    ((start-rip              :type (signed-byte   #.*max-linear-address-size*))
+    ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))
+     (start-rip              :type (signed-byte   #.*max-linear-address-size*))
      (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
 			     "@('temp-rip') points to the byte following the
 			     opcode byte")
+     (prefixes               :type (unsigned-byte #.*prefixes-width*))
+     (rex-byte               :type (unsigned-byte 8))
      (evex-prefixes           :type (unsigned-byte #.*evex-width*)
 			      "Completely populated when this function is
 			      called")
@@ -145,14 +154,20 @@
 						      signed-byte-p)))))
 
     (case opcode
-      ,@(avx-case-gen *evex-0F38-opcodes* nil state))))
+      ,@(avx-case-gen *evex-0F38-opcodes*
+                      *evex-0F38-exc-types*
+                      *evex-0F38-op-features*
+                      nil state))))
 
 (make-event
  `(define evex-0F3A-execute
-    ((start-rip              :type (signed-byte   #.*max-linear-address-size*))
+    ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))
+     (start-rip              :type (signed-byte   #.*max-linear-address-size*))
      (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
 			     "@('temp-rip') points to the byte following the
 			    opcode byte")
+     (prefixes               :type (unsigned-byte #.*prefixes-width*))
+     (rex-byte               :type (unsigned-byte 8))
      (evex-prefixes           :type (unsigned-byte #.*evex-width*)
 			      "Completely populated when this function is
 			      called")
@@ -184,7 +199,10 @@
 						      signed-byte-p)))))
 
     (case opcode
-      ,@(avx-case-gen *evex-0F3A-opcodes* nil state))))
+      ,@(avx-case-gen *evex-0F3A-opcodes*
+                      *evex-0F3A-exc-types*
+                      *evex-0F3A-op-features*
+                      nil state))))
 
 (define evex-decode-and-execute
   ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))
@@ -317,11 +335,11 @@
 
     (cond
      (evex-0F-map?
-      (evex-0F-execute start-rip temp-rip evex-prefixes opcode modr/m sib x86))
+      (evex-0F-execute proc-mode start-rip temp-rip prefixes rex-byte evex-prefixes opcode modr/m sib x86))
      (evex-0F38-map?
-      (evex-0F38-execute start-rip temp-rip evex-prefixes opcode modr/m sib x86))
+      (evex-0F38-execute proc-mode start-rip temp-rip prefixes rex-byte evex-prefixes opcode modr/m sib x86))
      (evex-0F3A-map?
-      (evex-0F3A-execute start-rip temp-rip evex-prefixes opcode modr/m sib x86))
+      (evex-0F3A-execute proc-mode start-rip temp-rip prefixes rex-byte evex-prefixes opcode modr/m sib x86))
      (t
       ;; Unreachable.
       (!!ms-fresh :illegal-value-of-EVEX-mm))))
