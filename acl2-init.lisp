@@ -912,11 +912,10 @@ implementations.")
 ;       for release instructions.
 
 ; Temporarily, for a release:
-  ""
+; ""
 
 ; Normally:
 
-  #+skip
   (format
    nil
    "
