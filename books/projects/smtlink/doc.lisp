@@ -8,6 +8,7 @@
 (in-package "SMT")
 (include-book "centaur/sv/tutorial/support" :dir :system)
 (include-book "examples/examples")
+(include-book "examples/ringosc")
 
 ;; ------------------------------------------------------- ;;
 ;;    Documentation
