@@ -449,7 +449,7 @@
 
     (b* ((ctx 'get-prefixes)
 	 ((mv flg (the (unsigned-byte 8) byte) x86)
-	  (rme08 proc-mode start-rip #.*cs* :x x86))
+	  (rme08-opt proc-mode start-rip #.*cs* :x x86))
 	 ((when flg)
 	  (mv (cons ctx flg) byte rex-byte x86))
 
@@ -1126,7 +1126,7 @@
    (local
     (defthm dumb-integerp-of-mv-nth-1-rme08-rule
       (implies (force (x86p x86))
-               (integerp (mv-nth 1 (rme08 proc-mode eff-addr seg-reg r-x x86))))
+	       (integerp (mv-nth 1 (rme08 proc-mode eff-addr seg-reg r-x x86))))
       :rule-classes (:rewrite :type-prescription)))
 
    (local (in-theory (e/d* ()
@@ -1188,7 +1188,7 @@
        ;; this function for simplicity.
        ((mv flg les/lds-distinguishing-byte x86)
 	(if vex-byte0?
-	    (rme08 proc-mode temp-rip #.*cs* :x x86)
+	    (rme08-opt proc-mode temp-rip #.*cs* :x x86)
 	  (mv nil 0 x86)))
        ((when flg)
 	(!!ms-fresh :les/lds-distinguishing-byte-read-error flg))
@@ -1242,7 +1242,7 @@
        ;; simplicity.
        ((mv flg bound-distinguishing-byte x86)
 	(if evex-byte0?
-	    (rme08 proc-mode temp-rip #.*cs* :x x86)
+	    (rme08-opt proc-mode temp-rip #.*cs* :x x86)
 	  (mv nil 0 x86)))
        ((when flg)
 	(!!ms-fresh :bound-distinguishing-byte-read-error flg))
@@ -1315,7 +1315,7 @@
 		;; The above will be true only if the instruction is LES or LDS
 		;; or BOUND in the 32-bit mode.
 		(mv nil les/lds-distinguishing-byte x86)
-	      (rme08 proc-mode temp-rip #.*cs* :x x86))
+	      (rme08-opt proc-mode temp-rip #.*cs* :x x86))
 	  (mv nil 0 x86)))
        ((when flg)
 	(!!ms-fresh :modr/m-byte-read-error flg))
@@ -1335,7 +1335,7 @@
 
        ((mv flg (the (unsigned-byte 8) sib) x86)
 	(if sib?
-	    (rme08 proc-mode temp-rip #.*cs* :x x86)
+	    (rme08-opt proc-mode temp-rip #.*cs* :x x86)
 	  (mv nil 0 x86)))
        ((when flg)
 	(!!ms-fresh :sib-byte-read-error flg))
@@ -1550,6 +1550,8 @@
 
 ;; ----------------------------------------------------------------------
 
+;; Some variants of x86-run:
+
 (define x86-run-steps1
   ((n :type (unsigned-byte 59))
    (n0 :type (unsigned-byte 59))
@@ -1615,14 +1617,13 @@
 
 (in-theory (disable x86-run-steps1))
 
-;; ----------------------------------------------------------------------
-
 (define x86-fetch-decode-execute-halt
   ((halt-address :type (signed-byte   #.*max-linear-address-size*))
    x86)
   :enabled t
   :parents (x86-decoder)
   :inline t
+  :no-function t
 
   :short "Alternative version of @(tsee x86-fetch-decode-execute) that sets the
   @('MS') field if @('rip') is equal to @('halt-address')"
@@ -1632,12 +1633,12 @@
   :prepwork
   ((local (in-theory (e/d* () (signed-byte-p unsigned-byte-p not)))))
 
-  (b* ((ctx __function__))
-    (if (equal (the (signed-byte #.*max-linear-address-size*)
-		 (rip x86))
-	       halt-address)
-	(!!ms-fresh)
-      (x86-fetch-decode-execute x86))))
+  (if (equal (the (signed-byte #.*max-linear-address-size*)
+	       (rip x86))
+	     halt-address)
+      (b* ((ctx 'x86-fetch-decode-execute-halt))
+	(!!ms-fresh))
+    (x86-fetch-decode-execute x86)))
 
 (define x86-run-halt
   ((halt-address :type (signed-byte   #.*max-linear-address-size*))
@@ -1661,21 +1662,34 @@
   ((halt-address :type (signed-byte   #.*max-linear-address-size*))
    (n            :type (unsigned-byte 59))
    x86
-   (steps        :type (unsigned-byte 59)))
+   (n0        :type (unsigned-byte 59)))
 
-  :short "Run @('n') instructions or till @('halt-address') is reached,
-  whichever comes first; also returns the number of steps executed."
+  :guard (<= n n0) ;; n == n0, to begin with.
 
-  :returns (mv (steps natp :hyp (natp steps)
+  :short "A combination in functionality of @(tsee x86-run-steps) and @(tsee
+  x86-run-halt)"
+
+  :long "<p>Run @('n') instructions or till @('halt-address') is reached,
+  whichever comes first.  This function also returns the number of times @(tsee
+  x86-fetch-decode-execute-halt) is executed.  Note that
+  @('x86-fetch-decode-execute-halt') is executed one more time than @(tsee
+  x86-fetch-decode-execute) --- i.e., when @('rip == halt-address').</p>"
+
+  :returns (mv (steps natp :hyp (and (natp n0) (natp n))
 		      :rule-classes :type-prescription)
 	       (x86 x86p :hyp (x86p x86)))
 
-  (cond ((fault x86) (mv steps x86))
-	((ms x86) (mv steps x86))
-	((mbe :logic (zp n) :exec (equal 0 n))
-	 (mv steps x86))
-	(t (let* ((x86 (x86-fetch-decode-execute-halt halt-address x86))
-		  (n (the (unsigned-byte 59) (1- n))))
-	     (x86-run-halt-count halt-address n x86 (n59 (1+ steps)))))))
+  (if (mbt (<= n n0))
+
+      (cond ((or (fault x86)
+		 (ms x86)
+		 (mbe :logic (zp n) :exec (equal 0 n)))
+	     (mv (the (unsigned-byte 59) (- n0 n)) x86))
+	    (t
+	     (let* ((x86 (x86-fetch-decode-execute-halt halt-address x86))
+		    (n (the (unsigned-byte 59) (1- n))))
+	       (x86-run-halt-count halt-address n x86 n0))))
+
+    (mv 0 x86)))
 
 ;; ----------------------------------------------------------------------

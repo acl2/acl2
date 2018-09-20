@@ -775,7 +775,7 @@ memory.</li>
     (defrule 64-bit-modep-of-las-to-pas
       (equal (64-bit-modep (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
              (64-bit-modep x86))
-      :hints (("Goal" :in-theory (e/d* (64-bit-modep) ()))))
+      :hints (("Goal" :in-theory (e/d* (64-bit-modep) (force (force))))))
 
     (defrule x86-operation-mode-of-las-to-pas
       (equal (x86-operation-mode (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
@@ -1131,7 +1131,8 @@ memory.</li>
     (defrule 64-bit-modep-of-rb
       (equal (64-bit-modep (mv-nth 2 (rb n addr r-x x86)))
              (64-bit-modep x86))
-      :enable 64-bit-modep)
+      :enable 64-bit-modep
+      :disable (force (force)))
 
     (defrule x86-operation-mode-of-rb
       (equal (x86-operation-mode (mv-nth 2 (rb n addr r-x x86)))
@@ -1231,7 +1232,8 @@ memory.</li>
     (defrule 64-bit-modep-of-write-to-physical-memory
       (equal (64-bit-modep (write-to-physical-memory p-addrs value x86))
              (64-bit-modep x86))
-      :enable 64-bit-modep)
+      :enable 64-bit-modep
+      :disable (force (force)))
 
     (defrule x86-operation-mode-of-write-to-physical-memory
       (equal (x86-operation-mode (write-to-physical-memory p-addrs value x86))
@@ -1554,7 +1556,8 @@ memory.</li>
   (defrule 64-bit-modep-of-mv-nth-1-of-wb ; contributed by Eric Smith
     (equal (64-bit-modep (mv-nth 1 (wb n addr w value x86)))
            (64-bit-modep x86))
-    :hints (("Goal" :in-theory (e/d* (64-bit-modep) ()))))
+    :hints (("Goal" :in-theory (e/d* (64-bit-modep)
+                                     (force (force))))))
 
   (defrule x86-operation-mode-of-mv-nth-1-of-wb
     (equal (x86-operation-mode (mv-nth 1 (wb n addr w value x86)))
@@ -1897,7 +1900,8 @@ memory.</li>
   (defrule 64-bit-modep-of-rml08
     (equal (64-bit-modep (mv-nth 2 (rml08 li-addr r-x x86)))
            (64-bit-modep x86))
-    :enable 64-bit-modep)
+    :enable 64-bit-modep
+    :disable (force (force)))
 
   (defrule x86-operation-mode-of-rml08
     (equal (x86-operation-mode (mv-nth 2 (rml08 li-addr r-x x86)))

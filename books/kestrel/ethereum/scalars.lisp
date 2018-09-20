@@ -21,7 +21,7 @@
   :short "Modeling of scalars."
   :long
   (xdoc::topp
-   "YP:3 says that scalars are
+   "[YP:3] says that scalars are
     non-negative integers in the @($\\mathbb{N}$) set,
     i.e. natural numbers.
     We use the library type <see topic='@(url fty::basetypes)'>@('nat')</see>

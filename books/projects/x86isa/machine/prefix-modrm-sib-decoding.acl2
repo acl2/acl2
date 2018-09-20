@@ -1,0 +1,7 @@
+(ld "cert.acl2")
+; From cert.acl2:
+;; cert-flags: ? t :ttags (:include-raw :syscall-exec :other-non-det :undef-flg) :skip-proofs-okp t
+
+#+acl2-par
+; computed hints that modify state
+(set-waterfall-parallelism nil)

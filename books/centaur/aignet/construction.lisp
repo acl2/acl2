@@ -200,7 +200,7 @@
 
 
 (defsection maybe-litp
-  :parents (std/basic litp)
+  :parents (litp)
   :short "Recognizer for lits and @('nil')."
   :long "<p>This is like an <a
 href='https://en.wikipedia.org/wiki/Option_type'>option type</a>; when @('x')
@@ -2898,12 +2898,15 @@ of the @('b*').</li>
   :returns (mv (result litp :rule-classes (:rewrite :type-prescription))
                (new-strash)
                (new-aignet))
-  (b* ((c (mbe :logic (non-exec (aignet-lit-fix c aignet))
+  (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet)) :exec aignet))
+       (c (mbe :logic (non-exec (aignet-lit-fix c aignet))
                :exec c))
        (tb (mbe :logic (non-exec (aignet-lit-fix tb aignet))
                 :exec tb))
        (fb (mbe :logic (non-exec (aignet-lit-fix fb aignet))
-                :exec fb)))
+                :exec fb))
+       ((when (eql tb fb)) (mv tb strash aignet))
+       ((when (eql tb (lit-negate fb))) (aignet-hash-xor c fb gatesimp strash aignet)))
     (aignet-build (or (and c tb) (and (not c) fb)) gatesimp strash aignet))
 
   ///
@@ -2917,6 +2920,45 @@ of the @('b*').</li>
   (defret aignet-litp-of-<fn>
     (aignet-litp result new-aignet))
 
+  ;; (local (defthm lit-eval-of-equal-aignet-lit-fix
+  ;;          (implies (and (equal y (aignet-lit-fix x aignet))
+  ;;                        (bind-free
+  ;;                         (progn$ (cw "x: ~x0 y: ~x0~%" y)
+  ;;                                 (case-match y
+  ;;                                   (('aignet-lit-fix yy 'aignet) `((yy . ,yy)))
+  ;;                                   (& `((yy . ,y)))))
+  ;;                         (yy))
+  ;;                        (equal (aignet-lit-fix yy aignet) y)
+  ;;                        (syntaxp (progn$ (cw "yy: ~x0~%" yy)
+  ;;                                         (not (equal yy x)))))
+  ;;                   (equal (lit-eval x invals regvals aignet)
+  ;;                          (lit-eval yy invals regvals aignet)))
+  ;;          :hints (("goal" :use ((:instance lit-eval-of-aignet-lit-fix
+  ;;                                 (x x))
+  ;;                                (:instance lit-eval-of-aignet-lit-fix
+  ;;                                 (x yy)))
+  ;;                   :in-theory (disable lit-eval-of-aignet-lit-fix)))))
+
+  (local (defthm lit-eval-equal-when-aignet-lit-fix-equal
+           (implies (equal (aignet-lit-fix x aignet)
+                           (aignet-lit-fix y aignet))
+                    (equal (equal (lit-eval x invals regvals aignet)
+                                  (lit-eval y invals regvals aignet))
+                           t))
+           :hints (("goal" :use ((:instance lit-eval-of-aignet-lit-fix (x x))
+                                 (:instance lit-eval-of-aignet-lit-fix (x y)))
+                    :in-theory (disable lit-eval-of-aignet-lit-fix)))))
+
+  (local (defthm lit-eval-equal-when-aignet-lit-fix-negated
+           (implies (equal (aignet-lit-fix x aignet)
+                           (lit-negate (aignet-lit-fix y aignet)))
+                    (equal (lit-eval x invals regvals aignet)
+                           (b-not (lit-eval y invals regvals aignet))))
+           :hints (("goal" :use ((:instance lit-eval-of-aignet-lit-fix (x x))
+                                 (:instance lit-eval-of-aignet-lit-fix (x y)))
+                    :in-theory (disable lit-eval-of-aignet-lit-fix
+                                        lit-eval-of-aignet-lit-fix-extension
+                                        lit-eval-equal-when-aignet-lit-fix-equal)))))
 
   (defret lit-eval-of-<fn>
     (equal (lit-eval result invals regvals new-aignet)
@@ -2939,6 +2981,13 @@ of the @('b*').</li>
                                   (lit (lit-fix lit))))
                     :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
 
+  (local (defthm unsigned-byte-p-when-aignet-litp-of-aignet-lit-fix
+           (implies (< (node-count aignet) #x1fffffff)
+                    (unsigned-byte-p 30 (aignet-lit-fix lit aignet)))
+           :hints (("goal" :use ((:instance unsigned-byte-p-when-aignet-litp
+                                  (lit (aignet-lit-fix lit aignet))))
+                    :in-theory (disable unsigned-byte-p-when-aignet-litp)))))
+
   (local (defret unsigned-byte-p-lemma-1
            (implies (and (< (node-count aignet) #x1ffffffd))
                     (unsigned-byte-p 30 result))))
@@ -2948,7 +2997,8 @@ of the @('b*').</li>
                   (natp n) (<= 30 n))
              (unsigned-byte-p n result))
     :hints (("goal" :use unsigned-byte-p-lemma-1
-             :in-theory (disable unsigned-byte-p-lemma-1)))))
+             :in-theory (disable unsigned-byte-p-lemma-1
+                                 <fn>)))))
 
 
 

@@ -797,11 +797,11 @@ the @('fault') field instead.</li>
 
 	    (0 (if (equal b 5)
 		   (b* (((mv ?flg0 dword x86)
-			 (rime-size
+			 (rime-size-opt
 			  proc-mode 4 temp-RIP #.*cs* :x check-alignment? x86
 			  :mem-ptr? nil)) ;; sign-extended
 			((when flg0)
-			 (mv (cons flg0 'rime-size-error) 0 0 0 x86)))
+			 (mv (cons flg0 'rime-size-opt-error) 0 0 0 x86)))
 		     (mv nil 0 dword 4 x86))
 		 (mv nil
 		     (if (equal proc-mode #.*64-bit-mode*)
@@ -812,10 +812,10 @@ the @('fault') field instead.</li>
 		     x86)))
 
 	    (1 (b* (((mv ?flg1 byte x86)
-		     (rime-size proc-mode 1 temp-RIP #.*cs* :x check-alignment? x86
+		     (rime-size-opt proc-mode 1 temp-RIP #.*cs* :x check-alignment? x86
 				:mem-ptr? nil)) ;; sign-extended
 		    ((when flg1)
-		     (mv (cons flg1 'rime-size-error) 0 0 0 x86)))
+		     (mv (cons flg1 'rime-size-opt-error) 0 0 0 x86)))
 		 (mv nil
 		     (if (equal proc-mode #.*64-bit-mode*)
 			 (rgfi (reg-index b rex-byte #.*b*) x86)
@@ -825,10 +825,10 @@ the @('fault') field instead.</li>
 		     x86)))
 
 	    (2 (b* (((mv ?flg2 dword x86)
-		     (rime-size proc-mode 4 temp-RIP #.*cs* :x check-alignment? x86
+		     (rime-size-opt proc-mode 4 temp-RIP #.*cs* :x check-alignment? x86
 				:mem-ptr? nil)) ;; sign-extended
 		    ((when flg2)
-		     (mv (cons flg2 'rime-size-error) 0 0 0 x86)))
+		     (mv (cons flg2 'rime-size-opt-error) 0 0 0 x86)))
 		 (mv nil
 		     (if (equal proc-mode #.*64-bit-mode*)
 			 (rgfi (reg-index b rex-byte #.*b*) x86)
@@ -924,11 +924,11 @@ the @('fault') field instead.</li>
     (case mod
       (0 (mv nil 0 0 x86))
       (1 (b* (((mv flg byte x86)
-	       (rime-size proc-mode 1 temp-rip #.*cs* :x nil x86 :mem-ptr? nil))
+	       (rime-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86 :mem-ptr? nil))
 	      ((when flg) (mv flg 0 0 x86)))
 	   (mv nil byte 1 x86)))
       (2 (b* (((mv flg word x86)
-	       (rime-size proc-mode 2 temp-rip #.*cs* :x nil x86 :mem-ptr? nil))
+	       (rime-size-opt proc-mode 2 temp-rip #.*cs* :x nil x86 :mem-ptr? nil))
 	      ((when flg) (mv flg 0 0 x86)))
 	   (mv nil word 2 x86)))
       (otherwise ; shouldn't happen
@@ -1009,7 +1009,7 @@ the @('fault') field instead.</li>
 	   (mv nil (n16 (+ di disp)) increment-rip-by x86)))
       (6 (case mod
 	   (0 (b* (((mv flg disp x86)
-		    (rime-size proc-mode 2 temp-rip #.*cs* :x nil x86
+		    (rime-size-opt proc-mode 2 temp-rip #.*cs* :x nil x86
 			       :mem-ptr? nil))
 		   ((when flg) (mv flg 0 0 x86)))
 		(mv nil (n16 disp) 2 x86)))
@@ -1142,7 +1142,7 @@ the @('fault') field instead.</li>
 		    (b* (((mv ?flg0 dword x86)
 			  ;; dword is the sign-extended displacement
 			  ;; present in the instruction.
-			  (rime-size
+			  (rime-size-opt
 			   #.*64-bit-mode* 4 temp-RIP #.*cs* :x nil x86
 			   :mem-ptr? nil))
 			 ;; next-rip is the rip of the next instruction.
@@ -1159,7 +1159,7 @@ the @('fault') field instead.</li>
 		  (b* (((mv flg dword x86)
 			;; dword is the sign-extended displacement
 			;; present in the instruction.
-			(rime-size
+			(rime-size-opt
 			 proc-mode 4 temp-RIP #.*cs* :x nil x86 :mem-ptr? nil))
 		       ((when flg) (mv flg 0 0 0 x86)))
 		    (mv nil 0 dword 4 x86))))
@@ -1183,7 +1183,7 @@ the @('fault') field instead.</li>
 
 	       (otherwise
 		(b* (((mv ?flg2 byte2 x86)
-		      (rime-size proc-mode 1 temp-RIP #.*cs* :x nil x86
+		      (rime-size-opt proc-mode 1 temp-RIP #.*cs* :x nil x86
 				 :mem-ptr? nil)) ; sign-extended
 		     (reg (if (equal proc-mode #.*64-bit-mode*)
 			      (rgfi (reg-index r/m rex-byte #.*b*) x86)
@@ -1200,7 +1200,7 @@ the @('fault') field instead.</li>
 
 	       (otherwise
 		(b* (((mv ?flg1 dword x86)
-		      (rime-size proc-mode 4 temp-RIP #.*cs* :x nil x86
+		      (rime-size-opt proc-mode 4 temp-RIP #.*cs* :x nil x86
 				 :mem-ptr? nil)) ; sign-extended
 		     (reg (if (equal proc-mode #.*64-bit-mode*)
 			      (rgfi (reg-index r/m rex-byte #.*b*) x86)
@@ -1806,7 +1806,8 @@ reference made from privilege level 3.</blockquote>"
 	       (member operand-size '(1 2 4 8)))
 	      (t (member operand-size '(4 8 16))))
 	   (member operand-size '(member 1 2 4 6 8 10 16)))
-  :guard-hints (("Goal" :in-theory (e/d* ()
+  ;; [Shilpi] enabled segment-base-and-bounds for rme-size-opt.
+  :guard-hints (("Goal" :in-theory (e/d* (segment-base-and-bounds)
 					 (las-to-pas
 					  unsigned-byte-p
 					  signed-byte-p))))
@@ -1864,9 +1865,10 @@ reference made from privilege level 3.</blockquote>"
 	    ;; The operand is being fetched from the memory, not the
 	    ;; instruction stream. That's why we have :r instead of :x
 	    ;; below.
-	    (rme-size
+	    (rme-size-opt
 	     proc-mode operand-size addr seg-reg :r check-alignment? x86
-	     :mem-ptr? memory-ptr?))))
+	     :mem-ptr? memory-ptr?
+	     :check-canonicity t))))
        ((when flg2)
 	(mv (cons 'Rm-Size-Error flg2) 0 0 0 x86)))
 
@@ -1905,9 +1907,10 @@ reference made from privilege level 3.</blockquote>"
     (implies (force (x86p x86))
 	     (natp (mv-nth
 		    2
-		    (x86-operand-from-modr/m-and-sib-bytes$ proc-mode reg-type
-							    operand-size inst-ac? memory-ptr? seg-reg p4 temp-RIP
-							    rex-byte r/m mod sib num-imm-bytes x86))))
+		    (x86-operand-from-modr/m-and-sib-bytes$
+		     proc-mode reg-type
+		     operand-size inst-ac? memory-ptr? seg-reg p4 temp-RIP
+		     rex-byte r/m mod sib num-imm-bytes x86))))
     :hints (("Goal" :in-theory (e/d (rml-size) ())))
     :rule-classes :type-prescription)
 

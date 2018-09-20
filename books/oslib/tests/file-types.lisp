@@ -88,7 +88,8 @@
 #+Unix ;; <-- maybe need to tweak this
 (progn
   (check-file-kind "/dev/null" :character-device)
-  #-(or darwin freebsd) ;; has failed on Mac OS 10.6.8 and 10.10.5, and FreeBSD
+  ; #-(or darwin freebsd) ;; has failed on Mac OS 10.6.8 and 10.10.5, and FreeBSD
+  #+skip ; see comment just above; also fails with CCL on Linux 4.4.0-134-generic #160-Ubuntu
   (check-file-kind "/dev/sda1" :block-device))
 
 

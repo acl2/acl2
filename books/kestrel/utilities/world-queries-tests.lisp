@@ -324,6 +324,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert! (primitivep 'cons))
+
+(assert! (primitivep 'binary-+))
+
+(assert! (not (primitivep 'len)))
+
+(must-succeed*
+ (defun f (x) x)
+ (assert! (not (primitivep 'f))))
+
+(assert! (not (primitivep 'xxxxxxxxxxxxxxxxxxxxxx)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (primitivep+ 'cons (w state)))
+
+(assert! (primitivep+ 'binary-+ (w state)))
+
+(assert! (not (primitivep+ 'len (w state))))
+
+(must-succeed*
+ (defun f (x) x)
+ (assert! (not (primitivep+ 'f (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert! (guard-verified-p 'len (w state)))
 
 (assert! (guard-verified-p 'cons (w state)))
@@ -1130,9 +1156,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (string-listp (all-pkgs-in-world (w state))))
+(assert! (string-listp (known-packages state)))
 
-(assert! (no-duplicatesp-equal (all-pkgs-in-world (w state))))
+(assert! (no-duplicatesp-equal (known-packages state)))
+
+(assert! (member-equal "ACL2" (known-packages state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (string-listp (known-packages+ state)))
+
+(assert! (no-duplicatesp-equal (known-packages+ state)))
+
+(assert! (member-equal "ACL2" (known-packages+ state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

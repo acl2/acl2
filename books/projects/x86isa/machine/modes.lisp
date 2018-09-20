@@ -35,10 +35,13 @@
 
 ; Original Author(s):
 ;   Alessandro Coglio <coglio@kestrel.edu>
+; Contributing Author(s):
+;  Shilpi Goel <shilpi@centtech.com>
 
 (in-package "X86ISA")
 
 (include-book "register-readers-and-writers" :ttags (:undef-flg))
+(include-book "std/bitsets/bignum-extract" :dir :system) ;; For 64-bit-modep
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
@@ -99,14 +102,43 @@
    but the IA32_EFER register consists of 12 bits.
    So we use @(tsee n12) to make @('ia32_efer-slice') applicable.
    </p>"
-  (b* ((ia32_efer (n12 (xr :msr *ia32_efer-idx* x86)))
-       (ia32_efer.lma (ia32_efer-slice :ia32_efer-lma ia32_efer))
-       (cs-hidden (xr :seg-hidden #.*cs* x86))
-       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-       (cs.l (code-segment-descriptor-attributes-layout-slice :l cs-attr)))
-    (and (equal ia32_efer.lma 1)
-         (equal cs.l 1)))
+
+  :no-function t
+  :guard-hints (("Goal" :in-theory (e/d (bitsets::bignum-extract) ())))
+  (mbe
+   :logic
+   (b* ((ia32_efer (n12 (xr :msr #.*ia32_efer-idx* x86)))
+        (ia32_efer.lma (ia32_efer-slice :ia32_efer-lma ia32_efer))
+        (cs-hidden (xr :seg-hidden #.*cs* x86))
+        (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+        (cs.l (code-segment-descriptor-attributes-layout-slice :l cs-attr)))
+     (and (equal ia32_efer.lma 1)
+          (equal cs.l 1)))
+   :exec
+   ;; [Shilpi] During execution, include the following book for efficiency (to
+   ;; decrease the bytes allocated on the heap because of all the bignum
+   ;; operations). This is likely most efficient on CCL.
+   ;; (include-book "std/bitsets/bignum-extract-opt" :dir :system)
+   ;; Note that this book requires a trust tag.
+   (b* (((the (unsigned-byte 32) ia32_efer-low-32)
+         (bitsets::bignum-extract
+          (xr :msr #.*ia32_efer-idx* x86)
+          0))
+        ((the (unsigned-byte 12) ia32_efer)
+         (mbe :logic (n12 ia32_efer-low-32)
+              :exec (logand #xFFF (the (unsigned-byte 32) ia32_efer-low-32))))
+        (ia32_efer.lma (ia32_efer-slice :ia32_efer-lma ia32_efer))
+        ((the (unsigned-byte 32) cs-attr-32)
+         (bitsets::bignum-extract (xr :seg-hidden #.*cs* x86) 3))
+        ((the (unsigned-byte 16) cs-attr)
+         (mbe :logic (n16 cs-attr-32)
+              :exec (logand 65535 (the (unsigned-byte 32) cs-attr-32))))
+        (cs.l (code-segment-descriptor-attributes-layout-slice :l cs-attr)))
+     (and (equal ia32_efer.lma 1)
+          (equal cs.l 1))))
   ///
+
+  (local (in-theory (e/d () (force (force)))))
 
   (defrule 64-bit-modep-of-xw ; contributed by Eric Smith
     (implies (and (not (equal fld :msr))
