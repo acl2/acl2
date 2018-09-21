@@ -45,7 +45,7 @@
      (if (hons-get (cdr (assoc :name (car x))) fal)
          acc
        (cons (car x) acc)))))
-        
+
 
 (defun replace-bound-topics (x fal acc used-fal)
   (if (atom x)
@@ -96,6 +96,7 @@
                      (if ,term
                          (cons ,x acc)
                        acc))))))
+       (comp t) ; Matt K. mod: seems necessary for Allegro CL
        (make-event
         (b* ((topics (filter-matching-topics (get-xdoc-table (w state)) state nil))
              (prev-get-event-table (and (boundp-global 'xdoc-get-event-table state)
