@@ -213,22 +213,18 @@
 ;; ----------------------------------------------------------------------
 
 (defmacro chk-exc (type-id feature-flag)
-  (declare (xargs :guard (and (keywordp type-id)
-                              (member-equal feature-flag *supported-feature-flags*))))
+  ;; (declare (xargs :guard (and (keywordp type-id)
+  ;;                             (member-equal feature-flag *supported-feature-flags*))))
   `(chk-exc-fn :legacy ,type-id (list ,feature-flag)
                ;; captured inputs:
                proc-mode prefixes rex-byte opcode modr/m sib x86))
 
 (defmacro chk-exc-vex (type-id feature-flags)
-  (declare (xargs :guard (and (keywordp type-id)
-                              (subset-equal feature-flags *supported-feature-flags*))))
   `(chk-exc-fn :vex ,type-id ,feature-flags
                ;; captured inputs:
                proc-mode prefixes rex-byte opcode modr/m sib x86))
 
 (defmacro chk-exc-evex (type-id feature-flags)
-  (declare (xargs :guard (and (keywordp type-id)
-                              (subset-equal feature-flags *supported-feature-flags*))))
   `(chk-exc-fn :evex ,type-id ,feature-flags
                ;; captured inputs:
                proc-mode prefixes rex-byte opcode modr/m sib x86))
@@ -346,3 +342,5 @@
         ;; Table 3-11 (More on Feature Information Returned in the EDX register)
         (equal (feature-flags feature-flags x86) 0))
     :ud)))
+
+;; ----------------------------------------------------------------------

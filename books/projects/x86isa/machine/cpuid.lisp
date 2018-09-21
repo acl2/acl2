@@ -194,7 +194,9 @@
       (:movbe           (cpuid-flag #ux_01             :reg #.*ecx* :bit 22))
       (:popcnt          (cpuid-flag #ux_01             :reg #.*ecx* :bit 23))
       (:tsc-deadline    (cpuid-flag #ux_01             :reg #.*ecx* :bit 24))
-      (:aesni           (cpuid-flag #ux_01             :reg #.*ecx* :bit 25))
+      ;; The following flag was listed as AESNI in the CPUID instruction
+      ;; description, but on other instructions' pages, it is listed as AES.
+      (:aes             (cpuid-flag #ux_01             :reg #.*ecx* :bit 25))
       (:xsave           (cpuid-flag #ux_01             :reg #.*ecx* :bit 26))
       (:osxsave         (cpuid-flag #ux_01             :reg #.*ecx* :bit 27))
       (:avx             (cpuid-flag #ux_01             :reg #.*ecx* :bit 28))
