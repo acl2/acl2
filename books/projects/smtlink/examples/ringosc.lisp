@@ -1,5 +1,6 @@
 (in-package "SMT")
 (include-book "inverter")
+; cert_param: (uses-smtlink)
 (value-triple (tshell-ensure))
 (add-default-hints '((SMT::SMT-computed-hint clause)))
 
