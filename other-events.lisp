@@ -1,5 +1,5 @@
-; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2017, Regents of the University of Texas
+; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2018, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -27908,7 +27908,7 @@
            (er soft ctx
                "It is illegal for supporters of DEFAXIOM events to receive ~
                 attachments, but ~*0.  See :DOC defattach."
-               `(impossible
+               `("impossible" ; This case shouldn't occur.
                  "~@*"
                  "~@*, and "
                  "~@*, "

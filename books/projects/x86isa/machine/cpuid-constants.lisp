@@ -85,7 +85,7 @@
 
 (defconst *supported-feature-flags*
   (append *fp-simd-feature-flags*
-	  (list :avx :avx2)
+	  (list :avx :avx2 :bmi1 :bmi2)
 	  *avx512-feature-flags*
 	  *mode-feature-flags*
 	  *misc-feature-flags*))

@@ -169,12 +169,36 @@
   (if (atom info) nil
     (b* ((exception (caar info))
          (exception-list (cdar info)))
+      (if (eq exception :ex)
+          `(let ((chk-ex (or ,@exception-list)))
+             (or chk-ex
+                 ,(create-exceptions-check (cdr info))))
       `(if (or ,@exception-list) (quote ,exception)
-         ,(create-exceptions-check (cdr info))))))
+         ,(create-exceptions-check (cdr info)))))))
 
 (local (defthm exception-info-is-alist
          (implies (exception-info-p x) (alistp x))
          :hints (("Goal" :in-theory (enable exception-info-p)))))
+
+(define make-exception-handling-cases ((exception-info exception-info-p)
+                                       unimplemented illegal
+                                       (world plist-worldp))
+  (append (and (or (assoc :ud exception-info)
+                   (assoc :ex exception-info))
+               (list (list :ud illegal)))
+          (and (or (assoc :gp exception-info)
+                   (assoc :ex exception-info))
+               (list (list :gp (replace-formals-with-arguments
+                                'x86-general-protection
+                                '((message . "#GP Encountered!"))
+                                world))))
+          (and (or (assoc :nm exception-info)
+                   (assoc :ex exception-info))
+               (list (list :nm (replace-formals-with-arguments
+                                'x86-device-not-available
+                                '((message . "#NM Encountered!"))
+                                world))))
+          (list (list t unimplemented))))
 
 (define create-call-from-semantic-info ((info semantic-function-info-p)
                                         (exception-info exception-info-p)
@@ -202,19 +226,10 @@
                           'x86-illegal-instruction
                           '((message . "#UD Encountered!"))
                           world))
-       (exception-cases  (append (and (assoc :ud exception-info)
-                                      (list (list :ud illegal)))
-                                 (and (assoc :gp exception-info)
-                                      (list (list :gp (replace-formals-with-arguments
-                                                       'x86-general-protection
-                                                       '((message . "#GP Encountered!"))
-                                                       world))))
-                                 (and (assoc :nm exception-info)
-                                      (list (list :nm (replace-formals-with-arguments
-                                                       'x86-device-not-available
-                                                       '((message . "#NM Encountered!"))
-                                                       world))))
-                                 (list (list t unimplemented)))))
+       (exception-cases  (make-exception-handling-cases exception-info
+                                                        unimplemented
+                                                        illegal
+                                                        world)))
 
     (if (equal info nil)
         (mv "Unimplemented"
@@ -942,23 +957,24 @@
 
   (if (atom prefix-case)
       (case prefix-case
-        (:UNUSED-VVVV     `((equal (vex-vvvv-slice vex-prefixes) #b1111)))
-        ((:NDS :NDD :DDS) `((not (equal (vex-vvvv-slice vex-prefixes) #b1111))))
-        ((:128 :LZ :L0)   `((equal (vex-l-slice vex-prefixes) 0)))
-        ((:256 :L1)       `((equal (vex-l-slice vex-prefixes) 1)))
-        ((:66)            `((equal (vex-pp-slice vex-prefixes) #.*v66*)))
-        ((:F3)            `((equal (vex-pp-slice vex-prefixes) #.*vF3*)))
-        ((:F2)            `((equal (vex-pp-slice vex-prefixes) #.*vF2*)))
-        ((:W0)            `((equal (vex-w-slice vex-prefixes) 0)))
-        ((:W1)            `((equal (vex-w-slice vex-prefixes) 1)))
-        ;; I don't need :0F, :0F38, and :0F3A below because the
-        ;; vex-decode-and-execute function deals with this already.
-        ;; ((:0F)            `((vex-prefixes-map-p #x0F vex-prefixes)))
-        ;; ((:0F38)          `((vex-prefixes-map-p #x0F38 vex-prefixes)))
-        ;; ((:0F3A)          `((vex-prefixes-map-p #x0F3A vex-prefixes)))
-        (otherwise
-         ;; :LIG, :WIG, :V, etc.
-         `()))
+	(:UNUSED-VVVV     `((equal (vex-vvvv-slice vex-prefixes) #b1111)))
+	((:NDS :NDD :DDS) `((not (equal (vex-vvvv-slice vex-prefixes) #b1111))))
+	((:128 :LZ :L0)   `((equal (vex-l-slice vex-prefixes) 0)))
+	((:256 :L1)       `((equal (vex-l-slice vex-prefixes) 1)))
+        ((:no-prefix)     `((equal (vex-pp-slice vex-prefixes) 0)))
+	((:66)            `((equal (vex-pp-slice vex-prefixes) #.*v66*)))
+	((:F3)            `((equal (vex-pp-slice vex-prefixes) #.*vF3*)))
+	((:F2)            `((equal (vex-pp-slice vex-prefixes) #.*vF2*)))
+	((:W0)            `((equal (vex-w-slice vex-prefixes) 0)))
+	((:W1)            `((equal (vex-w-slice vex-prefixes) 1)))
+	;; I don't need :0F, :0F38, and :0F3A below because the
+	;; vex-decode-and-execute function deals with this already.
+	;; ((:0F)            `((vex-prefixes-map-p #x0F vex-prefixes)))
+	;; ((:0F38)          `((vex-prefixes-map-p #x0F38 vex-prefixes)))
+	;; ((:0F3A)          `((vex-prefixes-map-p #x0F3A vex-prefixes)))
+	(otherwise
+	 ;; :LIG, :WIG, :V, etc.
+	 `()))
     (case (car prefix-case)
       (:REG   `((equal (modr/m->reg modr/m) ,(cdr prefix-case))))
       (:MOD    (if (equal (cdr prefix-case) :mem)
@@ -972,24 +988,25 @@
 
   (if (atom prefix-case)
       (case prefix-case
-        (:UNUSED-VVVV     `((and (equal (evex-vvvv-slice evex-prefixes) #b1111)
-                                 (equal (evex-v-prime-slice evex-prefixes) #b1))))
-        ((:NDS :NDD :DDS) `((not
-                             (and (equal (evex-vvvv-slice evex-prefixes) #b1111)
-                                  (equal (evex-v-prime-slice evex-prefixes) #b1)))))
-        ((:128 :LZ :L0)   `((equal (evex-vl/rc-slice evex-prefixes) 0)))
-        ((:256 :L1)       `((equal (evex-vl/rc-slice evex-prefixes) 1)))
-        (:512             `((equal (evex-vl/rc-slice evex-prefixes) 2)))
-        ((:66)            `((equal (evex-pp-slice evex-prefixes) #.*v66*)))
-        ((:F3)            `((equal (evex-pp-slice evex-prefixes) #.*vF3*)))
-        ((:F2)            `((equal (evex-pp-slice evex-prefixes) #.*vF2*)))
-        ((:W0)            `((equal (evex-w-slice evex-prefixes) 0)))
-        ((:W1)            `((equal (evex-w-slice evex-prefixes) 1)))
-        ;; I don't need to account for :0F, :0F38, and :0F3A because the
-        ;; evex-decode-and-execute function deals with this already.
-        (otherwise
-         ;; :LIG, :WIG, :EV, etc.
-         `()))
+	(:UNUSED-VVVV     `((and (equal (evex-vvvv-slice evex-prefixes) #b1111)
+				 (equal (evex-v-prime-slice evex-prefixes) #b1))))
+	((:NDS :NDD :DDS) `((not
+			     (and (equal (evex-vvvv-slice evex-prefixes) #b1111)
+				  (equal (evex-v-prime-slice evex-prefixes) #b1)))))
+	((:128 :LZ :L0)   `((equal (evex-vl/rc-slice evex-prefixes) 0)))
+	((:256 :L1)       `((equal (evex-vl/rc-slice evex-prefixes) 1)))
+	(:512             `((equal (evex-vl/rc-slice evex-prefixes) 2)))
+        ((:no-prefix)     `((equal (evex-pp-slice evex-prefixes) 0)))
+	((:66)            `((equal (evex-pp-slice evex-prefixes) #.*v66*)))
+	((:F3)            `((equal (evex-pp-slice evex-prefixes) #.*vF3*)))
+	((:F2)            `((equal (evex-pp-slice evex-prefixes) #.*vF2*)))
+	((:W0)            `((equal (evex-w-slice evex-prefixes) 0)))
+	((:W1)            `((equal (evex-w-slice evex-prefixes) 1)))
+	;; I don't need to account for :0F, :0F38, and :0F3A because the
+	;; evex-decode-and-execute function deals with this already.
+	(otherwise
+	 ;; :LIG, :WIG, :EV, etc.
+	 `()))
     (case (car prefix-case)
       (:REG   `((equal (modr/m->reg modr/m) ,(cdr prefix-case))))
       (:MOD    (if (equal (cdr prefix-case) :mem)
@@ -1012,24 +1029,74 @@
     `(,@(avx-keyword-case-gen (car case-info) vex?)
       ,@(avx-opcode-case-gen-aux (cdr case-info) vex?))))
 
+(define member-equal! (e x)
+  (and (consp x)
+       (or (equal e (first x))
+           (member-equal! e (rest x)))))
+
+(define subset-equal! (x y)
+  (or (atom x)
+      (and (member-equal! (first x) y)
+           (subset-equal! (rest x) y))))
+
+(define find-avx-exc-type (kwds (cell avx-exc-type-cell-p) top)
+  (cond ((endp cell)
+         (er hard? 'find-avx-exc-type
+             "one of the types should have matched!:~x0" (list kwds top)))
+        ((subset-equal! (caar cell) kwds)
+         (cadar cell))
+        (t (find-avx-exc-type kwds (cdr cell) top))))
+
+(define feat-look (kwds (features avx-op-features-cell-p))
+  (cond ((endp features) nil)
+        ((equal kwds (car (car (car features))))
+         (cdr (cadr (cadr (car (car features))))))
+        (t (feat-look kwds (rest features)))))
+
 (define avx-opcode-case-gen ((kwd-lst (kwd-or-key-cons-listp kwd-lst vex?))
-                             (vex? booleanp)
-                             state)
-  (cons
-   (cons 'and
-         (if (or (member-equal :NDS kwd-lst)
-                 (member-equal :NDD kwd-lst)
-                 (member-equal :DDS kwd-lst))
-             (avx-opcode-case-gen-aux kwd-lst vex?)
-           (avx-opcode-case-gen-aux (cons :UNUSED-VVVV kwd-lst) vex?)))
-   `(,(replace-formals-with-arguments
-       'x86-step-unimplemented
-       '((message . "Opcode unimplemented in x86isa!"))
-       (w state)))))
+			     (vex? booleanp)
+                             (cell avx-exc-type-cell-p)
+                             (features avx-op-features-cell-p)
+			     state)
+  (b* ((pref (cond ((member-eq :66 kwd-lst) :66)
+                   ((member-eq :F2 kwd-lst) :F2)
+                   ((member-eq :F3 kwd-lst) :F3)
+                   (t :no-prefix)))
+       (feature-flags (feat-look kwd-lst features))
+       (unimplemented (replace-formals-with-arguments
+                       'x86-step-unimplemented
+                       '((message . "Opcode Unimplemented in x86isa!"))
+                       (w state)))
+       (illegal       (replace-formals-with-arguments
+                       'x86-illegal-instruction
+                       '((message . "#UD Encountered!"))
+                       (w state)))
+       (kwd-lst (if (or (member-eq :NDS kwd-lst)
+                        (member-eq :NDD kwd-lst)
+                        (member-eq :DDS kwd-lst))
+                    kwd-lst
+                  (cons :UNUSED-VVVV kwd-lst)))
+       (kwd-lst (if (eq pref :no-prefix)
+                    (cons :no-prefix kwd-lst)
+                  kwd-lst))
+       (exc-type (find-avx-exc-type kwd-lst cell cell))
+       (exception-check (if vex?
+                            `(chk-exc-vex ,exc-type ,feature-flags)
+                          `(chk-exc-evex ,exc-type ,feature-flags)))
+       (exception-cases (make-exception-handling-cases '((:ex . nil))
+                                                       unimplemented
+                                                       illegal
+                                                       (w state))))
+    `((and ,@(avx-opcode-case-gen-aux kwd-lst vex?))
+      (let ((fault-var ,exception-check))
+        (if fault-var (case fault-var ,@exception-cases)
+          ,unimplemented)))))
 
 (define avx-opcode-cases-gen ((lst true-list-listp)
-                              (vex? booleanp)
-                              state)
+			      (vex? booleanp)
+                              (cell avx-exc-type-cell-p)
+                              (features avx-op-features-cell-p)
+			      state)
   (if (endp lst)
       `((t
          ,(replace-formals-with-arguments
@@ -1037,18 +1104,49 @@
            '((message . "Reserved or Illegal Opcode!"))
            (w state))))
     (b* ((first (car lst))
-         ((unless (kwd-or-key-cons-listp first vex?))
-          `())
-         (first-case (avx-opcode-case-gen first vex? state)))
+	 ((unless (kwd-or-key-cons-listp first vex?))
+	  `())
+	 (first-case (avx-opcode-case-gen first vex? cell features state)))
       `(,first-case
-         ,@(avx-opcode-cases-gen (cdr lst) vex? state)))))
+	 ,@(avx-opcode-cases-gen (cdr lst) vex? cell features state)))))
+
+(local (defthm avx-maps-well-formed-alistp
+         (implies (avx-maps-well-formed-p map vex?)
+                  (alistp map))
+         :hints (("Goal" :in-theory (enable avx-maps-well-formed-p)))))
+
+(local (defthm avx-opcode-cases-okp-alistp
+         (implies (avx-opcode-cases-okp map vex?)
+                  (alistp map))
+         :hints (("Goal" :in-theory (enable avx-opcode-cases-okp)))))
+
+(local (defthm avx-exc-type-map-alistp
+         (implies (avx-exc-type-map-p map)
+                  (alistp map))))
+
+(local (defthm avx-maps-well-formed-alist-cdr-car
+         (implies (and (avx-maps-well-formed-p map vex?)
+                       (consp map))
+                  (alistp (cdr (car map))))
+         :hints (("Goal" :in-theory (enable avx-maps-well-formed-p)))))
+
+(define feat-look2 ((op natp) (features avx-op-features-map-p))
+  :returns (rslt avx-op-features-cell-p :hyp :guard)
+  (cond ((endp features) nil)
+        ((eql op (caar features)) (cdar features))
+        (t (feat-look2 op (rest features)))))
 
 (define avx-case-gen ((map (avx-maps-well-formed-p map vex?))
-                      (vex? booleanp)
-                      state)
+                      (exc-types avx-exc-type-map-p)
+                      (features avx-op-features-map-p)
+ 		      (vex? booleanp)
+		      state)
+  :guard (equal (len map) (len exc-types))
+  ;; BOZO Rob -- would like this as well, but tables are not complete yet..
+  ;;     (equal (len map) (len features)))
   :guard-hints (("Goal" :in-theory (e/d (avx-maps-well-formed-p
-                                         avx-opcode-cases-okp)
-                                        ())))
+					 avx-opcode-cases-okp)
+					(avx-op-features-map-p))))
   (if (endp map)
       `((t
          ,(replace-formals-with-arguments
@@ -1056,11 +1154,17 @@
            '((message . "Reserved or Illegal Opcode!"))
            (w state))))
     (b* ((first (car map))
-         (opcode (car first))
-         (info (cdr first))
-         (kwd-lst (strip-cars info)))
-      `((,opcode (cond ,@(avx-opcode-cases-gen kwd-lst vex? state)))
-        ,@(avx-case-gen (cdr map) vex? state)))))
+	 (opcode (car first))
+	 (info (cdr first))
+         (type-cell (cadar exc-types))
+         (feature-cell (feat-look2 opcode features))
+	 (kwd-lsts (strip-cars info))
+         ((unless (true-list-listp kwd-lsts))
+          (er hard? 'avx-case-gen
+              "internal error: ill-formed kwd-lsts:~x0" kwd-lsts)))
+      `((,opcode (cond ,@(avx-opcode-cases-gen kwd-lsts vex? type-cell
+                                               feature-cell state)))
+	,@(avx-case-gen (cdr map) (cdr exc-types) features vex? state)))))
 
 ;; (avx-case-gen *vex-0F-opcodes*   t state)
 ;; (avx-case-gen *vex-0F38-opcodes* t state)
