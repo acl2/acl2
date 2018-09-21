@@ -215,7 +215,7 @@
           (if (atom sd)
               fs
             (let ((contents (cdr sd)))
-              (if (stringp (car contents)) 
+              (if (stringp (car contents))
                   fs ;; we still have names but we're at a regular file - error
                 (cons (cons (car sd)
                             (l2-unlink (cdr hns) contents))

@@ -17,7 +17,7 @@
   ()
   (local
    (include-book "std/lists/update-nth" :dir :system))
-  
+
   (defthm take-of-update-nth
     (equal (take n1 (update-nth n2 val x))
            (if (<= (nfix n1) (nfix n2))
@@ -3638,7 +3638,7 @@ Some (rather awful) testing forms are
              (equal filename "..         "))
          (list filename first-cluster)
        (b*
-           (((mv contents &) 
+           (((mv contents &)
              (get-clusterchain
               fat32-in-memory
               (fat32-entry-mask first-cluster)
