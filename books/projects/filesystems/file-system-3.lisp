@@ -685,7 +685,7 @@
            (equal (stringp (l3-stat hns (mv-nth 0 (l3-wrchs hns fs disk start text))
                                     (mv-nth 1 (l3-wrchs hns fs disk start text))))
                   (stringp (l3-stat hns fs disk))))
-  :hints (("Subgoal *1/7.2'" 
+  :hints (("Subgoal *1/7.2'"
            :in-theory (disable l3-wrchs-returns-fs)
            :use (:instance l3-wrchs-returns-fs (hns (cdr hns))
                            (fs (cdr (assoc-equal (car hns) fs))))) ))
@@ -873,7 +873,7 @@
                      (l3-rdchs hns1 fs disk start1 n1)))))
   :hints (("Goal"
            :in-theory (disable
-                       (:rewrite l2-read-after-create-2) 
+                       (:rewrite l2-read-after-create-2)
                        (:rewrite l3-to-l2-fs-correctness-1)
                        (:rewrite l3-stat-correctness-2)
                        (:rewrite l3-create-returns-fs)
