@@ -49,6 +49,12 @@
   (:bytes :fields ((bytes :type ubyte8-list :acc-body x)) :ctor-body bytes)
   ///
 
+  (defruled ubyte8list/error-p-alt-def
+    (equal (ubyte8list/error-p x)
+           (or (eq x :error)
+               (ubyte8-listp x)))
+    :enable ubyte8list/error-p)
+
   (defrule disjoint-ubyte8list/error
     (not (and (eq x :error)
               (ubyte8-listp x)))

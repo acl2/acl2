@@ -36,6 +36,12 @@
   (:bytes :fields ((nat :type nat :acc-body x)) :ctor-body nat)
   ///
 
+  (defruled nat/error-p-alt-def
+    (equal (nat/error-p x)
+           (or (eq x :error)
+               (natp x)))
+    :enable nat/error-p)
+
   (defrule disjoint-nat/error
     (not (and (eq x :error)
               (natp x)))

@@ -119,6 +119,12 @@
   (:bytes :fields ((tree :type rlp-tree :acc-body x)) :ctor-body tree)
   ///
 
+  (defruled rlp-tree/error-p-alt-def
+    (equal (rlp-tree/error-p x)
+           (or (eq x :error)
+               (rlp-treep x)))
+    :enable rlp-tree/error-p)
+
   (defrule disjoint-tree/error
     (not (and (eq x :error)
               (rlp-treep x)))
