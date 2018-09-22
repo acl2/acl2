@@ -29,14 +29,19 @@
      It is expected that this library will be extended with more
      Bitcoin-related formalizations and tools.")
    (xdoc::p
-    "This library is based on
-     the <a href=\"https://bitcoin.org\">Bitcoin web site</a>
-     (`Site' for short),
-     the <a href=\"https://en.bitcoin.it\">Bitcoin Wiki</a>
-     (`Wiki' for short),
-     the <a href=\"https://bitcoin.org/bitcoin.pdf\">Bitcoin White Paper</a>
-     (`WP' for short), and
-     the <a href=\"https://github.com/bitcoinbook/bitcoinbook\">`Mastering
-     Bitcoin' book</a>
-     (`MB' for short)."))
+    "This library is based on the following sources:")
+   (xdoc::ul
+    (xdoc::li
+     "The <a href=\"https://bitcoin.org\">Bitcoin web site</a>,
+      referenced as `[Site]' in the documentation of this library.")
+    (xdoc::li
+     "The <a href=\"https://en.bitcoin.it\">Bitcoin Wiki</a>,
+      referenced as `[Wiki]' in the documentation of this library.")
+    (xdoc::li
+     "The <a href=\"https://bitcoin.org/bitcoin.pdf\">Bitcoin White Paper</a>,
+      referenced as `[WP]' in the documentation of this library.")
+    (xdoc::li
+     "The <a href=\"https://github.com/bitcoinbook/bitcoinbook\">`Mastering
+      Bitcoin' book</a>,
+      referenced as `[MB]' in the documentation of this library.")))
   :order-subtopics t)
