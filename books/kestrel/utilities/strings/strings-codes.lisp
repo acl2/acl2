@@ -34,7 +34,11 @@
     (equal (nth i (explode (nats=>string nats)))
            (if (< (nfix i) (len nats))
                (code-char (nth i nats))
-             nil))))
+             nil)))
+
+  (defrule length-of-nats=>string
+    (equal (len (explode (nats=>string nats)))
+           (len nats))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

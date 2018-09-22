@@ -153,6 +153,11 @@
                (char-code (nth i chars))
              nil)))
 
+  (defrule chars=>nats-of-make-character-list
+    (equal (chars=>nats (make-character-list x))
+           (chars=>nats x))
+    :hints (("goal" :in-theory (enable chars=>nats))))
+
   (defrule
     chars=>nats-of-nats=>chars
     (implies (unsigned-byte-listp 8 (fix-true-list nats))
