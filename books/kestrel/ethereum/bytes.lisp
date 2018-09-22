@@ -46,8 +46,10 @@
   :parents (basics)
   :short "Union of @(':error') and true lists of @(see bytes)."
   (:error :fields () :ctor-body ':error :cond (eq x :error))
-  (:bytes :fields ((bytes :type ubyte8-list :acc-body x)) :ctor-body bytes)
-  ///
+  (:bytes :fields ((bytes :type ubyte8-list :acc-body x)) :ctor-body bytes))
+
+(defsection ubyte8list/error-ext
+  :extension ubyte8list/error
 
   (defruled ubyte8list/error-p-alt-def
     (equal (ubyte8list/error-p x)
