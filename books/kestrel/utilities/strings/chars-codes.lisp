@@ -79,9 +79,10 @@
     :enable repeat)
 
   (defrule nth-of-nats=>chars
-    (implies (integer-range-p 0 (len chars) i)
-             (equal (nth i (nats=>chars chars))
-                    (code-char (nth i chars))))))
+    (equal (nth i (nats=>chars nats))
+           (if (< (nfix i) (len nats))
+               (code-char (nth i nats))
+             nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -146,9 +147,20 @@
            (repeat n (char-code char)))
     :enable repeat)
 
-
   (defrule nth-of-chars=>nats
     (equal (nth i (chars=>nats chars))
            (if (< (nfix i) (len chars))
                (char-code (nth i chars))
-             nil))))
+             nil)))
+
+  (defrule
+    chars=>nats-of-nats=>chars
+    (implies (unsigned-byte-listp 8 (fix-true-list nats))
+             (equal (chars=>nats (nats=>chars nats))
+                    (fix-true-list nats)))
+    :enable nats=>chars
+    :rule-classes
+    ((:rewrite
+      :corollary (implies (unsigned-byte-listp 8 nats)
+                          (equal (chars=>nats (nats=>chars nats))
+                                 nats))))))
