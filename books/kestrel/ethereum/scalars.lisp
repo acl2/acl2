@@ -22,7 +22,7 @@
   :long
   (xdoc::topp
    "[YP:3] says that scalars are
-    non-negative integers in the @($\\mathbb{N}$) set,
+    non-negative integers in the set @($\\mathbb{N}$),
     i.e. natural numbers.
     We use the library type <see topic='@(url fty::basetypes)'>@('nat')</see>
     to model scalars in our Ethereum model."))
@@ -37,7 +37,7 @@
   ///
 
   (defrule disjoint-nat/error
-    (not (and (eq :error x)
+    (not (and (eq x :error)
               (natp x)))
     :rule-classes nil)
 

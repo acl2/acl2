@@ -21,10 +21,10 @@
   :short "Hex-prefix encoding."
   :long
   (xdoc::topp
-   "Hex-prefix encoding is an encoding method for Ethereum,
-    described in [YP:C] and in the section
+   "Hex-prefix is an encoding method for Ethereum,
+    described in [YP:C] and in the
     `Specification: Compact encoding of hex sequence with optional terminator'
-    of the `Patricia Tree' page of [Wiki].")
+    section of the `Patricia Tree' page of [Wiki].")
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -39,8 +39,7 @@
   :long
   (xdoc::topapp
    (xdoc::p
-    "This corresponds to the function @($\\mathtt{HP}$) in [YP:C],
-     defined by [YP:(186)] and [YP:(187)].")
+    "This corresponds to @($\\mathtt{HP}$) [YP:(186)] [YP:(187)].")
    (xdoc::p
     "The @($t$) flag is effectively treated as a boolean (i.e. 0 or not 0),
      so we use directly a boolean as argument to this function.
