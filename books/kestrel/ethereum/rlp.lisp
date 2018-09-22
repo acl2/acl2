@@ -25,7 +25,9 @@
   :long
   (xdoc::topp
    "RLP is a serialization (encoding) method for Ethereum,
-    described in [YP:B] and in the `RLP' page of [Wiki];
+    described in [YP:B] and in
+    <a href=\"https://github.com/ethereum/wiki/wiki/RLP\">Page `RLP'
+    of [Wiki]</a>;
     we reference that page of [Wiki] as `[Wiki:RLP]').")
   :order-subtopics t)
 

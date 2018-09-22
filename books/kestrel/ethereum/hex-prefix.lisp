@@ -20,9 +20,9 @@
   :long
   (xdoc::topp
    "Hex-prefix is an encoding method for Ethereum,
-    described in [YP:C] and in the
+    described in [YP:C] and in <a href=\"https://github.com/ethereum/wiki/wiki/Patricia-Tree#specification-compact-encoding-of-hex-sequence-with-optional-terminator\">Section
     `Specification: Compact encoding of hex sequence with optional terminator'
-    section of the `Patricia Tree' page of [Wiki].")
+     of Page `Patricia Tree' of [Wiki]</a>.")
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
