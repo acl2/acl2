@@ -45,6 +45,88 @@
   :short "Optimized byte-combining functions.")
 
 
+(local (include-book "ihs/logops-lemmas" :dir :system))
+(local (include-book "std/basic/inductions" :dir :system))
+
+(local
+ (defun logior-ash-loghead-logtail-induction-scheme (size i)
+   (declare (xargs :verify-guards nil))
+   (if (zp size)
+       i
+     (logior-ash-loghead-logtail-induction-scheme (- size 1) (logcdr i)))))
+
+(local
+ (defthm logior-ash-loghead-logtail
+   (implies (and (integerp i) (natp size))
+            (equal (logior (ash (logtail size i) size)
+                           (loghead size i))
+                   i))
+   :instructions ((:induct (logior-ash-loghead-logtail-induction-scheme size i))
+                  (:dive 2 1 2)
+                  (:rewrite loghead*)
+                  (:= (logcons (logcar i)
+                               (loghead (+ -1 size) (logcdr i))))
+                  :top (:dive 2 1 1 1)
+                  (:rewrite logtail*)
+                  (:= (logtail (+ -1 size) (logcdr i)))
+                  :up (:rewrite ash*)
+                  (:= (logcons 0
+                               (ash (logtail (+ -1 size) (logcdr i))
+                                    (+ -1 size))))
+                  :top (:dive 2 1)
+                  (:rewrite logior*)
+                  :top (:dive 2 1 1 1)
+                  (:rewrite logcar-logcons)
+                  :nx (:rewrite logcar-logcons)
+                  :top (:dive 2 1 2 1)
+                  (:rewrite logcdr-logcons)
+                  :nx (:rewrite logcdr-logcons)
+                  :up :top :promote (:demote 2)
+                  (:dive 1 1)
+                  :s :up :s-prop :top :promote (:dive 1 2)
+                  := (:drop 4)
+                  :top (:dive 1 1)
+                  (:rewrite simplify-bit-functions)
+                  (:rewrite bfix-bitp)
+                  :up (:rewrite logcar-logcdr-elim)
+                  :top :bash :promote (:dive 1 2)
+                  (:rewrite loghead*)
+                  (:= 0)
+                  :top (:dive 1 1 1)
+                  (:rewrite logtail*)
+                  (:= i)
+                  :up (:rewrite ash*)
+                  (:= i)
+                  :up :s
+                  :top :bash)))
+
+(local
+ (defthm
+   logior-of-ash
+   (implies (and (integerp i1)
+                 (integerp i2)
+                 (natp c))
+            (equal (logior (ash i1 c) (ash i2 c))
+                   (ash (logior i1 i2) c)))
+   :instructions ((:in-theory (disable logior ash logcons logcar logcdr))
+                  (:induct (dec-induct c))
+                  :promote (:demote 2)
+                  (:dive 1)
+                  :s :top :promote (:dive 1 1)
+                  (:rewrite ash*)
+                  :s :nx (:rewrite ash*)
+                  :s :up (:rewrite logior*)
+                  :s :nx (:rewrite ash*)
+                  :s :top :bash :promote (:= c 0)
+                  (:drop 1 4)
+                  (:dive 1 1)
+                  (:rewrite ash*)
+                  :s :nx (:rewrite ash*)
+                  :s :top (:dive 2)
+                  (:rewrite ash*)
+                  :s
+                  :top :bash)))
+
 (defsection combine16u
   :parents (combine-functions)
   :short "@(call combine16u) merges unsigned bytes, producing the 16-bit
@@ -64,7 +146,13 @@ unsigned interpretation of @('(a1 << 8) | a0')."
   (defthm combine16u-unsigned-byte
     (implies (and (force (unsigned-byte-p 8 a1))
                   (force (unsigned-byte-p 8 a0)))
-             (unsigned-byte-p 16 (combine16u a1 a0)))))
+             (unsigned-byte-p 16 (combine16u a1 a0))))
+
+  (defthm combine16u-loghead-logtail
+    (implies (natp i)
+             (equal (combine16u (logtail 8 i) (loghead 8 i))
+                    i))
+    :hints (("Goal" :in-theory (disable loghead logtail logior ash)))))
 
 
 
@@ -130,7 +218,40 @@ unsigned interpretation of @('(a3 << 24) | (a2 << 16) | (a1 << 8) | a0')."
                   (force (unsigned-byte-p 8 a2))
                   (force (unsigned-byte-p 8 a1))
                   (force (unsigned-byte-p 8 a0)))
-             (unsigned-byte-p 32 (combine32u a3 a2 a1 a0)))))
+             (unsigned-byte-p 32 (combine32u a3 a2 a1 a0))))
+
+  (defthm combine32u-loghead-logtail
+    (implies (natp i)
+             (equal (combine32u (logtail 24 i)
+                                (loghead 8 (logtail 16 i))
+                                (loghead 8 (logtail 8 i))
+                                (loghead 8 i))
+                    i))
+    :instructions
+    (:promote (:dive 1)
+              :expand (:dive 2 2)
+              (:dive 2)
+              (:= (loghead 8 (loghead 16 i)))
+              :up (:dive 1 1)
+              (:= (logtail 8 (loghead 16 i)))
+              :up :up
+              (:rewrite logior-ash-loghead-logtail)
+              :top (:dive 1)
+              (:= (logior (logior (ash (nfix (logtail 24 i)) 24)
+                                  (ash (nfix (loghead 8 (logtail 16 i)))
+                                       16))
+                          (loghead 16 i)))
+              (:dive 1 1)
+              (:= (ash (ash (logtail 24 i) 8) 16))
+              :up (:rewrite logior-of-ash)
+              (:dive 1 2)
+              :s :up (:dive 1 1)
+              (:= (logtail 8 (logtail 16 i)))
+              :up :up
+              (:rewrite logior-ash-loghead-logtail)
+              :up
+              :up (:rewrite logior-ash-loghead-logtail)
+              :top :bash)))
 
 
 
