@@ -155,15 +155,19 @@
 
   (defrule chars=>nats-of-make-character-list
     (equal (chars=>nats (make-character-list x))
-           (chars=>nats x))
-    :hints (("goal" :in-theory (enable chars=>nats))))
+           (chars=>nats x))))
+
+(defsection nats<=>chars-inversion-theorems
+  :parents (nats=>chars chars=>nats)
+  :short "@(tsee nats=>chars) and @(tsee chars=>nats)
+          are mutual inverses."
 
   (defrule
     chars=>nats-of-nats=>chars
     (implies (unsigned-byte-listp 8 (fix-true-list nats))
              (equal (chars=>nats (nats=>chars nats))
                     (fix-true-list nats)))
-    :enable nats=>chars
+    :enable (chars=>nats nats=>chars)
     :rule-classes
     ((:rewrite
       :corollary (implies (unsigned-byte-listp 8 nats)

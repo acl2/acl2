@@ -30,13 +30,13 @@
   (implode (nats=>chars nats))
   ///
 
-  (defrule nth-of-nats=>string
+  (defrule nth-of-explode-of-nats=>string
     (equal (nth i (explode (nats=>string nats)))
            (if (< (nfix i) (len nats))
                (code-char (nth i nats))
              nil)))
 
-  (defrule length-of-nats=>string
+  (defrule len-of-explode-of-nats=>string
     (equal (len (explode (nats=>string nats)))
            (len nats))))
 

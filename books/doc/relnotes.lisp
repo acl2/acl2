@@ -103,6 +103,16 @@
 
  <h3>Changes to Existing Libraries</h3>
 
+ <p>The filesystem books @('books/projects/filesystems/') have been
+ substantially expanded; in particular, they now contain a new model which
+ faithfully represents the state of a FAT32 disk image. More details about this
+ work are available in the paper <i>Formalising Filesystems in the ACL2 Theorem
+ Prover: an Application to FAT32</i>, to appear in the proceedings of
+ ACL2-2018.</p>
+
+ <p>In support of the above, the Kestrel string libraries have been expanded
+ with several new lemmas. Some existing lemmas have also been generalized.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
