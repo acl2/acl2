@@ -50,8 +50,60 @@ seeing that the size of the test expression isn't 1.</p>")
 
 (local (xdoc::set-default-parents qmarksize-check))
 
+(define vl-expr-qmarksize-test-trivial ((x  vl-expr-p)
+                                        (ss vl-scopestack-p))
+  :short "Recognize test expressions that are too trivial to warn about."
+  (b* ((x (vl-expr-fix x)))
+    (vl-expr-case x
+      :vl-literal
+      (vl-value-case x.val
+        :vl-constint
+        (or
+         ;; A (sized or unsized) constant 0 or 1 is a little unusual, but it
+         ;; shouldn't provoke a size error.
+         (eql x.val.value 1)
+         (eql x.val.value 0))
+        :otherwise
+        nil)
 
-(define vl-expr-qmarksize-check-aux ((x vl-expr-p)
+      :vl-index
+      ;; Module parameters are often untyped, so if we see something like a
+      ;; very vanilla `parameter foo = 1; wire w = foo ? a : b`, then we
+      ;; will treat this as trivial and not warn.
+      (b* (((unless (and (atom x.indices)
+                         (vl-partselect-case x.part :none)))
+            ;; Something complex, don't suppress warnings
+            nil)
+           ((mv err trace ?context ?tail) (vl-follow-scopeexpr x.scope ss))
+           ((when err)
+            nil)
+           (target (vl-hidstep->item (car trace)))
+           ((unless (eq (tag target) :vl-paramdecl))
+            nil)
+           ((vl-paramdecl target))
+           (plain-p
+            ;; It seems that we convert implicit to explicit before running
+            ;; qmarksize, so treat either implicit or explicit integer
+            ;; parameters as OK here.
+            (vl-paramtype-case target.type
+              :vl-implicitvalueparam
+              (and (not target.type.range)
+                   (not target.type.sign))
+              :vl-explicitvalueparam
+              (vl-datatype-case target.type.type
+                :vl-coretype (and (vl-coretypename-equiv target.type.type.name :vl-integer)
+                                  (atom target.type.type.pdims)
+                                  (atom target.type.type.udims))
+                ;; For any more complex type, go ahead and warn.
+                :otherwise nil)
+              :vl-typeparam
+              nil)))
+        plain-p)
+
+      :otherwise
+      nil)))
+
+(define vl-expr-qmarksize-check-aux ((x  vl-expr-p)
                                      (ss vl-scopestack-p))
   :short "Warn if the top level of x is a @('?:') expression with a wide test."
   :returns (warnings vl-warninglist-p)
@@ -61,7 +113,8 @@ seeing that the size of the test expression isn't 1.</p>")
                    ((unless test-size)
                     ;; Presumably we already warned about being unable to size it.
                     warnings)
-                   ((unless (eql test-size 1))
+                   ((unless (or (eql test-size 1)
+                                (vl-expr-qmarksize-test-trivial x.test ss)))
                     (warn :type :vl-warn-qmark-width
                           :msg "~x1-bit wide \"test\" expression for ?: operator, ~a2."
                           :args (list nil test-size x.test))))

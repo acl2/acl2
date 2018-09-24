@@ -492,15 +492,19 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
 (define vl-expr-indexy-via-ctx ((expr vl-expr-p)
                                 (ctx  vl-context1-p))
   :returns (indexy booleanp :rule-classes :type-prescription)
-  ;; Horrible godawful hack to treat the msb/lsb exprs from things like `wire
-  ;; [msb:lsb] foo` as indexy to begin with.
   (b* ((elem (vl-context1->elem ctx)))
     (case (tag elem)
       (:vl-vardecl
+       ;; Horrible godawful hack to treat the msb/lsb exprs from things like
+       ;; `wire [msb:lsb] foo` as indexy to begin with.
        (if (member-equal (vl-expr-fix expr)
                          (vl-datatype-allexprs (vl-vardecl->type elem)))
            t
          nil))
+      (:vl-paramdecl
+       ;; Similarly horrible hack, treat all expressions from parameters as
+       ;; being indexy.
+       t)
       (otherwise
        nil))))
 
