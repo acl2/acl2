@@ -126,7 +126,8 @@
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>
- Finished adding support for 32-bit application-level execution.
+ Finished adding support for 32-bit application-level execution
+ for non-floating-point instructions.
  </p>
 
  <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
