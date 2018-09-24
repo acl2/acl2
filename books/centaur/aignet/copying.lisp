@@ -335,8 +335,25 @@
              (aignet-copy-comb-iter n aignet copy
                                     gatesimp strash aignet2))))
 
+  (defthm copy-length-of-aignet-copy-comb-iter
+    (implies (and (<= (num-fanins aignet) (len copy))
+                  (<= (nfix n) (num-fanins aignet)))
+             (equal (len (mv-nth 0 (aignet-copy-comb-iter
+                                    n aignet copy gatesimp strash
+                                    aignet2)))
+                    (len copy)))
+    :hints ((acl2::just-induct-and-expand
+             (aignet-copy-comb-iter n aignet copy
+                                    gatesimp strash aignet2))))
+
+  (defthm copy-length-of-aignet-copy-comb
+    (implies (<= (num-fanins aignet) (len copy))
+             (equal (len (mv-nth 0 (aignet-copy-comb aignet copy gatesimp strash aignet2)))
+                    (len copy))))
+
   (defthm aignet-copy-sized-of-aignet-copy-comb-iter
-    (implies (<= (num-fanins aignet) (lits-length copy))
+    (implies (and (<= (num-fanins aignet) (lits-length copy))
+                  (<= (nfix n) (num-fanins aignet)))
              (< (fanin-count aignet)
                 (len (mv-nth 0 (aignet-copy-comb-iter
                                 n aignet copy gatesimp strash
