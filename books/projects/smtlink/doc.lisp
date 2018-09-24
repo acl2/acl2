@@ -133,7 +133,7 @@ configuration in smtlink-config.
 <h4>Load and Setup Smtlink</h4>
 <p>To use @('Smtlink'), one needs to include book:</p>
 @({
-  (include-book \"/dir/to/smtlink/top\")
+   (include-book \"projects/smtlink/top\" :dir :system)
   })
 <p>Then one needs to enable @(tsee acl2::tshell) by doing:</p>
 @({
@@ -427,10 +427,15 @@ this directory is in your PYTHONPATH environment variable. @echo Z3 was
 successfully installed.
 })
 </li>
-<li>So the last step is to add this path to PYTHONPATH.
+<li>So the last step is to add this path to PYTHONPATH. Adding this path to
+  existing PYTHONPATH:
 @({
 export PYTHONPATH=$HOME/usr/lib/python-2.7/site-packages:$PYTHONPATH
 })
+If PYTHONPATH is undefined, do:
+@({
+export PYTHONPATH=$HOME/usr/lib/python-2.7/site-packages
+@})
 </li>
 <li>Now one should be able to import z3 into Python.
 Run Python, which will put you in an interactive loop.
@@ -525,8 +530,9 @@ to confirm that the installation was successful.
 
 <h3>Allow the Build System to Find Z3</h3>
 <p>To make sure ACL2's build system can find Z3, Z3 should be installed in
-one's path.  One way of achieving this purpose is to generate below bash script
-called ``Z3'' and put it in one's path:</p>
+one's path.  In case if z3 is not installed in one's path by default, one way
+of achieving this purpose is to generate below bash script called ``z3'' and
+put it in one's path:</p>
 @({
 #!/bin/bash
 /path to z3 executable/z3 \"$@\"
