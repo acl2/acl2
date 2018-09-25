@@ -164,9 +164,9 @@
 
   (defrule
     chars=>nats-of-nats=>chars
-    (implies (unsigned-byte-listp 8 (fix-true-list nats))
+    (implies (unsigned-byte-listp 8 (list-fix nats))
              (equal (chars=>nats (nats=>chars nats))
-                    (fix-true-list nats)))
+                    (list-fix nats)))
     :enable (chars=>nats nats=>chars)
     :rule-classes
     ((:rewrite
