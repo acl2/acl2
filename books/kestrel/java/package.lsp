@@ -34,6 +34,7 @@
                          ensure-function-name-list$
                          ensure-list-functions$
                          ensure-list-no-duplicates$
+                         ensure-string$
                          ensure-string-or-nil$
                          er-soft+
                          explode

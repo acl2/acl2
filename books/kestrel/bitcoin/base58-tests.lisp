@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Example from steps 8 and 9 in Section 'How to create Bitcoin Address'
-; of Page 'Technical background of version 1 Bitcoin addresses' of Wiki
+; of Page 'Technical background of version 1 Bitcoin addresses' of [Wiki]
 ; (https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses#How_to_create_Bitcoin_Address):
 
 (acl2::assert-equal

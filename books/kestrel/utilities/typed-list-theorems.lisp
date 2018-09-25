@@ -54,5 +54,5 @@
   :short "Theorems about lists of strings."
 
   (defrule string-listp-of-remove-duplicates-equal
-    (implies (string-listp x)
-             (string-listp (remove-duplicates-equal x)))))
+    (equal (string-listp (remove-duplicates-equal x))
+           (string-listp (list-fix x)))))
