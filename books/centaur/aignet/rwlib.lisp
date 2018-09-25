@@ -145,6 +145,17 @@
                     (< (nfix idx) (len (nth n smm))))
                (aignet::aignet-litp (nth idx (nth n smm)) aignet))))
 
+  (defthm rwlib-wfp-implies-less
+    (b* ((smm (rwlib->cands rwlib))
+         (aignet (rwlib->aigs rwlib)))
+      (implies (and (rwlib-wfp rwlib)
+                    (< (nfix n) (len smm))
+                    (< (nfix idx) (len (nth n smm))))
+               (<= (lit->var (nth idx (nth n smm))) (fanin-count aignet))))
+    :hints (("goal" :use rwlib-wfp-implies-aignet-litp
+             :in-theory (e/d (aignet-idp)
+                             (rwlib-wfp-implies-aignet-litp rwlib-wfp)))))
+
   (defthm rwlib-wfp-implies-npn4arr-indices-exist
     (b* ((npn4arr (rwlib->npns rwlib)))
       (implies (and (rwlib-wfp rwlib)
@@ -304,12 +315,12 @@
                     rwlib->aigs
                     rwlib->truths))
 
-(define rwlib-num-nodes (rwlib)
+(define rwlib-num-fanins (rwlib)
   :enabled t
   (stobj-let
    ((aignet (rwlib->aigs rwlib)))
    (count)
-   (num-nodes aignet)
+   (num-fanins aignet)
    count))
 
 (define rwlib-num-cands (rwlib)
@@ -376,15 +387,15 @@
 ; abc-nodes-wellformed.
 (set-compile-fns t)
 
-(define abc-nodes-wellformed ((num-nodes natp)
+(define abc-nodes-wellformed ((num-fanins natp)
                               (nodedata nat-listp))
   :measure (len nodedata)
   (if (atom nodedata)
       t
     (and (consp (cdr nodedata))
-         (< (lit->var (car nodedata)) (lnfix num-nodes))
-         (< (lit->var (cadr nodedata)) (lnfix num-nodes))
-         (abc-nodes-wellformed (+ 1 (lnfix num-nodes)) (cddr nodedata))))
+         (< (lit->var (car nodedata)) (lnfix num-fanins))
+         (< (lit->var (cadr nodedata)) (lnfix num-fanins))
+         (abc-nodes-wellformed (+ 1 (lnfix num-fanins)) (cddr nodedata))))
   ///
   (with-output :off :all :on (error)
     (defthm abc-nodes-wellformed-of-abc-nodes
@@ -404,7 +415,7 @@
 
 
 (define aignet-build-abc-nodes ((next-idx natp) (nodes nat-listp) copy strash aignet)
-  :guard (and (not (equal 0 (num-nodes aignet)))
+  :guard (and (not (equal 0 (num-fanins aignet)))
               (abc-nodes-wellformed next-idx nodes)
               (aignet-copies-in-bounds copy aignet)
               (<= (+ next-idx (/ (len nodes) 2)) (lits-length copy))
@@ -424,7 +435,7 @@
              ;;          (implies (and (equal (stype-count :po aignet) 0)
              ;;                        (equal (stype-count :nxst aignet) 0))
              ;;                   (iff (aignet-litp lit aignet)
-             ;;                        (< (lit-id lit) (num-nodes aignet))))
+             ;;                        (< (lit-id lit) (num-fanins aignet))))
              ;;          :hints(("Goal" :in-theory (enable aignet-litp)))))
              )
 
@@ -484,11 +495,11 @@
 (define aignet-derive-truth4s ((n natp)
                                (aignet)
                                (truth4arr))
-  :guard (and (<= (num-nodes aignet) (truth4s-length truth4arr))
+  :guard (and (<= (num-fanins aignet) (truth4s-length truth4arr))
               (<= (num-ins aignet) 4)
               (equal 0 (num-regs aignet))
-              (<= n (num-nodes aignet)))
-  :measure (nfix (- (num-nodes aignet) (nfix n)))
+              (<= n (num-fanins aignet)))
+  :measure (nfix (- (num-fanins aignet) (nfix n)))
   :returns (new-truth4arr)
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
   :prepwork ((local (in-theory (disable unsigned-byte-p)))
@@ -501,13 +512,13 @@
                                (equal (equal (ctype (stype (car aignet))) :input)
                                       (equal (stype (car aignet)) :pi)))
                       :hints(("Goal" :in-theory (enable ctype))))))
-  (b* (((when (mbe :logic (zp (- (num-nodes aignet) (nfix n)))
-                   :exec (eql n (num-nodes aignet))))
+  (b* (((when (mbe :logic (zp (- (num-fanins aignet) (nfix n)))
+                   :exec (eql n (num-fanins aignet))))
         truth4arr)
        (type (id->type n aignet))
        (truth4arr
         (aignet-case type
-          :in (b* ((truth (truth::var4 (io-id->ionum n aignet))))
+          :in (b* ((truth (truth::var4 (ci-id->ionum n aignet))))
                 (set-truth4 n truth truth4arr))
           :gate (b* ((lit0 (gate-id->fanin0 n aignet))
                      (lit1 (gate-id->fanin1 n aignet)))
@@ -517,9 +528,6 @@
                                   (logand (truth::lit-truth lit0 truth4arr)
                                           (truth::lit-truth lit1 truth4arr)))
                               truth4arr))
-          :out (b* ((lit (co-id->fanin n aignet)))
-                 (set-truth4 n (truth::lit-truth lit truth4arr)
-                             truth4arr))
           :const (set-truth4 n 0 truth4arr))))
     (aignet-derive-truth4s (1+ (lnfix n)) aignet truth4arr))
   ///
@@ -546,7 +554,7 @@
            (implies (and (truths-ok n truth4arr aignet invals regvals)
                          (equal (stype-count :reg aignet) 0)
                          (<= (stype-count :pi aignet) 4))
-                    (truths-ok (+ 1 (node-count aignet))
+                    (truths-ok (+ 1 (fanin-count aignet))
                                new-truth4arr aignet invals regvals))
            :hints (("goal" :induct <call> :expand (<call>) :in-theory (enable xor))
                    (and stable-under-simplificationp
@@ -562,14 +570,14 @@
            :hints(("Goal" :in-theory (enable truths-ok)))))
 
   (defret truth4arr-length-of-aignet-derive-truth4s
-    (implies (<= (num-nodes aignet) (len truth4arr))
+    (implies (<= (num-fanins aignet) (len truth4arr))
              (equal (len new-truth4arr) (len truth4arr))))
 
   (defthmd aignet-derive-truth4s-correct
     (b* ((new-truth4arr (aignet-derive-truth4s 0 aignet truth4arr)))
       (implies (and (equal (stype-count :reg aignet) 0)
                     (<= (stype-count :pi aignet) 4)
-                    (< (nfix id) (num-nodes aignet)))
+                    (< (nfix id) (num-fanins aignet)))
              (equal (acl2::bit->bool (id-eval id invals regvals aignet))
                     (truth::truth-eval
                      (nth id new-truth4arr)
@@ -659,22 +667,23 @@
                    :induct t)
                   (and stable-under-simplificationp
                        '(:in-theory (enable ctype))))))
-  (local (defthm aignet-litp-when-no-outs
-           (implies (and (equal (stype-count :po aignet) 0)
-                         (equal (stype-count :nxst aignet) 0))
-                    (iff (aignet-litp lit aignet)
-                         (< (lit-id lit) (num-nodes aignet))))
-           :hints(("Goal" :in-theory (enable aignet-litp)))))
+  ;; (local (defthm aignet-litp-when-no-outs
+  ;;          (implies (and (equal (stype-count :po aignet) 0)
+  ;;                        (equal (stype-count :nxst aignet) 0))
+  ;;                   (iff (aignet-litp lit aignet)
+  ;;                        (< (lit-id lit) (num-fanins aignet))))
+  ;;          :hints(("Goal" :in-theory (enable aignet-p)))))
 
   (defret aignet-truthmap-p-of-aignet-lit-list-collect-truthmap
-    (implies (and (equal (num-nodes aignet) (truth4s-length truth4arr))
+    (implies (and (equal (num-fanins aignet) (truth4s-length truth4arr))
                   (equal (num-outs aignet) 0)
                   (equal (num-nxsts aignet) 0)
                   (aignet-truthmap-p truthmap-acc aignet))
              (aignet-truthmap-p truthmap aignet))
     :hints (("goal" :induct t)
             (and stable-under-simplificationp
-                 '(:expand ((:free (a b) (aignet-truthmap-p (cons a b) aignet)))))))
+                 '(:expand ((:free (a b) (aignet-truthmap-p (cons a b) aignet)))
+                   :in-theory (enable aignet-idp)))))
 
   (defretd aignet-lit-list-collect-truthmap-correct
     (implies (and (member lit (cdr (hons-assoc-equal truth (truthmap-fix truthmap))))
@@ -733,7 +742,7 @@
                     (equal (stype-count :po aignet) 0)
                     (equal (stype-count :nxst aignet) 0)
                     (<= (stype-count :pi aignet) 4)
-                    (equal (len truth4arr-orig) (num-nodes aignet)))
+                    (equal (len truth4arr-orig) (num-fanins aignet)))
                (equal (truth::truth-eval truth
                                          (truth4-env-from-aignet-invals invals)
                                          4)
@@ -748,7 +757,7 @@
                                                             x (aignet-derive-truth4s 0 aignet truth4arr-orig)
                                                             nil))))))
              :expand ((lit-eval lit invals regvals aignet))
-             :in-theory (enable hons-assoc-equal)))))
+             :in-theory (enable hons-assoc-equal aignet-idp)))))
 
 (define smm-write-lit ((block natp)
                        (idx natp)
@@ -1252,7 +1261,7 @@
        (smm (smm-clear smm))
        ((acl2::local-stobjs truth4arr2)
         (mv copy npn4arr truth4arr smm aignet truth4arr2))
-       (truth4arr2 (resize-truth4s (num-nodes aignet) truth4arr2))
+       (truth4arr2 (resize-truth4s (num-fanins aignet) truth4arr2))
        (truth4arr2 (aignet-derive-truth4s 0 aignet truth4arr2))
        ;; cons 0 to include the constant-0 node in the outputs
        (truthmap (aignet-lit-list-collect-truthmap (cons 0 (map-ids (abc-outs) copy)) truth4arr2 nil))
@@ -1308,7 +1317,7 @@
                  (copy (create-litarr))
                  ((mv copy aignet) (aignet-build-abc-top copy aignet))
                  (smm-orig (smm-clear smm))
-                 (truth4arr2-orig (resize-truth4s (num-nodes aignet) (create-truth4arr)))
+                 (truth4arr2-orig (resize-truth4s (num-fanins aignet) (create-truth4arr)))
                  (truth4arr2 (aignet-derive-truth4s 0 aignet truth4arr2-orig))
                  (outs (cons 0 (map-ids (abc-outs) copy)))
                  (prios (cons 0 (abc-prios)))

@@ -328,11 +328,11 @@ for translating between ABC and aignet does not support xors.</p>"
   :verify-guards nil
   :enabled t
   :returns (mv new-aignet2 state)
-  (mbe :logic (non-exec (apply-comb-transforms-logic aignet transforms state))
-       :exec (if (atom transforms)
-                 (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
-                   (mv aignet2 state))
-               (apply-comb-transforms-aux aignet aignet2 (acl2::rev transforms) state)))
+  (if (atom transforms)
+      (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
+        (mv aignet2 state))
+    (mbe :logic (non-exec (apply-comb-transforms-logic aignet transforms state))
+         :exec (apply-comb-transforms-aux aignet aignet2 (acl2::rev transforms) state)))
   ///
   
 
