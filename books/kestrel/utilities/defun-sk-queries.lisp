@@ -82,7 +82,7 @@
 
 (define defun-sk-p ((fn (function-namep fn wrld))
                     (wrld plist-worldp))
-  :returns (defun-sk-form? "A @(tsee pseudo-event-formp) or @('nil').")
+  :returns (defun-sk-form? "A @(tsee maybe-pseudo-event-formp).")
   :verify-guards nil
   :short "Check if a named function has been introduced via @(tsee defun-sk)."
   :long

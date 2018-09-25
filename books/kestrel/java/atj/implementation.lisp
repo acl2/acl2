@@ -320,8 +320,7 @@
                state)
   :mode :program
   :short "Process the @(':output-dir') input."
-  (b* (((unless (stringp output-dir))
-        (er-soft+ ctx t nil "The :OUTPUT-DIR input must be a string."))
+  (b* (((er &) (ensure-string$ output-dir "The :OUTPUT-DIR input" t nil))
        ((mv err/msg kind state) (oslib::file-kind output-dir))
        ((when (or err/msg
                   (not (eq kind :directory))))

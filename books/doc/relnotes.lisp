@@ -101,7 +101,52 @@
 
  <h3>New Libraries</h3>
 
+ <h4><see topic='@(url java::java)'>Java</see></h4>
+
+ <p>
+ Added a library for Java-related formalizations and tools, including:
+ </p>
+ <ul>
+  <li>
+  <see topic='@(url java::aij)'>AIJ (<b>A</b>CL2 <b>I</b>n <b>J</b>ava)</see>,
+  a deep embedding in Java
+  of an executable, side-effect-free, non-stobj-accessing
+  subset of the ACL2 language without guards.
+  </li>
+  <li>
+  <see topic='@(url java::atj)'>ATJ (<b>A</b>CL2 <b>T</b>o <b>J</b>ava)</see>,
+  a simple Java code generator
+  that turns ACL2 functions into AIJ representations
+  that are evaluated by the AIJ interpreter.
+  </li>
+ </ul>
+
  <h3>Changes to Existing Libraries</h3>
+
+ <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
+
+ <p>
+ Finished adding support for 32-bit application-level execution
+ for non-floating-point instructions.
+ </p>
+
+ <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
+
+ <p>
+ Improved the documentation of the Ethereum library.
+ </p>
+
+ <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
+
+ <p>
+ Improved the documentation of the Bitcoin library.
+ </p>
+
+ <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
+
+ <p>
+ Added @(tsee ensure-string), an error-checking function for strings.
+ </p>
 
  <h3>Licensing Changes</h3>
 
