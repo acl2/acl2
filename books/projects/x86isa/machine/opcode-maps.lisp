@@ -4663,14 +4663,7 @@
 		 ("CLAC" 0 :1a
 		  (:ud  . ((ud-Lock-used)
 			   (ud-cpl-is-not-zero)
-			   (equal
-			    ;; CPUID.(EAX=07H, ECX=0H):EBX.SMAP[bit 20]
-			    (cpuid-flag
-			     #ux_07
-			     :ecx #ux_00
-			     :reg #.*ebx*
-			     :bit 20)
-			    0)))))
+			   (equal (feature-flag-macro :smap) 0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b001)

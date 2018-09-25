@@ -45,8 +45,6 @@
 
 (include-book "other-non-det"
 	      :ttags (:include-raw :undef-flg :syscall-exec :other-non-det))
-(include-book "prefix-modrm-sib-decoding")
-(include-book "opcode-maps")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (in-theory (e/d () (mv-nth)))
@@ -122,6 +120,100 @@ the @('fault') field instead.</li>
   (defmacro !!fault-fresh (&rest args)
     `(!fault (!ms-erp-fresh :rip (rip x86) ,@args)
 	     x86)))
+
+;; ----------------------------------------------------------------------
+
+;; Some utilities related to ModR/M and SIB:
+
+(defsection ModR/M-structures
+  :parents (ModR/M-decoding decoding-and-spec-utils)
+  :short "Bitstruct definitions to store a ModR/M byte and its fields"
+
+  (local (xdoc::set-default-parents ModR/M-structures))
+
+  (defbitstruct modr/m-r/m 3)
+  (defbitstruct modr/m-reg 3)
+  (defbitstruct modr/m-mod 2)
+  
+  (defbitstruct modr/m
+    ((r/m modr/m-r/m-p)
+     (reg modr/m-reg-p)
+     (mod modr/m-mod-p))
+    :inline t)
+
+  (defthm return-type-of-ModR/M->r/m-linear
+    (< (ModR/M->r/m modr/m) 8)
+    :hints (("Goal" :in-theory (e/d (ModR/M->r/m) ())))
+    :rule-classes :linear)
+
+  (defthm return-type-of-ModR/M->reg-linear
+    (< (ModR/M->reg modr/m) 8)
+    :hints (("Goal" :in-theory (e/d (ModR/M->reg) ())))
+    :rule-classes :linear)
+
+  (defthm return-type-of-ModR/M->mod-linear
+    (< (ModR/M->mod modr/m) 4)
+    :hints (("Goal" :in-theory (e/d (ModR/M->mod modr/m-fix) ())))
+    :rule-classes :linear))
+
+(defsection SIB-decoding
+  :parents (decoding-and-spec-utils)
+  :short "Functions to detect and decode SIB bytes"
+
+  (local (xdoc::set-default-parents SIB-decoding))
+
+  (define x86-decode-SIB-p
+    ((ModR/M :type (unsigned-byte 8))
+     (16-bit-addressp booleanp))
+    :returns (bool booleanp :hyp (n08p ModR/M))
+    :short "Returns a boolean saying whether a SIB byte is expected to follow a
+    ModR/M byte or not."
+    :long
+    "<p>
+     This is based on Intel manual, Mar'17, Volume 2, Tables 2-1 and 2-2,
+     as well as AMD manual, Dec'17, Volume 3, Tables A-33 and A-35.
+     When the address size is 32 or 64 bits,
+     Intel Table 2-2 and AMD Table A-35 apply:
+     a SIB byte is expected exactly when
+     ModR/M.mod is not #b11 and ModR/M.r/m is #b100.
+     When the address size is 16 bits, no SIB byte is expected.
+     </p>
+     <p>
+     The second argument of this function says whether
+     the address size is 16 bits or not (i.e. 32 or 64 bits).
+     In 64-bit mode, this argument is always @('nil').
+     In 32-bit mode, this argument may be @('t') or @('nil').
+     </p>"
+    (and (not 16-bit-addressp)
+         (b* ((r/m (modr/m->r/m ModR/M))
+              (mod (modr/m->mod ModR/M)))
+           (and (int= r/m 4)
+                (not (int= mod 3))))))
+
+  (defbitstruct sib-base  3)
+  (defbitstruct sib-index 3)
+  (defbitstruct sib-scale 2)
+
+  (defbitstruct sib
+    ((base  sib-base-p)
+     (index sib-index-p)
+     (scale sib-scale-p))
+    :inline t)
+
+  (defthm return-type-of-sib->base-linear
+    (< (sib->base sib) 8)
+    :hints (("Goal" :in-theory (e/d (sib->base) ())))
+    :rule-classes :linear)
+
+  (defthm return-type-of-sib->index-linear
+    (< (sib->index sib) 8)
+    :hints (("Goal" :in-theory (e/d (sib->index) ())))
+    :rule-classes :linear)
+
+  (defthm return-type-of-sib->scale-linear
+    (< (sib->scale sib) 4)
+    :hints (("Goal" :in-theory (e/d (sib->scale sib-fix) ())))
+    :rule-classes :linear))
 
 ;; ======================================================================
 
