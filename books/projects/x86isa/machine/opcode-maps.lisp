@@ -40,6 +40,8 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shilpi@centtech.com>
+; Contributing Author(s):
+; Rob Sumners         <rsumners@centtech.com>
 
 (in-package "X86ISA")
 
@@ -724,15 +726,15 @@
 	       (:fn . (x86-one-byte-jcc))
 	       (:ud  . ((ud-Lock-used)))))
 
-    #| 80 |#  ((:Group-1 2 (E b) (I b) :1a)
-	       (:Group-1 2 (E v) (I z) :1a)
-	       ((:i64 . (:Group-1 2 (E b) (I b) :1a))
+    #| 80 |#  ((:Group-1 :1a)
+	       (:Group-1 :1a)
+	       ((:i64 . (:Group-1 :1a))
 		(:o64 . ("#UD" 0
 			 (:ud  . (t))
 			 (:fn . (x86-illegal-instruction
 				 (message .
 					  "Opcode 0x82 is illegal in the 64-bit mode!"))))))
-	       (:Group-1 2 (E v) (I b) :1a)
+	       (:Group-1 :1a)
 	       ("TEST" 2 (E b) (G b)
 		(:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
 			(operation .  #.*OP-TEST*)))
@@ -774,7 +776,7 @@
 			 (ud-Lock-used))))
 	       ;; in Table A-6, Grp 1A only contains POP,
 	       ;; so we leave the latter implicit here:
-	       (:Group-1A 1 (E v) :1a :d64))
+	       (:Group-1A :1a :d64))
 
     #| 90 |# (("XCHG" 1 (:r8)
 	       (:fn . (x86-xchg))
@@ -937,8 +939,8 @@
 	       (:fn . (x86-mov-Op/En-OI))
 	       (:ud  . ((ud-Lock-used)))))
 
-    #| c0 |# ((:Group-2 2 (E b) (I b) :1a)
-	      (:Group-2 2 (E v) (I b) :1a)
+    #| c0 |# ((:Group-2 :1a)
+	      (:Group-2 :1a)
 	      ("RET" 1 (I w) :f64
 	       (:fn . (x86-ret))
 	       ;; No UD Exception
@@ -964,8 +966,8 @@
 	       (:i64 . ("LDS" 2 (G z) (M p)
 			(:ud  . ((ud-Lock-used)
 				 (ud-source-operand-is-a-register))))))
-	      (:Group-11 2 (E b) (I b) :1a)
-	      (:Group-11 2 (E v) (I z) :1a)
+	      (:Group-11 :1a)
+	      (:Group-11 :1a)
 	      ("ENTER" 2 (I w) (I b)
 	       (:ud  . ((ud-Lock-used))))
 	      ("LEAVE" 0 :d64
@@ -991,10 +993,10 @@
 	      ("IRET/D/Q" 0
 	       (:ud  . ((ud-Lock-used)))))
 
-    #| d0 |# ((:Group-2 2 (E b) (1) :1a)
-	      (:Group-2 2 (E v) (1) :1a)
-	      (:Group-2 2 (E b) (:CL) :1a)
-	      (:Group-2 2 (E v) (:CL) :1a)
+    #| d0 |# ((:Group-2 :1a)
+	      (:Group-2 :1a)
+	      (:Group-2 :1a)
+	      (:Group-2 :1a)
 	      ((:i64 . ("AAM" 1 (I b)
 			(:ud  . ((ud-Lock-used)))))
 	       (:o64 . ("#UD" 0
@@ -1097,8 +1099,8 @@
 	      ("CMC" 0
 	       (:fn . (x86-cmc/clc/stc/cld/std))
 	       (:ud  . ((ud-Lock-used))))
-	      (:Group-3 1 (E b) :1a)
-	      (:Group-3 1 (E v) :1a)
+	      (:Group-3  :1a)
+	      (:Group-3  :1a)
 	      ("CLC" 0
 	       (:fn . (x86-cmc/clc/stc/cld/std))
 	       (:ud  . ((ud-Lock-used))))
@@ -1114,8 +1116,8 @@
 	      ("STD" 0
 	       (:fn . (x86-cmc/clc/stc/cld/std))
 	       (:ud  . ((ud-Lock-used))))
-	      (:Group-4 1 (E b) :1a)
-	      (:Group-5 1 (E v) :1a))
+	      (:Group-4 :1a)
+	      (:Group-5 :1a))
 
     #|       -------------------------------        |#
     ))
@@ -1128,8 +1130,8 @@
   '(
     #|       -------------------------------        |#
 
-    #| 00 |# ((:Group-6 0 :1a)
-	      (:Group-7 0 :1a)
+    #| 00 |# ((:Group-6 :1a)
+	      (:Group-7 :1a)
 	      ("LAR" 2 (G v) (E w)
 	       (:ud  . ((ud-Lock-used))))
 	      ("LSL" 2 (G v) (E w)
@@ -1179,119 +1181,112 @@
 	      (:none
 	       (:fn . (:no-instruction))))
 
-    #| 10 |# (((:no-prefix . ("VMOVUPS"    2 (V ps) (W ps)
+    #| 10 |# (((:no-prefix . ("MOVUPS"    2 (V ps) (W ps)
 			      (:fn . (x86-movups/movupd/movdqu-Op/En-RM))
-			      (:ex . ((chk-exc :type-4 :sse)))))
-	       (:66        . ("VMOVUPD"    2 (V pd) (W pd)
+			      (:ex . ((chk-exc :type-4 (:sse))))))
+	       (:66        . ("MOVUPD"    2 (V pd) (W pd)
 			      (:fn . (x86-movups/movupd/movdqu-Op/En-RM))
-			      (:ex . ((chk-exc :type-4 :sse2)))))
-	       (:F3        . ("VMOVSS"     3 (V x)  (H x)  (W ss)
+			      (:ex . ((chk-exc :type-4 (:sse2))))))
+	       (:F3        . ("MOVSS"     3 (V x)  (H x)  (W ss)
 			      (:fn . (x86-movss/movsd-Op/En-RM
 				      (sp/dp . #.*OP-SP*)))
-			      (:ex . ((chk-exc :type-5 :sse)))))
-	       (:F2        . ("VMOVSD"     3 (V x)  (H x)  (W sd)
+			      (:ex . ((chk-exc :type-5 (:sse))))))
+	       (:F2        . ("MOVSD"     3 (V x)  (H x)  (W sd)
 			      (:fn . (x86-movss/movsd-Op/En-RM
 				      (sp/dp . #.*OP-DP*)))
-			      (:ex . ((chk-exc :type-5 :sse2))))))
+			      (:ex . ((chk-exc :type-5 (:sse2)))))))
 
-	      ((:no-prefix . ("VMOVUPS"    2 (W ps) (V ps)
+	      ((:no-prefix . ("MOVUPS"    2 (W ps) (V ps)
 			      (:fn . (x86-movups/movupd/movdqu-Op/En-MR))
-			      (:ex . ((chk-exc :type-4 :sse)))))
-	       (:66        . ("VMOVUPD"    2 (W pd) (V pd)
+			      (:ex . ((chk-exc :type-4 (:sse))))))
+	       (:66        . ("MOVUPD"    2 (W pd) (V pd)
 			      (:fn . (x86-movups/movupd/movdqu-Op/En-MR))
-			      (:ex . ((chk-exc :type-4 :sse2)))))
-	       (:F3        . ("VMOVSS"     3 (W ss) (H x)  (V ss)
+			      (:ex . ((chk-exc :type-4 (:sse2))))))
+	       (:F3        . ("MOVSS"     3 (W ss) (H x)  (V ss)
 			      (:fn . (x86-movss/movsd-Op/En-MR
 				      (sp/dp . #.*OP-SP*)))
-			      (:ex . ((chk-exc :type-5 :sse)))))
-	       (:F2        . ("VMOVSD"     3 (W sd) (H x)  (V sd)
+			      (:ex . ((chk-exc :type-5 (:sse))))))
+	       (:F2        . ("MOVSD"     3 (W sd) (H x)  (V sd)
 			      (:fn . (x86-movss/movsd-Op/En-MR
 				      (sp/dp . #.*OP-DP*)))
-			      (:ex . ((chk-exc :type-5 :sse2))))))
+			      (:ex . ((chk-exc :type-5 (:sse2)))))))
 
 	      ((:no-prefix . (:EXT
 			      (((:opcode . #ux0F_12)
 				(:mod    . :mem)) .
-				("VMOVLPS"    3 (V q)  (H q)  (M q)
+				("MOVLPS"    3 (V q)  (H q)  (M q)
 				 (:fn . (x86-movlps/movlpd-Op/En-RM))
-				 (:ex . ((chk-exc :type-5 :sse)))))
+				 (:ex . ((chk-exc :type-5 (:sse))))))
 			      (((:opcode . #ux0F_12)
 				(:mod    . #b11)) .
-				("VMOVHLPS"    3 (V q)  (H q)  (U q)
-				 (:ex . ((chk-exc :type-7 :sse)))))))
+				("MOVHLPS"    3 (V q)  (H q)  (U q)
+				 (:ex . ((chk-exc :type-7 (:sse))))))))
 
-	       (:66        . ("VMOVLPD"    3 (V q)  (H q)  (M q)
+	       (:66        . ("MOVLPD"    3 (V q)  (H q)  (M q)
 			      (:fn . (x86-movlps/movlpd-Op/En-RM))
-			      (:ex . ((chk-exc :type-5 :sse2)))))
-	       (:F3        . ("VMOVSLDUP"  2 (V x)  (W x)
+			      (:ex . ((chk-exc :type-5 (:sse2))))))
+	       (:F3        . ("MOVSLDUP"  2 (V x)  (W x)
 			      (:fn . (x86-movlps/movlpd-Op/En-RM))
-			      (:ex . ((chk-exc :type-4 :sse3)))))
-	       (:F2        . ("VMOVDDUP"   2 (V x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse3))))))
+	       (:F2        . ("MOVDDUP"   2 (V x)  (W x)
 			      (:fn . (x86-movlps/movlpd-Op/En-RM))
-			      (:ex . ((chk-exc :type-5 :sse3))))))
+			      (:ex . ((chk-exc :type-5 (:sse3)))))))
 
-	      ((:no-prefix . ("VMOVLPS"    2 (M q)  (V q)
+	      ((:no-prefix . ("MOVLPS"    2 (M q)  (V q)
 			      (:fn . (x86-movlps/movlpd-Op/En-MR))
-			      (:ex . ((chk-exc :type-5 :sse)))))
-	       (:66        . ("VMOVLPD"    2 (M q)  (V q)
+			      (:ex . ((chk-exc :type-5 (:sse))))))
+	       (:66        . ("MOVLPD"    2 (M q)  (V q)
 			      (:fn . (x86-movlps/movlpd-Op/En-MR))
-			      (:ex . ((chk-exc :type-5 :sse2))))))
+			      (:ex . ((chk-exc :type-5 (:sse2)))))))
 
-	      ((:no-prefix . ("VUNPCKLPS"  3 (V x)  (H x)  (W x)
+	      ((:no-prefix . ("UNPCKLPS"  3 (V x)  (H x)  (W x)
 			      (:fn . (x86-unpck?ps-Op/En-RM
 				      (high/low . #.*LOW-PACK*)))
-			      (:ex . ((chk-exc :type-4 :sse)))))
-	       (:66        . ("VUNPCKLPD"  3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse))))))
+	       (:66        . ("UNPCKLPD"  3 (V x)  (H x)  (W x)
 			      (:fn . (x86-unpck?pd-Op/En-RM
 				      (high/low . #.*LOW-PACK*)))
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
-	      ((:no-prefix . ("VUNPCKHPS"  3 (V x)  (H x)  (W x)
+	      ((:no-prefix . ("UNPCKHPS"  3 (V x)  (H x)  (W x)
 			      (:fn . (x86-unpck?ps-Op/En-RM
 				      (high/low . #.*HIGH-PACK*)))
-			      (:ex . ((chk-exc :type-4 :sse)))))
-	       (:66        . ("VUNPCKHPD"  3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse))))))
+	       (:66        . ("UNPCKHPD"  3 (V x)  (H x)  (W x)
 			      (:fn . (x86-unpck?pd-Op/En-RM
 				      (high/low . #.*HIGH-PACK*)))
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . (:EXT
 			      (((:opcode . #ux0F_16)
 				(:mod    . :mem)) .
-				("VMOVHPS"    3 (V dq)  (H q)  (M q) :v1
+				("MOVHPS"    3 (V dq)  (H q)  (M q) :v1
 				 (:fn . (x86-movhps/movhpd-Op/En-RM))
-				 (:ex . ((chk-exc :type-5 :sse)))))
+				 (:ex . ((chk-exc :type-5 (:sse))))))
 			      (((:opcode . #ux0F_16)
 				(:mod    . #b11)) .
-				("VMOVLHPS"   3 (V dq)  (H q)  (U q)
-				 (:ex . ((chk-exc :type-7 :sse)))))))
-	       (:66        . ("VMOVHPD"    3 (V dq)  (H q)  (M q) :v1
+				("MOVLHPS"   3 (V dq)  (H q)  (U q)
+				 (:ex . ((chk-exc :type-7 (:sse))))))))
+	       (:66        . ("MOVHPD"    3 (V dq)  (H q)  (M q) :v1
 			      (:fn . (x86-movhps/movhpd-Op/En-RM))
-			      (:ex . ((chk-exc :type-5 :sse2)))))
-	       (:F3        . ("VMOVSHDUP"  2 (V x)   (W x)
-			      (:ex . ((chk-exc :type-4 :sse3))))))
+			      (:ex . ((chk-exc :type-5 (:sse2))))))
+	       (:F3        . ("MOVSHDUP"  2 (V x)   (W x)
+			      (:ex . ((chk-exc :type-4 (:sse3)))))))
 
-	      ((:no-prefix . ("VMOVHPS"    2 (M q)  (V q) :v1
+	      ((:no-prefix . ("MOVHPS"    2 (M q)  (V q) :v1
 			      (:fn . (x86-movhps/movhpd-Op/En-MR))
-			      (:ex . ((chk-exc :type-5 :sse)))))
-	       (:66        . ("VMOVHPD"    2 (M q)  (V q) :v1
+			      (:ex . ((chk-exc :type-5 (:sse))))))
+	       (:66        . ("MOVHPD"    2 (M q)  (V q) :v1
 			      (:fn . (x86-movhps/movhpd-Op/En-MR))
-			      (:ex . ((chk-exc :type-5 :sse2))))))
+			      (:ex . ((chk-exc :type-5 (:sse2)))))))
 
-    #| 18 |#  (:Group-16 0 :1a)
-
-	      (:none
-	       (:fn . (:no-instruction)))
-	      (:none
-	       (:fn . (:no-instruction)))
-	      (:none
-	       (:fn . (:no-instruction)))
-	      (:none
-	       (:fn . (:no-instruction)))
-	      (:none
-	       (:fn . (:no-instruction)))
-	      (:none
-	       (:fn . (:no-instruction)))
+    #| 18 |#  (:Group-16 :1a)
+	      ("RESERVEDNOP" 0)
+	      (:Group-16 :1a)
+	      (:Group-16 :1a)
+	      ("RESERVEDNOP" 0)
+	      ("RESERVEDNOP" 0)
+	      ("RESERVEDNOP" 0)
 	      ("NOP" 1 (E v)
 	       (:fn . (x86-two-byte-nop))
 	       (:ud  . ((ud-Lock-used)))))
@@ -1340,89 +1335,89 @@
 	      (:none
 	       (:fn . (:no-instruction)))
 
-	      #| 28 |#  ((:no-prefix . ("VMOVAPS"    2 (V ps)  (W ps)
-					(:fn . (x86-movaps/movapd-Op/En-RM))
-					(:ex . ((chk-exc :type-1 :sse)))))
-			 (:66        . ("VMOVAPD"    2 (V pd)  (W pd)
-					(:fn . (x86-movaps/movapd-Op/En-RM))
-					(:ex . ((chk-exc :type-1 :sse2))))))
+   #| 28 |#  ((:no-prefix . ("MOVAPS"    2 (V ps)  (W ps)
+			     (:fn . (x86-movaps/movapd-Op/En-RM))
+			     (:ex . ((chk-exc :type-1 (:sse))))))
+	      (:66        . ("MOVAPD"    2 (V pd)  (W pd)
+			     (:fn . (x86-movaps/movapd-Op/En-RM))
+			     (:ex . ((chk-exc :type-1 (:sse2)))))))
 
-	      ((:no-prefix . ("VMOVAPS"    2 (W ps)  (V ps)
+	      ((:no-prefix . ("MOVAPS"    2 (W ps)  (V ps)
 			      (:fn . (x86-movaps/movapd-Op/En-MR))
-			      (:ex . ((chk-exc :type-1 :sse)))))
-	       (:66        . ("VMOVAPD"    2 (W pd)  (V pd)
+			      (:ex . ((chk-exc :type-1 (:sse))))))
+	       (:66        . ("MOVAPD"    2 (W pd)  (V pd)
 			      (:fn . (x86-movaps/movapd-Op/En-MR))
-			      (:ex . ((chk-exc :type-1 :sse2))))))
+			      (:ex . ((chk-exc :type-1 (:sse2)))))))
 
 	      ((:no-prefix . ("CVTPI2PS"   2 (V ps)  (Q pi)
-			      (:ex . ((chk-exc :type-22-5 :mmx)))))
+			      (:ex . ((chk-exc :type-22-5 (:mmx))))))
 	       (:66        . ("CVTPI2PD"   2 (V pd)  (Q pi)
-			      (:ex . ((chk-exc :type-22-6 :mmx)))))
-	       (:F3        . ("VCVTSI2SS"  3 (V ss)  (H ss)  (E y)
+			      (:ex . ((chk-exc :type-22-6 (:mmx))))))
+	       (:F3        . ("CVTSI2SS"  3 (V ss)  (H ss)  (E y)
 			      (:fn . (x86-cvtsi2s?-Op/En-RM
 				      (sp/dp . #.*OP-SP*)))
-			      (:ex . ((chk-exc :type-3 :sse)))))
-	       (:F2        . ("VCVTSI2SD"  3 (V sd)  (H sd)  (E y)
+			      (:ex . ((chk-exc :type-3 (:sse))))))
+	       (:F2        . ("CVTSI2SD"  3 (V sd)  (H sd)  (E y)
 			      (:fn . (x86-cvtsi2s?-Op/En-RM
 				      (sp/dp . #.*OP-DP*)))
-			      (:ex . ((chk-exc :type-3 :sse2))))))
+			      (:ex . ((chk-exc :type-3 (:sse2)))))))
 
-	      ((:no-prefix . ("VMOVNTPS"   2 (M ps)  (V ps)
-			      (:ex . ((chk-exc :type-1 :sse)))))
-	       (:66        . ("VMOVNTPD"   2 (M pd)  (V pd)
-			      (:ex . ((chk-exc :type-1 :sse2))))))
+	      ((:no-prefix . ("MOVNTPS"   2 (M ps)  (V ps)
+			      (:ex . ((chk-exc :type-1 (:sse))))))
+	       (:66        . ("MOVNTPD"   2 (M pd)  (V pd)
+			      (:ex . ((chk-exc :type-1 (:sse2)))))))
 
 	      ((:no-prefix . ("CVTTPS2PI"  2 (P pi)  (W ps)
-			      (:ex . ((chk-exc :type-22-5 :mmx)))))
+			      (:ex . ((chk-exc :type-22-5 (:mmx))))))
 	       (:66        . ("CVTTPD2PI"  2 (P pi)  (W pd)
-			      (:ex . ((chk-exc :type-22-4 :mmx)))))
-	       (:F3        . ("VCVTTSS2SI" 2 (G y)   (W ss)
+			      (:ex . ((chk-exc :type-22-4 (:mmx))))))
+	       (:F3        . ("CVTTSS2SI" 2 (G y)   (W ss)
 			      (:fn . (x86-cvts?2si/cvtts?2si-Op/En-RM
 				      (sp/dp . #.*OP-SP*)
 				      (trunc . t)))
-			      (:ex . ((chk-exc :type-3 :sse)))))
-	       (:F2        . ("VCVTTSD2SI" 2 (G y)   (W sd)
+			      (:ex . ((chk-exc :type-3 (:sse))))))
+	       (:F2        . ("CVTTSD2SI" 2 (G y)   (W sd)
 			      (:fn . (x86-cvts?2si/cvtts?2si-Op/En-RM
 				      (sp/dp . #.*OP-DP*)
 				      (trunc . t)))
-			      (:ex . ((chk-exc :type-3 :sse2))))))
+			      (:ex . ((chk-exc :type-3 (:sse2)))))))
 
 	      ((:no-prefix . ("CVTPS2PI"   2 (P pi)  (W ps)
-			      (:ex . ((chk-exc :type-22-5 :mmx)))))
+			      (:ex . ((chk-exc :type-22-5 (:mmx))))))
 	       (:66        . ("CVTPD2PI"   2 (Q pi)  (W pd)
-			      (:ex . ((chk-exc :type-22-4 :mmx)))))
-	       (:F3        . ("VCVTSS2SI"  2 (G y)   (W ss)
+			      (:ex . ((chk-exc :type-22-4 (:mmx))))))
+	       (:F3        . ("CVTSS2SI"  2 (G y)   (W ss)
 			      (:fn . (x86-cvts?2si/cvtts?2si-Op/En-RM
 				      (sp/dp . #.*OP-SP*)
 				      (trunc . nil)))
-			      (:ex . ((chk-exc :type-3 :sse)))))
-	       (:F2        . ("VCVTSD2SI"  2 (G y)   (W sd)
+			      (:ex . ((chk-exc :type-3 (:sse))))))
+	       (:F2        . ("CVTSD2SI"  2 (G y)   (W sd)
 			      (:fn . (x86-cvts?2si/cvtts?2si-Op/En-RM
 				      (sp/dp . #.*OP-DP*)
 				      (trunc . nil)))
-			      (:ex . ((chk-exc :type-3 :sse2))))))
+			      (:ex . ((chk-exc :type-3 (:sse2)))))))
 
-	      ((:no-prefix . ("VUCOMISS"   2 (V ss)  (W ss)
+	      ((:no-prefix . ("UCOMISS"   2 (V ss)  (W ss)
 			      (:fn . (x86-comis?/ucomis?-Op/En-RM
 				      (operation . #.*OP-UCOMI*)
 				      (sp/dp . #.*OP-SP*)))
-			      (:ex . ((chk-exc :type-3 :sse)))))
-	       (:66        . ("VUCOMISD"   2 (V sd)  (W sd)
+			      (:ex . ((chk-exc :type-3 (:sse))))))
+	       (:66        . ("UCOMISD"   2 (V sd)  (W sd)
 			      (:fn . (x86-comis?/ucomis?-Op/En-RM
 				      (operation . #.*OP-UCOMI*)
 				      (sp/dp . #.*OP-DP*)))
-			      (:ex . ((chk-exc :type-3 :sse2))))))
+			      (:ex . ((chk-exc :type-3 (:sse2)))))))
 
-	      ((:no-prefix . ("VCOMISS"    2 (V ss)  (W ss)
+	      ((:no-prefix . ("COMISS"    2 (V ss)  (W ss)
 			      (:fn . (x86-comis?/ucomis?-Op/En-RM
 				      (operation . #.*OP-UCOMI*)
 				      (sp/dp . #.*OP-SP*)))
-			      (:ex . ((chk-exc :type-3 :sse)))))
-	       (:66        . ("VCOMISD"    2 (V sd)  (W sd)
+			      (:ex . ((chk-exc :type-3 (:sse))))))
+	       (:66        . ("COMISD"    2 (V sd)  (W sd)
 			      (:fn . (x86-comis?/ucomis?-Op/En-RM
 				      (operation . #.*OP-UCOMI*)
 				      (sp/dp . #.*OP-DP*)))
-			      (:ex . ((chk-exc :type-3 :sse2)))))))
+			      (:ex . ((chk-exc :type-3 (:sse2))))))))
 
     #| 30 |# (("WRMSR" 0
 	       (:ud  . ((ud-Lock-used))))
@@ -1512,329 +1507,329 @@
 	       (:fn . (x86-cmovcc))
 	       (:ud  . ((ud-Lock-used)))))
 
-    #| 50 |# (((:no-prefix . ("VMOVMSKPS"  2 (G y)  (U ps)
-			      (:ex . ((chk-exc :type-7 :sse)))))
-	       (:66        . ("VMOVMSKPD"  2 (G y)  (U pd)
-			      (:ex . ((chk-exc :type-7 :sse2))))))
+    #| 50 |# (((:no-prefix . ("MOVMSKPS"  2 (G y)  (U ps)
+			      (:ex . ((chk-exc :type-7 (:sse))))))
+	       (:66        . ("MOVMSKPD"  2 (G y)  (U pd)
+			      (:ex . ((chk-exc :type-7 (:sse2)))))))
 
-	      ((:no-prefix . ("VSQRTPS"    2 (V ps)  (W ps)
+	      ((:no-prefix . ("SQRTPS"    2 (V ps)  (W ps)
 			      (:fn . (x86-sqrtps-Op/En-RM))
-			      (:ex . ((chk-exc :type-2 :sse)))))
-	       (:66        . ("VSQRTPD"    2 (V pd)  (W pd)
+			      (:ex . ((chk-exc :type-2 (:sse))))))
+	       (:66        . ("SQRTPD"    2 (V pd)  (W pd)
 			      (:fn . (x86-sqrtpd-Op/En-RM))
-			      (:ex . ((chk-exc :type-2 :sse2)))))
-	       (:F3        . ("VSQRTSS"    3 (V ss)  (H ss)  (W ss)
+			      (:ex . ((chk-exc :type-2 (:sse2))))))
+	       (:F3        . ("SQRTSS"    3 (V ss)  (H ss)  (W ss)
 			      (:fn . (x86-sqrts?-Op/En-RM
 				      (sp/dp . #.*OP-SP*)))
-			      (:ex . ((chk-exc :type-3 :sse)))))
-	       (:F2        . ("VSQRTSD"    3 (V sd)  (H sd)  (W sd)
+			      (:ex . ((chk-exc :type-3 (:sse))))))
+	       (:F2        . ("SQRTSD"    3 (V sd)  (H sd)  (W sd)
 			      (:fn . (x86-sqrts?-Op/En-RM
 				      (sp/dp . #.*OP-DP*)))
-			      (:ex . ((chk-exc :type-3 :sse2))))))
+			      (:ex . ((chk-exc :type-3 (:sse2)))))))
 
-	      ((:no-prefix . ("VRSQRTPS"   2 (V ps)  (W ps)
-			      (:ex . ((chk-exc :type-4 :sse)))))
-	       (:F3        . ("VRSQRTSS"   3 (V ss)  (H ss)  (W ss)
-			      (:ex . ((chk-exc :type-5 :sse))))))
+	      ((:no-prefix . ("RSQRTPS"   2 (V ps)  (W ps)
+			      (:ex . ((chk-exc :type-4 (:sse))))))
+	       (:F3        . ("RSQRTSS"   3 (V ss)  (H ss)  (W ss)
+			      (:ex . ((chk-exc :type-5 (:sse)))))))
 
-	      ((:no-prefix . ("VRCPPS"     2 (V ps)  (W ps)
-			      (:ex . ((chk-exc :type-4 :sse)))))
-	       (:F3        . ("VRCPSS"     3 (V ss)  (H ss)  (W ss)
-			      (:ex . ((chk-exc :type-5 :sse))))))
+	      ((:no-prefix . ("RCPPS"     2 (V ps)  (W ps)
+			      (:ex . ((chk-exc :type-4 (:sse))))))
+	       (:F3        . ("RCPSS"     3 (V ss)  (H ss)  (W ss)
+			      (:ex . ((chk-exc :type-5 (:sse)))))))
 
-	      ((:no-prefix . ("VANDPS"     3 (V ps)  (H ps)  (W ps)
+	      ((:no-prefix . ("ANDPS"     3 (V ps)  (H ps)  (W ps)
 			      (:fn . (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
 				      (operation . #.*OP-AND*)))
-			      (:ex . ((chk-exc :type-4 :sse)))))
-	       (:66        . ("VANDPD"     3 (V pd)  (H pd)  (W pd)
+			      (:ex . ((chk-exc :type-4 (:sse))))))
+	       (:66        . ("ANDPD"     3 (V pd)  (H pd)  (W pd)
 			      (:fn . (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
 				      (operation . #.*OP-AND*)))
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
-	      ((:no-prefix . ("VANDNPS"    3 (V ps)  (H ps)  (W ps)
+	      ((:no-prefix . ("ANDNPS"    3 (V ps)  (H ps)  (W ps)
 			      (:fn . (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
 				      (operation . #.*OP-ANDN*)))
-			      (:ex . ((chk-exc :type-4 :sse)))))
-	       (:66        . ("VANDNPD"    3 (V pd)  (H pd)  (W pd)
+			      (:ex . ((chk-exc :type-4 (:sse))))))
+	       (:66        . ("ANDNPD"    3 (V pd)  (H pd)  (W pd)
 			      (:fn . (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
 				      (operation . #.*OP-ANDN*)))
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
-	      ((:no-prefix . ("VORPS"      3 (V ps)  (H ps)  (W ps)
+	      ((:no-prefix . ("ORPS"      3 (V ps)  (H ps)  (W ps)
 			      (:fn . (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
 				      (operation . #.*OP-OR*)))
-			      (:ex . ((chk-exc :type-4 :sse)))))
-	       (:66        . ("VORPD"      3 (V pd)  (H pd)  (W pd)
+			      (:ex . ((chk-exc :type-4 (:sse))))))
+	       (:66        . ("ORPD"      3 (V pd)  (H pd)  (W pd)
 			      (:fn . (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
 				      (operation . #.*OP-OR*)))
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
-	      ((:no-prefix . ("VXORPS"     3 (V ps)  (H ps)  (W ps)
+	      ((:no-prefix . ("XORPS"     3 (V ps)  (H ps)  (W ps)
 			      (:fn . (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
 				      (operation . #.*OP-XOR*)))
-			      (:ex . ((chk-exc :type-4 :sse)))))
-	       (:66        . ("VXORPD"     3 (V pd)  (H pd)  (W pd)
+			      (:ex . ((chk-exc :type-4 (:sse))))))
+	       (:66        . ("XORPD"     3 (V pd)  (H pd)  (W pd)
 			      (:fn . (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
 				      (operation . #.*OP-XOR*)))
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
-   #| 58 |#   ((:no-prefix . ("VADDPS"     3 (V ps)  (H ps)  (W ps)
+   #| 58 |#   ((:no-prefix . ("ADDPS"     3 (V ps)  (H ps)  (W ps)
 			      (:fn . (x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
 				      (operation . #.*OP-ADD*)))
-			      (:ex . ((chk-exc :type-4 :sse)))))
-	       (:66        . ("VADDPD"     3 (V pd)  (H pd)  (W pd)
+			      (:ex . ((chk-exc :type-4 (:sse))))))
+	       (:66        . ("ADDPD"     3 (V pd)  (H pd)  (W pd)
 			      (:fn . (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
 				      (operation . #.*OP-ADD*)))
-			      (:ex . ((chk-exc :type-4 :sse2)))))
-	       (:F3        . ("VADDSS"     3 (V ss)  (H ss)  (W ss)
+			      (:ex . ((chk-exc :type-4 (:sse2))))))
+	       (:F3        . ("ADDSS"     3 (V ss)  (H ss)  (W ss)
 			      (:fn . (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
 				      (operation . #.*OP-ADD*)
 				      (sp/dp . #.*OP-SP*)))
-			      (:ex . ((chk-exc :type-3 :sse)))))
-	       (:F2        . ("VADDSD"     3 (V sd)  (H sd)  (W sd)
+			      (:ex . ((chk-exc :type-3 (:sse))))))
+	       (:F2        . ("ADDSD"     3 (V sd)  (H sd)  (W sd)
 			      (:fn . (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
 				      (operation . #.*OP-ADD*)
 				      (sp/dp . #.*OP-DP*)))
-			      (:ex . ((chk-exc :type-3 :sse2))))))
+			      (:ex . ((chk-exc :type-3 (:sse2)))))))
 
-	      ((:no-prefix . ("VMULPS"     3 (V ps)  (H ps)  (W ps)
+	      ((:no-prefix . ("MULPS"     3 (V ps)  (H ps)  (W ps)
 			      (:fn . (x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
 				      (operation . #.*OP-MUL*)))
-			      (:ex . ((chk-exc :type-2 :sse)))))
-	       (:66        . ("VMULPD"     3 (V pd)  (H pd)  (W pd)
+			      (:ex . ((chk-exc :type-2 (:sse))))))
+	       (:66        . ("MULPD"     3 (V pd)  (H pd)  (W pd)
 			      (:fn . (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
 				      (operation . #.*OP-MUL*)))
-			      (:ex . ((chk-exc :type-2 :sse2)))))
-	       (:F3        . ("VMULSS"     3 (V ss)  (H ss)  (W ss)
+			      (:ex . ((chk-exc :type-2 (:sse2))))))
+	       (:F3        . ("MULSS"     3 (V ss)  (H ss)  (W ss)
 			      (:fn . (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
 				      (operation . #.*OP-MUL*)
 				      (sp/dp . #.*OP-SP*)))
-			      (:ex . ((chk-exc :type-3 :sse)))))
-	       (:F2        . ("VMULSD"     3 (V sd)  (H sd)  (W sd)
+			      (:ex . ((chk-exc :type-3 (:sse))))))
+	       (:F2        . ("MULSD"     3 (V sd)  (H sd)  (W sd)
 			      (:fn . (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
 				      (operation . #.*OP-MUL*)
 				      (sp/dp . #.*OP-DP*)))
-			      (:ex . ((chk-exc :type-3 :sse2))))))
+			      (:ex . ((chk-exc :type-3 (:sse2)))))))
 
-	      ((:no-prefix . ("VCVTPS2PD"  2 (V pd)  (W ps)
+	      ((:no-prefix . ("CVTPS2PD"  2 (V pd)  (W ps)
 			      (:fn . (x86-cvtps2pd-Op/En-RM))
-			      (:ex . ((chk-exc :type-3 :sse2)))))
-	       (:66        . ("VCVTPD2PS"  2 (V ps)  (W pd)
+			      (:ex . ((chk-exc :type-3 (:sse2))))))
+	       (:66        . ("CVTPD2PS"  2 (V ps)  (W pd)
 			      (:fn . (x86-cvtpd2ps-Op/En-RM))
-			      (:ex . ((chk-exc :type-3 :sse2)))))
-	       (:F3        . ("VCVTSS2SD"  3 (V sd)  (H x)   (W ss)
+			      (:ex . ((chk-exc :type-3 (:sse2))))))
+	       (:F3        . ("CVTSS2SD"  3 (V sd)  (H x)   (W ss)
 			      (:fn . (x86-cvts?2s?-Op/En-RM
 				      (dp-to-sp . #.*SP-TO-DP*)))
-			      (:ex . ((chk-exc :type-3 :sse2)))))
-	       (:F2        . ("VCVTSD2SS"  3 (V ss)  (H x)   (W sd)
+			      (:ex . ((chk-exc :type-3 (:sse2))))))
+	       (:F2        . ("CVTSD2SS"  3 (V ss)  (H x)   (W sd)
 			      (:fn . (x86-cvts?2s?-Op/En-RM
 				      (dp-to-sp . #.*DP-TO-SP*)))
-			      (:ex . ((chk-exc :type-3 :sse2))))))
+			      (:ex . ((chk-exc :type-3 (:sse2)))))))
 
-	      ((:no-prefix . ("VCVTDQ2PS"  2 (V ps)  (W dq)
-			      (:ex . ((chk-exc :type-2 :sse2)))))
-	       (:66        . ("VCVTPS2DQ"  2 (V dq)  (W ps)
-			      (:ex . ((chk-exc :type-2 :sse2)))))
-	       (:F3        . ("VCVTTPS2DQ" 2 (V dq)  (W ps)
-			      (:ex . ((chk-exc :type-2 :sse2))))))
+	      ((:no-prefix . ("CVTDQ2PS"  2 (V ps)  (W dq)
+			      (:ex . ((chk-exc :type-2 (:sse2))))))
+	       (:66        . ("CVTPS2DQ"  2 (V dq)  (W ps)
+			      (:ex . ((chk-exc :type-2 (:sse2))))))
+	       (:F3        . ("CVTTPS2DQ" 2 (V dq)  (W ps)
+			      (:ex . ((chk-exc :type-2 (:sse2)))))))
 
-	      ((:no-prefix . ("VSUBPS"     3 (V ps)  (H ps)  (W ps)
+	      ((:no-prefix . ("SUBPS"     3 (V ps)  (H ps)  (W ps)
 			      (:fn . (x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
 				      (operation . #.*OP-SUB*)))
-			      (:ex . ((chk-exc :type-2 :sse)))))
-	       (:66        . ("VSUBPD"     3 (V pd)  (H pd)  (W pd)
+			      (:ex . ((chk-exc :type-2 (:sse))))))
+	       (:66        . ("SUBPD"     3 (V pd)  (H pd)  (W pd)
 			      (:fn . (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
 				      (operation . #.*OP-SUB*)))
-			      (:ex . ((chk-exc :type-2 :sse2)))))
-	       (:F3        . ("VSUBSS"     3 (V ss)  (H ss)  (W ss)
+			      (:ex . ((chk-exc :type-2 (:sse2))))))
+	       (:F3        . ("SUBSS"     3 (V ss)  (H ss)  (W ss)
 			      (:fn . (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
 				      (operation . #.*OP-SUB*)
 				      (sp/dp . #.*OP-SP*)))
-			      (:ex . ((chk-exc :type-3 :sse)))))
-	       (:F2        . ("VSUBSD"     3 (V sd)  (H sd)  (W sd)
+			      (:ex . ((chk-exc :type-3 (:sse))))))
+	       (:F2        . ("SUBSD"     3 (V sd)  (H sd)  (W sd)
 			      (:fn . (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
 				      (operation . #.*OP-SUB*)
 				      (sp/dp . #.*OP-DP*)))
-			      (:ex . ((chk-exc :type-3 :sse2))))))
+			      (:ex . ((chk-exc :type-3 (:sse2)))))))
 
-	      ((:no-prefix . ("VMINPS"     3 (V ps)  (H ps)  (W ps)
+	      ((:no-prefix . ("MINPS"     3 (V ps)  (H ps)  (W ps)
 			      (:fn . (x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
 				      (operation . #.*OP-MIN*)))
-			      (:ex . ((chk-exc :type-2 :sse)))))
-	       (:66        . ("VMINPD"     3 (V pd)  (H pd)  (W pd)
+			      (:ex . ((chk-exc :type-2 (:sse))))))
+	       (:66        . ("MINPD"     3 (V pd)  (H pd)  (W pd)
 			      (:fn . (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
 				      (operation . #.*OP-MIN*)))
-			      (:ex . ((chk-exc :type-2 :sse2)))))
-	       (:F3        . ("VMINSS"     3 (V ss)  (H ss)  (W ss)
+			      (:ex . ((chk-exc :type-2 (:sse2))))))
+	       (:F3        . ("MINSS"     3 (V ss)  (H ss)  (W ss)
 			      (:fn . (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
 				      (operation . #.*OP-MIN*)
 				      (sp/dp . #.*OP-SP*)))
-			      (:ex . ((chk-exc :type-2 :sse)))))
-	       (:F2        . ("VMINSD"     3 (V sd)  (H sd)  (W sd)
+			      (:ex . ((chk-exc :type-2 (:sse))))))
+	       (:F2        . ("MINSD"     3 (V sd)  (H sd)  (W sd)
 			      (:fn . (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
 				      (operation . #.*OP-MIN*)
 				      (sp/dp . #.*OP-DP*)))
-			      (:ex . ((chk-exc :type-3 :sse2))))))
+			      (:ex . ((chk-exc :type-3 (:sse2)))))))
 
-	      ((:no-prefix . ("VDIVPS"     3 (V ps)  (H ps)  (W ps)
+	      ((:no-prefix . ("DIVPS"     3 (V ps)  (H ps)  (W ps)
 			      (:fn . (x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
 				      (operation . #.*OP-DIV*)))
-			      (:ex . ((chk-exc :type-2 :sse)))))
-	       (:66        . ("VDIVPD"     3 (V pd)  (H pd)  (W pd)
+			      (:ex . ((chk-exc :type-2 (:sse))))))
+	       (:66        . ("DIVPD"     3 (V pd)  (H pd)  (W pd)
 			      (:fn . (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
 				      (operation . #.*OP-DIV*)))
-			      (:ex . ((chk-exc :type-2 :sse2)))))
-	       (:F3        . ("VDIVSS"     3 (V ss)  (H ss)  (W ss)
+			      (:ex . ((chk-exc :type-2 (:sse2))))))
+	       (:F3        . ("DIVSS"     3 (V ss)  (H ss)  (W ss)
 			      (:fn . (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
 				      (operation . #.*OP-DIV*)
 				      (sp/dp . #.*OP-SP*)))
-			      (:ex . ((chk-exc :type-3 :sse)))))
-	       (:F2        . ("VDIVSD"     3 (V sd)  (H sd)  (W sd)
+			      (:ex . ((chk-exc :type-3 (:sse))))))
+	       (:F2        . ("DIVSD"     3 (V sd)  (H sd)  (W sd)
 			      (:fn . (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
 				      (operation . #.*OP-DIV*)
 				      (sp/dp . #.*OP-DP*)))
-			      (:ex . ((chk-exc :type-3 :sse2))))))
+			      (:ex . ((chk-exc :type-3 (:sse2)))))))
 
-	      ((:no-prefix . ("VMAXPS"     3 (V ps)  (H ps)  (W ps)
+	      ((:no-prefix . ("MAXPS"     3 (V ps)  (H ps)  (W ps)
 			      (:fn . (x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM
 				      (operation . #.*OP-MAX*)))
-			      (:ex . ((chk-exc :type-2 :sse)))))
-	       (:66        . ("VMAXPD"     3 (V pd)  (H pd)  (W pd)
+			      (:ex . ((chk-exc :type-2 (:sse))))))
+	       (:66        . ("MAXPD"     3 (V pd)  (H pd)  (W pd)
 			      (:fn . (x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM
 				      (operation . #.*OP-MAX*)))
-			      (:ex . ((chk-exc :type-2 :sse2)))))
-	       (:F3        . ("VMAXSS"     3 (V ss)  (H ss)  (W ss)
+			      (:ex . ((chk-exc :type-2 (:sse2))))))
+	       (:F3        . ("MAXSS"     3 (V ss)  (H ss)  (W ss)
 			      (:fn . (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
 				      (operation . #.*OP-MAX*)
 				      (sp/dp . #.*OP-SP*)))
-			      (:ex . ((chk-exc :type-3 :sse)))))
-	       (:F2        . ("VMAXSD"     3 (V sd)  (H sd)  (W sd)
+			      (:ex . ((chk-exc :type-3 (:sse))))))
+	       (:F2        . ("MAXSD"     3 (V sd)  (H sd)  (W sd)
 			      (:fn . (x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM
 				      (operation . #.*OP-MAX*)
 				      (sp/dp . #.*OP-DP*)))
-			      (:ex . ((chk-exc :type-3 :sse2)))))))
+			      (:ex . ((chk-exc :type-3 (:sse2))))))))
 
     #| 60 |# (((:no-prefix . ("PUNPCKLBW"  2 (P q)  (Q d)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPUNPCKLBW" 3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PUNPCKLBW" 3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("PUNPCKLWD"  2 (P q)  (Q d)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPUNPCKLWD" 3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PUNPCKLWD" 3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("PUNPCKLDQ"  2 (P q)  (Q d)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPUNPCKLDQ" 3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PUNPCKLDQ" 3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("PACKSSWB"   2 (P q)  (Q q)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPACKSSWB"  3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PACKSSWB"  3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("PCMPGTB"    2 (P q)  (Q q)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPCMPGTB"   3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PCMPGTB"   3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("PCMPGTW"    2 (P q)  (Q q)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPCMPGTW"   3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PCMPGTW"   3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("PCMPGTD"    2 (P q)  (Q q)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPCMPGTD"   3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PCMPGTD"   3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("PACKUSWB"   2 (P q)  (Q q)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPACKUSWB"  3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PACKUSWB"  3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
     #| 68 |#  ((:no-prefix . ("PUNPCKHBW"  2 (P q)  (Q d)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPUNPCKHBW" 3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PUNPCKHBW" 3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("PUNPCKHWD"  2 (P q)  (Q d)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPUNPCKHWD" 3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PUNPCKHWD" 3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("PUNPCKHDQ"  2 (P q)  (Q d)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPUNPCKHDQ" 3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PUNPCKHDQ" 3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("PACKSSDW"  2 (P q)  (Q d)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPACKSSDW" 3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PACKSSDW" 3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
-	      ((:66        . ("VPUNPCKLQDQ" 3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+	      ((:66        . ("PUNPCKLQDQ" 3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
-	      ((:66        . ("VPUNPCKHQDQ" 3 (V x)  (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+	      ((:66        . ("PUNPCKHQDQ" 3 (V x)  (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("MOVD/Q"      2 (P d)  (E y)
-			      (:ex . ((chk-exc :type-22-8 :mmx)))))
-	       (:66        . ("VMOVD/Q"     2 (V y)  (E y)
-			      (:ex . ((chk-exc :type-5 :sse2))))))
+			      (:ex . ((chk-exc :type-22-8 (:mmx))))))
+	       (:66        . ("MOVD/Q"     2 (V y)  (E y)
+			      (:ex . ((chk-exc :type-5 (:sse2)))))))
 
 	      ((:no-prefix . ("MOVQ"        2 (P q)  (Q q)
-			      (:ex . ((chk-exc :type-22-8 :mmx)))))
-	       (:66        . ("VMOVDQA"     2 (V x)  (W x)
-			      (:ex . ((chk-exc :type-1 :sse2)))))
-	       (:F3        . ("VMOVDQU"     2 (V x)  (W x)
+			      (:ex . ((chk-exc :type-22-8 (:mmx))))))
+	       (:66        . ("MOVDQA"     2 (V x)  (W x)
+			      (:ex . ((chk-exc :type-1 (:sse2))))))
+	       (:F3        . ("MOVDQU"     2 (V x)  (W x)
 			      (:fn . (x86-movups/movupd/movdqu-Op/En-RM))
-			      (:ex . ((chk-exc :type-4 :sse2)))))))
+			      (:ex . ((chk-exc :type-4 (:sse2))))))))
 
     #| 70 |# (((:no-prefix . ("PSHUFW"      3 (P q)   (Q q)   (I b)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPSHUFD"     3 (V x)   (W x)   (I b)
-			      (:ex . ((chk-exc :type-4 :sse2)))))
-	       (:F3        . ("VPSHUFHW"    3 (V x)   (W x)   (I b)
-			      (:ex . ((chk-exc :type-4 :sse2)))))
-	       (:F2        . ("VPSHUFLW"    3 (V x)   (W x)   (I b)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PSHUFD"     3 (V x)   (W x)   (I b)
+			      (:ex . ((chk-exc :type-4 (:sse2))))))
+	       (:F3        . ("PSHUFHW"    3 (V x)   (W x)   (I b)
+			      (:ex . ((chk-exc :type-4 (:sse2))))))
+	       (:F2        . ("PSHUFLW"    3 (V x)   (W x)   (I b)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 
-	      (:Group-12 0 :1a)
+	      (:Group-12  :1a)
 
-	      (:Group-13 0 :1a)
+	      (:Group-13  :1a)
 
-	      (:Group-14 0 :1a)
+	      (:Group-14  :1a)
 
 	      ((:no-prefix . ("PCMPEQB"     2 (P q)   (Q q)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPCMPEQB"    3 (V x)   (H x)  (W x)
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PCMPEQB"    3 (V x)   (H x)  (W x)
 			      (:fn . (x86-pcmpeqb-Op/En-RM))
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("PCMPEQW"     2 (P q)   (Q q)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPCMPEQW"    3 (V x)   (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PCMPEQW"    3 (V x)   (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("PCMPEQD"     2 (P q)   (Q q)
-			      (:ex . ((chk-exc :type-22-7 :mmx)))))
-	       (:66        . ("VPCMPEQD"    3 (V x)   (H x)  (W x)
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	       (:66        . ("PCMPEQD"    3 (V x)   (H x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	      ((:no-prefix . ("EMMS"        0
 			      (:ud . ((ud-Lock-used)
 				      (equal (cr0-slice :cr0-em (cr0)) 1)))))
 	       (:v         . ("VZEROUPPER/VZEROALL"  0
-			      (:ex . ((chk-exc :type-8 :avx))))))
+			      (:ex . ((chk-exc :type-8 (:avx)))))))
 
-    #| 78 |#  ("VMREAD" 2  (E y)  (G y)
+    #| 78 |#  ("MREAD" 2  (E y)  (G y)
 	       (:gp  . ((gp-cpl-not-0))))
 
-	      ("VMWRITE" 2  (E y)  (G y)
+	      ("MWRITE" 2  (E y)  (G y)
 	       (:gp  . ((gp-cpl-not-0))))
 
 	      (:none
@@ -1843,30 +1838,30 @@
 	      (:none
 	       (:fn . (:no-instruction)))
 
-	      ((:66        . ("VHADDPD"     3 (V pd)   (H pd)  (W pd)
-			      (:ex . ((chk-exc :type-2 :sse3)))))
-	       (:F2        . ("VHADDPS"     3 (V ps)   (H ps)  (W ps)
-			      (:ex . ((chk-exc :type-2 :sse3))))))
+	      ((:66        . ("HADDPD"     3 (V pd)   (H pd)  (W pd)
+			      (:ex . ((chk-exc :type-2 (:sse3))))))
+	       (:F2        . ("HADDPS"     3 (V ps)   (H ps)  (W ps)
+			      (:ex . ((chk-exc :type-2 (:sse3)))))))
 
-	      ((:66        . ("VHSUBPD"     3 (V pd)   (H pd)  (W pd)
-			      (:ex . ((chk-exc :type-2 :sse3)))))
-	       (:F2        . ("VHSUBPS"     3 (V ps)   (H ps)  (W ps)
-			      (:ex . ((chk-exc :type-2 :sse3))))))
+	      ((:66        . ("HSUBPD"     3 (V pd)   (H pd)  (W pd)
+			      (:ex . ((chk-exc :type-2 (:sse3))))))
+	       (:F2        . ("HSUBPS"     3 (V ps)   (H ps)  (W ps)
+			      (:ex . ((chk-exc :type-2 (:sse3)))))))
 
 	      ((:no-prefix . ("MOVD/Q"      2 (E y)    (P d)
-			      (:ex . ((chk-exc :type-22-8 :mmx)))))
-	       (:66        . ("VMOVD/Q"     2 (E y)    (V y)
-			      (:ex . ((chk-exc :type-5 :sse2)))))
-	       (:F3        . ("VMOVQ"       2 (V q)    (W q)
-			      (:ex . ((chk-exc :type-5 :sse2))))))
+			      (:ex . ((chk-exc :type-22-8 (:mmx))))))
+	       (:66        . ("MOVD/Q"     2 (E y)    (V y)
+			      (:ex . ((chk-exc :type-5 (:sse2))))))
+	       (:F3        . ("MOVQ"       2 (V q)    (W q)
+			      (:ex . ((chk-exc :type-5 (:sse2)))))))
 
 	      ((:no-prefix . ("MOVQ"        2 (Q q)    (P q)
-			      (:ex . ((chk-exc :type-22-8 :mmx)))))
-	       (:66        . ("VMOVDQA"     2 (W x)    (V x)
-			      (:ex . ((chk-exc :type-1 :sse2)))))
-	       (:F3        . ("VMOVDQU"      2 (W x)    (V x)
+			      (:ex . ((chk-exc :type-22-8 (:mmx))))))
+	       (:66        . ("MOVDQA"     2 (W x)    (V x)
+			      (:ex . ((chk-exc :type-1 (:sse2))))))
+	       (:F3        . ("MOVDQU"      2 (W x)    (V x)
 			      (:fn . (x86-movups/movupd/movdqu-Op/En-MR))
-			      (:ex . ((chk-exc :type-4 :sse2)))))))
+			      (:ex . ((chk-exc :type-4 (:sse2))))))))
 
     #| 80 |#  (("JO" 1 (J z) :f64
 		(:fn . (x86-two-byte-jcc))
@@ -1996,7 +1991,7 @@
 	       (:ud  . ((ud-Lock-used))))
 	      ("SHRD" 3 (E v) (G v) (:CL)
 	       (:ud  . ((ud-Lock-used))))
-	      (:Group-15 0 :1a :1c)
+	      (:Group-15 :1a :1c)
 	      ("IMUL" 2 (G v) (E v)
 	       (:fn . (x86-imul-Op/En-RM))
 	       (:ud  . ((ud-Lock-used)))))
@@ -2037,8 +2032,8 @@
 					  :reg #.*ecx*
 					  :bit 23)
 					 0))))))
-	      (:Group-10 0 :1a :1b)
-	      (:Group-8 2 (E v) (I b) :1a)
+	      (:Group-10 :1a :1b)
+	      (:Group-8  :1a)
 	      ("BTC" 2 (E v) (G v)
 	       (:ud  . ((ud-Lock-used-Dest-not-Memory-Op))))
 	      ((:no-prefix . ("BSF"   2 (G v) (E v)
@@ -2060,20 +2055,20 @@
 	       (:ud  . ((ud-Lock-used-Dest-not-Memory-Op))))
 	      ("XADD"     2 (E v)  (G v)
 	       (:ud  . ((ud-Lock-used-Dest-not-Memory-Op))))
-	      ((:no-prefix . ("VCMPPS"     4 (V ps)  (H ps)  (W ps)  (I b)
+	      ((:no-prefix . ("CMPPS"     4 (V ps)  (H ps)  (W ps)  (I b)
 			      (:fn . (x86-cmpps-Op/En-RMI))
-			      (:ex . ((chk-exc :type-2 :sse)))))
-	       (:66        . ("VCMPPD"     4 (V pd)  (H pd)  (W pd)  (I b)
+			      (:ex . ((chk-exc :type-2 (:sse))))))
+	       (:66        . ("CMPPD"     4 (V pd)  (H pd)  (W pd)  (I b)
 			      (:fn . (x86-cmppd-Op/En-RMI))
-			      (:ex . ((chk-exc :type-2 :sse2)))))
-	       (:F3        . ("VCMPSS"     4 (V ss)  (H ss)  (W ss)  (I b)
+			      (:ex . ((chk-exc :type-2 (:sse2))))))
+	       (:F3        . ("CMPSS"     4 (V ss)  (H ss)  (W ss)  (I b)
 			      (:fn . (x86-cmpss/cmpsd-Op/En-RMI
 				      (sp/dp . #.*OP-SP*)))
-			      (:ex . ((chk-exc :type-3 :sse)))))
-	       (:F2        . ("VCMPSD"     4 (V sd)  (H sd)  (W sd)  (I b)
+			      (:ex . ((chk-exc :type-3 (:sse))))))
+	       (:F2        . ("CMPSD"     4 (V sd)  (H sd)  (W sd)  (I b)
 			      (:fn . (x86-cmpss/cmpsd-Op/En-RMI
 				      (sp/dp . #.*OP-DP*)))
-			      (:ex . ((chk-exc :type-3 :sse2))))))
+			      (:ex . ((chk-exc :type-3 (:sse2)))))))
 
 	      ("MOVNTI"     2 (M y)   (G y)
 	       (:ud  . ((ud-Lock-used)
@@ -2087,28 +2082,28 @@
 
 	      ((:no-prefix . (:ALT
 			      (("PINSRW"     3 (P q)   (R y)  (I b)
-				(:ex . ((chk-exc :type-5 :sse))))
+				(:ex . ((chk-exc :type-5 (:sse)))))
 			       ("PINSRW"    3 (P q)   (M w)  (I b)
-				(:ex . ((chk-exc :type-5 :sse)))))))
+				(:ex . ((chk-exc :type-5 (:sse))))))))
 	       (:66        . (:ALT
-			      (("VPINSRW"    4 (V dq)  (H dq) (R y)  (I b)
-				(:ex . ((chk-exc :type-5 :sse2))))
-			       ("VPINSRW"    4 (V dq)  (H dq) (M w)  (I b)
-				(:ex . ((chk-exc :type-5 :sse2))))))))
+			      (("PINSRW"    4 (V dq)  (H dq) (R y)  (I b)
+				(:ex . ((chk-exc :type-5 (:sse2)))))
+			       ("PINSRW"    4 (V dq)  (H dq) (M w)  (I b)
+				(:ex . ((chk-exc :type-5 (:sse2)))))))))
 
 	      ((:no-prefix . ("PEXTRW"     3 (G d)   (N q)  (I b)
-			      (:ex . ((chk-exc :type-5 :sse)))))
-	       (:66        . ("VPEXTRW"    3 (G d)   (U dq) (I b)
-			      (:ex . ((chk-exc :type-5 :sse2))))))
+			      (:ex . ((chk-exc :type-5 (:sse))))))
+	       (:66        . ("PEXTRW"    3 (G d)   (U dq) (I b)
+			      (:ex . ((chk-exc :type-5 (:sse2)))))))
 
-	      ((:no-prefix . ("VSHUFPS"    4 (V ps)  (H ps)  (W ps)  (I b)
+	      ((:no-prefix . ("SHUFPS"    4 (V ps)  (H ps)  (W ps)  (I b)
 			      (:fn . (x86-shufps-Op/En-RMI))
-			      (:ex . ((chk-exc :type-4 :sse)))))
-	       (:66        . ("VSHUFPD"    4 (V pd)  (H pd)  (W pd)  (I b)
+			      (:ex . ((chk-exc :type-4 (:sse))))))
+	       (:66        . ("SHUFPD"    4 (V pd)  (H pd)  (W pd)  (I b)
 			      (:fn . (x86-shufpd-Op/En-RMI))
-			      (:ex . ((chk-exc :type-4 :sse2))))))
+			      (:ex . ((chk-exc :type-4 (:sse2)))))))
 
-	      (:Group-9 0 :1a)
+	      (:Group-9 :1a)
 
     #| c8 |#  ("BSWAP" 1 (:RAX/EAX/R8/R8D)
 	       (:ud  . ((ud-Lock-used))))
@@ -2127,38 +2122,38 @@
 	      ("BSWAP" 1 (:RDI/EDI/R15/R15D)
 	       (:ud  . ((ud-Lock-used)))))
 
-  #| d0 |# (((:66        . ("VADDSUBPD"  3 (V pd)  (H pd)  (W pd)
-			    (:ex . ((chk-exc :type-4 :sse3)))))
-	     (:F2        . ("VADDSUBPS"  3 (V ps)  (H ps)  (W ps)
-			    (:ex . ((chk-exc :type-4 :sse3))))))
+  #| d0 |# (((:66        . ("ADDSUBPD"  3 (V pd)  (H pd)  (W pd)
+			    (:ex . ((chk-exc :type-4 (:sse3))))))
+	     (:F2        . ("ADDSUBPS"  3 (V ps)  (H ps)  (W ps)
+			    (:ex . ((chk-exc :type-4 (:sse3)))))))
 
 	    ((:no-prefix . ("PSRLW"      2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSRLW"     3 (V x)   (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSRLW"     3 (V x)   (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PSRLD"      2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSRLD"     3 (V x)   (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSRLD"     3 (V x)   (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PSRLQ"      2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSRLQ"     3 (V x)   (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSRLQ"     3 (V x)   (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PADDQ"      2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VADDQ"      3 (V x)   (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("ADDQ"      3 (V x)   (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PMULLW"     2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPMULLW"    3 (V x)   (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PMULLW"    3 (V x)   (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
-	    ((:66        . ("VMOVQ"     2 (W q)   (V q)
-			    (:ex . ((chk-exc :type-4 :sse2)))))
+	    ((:66        . ("MOVQ"     2 (W q)   (V q)
+			    (:ex . ((chk-exc :type-4 (:sse2))))))
 	     (:F3        . ("MOVQ2DQ"   2 (V dq)  (N q)
 			    (:ud . ((equal (cr0-slice :cr0-ts (cr0)) 1)
 				    (equal (cr0-slice :cr0-em (cr0)) 1)
@@ -2173,216 +2168,216 @@
 				    (ud-Lock-used))))))
 
 	    ((:no-prefix . ("PMOVMSKB"  2 (G d)   (N q)
-			    (:ex . ((chk-exc :type-7 :sse)))))
-	     (:66        . ("VPMOVMSKB" 2 (G d)   (U x)
+			    (:ex . ((chk-exc :type-7 (:sse))))))
+	     (:66        . ("PMOVMSKB" 2 (G d)   (U x)
 			    (:fn . (x86-pmovmskb-Op/En-RM))
-			    (:ex . ((chk-exc :type-7 :sse2))))))
+			    (:ex . ((chk-exc :type-7 (:sse2)))))))
 
   #| d8 |#  ((:no-prefix . ("PSUBUSB"   2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSUBUSB"  3 (V x)   (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSUBUSB"  3 (V x)   (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PSUBUSW"   2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSUBUSW"  3 (V x)   (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSUBUSW"  3 (V x)   (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PMINUB"    2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :sse)))))
-	     (:66        . ("VPMINUB"   3 (V x)   (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:sse))))))
+	     (:66        . ("PMINUB"   3 (V x)   (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PAND"      2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPAND"     3 (V x)   (H x)  (W x)
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PAND"     3 (V x)   (H x)  (W x)
 			    (:fn . (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
 				    (operation . #.*OP-AND*)))
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PADDUSB"   2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPADDUSB"  3 (V x)   (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PADDUSB"  3 (V x)   (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PADDUSW"   2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPADDUSW"  3 (V x)   (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PADDUSW"  3 (V x)   (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PMAXUB"    2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :sse)))))
-	     (:66        . ("VPMAXUB"   3 (V x)   (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:sse))))))
+	     (:66        . ("PMAXUB"   3 (V x)   (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PANDN"     2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPANDN"    3 (V x)   (H x)  (W x)
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PANDN"    3 (V x)   (H x)  (W x)
 			    (:fn . (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
 				    (operation . #.*OP-ANDN*)))
-			    (:ex . ((chk-exc :type-4 :sse2)))))))
+			    (:ex . ((chk-exc :type-4 (:sse2))))))))
 
   #| e0 |# (((:no-prefix . ("PAVGB"      2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :sse)))))
-	     (:66        . ("VPAVGB"     3 (V x)   (H x)   (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:sse))))))
+	     (:66        . ("PAVGB"     3 (V x)   (H x)   (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PSRAW"      2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSRAW"     3 (V x)   (H x)   (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSRAW"     3 (V x)   (H x)   (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PSRAD"      2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSRAD"     3 (V x)   (H x)   (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSRAD"     3 (V x)   (H x)   (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PAVGW"      2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :sse)))))
-	     (:66        . ("VPAVGW"     3 (V x)   (H x)   (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:sse))))))
+	     (:66        . ("PAVGW"     3 (V x)   (H x)   (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PMULHUW"    2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :sse)))))
-	     (:66        . ("VPMULHUW"   3 (V x)   (H x)   (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:sse))))))
+	     (:66        . ("PMULHUW"   3 (V x)   (H x)   (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PMULHW"    2 (P q)   (Q q)
-			    (:ex . ((chk-exc :type-22-7 :sse)))))
-	     (:66        . ("VPMULHW"   3 (V x)   (H x)   (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:sse))))))
+	     (:66        . ("PMULHW"   3 (V x)   (H x)   (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
-	    ((:66        . ("VCVTTPD2DQ" 2 (V x)   (W pd)
-			    (:ex . ((chk-exc :type-2 :sse2)))))
-	     (:F3        . ("VCVTDQ2PD"  2 (V x)   (W pd)
-			    (:ex . ((chk-exc :type-5 :sse2)))))
-	     (:F2        . ("VCVTPD2DQ"  2 (V x)   (W pd)
-			    (:ex . ((chk-exc :type-2 :sse2))))))
+	    ((:66        . ("CVTTPD2DQ" 2 (V x)   (W pd)
+			    (:ex . ((chk-exc :type-2 (:sse2))))))
+	     (:F3        . ("CVTDQ2PD"  2 (V x)   (W pd)
+			    (:ex . ((chk-exc :type-5 (:sse2))))))
+	     (:F2        . ("CVTPD2DQ"  2 (V x)   (W pd)
+			    (:ex . ((chk-exc :type-2 (:sse2)))))))
 
 	    ((:no-prefix . ("MOVNTQ"    2 (M q)   (P q)
-			    (:ex . ((chk-exc :type-22-8 :mmx)))))
-	     (:66        . ("VMOVNTDQ"  2 (M x)   (V x)
-			    (:ex . ((chk-exc :type-1 :sse2))))))
+			    (:ex . ((chk-exc :type-22-8 (:mmx))))))
+	     (:66        . ("MOVNTDQ"  2 (M x)   (V x)
+			    (:ex . ((chk-exc :type-1 (:sse2)))))))
 
   #| e8 |#  ((:no-prefix . ("PSUBSB"  2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSUBSB" 3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSUBSB" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PSUBSW"  2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSUBSW" 3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSUBSW" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PMINSW"  2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-4 :sse)))))
-	     (:66        . ("VPMINSW" 3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-4 (:sse))))))
+	     (:66        . ("PMINSW" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("POR"  2 (P q)  (Q q)
 			    ;; Note: Table 22-7 does not list POR in the
 			    ;; "Applicable Instructions" section, but it does
 			    ;; list PXOR.  So this is a guess.
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPOR" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("POR" 3 (V x)  (H x)  (W x)
 			    (:fn . (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
 				      (operation . #.*OP-OR*)))
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PADDSB"  2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPADDSB" 3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PADDSB" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PADDSW"  2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPADDSW" 3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PADDSW" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PMAXSW"  2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :sse)))))
-	     (:66        . ("VPMAXSW" 3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:sse))))))
+	     (:66        . ("PMAXSW" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PXOR"  2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPXOR" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PXOR" 3 (V x)  (H x)  (W x)
 			    (:fn . (x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM
 				    (operation . #.*OP-XOR*)))
-			    (:ex . ((chk-exc :type-4 :sse2)))))))
+			    (:ex . ((chk-exc :type-4 (:sse2))))))))
 
-  #| f0 |# (((:F2        . ("VLDDQU" 2 (V x)  (M x)
-			    (:ex . ((chk-exc :type-4 :sse3))))))
+  #| f0 |# (((:F2        . ("LDDQU" 2 (V x)  (M x)
+			    (:ex . ((chk-exc :type-4 (:sse3)))))))
 
 	    ((:no-prefix . ("PSLLW"  2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSLLW" 3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSLLW" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PSLLD"  2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSLLD" 3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSLLD" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PSLLQ"  2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSLLQ" 3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSLLQ" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PMULUDQ"  2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPMULUDQ" 3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PMULUDQ" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PMADDWD"  2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPMADDWD" 3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PMADDWD" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PSADBW"  2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :sse)))))
-	     (:66        . ("VPSADBW" 3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:sse))))))
+	     (:66        . ("PSADBW" 3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("MASKMOVQ"    2 (P q)  (N q)
-			    (:ex . ((chk-exc :type-22-8 :mmx)))))
-	     (:66        . ("VMASKMOVDQU" 2 (V dq) (U dq)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-8 (:mmx))))))
+	     (:66        . ("MASKMOVDQU" 2 (V dq) (U dq)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
   #| f8 |#  ((:no-prefix . ("PSUBB"    2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSUBB"   3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSUBB"   3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PSUBW"    2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSUBW"   3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSUBW"   3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PSUBD"    2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSUBD"   3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSUBD"   3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PSUBQ"    2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPSUBQ"   3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PSUBQ"   3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PADDB"    2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPADDB"   3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PADDB"   3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PADDW"    2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPADDW"   3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PADDW"   3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    ((:no-prefix . ("PADDD"    2 (P q)  (Q q)
-			    (:ex . ((chk-exc :type-22-7 :mmx)))))
-	     (:66        . ("VPADDD"   3 (V x)  (H x)  (W x)
-			    (:ex . ((chk-exc :type-4 :sse2))))))
+			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
+	     (:66        . ("PADDD"   3 (V x)  (H x)  (W x)
+			    (:ex . ((chk-exc :type-4 (:sse2)))))))
 
 	    (:none
 	       (:fn . (:no-instruction))))
@@ -2400,112 +2395,112 @@
 
 ;; BOZO Rob question -- should these be UD in 64-bit mode? or just ignored..
     #| 00 |# (((:no-prefix . ("PSHUFB"          2 (P q) (Q q)
-			      (:ex . ((chk-exc :type-4 :sse3)))))
-	       (:66        . ("VPSHUFB"         3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx))))))
+			      (:ex . ((chk-exc :type-4 (:sse3))))))
+	       (:66        . ("PSHUFB"         3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx)))))))
 	      ((:no-prefix . ("PHADDW"          2 (P q) (Q q)
-			      (:ex . ((chk-exc :type-4 :sse3)))))
-	       (:66        . ("VPHADDW"         3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx))))))
+			      (:ex . ((chk-exc :type-4 (:sse3))))))
+	       (:66        . ("PHADDW"         3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx)))))))
 	      ((:no-prefix . ("PHADDD"          2 (P q) (Q q)
-			      (:ex . ((chk-exc :type-4 :sse3)))))
-	       (:66        . ("VPHADDD"         3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx))))))
+			      (:ex . ((chk-exc :type-4 (:sse3))))))
+	       (:66        . ("PHADDD"         3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx)))))))
 	      ((:no-prefix . ("PHADDSW"         2 (P q) (Q q)
-			      (:ex . ((chk-exc :type-4 :sse3)))))
-	       (:66        . ("VPHADDSW"        3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx))))))
+			      (:ex . ((chk-exc :type-4 (:sse3))))))
+	       (:66        . ("PHADDSW"        3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx)))))))
 	      ((:no-prefix . ("PMADDUBSW"       2 (P q) (Q q)
-			      (:ex . ((chk-exc :type-4 :sse3)))))
-	       (:66        . ("VPMADDUBSW"      3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx))))))
+			      (:ex . ((chk-exc :type-4 (:sse3))))))
+	       (:66        . ("PMADDUBSW"      3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx)))))))
 	      ((:no-prefix . ("PHSUBW"          2 (P q) (Q q)
-			      (:ex . ((chk-exc :type-4 :sse3)))))
-	       (:66        . ("VPHSUBW"         3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx))))))
+			      (:ex . ((chk-exc :type-4 (:sse3))))))
+	       (:66        . ("PHSUBW"         3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx)))))))
 	      ((:no-prefix . ("PHSUBD"          2 (P q) (Q q)
-			      (:ex . ((chk-exc :type-4 :sse3)))))
-	       (:66        . ("VPHSUBD"         3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx))))))
+			      (:ex . ((chk-exc :type-4 (:sse3))))))
+	       (:66        . ("PHSUBD"         3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx)))))))
 	      ((:no-prefix . ("PHSUBSW"         2 (P q) (Q q)
-			      (:ex . ((chk-exc :type-4 :sse3)))))
-	       (:66        . ("VPHSUBSW"        3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :sse3))))))
+			      (:ex . ((chk-exc :type-4 (:sse3))))))
+	       (:66        . ("PHSUBSW"        3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:sse3)))))))
     #| 08 |#  ((:no-prefix . ("PSIGNB"          2 (P q) (Q q)
-			      (:ex . ((chk-exc :type-4 :sse3)))))
-	       (:66        . ("VPSIGNB"         3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :sse3))))))
+			      (:ex . ((chk-exc :type-4 (:sse3))))))
+	       (:66        . ("PSIGNB"         3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:sse3)))))))
 	      ((:no-prefix . ("PSIGNW"          2 (P q) (Q q)
-			      (:ex . ((chk-exc :type-4 :sse3)))))
-	       (:66        . ("VPSIGNW"         3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx))))))
+			      (:ex . ((chk-exc :type-4 (:sse3))))))
+	       (:66        . ("PSIGNW"         3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx)))))))
 	      ((:no-prefix . ("PSIGND"          2 (P q) (Q q)
-			      (:ex . ((chk-exc :type-4 :sse3)))))
-	       (:66        . ("VPSIGND"         3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx))))))
+			      (:ex . ((chk-exc :type-4 (:sse3))))))
+	       (:66        . ("PSIGND"         3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx)))))))
 	      ((:no-prefix . ("PMULHRSW"        2 (P q) (Q q)
-			      (:ex . ((chk-exc :type-4 :sse3)))))
-	       (:66        . ("VPMULHRSW"       3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx))))))
+			      (:ex . ((chk-exc :type-4 (:sse3))))))
+	       (:66        . ("PMULHRSW"       3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66       . ("VPERMILPS"      3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx))))))
+			      (:ex . ((chk-exc :type-4 (:avx)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VPERMILPD"      3 (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-4 :avx))))))
+			       (:ex . ((chk-exc :type-4 (:avx)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VTESTPS"        2 (V x) (W x)
-			       (:ex . ((chk-exc :type-4 :avx))))))
+			       (:ex . ((chk-exc :type-4 (:avx)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VTESTPD"        2 (V x) (W x)
-			       (:ex . ((chk-exc :type-4 :avx)))))))
+			       (:ex . ((chk-exc :type-4 (:avx))))))))
 
     #| 10 |# (((:66        . ("PBLENDVB"        2 (V dq) (W dq)
-			      (:ex . ((chk-exc :type-4 :sse4.1))))))
+			      (:ex . ((chk-exc :type-4 (:sse4.1)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ((:v66       . ("VCVTPH2PS"       3 (V x)  (W x)  (I b)
-			      (:ex . ((chk-exc :type-11 :avx))))))
+			      (:ex . ((chk-exc :type-11 (:avx)))))))
 	      ((:66        . ("BLENDVPS"        2 (V dq) (W dq)
-			      (:ex . ((chk-exc :type-4 :sse4.1))))))
+			      (:ex . ((chk-exc :type-4 (:sse4.1)))))))
 	      ((:66        . ("BLENDVPD"        2 (V dq) (W dq)
-			      (:ex . ((chk-exc :type-4 :sse4.1))))))
+			      (:ex . ((chk-exc :type-4 (:sse4.1)))))))
 	      ((:v66       . ("VPERMPS"         3 (V qq) (H qq) (W qq)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
-	      ((:66        . ("VPTEST"          2 (V x)  (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
+	      ((:66        . ("PTEST"          2 (V x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
     #| 18 |#  ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VBROADCASTSS"    2 (V x)  (W d)
-			       (:ex . ((chk-exc :type-6 :avx2))))))
+			       (:ex . ((chk-exc :type-6 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VBROADCASTSD"    2 (V qq) (W q)
-			       (:ex . ((chk-exc :type-6 :avx2))))))
+			       (:ex . ((chk-exc :type-6 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VBROADCASTF128"  2 (V qq) (M dq)
-			       (:ex . ((chk-exc :type-6 :avx2))))))
+			       (:ex . ((chk-exc :type-6 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ((:no-prefix . ("PABSB"           2 (P q)  (Q q)
-			      (:ex . ((chk-exc :type-4 :sse4.1)))))
-	       (:66        . ("VPABSB"          2 (V x)  (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+			      (:ex . ((chk-exc :type-4 (:sse4.1))))))
+	       (:66        . ("PABSB"          2 (V x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . ("PABSW"           2 (P q)  (Q q)
-			      (:ex . ((chk-exc :type-4 :sse4.1)))))
-	       (:66        . ("VPABSW"          2 (V x)  (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+			      (:ex . ((chk-exc :type-4 (:sse4.1))))))
+	       (:66        . ("PABSW"          2 (V x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . ("PABSD"           2 (P q)  (Q q)
-			      (:ex . ((chk-exc :type-4 :sse4.1)))))
-	       (:66        . ("VPABSD"          2 (V x)  (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+			      (:ex . ((chk-exc :type-4 (:sse4.1))))))
+	       (:66        . ("PABSD"          2 (V x)  (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction))))
 
@@ -2514,174 +2509,174 @@
     #| 20 |# (((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPMOVSXBW" 2 (V x) (U x)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPMOVSXBW" 2 (V x) (M q)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PMOVSXBW" 2 (V x) (U x)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PMOVSXBW" 2 (V x) (M q)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPMOVSXBD" 2 (V x) (U x)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPMOVSXBD" 2 (V x) (M d)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PMOVSXBD" 2 (V x) (U x)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PMOVSXBD" 2 (V x) (M d)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPMOVSXBQ" 2 (V x) (U x)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPMOVSXBQ" 2 (V x) (M w)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PMOVSXBQ" 2 (V x) (U x)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PMOVSXBQ" 2 (V x) (M w)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPMOVSXWD" 2 (V x) (U x)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPMOVSXWD" 2 (V x) (M q)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PMOVSXWD" 2 (V x) (U x)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PMOVSXWD" 2 (V x) (M q)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPMOVSXWQ" 2 (V x) (U x)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPMOVSXWQ" 2 (V x) (M d)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PMOVSXWQ" 2 (V x) (U x)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PMOVSXWQ" 2 (V x) (M d)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPMOVSXDQ" 2 (V x) (U x)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPMOVSXDQ" 2 (V x) (M q)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PMOVSXDQ" 2 (V x) (U x)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PMOVSXDQ" 2 (V x) (M q)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
     #| 28 |#  ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPMULDQ"     3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PMULDQ"     3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPCMPEQQ"    3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PCMPEQQ"    3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VMOVNTDQA"   2 (V x) (M x)
-			      (:ex . ((chk-exc :type-1 :avx2))))))
+	       (:66        . ("MOVNTDQA"   2 (V x) (M x)
+			      (:ex . ((chk-exc :type-1 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPACKUSDW"   3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PACKUSDW"   3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VMASKMOVPS"  3 (V x) (H x) (M x)
-			       (:ex . ((chk-exc :type-6 :avx2))))))
+			       (:ex . ((chk-exc :type-6 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VMASKMOVPD"  3 (V x) (H x) (M x)
-			       (:ex . ((chk-exc :type-6 :avx2))))))
+			       (:ex . ((chk-exc :type-6 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VMASKMOVPS"  3 (M x) (H x) (V x)
-			       (:ex . ((chk-exc :type-6 :avx2))))))
+			       (:ex . ((chk-exc :type-6 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VMASKMOVPD"  3 (M x) (H x) (V x)
-			       (:ex . ((chk-exc :type-6 :avx2)))))))
+			       (:ex . ((chk-exc :type-6 (:avx2))))))))
 
     #| 30 |# (((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPMOVZXBW" 2 (V x)  (U x)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPMOVZXBW" 2 (V x)  (M q)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PMOVZXBW" 2 (V x)  (U x)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PMOVZXBW" 2 (V x)  (M q)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPMOVZXBD" 2 (V x)  (U x)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPMOVZXBD" 2 (V x)  (M d)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PMOVZXBD" 2 (V x)  (U x)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PMOVZXBD" 2 (V x)  (M d)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPMOVZXBQ" 2 (V x)  (U x)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPMOVZXBQ" 2 (V x)  (M w)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PMOVZXBQ" 2 (V x)  (U x)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PMOVZXBQ" 2 (V x)  (M w)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPMOVZXWD" 2 (V x)  (U x)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPMOVZXWD" 2 (V x)  (M q)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PMOVZXWD" 2 (V x)  (U x)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PMOVZXWD" 2 (V x)  (M q)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPMOVZXWQ" 2 (V x)  (U x)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPMOVZXWQ" 2 (V x)  (M d)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PMOVZXWQ" 2 (V x)  (U x)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PMOVZXWQ" 2 (V x)  (M d)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPMOVZXDQ" 2 (V x)  (U x)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPMOVZXDQ" 2 (V x)  (M q)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PMOVZXDQ" 2 (V x)  (U x)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PMOVZXDQ" 2 (V x)  (M q)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VPERMD"     3 (V qq) (H qq) (W qq)
-			       (:ex . ((chk-exc :type-4 :avx2))))))
+			       (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPCMPGTQ"   3 (V x) (Hx) (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PCMPGTQ"   3 (V x) (Hx) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 
     #| 38 |#  ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPMINSB"    3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PMINSB"    3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPMINSD"    3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PMINSD"    3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPMINUW"    3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PMINUW"    3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPMINUD"    3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PMINUD"    3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPMAXSB"    3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PMAXSB"    3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPMAXSD"    3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PMAXSD"    3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPMAXUW"    3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PMAXUW"    3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPMAXUD"    3 (V x) (H x) (W x)
-			      (:ex . ((chk-exc :type-4 :avx2)))))))
+	       (:66        . ("PMAXUD"    3 (V x) (H x) (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2))))))))
 
     #| 40 |# (((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPMULLD"     3 (V x)  (H x)    (W x)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PMULLD"     3 (V x)  (H x)    (W x)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPHMINPOSUW" 2 (V dq) (W dq)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PHMINPOSUW" 2 (V dq) (W dq)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2691,15 +2686,15 @@
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VPSRLVD/Q"   3  (V x) (H x)    (W x)
-			       (:ex . ((chk-exc :type-4 :avx2))))))
+			       (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VPSRAVD"     3  (V x) (H x)    (W x)
-			       (:ex . ((chk-exc :type-4 :avx2))))))
+			       (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VPSLLVD/Q"   3  (V x) (H x)    (W x)
-			       (:ex . ((chk-exc :type-4 :avx2))))))
+			       (:ex . ((chk-exc :type-4 (:avx2)))))))
     #| 48 |#  (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2736,15 +2731,15 @@
     #| 58 |#  ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VPBROADCASTD"   2  (V x)  (W x)
-			       (:ex . ((chk-exc :type-7 :avx2))))))
+			       (:ex . ((chk-exc :type-7 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VPBROADCASTQ"   2  (V x)  (W x)
-			       (:ex . ((chk-exc :type-7 :avx2))))))
+			       (:ex . ((chk-exc :type-7 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VBROADCASTI128" 2  (V qq) (M dq)
-			       (:ex . ((chk-exc :type-6 :avx2))))))
+			       (:ex . ((chk-exc :type-6 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2808,11 +2803,11 @@
     #| 78 |#  ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VPBROADCASTB" 2 (V x) (W x)
-			       (:ex . ((chk-exc :type-7 :avx2))))))
+			       (:ex . ((chk-exc :type-7 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VPBROADCASTW" 2 (V x) (W x)
-			       (:ex . ((chk-exc :type-7 :avx2))))))
+			       (:ex . ((chk-exc :type-7 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2867,32 +2862,32 @@
 	       ((:no-prefix . (:none
 			       (:fn . (:no-instruction))))
 		(:v66        . ("VPMASKMOVD/Q" 3 (V x) (H x) (M x)
-				(:ex . ((chk-exc :type-6 :avx2))))))
+				(:ex . ((chk-exc :type-6 (:avx2)))))))
 	       (:none
 	       (:fn . (:no-instruction)))
 	       ((:no-prefix . (:none
 			       (:fn . (:no-instruction))))
 		(:v66        . ("VPMASKMOVD/Q" 3 (M x) (V x) (H x)
-				(:ex . ((chk-exc :type-6 :avx2))))))
+				(:ex . ((chk-exc :type-6 (:avx2)))))))
 	       (:none
 	       (:fn . (:no-instruction))))
 
     #| 90 |# (((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VGATHERDD/Q"      3 (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-12 :avx2))))))
+			       (:ex . ((chk-exc :type-12 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VGATHERQD/Q"      3 (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-12 :avx2))))))
+			       (:ex . ((chk-exc :type-12 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VGATHERDPS/D"     3 (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-12 :avx2))))))
+			       (:ex . ((chk-exc :type-12 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VGATHERQPS/D"     3 (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-12 :avx2))))))
+			       (:ex . ((chk-exc :type-12 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:none
@@ -2904,43 +2899,43 @@
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMADDSUB132PS/D" 3 (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMSUBADD132PS/D" 3 (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
     #| 98 |#  ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMADD132PS/D"    3  (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMADD132SS/D"    3  (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-3 :avx2))))))
+			       (:ex . ((chk-exc :type-3 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMSUB132PS/D"    3  (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMSUB132SS/D"    3  (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-3 :avx2))))))
+			       (:ex . ((chk-exc :type-3 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFNMADD132PS/D"   3  (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFNMADD132SS/D"   3  (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-3 :avx2))))))
+			       (:ex . ((chk-exc :type-3 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFNMSUB132PS/D"   3  (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFNMSUB132SS/D"   3  (V x) (H x) (W x)
-			       (:ex . ((chk-exc :type-3 :avx2)))))))
+			       (:ex . ((chk-exc :type-3 (:avx2))))))))
 
     #| a0 |# ((:none
 	       (:fn . (:no-instruction)))
@@ -2957,43 +2952,43 @@
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMADDSUB213PS/D" 3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMSUBADD213PS/D" 3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
     #| a8 |#  ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMADD213PS/D"    3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMADD213SS/D"    3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-3 :avx2))))))
+			       (:ex . ((chk-exc :type-3 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMSUB213PS/D"    3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMSUB213SS/D"    3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-3 :avx2))))))
+			       (:ex . ((chk-exc :type-3 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFNMADD213PS/D"   3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFNMADD213SS/D"   3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-3 :avx2))))))
+			       (:ex . ((chk-exc :type-3 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFNMSUB213PS/D"   3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFNMSUB213SS/D"   3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-3 :avx2)))))))
+			       (:ex . ((chk-exc :type-3 (:avx2))))))))
 
     #| b0 |# ((:none
 	       (:fn . (:no-instruction)))
@@ -3010,43 +3005,43 @@
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMADDSUB231PS/D" 3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMSUBADD231PS/D" 3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
     #| b8 |#  ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMADD231PS/D"    3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMADD231SS/D"    3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-3 :avx2))))))
+			       (:ex . ((chk-exc :type-3 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMSUB231PS/D"    3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFMSUB231SS/D"    3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-3 :avx2))))))
+			       (:ex . ((chk-exc :type-3 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFNMADD231PS/D"   3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFNMADD231SS/D"   3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-3 :avx2))))))
+			       (:ex . ((chk-exc :type-3 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFNMSUB231PS/D"   3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-2 :avx2))))))
+			       (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VFNMSUB231SS/D"   3 (V x)  (H x)  (W x)
-			       (:ex . ((chk-exc :type-3 :avx2)))))))
+			       (:ex . ((chk-exc :type-3 (:avx2))))))))
 
     #| c0 |# ((:none
 	       (:fn . (:no-instruction)))
@@ -3065,17 +3060,17 @@
 	      (:none
 	       (:fn . (:no-instruction)))
     #| c8 |#  ("SHA1NEXTE"   2 (V dq) (W dq)
-	       (:ex . ((chk-exc :type-4 :avx2))))
+	       (:ex . ((chk-exc :type-4 (:avx2)))))
 	      ("SHA1MSG1"    2 (V dq) (W dq)
-	       (:ex . ((chk-exc :type-4 :avx2))))
+	       (:ex . ((chk-exc :type-4 (:avx2)))))
 	      ("SHA1MSG2"    2 (V dq) (W dq)
-	       (:ex . ((chk-exc :type-4 :avx2))))
+	       (:ex . ((chk-exc :type-4 (:avx2)))))
 	      ("SHA256RNDS2" 2 (V dq) (W dq)
-	       (:ex . ((chk-exc :type-4 :avx2))))
+	       (:ex . ((chk-exc :type-4 (:avx2)))))
 	      ("SHA256MSG1"  2 (V dq) (W dq)
-	       (:ex . ((chk-exc :type-4 :avx2))))
+	       (:ex . ((chk-exc :type-4 (:avx2)))))
 	      ("SHA256MSG2"  2 (V dq) (W dq)
-	       (:ex . ((chk-exc :type-4 :avx2))))
+	       (:ex . ((chk-exc :type-4 (:avx2)))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3105,24 +3100,24 @@
 	       (:fn . (:no-instruction)))
 	    ((:no-prefix . (:none
 			    (:fn . (:no-instruction))))
-	     (:66        . ("VAESIMC"     2 (V dq) (W dq)
-			    (:ex . ((chk-exc :type-4 :avx2))))))
+	     (:66        . ("AESIMC"     2 (V dq) (W dq)
+			    (:ex . ((chk-exc :type-4 (:aes)))))))
 	    ((:no-prefix . (:none
 			    (:fn . (:no-instruction))))
-	     (:66        . ("VAESENC"     3 (V dq) (H dq) (W dq)
-			    (:ex . ((chk-exc :type-4 :avx2))))))
+	     (:66        . ("AESENC"     3 (V dq) (H dq) (W dq)
+			    (:ex . ((chk-exc :type-4 (:aes)))))))
 	    ((:no-prefix . (:none
 			    (:fn . (:no-instruction))))
-	     (:66        . ("VAESENCLAST" 3 (V dq) (H dq) (W dq)
-			    (:ex . ((chk-exc :type-4 :avx2))))))
+	     (:66        . ("AESENCLAST" 3 (V dq) (H dq) (W dq)
+			    (:ex . ((chk-exc :type-4 (:aes)))))))
 	    ((:no-prefix . (:none
 			    (:fn . (:no-instruction))))
-	     (:66        . ("VAESDEC"     3 (V dq) (H dq) (W dq)
-			    (:ex . ((chk-exc :type-4 :avx2))))))
+	     (:66        . ("AESDEC"     3 (V dq) (H dq) (W dq)
+			    (:ex . ((chk-exc :type-4 (:aes)))))))
 	    ((:no-prefix . (:none
 			    (:fn . (:no-instruction))))
-	     (:66        . ("VAESDECLAST" 3 (V dq) (H dq) (W dq)
-			    (:ex . ((chk-exc :type-4 :avx2)))))))
+	     (:66        . ("AESDECLAST" 3 (V dq) (H dq) (W dq)
+			    (:ex . ((chk-exc :type-4 (:aes))))))))
 
   #| e0 |# ((:none
 	       (:fn . (:no-instruction)))
@@ -3202,7 +3197,7 @@
 	     ;; ((:66 :F2)     . ("CRC32" 2 (G d)  (E w)))
 	     )
 	    ((:v            . ("ANDN"  3 (G y)  (B y)  (E y)
-			       (:ex . ((chk-exc :type-vex-gpr :bmi1)))))
+			       (:ex . ((chk-exc :type-vex-gpr (:bmi1))))))
 	     (:66           . (:none
 			       (:fn . (:no-instruction))))
 	     (:F3           . (:none
@@ -3211,7 +3206,12 @@
 			       (:fn . (:no-instruction))))
 	     ;; ((:66 :F2)     . (:none (:fn . (:no-instruction))))
 	     )
-	    (:Group-17 0 :1a)
+	    (:Group-17
+	     ;; [Shilpi] I commented out :1a here, because :Group-17 is
+	     ;; vex-specific only.  For legacy instructions, no modr/m byte is
+	     ;; expected here.
+	     ;; :1a
+	     :v)
 	    ((:no-prefix    . (:none
 			       (:fn . (:no-instruction))))
 	     (:66           . (:none
@@ -3223,35 +3223,35 @@
 	     ;; ((:66 :F2)     . (:none (:fn . (:no-instruction))))
 	     )
 	    ((:v            . ("BZHI"  3 (G y)  (E y)  (B y)
-			       (:ex . ((chk-exc :type-vex-gpr :bmi1)))))
+			       (:ex . ((chk-exc :type-vex-gpr (:bmi1))))))
 	     (:66           . (:none
 			       (:fn . (:no-instruction))))
 	     (:vF3           . ("PEXT"  3 (G y)  (B y)  (E y)
-				(:ex . ((chk-exc :type-vex-gpr :bmi1)))))
+				(:ex . ((chk-exc :type-vex-gpr (:bmi1))))))
 	     (:vF2           . ("PDEP"  3 (G y)  (B y)  (E y)
-				(:ex . ((chk-exc :type-vex-gpr :bmi1)))))
+				(:ex . ((chk-exc :type-vex-gpr (:bmi1))))))
 	     ;; ((:66 :F2)     . (:none (:fn . (:no-instruction))))
 	     )
 	    ((:no-prefix    . (:none
 			       (:fn . (:no-instruction))))
 	     (:66           . ("ADCX"  2 (G y)  (E y)
-			       (:ud . ((= (cpuid-flag #ux_07 :reg #.*ebx* :bit 19) 0)
+			       (:ud . ((eql (feature-flag-macro :adx) 0)
 				       (ud-Lock-used)))))
 	     (:F3           . ("ADOX"  2 (G y)  (E y)
-			       (:ud . ((= (cpuid-flag #ux_07 :reg #.*ebx* :bit 19) 0)
+			       (:ud . ((eql (feature-flag-macro :adx) 0)
 				       (ud-Lock-used)))))
 	     (:vF2           . ("MULX"  3 (B y)  (G y)  (:rDX)  (E y)
-				(:ex . ((chk-exc :type-vex-gpr :bmi1)))))
+				(:ex . ((chk-exc :type-vex-gpr (:bmi1))))))
 	     ;; ((:66 :F2)     . (:none (:fn . (:no-instruction))))
 	     )
 	    ((:v             . ("BEXTR" 3 (G y)  (E y)  (B y)
-				(:ex . ((chk-exc :type-vex-gpr :bmi1)))))
+				(:ex . ((chk-exc :type-vex-gpr (:bmi1))))))
 	     (:v66           . ("SHLX"  3 (G y)  (E y)  (B y)
-				(:ex . ((chk-exc :type-vex-gpr :bmi1)))))
+				(:ex . ((chk-exc :type-vex-gpr (:bmi1))))))
 	     (:vF3           . ("SARX"  3 (G y)  (E y)  (B y)
-				(:ex . ((chk-exc :type-vex-gpr :bmi1)))))
+				(:ex . ((chk-exc :type-vex-gpr (:bmi1))))))
 	     (:vF2           . ("SHRX"  3 (G y)  (E y)  (B y)
-				(:ex . ((chk-exc :type-vex-gpr :bmi1)))))
+				(:ex . ((chk-exc :type-vex-gpr (:bmi1))))))
 	     ;; ((:66 :F2)     . (:none (:fn . (:no-instruction))))
 	     )
 
@@ -3286,63 +3286,63 @@
     #| 00 |# (((:no-prefix  . (:none
 			       (:fn . (:no-instruction))))
 	       (:v66        . ("VPERMQ"     3 (V qq)  (W qq)  (I b)
-			       (:ex . ((chk-exc :type-4 :avx2))))))
+			       (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix  . (:none
 			       (:fn . (:no-instruction))))
 	       (:v66        . ("VPERMPD"    3 (V qq)  (W qq)  (I b)
-			       (:ex . ((chk-exc :type-4 :avx2))))))
+			       (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix  . (:none
 			       (:fn . (:no-instruction))))
 	       (:v66        . ("VPBLENDD"   4 (V x)   (H x)   (W x)  (I b)
-			       (:ex . ((chk-exc :type-4 :avx2))))))
+			       (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ((:no-prefix  . (:none
 			       (:fn . (:no-instruction))))
 	       (:v66        . ("VPERMILPS"  3 (V x)  (W x)  (I b)
-			       (:ex . ((chk-exc :type-4 :avx2))))))
+			       (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix  . (:none
 			       (:fn . (:no-instruction))))
 	       (:v66       . ("VPERMILPD"  3 (V x)  (W x)  (I b)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VPERM2F128" 4 (V qq) (H qq) (W qq) (I b)
-			       (:ex . ((chk-exc :type-6 :avx2))))))
+			       (:ex . ((chk-exc :type-6 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
    #| 08 |#  ((:no-prefix . (:none
 			     (:fn . (:no-instruction))))
-	      (:66        . ("VROUNDPS" 3 (V x)  (W x)  (I b)
-			     (:ex . ((chk-exc :type-2 :avx2))))))
+	      (:66        . ("ROUNDPS" 3 (V x)  (W x)  (I b)
+			     (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VROUNDPD" 3 (V x)  (W x)  (I b)
-			      (:ex . ((chk-exc :type-2 :avx2))))))
+	       (:66        . ("ROUNDPD" 3 (V x)  (W x)  (I b)
+			      (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VROUNDSS" 3 (V ss) (W ss) (I b)
-			      (:ex . ((chk-exc :type-3 :avx2))))))
+	       (:66        . ("ROUNDSS" 3 (V ss) (W ss) (I b)
+			      (:ex . ((chk-exc :type-3 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VROUNDSD" 3 (V sd) (W sd) (I b)
-			      (:ex . ((chk-exc :type-3 :avx2))))))
+	       (:66        . ("ROUNDSD" 3 (V sd) (W sd) (I b)
+			      (:ex . ((chk-exc :type-3 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VBLENDPS" 4 (V x)  (H x)  (W x) (I b)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("BLENDPS" 4 (V x)  (H x)  (W x) (I b)
+			      (:ex . ((chk-exc :type-4 (:sse4.1)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VBLENDPD" 4 (V x)  (H x)  (W x) (I b)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("BLENDPD" 4 (V x)  (H x)  (W x) (I b)
+			      (:ex . ((chk-exc :type-4 (:sse4.1)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPBLENDW" 4 (V x)  (H x)  (W x) (I b)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PBLENDW" 4 (V x)  (H x)  (W x) (I b)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . ("PALIGNR"  3 (P q)  (Q q)  (I b)
-			      (:ex . ((chk-exc :type-4 :avx2)))))
-	       (:66        . ("VPALIGNR" 4 (V x)  (H x)  (W x) (I b)
-			      (:ex . ((chk-exc :type-4 :avx2)))))))
+			      (:ex . ((chk-exc :type-4 (:avx2))))))
+	       (:66        . ("PALIGNR" 4 (V x)  (H x)  (W x) (I b)
+			      (:ex . ((chk-exc :type-4 (:avx2))))))))
 
     #| 10 |# ((:none
 	       (:fn . (:no-instruction)))
@@ -3355,33 +3355,33 @@
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPEXTRB"    3 (R d)  (V dq)  (I b)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPEXTRB"    3 (M b)  (V dq)  (I b)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PEXTRB"    3 (R d)  (V dq)  (I b)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PEXTRB"    3 (M b)  (V dq)  (I b)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPEXTRW"    3 (R d)  (V dq)  (I b)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPEXTRW"    3 (M w)  (V dq)  (I b)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PEXTRW"    3 (R d)  (V dq)  (I b)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PEXTRW"    3 (M w)  (V dq)  (I b)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPEXTRD/Q"   3 (E y)  (V dq)  (I b)
-			      (:ex . ((chk-exc :type-5 :avx2))))))
+	       (:66        . ("PEXTRD/Q"   3 (E y)  (V dq)  (I b)
+			      (:ex . ((chk-exc :type-5 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VEXTRACTPS"  3 (E d)  (V dq)  (I b)
-			      (:ex . ((chk-exc :type-5 :avx2))))))
-	      #| 18 |#  ((:no-prefix . (:none
-					(:fn . (:no-instruction))))
-			 (:v66        . ("VINSERTF128"  4 (V qq) (H qq) (W qq) (I b)
-					 (:ex . ((chk-exc :type-6 :avx2))))))
+	       (:66        . ("EXTRACTPS"  3 (E d)  (V dq)  (I b)
+			      (:ex . ((chk-exc :type-5 (:avx2)))))))
+   #| 18 |#  ((:no-prefix . (:none
+			     (:fn . (:no-instruction))))
+	      (:v66        . ("VINSERTF128"  4 (V qq) (H qq) (W qq) (I b)
+			      (:ex . ((chk-exc :type-6 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VEXTRACTF128" 3 (W dq) (V qq) (I b)
-			       (:ex . ((chk-exc :type-6 :avx2))))))
+			       (:ex . ((chk-exc :type-6 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3391,7 +3391,7 @@
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VCVTPS2PH"    3 (W x)  (V x)  (I b)
-			       (:ex . ((chk-exc :type-11 :avx2))))))
+			       (:ex . ((chk-exc :type-11 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3400,21 +3400,21 @@
     #| 20 |# (((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VPINSRB"   4 (V dq) (H dq) (R y)  (I b)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VPINSRB"   4 (V dq) (H dq) (M b) (I b)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("PINSRB"   4 (V dq) (H dq) (R y)  (I b)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("PINSRB"   4 (V dq) (H dq) (M b) (I b)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . (:ALT
-			      (("VINSERTPS" 4 (V dq) (H dq) (U dq) (I b)
-				(:ex . ((chk-exc :type-5 :avx2))))
-			       ("VINSERTPS" 4 (V dq) (H dq) (M d) (I b)
-				(:ex . ((chk-exc :type-5 :avx2))))))))
+			      (("INSERTPS" 4 (V dq) (H dq) (U dq) (I b)
+				(:ex . ((chk-exc :type-5 (:avx2)))))
+			       ("INSERTPS" 4 (V dq) (H dq) (M d) (I b)
+				(:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPINSRD/Q"  4 (V dq) (H dq) (E y)  (I b)
-			      (:ex . ((chk-exc :type-5 :avx2))))))
+	       (:66        . ("PINSRD/Q"  4 (V dq) (H dq) (E y)  (I b)
+			      (:ex . ((chk-exc :type-5 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3425,8 +3425,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      #| 28 |#  (:none
-			 (:fn . (:no-instruction)))
+    #| 28 |#  (:none
+	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3458,14 +3458,14 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      #| 38 |#  ((:no-prefix . (:none
+   #| 38 |#  ((:no-prefix . (:none
 					(:fn . (:no-instruction))))
-			 (:v66        . ("VINSERTI128"  4 (V qq) (H qq) (W qq) (I b)
-					 (:ex . ((chk-exc :type-6 :avx2))))))
+	      (:v66        . ("VINSERTI128"  4 (V qq) (H qq) (W qq) (I b)
+			      (:ex . ((chk-exc :type-6 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VEXTRACTI128" 3 (W dq) (V qq) (I b)
-			       (:ex . ((chk-exc :type-6 :avx2))))))
+			       (:ex . ((chk-exc :type-6 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3481,46 +3481,46 @@
 
     #| 40 |# (((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VDPPS"      4 (V x)  (H x)  (W x)  (I b)
-			      (:ex . ((chk-exc :type-2 :avx2))))))
+	       (:66        . ("DPPS"      4 (V x)  (H x)  (W x)  (I b)
+			      (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VDPPD"      4 (V dq) (H dq) (W dq) (I b)
-			      (:ex . ((chk-exc :type-2 :avx2))))))
+	       (:66        . ("DPPD"      4 (V dq) (H dq) (W dq) (I b)
+			      (:ex . ((chk-exc :type-2 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VMPSADBW"   4 (V x)  (H x)  (W x)  (I b)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("MPSADBW"   4 (V x)  (H x)  (W x)  (I b)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPCLMULQDQ" 4 (V dq) (H dq) (W dq) (I b)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PCLMULQDQ" 4 (V dq) (H dq) (W dq) (I b)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VPERM2I128" 4 (V qq) (H qq) (W qq) (I b)
-			       (:ex . ((chk-exc :type-6 :avx2))))))
+			       (:ex . ((chk-exc :type-6 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      #| 48 |#  (:none
-			 (:fn . (:no-instruction)))
+    #| 48 |#  (:none
+	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VBLENDVPS"  4 (V x)  (H x)  (W x)  (L x)
-			       (:ex . ((chk-exc :type-4 :avx2))))))
+			       (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VBLENDVPD"  4 (V x)  (H x)  (W x)  (L x)
-			       (:ex . ((chk-exc :type-4 :avx2))))))
+			       (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VPBLENDVB"  4 (V x)  (H x)  (W x)  (L x)
-			       (:ex . ((chk-exc :type-4 :avx2))))))
+			       (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3544,8 +3544,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      #| 58 |#  (:none
-			 (:fn . (:no-instruction)))
+    #| 58 |#  (:none
+	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3563,20 +3563,20 @@
 
     #| 60 |# (((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPCMPESTRM" 3 (V dq)  (W dq)  (I b)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PCMPESTRM" 3 (V dq)  (W dq)  (I b)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPCMPESTRI" 3 (V dq)  (W dq)  (I b)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PCMPESTRI" 3 (V dq)  (W dq)  (I b)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPCMPISTRM" 3 (V dq)  (W dq)  (I b)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PCMPISTRM" 3 (V dq)  (W dq)  (I b)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VPCMPISTRI" 3 (V dq)  (W dq)  (I b)
-			      (:ex . ((chk-exc :type-4 :avx2))))))
+	       (:66        . ("PCMPISTRI" 3 (V dq)  (W dq)  (I b)
+			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3585,8 +3585,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      #| 68 |#  (:none
-			 (:fn . (:no-instruction)))
+    #| 68 |#  (:none
+	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3618,8 +3618,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      #| 78 |#  (:none
-			 (:fn . (:no-instruction)))
+    #| 78 |#  (:none
+	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3651,8 +3651,8 @@
 		(:fn . (:no-instruction)))
 	       (:none
 		(:fn . (:no-instruction)))
-	       #| 88 |#   (:none
-			   (:fn . (:no-instruction)))
+    #| 88 |#   (:none
+		(:fn . (:no-instruction)))
 	       (:none
 		(:fn . (:no-instruction)))
 	       (:none
@@ -3684,8 +3684,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      #| 98 |#  (:none
-			 (:fn . (:no-instruction)))
+    #| 98 |#  (:none
+	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3717,8 +3717,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      #| a8 |#  (:none
-			 (:fn . (:no-instruction)))
+    #| a8 |#  (:none
+	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3750,8 +3750,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      #| b8 |#  (:none
-			 (:fn . (:no-instruction)))
+   #| b8 |#   (:none
+	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3783,8 +3783,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      #| c8 |#  (:none
-			 (:fn . (:no-instruction)))
+    #| c8 |#  (:none
+	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3792,7 +3792,7 @@
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ("SHA1RNDS4" 3 (V dq) (W dq) (I b)
-	       (:ex . ((chk-exc :type-4 :avx2))))
+	       (:ex . ((chk-exc :type-4 (:avx2)))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3816,8 +3816,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      #| d8 |#  (:none
-			 (:fn . (:no-instruction)))
+   #| d8 |#   (:none
+	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3832,8 +3832,8 @@
 	       (:fn . (:no-instruction)))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("VAESKEYGEN" 3 (V dq)  (W dq)  (I b)
-			      (:ex . ((chk-exc :type-4 :avx2)))))))
+	       (:66        . ("AESKEYGENASSIST" 3 (V dq)  (W dq)  (I b)
+			      (:ex . ((chk-exc :type-4 (:aes))))))))
 
     #| e0 |# ((:none
 	       (:fn . (:no-instruction)))
@@ -3851,8 +3851,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      #| e8 |#  (:none
-			 (:fn . (:no-instruction)))
+   #| e8 |#  (:none
+	      (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3871,7 +3871,7 @@
     #| f0 |# (((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:vF2        . ("RORX" 3 (G y)  (E y)  (I b)
-			       (:ex . ((chk-exc :type-vex-gpr :bmi1))))))
+			       (:ex . ((chk-exc :type-vex-gpr (:bmi1)))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -3886,8 +3886,8 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-	      #| f8 |#  (:none
-			 (:fn . (:no-instruction)))
+    #| f8 |#  (:none
+	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -4637,12 +4637,12 @@
 		 ("MONITOR" 0 :1a
 		  (:ud  . ((ud-cpl-is-not-zero)
 			   (equal
-			     ;; CPUID.01H:ECX.MONITOR[bit 3]
-			     (cpuid-flag
-			      #ux_01
-			      :reg #.*ecx*
-			      :bit 3)
-			     0)))))
+			    ;; CPUID.01H:ECX.MONITOR[bit 3]
+			    (cpuid-flag
+			     #ux_01
+			     :reg #.*ecx*
+			     :bit 3)
+			    0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b001)
@@ -4650,12 +4650,12 @@
 		 ("MWAIT" 0 :1a
 		  (:ud  . ((ud-cpl-is-not-zero)
 			   (equal
-			     ;; CPUID.01H:ECX.MONITOR[bit 3]
-			     (cpuid-flag
-			      #ux_01
-			      :reg #.*ecx*
-			      :bit 3)
-			     0)))))
+			    ;; CPUID.01H:ECX.MONITOR[bit 3]
+			    (cpuid-flag
+			     #ux_01
+			     :reg #.*ecx*
+			     :bit 3)
+			    0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b001)
@@ -4664,13 +4664,13 @@
 		  (:ud  . ((ud-Lock-used)
 			   (ud-cpl-is-not-zero)
 			   (equal
-			     ;; CPUID.(EAX=07H, ECX=0H):EBX.SMAP[bit 20]
-			     (cpuid-flag
-			      #ux_07
-			      :ecx #ux_00
-			      :reg #.*ebx*
-			      :bit 20)
-			     0)))))
+			    ;; CPUID.(EAX=07H, ECX=0H):EBX.SMAP[bit 20]
+			    (cpuid-flag
+			     #ux_07
+			     :ecx #ux_00
+			     :reg #.*ebx*
+			     :bit 20)
+			    0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b001)
@@ -4679,13 +4679,13 @@
 		  (:ud  . ((ud-Lock-used)
 			   (ud-cpl-is-not-zero)
 			   (equal
-			     ;; CPUID.(EAX=07H, ECX=0H):EBX.SMAP[bit 20]
-			     (cpuid-flag
-			      #ux_07
-			      :ecx #ux_00
-			      :reg #.*ebx*
-			      :bit 20)
-			     0)))))
+			    ;; CPUID.(EAX=07H, ECX=0H):EBX.SMAP[bit 20]
+			    (cpuid-flag
+			     #ux_07
+			     :ecx #ux_00
+			     :reg #.*ebx*
+			     :bit 20)
+			    0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b001)
@@ -4712,16 +4712,16 @@
 		 ("XGETBV" 0 :1a
 		  (:ud  . ((ud-Lock-used)
 			   (equal
-			     ;; CR4.OSXSAVE[bit 18]
-			     (cr4-slice :cr4-osxsave (cr4))
-			     0)
+			    ;; CR4.OSXSAVE[bit 18]
+			    (cr4-slice :cr4-osxsave (cr4))
+			    0)
 			   (equal
-			     ;; CPUID.01H:ECX.XSAVE[bit 26]
-			     (cpuid-flag
-			      #ux_01
-			      :reg #.*ecx*
-			      :bit 26)
-			     0)))))
+			    ;; CPUID.01H:ECX.XSAVE[bit 26]
+			    (cpuid-flag
+			     #ux_01
+			     :reg #.*ecx*
+			     :bit 26)
+			    0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b011)
@@ -4729,16 +4729,16 @@
 		 ("XSETBV" 0 :1a
 		  (:ud  . ((ud-Lock-used)
 			   (equal
-			     ;; CR4.OSXSAVE[bit 18]
-			     (cr4-slice :cr4-osxsave (cr4))
-			     0)
+			    ;; CR4.OSXSAVE[bit 18]
+			    (cr4-slice :cr4-osxsave (cr4))
+			    0)
 			   (equal
-			     ;; CPUID.01H:ECX.XSAVE[bit 26]
-			     (cpuid-flag
-			      #ux_01
-			      :reg #.*ecx*
-			      :bit 26)
-			     0)))))
+			    ;; CPUID.01H:ECX.XSAVE[bit 26]
+			    (cpuid-flag
+			     #ux_01
+			     :reg #.*ecx*
+			     :bit 26)
+			    0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b011)
@@ -4753,13 +4753,13 @@
 			   (ud-Opr-used)
 			   (ud-Reps-used)
 			   (equal
-			     ;; CPUID.(EAX=7, ECX=0):EBX.RTM[bit 11]
-			     (cpuid-flag
-			      #ux_07
-			      :ecx #ux_00
-			      :reg #.*ebx*
-			      :bit 11)
-			     0)))))
+			    ;; CPUID.(EAX=7, ECX=0):EBX.RTM[bit 11]
+			    (cpuid-flag
+			     #ux_07
+			     :ecx #ux_00
+			     :reg #.*ebx*
+			     :bit 11)
+			    0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b011)
@@ -4829,12 +4829,12 @@
 		 ("RDTSCP" 0 :1a
 		  (:ud  . ((ud-Lock-used)
 			   (equal
-			     ;; CPUID.80000001H:EDX.RDTSCP[bit 27]
-			     (cpuid-flag
-			      #ux8000_0001
-			      :reg #.*edx*
-			      :bit 27)
-			     0)))))))
+			    ;; CPUID.80000001H:EDX.RDTSCP[bit 27]
+			    (cpuid-flag
+			     #ux8000_0001
+			     :reg #.*edx*
+			     :bit 27)
+			    0)))))))
 
     (:Group-8 . ;; Covers opcode 0F BA.
 	      ((((:opcode . #ux0F_BA)
@@ -4877,7 +4877,7 @@
 		 (:none
 		  (:fn . (:no-instruction))))
 	       (((:opcode . #ux0F_C7)
-		 (:prefix . nil)
+		 (:prefix . :no-prefix)
 		 (:mod    . :mem)
 		 (:reg    . #b001)) .
 		 (:ALT
@@ -4906,7 +4906,7 @@
 		 (:none
 		  (:fn . (:no-instruction))))
 	       (((:opcode . #ux0F_C7)
-		 (:prefix . nil)
+		 (:prefix . :no-prefix)
 		 (:mod    . :mem)
 		 (:reg    . #b110)) .
 		 ("VMPTRLD" 1 (M q) :1a
@@ -4925,13 +4925,13 @@
 		  ;; BOZO Rob -- following GP only if executed outside VMX operation!
 		  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_C7)
-		 (:prefix . nil)
+		 (:prefix . :no-prefix)
 		 (:mod    . :mem)
 		 (:reg    . #b111)) .
 		 ("VMPTRLD" 1 (M q) :1a
 		  (:gp  . ((gp-cpl-not-0)))))
 	       (((:opcode . #ux0F_C7)
-		 (:prefix . nil)
+		 (:prefix . :no-prefix)
 		 (:mod    . #b11)
 		 (:reg    . #b110)) .
 		 ("RDRAND" 1 (R v) :1a
@@ -4939,26 +4939,26 @@
 		  (:ud  . ((ud-Lock-used)
 			   (ud-Reps-used)
 			   (equal
-			     ;; CPUID.01H:ECX.RDRAND[bit 30]
-			     (cpuid-flag
-			      #ux_01
-			      :reg #.*ecx*
-			      :bit 30)
-			     t)))))
+			    ;; CPUID.01H:ECX.RDRAND[bit 30]
+			    (cpuid-flag
+			     #ux_01
+			     :reg #.*ecx*
+			     :bit 30)
+			    t)))))
 	       (((:opcode . #ux0F_C7)
-		 (:prefix . nil)
+		 (:prefix . :no-prefix)
 		 (:reg    . #b111)) .
 		 ("RDSEED" 1 (R v) :1a
 		  (:ud  . ((ud-Lock-used)
 			   (ud-Reps-used)
 			   (equal
-			     ;; CPUID.(EAX=07H, ECX=0H):EBX.RDSEED[bit 18]
-			     (cpuid-flag
-			      #ux_07
-			      :ecx #ux_00
-			      :reg #.*ebx*
-			      :bit 18)
-			     0)))))
+			    ;; CPUID.(EAX=07H, ECX=0H):EBX.RDSEED[bit 18]
+			    (cpuid-flag
+			     #ux_07
+			     :ecx #ux_00
+			     :reg #.*ebx*
+			     :bit 18)
+			    0)))))
 	       (((:opcode . #ux0F_C7)
 		 (:prefix . :F3)
 		 (:reg    . #b111)) .
@@ -4967,13 +4967,13 @@
 		   ("RDPID" 1 (R q) :1a))
 		  (:ud  . ((ud-Lock-used)
 			   (equal
-			     ;; CPUID.7H.0:ECX.RDPID[bit 22]
-			     (cpuid-flag
-			      #ux_07
-			      :ecx #ux_0
-			      :reg #.*ecx*
-			      :bit 22)
-			     0)))))))
+			    ;; CPUID.7H.0:ECX.RDPID[bit 22]
+			    (cpuid-flag
+			     #ux_07
+			     :ecx #ux_0
+			     :reg #.*ecx*
+			     :bit 22)
+			    0)))))))
 
     (:Group-10 . ;; Covers opcode 0F B9.
 	       ((((:opcode . #ux0F_B9)) .
@@ -5024,14 +5024,14 @@
 		  ("XABORT" 1 (I b) :1a
 		   (:ud  . ((ud-Lock-used)
 			    (equal
-			      ;; CPUID.(EAX=7, ECX=0):EBX.RTM[bit 11]
-			      (cpuid-flag
-			       #ux_07
-			       :ecx #ux_00
-			       :reg #.*ebx*
-			       :bit 11 ;; RTM
-			       )
-			      0)))))
+			     ;; CPUID.(EAX=7, ECX=0):EBX.RTM[bit 11]
+			     (cpuid-flag
+			      #ux_07
+			      :ecx #ux_00
+			      :reg #.*ebx*
+			      :bit 11 ;; RTM
+			      )
+			     0)))))
 
 		(((:opcode . #xC7)
 		  (:reg    . #b000)) .
@@ -5074,14 +5074,14 @@
 		  ("XBEGIN" 1 (J z) :1a
 		   (:ud  . ((ud-Lock-used)
 			    (equal
-			      ;; CPUID.(EAX=7, ECX=0):EBX.RTM[bit 11]
-			      (cpuid-flag
-			       #ux_07
-			       :ecx #ux_00
-			       :reg #.*ebx*
-			       :bit 11 ;; RTM
-			       )
-			      0)))))))
+			     ;; CPUID.(EAX=7, ECX=0):EBX.RTM[bit 11]
+			     (cpuid-flag
+			      #ux_07
+			      :ecx #ux_00
+			      :reg #.*ebx*
+			      :bit 11 ;; RTM
+			      )
+			     0)))))))
 
     (:Group-12 . ;; Covers opcode 0F 71.
 	       ((((:opcode . #ux0F_71)
@@ -5093,49 +5093,49 @@
 		  (:none
 		   (:fn . (:no-instruction))))
 		(((:opcode . #ux0F_71)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . #b11)
 		  (:reg    . #b010)) .
 		  ("PSRLW" 2 (N q) (I b) :1a
-		   (:ex . ((chk-exc :type-22-7 :mmx)))))
+		   (:ex . ((chk-exc :type-22-7 (:mmx))))))
 		(((:opcode . #ux0F_71)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b010)) .
-		  ("VPSRLW" 3 (H x) (U x) (I b) :1a
-		   (:ex . ((chk-exc :type-7 :sse2)))))
+		  ("PSRLW" 3 (H x) (U x) (I b) :1a
+		   (:ex . ((chk-exc :type-7 (:sse2))))))
 		(((:opcode . #ux0F_71)
 		  (:reg    . #b011)) .
 		  (:none
 		   (:fn . (:no-instruction))))
 		(((:opcode . #ux0F_71)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . #b11)
 		  (:reg    . #b100)) .
 		  ("PSRAW" 2 (N q) (I b) :1a
-		   (:ex . ((chk-exc :type-22-7 :mmx)))))
+		   (:ex . ((chk-exc :type-22-7 (:mmx))))))
 		(((:opcode . #ux0F_71)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b100)) .
-		  ("VPSRAW" 3 (H x) (U x) (I b) :1a
-		   (:ex . ((chk-exc :type-7 :sse2)))))
+		  ("PSRAW" 3 (H x) (U x) (I b) :1a
+		   (:ex . ((chk-exc :type-7 (:sse2))))))
 		(((:opcode . #ux0F_71)
 		  (:reg    . #b101)) .
 		  (:none
 		   (:fn . (:no-instruction))))
 		(((:opcode . #ux0F_71)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
 		  ("PSLLW" 2 (N q) (I b) :1a
-		   (:ex . ((chk-exc :type-22-7 :mmx)))))
+		   (:ex . ((chk-exc :type-22-7 (:mmx))))))
 		(((:opcode . #ux0F_71)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
-		  ("VPSLLW" 3 (H x) (U x) (I b) :1a
-		   (:ex . ((chk-exc :type-7 :sse2)))))
+		  ("PSLLW" 3 (H x) (U x) (I b) :1a
+		   (:ex . ((chk-exc :type-7 (:sse2))))))
 		(((:opcode . #ux0F_71)
 		  (:reg    . #b111)) .
 		  (:none
@@ -5151,49 +5151,49 @@
 		  (:none
 		   (:fn . (:no-instruction))))
 		(((:opcode . #ux0F_72)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . #b11)
 		  (:reg    . #b010)) .
 		  ("PSRLD" 2 (N q) (I b) :1a
-		   (:ex . ((chk-exc :type-22-7 :mmx)))))
+		   (:ex . ((chk-exc :type-22-7 (:mmx))))))
 		(((:opcode . #ux0F_72)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b010)) .
-		  ("VPSRLD" 3 (H x) (U x) (I b) :1a
-		   (:ex . ((chk-exc :type-7 :sse2)))))
+		  ("PSRLD" 3 (H x) (U x) (I b) :1a
+		   (:ex . ((chk-exc :type-7 (:sse2))))))
 		(((:opcode . #ux0F_72)
 		  (:reg    . #b011)) .
 		  (:none
 		   (:fn . (:no-instruction))))
 		(((:opcode . #ux0F_72)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . #b11)
 		  (:reg    . #b100)) .
 		  ("PSRAD" 2 (N q) (I b) :1a
-		   (:ex . ((chk-exc :type-22-7 :mmx)))))
+		   (:ex . ((chk-exc :type-22-7 (:mmx))))))
 		(((:opcode . #ux0F_72)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b100)) .
-		  ("VPSRAD" 3 (H x) (U x) (I b) :1a
-		   (:ex . ((chk-exc :type-7 :sse2)))))
+		  ("PSRAD" 3 (H x) (U x) (I b) :1a
+		   (:ex . ((chk-exc :type-7 (:sse2))))))
 		(((:opcode . #ux0F_72)
 		  (:reg    . #b101)) .
 		  (:none
 		   (:fn . (:no-instruction))))
 		(((:opcode . #ux0F_72)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
 		  ("PSLLD" 2 (N q) (I b) :1a
-		   (:ex . ((chk-exc :type-22-7 :mmx)))))
+		   (:ex . ((chk-exc :type-22-7 (:mmx))))))
 		(((:opcode . #ux0F_72)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
-		  ("VPSLLD" 3 (H x) (U x) (I b) :1a
-		   (:ex . ((chk-exc :type-7 :sse2)))))
+		  ("PSLLD" 3 (H x) (U x) (I b) :1a
+		   (:ex . ((chk-exc :type-7 (:sse2))))))
 		(((:opcode . #ux0F_72)
 		  (:reg    . #b111)) .
 		  (:none
@@ -5209,25 +5209,25 @@
 		  (:none
 		   (:fn . (:no-instruction))))
 		(((:opcode . #ux0F_73)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . #b11)
 		  (:reg    . #b010)) .
 		  ("PSRLQ" 2 (N q) (I b) :1a
-		   (:ex . ((chk-exc :type-22-7 :mmx)))))
+		   (:ex . ((chk-exc :type-22-7 (:mmx))))))
 		(((:opcode . #ux0F_73)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b010)) .
-		  ("VPSRLQ" 3 (H x) (U x) (I b) :1a
-		   (:ex . ((chk-exc :type-7 :sse2)))))
+		  ("PSRLQ" 3 (H x) (U x) (I b) :1a
+		   (:ex . ((chk-exc :type-7 (:sse2))))))
 		(((:opcode . #ux0F_73)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b011)) .
-		  ("VPSRLDQ" 3 (H x) (U x) (I b) :1a
-		   (:ex . ((chk-exc :type-7 :sse2)))))
+		  ("PSRLDQ" 3 (H x) (U x) (I b) :1a
+		   (:ex . ((chk-exc :type-7 (:sse2))))))
 		(((:opcode . #ux0F_73)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:reg    . #b100)) .
 		  (:none
 		   (:fn . (:no-instruction))))
@@ -5236,38 +5236,38 @@
 		  (:none
 		   (:fn . (:no-instruction))))
 		(((:opcode . #ux0F_73)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
 		  ("PSLLQ" 2 (N q) (I b) :1a
-		   (:ex . ((chk-exc :type-22-7 :mmx)))))
+		   (:ex . ((chk-exc :type-22-7 (:mmx))))))
 		(((:opcode . #ux0F_73)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
-		  ("VPSLLQ" 3 (H x) (U x) (I b) :1a
-		   (:ex . ((chk-exc :type-7 :sse2)))))
+		  ("PSLLQ" 3 (H x) (U x) (I b) :1a
+		   (:ex . ((chk-exc :type-7 (:sse2))))))
 		(((:opcode . #ux0F_73)
 		  (:prefix . :66)
 		  (:mod    . #b11)
 		  (:reg    . #b111)) .
-		  ("VPSLLDQ" 3 (H x) (U x) (I b) :1a
-		   (:ex . ((chk-exc :type-7 :sse2)))))))
+		  ("PSLLDQ" 3 (H x) (U x) (I b) :1a
+		   (:ex . ((chk-exc :type-7 (:sse2))))))))
 
     (:Group-15 . ;; Covers opcode 0F AE.
 	       ((((:opcode . #ux0F_AE)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . :mem)
 		  (:reg    . #b000)) .
 		  ("FXSAVE" 0 :1a
 		   (:ud  . ((ud-Lock-used)
 			    (equal
-			      ;; CPUID.01H:EDX.FXSR[bit 24]
-			      (cpuid-flag
-			       #ux_01
-			       :reg #.*edx*
-			       :bit 24)
-			      0)))
+			     ;; CPUID.01H:EDX.FXSR[bit 24]
+			     (cpuid-flag
+			      #ux_01
+			      :reg #.*edx*
+			      :bit 24)
+			     0)))
 		   (:nm  . ((nm-cr0-ts-is-1)
 			    (nm-cr0-em-is-1)))))
 		(((:opcode . #ux0F_AE)
@@ -5279,26 +5279,26 @@
 		   (:ud  . ((ud-Lock-used)
 			    (equal (cr4-slice :cr4-fsgsbase (cr4)) 0)
 			    (equal
-			      ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
-			      (cpuid-flag
-			       #ux_07
-			       :ecx #ux_00
-			       :reg #.*ebx*
-			       :bit 0)
-			      0)))))
+			     ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
+			     (cpuid-flag
+			      #ux_07
+			      :ecx #ux_00
+			      :reg #.*ebx*
+			      :bit 0)
+			     0)))))
 		(((:opcode . #ux0F_AE)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . :mem)
 		  (:reg    . #b001)) .
 		  ("FXRSTOR" 0 :1a
 		   (:ud  . ((ud-Lock-used)
 			    (equal
-			      ;; CPUID.01H:EDX.FXSR[bit 24]
-			      (cpuid-flag
-			       #ux_01
-			       :reg #.*edx*
-			       :bit 24)
-			      0)))
+			     ;; CPUID.01H:EDX.FXSR[bit 24]
+			     (cpuid-flag
+			      #ux_01
+			      :reg #.*edx*
+			      :bit 24)
+			     0)))
 		   (:nm  . ((nm-cr0-ts-is-1)
 			    (nm-cr0-em-is-1)))))
 		(((:opcode . #ux0F_AE)
@@ -5310,15 +5310,15 @@
 		   (:ud  . ((ud-Lock-used)
 			    (equal (cr4-slice :cr4-fsgsbase (cr4)) 0)
 			    (equal
-			      ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
-			      (cpuid-flag
-			       #ux_07
-			       :ecx #ux_00
-			       :reg #.*ebx*
-			       :bit 0)
-			      0)))))
+			     ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
+			     (cpuid-flag
+			      #ux_07
+			      :ecx #ux_00
+			      :reg #.*ebx*
+			      :bit 0)
+			     0)))))
 		(((:opcode . #ux0F_AE)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . :mem)
 		  (:reg    . #b010)) .
 		  ("LDMXCSR" 0 :1a
@@ -5332,15 +5332,15 @@
 		   (:ud  . ((ud-Lock-used)
 			    (equal (cr4-slice :cr4-fsgsbase (cr4)) 0)
 			    (equal
-			      ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
-			      (cpuid-flag
-			       #ux_07
-			       :ecx #ux_00
-			       :reg #.*ebx*
-			       :bit 0)
-			      0)))))
+			     ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
+			     (cpuid-flag
+			      #ux_07
+			      :ecx #ux_00
+			      :reg #.*ebx*
+			      :bit 0)
+			     0)))))
 		(((:opcode . #ux0F_AE)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . :mem)
 		  (:reg    . #b011)) .
 		  ("STMXCSR" 0 :1a
@@ -5354,60 +5354,60 @@
 		   (:ud  . ((ud-Lock-used)
 			    (equal (cr4-slice :cr4-fsgsbase (cr4)) 0)
 			    (equal
-			      ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
-			      (cpuid-flag
-			       #ux_07
-			       :ecx #ux_00
-			       :reg #.*ebx*
-			       :bit 0)
-			      0)))))
+			     ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
+			     (cpuid-flag
+			      #ux_07
+			      :ecx #ux_00
+			      :reg #.*ebx*
+			      :bit 0)
+			     0)))))
 		(((:opcode . #ux0F_AE)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . :mem)
 		  (:reg    . #b100)) .
 		  ("XSAVE" 0 :1a
 		   (:ud  . ((ud-Lock-used)
 			    (equal (cr4-slice :cr4-osxsave (cr4)) 0)
 			    (equal
-			      ;; CPUID.01H:ECX.XSAVE[bit 26]
-			      (cpuid-flag
-			       #ux_01
-			       :reg #.*ecx*
-			       :bit 26)
-			      0)))
+			     ;; CPUID.01H:ECX.XSAVE[bit 26]
+			     (cpuid-flag
+			      #ux_01
+			      :reg #.*ecx*
+			      :bit 26)
+			     0)))
 		   (:gp  . ((gp-cpl-not-0)))
 		   (:nm  . ((nm-cr0-ts-is-1)))))
 		(((:opcode . #ux0F_AE)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . :mem)
 		  (:reg    . #b101)) .
 		  ("XRSTOR" 0 :1a
 		   (:ud  . ((ud-Lock-used)
 			    (equal (cr4-slice :cr4-osxsave (cr4)) 0)
 			    (equal
-			      ;; CPUID.01H:ECX.XSAVE[bit 26]
-			      (cpuid-flag
-			       #ux_01
-			       :reg #.*ecx*
-			       :bit 26)
-			      0)))
+			     ;; CPUID.01H:ECX.XSAVE[bit 26]
+			     (cpuid-flag
+			      #ux_01
+			      :reg #.*ecx*
+			      :bit 26)
+			     0)))
 		   (:gp  . ((gp-cpl-not-0)))
 		   (:nm  . ((nm-cr0-ts-is-1)))))
 		(((:opcode . #ux0F_AE)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . #b11)
 		  (:reg    . #b101)) .
 		  ("LFENCE" 0 :1a
 		   (:ud  . ((ud-Lock-used)
 			    (equal
-			      ;; CPUID.01H:EDX.SSE2[bit 26]
-			      (cpuid-flag
-			       #ux_01
-			       :reg #.*edx*
-			       :bit 26)
-			      0)))))
+			     ;; CPUID.01H:EDX.SSE2[bit 26]
+			     (cpuid-flag
+			      #ux_01
+			      :reg #.*edx*
+			      :bit 26)
+			     0)))))
 		(((:opcode . #ux0F_AE)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . :mem)
 		  (:reg    . #b110)) .
 		  ("XSAVEOPT" 0 :1a
@@ -5431,44 +5431,44 @@
 			      0))))
 		   (:nm  . ((nm-cr0-ts-is-1)))))
 		(((:opcode . #ux0F_AE)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . #b11)
 		  (:reg    . #b110)) .
 		  ("MFENCE" 0 :1a
 		   (:ud  . ((ud-Lock-used)
 			    (equal
-			      ;; CPUID.01H:EDX.SSE2[bit 26]
-			      (cpuid-flag
-			       #ux_01
-			       :reg #.*edx*
-			       :bit 26)
-			      0)))))
+			     ;; CPUID.01H:EDX.SSE2[bit 26]
+			     (cpuid-flag
+			      #ux_01
+			      :reg #.*edx*
+			      :bit 26)
+			     0)))))
 		(((:opcode . #ux0F_AE)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . :mem)
 		  (:reg    . #b111)) .
 		  ("CLFLUSH" 0 :1a
 		   (:ud  . ((ud-Lock-used)
 			    (equal
-			      ;; CPUID.01H:EDX.CLFSH[bit 19]
-			      (cpuid-flag
-			       #ux_01
-			       :reg #.*edx*
-			       :bit 19)
-			      0)))))
+			     ;; CPUID.01H:EDX.CLFSH[bit 19]
+			     (cpuid-flag
+			      #ux_01
+			      :reg #.*edx*
+			      :bit 19)
+			     0)))))
 		(((:opcode . #ux0F_AE)
-		  (:prefix . nil)
+		  (:prefix . :no-prefix)
 		  (:mod    . #b11)
 		  (:reg    . #b111)) .
 		  ("SFENCE" 0 :1a
 		   (:ud  . ((ud-Lock-used)
 			    (equal
-			      ;; CPUID.01H:EDX.SSE[bit 25]
-			      (cpuid-flag
-			       #ux_01
-			       :reg #.*edx*
-			       :bit 25)
-			      0)))))))
+			     ;; CPUID.01H:EDX.SSE[bit 25]
+			     (cpuid-flag
+			      #ux_01
+			      :reg #.*edx*
+			      :bit 25)
+			     0)))))))
 
     (:Group-16 . ;; Covers opcode 0F 18.
 	       ((((:opcode . #ux0F_18)
@@ -5505,6 +5505,267 @@
 		  ("RESERVEDNOP" 0))
 		(((:opcode . #ux0F_18)
 		  (:mod    . #b11)) .
+		  ("RESERVEDNOP" 0))
+
+		(((:opcode . #ux0F_1A)
+		  (:prefix . :no-prefix)
+		  (:mod    . :mem)
+		  (:feat   . (:mpx))) .
+		  ("BNDLDX" 2 (rB) (M)
+		   ;; Source: BNDLDX-Load Extended Bounds Using Address
+		   ;; Translation, Intel Vol. 2 (May 2018 edition)
+		   ;; "Any encoding of this instruction that does not specify
+		   ;; base or index register will treat those registers as zero
+		   ;; (constant)."
+		   ;; This leads me to infer that even though the source operand
+		   ;; is obtained from the SIB byte, we should not #UD when the
+		   ;; SIB byte is not present (i.e., when ModR/M.r/m != #b100 --
+		   ;; See Table 2-2 in Intel Vol. 2).
+		   (:ud  . ((ud-Lock-used)
+			    ;; [Shilpi] "ModRM.r/m" below is likely a typo in
+			    ;; the Intel manuals.  It should be ModRM.reg,
+			    ;; because the latter is used to encode the BND
+			    ;; registers.
+			    ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+			    ;;   Intel MPX is enabled.
+			    (<= 4 (reg-index (modr/m->reg ModR/M) rex-byte #.*r*))
+			    (if  (eql proc-mode #.*64-bit-mode*)
+				;; RIP-relative addressing in 64-bit mode
+				;; Source: Table 2-7 (RIP-Relative Addressing),
+				;; Intel Vol. 2 (May 2018 edition)
+				;; - If ModRM is RIP-relative
+				(and (eql (modr/m->mod ModR/M) 0)
+				     (or ;; SIB Byte not present
+				      (eql (modr/m->r/m ModR/M) #b101)
+				      (and ;; SIB Byte present
+				       (eql (modr/m->r/m ModR/M) #b100)
+				       (eql (sib->base sib) #b101)
+				       (eql (sib->index sib) #b100))))
+			      ;; In Compatibility/Protected Mode:
+			      ;; - If 67H prefix is used and CS.D=1.
+			      ;; - If 67H prefix is not used and CS.D=0.
+			      (if (eql (prefixes->adr prefixes)
+				       #.*addr-size-override*)
+				  ;; cs.d = 1
+				  (eql (cs.d) 1)
+				;; cs.d = 0
+				(eql (cs.d) 0)))))))
+		;; Source: BNDLDX-Load Extended Bounds Using Address
+		;; Translation, Intel Vol. 2 (May 2018 edition)
+		;; "The reg-reg form of this instruction will remain a NOP."
+		(((:opcode . #ux0F_1A)
+		  (:mod    . #b11)
+		  (:feat   . (:mpx))
+		  (:prefix . :no-prefix)) .
+		  ("RESERVEDNOP" 0))
+
+		(((:opcode . #ux0F_1A)
+		  (:prefix . :66)
+		  (:feat   . (:mpx))) .
+		  (:ALT
+		   (("BNDMOV"    2 (rB) (mB))
+		    ("BNDMOV"    2 (rB) (M)))
+		   (:ud  . ((ud-Lock-used-Dest-not-Memory-Op)
+			    ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+			    ;;   Intel MPX is enabled.
+			    (<= 4 (reg-index (modr/m->r/m ModR/M) rex-byte #.*b*))
+			    ;; In Compatibility/Protected Mode:
+			    ;; - If 67H prefix is used and CS.D=1.
+			    ;; - If 67H prefix is not used and CS.D=0.
+			    (if (and (not (eql proc-mode #.*64-bit-mode*))
+				     (eql (prefixes->adr prefixes)
+					  #.*addr-size-override*))
+				;; cs.d = 1
+				(eql (cs.d) 1)
+			      ;; cs.d = 0
+			      (eql (cs.d) 0))))))
+
+		(((:opcode . #ux0F_1A)
+		  (:prefix . :F3)
+		  (:feat   . (:mpx))) .
+		  ("BNDCL"    2 (rB) (E y)
+		   (:ud  . ((ud-Lock-used)
+			    ;; [Shilpi] "ModRM.r/m" below is likely a typo in
+			    ;; the Intel manuals.  It should be ModRM.reg,
+			    ;; because the latter is used to encode the BND
+			    ;; registers.
+			    ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+			    ;;   Intel MPX is enabled.
+			    (<= 4 (reg-index (modr/m->reg ModR/M) rex-byte #.*r*))
+			    (and (not (eql proc-mode #.*64-bit-mode*))
+				 ;; In Compatibility/Protected Mode:
+				 ;; - If 67H prefix is used and CS.D=1.
+				 ;; - If 67H prefix is not used and CS.D=0.
+				 (if (eql (prefixes->adr prefixes)
+					  #.*addr-size-override*)
+				     ;; cs.d = 1
+				     (eql (cs.d) 1)
+				   ;; cs.d = 0
+				   (eql (cs.d) 0)))))))
+
+		(((:opcode . #ux0F_1A)
+		  (:prefix . :F2)
+		  (:feat   . (:mpx))) .
+		  ("BNDCU"    2 (rB) (E y)
+		   (:ud  . ((ud-Lock-used)
+			    ;; [Shilpi] "ModRM.r/m" below is likely a typo in
+			    ;; the Intel manuals.  It should be ModRM.reg,
+			    ;; because the latter is used to encode the BND
+			    ;; registers.
+			    ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+			    ;;   Intel MPX is enabled.
+			    (<= 4 (reg-index (modr/m->reg ModR/M) rex-byte #.*r*))
+			    (and (not (eql proc-mode #.*64-bit-mode*))
+				 ;; In Compatibility/Protected Mode:
+				 ;; - If 67H prefix is used and CS.D=1.
+				 ;; - If 67H prefix is not used and CS.D=0.
+				 (if (eql (prefixes->adr prefixes)
+					  #.*addr-size-override*)
+				     ;; cs.d = 1
+				     (eql (cs.d) 1)
+				   ;; cs.d = 0
+				   (eql (cs.d) 0)))))))
+
+		;; Non-MPX Encoding:
+		(((:opcode . #ux0F_1A)) .
+		 ("RESERVEDNOP" 0))
+
+		(((:opcode . #ux0F_1B)
+		  (:prefix . :no-prefix)
+		  (:mod    . :mem)
+		  (:feat   . (:mpx))) .
+		  ("BNDSTX"    2 (M) (rB)
+		   ;; Source: BNDSTX-Load Extended Bounds Using Address
+		   ;; Translation, Intel Vol. 2 (May 2018 edition)
+		   ;; "Any encoding of this instruction that does not specify
+		   ;; base or index register will treat those registers as zero
+		   ;; (constant)."
+		   ;; Similar to BNDLDX.
+		   (:ud  . ((ud-Lock-used)
+			    ;; [Shilpi] "ModRM.r/m" below is likely a typo in
+			    ;; the Intel manuals.  It should be ModRM.reg,
+			    ;; because the latter is used to encode the BND
+			    ;; registers.
+			    ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+			    ;;   Intel MPX is enabled.
+			    (<= 4 (reg-index (modr/m->reg ModR/M) rex-byte #.*r*))
+			    (if  (eql proc-mode #.*64-bit-mode*)
+				;; RIP-relative addressing in 64-bit mode
+				;; Source: Table 2-7 (RIP-Relative Addressing),
+				;; Intel Vol. 2 (May 2018 edition)
+				;; - If ModRM is RIP-relative
+				(and (eql (modr/m->mod ModR/M) 0)
+				     (or ;; SIB Byte not present
+				      (eql (modr/m->r/m ModR/M) #b101)
+				      (and ;; SIB Byte present
+				       (eql (modr/m->r/m ModR/M) #b100)
+				       (eql (sib->base sib) #b101)
+				       (eql (sib->index sib) #b100))))
+			      ;; In Compatibility/Protected Mode:
+			      ;; - If 67H prefix is used and CS.D=1.
+			      ;; - If 67H prefix is not used and CS.D=0.
+			      (if (eql (prefixes->adr prefixes)
+				       #.*addr-size-override*)
+				  ;; cs.d = 1
+				  (eql (cs.d) 1)
+				;; cs.d = 0
+				(eql (cs.d) 0)))))))
+		;; "The reg-reg form of this instruction will remain a NOP."
+		(((:opcode . #ux0F_1B)
+		  (:prefix . :no-prefix)
+		  (:mod    . #b11)
+		  (:feat   . (:mpx))) .
+		  ("RESERVEDNOP" 0))
+
+		(((:opcode . #ux0F_1B)
+		  (:prefix .  :66)
+		  (:feat   . (:mpx))) .
+		  (:ALT
+		   (("BNDMOV"    2 (mB) (rB))
+		    ("BNDMOV"    2 (M) (rB)))
+		   (:ud  . ((ud-Lock-used-Dest-not-Memory-Op)
+			    ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+			    ;;   Intel MPX is enabled.
+			    (<= 4 (reg-index (modr/m->r/m ModR/M) rex-byte #.*b*))
+			    ;; In Compatibility/Protected Mode:
+			    ;; - If 67H prefix is used and CS.D=1.
+			    ;; - If 67H prefix is not used and CS.D=0.
+			    (if (and (not (eql proc-mode #.*64-bit-mode*))
+				     (eql (prefixes->adr prefixes)
+					  #.*addr-size-override*))
+				;; cs.d = 1
+				(eql (cs.d) 1)
+			      ;; cs.d = 0
+			      (eql (cs.d) 0))))))
+
+		(((:opcode . #ux0F_1B)
+		  (:prefix .  :F3)
+		  (:mod    . :mem)
+		  (:feat   . (:mpx))) .
+		  ("BNDMK"    2 (rB) (M y)
+		   (:ud  . ((ud-Lock-used)
+			    ;; [Shilpi] "ModRM.r/m" below is likely a typo in
+			    ;; the Intel manuals.  It should be ModRM.reg,
+			    ;; because the latter is used to encode the BND
+			    ;; registers.
+			    ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+			    ;;   Intel MPX is enabled.
+			    (<= 4 (reg-index (modr/m->reg ModR/M) rex-byte #.*r*))
+			    (if (eql proc-mode #.*64-bit-mode*)
+				;; - If RIP-relative addressing is used.
+				;; Source: Table 2-7 (RIP-Relative Addressing),
+				;; Intel Vol. 2 (May 2018 edition)
+				(and (eql (modr/m->mod ModR/M) 0)
+				     (or ;; SIB Byte not present
+				      (eql (modr/m->r/m ModR/M) #b101)
+				      (and ;; SIB Byte present
+				       (eql (modr/m->r/m ModR/M) #b100)
+				       (eql (sib->base sib) #b101)
+				       (eql (sib->index sib) #b100))))
+			      ;; In Compatibility/Protected Mode:
+			      ;; - If 67H prefix is used and CS.D=1.
+			      ;; - If 67H prefix is not used and CS.D=0.
+			      (if (eql (prefixes->adr prefixes)
+				       #.*addr-size-override*)
+				  ;; cs.d = 1
+				  (eql (cs.d) 1)
+				;; cs.d = 0
+				(eql (cs.d) 0)))))))
+		(((:opcode . #ux0F_1B)
+		  (:prefix .  :F3)
+		  (:mod    . #b11)
+		  (:feat   . (:mpx))) .
+		  ;; Source: BNDMK-Make Bounds, Intel Vol. 2 (May 2018 Edition)
+		  ;; "The reg-reg form of this instruction retains legacy behavior
+		  ;; (NOP)."
+		  ("RESERVEDNOP" 0))
+
+		(((:opcode . #ux0F_1B)
+		  (:prefix .  :F2)
+		  (:feat   . (:mpx))) .
+		  ("BNDCN"    2 (rB) (E y)
+		   2 (rB) (E y)
+		   (:ud  . ((ud-Lock-used)
+			    ;; [Shilpi] "ModRM.r/m" below is likely a typo in
+			    ;; the Intel manuals.  It should be ModRM.reg,
+			    ;; because the latter is used to encode the BND
+			    ;; registers.
+			    ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+			    ;;   Intel MPX is enabled.
+			    (<= 4 (reg-index (modr/m->reg ModR/M) rex-byte #.*r*))
+			    (and (not (eql proc-mode #.*64-bit-mode*))
+				 ;; In Compatibility/Protected Mode:
+				 ;; - If 67H prefix is used and CS.D=1.
+				 ;; - If 67H prefix is not used and CS.D=0.
+				 (if (eql (prefixes->adr prefixes)
+					  #.*addr-size-override*)
+				     ;; cs.d = 1
+				     (eql (cs.d) 1)
+				   ;; cs.d = 0
+				   (eql (cs.d) 0)))))))
+
+		;; Non-MPX Encoding:
+		(((:opcode . #ux0F_1B)) .
 		  ("RESERVEDNOP" 0))))
 
     (:Group-17 . ;; Covers opcode VEX 0F 38 F3.
@@ -5517,17 +5778,17 @@
 		  (:vex    . t)
 		  (:reg    . #b001)) .
 		  ("BLSR" 2 (B y) (E y) :v
-		   (:ex . ((chk-exc :type-vex-gpr :bmi2)))))
+		   (:ex . ((chk-exc :type-vex-gpr (:bmi2))))))
 		(((:opcode . #ux0F_38_F3)
 		  (:vex    . t)
 		  (:reg    . #b010)) .
 		  ("BLSMSK" 2 (B y) (E y) :v
-		   (:ex . ((chk-exc :type-vex-gpr :bmi2)))))
+		   (:ex . ((chk-exc :type-vex-gpr (:bmi2))))))
 		(((:opcode . #ux0F_38_F3)
 		  (:vex    . t)
 		  (:reg    . #b011)) .
 		  ("BLSI" 2 (B y) (E y) :v
-		   (:ex . ((chk-exc :type-vex-gpr :bmi2)))))
+		   (:ex . ((chk-exc :type-vex-gpr (:bmi2))))))
 		(((:opcode . #ux0F_38_F3)
 		  (:vex    . t)
 		  (:reg    . #b100)) .
@@ -5560,7 +5821,7 @@
 ;; edition).
 
 (defconst *vex-0F-opcodes*
-  '((#x10 ((:VEX :0F :LIG :F2 :WIG)                  ("VMOVSD"               3 (V x)  (H x)  (W sd)))
+  '((#x10 ((:VEX :0F :LIG :F2 :WIG)                  ("MOVSD"               3 (V x)  (H x)  (W sd)))
 	  ((:VEX :0F :NDS :LIG :F2 :WIG)             ("VMOVSD"               3 (V x)  (H x)  (W sd)))
 	  ((:VEX :0F :LIG :F3 :WIG)                  ("VMOVSS"               3 (V x)  (H x)  (W ss)))
 	  ((:VEX :0F :NDS :LIG :F3 :WIG)             ("VMOVSS"               3 (V x)  (H x)  (W ss)))
@@ -7945,9 +8206,23 @@
      (semantic-function-info-p semantic-info)
      (exception-info-p exception-info)
      (or
-      (and (or (stringp first)
-	       (member-equal first *group-numbers*))
+      (and (stringp first)
 	   (simple-cell-addressing-info-p new-rest))
+      ;; We don't expect addressing info. for group numbers right there in the
+      ;; cell --- there's indirection.  Go to
+      ;; *opcode-extensions-by-group-number* for addressing details of these
+      ;; opcodes.
+      (and (member-equal first *group-numbers*)
+	   (or
+	    ;; For all other Groups.
+	    (member-equal :1a new-rest)
+	    ;; For Group-17.
+	    (member-equal :v new-rest))
+	   ;; The following is unnecessary because we know
+	   ;; remove-semantic-function-info returns a true-listp.  However, it
+	   ;; forces the output of this function to be a boolean (member-equal
+	   ;; sucks so bad).
+	   (true-listp new-rest))
       (and
        (member-equal first *simple-cells-standalone-legal-keywords*)
        (equal new-rest nil)))))
@@ -7994,7 +8269,7 @@
     :rule-classes :forward-chaining))
 
 (defconst *opcode-descriptor-legal-keys*
-  '(:opcode :reg :prefix :mod :r/m :vex :evex :mode))
+  '(:opcode :reg :prefix :mod :r/m :vex :evex :mode :feat))
 
 (define opcode-descriptor-p (opcode-descriptor)
   (if (consp opcode-descriptor)

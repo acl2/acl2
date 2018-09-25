@@ -330,9 +330,16 @@
 	 (opcode-cell (cdr opcode-descriptor))
 	 ;; (vex         (cdr (assoc-equal :vex opcode-identifier)))
 	 ;; (evex        (cdr (assoc-equal :evex opcode-identifier)))
+	 (feat        (cdr (assoc-equal :feat opcode-identifier)))
 	 (mode        (cdr (assoc-equal :mode opcode-identifier)))
 	 (reg         (cdr (assoc-equal :reg opcode-identifier)))
 	 (prefix      (cdr (assoc-equal :prefix opcode-identifier)))
+         (prefix-val  (case prefix                        
+                        (:66 #x66)
+                        (:F3 #xF3)
+                        (:F2 #xF2)
+                        (t ;; :no-prefix
+                         #x0)))
 	 (mod         (cdr (assoc-equal :mod opcode-identifier)))
 	 (r/m         (cdr (assoc-equal :r/m opcode-identifier)))
 	 (condition
@@ -347,6 +354,8 @@
 		   (if (equal mode :o64)
 		       `((equal proc-mode #.*64-bit-mode*))
 		     `((not (equal proc-mode #.*64-bit-mode*)))))
+	    ,@(and feat
+		   `((equal (feature-flags-macro ',feat) 1)))
 	    ,@(and reg
 		   `((equal (modr/m->reg modr/m) ,reg)))
 	    ,@(and mod
@@ -356,7 +365,7 @@
 	    ,@(and r/m
 		   `((equal (modr/m->r/m modr/m) ,r/m)))
 	    ,@(and prefix
-		   `((equal mandatory-prefix ,prefix)))))
+		   `((equal mandatory-prefix ,prefix-val)))))
 	 ((mv doc-string dispatch)
 	  (create-dispatch-from-no-extensions-simple-cell
 	   opcode-cell world))
@@ -368,6 +377,7 @@
 			   (str::pretty
 			    `( ;; ,@(and evex   `((:EVEX ,evex)))
 			      ;; ,@(and vex    `((:VEX  ,vex)))
+			      ,@(and feat   `((:FEAT ,feat)))
 			      ,@(and mode   `((:MODE ,mode)))
 			      ,@(and prefix `((:PFX  ,prefix)))
 			      ,@(and reg    `((:REG  ,reg)))
@@ -1048,10 +1058,10 @@
 	(t (find-avx-exc-type kwds (cdr cell) top))))
 
 (define feat-look ((kwds true-listp)
-                   (features avx-op-features-cell-p))
+		   (features avx-op-features-cell-p))
   (cond ((endp features) nil)
 	((equal (acl2::merge-sort-lexorder kwds)
-                (acl2::merge-sort-lexorder (car (car features))))
+		(acl2::merge-sort-lexorder (car (car features))))
 	 (cdr (cadr (cadr (car features)))))
 	(t (feat-look kwds (rest features)))))
 
@@ -1083,8 +1093,8 @@
 		  kwd-lst))
        (exc-type (find-avx-exc-type kwd-lst cell cell))
        (exception-check (if vex?
-			    `(chk-exc-vex ,exc-type ',feature-flags)
-			  `(chk-exc-evex ,exc-type ',feature-flags)))
+			    `(chk-exc-vex ,exc-type ,feature-flags)
+			  `(chk-exc-evex ,exc-type ,feature-flags)))
        (exception-cases (make-exception-handling-cases '((:ex . nil))
 						       unimplemented
 						       illegal
@@ -1151,7 +1161,7 @@
 	      (equal (len map) (len features)))
   :guard-hints (("Goal" :in-theory (e/d (avx-maps-well-formed-p
 					 avx-opcode-cases-okp
-                                         avx-op-features-map-p)
+					 avx-op-features-map-p)
 					())))
   (if (endp map)
       `((t

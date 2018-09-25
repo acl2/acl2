@@ -46,8 +46,6 @@
 (include-book "cpuid-constants")
 (include-book "cpuid")
 (include-book "../utils/constants")
-;(include-book "instructions/top"
-;	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (xdoc::set-default-parents 'opcode-maps))
 
@@ -193,6 +191,11 @@
 (defmacro cplx86 ()
   `(ifix (cpl x86)))
 
+(defmacro cs.d ()
+  `(b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
+        (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden)))
+     (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+
 (defmacro cr0 ()
   `(the (unsigned-byte 32)
      (loghead 32 (ifix (ctri #.*cr0* x86)))))
@@ -212,20 +215,18 @@
 
 ;; ----------------------------------------------------------------------
 
-(defmacro chk-exc (type-id feature-flag)
-  ;; (declare (xargs :guard (and (keywordp type-id)
-  ;;                             (member-equal feature-flag *supported-feature-flags*))))
-  `(chk-exc-fn :legacy ,type-id (list ,feature-flag)
+(defmacro chk-exc (type-id feature-flags)
+  `(chk-exc-fn :legacy ,type-id ',feature-flags
                ;; captured inputs:
                proc-mode prefixes rex-byte opcode modr/m sib x86))
 
 (defmacro chk-exc-vex (type-id feature-flags)
-  `(chk-exc-fn :vex ,type-id ,feature-flags
+  `(chk-exc-fn :vex ,type-id ',feature-flags
                ;; captured inputs:
                proc-mode prefixes rex-byte opcode modr/m sib x86))
 
 (defmacro chk-exc-evex (type-id feature-flags)
-  `(chk-exc-fn :evex ,type-id ,feature-flags
+  `(chk-exc-fn :evex ,type-id ',feature-flags
                ;; captured inputs:
                proc-mode prefixes rex-byte opcode modr/m sib x86))
 
