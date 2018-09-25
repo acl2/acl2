@@ -21,9 +21,9 @@ questions.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
-{{Eliminate fix-true-listp in favor of list-fix.}}
+{{Eliminate fix-true-list in favor of list-fix.}}
 
-Replace the function fix-true-listp in the ACL2 sources with the
+Replace the function fix-true-list in the ACL2 sources with the
 function list-fix defined in books/std/lists/list-fix.lisp.  Actually,
 I prefer the name true-list-fix to list-fix, since in Common Lisp, a
 "list" need not be a true list.
@@ -38,11 +38,11 @@ Steps:
    - Make a note of the starting git hash (see below).
 
    - Do tags-search in sources and grep in books, e.g.:
-       time fgrep --include='*.l*sp' -ri fix-true-listp .
+       time fgrep --include='*.l*sp' -ri fix-true-list .
      Make replacements as appropriate.
 
-   - Maybe add fix-true-listp as macro for (true-)list-fix, to avoid
-     having to replace calls of fix-true-listp.
+   - Maybe add fix-true-list as macro for (true-)list-fix, to avoid
+     having to replace calls of fix-true-list.
 
    - Possibly remove definition of list-fix in the book, since it's
      (to be) in the sources.
