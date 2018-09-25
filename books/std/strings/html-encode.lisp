@@ -165,8 +165,8 @@ HTML.</p>")
        :exec
        (- tabsize
           (the unsigned-byte (rem col tabsize))))
-  :prepwork
-  ((local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))))
+  :prepwork ((local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+             (local (in-theory (disable rem)))))
 
 (define html-encode-next-col
   :parents (html-encode-push)

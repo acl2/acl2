@@ -177,92 +177,90 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
                        (:free (z) (charlistnat< y z)))))))
 
 
+
+
+    ;; (local (defthm crock
+    ;;          (implies (and (equal (take-leading-digits y)
+    ;;                               (take-leading-digits x))
+    ;;                        (charlisteqv (skip-leading-digits x)
+    ;;                                     (skip-leading-digits y)))
+    ;;                   (charlisteqv x y))
+    ;;          :hints(("Goal"
+    ;;                  :induct (my-induction x y)
+    ;;                  :expand ((take-leading-digits x)
+    ;;                           (take-leading-digits y)
+    ;;                           (skip-leading-digits x)
+    ;;                           (skip-leading-digits y))))))
+
+    ;; (local (defthm lemma-3
+    ;;          (implies (and (equal (len (take-leading-digits y))
+    ;;                               (len (take-leading-digits x)))
+    ;;                        (equal (digit-list-value (take-leading-digits y))
+    ;;                               (digit-list-value (take-leading-digits x)))
+    ;;                        (charlisteqv (skip-leading-digits x)
+    ;;                                     (skip-leading-digits y)))
+    ;;                   (equal (charlisteqv x y)
+    ;;                          t))
+    ;;          :hints(("Goal"
+    ;;                  :in-theory (enable chareqv
+    ;;                                     take-leading-digits
+    ;;                                     skip-leading-digits
+    ;;                                     digit-list-value)))))
+    ;; (defthm charlistnat<-trichotomy-weak
+    ;;   (implies (and (not (charlistnat< x y))
+    ;;                 (not (charlistnat< y x)))
+    ;;            (equal (charlisteqv x y)
+    ;;                   t))
+    ;;   :hints (("goal" :induct (charlistnat< x y)
+    ;;            :expand ((charlisteqv x y)
+    ;;                     (charlistnat< y x)
+    ;;                     (charlistnat< x y)))))
+
   (encapsulate
     ()
+    (local (defthm digit-list-value-max
+             (< (digit-list-value x) (expt 10 (len x)))
+             :hints(("Goal" :in-theory (enable digit-list-value)))
+             :rule-classes :linear))
+    
+    (local (defthmd equal-of-sum-digits-lemma1
+             (implies (and (posp b)
+                           (natp big1)
+                           (natp big2)
+                           (natp little1)
+                           (natp little2)
+                           (< little1 b)
+                           (< little2 b)
+                           (not (equal big1 big2)))
+                      (not (equal (+ (* big1 b) little1)
+                                  (+ (* big2 b) little2))))
+             :hints (("goal" :use ((:instance distributivity (x b) (y big1) (z (- big2)))
+                                   (:instance distributivity (x b) (y big2) (z (- big1))))
+                      :in-theory (disable distributivity))
+                     (and stable-under-simplificationp
+                          '(:use ((:instance ACL2::<-*-Y-X-Y
+                                   (y b) (x (- big1 big2)))
+                                  (:instance ACL2::<-*-Y-X-Y
+                                   (y b) (x (- big2 big1))))
+                            :in-theory (disable distributivity acl2::<-*-y-x-y)
+                            :cases ((and (< (+ big1 (- big2)) 1)
+                                         (< (+ big2 (- big1)) 1))))))
+             :otf-flg t))
 
-    (local
-     (encapsulate ()
-       ;; A slightly tricky lemma about arithmetic.
+    (local (defthm equal-of-sum-digits
+             (implies (and (posp b)
+                           (natp big1)
+                           (natp big2)
+                           (natp little1)
+                           (natp little2)
+                           (< little1 b)
+                           (< little2 b))
+                      (iff (equal (+ (* big1 b) little1)
+                                  (+ (* big2 b) little2))
+                           (and (equal big1 big2)
+                                (equal little1 little2))))
+             :hints (("goal" :use ((:instance equal-of-sum-digits-lemma1))))))
 
-       (local (defun expr (a x b n)
-                (+ a (* x (expt b n)))))
-
-       (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
-
-       (local (defthm mod-of-expr
-                (implies (and (natp a1)
-                              (natp x1)
-                              (natp n)
-                              (natp b)
-                              (< a1 (expt b n))
-                              (<= x1 b))
-                         (equal (mod (expr a1 x1 b n)
-                                     (expt b n))
-                                a1))))
-
-       (local (defthm main-lemma
-                (implies (and (natp a1)
-                              (natp a2)
-                              (natp x1)
-                              (natp x2)
-                              (natp n)
-                              (natp b)
-                              (< a1 (expt b n))
-                              (< a2 (expt b n))
-                              (<= x1 b)
-                              (<= x2 b)
-                              (not (equal a1 a2)))
-                         (not (equal (expr a1 x1 b n)
-                                     (expr a2 x2 b n))))
-                :hints(("Goal" :in-theory (disable expr mod-of-expr)
-                        :use ((:instance mod-of-expr)
-                              (:instance mod-of-expr (a1 a2) (x1 x2)))))))
-
-       (defthmd arith-lemma-1
-         (implies (and (natp a1)
-                       (natp a2)
-                       (natp x1)
-                       (natp x2)
-                       (natp n)
-                       (natp b)
-                       (< a1 (expt b n))
-                       (< a2 (expt b n))
-                       (<= x1 b)
-                       (<= x2 b)
-                       (not (equal a1 a2)))
-                  (not (equal (+ a1 (* x1 (expt b n)))
-                              (+ a2 (* x2 (expt b n))))))
-         :hints(("Goal"
-                 :in-theory (enable expr)
-                 :use ((:instance main-lemma)))))))
-
-; The main proof of trichotomy
-
-    (local (defthm lemma-1
-             (IMPLIES (AND (NOT (EQUAL (DIGIT-LIST-VALUE X2)
-                                       (DIGIT-LIST-VALUE Y2)))
-                           (NOT (EQUAL X2 Y2))
-                           (CHARACTERP X1)
-                           (CHARACTERP Y1)
-                           (CHARACTER-LISTP X2)
-                           (CHARACTER-LISTP Y2)
-                           (DIGITP X1)
-                           (DIGITP Y1)
-                           (DIGIT-LISTP X2)
-                           (DIGIT-LISTP Y2)
-                           (EQUAL (LEN X2) (LEN Y2)))
-                      (NOT (EQUAL (+ (DIGIT-LIST-VALUE X2)
-                                     (* (DIGIT-VAL X1) (EXPT 10 (LEN X2))))
-                                  (+ (DIGIT-LIST-VALUE Y2)
-                                     (* (DIGIT-VAL Y1) (EXPT 10 (LEN X2)))))))
-             :hints(("Goal"
-                     :use ((:instance arith-lemma-1
-                            (a1 (digit-list-value x2))
-                            (a2 (digit-list-value y2))
-                            (x1 (digit-val x1))
-                            (x2 (digit-val y1))
-                            (b 10)
-                            (n (len x2))))))))
 
     (local (defun my-induction (x y)
              (if (and (consp x)
@@ -283,7 +281,14 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
                      :induct (my-induction x y)
                      :in-theory (enable digit-listp
                                         digit-list-value
-                                        commutativity-of-+)))))
+                                        commutativity-of-+))
+                    (and stable-under-simplificationp
+                         '(:use ((:instance equal-of-sum-digits
+                                  (b (expt 10 (len (cdr x))))
+                                  (little1 (digit-list-value (cdr x)))
+                                  (little2 (digit-list-value (cdr y)))
+                                  (big1 (digit-val (car x)))
+                                  (big2 (digit-val (car y))))))))))
 
     (local (defthm crock
              (implies (and (equal (take-leading-digits y)

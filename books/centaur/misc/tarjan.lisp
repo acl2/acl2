@@ -3315,17 +3315,17 @@
 
   (local (defun scc-in-preorder-p-preserved-by-extension-lemma1-hint (x a b preorder new-preorder scc)
            (b* (((unless (graph-reachable-through-unvisited-p a b preorder))
-                 `'(:use ((:instance scc-in-preorder-p-necc
+                 `(:use ((:instance scc-in-preorder-p-necc
                            (x ,(hq a)) (y ,(hq b))))))
                 (a-b (graph-reachable-through-unvisited-canonical-witness a b preorder))
                 ((unless (intersectp a-b new-preorder))
-                 `'(:use ((:instance graph-reachable-through-unvisited-p-suff
+                 `(:use ((:instance graph-reachable-through-unvisited-p-suff
                            (x ,(hq a)) (y ,(hq b)) (visited new-preorder)
                            (path ,(hq a-b))))))
                 (int (intersectp-witness a-b new-preorder))
                 ((when (member int preorder))
                  ;; int can't be in preorder or a-b is not actually a sufficient path
-                 `'(:use ((:instance intersectp-member
+                 `(:use ((:instance intersectp-member
                            (a ,(hq int))
                            (x ,(hq a-b))
                            (y ,(hq preorder))))
@@ -3333,12 +3333,12 @@
                                         scc-in-preorder-p-necc)))
                 ((unless (graph-reachable-through-unvisited-p x int preorder))
                  ;; int is reachable from x in preorder
-                 `'(:use ((:instance tarjan-preorder-member-cond-necc
+                 `(:use ((:instance tarjan-preorder-member-cond-necc
                            (y ,(hq int))))
                     :in-theory (disable tarjan-preorder-member-cond-necc
                                         scc-in-preorder-p-necc)))
                 ((unless (member int scc))
-                 `'(:use ((:instance scc-path-member-is-in-scc
+                 `(:use ((:instance scc-path-member-is-in-scc
                            (x ,(hq int))
                            (path ,(hq a-b))))))
                 ;; Now (car scc) is reachable from x because int is reachable from x.
@@ -3346,7 +3346,7 @@
                               (z ,(hq x))
                               (x ,(hq int))
                               (y ,(hq (car scc)))))))
-             `'(:use ,use-hints
+             `(:use ,use-hints
                 :in-theory (disable tarjan-preorder-member-cond-necc
                                     scc-in-preorder-p-necc)))))
 
@@ -3594,7 +3594,7 @@
            (declare (xargs :normalize nil))
            (b* ((new-preorder (append preorder (list x)))
                 ((when (member x scc))
-                 `'(:use ((:instance not-scc-in-preorder-p-when-member-in-common-with-preorder
+                 `(:use ((:instance not-scc-in-preorder-p-when-member-in-common-with-preorder
                           (preorder ,(hq new-preorder))))))
                 ((mv a b) (scc-in-preorder-p-witness scc preorder))
                 ((when (let ((x a) (y b))
@@ -3602,24 +3602,24 @@
                                     (iff (member y scc)
                                          (and (graph-reachable-through-unvisited-p x y preorder)
                                               (graph-reachable-through-unvisited-p y x preorder))))))
-                 `'(:use ((:instance scc-in-preorder-p))))
+                 `(:use ((:instance scc-in-preorder-p))))
                 ;; ((termhint-seq ))
                 ((when (member b scc))
-                 `'(:in-theory (enable scc-in-preorder-p-necc)))
-                ((termhint-seq `'(:use ((:instance scc-in-preorder-p-necc
+                 `(:in-theory (enable scc-in-preorder-p-necc)))
+                ((termhint-seq `(:use ((:instance scc-in-preorder-p-necc
                                          (x ,(hq a)) (y ,(hq b)) (preorder ,(hq new-preorder)))))))
                 ((unless (graph-reachable-through-unvisited-p (car scc) a preorder))
-                 `'(:use ((:instance scc-in-preorder-p-necc
+                 `(:use ((:instance scc-in-preorder-p-necc
                            (x ,(hq (car scc))) (y ,(hq a)) (preorder ,(hq new-preorder))))))
                 ((unless (graph-reachable-through-unvisited-p a b new-preorder))
                  (b* (((unless (graph-reachable-through-unvisited-p a x preorder))
-                       `'(:use ((:instance graph-reachable-through-unvisited-if-not-blocked-by-reachable
+                       `(:use ((:instance graph-reachable-through-unvisited-if-not-blocked-by-reachable
                                  (a ,(hq a)) (b ,(hq b)))))))
                    ;; transitivity
                    nil))
                 ;; b can't reach a
                 ((unless (graph-reachable-through-unvisited-p b x preorder))
-                 `'(:use ((:instance graph-reachable-through-unvisited-if-not-blocked-by-reachable
+                 `(:use ((:instance graph-reachable-through-unvisited-if-not-blocked-by-reachable
                            (a ,(hq b)) (b ,(hq a)))))))
              ;; transitivity
              nil)))
@@ -4051,7 +4051,7 @@
                 (y-stack-node (tarjan-lowlink-node y (cons x stack)
                                                    (append preorder (list x))))
                 ((termhint-seq
-                  `'(:use ((:instance tarjan-lowlink-node-exists-when-node-reaches-stack
+                  `(:use ((:instance tarjan-lowlink-node-exists-when-node-reaches-stack
                            (node y) (stack (cons x stack)) (preorder (append preorder (list x)))))
                     :in-theory (disable tarjan-lowlink-node-exists-when-node-reaches-stack
                                         graph-reachable-through-unvisited-but-last-when-reachable-from-reachable))))
@@ -4060,9 +4060,9 @@
                  nil)
                 ((unless (graph-reachable-through-unvisited-but-last-p
                           x y-stack-node preorder))
-                 `'(:use ((:instance graph-reachable-through-unvisited-but-last-when-reachable-from-reachable
+                 `(:use ((:instance graph-reachable-through-unvisited-but-last-when-reachable-from-reachable
                            (x x) (y y) (z ,(hq y-stack-node)))))))
-             `'(:use ((:instance tarjan-node-reaches-stack-sufficient
+             `(:use ((:instance tarjan-node-reaches-stack-sufficient
                        (some-node ,(hq y-stack-node))
                        (node x)))))))
 
@@ -4106,14 +4106,14 @@
            (b* (((when (tarjan-node-reaches-stack sccy (cons x stack) (append preorder (list x))))
                  nil)
                 ((when (graph-reachable-through-unvisited-p sccy sccx (append preorder (list x))))
-                 `'(:use ((:instance tarjan-node-reaches-stack-when-reaches-other-node
+                 `(:use ((:instance tarjan-node-reaches-stack-when-reaches-other-node
                            (x sccy) (y sccx) (preorder (append preorder (list x)))
                            (stack (cons x stack))))
                     :in-theory (disable tarjan-node-reaches-stack-when-reaches-other-node)))
                 ;; ((when (graph-reachable-through-unvisited-but-last-p sccy x (append preorder (list x))))
-                ;;  `'(:expand (,(hq (tarjan-node-reaches-stack sccy (cons x stack) (append preorder (list x)))))))
+                ;;  `(:expand (,(hq (tarjan-node-reaches-stack sccy (cons x stack) (append preorder (list x)))))))
                 )
-             `'(:use ((:instance graph-reachable-through-unvisited-if-not-blocked-by-reachable
+             `(:use ((:instance graph-reachable-through-unvisited-if-not-blocked-by-reachable
                        (a sccy) (b sccx)))))))
 
 
@@ -4153,12 +4153,12 @@
                 ((termhint-seq ``(:expand (,(car (last clause))))))
                 ((mv sccx0 sccy0) (scc-in-preorder-p-witness scc preorder))
                 ((unless (member sccy0 scc))
-                 `'(:use ((:instance take-difference-of-new-stack-is-scc-lemma-case2
+                 `(:use ((:instance take-difference-of-new-stack-is-scc-lemma-case2
                            (x ,(hq x)) (sccx ,(hq sccx0)) (sccy ,(hq sccy0))))))
                 ((when (graph-reachable-through-unvisited-p sccx0 sccy0 preorder))
-                 `'(:use ((:instance take-difference-of-new-stack-is-scc-lemma-case1
+                 `(:use ((:instance take-difference-of-new-stack-is-scc-lemma-case1
                            (x ,(hq x)) (sccx ,(hq sccy0)) (sccy ,(hq sccx0)))))))
-             `'(:use ((:instance take-difference-of-new-stack-is-scc-lemma-case1
+             `(:use ((:instance take-difference-of-new-stack-is-scc-lemma-case1
                        (x ,(hq x)) (sccx ,(hq sccx0)) (sccy ,(hq sccy0))))))))
 
   (defthm take-difference-of-new-stack-is-scc
@@ -4706,10 +4706,10 @@
   (local (defun graph-reachable-through-unvisited-when-empty-hint (x y)
            (if (graph-reachable-through-unvisited-p x y nil)
                (b* ((path (graph-reachable-through-unvisited-canonical-witness x y nil)))
-                 `'(:use ((:instance graph-reachable-p-suff
+                 `(:use ((:instance graph-reachable-p-suff
                            (x ,(hq x)) (y ,(hq y)) (path ,(hq path))))))
              (b* ((path (graph-reachable-canonical-witness x y)))
-               `'(:use ((:instance graph-reachable-through-unvisited-p-suff
+               `(:use ((:instance graph-reachable-through-unvisited-p-suff
                          (x ,(hq x)) (y ,(hq y)) (visited nil) (path ,(hq path)))))))))
 
   (defthm graph-reachable-through-unvisited-when-preorer-empty
@@ -4721,10 +4721,10 @@
   (local (defun graph-reachable-through-unvisited-for-some-x-when-preorder-empty-hint (x y)
            (if (graph-reachable-through-unvisited-for-some-x x y nil)
                (b* ((path (graph-reachable-through-unvisited-for-some-x-witness x y nil)))
-                 `'(:use ((:instance graph-reachable-for-some-x-by-path
+                 `(:use ((:instance graph-reachable-for-some-x-by-path
                            (x ,(hq x)) (y ,(hq y)) (path ,(hq path))))))
              (b* ((path (graph-reachable-for-some-x-witness x y)))
-               `'(:use ((:instance graph-reachable-through-unvisited-for-some-x-by-path
+               `(:use ((:instance graph-reachable-through-unvisited-for-some-x-by-path
                          (x ,(hq x)) (y ,(hq y)) (preorder nil) (path ,(hq path)))))))))
 
   (defthm graph-reachable-through-unvisited-for-some-x-when-preorder-empty
@@ -4746,12 +4746,12 @@
   (local (defun scc-in-preorder-when-empty-hint (scc)
            (if (scc-in-preorder-p scc nil)
                (b* (((mv x y) (scc-p-witness scc)))
-                 `'(:use ((:instance scc-in-preorder-p-necc
+                 `(:use ((:instance scc-in-preorder-p-necc
                            (x ,(hq x)) (y ,(hq y)) (preorder nil)))
                     :expand ((scc-p scc))
                     :in-theory (disable scc-in-preorder-p-necc)))
              (b* (((mv x y) (scc-in-preorder-p-witness scc nil)))
-                 `'(:use ((:instance scc-p-necc
+                 `(:use ((:instance scc-p-necc
                            (x ,(hq x)) (y ,(hq y))))
                     :expand ((scc-in-preorder-p scc nil))
                     :in-theory (disable scc-p-necc))))))
