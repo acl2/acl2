@@ -123,6 +123,9 @@
 
  <h3>Changes to Existing Libraries</h3>
 
+ <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
+ inside @('lambda') (@('let')) bodies.</p>
+
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>
