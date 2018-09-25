@@ -6,12 +6,14 @@
 
 (include-book "xdoc/top" :dir :system)
 
+(local (include-book "kestrel/utilities/all-vars-theorems" :dir :system))
+
 (defxdoc sublis-expr+
   :parents (kestrel-utilities)
   :short "Replace @(see term)s by variables, even inside @(see lambda) bodies"
   :long "<p>WARNING: This utility takes an alist that maps terms to variables.
  In that sense it is more restrictive than the corresponding utility that is
- built into ACL2, @(tsee sublis-expr).  This restriction to variables could
+ built into ACL2, @('sublis-expr').  This restriction to variables could
  probably be lifted with a little effort (but was acceptable for its initial
  purpose).</p>
 
@@ -135,8 +137,6 @@
 (encapsulate
   ()
 
-  (local (include-book "kestrel/utilities/all-vars-theorems" :dir :system))
-
   (defun sublis-expr+-restrict-alist (alist formals/actuals)
 
 ; We keep only those pairs (expr . var) from alist for which neither var nor
@@ -160,6 +160,8 @@
                                                          formals/actuals)))
                      (t (sublis-expr+-restrict-alist (cdr alist)
                                                      formals/actuals))))))))
+
+(verify-termination make-lambda-term) ; and guards
 
 (mutual-recursion
 
@@ -237,6 +239,32 @@
    (defthm len-sublis-expr+-lst
      (equal (len (sublis-expr+-lst alist x))
             (len x)))
+
+   (defthm len-append
+     (equal (len (append x y))
+            (+ (len x) (len y))))
+
+   (defthm pseudo-term-listp-append
+     (implies (pseudo-term-listp x)
+              (equal (pseudo-term-listp (append x y))
+                     (pseudo-term-listp y))))
+
+   (defthm pseudo-term-listp-set-difference-equal
+     (implies (pseudo-term-listp x)
+              (pseudo-term-listp (set-difference-equal x y))))
+
+   (defthm symbol-listp-implies-pseudo-term-listp
+     (implies (symbol-listp x)
+              (pseudo-term-listp x)))
+
+   (defthm symbol-listp-append
+     (implies (symbol-listp x)
+              (equal (symbol-listp (append x y))
+                     (symbol-listp y))))
+
+   (defthm symbol-listp-set-difference-equal
+     (implies (symbol-listp x)
+              (symbol-listp (set-difference-equal x y))))
 
    (defthm-sublis-expr+
      (defthm pseudo-termp-sublis-expr+

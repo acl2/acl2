@@ -60,6 +60,7 @@
 (include-book "prove-interface")
 (include-book "skip-in-book")
 (include-book "strings/top")
+(include-book "sublis-expr-plus")
 (include-book "symbol-symbol-alists")
 (include-book "symbol-true-list-alists")
 (include-book "symbols")
