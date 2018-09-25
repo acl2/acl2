@@ -180,9 +180,9 @@
                   (alist+ (sublis-expr+-restrict-alist
                            alist
                            (pairlis$ formals actuals))))
-             (cons-term (make-lambda formals
-                                     (sublis-expr+ alist+ body))
-                        (sublis-expr+-lst alist actuals))))
+             (make-lambda-term formals
+                               (sublis-expr+-lst alist actuals)
+                               (sublis-expr+ alist+ body))))
           (t (cons-term (ffn-symb term)
                         (sublis-expr+-lst alist (fargs term)))))))
 
