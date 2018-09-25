@@ -142,6 +142,12 @@
  Improved the documentation of the Bitcoin library.
  </p>
 
+ <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
+
+ <p>
+ Added @(tsee ensure-string), an error-checking function for strings.
+ </p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
