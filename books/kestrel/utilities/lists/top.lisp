@@ -32,7 +32,10 @@
   :long
   (xdoc::topapp
    (xdoc::p
-    "These are for lists with elements of any type,
-     similarly to @(see std/lists).")
+    "These are for lists with elements of any types,
+     similarly to @(see std/lists).
+     In contrast,
+     the <see topic='@(url typed-list-utilities)'>typed list utilities</see>
+     are for lists with elements of homogeneous types.")
    (xdoc::p
     "These utilities may be eventually integrated into @(see std/lists).")))

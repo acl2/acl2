@@ -126,6 +126,10 @@
  <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
  inside @('lambda') (@('let')) bodies.</p>
 
+ <p>Refactored the old file
+ @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
+ under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
+
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>
@@ -378,11 +382,11 @@
  <p>Extended the <see topic='@(url set::oset-utilities)'>oset utilities</see>
  with a <see topic='@(url fty)'>fixtype</see> for osets.</p>
 
- <p>Added some <see topic='@(url theorems-about-nat-lists)'>theorems about
- lists of natural numbers</see>.</p>
+ <p>Added some <see topic='@(url nat-list-fix-theorems)'>theorems about lists
+ of natural numbers</see>.</p>
 
- <p>Added a <see topic='@(url theorems-about-string-lists)'>theorem about lists
- of strings</see>.</p>
+ <p>Added a <see topic='@(url string-listp-theorems)'>theorem about lists of
+ strings</see>.</p>
 
  <p>Merged the utilities in @('[books]/kestrel/utilities/characters.lisp') into
  the <see topic='@(url string-utilities)'>string utilities</see>.  Extended the
