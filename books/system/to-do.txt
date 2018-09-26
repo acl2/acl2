@@ -28,12 +28,14 @@ function list-fix defined in books/std/lists/list-fix.lisp.  Actually,
 I prefer the name true-list-fix to list-fix, since in Common Lisp, a
 "list" need not be a true list.
 
+Note that Jared Davis, author and copyright holder (through Kookamara
+LLC) of the book above, has given his consent to integrate it into the
+ACL2 sources.
+
 Steps:
 
    - Check with J to see if he is OK with the name list-fix, even
      though true-list-fix is more accurate.
-
-   - Get permission from Jared (author of the book).
 
    - Make a note of the starting git hash (see below).
 
