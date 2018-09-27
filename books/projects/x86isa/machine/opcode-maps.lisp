@@ -731,9 +731,10 @@
 	       ((:i64 . (:Group-1 :1a))
 		(:o64 . ("#UD" 0
 			 (:ud  . (t))
-			 (:fn . (x86-illegal-instruction
-				 (message .
-					  "Opcode 0x82 is illegal in the 64-bit mode!"))))))
+			 (:fn .
+			      (x86-illegal-instruction
+			       (message .
+					"Opcode 0x82 is illegal in the 64-bit mode!"))))))
 	       (:Group-1 :1a)
 	       ("TEST" 2 (E b) (G b)
 		(:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
@@ -4938,6 +4939,28 @@
 			     :reg #.*ecx*
 			     :bit 30)
 			    t)))))
+	       ;; [Shilpi] RDRAND, with #x66 prefix, isn't listed in the Intel
+	       ;; manuals (May 2018 edition).  This is because all opcodes in
+	       ;; this table other than RDRAND throw an error if they're used
+	       ;; with a SIMD prefix that's not listed as an allowed mandatory
+	       ;; prefix for that opcode.  RDRAND can be used with :no-prefix
+	       ;; and :66, but not :F2 or :F3 (see (ud-Reps-used) in :ud
+	       ;; listing).
+	       (((:opcode . #ux0F_C7)
+		 (:prefix . :66)
+		 (:mod    . #b11)
+		 (:reg    . #b110)) .
+		 ("RDRAND" 1 (R w) :1a
+		  (:fn . (x86-rdrand))
+		  (:ud  . ((ud-Lock-used)
+			   (ud-Reps-used)
+			   (equal
+			    ;; CPUID.01H:ECX.RDRAND[bit 30]
+			    (cpuid-flag
+			     #ux_01
+			     :reg #.*ecx*
+			     :bit 30)
+			    t)))))
 	       (((:opcode . #ux0F_C7)
 		 (:prefix . :no-prefix)
 		 (:reg    . #b111)) .
@@ -5463,7 +5486,7 @@
 			      :bit 25)
 			     0)))))))
 
-    (:Group-16 . ;; Covers opcode 0F 18.
+    (:Group-16 . ;; Covers opcode 0F 18, 0F 1A, and 0F 1B.
 	       ((((:opcode . #ux0F_18)
 		  (:mod    . :mem)
 		  (:reg    . #b000)) .

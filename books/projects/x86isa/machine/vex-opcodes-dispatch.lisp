@@ -45,7 +45,7 @@
 
 (include-book "instructions/top"
 	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
-(include-book "prefix-modrm-decoding")
+(include-book "prefix-modrm-sib-decoding")
 (include-book "dispatch-macros")
 (include-book "cpuid")
 (include-book "std/strings/hexify" :dir :system)

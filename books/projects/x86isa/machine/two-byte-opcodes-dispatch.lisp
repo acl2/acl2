@@ -180,20 +180,35 @@
        ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip 1 x86))
        ((when flg) (!!ms-fresh :increment-error flg))
 
-       ((mv msg (the (unsigned-byte 8) mandatory-prefix))
-	(compute-mandatory-prefix-for-two-byte-opcode
-	 proc-mode opcode prefixes))
-       ((when msg)
-	(x86-illegal-instruction msg start-rip temp-rip x86))
+       ;; ((mv msg (the (unsigned-byte 8) mandatory-prefix))
+       ;;  (compute-mandatory-prefix-for-two-byte-opcode
+       ;;   proc-mode opcode prefixes))
+       ;; ((when msg)
+       ;;  (x86-illegal-instruction msg start-rip temp-rip x86))
 
-       (modr/m?
-	(two-byte-opcode-ModR/M-p
-	 proc-mode mandatory-prefix opcode))
-       ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
-	(if modr/m?
-	    (rme08 proc-mode temp-rip #.*cs* :x x86)
-	  (mv nil 0 x86)))
-       ((when flg1) (!!ms-fresh :modr/m-byte-read-error flg1))
+       ;; (modr/m?
+       ;;  (two-byte-opcode-ModR/M-p
+       ;;   proc-mode mandatory-prefix opcode))
+       ;; ((mv flg1 (the (unsigned-byte 8) modr/m) x86)
+       ;;  (if modr/m?
+       ;;      (rme08 proc-mode temp-rip #.*cs* :x x86)
+       ;;    (mv nil 0 x86)))
+       ;; ((when flg1) (!!ms-fresh :modr/m-byte-read-error flg1))
+
+       ((mv modr/m-mand-err
+	    (the (unsigned-byte 8) mandatory-prefix)
+	    modr/m?
+	    (the (unsigned-byte 8) modr/m)
+	    x86)
+	(two-byte-opcode-modr/m-and-mandatory-prefix
+	 proc-mode opcode prefixes temp-rip x86))
+       ((when modr/m-mand-err)
+	(if (and (consp modr/m-mand-err)
+		 (equal (car modr/m-mand-err) :illegal-use-of-mandatory-prefix))
+	    ;; #UD thrown.
+	    (x86-illegal-instruction modr/m-mand-err start-rip temp-rip x86)
+	  ;; Model-related error
+	  (!!ms-fresh :modr/m-error modr/m-mand-err)))
 
        ((mv flg temp-rip) (if modr/m?
 			      (add-to-*ip proc-mode temp-rip 1 x86)

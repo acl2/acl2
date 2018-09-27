@@ -430,7 +430,9 @@ writes the final value of the instruction pointer into RIP.</p>")
 
 (add-to-ruleset instruction-decoding-and-spec-rules
                 '(x86-step-unimplemented
-                  x86-illegal-instruction))
+                  x86-illegal-instruction
+                  x86-general-protection
+                  x86-device-not-available))
 
 ;; ======================================================================
 
