@@ -150,7 +150,7 @@
 
  <h4>Filesystem Books</h4>
 
- <p>The filesystem books @('books/projects/filesystems/') have been
+ <p>The filesystem books @('[books]/projects/filesystems/') have been
  substantially expanded; in particular, they now contain a new model which
  faithfully represents the state of a FAT32 disk image. More details about this
  work are available in the paper <i>Formalising Filesystems in the ACL2 Theorem
@@ -168,11 +168,11 @@
  @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
  under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
 
- <h4>Other Kestrel Utilities</h4>
+ <h4>Other Utilities</h4>
 
  <p>In support of changes to the filesystem books (see above), the Kestrel
- string libraries as well as the byte-combining libraries
- @('books/std/io/combine.lisp') have been expanded with several new
+ string libraries as well as the <see topic='@(url combine-functions)'>std/io
+ byte-combining libraries </see> have been expanded with several new
  lemmas. Some existing lemmas have also been generalized.</p>
 
  <h3>Licensing Changes</h3>
