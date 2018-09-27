@@ -76,6 +76,115 @@
  <p>The current version of ACL2 is the value of the constant @('(@
  acl2-version)').</p>")
 
+(defxdoc note-8-2-books
+
+; Please add information about your library in the appropriate
+; category below --- the category title is enclosed in <h3>..</h3>
+; tags (of course, feel free to add a new category if needed).  To
+; ensure consistency with the style of previous book release doc
+; topics, please follow the following convention:
+
+;  <h4>Your Library Title</h4>
+;  <p>Details go here.</p>
+
+; If you are stuck, see comments in previous (defxdoc note-xxx-books ...).
+
+  :parents (note-8-2 release-notes-books)
+  :short "Release notes for the ACL2 Community Books for ACL2 8.2"
+
+  :long "<p>The following is a brief summary of changes made to the @(see
+ community-books) between the releases of ACL2 8.1 and 8.2.</p>
+
+ <p>See also @(see note-8-2) for the changes made to ACL2 itself.  For
+ additional details, you may also see the raw <a
+ href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
+
+ <h3>New Libraries</h3>
+
+ <h4><see topic='@(url java::java)'>Java</see></h4>
+
+ <p>
+ Added a library for Java-related formalizations and tools, including:
+ </p>
+ <ul>
+  <li>
+  <see topic='@(url java::aij)'>AIJ (<b>A</b>CL2 <b>I</b>n <b>J</b>ava)</see>,
+  a deep embedding in Java
+  of an executable, side-effect-free, non-stobj-accessing
+  subset of the ACL2 language without guards.
+  </li>
+  <li>
+  <see topic='@(url java::atj)'>ATJ (<b>A</b>CL2 <b>T</b>o <b>J</b>ava)</see>,
+  a simple Java code generator
+  that turns ACL2 functions into AIJ representations
+  that are evaluated by the AIJ interpreter.
+  </li>
+ </ul>
+
+ <h3>Changes to Existing Libraries</h3>
+
+ <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
+
+ <p>
+ Finished adding support for 32-bit application-level execution
+ for non-floating-point instructions.
+ </p>
+
+ <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
+
+ <p>
+ Improved the documentation of the Ethereum library.
+ </p>
+
+ <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
+
+ <p>
+ Improved the documentation of the Bitcoin library.
+ </p>
+
+ <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
+
+ <p>
+ Added @(tsee ensure-string), an error-checking function for strings.
+ </p>
+
+ <h4>Filesystem Books</h4>
+
+ <p>The filesystem books @('books/projects/filesystems/') have been
+ substantially expanded; in particular, they now contain a new model which
+ faithfully represents the state of a FAT32 disk image. More details about this
+ work are available in the paper <i>Formalising Filesystems in the ACL2 Theorem
+ Prover: an Application to FAT32</i>, to appear in the proceedings of
+ ACL2-2018.</p>
+
+ <h4>System-level Utilities</h4>
+
+ <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
+ inside @('lambda') (@('let')) bodies.</p>
+
+ <h4>Typed List Utilities</h4>
+
+ <p>Refactored the old file
+ @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
+ under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
+
+ <h4>Other Kestrel Utilities</h4>
+
+ <p>In support of changes to the filesystem books (see above), the Kestrel
+ string libraries as well as the byte-combining libraries
+ @('books/std/io/combine.lisp') have been expanded with several new
+ lemmas. Some existing lemmas have also been generalized.</p>
+
+ <h3>Licensing Changes</h3>
+
+ <h3>Build System Updates</h3>
+
+ <h3>Testing</h3>
+
+ <h3>Miscellaneous</h3>
+
+ ")
+
 (defxdoc note-8-1-books
 
 ; Please add information about your library in the appropriate
@@ -293,11 +402,11 @@
  <p>Extended the <see topic='@(url set::oset-utilities)'>oset utilities</see>
  with a <see topic='@(url fty)'>fixtype</see> for osets.</p>
 
- <p>Added some <see topic='@(url theorems-about-nat-lists)'>theorems about
- lists of natural numbers</see>.</p>
+ <p>Added some <see topic='@(url nat-list-fix-theorems)'>theorems about lists
+ of natural numbers</see>.</p>
 
- <p>Added a <see topic='@(url theorems-about-string-lists)'>theorem about lists
- of strings</see>.</p>
+ <p>Added a <see topic='@(url string-listp-theorems)'>theorem about lists of
+ strings</see>.</p>
 
  <p>Merged the utilities in @('[books]/kestrel/utilities/characters.lisp') into
  the <see topic='@(url string-utilities)'>string utilities</see>.  Extended the

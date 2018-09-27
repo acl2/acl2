@@ -29,11 +29,11 @@
    (xdoc::p
     "Base58 encoding is described in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding\"
-     >Page `Base58Check encoding' of Wiki</a>;
+     >Page `Base58Check encoding' of [Wiki]</a>;
      Base58 encoding is part of Base58Check encoding.
      Base58 encoding is also described
-     in Section `Base58 and Base58Check Encoding' of Chapter 4 of MB.
-     WP does not mention Base58 encoding.")
+     in Section `Base58 and Base58Check Encoding' of Chapter 4 of [MB].
+     [WP] does not mention Base58 encoding.")
    (xdoc::p
     "Base58 decoding is the inverse of Base58 encoding."))
   :order-subtopics t
@@ -47,7 +47,7 @@
   "<p>
    These characters are listed in the table in
    <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding#Base58_symbol_chart\"
-   >Section `Base58 symbol chart' of Page `Base58Check encoding' of Wiki</a>,
+   >Section `Base58 symbol chart' of Page `Base58Check encoding' of [Wiki]</a>,
    along with their corresponding values in base 58.
    This list is ordered according to increasing values.
    </p>"
@@ -247,7 +247,7 @@
     in the table
     in Section `Base58 symbol chart'
     of Page `Base58Check encoding'
-    of Wiki.
+    of [Wiki].
     Since the list @(tsee *base58-characters*)
     is ordered according to increasing values,
     this function is essentially @(tsee nth).")
@@ -358,7 +358,7 @@
     "This is described in bullets 4, 5, and 6 in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding#Creating_a_Base58Check_string\"
      >Section `Creating a Base58Check string' of Page `Base58Check encoding'
-     of Wiki</a>.")
+     of [Wiki]</a>.")
    (xdoc::p
     "The bytes are treated as big bendian digits in base 256
      and converted into the natural number that they denote.
@@ -416,7 +416,7 @@
   :long
   (xdoc::topapp
    (xdoc::p
-    "This is not explicitly described in Wiki or MB,
+    "This is not explicitly described in [Wiki] or [MB],
      but is, implicitly, the inverse of encoding.")
    (xdoc::p
     "From a formal specification perspective,

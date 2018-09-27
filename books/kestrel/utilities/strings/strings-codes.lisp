@@ -27,7 +27,18 @@
   :parents (string-codelist-conversions)
   :short "Convert a true list of natural numbers below 256
           to the corresponding string."
-  (implode (nats=>chars nats)))
+  (implode (nats=>chars nats))
+  ///
+
+  (defrule nth-of-explode-of-nats=>string
+    (equal (nth i (explode (nats=>string nats)))
+           (if (< (nfix i) (len nats))
+               (code-char (nth i nats))
+             nil)))
+
+  (defrule len-of-explode-of-nats=>string
+    (equal (len (explode (nats=>string nats)))
+           (len nats))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -58,6 +58,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
+ (b* (((er x) (ensure-string "" "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-string "XYZ" "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-fail
+ (ensure-string 88 "This" t nil 'test state)
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-eval-to-t
  (b* (((er x) (ensure-string-or-nil "string" "This" t nil 'test state)))
    (value (equal x nil))))
 

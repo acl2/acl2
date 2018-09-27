@@ -914,13 +914,15 @@
 
  <p>As of this writing, six Common Lisp implementations support ACL2: Allegro
  Common Lisp (ACL), Clozure CL (CCL), CMU Common Lisp (CMUCL), GNU Common
- Lisp (GCL), LispWorks, and Steel Bank Common Lisp (SBCL).  Some ACL2 raw-Lisp
- code is implementation-specific, that is, depends on which of these six Common
- Lisp implementations is the host lisp.  See for example the definitions of
- @('exit-lisp') and @('getenv$-raw').  Here is an elided version of the
- definition of @('exit-lisp').  Notice the readtime conditional used for each
- of the six supported Lisp implementations and also some that are no longer
- supported, like CLISP.  (Note: Normally we see ``@('gcl')'' for GCL but
+ Lisp (GCL), LispWorks, and Steel Bank Common Lisp (SBCL).  (Note: As of
+ Sept. 2018 there remains a problem with CMUCL that was reported several months
+ ago, which the implementor has indicated that he intends to try to fix.)  Some
+ ACL2 raw-Lisp code is implementation-specific, that is, depends on which of
+ these six Common Lisp implementations is the host lisp.  See for example the
+ definitions of @('exit-lisp') and @('getenv$-raw').  Here is an elided version
+ of the definition of @('exit-lisp').  Notice the readtime conditional used for
+ each of the six supported Lisp implementations and also some that are no
+ longer supported, like CLISP.  (Note: Normally we see ``@('gcl')'' for GCL but
  sometimes, as below, we see the somewhat archaic (but still acceptable)
  ``@('akcl')''.)</p>
 
@@ -1015,14 +1017,14 @@
 
  <h3>Building with `@('make')'</h3>
 
- <p>The preceding chapter (see @(see developers-guide-background)) notes six
- different Lisps on which ACL2 may be built.  There have been occasions when an
- ACL2 bug only showed up with one of those Lisps; so, it is a good idea to
- build ACL2 in each of them from time to time, when feasible.  Just specify
+ <p>The preceding chapter (see @(see developers-guide-background)) notes five
+ or six different Lisps on which ACL2 may be built.  There have been occasions
+ when an ACL2 bug only showed up with one of those Lisps; so, it is a good idea
+ to build ACL2 in each of them from time to time, when feasible.  Just specify
  @('LISP') on the command line, typically with @('PREFIX') specified as well,
  which is put on the front of @('saved_acl2').  For example, to build ACL2 in
- SBCL, you might issue the following shell command to create an SBCL-based
- ACL2 executable named @('sbcl-saved_acl2').</p>
+ SBCL, you might issue the following shell command to create an SBCL-based ACL2
+ executable named @('sbcl-saved_acl2').</p>
 
  @({
  (make PREFIX=sbcl- LISP=sbcl) >& make-sbcl.log&
@@ -1078,6 +1080,16 @@
  <p>Not surprisingly, there are many details that we omit here.  We expect ACL2
  developers to be able to follow the source code and @('GNUmakefile') where
  they lead when it is important to understand details.</p>
+
+ <h3>Debugging a failed build</h3>
+
+ <p>When a build fails using ``@('make')'', you can generally re-create the
+ failure in an interactive session as follows, so that you can use the Lisp
+ debugger to investigate.  First, look for a file ``@('workxxx')'' in the build
+ directory.  It should contain the forms that were executed in Lisp to get to
+ the error.  So, start Lisp, and then execute each of those forms until you get
+ to the error &mdash; it's as simple as that!  (Of course, the debugging that
+ ensues may be simple or complex.)</p>
 
  <h3>Documentation</h3>
 

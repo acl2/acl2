@@ -45,30 +45,29 @@
   (const-type
    gate-type
    in-type
-   out-type
+   ;; out-type
    aignet
    aignet-sizes-ok
    id->slot id->slot0 id->slot1 id->slot$
-   set-snode->regid
-   id->type
-   id->phase
-   id->regp
-   id->ionum
-   id->fanin0
-   id->fanin1
-   reg-id->nxst
-   nxst-id->reg
+   set-snode->fanin
+   ;; id->type
+   ;; id->phase
+   ;; id->regp
+   ;; id->ionum
+   ;; id->fanin0
+   ;; id->fanin1
+   ;; reg-id->nxst
+   ;; nxst-id->reg
    update-node-slot update-node-slot0 update-node-slot1 update-node-slot$
    maybe-grow-nodes maybe-grow-ins maybe-grow-regs maybe-grow-outs
    set-innum->id innum->id
    set-regnum->id regnum->id
-   set-outnum->id outnum->id
+   set-outnum->fanin outnum->fanin
    lit->phase
-   fanin-litp
+   ;; fanin-litp
    count-nodes
-   aignet-counts-accurate
-   aignet-nodes-nonconst-witness
-   aignet-find-max-fanin
+   ;; aignet-counts-accurate
+   ;; aignet-nodes-nonconst-witness
    add-node add-in add-out add-reg
    aignet-add-in
    aignet-add-reg
@@ -76,9 +75,12 @@
    aignet-add-xor
    aignet-add-out
    aignet-set-nxst
-   aignet-gates-onlyp
+   ;; aignet-gates-onlyp
+   ;; aignet-regs-constant
+   ;; aignet-reg-ids-in-bounds
    aignet-rollback
    aignet-clear
    aignet-init
    id-existsp
+   ;; regnum->nxst
    ))

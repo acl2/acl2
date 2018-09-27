@@ -129,6 +129,7 @@
     duplicity
     stobj
     abstract-stobj
+    new old orig
     ))
 
 (defpkg "AIGNET"
@@ -231,13 +232,15 @@
              ;; [Jared] added these for nicer aignet-base-api docs
              f f0 f1 n regid lit
              max-outs max-regs max-ins max-nodes
+             new old orig
              ))
 
 (defpkg "AIGNET$A"
   #!AIGNET '(
              ;; [Jared] added these for a nicer aignet-base-api docs
              f f0 f1 n regid lit
-             max-outs max-regs max-ins max-nodes))
+             max-outs max-regs max-ins max-nodes
+             new old orig))
 
 ;; (defpkg "AIGNET$A"
 ;;   (union-eq *acl2-exports*
@@ -251,4 +254,6 @@
             *common-lisp-symbols-from-main-lisp-package*
             *aignet-imports*
             satlink::*satlink-exports*
-            *aignet$c-imports*))
+            *aignet$c-imports*
+            std::*std-exports*
+            *stobjs-exports*))
