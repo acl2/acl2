@@ -44,6 +44,27 @@
   :parents (read-bytes$)
   :short "Optimized byte-combining functions.")
 
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+
+(local
+ (defthm logior-ash-loghead-logtail
+   (implies (and (integerp i) (natp size))
+            (equal (logior (ash (logtail size i) size)
+                           (loghead size i))
+                   i))
+   :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs
+                                      ihsext-inductions)))))
+
+(local
+ (defthm
+   logior-of-ash
+   (implies (and (integerp i1)
+                 (integerp i2)
+                 (natp c))
+            (equal (logior (ash i1 c) (ash i2 c))
+                   (ash (logior i1 i2) c)))
+   :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs
+                                      ihsext-inductions)))))
 
 (defsection combine16u
   :parents (combine-functions)
@@ -64,7 +85,13 @@ unsigned interpretation of @('(a1 << 8) | a0')."
   (defthm combine16u-unsigned-byte
     (implies (and (force (unsigned-byte-p 8 a1))
                   (force (unsigned-byte-p 8 a0)))
-             (unsigned-byte-p 16 (combine16u a1 a0)))))
+             (unsigned-byte-p 16 (combine16u a1 a0))))
+
+  (defthm combine16u-loghead-logtail
+    (implies (natp i)
+             (equal (combine16u (logtail 8 i) (loghead 8 i))
+                    i))
+    :hints (("Goal" :in-theory (disable loghead logtail logior ash)))))
 
 
 
@@ -130,7 +157,30 @@ unsigned interpretation of @('(a3 << 24) | (a2 << 16) | (a1 << 8) | a0')."
                   (force (unsigned-byte-p 8 a2))
                   (force (unsigned-byte-p 8 a1))
                   (force (unsigned-byte-p 8 a0)))
-             (unsigned-byte-p 32 (combine32u a3 a2 a1 a0)))))
+             (unsigned-byte-p 32 (combine32u a3 a2 a1 a0))))
+
+  (defthm
+    combine32u-loghead-logtail
+    (implies (natp i)
+             (equal (combine32u (logtail 24 i)
+                                (loghead 8 (logtail 16 i))
+                                (loghead 8 (logtail 8 i))
+                                (loghead 8 i))
+                    i))
+    :hints
+    (("goal"
+      :in-theory (disable logior-ash-loghead-logtail
+                          logior-of-ash)
+      :use ((:instance logior-ash-loghead-logtail (size 8)
+                       (i (loghead 16 i)))
+            (:instance logior-of-ash
+                       (i1 (ash (logtail 24 i) 8))
+                       (i2 (nfix (loghead 8 (logtail 16 i))))
+                       (c 16))
+            (:instance logior-ash-loghead-logtail (size 8)
+                       (i (logtail 16 i)))
+            (:instance logior-ash-loghead-logtail
+                       (size 16)))))))
 
 
 

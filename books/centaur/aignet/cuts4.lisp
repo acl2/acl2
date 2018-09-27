@@ -1729,8 +1729,7 @@
                   (<= (nfix idx) (nfix n))
                   (< (nfix n) (+ (nfix idx) (nfix num))))
              (aignet-litp (make-lit (cut-leavesi n cutsdb) bit) aignet))
-    :hints(("Goal" :in-theory (enable* acl2::arith-equiv-forwarding
-                                       aignet-litp aignet-idp))))
+    :hints(("Goal" :in-theory (enable* acl2::arith-equiv-forwarding aignet-idp))))
 
   (defthm leaves-lit-idsp-of-aignet-extension
     (implies (and (aignet-extension-binding)
@@ -6535,7 +6534,7 @@
                                  (cutsdb cutsdb-ok))
   :returns (mv (cuts-checked natp :rule-classes :type-prescription)
                new-cutsdb)
-  :guard (and (<= (cut-nnodes cutsdb) (max-fanin aignet))
+  :guard (and (< (cut-nnodes cutsdb) (num-fanins aignet))
               (< (cut-nnodes cutsdb) (u32-length refcounts)))
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
   (b* ((node (cut-nnodes cutsdb))
@@ -6590,7 +6589,7 @@
   (defret cutsdb-lit-idsp-of-aignet-derive-cuts-node
     (implies (and (cutsdb-ok cutsdb)
                   (cutsdb-lit-idsp aignet cutsdb)
-                  (<= (cut-nnodes cutsdb) (node-count aignet)))
+                  (<= (cut-nnodes cutsdb) (fanin-count aignet)))
              (cutsdb-lit-idsp aignet new-cutsdb))
     :hints(("Goal" :in-theory (enable aignet-idp))))
 
@@ -6614,7 +6613,7 @@
   (defret node-cuts-consistent-of-aignet-derive-cuts-node
     (implies (and (cutsdb-ok cutsdb)
                   (cutsdb-consistent cutsdb (aignet-record-vals vals invals regvals aignet))
-                  (<= (cut-nnodes cutsdb) (max-fanin aignet)))
+                  (<= (cut-nnodes cutsdb) (fanin-count aignet)))
              (node-cuts-consistent
               (cut-nnodes cutsdb)
               new-cutsdb
@@ -6633,20 +6632,20 @@
                                 (cutsdb cutsdb-ok))
   :returns (mv (cuts-checked natp :rule-classes :type-prescription)
                new-cutsdb)
-  :measure (nfix (- (+ 1 (max-fanin aignet)) (cut-nnodes cutsdb)))
-  :guard (and (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet)))
-              (< (max-fanin aignet) (u32-length refcounts)))
+  :measure (nfix (- (num-fanins aignet) (cut-nnodes cutsdb)))
+  :guard (and (<= (cut-nnodes cutsdb) (num-fanins aignet))
+              (<= (num-fanins aignet) (u32-length refcounts)))
   (b* ((node (cut-nnodes cutsdb))
-       ((when (mbe :logic (zp (+ 1 (max-fanin aignet) (- (nfix node))))
-                   :exec (eql (+ 1 (max-fanin aignet)) node)))
+       ((when (mbe :logic (zp (+ (num-fanins aignet) (- (nfix node))))
+                   :exec (eql (num-fanins aignet) node)))
         (mv (lnfix cuts-checked-in) cutsdb))
        ((mv count cutsdb) (aignet-derive-cuts-node aignet config refcounts cutsdb)))
     (aignet-derive-cuts-aux aignet (+ count (lnfix cuts-checked-in)) config refcounts cutsdb))
   ///
   (defret cut-nnodes-of-aignet-derive-cuts-aux
-    (implies (<= (cut-nnodes cutsdb) (+ 1 (max-fanin aignet)))
+    (implies (<= (cut-nnodes cutsdb) (+ 1 (fanin-count aignet)))
              (equal (cut-nnodes new-cutsdb)
-                    (+ 1 (max-fanin aignet)))))
+                    (+ 1 (fanin-count aignet)))))
 
   (defret nth-cut-leaves-of-aignet-derive-cuts-aux
     (implies (< (nfix n) (* 4 (nodecut-indicesi (cut-nnodes cutsdb) cutsdb)))
@@ -6695,7 +6694,7 @@
 (define aignet-derive-cuts (aignet (config cuts4-config-p) refcounts cutsdb)
   :returns (mv (cuts-checked natp :rule-classes :type-prescription)
                new-cutsdb)
-  :guard (< (max-fanin aignet) (u32-length refcounts))
+  :guard (<= (num-fanins aignet) (u32-length refcounts))
   :verify-guards nil
   (b* ((cutsdb (update-cut-nnodes 0 cutsdb))
        (cutsdb (cutsdb-maybe-grow-nodecut-indices 1 cutsdb))
@@ -6742,7 +6741,7 @@
 
   (defret cut-nnodes-of-aignet-derive-cuts
     (equal (cut-nnodes new-cutsdb)
-           (+ 1 (max-fanin aignet)))))
+           (+ 1 (fanin-count aignet)))))
 
 
 

@@ -148,6 +148,28 @@
  Added @(tsee ensure-string), an error-checking function for strings.
  </p>
 
+ <p>The filesystem books @('books/projects/filesystems/') have been
+ substantially expanded; in particular, they now contain a new model which
+ faithfully represents the state of a FAT32 disk image. More details about this
+ work are available in the paper <i>Formalising Filesystems in the ACL2 Theorem
+ Prover: an Application to FAT32</i>, to appear in the proceedings of
+ ACL2-2018.</p>
+
+ <p>In support of the above, the Kestrel string libraries as well as the
+ byte-combining libraries @('books/std/io/combine.lisp') have been expanded
+ with several new lemmas. Some existing lemmas have also been generalized.</p>
+
+ <h4>System Utilities</h4>
+
+ <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
+ inside @('lambda') (@('let')) bodies.</p>
+
+ <h4>Typed List Utilities</h4>
+
+ <p>Refactored the old file
+ @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
+ under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
@@ -375,11 +397,11 @@
  <p>Extended the <see topic='@(url set::oset-utilities)'>oset utilities</see>
  with a <see topic='@(url fty)'>fixtype</see> for osets.</p>
 
- <p>Added some <see topic='@(url theorems-about-nat-lists)'>theorems about
- lists of natural numbers</see>.</p>
+ <p>Added some <see topic='@(url nat-list-fix-theorems)'>theorems about lists
+ of natural numbers</see>.</p>
 
- <p>Added a <see topic='@(url theorems-about-string-lists)'>theorem about lists
- of strings</see>.</p>
+ <p>Added a <see topic='@(url string-listp-theorems)'>theorem about lists of
+ strings</see>.</p>
 
  <p>Merged the utilities in @('[books]/kestrel/utilities/characters.lisp') into
  the <see topic='@(url string-utilities)'>string utilities</see>.  Extended the

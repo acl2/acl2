@@ -371,30 +371,41 @@
                                       )
             :induct t))))
 
-(define classes-init-outs-bitarr ((n natp) bitarr aignet)
-  :guard (and (<= n (num-cos aignet))
-              (< (max-fanin aignet) (bits-length bitarr)))
+
+(define classes-init-pos-bitarr ((n natp) bitarr aignet)
+  :guard (and (<= n (num-outs aignet))
+              (<= (num-fanins aignet) (bits-length bitarr)))
   :returns (new-bitarr)
-  :prepwork ((local (defthm conum->id-is-lookup-conum
-                      (implies (< (nfix n) (num-cos aignet))
-                               (equal (conum->id n aignet)
-                                      (node-count (lookup-conum n aignet))))
-                      :hints(("Goal" :in-theory (enable conum->id lookup-conum))))))
   (b* (((when (zp n)) bitarr)
        (n-1 (1- n))
-       (out-id (conum->id n-1 aignet))
-       (fanin-id (if (int= (id->type out-id aignet) (out-type))
-                      (lit-id (co-id->fanin out-id aignet))
-                    out-id))
+       (fanin-id (lit->var (outnum->fanin n-1 aignet)))
        (bitarr (set-bit fanin-id 1 bitarr)))
-    (classes-init-outs-bitarr n-1 bitarr aignet))
+    (classes-init-pos-bitarr n-1 bitarr aignet))
   ///
-  (defret bitarr-size-of-classes-init-outs-bitarr
+  (defret bitarr-size-of-classes-init-pos-bitarr
     (<= (len bitarr) (len new-bitarr))
     :rule-classes :linear)
-  (defret bitarr-size-of-classes-init-outs-bitarr-equal
-    (implies (and (< (max-fanin aignet) (len bitarr))
-                  (<= (nfix n) (num-cos aignet)))
+  (defret bitarr-size-of-classes-init-pos-bitarr-equal
+    (implies (and (< (fanin-count aignet) (len bitarr))
+                  (<= (nfix n) (num-outs aignet)))
+             (equal (len new-bitarr) (len bitarr)))))
+
+(define classes-init-nxsts-bitarr ((n natp) bitarr aignet)
+  :guard (and (<= n (num-regs aignet))
+              (<= (num-fanins aignet) (bits-length bitarr)))
+  :returns (new-bitarr)
+  (b* (((when (zp n)) bitarr)
+       (n-1 (1- n))
+       (fanin-id (lit->var (regnum->nxst n-1 aignet)))
+       (bitarr (set-bit fanin-id 1 bitarr)))
+    (classes-init-nxsts-bitarr n-1 bitarr aignet))
+  ///
+  (defret bitarr-size-of-classes-init-nxsts-bitarr
+    (<= (len bitarr) (len new-bitarr))
+    :rule-classes :linear)
+  (defret bitarr-size-of-classes-init-nxsts-bitarr-equal
+    (implies (and (< (fanin-count aignet) (len bitarr))
+                  (<= (nfix n) (num-regs aignet)))
              (equal (len new-bitarr) (len bitarr)))))
 
 (define classes-init-outs (classes aignet)
@@ -412,14 +423,15 @@
   :guard-hints (("goal" :do-not-induct t))
   ;; :guard-hints ((and stable-under-simplificationp
   ;;                    '(:in-theory (enable classes-sized))))
-  (b* ((size (+ 1 (max-fanin aignet)))
+  (b* ((size (num-fanins aignet))
        (classes (resize-class-nexts size classes))
        (classes (resize-class-heads size classes))
        ((when (zp size)) classes)
        ((acl2::local-stobjs bitarr)
         (mv bitarr classes))
        (bitarr (resize-bits size bitarr))
-       (bitarr (classes-init-outs-bitarr (num-cos aignet) bitarr aignet))
+       (bitarr (classes-init-pos-bitarr (num-outs aignet) bitarr aignet))
+       (bitarr (classes-init-nxsts-bitarr (num-regs aignet) bitarr aignet))
        ;; Always flag the constant node so that it will be in the class.
        (bitarr (set-bit 0 1 bitarr))
        (classes (classes-init-filtered-aux size nil bitarr classes)))
@@ -427,7 +439,7 @@
   ///
 
   (std::defret classes-size-of-classes-init-outs
-    (equal (classes-size new-classes) (+ 1 (max-fanin aignet))))
+    (equal (classes-size new-classes) (+ 1 (fanin-count aignet))))
 
   (std::defret classes-wellformed-of-classes-init-outs
     (classes-wellformed new-classes)
@@ -584,7 +596,7 @@
                                (s32v)
                                aignet)
   :guard (and (< node (s32v-nrows s32v))
-              (< node (num-nodes aignet)))
+              (< node (num-fanins aignet)))
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
   :returns (match (or (not match) (natp match)) :rule-classes :type-prescription)
   (b* (((unless lookup) nil)
@@ -610,7 +622,7 @@
                            (classhash)
                            (aignet))
   :guard (and (< node (s32v-nrows s32v))
-              (< node (num-nodes aignet)))
+              (< node (num-fanins aignet)))
   :returns (match (or (not match) (natp match)) :rule-classes :type-prescription)
   (b* ((lookup (classhash-table-get hash classhash)))
     (classes-hash-find-aux node lookup s32v aignet))
@@ -655,7 +667,7 @@
   :guard (and (<= prev node)
               (< node (classes-size classes))
               (equal (classes-size classes) (s32v-nrows s32v))
-              (<= (classes-size classes) (num-nodes aignet))
+              (<= (classes-size classes) (num-fanins aignet))
               (classes-wellformed classes))
   :Guard-hints (("goal" :in-theory (enable aignet-idp)))
   :measure (nfix (- (classes-size classes) (nfix node)))
@@ -732,7 +744,7 @@
 ;;   ;; :inline t
 ;;   :guard (and (< node (classes-size classes))
 ;;               (equal (classes-size classes) (s32v-nrows s32v))
-;;               (<= (classes-size classes) (num-nodes aignet))
+;;               (<= (classes-size classes) (num-fanins aignet))
 ;;               (classes-wellformed classes))
 ;;   :returns (mv new-classhash
 ;;                new-classes
@@ -808,7 +820,7 @@
   ;; This loop needs to be really highly optimized, especially for singleton nodes!
   :guard (and (<= node (classes-size classes))
               (equal (classes-size classes) (s32v-nrows s32v))
-              (<= (classes-size classes) (num-nodes aignet))
+              (<= (classes-size classes) (num-fanins aignet))
               (classes-wellformed classes))
   :split-types t
   :returns (mv new-classhash
@@ -847,7 +859,7 @@
                         (classes)
                         (aignet))
   :guard (and (equal (classes-size classes) (s32v-nrows s32v))
-              (<= (classes-size classes) (num-nodes aignet))
+              (<= (classes-size classes) (num-fanins aignet))
               (classes-wellformed classes))
   :returns (mv new-classes
                (nclass-lits-refined natp :rule-classes :type-prescription)
@@ -881,7 +893,7 @@
                (nclass-lits-out natp :rule-classes :type-prescription))
   :measure (nfix (- (classes-size classes) (nfix n)))
   ;; The three stats returned are disjoint subsets of the nodes, so the number of nodes with no equivalences is
-  ;; (- (num-nodes) (+ nconst-lits nclasses nclass-lits)) (where the 1 is for the constant-0 node).
+  ;; (- (num-fanins) (+ nconst-lits nclasses nclass-lits)) (where the 1 is for the constant-0 node).
   (b* ((nclasses (lnfix nclasses))
        (nconst-lits (lnfix nconst-lits))
        (nclass-lits (lnfix nclass-lits))

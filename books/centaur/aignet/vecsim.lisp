@@ -71,7 +71,7 @@
 ;;                   :guard-hints ('(:in-theory (enable memo-tablep
 ;;                                                      acl2::aignetp)))))
 ;;   (mbe :logic (non-exec (memo-tablep (cdr s32v) aignet))
-;;        :exec (<= (num-nodes aignet) (s32v-nrows s32v))))
+;;        :exec (<= (num-fanins aignet) (s32v-nrows s32v))))
 
 ;; (defun s32v-id-in-bounds (id s32v)
 ;;   (declare (xargs :guard (idp id)
@@ -114,8 +114,8 @@
     (declare (type (integer 0 *) slot)
              (type (integer 0 *) bit)
              (xargs :stobjs (s32v vals aignet)
-                    :guard (and (<= (num-nodes aignet) (s32v-nrows s32v))
-                                (<= (num-nodes aignet) (bits-length vals))
+                    :guard (and (<= (num-fanins aignet) (s32v-nrows s32v))
+                                (<= (num-fanins aignet) (bits-length vals))
                                 (< slot (s32v-ncols s32v)))))
     (b* ((nid (lnfix n))
          (slotval (s32v-get2 nid slot s32v))
@@ -124,7 +124,7 @@
       vals)
     :returns vals
     :index n
-    :last (num-nodes aignet))
+    :last (num-fanins aignet))
 
   (in-theory (disable vecsim-to-eval))
   (local (in-theory (enable vecsim-to-eval-iter
@@ -138,7 +138,7 @@
 
   (defthm lookup-in-vecsim-to-eval
     (equal (nth m (vecsim-to-eval slot bit s32v vals aignet))
-           (if (<= (num-nodes aignet) (nfix m))
+           (if (<= (num-fanins aignet) (nfix m))
                (nth m vals)
              (acl2::logbit bit (s32v-get2 m slot s32v)))))
 
@@ -177,13 +177,13 @@
   (local (in-theory (enable s32v-copy-lit-iter)))
 
   (defthm memo-tablep-s32v-copy-lit-iter
-    (implies (< (node-count aignet) (len (stobjs::2darr->rows s32v)))
-             (< (node-count aignet) (len (stobjs::2darr->rows (s32v-copy-lit-iter n in-lit out-id s32v)))))
+    (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
+             (< (fanin-count aignet) (len (stobjs::2darr->rows (s32v-copy-lit-iter n in-lit out-id s32v)))))
     :rule-classes :linear)
 
-  (defthm max-fanin-memo-tablep-s32v-copy-lit-iter
-    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows s32v)))
-             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows (s32v-copy-lit-iter n in-lit out-id s32v)))))
+  (defthm memo-tablep-s32v-copy-lit-iter
+    (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
+             (< (fanin-count aignet) (len (stobjs::2darr->rows (s32v-copy-lit-iter n in-lit out-id s32v)))))
     :rule-classes :linear)
 
   (defthm ncols-s32v-copy-lit-iter
@@ -258,13 +258,13 @@
   (local (in-theory (enable s32v-and-lits-iter)))
 
   (defthm memo-tablep-s32v-and-lits-iter
-    (implies (< (node-count aignet) (len (stobjs::2darr->rows s32v)))
-             (< (node-count aignet) (len (stobjs::2darr->rows (s32v-and-lits-iter n lit1 lit2 out-id s32v)))))
+    (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
+             (< (fanin-count aignet) (len (stobjs::2darr->rows (s32v-and-lits-iter n lit1 lit2 out-id s32v)))))
     :rule-classes :linear)
 
-  (defthm max-fanin-memo-tablep-s32v-and-lits-iter
-    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows s32v)))
-             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows (s32v-and-lits-iter n lit1 lit2 out-id s32v)))))
+  (defthm memo-tablep-s32v-and-lits-iter
+    (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
+             (< (fanin-count aignet) (len (stobjs::2darr->rows (s32v-and-lits-iter n lit1 lit2 out-id s32v)))))
     :rule-classes :linear)
 
   (defthm ncols-s32v-and-lits-iter
@@ -353,13 +353,13 @@
   (local (in-theory (enable s32v-xor-lits-iter)))
 
   (defthm memo-tablep-s32v-xor-lits-iter
-    (implies (< (node-count aignet) (len (stobjs::2darr->rows s32v)))
-             (< (node-count aignet) (len (stobjs::2darr->rows (s32v-xor-lits-iter n lit1 lit2 out-id s32v)))))
+    (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
+             (< (fanin-count aignet) (len (stobjs::2darr->rows (s32v-xor-lits-iter n lit1 lit2 out-id s32v)))))
     :rule-classes :linear)
 
-  (defthm max-fanin-memo-tablep-s32v-xor-lits-iter
-    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows s32v)))
-             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows (s32v-xor-lits-iter n lit1 lit2 out-id s32v)))))
+  (defthm memo-tablep-s32v-xor-lits-iter
+    (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
+             (< (fanin-count aignet) (len (stobjs::2darr->rows (s32v-xor-lits-iter n lit1 lit2 out-id s32v)))))
     :rule-classes :linear)
 
   (defthm ncols-s32v-xor-lits-iter
@@ -435,13 +435,13 @@
   (local (in-theory (enable s32v-zero-iter)))
 
   (defthm memo-tablep-s32v-zero-iter
-    (implies (< (node-count aignet) (len (stobjs::2darr->rows s32v)))
-             (< (node-count aignet) (len (stobjs::2darr->rows (s32v-zero-iter n out-id s32v)))))
+    (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
+             (< (fanin-count aignet) (len (stobjs::2darr->rows (s32v-zero-iter n out-id s32v)))))
     :rule-classes :linear)
 
-  (defthm max-fanin-memo-tablep-s32v-zero-iter
-    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows s32v)))
-             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows (s32v-zero-iter n out-id s32v)))))
+  (defthm memo-tablep-s32v-zero-iter
+    (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
+             (< (fanin-count aignet) (len (stobjs::2darr->rows (s32v-zero-iter n out-id s32v)))))
     :rule-classes :linear)
 
   (defthm ncols-s32v-zero-iter
@@ -516,8 +516,8 @@
   (local (in-theory (enable s32v-randomize-iter)))
 
   (defthm memo-tablep-s32v-randomize-iter
-    (implies (< (node-count aignet) (len (stobjs::2darr->rows s32v)))
-             (< (node-count aignet) (len (stobjs::2darr->rows (mv-nth 0 (s32v-randomize-iter n out-id s32v state))))))
+    (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
+             (< (fanin-count aignet) (len (stobjs::2darr->rows (mv-nth 0 (s32v-randomize-iter n out-id s32v state))))))
     :rule-classes :linear)
 
   (defthm ncols-s32v-randomize-iter
@@ -538,7 +538,7 @@
 (defsection aignet-vecsim
   (defiteration aignet-vecsim (s32v aignet)
     (declare (xargs :stobjs (s32v aignet)
-                    :guard (<= (num-nodes aignet) (s32v-nrows s32v))
+                    :guard (<= (num-fanins aignet) (s32v-nrows s32v))
                     :guard-hints (("goal" :in-theory (enable aignet-idp)))))
     (b* ((n (lnfix n))
          (nid n)
@@ -552,13 +552,11 @@
                 (if (eql 1 (snode->regp slot1))
                     (s32v-xor-lits f0 f1 nid s32v)
                   (s32v-and-lits f0 f1 nid s32v)))
-       :out   (b* ((f0 (snode->fanin slot0)))
-                (s32v-copy-lit f0 nid s32v))
        :const (s32v-zero nid s32v)
        :in    s32v))
     :returns s32v
     :index n
-    :last (num-nodes aignet)
+    :last (num-fanins aignet)
     :package aignet::foo)
 
   (defthm car-nonnil-forward-to-consp
@@ -566,41 +564,42 @@
              (consp x))
     :rule-classes :forward-chaining)
 
-  (defiteration aignet-vecsim-frame (s32v aignet)
-    (declare (xargs :stobjs (s32v aignet)
-                    :guard (<= (num-nodes aignet) (s32v-nrows s32v))
-                    :guard-hints ((and stable-under-simplificationp
-                                       '(:in-theory (enable aignet-idp))))))
-    (b* ((n (lnfix n))
-         (nid n)
-         (slot0 (id->slot nid 0 aignet))
-         (type (snode->type slot0)))
-      (aignet-case
-       type (id->regp nid aignet)
-       :gate  (b* ((f0 (snode->fanin slot0))
-                   (slot1 (id->slot nid 1 aignet))
-                   (f1 (snode->fanin slot1)))
-                (if (eql 1 (snode->regp slot1))
-                    (s32v-xor-lits f0 f1 nid s32v)
-                  (s32v-and-lits f0 f1 nid s32v)))
-       :pi    s32v
-       :reg   (b* ((ri (reg-id->nxst (regnum->id (io-id->ionum nid aignet)
-                                                 aignet)
-                                     aignet)))
-                (s32v-copy-lit (mk-lit ri 0) nid s32v))
-       :co    (b* ((f0 (snode->fanin slot0)))
-                (s32v-copy-lit f0 nid s32v))
-       :const (s32v-zero nid s32v)))
-    :returns s32v
-    :index n
-    :last (num-nodes aignet)
-    :package aignet::foo)
+  ;; (defiteration aignet-vecsim-frame (s32v aignet)
+  ;;   (declare (xargs :stobjs (s32v aignet)
+  ;;                   :guard (<= (num-fanins aignet) (s32v-nrows s32v))
+  ;;                   :guard-hints ((and stable-under-simplificationp
+  ;;                                      '(:in-theory (enable aignet-idp))))))
+  ;;   (b* ((n (lnfix n))
+  ;;        (nid n)
+  ;;        (slot0 (id->slot nid 0 aignet))
+  ;;        (type (snode->type slot0)))
+  ;;     (aignet-case
+  ;;      type (id->regp nid aignet)
+  ;;      :gate  (b* ((f0 (snode->fanin slot0))
+  ;;                  (slot1 (id->slot nid 1 aignet))
+  ;;                  (f1 (snode->fanin slot1)))
+  ;;               (if (eql 1 (snode->regp slot1))
+  ;;                   (s32v-xor-lits f0 f1 nid s32v)
+  ;;                 (s32v-and-lits f0 f1 nid s32v)))
+  ;;      :pi    s32v
+  ;;      :reg   (b* ((ri (reg-id->nxst (regnum->id (ci-id->ionum nid aignet)
+  ;;                                                aignet)
+  ;;                                    aignet)))
+  ;;               (s32v-copy-lit (mk-lit ri 0) nid s32v))
+  ;;      :co    (b* ((f0 (snode->fanin slot0)))
+  ;;               (s32v-copy-lit f0 nid s32v))
+  ;;      :const (s32v-zero nid s32v)))
+  ;;   :returns s32v
+  ;;   :index n
+  ;;   :last (num-fanins aignet)
+  ;;   :package aignet::foo)
 
-  (local (in-theory (enable aignet-vecsim-iter aignet-vecsim-frame-iter)))
+  (local (in-theory (enable aignet-vecsim-iter ;; aignet-vecsim-frame-iter
+                            )))
 
   (defthm memo-tablep-aignet-vecsim-iter
-    (implies (< (node-count aignet) (len (stobjs::2darr->rows s32v)))
-             (< (node-count aignet) (len (stobjs::2darr->rows (aignet-vecsim-iter n s32v aignet)))))
+    (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
+             (< (fanin-count aignet) (len (stobjs::2darr->rows (aignet-vecsim-iter n s32v aignet)))))
     :rule-classes :linear)
 
 
@@ -626,6 +625,11 @@
     (equal (stobjs::2darr->ncols (aignet-vecsim-iter n s32v aignet))
            (stobjs::2darr->ncols s32v))
     :hints ((acl2::just-induct-and-expand (aignet-vecsim-iter n s32v aignet))))
+
+  (defthm nrows-of-aignet-vecsim-iter
+    (implies (<= n (len (stobjs::2darr->rows s32v)))
+             (equal (len (stobjs::2darr->rows (aignet-vecsim-iter n s32v aignet)))
+                    (len (stobjs::2darr->rows s32v)))))
 
   (defthmd nth-in-aignet-vecsim-iter-preserved
     (implies (and (< (nfix m) (nfix n))
@@ -694,7 +698,6 @@
 
   (defthm aignet-vecsim-correct
     (implies (and (aignet-idp m aignet)
-                  (< (nfix m) (num-nodes aignet))
                   (< (nfix slot) (s32v-ncols s32v)))
              (equal (acl2::logbit bit (s32-fix (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim s32v aignet))))))
                     (let* ((vals
@@ -704,8 +707,9 @@
                                                           aignet))
                             (reg-vals (aignet-vals->regvals nil vals aignet)))
                       (id-eval m in-vals reg-vals aignet))))
-    :hints(("Goal" :in-theory (disable bitops::logbit-to-logbitp
-                                       aignet-vecsim-iter))))
+    :hints(("Goal" :in-theory (e/d (aignet-idp)
+                                   (bitops::logbit-to-logbitp
+                                    aignet-vecsim-iter)))))
 
 
   (defthm aignet-eval-iter-out-of-bounds
@@ -716,7 +720,7 @@
             (aignet-eval-iter n vals aignet))))
 
   (defthm aignet-eval-out-of-bounds
-    (implies (< (node-count aignet) (nfix m))
+    (implies (< (fanin-count aignet) (nfix m))
              (equal (nth m (aignet-eval vals aignet))
                     (nth m vals)))
     :hints(("Goal" :in-theory (enable aignet-eval))))
@@ -745,7 +749,7 @@
 (defsection aignet-vecsim1
   (defiteration aignet-vecsim1 (s32v aignet)
     (declare (xargs :stobjs (s32v aignet)
-                    :guard (and (<= (num-nodes aignet) (s32v-nrows s32v))
+                    :guard (and (<= (num-fanins aignet) (s32v-nrows s32v))
                                 (equal (s32v-ncols s32v) 1))
                     :guard-hints (("goal" :in-theory (enable aignet-idp)))))
     (b* ((n (lnfix n))
@@ -767,15 +771,11 @@
                                      (logxor (bit-extend (lit->neg f1))
                                              (s32v-get (lit->var f1) s32v))))
                            s32v))
-        :out   (b* ((f0 (snode->fanin slot0)))
-                 (s32v-set n (logxor (bit-extend (lit->neg f0))
-                                     (s32v-get (lit->var f0) s32v))
-                           s32v))
         :const (s32v-set n 0 s32v)
         :in    s32v))
     :returns s32v
     :index n
-    :last (num-nodes aignet)
+    :last (num-fanins aignet)
     :package aignet::foo)
 
   (local (in-theory (enable aignet-vecsim-iter)))
@@ -820,7 +820,7 @@
 
 (define aignet-vecsim-top (s32v aignet)
   :enabled t
-  :guard (<= (num-nodes aignet) (s32v-nrows s32v))
+  :guard (<= (num-fanins aignet) (s32v-nrows s32v))
   (mbe :logic (aignet-vecsim s32v aignet)
        :exec (if (eql (s32v-ncols s32v) 1)
                  (aignet-vecsim1 s32v aignet)
@@ -828,274 +828,90 @@
 
 
 
-(defsection aignet-vecsim*
-  ;; Same as aignet-vecsim, but does not process output nodes and therefore
-  ;; only needs max-fanin+1 entries.  Note: we can't have a version of
-  ;; aignet-vecsim-frame that works this way, because of problems where we
-  ;; overwrite some previous-frame value with a next-frame value while that
-  ;; previous-frame value is still needed for some register to be updated.
-  (defiteration aignet-vecsim* (s32v aignet)
-    (declare (xargs :stobjs (s32v aignet)
-                    :guard (<= (+ 1 (max-fanin aignet)) (s32v-nrows s32v))
-                    :guard-hints (("goal" :in-theory (enable aignet-idp)))))
-    (b* ((n (lnfix n))
-         (nid n)
-         (slot0 (id->slot nid 0 aignet))
-         (type (snode->type slot0)))
-      (aignet-case
-       type
-       :gate  (b* ((f0 (snode->fanin slot0))
-                   (slot1 (id->slot nid 1 aignet))
-                   (f1 (snode->fanin slot1)))
-                (if (eql 1 (snode->regp slot1))
-                    (s32v-xor-lits f0 f1 nid s32v)
-                  (s32v-and-lits f0 f1 nid s32v)))
-       :out   s32v
-       :const (s32v-zero nid s32v)
-       :in    s32v))
-    :returns s32v
-    :index n
-    :last (+ 1 (max-fanin aignet))
-    :package aignet::foo)
-
-
-  (local (in-theory (enable aignet-vecsim*-iter)))
-
-  (defthm max-fanin-memo-tablep-aignet-vecsim*-iter
-    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows s32v)))
-             (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows (aignet-vecsim*-iter n s32v aignet)))))
-    :rule-classes :linear)
 
 
 
-  (local (defthm nfix-less-than-0
-           (equal (< (nfix n) 0)
-                  nil)))
+;; (defsection aignet-vecsim1
+;;   (defiteration aignet-vecsim1 (s32v aignet)
+;;     (declare (xargs :stobjs (s32v aignet)
+;;                     :guard (and (<= (+ 1 (max-fanin aignet)) (s32v-nrows s32v))
+;;                                 (equal (s32v-ncols s32v) 1))
+;;                     :guard-hints (("goal" :in-theory (enable aignet-idp)))))
+;;     (b* ((n (lnfix n))
+;;          (nid n)
+;;          (slot0 (id->slot nid 0 aignet))
+;;          (type (snode->type slot0)))
+;;       (aignet-case
+;;         type
+;;         :gate  (b* ((f0 (snode->fanin slot0))
+;;                     (slot1 (id->slot nid 1 aignet))
+;;                     (f1 (snode->fanin slot1)))
+;;                  (s32v-set n
+;;                            (if (eql 1 (snode->regp slot1))
+;;                                (logxor (bit-extend (b-xor (lit->neg f0) (lit->neg f1)))
+;;                                        (s32v-get (lit->var f0) s32v)
+;;                                        (s32v-get (lit->var f1) s32v))
+;;                              (logand (logxor (bit-extend (lit->neg f0))
+;;                                              (s32v-get (lit->var f0) s32v))
+;;                                      (logxor (bit-extend (lit->neg f1))
+;;                                              (s32v-get (lit->var f1) s32v))))
+;;                            s32v))
+;;         :out   s32v
+;;         :const (s32v-set n 0 s32v)
+;;         :in    s32v))
+;;     :returns s32v
+;;     :index n
+;;     :last (+ 1 (max-fanin aignet))
+;;     :package aignet::foo)
 
+;;   (local (in-theory (enable aignet-vecsim-iter)))
 
-  ;; (local (defthm aignet-eval-frame1-preserves-prev
-  ;;          (implies (<= (nfix m) (nfix n))
-  ;;                   (equal (nth n (aignet-eval-frame1-iter m vals aignet))
-  ;;                          (nth n vals)))
-  ;;          :hints(("Goal" :in-theory (enable aignet-eval-frame1-iter)))))
+;;   (local (in-theory (disable s32vl-get2 s32vl-set2)))
 
-  (defthm aignet-vecsim*-iter-lookup-prev
-    (implies (<= (nfix n) (nfix m))
-             (equal (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim*-iter n s32v aignet))))
-                    (nth slot (nth m (stobjs::2darr->rows s32v)))))
-    :hints ((acl2::just-induct-and-expand (aignet-vecsim*-iter n s32v aignet))))
+;;   (local (defthm floor-1
+;;            (implies (natp x)
+;;                     (equal (floor x 1) x))
+;;            :hints(("Goal" :in-theory (enable floor)))))
 
-  (defthm ncols-of-aignet-vecsim*-iter
-    (equal (stobjs::2darr->ncols (aignet-vecsim*-iter n s32v aignet))
-           (stobjs::2darr->ncols s32v))
-    :hints ((acl2::just-induct-and-expand (aignet-vecsim*-iter n s32v aignet))))
-
-  (defthm nrows-of-aignet-vecsim*-iter
-    (implies (<= n (len (stobjs::2darr->rows s32v)))
-             (equal (len (stobjs::2darr->rows (aignet-vecsim*-iter n s32v aignet)))
-                    (len (stobjs::2darr->rows s32v)))))
-
-  (defthmd nth-in-aignet-vecsim*-iter-preserved
-    (implies (and (< (nfix m) (nfix n))
-                  (equal nm (1+ (nfix m)))
-                  (syntaxp (not (equal n nm))))
-             (equal (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim*-iter n vals
-                                                              aignet))))
-                    (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim*-iter nm vals
-                                                              aignet))))))
-    :hints (("goal" :induct (aignet-vecsim*-iter n vals aignet)
-             :in-theory (disable acl2::b-xor acl2::b-and
-                                 (:definition aignet-vecsim*-iter))
-             :expand ((aignet-vecsim*-iter n vals aignet)))
-            (and stable-under-simplificationp
-                 '(:expand ((aignet-vecsim*-iter (+ 1 (nfix m))
-                                                vals
-                                                aignet))))))
-
-  (local (in-theory (enable nth-in-aignet-vecsim*-iter-preserved)))
-
-
-  (local (defthm aignet-vecsim*-stores-id-evals-lemma
-           (implies (and (aignet-idp id aignet)
-                         (not (equal (ctype (stype (car (lookup-id id aignet))))
-                                     :output))
-                         (< (nfix id) (nfix n))
-                         (< (nfix slot) (s32v-ncols s32v)))
-                    (acl2::bit-equiv
-                     (acl2::logbit bit (s32-fix (nth slot
-                                                     (nth id (stobjs::2darr->rows (aignet-vecsim*-iter
-                                                                                   n s32v
-                                                                                   aignet))))))
-                     (let* ((vals
-                             (vecsim-to-eval slot bit s32v vals
-                                             aignet))
-                            (in-vals (aignet-vals->invals nil vals
-                                                          aignet))
-                            (reg-vals (aignet-vals->regvals nil vals aignet)))
-                       (id-eval id in-vals reg-vals aignet))))
-           :hints(("Goal" :in-theory (e/d (lit-eval eval-and-of-lits eval-xor-of-lits)
-                                          (id-eval
-                                           aignet-vecsim*-iter))
-                   :induct (id-eval-ind id aignet)
-                   :expand ((:free (in-vals reg-vals) (id-eval id in-vals reg-vals aignet))
-                            (aignet-vecsim*-iter (+ 1 (nfix id))
-                                                s32v aignet)
-                            (aignet-vecsim*-iter 1 s32v aignet))))))
-
-  (defthm aignet-vecsim*-iter-correct
-    (implies (and (aignet-idp m aignet)
-                  (not (equal (ctype (stype (car (lookup-id m aignet))))
-                                     :output))
-                  (< (nfix m) (nfix n))
-                  (< (nfix slot) (s32v-ncols s32v)))
-             (equal (acl2::logbit bit (s32-fix (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim*-iter n s32v aignet))))))
-                    (let* ((vals
-                             (vecsim-to-eval slot bit s32v vals
-                                             aignet))
-                            (in-vals (aignet-vals->invals nil vals
-                                                          aignet))
-                            (reg-vals (aignet-vals->regvals nil vals aignet)))
-                      (id-eval m in-vals reg-vals aignet))))
-    :hints (("goal" :use ((:instance aignet-vecsim*-stores-id-evals-lemma
-                           (id m)))
-             :in-theory (disable aignet-vecsim*-stores-id-evals-lemma
-                                 aignet-vecsim*-iter
-                                 vecsim-to-eval
-                                 id-eval)
-             :do-not-induct t)))
-
+;;   (local (defthm 2darr-index-inverse-when-ncols-is-1
+;;            (equal (stobjs::2darr-index-inverse idx nrows 1)
+;;                   (mv (nfix idx) 0))
+;;            :hints(("Goal" :in-theory (enable stobjs::2darr-index-inverse mod)))))
   
-  (local (defthm aignet-idp-and-not-output-implies-less-than-max-fanin
-           (implies (and (aignet-idp n aignet)
-                         (not (equal (ctype (stype (car (lookup-id n aignet))))
-                                     :output)))
-                    (< (nfix n) (+ 1 (node-count (find-max-fanin aignet)))))
-           :hints(("Goal" :in-theory (enable find-max-fanin lookup-id aignet-idp)))))
+;;   (local (defthm bit-extend-of-b-xor
+;;            (equal (bit-extend (b-xor a b))
+;;                   (logxor (bit-extend a) (bit-extend b)))
+;;            :hints(("Goal" :in-theory (enable b-xor bit-extend)))))
 
-  (defthm aignet-vecsim*-correct
-    (implies (and (aignet-idp m aignet)
-                  (not (equal (ctype (stype (car (lookup-id m aignet))))
-                                     :output))
-                  ;; (<= (nfix m) (max-fanin aignet))
-                  (< (nfix slot) (s32v-ncols s32v)))
-             (equal (acl2::logbit bit (s32-fix (nth slot (nth m (stobjs::2darr->rows (aignet-vecsim* s32v aignet))))))
-                    (let* ((vals
-                             (vecsim-to-eval slot bit s32v vals
-                                             aignet))
-                            (in-vals (aignet-vals->invals nil vals
-                                                          aignet))
-                            (reg-vals (aignet-vals->regvals nil vals aignet)))
-                      (id-eval m in-vals reg-vals aignet))))
-    :hints(("Goal" :in-theory (disable bitops::logbit-to-logbitp
-                                       aignet-vecsim*-iter))))
+;;   (defthm aignet-vecsim1-iter-is-aignet-vecsim-iter
+;;     (implies (equal (s32v-ncols s32v) 1)
+;;              (equal (aignet-vecsim1-iter n s32v aignet)
+;;                     (aignet-vecsim-iter n s32v aignet)))
+;;     :hints(("Goal" :induct t
+;;             :expand ((:free (lit0 lit1 n s32v) (s32v-and-lits-iter 1 lit0 lit1 n s32v))
+;;                      (:free (lit0 lit1 n s32v) (s32v-and-lits-iter 0 lit0 lit1 n s32v))
+;;                      (:free (lit0 lit1 n s32v) (s32v-xor-lits-iter 1 lit0 lit1 n s32v))
+;;                      (:free (lit0 lit1 n s32v) (s32v-xor-lits-iter 0 lit0 lit1 n s32v))
+;;                      (:free (lit0 n s32v) (s32v-copy-lit-iter 1 lit0 n s32v))
+;;                      (:free (lit0 n s32v) (s32v-copy-lit-iter 0 lit0 n s32v))
+;;                      (:free (n s32v) (s32v-zero-iter 1 n s32v))
+;;                      (:free (n s32v) (s32v-zero-iter 0 n s32v))
+;;                      (aignet-vecsim1-iter n s32v aignet)
+;;                     (aignet-vecsim-iter n s32v aignet)))))
 
-
-  (defthm aignet-eval-iter-out-of-bounds
-    (implies (<= (nfix n) (nfix m))
-             (equal (nth m (aignet-eval-iter n vals aignet))
-                    (nth m vals)))
-    :hints((acl2::just-induct-and-expand
-            (aignet-eval-iter n vals aignet))))
+;;   (defthm aignet-vecsim1-is-aignet-vecsim
+;;     (implies (equal (s32v-ncols s32v) 1)
+;;              (equal (aignet-vecsim1 s32v aignet)
+;;                     (aignet-vecsim s32v aignet)))))
 
 
-  (defthm aignet-vecsim*-to-eval-lemma
-    (implies (and (< (nfix slot) (s32v-ncols s32v))
-                  (not (equal (ctype (stype (car (lookup-id id aignet))))
-                                     :output))
-                  ;; (aignet-idp id aignet)
-                  ;; (<= (nfix id) (max-fanin aignet))
-                  )
-             (bit-equiv
-              (nth id (vecsim-to-eval slot bit (aignet-vecsim* s32v aignet) vals aignet))
-              (nth id (aignet-eval (vecsim-to-eval slot bit s32v vals
-                                                   aignet) aignet))))
-    :hints (("goal" :in-theory (e/d (aignet-idp)
-                                    (bitops::logbit-to-logbitp
-                                     aignet-vecsim*))
-             :cases ((aignet-idp id aignet))))))
-
-
-(defsection aignet-vecsim*1
-  (defiteration aignet-vecsim*1 (s32v aignet)
-    (declare (xargs :stobjs (s32v aignet)
-                    :guard (and (<= (+ 1 (max-fanin aignet)) (s32v-nrows s32v))
-                                (equal (s32v-ncols s32v) 1))
-                    :guard-hints (("goal" :in-theory (enable aignet-idp)))))
-    (b* ((n (lnfix n))
-         (nid n)
-         (slot0 (id->slot nid 0 aignet))
-         (type (snode->type slot0)))
-      (aignet-case
-        type
-        :gate  (b* ((f0 (snode->fanin slot0))
-                    (slot1 (id->slot nid 1 aignet))
-                    (f1 (snode->fanin slot1)))
-                 (s32v-set n
-                           (if (eql 1 (snode->regp slot1))
-                               (logxor (bit-extend (b-xor (lit->neg f0) (lit->neg f1)))
-                                       (s32v-get (lit->var f0) s32v)
-                                       (s32v-get (lit->var f1) s32v))
-                             (logand (logxor (bit-extend (lit->neg f0))
-                                             (s32v-get (lit->var f0) s32v))
-                                     (logxor (bit-extend (lit->neg f1))
-                                             (s32v-get (lit->var f1) s32v))))
-                           s32v))
-        :out   s32v
-        :const (s32v-set n 0 s32v)
-        :in    s32v))
-    :returns s32v
-    :index n
-    :last (+ 1 (max-fanin aignet))
-    :package aignet::foo)
-
-  (local (in-theory (enable aignet-vecsim*-iter)))
-
-  (local (in-theory (disable s32vl-get2 s32vl-set2)))
-
-  (local (defthm floor-1
-           (implies (natp x)
-                    (equal (floor x 1) x))
-           :hints(("Goal" :in-theory (enable floor)))))
-
-  (local (defthm 2darr-index-inverse-when-ncols-is-1
-           (equal (stobjs::2darr-index-inverse idx nrows 1)
-                  (mv (nfix idx) 0))
-           :hints(("Goal" :in-theory (enable stobjs::2darr-index-inverse mod)))))
-  
-  (local (defthm bit-extend-of-b-xor
-           (equal (bit-extend (b-xor a b))
-                  (logxor (bit-extend a) (bit-extend b)))
-           :hints(("Goal" :in-theory (enable b-xor bit-extend)))))
-
-  (defthm aignet-vecsim*1-iter-is-aignet-vecsim*-iter
-    (implies (equal (s32v-ncols s32v) 1)
-             (equal (aignet-vecsim*1-iter n s32v aignet)
-                    (aignet-vecsim*-iter n s32v aignet)))
-    :hints(("Goal" :induct t
-            :expand ((:free (lit0 lit1 n s32v) (s32v-and-lits-iter 1 lit0 lit1 n s32v))
-                     (:free (lit0 lit1 n s32v) (s32v-and-lits-iter 0 lit0 lit1 n s32v))
-                     (:free (lit0 lit1 n s32v) (s32v-xor-lits-iter 1 lit0 lit1 n s32v))
-                     (:free (lit0 lit1 n s32v) (s32v-xor-lits-iter 0 lit0 lit1 n s32v))
-                     (:free (lit0 n s32v) (s32v-copy-lit-iter 1 lit0 n s32v))
-                     (:free (lit0 n s32v) (s32v-copy-lit-iter 0 lit0 n s32v))
-                     (:free (n s32v) (s32v-zero-iter 1 n s32v))
-                     (:free (n s32v) (s32v-zero-iter 0 n s32v))
-                     (aignet-vecsim*1-iter n s32v aignet)
-                    (aignet-vecsim*-iter n s32v aignet)))))
-
-  (defthm aignet-vecsim*1-is-aignet-vecsim*
-    (implies (equal (s32v-ncols s32v) 1)
-             (equal (aignet-vecsim*1 s32v aignet)
-                    (aignet-vecsim* s32v aignet)))))
-
-
-(define aignet-vecsim*-top (s32v aignet)
-  :enabled t
-  :guard (<= (+ 1 (max-fanin aignet)) (s32v-nrows s32v))
-  (mbe :logic (aignet-vecsim* s32v aignet)
-       :exec (if (eql (s32v-ncols s32v) 1)
-                 (aignet-vecsim*1 s32v aignet)
-               (aignet-vecsim* s32v aignet))))
+;; (define aignet-vecsim-top (s32v aignet)
+;;   :enabled t
+;;   :guard (<= (+ 1 (max-fanin aignet)) (s32v-nrows s32v))
+;;   (mbe :logic (aignet-vecsim s32v aignet)
+;;        :exec (if (eql (s32v-ncols s32v) 1)
+;;                  (aignet-vecsim1 s32v aignet)
+;;                (aignet-vecsim s32v aignet))))
 
 
 
@@ -1105,7 +921,7 @@
                                (aignet)
                                (state))
   :guard (and (<= n (num-ins aignet))
-              (<= (+ 1 (max-fanin aignet)) (s32v-nrows s32v)))
+              (<= (num-fanins aignet) (s32v-nrows s32v)))
   :measure (nfix (- (num-ins aignet) (nfix n)))
   :returns (mv new-s32v new-state)
   (if (mbe :logic (zp (- (num-ins aignet) (nfix n)))
@@ -1119,7 +935,7 @@
            (stobjs::2darr->ncols s32v)))
 
   (defret nrows-of-s32v-randomize-inputs
-    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows s32v)))
+    (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
              (equal (len (stobjs::2darr->rows new-s32v))
                     (len (stobjs::2darr->rows s32v))))))
 
@@ -1128,7 +944,7 @@
                              (aignet)
                              (state))
   :guard (and (<= n (num-regs aignet))
-              (<= (+ 1 (max-fanin aignet)) (s32v-nrows s32v)))
+              (<= (num-fanins aignet) (s32v-nrows s32v)))
   :measure (nfix (- (num-regs aignet) (nfix n)))
   :returns (mv new-s32v new-state)
   (if (mbe :logic (zp (- (num-regs aignet) (nfix n)))
@@ -1142,7 +958,7 @@
            (stobjs::2darr->ncols s32v)))
 
   (defret nrows-of-s32v-randomize-regs
-    (implies (<= (+ 1 (node-count (find-max-fanin aignet))) (len (stobjs::2darr->rows s32v)))
+    (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
              (equal (len (stobjs::2darr->rows new-s32v))
                     (len (stobjs::2darr->rows s32v))))))
   

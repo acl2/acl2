@@ -163,26 +163,27 @@
   ;; connected RO/RI:   RO --> RI --> regnum
   ;;                     \______________/
 
-  (definlined snode->regid (slot0)
-    (declare (type (integer 0 *) slot0))
-    (mbe :logic (ash (lnfix slot0) -2)
-         :exec (if (<= slot0 #xffffffff)
-                   (ash (the (unsigned-byte 32) slot0) -2)
-                 (ash (lnfix slot0) -2))))
+  ;; (definlined snode->regid (slot0)
+  ;;   (declare (type (integer 0 *) slot0))
+  ;;   (mbe :logic (ash (lnfix slot0) -2)
+  ;;        :exec (if (<= slot0 #xffffffff)
+  ;;                  (ash (the (unsigned-byte 32) slot0) -2)
+  ;;                (ash (lnfix slot0) -2))))
 
-  (define snode->regid^ ((slot0 :type (unsigned-byte 32)))
-    :inline t
-    :enabled t
-    :guard-hints (("goal" :in-theory (enable snode->regid)))
-    (mbe :logic (snode->regid slot0)
-         :exec (the (unsigned-byte 30) (ash (the (unsigned-byte 32) slot0) -2))))
+  ;; (define snode->regid^ ((slot0 :type (unsigned-byte 32)))
+  ;;   :inline t
+  ;;   :enabled t
+  ;;   :guard-hints (("goal" :in-theory (enable snode->regid)))
+  ;;   (mbe :logic (snode->regid slot0)
+  ;;        :exec (the (unsigned-byte 30) (ash (the (unsigned-byte 32) slot0) -2))))
 
-  (defthm natp-of-snode->regid
-    (natp (snode->regid slot0))
-    :rule-classes :type-prescription)
+  ;; (defthm natp-of-snode->regid
+  ;;   (natp (snode->regid slot0))
+  ;;   :rule-classes :type-prescription)
 
-  (defcong nat-equiv equal (snode->regid slot) 1
-    :hints(("Goal" :in-theory (enable snode->regid)))))
+  ;; (defcong nat-equiv equal (snode->regid slot) 1
+  ;;   :hints(("Goal" :in-theory (enable snode->regid))))
+  )
 
 
 (defsection mk-snode
@@ -257,15 +258,16 @@
                 (nfix fanin1)))
     :hints(("Goal" :in-theory (enable snode->fanin))))
 
-  (defthm snode->regid-of-mk-snode-0
-    (equal (snode->regid (mv-nth 0 (mk-snode type regp phase fanin0 fanin1)))
-           (nfix fanin0))
-    :hints(("Goal" :in-theory (enable snode->regid))))
+  ;; (defthm snode->regid-of-mk-snode-0
+  ;;   (equal (snode->regid (mv-nth 0 (mk-snode type regp phase fanin0 fanin1)))
+  ;;          (nfix fanin0))
+  ;;   :hints(("Goal" :in-theory (enable snode->regid))))
 
-  (defthm snode->regid-of-mk-snode-1
-    (equal (snode->regid (mv-nth 1 (mk-snode type regp phase fanin0 fanin1)))
-           (nfix fanin1))
-    :hints(("Goal" :in-theory (enable snode->regid))))
+  ;; (defthm snode->regid-of-mk-snode-1
+  ;;   (equal (snode->regid (mv-nth 1 (mk-snode type regp phase fanin0 fanin1)))
+  ;;          (nfix fanin1))
+  ;;   :hints(("Goal" :in-theory (enable snode->regid))))
+
 
   (defthm snode->ionum-of-mk-snode
     (equal (snode->ionum (mv-nth 1 (mk-snode type regp phase fanin0 fanin1)))
@@ -283,5 +285,11 @@
     (implies (syntaxp (not (and (equal fanin0 ''0)
                                 (equal type ''0))))
              (equal (mv-nth 1 (mk-snode type regp phase fanin0 fanin1))
-                    (mv-nth 1 (mk-snode 0 regp phase 0 fanin1))))))
+                    (mv-nth 1 (mk-snode 0 regp phase 0 fanin1)))))
+
+  (defthm unsigned-byte-p-of-mk-snode-0
+    (and (implies (unsigned-byte-p 30 fanin0)
+                  (unsigned-byte-p 32 (mv-nth 0 (mk-snode type regp phase fanin0 fanin1))))
+         (implies (unsigned-byte-p 30 fanin1)
+                  (unsigned-byte-p 32 (mv-nth 1 (mk-snode type regp phase fanin0 fanin1)))))))
 

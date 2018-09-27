@@ -176,4 +176,27 @@ module a0;
    wire rand3 = $random() % 2;
    wire rand4 = $urandom() % 2;
 
+
+  wire [3:0] normal_sysfun1 = xx0 & $countones(xx2);
+  wire [2:0] normal_sysfun2 = yy0 & $countones(xx2);
+  wire [3:0] normal_sysfun3 = xx0 == $bits(xx2);
+  wire [2:0] normal_sysfun4 = yy0 == $bits(xx2);
+
+endmodule
+
+
+module a1 ;
+
+   parameter foo = 7;
+   wire [3:0] bar;
+   parameter [4:0] baz = 6;
+
+   wire x0, x1, x2;
+   wire y0, y1, y2;
+   wire z0, z1, z2;
+
+   assign x0 = foo ? x1 : x2;  // don't warn about wide, untyped parameters like foo
+   assign y0 = bar ? y1 : y2;  // do warn about wide wires like bar
+   assign z0 = baz ? z1 : z2;  // do warn about wide, typed parameters
+
 endmodule

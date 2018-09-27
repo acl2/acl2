@@ -272,8 +272,8 @@
         (mv ans vals initsts))
        (initsts (resize-bits (num-regs aignet) initsts))
        (vals (aignet-sim-frames vals frames initsts aignet))
-       (out-id (outnum->id 0 aignet)))
-    (mv (get-bit out-id vals) vals initsts)))
+       (out-fanin (outnum->fanin 0 aignet)))
+    (mv (aignet-eval-lit out-fanin vals) vals initsts)))
 
 (define abc-mcheck-simple (prop (updates bfr-updates-p) init-st)
   :returns (mv result ctrex)

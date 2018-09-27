@@ -177,7 +177,7 @@
 ;;   ;; Each type of memo table will have a different executable predicate, but
 ;;   ;; they all rewrite to this one, which the in-bounds rewrite rule triggers on.
 ;;   (defund-nx memo-tablep (arr aignet)
-;;     (<= (nfix (num-nodes aignet)) (len arr)))
+;;     (<= (nfix (num-fanins aignet)) (len arr)))
 
 ;;   (local (in-theory (enable memo-tablep)))
 
@@ -206,7 +206,7 @@
 
 ;;   (defthm iterator-in-bounds-when-memo-tablep
 ;;     (implies (and (memo-tablep arr aignet)
-;;                   (<= (nfix n) (+ 1 (node-count aignet))))
+;;                   (<= (nfix n) (+ 1 (fanin-count aignet))))
 ;;              (iterator-in-bounds n arr)))
 
 ;;   (defthm id-in-bounds-of-update
@@ -224,7 +224,7 @@
 ;;     :hints(("Goal" :in-theory (enable update-nth-lit))))
 
 ;;   (defthm memo-tablep-when-big-enough
-;;     (implies (<= (nfix (num-nodes aignet)) (len arr))
+;;     (implies (<= (nfix (num-fanins aignet)) (len arr))
 ;;              (memo-tablep arr aignet)))
 
 ;;   (defthm memo-tablep-of-update-nth
@@ -257,7 +257,7 @@
 
 ;;   (defthm big-enough-when-memo-tablep
 ;;     (implies (memo-tablep arr aignet)
-;;              (< (node-count aignet) (len arr)))
+;;              (< (fanin-count aignet) (len arr)))
 ;;     :rule-classes (:rewrite :forward-chaining))
 
 ;;   (defthm id-in-bounds-when-iterator-in-bounds-and-less
@@ -290,13 +290,13 @@
 ;;   (defund aignet-iterator-p (n aignet)
 ;;     (declare (xargs :stobjs aignet
 ;;                     :guard (natp n)))
-;;     (<= (lnfix n) (lnfix (num-nodes aignet))))
+;;     (<= (lnfix n) (lnfix (num-fanins aignet))))
 
 ;;   (local (in-theory (enable aignet-iterator-p)))
 
 ;;   (defthm aignet-idp-when-iterator-and-less
 ;;     (implies (and (aignet-iterator-p n aignet)
-;;                   (not (equal (nfix n) (nfix (num-nodes aignet)))))
+;;                   (not (equal (nfix n) (nfix (num-fanins aignet)))))
 ;;              (aignet-idp n aignet))
 ;;     :hints(("Goal" :in-theory (enable aignet-idp))))
 
@@ -308,18 +308,18 @@
 ;;   (defthm aignet-iterator-p-of-zero
 ;;     (aignet-iterator-p 0 aignet))
 
-;;   (defthm aignet-iterator-p-of-num-nodes
-;;     (aignet-iterator-p (+ 1 (node-count aignet)) aignet))
+;;   (defthm aignet-iterator-p-of-num-fanins
+;;     (aignet-iterator-p (+ 1 (fanin-count aignet)) aignet))
 
 ;;   (defthm aignet-iterator-p-of-incr
 ;;     (implies (and (aignet-iterator-p n aignet)
-;;                   (not (equal (nfix n) (+ 1 (node-count aignet)))))
+;;                   (not (equal (nfix n) (+ 1 (fanin-count aignet)))))
 ;;              (aignet-iterator-p (+ 1 (nfix n)) aignet)))
 
 ;;   (defthm aignet-iterator-p-of-incr-nat
 ;;     (implies (and (aignet-iterator-p n aignet)
 ;;                   (natp n)
-;;                   (not (equal n (+ 1 (node-count aignet)))))
+;;                   (not (equal n (+ 1 (fanin-count aignet)))))
 ;;              (aignet-iterator-p (+ 1 n) aignet)))
 
 ;;   (defthm aignet-iterator-p-of-decr
@@ -330,11 +330,11 @@
 ;;   (defthm aignet-iterator-p-implies-less
 ;;     (implies (and (aignet-iterator-p n aignet)
 ;;                   (integerp n)
-;;                   (not (equal n (+ 1 (node-count aignet)))))
-;;              (<= n (node-count aignet))))
+;;                   (not (equal n (+ 1 (fanin-count aignet)))))
+;;              (<= n (fanin-count aignet))))
 
 ;;   (defthmd aignet-iterator-p-when-lte
-;;     (implies (and (<= x (+ 1 (node-count aignet)))
+;;     (implies (and (<= x (+ 1 (fanin-count aignet)))
 ;;                   (integerp x))
 ;;              (aignet-iterator-p x aignet))
 ;;     :hints(("Goal" :in-theory (enable aignet-iterator-p)))))
@@ -347,7 +347,7 @@
   ;;   (declare (xargs :stobjs (bitarr aignet)
   ;;                   :guard-hints ('(:in-theory (e/d (memo-tablep))))))
   ;;   (mbe :logic (non-exec (memo-tablep bitarr aignet))
-  ;;        :exec (<= (num-nodes aignet) (bits-length bitarr))))
+  ;;        :exec (<= (num-fanins aignet) (bits-length bitarr))))
 
   ;; (defun bitarr-id-in-bounds (id bitarr)
   ;;   (declare (xargs :guard (idp id)
@@ -423,7 +423,7 @@
   ;;   (declare (xargs :stobjs (litarr aignet)
   ;;                   :guard-hints ('(:in-theory (enable memo-tablep)))))
   ;;   (mbe :logic (non-exec (memo-tablep litarr aignet))
-  ;;        :exec (<= (num-nodes aignet) (lits-length litarr))))
+  ;;        :exec (<= (num-fanins aignet) (lits-length litarr))))
 
   ;; (defun litarr-id-in-bounds (id litarr)
   ;;   (declare (xargs :guard (idp id)
@@ -528,7 +528,7 @@
 ;;     (declare (xargs :stobjs (idarr aignet)
 ;;                     :guard-hints ('(:in-theory (enable memo-tablep)))))
 ;;     (mbe :logic (non-exec (memo-tablep idarr aignet))
-;;          :exec (<= (num-nodes aignet) (ids-length idarr))))
+;;          :exec (<= (num-fanins aignet) (ids-length idarr))))
 
 ;;   (defun idarr-id-in-bounds (id idarr)
 ;;     (declare (xargs :guard (idp id)
@@ -646,7 +646,7 @@
   ;;   (declare (xargs :stobjs (u32arr aignet)
   ;;                   :guard-hints ('(:in-theory (enable memo-tablep)))))
   ;;   (mbe :logic (non-exec (memo-tablep u32arr aignet))
-  ;;        :exec (<= (num-nodes aignet) (u32-length u32arr))))
+  ;;        :exec (<= (num-fanins aignet) (u32-length u32arr))))
 
   ;; (defun u32arr-id-in-bounds (id u32arr)
   ;;   (declare (xargs :guard (idp id)
