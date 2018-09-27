@@ -148,6 +148,8 @@
  Added @(tsee ensure-string), an error-checking function for strings.
  </p>
 
+ <h4>Filesystem Books</h4>
+
  <p>The filesystem books @('books/projects/filesystems/') have been
  substantially expanded; in particular, they now contain a new model which
  faithfully represents the state of a FAT32 disk image. More details about this
@@ -155,11 +157,7 @@
  Prover: an Application to FAT32</i>, to appear in the proceedings of
  ACL2-2018.</p>
 
- <p>In support of the above, the Kestrel string libraries as well as the
- byte-combining libraries @('books/std/io/combine.lisp') have been expanded
- with several new lemmas. Some existing lemmas have also been generalized.</p>
-
- <h4>System Utilities</h4>
+ <h4>System-level Utilities</h4>
 
  <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
  inside @('lambda') (@('let')) bodies.</p>
@@ -169,6 +167,13 @@
  <p>Refactored the old file
  @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
  under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
+
+ <h4>Other Kestrel Utilities</h4>
+
+ <p>In support of changes to the filesystem books (see above), the Kestrel
+ string libraries as well as the byte-combining libraries
+ @('books/std/io/combine.lisp') have been expanded with several new
+ lemmas. Some existing lemmas have also been generalized.</p>
 
  <h3>Licensing Changes</h3>
 
