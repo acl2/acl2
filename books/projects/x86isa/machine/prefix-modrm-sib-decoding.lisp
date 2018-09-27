@@ -1987,9 +1987,7 @@
 
       (define two-byte-opcode-ModR/M-p
 	((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
-	 (mandatory-prefix :type (unsigned-byte 8)
-			   "As computed by @(tsee
-			   compute-mandatory-prefix-for-two-byte-opcode)")
+	 (mandatory-prefix :type (unsigned-byte 8))
 	 (opcode           :type (unsigned-byte 8)
 			   "Second byte of the two-byte opcode"))
 	:short "Returns @('t') if a two-byte opcode requires a ModR/M byte;
@@ -3186,30 +3184,9 @@
       ,(gen-compute-mandatory-prefix-fn #ux0F_3A 64)
       ,(gen-compute-mandatory-prefix-fn #ux0F_3A 32)))
 
-  (define compute-mandatory-prefix-for-two-byte-opcode
-    ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
-     (opcode        :type (unsigned-byte 8)
-		    "Second byte of a two-byte opcode")
-     (prefixes      :type (unsigned-byte #.*prefixes-width*)))
-
-    :inline t
-    :no-function t
-    :returns (mv
-	      err-flg
-	      (mandatory-prefix
-	       (unsigned-byte-p 8 mandatory-prefix)
-	       :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))))
-    :short "Two-byte Opcodes: picks the appropriate SIMD prefix as the
-    mandatory prefix, if applicable"
-
-    (case proc-mode
-      (#.*64-bit-mode*
-       (64-bit-compute-mandatory-prefix-for-two-byte-opcode
-	opcode prefixes))
-      (otherwise
-       ;; TODO: Other modes.
-       (32-bit-compute-mandatory-prefix-for-two-byte-opcode
-	opcode prefixes))))
+  ;; Note: for two-byte opcodes, determining and fetching the modr/m and
+  ;; mandatory prefix bytes is intertwined.  See
+  ;; two-byte-opcode-modr/m-and-mandatory-prefix.
 
   (define compute-mandatory-prefix-for-0F-38-three-byte-opcode
     ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
@@ -3285,548 +3262,524 @@
       (otherwise
        (mv nil 0)))))
 
-;; ----------------------------------------------------------------------
+(defsection two-byte-opcodes-mandatory-prefixes-and-modr/m-computation
 
-(define prefix-in-desc-list? ((group-num (member-equal group-num *group-numbers*)))
-  :short "Do opcodes under @('group-num') require a mandatory prefix?"
-  (b* ((desc-list (cdr (assoc-equal group-num *opcode-extensions-by-group-number*)))
-       (desc-list-keys (acl2::flatten (strip-cars desc-list))))
-    (and (member-equal :prefix (strip-cars desc-list-keys)) t)))
+  :parents (mandatory-prefixes-computation ModR/M-decoding ModR/M-detection)
 
-(define compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
-  ((row          true-list-listp)
-   (64-bit-modep booleanp))
+  :short "Functions to pick legal mandatory prefixes and fetch the modr/m byte
+  for two-byte opcodes"
 
-  :guard-hints (("Goal" :in-theory (e/d (not-consp-not-assoc-equal
-					 opcode-row-p
-					 opcode-cell-p)
-					(member-equal))))
-  :returns (extensions-info true-listp)
+  :long "<p>For all non-AVX opcodes, we compute the mandatory prefix first and
+ then based on the mandatory prefix, we determine if a modr/m byte is required.
+ This order works for one- and three-byte (both @('0x0F_38') and @('0x0F_3A'))
+ opcodes, but not for two-byte opcodes.</p>
 
-  (if (opcode-row-p row)
+ <p>Specifically, for two-byte simple opcodes without extensions (i.e., those
+ NOT in @('*opcode-extensions-by-group-number*')) and for compound opcodes, the
+ above order works, but for simple opcodes with extensions, determining the
+ mandatory prefix can hinge on the modr/m byte's fields.  In that case, we need
+ to fetch the modr/m byte before we can determine the right mandatory
+ prefix. See @(tsee two-byte-opcode-decode-and-execute) for details.</p>"
 
-      (if (endp row)
+  (local (xdoc::set-default-parents
+	  two-byte-opcodes-mandatory-prefixes-and-modr/m-computation))
 
-	  nil
+  (define prefix-in-desc-list? ((group-num (member-equal group-num *group-numbers*)))
+    :short "Do opcodes under @('group-num') require a mandatory prefix?"
+    (b* ((desc-list (cdr (assoc-equal group-num *opcode-extensions-by-group-number*)))
+	 (desc-list-keys (acl2::flatten (strip-cars desc-list))))
+      (and (member-equal :prefix (strip-cars desc-list-keys)) t)))
 
-	(b* ((cell (car row))
-	     (car-cell
-	      ;; We assume that if cells with *group-numbers* satisfy
-	      ;; simple-cell-p, then they satisfy basic-simple-cell-p only, and
-	      ;; if these cells satsify compound-cell-p, then they appear in
-	      ;; cells with keys :o64 and :i64.
-	      (if (and (basic-simple-cell-p cell)
-		       (member-equal (car cell) *group-numbers*))
-		  (car cell)
-		(if (compound-cell-p cell)
-		    (b* ((stripped-cell
-			  ;; In 64-bit mode, we ignore the opcode
-			  ;; information that is invalid in 64-bit mode,
-			  ;; while in 32-bit mode, we ignore the opcode
-			  ;; information that is valid only in 64-bit
-			  ;; mode.
-			  (if 64-bit-modep
-			      (b* ((no-i64-cell (delete-assoc-equal :i64 cell))
-				   (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
-				(or o64-cell no-i64-cell))
-			    (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
-				 (i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
-			      (or i64-cell no-o64-cell)))))
-		      (if (and (basic-simple-cell-p stripped-cell)
-			       (member-equal (car stripped-cell) *group-numbers*))
-			  (car stripped-cell)
-			nil))
-		  nil)))
-	     ((if car-cell)
-	      (if (prefix-in-desc-list? car-cell)
-		  (cons 't
+  (define compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+    ((row          true-list-listp)
+     (64-bit-modep booleanp))
+
+    :guard-hints (("Goal" :in-theory (e/d (not-consp-not-assoc-equal
+					   opcode-row-p
+					   opcode-cell-p)
+					  (member-equal))))
+    :returns (extensions-info true-listp)
+
+    (if (opcode-row-p row)
+
+	(if (endp row)
+
+	    nil
+
+	  (b* ((cell (car row))
+	       (car-cell
+		;; We assume that if cells with *group-numbers* satisfy
+		;; simple-cell-p, then they satisfy basic-simple-cell-p only, and
+		;; if these cells satsify compound-cell-p, then they appear in
+		;; cells with keys :o64 and :i64.
+		(if (and (basic-simple-cell-p cell)
+			 (member-equal (car cell) *group-numbers*))
+		    (car cell)
+		  (if (compound-cell-p cell)
+		      (b* ((stripped-cell
+			    ;; In 64-bit mode, we ignore the opcode
+			    ;; information that is invalid in 64-bit mode,
+			    ;; while in 32-bit mode, we ignore the opcode
+			    ;; information that is valid only in 64-bit
+			    ;; mode.
+			    (if 64-bit-modep
+				(b* ((no-i64-cell (delete-assoc-equal :i64 cell))
+				     (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
+				  (or o64-cell no-i64-cell))
+			      (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
+				   (i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
+				(or i64-cell no-o64-cell)))))
+			(if (and (basic-simple-cell-p stripped-cell)
+				 (member-equal (car stripped-cell) *group-numbers*))
+			    (car stripped-cell)
+			  nil))
+		    nil)))
+	       ((if car-cell)
+		(if (prefix-in-desc-list? car-cell)
+		    (cons 't
+			  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+			   (cdr row) 64-bit-modep))
+		  (cons 'nil
 			(compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
-			 (cdr row) 64-bit-modep))
-		(cons 'nil
-		      (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
-		       (cdr row) 64-bit-modep)))))
-	  (cons 'nil
-		(compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
-		 (cdr row) 64-bit-modep))))
+			 (cdr row) 64-bit-modep)))))
+	    (cons 'nil
+		  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+		   (cdr row) 64-bit-modep))))
 
-    (b* ((- (cw "~%compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row:~% ~
+      (b* ((- (cw "~%compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row:~% ~
  Ill-formed opcode row: ~x0~%" row)))
-      nil)))
+	nil)))
 
-(define compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
-  ((map          true-list-listp)
-   (64-bit-modep booleanp))
+  (define compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+    ((map          true-list-listp)
+     (64-bit-modep booleanp))
 
-  :guard-hints (("Goal" :in-theory (e/d (not-consp-not-assoc-equal
-					 opcode-map-p)
-					())))
+    :guard-hints (("Goal" :in-theory (e/d (not-consp-not-assoc-equal
+					   opcode-map-p)
+					  ())))
 
-  (if (opcode-map-p map)
+    (if (opcode-map-p map)
 
-      (if (endp map)
+	(if (endp map)
 
-	  nil
+	    nil
 
-	(append
-	 (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
-	  (car map) 64-bit-modep)
-	 (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
-	  (cdr map) 64-bit-modep)))
+	  (append
+	   (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+	    (car map) 64-bit-modep)
+	   (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	    (cdr map) 64-bit-modep)))
 
-    (b* ((- (cw "~%compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map:~% ~
+      (b* ((- (cw "~%compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map:~% ~
  Ill-formed opcode map: ~x0~%" map)))
-      nil)))
-
-(assert-event
- ;; One-byte opcodes: no extensions needing mandatory prefix
- ;; Same in 32- and 64-bit modes
- (equal
-  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
-   *one-byte-opcode-map-lst* t)
-  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
-   *one-byte-opcode-map-lst* nil)))
-
-(assert-event
- ;; Two-byte opcodes: extensions needing mandatory prefix
- ;; Same in 32- and 64-bit modes
- (equal
-  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
-   *two-byte-opcode-map-lst* t)
-  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
-   *two-byte-opcode-map-lst* nil)))
-
-(defconst *two-byte-opcode-extensions-needing-pfx-ar*
-  (list-to-array
-   'two-byte-opcode-extensions-needing-pfx
-   (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
-    *two-byte-opcode-map-lst* t)))
-
-(assert-event
- ;; Three-byte opcodes: no extensions need mandatory prefix
- ;; Same in 32- and 64-bit modes
- (b* ((64-bit-0f-38-three-byte-lst
-       (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
-	*0F-38-three-byte-opcode-map-lst* t))
-      (32-bit-0f-38-three-byte-lst
-       (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
-	*0F-38-three-byte-opcode-map-lst* nil))
-      (64-bit-0f-3a-three-byte-lst
-       (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
-	*0F-38-three-byte-opcode-map-lst* t))
-      (32-bit-0f-3a-three-byte-lst
-       (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
-	*0F-38-three-byte-opcode-map-lst* nil)))
-   (and
-    (acl2::all-nils 64-bit-0f-38-three-byte-lst)
-    (equal 64-bit-0f-38-three-byte-lst 32-bit-0f-38-three-byte-lst)
-    (acl2::all-nils 64-bit-0f-3A-three-byte-lst)
-    (equal 64-bit-0f-3A-three-byte-lst 32-bit-0f-3A-three-byte-lst))))
-
-(define collect-all-vals-of-a-key ((key)
-				   (alst alistp)
-				   (acc true-listp))
-  ;; (collect-all-vals-of-a-key 1 '((1 . a) (2 . b) (1 . c)) nil)
-  ;; '(a c)
-  :returns (lst true-listp)
-  :prepwork
-  ((local
-    (defthm true-listp-flatten
-      (true-listp (acl2::flatten x))
-      :hints (("Goal" :in-theory (e/d (acl2::flatten) ()))))))
-  (b* ((val (cdr (assoc-equal key alst)))
-       ((unless val)
-	(if (alistp acc)
-	    (list (acl2::flatten (acl2::rev acc)))
-	  (acl2::rev acc)))
-       (new-acc (cons val acc))
-       (new-alst (delete-assoc-equal key alst)))
-    (collect-all-vals-of-a-key key new-alst new-acc)))
-
-(define delete-all-keys ((key)
-			 (alst alistp))
-  :returns (new-alst alistp :hyp (alistp alst))
-  (if (endp alst)
-      nil
-    (if (assoc-equal key alst)
-	(delete-all-keys key (delete-assoc-equal key alst))
-      alst))
-  ///
+	nil)))
 
   (local
-   (defthm len-reduced-by-delete-assoc-equal
-     (implies (and (alistp alst) (assoc-equal key alst))
-	      (< (len (delete-assoc-equal key alst))
-		 (len alst)))
-     :hints (("Goal" :in-theory (e/d (delete-assoc-equal) ())))
-     :rule-classes :linear))
+   (assert-event
+    ;; One-byte opcodes: no extensions needing mandatory prefix
+    ;; Same in 32- and 64-bit modes
+    (b* ((64-bit-one-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *one-byte-opcode-map-lst* t))
+	 (32-bit-one-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *one-byte-opcode-map-lst* nil)))
 
-  (defthm len-reduced-by-delete-all-keys
-    (implies (and (alistp alst) (assoc-equal key alst))
-	     (< (len (delete-all-keys key alst))
-		(len alst)))))
+      (and
+       (acl2::all-nils 64-bit-one-byte-lst)
+       (acl2::all-nils 32-bit-one-byte-lst)))))
 
-(define insert-elem ((pos natp)
-		     (elem)
-		     (lst true-listp))
-  :returns (new-lst true-listp :hyp (true-listp lst))
-  (append (take pos lst)
-	  (list elem) (nthcdr pos lst)))
+  (local
+   (assert-event
+    ;; Two-byte opcodes: extensions needing mandatory prefix
+    ;; Same in 32- and 64-bit modes
+    (b* ((64-bit-two-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *two-byte-opcode-map-lst* t))
+	 (32-bit-two-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *two-byte-opcode-map-lst* nil)))
+      (and
+       (not (acl2::all-nils 64-bit-two-byte-lst))
+       (equal 64-bit-two-byte-lst 32-bit-two-byte-lst)))))
 
-(define reorder-mand-pfx-vals ((lst true-listp))
-  ;; #x0 #x66 #xF3 #xF2, with nil for filler
-  (b* ((new-lst (if (member-equal #x0 lst)
-		    (insert-elem 0 #x0 (remove-equal #x0 lst))
-		  (insert-elem 0 nil lst)))
-       (new-lst (if (member-equal #x66 new-lst)
-		    (insert-elem 1 #x66 (remove-equal #x66 new-lst))
-		  (insert-elem 1 nil new-lst)))
-       (new-lst (if (member-equal #xF3 new-lst)
-		    (insert-elem 2 #xF3 (remove-equal #xF3 new-lst))
-		  (insert-elem 2 nil new-lst)))
-       (new-lst (if (member-equal #xF2 new-lst)
-		    (insert-elem 2 #xF2 (remove-equal #xF2 new-lst))
-		  (insert-elem 2 nil new-lst))))
-    new-lst))
+  (defconst *two-byte-opcode-extensions-needing-pfx-ar*
+    (list-to-array
+     'two-byte-opcode-extensions-needing-pfx
+     (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+      *two-byte-opcode-map-lst* t)))
 
-(define collect-vals-of-dup-keys ((alst alistp))
-  :measure (len alst)
-  :prepwork
-  ((local
-    (defthm true-listp-flatten
-      (true-listp (acl2::flatten x))
-      :hints (("Goal" :in-theory (e/d (acl2::flatten) ()))))))
-  (if (or (endp alst) (not (alistp alst)))
-      nil
-    (b* ((key (caar alst))
-	 (vals (collect-all-vals-of-a-key key alst nil))
-	 (vals (list (cons 'mv (reorder-mand-pfx-vals (acl2::flatten vals)))))
-	 ;; (- (cw "~% vals: ~p0 ~%" vals))
-	 ((unless (assoc-equal key alst)) nil)
-	 (new-alst (delete-all-keys key alst)))
-      (cons
-       (cons key vals)
-       (collect-vals-of-dup-keys new-alst)))))
+  (local
+   (assert-event
+    ;; Three-byte opcodes: no extensions need mandatory prefix
+    ;; Same in 32- and 64-bit modes
+    (b* ((64-bit-0f-38-three-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *0F-38-three-byte-opcode-map-lst* t))
+	 (32-bit-0f-38-three-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *0F-38-three-byte-opcode-map-lst* nil))
+	 (64-bit-0f-3a-three-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *0F-38-three-byte-opcode-map-lst* t))
+	 (32-bit-0f-3a-three-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *0F-38-three-byte-opcode-map-lst* nil)))
+      (and
+       (acl2::all-nils 64-bit-0f-38-three-byte-lst)
+       (equal 64-bit-0f-38-three-byte-lst 32-bit-0f-38-three-byte-lst)
+       (acl2::all-nils 64-bit-0f-3A-three-byte-lst)
+       (equal 64-bit-0f-3A-three-byte-lst 32-bit-0f-3A-three-byte-lst)))))
 
-(define gen-mandatory-prefix-for-opcode-extensions-aux
-  ((opcode natp)
-   (desc-list opcode-descriptor-list-p)
-   &key
-   ((escape-bytes natp) '0))
-  :guard-hints (("Goal"
-		 :in-theory (e/d (opcode-descriptor-list-p
-				  opcode-descriptor-p)
-				 ())
-		 :do-not-induct t))
-  :returns (cond-stmt alistp)
+  (define collect-all-vals-of-a-key ((key)
+				     (alst alistp)
+				     (acc true-listp))
+    ;; (collect-all-vals-of-a-key 1 '((1 . a) (2 . b) (1 . c)) nil)
+    ;; '(a c)
+    :returns (lst true-listp)
+    :prepwork
+    ((local
+      (defthm true-listp-flatten
+	(true-listp (acl2::flatten x))
+	:hints (("Goal" :in-theory (e/d (acl2::flatten) ()))))))
+    (b* ((val (cdr (assoc-equal key alst)))
+	 ((unless val)
+	  (if (alistp acc)
+	      (list (acl2::flatten (acl2::rev acc)))
+	    (acl2::rev acc)))
+	 (new-acc (cons val acc))
+	 (new-alst (delete-assoc-equal key alst)))
+      (collect-all-vals-of-a-key key new-alst new-acc)))
 
-  ;; Borrowed heavily from create-case-dispatch-for-opcode-extensions-aux in
-  ;; dispatch-utils.lisp.  Keep these two in sync.
+  (define delete-all-keys ((key)
+			   (alst alistp))
+    :returns (new-alst alistp :hyp (alistp alst))
+    (if (endp alst)
+	nil
+      (if (assoc-equal key alst)
+	  (delete-all-keys key (delete-assoc-equal key alst))
+	alst))
+    ///
 
-  (if (endp desc-list)
-      `((t 0))
-    (b* ((opcode-descriptor (car desc-list))
-	 (opcode-identifier (car opcode-descriptor))
-	 ((unless (equal (cdr (assoc-equal :opcode opcode-identifier))
-			 (+ escape-bytes opcode)))
-	  (gen-mandatory-prefix-for-opcode-extensions-aux
-	   opcode (cdr desc-list) :escape-bytes escape-bytes))
-	 ;; (opcode-cell (cdr opcode-descriptor))
-	 (feat        (cdr (assoc-equal :feat opcode-identifier)))
-	 (mode        (cdr (assoc-equal :mode opcode-identifier)))
-	 (reg         (cdr (assoc-equal :reg opcode-identifier)))
-	 (prefix      (cdr (assoc-equal :prefix opcode-identifier)))
-	 (prefix-val  (case prefix
-			(:66 #x66)
-			(:F3 #xF3)
-			(:F2 #xF2)
-			(t ;; :no-prefix
-			 #x0)))
-	 (mod         (cdr (assoc-equal :mod opcode-identifier)))
-	 (r/m         (cdr (assoc-equal :r/m opcode-identifier)))
-	 (condition
-	  `(and
-	    ,@(and mode
-		   (if (equal mode :o64)
-		       `((equal proc-mode #.*64-bit-mode*))
-		     `((not (equal proc-mode #.*64-bit-mode*)))))
-	    ,@(and feat
-		   `((equal (feature-flags-macro ',feat) 1)))
-	    ,@(and reg
-		   `((equal (modr/m->reg modr/m) ,reg)))
-	    ,@(and mod
-		   (if (equal mod :mem)
-		       `((not (equal (modr/m->mod modr/m) #b11)))
-		     `((equal (modr/m->mod modr/m) #b11))))
-	    ,@(and r/m
-		   `((equal (modr/m->r/m modr/m) ,r/m)))
-	    ;; ,@(and prefix
-	    ;;        `((equal mandatory-prefix ,prefix-val)))
-	    )))
-      (cons `(,condition ,prefix-val)
+    (local
+     (defthm len-reduced-by-delete-assoc-equal
+       (implies (and (alistp alst) (assoc-equal key alst))
+		(< (len (delete-assoc-equal key alst))
+		   (len alst)))
+       :hints (("Goal" :in-theory (e/d (delete-assoc-equal) ())))
+       :rule-classes :linear))
+
+    (defthm len-reduced-by-delete-all-keys
+      (implies (and (alistp alst) (assoc-equal key alst))
+	       (< (len (delete-all-keys key alst))
+		  (len alst)))))
+
+  (define insert-elem ((pos natp)
+		       (elem)
+		       (lst true-listp))
+    :returns (new-lst true-listp :hyp (true-listp lst))
+    (append (take pos lst)
+	    (list elem) (nthcdr pos lst)))
+
+  (define reorder-mand-pfx-vals ((lst true-listp))
+    ;; #x0 #x66 #xF3 #xF2, with nil for filler
+    (b* ((new-lst (if (member-equal #x0 lst)
+		      (insert-elem 0 #x0 (remove-equal #x0 lst))
+		    (insert-elem 0 nil lst)))
+	 (new-lst (if (member-equal #x66 new-lst)
+		      (insert-elem 1 #x66 (remove-equal #x66 new-lst))
+		    (insert-elem 1 nil new-lst)))
+	 (new-lst (if (member-equal #xF3 new-lst)
+		      (insert-elem 2 #xF3 (remove-equal #xF3 new-lst))
+		    (insert-elem 2 nil new-lst)))
+	 (new-lst (if (member-equal #xF2 new-lst)
+		      (insert-elem 2 #xF2 (remove-equal #xF2 new-lst))
+		    (insert-elem 2 nil new-lst))))
+      new-lst))
+
+  (define collect-vals-of-dup-keys ((alst alistp))
+    :measure (len alst)
+    :prepwork
+    ((local
+      (defthm true-listp-flatten
+	(true-listp (acl2::flatten x))
+	:hints (("Goal" :in-theory (e/d (acl2::flatten) ()))))))
+    (if (or (endp alst) (not (alistp alst)))
+	nil
+      (b* ((key (caar alst))
+	   (vals (collect-all-vals-of-a-key key alst nil))
+	   (vals (list (cons 'mv (reorder-mand-pfx-vals (acl2::flatten vals)))))
+	   ;; (- (cw "~% vals: ~p0 ~%" vals))
+	   ((unless (assoc-equal key alst)) nil)
+	   (new-alst (delete-all-keys key alst)))
+	(cons
+	 (cons key vals)
+	 (collect-vals-of-dup-keys new-alst)))))
+
+  (define gen-mandatory-prefix-for-opcode-extensions-aux
+    ((opcode natp)
+     (desc-list opcode-descriptor-list-p)
+     &key
+     ((escape-bytes natp) '0))
+    :guard-hints (("Goal"
+		   :in-theory (e/d (opcode-descriptor-list-p
+				    opcode-descriptor-p)
+				   ())
+		   :do-not-induct t))
+    :returns (cond-stmt alistp)
+
+    ;; Borrowed heavily from create-case-dispatch-for-opcode-extensions-aux in
+    ;; dispatch-utils.lisp.  Keep these two in sync.
+
+    (if (endp desc-list)
+	`((t 0))
+      (b* ((opcode-descriptor (car desc-list))
+	   (opcode-identifier (car opcode-descriptor))
+	   ((unless (equal (cdr (assoc-equal :opcode opcode-identifier))
+			   (+ escape-bytes opcode)))
 	    (gen-mandatory-prefix-for-opcode-extensions-aux
-	     opcode (cdr desc-list) :escape-bytes escape-bytes)))))
+	     opcode (cdr desc-list) :escape-bytes escape-bytes))
+	   ;; (opcode-cell (cdr opcode-descriptor))
+	   (feat        (cdr (assoc-equal :feat opcode-identifier)))
+	   (mode        (cdr (assoc-equal :mode opcode-identifier)))
+	   (reg         (cdr (assoc-equal :reg opcode-identifier)))
+	   (prefix      (cdr (assoc-equal :prefix opcode-identifier)))
+	   (prefix-val  (case prefix
+			  (:66 #x66)
+			  (:F3 #xF3)
+			  (:F2 #xF2)
+			  (t ;; :no-prefix
+			   #x0)))
+	   (mod         (cdr (assoc-equal :mod opcode-identifier)))
+	   (r/m         (cdr (assoc-equal :r/m opcode-identifier)))
+	   (condition
+	    `(and
+	      ,@(and mode
+		     (if (equal mode :o64)
+			 `((equal proc-mode #.*64-bit-mode*))
+		       `((not (equal proc-mode #.*64-bit-mode*)))))
+	      ,@(and feat
+		     `((equal (feature-flags-macro ',feat) 1)))
+	      ,@(and reg
+		     `((equal (modr/m->reg modr/m) ,reg)))
+	      ,@(and mod
+		     (if (equal mod :mem)
+			 `((not (equal (modr/m->mod modr/m) #b11)))
+		       `((equal (modr/m->mod modr/m) #b11))))
+	      ,@(and r/m
+		     `((equal (modr/m->r/m modr/m) ,r/m)))
+	      ;; ,@(and prefix
+	      ;;        `((equal mandatory-prefix ,prefix-val)))
+	      )))
+	(cons `(,condition ,prefix-val)
+	      (gen-mandatory-prefix-for-opcode-extensions-aux
+	       opcode (cdr desc-list) :escape-bytes escape-bytes)))))
 
-(define gen-mandatory-prefix-for-opcode-extensions
-  ((opcode natp)
-   (desc-list opcode-descriptor-list-p)
-   &key
-   ((escape-bytes natp) '0))
+  (define gen-mandatory-prefix-for-opcode-extensions
+    ((opcode natp)
+     (desc-list opcode-descriptor-list-p)
+     &key
+     ((escape-bytes natp) '0))
+    ;; (gen-mandatory-prefix-for-opcode-extensions
+    ;;  #xC7
+    ;;  (acl2::flatten (strip-cdrs *opcode-extensions-by-group-number*))
+    ;;  :escape-bytes
+    ;;  #ux0F_00)
 
-  (b* ((cond-stmt
-	(gen-mandatory-prefix-for-opcode-extensions-aux
-	 opcode desc-list :escape-bytes escape-bytes))
-       (new-cond-stmt
-	(collect-vals-of-dup-keys cond-stmt)))
-    new-cond-stmt))
+    (b* ((cond-stmt
+	  (gen-mandatory-prefix-for-opcode-extensions-aux
+	   opcode desc-list :escape-bytes escape-bytes))
+	 (new-cond-stmt
+	  (collect-vals-of-dup-keys cond-stmt)))
+      new-cond-stmt))
 
-;; (gen-mandatory-prefix-for-opcode-extensions
-;;  #xC7
-;;  (acl2::flatten (strip-cdrs *opcode-extensions-by-group-number*))
-;;  :escape-bytes
-;;  #ux0F_00)
+  (define gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
+    ((opcode :type (unsigned-byte 9)))
+    :measure (nfix (- 256 opcode))
 
-(define gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
-  ((opcode :type (unsigned-byte 9)))
-  :measure (nfix (- 256 opcode))
+    (if (and (natp opcode)
+	     (<= opcode 255))
 
-  (if (and (natp opcode)
-	   (<= opcode 255))
+	(if (aref1 'two-byte-opcode-extensions-needing-pfx
+		   *two-byte-opcode-extensions-needing-pfx-ar*
+		   opcode)
+	    (cons
+	     (cons opcode
+		   `((cond
+		      ,@(gen-mandatory-prefix-for-opcode-extensions
+			 opcode
+			 (acl2::flatten (strip-cdrs *opcode-extensions-by-group-number*))
+			 :escape-bytes
+			 #ux0F_00))))
+	     (gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
+	      (1+ opcode)))
+	  (gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
+	   (1+ opcode)))
 
-      (if (aref1 'two-byte-opcode-extensions-needing-pfx
-		 *two-byte-opcode-extensions-needing-pfx-ar*
-		 opcode)
-	  (cons
-	   (cons opcode
-		 `((cond
-		    ,@(gen-mandatory-prefix-for-opcode-extensions
-		       opcode
-		       (acl2::flatten (strip-cdrs *opcode-extensions-by-group-number*))
-		       :escape-bytes
-		       #ux0F_00))))
-	   (gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
-	    (1+ opcode)))
-	(gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
-	 (1+ opcode)))
+      nil))
 
-    nil))
+  (make-event
+   `(define compute-mandatory-prefix-for-two-byte-opcode-extensions
+      ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+       (opcode    :type (unsigned-byte 8) "Relevant opcode byte")
+       (prefixes  :type (unsigned-byte #.*prefixes-width*))
+       (modr/m    :type (unsigned-byte 8))
+       x86)
+      :guard
+      ;; We expect this function to be called only for opcodes with simple cells.
+      (case proc-mode
+	(#.*64-bit-mode*
+	 (not (aref1 '64-bit-mode-two-byte-compound-opcodes
+		     *64-bit-mode-two-byte-compound-opcodes-ar*
+		     opcode)))
+	(otherwise
+	 (not (aref1 '32-bit-mode-two-byte-compound-opcodes
+		     *32-bit-mode-two-byte-compound-opcodes-ar*
+		     opcode))))
 
-(make-event
- `(define compute-mandatory-prefix-for-two-byte-opcode-extensions
+      :returns
+      (mv err-flg
+	  (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix)))
+
+      :prepwork
+      ((local (in-theory (disable unsigned-byte-p aref1 assoc-equal (tau-system)))))
+
+      (b* (((mv no-pfx-ok 66-pfx-ok f3-pfx-ok f2-pfx-ok)
+	    (case opcode
+	      ,@(gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
+		 0)
+	      (otherwise (mv 0 nil nil nil)))))
+
+	(let ((rep-pfx (prefixes->rep prefixes)))
+	  (if (not (eql rep-pfx 0))
+
+	      (if (or (and (equal rep-pfx #.*mandatory-F3h*)
+			   f3-pfx-ok)
+		      (and (equal rep-pfx #.*mandatory-F2h*)
+			   f2-pfx-ok))
+
+		  ;; If the opcode is allowed to have F2/F3, then rep-pfx is the
+		  ;; mandatory-prefix.
+
+		  (mv nil rep-pfx)
+
+		(mv (list :illegal-use-of-mandatory-prefix rep-pfx
+			  :opcode #x0F opcode)
+		    0))
+
+	    (let ((opr-pfx (prefixes->opr prefixes)))
+
+	      (if (not (eql opr-pfx 0))
+
+		  (if 66-pfx-ok
+
+		      (mv nil opr-pfx)
+
+		    (mv (list :illegal-use-of-mandatory-prefix opr-pfx
+			      :opcode #x0F opcode)
+			0))
+
+		(if no-pfx-ok
+
+		    ;; Okay to have no mandatory prefix.
+		    (mv nil 0)
+
+		  (mv (list :illegal-use-of-mandatory-prefix 0
+			    :opcode #x0F opcode)
+		      0)))))))))
+
+  (define two-byte-compound-opcode-modr/m-and-mandatory-prefix
     ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
      (opcode    :type (unsigned-byte 8) "Relevant opcode byte")
-     (prefixes  :type (unsigned-byte #.*prefixes-width*))
-     (modr/m    :type (unsigned-byte 8))
-     x86)
-    :guard
-    ;; We expect this function to be called only for opcodes with simple cells.
-    (case proc-mode
-      (#.*64-bit-mode*
-       (not (aref1 '64-bit-mode-two-byte-compound-opcodes
-		   *64-bit-mode-two-byte-compound-opcodes-ar*
-		   opcode)))
-      (otherwise
-       (not (aref1 '32-bit-mode-two-byte-compound-opcodes
-		   *32-bit-mode-two-byte-compound-opcodes-ar*
-		   opcode))))
-
+     (prefixes  :type (unsigned-byte 52))
+     (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
+     (x86))
+    :enabled t
+    :guard (and (prefixes-p prefixes)
+		(case proc-mode
+		  (#.*64-bit-mode*
+		   (aref1 '64-bit-mode-two-byte-compound-opcodes
+			  *64-bit-mode-two-byte-compound-opcodes-ar*
+			  opcode))
+		  (otherwise
+		   (aref1 '32-bit-mode-two-byte-compound-opcodes
+			  *32-bit-mode-two-byte-compound-opcodes-ar*
+			  opcode))))
     :returns
     (mv err-flg
-	(mandatory-prefix (unsigned-byte-p 8 mandatory-prefix)))
+	(mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
+	modr/m?
+	(modr/m           (unsigned-byte-p 8 modr/m)
+			  :hyp (x86p x86))
+	(new-x86          x86p
+			  :hyp (x86p x86)))
 
     :prepwork
     ((local (in-theory (disable unsigned-byte-p aref1 assoc-equal (tau-system)))))
 
-    (b* (((mv no-pfx-ok 66-pfx-ok f3-pfx-ok f2-pfx-ok)
-	  (case opcode
-	    ,@(gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
-	       0)
-	    (otherwise (mv 0 nil nil nil)))))
+    ;; We first get the mandatory prefix, and based on that, we determine if we
+    ;; need the modr/m byte; if yes, we get it.
 
-      (let ((rep-pfx (prefixes->rep prefixes)))
-	(if (not (eql rep-pfx 0))
-
-	    (if (or (and (equal rep-pfx #.*mandatory-F3h*)
-			 f3-pfx-ok)
-		    (and (equal rep-pfx #.*mandatory-F2h*)
-			 f2-pfx-ok))
-
-		;; If the opcode is allowed to have F2/F3, then rep-pfx is the
-		;; mandatory-prefix.
-
-		(mv nil rep-pfx)
-
-	      (mv (list :illegal-use-of-mandatory-prefix rep-pfx
-			:opcode #x0F opcode)
-		  0))
-
-	  (let ((opr-pfx (prefixes->opr prefixes)))
-
-	    (if (not (eql opr-pfx 0))
-
-		(if 66-pfx-ok
-
-		    (mv nil opr-pfx)
-
-		  (mv (list :illegal-use-of-mandatory-prefix opr-pfx
-			    :opcode #x0F opcode)
-		      0))
-
-	      (if no-pfx-ok
-
-		  ;; Okay to have no mandatory prefix.
-		  (mv nil 0)
-
-		(mv (list :illegal-use-of-mandatory-prefix 0
-			  :opcode #x0F opcode)
-		    0)))))))))
-
-(define two-byte-compound-opcode-modr/m-and-mandatory-prefix
-  ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-   (opcode    :type (unsigned-byte 8) "Relevant opcode byte")
-   (prefixes  :type (unsigned-byte 52))
-   (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
-   (x86))
-  :enabled t
-  :guard (and (prefixes-p prefixes)
-	      (case proc-mode
-		(#.*64-bit-mode*
-		 (aref1 '64-bit-mode-two-byte-compound-opcodes
-			*64-bit-mode-two-byte-compound-opcodes-ar*
-			opcode))
-		(otherwise
-		 (aref1 '32-bit-mode-two-byte-compound-opcodes
-			*32-bit-mode-two-byte-compound-opcodes-ar*
-			opcode))))
-  :returns
-  (mv err-flg
-      (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
-      modr/m?
-      (modr/m           (unsigned-byte-p 8 modr/m)
-			:hyp (x86p x86))
-      (new-x86          x86p
-			:hyp (x86p x86)))
-
-  :prepwork
-  ((local (in-theory (disable unsigned-byte-p aref1 assoc-equal (tau-system)))))
-
-  ;; We first get the mandatory prefix, and based on that, we determine if we
-  ;; need the modr/m byte; if yes, we get it.
-
-  (b* (((mv compound-mand-pfx-error (the (unsigned-byte 8) mand-pfx))
-	(case proc-mode
-	  (#.*64-bit-mode*
-	   (64-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
-	    opcode prefixes))
-	  (otherwise
-	   (32-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
-	    opcode prefixes))))
-       ((when compound-mand-pfx-error)
-	(mv compound-mand-pfx-error 0 nil 0 x86))
-       (modr/m?
-	(two-byte-opcode-ModR/M-p proc-mode mand-pfx opcode))
-       ((mv modr/m-flg (the (unsigned-byte 8) modr/m) x86)
-	(if modr/m?
-	    (rme08 proc-mode temp-rip #.*cs* :x x86)
-	  (mv nil 0 x86)))
-       ((when modr/m-flg)
-	(mv (list :modr/m-byte-read-error modr/m-flg) 0 nil 0 x86)))
-    (mv nil mand-pfx modr/m? modr/m x86))
-
-  ///
-
-  (defthmd two-byte-compound-opcode-modr/m-and-mandatory-prefix.new-x86-rewrite
-    ;; Sanity checking
-    (b* (((mv compound-mand-pfx-error mand-pfx)
+    (b* (((mv compound-mand-pfx-error (the (unsigned-byte 8) mand-pfx))
 	  (case proc-mode
 	    (#.*64-bit-mode*
 	     (64-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
 	      opcode prefixes))
 	    (otherwise
 	     (32-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
-	      opcode prefixes)))))
-      (equal (mv-nth
-	      4
-	      (two-byte-compound-opcode-modr/m-and-mandatory-prefix
-	       proc-mode opcode prefixes temp-rip x86))
-	     (if (and (not compound-mand-pfx-error)
-		      (two-byte-opcode-ModR/M-p proc-mode mand-pfx opcode))
-		 (mv-nth 2 (rme08 proc-mode temp-rip #.*cs* :x x86))
-	       x86)))))
+	      opcode prefixes))))
+	 ((when compound-mand-pfx-error)
+	  (mv compound-mand-pfx-error 0 nil 0 x86))
+	 (modr/m?
+	  (two-byte-opcode-ModR/M-p proc-mode mand-pfx opcode))
+	 ((mv modr/m-flg (the (unsigned-byte 8) modr/m) x86)
+	  (if modr/m?
+	      (rme08 proc-mode temp-rip #.*cs* :x x86)
+	    (mv nil 0 x86)))
+	 ((when modr/m-flg)
+	  (mv (list :modr/m-byte-read-error modr/m-flg) 0 nil 0 x86)))
+      (mv nil mand-pfx modr/m? modr/m x86))
 
-(define two-byte-opcode-modr/m-and-mandatory-prefix
-  ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-   (opcode   :type (unsigned-byte 8) "Relevant opcode byte")
-   (prefixes :type (unsigned-byte 52))
-   (temp-rip :type (signed-byte   #.*max-linear-address-size*))
-   (x86))
-  :guard (prefixes-p prefixes)
-  :enabled t
-  :returns
-  (mv err-flg
-      (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
-      modr/m?
-      (modr/m           (unsigned-byte-p 8 modr/m)
-			:hyp (x86p x86))
-      (new-x86          x86p
-			:hyp (x86p x86)))
-  :prepwork
-  ((local (in-theory (disable aref1 assoc-equal unsigned-byte-p (tau-system)))))
+    ///
 
-  (b* ((compound-opcode?
-	(case proc-mode
-	  (#.*64-bit-mode*
-	   (aref1 '64-bit-mode-two-byte-compound-opcodes
-		  *64-bit-mode-two-byte-compound-opcodes-ar*
-		  opcode))
-	  (otherwise
-	   (aref1 '32-bit-mode-two-byte-compound-opcodes
-		  *32-bit-mode-two-byte-compound-opcodes-ar*
-		  opcode))))
-       ((when compound-opcode?)
-	(two-byte-compound-opcode-modr/m-and-mandatory-prefix
-	 proc-mode opcode prefixes temp-rip x86))
+    (defthmd two-byte-compound-opcode-modr/m-and-mandatory-prefix.new-x86-rewrite
+      ;; Sanity checking
+      (b* (((mv compound-mand-pfx-error mand-pfx)
+	    (case proc-mode
+	      (#.*64-bit-mode*
+	       (64-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
+		opcode prefixes))
+	      (otherwise
+	       (32-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
+		opcode prefixes)))))
+	(equal (mv-nth
+		4
+		(two-byte-compound-opcode-modr/m-and-mandatory-prefix
+		 proc-mode opcode prefixes temp-rip x86))
+	       (if (and (not compound-mand-pfx-error)
+			(two-byte-opcode-ModR/M-p proc-mode mand-pfx opcode))
+		   (mv-nth 2 (rme08 proc-mode temp-rip #.*cs* :x x86))
+		 x86)))))
 
-       (simple-opcode-modr/m?
-	(case proc-mode
-	  (#.*64-bit-mode*
-	   (aref1 '64-bit-mode-two-byte-no-prefix-has-modr/m
-		  *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))
-	  (otherwise
-	   (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
-		  *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))))
-       ((when (not simple-opcode-modr/m?))
-	;; If the simple opcode doesn't require a modr/m byte, then it can't
-	;; have a mandatory-prefix too (because if it did, it'd be a compound
-	;; opcode, and we've already dealt with them at this point).
-	(mv nil 0 simple-opcode-modr/m? 0 x86))
-       ((mv modr/m-flg (the (unsigned-byte 8) modr/m) x86)
-	(rme08 proc-mode temp-rip #.*cs* :x x86))
-       ((when modr/m-flg)
-	(mv (list :modr/m-byte-read-error modr/m-flg)
-	    0 simple-opcode-modr/m? 0 x86))
+  (define two-byte-opcode-modr/m-and-mandatory-prefix
+    ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+     (opcode   :type (unsigned-byte 8) "Relevant opcode byte")
+     (prefixes :type (unsigned-byte 52))
+     (temp-rip :type (signed-byte   #.*max-linear-address-size*))
+     (x86))
+    :guard (prefixes-p prefixes)
+    :enabled t
+    :returns
+    (mv err-flg
+	(mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
+	modr/m?
+	(modr/m           (unsigned-byte-p 8 modr/m)
+			  :hyp (x86p x86))
+	(new-x86          x86p
+			  :hyp (x86p x86)))
+    :prepwork
+    ((local (in-theory (disable aref1 assoc-equal unsigned-byte-p (tau-system)))))
 
-       ((if (not (aref1 'two-byte-opcode-extensions-needing-pfx
-			*two-byte-opcode-extensions-needing-pfx-ar*
-			opcode)))
-	;; If the simple opcode requires a modr/m byte but has no modr/m
-	;; extensions (i.e., isn't a "Group" opcode belonging in
-	;; *opcode-extensions-by-group-number*), then it doesn't require a
-	;; mandatory prefix.  In this case, even if the simple opcode has
-	;; modr/m extensions, they don't require a mandatory prefix.
-	(mv nil 0 simple-opcode-modr/m? modr/m x86))
-       ((mv mand-pfx-err (the (unsigned-byte 8) mand-pfx))
-	;; The opcode is simple but its opcode extensions require a mandatory
-	;; prefix (for the purpose of disambiguation).  We need the modr/m byte
-	;; below because the extensions may also depend on it.  We need x86
-	;; below to look up CPUID features, for example.
-	(compute-mandatory-prefix-for-two-byte-opcode-extensions
-	 proc-mode opcode prefixes modr/m x86)))
-    (mv mand-pfx-err mand-pfx simple-opcode-modr/m? modr/m x86))
-
-  ///
-
-  (defthmd two-byte-opcode-modr/m-and-mandatory-prefix.new-x86-rewrite
-    ;; Sanity checking
     (b* ((compound-opcode?
 	  (case proc-mode
 	    (#.*64-bit-mode*
@@ -3837,6 +3790,10 @@
 	     (aref1 '32-bit-mode-two-byte-compound-opcodes
 		    *32-bit-mode-two-byte-compound-opcodes-ar*
 		    opcode))))
+	 ((when compound-opcode?)
+	  (two-byte-compound-opcode-modr/m-and-mandatory-prefix
+	   proc-mode opcode prefixes temp-rip x86))
+
 	 (simple-opcode-modr/m?
 	  (case proc-mode
 	    (#.*64-bit-mode*
@@ -3844,20 +3801,71 @@
 		    *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))
 	    (otherwise
 	     (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
-		    *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode)))))
-      (equal (mv-nth
-	      4
-	      (two-byte-opcode-modr/m-and-mandatory-prefix
-	       proc-mode opcode prefixes temp-rip x86))
-	     (cond
-	      (compound-opcode?
-	       (mv-nth
+		    *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))))
+	 ((when (not simple-opcode-modr/m?))
+	  ;; If the simple opcode doesn't require a modr/m byte, then it can't
+	  ;; have a mandatory-prefix too (because if it did, it'd be a compound
+	  ;; opcode, and we've already dealt with them at this point).
+	  (mv nil 0 simple-opcode-modr/m? 0 x86))
+	 ((mv modr/m-flg (the (unsigned-byte 8) modr/m) x86)
+	  (rme08 proc-mode temp-rip #.*cs* :x x86))
+	 ((when modr/m-flg)
+	  (mv (list :modr/m-byte-read-error modr/m-flg)
+	      0 simple-opcode-modr/m? 0 x86))
+
+	 ((if (not (aref1 'two-byte-opcode-extensions-needing-pfx
+			  *two-byte-opcode-extensions-needing-pfx-ar*
+			  opcode)))
+	  ;; If the simple opcode requires a modr/m byte but has no modr/m
+	  ;; extensions (i.e., isn't a "Group" opcode belonging in
+	  ;; *opcode-extensions-by-group-number*), then it doesn't require a
+	  ;; mandatory prefix.  In this case, even if the simple opcode has
+	  ;; modr/m extensions, they don't require a mandatory prefix.
+	  (mv nil 0 simple-opcode-modr/m? modr/m x86))
+	 ((mv mand-pfx-err (the (unsigned-byte 8) mand-pfx))
+	  ;; The opcode is simple but its opcode extensions require a mandatory
+	  ;; prefix (for the purpose of disambiguation).  We need the modr/m byte
+	  ;; below because the extensions may also depend on it.  We need x86
+	  ;; below to look up CPUID features, for example.
+	  (compute-mandatory-prefix-for-two-byte-opcode-extensions
+	   proc-mode opcode prefixes modr/m x86)))
+      (mv mand-pfx-err mand-pfx simple-opcode-modr/m? modr/m x86))
+
+    ///
+
+    (defthmd two-byte-opcode-modr/m-and-mandatory-prefix.new-x86-rewrite
+      ;; Sanity checking
+      (b* ((compound-opcode?
+	    (case proc-mode
+	      (#.*64-bit-mode*
+	       (aref1 '64-bit-mode-two-byte-compound-opcodes
+		      *64-bit-mode-two-byte-compound-opcodes-ar*
+		      opcode))
+	      (otherwise
+	       (aref1 '32-bit-mode-two-byte-compound-opcodes
+		      *32-bit-mode-two-byte-compound-opcodes-ar*
+		      opcode))))
+	   (simple-opcode-modr/m?
+	    (case proc-mode
+	      (#.*64-bit-mode*
+	       (aref1 '64-bit-mode-two-byte-no-prefix-has-modr/m
+		      *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))
+	      (otherwise
+	       (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
+		      *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode)))))
+	(equal (mv-nth
 		4
-		(two-byte-compound-opcode-modr/m-and-mandatory-prefix
-		 proc-mode opcode prefixes temp-rip x86)))
-	      ((not simple-opcode-modr/m?)
-	       x86)
-	      (t
-	       (mv-nth 2 (rme08 proc-mode temp-rip #.*cs* :x x86))))))))
+		(two-byte-opcode-modr/m-and-mandatory-prefix
+		 proc-mode opcode prefixes temp-rip x86))
+	       (cond
+		(compound-opcode?
+		 (mv-nth
+		  4
+		  (two-byte-compound-opcode-modr/m-and-mandatory-prefix
+		   proc-mode opcode prefixes temp-rip x86)))
+		((not simple-opcode-modr/m?)
+		 x86)
+		(t
+		 (mv-nth 2 (rme08 proc-mode temp-rip #.*cs* :x x86)))))))))
 
 ;; ----------------------------------------------------------------------
