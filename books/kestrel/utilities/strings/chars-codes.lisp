@@ -79,9 +79,10 @@
     :enable repeat)
 
   (defrule nth-of-nats=>chars
-    (implies (integer-range-p 0 (len chars) i)
-             (equal (nth i (nats=>chars chars))
-                    (code-char (nth i chars))))))
+    (equal (nth i (nats=>chars nats))
+           (if (< (nfix i) (len nats))
+               (code-char (nth i nats))
+             nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -146,9 +147,29 @@
            (repeat n (char-code char)))
     :enable repeat)
 
-
   (defrule nth-of-chars=>nats
     (equal (nth i (chars=>nats chars))
            (if (< (nfix i) (len chars))
                (char-code (nth i chars))
-             nil))))
+             nil)))
+
+  (defrule chars=>nats-of-make-character-list
+    (equal (chars=>nats (make-character-list x))
+           (chars=>nats x))))
+
+(defsection nats<=>chars-inversion-theorems
+  :parents (nats=>chars chars=>nats)
+  :short "@(tsee nats=>chars) and @(tsee chars=>nats)
+          are mutual inverses."
+
+  (defrule
+    chars=>nats-of-nats=>chars
+    (implies (unsigned-byte-listp 8 (list-fix nats))
+             (equal (chars=>nats (nats=>chars nats))
+                    (list-fix nats)))
+    :enable (chars=>nats nats=>chars)
+    :rule-classes
+    ((:rewrite
+      :corollary (implies (unsigned-byte-listp 8 nats)
+                          (equal (chars=>nats (nats=>chars nats))
+                                 nats))))))
