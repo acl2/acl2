@@ -1,11 +1,13 @@
+#|$ACL2s-Preamble$;
 ; Copyright (C) 2018, Northeastern University
 ; Written by Pete Manolios
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 (include-book ;; Newline to fool ACL2/cert.pl dependency scanner
  "portcullis")
-(begin-book t :ttags :all);$ACL2s-Preamble$|#
+(begin-book t);$ACL2s-Preamble$|#
 
 (in-package "ACL2S")
+
 (include-book "kestrel/utilities/proof-builder-macros" :dir :system)
 
 (defxdoc acl2-pc::repeat-until-done
