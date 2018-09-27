@@ -17,6 +17,9 @@
 ; Pete 9/16/2018: Better range support
 (include-book "tau/bounders/elementary-bounders" :dir :system)
 
+; Pete 9/27/2018: Include utilities book
+(include-book "utilities")
+
 ; Pete 9/14/2018: I am enabling some of the functions that
 ; std/lists/top disables, since this causes problems where simple
 ; theorems do not getting proved.
@@ -25,6 +28,7 @@
             true-listp
             len
             append
+            rev
             revappend
             no-duplicatesp-equal
             make-character-list
