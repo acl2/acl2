@@ -213,6 +213,11 @@
   :hints (("goal" :induct (first-n-ac n alv ac))))
 
 (defthm
+  count-free-blocks-alt-correctness-2-lemma-1
+  (equal (count-free-blocks (fix-true-list alv))
+         (count-free-blocks alv)))
+
+(defthm
   count-free-blocks-alt-correctness-2
   (implies (and (boolean-listp alv)
                 (equal n (len alv)))
