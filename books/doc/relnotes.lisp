@@ -123,13 +123,6 @@
 
  <h3>Changes to Existing Libraries</h3>
 
- <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
- inside @('lambda') (@('let')) bodies.</p>
-
- <p>Refactored the old file
- @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
- under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
-
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>
@@ -154,6 +147,17 @@
  <p>
  Added @(tsee ensure-string), an error-checking function for strings.
  </p>
+
+ <h4>System Utilities</h4>
+
+ <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
+ inside @('lambda') (@('let')) bodies.</p>
+
+ <h4>Typed List Utilities</h4>
+
+ <p>Refactored the old file
+ @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
+ under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
 
  <h3>Licensing Changes</h3>
 
