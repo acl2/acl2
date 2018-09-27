@@ -148,7 +148,7 @@
  Added @(tsee ensure-string), an error-checking function for strings.
  </p>
 
- <h4>Filesystem Books</see></h4>
+ <h4>Filesystem Books</h4>
 
  <p>The filesystem books @('books/projects/filesystems/') have been
  substantially expanded; in particular, they now contain a new model which
