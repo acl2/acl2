@@ -148,7 +148,7 @@
  Added @(tsee ensure-string), an error-checking function for strings.
  </p>
 
- <h4>System Utilities</h4>
+ <h4>System-level Utilities</h4>
 
  <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
  inside @('lambda') (@('let')) bodies.</p>
