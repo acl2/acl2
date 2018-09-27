@@ -343,9 +343,17 @@ the warning into a printed message here.  We'll include both HTML and plain
 TEXT versions of the message.</p>"
 
   (b* (((vl-warning x) x)
-       (text (with-local-ps (if x.context
-                                (vl-cw-obj "~a0: ~@1" (list x.context (vl-msg x.msg x.args)))
-                              (vl-cw-obj x.msg x.args))))
+       (text (with-local-ps
+               ;; Historically, we used the default auto-wrap here.  But this
+               ;; often results in long Verilog expressions getting
+               ;; word-wrapped (1) by their author, and (2) by us after the
+               ;; fact.  This often results in unfortunate formatting.  So now
+               ;; we bump this up to a pretty large wrap, deferring to the
+               ;; user's formatting unless they have really gone off the ranch.
+               (vl-ps-update-autowrap-col 1000)
+               (if x.context
+                   (vl-cw-obj "~a0: ~@1" (list x.context (vl-msg x.msg x.args)))
+                 (vl-cw-obj x.msg x.args))))
        ((when no-html)
         ;; Suppressing HTML output can be useful for reducing file sizes of
         ;; vl-warnings.json in VL Lint.

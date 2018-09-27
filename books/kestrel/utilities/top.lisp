@@ -68,7 +68,7 @@
 (include-book "testing")
 (include-book "trans-eval-error-triple")
 (include-book "true-list-listp-theorems")
-(include-book "typed-list-theorems")
+(include-book "typed-lists/top")
 (include-book "typed-tuples")
 (include-book "ubi")
 (include-book "untranslate-preprocessing")

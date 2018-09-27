@@ -25,15 +25,19 @@ questions.
 
 Replace the function fix-true-list in the ACL2 sources with the
 function list-fix defined in books/std/lists/list-fix.lisp.  Actually,
-I prefer the name true-list-fix to list-fix, since in Common Lisp, a
-"list" need not be a true list.
+the name true-list-fix seems preferable to list-fix (at least to Matt
+K. and Alessandro C.), since in Common Lisp, a "list" need not be a
+true list, and since the name true-list-fix "mirrors" true-listp,
+according to the pattern <x>-listp / <x>-list-fix.
+
+Note that Jared Davis, author and copyright holder (through Kookamara
+LLC) of the book above, has given his consent to integrate it into the
+ACL2 sources.
 
 Steps:
 
    - Check with J to see if he is OK with the name list-fix, even
      though true-list-fix is more accurate.
-
-   - Get permission from Jared (author of the book).
 
    - Make a note of the starting git hash (see below).
 

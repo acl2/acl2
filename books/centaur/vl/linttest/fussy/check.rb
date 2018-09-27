@@ -186,7 +186,13 @@ fuss("shift_xor_warn2")
 normal("shift_xor_normal1")
 normal("shift_xor_normal2")
 
+normal("normal_sysfun1")
+normal("normal_sysfun2")
+normal("normal_sysfun3")
+normal("normal_sysfun4")
+
+outlaw_warning(:a1, "VL-WARN-QMARK-WIDTH", "foo")
+match_warning(:a1, "VL-WARN-QMARK-WIDTH", "bar")
+match_warning(:a1, "VL-WARN-QMARK-WIDTH", "baz")
+
 test_passed()
-
-
-

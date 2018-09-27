@@ -167,7 +167,7 @@
                                 `(:expansion? ,(car form-list)))
                          :on-behalf-of :quiet!)))
     (cond (quiet `(with-output
-                    ,@(and quiet '(:stack :push))
+                    :stack :push
                     :gag-mode nil
                     :off :all
                     ,ev))
