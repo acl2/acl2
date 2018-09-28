@@ -148,7 +148,8 @@
 			     (add-to-*ip
 			      modr/m-p
 			      add-to-*ip-is-i48p-rewrite-rule)
-			     (unsigned-byte-p
+			     (two-byte-opcode-modr/m-and-mandatory-prefix
+                              unsigned-byte-p
 			      (:type-prescription bitops::logand-natp-type-2)
 			      (:type-prescription bitops::ash-natp-type)
 			      acl2::loghead-identity
@@ -245,6 +246,6 @@
 		    proc-mode start-rip temp-rip prefixes
 		    rex-byte escape-byte x86)))
     :enable add-to-*ip-is-i48p-rewrite-rule
-    :disable signed-byte-p))
+    :disable (signed-byte-p two-byte-opcode-modr/m-and-mandatory-prefix)))
 
 ;; ----------------------------------------------------------------------
