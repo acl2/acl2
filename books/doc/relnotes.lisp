@@ -130,6 +130,14 @@
  for non-floating-point instructions.
  </p>
 
+ <p>Added support for enabling/disabling machine features that depend on CPUID
+ flags.</p>
+
+ <p>Detection of many decode-time exceptions is now done during opcode
+ dispatch, as opposed to inside the instruction semantic functions.  This not
+ only lets us catch exceptions early, but also allows us to specify them
+ even if the semantic functions themselves are missing.</p>
+
  <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
 
  <p>
