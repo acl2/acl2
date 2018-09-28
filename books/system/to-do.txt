@@ -23,6 +23,11 @@ questions.
 
 {{Eliminate fix-true-list in favor of list-fix.}}
 
+**********
+**NOTE**: Mihir Mehta is in the middle of this, and would appreciate
+  assistance, especially with congruence rules.
+**********
+
 Replace the function fix-true-list in the ACL2 sources with the
 function list-fix defined in books/std/lists/list-fix.lisp.  Actually,
 the name true-list-fix seems preferable to list-fix (at least to Matt
