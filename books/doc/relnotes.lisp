@@ -183,6 +183,10 @@
  byte-combining libraries </see> have been expanded with several new
  lemmas. Some existing lemmas have also been generalized.</p>
 
+ <p>The utility, @(tsee directed-untranslate), has been improved in several
+ ways, including more complete handling of @(tsee mv-let), @(tsee b*), and
+ @(tsee progn$).</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
