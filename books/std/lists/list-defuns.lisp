@@ -39,24 +39,13 @@
 ; now prove the bare-minimum theorems inline and avoid including the other
 ; books.
 
-(defund list-fix-exec (x)
-  (declare (xargs :guard t))
-  (if (consp x)
-      (cons (car x)
-            (list-fix-exec (cdr x)))
-    nil))
+(defmacro list-fix-exec (x) `(true-list-fix-exec ,x))
 
-(defund list-fix (x)
-  (declare (xargs :guard t :verify-guards nil))
-  (mbe :logic
-       (if (consp x)
-           (cons (car x)
-                 (list-fix (cdr x)))
-         nil)
-       :exec
-       (if (true-listp x)
-           x
-         (list-fix-exec x))))
+(table macro-aliases-table 'list-fix-exec 'true-list-fix-exec)
+
+(defmacro list-fix (x) `(true-list-fix ,x))
+
+(table macro-aliases-table 'list-fix 'true-list-fix)
 
 (encapsulate
   ()
@@ -69,8 +58,6 @@
   (local (defthm list-fix-when-true-listp
            (implies (true-listp x)
                     (equal (list-fix x) x))))
-
-  (verify-guards list-fix)
 
   (defun-inline llist-fix (x)
     (declare (xargs :guard (true-listp x)))
