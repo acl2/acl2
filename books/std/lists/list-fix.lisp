@@ -74,24 +74,15 @@ returns its argument unchanged.</p>
 <p>See also @(see llist-fix), a \"logical list fix\" that is guarded with
 @(see true-listp) for greater efficiency.</p>"
 
-  (defund list-fix-exec (x)
-    (declare (xargs :guard t))
-    (if (consp x)
-        (cons (car x)
-              (list-fix-exec (cdr x)))
-      nil))
+  (defmacro list-fix-exec (x) `(true-list-fix-exec ,x))
 
-  (defund list-fix (x)
-    (declare (xargs :guard t :verify-guards nil))
-    (mbe :logic
-         (if (consp x)
-             (cons (car x)
-                   (list-fix (cdr x)))
-           nil)
-         :exec
-         (if (true-listp x)
-             x
-           (list-fix-exec x))))
+  (table macro-aliases-table 'list-fix-exec 'true-list-fix-exec)
+
+  (defmacro list-fix (x) `(true-list-fix ,x))
+
+  (table macro-aliases-table 'list-fix 'true-list-fix)
+
+  (in-theory (disable list-fix))
 
   (local (in-theory (enable list-fix-exec)))
 
@@ -110,8 +101,6 @@ returns its argument unchanged.</p>
     (equal (list-fix-exec x)
            (list-fix x))
     :hints(("Goal" :in-theory (enable list-fix))))
-
-  (verify-guards list-fix)
 
   (defthm car-of-list-fix
     (equal (car (list-fix x))
