@@ -165,14 +165,14 @@
  @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
  under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
 
- <h4>Other Utilities</h4>
+ <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
 
- <p>In support of changes to the filesystem books (see above), the Kestrel
- string libraries as well as the <see topic='@(url combine-functions)'>std/io
- byte-combining libraries </see> have been expanded with several new
- lemmas. Some existing lemmas have also been generalized.</p>
+ <p>Added new lemmas and generalized some existing lemmas.</p>
 
- <h4>Digits in Arbitrary Bases</h4>
+ <h4>@(csee std/io)</h4>
+
+ <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
+ byte-combining libraries</see>.</p> <h4>Digits in Arbitrary Bases</h4>
 
  <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
  moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
