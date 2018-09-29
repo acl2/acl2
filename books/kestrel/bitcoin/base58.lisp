@@ -11,7 +11,7 @@
 (in-package "BITCOIN")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/utilities/digits-any-base-pow2" :dir :system)
+(include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
 (include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/lists/index-of" :dir :system)

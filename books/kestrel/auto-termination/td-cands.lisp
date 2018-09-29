@@ -7125,7 +7125,7 @@
      (O< (ACL2-COUNT (FLOOR NAT (DAB-BASE-FIX BASE)))
          (ACL2-COUNT NAT))))
    (NAT=>DIGITS-EXEC 3 :SYSTEM
-                     . "kestrel/utilities/digits-any-base"))
+                     . "kestrel/utilities/digits-any-base/core"))
   ((JUSTIFICATION (TERM)
                   (NIL O-P . O<)
                   ((ACL2-COUNT TERM) MV-LIST RETURN-LAST))

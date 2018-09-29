@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/digits-any-base-pow2" :dir :system)
+(include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
 (include-book "kestrel/utilities/lists/index-of-theorems" :dir :system)
 (include-book "kestrel/utilities/lists/rev-theorems" :dir :system)
 (include-book "std/util/defrule" :dir :system)
