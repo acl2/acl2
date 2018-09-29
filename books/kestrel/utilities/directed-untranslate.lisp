@@ -7,11 +7,8 @@
 
 ; TODO:
 
-; - Handle more built-in macros, such as case.
-
-; - Handle b*.  A possible strategy is to use macroexpand1* to translate away
-;   all b* calls, then try to reconstruct b* from the result and the given
-;   uterm.
+; - Handle more built-in macros, such as case and, perhaps more completely,
+;   b*.
 
 ; - Perhaps improve lambdafy-rec to deal with dropped conjuncts and disjuncts;
 ;   see adjust-sterm-for-tterm.
@@ -21,7 +18,7 @@
 (in-package "ACL2")
 
 (include-book "make-executable")
-
+(include-book "std/util/bstar" :dir :system)
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc directed-untranslate
@@ -47,7 +44,7 @@
  @('tterm') (we may think of @('sterm') as a simplified version of
  @('tterm'));</li>
 
- <li>@('iff-flg') is a Boolean</li>
+ <li>@('iff-flg') is a Boolean;</li>
 
  <li>@('stobjs-out') is either @('nil') or a @(tsee true-listp) each of whose
  members is either @('nil') or the name of a @(see stobj), with no stobj name
@@ -103,37 +100,61 @@
  <ol>
 
  <li>The @('directed-untranslate') utility is based on heuristics that may not
- always produce the result you want.</li>
+ always produce the result you want.  They have been designed to work best in
+ the case that @('sterm') is a simplification of @('tterm').</li>
 
- <li>Thus, @('directed-untranslate') may be improved over time; hence its
- untranslation of a given term may change over time as the tool uses
- increasingly sophisticated heuristics.</li>
+ <ul>
 
- <li>The heuristics may work best in the case that @('sterm') is a
- simplification of @('tterm').</li>
+ <li>For an example of the heuristics, suppose that @('uterm') let-binds a
+ variable, @('v'), which thus is @(see lambda)-bound in @('tterm') to some
+ expression, @('expr').  If @('v') has essentially been replaced by a value
+ @('expr'') that occurs in @('sterm'), then an attempt is often made to use
+ lambda abstraction to let-bind @('v') to @('expr'') in the result.  (No such
+ attempt is made if @('expr') has essentially disappeared in @('sterm').)  The
+ utility, @('directed-untranslate-no-lets'), is similar but does not make such
+ an attempt.</li>
 
- <li>When @('sterm') has no @(tsee lambda) applications, an attempt is made to
- insert suitable @('LET') and/or @('LET*') bindings into the result.  The
- utility @('directed-untranslate-no-lets') is similar but does not make such an
- attempt.</li>
+ <li>For another example, results involving @(tsee b*) are biased towards the
+ intended primary use case, in which sterm is a simplification of tterm and the
+ result is intended to be in simplified form.  In particular, bindings of the
+ form @('(var val)') that specify an ignored or ignorable variable are handled
+ as follows.
 
- <li>Here are some features that are not yet implemented but might be in the
- future, quite possibly only upon request.
+ <ul>
+
+  <li>A @('b*') binding <tt>(- val)</tt> in @('uterm') translates to @('(prog2$
+  val ...)'), so is generally preserved if there is a corresponding @(tsee
+  prog2$) call in @('sterm').</li>
+
+  <li>A @('b*') binding of @('(& val)') or @('(?!x val)') in @('uterm') is
+  completely discarded in translation to @('tterm'), so is presumably not
+  present in @('sterm'), hence is also discarded in the result.</li>
+
+  <li>A @('b*') binding @('(?x val)') in @('uterm') generates an @('ignorable')
+  declaration, so is generally preserved if and only if @('x') occurs free in
+  @('sterm').  (If the binding were restored after being simplified away, it
+  could contain an unsimplified term, which we deem to be undesirable.)</li>
+
+ </ul></li>
+
+ </ul>
+
+ <li>@('Directed-untranslate') may be improved over time; hence it may produce
+ different results as the tool uses increasingly sophisticated heuristics.  For
+ example, here are some features that are not yet implemented but might be in
+ the future, quite possibly only upon request.
 
  <ul>
 
  <li>A better untranslation might be obtainable when the simplified
  term (@('sterm')) has similar structure to a proper subterm of the original
- term @('tterm').  As it stands now, the original untranslated term @('uterm')
+ term @('@('tterm')').  As it stands now, the original untranslated term @('uterm')
  is probably useless in that case.</li>
 
  <li>More macros could quite reasonably be handled, but aren't yet, such as
  @(tsee case).</li>
 
- <li>Support for preserving @(tsee let), @(tsee let*), @(tsee mv-let), and
- @(tsee b*) may be improved.  In particular, @('b*') currently is preserved
- only for certain simple bindings: @('(- expr)'), @('(var expr)'), and @('((mv
- v1 ... vn) expr)').</li>
+ <li>Support for @(tsee b*) may be improved by comprehending more binders.</li>
 
  </ul></li>
 
@@ -189,9 +210,19 @@
   (mv-let (erp val)
     (translate-cmp uterm t nil t 'check-du-inv-fn wrld
                    (default-state-vars nil))
-    (and (not erp)
-         (equal (remove-declare-effects val)
-                (remove-declare-effects tterm)))))
+    (cond (erp (er hard 'check-du-inv
+                   "Translation failed during directed-untranslate for the ~
+                    form ~x0.  The error is as follows:~|~%~@1"
+                   uterm val))
+          ((equal (remove-declare-effects val)
+                  (remove-declare-effects tterm))
+           t)
+          (t (er hard 'check-du-inv
+                 "Implementation error: Translation check failed during ~
+                  directed-untranslate: uterm does not translate to tterm ~
+                  (even after ignoring certain effects from declare forms, if ~
+                  any).~|uterm: ~x0~|tterm: ~x1"
+                 uterm tterm)))))
 
 (defmacro check-du-inv (uterm tterm wrld form)
 
@@ -1288,29 +1319,88 @@
               (equal (cadr xn) x)))
         (t nil)))
 
-(defun du-make-mv-let-aux (bindings mv-var n acc-vars)
+(defun du-nth-index (xn x)
+
+; Xn and x are untranslated terms.  It is permissible (and desirable) to return
+; the natural number n if xn is provably equal to (nth n x).  Otherwise, return
+; nil.
+
+; We could improve this function by returning non-nil in more cases, for
+; example: (du-nth '(cadr x) x) could equal 1.
+
+  (declare (xargs :guard (symbolp x)))
+  (cond
+   ((and (true-listp xn) ; case (DU-NTH-INDEX ([MV-]NTH n MV) MV)
+         (member-eq (car xn) '(nth mv-nth))
+         (natp (cadr xn))
+         (eq (caddr xn) x))
+    (cadr xn))
+   ((and (true-listp xn) ; case (DU-NTH-INDEX ([MV-]NTH n (MV-LIST _ MV)) MV)
+         (member-eq (car xn) '(nth mv-nth))
+         (natp (cadr xn))
+         (let ((tmp (caddr xn)))
+           (case-match tmp
+             (('mv-list & !x) t)
+             (& nil))))
+    (cadr xn))
+   ((and (consp xn)
+         (consp (cdr xn))
+         (eq (car xn) 'hide))
+    (du-nth-index (cadr xn) x))
+   ((and ; xn is (car x)
+     (consp xn)
+     (consp (cdr xn))
+     (eq (car xn) 'car)
+     (eq (cadr xn) x))
+    0)
+   (t nil)))
+
+(defun du-make-mv-let-aux (bindings formals mv-var n acc-vars ignore-vars)
 
 ; See du-make-mv-let.  Here we check that bindings are as expected for
 ; untranslation of the translation of an mv-let.
 
   (declare (xargs :guard (and (doublet-listp bindings)
+                              (symbol-listp formals)
                               (natp n)
                               (symbolp mv-var)
-                              (true-listp acc-vars))))
-  (cond ((endp bindings) (mv t (reverse acc-vars)))
+                              (true-listp acc-vars)
+                              (true-listp ignore-vars))))
+  (cond ((endp formals) (mv t (reverse acc-vars) (reverse ignore-vars)))
+        ((endp bindings)
+         (mv t (revappend acc-vars formals) (revappend ignore-vars formals)))
         (t (let* ((b (car bindings))
-                  (xn (cadr b)))
-             (cond ((du-nthp n xn mv-var)
+                  (xn (cadr b))
+                  (index (du-nth-index xn mv-var)))
+             (cond ((eql index n)
                     (du-make-mv-let-aux (cdr bindings)
+                                        (cdr formals)
                                         mv-var
                                         (1+ n)
-                                        (cons (car b) acc-vars)))
-                   (t (mv nil nil)))))))
+                                        (cons (car b) acc-vars)
+                                        ignore-vars))
+                   ((and (natp index) ; equivalently, index is non-nil
+                         (< n index)
 
-(defun du-make-mv-let (x wrld)
+; We check that the newly-ignored formal is not among the bound variables.  It
+; might be very difficult to find an example that fails this check!
+
+                         (not (member-eq (car formals) acc-vars))
+                         (not (assoc-eq (car formals) bindings)))
+                    (du-make-mv-let-aux bindings
+                                        (cdr formals)
+                                        mv-var
+                                        (1+ n)
+                                        (cons (car formals) acc-vars)
+                                        (cons (car formals) ignore-vars)))
+                   (t (mv nil nil nil)))))))
+
+(defun du-make-mv-let (formals x wrld state-vars)
 
 ; This function returns an untranslated term that is provably equal to the
-; input untranslated term, x.
+; input untranslated term, x.  Formals is used heuristically; in practice, x is
+; derived from a call of directed-untranslate-rec whose uterm is (mv-let
+; formals ...).
 
 ; The following simple evaluation helped to guide us in writing this code.
 
@@ -1336,7 +1426,30 @@
 ;             (APPEND X X)))
 ;   ACL2 !>
 
-  (declare (xargs :guard (plist-worldp wrld)))
+; Here is evidence that we got the guards right.
+
+;   (verify-termination du-nth-index)
+;   (verify-termination du-make-mv-let-aux)
+;   (verify-termination uterm-values-len)
+;
+;   (defthm doublet-listp-forward-to-alistp
+;     (implies (doublet-listp x)
+;              (alistp x))
+;     :rule-classes :forward-chaining)
+;
+;   (defthm doublet-listp-implies-all->=-len
+;     (implies (doublet-listp x)
+;              (all->=-len x 2))
+;     :hints (("Goal" :expand ((LEN (CAR X))))))
+;
+;   ; Now redefine du-make-mv-let by removing the call of program-mode function
+;   ; translate-cmp and adding (declare (ignore state-vars)).
+;
+;   (verify-termination du-make-mv-let)
+
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (plist-worldp wrld)
+                              (weak-state-vars-p state-vars))))
   (or (case-match x
         (('LET ((mv-var mv-let-body))
                ('LET bindings main-body))
@@ -1346,23 +1459,43 @@
 ; either MV or else an untranslated term whose list of returned values is of
 ; the same length as bindings.
 
-         (let ((mv-let-body
-                (case-match mv-let-body
-                  (('mv-list & y)
-                   y)
-                  (& mv-let-body))))
-           (and (symbolp mv-var)       ; always true?
-                (doublet-listp bindings) ; always true?
-                (eql (uterm-values-len mv-let-body wrld)
-                     (length bindings))
-                (mv-let (flg vars)
-                  (du-make-mv-let-aux bindings mv-var 0 nil)
-                  (and flg
-                       `(mv-let ,vars
-                          ,mv-let-body
-                          ,main-body))))))
+         (and (symbolp mv-var)         ; always true?
+              (doublet-listp bindings) ; always true?
+              (let* ((mv-let-body (case-match mv-let-body
+                                    (('mv-list & y)
+                                     y)
+                                    (& mv-let-body)))
+                     (values-len (uterm-values-len mv-let-body wrld))
+                     (bindings-len (length bindings)))
+                (and (= values-len (length formals)) ; always true?
+                     (<= bindings-len values-len)
+                     (mv-let (flg vars ignore-vars)
+                       (du-make-mv-let-aux bindings formals mv-var 0 nil nil)
+                       (and flg
+
+; We check that the ignored variables are not free in main-body.  We need to
+; translate main-body in order to do that check.
+
+                            (or
+                             (null ignore-vars)
+                             (mv-let (erp tbody)
+                               (translate-cmp main-body
+                                              nil ; stobjs-out
+                                              nil ; logic-modep (don't care)
+                                              t   ; known-stobjs
+                                              'du-make-mv-let ; ctx
+                                              wrld
+                                              state-vars)
+                               (and (null erp)
+                                    (not (intersectp-eq ignore-vars tbody)))))
+                            `(mv-let ,vars
+                               ,mv-let-body
+                               ,@(and ignore-vars
+                                      `((declare (ignore ,@ignore-vars))))
+                               ,main-body)))))))
         (('LET bindings main-body)
-         (and (consp (cdr bindings))
+         (and (doublet-listp bindings) ; always true?
+              (consp (cdr bindings))
               `(mv-let ,(strip-cars bindings)
                  (mv ,@(strip-cadrs bindings))
                  ,main-body))))
@@ -1418,6 +1551,16 @@
           "Implementation error: Unexpected uterm,~|~x0"
           uterm)))
 
+(defun prog2$-to-progn$ (uterm)
+  (case-match uterm
+    (('prog2$ x y)
+     (let ((y2 (prog2$-to-progn$ y)))
+       (case-match y2
+         (('progn$ . rest)
+          (list* 'progn$ x rest))
+         (& (list 'progn$ x y)))))
+    (& uterm)))
+
 (mutual-recursion
 
 (defun directed-untranslate-rec (uterm tterm sterm iff-flg lflg exec-p wrld)
@@ -1428,7 +1571,7 @@
 ; one that is similar in structure to uterm.  See also directed-untranslate.
 
 ; When lflg is true, we allow ourselves to modify sterm to match the lambda
-; applictions in tterm.
+; applications in tterm.
 
 ; When exec-p is true we assume that sterm has already been made executable
 ; (with make-executable), and we try to produce an executable result.
@@ -1444,13 +1587,11 @@
 ;   ((equal tterm sterm)
 ;    uterm)
 
-    ((or (variablep sterm)
-         (fquotep sterm)
-         (variablep tterm)
+    ((or (variablep tterm)
          (fquotep tterm)
          (atom uterm))
      (du-untranslate sterm iff-flg wrld))
-    ((eq (ffn-symb sterm) 'mv-marker)
+    ((ffn-symb-p sterm 'mv-marker)
      (let* ((ans (directed-untranslate-rec uterm tterm
                                            (fargn sterm 2)
                                            iff-flg lflg exec-p wrld))
@@ -1458,26 +1599,34 @@
             (args (mv-marker-args n ans)))
        (cond (args (cons 'mv args))
              (t ans))))
-    ((eq (ffn-symb sterm) 'mv-list)
+    ((ffn-symb-p sterm 'mv-list)
      (let ((ans (directed-untranslate-rec uterm tterm
                                           (fargn sterm 2)
                                           iff-flg lflg exec-p wrld))
            (n (du-untranslate (fargn sterm 1) nil wrld)))
        (list 'mv-list n ans)))
-    ((and (eq (ffn-symb tterm) 'return-last)
-          (equal (fargn tterm 1) ''progn)
-          (case-match uterm
-            (('prog2$ & uterm2)
-             (directed-untranslate-rec
-              uterm2 (fargn tterm 3) sterm iff-flg lflg exec-p wrld)))))
-    ((and (consp uterm) (eq (car uterm) 'mv-let))
-     (let* ((uterm (expand-mv-let uterm tterm))
-            (ans (directed-untranslate-rec uterm tterm sterm iff-flg lflg
-                                           exec-p wrld)))
-       (du-make-mv-let ans wrld)))
+    ((case-match uterm
+       (('progn$ & & . &) t))
+     (let ((ans (directed-untranslate-rec `(prog2$ ,(cadr uterm)
+                                                   (progn$ ,@(cddr uterm)))
+                                          tterm sterm
+                                          iff-flg lflg exec-p wrld)))
+       (prog2$-to-progn$ ans)))
+    ((and (consp uterm)
+          (eq (car uterm) 'mv-let))
+     (assert$
+      (and (consp (cdr uterm))
+           (symbol-listp (cadr uterm)))
+      (du-make-mv-let (cadr uterm)
+                      (directed-untranslate-rec (expand-mv-let uterm tterm)
+                                                tterm sterm iff-flg lflg
+                                                exec-p wrld)
+                      wrld
+                      (default-state-vars nil))))
     ((and (consp uterm) (eq (car uterm) 'let*))
 
-; Warning: If you change this, consider changing the case for b* below.
+; Warning: If you change this, consider changing the handling of b*
+; in directed-untranslate-b*.
 
      (case-match uterm
        (('let* () . &)
@@ -1509,79 +1658,14 @@
         (er hard 'directed-untranslate-rec
             "Implementation error: unexpected uterm, ~x0."
             uterm))))
-    ((and
-      (consp uterm)
-      (eq (car uterm) 'b*)
+    ((and (consp uterm)
+          (eq (car uterm) 'b*)
 
-; Warning: If you change this, consider changing the case for let* above.
+; Warning: If you change this, consider changing the case for let* in
+; directed-untranslate-rec.
 
-; We want to fall through if we encounter a b* case that's not handled, so we
-; structure this cond clause as just a non-nilvalue, not (test value).
-
-; Note: It's technically wrong to untranslate to b*, since someone may have b*
-; defined differently from how it's defined in std/util/bstar.lisp.  But we
-; view directed-untranslate as essentially heuristic, so we can live with that
-; technical "unsoundness" that, in fact, is very likely ever to be relevant.
-
-      (case-match uterm
-        (('b* () rest)
-         (directed-untranslate-rec
-          rest tterm sterm iff-flg lflg exec-p wrld))
-        (('b* ((('mv . vars) val) . bindings) rest)
-         (let ((x (directed-untranslate-rec
-                   `(mv-let ,vars
-                      ,val
-                      (b* ,bindings ,rest))
-                   tterm sterm iff-flg lflg exec-p wrld)))
-           (case-match x
-             (('mv-let !vars val2 ('b* bindings2 rest2))
-              `(b* (((mv ,@vars) ,val2) ,@bindings2)
-                 ,rest2))
-             (('mv-let !vars val2 rest2)
-              `(b* (((mv ,@vars) ,val2))
-                 ,rest2))
-             (& x))))
-        (('b* ((var val) . bindings) rest)
-         (cond
-          ((eq var '-)
-           (case-match tterm
-             (('return-last '(quote progn) val2 rest2)
-              (case-match sterm
-                (('return-last '(quote progn) val3 rest3)
-                 (let ((val4 (directed-untranslate-rec
-                              val val2 val3 nil lflg exec-p wrld))
-                       (rest4 (directed-untranslate-rec
-                               (list 'b* bindings rest)
-                               rest2 rest3 iff-flg lflg exec-p wrld)))
-                   (case-match rest4
-                     (('b* bindings5 rest5)
-                      `(b* ((- ,val4) ,@bindings5) ,rest5))
-                     (& `(prog2$ ,val4 ,rest4)))))
-                (& ; prog2$ was probably just blown away
-                 (directed-untranslate-rec
-                  (list 'b* bindings rest)
-                  rest2 sterm iff-flg lflg exec-p wrld))))
-             (& (er hard 'directed-untranslate-rec
-                    "Implementation error: unexpected translation of ~x0:~|~x1."
-                    uterm tterm))))
-          ((symbolp var)
-           (let ((x (directed-untranslate-rec
-                     `(let ((,var ,val))
-                        (b* ,bindings ,rest))
-                     tterm sterm iff-flg lflg exec-p wrld)))
-             (case-match x
-               (('let ((var2 val2)) ('b* bindings2 rest2))
-                `(b* ((,var2 ,val2) ,@bindings2)
-                   ,rest2))
-               (('let ((var2 val2)) rest2)
-                `(b* ((,var2 ,val2))
-                   ,rest2))
-               (& x))))
-          (t nil)))
-         (& ; impossible
-          (er hard 'directed-untranslate-rec
-              "Implementation error: unexpected uterm, ~x0."
-              uterm)))))
+          (directed-untranslate-b* uterm tterm sterm iff-flg lflg exec-p
+                                   wrld)))
     ((and (lambda-applicationp tterm)
           (lambda-applicationp sterm)
           (consp uterm)
@@ -1646,6 +1730,9 @@
                       (make-let-smart bindings body (all-vars-for-real sbody))
                     body)))))
         (du-untranslate sterm iff-flg wrld))))
+    ((or (variablep sterm)
+         (fquotep sterm))
+     (du-untranslate sterm iff-flg wrld))
     ((and (lambda-applicationp tterm)
           (not (lambda-applicationp sterm))
           lflg)
@@ -1719,7 +1806,7 @@
                                                              (caddr uterm))
                                                            (fargn tterm 2)
                                                            x2 iff-flg lflg
-                         exec-p wrld)
+                                                           exec-p wrld)
                                  iff-flg))
                                ((cdr uterm) ; uterm is (and x)
                                 (directed-untranslate-rec (cadr uterm)
@@ -1775,8 +1862,8 @@
                                                         iff-flg lflg exec-p wrld)))
                         (& nil))))
                 ((and (eq (car uterm) '>)  ; (> x0 y0)
-                      (eq (car sterm) '<)  ; (< y1 x1)
-                      (eq (car tterm) '<)) ; (< y2 y1)
+                      (ffn-symb-p sterm '<)  ; (< y1 x1)
+                      (ffn-symb-p tterm '<)) ; (< y2 y1)
 
 ; Replace < in sterm by >.
 
@@ -1943,6 +2030,221 @@
                                  (t nil)))
                           (t nil))))
                   (du-untranslate sterm iff-flg wrld)))))))))))))))
+
+(defun directed-untranslate-b* (uterm tterm sterm iff-flg lflg exec-p wrld)
+
+; Warning: If you change this, consider changing the case for let* in
+; directed-untranslate-rec.
+
+; This is just code for handling b* that was originally in
+; directed-untranslate-rec, but has been moved into this separate function, for
+; clarity.  This function may return nil.
+
+; We want to fall through if we encounter a b* case that's not handled, so we
+; structure this cond clause as just a non-nilvalue, not (test value).
+
+; Note: It's technically wrong to untranslate to b*, since someone may have
+; defined b* differently from how it's defined in std/util/bstar.lisp.  But we
+; view directed-untranslate as essentially heuristic, so we can live with that
+; technical "unsoundness" that, in fact, is very likely ever to be relevant.
+
+  (case-match uterm
+    (('b* bindings form1 form2 . rest)
+     (let ((x (directed-untranslate-b*
+               (list 'b* bindings (list* 'progn$ form1 form2 rest))
+               tterm sterm iff-flg lflg exec-p wrld)))
+       (case-match x
+         (('b* bindings (progn$-or-prog2$ . forms))
+          (if (member-eq progn$-or-prog2$ '(prog2$ progn$))
+              `(b* ,bindings ,@forms)
+            x))
+         (& x))))
+    (('b* () rest)
+     (directed-untranslate-rec
+      rest tterm sterm iff-flg lflg exec-p wrld))
+    (('b* ((('if tst) . vals) . bindings) . rest)
+     (let ((x (directed-untranslate-rec
+               `(b* (((when ,tst) ,@vals) ,@bindings) ,@rest)
+               tterm sterm iff-flg lflg exec-p wrld)))
+       (case-match x
+         (('b* ((('when tst2) . vals2) . bindings2) . rest2)
+          `(b* (((if ,tst2) ,@vals2) ,@bindings2) ,@rest2))
+         (& x))))
+    (('b* ((('when u-tst) . vals) . bindings) rest)
+; Keep this in sync with the 'unless case.
+     (case-match tterm
+       (('if t-tst t-tbr t-fbr) ; should always match
+        (case-match sterm
+          (('if s-tst s-tbr s-fbr)
+           (let* ((r-tst ; "r-" for "result-"
+                   (directed-untranslate-rec
+                    u-tst t-tst s-tst t lflg exec-p wrld))
+                  (u-tbr (if vals
+                             `(progn$ ,@vals)
+                           u-tst))
+                  (r-tbr
+                   (directed-untranslate-rec
+                    u-tbr t-tbr s-tbr iff-flg lflg exec-p wrld))
+                  (r-fbr
+                   (directed-untranslate-rec
+                    `(b* ,bindings ,rest)
+                    t-fbr s-fbr iff-flg lflg exec-p wrld))
+                  (new-binding `((when ,r-tst)
+                                 ,@(cond
+                                    ((and (null vals)
+                                          (equal r-tst r-tbr))
+                                     nil)
+                                    ((eq (car r-tbr) 'progn$)
+                                     (cdr r-tbr))
+                                    (t (list r-tbr))))))
+             (case-match r-fbr
+               (('b* bindings2 . rest2)
+                `(b* (,new-binding
+                      ,@bindings2)
+                   ,@rest2))
+               (& `(b* (,new-binding)
+                     r-fbr)))))
+          (& ; test presumably simplified to true or false; don't know which
+           (du-untranslate sterm iff-flg wrld))))
+       (& ; probably an impossible case
+        (du-untranslate sterm iff-flg wrld))))
+    (('b* ((('unless u-tst) . vals) . bindings) rest)
+; Keep this in sync with the 'when case.
+     (case-match tterm
+       (('if t-tst t-tbr t-fbr) ; should always match
+        (case-match sterm
+          (('if s-tst s-tbr s-fbr)
+           (let* ((r-tst ; "r-" for "result-"
+                   (directed-untranslate-rec
+                    u-tst t-tst s-tst t lflg exec-p wrld))
+                  (u-fbr `(progn$ ,@vals))
+                  (r-tbr
+                   (directed-untranslate-rec
+                    `(b* ,bindings ,rest)
+                    t-tbr s-tbr iff-flg lflg exec-p wrld))
+                  (r-fbr
+                   (directed-untranslate-rec
+                    u-fbr t-fbr s-fbr iff-flg lflg exec-p wrld))
+                  (new-binding `((unless ,r-tst)
+                                 ,@(cond
+                                    ((null vals)
+                                     nil)
+                                    ((and (consp r-fbr)
+                                          (eq (car r-fbr) 'progn$))
+                                     (cdr r-fbr))
+                                    (t (list r-fbr))))))
+             (case-match r-tbr
+               (('b* bindings2 . rest2)
+                `(b* (,new-binding
+                      ,@bindings2)
+                   ,@rest2))
+               (& `(b* (,new-binding)
+                     r-tbr)))))
+          (& ; test presumably simplified to true or false; don't know which
+           (du-untranslate sterm iff-flg wrld))))
+       (& ; probably an impossible case
+        (du-untranslate sterm iff-flg wrld))))
+    (('b* ((('mv . args) val) . bindings) rest)
+     (and (symbol-listp args) ; otherwise, future work...
+          (mv-let (vars binders ignores ignorables freshvars)
+
+; The following call is a bit dodgy, since it takes advantage of the
+; implementation of b*, which presumably could change.
+
+            (var-ignore-list-for-patbind-mv args 0 nil nil nil nil nil)
+            (declare (ignore binders freshvars))
+            (let ((x (directed-untranslate-rec
+                      `(mv-let ,vars
+                         ,val
+                         ,@(and ignores
+                                `((declare (ignore ,@ignores))))
+                         ,@(and ignorables
+                                `((declare (ignorable ,@ignorables))))
+                         (b* ,bindings ,rest))
+                      tterm sterm iff-flg lflg exec-p wrld)))
+              (or (case-match x
+                    (('mv-let !vars val2 . last)
+                     (and last
+                          (let ((body (car (last last))))
+                            (and (not (intersectp-eq ignores (all-vars body)))
+
+; Originally we had
+; (b* (((mv . args) val) ..) ...)
+; and after calling directed-untranslate-rec, we have
+; (b* (((mv . vars) val2) ..) ...)
+; where vars results from replacing variables in args, for example, ?!v with v
+; and - with ignore-3.  In this case we want to use the original args, provided
+; the ignored variables don't occur free in the body of the resulting mv-let.
+
+                                 (mv-let (bindings2 body2)
+                                   (case-match body
+                                     (('b* bindings2 . rest2) ; ignore declares
+                                      (mv bindings2 (car (last rest2))))
+                                     (& (mv nil body)))
+                                   `(b* (((mv ,@args) ,val2)
+                                         ,@bindings2)
+                                      ,body2)))))))
+                  x)))))
+    (('b* ((var val) . bindings) rest)
+     (cond
+      ((eq var '-)
+       (case-match tterm
+         (('return-last '(quote progn) val2 rest2)
+          (case-match sterm
+            (('return-last '(quote progn) val3 rest3)
+             (let ((val4 (directed-untranslate-rec
+                          val val2 val3 nil lflg exec-p wrld))
+                   (rest4 (directed-untranslate-rec
+                           (list 'b* bindings rest)
+                           rest2 rest3 iff-flg lflg exec-p wrld)))
+               (case-match rest4
+                 (('b* bindings5 rest5)
+                  `(b* ((- ,val4) ,@bindings5) ,rest5))
+                 (& `(b* ((- ,val4)) ,rest4)))))
+            (& ; prog2$ was probably just blown away
+             (directed-untranslate-rec
+              (list 'b* bindings rest)
+              rest2 sterm iff-flg lflg exec-p wrld))))
+         (& (er hard 'directed-untranslate-rec
+                "Implementation error: unexpected translation of ~x0:~|~x1."
+                uterm tterm))))
+      ((eq var '&)
+
+; The binding of var (i.e., of &) is thrown away at translate time, so as with
+; LET, we don't want to keep an unsimplified val -- we just throw the binding
+; away.
+
+       (directed-untranslate-rec
+        (list 'b* bindings rest)
+        tterm sterm iff-flg lflg exec-p wrld))
+      ((symbolp var)
+       (mv-let (sym ignorep)
+         (decode-varname-for-patbind var)
+         (if (eq ignorep 'ignore)
+             (directed-untranslate-rec
+              `(b* ,bindings ,rest) tterm sterm iff-flg lflg exec-p wrld)
+           (let* ((uterm0
+                   ;; Can we just refuse to bind a variable marked ignored?
+                   `(let ((,sym ,val))
+                      ,@(and ignorep `((declare (,ignorep ,sym))))
+                      (b* ,bindings ,rest)))
+                  (x (directed-untranslate-rec
+                      uterm0 tterm sterm iff-flg lflg exec-p wrld)))
+             (or (case-match x
+                   (('let ((!sym val2)) . last)
+                    (and last
+                         (let ((body (car (last last)))) ; ignore declares
+                           (mv-let (bindings2 body2)
+                             (case-match body
+                               (('b* bindings2 . rest2) ; ignore declares
+                                (mv bindings2 (car (last rest2))))
+                               (& (mv nil body)))
+                             `(b* ((,var ,val2) ,@bindings2)
+                                ,body2))))))
+                 x)))))
+      (t ; Binders besides mv are not yet handled.
+       nil)))
+    (& nil)))
 
 (defun directed-untranslate-lst (uargs targs sargs iff-flg-lst lflg exec-p
                                        wrld)
