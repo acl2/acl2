@@ -384,6 +384,11 @@
 (defcong list::equiv list::equiv
   (v1-remove-prefix prefix x) 2)
 
+(defthm true-listp-v1-remove-prefix
+  (implies
+   (true-listp x)
+   (true-listp (v1-remove-prefix prefix x))))
+
 (defthm list-fix-v1-remove-prefix
   (equal (list::fix (v1-remove-prefix prefix x))
          (v1-remove-prefix prefix (list::fix x))))
@@ -2155,7 +2160,7 @@
   (bag::meta-memberp x list)
   (bag::any-subbagp x list) ;remove this?
   (list::finalcdr x)
-  (acl2::list-fix x)
+  (acl2::true-list-fix x)
   (bag::subbagp x y)
   (list::memberp a x)
 ; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2

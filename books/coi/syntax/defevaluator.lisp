@@ -100,8 +100,8 @@
                                         (evfn (list 'quote x) a)))
                         :induct (fix-true-list args)))))
             (local
-             (defthm fix-true-list-ev-lst
-               (equal (fix-true-list (evfn-lst x a))
+             (defthm true-list-fix-ev-lst
+               (equal (true-list-fix (evfn-lst x a))
                       (evfn-lst x a))
                :hints (("goal" :induct (len x)
                         :in-theory (e/d ((:induction len)))
