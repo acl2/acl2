@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "digits-any-base")
-(include-book "testing")
+(include-book "core")
+(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

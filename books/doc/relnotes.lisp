@@ -183,6 +183,12 @@
  byte-combining libraries </see> have been expanded with several new
  lemmas. Some existing lemmas have also been generalized.</p>
 
+ <h4>Digits in Arbitrary Bases</h4>
+
+ <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
+ moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
+ and renamed.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
