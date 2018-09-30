@@ -172,7 +172,9 @@
  <h4>@(csee std/io)</h4>
 
  <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
- byte-combining libraries</see>.</p> <h4>Digits in Arbitrary Bases</h4>
+ byte-combining libraries</see>.</p>
+
+ <h4>Digits in Arbitrary Bases</h4>
 
  <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
  moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
@@ -181,6 +183,12 @@
  <p>The utility, @(tsee directed-untranslate), has been improved in several
  ways, including more complete handling of @(tsee mv-let), @(tsee b*), and
  @(tsee progn$).</p>
+
+ <h4>Other</h4>
+
+ <p>For the event macro @(tsee orelse*), the default for the @(':expansion?p')
+ argument has been changed from @('nil') to @('t'), for consistency with @(tsee
+ orelse).</p>
 
  <h3>Licensing Changes</h3>
 
