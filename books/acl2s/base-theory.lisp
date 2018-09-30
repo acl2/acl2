@@ -165,3 +165,9 @@
            :use ((:instance numerator-1-decreases 
                             (n (+ r (- n) 1))))))
   :rule-classes ((:linear) (:rewrite)))
+
+(defthm replace-o<-with-<
+  (implies (and (natp x)
+                (natp y))
+           (equal (o< x y)
+                  (< x y))))
