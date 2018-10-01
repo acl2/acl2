@@ -23,7 +23,7 @@
 (include-book "defthmr")
 (include-book "defmacroq")
 (include-book "defun-sk-queries")
-(include-book "digits-any-base/pow2")
+(include-book "digits-any-base/pow2-instances")
 (include-book "directed-untranslate")
 (include-book "doublets")
 (include-book "enumerations")
