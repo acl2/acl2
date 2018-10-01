@@ -1533,31 +1533,29 @@
  (use @('git log') if you want to see examples), often quoting your new release
  note item.
  @({
- cd books/
- git commit -a -F tmp.msg
+ git add books
+ git commit -F tmp.msg
  })</li>
 
- <li>Create your own GitHub fork if you don't already have one.  Assuming your
- GitHub username is @('my-username') and (again) your branch name is
- @('my-branch'), this should make your branch publicly accessible at the
- following URL:
- @({
- https://github.com/my-username/acl2/tree/my-branch
- })</li>
+ <li>Create your own GitHub fork if you don't already have one (for example, as
+ explained in the documentation topic, @(see
+ github-commit-code-using-pull-requests), Section (A)).  Assuming your GitHub
+ username is @('my-username') and (again) your branch name is @('my-branch'),
+ this should make your branch publicly accessible at the following URL: @({
+ https://github.com/my-username/acl2/tree/my-branch })</li>
 
- <li>Push to your own github fork:
+ <li>Push to your own GitHub fork, as follows:
  @({
- git push
+ git push https://github.com/my-username/acl2 my-branch
  })</li>
 
  <li>Send the commit hash and tarball (see ``Create a tarball'' above), as well
  as the name and URL of your new branch (as discussed above), to an ACL2
- author.  Currently, send these to @('kaufmann@cs.utexas.edu'); let's call the
- ACL2 author, ``Matt''.</li>
+ author.  As of this writing, those are to be sent to Matt Kaufmann, at
+ @('kaufmann@cs.utexas.edu').</li>
 
- </ol>
-
- <p>After this, Matt will get your changes as follows.</p>
+ <li>The last steps will be done by Matt, who will start by getting your
+ changes as follows.
 
  @({
  git clone https://github.com/acl2/acl2 .
@@ -1565,17 +1563,29 @@
  git checkout my-branch
  })
 
- <p>Matt will then install your source code changes (from the tarball) into the
- branch, @('my-branch'), possibly make some edits, and run an @('`everything'')
- regression.  When this passes, Matt will push as follows, where tmp.msg says
- something about the changes, with credit to you.</p>
+ Note that after the @('checkout') command just above, @('my-branch') will
+ contain only your changes.  Matt will then install your source code
+ changes (from the tarball) into the branch, @('my-branch'), possibly make some
+ edits, and run an @('`everything'') regression.  When this passes, Matt will
+ run the following two commands, where @('tmp.msg') says something about the
+ changes, with credit to you.  Note that the @('commit') command will cause
+ @('my-branch') to contain all changes, both under @('books/') and from the
+ sources tarball, possibly after edits from Matt.
 
  @({
- git checkout master
- git merge my-branch
  git commit -a -F tmp.msg
- git push
+ git checkout master
  })
+
+ Finally, Matt will run a @('merge') command so that @('master') contains all
+ changes (both from @('books/') and from outside @('books/')), and then
+ complete the update to @('master') in the GitHub repository.
+
+ @({
+ git merge my-branch
+ git push https://github.com/acl2/acl2 master
+ })</li>
+ </ol>
  ")
 
 (defxdoc developers-guide-utilities
@@ -2824,10 +2834,3 @@
 (xdoc::order-subtopics developers-guide
                        ()
                        t)
-
-; The following forms cause certification to save a fancy manual.
-; (include-book "xdoc/save" :dir :system)
-; (make-event (er-progn (xdoc::save "./manual"
-;                                   :error t
-;                                   :broken-links-limit nil)
-;                       (value '(value-triple :manual-built))))
