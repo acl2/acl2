@@ -60,13 +60,6 @@
 
 ;; ----------------------------------------------------------------------
 
-
-;; Increasing the rewrite stack limit to help the guard proof go through; note
-;; that this is local to this book.
-(set-rewrite-stack-limit (+ 6000 acl2::*default-rewrite-stack-limit*))
-
-;; ----------------------------------------------------------------------
-
 (local
  (defthm unsigned-byte-p-1-of-logbit
    (unsigned-byte-p 1 (logbit i x))))
