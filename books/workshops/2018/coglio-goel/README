@@ -1,0 +1,13 @@
+Supporting Materials
+
+Title:   Adding 32-bit Mode to the ACL2 Model of the x86 ISA
+Authors: Alessandro Coglio <coglio@kestreltechnology.com>
+	 Shilpi Goel       <shilpi@centtech.com>
+
+The supporting materials for this paper are already a part of the ACL2
+Community Books.  They can be found on the web at
+https://github.com/acl2/acl2/tree/master/books/projects/x86isa
+or in an ACL2+books distribution in books/projects/x86isa/.
+
+Each book in this library has the copyright, license, and authorship
+information at its very beginning.

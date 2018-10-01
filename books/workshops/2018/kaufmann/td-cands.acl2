@@ -1,0 +1,66 @@
+; NOTE: This file has been automatically generated.
+
+(in-package "ACL2")
+
+; The following books are included to provide the packages that are
+; defined after including system book "doc/top".
+
+(INCLUDE-BOOK "data-structures/memories/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "kestrel/ethereum/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/smtlink/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/sat/dimacs-reader/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/sat/proof-checker-array/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/sat/proof-checker-itp13/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/farray/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/x86isa/portcullis/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/sidekick/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "coi/util/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "coi/nary/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/defrstobj/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/lispfloat/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/clex/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/sat/lrat/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/truth/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/aig/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "acl2s/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "coi/symbol-fns/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "system/doc/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/acre/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "kestrel/apt/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "kestrel/soft/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "data-structures/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "cowles/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "build/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/gl/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/aignet/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/ipasir/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/satlink/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/vl/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/vl2014/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/depgraph/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/fty/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/bitops/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/nrev/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/getopt/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/bridge/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "oslib/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "std/portcullis" :DIR :SYSTEM)
+
+; Next we deal with packages whose associated book in
+;   (KNOWN-PACKAGE-ALIST STATE)
+; is community book "doc/top", which is too large to include efficiently.
+
+; "MEMOIZE"
+(include-book "centaur/memoize/portcullis" :dir :system)
+; "MILAWA" -- omitted because of trust tag
+; (include-book "projects/milawa/ACL2/portcullis" :dir :system))
+; "REWRITE-CODE"
+(include-book "hacking/rewrite-code" :dir :system)
+; "ACL2-HACKER"
+(include-book "hacking/hacker" :dir :system)
+; "ABNF"
+(include-book "kestrel/abnf/portcullis" :dir :system)
+; "RTL" -- already included
+; "BED"
+(include-book "centaur/bed/portcullis" :dir :system)
+; "SV" -- already included
