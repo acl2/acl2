@@ -86,13 +86,6 @@
 
   (b* ((ctx 'x86-syscall-app-view)
 
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
-       ((unless (eql proc-mode #.*64-bit-mode*))
-        (!!fault-fresh :ud nil ;; #UD
-                       :syscall-app-view-not-64bit-mode proc-mode))
-
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce)
         (ia32_efer-slice :ia32_efer-sce ia32-efer))
@@ -235,13 +228,6 @@
   :body
 
   (b* ((ctx 'x86-syscall)
-
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
-       ((unless (eql proc-mode #.*64-bit-mode*))
-        (!!fault-fresh :ud nil ;; #UD
-                       :syscall-app-view-not-64bit-mode proc-mode))
 
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce)
@@ -478,13 +464,6 @@
   :body
 
   (b* ((ctx 'x86-sysret)
-
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
-       ((unless (eql proc-mode #.*64-bit-mode*))
-        (!!fault-fresh :ud nil ;; #UD
-                       :syscall-app-view-not-64bit-mode proc-mode))
 
        ;; We can't *call* SYSRET in any mode other than 64-bit mode
        ;; (including compatibility mode), but when it is called from

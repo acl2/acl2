@@ -153,15 +153,7 @@ writes the final value of the instruction pointer into RIP.</p>")
   :body
 
   (b* ((ctx 'x86-hlt)
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
-       (cpl (cpl x86))
-       ((unless (eql cpl 0))
-        (!!fault-fresh :gp 0 :lock-prefix prefixes)) ;; #GP(0)
-
        ;; Update the x86 state:
-
        ;; Intel Vol. 2A, HLT specification: Instruction pointer is saved.
        ;; "If an interrupt ... is used to resume execution after a HLT
        ;; instruction, the saved instruction pointer points to the instruction
@@ -189,10 +181,7 @@ writes the final value of the instruction pointer into RIP.</p>")
                                (canonical-address-p temp-rip)))
   :body
 
-  (b* ((ctx 'x86-cmc/clc/stc/cld/std)
-
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+  (b* ((?ctx 'x86-cmc/clc/stc/cld/std)
 
        (x86 (case opcode
               (#xF5 ;; CMC
@@ -220,9 +209,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   ;; Opcode: #x9E
 
-  ;; TO-DO@Shilpi: The following instruction is valid in 64-bit mode
-  ;; only if the CPUID.80000001H:ECX.LAHF-SAHF[bit0] = 1.
-
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
@@ -230,9 +216,7 @@ writes the final value of the instruction pointer into RIP.</p>")
                                (canonical-address-p temp-rip)))
   :body
 
-  (b* ((ctx 'x86-sahf)
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+  (b* ((?ctx 'x86-sahf)
        ((the (unsigned-byte 16) ax)
         (mbe :logic (rgfi-size 2 *rax* rex-byte x86)
              :exec (rr16 *rax* x86)))
@@ -253,9 +237,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   ;; Opcode: #x9F
 
-  ;; TO-DO@Shilpi: The following instruction is valid in 64-bit mode
-  ;; only if the CPUID.80000001H:ECX.LAHF-LAHF[bit0] = 1.
-
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
@@ -263,9 +244,7 @@ writes the final value of the instruction pointer into RIP.</p>")
                                (canonical-address-p temp-rip)))
   :body
 
-  (b* ((ctx 'x86-lahf)
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+  (b* ((?ctx 'x86-lahf)
        ((the (unsigned-byte 8) ah)
         (logand #xff (the (unsigned-byte 32) (rflags x86))))
        ((the (unsigned-byte 16) ax)
@@ -316,16 +295,6 @@ writes the final value of the instruction pointer into RIP.</p>")
   (b* ((ctx 'x86-rdrand)
 
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-
-       ;; TODO: throw #UD if CPUID.01H:ECX.RDRAND[bit 30] = 0
-       ;; (see Intel manual, Mar'17, Vol 2, RDRAND)
-
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       (rep (prefixes->seg prefixes))
-       (rep-p (or (equal #.*repe* rep)
-                  (equal #.*repne* rep)))
-       ((when (or lock? rep-p))
-        (!!fault-fresh :ud nil :lock-prefix-or-rep-p prefixes)) ;; #UD
 
        ((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes x86))

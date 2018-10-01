@@ -134,16 +134,12 @@
 
   (b* ((ctx 'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
 
-       (lock (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (r/m (modr/m->r/m modr/m))
        (mod (modr/m->mod modr/m))
        (reg (modr/m->reg modr/m))
 
        (p2 (prefixes->seg prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes->adr prefixes)))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (byte-operand? (or (equal opcode #xC0)
                           (equal opcode #xD0)

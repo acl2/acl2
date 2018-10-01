@@ -109,11 +109,6 @@
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
        
-       (lock (eql #.*lock*
-                  (prefixes->lck prefixes)))
-       ((when lock)
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))

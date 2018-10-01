@@ -109,15 +109,17 @@
    opcodes like ADD, SUB, etc. The decoding is coupled with the execution in
    this case.</p>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p
+		:hyp (and (x86p x86)
+			  (canonical-address-p temp-rip))
+		:hints (("Goal" :in-theory (e/d ()
+						(select-operand-size
+						 signed-byte-p
+						 unsigned-byte-p)))))
 
   :body
 
   (b* ((ctx 'x86-push-general-register)
-
-       ((when (eql #.*lock* (prefixes->lck prefixes)))
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
 		 (prefixes->opr prefixes)))
@@ -140,7 +142,7 @@
        ;; See "Z" in http://ref.x86asm.net/geek.html#x50
        (reg (mbe :logic (loghead 3 opcode)
 		 :exec (the (unsigned-byte 3)
-			    (logand #x07 opcode))))
+			 (logand #x07 opcode))))
        ;; See Intel Table 3.1, p.3-3, Vol. 2-A
        (val (rgfi-size operand-size (reg-index reg rex-byte #.*b*) rex-byte
 		       x86))
@@ -152,13 +154,13 @@
        ;; Update the x86 state:
        ((mv flg x86)
 	(wme-size-opt proc-mode
-	 operand-size
-	 (the (signed-byte #.*max-linear-address-size*) new-rsp)
-	 #.*ss*
-	 val
-	 (alignment-checking-enabled-p x86)
-	 x86
-	 :mem-ptr? nil))
+		      operand-size
+		      (the (signed-byte #.*max-linear-address-size*) new-rsp)
+		      #.*ss*
+		      val
+		      (alignment-checking-enabled-p x86)
+		      x86
+		      :mem-ptr? nil))
        ((when flg) ;; Would also handle bad rsp values.
 	(cond
 	 ;; FIXME? The non-canonical-address error won't come up here
@@ -192,15 +194,17 @@
    <p>This opcode belongs to Group 5, and it has an opcode
    extension (ModR/m.reg = 6).</p>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p
+		:hyp (and (x86p x86)
+			  (canonical-address-p temp-rip))
+		:hints (("Goal" :in-theory (e/d ()
+						(select-operand-size
+						 signed-byte-p
+						 unsigned-byte-p)))))
 
   :body
 
   (b* ((ctx 'x86-push-Ev)
-
-       ((when (eql #.*lock* (prefixes->lck prefixes)))
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes->seg prefixes))
        (p3? (eql #.*operand-size-override*
@@ -251,12 +255,12 @@
 
        ((mv flg x86)
 	(wme-size-opt proc-mode operand-size
-		  (the (signed-byte #.*max-linear-address-size*) new-rsp)
-		  #.*ss*
-		  E
-		  (alignment-checking-enabled-p x86)
-		  x86
-		  :mem-ptr? nil))
+		      (the (signed-byte #.*max-linear-address-size*) new-rsp)
+		      #.*ss*
+		      E
+		      (alignment-checking-enabled-p x86)
+		      x86
+		      :mem-ptr? nil))
        ((when flg) ;; Would also handle bad rsp values.
 	(cond
 	 ;; FIXME? The non-canonical-address error won't come up here
@@ -294,17 +298,19 @@
    opcodes like ADD, SUB, etc. The decoding is coupled the decoding with the
    execution in this case.</p>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p
+		:hyp (and (x86p x86)
+			  (canonical-address-p temp-rip))
+		:hints (("Goal" :in-theory (e/d ()
+						(select-operand-size
+						 signed-byte-p
+						 unsigned-byte-p)))))
 
   :guard-hints (("Goal" :in-theory (enable rime-size)))
 
   :body
 
   (b* ((ctx 'x86-push-I)
-
-       ((when (eql #.*lock* (prefixes->lck prefixes)))
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
 		 (prefixes->opr prefixes)))
@@ -345,18 +351,18 @@
        ;; Update the x86 state:
        ((mv flg1 x86)
 	(wme-size-opt proc-mode operand-size
-		  new-rsp
-		  #.*ss*
-		  (mbe :logic (loghead (ash operand-size 3) imm)
-		       :exec (logand
-			      (case operand-size
-				(2 #.*2^16-1*)
-				(4 #.*2^32-1*)
-				(8 #.*2^64-1*))
-			      (the (signed-byte 32) imm)))
-		  (alignment-checking-enabled-p x86)
-		  x86
-		  :mem-ptr? nil))
+		      new-rsp
+		      #.*ss*
+		      (mbe :logic (loghead (ash operand-size 3) imm)
+			   :exec (logand
+				  (case operand-size
+				    (2 #.*2^16-1*)
+				    (4 #.*2^32-1*)
+				    (8 #.*2^64-1*))
+				  (the (signed-byte 32) imm)))
+		      (alignment-checking-enabled-p x86)
+		      x86
+		      :mem-ptr? nil))
        ((when flg1) ;; Would also handle "bad" rsp values.
 	(cond
 	 ;; FIXME? The non-canonical-address error won't come up here
@@ -365,7 +371,7 @@
 	  (!!fault-fresh :ss 0 :new-rsp-not-canonical flg1)) ;; #SS(0)
 	 ((and (consp flg1) (eql (car flg1) :unaligned-linear-address))
 	  (!!fault-fresh :ac 0 :new-rsp-unaligned flg1)) ;; #AC(0)
-	 (t ;; Unclassified error!
+	 (t                                              ;; Unclassified error!
 	  (!!fault-fresh flg1))))
 
        (x86 (write-*sp proc-mode new-rsp x86))
@@ -376,9 +382,12 @@
 (def-inst x86-push-segment-register
   :parents (one-byte-opcodes two-byte-opcodes)
 
-  :short "PUSH FS/GS"
+  :short "PUSH Segment Register"
   :long
-  "<p><tt>0E</tt>:    \[PUSH CS\]</p>
+  "<p>Note that PUSH CS/SS/DS/ES are invalid in 64-bit mode.  Only PUSH FS/GS
+  are valid in 64-bit mode.</p>
+
+   <p><tt>0E</tt>:    \[PUSH CS\]</p>
    <p><tt>16</tt>:    \[PUSH SS\]</p>
    <p><tt>1E</tt>:    \[PUSH DS\]</p>
    <p><tt>06</tt>:    \[PUSH ES\]</p>
@@ -396,20 +405,17 @@
    opcodes like ADD, SUB, etc. The decoding is coupled with the execution in
    this case.</p>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p
+		:hyp (and (x86p x86)
+			  (canonical-address-p temp-rip))
+		:hints (("Goal" :in-theory (e/d ()
+						(select-operand-size
+						 signed-byte-p
+						 unsigned-byte-p)))))
 
   :body
 
   (b* ((ctx 'x86-push-general-register)
-
-       ((when (eql #.*lock* (prefixes->lck prefixes)))
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
-       ;; PUSH CS/SS/DS/ES are invalid in 64-bit mode:
-       ((when (and (equal proc-mode #.*64-bit-mode*)
-		   (member opcode '(#x0E #x16 #x1E #x06))))
-	(!!fault-fresh :ud nil :push-segment-64-bit-mode opcode)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
 		 (prefixes->opr prefixes)))
@@ -489,14 +495,16 @@
    opcodes like ADD, SUB, etc. The decoding is coupled with the execution in
    this case.</p>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p
+		:hyp (and (x86p x86)
+			  (canonical-address-p temp-rip))
+		:hints (("Goal" :in-theory (e/d ()
+						(select-operand-size
+						 signed-byte-p
+						 unsigned-byte-p)))))
   :body
 
   (b* ((ctx 'x86-pop-general-register)
-
-       ((when (eql #.*lock* (prefixes->lck prefixes)))
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (eql #.*operand-size-override*
 		 (prefixes->opr prefixes)))
@@ -574,14 +582,16 @@
    <p>This opcode belongs to Group 1A, and it has an opcode
    extension (ModR/m.reg = 0).</p>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p
+		:hyp (and (x86p x86)
+			  (canonical-address-p temp-rip))
+		:hints (("Goal" :in-theory (e/d ()
+						(select-operand-size
+						 signed-byte-p
+						 unsigned-byte-p)))))
   :body
 
   (b* ((ctx 'x86-pop-Ev)
-
-       ((when (equal #.*lock* (prefixes->lck prefixes)))
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes->seg prefixes))
        (p3? (equal #.*operand-size-override*
@@ -801,15 +811,17 @@
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p
+		:hyp (and (x86p x86)
+			  (canonical-address-p temp-rip))
+		:hints (("Goal" :in-theory (e/d ()
+						(select-operand-size
+						 signed-byte-p
+						 unsigned-byte-p)))))
 
   :body
 
   (b* ((ctx 'x86-pushf)
-
-       ((when (equal #.*lock* (prefixes->lck prefixes)))
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (equal #.*operand-size-override*
 		   (prefixes->opr prefixes)))
@@ -934,15 +946,17 @@
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p
+		:hyp (and (x86p x86)
+			  (canonical-address-p temp-rip))
+		:hints (("Goal" :in-theory (e/d ()
+						(select-operand-size
+						 signed-byte-p
+						 unsigned-byte-p)))))
 
   :body
 
   (b* ((ctx 'x86-popf)
-
-       ((when (equal #.*lock* (prefixes->lck prefixes)))
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (equal #.*operand-size-override*
 		   (prefixes->opr prefixes)))
@@ -1044,19 +1058,22 @@
    </p>"
 
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :guard (not (equal proc-mode #.*64-bit-mode*))
+
+  :returns (x86 x86p
+		:hyp (and (x86p x86)
+			  (canonical-address-p temp-rip))
+		:hints (("Goal" :in-theory (e/d ()
+						(rgfi-size
+						 select-operand-size
+						 signed-byte-p
+						 unsigned-byte-p)))))
 
   :prepwork
-  ((local (in-theory (e/d* () ((tau-system))))))
+  ((local (in-theory (e/d* () (not (tau-system))))))
   :body
 
   (b* ((ctx 'x86-pusha)
-
-       ((when (equal proc-mode #.*64-bit-mode*)) (!!fault-fresh :ud nil)) ;; #UD
-
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 2 4) operand-size)
 	(select-operand-size proc-mode nil 0 nil prefixes x86))
@@ -1152,14 +1169,19 @@
    It may be possible to optimize it by popping all the registers in one shot.
    </p>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :guard (not (equal proc-mode #.*64-bit-mode*))
+
+  :returns (x86 x86p
+		:hyp (and (x86p x86)
+			  (canonical-address-p temp-rip))
+		:hints (("Goal" :in-theory (e/d ()
+						(!rgfi-size 
+                                                 select-operand-size
+						 signed-byte-p
+						 unsigned-byte-p)))))
 
   :prepwork
-  ( ;; I wouldn't need the following two lemmas if I left tau enabled.
-   ;; Since tau slows the guard proof down, I'd rather have these
-   ;; lemmas here locally.
-   (local
+  ((local
     (defthm integerp-of-rme16-value
       (implies (x86p x86)
 	       (b* (((mv ?flg ?word ?x86-new)
@@ -1181,11 +1203,6 @@
 
   :body
   (b* ((ctx 'x86-popa)
-
-       ((when (equal proc-mode #.*64-bit-mode*)) (!!fault-fresh :ud nil)) ;; #UD
-
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ((the (integer 2 4) operand-size)
 	(select-operand-size proc-mode nil 0 nil prefixes x86))

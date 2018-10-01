@@ -210,18 +210,8 @@
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       (lock? (eql #.*lock* (prefixes->lck prefixes)))
-       ((when (and lock? (or (eql operation #.*OP-CMP*)
-			     (eql operation #.*OP-TEST*))))
-	;; CMP and TEST do not allow a LOCK prefix.
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-       ((when (and lock? (eql mod 3)))
-	;; Only memory operands allow a LOCK prefix.
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (p2 (prefixes->seg prefixes))
-       (p4? (eql #.*addr-size-override*
-		 (prefixes->adr prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
 
        (byte-operand? (eql 0 (the (unsigned-byte 1)
 			       (logand 1 opcode))))
@@ -344,15 +334,8 @@
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       ;; Since the destination is a general-purpose register and not memory,
-       ;; the LOCK prefix cannot be used for ADD, ADC, SUB, SBB, OR, AND, and
-       ;; XOR. In general, the LOCK prefix cannot be used for CMP and TEST.
-       (lock? (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (p2 (prefixes->seg prefixes))
-       (p4? (eql #.*addr-size-override*
-		 (prefixes->adr prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
 
        (byte-operand? (eql 0 (the (unsigned-byte 1)
 			       (logand 1 opcode))))
@@ -451,7 +434,13 @@
 
   :operation t
   :guard (and (natp operation)
-	      (<= operation 8))
+	      (<= operation 8)
+	      ;; The opcode 82H is an alternative encoding that generates #UD
+	      ;; in 64-bit mode; see AMD manual, Dec'17, Volume 3, Appendix
+	      ;; B.3.  Also see the opcode-maps.
+	      (if (eql opcode #x82)
+                  (not (equal proc-mode #.*64-bit-mode*))
+                  t))
   :guard-hints (("Goal" :in-theory (e/d (n08-to-i08
 					 n16-to-i16
 					 n32-to-i32
@@ -478,23 +467,8 @@
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
 
-       ;; The opcode 82H is an alternative encoding that generates #UD in
-       ;; 64-bit mode; see AMD manual, Dec'17, Volume 3, Appendix B.3.
-       ((when (and (eql opcode #x82)
-		   (equal proc-mode #.*64-bit-mode*)))
-	(!!fault-fresh :ud nil))
-
        (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-
-       (lock? (eql #.*lock* (prefixes->lck prefixes)))
-       ((when (and lock? (or (eql operation #.*OP-CMP*)
-			     (eql operation #.*OP-TEST*))))
-	;; CMP and TEST do not allow a LOCK prefix.
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-       ((when (and lock? (eql mod 3)))
-	;; Only memory operands allow a LOCK prefix.
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
@@ -659,10 +633,6 @@
 
   (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
 
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ;; rAX is not a memory operand:
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (byte-operand? (equal 0 (logand 1 opcode)))
        ((the (integer 1 8) operand-size)
 	(select-operand-size proc-mode byte-operand? rex-byte t prefixes x86))
@@ -748,11 +718,6 @@
        (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       ;; the LOCK prefix cannot be used with a register operand:
-       (lock? (eql #.*lock* (prefixes->lck prefixes)))
-       ((when (and lock? (eql mod 3)))
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*

@@ -864,7 +864,8 @@
 	       (:fn . (x86-movs))
 	       (:ud  . ((ud-Lock-used))))
 	      ("CMPS/B"   2 (X b) (Y b)
-	       (:fn . (x86-cmps)))
+	       (:fn . (x86-cmps))
+               (:ud  . ((ud-Lock-used))))
 	      ("CMPS/W/D" 2 (X v) (Y v)
 	       (:fn . (x86-cmps))
 	       (:ud  . ((ud-Lock-used))))
@@ -944,12 +945,10 @@
 	      (:Group-2 :1a)
 	      ("RET" 1 (I w) :f64
 	       (:fn . (x86-ret))
-	       ;; No UD Exception
-	       )
+               (:ud  . ((ud-Lock-used))))
 	      ("RET" 0 :f64
 	       (:fn . (x86-ret))
-	       ;; No UD Exception
-	       )
+	       (:ud  . ((ud-Lock-used))))
 	      ;; C4 and C5 are first bytes of the vex prefixes, both
 	      ;; in 32-bit and IA-32e modes.  However, in the 32-bit
 	      ;; and compatibility modes, the second byte determines
@@ -1096,7 +1095,8 @@
 	       (:fn . (:no-instruction)))
 	      ("HLT" 0
 	       (:fn . (x86-hlt))
-	       (:ud  . ((ud-Lock-used))))
+	       (:ud  . ((ud-Lock-used)))
+               (:gp  . ((gp-cpl-not-0))))
 	      ("CMC" 0
 	       (:fn . (x86-cmc/clc/stc/cld/std))
 	       (:ud  . ((ud-Lock-used))))
@@ -1970,7 +1970,7 @@
 	       (:fn . (x86-setcc))
 	       (:ud  . ((ud-Lock-used)))))
 
-    #| a0 |# (("PUSH"  1 (:FS) :d64
+    #| a0 |# (("PUSH FS"  1 (:FS) :d64
 	       (:fn . (x86-push-segment-register))
 	       (:ud  . ((ud-Lock-used))))
 	      ("POP"   1 (:FS) :d64
@@ -1988,7 +1988,7 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| a8 |#  ("PUSH"  1 (:GS) :d64
+    #| a8 |#  ("PUSH GS"  1 (:GS) :d64
 	       (:fn . (x86-push-segment-register))
 	       (:ud  . ((ud-Lock-used))))
 	      ("POP"   1 (:GS) :d64
@@ -4098,7 +4098,7 @@
 		 ("CMP" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
 			  (operation . #.*OP-CMP*)))
-		  (:ud  . ((ud-Lock-used-Dest-not-Memory-Op)))))
+		  (:ud  . ((ud-Lock-used)))))
 
 	       (((:opcode . #x81)
 		 (:reg    . #b000)) .
@@ -5473,7 +5473,8 @@
 		  (:mod    . :mem)
 		  (:reg    . #b010)) .
 		  ("LDMXCSR" 0 :1a
-		   (:fn . (x86-ldmxcsr/stmxcsr-Op/En-M))))
+		   (:fn . (x86-ldmxcsr/stmxcsr-Op/En-M))
+                   (:ex . ((chk-exc :type-5 (:sse))))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . :F3)
 		  (:mod    . #b11)
@@ -5495,7 +5496,8 @@
 		  (:mod    . :mem)
 		  (:reg    . #b011)) .
 		  ("STMXCSR" 0 :1a
-		   (:fn . (x86-ldmxcsr/stmxcsr-Op/En-M))))
+		   (:fn . (x86-ldmxcsr/stmxcsr-Op/En-M))
+                   (:ex . ((chk-exc :type-5 (:sse))))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . :F3)
 		  (:mod    . #b11)

@@ -98,9 +98,6 @@
        (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
@@ -189,9 +186,6 @@
        (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (integer 4 8) operand-size)
         (if (equal sp/dp #.*OP-DP*) 8 4))
@@ -286,9 +280,6 @@
        (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
@@ -448,9 +439,6 @@
        (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
@@ -588,9 +576,6 @@
        (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (integer 4 8) operand-size)
         (if (equal sp/dp #.*OP-DP*) 8 4))

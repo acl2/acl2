@@ -85,12 +85,8 @@
        (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (p2 (prefixes->seg prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes->adr prefixes)))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (select-byte-operand (equal opcode #xF6))
        ((the (integer 1 8) reg/mem-size)
@@ -199,12 +195,8 @@
        (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (p2 (prefixes->seg prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes->adr prefixes)))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (select-byte-operand (equal opcode #xF6))
        ((the (integer 1 8) reg/mem-size)
@@ -288,9 +280,6 @@
   :body
 
   (b* ((ctx 'x86-imul-Op/En-RM)
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
@@ -389,12 +378,8 @@
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (p2 (prefixes->seg prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes->adr prefixes)))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes x86))

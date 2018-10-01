@@ -102,9 +102,6 @@
 
   (b* ((ctx 'x86-call-E8-Op/En-M)
 
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (p3? (equal #.*operand-size-override* (prefixes->opr prefixes)))
 
        ((the (integer 0 4) offset-size)
@@ -194,9 +191,6 @@
   :body
 
   (b* ((ctx ' x86-call-FF/2-Op/En-M)
-
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes->seg prefixes))
        (p3? (equal #.*operand-size-override* (prefixes->opr prefixes)))
@@ -334,9 +328,6 @@
   :body
 
   (b* ((ctx 'x86-ret)
-
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (rsp (read-*sp proc-mode x86))
 
@@ -477,10 +468,6 @@
   :body
 
   (b* ((ctx 'x86-leave)
-
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?)
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p3? (equal #.*operand-size-override* (prefixes->opr prefixes)))
        ((the (integer 2 8) operand-size)
