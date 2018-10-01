@@ -10,7 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/fixbytes/instances" :dir :system)
+(include-book "kestrel/utilities/event-forms" :dir :system)
+(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "core")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -149,15 +150,20 @@
   :short "Introduce return type theorems for
           the conversions from natural numbers
           to digits in the specified power-of-2 base."
-  :long "@(def defthm-digit-byte-return-types)"
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This requires the presence, in the ACL2 world,
+     of the fixtype for (lists of) unsigned bytes of size equal to
+     the exponent of the power-of-2 base.
+     For instance, the call @('(defthm-digit-byte-return-types 8)') for base 256
+     requires the presence of the fixtype of unsigned bytes of size 8.")
+   (xdoc::p
+    "This requirement can be often satisfied by including the appropriate file
+     @('[books]/kestrel/utilities/fixbytes/ubyte<n>.lisp'),
+     e.g. @('ubyte8.lisp') for the example just above.
+     See the files @('pow2-<n>.lisp') in this directory for examples.")
+   (xdoc::def "defthm-digit-byte-return-types"))
   (defmacro defthm-digit-byte-return-types (size)
     (declare (xargs :guard (posp size)))
     `(make-event (defthm-digit-byte-return-types-fn ,size))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm-digit-byte-return-types 1)
-(defthm-digit-byte-return-types 2)
-(defthm-digit-byte-return-types 3)
-(defthm-digit-byte-return-types 4)
-(defthm-digit-byte-return-types 8)

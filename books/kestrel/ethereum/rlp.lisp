@@ -11,7 +11,7 @@
 (in-package "ETHEREUM")
 
 (include-book "kestrel/utilities/define-sk" :dir :system)
-(include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
+(include-book "kestrel/utilities/digits-any-base/pow2-8" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
 

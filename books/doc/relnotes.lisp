@@ -178,7 +178,9 @@
 
  <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
  moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
- and renamed.</p>
+ and renamed.  The uses of the macro to generate return type theorems for
+ specific power-of-2 bases have been split into several files so that they can
+ be included individually as needed.</p>
 
  <p>The utility, @(tsee directed-untranslate), has been improved in several
  ways, including more complete handling of @(tsee mv-let), @(tsee b*), and
