@@ -6,7 +6,6 @@
 ; defined after including system book "doc/top".
 
 (INCLUDE-BOOK "data-structures/memories/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "kestrel/ethereum/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/smtlink/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/sat/dimacs-reader/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/sat/proof-checker-array/portcullis" :DIR :SYSTEM)
@@ -25,6 +24,9 @@
 (INCLUDE-BOOK "acl2s/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "coi/symbol-fns/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "system/doc/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "kestrel/bitcoin/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "kestrel/ethereum/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "kestrel/java/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/acre/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/apt/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/soft/portcullis" :DIR :SYSTEM)

@@ -3,13 +3,15 @@ Written by Matt Kaufmann
 License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 [[NOTE: This directory is a static snapshot of community books
-directory books/kestrel/auto-termination/ from 10/1/2018, so that as
+directory books/kestrel/auto-termination/ from 10/2/2018, so that as
 that source directory evolves, the present directory can continue to
 correspond to the paper in ACL2 Workshop 2018: "DefunT: A Tool for
 Automating Termination Proofs by Using the Community Books (Extended
-Abstract)".  This directory is excluded from regression targets for
-the community books, because recertification could change file
-td-cands.lisp.]]
+Abstract)".  Note that some material below was written as early as
+June, 2018; there were only small changes between then and 10/2/2018.
+
+This directory is excluded from regression targets for the community
+books, because recertification could change file td-cands.lisp.]]
 
 This is the README file for books/kestrel/auto-termination/.
 See also :doc auto-termination.
