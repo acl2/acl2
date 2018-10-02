@@ -46,15 +46,15 @@
 (define aignet-record-levels-aux ((n natp)
                                   (aignet)
                                   (aignet-levels))
-  :guard (and (<= (+ 1 (max-fanin aignet)) (u32-length aignet-levels))
-              (<= n (+ 1 (max-fanin aignet))))
-  :measure (nfix (- (+ 1 (max-fanin aignet)) (nfix n)))
+  :guard (and (<= (num-fanins aignet) (u32-length aignet-levels))
+              (<= n (num-fanins aignet)))
+  :measure (nfix (- (num-fanins aignet) (nfix n)))
   :returns (aignet-levels-out (<= (len aignet-levels)
                                   (len aignet-levels-out))
                               :rule-classes :linear)
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
-  (b* (((when (mbe :logic (zp (- (+ 1 (max-fanin aignet)) (nfix n)))
-                   :exec (eql n (+ 1 (max-fanin aignet)))))
+  (b* (((when (mbe :logic (zp (- (num-fanins aignet) (nfix n)))
+                   :exec (eql n (num-fanins aignet))))
         aignet-levels)
        (aignet-levels
         (aignet-case (id->type n aignet)
@@ -63,8 +63,7 @@
                      (level (+ 1 (max lev0 lev1))))
                   (set-u32 n level aignet-levels))
           :in (set-u32 n 0 aignet-levels)
-          :const (set-u32 n 0 aignet-levels)
-          :out aignet-levels)))
+          :const (set-u32 n 0 aignet-levels))))
     (aignet-record-levels-aux (+ 1 (lnfix n)) aignet aignet-levels))
 
   ///
@@ -151,14 +150,14 @@
 
   (defthm aignet-levels-correct-up-to-of-aignet-record-levels-aux
     (implies (aignet-levels-correct-up-to n aignet aignet-levels)
-             (aignet-levels-correct-up-to (node-count (find-max-fanin aignet))
+             (aignet-levels-correct-up-to (+ 1 (fanin-count aignet))
                                           aignet
                                           (aignet-record-levels-aux n aignet aignet-levels)))
     :hints (("goal" :induct (aignet-record-levels-aux n aignet aignet-levels)
              :expand ((aignet-node-level n aignet)))))
 
   (defthm aignet-levels-correct-of-aignet-record-levels-aux
-    (aignet-levels-correct-up-to (node-count (find-max-fanin aignet))
+    (aignet-levels-correct-up-to (+ 1 (fanin-count aignet))
                                  aignet
                                  (aignet-record-levels-aux 0 aignet aignet-levels))))
 
@@ -172,14 +171,14 @@
   :long "<p>Does not record a level value for combinational outputs.  Look up the
          level of its fanin node instead.</p>"
   :returns (aignet-levels
-            (< (node-count (find-max-fanin aignet))
+            (< (fanin-count aignet)
                (len aignet-levels))
             :rule-classes :linear)
-  (b* ((aignet-levels (resize-u32 (+ 1 (max-fanin aignet)) aignet-levels)))
+  (b* ((aignet-levels (resize-u32 (num-fanins aignet) aignet-levels)))
     (aignet-record-levels-aux 0 aignet aignet-levels))
   ///
   (defthm aignet-levels-correct-of-aignet-record-levels
-    (aignet-levels-correct-up-to (node-count (find-max-fanin aignet))
+    (aignet-levels-correct-up-to (+ 1 (fanin-count aignet))
                                  aignet
                                  (aignet-record-levels aignet aignet-levels))))
 

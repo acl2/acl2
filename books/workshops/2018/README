@@ -1,0 +1,77 @@
+Below is a list of all papers accepted for ACL2 Workshop 2018,
+together with the corresponding subdirectory, which either contains
+supporting materials or a README that explains where they may be
+found.  (When the subdirectory is missing, it means that the
+supporting materials have not yet been included.)
+
+------------------------------
+
+Alessandro Coglio
+A Simple Java Code Generator for ACL2 Based on a Deep Embedding of ACL2 in Java
+coglio/
+
+------------------------------
+
+Alessandro Coglio and Shilpi Goel
+Adding 32-bit Mode to the ACL2 Model of the x86 ISA
+coglio-goel/
+
+------------------------------
+
+David Greve and Andrew Gacek
+Trapezoidal Generalization over Linear Constraints
+
+------------------------------
+
+Ruben Gamboa and John Cowles
+The Fundamental Theorem of Algebra in ACL2
+
+------------------------------
+
+David Hardin and Konrad Slind
+Using ACL2 in the Design of Efficient, Verifiable Data Structures for High-Assurance Systems
+
+------------------------------
+
+Carl Kwan and Mark Greenstreet
+Convex Functions in ACL2(r)
+
+------------------------------
+
+Carl Kwan and Mark Greenstreet
+The Cauchy-Schwarz Inequality in ACL2(r)
+
+------------------------------
+
+Matt Kaufmann
+DefunT: A Tool for Automating Termination Proofs by Using the Community Books (Extended Abstract)
+kaufmann/
+
+------------------------------
+
+Mihir Mehta
+Formalising Filesystems in the ACL2 Theorem Prover: an Application to FAT32
+mehta/
+
+------------------------------
+
+Yan Peng and Mark Greenstreet
+Smtlink 2.0
+
+------------------------------
+
+Rob Sumners
+A Toolbox for Property Checking from Simulation using Incremental SAT (Extended Abstract)
+
+------------------------------
+
+Sol Swords
+Hint Orchestration Using ACL2's Simplifier
+swords-hint-orchestration/
+
+------------------------------
+
+Sol Swords
+Incremental SAT Library Integration using Abstract Stobjs
+
+------------------------------

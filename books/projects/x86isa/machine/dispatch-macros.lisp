@@ -44,6 +44,8 @@
 (in-package "X86ISA")
 (include-book "std/util/define" :dir :system)
 (include-book "cpuid-constants")
+(include-book "cpuid")
+(include-book "../utils/constants")
 
 (local (xdoc::set-default-parents 'opcode-maps))
 
@@ -132,15 +134,129 @@
 (defmacro ud-cpl-is-not-zero ()
   `(not (eql (cplx86) 0)))
 
-(defmacro ud-simd-specification (feature-flag &key (cr4-osfxsr? 't))
-  (declare (xargs :guard (and (member-equal feature-flag *fp-simd-feature-flags*)
-			      (booleanp cr4-osfxsr?))))
+(defmacro ud-not-in-prot-or-64-mode ()
+  `(not (or (eql proc-mode #.*64-bit-mode*)
+            (eql proc-mode #.*protected-mode*))))
 
+(defmacro ud-not-in-vmx-operation ()
+  ;; BOZO Rob -- this is not modeled yet in x86 model, so return nil..
+  `nil)
+
+(defmacro ud-invept-not-supported ()
+  ;; BOZO Rob -- we do not support this yet either in x86 model:
+  ;;   (IA32_VMX_PROCBASED_CTLS2[33]=1) but does not support the INVEPT instruction (IA32_VMX_EPT_VPID_CAP[20]=0)
+  `nil)
+
+(defmacro ud-invvpid-not-supported ()
+  ;; BOZO Rob -- and similary, x86 doesn't support this yet:
+  ;;   (IA32_VMX_PROCBASED_CTLS2[37]=1) but does not support the INVVPID instruction (IA32_VMX_EPT_VPID_CAP[32]=0)
+  `nil)
+
+(defmacro ud-invpcid-not-supported ()
+  `(= (cpuid-flag #ux_07 :reg #.*ebx* :bit 10) 0))
+
+(defmacro ud-repne-f2-V86-cpuid-case ()
+  ;; BOZO Rob -- we don't really have V86 mode supported yet in x86, so return nil here:
+  `nil)
+
+(defmacro ud-rep-f3-used ()
+  `(eql #.*repe* (prefixes->rep prefixes)))
+
+(defmacro nm-cr0-ts-is-1 ()
+  `(eql (cr0-slice :cr0-ts (cr0)) 1))
+
+(defmacro nm-cr0-em-is-1 ()
+  `(eql (cr0-slice :cr0-em (cr0)) 1))
+
+(defmacro nm-exc-all-types ()
+  ;; for all vex/evex exception types, we have a requirement on cr0.ts bit:
+  `(nm-cr0-ts-is-1))
+
+(defmacro gp-cpl-not-0 ()
+  `(not (eql (cplx86) 0)))
+
+(defmacro gp-cr4-pce-is-0 ()
+  `(eql (cr4-slice :cr4-pce (cr4)) 0))
+
+(defmacro gp-cr4-umip-is-1 ()
+  `(eql (cr4-slice :cr4-umip (cr4)) 0))
+
+(defmacro gp-cr0-pe-is-0 ()
+  `(eql (cr0-slice :cr0-pe (cr0)) 0))
+
+;; ----------------------------------------------------------------------
+
+;; These macros are the access points to the specific registers in the x86 model:
+
+(defmacro cplx86 ()
+  `(ifix (cpl x86)))
+
+(defmacro cs.d ()
+  `(b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
+        (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden)))
+     (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+
+(defmacro cr0 ()
+  `(the (unsigned-byte 32)
+     (loghead 32 (ifix (ctri #.*cr0* x86)))))
+
+(defmacro cr4 ()
+  `(the (unsigned-byte 22)
+     (loghead 22 (ifix (ctri #.*cr4* x86)))))
+
+(defmacro ia32_efer ()
+  `(msri #.*ia32_efer-idx* x86))
+
+(defmacro feature-flag-macro (x)
+  `(feature-flag ,x x86))
+
+(defmacro feature-flags-macro (x)
+  `(feature-flags ,x x86))
+
+;; ----------------------------------------------------------------------
+
+(defmacro chk-exc (type-id feature-flags)
+  `(chk-exc-fn :legacy ,type-id ',feature-flags
+               ;; captured inputs:
+               proc-mode prefixes rex-byte opcode modr/m sib x86))
+
+(defmacro chk-exc-vex (type-id feature-flags)
+  `(chk-exc-fn :vex ,type-id ',feature-flags
+               ;; captured inputs:
+               proc-mode prefixes rex-byte opcode modr/m sib x86))
+
+(defmacro chk-exc-evex (type-id feature-flags)
+  `(chk-exc-fn :evex ,type-id ',feature-flags
+               ;; captured inputs:
+               proc-mode prefixes rex-byte opcode modr/m sib x86))
+
+;;;;;;
+
+(local (include-book "arithmetic-5/top" :dir :system))
+
+(define chk-exc-fn ((decode-context symbolp)
+                    (type-id        symbolp)
+                    (feature-flags  symbol-listp)
+                    ;; these parameters are captured from the expected
+                    ;; environment in which chk-exc calls should expand:
+                    (proc-mode     :type (integer 0 #.*num-proc-modes-1*))
+                    (prefixes      :type (unsigned-byte #.*prefixes-width*))
+                    (rex-byte      :type (unsigned-byte 8))
+                    (opcode        :type (unsigned-byte 8))
+                    (modr/m        :type (unsigned-byte 8))
+                    (sib           :type (unsigned-byte 8))
+                    x86)
+
+  :guard (and (member-eq decode-context '(:legacy :vex :evex))
+              (subset-equal feature-flags *supported-feature-flags*))
+  :guard-hints (("Goal" :in-theory (e/d () (x86$ap xr ifix))))
+  (declare (ignore opcode modr/m sib)) ;; don't use these yet, but include them anyways..
+  
   ;; *** UD checks for conditions that can be detected at decode time ***
-
+  
   ;; This macro is applicable to non-AVX instructions in only
   ;; protected/compatibility and 64-bit modes.
-
+  
   ;; Note that we don't check for "If an unmasked SIMD floating-point exception
   ;; and CR4.OSXMMEXCPT[bit 10] = 0."  here (which shows up in Types 2 and 3,
   ;; Intel Vol. 2, and in Tables 22-4, 22-5, and 22-6 Intel Vol. 3) --- this is
@@ -195,89 +311,37 @@
 
   ;; --------------------------------------------------
 
-  `(or (equal (cr0-slice :cr0-em (cr0)) 1)
-       ,@(if cr4-osfxsr?
-	     `((equal (cr4-slice :cr4-osfxsr (cr4)) 0))
-	   nil)
-       (ud-lock-used)
-       ;; If a corresponding CPUID feature flag is 0.
-       ;; Source: Intel Vol. 2 (May 2018 edition)
-       ;; Figure 3-7 (Feature Information Returned in the ECX register)
-       ;; Table 3-10 (Feature Information Returned in the ECX register)
-       ;; Figure 3-8 (Feature Information Returned in the EDX register)
-       ;; Table 3-11 (More on Feature Information Returned in the EDX register)
-       (equal (feature-flag ,feature-flag) 0)))
-
-(defmacro ud-exc-type-1 (feature-flag)
-  `(ud-simd-specification ,feature-flag :cr4-osfxsr? t))
-
-(defmacro ud-exc-type-2 (feature-flag)
-  `(ud-simd-specification ,feature-flag :cr4-osfxsr? t))
-
-(defmacro ud-exc-type-3 (feature-flag)
-  `(ud-simd-specification ,feature-flag :cr4-osfxsr? t))
-
-(defmacro ud-exc-type-4 (feature-flag)
-  `(ud-simd-specification ,feature-flag :cr4-osfxsr? t))
-
-(defmacro ud-exc-type-5 (feature-flag)
-  `(ud-simd-specification ,feature-flag :cr4-osfxsr? t))
-
-(defmacro ud-exc-type-7 (feature-flag)
-  `(ud-simd-specification ,feature-flag :cr4-osfxsr? t))
-
-(defmacro ud-exc-22-4 (feature-flag)
-  `(ud-simd-specification ,feature-flag :cr4-osfxsr? t))
-
-(defmacro ud-exc-22-5 (feature-flag)
-  `(ud-simd-specification ,feature-flag :cr4-osfxsr? t))
-
-(defmacro ud-exc-22-6 (feature-flag)
-  `(ud-simd-specification ,feature-flag :cr4-osfxsr? t))
-
-(defmacro ud-exc-22-7 (feature-flag)
-  `(ud-simd-specification ,feature-flag :cr4-osfxsr? nil))
-
-(defmacro ud-exc-22-8 (feature-flag)
-  `(ud-simd-specification ,feature-flag :cr4-osfxsr? nil))
-
-(defmacro ud-exc-22-9 (feature-flag)
-  `(ud-simd-specification ,feature-flag :cr4-osfxsr? nil))
-
-
-(defmacro nm-cr0-ts-is-1 ()
-  `(eql (cr0-slice :cr0-ts (cr0)) 1))
-
-(defmacro nm-cr0-em-is-1 ()
-  `(eql (cr0-slice :cr0-em (cr0)) 1))
-
-(defmacro gp-cpl-not-0 ()
-  `(not (eql (cplx86) 0)))
-
-(defmacro gp-cr4-pce-is-0 ()
-  `(eql (cr4-slice :cr4-pce (cr4)) 0))
-
-(defmacro gp-cr4-umip-is-1 ()
-  `(eql (cr4-slice :cr4-umip (cr4)) 0))
-
-(defmacro gp-cr0-pe-is-0 ()
-  `(eql (cr0-slice :cr0-pe (cr0)) 0))
-
-
-;; Some x86isa-specific macros:
-
-(defmacro cplx86 ()
-  `(cpl x86))
-
-(defmacro cr0 ()
-  `(the (unsigned-byte 32)
-     (loghead 32 (ctri #.*cr0* x86))))
-
-(defmacro cr4 ()
-  `(the (unsigned-byte 22)
-     (loghead 22 (ctri #.*cr4* x86))))
-
-(defmacro ia32_efer ()
-  `(msri #.*ia32_efer-idx* x86))
+  (cond
+;   (t nil) ;; BOZO Rob -- I want to enable the rest of this definition, but the
+   ;; guard proof is excruciatingly (although it does go through) and I need to
+   ;; figure out how to get it to go through quicker..
+   ((and (eq decode-context :vex)
+         (or (ud-Reps-used)
+             (ud-Opr-used)
+             (not (eql rex-byte 0))
+             (not (or (eql proc-mode #.*64-bit-mode*)
+                      (eql proc-mode #.*compatibility-mode*)
+                      (eql proc-mode #.*protected-mode*)))))
+    :ud)
+   ((eq type-id :type-vex-gpr)
+    ;; from table 2.5.1 from volume 2.. we only need to additionally check
+    ;; the cpuid requirements:
+    (cond ((equal (feature-flags feature-flags x86) 0) :ud)))
+   ((equal (cr0-slice :cr0-ts (cr0)) 1)
+    :nm)
+   ((and (not (member-eq type-id '(:type-22-7 :type-22-8 :type-22-9)))
+         (equal (cr4-slice :cr4-osfxsr (cr4)) 0))
+    :ud)
+   ;; BOZO -- Rob -- still need to add more here :(
+   ((or (equal (cr0-slice :cr0-em (cr0)) 1)
+        (ud-lock-used)
+        ;; If a corresponding CPUID feature flag is 0.
+        ;; Source: Intel Vol. 2 (May 2018 edition)
+        ;; Figure 3-7 (Feature Information Returned in the ECX register)
+        ;; Table 3-10 (Feature Information Returned in the ECX register)
+        ;; Figure 3-8 (Feature Information Returned in the EDX register)
+        ;; Table 3-11 (More on Feature Information Returned in the EDX register)
+        (equal (feature-flags feature-flags x86) 0))
+    :ud)))
 
 ;; ----------------------------------------------------------------------

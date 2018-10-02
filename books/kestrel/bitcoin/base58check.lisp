@@ -25,10 +25,10 @@
    (xdoc::p
     "Base58Check encoding is described in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding\"
-     >Page `Base58Check encoding' of Wiki</a>.
+     >Page `Base58Check encoding' of [Wiki]</a>.
      Base58Check encoding is also described
-     in Section `Base58 and Base58Check Encoding' of Chapter 4 of MB.
-     WP does not mention Base58Check encoding.")
+     in Section `Base58 and Base58Check Encoding' of Chapter 4 of [MB].
+     [WP] does not mention Base58Check encoding.")
    (xdoc::p
     "We do not formalize any Base58Check decoding for now."))
   :order-subtopics t
@@ -48,9 +48,9 @@
     "This is described in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding#Creating_a_Base58Check_string\"
      >Section `Creating a Base58Check string' of Page `Base58Check encoding'
-     of Wiki</a>.
+     of [Wiki]</a>.
      It is also described
-     in Section `Base58 and Base58Check Encoding' of Chapter 4 of MB,
+     in Section `Base58 and Base58Check Encoding' of Chapter 4 of [MB],
      with an illustration in Figure 6.")
    (xdoc::p
     "Version prefix and payload (which are both lists of bytes)
@@ -59,10 +59,10 @@
      which is appended to the concatenated version prefix and payload.
      The resulting bytes are Base58-encoded.")
    (xdoc::p
-    "Bullet 1 of the description in Wiki talks about a single version byte.
-     However, both Table 1 of Chapter 4 of MB
+    "Bullet 1 of the description in [Wiki] talks about a single version byte.
+     However, both Table 1 of Chapter 4 of [MB]
      and <a href=\"https://en.bitcoin.it/wiki/List_of_address_prefixes\">Page
-     `List of address prefixes' of Wiki</a>
+     `List of address prefixes' of [Wiki]</a>
      include multi-byte prefixes.
      Thus, this function takes a list of bytes as the version prefix.")
    (xdoc::p

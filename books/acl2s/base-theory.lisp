@@ -17,13 +17,18 @@
 ; Pete 9/16/2018: Better range support
 (include-book "tau/bounders/elementary-bounders" :dir :system)
 
+; Pete 9/27/2018: Include utilities book
+(include-book "utilities")
+
 ; Pete 9/14/2018: I am enabling some of the functions that
 ; std/lists/top disables, since this causes problems where simple
 ; theorems do not getting proved.
 
 (in-theory (enable
+            true-listp
             len
             append
+            rev
             revappend
             no-duplicatesp-equal
             make-character-list
@@ -85,6 +90,15 @@
      :satisfies (<= x1 (len x3)))
 
 (include-book "arithmetic-5/top" :dir :system)
+(include-book "rtl/rel11/lib/top" :dir :system)
+(in-theory
+ (disable
+  acl2::|(mod (+ x y) z) where (<= 0 z)| acl2::|(mod (+ x (- (mod a b))) y)| 
+  acl2::|(mod (mod x y) z)| acl2::|(mod (+ x (mod a b)) y)| acl2::cancel-mod-+
+  acl2::mod-cancel-*-const acl2::simplify-products-gather-exponents-equal 
+  acl2::simplify-products-gather-exponents-<
+  acl2::cancel-mod-+ acl2::reduce-additive-constant-< acl2::|(floor x 2)|
+  acl2::|(equal x (if a b c))| acl2::|(equal (if a b c) x)|))
 
 (defthm natp-implies-acl2-numberp
   (implies (natp x)

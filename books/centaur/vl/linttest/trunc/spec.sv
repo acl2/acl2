@@ -136,3 +136,20 @@ module a0 ;
 
 endmodule
 
+module a1;
+
+   wire [3:0] w;
+
+   wire [3:0] xx0 = {3{1'b0}}; // no warning, fits
+   wire [3:0] xx1 = {4{1'b0}}; // no warning, fits
+   wire [3:0] xx2 = {5{1'b0}}; // no warning, still getting all zeroes
+
+   wire [3:0] yy0 = {3{1'b1}}; // warn, extension
+   wire [3:0] yy1 = {4{1'b1}}; // no warning, correct
+   wire [3:0] yy2 = {5{1'b1}}; // warn, truncating a 1
+
+   wire [3:0] zz0 = $countones(w);  // no warning, integer-valued system function
+   wire [3:0] zz1 = $bits(w);       // no warning, integer-valued system function
+   wire [2:0] zz2 = $unsigned(w);   // warn, wrong size
+
+endmodule

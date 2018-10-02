@@ -45,6 +45,7 @@
 
 (include-book "instructions/top"
 	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "prefix-modrm-sib-decoding")
 (include-book "dispatch-macros")
 (include-book "cpuid")
 (include-book "std/strings/hexify" :dir :system)
@@ -63,6 +64,15 @@
 
 ;; ----------------------------------------------------------------------
 
+
+;; BOZO - Rob -- not sure where the mod-4 terms arise in the expansion, but
+;;               needed this simple theorem to bring them back to loghead
+;;               to get the guards to clear up..
+(local (defthm loghead-2-equal-mod-4
+         (implies (natp x)
+                  (equal (mod x 4)
+                         (loghead 2 x)))
+         :hints (("Goal" :in-theory (enable loghead logand)))))
 
 (make-event
  (b* (((mv table-doc-string dispatch)

@@ -18,27 +18,6 @@
 (include-book "insert-text")
 (include-book "fat32")
 
-;; This was moved to one of the main books, but still kept
-(defthm unsigned-byte-listp-of-update-nth
-  (implies (and (unsigned-byte-listp n l)
-                (< key (len l)))
-           (equal (unsigned-byte-listp n (update-nth key val l))
-                  (unsigned-byte-p n val)))
-  :hints (("goal" :in-theory (enable unsigned-byte-listp))))
-
-;; This was taken from Alessandro Coglio's book at
-;; books/kestrel/utilities/typed-list-theorems.lisp
-(defthm unsigned-byte-listp-of-rev
-  (equal (unsigned-byte-listp n (rev bytes))
-         (unsigned-byte-listp n (list-fix bytes)))
-  :hints (("goal" :in-theory (enable unsigned-byte-listp rev))))
-
-(defthm nth-of-unsigned-byte-list
-  (implies (and (unsigned-byte-listp bits l)
-                (natp n)
-                (< n (len l)))
-           (unsigned-byte-p bits (nth n l))))
-
 (defthm nth-of-string=>nats
   (equal (nth n (string=>nats string))
          (if (< (nfix n) (len (explode string)))

@@ -458,6 +458,11 @@
   "Cause an error if a value is not a symbol."
   (((symbolp x) "~@0 must be a symbol." description)))
 
+(def-error-checker ensure-string
+  ((x "Value to check."))
+  "Cause an error if a value is not a string."
+  (((stringp x) "~@0 must be a string." description)))
+
 (def-error-checker ensure-string-or-nil
   ((x "Value to check."))
   "Cause an error if a value is not a string or @('nil')."

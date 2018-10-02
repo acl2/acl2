@@ -99,9 +99,6 @@
 
   (b* ((ctx 'x86-near-jmp-Op/En-D)
 
-       ((when (equal #.*lock* (prefixes->lck prefixes)))
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (p3? (equal #.*operand-size-override* (prefixes->opr prefixes)))
 
        ((the (integer 0 4) offset-size)
@@ -160,9 +157,6 @@
   :body
 
   (b* ((ctx 'x86-near-jmp-Op/En-M)
-
-       ((when (equal #.*lock* (prefixes->lck prefixes)))
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (r/m (modr/m->r/m modr/m))
        ;; Note that the reg field serves as an opcode extension for
@@ -314,9 +308,6 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
   :body
 
   (b* ((ctx 'x86-far-jmp-Op/En-M)
-
-       ((when (equal #.*lock* (prefixes->lck prefixes)))
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (r/m (modr/m->r/m modr/m))
        (mod (modr/m->mod modr/m))
@@ -837,9 +828,6 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
   :body
 
   (b* ((ctx 'x86-loop)
-
-       ((when (equal #.*lock* (prefixes->lck prefixes)))
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        ;; temp-rip right now points to the rel8 byte.  Add 1 to
        ;; temp-rip to account for rel8 when computing the length

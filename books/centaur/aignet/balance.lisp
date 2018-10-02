@@ -331,12 +331,12 @@
 (define aignet-update-node-level ((id natp)
                                   (levels)
                                   (aignet))
-  :guard (<= id (max-fanin aignet))
+  :guard (< id (num-fanins aignet))
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
   :returns (new-levels)
   (b* ((id (lnfix id))
-       (levels (if (<= (u32-length levels) (max-fanin aignet))
-                   (resize-u32 (max 16 (* 2 (max-fanin aignet))) levels)
+       (levels (if (< (u32-length levels) (num-fanins aignet))
+                   (resize-u32 (max 16 (* 2 (num-fanins aignet))) levels)
                  levels))
        ((unless (eql (id->type id aignet) (gate-type)))
         (set-u32 id 0 levels))
@@ -349,7 +349,7 @@
     :rule-classes :linear)
 
   (defret aignet-update-node-level-length-lower-bound
-    (< (node-count (find-max-fanin aignet)) (len new-levels))
+    (< (fanin-count aignet) (len new-levels))
     :rule-classes :linear))
 
 
@@ -366,8 +366,8 @@
   (equal (cdr (lit-list-fix x))
          (lit-list-fix (cdr x))))
 
-(fty::deffixequiv aignet-litp
-  :hints(("Goal" :in-theory (enable aignet-litp))))
+;; (fty::deffixequiv aignet-litp
+;;   :hints(("Goal" :in-theory (enable aignet-litp))))
 
 (defthm aignet-lit-listp-of-lit-list-fix
   (implies (aignet-lit-listp x aignet)
@@ -383,7 +383,7 @@
   :guard (and (fanin-litp first aignet2)
               (fanin-litp level-ref aignet2)
               (aignet-lit-listp rest aignet2)
-              (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+              (<= (num-fanins aignet2) (u32-length levels)))
   :returns (mv (pairing (iff (litp pairing) pairing))
                (remaining lit-listp))
   :measure (len rest)
@@ -411,7 +411,7 @@
     (mv nil rest))
   ///
   (verify-guards aignet-balance-find-pairing-rec :guard-debug t
-    :hints (("goal" :do-not-induct t)) :otf-flg t)
+    :hints (("goal" :do-not-induct t :in-theory (enable aignet-idp))) :otf-flg t)
 
   (defret aignet-balance-find-pairing-rec-correct-when-found
     (implies pairing
@@ -469,7 +469,7 @@
   :guard (and (consp lits)
               (consp (cdr lits))
               (aignet-lit-listp lits aignet2)
-              (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+              (<= (num-fanins aignet2) (u32-length levels)))
   :returns (mv (first litp) (second litp) (rest lit-listp))
   (b* ((first (lit-fix (car lits)))
        (second (lit-fix (cadr lits)))
@@ -549,58 +549,58 @@
 (defthm levels-sort-list-p-when-aignet-lit-listp
   (implies (and (aignet-lit-listp lits aignet2)
                 (lit-listp lits)
-                (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+                (<= (num-fanins aignet2) (u32-length levels)))
            (levels-sort-list-p lits levels))
-  :hints(("Goal" :in-theory (enable levels-sort-list-p))))
+  :hints(("Goal" :in-theory (enable levels-sort-list-p aignet-idp))))
 
 (defthm levels-sort-list-p-when-aignet-lit-listp-bind-free
   (implies (and (bind-free '((aignet2 . aignet2)) (aignet2))
                 (aignet-lit-listp lits aignet2)
                 (lit-listp lits)
-                (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+                (<= (num-fanins aignet2) (u32-length levels)))
            (levels-sort-list-p lits levels))
   :hints(("Goal" :in-theory (enable levels-sort-list-p))))
 
 (local (defretd max-fanin-of-aignet-install-gate
          (implies (and (aignet-litp x0 aignet)
                        (aignet-litp x1 aignet))
-                  (equal (node-count (find-max-fanin new-aignet))
-                         (if (> (lit-id lit) (node-count (find-max-fanin aignet)))
+                  (equal (fanin-count new-aignet)
+                         (if (> (lit-id lit) (fanin-count aignet))
                              (lit-id lit)
-                           (node-count (find-max-fanin aignet)))))
+                           (fanin-count aignet))))
          :fn aignet-install-gate
-         :hints(("Goal" :in-theory (e/d (aignet-install-gate))))))
+         :hints(("Goal" :in-theory (e/d (aignet-install-gate aignet-idp))))))
 
-(local (defret max-fanin-of-aignet-hash-and-casesplit
+(local (defret fanin-count-of-aignet-hash-and-casesplit
          (implies (and (aignet-litp lit1 aignet)
                        (aignet-litp lit2 aignet))
-                  (equal (node-count (find-max-fanin new-aignet))
-                         (if (> (lit-id and-lit) (node-count (find-max-fanin aignet)))
+                  (equal (fanin-count new-aignet)
+                         (if (> (lit-id and-lit) (fanin-count aignet))
                              (lit-id and-lit)
-                           (node-count (find-max-fanin aignet)))))
+                           (fanin-count aignet))))
          :fn aignet-hash-and
          :hints(("Goal" :in-theory (e/d (aignet-hash-and max-fanin-of-aignet-install-gate))))))
 
-(defthm aignet-hash-and-id-less-than-max-fanin
+(defthm aignet-hash-and-id-less-than-fanin-count
   (implies (and (aignet-litp lit1 aignet)
                 (aignet-litp lit2 aignet))
            (b* (((mv lit ?strash new-aignet) (aignet-hash-and lit1 lit2 gatesimp strash aignet)))
-             (<= (lit-id lit) (node-count (find-max-fanin new-aignet)))))
+             (<= (lit-id lit) (fanin-count new-aignet))))
   :rule-classes :linear)
 
-;; (local (defret max-fanin-of-aignet-hash-xor-casesplit
-;;          (equal (node-count (find-max-fanin new-aignet))
-;;                 (if (> (lit-id xor-lit) (node-count (find-max-fanin aignet)))
-;;                     (lit-id xor-lit)
-;;                   (node-count (find-max-fanin aignet))))
-;;          :fn aignet-hash-xor
-;;          :hints(("Goal" :in-theory (e/d (aignet-hash-xor max-fanin-of-aignet-install-gate))))))
+;; ;; (local (defret max-fanin-of-aignet-hash-xor-casesplit
+;; ;;          (equal (fanin-count (find-max-fanin new-aignet))
+;; ;;                 (if (> (lit-id xor-lit) (fanin-count aignet))
+;; ;;                     (lit-id xor-lit)
+;; ;;                   (fanin-count aignet)))
+;; ;;          :fn aignet-hash-xor
+;; ;;          :hints(("Goal" :in-theory (e/d (aignet-hash-xor max-fanin-of-aignet-install-gate))))))
 
 (defthm aignet-hash-xor-id-less-than-max-fanin
   (b* (((mv lit ?strash new-aignet) (aignet-hash-xor lit1 lit2 gatesimp strash aignet)))
-    (<= (lit-id lit) (node-count (find-max-fanin new-aignet))))
+    (<= (lit-id lit) (fanin-count new-aignet)))
   :hints (("goal" :use ((:instance aignet-litp-of-aignet-hash-xor))
-           :in-theory (disable aignet-litp-of-aignet-hash-xor)))
+           :in-theory (e/d (aignet-idp) (aignet-litp-of-aignet-hash-xor))))
   :rule-classes :linear)
 
 
@@ -628,7 +628,7 @@
                (new-strash))
   :guard (and (consp lits)
               (aignet-lit-listp lits aignet2)
-              (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+              (<= (num-fanins aignet2) (u32-length levels)))
   :measure (len lits)
   (b* (((when (atom (cdr lits)))
         (mv (lit-fix (car lits)) levels aignet2 strash))
@@ -691,9 +691,9 @@
     :hints (("goal" :induct <call> :expand (<call>))))
 
   (defret levels-length-of-aignet-balance-build-supergate-rec
-    (implies (and (< (max-fanin aignet2) (len levels))
+    (implies (and (<= (num-fanins aignet2) (len levels))
                   (aignet-lit-listp lits aignet2))
-             (< (node-count (find-max-fanin new-aignet2)) (len new-levels)))
+             (< (fanin-count new-aignet2) (len new-levels)))
     :hints (("goal" :induct <call> :expand (<call>)))
     :rule-classes :linear)
 
@@ -740,7 +740,7 @@
                (new-aignet2)
                (new-strash))
   :guard (and (aignet-lit-listp lits aignet2)
-              (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+              (<= (num-fanins aignet2) (u32-length levels)))
   :guard-debug t
   (b* ((lits (lit-list-fix lits))
        ((when (member 0 lits))
@@ -790,9 +790,9 @@
              (aignet-litp result-lit new-aignet2)))
 
   (defret levels-length-of-aignet-balance-build-supergate
-    (implies (and (< (max-fanin aignet2) (len levels))
+    (implies (and (<= (num-fanins aignet2) (len levels))
                   (aignet-lit-listp lits aignet2))
-             (< (node-count (find-max-fanin new-aignet2)) (len new-levels)))
+             (< (fanin-count new-aignet2) (len new-levels)))
     :rule-classes :linear)
 
   (defret aignet-extension-p-of-aignet-balance-build-supergate
@@ -847,7 +847,7 @@
   :guard (and (fanin-litp first aignet2)
               (fanin-litp level-ref aignet2)
               (aignet-lit-listp rest aignet2)
-              (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+              (<= (num-fanins aignet2) (u32-length levels)))
   :returns (mv (pairing (iff (litp pairing) pairing))
                (remaining lit-listp))
   :measure (len rest)
@@ -879,7 +879,7 @@
   ;;          :hints(("Goal" :in-theory (enable make-lit)))))
 
   (verify-guards aignet-balance-find-xor-pairing-rec :guard-debug t
-    :hints (("goal" :do-not-induct t)) :otf-flg t)
+    :hints (("goal" :do-not-induct t :in-theory (enable aignet-idp))) :otf-flg t)
 
   ;; (local (defthm lit-eval-of-make-lit-0
   ;;          (equal (lit-eval (make-lit 0 bit) invals regvals aignet)
@@ -940,7 +940,7 @@
   :guard (and (consp lits)
               (consp (cdr lits))
               (aignet-lit-listp lits aignet2)
-              (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+              (<= (num-fanins aignet2) (u32-length levels)))
   :returns (mv (first litp) (second litp) (rest lit-listp))
   (b* ((first (lit-fix (car lits)))
        (second (lit-fix (cadr lits)))
@@ -1028,7 +1028,7 @@
                (new-strash))
   :guard (and (consp lits)
               (aignet-lit-listp lits aignet2)
-              (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+              (<= (num-fanins aignet2) (u32-length levels)))
   :measure (len lits)
   :prepwork ((local (defthmd mk-lit-0
                       (equal (mk-lit 0 neg) (bfix neg))
@@ -1102,9 +1102,9 @@
     :hints (("goal" :induct <call> :expand (<call>))))
 
   (defret levels-length-of-aignet-balance-build-superxor-rec
-    (implies (and (< (max-fanin aignet2) (len levels))
+    (implies (and (<= (num-fanins aignet2) (len levels))
                   (aignet-lit-listp lits aignet2))
-             (< (node-count (find-max-fanin new-aignet2)) (len new-levels)))
+             (< (fanin-count new-aignet2) (len new-levels)))
     :hints (("goal" :induct <call> :expand (<call>)))
     :rule-classes :linear)
 
@@ -1126,7 +1126,7 @@
                (new-aignet2)
                (new-strash))
   :guard (and (aignet-lit-listp lits aignet2)
-              (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+              (<= (num-fanins aignet2) (u32-length levels)))
   :guard-debug t
   :prepwork ((local (defthmd mk-lit-0
                       (equal (mk-lit 0 neg) (bfix neg))
@@ -1199,9 +1199,9 @@
              (aignet-litp result-lit new-aignet2)))
 
   (defret levels-length-of-aignet-balance-build-superxor
-    (implies (and (< (max-fanin aignet2) (len levels))
+    (implies (and (<= (num-fanins aignet2) (len levels))
                   (aignet-lit-listp lits aignet2))
-             (< (node-count (find-max-fanin new-aignet2)) (len new-levels)))
+             (< (fanin-count new-aignet2) (len new-levels)))
     :rule-classes :linear)
 
   (defret aignet-extension-p-of-aignet-balance-build-superxor
@@ -1211,8 +1211,6 @@
     (implies (and (not (equal (stype-fix stype) (and-stype)))
                   (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2) (stype-count stype aignet2)))))
-       
-(defstobj-clone refcounts u32arr :prefix "REFCOUNTS-")
 
 (define lit-collect-superxor ((lit litp)
                               top
@@ -1337,12 +1335,12 @@
                               (levels "for output network")
                               (aignet2 "output")
                               (strash "for output network"))
-    :guard (and (<= node (max-fanin aignet))
-                (<= (+ 1 (max-fanin aignet)) (lits-length copy))
+    :guard (and (< node (num-fanins aignet))
+                (<= (num-fanins aignet) (lits-length copy))
                 (non-exec (ec-call (aignet-copies-in-bounds copy aignet2)))
-                (<= (+ 1 (max-fanin aignet)) (bits-length mark))
-                (<= (+ 1 (max-fanin aignet)) (u32-length refcounts))
-                (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+                (<= (num-fanins aignet) (bits-length mark))
+                (<= (num-fanins aignet) (u32-length refcounts))
+                (<= (num-fanins aignet2) (u32-length levels)))
     :returns (mv (copy-lit litp) new-mark new-copy new-levels new-aignet2 new-strash)
     :verify-guards nil
     :measure (acl2::two-nats-measure (nfix node) 0)
@@ -1376,11 +1374,11 @@
                                    (aignet2 "output")
                                    (strash "for output network"))
     :guard (and (aignet-lit-listp lits aignet)
-                (<= (+ 1 (max-fanin aignet)) (lits-length copy))
+                (<= (num-fanins aignet) (lits-length copy))
                 (non-exec (ec-call (aignet-copies-in-bounds copy aignet2)))
-                (<= (+ 1 (max-fanin aignet)) (bits-length mark))
-                (<= (+ 1 (max-fanin aignet)) (u32-length refcounts))
-                (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+                (<= (num-fanins aignet) (bits-length mark))
+                (<= (num-fanins aignet) (u32-length refcounts))
+                (<= (num-fanins aignet2) (u32-length levels)))
     :returns (mv (copy-lits lit-listp) new-mark new-copy new-levels new-aignet2 new-strash)
     :measure (acl2::two-nats-measure (lits-max-id-val lits) (+ 1 (len lits)))
     (b* (((When (atom lits))
@@ -1392,11 +1390,11 @@
       (mv (cons (lit-negate-cond lit1 (lit-neg (car lits))) rest-lits)
           mark copy levels aignet2 strash)))
   ///
-  (local (defthm aignet-litp-of-make-lit
-           (implies (and (<= (nfix id) (node-count aignet))
-                         (not (equal (ctype (stype (car (lookup-id id aignet)))) :output)))
-                    (aignet-litp (make-lit id 0) aignet))
-           :hints(("Goal" :in-theory (enable aignet-litp)))))
+  ;; (local (defthm aignet-litp-of-make-lit
+  ;;          (implies (and (<= (nfix id) (fanin-count aignet))
+  ;;                        (not (equal (ctype (stype (car (lookup-id id aignet)))) :output)))
+  ;;                   (aignet-litp (make-lit id 0) aignet))
+  ;;          :hints(("Goal" :in-theory (enable aignet-idp)))))
 
   (local (in-theory (disable aignet-balance-rec aignet-balance-list-rec)))
 
@@ -1413,7 +1411,7 @@
   (std::defret-mutual aignet-litp-of-aignet-balance-rec
     (defret aignet-litp-of-aignet-balance-rec
       (implies (and (aignet-copies-in-bounds copy aignet2)
-                    (<= (nfix node) (max-fanin aignet)))
+                    (< (nfix node) (num-fanins aignet)))
                (and (aignet-copies-in-bounds new-copy new-aignet2)
                     (aignet-litp copy-lit new-aignet2)))
       :hints ('(:expand (<call>)))
@@ -1423,53 +1421,53 @@
                     (aignet-lit-listp lits aignet))
                (and (aignet-copies-in-bounds new-copy new-aignet2)
                     (aignet-lit-listp copy-lits new-aignet2)))
-      :hints ('(:expand (<call>)))
+      :hints ('(:expand (<call>) :in-theory (enable aignet-idp)))
       :fn aignet-balance-list-rec))
   
   (std::defret-mutual levels-length-of-aignet-balance-rec
     (defret levels-length-of-aignet-balance-rec
-      (implies (and (< (max-fanin aignet2) (len levels))
+      (implies (and (<= (num-fanins aignet2) (len levels))
                     (aignet-copies-in-bounds copy aignet2)
-                    (<= (nfix node) (max-fanin aignet)))
-               (< (node-count (find-max-fanin new-aignet2)) (len new-levels)))
+                    (< (nfix node) (num-fanins aignet)))
+               (< (fanin-count new-aignet2) (len new-levels)))
       :hints ('(:expand (<call>)))
       :fn aignet-balance-rec
       :rule-classes :linear)
     (defret levels-length-of-aignet-balance-list-rec
-      (implies (and (< (max-fanin aignet2) (len levels))
+      (implies (and (<= (num-fanins aignet2) (len levels))
                     (aignet-copies-in-bounds copy aignet2)
                     (aignet-lit-listp lits aignet))
-               (< (node-count (find-max-fanin new-aignet2)) (len new-levels)))
-      :hints ('(:expand (<call>)))
+               (< (fanin-count new-aignet2) (len new-levels)))
+      :hints ('(:expand (<call>) :in-theory (enable aignet-idp)))
       :fn aignet-balance-list-rec
       :rule-classes :linear))
 
   (std::defret-mutual mark-length-of-aignet-balance-rec
     (defret mark-length-of-aignet-balance-rec
-      (implies (and (<= (+ 1 (max-fanin aignet)) (len mark))
-                    (<= (nfix node) (max-fanin aignet)))
+      (implies (and (<= (num-fanins aignet) (len mark))
+                    (< (nfix node) (num-fanins aignet)))
                (equal (len new-mark) (len mark)))
       :hints ('(:expand (<call>)))
       :fn aignet-balance-rec)
     (defret mark-length-of-aignet-balance-list-rec
-      (implies (and (<= (+ 1 (max-fanin aignet)) (len mark))
+      (implies (and (<= (num-fanins aignet) (len mark))
                     (aignet-lit-listp lits aignet))
                (equal (len new-mark) (len mark)))
-      :hints ('(:expand (<call>)))
+      :hints ('(:expand (<call>) :in-theory (enable aignet-idp)))
       :fn aignet-balance-list-rec))
 
   (std::defret-mutual copy-length-of-aignet-balance-rec
     (defret copy-length-of-aignet-balance-rec
-      (implies (and (<= (+ 1 (max-fanin aignet)) (len copy))
-                    (<= (nfix node) (max-fanin aignet)))
+      (implies (and (<= (num-fanins aignet) (len copy))
+                    (< (nfix node) (num-fanins aignet)))
                (equal (len new-copy) (len copy)))
       :hints ('(:expand (<call>)))
       :fn aignet-balance-rec)
     (defret copy-length-of-aignet-balance-list-rec
-      (implies (and (<= (+ 1 (max-fanin aignet)) (len copy))
+      (implies (and (<= (num-fanins aignet) (len copy))
                     (aignet-lit-listp lits aignet))
                (equal (len new-copy) (len copy)))
-      :hints ('(:expand (<call>)))
+      :hints ('(:expand (<call>) :in-theory (enable aignet-idp)))
       :fn aignet-balance-list-rec))
 
   (verify-guards aignet-balance-rec
@@ -1585,7 +1583,7 @@
     (defret aignet-balance-rec-correct
       (implies (and (marked-lit-copies-equiv mark copy aignet aignet2 invals regvals)
                     (aignet-copies-in-bounds copy aignet2)
-                    (<= (nfix node) (max-fanin aignet)))
+                    (< (nfix node) (num-fanins aignet)))
                (and (marked-lit-copies-equiv new-mark new-copy aignet new-aignet2 invals regvals)
                     (implies (not (equal (id->type node aignet) (out-type)))
                              (equal (lit-eval copy-lit invals regvals new-aignet2)
@@ -1621,7 +1619,8 @@
                          (:free (a b aignet2) (aignet-eval-parity (cons a b) invals regvals aignet2))
                          (:free (aignet2) (aignet-eval-parity nil invals regvals aignet2))
                          (aignet-eval-parity lits invals regvals aignet)
-                         (lit-eval (car lits) invals regvals aignet))))
+                         (lit-eval (car lits) invals regvals aignet))
+                :in-theory (enable aignet-idp)))
       :fn aignet-balance-list-rec))
 
   (std::defret-mutual stype-counts-of-aignet-balance-rec
@@ -1656,9 +1655,8 @@
 (defun-sk aignet-nxst-fanins-marked (mark aignet)
   (forall n
           (implies (< (nfix n) (num-regs aignet))
-                   (b* ((nxst-suffix (lookup-regnum->nxst n aignet)))
-                     (equal (nth (lit-id (fanin-if-co nxst-suffix))
-                                 mark)
+                   (b* ((nxst-lit (lookup-reg->nxst n aignet)))
+                     (equal (nth (lit-id nxst-lit) mark)
                             1))))
   :rewrite :direct)
 
@@ -1713,7 +1711,7 @@
             (and stable-under-simplificationp
                  '(:expand ((:free (aignet n) (lit-eval (make-lit n 0) invals regvals aignet))
                             (:free (count stype aignet aignet2)
-                             (id-eval (node-count (lookup-stype count stype aignet))
+                             (id-eval (fanin-count (lookup-stype count stype aignet))
                                       invals regvals aignet2))
                             (id-eval some-node invals regvals aignet))))))
 
@@ -1734,11 +1732,11 @@
                              (aignet2 "output")
                              (strash "for output network"))
   :guard (and (<= n (num-outs aignet))
-              (<= (+ 1 (max-fanin aignet)) (lits-length copy))
+              (<= (num-fanins aignet) (lits-length copy))
               (non-exec (ec-call (aignet-copies-in-bounds copy aignet2)))
-              (<= (+ 1 (max-fanin aignet)) (bits-length mark))
-              (<= (+ 1 (max-fanin aignet)) (u32-length refcounts))
-              (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+              (<= (num-fanins aignet) (bits-length mark))
+              (<= (num-fanins aignet) (u32-length refcounts))
+              (<= (num-fanins aignet2) (u32-length levels)))
   :returns (mv new-mark new-copy new-levels new-aignet2 new-strash)
   :measure (nfix (- (num-outs aignet) (nfix n)))
   :verify-guards nil
@@ -1748,9 +1746,9 @@
        (- (and (>= (balance-config->verbosity-level config) 1)
                (b* (((acl2::local-stobjs u32arr)
                      (mv blah u32arr))
-                    (u32arr (resize-u32 (+ 1 (max-fanin aignet)) u32arr))
+                    (u32arr (resize-u32 (num-fanins aignet) u32arr))
                     ((mv supergate &)
-                     (lit-collect-supergate (co-id->fanin (outnum->id n aignet) aignet)
+                     (lit-collect-supergate (outnum->fanin n aignet)
                                             t nil
                                             (balance-config->supergate-limit config)
                                             nil u32arr aignet)))
@@ -1758,12 +1756,12 @@
                  (cw "Gate numbers: ~x0~%" (count-gates-list supergate aignet))
                  (mv nil u32arr))))
        ((mv ?lit mark copy levels aignet2 strash)
-        (aignet-balance-rec (lit-id (co-id->fanin (outnum->id n aignet) aignet))
+        (aignet-balance-rec (lit-id (outnum->fanin n aignet))
                             config aignet mark copy refcounts levels aignet2 strash))
        (- (and (>= (balance-config->verbosity-level config) 1)
                (b* (((acl2::local-stobjs u32arr)
                      (mv blah u32arr))
-                    (u32arr (resize-u32 (+ 1 (max-fanin aignet2)) u32arr))
+                    (u32arr (resize-u32 (num-fanins aignet2) u32arr))
                     ((mv supergate &)
                      (lit-collect-supergate lit t nil
                                             (balance-config->supergate-limit config)
@@ -1781,22 +1779,23 @@
              (aignet-copies-in-bounds new-copy new-aignet2)))
 
   (defret levels-length-of-aignet-balance-outs
-    (implies (and (< (max-fanin aignet2) (len levels))
+    (implies (and (<= (num-fanins aignet2) (len levels))
                   (aignet-copies-in-bounds copy aignet2))
-             (< (node-count (find-max-fanin new-aignet2)) (len new-levels)))
+             (< (fanin-count new-aignet2) (len new-levels)))
     :rule-classes :linear)
 
   (defret mark-length-of-aignet-balance-outs
-    (implies (< (max-fanin aignet) (len mark))
+    (implies (<= (num-fanins aignet) (len mark))
              (equal (len new-mark) (len mark))))
 
   (defret copy-length-of-aignet-balance-outs
-    (implies (< (max-fanin aignet) (len copy))
+    (implies (<= (num-fanins aignet) (len copy))
              (equal (len new-copy) (len copy))))
 
-  (local (defthm less-than-max-fanin-when-aignet-litp
+  (local (defthm less-than-max-fanin-when-aignet-idp
            (implies (aignet-litp x aignet)
-                    (< (lit-id x) (+ 1 (node-count (find-max-fanin aignet)))))))
+                    (< (lit-id x) (+ 1 (fanin-count aignet))))
+           :hints(("Goal" :in-theory (enable aignet-idp)))))
 
   (verify-guards aignet-balance-outs)
   
@@ -1848,11 +1847,11 @@
                              (aignet2 "output")
                              (strash "for output network"))
   :guard (and (<= n (num-regs aignet))
-              (<= (+ 1 (max-fanin aignet)) (lits-length copy))
+              (<= (num-fanins aignet) (lits-length copy))
               (non-exec (ec-call (aignet-copies-in-bounds copy aignet2)))
-              (<= (+ 1 (max-fanin aignet)) (bits-length mark))
-              (<= (+ 1 (max-fanin aignet)) (u32-length refcounts))
-              (<= (+ 1 (max-fanin aignet2)) (u32-length levels)))
+              (<= (num-fanins aignet) (bits-length mark))
+              (<= (num-fanins aignet) (u32-length refcounts))
+              (<= (num-fanins aignet2) (u32-length levels)))
   :returns (mv new-mark new-copy new-levels new-aignet2 new-strash)
   :measure (nfix (- (num-regs aignet) (nfix n)))
   :verify-guards nil
@@ -1860,7 +1859,7 @@
                    :exec (eql n (num-regs aignet))))
         (mv mark copy levels aignet2 strash))
        ((mv ?lit mark copy levels aignet2 strash)
-        (aignet-balance-rec (lit-id (reg-id->nxst-lit (regnum->id n aignet) aignet))
+        (aignet-balance-rec (lit-id (regnum->nxst n aignet))
                             config aignet mark copy refcounts levels aignet2 strash)))
     (aignet-balance-nxsts (1+ (lnfix n)) config aignet mark copy refcounts levels aignet2 strash))
   ///
@@ -1872,17 +1871,17 @@
              (aignet-copies-in-bounds new-copy new-aignet2)))
 
   (defret levels-length-of-aignet-balance-nxsts
-    (implies (and (< (max-fanin aignet2) (len levels))
+    (implies (and (<= (num-fanins aignet2) (len levels))
                   (aignet-copies-in-bounds copy aignet2))
-             (< (node-count (find-max-fanin new-aignet2)) (len new-levels)))
+             (< (fanin-count new-aignet2) (len new-levels)))
     :rule-classes :linear)
 
   (defret mark-length-of-aignet-balance-nxsts
-    (implies (< (max-fanin aignet) (len mark))
+    (implies (<= (num-fanins aignet) (len mark))
              (equal (len new-mark) (len mark))))
 
   (defret copy-length-of-aignet-balance-nxsts
-    (implies (< (max-fanin aignet) (len copy))
+    (implies (<= (num-fanins aignet) (len copy))
              (equal (len new-copy) (len copy))))
 
   (verify-guards aignet-balance-nxsts)
@@ -1899,13 +1898,12 @@
             (and stable-under-simplificationp
                  `(:expand (,(car (last clause)))))))
 
-  (local (in-theory (enable* acl2::arith-equiv-forwarding
-                             reg-id->nxst-lit)))
+  (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 
   (defret nxst-fanin-marked-of-aignet-balance-nxsts
     (implies (and (<= (nfix n) (nfix m))
                   (< (nfix m) (num-regs aignet)))
-             (equal (nth (lit-id (fanin-if-co (lookup-regnum->nxst m aignet))) new-mark) 1)))
+             (equal (nth (lit-id (lookup-reg->nxst m aignet)) new-mark) 1)))
 
   (defret aignet-nxst-fanins-marked-of-aignet-balance-nxsts
     (implies (zp n)
@@ -1941,14 +1939,14 @@
             (implies (and (marked-lit-copies-equiv-all-evals mark copy aignet aignet2)
                           (aignet-output-fanins-marked mark aignet))
                      (output-fanins-comb-equiv aignet copy aignet2))
-            :hints(("Goal" :in-theory (e/d (output-fanins-comb-equiv)
+            :hints(("Goal" :in-theory (e/d (output-fanins-comb-equiv lit-copy lit-eval)
                                            (output-fanins-comb-equiv-necc))))))
 
    (local (defthm marked-lit-copies-equiv-implies-nxst-fanins-comb-equiv
             (implies (and (marked-lit-copies-equiv-all-evals mark copy aignet aignet2)
                           (aignet-nxst-fanins-marked mark aignet))
                      (nxst-fanins-comb-equiv aignet copy aignet2))
-            :hints(("Goal" :in-theory (e/d (nxst-fanins-comb-equiv)
+            :hints(("Goal" :in-theory (e/d (nxst-fanins-comb-equiv lit-copy lit-eval)
                                            (nxst-fanins-comb-equiv-necc))))))
 
    (defun finish-copy-comb-balance-bind-mark (aignet2)
@@ -1976,8 +1974,8 @@
 ;;                              (aignet2)
 ;;                              mark) ;; to make reasoning easier
 ;;   (declare (ignore mark))
-;;   :guard (and (< (max-fanin aignet) (lits-length copy))
-;;               (aignet-copies-ok (+ 1 (max-fanin aignet)) copy aignet2)
+;;   :guard (and (<= (num-fanins aignet) (lits-length copy))
+;;               (aignet-copies-ok (num-fanins aignet) copy aignet2)
 ;;               (<= (num-regs aignet) (num-regs aignet2)))
 ;;   :returns (new-aignet2)
 ;;   (finish-copy-comb aignet copy aignet2)
@@ -2007,14 +2005,14 @@
 ;;   (local (in-theory (enable lookup-stype-in-bounds)))
 
 
-;;   (local (defthm node-count-of-aignet-copy-outs-from-fanins-iter
-;;            (equal (node-count (aignet-copy-outs-from-fanins-iter n aignet copy aignet2))
-;;                   (+ (nfix n) (node-count aignet2)))
+;;   (local (defthm fanin-count-of-aignet-copy-outs-from-fanins-iter
+;;            (equal (fanin-count (aignet-copy-outs-from-fanins-iter n aignet copy aignet2))
+;;                   (+ (nfix n) (fanin-count aignet2)))
 ;;            :hints(("Goal" :in-theory (enable aignet-copy-outs-from-fanins-iter)))))
 
-;;   (local (defthm node-count-of-aignet-copy-outs-from-fanins
-;;            (equal (node-count (aignet-copy-outs-from-fanins aignet copy aignet2))
-;;                   (+ (num-outs aignet) (node-count aignet2)))
+;;   (local (defthm fanin-count-of-aignet-copy-outs-from-fanins
+;;            (equal (fanin-count (aignet-copy-outs-from-fanins aignet copy aignet2))
+;;                   (+ (num-outs aignet) (fanin-count aignet2)))
 ;;            :hints(("Goal" :in-theory (enable aignet-copy-outs-from-fanins)))))
 
 ;;   (local (in-theory (enable aignet-idp)))
@@ -2039,23 +2037,23 @@
 ;;                   (and stable-under-simplificationp
 ;;                        '(:cases ((< (nfix n) (num-outs aignet)))
 ;;                          :expand ((:free (suff aignet)
-;;                                    (id-eval (node-count suff) invals regvals aignet))
+;;                                    (id-eval (fanin-count suff) invals regvals aignet))
 ;;                                   (:free (suff aignet)
-;;                                    (id-eval (+ 1 (nfix n) (node-count suff)) invals regvals aignet))
+;;                                    (id-eval (+ 1 (nfix n) (fanin-count suff)) invals regvals aignet))
 ;;                                   (aignet-copy-outs-from-fanins-iter (+ 1 (nfix n)) aignet copy aignet2)
 ;;                                   (:free (x)
 ;;                                    (lit-eval (fanin :co x)
 ;;                                              invals regvals aignet))))))))
 
   
-;;   (local (defthm node-count-of-aignet-copy-nxsts-from-fanins-iter
-;;            (equal (node-count (aignet-copy-nxsts-from-fanins-iter n aignet copy aignet2))
-;;                   (+ (nfix n) (node-count aignet2)))
+;;   (local (defthm fanin-count-of-aignet-copy-nxsts-from-fanins-iter
+;;            (equal (fanin-count (aignet-copy-nxsts-from-fanins-iter n aignet copy aignet2))
+;;                   (+ (nfix n) (fanin-count aignet2)))
 ;;            :hints(("Goal" :in-theory (enable aignet-copy-nxsts-from-fanins-iter)))))
 
-;;   (local (defthm node-count-of-aignet-copy-nxsts-from-fanins
-;;            (equal (node-count (aignet-copy-nxsts-from-fanins aignet copy aignet2))
-;;                   (+ (num-regs aignet) (node-count aignet2)))
+;;   (local (defthm fanin-count-of-aignet-copy-nxsts-from-fanins
+;;            (equal (fanin-count (aignet-copy-nxsts-from-fanins aignet copy aignet2))
+;;                   (+ (num-regs aignet) (fanin-count aignet2)))
 ;;            :hints(("Goal" :in-theory (enable aignet-copy-nxsts-from-fanins)))))
 
 ;;   (local (in-theory (enable aignet-idp)))
@@ -2082,7 +2080,7 @@
 ;;                   (and stable-under-simplificationp
 ;;                        '(:cases ((< (nfix n) (num-regs aignet)))
 ;;                          :expand ((:free (suff aignet)
-;;                                    (id-eval (node-count suff) invals regvals aignet))
+;;                                    (id-eval (fanin-count suff) invals regvals aignet))
 ;;                                   (:free (suff aignet)
 ;;                                    (id-eval (+ 1 (nfix n) suff) invals regvals aignet))
 ;;                                   (:free (Aignet2)
@@ -2116,10 +2114,10 @@
   (b* (((local-stobjs mark copy refcounts levels strash)
         (mv mark copy refcounts levels aignet2 strash))
        ((mv copy aignet2) (init-copy-comb aignet copy aignet2))
-       (refcounts (resize-u32 (+ 1 (max-fanin aignet)) refcounts))
+       (refcounts (resize-u32 (num-fanins aignet) refcounts))
        (refcounts (aignet-count-refs refcounts aignet))
-       (mark (resize-bits (+ 1 (max-fanin aignet)) mark))
-       (levels (resize-u32 (+ (+ 1 (max-fanin aignet2)) (floor (num-gates aignet) 3)) levels))
+       (mark (resize-bits (num-fanins aignet) mark))
+       (levels (resize-u32 (+ (num-fanins aignet2) (floor (num-gates aignet) 3)) levels))
        ((mv mark copy levels aignet2 strash)
         (aignet-balance-outs 0 config aignet mark copy refcounts levels aignet2 strash))
        ((mv mark copy levels aignet2 strash)
@@ -2165,7 +2163,7 @@
   (b* (((local-stobjs levels)
         (mv nothing levels))
        (levels (aignet-record-levels aignet levels))
-       (max (find-max-level 0 (+ 1 (max-fanin aignet)) 0 levels)))
+       (max (find-max-level 0 (num-fanins aignet) 0 levels)))
     (mv (cw "Max level: ~x0~%" max) levels)))
        
 

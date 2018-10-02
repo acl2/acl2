@@ -45,6 +45,7 @@
 
 (include-book "instructions/top"
 	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "prefix-modrm-sib-decoding")
 (include-book "dispatch-macros")
 (include-book "cpuid")
 (include-book "std/strings/hexify" :dir :system)
@@ -78,10 +79,13 @@
 
 (make-event
  `(define vex-0F-execute
-    ((start-rip              :type (signed-byte   #.*max-linear-address-size*))
+    ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))
+     (start-rip              :type (signed-byte   #.*max-linear-address-size*))
      (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
 			     "@('temp-rip') points to the byte following the
 			      opcode byte")
+     (prefixes               :type (unsigned-byte #.*prefixes-width*))
+     (rex-byte               :type (unsigned-byte 8))
      (vex-prefixes           :type (unsigned-byte 24)
 			     "Completely populated when this function is
 			      called")
@@ -110,14 +114,20 @@
 				 (x86p x86)))
 
     (case opcode
-      ,@(avx-case-gen *vex-0F-opcodes* t state))))
+      ,@(avx-case-gen *vex-0F-opcodes*
+                      *vex-0F-exc-types*
+                      *vex-0F-op-features*
+                      t state))))
 
 (make-event
  `(define vex-0F38-execute
-    ((start-rip              :type (signed-byte   #.*max-linear-address-size*))
+    ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))
+     (start-rip              :type (signed-byte   #.*max-linear-address-size*))
      (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
 			     "@('temp-rip') points to the byte following the
 			     opcode byte")
+     (prefixes               :type (unsigned-byte #.*prefixes-width*))
+     (rex-byte               :type (unsigned-byte 8))
      (vex-prefixes           :type (unsigned-byte 24)
 			     "Completely populated when this function is
 			      called")
@@ -148,14 +158,20 @@
 				 (x86p x86)))
 
     (case opcode
-      ,@(avx-case-gen *vex-0F38-opcodes* t state))))
+      ,@(avx-case-gen *vex-0F38-opcodes*
+                      *vex-0F38-exc-types*
+                      *vex-0F38-op-features*
+                      t state))))
 
 (make-event
  `(define vex-0F3A-execute
-    ((start-rip              :type (signed-byte   #.*max-linear-address-size*))
+    ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))
+     (start-rip              :type (signed-byte   #.*max-linear-address-size*))
      (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
 			     "@('temp-rip') points to the byte following the
 			    opcode byte")
+     (prefixes               :type (unsigned-byte #.*prefixes-width*))
+     (rex-byte               :type (unsigned-byte 8))
      (vex-prefixes           :type (unsigned-byte 24)
 			     "Completely populated when this function is
 			      called")
@@ -186,7 +202,10 @@
 				 (x86p x86)))
 
     (case opcode
-      ,@(avx-case-gen *vex-0F3A-opcodes* t state))))
+      ,@(avx-case-gen *vex-0F3A-opcodes*
+                      *vex-0F3A-exc-types*
+                      *vex-0F3A-op-features*
+                      t state))))
 
 (define vex-decode-and-execute
   ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))
@@ -376,13 +395,13 @@
     (cond
      ((mbe :logic (vex-prefixes-map-p #ux0F vex-prefixes)
 	   :exec (or vex2-prefix? (and vex3-prefix? vex3-0F-map?)))
-      (vex-0F-execute start-rip temp-rip vex-prefixes opcode modr/m sib x86))
+      (vex-0F-execute proc-mode start-rip temp-rip prefixes rex-byte vex-prefixes opcode modr/m sib x86))
      ((mbe :logic (vex-prefixes-map-p #ux0F_38 vex-prefixes)
 	   :exec (and vex3-prefix? vex3-0F38-map?))
-      (vex-0F38-execute start-rip temp-rip vex-prefixes opcode modr/m sib x86))
+      (vex-0F38-execute proc-mode start-rip temp-rip prefixes rex-byte vex-prefixes opcode modr/m sib x86))
      ((mbe :logic (vex-prefixes-map-p #ux0F_3A vex-prefixes)
 	   :exec (and vex3-prefix? vex3-0F3A-map?))
-      (vex-0F3A-execute start-rip temp-rip vex-prefixes opcode modr/m sib x86))
+      (vex-0F3A-execute proc-mode start-rip temp-rip prefixes rex-byte vex-prefixes opcode modr/m sib x86))
      (t
       ;; Unreachable.
       (!!ms-fresh :illegal-value-of-VEX-m-mmmm))))

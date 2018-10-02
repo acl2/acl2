@@ -1,5 +1,5 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 8.0 Installation Guide: Installing CCL</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 8.1 Installation Guide: Installing CCL</TITLE></HEAD>
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" STYLE="font-family:'Verdana'">
 
@@ -21,11 +21,11 @@
 cd ccl
 git rev-parse HEAD
 cd ../../
-# NOTE!! Change the name below (e.g., its date and hash) as appropriate:
+# Change directory name, and then go back to ccl directory:
+# NOTE!! Change the name below (e.g., its date and hash) as
+# appropriate, twice here and once further below.
 mv temp 2017-12-07-6be8298fe5
-
-# Back to ccl directory after the commands above:
-cd -
+cd 2017-12-07-6be8298fe5/ccl
 
 # Build the lisp kernel in the appropriate directory:
 cd lisp-kernel/linuxx8664/

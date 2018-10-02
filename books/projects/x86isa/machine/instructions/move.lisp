@@ -75,10 +75,6 @@
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?)
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
@@ -152,10 +148,6 @@
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?)
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
@@ -213,11 +205,6 @@
   (b* ((ctx 'x86-mov-Op/En-FD)
 
        ;; This instruction does not require a ModR/M byte.
-
-       ;; Get prefixes:
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
@@ -306,10 +293,6 @@
 
   (b* ((ctx 'x86-mov-Op/En-OI)
 
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?)
-	(!!ms-fresh :lock-prefix prefixes))
-
        (byte-operand? (and (<= #xB0 opcode) ;; B0+rb
 			   (<= opcode #xB7)))
        ((the (integer 1 8) operand-size)
@@ -364,9 +347,6 @@
 
        (mod (modr/m->mod modr/m))
        (r/m (modr/m->r/m modr/m))
-
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
@@ -469,21 +449,12 @@
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
-       (p4? (equal #.*addr-size-override*
-		   (prefixes->adr prefixes)))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        ;; this is the operand size
        ;; in Intel manual, Mar'17, Vol 2, Tables 3-53 and 3-54:
        ((the (integer 2 8) register-size)
 	(select-operand-size proc-mode nil rex-byte nil prefixes x86))
-
-       ((when (equal mod #b11))
-	;; See "M" in http://ref.x86asm.net/#Instruction-Operand-Codes
-	(!!fault-fresh :ud nil ;; #UD
-		       :x86-lea "Source operand is not a memory location"))
 
        ((mv ?flg0
 	    (the (signed-byte 64) M)
@@ -540,13 +511,9 @@
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (p2 (prefixes->seg prefixes))
 
-       (p4? (equal #.*addr-size-override*
-		   (prefixes->adr prefixes)))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        ((the (integer 1 8) reg/mem-size)
 	(select-operand-size proc-mode nil rex-byte t prefixes x86))
@@ -628,9 +595,6 @@
   :body
 
   (b* ((ctx 'x86-movsxd)
-
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
@@ -734,13 +698,8 @@
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?)
-	(!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
        (p2 (prefixes->seg prefixes))
-       (p4? (equal #.*addr-size-override*
-		   (prefixes->adr prefixes)))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
@@ -827,7 +786,7 @@
 
   :body
 
-  (b* ((ctx 'x86-mov-control-regs-Op/En-MR)
+  (b* ((?ctx 'x86-mov-control-regs-Op/En-MR)
 
        ;; The r/m field specifies the GPR (destination).
        (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
@@ -835,32 +794,18 @@
        ;; The reg field specifies the control register (source).
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
-       (lock? (equal #.*lock* (prefixes->lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
-       (cpl (cpl x86))
-       ((when (not (equal 0 cpl)))
-	(!!fault-fresh :gp 0 :cpl!=0 cpl)) ;; #GP(0)
        ;; *operand-size-override* and REX.W are ignored.
 
        ;; Get value from the control register
-       ((mv flg ctr-index)
-	(if (logbitp #.*r* rex-byte)
-	    (if (equal reg 0)
-		(mv nil *cr8*)
-	      (mv t reg))
-	  (if (and (not (equal reg #.*cr1*))
-		   (not (equal reg #.*cr5*))
-		   (not (equal reg #.*cr6*))
-		   (not (equal reg #.*cr7*)))
-	      (mv nil reg)
-	    (mv t reg))))
-       ((when flg)
-	;; #UD Exception (if an attempt is made to access CR1, CR5,
-	;; CR6, or CR7 or if the REX.R prefix is used to specify a
-	;; register other than CR8)
-	(!!fault-fresh
-	 :ud nil :ctr-index-illegal (cons 'ModR/M.reg reg))) ;; #UD
+       (ctr-index
+	;; Note that there is a #UD Exception if an attempt is made to access
+	;; CR1, CR5, CR6, or CR7 or if the REX.R prefix is used to specify a
+	;; register other than CR8.  This is checked during dispatch --- see
+	;; opcode-maps for details.
+	(if (and (logbitp #.*r* rex-byte)
+		 (equal reg 0))
+	    #.*cr8*
+	  reg))
 
        (operand-size (if (equal proc-mode #.*64-bit-mode*) 8 4))
 

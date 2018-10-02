@@ -524,6 +524,7 @@
              (equal (len new-regvals) (len regvals))))
   (verify-guards aignet-get-ipasir-ctrex-regvals))
 
+(local (in-theory (enable aignet-idp)))
 
 (define aignet-lit-ipasir-sat-check-aux ((x litp)
                                          sat-lits ipasir
@@ -535,13 +536,14 @@
   :returns (mv new-ipasir
                new-sat-lits
                new-state)
+  :guard-hints (("goal" :in-theory (enable aignet-idp)))
   (b* (((acl2::local-stobjs aignet-refcounts)
         (mv aignet-refcounts ipasir sat-lits state))
        (sat-lits (mbe :logic (non-exec (create-sat-lits)) :exec sat-lits))
        (ipasir (mbe :logic (non-exec (create-ipasir)) :exec ipasir))
        ((mv ipasir state) (ipasir::ipasir-init ipasir state))
-       (sat-lits (resize-aignet->sat (ash (+ 1 (max-fanin aignet)) -1) sat-lits)) 
-       (aignet-refcounts (resize-u32 (+ 1 (max-fanin aignet)) aignet-refcounts))
+       (sat-lits (resize-aignet->sat (ash (num-fanins aignet) -1) sat-lits)) 
+       (aignet-refcounts (resize-u32 (num-fanins aignet) aignet-refcounts))
        (aignet-refcounts (aignet-count-refs aignet-refcounts aignet))
        ((mv sat-lits ipasir) (aignet-lit->ipasir (lit-fix x) t aignet-refcounts sat-lits aignet ipasir))
        (sat-lit (aignet-lit->sat-lit x sat-lits))
@@ -641,9 +643,9 @@
        (mark (set-bit id 1 mark)))
     (aignet-case (id->type id aignet)
       :in (if (eql 1 (id->regp id aignet))
-              (b* ((regmasks (set-bit (io-id->ionum id aignet) 1 regmasks)))
+              (b* ((regmasks (set-bit (ci-id->ionum id aignet) 1 regmasks)))
                 (mv inmasks regmasks mark state))
-            (b* ((inmasks (set-bit (io-id->ionum id aignet) 1 inmasks)))
+            (b* ((inmasks (set-bit (ci-id->ionum id aignet) 1 inmasks)))
               (mv inmasks regmasks mark state)))
       :out (mv inmasks regmasks mark state)
       :const (mv inmasks regmasks mark state)
@@ -731,7 +733,7 @@
   (local (defthm lit-id-of-fanin-mark-lemma
            (implies (< (nfix id) (len mark))
                     (< (lit-id (fanin ftype (lookup-id id aignet))) (len mark)))
-           :hints (("goal" :cases ((<= (nfix id) (node-count aignet)))))))
+           :hints (("goal" :cases ((<= (nfix id) (fanin-count aignet)))))))
 
   (verify-guards aignet-vals-sat-care-masks-rec
     :hints(("Goal" :in-theory (enable lit-eval))))
@@ -940,7 +942,7 @@
   (defun-sk aignet-marked-inputs-are-masked (mark inmasks aignet)
     (forall n
             (implies (and (< (nfix n) (num-ins aignet))
-                          (equal 1 (nth (node-count (lookup-stype n :pi aignet)) mark)))
+                          (equal 1 (nth (fanin-count (lookup-stype n :pi aignet)) mark)))
                      (equal (nth n inmasks) 1)))
     :rewrite :direct)
   
@@ -975,7 +977,7 @@
   (defun-sk aignet-marked-regs-are-masked (mark regmasks aignet)
     (forall n
             (implies (and (< (nfix n) (num-regs aignet))
-                          (equal 1 (nth (node-count (lookup-stype n :reg aignet)) mark)))
+                          (equal 1 (nth (fanin-count (lookup-stype n :reg aignet)) mark)))
                      (equal (nth n regmasks) 1)))
     :rewrite :direct)
   
@@ -1103,6 +1105,7 @@
   :long "<p>This uses the ipasir incremental solver interface to perform a SAT
 check on the given literal.  This isn't really the intended use of an
 incremental solver, but it at least illustrates how to use it.</p>"
+  :guard-hints (("goal" :in-theory (enable aignet-idp)))
   (b* (((acl2::local-stobjs ipasir sat-lits)
         (mv ipasir sat-lits status invals regvals vals state))
        ((mv ipasir sat-lits state)
@@ -1126,12 +1129,15 @@ incremental solver, but it at least illustrates how to use it.</p>"
     (implies (and (equal status :sat)
                   (aignet-litp x aignet))
              (equal (lit-eval x sat-invals sat-regvals aignet) 1))
-    :hints (("goal" :expand ((:free (invals regvals) (lit-eval x invals regvals aignet))))))
+    :hints (("goal" :expand ((:free (invals regvals) (lit-eval x invals regvals aignet)))
+             :in-theory (enable aignet-idp))))
 
   (defret aignet-lit-ipasir-sat-check-not-unsat-when-sat
     (implies (and (equal (lit-eval x some-invals some-regvals aignet) 1)
                   (aignet-litp x aignet))
              (not (equal status :unsat)))))
+
+
 
 
 (define aignet-lit-ipasir-sat-minimize

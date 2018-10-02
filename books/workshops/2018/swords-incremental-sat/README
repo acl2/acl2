@@ -1,0 +1,26 @@
+
+Incremental SAT Library Integration using Abstract Stobjs -- Supporting materials
+
+
+Supporting ACL2 code from the community books
+========================================
+
+Logical story:
+centaur/ipasir/ipasir-logic.lisp
+
+Backend implementation:
+centaur/ipasir/ipasir-backend.lisp
+centaur/ipasir/ipasir-interface-raw.lsp
+centaur/ipasir/ipasir-backend-extra.lisp
+centaur/ipasir/ipasir-interface-extra-raw.lsp
+
+Fraiging algorithm and AIGNET integration:
+centaur/aignet/fraig.lisp
+centaur/aignet/ipasir.lisp
+
+Demo of execution pipeline verification using fraiging:
+centaur/sv/tutorial/sums.lisp
+
+See :xdoc ipasir::building-an-ipasir-solver-library for
+(Linux-specific) instructions to obtain and build a suitable external
+SAT solver library, in particular, libipasirglucose4.so.

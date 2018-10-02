@@ -42,7 +42,7 @@
 
 ;; ======================================================================
 
-(include-book "arith-and-logic"
+(include-book "arith-and-logic-spec"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "../decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
@@ -150,9 +150,6 @@
   :body
 
   (b* ((ctx 'x86-movs)
-
-       ((when (equal #.*lock* (the (unsigned-byte 8) (prefixes->lck prefixes))))
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
 
@@ -380,7 +377,9 @@
                                          (rme-size
                                           !rgfi-size
                                           unsigned-byte-p
-                                          signed-byte-p)))
+                                          signed-byte-p
+                                          force (force)
+                                          !rgfi-size)))
                  (if (and (consp id)
                           (consp (car id))
                           (equal (caar id) 1))
@@ -405,9 +404,6 @@
   :body
 
   (b* ((ctx 'x86-cmps)
-
-       ((when (equal #.*lock* (the (unsigned-byte 8) (prefixes->lck prefixes))))
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
 
@@ -615,10 +611,13 @@
                           (canonical-address-p temp-rip))
                 :hints
                 (("Goal" :in-theory (e/d ()
-                                         (rme-size
+                                         (trunc
+                                          rme-size 
+                                          !rgfi-size
                                           !rgfi-size
                                           unsigned-byte-p
-                                          signed-byte-p)))
+                                          signed-byte-p
+                                          (force) force)))
                  (if (and (consp id)
                           (consp (car id))
                           (equal (caar id) 1))
@@ -643,9 +642,6 @@
   :body
 
   (b* ((ctx 'x86-stos)
-
-       ((when (equal #.*lock* (the (unsigned-byte 8) (prefixes->lck prefixes))))
-        (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
 
        (group-1-prefix (the (unsigned-byte 8) (prefixes->seg prefixes)))
 

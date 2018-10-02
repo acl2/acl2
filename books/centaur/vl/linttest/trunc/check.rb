@@ -74,6 +74,19 @@ outlaw_warning(:a0, "VL-WARN-TRUNCATION", "mod3")
 match_warning(:a0, "VL-WARN-TRUNCATION", "mod4")
 match_warning(:a0, "VL-WARN-TRUNCATION", "mod5")
 
+outlaw_warning(:a1, "VL-WARN-TRUNCATION", "xx0")
+outlaw_warning(:a1, "VL-WARN-TRUNCATION", "xx1")
+outlaw_warning(:a1, "VL-WARN-TRUNCATION", "xx2")
+
+outlaw_warning(:a1, "VL-WARN-TRUNCATION", "yy0")
+match_warning(:a1, "VL-WARN-EXTENSION", "yy0")
+outlaw_warning(:a1, "VL-WARN-TRUNCATION", "yy1")
+match_warning(:a1, "VL-WARN-TRUNCATION", "yy2")
+
+outlaw_warning(:a1, "VL-WARN-TRUNCATION", "zz0")
+outlaw_warning(:a1, "VL-WARN-TRUNCATION", "zz1")
+match_warning(:a1, "VL-WARN-TRUNCATION", "zz2")
+
 test_passed()
 
 

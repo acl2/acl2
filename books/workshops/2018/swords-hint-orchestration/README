@@ -1,0 +1,9 @@
+Supporting materials for "Hint Orchestration Using ACL2's Simplifier":
+
+See in the ACL2 community books:
+
+Implementation of the termhint utility:
+std/util/termhints.lisp
+
+Application discussed in the paper:
+centaur/misc/tarjan.lisp

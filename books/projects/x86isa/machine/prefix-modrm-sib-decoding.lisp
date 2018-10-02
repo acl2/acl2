@@ -43,6 +43,8 @@
 
 (include-book "../utils/constants")
 (include-book "opcode-maps")
+(include-book "top-level-memory")
+(include-book "dispatch-macros")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ----------------------------------------------------------------------
@@ -64,10 +66,9 @@
  for the efficient lookup of modr/m-related information from the opcode maps.
  See @(see ModR/M-decoding).</p>
 
- <h3>SIB Decoding</h3>
+ <h3>SIB Detecting and Decoding</h3>
 
- <p>The function @(tsee x86-decode-SIB-p) determines whether a SIB byte ought
- to follow a ModR/M byte or not.</p>")
+ <p>See @(see SIB-decoding) for details.</p>")
 
 (local (xdoc::set-default-parents prefix-modrm-sib-decoding))
 
@@ -147,6 +148,20 @@
    ;; instruction pointer register (for example JMP (0E9), LOOP).
 
    '(J (:modr/m? . nil) (:vex? . nil))
+
+   ;; Important: Note that rB, mB are not listed as Z addressing methods in the
+   ;; Intel manuals (May 2018 edition).  I borrowed them from the following:
+   ;; http://sandpile.org/x86/opc_enc.htm.
+
+   ;; rB: modr/m.reg is used to access bound registers (added as a part of the
+   ;; Intel MPX Programming Environment).
+
+   '(rB (:modr/m? . t) (:vex? . nil))
+
+   ;; mB: modr/m.r/m is used to access bound registers (added as a part of the
+   ;; Intel MPX Programming Environment).
+
+   '(mB (:modr/m? . t) (:vex? . nil))
 
    ;; Important: Addressing info with "K-" prefix below does not appear in the
    ;; Intel Manuals (dated May, 2018).  The Intel manuals do not define a Z
@@ -257,14 +272,14 @@
 (local
  (defthm delete-assoc-equal-returns-an-alistp
    (implies (alistp y)
-            (alistp (delete-assoc-equal x y)))
+	    (alistp (delete-assoc-equal x y)))
    :hints (("Goal" :in-theory (e/d (delete-assoc-equal) ())))))
 
 (local
  (defthmd not-consp-not-assoc-equal
    (implies (and (alistp cell)
-                 (not (consp (assoc-equal key cell))))
-            (not (assoc-equal key cell)))))
+		 (not (consp (assoc-equal key cell))))
+	    (not (assoc-equal key cell)))))
 
 ;; ----------------------------------------------------------------------
 
@@ -275,7 +290,7 @@
   mandatory prefixes"
 
   (local (xdoc::set-default-parents
-          detecting-compound-cells-and-legal-mandatory-prefixes))
+	  detecting-compound-cells-and-legal-mandatory-prefixes))
 
   (define compute-compound-cell-for-an-opcode-row
     ((row          true-list-listp)
@@ -285,316 +300,318 @@
     :guard (member-equal k (cons :no-prefix *mandatory-prefixes*))
 
     :guard-hints (("Goal" :in-theory (e/d (not-consp-not-assoc-equal
-                                           opcode-row-p
-                                           opcode-cell-p)
-                                          ())))
+					   opcode-row-p
+					   opcode-cell-p)
+					  ())))
     :returns (mv (compound-info true-listp)
-                 (pfx-info true-listp))
+		 (pfx-info true-listp))
 
     (if (opcode-row-p row)
 
-        (if (endp row)
+	(if (endp row)
 
-            (mv nil nil)
+	    (mv nil nil)
 
-          (b* ((cell (car row))
-               ((if (simple-cell-p cell))
-                (b* (((mv compound? pfx-ok?)
-                      (compute-compound-cell-for-an-opcode-row
-                       (cdr row)
-                       64-bit-modep :k k)))
-                  (mv (cons '0 compound?) (cons '0 pfx-ok?))))
-               (stripped-cell
-                ;; In 64-bit mode, we ignore the opcode information
-                ;; that is invalid in 64-bit mode, while in 32-bit
-                ;; mode, we ignore the opcode information that is valid
-                ;; only in 64-bit mode.
+	  (b* ((cell (car row))
+	       ((if (simple-cell-p cell))
+		(b* (((mv compound? pfx-ok?)
+		      (compute-compound-cell-for-an-opcode-row
+		       (cdr row)
+		       64-bit-modep :k k)))
+		  (mv (cons '0 compound?) (cons '0 pfx-ok?))))
+	       (stripped-cell
+		;; In 64-bit mode, we ignore the opcode information
+		;; that is invalid in 64-bit mode, while in 32-bit
+		;; mode, we ignore the opcode information that is valid
+		;; only in 64-bit mode.
 
-                ;; If the resulting stripped cell is compound, then it can only
-                ;; have the following legal keys now:
-                ;; (*compound-cells-legal-keys* - '(:i64 :o64))
-                (if 64-bit-modep
-                    (b* ((no-i64-cell (delete-assoc-equal :i64 cell))
-                         (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
-                      (or o64-cell no-i64-cell))
-                  (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
-                       (i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
-                    (or i64-cell no-o64-cell))))
-               (this-computed-val  (cond
-                                    ((eq stripped-cell 'nil) '0)
-                                    ((compound-cell-p stripped-cell) '1)
-                                    (t '0)))
-               (this-pfx-val (bool->bit
-                              (if (eql this-computed-val 1)
-                                  ;; Compound Cell
-                                  (member-equal k (strip-cars stripped-cell))
-                                nil)))
-               ((mv compound? pfx-ok?)
-                (compute-compound-cell-for-an-opcode-row
-                 (cdr row)
-                 64-bit-modep :k k)))
-            (mv (cons this-computed-val compound?)
-                (cons this-pfx-val pfx-ok?))))
+		;; If the resulting stripped cell is compound, then it can only
+		;; have the following legal keys now:
+		;; (*compound-cells-legal-keys* - '(:i64 :o64))
+		(if 64-bit-modep
+		    (b* ((no-i64-cell (delete-assoc-equal :i64 cell))
+			 (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
+		      (or o64-cell no-i64-cell))
+		  (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
+		       (i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
+		    (or i64-cell no-o64-cell))))
+	       (this-computed-val  (cond
+				    ((eq stripped-cell 'nil) '0)
+				    ((compound-cell-p stripped-cell) '1)
+				    (t '0)))
+	       (this-pfx-val (bool->bit
+			      (if (eql this-computed-val 1)
+				  ;; Compound Cell
+				  (member-equal k (strip-cars stripped-cell))
+				nil)))
+	       ((mv compound? pfx-ok?)
+		(compute-compound-cell-for-an-opcode-row
+		 (cdr row)
+		 64-bit-modep :k k)))
+	    (mv (cons this-computed-val compound?)
+		(cons this-pfx-val pfx-ok?))))
 
       (b* ((- (cw "~%compute-compound-cell-for-an-opcode-row:~% ~
  Ill-formed opcode row: ~x0~%" row)))
-        (mv nil nil))))
+	(mv nil nil))))
 
   (define compute-compound-cell-for-an-opcode-map ((map true-listp)
-                                                   (64-bit-modep booleanp)
-                                                   &key
-                                                   (k ':no-prefix))
+						   (64-bit-modep booleanp)
+						   &key
+						   (k ':no-prefix))
     :guard (member-equal k (cons :no-prefix *mandatory-prefixes*))
 
     :guard-hints (("Goal" :in-theory (e/d (opcode-map-p) ())))
 
     (if (opcode-map-p map)
 
-        (if (endp map)
-            (mv nil nil)
-          (b* ((row (car map))
-               ((mv row-compound-p row-pfx)
-                (compute-compound-cell-for-an-opcode-row
-                 row 64-bit-modep :k k))
-               ((mv rest-compound-p rest-pfx)
-                (compute-compound-cell-for-an-opcode-map
-                 (cdr map) 64-bit-modep :k k)))
-            (mv (append row-compound-p rest-compound-p)
-                (append row-pfx rest-pfx))))
+	(if (endp map)
+	    (mv nil nil)
+	  (b* ((row (car map))
+	       ((mv row-compound-p row-pfx)
+		(compute-compound-cell-for-an-opcode-row
+		 row 64-bit-modep :k k))
+	       ((mv rest-compound-p rest-pfx)
+		(compute-compound-cell-for-an-opcode-map
+		 (cdr map) 64-bit-modep :k k)))
+	    (mv (append row-compound-p rest-compound-p)
+		(append row-pfx rest-pfx))))
 
       (b* ((- (cw "~%compute-compound-cell-for-an-opcode-map:~% ~
  Ill-formed opcode map: ~x0~%" map)))
-        (mv nil nil))))
+	(mv nil nil))))
 
   (assert-event
    ;; Sanity check: one-byte opcode map has no compound opcodes in both 32- and
    ;; 64-bit modes.
    (b* (((mv 64-bit-compound-info &)
-         (compute-compound-cell-for-an-opcode-map
-          *one-byte-opcode-map-lst* t))
-        ((mv 32-bit-compound-info &)
-         (compute-compound-cell-for-an-opcode-map
-          *one-byte-opcode-map-lst* nil)))
+	 (compute-compound-cell-for-an-opcode-map
+	  *one-byte-opcode-map-lst* t))
+	((mv 32-bit-compound-info &)
+	 (compute-compound-cell-for-an-opcode-map
+	  *one-byte-opcode-map-lst* nil)))
      (and
       (equal 64-bit-compound-info 32-bit-compound-info)
       (equal 64-bit-compound-info
-             '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)))))
+	     '(
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       )))))
 
   (make-event
    (b* (((mv 64-bit-compound-info &)
-         (compute-compound-cell-for-an-opcode-map
-          *two-byte-opcode-map-lst* t))
-        ((mv & 64-bit-66-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *two-byte-opcode-map-lst* t :k :66))
-        ((mv & 64-bit-f3-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *two-byte-opcode-map-lst* t :k :f3))
-        ((mv & 64-bit-f2-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *two-byte-opcode-map-lst* t :k :f2))
-        ((mv 32-bit-compound-info &)
-         (compute-compound-cell-for-an-opcode-map
-          *two-byte-opcode-map-lst* nil))
-        ((mv & 32-bit-66-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *two-byte-opcode-map-lst* nil :k :66))
-        ((mv & 32-bit-f3-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *two-byte-opcode-map-lst* nil :k :f3))
-        ((mv & 32-bit-f2-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *two-byte-opcode-map-lst* nil :k :f2)))
+	 (compute-compound-cell-for-an-opcode-map
+	  *two-byte-opcode-map-lst* t))
+	((mv & 64-bit-66-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *two-byte-opcode-map-lst* t :k :66))
+	((mv & 64-bit-f3-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *two-byte-opcode-map-lst* t :k :f3))
+	((mv & 64-bit-f2-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *two-byte-opcode-map-lst* t :k :f2))
+	((mv 32-bit-compound-info &)
+	 (compute-compound-cell-for-an-opcode-map
+	  *two-byte-opcode-map-lst* nil))
+	((mv & 32-bit-66-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *two-byte-opcode-map-lst* nil :k :66))
+	((mv & 32-bit-f3-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *two-byte-opcode-map-lst* nil :k :f3))
+	((mv & 32-bit-f2-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *two-byte-opcode-map-lst* nil :k :f2)))
      `(progn
 
-        (defconst *64-bit-mode-two-byte-compound-opcodes-ar*
-          (list-to-array
-           '64-bit-mode-two-byte-compound-opcodes
-           (ints-to-booleans (quote ,64-bit-compound-info))))
+	(defconst *64-bit-mode-two-byte-compound-opcodes-ar*
+	  (list-to-array
+	   '64-bit-mode-two-byte-compound-opcodes
+	   (ints-to-booleans (quote ,64-bit-compound-info))))
 
-        (defconst *64-bit-mode-two-byte-66-ok-ar*
-          (list-to-array
-           '64-bit-mode-two-byte-66-ok
-           (ints-to-booleans (quote ,64-bit-66-ok))))
+	(defconst *64-bit-mode-two-byte-66-ok-ar*
+	  (list-to-array
+	   '64-bit-mode-two-byte-66-ok
+	   (ints-to-booleans (quote ,64-bit-66-ok))))
 
-        (defconst *64-bit-mode-two-byte-f3-ok-ar*
-          (list-to-array
-           '64-bit-mode-two-byte-f3-ok
-           (ints-to-booleans (quote ,64-bit-f3-ok))))
+	(defconst *64-bit-mode-two-byte-f3-ok-ar*
+	  (list-to-array
+	   '64-bit-mode-two-byte-f3-ok
+	   (ints-to-booleans (quote ,64-bit-f3-ok))))
 
-        (defconst *64-bit-mode-two-byte-f2-ok-ar*
-          (list-to-array
-           '64-bit-mode-two-byte-f2-ok
-           (ints-to-booleans (quote ,64-bit-f2-ok))))
+	(defconst *64-bit-mode-two-byte-f2-ok-ar*
+	  (list-to-array
+	   '64-bit-mode-two-byte-f2-ok
+	   (ints-to-booleans (quote ,64-bit-f2-ok))))
 
-        (defconst *32-bit-mode-two-byte-compound-opcodes-ar*
-          (list-to-array
-           '32-bit-mode-two-byte-compound-opcodes
-           (ints-to-booleans (quote ,32-bit-compound-info))))
+	(defconst *32-bit-mode-two-byte-compound-opcodes-ar*
+	  (list-to-array
+	   '32-bit-mode-two-byte-compound-opcodes
+	   (ints-to-booleans (quote ,32-bit-compound-info))))
 
-        (defconst *32-bit-mode-two-byte-66-ok-ar*
-          (list-to-array
-           '32-bit-mode-two-byte-66-ok
-           (ints-to-booleans (quote ,32-bit-66-ok))))
+	(defconst *32-bit-mode-two-byte-66-ok-ar*
+	  (list-to-array
+	   '32-bit-mode-two-byte-66-ok
+	   (ints-to-booleans (quote ,32-bit-66-ok))))
 
-        (defconst *32-bit-mode-two-byte-f3-ok-ar*
-          (list-to-array
-           '32-bit-mode-two-byte-f3-ok
-           (ints-to-booleans (quote ,32-bit-f3-ok))))
+	(defconst *32-bit-mode-two-byte-f3-ok-ar*
+	  (list-to-array
+	   '32-bit-mode-two-byte-f3-ok
+	   (ints-to-booleans (quote ,32-bit-f3-ok))))
 
-        (defconst *32-bit-mode-two-byte-f2-ok-ar*
-          (list-to-array
-           '32-bit-mode-two-byte-f2-ok
-           (ints-to-booleans (quote ,32-bit-f2-ok)))))))
+	(defconst *32-bit-mode-two-byte-f2-ok-ar*
+	  (list-to-array
+	   '32-bit-mode-two-byte-f2-ok
+	   (ints-to-booleans (quote ,32-bit-f2-ok)))))))
 
   (make-event
    (b* (((mv 64-bit-compound-info &)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-38-three-byte-opcode-map-lst* t))
-        ((mv & 64-bit-66-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-38-three-byte-opcode-map-lst* t :k :66))
-        ((mv & 64-bit-f3-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-38-three-byte-opcode-map-lst* t :k :f3))
-        ((mv & 64-bit-f2-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-38-three-byte-opcode-map-lst* t :k :f2))
-        ((mv 32-bit-compound-info &)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-38-three-byte-opcode-map-lst* nil))
-        ((mv & 32-bit-66-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-38-three-byte-opcode-map-lst* nil :k :66))
-        ((mv & 32-bit-f3-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-38-three-byte-opcode-map-lst* nil :k :f3))
-        ((mv & 32-bit-f2-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-38-three-byte-opcode-map-lst* nil :k :f2)))
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-38-three-byte-opcode-map-lst* t))
+	((mv & 64-bit-66-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-38-three-byte-opcode-map-lst* t :k :66))
+	((mv & 64-bit-f3-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-38-three-byte-opcode-map-lst* t :k :f3))
+	((mv & 64-bit-f2-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-38-three-byte-opcode-map-lst* t :k :f2))
+	((mv 32-bit-compound-info &)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-38-three-byte-opcode-map-lst* nil))
+	((mv & 32-bit-66-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-38-three-byte-opcode-map-lst* nil :k :66))
+	((mv & 32-bit-f3-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-38-three-byte-opcode-map-lst* nil :k :f3))
+	((mv & 32-bit-f2-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-38-three-byte-opcode-map-lst* nil :k :f2)))
      `(progn
 
-        (defconst *64-bit-mode-0f-38-three-byte-compound-opcodes-ar*
-          (list-to-array
-           '64-bit-mode-0f-38-three-byte-compound-opcodes
-           (ints-to-booleans (quote ,64-bit-compound-info))))
+	(defconst *64-bit-mode-0f-38-three-byte-compound-opcodes-ar*
+	  (list-to-array
+	   '64-bit-mode-0f-38-three-byte-compound-opcodes
+	   (ints-to-booleans (quote ,64-bit-compound-info))))
 
-        (defconst *64-bit-mode-0f-38-three-byte-66-ok-ar*
-          (list-to-array
-           '64-bit-mode-0f-38-three-byte-66-ok
-           (ints-to-booleans (quote ,64-bit-66-ok))))
+	(defconst *64-bit-mode-0f-38-three-byte-66-ok-ar*
+	  (list-to-array
+	   '64-bit-mode-0f-38-three-byte-66-ok
+	   (ints-to-booleans (quote ,64-bit-66-ok))))
 
-        (defconst *64-bit-mode-0f-38-three-byte-f3-ok-ar*
-          (list-to-array
-           '64-bit-mode-0f-38-three-byte-f3-ok
-           (ints-to-booleans (quote ,64-bit-f3-ok))))
+	(defconst *64-bit-mode-0f-38-three-byte-f3-ok-ar*
+	  (list-to-array
+	   '64-bit-mode-0f-38-three-byte-f3-ok
+	   (ints-to-booleans (quote ,64-bit-f3-ok))))
 
-        (defconst *64-bit-mode-0f-38-three-byte-f2-ok-ar*
-          (list-to-array
-           '64-bit-mode-0f-38-three-byte-f2-ok
-           (ints-to-booleans (quote ,64-bit-f2-ok))))
+	(defconst *64-bit-mode-0f-38-three-byte-f2-ok-ar*
+	  (list-to-array
+	   '64-bit-mode-0f-38-three-byte-f2-ok
+	   (ints-to-booleans (quote ,64-bit-f2-ok))))
 
-        (defconst *32-bit-mode-0f-38-three-byte-compound-opcodes-ar*
-          (list-to-array
-           '32-bit-mode-0f-38-three-byte-compound-opcodes
-           (ints-to-booleans (quote ,32-bit-compound-info))))
+	(defconst *32-bit-mode-0f-38-three-byte-compound-opcodes-ar*
+	  (list-to-array
+	   '32-bit-mode-0f-38-three-byte-compound-opcodes
+	   (ints-to-booleans (quote ,32-bit-compound-info))))
 
-        (defconst *32-bit-mode-0f-38-three-byte-66-ok-ar*
-          (list-to-array
-           '32-bit-mode-0f-38-three-byte-66-ok
-           (ints-to-booleans (quote ,32-bit-66-ok))))
+	(defconst *32-bit-mode-0f-38-three-byte-66-ok-ar*
+	  (list-to-array
+	   '32-bit-mode-0f-38-three-byte-66-ok
+	   (ints-to-booleans (quote ,32-bit-66-ok))))
 
-        (defconst *32-bit-mode-0f-38-three-byte-f3-ok-ar*
-          (list-to-array
-           '32-bit-mode-0f-38-three-byte-f3-ok
-           (ints-to-booleans (quote ,32-bit-f3-ok))))
+	(defconst *32-bit-mode-0f-38-three-byte-f3-ok-ar*
+	  (list-to-array
+	   '32-bit-mode-0f-38-three-byte-f3-ok
+	   (ints-to-booleans (quote ,32-bit-f3-ok))))
 
-        (defconst *32-bit-mode-0f-38-three-byte-f2-ok-ar*
-          (list-to-array
-           '32-bit-mode-0f-38-three-byte-f2-ok
-           (ints-to-booleans (quote ,32-bit-f2-ok)))))))
+	(defconst *32-bit-mode-0f-38-three-byte-f2-ok-ar*
+	  (list-to-array
+	   '32-bit-mode-0f-38-three-byte-f2-ok
+	   (ints-to-booleans (quote ,32-bit-f2-ok)))))))
 
   (make-event
    (b* (((mv 64-bit-compound-info &)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-3A-three-byte-opcode-map-lst* t))
-        ((mv & 64-bit-66-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-3A-three-byte-opcode-map-lst* t :k :66))
-        ((mv & 64-bit-f3-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-3A-three-byte-opcode-map-lst* t :k :f3))
-        ((mv & 64-bit-f2-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-3A-three-byte-opcode-map-lst* t :k :f2))
-        ((mv 32-bit-compound-info &)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-3A-three-byte-opcode-map-lst* nil))
-        ((mv & 32-bit-66-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-3A-three-byte-opcode-map-lst* nil :k :66))
-        ((mv & 32-bit-f3-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-3A-three-byte-opcode-map-lst* nil :k :f3))
-        ((mv & 32-bit-f2-ok)
-         (compute-compound-cell-for-an-opcode-map
-          *0F-3A-three-byte-opcode-map-lst* nil :k :f2)))
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-3A-three-byte-opcode-map-lst* t))
+	((mv & 64-bit-66-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-3A-three-byte-opcode-map-lst* t :k :66))
+	((mv & 64-bit-f3-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-3A-three-byte-opcode-map-lst* t :k :f3))
+	((mv & 64-bit-f2-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-3A-three-byte-opcode-map-lst* t :k :f2))
+	((mv 32-bit-compound-info &)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-3A-three-byte-opcode-map-lst* nil))
+	((mv & 32-bit-66-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-3A-three-byte-opcode-map-lst* nil :k :66))
+	((mv & 32-bit-f3-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-3A-three-byte-opcode-map-lst* nil :k :f3))
+	((mv & 32-bit-f2-ok)
+	 (compute-compound-cell-for-an-opcode-map
+	  *0F-3A-three-byte-opcode-map-lst* nil :k :f2)))
      `(progn
 
-        (defconst *64-bit-mode-0f-3A-three-byte-compound-opcodes-ar*
-          (list-to-array
-           '64-bit-mode-0f-3A-three-byte-compound-opcodes
-           (ints-to-booleans (quote ,64-bit-compound-info))))
+	(defconst *64-bit-mode-0f-3A-three-byte-compound-opcodes-ar*
+	  (list-to-array
+	   '64-bit-mode-0f-3A-three-byte-compound-opcodes
+	   (ints-to-booleans (quote ,64-bit-compound-info))))
 
-        (defconst *64-bit-mode-0f-3A-three-byte-66-ok-ar*
-          (list-to-array
-           '64-bit-mode-0f-3A-three-byte-66-ok
-           (ints-to-booleans (quote ,64-bit-66-ok))))
+	(defconst *64-bit-mode-0f-3A-three-byte-66-ok-ar*
+	  (list-to-array
+	   '64-bit-mode-0f-3A-three-byte-66-ok
+	   (ints-to-booleans (quote ,64-bit-66-ok))))
 
-        (defconst *64-bit-mode-0f-3A-three-byte-f3-ok-ar*
-          (list-to-array
-           '64-bit-mode-0f-3A-three-byte-f3-ok
-           (ints-to-booleans (quote ,64-bit-f3-ok))))
+	(defconst *64-bit-mode-0f-3A-three-byte-f3-ok-ar*
+	  (list-to-array
+	   '64-bit-mode-0f-3A-three-byte-f3-ok
+	   (ints-to-booleans (quote ,64-bit-f3-ok))))
 
-        (defconst *64-bit-mode-0f-3A-three-byte-f2-ok-ar*
-          (list-to-array
-           '64-bit-mode-0f-3A-three-byte-f2-ok
-           (ints-to-booleans (quote ,64-bit-f2-ok))))
+	(defconst *64-bit-mode-0f-3A-three-byte-f2-ok-ar*
+	  (list-to-array
+	   '64-bit-mode-0f-3A-three-byte-f2-ok
+	   (ints-to-booleans (quote ,64-bit-f2-ok))))
 
-        (defconst *32-bit-mode-0f-3A-three-byte-compound-opcodes-ar*
-          (list-to-array
-           '32-bit-mode-0f-3A-three-byte-compound-opcodes
-           (ints-to-booleans (quote ,32-bit-compound-info))))
+	(defconst *32-bit-mode-0f-3A-three-byte-compound-opcodes-ar*
+	  (list-to-array
+	   '32-bit-mode-0f-3A-three-byte-compound-opcodes
+	   (ints-to-booleans (quote ,32-bit-compound-info))))
 
-        (defconst *32-bit-mode-0f-3A-three-byte-66-ok-ar*
-          (list-to-array
-           '32-bit-mode-0f-3A-three-byte-66-ok
-           (ints-to-booleans (quote ,32-bit-66-ok))))
+	(defconst *32-bit-mode-0f-3A-three-byte-66-ok-ar*
+	  (list-to-array
+	   '32-bit-mode-0f-3A-three-byte-66-ok
+	   (ints-to-booleans (quote ,32-bit-66-ok))))
 
-        (defconst *32-bit-mode-0f-3A-three-byte-f3-ok-ar*
-          (list-to-array
-           '32-bit-mode-0f-3A-three-byte-f3-ok
-           (ints-to-booleans (quote ,32-bit-f3-ok))))
+	(defconst *32-bit-mode-0f-3A-three-byte-f3-ok-ar*
+	  (list-to-array
+	   '32-bit-mode-0f-3A-three-byte-f3-ok
+	   (ints-to-booleans (quote ,32-bit-f3-ok))))
 
-        (defconst *32-bit-mode-0f-3A-three-byte-f2-ok-ar*
-          (list-to-array
-           '32-bit-mode-0f-3A-three-byte-f2-ok
-           (ints-to-booleans (quote ,32-bit-f2-ok))))))))
+	(defconst *32-bit-mode-0f-3A-three-byte-f2-ok-ar*
+	  (list-to-array
+	   '32-bit-mode-0f-3A-three-byte-f2-ok
+	   (ints-to-booleans (quote ,32-bit-f2-ok))))))))
 
 ;; ----------------------------------------------------------------------
 
@@ -618,35 +635,35 @@
    <p>Note that legacy prefixes are a part of the one-byte opcode map.</p>"
 
     (if (or (not (true-listp cell))
-            (endp cell))
+	    (endp cell))
 
-        0
+	0
 
       (b* ((first-elem (car cell)))
-        (cond
-         ((keywordp first-elem)
-          (case first-elem
-            (:prefix-Lock       1) ;; #xF0
-            (:prefix-REPNE      1) ;; #xF2
-            (:prefix-REP/REPE   1) ;; #xF3
+	(cond
+	 ((keywordp first-elem)
+	  (case first-elem
+	    (:prefix-Lock       1) ;; #xF0
+	    (:prefix-REPNE      1) ;; #xF2
+	    (:prefix-REP/REPE   1) ;; #xF3
 
-            (:prefix-ES         2) ;; #x26
-            (:prefix-CS         2) ;; #x2E
-            (:prefix-SS         2) ;; #x36
-            (:prefix-DS         2) ;; #x3E
-            (:prefix-FS         2) ;; #x64
-            (:prefix-GS         2) ;; #x65
+	    (:prefix-ES         2) ;; #x26
+	    (:prefix-CS         2) ;; #x2E
+	    (:prefix-SS         2) ;; #x36
+	    (:prefix-DS         2) ;; #x3E
+	    (:prefix-FS         2) ;; #x64
+	    (:prefix-GS         2) ;; #x65
 
-            (:prefix-OpSize     3) ;; #x66
+	    (:prefix-OpSize     3) ;; #x66
 
-            (:prefix-AddrSize   4) ;; #x67
+	    (:prefix-AddrSize   4) ;; #x67
 
-            (t 0)))
+	    (t 0)))
 
-         (t 0)))))
+	 (t 0)))))
 
   (define compute-prefix-byte-group-code-from-opcode-row ((row opcode-row-p)
-                                                          (prefix true-listp))
+							  (prefix true-listp))
     :short "Takes in a single opcode row from an opcode map and returns
   prefix byte info for each of the opcodes in that row"
 
@@ -657,32 +674,32 @@
     ;; (in compute-prefix-byte-group-code)
 
     (if (mbt (and (opcode-row-p row)
-                  (true-listp prefix)))
+		  (true-listp prefix)))
 
-        (if (atom row)
-            prefix
-          (let ((cell (car row)))
-            (compute-prefix-byte-group-code-from-opcode-row
-             (cdr row)
-             (cons (compute-prefix-byte-group-code-of-one-opcode cell)
-                   prefix))))
+	(if (atom row)
+	    prefix
+	  (let ((cell (car row)))
+	    (compute-prefix-byte-group-code-from-opcode-row
+	     (cdr row)
+	     (cons (compute-prefix-byte-group-code-of-one-opcode cell)
+		   prefix))))
 
       nil))
 
   (define compute-prefix-byte-group-code-1 ((row-number natp)
-                                            (map opcode-map-p))
+					    (map opcode-map-p))
     (if (mbt (and (natp row-number)
-                  (opcode-map-p map)))
+		  (opcode-map-p map)))
 
-        (if (zp row-number)
-            nil
-          (b* ((row (nth (1- row-number) map))
-               ((when (not (opcode-row-p row)))
-                (er hard? "Expected: opcode-row-p: ~x0" row))
-               (row-column-info
-                (compute-prefix-byte-group-code-from-opcode-row row nil)))
-            (append row-column-info
-                    (compute-prefix-byte-group-code-1 (1- row-number) map))))
+	(if (zp row-number)
+	    nil
+	  (b* ((row (nth (1- row-number) map))
+	       ((when (not (opcode-row-p row)))
+		(er hard? "Expected: opcode-row-p: ~x0" row))
+	       (row-column-info
+		(compute-prefix-byte-group-code-from-opcode-row row nil)))
+	    (append row-column-info
+		    (compute-prefix-byte-group-code-1 (1- row-number) map))))
       nil))
 
   (define compute-prefix-byte-group-code ((map opcode-map-p))
@@ -698,42 +715,1550 @@
 
   (make-event
    (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 2 0 0 0 0 0 0 0 2 0
-             0 0 0 0 0 0 2 0 0 0 0 0 0 0 2 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 2 2 3 4 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table
-         (compute-prefix-byte-group-code *one-byte-opcode-map-lst*))
-        ((unless (equal precomputed-table computed-table))
-         (er hard 'one-byte-prefixes-group-code-info
-             "Error: Incorrect legacy prefix info computed!")))
+	 '(
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 2 0 0 0 0 0 0 0 2 0
+	   0 0 0 0 0 0 2 0 0 0 0 0 0 0 2 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 2 2 3 4 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table
+	 (compute-prefix-byte-group-code *one-byte-opcode-map-lst*))
+	((unless (equal precomputed-table computed-table))
+	 (er hard 'one-byte-prefixes-group-code-info
+	     "Error: Incorrect legacy prefix info computed!")))
      `(defconst *one-byte-prefixes-group-code-info-ar*
-        (list-to-array 'one-byte-prefixes-group-code-info
-                       (quote ,computed-table)))))
+	(list-to-array 'one-byte-prefixes-group-code-info
+		       (quote ,computed-table)))))
 
   (define get-one-byte-prefix-array-code
     ((byte :type (unsigned-byte 8)))
     :returns (code natp :rule-classes (:rewrite :type-prescription))
     (aref1 'one-byte-prefixes-group-code-info
-           *one-byte-prefixes-group-code-info-ar*
-           (mbe :logic (loghead 8 byte)
-                :exec byte))
+	   *one-byte-prefixes-group-code-info-ar*
+	   (mbe :logic (loghead 8 byte)
+		:exec byte))
     ///
     (defthm upper-bound-get-one-byte-prefix-array-code
       (<= (get-one-byte-prefix-array-code x) 4))))
 
+;; ----------------------------------------------------------------------
+
+(defsection ModR/M-detection
+
+  :short "Utilities to detect which opcodes need a ModR/M byte"
+
+  (local (xdoc::set-default-parents ModR/M-detection))
+
+  (define any-operand-with-prop?-aux ((prop   keywordp)
+				      (op_num :type (integer 0 *))
+				      (op_list alistp))
+    :guard (or (equal prop :modr/m?)
+	       (equal prop :vex?))
+
+    :short "Returns @('t') if at least one operand of a basic simple
+  opcode (see @(see basic-simple-cell-p)) requires a @('ModR/M') byte or a
+  @('VEX') prefix, depending on the value of @('prop')"
+    ;; Example inputs are PROP = :MODR/M?, OP_NUM = 2, and OP_LIST = '((E b) (G
+    ;; b)), extracted from '("ADD" 2 (E b) (G b)) entry in the
+    ;; *ONE-BYTE-OPCODE-MAP-LST* table.  Note that only the uppercase letters
+    ;; are used here (e.g. E and G in the example inputs just above), while the
+    ;; lowercase letters are ignored.
+    (b* (((when (not (equal (len op_list) op_num)))
+	  (er hard? "Expected length of ~x0 was ~x1." op_list op_num)))
+      (if (zp op_num)
+	  nil
+	(b* ((char (caar op_list))
+	     (this-opcode-prop?
+	      (cdr (assoc-equal prop
+				(cdr (assoc-equal
+				      char
+				      *Z-addressing-method-info*)))))
+	     ((when this-opcode-prop?)
+	      ;; Early out if this operand requires a ModR/M byte or VEX
+	      ;; prefix.
+	      t))
+	  (any-operand-with-prop?-aux prop (1- op_num) (cdr op_list))))))
+
+  (define any-operand-with-prop? ((prop keywordp)
+				  (cell true-listp))
+
+    :guard (or (equal prop :modr/m?)
+	       (equal prop :vex?))
+
+    :short "Returns @('t') if at least one operand of a basic simple
+  opcode requires a @('ModR/M') byte or a @('VEX') prefix"
+    (b* (((when (not (basic-simple-cell-p cell)))
+	  (er hard? 'any-operand-with-prop?
+	      "Cell expected to be a basic-simple-cell-p: ~x0."
+	      cell))
+	 (first (car cell))
+	 ((when (member-equal first *simple-cells-standalone-legal-keywords*))
+	  0)
+	 ((when (< (len cell) 2))
+	  (er hard? 'any-operand-with-prop?
+	      "Len of column info field is < 2: ~x0."
+	      cell))
+	 ((when (and (eq prop :modr/m?)
+		     (or (member-eq :1a cell)
+			 (member-eq :1c cell))))
+	  ;; [Rob Sumners] modr/m byte is used in this case for processing
+	  ;; opcode extensions.
+	  1)
+	 ((when (and (member-equal first *group-numbers*)
+		     (not (member-eq :1a cell))))
+	  ;; [Shilpi] This is true for :Group-17, which is VEX-specific.
+	  0)
+	 (op_num (nth 1 cell))
+	 ((when (not (natp op_num)))
+	  (er hard? 'any-operand-with-prop?
+	      "We expected an op_num: ~x0." cell))
+	 (op_list
+	  ;; Need the "take" here to throw out superscripts like :1a,
+	  ;; etc.
+	  (take op_num (nthcdr 2 cell)))
+	 ((when (not (alistp op_list)))
+	  (er hard? 'any-operand-with-prop?
+	      "We expected an op_list: ~x0." cell))
+	 (prop? (any-operand-with-prop?-aux prop op_num op_list)))
+      (acl2::bool->bit prop?)))
+
+  (define any-operand-with-prop-for-simple-cells? ((prop  keywordp)
+						   (cells true-list-listp))
+
+    :guard (or (equal prop :modr/m?)
+	       (equal prop :vex?))
+
+    :short "Returns @('t') if at least cell of a @(see
+  basic-simple-cells-p) requires a @('ModR/M') byte or a @('VEX') prefix"
+    ;; This function is only called by compute-prop-for-a-simple-cell.
+    (if (or (not (basic-simple-cells-p cells))
+	    (endp cells))
+	nil
+      (or (any-operand-with-prop? prop (car cells))
+	  (any-operand-with-prop-for-simple-cells? prop (cdr cells)))))
+
+  (define compute-prop-for-a-simple-cell ((prop keywordp)
+					  (cell true-listp))
+    :short "Returns @('1') if a <i>simple</i> opcode requires a
+  @('ModR/M') byte or a @('VEX') prefix"
+    :long "<p>We call an opcode <i>simple</i> if it satisfies @(see
+  simple-cell-p).</p>"
+
+    :guard (or (equal prop :modr/m?)
+	       (equal prop :vex?))
+
+    :guard-hints (("Goal" :in-theory (e/d (simple-cell-p) ())))
+
+    ;; Example invocations:
+    ;; (compute-prop-for-a-simple-cell :modr/m? '("ADD" 2 (E b)  (G b)))
+    ;; (compute-prop-for-a-simple-cell :modr/m? '(:2-byte-escape))
+    ;; (compute-prop-for-a-simple-cell :modr/m? '(:ALT
+    ;;                                            (("VPMOVZXBW" 2 (V x)  (U x))
+    ;;                                             ("VPMOVZXBW" 2 (V x)  (M q)))))
+
+    (cond ((not (simple-cell-p cell))
+	   (er hard? 'compute-prop-for-a-simple-cell
+	       "Use this function for a simple cell only.~%~x0 is not simple!~%" cell))
+	  ((basic-simple-cell-p cell)
+	   (any-operand-with-prop? prop cell))
+	  ((and (equal (car cell) :ALT)
+		(true-listp (cdr cell))
+		(true-list-listp (car (cdr cell))))
+	   ;; See comment in *simple-cells-legal-keywords* for a
+	   ;; description of :ALT.
+	   (any-operand-with-prop-for-simple-cells? prop (car (cdr cell))))
+	  ;; We've observed that either all :EXT opcodes have the same prop, or
+	  ;; none do.
+	  ((and (equal (car cell) :EXT)
+		(opcode-descriptor-list-p (cdr cell))
+		(basic-simple-cells-p (strip-cdrs (cdr cell))))
+	   (any-operand-with-prop-for-simple-cells?
+	    prop (strip-cdrs (cdr cell))))
+	  (t
+	   ;; We shouldn't reach here.
+	   (er hard? 'compute-prop-for-a-simple-cell
+	       "Cell info.: ~x0~%" cell))))
+
+  (define compute-prop-for-an-opcode-cell ((prop keywordp)
+					   (cell true-listp)
+					   (64-bit-modep booleanp)
+					   &key
+					   ((k) ':NO-PREFIX))
+    :guard (and (or (equal prop :modr/m?)
+		    (equal prop :vex?))
+		(compound-cells-legal-key-p k))
+    :short "Returns @('1') if an opcode requires a @('ModR/M') byte or a
+    @('VEX') prefix"
+
+    :guard-hints (("Goal"
+		   :do-not-induct t
+		   :in-theory (e/d (not-consp-not-assoc-equal
+				    compound-cells-legal-key-p opcode-cell-p)
+				   (member-equal not))))
+
+    (cond ((not (opcode-cell-p cell))
+	   (er hard? 'compute-prop-for-an-opcode-cell
+	       "Ill-formed opcode cell: ~x0~%" cell))
+	  ((simple-cell-p cell)
+	   (if (or (equal k ':NO-PREFIX)
+		   (member-equal (car cell) *group-numbers*))
+	       (compute-prop-for-a-simple-cell prop cell)
+	     0))
+	  (t ;; Compound cell
+	   (b* ((stripped-cell
+		 ;; In 64-bit mode, we ignore the opcode information
+		 ;; that is invalid in 64-bit mode, while in 32-bit
+		 ;; mode, we ignore the opcode information that is valid
+		 ;; only in 64-bit mode.
+		 (if 64-bit-modep
+		     (b* ((no-i64-cell (delete-assoc-equal :i64 cell))
+			  (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
+		       (or o64-cell no-i64-cell))
+		   (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
+			(i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
+		     (or i64-cell no-o64-cell))))
+		;; If a stripped cell is compound, then it can only have
+		;; the following legal keys now:
+		;; *compound-cells-legal-keys* - '(:i64 :o64)
+		(relevant-simple-cell
+		 (cond
+		  ((compound-cell-p stripped-cell)
+		   ;; The following should produce a simple-cell-p.
+		   (cdr (assoc-equal k stripped-cell)))
+		  (t
+		   ;; Ignore k if stripped-cell is, e.g., a simple-cell-p or nil.
+		   stripped-cell)))
+		(computed-prop
+		 ;; relevant-simple-cell may be nil.  E.g., for
+		 ;; '((:no-prefix . ("PSHUFB"          2 (P q) (Q q)))
+		 ;;   (:66        . ("VPSHUFB"         3 (V x) (H x) (W x))))
+		 ;; looking for :F2 should return 0.
+
+		 ;; Also: in 64-bit mode, for
+		 ;; ((:i64 . ("PUSH ES" 0)))
+		 ;; relevant-simple-cell will be nil.
+		 (if (simple-cell-p relevant-simple-cell)
+		     (compute-prop-for-a-simple-cell prop relevant-simple-cell)
+		   0)))
+	     computed-prop))))
+
+  (define compute-prop-for-an-opcode-row ((prop keywordp)
+					  (row true-list-listp)
+					  (64-bit-modep booleanp)
+					  &key
+					  ((k) ':NO-PREFIX))
+    :guard (and (or (equal prop :modr/m?)
+		    (equal prop :vex?))
+		(compound-cells-legal-key-p k))
+
+    :short "ModR/M byte or VEX prefix detection for an opcode row"
+    :long "<p>This function simply calls @(see compute-prop-for-an-opcode-cell)
+  recursively. It returns a list of 1s and 0s corresponding to the presence or
+  absence of ModR/M byte or VEX prefix (depending on the value of @('prop'),
+  for each opcode in an opcode row of the Intel opcode maps.</p>"
+
+    (if (opcode-row-p row)
+	(if (endp row)
+	    nil
+	  (b* ((cell (car row))
+	       (cell-prop
+		(compute-prop-for-an-opcode-cell prop cell 64-bit-modep :k k)))
+	    (cons cell-prop
+		  (compute-prop-for-an-opcode-row
+		   prop (cdr row) 64-bit-modep :k k))))
+      (er hard? 'compute-prop-for-an-opcode-row
+	  "Ill-formed opcode row: ~x0~%" row)))
+
+  (define compute-prop-for-an-opcode-map ((prop keywordp)
+					  (map true-listp)
+					  (64-bit-modep booleanp)
+					  &key
+					  ((k) ':NO-PREFIX))
+    :guard (and (or (equal prop :modr/m?)
+		    (equal prop :vex?))
+		(compound-cells-legal-key-p k))
+
+    :guard-hints (("Goal" :in-theory (e/d (opcode-map-p) ())))
+
+    :short "ModR/M byte or VEX prefix detection for an opcode map"
+    :long "<p>This function simply calls @(see compute-prop-for-an-opcode-row)
+  recursively. It returns a list of 1s and 0s corresponding to the presence or
+  absence of ModR/M byte or VEX prefix, depending on the value of @('prop'),
+  for each opcode in an opcode map.</p>"
+
+    (if (opcode-map-p map)
+	(if (endp map)
+	    nil
+	  (b* ((row (car map))
+	       (row-prop
+		(compute-prop-for-an-opcode-row prop row 64-bit-modep :k k)))
+	    (append
+	     row-prop
+	     (compute-prop-for-an-opcode-map prop (cdr map) 64-bit-modep :k k))))
+      (er hard? 'compute-prop-for-an-opcode-map
+	  "Ill-formed opcode map: ~x0~%" map)))
+
+  (define compute-modr/m-for-vex-encoded-instructions-1
+    ((vex-opcodes true-list-listp)
+     (64-bit-modep booleanp))
+
+    (if (endp vex-opcodes)
+	nil
+      (b* ((cell (car vex-opcodes)))
+	(cons
+	 (compute-prop-for-an-opcode-cell :modr/m? cell 64-bit-modep)
+	 (compute-modr/m-for-vex-encoded-instructions-1
+	  (cdr vex-opcodes) 64-bit-modep)))))
+
+  (define compute-modr/m-for-vex-encoded-instructions
+    ((vex-map (avx-maps-well-formed-p vex-map t))
+     (64-bit-modep booleanp))
+    :guard-hints (("Goal" :in-theory (e/d (avx-maps-well-formed-p) ())))
+
+    (if (atom vex-map)
+	nil
+      (b* ((row (car vex-map))
+	   (opcode (car row))
+	   (cells-pre (cdr row))
+	   ((unless (alistp cells-pre))
+	    (er hard? 'compute-modr/m-for-vex-encoded-instructions
+		"Ill-formed VEX opcode row (it's not alistp): ~x0~%" row))
+	   (cells (acl2::flatten (strip-cdrs cells-pre)))
+	   ((unless (true-list-listp cells))
+	    (er hard? 'compute-modr/m-for-vex-encoded-instructions
+		"Ill-formed VEX opcode row (it's not true-list-listp): ~x0~%" row))
+	   ;; (- (cw "~% Cells: ~p0 ~%" cells))
+	   )
+	(cons
+	 (cons opcode
+	       (list (compute-modr/m-for-vex-encoded-instructions-1 cells 64-bit-modep)))
+	 (compute-modr/m-for-vex-encoded-instructions
+	  (cdr vex-map) 64-bit-modep))))))
+
+(defsection ModR/M-decoding
+
+  :short "Functions to detect and decode ModR/M bytes"
+
+  (local (xdoc::set-default-parents ModR/M-decoding))
+
+  ;;  ModR/M Arrays for One-byte Opcode Map:
+  (make-event
+   ;; For 64-bit mode:
+   (b* ((precomputed-table
+	 '(
+	   1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
+	   1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
+	   1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
+	   1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 1 0 0 0 0 0 1 0 1 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 0 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 0 0 0 0 1 1 0 0 0 0 0 0 0 0
+	   1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 1 1 0 0 0 0 0 0 1 1
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *one-byte-opcode-map-lst* t :k :NO-PREFIX))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '64-bit-mode-one-byte-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *64-bit-mode-one-byte-has-modr/m-ar*
+	(list-to-array '64-bit-mode-one-byte-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 32-bit/Compatibility Modes:
+   (b* ((precomputed-table
+	 '(
+	   1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
+	   1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
+	   1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
+	   1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 1 1 0 0 0 0 0 1 0 1 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 0 0 1 1 1 1 0 0 0 0 0 0 0 0
+	   1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 1 1 0 0 0 0 0 0 1 1
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *one-byte-opcode-map-lst* nil :k :NO-PREFIX))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '32-bit-mode-one-byte-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *32-bit-mode-one-byte-has-modr/m-ar*
+	(list-to-array '32-bit-mode-one-byte-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  ;;  ModR/M Arrays for Two-byte Opcode Map:
+  (make-event
+   ;; For 64-bit mode: (:NO-PREFIX)
+   (b* ((precomputed-table
+	 '(
+	   1 1 1 1 0 0 0 0 0 0 0 0 0 1 0 0
+	   1 1 1 1 1 1 1 1 1 0 1 1 0 0 0 1
+	   1 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 1 1 1 1 1 1 0 0 1 1
+	   1 1 1 1 1 1 1 0 1 1 0 0 0 0 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   0 0 0 1 1 1 0 0 0 0 0 1 1 1 1 1
+	   1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0
+	   0 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1
+	   0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *two-byte-opcode-map-lst* t :k :NO-PREFIX))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '64-bit-mode-two-byte-no-prefix-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *64-bit-mode-two-byte-no-prefix-has-modr/m-ar*
+	(list-to-array '64-bit-mode-two-byte-no-prefix-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 64-bit mode: (:66)
+   (b* ((precomputed-table
+	 '(
+	   1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 1 1 1 1 1 1 0 1 1 0 0 0 0
+	   0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 0 0 1 1 1 1 1 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 1 0 0 0 0 0 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0
+	   0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0
+	   0 0 1 0 1 1 1 1 0 0 0 0 0 0 0 0
+	   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *two-byte-opcode-map-lst* t :k :66))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '64-bit-mode-two-byte-66-has-modr/m-ar
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *64-bit-mode-two-byte-66-has-modr/m-ar*
+	(list-to-array '64-bit-mode-two-byte-66-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 64-bit mode: (:F2)
+   (b* ((precomputed-table
+	 '(
+	   1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 0 0 0 0 0 1 0 1 1 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 1 0 0 0 0 0 0 1 1 1 0 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 1 0 0 0 0 0 0 0 0 1 1 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0
+	   0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0
+	   0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0
+	   1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
+	   1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *two-byte-opcode-map-lst* t :k :F2))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '64-bit-mode-two-byte-F2-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *64-bit-mode-two-byte-F2-has-modr/m-ar*
+	(list-to-array '64-bit-mode-two-byte-F2-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 64-bit mode: (:F3)
+   (b* ((precomputed-table
+	 '(
+	   1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 0 0 0 1 0 1 0 1 1 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+	   1 1 1 1 0 0 0 0 0 0 0 0 0 0 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0
+	   0 0 0 0 0 0 0 0 1 1 1 0 1 1 0 0
+	   0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *two-byte-opcode-map-lst* t :k :F3))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '64-bit-mode-two-byte-F3-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *64-bit-mode-two-byte-F3-has-modr/m-ar*
+	(list-to-array '64-bit-mode-two-byte-F3-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 32-bit mode: (:NO-PREFIX)
+   (b* ((precomputed-table
+	 '(
+	   1 1 1 1 0 0 0 0 0 0 0 0 0 1 0 0
+	   1 1 1 1 1 1 1 1 1 0 1 1 0 0 0 1
+	   1 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 1 1 1 1 1 1 0 0 1 1
+	   1 1 1 1 1 1 1 0 1 1 0 0 0 0 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   0 0 0 1 1 1 0 0 0 0 0 1 1 1 1 1
+	   1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0
+	   0 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1
+	   0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *two-byte-opcode-map-lst* nil :k :NO-PREFIX))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '32-bit-mode-two-byte-no-prefix-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *32-bit-mode-two-byte-no-prefix-has-modr/m-ar*
+	(list-to-array '32-bit-mode-two-byte-no-prefix-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 32-bit mode: (:66)
+   (b* ((precomputed-table
+	 '(
+	   1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 1 1 1 1 1 1 0 1 1 0 0 0 0
+	   0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 0 0 1 1 1 1 1 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 1 0 0 0 0 0 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0
+	   0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0
+	   0 0 1 0 1 1 1 1 0 0 0 0 0 0 0 0
+	   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+	   0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *two-byte-opcode-map-lst* nil :k :66))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '32-bit-mode-two-byte-66-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *32-bit-mode-two-byte-66-has-modr/m-ar*
+	(list-to-array '32-bit-mode-two-byte-66-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 32-bit mode: (:F2)
+   (b* ((precomputed-table
+	 '(
+	   1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 0 0 0 0 0 1 0 1 1 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 1 0 0 0 0 0 0 1 1 1 0 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 1 0 0 0 0 0 0 0 0 1 1 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0
+	   0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0
+	   0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0
+	   1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
+	   1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *two-byte-opcode-map-lst* nil :k :F2))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '32-bit-mode-two-byte-F2-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *32-bit-mode-two-byte-F2-has-modr/m-ar*
+	(list-to-array '32-bit-mode-two-byte-F2-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 32-bit mode: (:F3)
+   (b* ((precomputed-table
+	 '(
+	   1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 0 0 0 1 0 1 0 1 1 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+	   1 1 1 1 0 0 0 0 0 0 0 0 0 0 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0
+	   0 0 0 0 0 0 0 0 1 1 1 0 1 1 0 0
+	   0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *two-byte-opcode-map-lst* nil :k :F3))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '32-bit-mode-two-byte-F3-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *32-bit-mode-two-byte-F3-has-modr/m-ar*
+	(list-to-array '32-bit-mode-two-byte-F3-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  ;;  ModR/M Arrays for the first Three-byte Opcode Map:
+  (make-event
+   ;; For 64-bit mode: (:NO-PREFIX)
+   (b* ((precomputed-table
+	 '(
+	   1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 1 1 1 1 1 1 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table
+	 (compute-prop-for-an-opcode-map
+	  :modr/m?
+	  *0F-38-three-byte-opcode-map-lst* t :k :NO-PREFIX))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '64-bit-mode-0f-38-three-byte-no-prefix-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *64-bit-mode-0f-38-three-byte-no-prefix-has-modr/m-ar*
+	(list-to-array '64-bit-mode-0f-38-three-byte-no-prefix-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 64-bit mode: (:66)
+   (b* ((precomputed-table
+	 '(
+	   1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0
+	   1 0 0 0 1 1 0 1 0 0 0 0 1 1 1 0
+	   1 1 1 1 1 1 0 0 1 1 1 1 0 0 0 0
+	   1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1
+	   1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-38-three-byte-opcode-map-lst* t :k :66))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '64-bit-mode-0f-38-three-byte-66-has-modr/m-ar
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *64-bit-mode-0f-38-three-byte-66-has-modr/m-ar*
+	(list-to-array '64-bit-mode-0f-38-three-byte-66-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 64-bit mode: (:F2)
+   (b* ((precomputed-table
+	 '(
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-38-three-byte-opcode-map-lst* t :k :F2))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '64-bit-mode-0f-38-three-byte-F2-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *64-bit-mode-0f-38-three-byte-F2-has-modr/m-ar*
+	(list-to-array '64-bit-mode-0f-38-three-byte-F2-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 64-bit mode: (:F3)
+   (b* ((precomputed-table
+	 '(
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-38-three-byte-opcode-map-lst* t :k :F3))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '64-bit-mode-0f-38-three-byte-F3-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *64-bit-mode-0f-38-three-byte-F3-has-modr/m-ar*
+	(list-to-array '64-bit-mode-0f-38-three-byte-F3-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 32-bit mode: (:NO-PREFIX)
+   (b* ((precomputed-table
+	 '(
+	   1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 1 1 1 1 1 1 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-38-three-byte-opcode-map-lst* nil :k :NO-PREFIX))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '32-bit-mode-0f-38-three-byte-no-prefix-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *32-bit-mode-0f-38-three-byte-no-prefix-has-modr/m-ar*
+	(list-to-array '32-bit-mode-0f-38-three-byte-no-prefix-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 32-bit mode: (:66)
+   (b* ((precomputed-table
+	 '(
+	   1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0
+	   1 0 0 0 1 1 0 1 0 0 0 0 1 1 1 0
+	   1 1 1 1 1 1 0 0 1 1 1 1 0 0 0 0
+	   1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1
+	   1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-38-three-byte-opcode-map-lst* nil :k :66))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '32-bit-mode-0f-38-three-byte-66-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *32-bit-mode-0f-38-three-byte-66-has-modr/m-ar*
+	(list-to-array '32-bit-mode-0f-38-three-byte-66-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 32-bit mode: (:F2)
+   (b* ((precomputed-table
+	 '(
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-38-three-byte-opcode-map-lst* nil :k :F2))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '32-bit-mode-0f-38-three-byte-F2-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *32-bit-mode-0f-38-three-byte-F2-has-modr/m-ar*
+	(list-to-array '32-bit-mode-0f-38-three-byte-F2-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 32-bit mode: (:F3)
+   (b* ((precomputed-table
+	 '(
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-38-three-byte-opcode-map-lst* nil :k :F3))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '32-bit-mode-0f-38-three-byte-F3-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *32-bit-mode-0f-38-three-byte-F3-has-modr/m-ar*
+	(list-to-array '32-bit-mode-0f-38-three-byte-F3-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  ;;  ModR/M Arrays for the second Three-byte Opcode Map:
+  (make-event
+   ;; For 64-bit mode: (:NO-PREFIX)
+   (b* ((precomputed-table
+	 '(
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-3A-three-byte-opcode-map-lst* t :k :NO-PREFIX))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '64-bit-mode-0f-3A-three-byte-no-prefix-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *64-bit-mode-0f-3A-three-byte-no-prefix-has-modr/m-ar*
+	(list-to-array '64-bit-mode-0f-3A-three-byte-no-prefix-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 64-bit mode: (:66)
+   (b* ((precomputed-table
+	 '(
+	   0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1
+	   0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0
+	   1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 0 1 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-3A-three-byte-opcode-map-lst* t :k :66))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '64-bit-mode-0f-3A-three-byte-66-has-modr/m-ar
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *64-bit-mode-0f-3A-three-byte-66-has-modr/m-ar*
+	(list-to-array '64-bit-mode-0f-3A-three-byte-66-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 64-bit mode: (:F2)
+   (b* ((precomputed-table
+	 '(
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table
+	 (compute-prop-for-an-opcode-map
+	  :modr/m?
+	  *0F-3A-three-byte-opcode-map-lst* t :k :F2))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '64-bit-mode-0f-3A-three-byte-F2-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *64-bit-mode-0f-3A-three-byte-F2-has-modr/m-ar*
+	(list-to-array
+	 '64-bit-mode-0f-3A-three-byte-F2-has-modr/m
+	 (ints-to-booleans (quote ,computed-table))))))
+
+  (make-event
+   ;; For 64-bit mode: (:F3)
+   (b* ((precomputed-table
+	 '(
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-3A-three-byte-opcode-map-lst* t :k :F3))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '64-bit-mode-0f-3A-three-byte-F3-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *64-bit-mode-0f-3A-three-byte-F3-has-modr/m-ar*
+	(list-to-array '64-bit-mode-0f-3A-three-byte-F3-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 32-bit mode: (:NO-PREFIX)
+   (b* ((precomputed-table
+	 '(
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-3A-three-byte-opcode-map-lst* nil :k :NO-PREFIX))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '32-bit-mode-0f-3A-three-byte-no-prefix-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *32-bit-mode-0f-3A-three-byte-no-prefix-has-modr/m-ar*
+	(list-to-array '32-bit-mode-0f-3A-three-byte-no-prefix-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 32-bit mode: (:66)
+   (b* ((precomputed-table
+	 '(
+	   0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1
+	   0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0
+	   1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 0 1 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-3A-three-byte-opcode-map-lst* nil :k :66))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '32-bit-mode-0f-3A-three-byte-66-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *32-bit-mode-0f-3A-three-byte-66-has-modr/m-ar*
+	(list-to-array '32-bit-mode-0f-3A-three-byte-66-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 32-bit mode: (:F2)
+   (b* ((precomputed-table
+	 '(
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-3A-three-byte-opcode-map-lst* nil :k :F2))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '32-bit-mode-0f-3A-three-byte-F2-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *32-bit-mode-0f-3A-three-byte-F2-has-modr/m-ar*
+	(list-to-array '32-bit-mode-0f-3A-three-byte-F2-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+  (make-event
+   ;; For 32-bit mode: (:F3)
+   (b* ((precomputed-table
+	 '(
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
+	(computed-table (compute-prop-for-an-opcode-map
+			 :modr/m?
+			 *0F-3A-three-byte-opcode-map-lst* nil :k :F3))
+	((unless (equal precomputed-table computed-table))
+	 (er hard '32-bit-mode-0f-3A-three-byte-F3-has-modr/m
+	     "Error: Incorrect ModR/M info computed!")))
+     `(defconst *32-bit-mode-0f-3A-three-byte-F3-has-modr/m-ar*
+	(list-to-array '32-bit-mode-0f-3A-three-byte-F3-has-modr/m
+		       (ints-to-booleans
+			(quote ,computed-table))))))
+
+
+  (with-output
+    :off :all
+    :gag-mode nil
+
+    (progn
+
+      (define 64-bit-mode-one-byte-opcode-ModR/M-p
+	((opcode :type (unsigned-byte 8)))
+	:inline t
+	:no-function t
+	:short "Returns a boolean saying whether, in 64-bit mode,
+	    the given opcode in the one-byte opcode map expects a ModR/M byte."
+	:returns (bool booleanp :hyp (n08p opcode))
+	(aref1 '64-bit-mode-one-byte-has-modr/m
+	       *64-bit-mode-one-byte-has-modr/m-ar* opcode))
+
+      (define 32-bit-mode-one-byte-opcode-ModR/M-p
+	((opcode :type (unsigned-byte 8)))
+	:inline t
+	:no-function t
+	:short "Returns a boolean saying whether, in 32-bit mode,
+	    the given opcode in the one-byte opcode map expects a ModR/M byte."
+	:returns (bool booleanp :hyp (n08p opcode))
+	(aref1 '32-bit-mode-one-byte-has-modr/m
+	       *32-bit-mode-one-byte-has-modr/m-ar* opcode))
+
+      (define one-byte-opcode-ModR/M-p
+	((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
+	 (opcode           :type (unsigned-byte 8)))
+	:short "Returns @('t') if a one-byte opcode requires a ModR/M byte;
+	@('nil') otherwise"
+	:inline t
+	:no-function t
+	:returns (bool booleanp :hyp (n08p opcode))
+	(if (equal proc-mode #.*64-bit-mode*)
+	    (64-bit-mode-one-byte-opcode-ModR/M-p opcode)
+	  ;; TODO: Other modes eventually.
+	  (32-bit-mode-one-byte-opcode-ModR/M-p opcode)))
+
+      (define 64-bit-mode-two-byte-opcode-ModR/M-p
+	((mandatory-prefix :type (unsigned-byte 8))
+	 (opcode           :type (unsigned-byte 8)
+			   "Second byte of the two-byte opcode"))
+	:short "Returns a boolean saying whether, in 64-bit mode,
+	    the given opcode in the two-byte opcode map expects a ModR/M byte."
+	:returns (bool booleanp :hyp (n08p opcode))
+
+	(case mandatory-prefix
+
+	  (#.*mandatory-66h*
+	   (aref1 '64-bit-mode-two-byte-66-has-modr/m
+		  *64-bit-mode-two-byte-66-has-modr/m-ar* opcode))
+
+	  (#.*mandatory-F3h*
+	   (aref1 '64-bit-mode-two-byte-F3-has-modr/m
+		  *64-bit-mode-two-byte-F3-has-modr/m-ar* opcode))
+
+	  (#.*mandatory-F2h*
+	   (aref1 '64-bit-mode-two-byte-F2-has-modr/m
+		  *64-bit-mode-two-byte-F2-has-modr/m-ar* opcode))
+
+	  (t
+	   ;; Applies to simple cells as well as NP compound cells.
+	   (aref1 '64-bit-mode-two-byte-no-prefix-has-modr/m
+		  *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))))
+
+      (define 32-bit-mode-two-byte-opcode-ModR/M-p
+	((mandatory-prefix :type (unsigned-byte 8))
+	 (opcode           :type (unsigned-byte 8)
+			   "Second byte of the two-byte opcode"))
+	:short "Returns a boolean saying whether, in 32-bit mode,
+	    the given opcode in the two-byte opcode map expects a ModR/M byte."
+	:returns (bool booleanp :hyp (n08p opcode))
+
+	(case mandatory-prefix
+
+	  (#.*mandatory-66h*
+	   (aref1 '32-bit-mode-two-byte-66-has-modr/m
+		  *32-bit-mode-two-byte-66-has-modr/m-ar* opcode))
+
+	  (#.*mandatory-F3h*
+	   (aref1 '32-bit-mode-two-byte-F3-has-modr/m
+		  *32-bit-mode-two-byte-F3-has-modr/m-ar* opcode))
+
+	  (#.*mandatory-F2h*
+	   (aref1 '32-bit-mode-two-byte-F2-has-modr/m
+		  *32-bit-mode-two-byte-F2-has-modr/m-ar* opcode))
+
+	  (t
+	   ;; Applies to simple cells as well as NP compound cells.
+	   (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
+		  *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))))
+
+      (define two-byte-opcode-ModR/M-p
+	((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
+	 (mandatory-prefix :type (unsigned-byte 8))
+	 (opcode           :type (unsigned-byte 8)
+			   "Second byte of the two-byte opcode"))
+	:short "Returns @('t') if a two-byte opcode requires a ModR/M byte;
+	@('nil') otherwise. Doesn't account for AVX/AVX2/AVX512 instructions."
+	:inline t
+	:no-function t
+	:returns (bool booleanp :hyp (n08p opcode))
+
+	(cond ((equal proc-mode #.*64-bit-mode*)
+	       (64-bit-mode-two-byte-opcode-ModR/M-p
+		mandatory-prefix opcode))
+	      (t
+	       ;; TODO: Other modes here eventually.
+	       (32-bit-mode-two-byte-opcode-ModR/M-p
+		mandatory-prefix opcode))))
+
+
+      (define 64-bit-mode-0F-38-three-byte-opcode-ModR/M-p
+	((mandatory-prefix :type (unsigned-byte 8))
+	 (opcode   :type (unsigned-byte 8)
+		   "Third byte of the 38 three-byte opcode"))
+	:short "Returns a boolean saying whether, in 64-bit mode, the given
+	    opcode in the first three-byte opcode map expects a ModR/M byte."
+	:returns (bool booleanp :hyp (n08p opcode))
+
+	(case mandatory-prefix
+
+	  (#.*mandatory-66h*
+	   (aref1 '64-bit-mode-0F-38-three-byte-66-has-modr/m
+		  *64-bit-mode-0F-38-three-byte-66-has-modr/m-ar* opcode))
+
+	  (#.*mandatory-F3h*
+	   (aref1 '64-bit-mode-0F-38-three-byte-F3-has-modr/m
+		  *64-bit-mode-0F-38-three-byte-F3-has-modr/m-ar* opcode))
+
+	  (#.*mandatory-F2h*
+	   (aref1 '64-bit-mode-0F-38-three-byte-F2-has-modr/m
+		  *64-bit-mode-0F-38-three-byte-F2-has-modr/m-ar* opcode))
+
+	  (t
+	   ;; Applies to simple cells as well as NP compound cells.
+	   (aref1 '64-bit-mode-0F-38-three-byte-no-prefix-has-modr/m
+		  *64-bit-mode-0F-38-three-byte-no-prefix-has-modr/m-ar*
+		  opcode))))
+
+      (define 32-bit-mode-0F-38-three-byte-opcode-ModR/M-p
+	((mandatory-prefix :type (unsigned-byte 8))
+	 (opcode   :type (unsigned-byte 8)
+		   "Third byte of the 38 three-byte opcode"))
+	:short "Returns a boolean saying whether, in 32-bit mode, the given
+	    opcode in the first three-byte opcode map expects a ModR/M byte."
+	:returns (bool booleanp :hyp (n08p opcode))
+
+	(case mandatory-prefix
+
+	  (#.*mandatory-66h*
+	   (aref1 '32-bit-mode-0F-38-three-byte-66-has-modr/m
+		  *32-bit-mode-0F-38-three-byte-66-has-modr/m-ar* opcode))
+
+	  (#.*mandatory-F3h*
+	   (aref1 '32-bit-mode-0F-38-three-byte-F3-has-modr/m
+		  *32-bit-mode-0F-38-three-byte-F3-has-modr/m-ar* opcode))
+
+	  (#.*mandatory-F2h*
+	   (aref1 '32-bit-mode-0F-38-three-byte-F2-has-modr/m
+		  *32-bit-mode-0F-38-three-byte-F2-has-modr/m-ar* opcode))
+
+	  (t
+	   ;; Applies to simple cells as well as NP compound cells.
+	   (aref1 '32-bit-mode-0F-38-three-byte-no-prefix-has-modr/m
+		  *32-bit-mode-0F-38-three-byte-no-prefix-has-modr/m-ar*
+		  opcode))))
+
+      (define 64-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
+	((mandatory-prefix :type (unsigned-byte 8))
+	 (opcode   :type (unsigned-byte 8)
+		   "Third byte of the 3A three-byte opcode"))
+	:short "Returns a boolean saying whether, in 64-bit mode, the given
+	    opcode in the second three-byte opcode map expects a ModR/M byte."
+	:returns (bool booleanp :hyp (n08p opcode))
+
+	(case mandatory-prefix
+
+	  (#.*mandatory-66h*
+	   (aref1 '64-bit-mode-0F-3A-three-byte-66-has-modr/m
+		  *64-bit-mode-0F-3A-three-byte-66-has-modr/m-ar* opcode))
+
+	  (#.*mandatory-F3h*
+	   (aref1 '64-bit-mode-0F-3A-three-byte-F3-has-modr/m
+		  *64-bit-mode-0F-3A-three-byte-F3-has-modr/m-ar* opcode))
+
+	  (#.*mandatory-F2h*
+	   (aref1 '64-bit-mode-0F-3A-three-byte-F2-has-modr/m
+		  *64-bit-mode-0F-3A-three-byte-F2-has-modr/m-ar* opcode))
+
+	  (t
+	   ;; Applies to simple cells as well as NP compound cells.
+	   (aref1 '64-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m
+		  *64-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m-ar*
+		  opcode))))
+
+      (define 32-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
+	((mandatory-prefix :type (unsigned-byte 8))
+	 (opcode   :type (unsigned-byte 8)
+		   "Third byte of the 3A three-byte opcode"))
+	:short "Returns a boolean saying whether, in 32-bit mode, the given
+	    opcode in the second three-byte opcode map expects a ModR/M byte."
+	:returns (bool booleanp :hyp (n08p opcode))
+
+	(case mandatory-prefix
+
+	  (#.*mandatory-66h*
+	   (aref1 '32-bit-mode-0F-3A-three-byte-66-has-modr/m
+		  *32-bit-mode-0F-3A-three-byte-66-has-modr/m-ar* opcode))
+
+	  (#.*mandatory-F3h*
+	   (aref1 '32-bit-mode-0F-3A-three-byte-F3-has-modr/m
+		  *32-bit-mode-0F-3A-three-byte-F3-has-modr/m-ar* opcode))
+
+	  (#.*mandatory-F2h*
+	   (aref1 '32-bit-mode-0F-3A-three-byte-F2-has-modr/m
+		  *32-bit-mode-0F-3A-three-byte-F2-has-modr/m-ar* opcode))
+
+	  (t
+	   ;; Applies to simple cells as well as NP compound cells.
+	   (aref1 '32-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m
+		  *32-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m-ar*
+		  opcode))))
+
+      (define three-byte-opcode-ModR/M-p
+	((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
+	 (mandatory-prefix :type (unsigned-byte 8)
+			   "As computed by @(tsee
+			   compute-mandatory-prefix-for-three-byte-opcode)")
+	 (escape-byte      :type (unsigned-byte 8)
+			   "Second byte of the three-byte opcode --- either
+			   @('#x38') or @('#x3A')")
+	 (opcode           :type (unsigned-byte 8)
+			   "Third byte of the three-byte opcode"))
+	:short "Returns @('t') if a three-byte opcode requires a ModR/M byte;
+	@('nil') otherwise. Doesn't account for AVX/AVX2/AVX512 instructions."
+	:inline t
+	:no-function t
+	:guard (or (equal escape-byte #x38)
+		   (equal escape-byte #x3A))
+	:returns (bool booleanp :hyp (n08p opcode))
+
+	(cond ((equal escape-byte #x38)
+	       (if (equal proc-mode #.*64-bit-mode*)
+		   (64-bit-mode-0F-38-three-byte-opcode-ModR/M-p
+		    mandatory-prefix opcode)
+		 ;; TODO: Other modes here eventually.
+		 (32-bit-mode-0F-38-three-byte-opcode-ModR/M-p
+		  mandatory-prefix opcode)))
+	      (t
+	       (if (equal proc-mode #.*64-bit-mode*)
+		   (64-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
+		    mandatory-prefix opcode)
+		 ;; TODO: Other modes here eventually.
+		 (32-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
+		  mandatory-prefix opcode)))))))
+
+  ;; ModR/M Detection Check for VEX-encoded instructions:
+
+  (local
+   (encapsulate
+     ()
+
+     (local
+      (defun all-ones-p (lst)
+	(if (atom lst)
+	    (equal lst nil)
+	  (and (equal (car lst) 1)
+	       (all-ones-p (cdr lst))))))
+
+     (local
+      (defun check-vex-map-modr/m-detection (lst 0f-map?)
+	;; lst: output of compute-modr/m-for-vex-encoded-instructions
+	(if (atom lst)
+	    (equal lst nil)
+	  (b* ((opcode-info (car lst))
+	       ((unless (true-listp opcode-info))
+		nil)
+	       (opcode (car opcode-info))
+	       (cells  (acl2::flatten (cdr opcode-info))))
+	    (if (all-ones-p cells)
+		(check-vex-map-modr/m-detection (cdr lst) 0f-map?)
+	      (if 0f-map?
+		  (and (equal opcode #x77)
+		       ;; VZEROALL/VZEROUPPER don't expect a ModR/M.  Everything
+		       ;; else that's VEX-encoded does.
+		       (check-vex-map-modr/m-detection (cdr lst) 0f-map?))
+		nil))))))
+
+     (assert-event
+      ;; Check: VZEROALL/VZEROUPPER are the only VEX-encoded opcodes that do NOT
+      ;; expect a ModR/M byte.
+      (and
+       (check-vex-map-modr/m-detection
+	(compute-modr/m-for-vex-encoded-instructions *vex-0F-opcodes*   t)
+	t)
+       (check-vex-map-modr/m-detection
+	(compute-modr/m-for-vex-encoded-instructions *vex-0F38-opcodes*   t)
+	nil)
+       (check-vex-map-modr/m-detection
+	(compute-modr/m-for-vex-encoded-instructions *vex-0F3A-opcodes*   t)
+	nil)
+       (check-vex-map-modr/m-detection
+	(compute-modr/m-for-vex-encoded-instructions *vex-0F-opcodes*   nil)
+	t)
+       (check-vex-map-modr/m-detection
+	(compute-modr/m-for-vex-encoded-instructions *vex-0F38-opcodes*   nil)
+	nil)
+       (check-vex-map-modr/m-detection
+	(compute-modr/m-for-vex-encoded-instructions *vex-0F3A-opcodes*   nil)
+	nil)))))
+
+  (define vex-opcode-ModR/M-p
+    ((vex-prefixes     :type (unsigned-byte 24))
+     (opcode           :type (unsigned-byte 8)))
+    :short "Returns @('t') if a VEX-encoded opcode requires a ModR/M byte;
+	@('nil') otherwise."
+    :inline t
+    :no-function t
+    :returns (bool booleanp)
+    :guard (vex-prefixes-byte0-p vex-prefixes)
+    (if (not (equal opcode #x77))
+	t
+      ;; VZEROALL/VZEROUPPER are the only two VEX-encoded instructions that do
+      ;; not require a ModR/M byte.  These have the opcode #ux0F_77.
+      ;; Also see compute-modr/m-for-vex-encoded-instructions above for more
+      ;; details.
+      (not (vex-prefixes-map-p #x0F vex-prefixes)))))
+
+;; ----------------------------------------------------------------------
+
+(defsection SIB-decoding
+  :parents (decoding-and-spec-utils)
+  :short "Functions to detect and decode SIB bytes"
+
+  (local (xdoc::set-default-parents SIB-decoding))
+
+  (define x86-decode-SIB-p
+    ((ModR/M :type (unsigned-byte 8))
+     (16-bit-addressp booleanp))
+    :returns (bool booleanp :hyp (n08p ModR/M))
+    :short "Returns a boolean saying whether a SIB byte is expected to follow a
+    ModR/M byte or not."
+    :long
+    "<p>
+     This is based on Intel manual, Mar'17, Volume 2, Tables 2-1 and 2-2,
+     as well as AMD manual, Dec'17, Volume 3, Tables A-33 and A-35.
+     When the address size is 32 or 64 bits,
+     Intel Table 2-2 and AMD Table A-35 apply:
+     a SIB byte is expected exactly when
+     ModR/M.mod is not #b11 and ModR/M.r/m is #b100.
+     When the address size is 16 bits, no SIB byte is expected.
+     </p>
+     <p>
+     The second argument of this function says whether
+     the address size is 16 bits or not (i.e. 32 or 64 bits).
+     In 64-bit mode, this argument is always @('nil').
+     In 32-bit mode, this argument may be @('t') or @('nil').
+     </p>"
+    (and (not 16-bit-addressp)
+	 (b* ((r/m (modr/m->r/m ModR/M))
+	      (mod (modr/m->mod ModR/M)))
+	   (and (int= r/m 4)
+		(not (int= mod 3)))))))
+
+;; ----------------------------------------------------------------------
 
 (defsection mandatory-prefixes-computation
 
@@ -744,7 +2269,7 @@
  opcode maps?</b></p>
 
  <p>Here are some decoding rules for SIMD mandatory prefixes; note that these
- don't apply for VEX/EVEX-encoded instructions because the mandatory prefixes
+ do NOT apply for VEX/EVEX-encoded instructions because the mandatory prefixes
  are explicitly stated there.  All the examples listed below are from Intel's
  XED (x86 Encoder Decoder: @('https://intelxed.github.io/')).</p>
 
@@ -1097,7 +2622,7 @@
     (list-to-array
      'error-66-with-0F-38-three-byte-opcode
      (ints-to-booleans (strip-cdrs
-                        *error-66-with-0F-38-three-byte-opcode-alist*))))
+			*error-66-with-0F-38-three-byte-opcode-alist*))))
 
   (defconst *error-F2-with-0F-38-three-byte-opcode-alist*
     '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
@@ -1173,7 +2698,7 @@
     (list-to-array
      'error-F2-with-0F-38-three-byte-opcode
      (ints-to-booleans (strip-cdrs
-                        *error-F2-with-0F-38-three-byte-opcode-alist*))))
+			*error-F2-with-0F-38-three-byte-opcode-alist*))))
 
   (defconst *error-F3-with-0F-38-three-byte-opcode-alist*
     '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
@@ -1249,7 +2774,7 @@
     (list-to-array
      'error-F3-with-0F-38-three-byte-opcode
      (ints-to-booleans (strip-cdrs
-                        *error-F3-with-0F-38-three-byte-opcode-alist*))))
+			*error-F3-with-0F-38-three-byte-opcode-alist*))))
 
 
   (defconst *error-66-with-0F-3A-three-byte-opcode-alist*
@@ -1326,7 +2851,7 @@
     (list-to-array
      'error-66-with-0F-3A-three-byte-opcode
      (ints-to-booleans (strip-cdrs
-                        *error-66-with-0F-3A-three-byte-opcode-alist*))))
+			*error-66-with-0F-3A-three-byte-opcode-alist*))))
 
   (defconst *error-F2-with-0F-3A-three-byte-opcode-alist*
     '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
@@ -1402,7 +2927,7 @@
     (list-to-array
      'error-F2-with-0F-3A-three-byte-opcode
      (ints-to-booleans (strip-cdrs
-                        *error-F2-with-0F-3A-three-byte-opcode-alist*))))
+			*error-F2-with-0F-3A-three-byte-opcode-alist*))))
 
   (defconst *error-F3-with-0F-3A-three-byte-opcode-alist*
     '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
@@ -1478,11 +3003,9 @@
     (list-to-array
      'error-F3-with-0F-3A-three-byte-opcode
      (ints-to-booleans (strip-cdrs
-                        *error-F3-with-0F-3A-three-byte-opcode-alist*))))
-
+			*error-F3-with-0F-3A-three-byte-opcode-alist*))))
 
   (local (include-book "std/strings/decimal" :dir :system))
-
 
   (local
    (define gen-compute-mandatory-prefix-fn
@@ -1490,141 +3013,167 @@
       (mode (member-equal mode '(32 64))))
 
      (b* ((mode-name (str::cat (str::natstr mode) "-BIT"))
-          (pre-name (str::cat mode-name "-COMPUTE-MANDATORY-PREFIX-FOR-"))
-          (map-name (case map
-                      (#ux0F    "TWO-BYTE")
-                      (#ux0F_38 "0F-38-THREE-BYTE")
-                      (#ux0F_3A "0F-3A-THREE-BYTE")))
-          (name (intern$ (str::cat pre-name map-name "-OPCODE") "X86ISA"))
-          (compound-opcode-name-crux
-           (str::cat mode-name "-MODE-" map-name "-COMPOUND-OPCODES"))
-          (compound-opcode-name
-           (intern$ compound-opcode-name-crux "X86ISA"))
-          (compound-opcode-const
-           (intern$ (str::cat "*" compound-opcode-name-crux "-AR*")
-                    "X86ISA"))
+	  (pre-name (str::cat mode-name "-COMPUTE-MANDATORY-PREFIX-FOR-"))
+	  (map-name (case map
+		      (#ux0F    "TWO-BYTE")
+		      (#ux0F_38 "0F-38-THREE-BYTE")
+		      (#ux0F_3A "0F-3A-THREE-BYTE")))
+	  (name (intern$ (str::cat pre-name map-name "-OPCODE") "X86ISA"))
+	  (name-aux (intern$ (str::cat pre-name map-name "-OPCODE-AUX") "X86ISA"))
+	  (compound-opcode-name-crux
+	   (str::cat mode-name "-MODE-" map-name "-COMPOUND-OPCODES"))
+	  (compound-opcode-name
+	   (intern$ compound-opcode-name-crux "X86ISA"))
+	  (compound-opcode-const
+	   (intern$ (str::cat "*" compound-opcode-name-crux "-AR*")
+		    "X86ISA"))
 
-          (F3-ok-crux
-           (str::cat mode-name "-MODE-" map-name "-F3-OK"))
-          (F3-ok (intern$ F3-ok-crux "X86ISA"))
-          (F3-ok-const (intern$ (str::cat "*" F3-ok-crux "-AR*") "X86ISA"))
-          (F3-error-crux
-           (str::cat "ERROR-F3-WITH-" map-name "-OPCODE"))
-          (F3-error
-           (intern$ F3-error-crux "X86ISA"))
-          (F3-error-const
-           (intern$ (str::cat "*" F3-error-crux "-AR*") "X86ISA"))
+	  (F3-ok-crux
+	   (str::cat mode-name "-MODE-" map-name "-F3-OK"))
+	  (F3-ok (intern$ F3-ok-crux "X86ISA"))
+	  (F3-ok-const (intern$ (str::cat "*" F3-ok-crux "-AR*") "X86ISA"))
+	  (F3-error-crux
+	   (str::cat "ERROR-F3-WITH-" map-name "-OPCODE"))
+	  (F3-error
+	   (intern$ F3-error-crux "X86ISA"))
+	  (F3-error-const
+	   (intern$ (str::cat "*" F3-error-crux "-AR*") "X86ISA"))
 
-          (F2-ok-crux
-           (str::cat mode-name "-MODE-" map-name "-F2-OK"))
-          (F2-ok (intern$ F2-ok-crux "X86ISA"))
-          (F2-ok-const (intern$ (str::cat "*" F2-ok-crux "-AR*") "X86ISA"))
-          (F2-error-crux
-           (str::cat "ERROR-F2-WITH-" map-name "-OPCODE"))
-          (F2-error
-           (intern$ F2-error-crux "X86ISA"))
-          (F2-error-const
-           (intern$ (str::cat "*" F2-error-crux "-AR*") "X86ISA"))
+	  (F2-ok-crux
+	   (str::cat mode-name "-MODE-" map-name "-F2-OK"))
+	  (F2-ok (intern$ F2-ok-crux "X86ISA"))
+	  (F2-ok-const (intern$ (str::cat "*" F2-ok-crux "-AR*") "X86ISA"))
+	  (F2-error-crux
+	   (str::cat "ERROR-F2-WITH-" map-name "-OPCODE"))
+	  (F2-error
+	   (intern$ F2-error-crux "X86ISA"))
+	  (F2-error-const
+	   (intern$ (str::cat "*" F2-error-crux "-AR*") "X86ISA"))
 
-          (66-ok-crux
-           (str::cat mode-name "-MODE-" map-name "-66-OK"))
-          (66-ok (intern$ 66-ok-crux "X86ISA"))
-          (66-ok-const (intern$ (str::cat "*" 66-ok-crux "-AR*") "X86ISA"))
-          (66-error-crux
-           (str::cat "ERROR-66-WITH-" map-name "-OPCODE"))
-          (66-error
-           (intern$ 66-error-crux "X86ISA"))
-          (66-error-const
-           (intern$ (str::cat "*" 66-error-crux "-AR*") "X86ISA")))
+	  (66-ok-crux
+	   (str::cat mode-name "-MODE-" map-name "-66-OK"))
+	  (66-ok (intern$ 66-ok-crux "X86ISA"))
+	  (66-ok-const (intern$ (str::cat "*" 66-ok-crux "-AR*") "X86ISA"))
+	  (66-error-crux
+	   (str::cat "ERROR-66-WITH-" map-name "-OPCODE"))
+	  (66-error
+	   (intern$ 66-error-crux "X86ISA"))
+	  (66-error-const
+	   (intern$ (str::cat "*" 66-error-crux "-AR*") "X86ISA")))
 
-       `(define ,name
-          ((opcode        :type (unsigned-byte 8)
-                          "Relevant opcode byte")
-           (prefixes      :type (unsigned-byte #.*prefixes-width*)))
-          :guard (prefixes-p prefixes)
+       `(encapsulate
+	  ()
 
-          :returns (mv
-                    err-flg
-                    (mandatory-prefix
-                     (unsigned-byte-p 8 mandatory-prefix)
-                     :hints
-                     (("goal"
-                       :use ((:instance opr-p-of-prefixes->opr (x prefixes))
-                             (:instance rep-p-of-prefixes->rep (x prefixes)))
-                       :in-theory (e/d (opr-p rep-p)
-                                       (opr-p-of-prefixes->opr
-                                        rep-p-of-prefixes->rep))))))
+	  (define ,name-aux
+	    ((opcode        :type (unsigned-byte 8)
+			    "Relevant opcode byte")
+	     (prefixes      :type (unsigned-byte #.*prefixes-width*)))
+	    :guard (and (prefixes-p prefixes)
+			(aref1 ',compound-opcode-name
+			       ,compound-opcode-const
+			       opcode))
+	    :guard-hints
+	    (("Goal" :in-theory (disable aref1 assoc-equal (tau-system))))
+	    :inline t
 
-          (b* ((compound-opcode?
-                (aref1 ',compound-opcode-name
-                       ,compound-opcode-const
-                       opcode))
-               ((unless compound-opcode?)
-                ;; Return 0 if the opcode is not allowed to have any mandatory
-                ;; prefixes.  In this case, if 66/F3/F2 are present, they assume
-                ;; their normal roles as modifier prefixes.
-                (mv nil 0)))
+	    :returns (mv
+		      err-flg
+		      (mandatory-prefix
+		       (unsigned-byte-p 8 mandatory-prefix)
+		       :hints
+		       (("goal"
+			 :use ((:instance opr-p-of-prefixes->opr (x prefixes))
+			       (:instance rep-p-of-prefixes->rep (x prefixes)))
+			 :in-theory (e/d (opr-p rep-p)
+					 (opr-p-of-prefixes->opr
+					  rep-p-of-prefixes->rep))))))
 
-            (let ((rep-pfx (the (unsigned-byte 8)
-                             (prefixes->rep prefixes))))
+	    (let ((rep-pfx (the (unsigned-byte 8)
+			     (prefixes->rep prefixes))))
 
-              ;; We first check for F2/F3 prefixes, because they have precedence over
-              ;; 66.
-              (if (not (eql rep-pfx 0))
+	      ;; We first check for F2/F3 prefixes, because they have precedence over
+	      ;; 66.
+	      (if (not (eql rep-pfx 0))
 
-                  (if (or (and (equal rep-pfx  #.*mandatory-f3h*)
-                               (aref1 ',F3-ok ,F3-ok-const opcode))
-                          (and
-                           (equal rep-pfx #.*mandatory-f2h*)
-                           (aref1 ',F2-ok ,F2-ok-const opcode)))
+		  (if (or (and (equal rep-pfx  #.*mandatory-f3h*)
+			       (aref1 ',F3-ok ,F3-ok-const opcode))
+			  (and
+			   (equal rep-pfx #.*mandatory-f2h*)
+			   (aref1 ',F2-ok ,F2-ok-const opcode)))
 
-                      ;; If the opcode is allowed to have F2/F3, then rep-pfx is the
-                      ;; mandatory-prefix.
+		      ;; If the opcode is allowed to have F2/F3, then rep-pfx is the
+		      ;; mandatory-prefix.
 
-                      (mv nil rep-pfx)
+		      (mv nil rep-pfx)
 
-                    ;; If F2/F3 is used with an opcode that does not support these
-                    ;; prefixes as mandatory prefixes, then we look whether the use
-                    ;; of these prefixes with this opcode causes an error.
+		    ;; If F2/F3 is used with an opcode that does not support these
+		    ;; prefixes as mandatory prefixes, then we look whether the use
+		    ;; of these prefixes with this opcode causes an error.
 
-                    (if (or (and (equal rep-pfx #.*mandatory-f3h*)
-                                 (not (aref1 ',F3-error ,F3-error-const opcode)))
-                            (and (equal rep-pfx #.*mandatory-f2h*)
-                                 (not (aref1 ',F2-error ,F2-error-const opcode))))
+		    (if (or (and (equal rep-pfx #.*mandatory-f3h*)
+				 (not (aref1 ',F3-error ,F3-error-const opcode)))
+			    (and (equal rep-pfx #.*mandatory-f2h*)
+				 (not (aref1 ',F2-error ,F2-error-const opcode))))
 
-                        ;; F2/F3 are used as modifier prefixes.
+			;; F2/F3 are used as modifier prefixes.
 
-                        (mv nil 0)
+			(mv nil 0)
 
-                      (mv (list :illegal-use-of-mandatory-prefix rep-pfx
-                                :opcode ,map opcode)
-                          0)))
+		      (mv (list :illegal-use-of-mandatory-prefix rep-pfx
+				:opcode ,map opcode)
+			  0)))
 
-                ;; If F2/F3 are not present, then we check for 66 prefix.
-                (let ((opr-pfx  (the (unsigned-byte 8)
-                                  (prefixes->opr prefixes))))
+		;; If F2/F3 are not present, then we check for 66 prefix.
+		(let ((opr-pfx  (the (unsigned-byte 8)
+				  (prefixes->opr prefixes))))
 
-                  (if (not (eql opr-pfx 0))
+		  (if (not (eql opr-pfx 0))
 
-                      (if (aref1 ',66-ok ,66-ok-const opcode)
+		      (if (aref1 ',66-ok ,66-ok-const opcode)
 
-                          (mv nil opr-pfx)
+			  (mv nil opr-pfx)
 
-                        ;; If 66 is used with an opcode that does not support it
-                        ;; as a mandatory prefix, then we look whether the use of
-                        ;; this prefixes with this opcode causes an error.
+			;; If 66 is used with an opcode that does not support it
+			;; as a mandatory prefix, then we look whether the use of
+			;; this prefixes with this opcode causes an error.
 
-                        (if (not (aref1 ',66-error ,66-error-const opcode))
+			(if (not (aref1 ',66-error ,66-error-const opcode))
 
-                            ;; 66 is used as a modifier prefix.
-                            (mv nil 0)
+			    ;; 66 is used as a modifier prefix.
+			    (mv nil 0)
 
-                          (mv (list :illegal-use-of-mandatory-prefix opr-pfx
-                                    :opcode ,map opcode)
-                              0)))
+			  (mv (list :illegal-use-of-mandatory-prefix opr-pfx
+				    :opcode ,map opcode)
+			      0)))
 
-                    ;; No mandatory prefixes present.
-                    (mv nil 0))))))))))
+		    ;; No mandatory prefixes present.
+		    (mv nil 0))))))
+
+	  (define ,name
+	    ((opcode        :type (unsigned-byte 8)
+			    "Relevant opcode byte")
+	     (prefixes      :type (unsigned-byte #.*prefixes-width*)))
+	    :guard (prefixes-p prefixes)
+	    :inline t
+
+	    :returns (mv
+		      err-flg
+		      (mandatory-prefix
+		       (unsigned-byte-p 8 mandatory-prefix)
+		       :hints
+		       (("goal" :in-theory (e/d () (unsigned-byte-p))))))
+
+	    (b* ((compound-opcode?
+		  (aref1 ',compound-opcode-name
+			 ,compound-opcode-const
+			 opcode))
+		 ((unless compound-opcode?)
+		  ;; Return 0 if the opcode is not allowed to have any mandatory
+		  ;; prefixes.  In this case, if 66/F3/F2 are present, they assume
+		  ;; their normal roles as modifier prefixes.
+		  (mv nil 0)))
+
+	      (,name-aux opcode prefixes)))))))
 
   (make-event
    `(progn
@@ -1635,30 +3184,9 @@
       ,(gen-compute-mandatory-prefix-fn #ux0F_3A 64)
       ,(gen-compute-mandatory-prefix-fn #ux0F_3A 32)))
 
-  (define compute-mandatory-prefix-for-two-byte-opcode
-    ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
-     (opcode        :type (unsigned-byte 8)
-                    "Second byte of a two-byte opcode")
-     (prefixes      :type (unsigned-byte #.*prefixes-width*)))
-
-    :inline t
-    :no-function t
-    :returns (mv
-              err-flg
-              (mandatory-prefix
-               (unsigned-byte-p 8 mandatory-prefix)
-               :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))))
-    :short "Two-byte Opcodes: picks the appropriate SIMD prefix as the
-    mandatory prefix, if applicable"
-
-    (case proc-mode
-      (#.*64-bit-mode*
-       (64-bit-compute-mandatory-prefix-for-two-byte-opcode
-        opcode prefixes))
-      (otherwise
-       ;; TODO: Other modes.
-       (32-bit-compute-mandatory-prefix-for-two-byte-opcode
-        opcode prefixes))))
+  ;; Note: for two-byte opcodes, determining and fetching the modr/m and
+  ;; mandatory prefix bytes is intertwined.  See
+  ;; two-byte-opcode-modr/m-and-mandatory-prefix.
 
   (define compute-mandatory-prefix-for-0F-38-three-byte-opcode
     ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
@@ -1667,19 +3195,19 @@
     :inline t
     :no-function t
     :returns (mv
-              err-flg
-              (mandatory-prefix
-               (unsigned-byte-p 8 mandatory-prefix)
-               :hints (("Goal" :in-theory (e/d ()
-                                               (unsigned-byte-p))))))
+	      err-flg
+	      (mandatory-prefix
+	       (unsigned-byte-p 8 mandatory-prefix)
+	       :hints (("Goal" :in-theory (e/d ()
+					       (unsigned-byte-p))))))
 
     (case proc-mode
       (#.*64-bit-mode*
        (64-bit-compute-mandatory-prefix-for-0F-38-three-byte-opcode
-        opcode prefixes))
+	opcode prefixes))
       (otherwise
        (32-bit-compute-mandatory-prefix-for-0F-38-three-byte-opcode
-        opcode prefixes))))
+	opcode prefixes))))
 
   (define compute-mandatory-prefix-for-0F-3A-three-byte-opcode
     ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
@@ -1689,37 +3217,37 @@
     :inline t
     :no-function t
     :returns (mv err-flg
-                 (mandatory-prefix
-                  (unsigned-byte-p 8 mandatory-prefix)
-                  :hints (("Goal" :in-theory (e/d ()
-                                                  (unsigned-byte-p))))))
+		 (mandatory-prefix
+		  (unsigned-byte-p 8 mandatory-prefix)
+		  :hints (("Goal" :in-theory (e/d ()
+						  (unsigned-byte-p))))))
 
     (case proc-mode
       (#.*64-bit-mode*
        (64-bit-compute-mandatory-prefix-for-0F-3A-three-byte-opcode
-        opcode prefixes))
+	opcode prefixes))
       (otherwise
        (32-bit-compute-mandatory-prefix-for-0F-3A-three-byte-opcode
-        opcode prefixes))))
+	opcode prefixes))))
 
   (define compute-mandatory-prefix-for-three-byte-opcode
     ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
      (second-escape-byte :type (unsigned-byte 8)
-                         "Second byte of the three-byte opcode; either
-                         @('0x38') or @('0x3A')")
+			 "Second byte of the three-byte opcode; either
+			 @('0x38') or @('0x3A')")
      (opcode             :type (unsigned-byte 8)
-                         "Third byte of the three-byte opcode")
+			 "Third byte of the three-byte opcode")
      (prefixes           :type (unsigned-byte #.*prefixes-width*)))
 
     :inline t
     :no-function t
     :guard (or (equal second-escape-byte #x38)
-               (equal second-escape-byte #x3A))
+	       (equal second-escape-byte #x3A))
 
     :returns (mv err-flg
-                 (mandatory-prefix
-                  (unsigned-byte-p 8 mandatory-prefix)
-                  :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))))
+		 (mandatory-prefix
+		  (unsigned-byte-p 8 mandatory-prefix)
+		  :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))))
 
     :short "Three-byte opcodes: picks the appropriate SIMD prefix as the
     mandatory prefix, if applicable"
@@ -1727,1511 +3255,617 @@
     (case second-escape-byte
       (#x38
        (compute-mandatory-prefix-for-0F-38-three-byte-opcode
-        proc-mode opcode prefixes))
+	proc-mode opcode prefixes))
       (#x3A
        (compute-mandatory-prefix-for-0F-3A-three-byte-opcode
-        proc-mode opcode prefixes))
+	proc-mode opcode prefixes))
       (otherwise
        (mv nil 0)))))
 
-;; ----------------------------------------------------------------------
+(defsection two-byte-opcodes-mandatory-prefixes-and-modr/m-computation
 
-(defsection ModR/M-detection
+  :parents (mandatory-prefixes-computation ModR/M-decoding ModR/M-detection)
 
-  :short "Utilities to detect which opcodes need a ModR/M byte"
+  :short "Functions to pick legal mandatory prefixes and fetch the modr/m byte
+  for two-byte opcodes"
 
-  (local (xdoc::set-default-parents ModR/M-detection))
+  :long "<p>For all non-AVX opcodes, we compute the mandatory prefix first and
+ then based on the mandatory prefix, we determine if a modr/m byte is required.
+ This order works for one- and three-byte (both @('0x0F_38') and @('0x0F_3A'))
+ opcodes, but not for two-byte opcodes.</p>
 
-  (define any-operand-with-prop?-aux ((prop   keywordp)
-                                      (op_num :type (integer 0 *))
-                                      (op_list alistp))
-    :guard (or (equal prop :modr/m?)
-               (equal prop :vex?))
+ <p>Specifically, for two-byte simple opcodes without extensions (i.e., those
+ NOT in @('*opcode-extensions-by-group-number*')) and for compound opcodes, the
+ above order works, but for simple opcodes with extensions, determining the
+ mandatory prefix can hinge on the modr/m byte's fields.  In that case, we need
+ to fetch the modr/m byte before we can determine the right mandatory
+ prefix. See @(tsee two-byte-opcode-decode-and-execute) for details.</p>"
 
-    :short "Returns @('t') if at least one operand of a basic simple
-  opcode (see @(see basic-simple-cell-p)) requires a @('ModR/M') byte or a
-  @('VEX') prefix, depending on the value of @('prop')"
-    ;; Example inputs are PROP = :MODR/M?, OP_NUM = 2, and OP_LIST = '((E b) (G
-    ;; b)), extracted from '("ADD" 2 (E b) (G b)) entry in the
-    ;; *ONE-BYTE-OPCODE-MAP-LST* table.  Note that only the uppercase letters
-    ;; are used here (e.g. E and G in the example inputs just above), while the
-    ;; lowercase letters are ignored.
-    (b* (((when (not (equal (len op_list) op_num)))
-          (er hard? "Expected length of ~x0 was ~x1." op_list op_num)))
-      (if (zp op_num)
-          nil
-        (b* ((char (caar op_list))
-             (this-opcode-prop?
-              (cdr (assoc-equal prop
-                                (cdr (assoc-equal
-                                      char
-                                      *Z-addressing-method-info*)))))
-             ((when this-opcode-prop?)
-              ;; Early out if this operand requires a ModR/M byte or VEX
-              ;; prefix.
-              t))
-          (any-operand-with-prop?-aux prop (1- op_num) (cdr op_list))))))
+  (local (xdoc::set-default-parents
+	  two-byte-opcodes-mandatory-prefixes-and-modr/m-computation))
 
-  (define any-operand-with-prop? ((prop keywordp)
-                                  (cell true-listp))
+  (define prefix-in-desc-list? ((group-num (member-equal group-num *group-numbers*)))
+    :short "Do opcodes under @('group-num') require a mandatory prefix?"
+    (b* ((desc-list (cdr (assoc-equal group-num *opcode-extensions-by-group-number*)))
+	 (desc-list-keys (acl2::flatten (strip-cars desc-list))))
+      (and (member-equal :prefix (strip-cars desc-list-keys)) t)))
 
-    :guard (or (equal prop :modr/m?)
-               (equal prop :vex?))
+  (define compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+    ((row          true-list-listp)
+     (64-bit-modep booleanp))
 
-    :short "Returns @('t') if at least one operand of a basic simple
-  opcode requires a @('ModR/M') byte or a @('VEX') prefix"
-    (b* (((when (not (basic-simple-cell-p cell)))
-          (er hard? 'any-operand-with-prop?
-              "Cell expected to be a basic-simple-cell-p: ~x0."
-              cell))
-         ((when (member-equal (car cell)
-                              *simple-cells-standalone-legal-keywords*))
-          0)
-         ((when (< (len cell) 2))
-          (er hard? 'any-operand-with-prop?
-              "Len of column info field is < 2: ~x0."
-              cell))
-         (op_num (nth 1 cell))
-         ((when (not (natp op_num)))
-          (er hard? 'any-operand-with-prop?
-              "We expected an op_num: ~x0." cell))
-         ((when (and (eq prop :modr/m?)
-                     (member-eq :1a cell)))
-          ;; [Rob Sumners] modr/m byte is used in this case for processing
-          ;; opcode extensions.
-          1)
-         (op_list
-          ;; Need the "take" here to throw out superscripts like :1a,
-          ;; etc.
-          (take op_num (nthcdr 2 cell)))
-         ((when (not (alistp op_list)))
-          (er hard? 'any-operand-with-prop?
-              "We expected an op_list: ~x0." cell))
-         (prop? (any-operand-with-prop?-aux prop op_num op_list)))
-      (acl2::bool->bit prop?)))
-
-  (define any-operand-with-prop-for-simple-cells? ((prop  keywordp)
-                                                   (cells true-list-listp))
-
-    :guard (or (equal prop :modr/m?)
-               (equal prop :vex?))
-
-    :short "Returns @('t') if at least cell of a @(see
-  basic-simple-cells-p) requires a @('ModR/M') byte or a @('VEX') prefix"
-    ;; This function is only called by compute-prop-for-a-simple-cell.
-    (if (or (not (basic-simple-cells-p cells))
-            (endp cells))
-        nil
-      (or (any-operand-with-prop? prop (car cells))
-          (any-operand-with-prop-for-simple-cells? prop (cdr cells)))))
-
-  (define compute-prop-for-a-simple-cell ((prop keywordp)
-                                          (cell true-listp))
-    :short "Returns @('1') if a <i>simple</i> opcode requires a
-  @('ModR/M') byte or a @('VEX') prefix"
-    :long "<p>We call an opcode <i>simple</i> if it satisfies @(see
-  simple-cell-p).</p>"
-
-    :guard (or (equal prop :modr/m?)
-               (equal prop :vex?))
-
-    :guard-hints (("Goal" :in-theory (e/d (simple-cell-p) ())))
-
-    ;; Example invocations:
-    ;; (compute-prop-for-a-simple-cell :modr/m? '("ADD" 2 (E b)  (G b)))
-    ;; (compute-prop-for-a-simple-cell :modr/m? '(:2-byte-escape))
-    ;; (compute-prop-for-a-simple-cell :modr/m? '(:ALT
-    ;;                                            (("VPMOVZXBW" 2 (V x)  (U x))
-    ;;                                             ("VPMOVZXBW" 2 (V x)  (M q)))))
-
-    (cond ((not (simple-cell-p cell))
-           (er hard? 'compute-prop-for-a-simple-cell
-               "Use this function for a simple cell only.~%~x0 is not simple!~%" cell))
-          ((basic-simple-cell-p cell)
-           (any-operand-with-prop? prop cell))
-          ((and (equal (car cell) :ALT)
-                (true-listp (cdr cell))
-                (true-list-listp (car (cdr cell))))
-           ;; See comment in *simple-cells-legal-keywords* for a
-           ;; description of :ALT.
-           (any-operand-with-prop-for-simple-cells? prop (car (cdr cell))))
-          ;; We've observed that either all :EXT opcodes have the same prop, or
-          ;; none do.
-          ((and (equal (car cell) :EXT)
-                (opcode-descriptor-list-p (cdr cell))
-                (basic-simple-cells-p (strip-cdrs (cdr cell))))
-           (any-operand-with-prop-for-simple-cells?
-            prop (strip-cdrs (cdr cell))))
-          (t
-           ;; We shouldn't reach here.
-           (er hard? 'compute-prop-for-a-simple-cell
-               "Cell info.: ~x0~%" cell))))
-
-  (define compute-prop-for-an-opcode-cell ((prop keywordp)
-                                           (cell true-listp)
-                                           (64-bit-modep booleanp)
-                                           &key
-                                           ((k) ':NO-PREFIX))
-    :guard (and (or (equal prop :modr/m?)
-                    (equal prop :vex?))
-                (compound-cells-legal-key-p k))
-    :short "Returns @('1') if an opcode requires a @('ModR/M') byte or a
-    @('VEX') prefix"
-
-    :guard-hints (("Goal"
-                   :do-not-induct t
-                   :in-theory (e/d (not-consp-not-assoc-equal
-                                    compound-cells-legal-key-p opcode-cell-p)
-                                   (member-equal not))))
-
-    (cond ((not (opcode-cell-p cell))
-           (er hard? 'compute-prop-for-an-opcode-cell
-               "Ill-formed opcode cell: ~x0~%" cell))
-          ((simple-cell-p cell)
-           (if (equal k ':NO-PREFIX)
-               (compute-prop-for-a-simple-cell prop cell)
-             0))
-          (t ;; Compound cell
-           (b* ((stripped-cell
-                 ;; In 64-bit mode, we ignore the opcode information
-                 ;; that is invalid in 64-bit mode, while in 32-bit
-                 ;; mode, we ignore the opcode information that is valid
-                 ;; only in 64-bit mode.
-                 (if 64-bit-modep
-                     (b* ((no-i64-cell (delete-assoc-equal :i64 cell))
-                          (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
-                       (or o64-cell no-i64-cell))
-                   (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
-                        (i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
-                     (or i64-cell no-o64-cell))))
-                ;; If a stripped cell is compound, then it can only have
-                ;; the following legal keys now:
-                ;; *compound-cells-legal-keys* - '(:i64 :o64)
-                (relevant-simple-cell
-                 (cond
-                  ((compound-cell-p stripped-cell)
-                   ;; The following should produce a simple-cell-p.
-                   (cdr (assoc-equal k stripped-cell)))
-                  (t
-                   ;; Ignore k if stripped-cell is, e.g., a simple-cell-p or nil.
-                   stripped-cell)))
-                (computed-prop
-                 ;; relevant-simple-cell may be nil.  E.g., for
-                 ;; '((:no-prefix . ("PSHUFB"          2 (P q) (Q q)))
-                 ;;   (:66        . ("VPSHUFB"         3 (V x) (H x) (W x))))
-                 ;; looking for :F2 should return 0.
-
-                 ;; Also: in 64-bit mode, for
-                 ;; ((:i64 . ("PUSH ES" 0)))
-                 ;; relevant-simple-cell will be nil.
-                 (if (simple-cell-p relevant-simple-cell)
-                     (compute-prop-for-a-simple-cell prop relevant-simple-cell)
-                   0)))
-             computed-prop))))
-
-  (define compute-prop-for-an-opcode-row ((prop keywordp)
-                                          (row true-list-listp)
-                                          (64-bit-modep booleanp)
-                                          &key
-                                          ((k) ':NO-PREFIX))
-    :guard (and (or (equal prop :modr/m?)
-                    (equal prop :vex?))
-                (compound-cells-legal-key-p k))
-
-    :short "ModR/M byte or VEX prefix detection for an opcode row"
-    :long "<p>This function simply calls @(see compute-prop-for-an-opcode-cell)
-  recursively. It returns a list of 1s and 0s corresponding to the presence or
-  absence of ModR/M byte or VEX prefix (depending on the value of @('prop'),
-  for each opcode in an opcode row of the Intel opcode maps.</p>"
+    :guard-hints (("Goal" :in-theory (e/d (not-consp-not-assoc-equal
+					   opcode-row-p
+					   opcode-cell-p)
+					  (member-equal))))
+    :returns (extensions-info true-listp)
 
     (if (opcode-row-p row)
-        (if (endp row)
-            nil
-          (b* ((cell (car row))
-               (cell-prop
-                (compute-prop-for-an-opcode-cell prop cell 64-bit-modep :k k)))
-            (cons cell-prop
-                  (compute-prop-for-an-opcode-row
-                   prop (cdr row) 64-bit-modep :k k))))
-      (er hard? 'compute-prop-for-an-opcode-row
-          "Ill-formed opcode row: ~x0~%" row)))
 
-  (define compute-prop-for-an-opcode-map ((prop keywordp)
-                                          (map true-listp)
-                                          (64-bit-modep booleanp)
-                                          &key
-                                          ((k) ':NO-PREFIX))
-    :guard (and (or (equal prop :modr/m?)
-                    (equal prop :vex?))
-                (compound-cells-legal-key-p k))
+	(if (endp row)
 
-    :guard-hints (("Goal" :in-theory (e/d (opcode-map-p) ())))
+	    nil
 
-    :short "ModR/M byte or VEX prefix detection for an opcode map"
-    :long "<p>This function simply calls @(see compute-prop-for-an-opcode-row)
-  recursively. It returns a list of 1s and 0s corresponding to the presence or
-  absence of ModR/M byte or VEX prefix, depending on the value of @('prop'),
-  for each opcode in an opcode map.</p>"
+	  (b* ((cell (car row))
+	       (car-cell
+		;; We assume that if cells with *group-numbers* satisfy
+		;; simple-cell-p, then they satisfy basic-simple-cell-p only, and
+		;; if these cells satsify compound-cell-p, then they appear in
+		;; cells with keys :o64 and :i64.
+		(if (and (basic-simple-cell-p cell)
+			 (member-equal (car cell) *group-numbers*))
+		    (car cell)
+		  (if (compound-cell-p cell)
+		      (b* ((stripped-cell
+			    ;; In 64-bit mode, we ignore the opcode
+			    ;; information that is invalid in 64-bit mode,
+			    ;; while in 32-bit mode, we ignore the opcode
+			    ;; information that is valid only in 64-bit
+			    ;; mode.
+			    (if 64-bit-modep
+				(b* ((no-i64-cell (delete-assoc-equal :i64 cell))
+				     (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
+				  (or o64-cell no-i64-cell))
+			      (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
+				   (i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
+				(or i64-cell no-o64-cell)))))
+			(if (and (basic-simple-cell-p stripped-cell)
+				 (member-equal (car stripped-cell) *group-numbers*))
+			    (car stripped-cell)
+			  nil))
+		    nil)))
+	       ((if car-cell)
+		(if (prefix-in-desc-list? car-cell)
+		    (cons 't
+			  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+			   (cdr row) 64-bit-modep))
+		  (cons 'nil
+			(compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+			 (cdr row) 64-bit-modep)))))
+	    (cons 'nil
+		  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+		   (cdr row) 64-bit-modep))))
+
+      (b* ((- (cw "~%compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row:~% ~
+ Ill-formed opcode row: ~x0~%" row)))
+	nil)))
+
+  (define compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+    ((map          true-list-listp)
+     (64-bit-modep booleanp))
+
+    :guard-hints (("Goal" :in-theory (e/d (not-consp-not-assoc-equal
+					   opcode-map-p)
+					  ())))
 
     (if (opcode-map-p map)
-        (if (endp map)
-            nil
-          (b* ((row (car map))
-               (row-prop
-                (compute-prop-for-an-opcode-row prop row 64-bit-modep :k k)))
-            (append
-             row-prop
-             (compute-prop-for-an-opcode-map prop (cdr map) 64-bit-modep :k k))))
-      (er hard? 'compute-prop-for-an-opcode-map
-          "Ill-formed opcode map: ~x0~%" map)))
 
-  (define compute-modr/m-for-vex-encoded-instructions-1
-    ((vex-opcodes true-list-listp)
-     (64-bit-modep booleanp))
+	(if (endp map)
 
-    (if (endp vex-opcodes)
-        nil
-      (b* ((cell (car vex-opcodes)))
-        (cons
-         (compute-prop-for-an-opcode-cell :modr/m? cell 64-bit-modep)
-         (compute-modr/m-for-vex-encoded-instructions-1
-          (cdr vex-opcodes) 64-bit-modep)))))
+	    nil
 
-  (define compute-modr/m-for-vex-encoded-instructions
-    ((vex-map (avx-maps-well-formed-p vex-map t))
-     (64-bit-modep booleanp))
-    :guard-hints (("Goal" :in-theory (e/d (avx-maps-well-formed-p) ())))
+	  (append
+	   (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+	    (car map) 64-bit-modep)
+	   (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	    (cdr map) 64-bit-modep)))
 
-    (if (atom vex-map)
-        nil
-      (b* ((row (car vex-map))
-           (opcode (car row))
-           (cells-pre (cdr row))
-           ((unless (alistp cells-pre))
-            (er hard? 'compute-modr/m-for-vex-encoded-instructions
-                "Ill-formed VEX opcode row (it's not alistp): ~x0~%" row))
-           (cells (acl2::flatten (strip-cdrs cells-pre)))
-           ((unless (true-list-listp cells))
-            (er hard? 'compute-modr/m-for-vex-encoded-instructions
-                "Ill-formed VEX opcode row (it's not true-list-listp): ~x0~%" row))
-           ;; (- (cw "~% Cells: ~p0 ~%" cells))
-           )
-        (cons
-         (cons opcode
-               (list (compute-modr/m-for-vex-encoded-instructions-1 cells 64-bit-modep)))
-         (compute-modr/m-for-vex-encoded-instructions
-          (cdr vex-map) 64-bit-modep))))))
-
-;; ----------------------------------------------------------------------
-
-(defsection ModR/M-decoding
-
-  :short "Functions to detect and decode ModR/M bytes"
-
-  (local (xdoc::set-default-parents ModR/M-decoding))
-
-  ;;  ModR/M Arrays for One-byte Opcode Map:
-  (make-event
-   ;; For 64-bit mode:
-   (b* ((precomputed-table
-         '(1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
-             1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
-             1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
-             1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 1 0 0 0 0 0 1 0 1 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 0 1 1 1 1 1 1 1 1 1 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 0 0 0 0 1 1 0 0 0 0 0 0 0 0
-             1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 1 1 0 0 0 0 0 0 1 1))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *one-byte-opcode-map-lst* t :k :NO-PREFIX))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-one-byte-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-one-byte-has-modr/m-ar*
-        (list-to-array '64-bit-mode-one-byte-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit/Compatibility Modes:
-   (b* ((precomputed-table
-         '(1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
-             1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
-             1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
-             1 1 1 1 0 0 0 0 1 1 1 1 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 1 1 0 0 0 0 0 1 0 1 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 0 0 1 1 1 1 0 0 0 0 0 0 0 0
-             1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 1 1 0 0 0 0 0 0 1 1))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *one-byte-opcode-map-lst* nil :k :NO-PREFIX))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-one-byte-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-one-byte-has-modr/m-ar*
-        (list-to-array '32-bit-mode-one-byte-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  ;;  ModR/M Arrays for Two-byte Opcode Map:
-  (make-event
-   ;; For 64-bit mode: (:NO-PREFIX)
-   (b* ((precomputed-table
-         '(1 1 1 1 0 0 0 0 0 0 0 0 0 1 0 0
-             1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 1
-             1 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-             1 1 1 1 1 1 1 1 1 1 1 1 0 0 1 1
-             1 1 1 1 1 1 1 0 1 1 0 0 0 0 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-             0 0 0 1 1 1 0 0 0 0 0 1 1 1 1 1
-             1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1
-             1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0
-             0 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1
-             1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1
-             0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *two-byte-opcode-map-lst* t :k :NO-PREFIX))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-two-byte-no-prefix-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-two-byte-no-prefix-has-modr/m-ar*
-        (list-to-array '64-bit-mode-two-byte-no-prefix-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 64-bit mode: (:66)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 0 0 1 1 1 1 1 1 1 1 1 1 1 1
-             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-             1 0 0 0 1 1 1 0 0 0 0 0 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 1 0 1 1 1 0 0 0 0 0 0 0 0 0
-             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-             0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *two-byte-opcode-map-lst* t :k :66))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-two-byte-66-has-modr/m-ar
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-two-byte-66-has-modr/m-ar*
-        (list-to-array '64-bit-mode-two-byte-66-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 64-bit mode: (:F2)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 1 0 0 0 0 0 0 1 1 1 0 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
-             1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *two-byte-opcode-map-lst* t :k :F2))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-two-byte-F2-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-two-byte-F2-has-modr/m-ar*
-        (list-to-array '64-bit-mode-two-byte-F2-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 64-bit mode: (:F3)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
-             1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 1 0 0 0 1 1 0 0
-             0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *two-byte-opcode-map-lst* t :k :F3))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-two-byte-F3-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-two-byte-F3-has-modr/m-ar*
-        (list-to-array '64-bit-mode-two-byte-F3-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit mode: (:NO-PREFIX)
-   (b* ((precomputed-table
-         '(1 1 1 1 0 0 0 0 0 0 0 0 0 1 0 0
-             1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 1
-             1 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-             1 1 1 1 1 1 1 1 1 1 1 1 0 0 1 1
-             1 1 1 1 1 1 1 0 1 1 0 0 0 0 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-             0 0 0 1 1 1 0 0 0 0 0 1 1 1 1 1
-             1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1
-             1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0
-             0 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1
-             1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1
-             0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *two-byte-opcode-map-lst* nil :k :NO-PREFIX))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-two-byte-no-prefix-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-two-byte-no-prefix-has-modr/m-ar*
-        (list-to-array '32-bit-mode-two-byte-no-prefix-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit mode: (:66)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 0 0 1 1 1 1 1 1 1 1 1 1 1 1
-             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-             1 0 0 0 1 1 1 0 0 0 0 0 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 1 0 1 1 1 0 0 0 0 0 0 0 0 0
-             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-             0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *two-byte-opcode-map-lst* nil :k :66))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-two-byte-66-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-two-byte-66-has-modr/m-ar*
-        (list-to-array '32-bit-mode-two-byte-66-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit mode: (:F2)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 1 0 0 0 0 0 0 1 1 1 0 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
-             1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *two-byte-opcode-map-lst* nil :k :F2))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-two-byte-F2-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-two-byte-F2-has-modr/m-ar*
-        (list-to-array '32-bit-mode-two-byte-F2-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit mode: (:F3)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
-             1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 1 0 0 0 1 1 0 0
-             0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *two-byte-opcode-map-lst* nil :k :F3))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-two-byte-F3-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-two-byte-F3-has-modr/m-ar*
-        (list-to-array '32-bit-mode-two-byte-F3-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  ;;  ModR/M Arrays for the first Three-byte Opcode Map:
-  (make-event
-   ;; For 64-bit mode: (:NO-PREFIX)
-   (b* ((precomputed-table
-         '(1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 1 1 1 1 1 1 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table
-         (compute-prop-for-an-opcode-map
-          :modr/m?
-          *0F-38-three-byte-opcode-map-lst* t :k :NO-PREFIX))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-0f-38-three-byte-no-prefix-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-0f-38-three-byte-no-prefix-has-modr/m-ar*
-        (list-to-array '64-bit-mode-0f-38-three-byte-no-prefix-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 64-bit mode: (:66)
-   (b* ((precomputed-table
-         '(1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0
-             1 0 0 0 1 1 0 1 0 0 0 0 1 1 1 0
-             1 1 1 1 1 1 0 0 1 1 1 1 0 0 0 0
-             1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1
-             1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-38-three-byte-opcode-map-lst* t :k :66))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-0f-38-three-byte-66-has-modr/m-ar
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-0f-38-three-byte-66-has-modr/m-ar*
-        (list-to-array '64-bit-mode-0f-38-three-byte-66-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 64-bit mode: (:F2)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-38-three-byte-opcode-map-lst* t :k :F2))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-0f-38-three-byte-F2-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-0f-38-three-byte-F2-has-modr/m-ar*
-        (list-to-array '64-bit-mode-0f-38-three-byte-F2-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 64-bit mode: (:F3)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-38-three-byte-opcode-map-lst* t :k :F3))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-0f-38-three-byte-F3-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-0f-38-three-byte-F3-has-modr/m-ar*
-        (list-to-array '64-bit-mode-0f-38-three-byte-F3-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit mode: (:NO-PREFIX)
-   (b* ((precomputed-table
-         '(1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 1 1 1 1 1 1 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-38-three-byte-opcode-map-lst* nil :k :NO-PREFIX))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-0f-38-three-byte-no-prefix-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-0f-38-three-byte-no-prefix-has-modr/m-ar*
-        (list-to-array '32-bit-mode-0f-38-three-byte-no-prefix-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit mode: (:66)
-   (b* ((precomputed-table
-         '(1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0
-             1 0 0 0 1 1 0 1 0 0 0 0 1 1 1 0
-             1 1 1 1 1 1 0 0 1 1 1 1 0 0 0 0
-             1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1
-             1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-38-three-byte-opcode-map-lst* nil :k :66))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-0f-38-three-byte-66-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-0f-38-three-byte-66-has-modr/m-ar*
-        (list-to-array '32-bit-mode-0f-38-three-byte-66-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit mode: (:F2)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-38-three-byte-opcode-map-lst* nil :k :F2))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-0f-38-three-byte-F2-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-0f-38-three-byte-F2-has-modr/m-ar*
-        (list-to-array '32-bit-mode-0f-38-three-byte-F2-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit mode: (:F3)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-38-three-byte-opcode-map-lst* nil :k :F3))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-0f-38-three-byte-F3-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-0f-38-three-byte-F3-has-modr/m-ar*
-        (list-to-array '32-bit-mode-0f-38-three-byte-F3-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  ;;  ModR/M Arrays for the second Three-byte Opcode Map:
-  (make-event
-   ;; For 64-bit mode: (:NO-PREFIX)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-3A-three-byte-opcode-map-lst* t :k :NO-PREFIX))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-0f-3A-three-byte-no-prefix-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-0f-3A-three-byte-no-prefix-has-modr/m-ar*
-        (list-to-array '64-bit-mode-0f-3A-three-byte-no-prefix-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 64-bit mode: (:66)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1
-             0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0
-             1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 0 1 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-3A-three-byte-opcode-map-lst* t :k :66))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-0f-3A-three-byte-66-has-modr/m-ar
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-0f-3A-three-byte-66-has-modr/m-ar*
-        (list-to-array '64-bit-mode-0f-3A-three-byte-66-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 64-bit mode: (:F2)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table
-         (compute-prop-for-an-opcode-map
-          :modr/m?
-          *0F-3A-three-byte-opcode-map-lst* t :k :F2))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-0f-3A-three-byte-F2-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-0f-3A-three-byte-F2-has-modr/m-ar*
-        (list-to-array
-         '64-bit-mode-0f-3A-three-byte-F2-has-modr/m
-         (ints-to-booleans (quote ,computed-table))))))
-
-  (make-event
-   ;; For 64-bit mode: (:F3)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-3A-three-byte-opcode-map-lst* t :k :F3))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '64-bit-mode-0f-3A-three-byte-F3-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *64-bit-mode-0f-3A-three-byte-F3-has-modr/m-ar*
-        (list-to-array '64-bit-mode-0f-3A-three-byte-F3-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit mode: (:NO-PREFIX)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-3A-three-byte-opcode-map-lst* nil :k :NO-PREFIX))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-0f-3A-three-byte-no-prefix-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-0f-3A-three-byte-no-prefix-has-modr/m-ar*
-        (list-to-array '32-bit-mode-0f-3A-three-byte-no-prefix-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit mode: (:66)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1
-             0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0
-             1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 0 1 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-3A-three-byte-opcode-map-lst* nil :k :66))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-0f-3A-three-byte-66-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-0f-3A-three-byte-66-has-modr/m-ar*
-        (list-to-array '32-bit-mode-0f-3A-three-byte-66-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit mode: (:F2)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-3A-three-byte-opcode-map-lst* nil :k :F2))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-0f-3A-three-byte-F2-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-0f-3A-three-byte-F2-has-modr/m-ar*
-        (list-to-array '32-bit-mode-0f-3A-three-byte-F2-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-  (make-event
-   ;; For 32-bit mode: (:F3)
-   (b* ((precomputed-table
-         '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        (computed-table (compute-prop-for-an-opcode-map
-                         :modr/m?
-                         *0F-3A-three-byte-opcode-map-lst* nil :k :F3))
-        ((unless (equal precomputed-table computed-table))
-         (er hard '32-bit-mode-0f-3A-three-byte-F3-has-modr/m
-             "Error: Incorrect ModR/M info computed!")))
-     `(defconst *32-bit-mode-0f-3A-three-byte-F3-has-modr/m-ar*
-        (list-to-array '32-bit-mode-0f-3A-three-byte-F3-has-modr/m
-                       (ints-to-booleans
-                        (quote ,computed-table))))))
-
-
-  (with-output
-    :off :all
-    :gag-mode nil
-
-    (progn
-
-      (define 64-bit-mode-one-byte-opcode-ModR/M-p
-        ((opcode :type (unsigned-byte 8)))
-        :inline t
-        :no-function t
-        :short "Returns a boolean saying whether, in 64-bit mode,
-            the given opcode in the one-byte opcode map expects a ModR/M byte."
-        :returns (bool booleanp :hyp (n08p opcode))
-        (aref1 '64-bit-mode-one-byte-has-modr/m
-               *64-bit-mode-one-byte-has-modr/m-ar* opcode))
-
-      (define 32-bit-mode-one-byte-opcode-ModR/M-p
-        ((opcode :type (unsigned-byte 8)))
-        :inline t
-        :no-function t
-        :short "Returns a boolean saying whether, in 32-bit mode,
-            the given opcode in the one-byte opcode map expects a ModR/M byte."
-        :returns (bool booleanp :hyp (n08p opcode))
-        (aref1 '32-bit-mode-one-byte-has-modr/m
-               *32-bit-mode-one-byte-has-modr/m-ar* opcode))
-
-      (define one-byte-opcode-ModR/M-p
-        ((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
-         (opcode           :type (unsigned-byte 8)))
-        :short "Returns @('t') if a one-byte opcode requires a ModR/M byte;
-        @('nil') otherwise"
-        :inline t
-        :no-function t
-        :returns (bool booleanp :hyp (n08p opcode))
-        (if (equal proc-mode #.*64-bit-mode*)
-            (64-bit-mode-one-byte-opcode-ModR/M-p opcode)
-          ;; TODO: Other modes eventually.
-          (32-bit-mode-one-byte-opcode-ModR/M-p opcode)))
-
-      (define 64-bit-mode-two-byte-opcode-ModR/M-p
-        ((mandatory-prefix :type (unsigned-byte 8))
-         (opcode           :type (unsigned-byte 8)
-                           "Second byte of the two-byte opcode"))
-        :short "Returns a boolean saying whether, in 64-bit mode,
-            the given opcode in the two-byte opcode map expects a ModR/M byte."
-        :returns (bool booleanp :hyp (n08p opcode))
-
-        (case mandatory-prefix
-
-          (#.*mandatory-66h*
-           (aref1 '64-bit-mode-two-byte-66-has-modr/m
-                  *64-bit-mode-two-byte-66-has-modr/m-ar* opcode))
-
-          (#.*mandatory-F3h*
-           (aref1 '64-bit-mode-two-byte-F3-has-modr/m
-                  *64-bit-mode-two-byte-F3-has-modr/m-ar* opcode))
-
-          (#.*mandatory-F2h*
-           (aref1 '64-bit-mode-two-byte-F2-has-modr/m
-                  *64-bit-mode-two-byte-F2-has-modr/m-ar* opcode))
-
-          (t
-           ;; Applies to simple cells as well as NP compound cells.
-           (aref1 '64-bit-mode-two-byte-no-prefix-has-modr/m
-                  *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))))
-
-      (define 32-bit-mode-two-byte-opcode-ModR/M-p
-        ((mandatory-prefix :type (unsigned-byte 8))
-         (opcode           :type (unsigned-byte 8)
-                           "Second byte of the two-byte opcode"))
-        :short "Returns a boolean saying whether, in 32-bit mode,
-            the given opcode in the two-byte opcode map expects a ModR/M byte."
-        :returns (bool booleanp :hyp (n08p opcode))
-
-        (case mandatory-prefix
-
-          (#.*mandatory-66h*
-           (aref1 '32-bit-mode-two-byte-66-has-modr/m
-                  *32-bit-mode-two-byte-66-has-modr/m-ar* opcode))
-
-          (#.*mandatory-F3h*
-           (aref1 '32-bit-mode-two-byte-F3-has-modr/m
-                  *32-bit-mode-two-byte-F3-has-modr/m-ar* opcode))
-
-          (#.*mandatory-F2h*
-           (aref1 '32-bit-mode-two-byte-F2-has-modr/m
-                  *32-bit-mode-two-byte-F2-has-modr/m-ar* opcode))
-
-          (t
-           ;; Applies to simple cells as well as NP compound cells.
-           (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
-                  *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))))
-
-      (define two-byte-opcode-ModR/M-p
-        ((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
-         (mandatory-prefix :type (unsigned-byte 8)
-                           "As computed by @(tsee
-                           compute-mandatory-prefix-for-two-byte-opcode)")
-         (opcode           :type (unsigned-byte 8)
-                           "Second byte of the two-byte opcode"))
-        :short "Returns @('t') if a two-byte opcode requires a ModR/M byte;
-        @('nil') otherwise. Doesn't account for AVX/AVX2/AVX512 instructions."
-        :inline t
-        :no-function t
-        :returns (bool booleanp :hyp (n08p opcode))
-
-        (cond ((equal proc-mode #.*64-bit-mode*)
-               (64-bit-mode-two-byte-opcode-ModR/M-p
-                mandatory-prefix opcode))
-              (t
-               ;; TODO: Other modes here eventually.
-               (32-bit-mode-two-byte-opcode-ModR/M-p
-                mandatory-prefix opcode))))
-
-
-      (define 64-bit-mode-0F-38-three-byte-opcode-ModR/M-p
-        ((mandatory-prefix :type (unsigned-byte 8))
-         (opcode   :type (unsigned-byte 8)
-                   "Third byte of the 38 three-byte opcode"))
-        :short "Returns a boolean saying whether, in 64-bit mode, the given
-            opcode in the first three-byte opcode map expects a ModR/M byte."
-        :returns (bool booleanp :hyp (n08p opcode))
-
-        (case mandatory-prefix
-
-          (#.*mandatory-66h*
-           (aref1 '64-bit-mode-0F-38-three-byte-66-has-modr/m
-                  *64-bit-mode-0F-38-three-byte-66-has-modr/m-ar* opcode))
-
-          (#.*mandatory-F3h*
-           (aref1 '64-bit-mode-0F-38-three-byte-F3-has-modr/m
-                  *64-bit-mode-0F-38-three-byte-F3-has-modr/m-ar* opcode))
-
-          (#.*mandatory-F2h*
-           (aref1 '64-bit-mode-0F-38-three-byte-F2-has-modr/m
-                  *64-bit-mode-0F-38-three-byte-F2-has-modr/m-ar* opcode))
-
-          (t
-           ;; Applies to simple cells as well as NP compound cells.
-           (aref1 '64-bit-mode-0F-38-three-byte-no-prefix-has-modr/m
-                  *64-bit-mode-0F-38-three-byte-no-prefix-has-modr/m-ar*
-                  opcode))))
-
-      (define 32-bit-mode-0F-38-three-byte-opcode-ModR/M-p
-        ((mandatory-prefix :type (unsigned-byte 8))
-         (opcode   :type (unsigned-byte 8)
-                   "Third byte of the 38 three-byte opcode"))
-        :short "Returns a boolean saying whether, in 32-bit mode, the given
-            opcode in the first three-byte opcode map expects a ModR/M byte."
-        :returns (bool booleanp :hyp (n08p opcode))
-
-        (case mandatory-prefix
-
-          (#.*mandatory-66h*
-           (aref1 '32-bit-mode-0F-38-three-byte-66-has-modr/m
-                  *32-bit-mode-0F-38-three-byte-66-has-modr/m-ar* opcode))
-
-          (#.*mandatory-F3h*
-           (aref1 '32-bit-mode-0F-38-three-byte-F3-has-modr/m
-                  *32-bit-mode-0F-38-three-byte-F3-has-modr/m-ar* opcode))
-
-          (#.*mandatory-F2h*
-           (aref1 '32-bit-mode-0F-38-three-byte-F2-has-modr/m
-                  *32-bit-mode-0F-38-three-byte-F2-has-modr/m-ar* opcode))
-
-          (t
-           ;; Applies to simple cells as well as NP compound cells.
-           (aref1 '32-bit-mode-0F-38-three-byte-no-prefix-has-modr/m
-                  *32-bit-mode-0F-38-three-byte-no-prefix-has-modr/m-ar*
-                  opcode))))
-
-      (define 64-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
-        ((mandatory-prefix :type (unsigned-byte 8))
-         (opcode   :type (unsigned-byte 8)
-                   "Third byte of the 3A three-byte opcode"))
-        :short "Returns a boolean saying whether, in 64-bit mode, the given
-            opcode in the second three-byte opcode map expects a ModR/M byte."
-        :returns (bool booleanp :hyp (n08p opcode))
-
-        (case mandatory-prefix
-
-          (#.*mandatory-66h*
-           (aref1 '64-bit-mode-0F-3A-three-byte-66-has-modr/m
-                  *64-bit-mode-0F-3A-three-byte-66-has-modr/m-ar* opcode))
-
-          (#.*mandatory-F3h*
-           (aref1 '64-bit-mode-0F-3A-three-byte-F3-has-modr/m
-                  *64-bit-mode-0F-3A-three-byte-F3-has-modr/m-ar* opcode))
-
-          (#.*mandatory-F2h*
-           (aref1 '64-bit-mode-0F-3A-three-byte-F2-has-modr/m
-                  *64-bit-mode-0F-3A-three-byte-F2-has-modr/m-ar* opcode))
-
-          (t
-           ;; Applies to simple cells as well as NP compound cells.
-           (aref1 '64-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m
-                  *64-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m-ar*
-                  opcode))))
-
-      (define 32-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
-        ((mandatory-prefix :type (unsigned-byte 8))
-         (opcode   :type (unsigned-byte 8)
-                   "Third byte of the 3A three-byte opcode"))
-        :short "Returns a boolean saying whether, in 32-bit mode, the given
-            opcode in the second three-byte opcode map expects a ModR/M byte."
-        :returns (bool booleanp :hyp (n08p opcode))
-
-        (case mandatory-prefix
-
-          (#.*mandatory-66h*
-           (aref1 '32-bit-mode-0F-3A-three-byte-66-has-modr/m
-                  *32-bit-mode-0F-3A-three-byte-66-has-modr/m-ar* opcode))
-
-          (#.*mandatory-F3h*
-           (aref1 '32-bit-mode-0F-3A-three-byte-F3-has-modr/m
-                  *32-bit-mode-0F-3A-three-byte-F3-has-modr/m-ar* opcode))
-
-          (#.*mandatory-F2h*
-           (aref1 '32-bit-mode-0F-3A-three-byte-F2-has-modr/m
-                  *32-bit-mode-0F-3A-three-byte-F2-has-modr/m-ar* opcode))
-
-          (t
-           ;; Applies to simple cells as well as NP compound cells.
-           (aref1 '32-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m
-                  *32-bit-mode-0F-3A-three-byte-no-prefix-has-modr/m-ar*
-                  opcode))))
-
-      (define three-byte-opcode-ModR/M-p
-        ((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
-         (mandatory-prefix :type (unsigned-byte 8)
-                           "As computed by @(tsee
-                           compute-mandatory-prefix-for-three-byte-opcode)")
-         (escape-byte      :type (unsigned-byte 8)
-                           "Second byte of the three-byte opcode --- either
-                           @('#x38') or @('#x3A')")
-         (opcode           :type (unsigned-byte 8)
-                           "Third byte of the three-byte opcode"))
-        :short "Returns @('t') if a three-byte opcode requires a ModR/M byte;
-        @('nil') otherwise. Doesn't account for AVX/AVX2/AVX512 instructions."
-        :inline t
-        :no-function t
-        :guard (or (equal escape-byte #x38)
-                   (equal escape-byte #x3A))
-        :returns (bool booleanp :hyp (n08p opcode))
-
-        (cond ((equal escape-byte #x38)
-               (if (equal proc-mode #.*64-bit-mode*)
-                   (64-bit-mode-0F-38-three-byte-opcode-ModR/M-p
-                    mandatory-prefix opcode)
-                 ;; TODO: Other modes here eventually.
-                 (32-bit-mode-0F-38-three-byte-opcode-ModR/M-p
-                  mandatory-prefix opcode)))
-              (t
-               (if (equal proc-mode #.*64-bit-mode*)
-                   (64-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
-                    mandatory-prefix opcode)
-                 ;; TODO: Other modes here eventually.
-                 (32-bit-mode-0F-3A-three-byte-opcode-ModR/M-p
-                  mandatory-prefix opcode)))))))
-
-  ;; ModR/M Detection Check for VEX-encoded instructions:
+      (b* ((- (cw "~%compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map:~% ~
+ Ill-formed opcode map: ~x0~%" map)))
+	nil)))
 
   (local
-   (encapsulate
-     ()
+   (assert-event
+    ;; One-byte opcodes: no extensions needing mandatory prefix
+    ;; Same in 32- and 64-bit modes
+    (b* ((64-bit-one-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *one-byte-opcode-map-lst* t))
+	 (32-bit-one-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *one-byte-opcode-map-lst* nil)))
 
-     (local
-      (defun all-ones-p (lst)
-        (if (atom lst)
-            (equal lst nil)
-          (and (equal (car lst) 1)
-               (all-ones-p (cdr lst))))))
-
-     (local
-      (defun check-vex-map-modr/m-detection (lst 0f-map?)
-        ;; lst: output of compute-modr/m-for-vex-encoded-instructions
-        (if (atom lst)
-            (equal lst nil)
-          (b* ((opcode-info (car lst))
-               ((unless (true-listp opcode-info))
-                nil)
-               (opcode (car opcode-info))
-               (cells  (acl2::flatten (cdr opcode-info))))
-            (if (all-ones-p cells)
-                (check-vex-map-modr/m-detection (cdr lst) 0f-map?)
-              (if 0f-map?
-                  (and (equal opcode #x77)
-                       ;; VZEROALL/VZEROUPPER don't expect a ModR/M.  Everything
-                       ;; else that's VEX-encoded does.
-                       (check-vex-map-modr/m-detection (cdr lst) 0f-map?))
-                nil))))))
-
-     (assert-event
-      ;; Check: VZEROALL/VZEROUPPER are the only VEX-encoded opcodes that do NOT
-      ;; expect a ModR/M byte.
       (and
-       (check-vex-map-modr/m-detection
-        (compute-modr/m-for-vex-encoded-instructions *vex-0F-opcodes*   t)
-        t)
-       (check-vex-map-modr/m-detection
-        (compute-modr/m-for-vex-encoded-instructions *vex-0F38-opcodes*   t)
-        nil)
-       (check-vex-map-modr/m-detection
-        (compute-modr/m-for-vex-encoded-instructions *vex-0F3A-opcodes*   t)
-        nil)
-       (check-vex-map-modr/m-detection
-        (compute-modr/m-for-vex-encoded-instructions *vex-0F-opcodes*   nil)
-        t)
-       (check-vex-map-modr/m-detection
-        (compute-modr/m-for-vex-encoded-instructions *vex-0F38-opcodes*   nil)
-        nil)
-       (check-vex-map-modr/m-detection
-        (compute-modr/m-for-vex-encoded-instructions *vex-0F3A-opcodes*   nil)
-        nil)))))
+       (acl2::all-nils 64-bit-one-byte-lst)
+       (acl2::all-nils 32-bit-one-byte-lst)))))
 
-  (define vex-opcode-ModR/M-p
-    ((vex-prefixes     :type (unsigned-byte 24))
-     (opcode           :type (unsigned-byte 8)))
-    :short "Returns @('t') if a VEX-encoded opcode requires a ModR/M byte;
-        @('nil') otherwise."
-    :inline t
-    :no-function t
-    :returns (bool booleanp)
-    :guard (vex-prefixes-byte0-p vex-prefixes)
-    (if (not (equal opcode #x77))
-        t
-      ;; VZEROALL/VZEROUPPER are the only two VEX-encoded instructions that do
-      ;; not require a ModR/M byte.  These have the opcode #ux0F_77.
-      ;; Also see compute-modr/m-for-vex-encoded-instructions above for more
-      ;; details.
-      (not (vex-prefixes-map-p #x0F vex-prefixes))))
+  (local
+   (assert-event
+    ;; Two-byte opcodes: extensions needing mandatory prefix
+    ;; Same in 32- and 64-bit modes
+    (b* ((64-bit-two-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *two-byte-opcode-map-lst* t))
+	 (32-bit-two-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *two-byte-opcode-map-lst* nil)))
+      (and
+       (not (acl2::all-nils 64-bit-two-byte-lst))
+       (equal 64-bit-two-byte-lst 32-bit-two-byte-lst)))))
 
-  (defbitstruct modr/m-r/m 3)
-  (defbitstruct modr/m-reg 3)
-  (defbitstruct modr/m-mod 2)
+  (defconst *two-byte-opcode-extensions-needing-pfx-ar*
+    (list-to-array
+     'two-byte-opcode-extensions-needing-pfx
+     (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+      *two-byte-opcode-map-lst* t)))
 
-  (defbitstruct modr/m
-    ((r/m modr/m-r/m-p)
-     (reg modr/m-reg-p)
-     (mod modr/m-mod-p))
-    :inline t)
+  (local
+   (assert-event
+    ;; Three-byte opcodes: no extensions need mandatory prefix
+    ;; Same in 32- and 64-bit modes
+    (b* ((64-bit-0f-38-three-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *0F-38-three-byte-opcode-map-lst* t))
+	 (32-bit-0f-38-three-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *0F-38-three-byte-opcode-map-lst* nil))
+	 (64-bit-0f-3a-three-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *0F-38-three-byte-opcode-map-lst* t))
+	 (32-bit-0f-3a-three-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *0F-38-three-byte-opcode-map-lst* nil)))
+      (and
+       (acl2::all-nils 64-bit-0f-38-three-byte-lst)
+       (equal 64-bit-0f-38-three-byte-lst 32-bit-0f-38-three-byte-lst)
+       (acl2::all-nils 64-bit-0f-3A-three-byte-lst)
+       (equal 64-bit-0f-3A-three-byte-lst 32-bit-0f-3A-three-byte-lst)))))
 
-  (defthm return-type-of-ModR/M->r/m-linear
-    (< (ModR/M->r/m modr/m) 8)
-    :hints (("Goal" :in-theory (e/d (ModR/M->r/m) ())))
-    :rule-classes :linear)
+  (define collect-all-vals-of-a-key ((key)
+				     (alst alistp)
+				     (acc true-listp))
+    ;; (collect-all-vals-of-a-key 1 '((1 . a) (2 . b) (1 . c)) nil)
+    ;; '(a c)
+    :returns (lst true-listp)
+    :prepwork
+    ((local
+      (defthm true-listp-flatten
+	(true-listp (acl2::flatten x))
+	:hints (("Goal" :in-theory (e/d (acl2::flatten) ()))))))
+    (b* ((val (cdr (assoc-equal key alst)))
+	 ((unless val)
+	  (if (alistp acc)
+	      (list (acl2::flatten (acl2::rev acc)))
+	    (acl2::rev acc)))
+	 (new-acc (cons val acc))
+	 (new-alst (delete-assoc-equal key alst)))
+      (collect-all-vals-of-a-key key new-alst new-acc)))
 
-  (defthm return-type-of-ModR/M->reg-linear
-    (< (ModR/M->reg modr/m) 8)
-    :hints (("Goal" :in-theory (e/d (ModR/M->reg) ())))
-    :rule-classes :linear)
+  (define delete-all-keys ((key)
+			   (alst alistp))
+    :returns (new-alst alistp :hyp (alistp alst))
+    (if (endp alst)
+	nil
+      (if (assoc-equal key alst)
+	  (delete-all-keys key (delete-assoc-equal key alst))
+	alst))
+    ///
 
-  (defthm return-type-of-ModR/M->mod-linear
-    (< (ModR/M->mod modr/m) 4)
-    :hints (("Goal" :in-theory (e/d (ModR/M->mod modr/m-fix) ())))
-    :rule-classes :linear))
+    (local
+     (defthm len-reduced-by-delete-assoc-equal
+       (implies (and (alistp alst) (assoc-equal key alst))
+		(< (len (delete-assoc-equal key alst))
+		   (len alst)))
+       :hints (("Goal" :in-theory (e/d (delete-assoc-equal) ())))
+       :rule-classes :linear))
 
-;; ----------------------------------------------------------------------
+    (defthm len-reduced-by-delete-all-keys
+      (implies (and (alistp alst) (assoc-equal key alst))
+	       (< (len (delete-all-keys key alst))
+		  (len alst)))))
 
-(defsection SIB-decoding
+  (define insert-elem ((pos natp)
+		       (elem)
+		       (lst true-listp))
+    :returns (new-lst true-listp :hyp (true-listp lst))
+    (append (take pos lst)
+	    (list elem) (nthcdr pos lst)))
 
-  :short "Functions to detect and decode SIB bytes"
+  (define reorder-mand-pfx-vals ((lst true-listp))
+    ;; #x0 #x66 #xF3 #xF2, with nil for filler
+    (b* ((new-lst (if (member-equal #x0 lst)
+		      (insert-elem 0 #x0 (remove-equal #x0 lst))
+		    (insert-elem 0 nil lst)))
+	 (new-lst (if (member-equal #x66 new-lst)
+		      (insert-elem 1 #x66 (remove-equal #x66 new-lst))
+		    (insert-elem 1 nil new-lst)))
+	 (new-lst (if (member-equal #xF3 new-lst)
+		      (insert-elem 2 #xF3 (remove-equal #xF3 new-lst))
+		    (insert-elem 2 nil new-lst)))
+	 (new-lst (if (member-equal #xF2 new-lst)
+		      (insert-elem 2 #xF2 (remove-equal #xF2 new-lst))
+		    (insert-elem 2 nil new-lst))))
+      new-lst))
 
-  (local (xdoc::set-default-parents SIB-decoding))
+  (define collect-vals-of-dup-keys ((alst alistp))
+    :measure (len alst)
+    :prepwork
+    ((local
+      (defthm true-listp-flatten
+	(true-listp (acl2::flatten x))
+	:hints (("Goal" :in-theory (e/d (acl2::flatten) ()))))))
+    (if (or (endp alst) (not (alistp alst)))
+	nil
+      (b* ((key (caar alst))
+	   (vals (collect-all-vals-of-a-key key alst nil))
+	   (vals (list (cons 'mv (reorder-mand-pfx-vals (acl2::flatten vals)))))
+	   ;; (- (cw "~% vals: ~p0 ~%" vals))
+	   ((unless (assoc-equal key alst)) nil)
+	   (new-alst (delete-all-keys key alst)))
+	(cons
+	 (cons key vals)
+	 (collect-vals-of-dup-keys new-alst)))))
 
-  (define x86-decode-SIB-p
-    ((ModR/M :type (unsigned-byte 8))
-     (16-bit-addressp booleanp))
-    :returns (bool booleanp :hyp (n08p ModR/M))
-    :short "Returns a boolean saying whether a SIB byte is expected."
-    :long
-    "<p>
-     This is based on Intel manual, Mar'17, Volume 2, Tables 2-1 and 2-2,
-     as well as AMD manual, Dec'17, Volume 3, Tables A-33 and A-35.
-     When the address size is 32 or 64 bits,
-     Intel Table 2-2 and AMD Table A-35 apply:
-     a SIB byte is expected exactly when
-     ModR/M.mod is not #b11 and ModR/M.r/m is #b100.
-     When the address size is 16 bits, no SIB byte is expected.
-     </p>
-     <p>
-     The second argument of this function says whether
-     the address size is 16 bits or not (i.e. 32 or 64 bits).
-     In 64-bit mode, this argument is always @('nil').
-     In 32-bit mode, this argument may be @('t') or @('nil').
-     </p>"
-    (and (not 16-bit-addressp)
-         (b* ((r/m (modr/m->r/m ModR/M))
-              (mod (modr/m->mod ModR/M)))
-           (and (int= r/m 4)
-                (not (int= mod 3))))))
+  (define gen-mandatory-prefix-for-opcode-extensions-aux
+    ((opcode natp)
+     (desc-list opcode-descriptor-list-p)
+     &key
+     ((escape-bytes natp) '0))
+    :guard-hints (("Goal"
+		   :in-theory (e/d (opcode-descriptor-list-p
+				    opcode-descriptor-p)
+				   ())
+		   :do-not-induct t))
+    :returns (cond-stmt alistp)
 
-  (defbitstruct sib-base  3)
-  (defbitstruct sib-index 3)
-  (defbitstruct sib-scale 2)
+    ;; Borrowed heavily from create-case-dispatch-for-opcode-extensions-aux in
+    ;; dispatch-utils.lisp.  Keep these two in sync.
 
-  (defbitstruct sib
-    ((base  sib-base-p)
-     (index sib-index-p)
-     (scale sib-scale-p))
-    :inline t)
+    (if (endp desc-list)
+	`((t 0))
+      (b* ((opcode-descriptor (car desc-list))
+	   (opcode-identifier (car opcode-descriptor))
+	   ((unless (equal (cdr (assoc-equal :opcode opcode-identifier))
+			   (+ escape-bytes opcode)))
+	    (gen-mandatory-prefix-for-opcode-extensions-aux
+	     opcode (cdr desc-list) :escape-bytes escape-bytes))
+	   ;; (opcode-cell (cdr opcode-descriptor))
+	   (feat        (cdr (assoc-equal :feat opcode-identifier)))
+	   (mode        (cdr (assoc-equal :mode opcode-identifier)))
+	   (reg         (cdr (assoc-equal :reg opcode-identifier)))
+	   (prefix      (cdr (assoc-equal :prefix opcode-identifier)))
+	   (prefix-val  (case prefix
+			  (:66 #x66)
+			  (:F3 #xF3)
+			  (:F2 #xF2)
+			  (t ;; :no-prefix
+			   #x0)))
+	   (mod         (cdr (assoc-equal :mod opcode-identifier)))
+	   (r/m         (cdr (assoc-equal :r/m opcode-identifier)))
+	   (condition
+	    `(and
+	      ,@(and mode
+		     (if (equal mode :o64)
+			 `((equal proc-mode #.*64-bit-mode*))
+		       `((not (equal proc-mode #.*64-bit-mode*)))))
+	      ,@(and feat
+		     `((equal (feature-flags-macro ',feat) 1)))
+	      ,@(and reg
+		     `((equal (modr/m->reg modr/m) ,reg)))
+	      ,@(and mod
+		     (if (equal mod :mem)
+			 `((not (equal (modr/m->mod modr/m) #b11)))
+		       `((equal (modr/m->mod modr/m) #b11))))
+	      ,@(and r/m
+		     `((equal (modr/m->r/m modr/m) ,r/m)))
+	      ;; ,@(and prefix
+	      ;;        `((equal mandatory-prefix ,prefix-val)))
+	      )))
+	(cons `(,condition ,prefix-val)
+	      (gen-mandatory-prefix-for-opcode-extensions-aux
+	       opcode (cdr desc-list) :escape-bytes escape-bytes)))))
 
-  (defthm return-type-of-sib->base-linear
-    (< (sib->base sib) 8)
-    :hints (("Goal" :in-theory (e/d (sib->base) ())))
-    :rule-classes :linear)
+  (define gen-mandatory-prefix-for-opcode-extensions
+    ((opcode natp)
+     (desc-list opcode-descriptor-list-p)
+     &key
+     ((escape-bytes natp) '0))
+    ;; (gen-mandatory-prefix-for-opcode-extensions
+    ;;  #xC7
+    ;;  (acl2::flatten (strip-cdrs *opcode-extensions-by-group-number*))
+    ;;  :escape-bytes
+    ;;  #ux0F_00)
 
-  (defthm return-type-of-sib->index-linear
-    (< (sib->index sib) 8)
-    :hints (("Goal" :in-theory (e/d (sib->index) ())))
-    :rule-classes :linear)
+    (b* ((cond-stmt
+	  (gen-mandatory-prefix-for-opcode-extensions-aux
+	   opcode desc-list :escape-bytes escape-bytes))
+	 (new-cond-stmt
+	  (collect-vals-of-dup-keys cond-stmt)))
+      new-cond-stmt))
 
-  (defthm return-type-of-sib->scale-linear
-    (< (sib->scale sib) 4)
-    :hints (("Goal" :in-theory (e/d (sib->scale sib-fix) ())))
-    :rule-classes :linear))
+  (define gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
+    ((opcode :type (unsigned-byte 9)))
+    :measure (nfix (- 256 opcode))
+
+    (if (and (natp opcode)
+	     (<= opcode 255))
+
+	(if (aref1 'two-byte-opcode-extensions-needing-pfx
+		   *two-byte-opcode-extensions-needing-pfx-ar*
+		   opcode)
+	    (cons
+	     (cons opcode
+		   `((cond
+		      ,@(gen-mandatory-prefix-for-opcode-extensions
+			 opcode
+			 (acl2::flatten (strip-cdrs *opcode-extensions-by-group-number*))
+			 :escape-bytes
+			 #ux0F_00))))
+	     (gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
+	      (1+ opcode)))
+	  (gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
+	   (1+ opcode)))
+
+      nil))
+
+  (make-event
+   `(define compute-mandatory-prefix-for-two-byte-opcode-extensions
+      ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+       (opcode    :type (unsigned-byte 8) "Relevant opcode byte")
+       (prefixes  :type (unsigned-byte #.*prefixes-width*))
+       (modr/m    :type (unsigned-byte 8))
+       x86)
+      :guard
+      ;; We expect this function to be called only for opcodes with simple cells.
+      (case proc-mode
+	(#.*64-bit-mode*
+	 (not (aref1 '64-bit-mode-two-byte-compound-opcodes
+		     *64-bit-mode-two-byte-compound-opcodes-ar*
+		     opcode)))
+	(otherwise
+	 (not (aref1 '32-bit-mode-two-byte-compound-opcodes
+		     *32-bit-mode-two-byte-compound-opcodes-ar*
+		     opcode))))
+
+      :returns
+      (mv err-flg
+	  (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix)))
+
+      :prepwork
+      ((local (in-theory (disable unsigned-byte-p aref1 assoc-equal (tau-system)))))
+
+      (b* (((mv no-pfx-ok 66-pfx-ok f3-pfx-ok f2-pfx-ok)
+	    (case opcode
+	      ,@(gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
+		 0)
+	      (otherwise (mv 0 nil nil nil)))))
+
+	(let ((rep-pfx (prefixes->rep prefixes)))
+	  (if (not (eql rep-pfx 0))
+
+	      (if (or (and (equal rep-pfx #.*mandatory-F3h*)
+			   f3-pfx-ok)
+		      (and (equal rep-pfx #.*mandatory-F2h*)
+			   f2-pfx-ok))
+
+		  ;; If the opcode is allowed to have F2/F3, then rep-pfx is the
+		  ;; mandatory-prefix.
+
+		  (mv nil rep-pfx)
+
+		(mv (list :illegal-use-of-mandatory-prefix rep-pfx
+			  :opcode #x0F opcode)
+		    0))
+
+	    (let ((opr-pfx (prefixes->opr prefixes)))
+
+	      (if (not (eql opr-pfx 0))
+
+		  (if 66-pfx-ok
+
+		      (mv nil opr-pfx)
+
+		    (mv (list :illegal-use-of-mandatory-prefix opr-pfx
+			      :opcode #x0F opcode)
+			0))
+
+		(if no-pfx-ok
+
+		    ;; Okay to have no mandatory prefix.
+		    (mv nil 0)
+
+		  (mv (list :illegal-use-of-mandatory-prefix 0
+			    :opcode #x0F opcode)
+		      0)))))))))
+
+  (define two-byte-compound-opcode-modr/m-and-mandatory-prefix
+    ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+     (opcode    :type (unsigned-byte 8) "Relevant opcode byte")
+     (prefixes  :type (unsigned-byte 52))
+     (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
+     (x86))
+    :enabled t
+    :guard (and (prefixes-p prefixes)
+		(case proc-mode
+		  (#.*64-bit-mode*
+		   (aref1 '64-bit-mode-two-byte-compound-opcodes
+			  *64-bit-mode-two-byte-compound-opcodes-ar*
+			  opcode))
+		  (otherwise
+		   (aref1 '32-bit-mode-two-byte-compound-opcodes
+			  *32-bit-mode-two-byte-compound-opcodes-ar*
+			  opcode))))
+    :returns
+    (mv err-flg
+	(mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
+	modr/m?
+	(modr/m           (unsigned-byte-p 8 modr/m)
+			  :hyp (x86p x86))
+	(new-x86          x86p
+			  :hyp (x86p x86)))
+
+    :prepwork
+    ((local (in-theory (disable unsigned-byte-p aref1 assoc-equal (tau-system)))))
+
+    ;; We first get the mandatory prefix, and based on that, we determine if we
+    ;; need the modr/m byte; if yes, we get it.
+
+    (b* (((mv compound-mand-pfx-error (the (unsigned-byte 8) mand-pfx))
+	  (case proc-mode
+	    (#.*64-bit-mode*
+	     (64-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
+	      opcode prefixes))
+	    (otherwise
+	     (32-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
+	      opcode prefixes))))
+	 ((when compound-mand-pfx-error)
+	  (mv compound-mand-pfx-error 0 nil 0 x86))
+	 (modr/m?
+	  (two-byte-opcode-ModR/M-p proc-mode mand-pfx opcode))
+	 ((mv modr/m-flg (the (unsigned-byte 8) modr/m) x86)
+	  (if modr/m?
+	      (rme08 proc-mode temp-rip #.*cs* :x x86)
+	    (mv nil 0 x86)))
+	 ((when modr/m-flg)
+	  (mv (list :modr/m-byte-read-error modr/m-flg) 0 nil 0 x86)))
+      (mv nil mand-pfx modr/m? modr/m x86))
+
+    ///
+
+    (defthmd two-byte-compound-opcode-modr/m-and-mandatory-prefix.new-x86-rewrite
+      ;; Sanity checking
+      (b* (((mv compound-mand-pfx-error mand-pfx)
+	    (case proc-mode
+	      (#.*64-bit-mode*
+	       (64-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
+		opcode prefixes))
+	      (otherwise
+	       (32-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
+		opcode prefixes)))))
+	(equal (mv-nth
+		4
+		(two-byte-compound-opcode-modr/m-and-mandatory-prefix
+		 proc-mode opcode prefixes temp-rip x86))
+	       (if (and (not compound-mand-pfx-error)
+			(two-byte-opcode-ModR/M-p proc-mode mand-pfx opcode))
+		   (mv-nth 2 (rme08 proc-mode temp-rip #.*cs* :x x86))
+		 x86)))))
+
+  (define two-byte-opcode-modr/m-and-mandatory-prefix
+    ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+     (opcode   :type (unsigned-byte 8) "Relevant opcode byte")
+     (prefixes :type (unsigned-byte 52))
+     (temp-rip :type (signed-byte   #.*max-linear-address-size*))
+     (x86))
+    :guard (prefixes-p prefixes)
+    :enabled t
+    :returns
+    (mv err-flg
+	(mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
+	modr/m?
+	(modr/m           (unsigned-byte-p 8 modr/m)
+			  :hyp (x86p x86))
+	(new-x86          x86p
+			  :hyp (x86p x86)))
+    :prepwork
+    ((local (in-theory (disable aref1 assoc-equal unsigned-byte-p (tau-system)))))
+
+    (b* ((compound-opcode?
+	  (case proc-mode
+	    (#.*64-bit-mode*
+	     (aref1 '64-bit-mode-two-byte-compound-opcodes
+		    *64-bit-mode-two-byte-compound-opcodes-ar*
+		    opcode))
+	    (otherwise
+	     (aref1 '32-bit-mode-two-byte-compound-opcodes
+		    *32-bit-mode-two-byte-compound-opcodes-ar*
+		    opcode))))
+	 ((when compound-opcode?)
+	  (two-byte-compound-opcode-modr/m-and-mandatory-prefix
+	   proc-mode opcode prefixes temp-rip x86))
+
+	 (simple-opcode-modr/m?
+	  (case proc-mode
+	    (#.*64-bit-mode*
+	     (aref1 '64-bit-mode-two-byte-no-prefix-has-modr/m
+		    *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))
+	    (otherwise
+	     (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
+		    *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))))
+	 ((when (not simple-opcode-modr/m?))
+	  ;; If the simple opcode doesn't require a modr/m byte, then it can't
+	  ;; have a mandatory-prefix too (because if it did, it'd be a compound
+	  ;; opcode, and we've already dealt with them at this point).
+	  (mv nil 0 simple-opcode-modr/m? 0 x86))
+	 ((mv modr/m-flg (the (unsigned-byte 8) modr/m) x86)
+	  (rme08 proc-mode temp-rip #.*cs* :x x86))
+	 ((when modr/m-flg)
+	  (mv (list :modr/m-byte-read-error modr/m-flg)
+	      0 simple-opcode-modr/m? 0 x86))
+
+	 ((if (not (aref1 'two-byte-opcode-extensions-needing-pfx
+			  *two-byte-opcode-extensions-needing-pfx-ar*
+			  opcode)))
+	  ;; If the simple opcode requires a modr/m byte but has no modr/m
+	  ;; extensions (i.e., isn't a "Group" opcode belonging in
+	  ;; *opcode-extensions-by-group-number*), then it doesn't require a
+	  ;; mandatory prefix.  In this case, even if the simple opcode has
+	  ;; modr/m extensions, they don't require a mandatory prefix.
+	  (mv nil 0 simple-opcode-modr/m? modr/m x86))
+	 ((mv mand-pfx-err (the (unsigned-byte 8) mand-pfx))
+	  ;; The opcode is simple but its opcode extensions require a mandatory
+	  ;; prefix (for the purpose of disambiguation).  We need the modr/m byte
+	  ;; below because the extensions may also depend on it.  We need x86
+	  ;; below to look up CPUID features, for example.
+	  (compute-mandatory-prefix-for-two-byte-opcode-extensions
+	   proc-mode opcode prefixes modr/m x86)))
+      (mv mand-pfx-err mand-pfx simple-opcode-modr/m? modr/m x86))
+
+    ///
+
+    (defthmd two-byte-opcode-modr/m-and-mandatory-prefix.new-x86-rewrite
+      ;; Sanity checking
+      (b* ((compound-opcode?
+	    (case proc-mode
+	      (#.*64-bit-mode*
+	       (aref1 '64-bit-mode-two-byte-compound-opcodes
+		      *64-bit-mode-two-byte-compound-opcodes-ar*
+		      opcode))
+	      (otherwise
+	       (aref1 '32-bit-mode-two-byte-compound-opcodes
+		      *32-bit-mode-two-byte-compound-opcodes-ar*
+		      opcode))))
+	   (simple-opcode-modr/m?
+	    (case proc-mode
+	      (#.*64-bit-mode*
+	       (aref1 '64-bit-mode-two-byte-no-prefix-has-modr/m
+		      *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))
+	      (otherwise
+	       (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
+		      *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode)))))
+	(equal (mv-nth
+		4
+		(two-byte-opcode-modr/m-and-mandatory-prefix
+		 proc-mode opcode prefixes temp-rip x86))
+	       (cond
+		(compound-opcode?
+		 (mv-nth
+		  4
+		  (two-byte-compound-opcode-modr/m-and-mandatory-prefix
+		   proc-mode opcode prefixes temp-rip x86)))
+		((not simple-opcode-modr/m?)
+		 x86)
+		(t
+		 (mv-nth 2 (rme08 proc-mode temp-rip #.*cs* :x x86)))))))))
 
 ;; ----------------------------------------------------------------------

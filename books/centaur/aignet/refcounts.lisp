@@ -43,16 +43,17 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defstobj-clone aignet-refcounts u32arr :suffix "-COUNTS")
+(defstobj-clone refcounts u32arr :prefix "REFCOUNTS-")
 
-(defsection aignet-refcounts
+(defsection aignet-count-gate-refs
 
-  (defiteration aignet-count-refs (aignet-refcounts aignet)
+  (defiteration aignet-count-gate-refs (aignet-refcounts aignet)
     (declare (xargs :stobjs (aignet-refcounts aignet)
-                    :guard (<= (+ 1 (max-fanin aignet)) (u32-length aignet-refcounts))
+                    :guard (<= (num-fanins aignet) (u32-length aignet-refcounts))
                     :guard-hints ('(:do-not-induct t
                                     :in-theory (enable aignet-idp)))))
     (b* ((id n)
-         (aignet-refcounts (if (<= id (max-fanin aignet))
+         (aignet-refcounts (if (mbt (< id (num-fanins aignet)))
                                (set-u32 id 0 aignet-refcounts)
                              aignet-refcounts)))
       (aignet-case
@@ -64,41 +65,131 @@
                                  aignet-refcounts)))
                 (set-u32 id1 (+ 1 (get-u32 id1 aignet-refcounts))
                              aignet-refcounts))
-       :out (b* ((fid (lit-id (co-id->fanin id aignet))))
-              (set-u32 fid (+ 1 (get-u32 fid aignet-refcounts)) aignet-refcounts))
        :in aignet-refcounts
        :const aignet-refcounts))
     :returns aignet-refcounts
     :index n
-    :last (num-nodes aignet))
+    :last (num-fanins aignet))
 
-  (in-theory (disable aignet-count-refs))
-  (local (in-theory (enable aignet-count-refs)))
+  (in-theory (disable aignet-count-gate-refs))
+  (local (in-theory (enable aignet-count-gate-refs)))
 
-  (defthm aignet-refcounts-sizedp-after-aignet-refcounts-iter
-    (implies (< (node-count (find-max-fanin aignet)) (len aignet-refcounts))
-             (< (node-count (find-max-fanin aignet))
-                (len (aignet-count-refs-iter n aignet-refcounts aignet))))
+  (defthm aignet-refcounts-sizedp-after-aignet-count-gate-refs-iter
+    (implies (< (fanin-count aignet) (len aignet-refcounts))
+             (equal (len (aignet-count-gate-refs-iter n aignet-refcounts aignet))
+                    (len aignet-refcounts)))
     :hints((acl2::just-induct-and-expand
-            (aignet-count-refs-iter n aignet-refcounts aignet)))
-    :rule-classes :linear)
+            (aignet-count-gate-refs-iter n aignet-refcounts aignet))))
 
-  (defthm aignet-refcounts-sizedp-after-aignet-refcounts
-    (implies (< (node-count (find-max-fanin aignet)) (len aignet-refcounts))
-             (< (node-count (find-max-fanin aignet)) (len (aignet-count-refs aignet-refcounts aignet))))
-    :rule-classes :linear)
+  (defthm aignet-refcounts-sizedp-after-aignet-count-gate-refs
+    (implies (< (fanin-count aignet) (len aignet-refcounts))
+             (equal (len (aignet-count-gate-refs aignet-refcounts aignet))
+                    (len aignet-refcounts))))
 
-  (defthm aignet-count-refs-iter-does-not-shrink-refcounts
+  (defthm aignet-count-gate-refs-iter-does-not-shrink-refcounts
     (<= (len aignet-refcounts)
-        (len (aignet-count-refs-iter n aignet-refcounts aignet)))
+        (len (aignet-count-gate-refs-iter n aignet-refcounts aignet)))
     :rule-classes :linear
-    :hints(("Goal" :in-theory (enable aignet-count-refs-iter))))
+    :hints(("Goal" :in-theory (enable aignet-count-gate-refs-iter))))
 
-  (defthm aignet-count-refs-does-not-shrink-refcounts
+  (defthm aignet-count-gate-refs-does-not-shrink-refcounts
     (<= (len aignet-refcounts)
-        (len (aignet-count-refs aignet-refcounts aignet)))
+        (len (aignet-count-gate-refs aignet-refcounts aignet)))
     :rule-classes :linear)
 
-  (fty::deffixequiv aignet-count-refs-iter :args ((aignet aignet)))
-  (fty::deffixequiv aignet-count-refs$inline :args ((aignet aignet))))
+  (fty::deffixequiv aignet-count-gate-refs-iter :args ((aignet aignet)))
+  (fty::deffixequiv aignet-count-gate-refs$inline :args ((aignet aignet))))
+
+
+(defsection aignet-count-po-refs
+  (defiteration aignet-count-po-refs (aignet-refcounts aignet)
+    (declare (xargs :stobjs (aignet-refcounts aignet)
+                    :guard (<= (num-fanins aignet) (u32-length aignet-refcounts))))
+    (b* ((fanin-id (lit->var (outnum->fanin n aignet))))
+      (set-u32 fanin-id (+ 1 (get-u32 fanin-id aignet-refcounts)) aignet-refcounts))
+    :returns aignet-refcounts
+    :index n
+    :last (num-outs aignet))
+
+  (defthm aignet-refcounts-sizedp-after-aignet-count-po-refs-iter
+    (implies (< (fanin-count aignet) (len aignet-refcounts))
+             (equal (len (aignet-count-po-refs-iter n aignet-refcounts aignet))
+                    (len aignet-refcounts)))
+    :hints((acl2::just-induct-and-expand
+            (aignet-count-po-refs-iter n aignet-refcounts aignet))))
+
+  (defthm aignet-refcounts-sizedp-after-aignet-count-po-refs
+    (implies (< (fanin-count aignet) (len aignet-refcounts))
+             (equal (len (aignet-count-po-refs aignet-refcounts aignet))
+                    (len aignet-refcounts))))
+
+  (defthm aignet-count-po-refs-iter-does-not-shrink-refcounts
+    (<= (len aignet-refcounts)
+        (len (aignet-count-po-refs-iter n aignet-refcounts aignet)))
+    :rule-classes :linear
+    :hints(("Goal" :in-theory (enable aignet-count-po-refs-iter))))
+
+  (defthm aignet-count-po-refs-does-not-shrink-refcounts
+    (<= (len aignet-refcounts)
+        (len (aignet-count-po-refs aignet-refcounts aignet)))
+    :rule-classes :linear)
+
+  (fty::deffixequiv aignet-count-po-refs-iter :args ((aignet aignet)))
+  (fty::deffixequiv aignet-count-po-refs$inline :args ((aignet aignet))))
+
+(defsection aignet-count-nxst-refs
+  (defiteration aignet-count-nxst-refs (aignet-refcounts aignet)
+    (declare (xargs :stobjs (aignet-refcounts aignet)
+                    :guard (<= (num-fanins aignet) (u32-length aignet-refcounts))))
+    (b* ((fanin-id (lit->var (regnum->nxst n aignet))))
+      (set-u32 fanin-id (+ 1 (get-u32 fanin-id aignet-refcounts)) aignet-refcounts))
+    :returns aignet-refcounts
+    :index n
+    :last (num-regs aignet))
+
+  (defthm aignet-refcounts-sizedp-after-aignet-count-nxst-refs-iter
+    (implies (< (fanin-count aignet) (len aignet-refcounts))
+             (equal (len (aignet-count-nxst-refs-iter n aignet-refcounts aignet))
+                    (len aignet-refcounts)))
+    :hints((acl2::just-induct-and-expand
+            (aignet-count-nxst-refs-iter n aignet-refcounts aignet))))
+
+  (defthm aignet-refcounts-sizedp-after-aignet-count-nxst-refs
+    (implies (< (fanin-count aignet) (len aignet-refcounts))
+             (equal (len (aignet-count-nxst-refs aignet-refcounts aignet))
+                    (len aignet-refcounts))))
+
+  (defthm aignet-count-nxst-refs-iter-does-not-shrink-refcounts
+    (<= (len aignet-refcounts)
+        (len (aignet-count-nxst-refs-iter n aignet-refcounts aignet)))
+    :rule-classes :linear
+    :hints(("Goal" :in-theory (enable aignet-count-nxst-refs-iter))))
+
+  (defthm aignet-count-nxst-refs-does-not-shrink-refcounts
+    (<= (len aignet-refcounts)
+        (len (aignet-count-nxst-refs aignet-refcounts aignet)))
+    :rule-classes :linear)
+
+  (fty::deffixequiv aignet-count-nxst-refs-iter :args ((aignet aignet)))
+  (fty::deffixequiv aignet-count-nxst-refs$inline :args ((aignet aignet))))
+  
+                    
+
+(define aignet-count-refs (refcounts aignet)
+  :returns (new-refcounts)
+  :guard (<= (num-fanins aignet) (u32-length refcounts))
+  (b* ((refcounts (aignet-count-gate-refs refcounts aignet))
+       (refcounts (aignet-count-po-refs refcounts aignet)))
+    (aignet-count-nxst-refs refcounts aignet))
+  ///
+  (defret aignet-refcounts-sizedp-after-aignet-count-refs
+    (implies (< (fanin-count aignet) (len refcounts))
+             (equal (len new-refcounts)
+                    (len refcounts))))
+
+  (defret aignet-count-refs-does-not-shrink-refcounts
+    (<= (len refcounts) (len new-refcounts))
+    :rule-classes :linear)
+
+  (fty::deffixequiv aignet-count-refs :args ((aignet aignet))))
 
