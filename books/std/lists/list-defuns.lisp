@@ -43,9 +43,13 @@
 
 (table macro-aliases-table 'list-fix-exec 'true-list-fix-exec)
 
+(in-theory (disable list-fix-exec))
+
 (defmacro list-fix (x) `(true-list-fix ,x))
 
 (table macro-aliases-table 'list-fix 'true-list-fix)
+
+(in-theory (disable list-fix))
 
 (encapsulate
   ()
