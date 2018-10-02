@@ -1577,7 +1577,7 @@
 
 ; ------------------------------
 
-; Example 10: Preserving progn$
+; Example 10: Preserving prog2$, mbe, cw, and progn$
 
 (local-test
  (assert!
@@ -1590,7 +1590,30 @@
                           (+ u v)))
          (sterm (du-trans uterm2)))
     (equal (directed-untranslate-rec uterm tterm sterm nil t nil (w state))
-           uterm2))))
+           uterm2)))
+
+(assert!
+  (let* ((uterm '(progn$
+                  (cw "howdy ~x0 ~x1"
+                      (list* (first x) (car (cons nil x)))
+                      (mbe :logic (list* (first y) (cdr (list x)))
+                           :exec (prog2$ (cw "hi ~s0" (car (cons 'there y)))
+                                         y)))
+                  (mbe :logic (list* (first x) (car (cons nil x)))
+                       :exec (list (nth 0 x)))))
+         (tterm (du-trans uterm))
+         (uterm2 '(progn$
+                   (cw "howdy ~x0 ~x1"
+                       (list* (first x) nil)
+                       (mbe :logic (list* (first y) nil)
+                            :exec (prog2$ (cw "hi ~s0" 'there)
+                                          y)))
+                   (mbe :logic (list* (first x) nil)
+                        :exec (and (consp x) (car x)))))
+         (sterm (du-trans uterm2)))
+    (equal (directed-untranslate-rec uterm tterm sterm nil t nil (w state))
+           uterm2)))
+)
 
 ; ------------------------------
 

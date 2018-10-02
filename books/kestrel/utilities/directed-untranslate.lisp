@@ -1607,11 +1607,17 @@
        (list 'mv-list n ans)))
     ((case-match uterm
        (('progn$ & & . &) t))
-     (let ((ans (directed-untranslate-rec `(prog2$ ,(cadr uterm)
-                                                   (progn$ ,@(cddr uterm)))
-                                          tterm sterm
-                                          iff-flg lflg exec-p wrld)))
+     (let ((ans (directed-untranslate-rec
+                 `(prog2$ ,(cadr uterm)
+                          (progn$ ,@(cddr uterm)))
+                 tterm sterm iff-flg lflg exec-p wrld)))
        (prog2$-to-progn$ ans)))
+    ((and (consp uterm)
+          (eq (car uterm) 'progn$)) ; (progn$ &)
+     (assert$ (null (cddr uterm))
+              (directed-untranslate-rec
+               (cadr uterm)
+               tterm sterm iff-flg lflg exec-p wrld)))
     ((and (consp uterm)
           (eq (car uterm) 'mv-let))
      (assert$
@@ -1733,6 +1739,58 @@
     ((or (variablep sterm)
          (fquotep sterm))
      (du-untranslate sterm iff-flg wrld))
+    ((and (eq (ffn-symb sterm) 'return-last)
+          (directed-untranslate-return-last uterm tterm sterm iff-flg lflg
+                                            exec-p wrld)))
+    ((and (consp uterm)
+          (member-eq (car uterm) '(er cw))
+          (true-listp (cdr uterm)) ; always true?
+          (cond ((eq (car uterm) 'er)
+                 (and (member-eq (cadr uterm) '(hard hard?))
+                      (member-eq (ffn-symb tterm) '(illegal hard-error))
+                      (member-eq (ffn-symb sterm) '(illegal hard-error))))
+                (t ; (eq (car uterm) 'cw)
+                 (and (eq (ffn-symb tterm) 'fmt-to-comment-window)
+                      (eq (ffn-symb sterm) 'fmt-to-comment-window)
+                      (equal (fargn sterm 3) *0*)
+                      (equal (fargn sterm 4) *nil*)
+                      (equal (fargn sterm 5) *nil*))))
+          (let ((uargs (if (eq (car uterm) 'cw)
+                           (cddr uterm)
+                         (cddddr uterm)))
+                (targs (unmake-formal-pairlis2
+                        (if (eq (car uterm) 'cw)
+                            (fargn tterm 2)
+                          (fargn tterm 3))
+                        '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
+                (sargs (unmake-formal-pairlis2
+                        (if (eq (car uterm) 'cw)
+                            (fargn sterm 2)
+                          (fargn sterm 3))
+                        '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))))
+            (and (not (eq targs :fail))
+                 (not (eq sargs :fail))
+                 (= (length uargs) (length sargs))
+                 (= (length targs) (length sargs))
+                 (let ((string-arg ; overkill to call directed-untranslate-rec
+                        (du-untranslate (if (eq (car uterm) 'cw)
+                                            (fargn sterm 1)
+                                          (fargn sterm 2))
+                                        nil wrld))
+                       (rest-args
+                        (directed-untranslate-lst
+                         uargs targs sargs
+                         (make-list (length uargs) :initial-element iff-flg)
+                         lflg exec-p wrld)))
+                   (cond ((eq (car uterm) 'cw)
+                          `(cw ,string-arg ,@rest-args))
+                         (t
+                          `(er ,(if (eq (ffn-symb sterm) 'illegal)
+                                    'hard
+                                  'hard?)
+                               ,(du-untranslate (fargn sterm 1) nil wrld)
+                               ,string-arg
+                               ,@rest-args))))))))
     ((and (lambda-applicationp tterm)
           (not (lambda-applicationp sterm))
           lflg)
@@ -2031,6 +2089,55 @@
                           (t nil))))
                   (du-untranslate sterm iff-flg wrld)))))))))))))))
 
+(defun directed-untranslate-return-last (uterm tterm sterm iff-flg lflg exec-p
+                                               wrld)
+
+; This is just code for handling the case of directed-untranslate-rec, that
+; sterm is a call of return-last directed-untranslate-rec.  Initially we give
+; special treatment only to cases corresponding to prog2$ and mbe.  Other cases
+; may be added later.
+
+; This function returns nil for cases not yet handled.
+
+  (declare (xargs :guard ; a partial guard to record some input assumptions
+                  (and (nvariablep tterm)
+                       (not (fquotep tterm)))))
+  (cond
+   ((not (and (eq (ffn-symb sterm) 'return-last)
+              (true-listp uterm) ; impossible?
+              (ffn-symb-p tterm 'return-last)
+              (equal (fargn tterm 1)
+                     (fargn sterm 1))))
+    nil)
+   ((and (eq (car uterm) 'prog2$)
+         (equal (fargn sterm 1) ''progn))
+    (list 'prog2$
+          (directed-untranslate-rec (cadr uterm)
+                                    (fargn tterm 2)
+                                    (fargn sterm 2)
+                                    nil lflg exec-p wrld)
+          (directed-untranslate-rec (caddr uterm)
+                                    (fargn tterm 3)
+                                    (fargn sterm 3)
+                                    iff-flg lflg exec-p wrld)))
+   ((and (eq (car uterm) 'mbe)
+         (equal (fargn sterm 1) ''mbe1-raw))
+    (list 'mbe
+          :logic
+          (directed-untranslate-rec (cadr (assoc-keyword :logic (cdr uterm)))
+                                    (fargn tterm 3)
+                                    (fargn sterm 3)
+                                    iff-flg lflg nil wrld)
+          :exec
+          (directed-untranslate-rec (cadr (assoc-keyword :exec (cdr uterm)))
+                                    (fargn tterm 2)
+                                    (fargn sterm 2)
+                                    iff-flg lflg exec-p wrld)))
+
+; Other cases for return-last can be added here.
+
+   (t nil)))
+
 (defun directed-untranslate-b* (uterm tterm sterm iff-flg lflg exec-p wrld)
 
 ; Warning: If you change this, consider changing the case for let* in
@@ -2039,9 +2146,6 @@
 ; This is just code for handling b* that was originally in
 ; directed-untranslate-rec, but has been moved into this separate function, for
 ; clarity.  This function may return nil.
-
-; We want to fall through if we encounter a b* case that's not handled, so we
-; structure this cond clause as just a non-nilvalue, not (test value).
 
 ; Note: It's technically wrong to untranslate to b*, since someone may have
 ; defined b* differently from how it's defined in std/util/bstar.lisp.  But we

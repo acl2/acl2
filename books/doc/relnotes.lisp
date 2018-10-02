@@ -185,8 +185,8 @@
  <h4>Other</h4>
 
  <p>The utility, @(tsee directed-untranslate), has been improved in several
- ways, including more complete handling of @(tsee mv-let), @(tsee b*), and
- @(tsee progn$).</p>
+ ways, including more complete handling of @(tsee mv-let), @(tsee b*),
+ @(tsee progn$), @(tsee er), @(tsee cw), and @(tsee mbe).</p>
 
  <p>For the event macro @(tsee orelse*), the default for the @(':expansion?p')
  argument has been changed from @('nil') to @('t'), for consistency with @(tsee
