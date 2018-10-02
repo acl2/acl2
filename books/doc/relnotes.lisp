@@ -187,6 +187,11 @@
  ways, including more complete handling of @(tsee mv-let), @(tsee b*), and
  @(tsee progn$).</p>
 
+ <p>The function @(see list-fix) from @('\"books/std/lists/list-fix.lisp\"')
+ has been moved to the ACL2 sources in a way that minimizes changes to existing
+ books. For more details, please see the section Changes to Existing Features
+ in @(see note-8-2).</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
