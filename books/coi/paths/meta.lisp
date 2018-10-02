@@ -384,11 +384,6 @@
 (defcong list::equiv list::equiv
   (v1-remove-prefix prefix x) 2)
 
-(defthm true-listp-v1-remove-prefix
-  (implies
-   (true-listp x)
-   (true-listp (v1-remove-prefix prefix x))))
-
 (defthm list-fix-v1-remove-prefix
   (equal (list::fix (v1-remove-prefix prefix x))
          (v1-remove-prefix prefix (list::fix x))))

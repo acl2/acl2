@@ -89,6 +89,11 @@
                         (t (cons (evfn (car x-lst) a)
                                  (evfn-lst (cdr x-lst) a)))))))
             (local (in-theory (disable evfn evfn-lst apply-for-defevaluator)))
+            ;; Mihir M. mod - this is one of a small number of unusual books
+            ;; which use true-list fix (enabled by default) while also
+            ;; including books which bring in list-fix and disable the
+            ;; underlying function true-list-fix. It needs this theory hint for
+            ;; proofs to succeed.
             (local
              (defthm eval-list-kwote-lst
                (equal (evfn-lst (kwote-lst args) a)
@@ -98,7 +103,8 @@
                                  (evfn-lst nil a)
                                  (:free (x)
                                         (evfn (list 'quote x) a)))
-                        :induct (fix-true-list args)))))
+                        :in-theory (enable true-list-fix)
+                        :induct (true-list-fix args)))))
             (local
              (defthm true-list-fix-ev-lst
                (equal (true-list-fix (evfn-lst x a))
