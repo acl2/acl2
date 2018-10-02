@@ -537,6 +537,27 @@ put it in one's path:</p>
 #!/bin/bash
 /path to z3 executable/z3 \"$@\"
 })
+
+<p>To make sure ACL2's build system can find Z3, Z3 should be installed in
+one's path.  There are two ways to achieve this:</p>
+<ul>
+<li>
+Add the path to where Z3 is installed into one's path.  For example,
+@({
+export PATH=/path to z3 executable/:$PATH
+})
+</li>
+<li>
+Another way of achieving this purpose is to create the following bash script
+called ``z3'' and put it in one's path:
+@({
+#!/bin/bash
+/path to z3 executable/z3 \"$@\"
+})
+In some systems, after creating that script, one needs to run ``rehash'' in the
+shell.
+</li>
+</ul>
 ")
 
 ;; (xdoc::save "./manual" :redef-okp t)  ;; write the manual
