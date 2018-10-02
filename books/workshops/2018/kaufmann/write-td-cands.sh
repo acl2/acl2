@@ -4,9 +4,10 @@
 # Written by Matt Kaufmann
 # License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-# Run ./write-td-cands.sh to create the file td-cands.lisp, after
-# moving the existing td-cands.lisp and td-cands.acl2 (if they exist) to
-# td-cands.lisp.backup and td-cands.acl2.backup.
+# Run ./write-td-cands.sh to move the existing td-cands.lisp and
+# td-cands.acl2 (if they exist) to td-cands.lisp.backup and
+# td-cands.acl2.backup, and then create new files td-cands.lisp and
+# td-cands.acl2.
 
 # Usage (the first gets acl2 from $ACL2):
 # ./write-td-cands.sh
