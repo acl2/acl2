@@ -278,7 +278,7 @@
            (T (CONS (EVAD (CAR X-LST) A)
                     (EVAD-LST (CDR X-LST) A)))))))
  (LOCAL (IN-THEORY (DISABLE EVAD EVAD-LST APPLY-FOR-DEFEVALUATOR)))
- ;; Mihir M. mod - this is one of a small number of unusual books
+ ;; Mihir M. mod: this is one of a small number of unusual books
  ;; which use true-list fix (enabled by default) while also
  ;; including books which bring in list-fix and disable the
  ;; underlying function true-list-fix. It needs this theory hint for

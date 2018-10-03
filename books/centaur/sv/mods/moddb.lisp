@@ -516,6 +516,8 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     ;; :hints (("goal" :induct (ind a b)
     ;;          :expand ((:free (a b) (remove-later-duplicates (cons a b)))))))
 
+  ;; Mihir M. mod: a subgoal hint was necessary here after list-fix was
+  ;; migrated to the sources and renamed
   (defthm remove-later-duplicates-when-no-duplicates
     (implies (no-duplicatesp x)
              (equal (remove-later-duplicates x)

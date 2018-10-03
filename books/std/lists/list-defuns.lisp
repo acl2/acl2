@@ -39,6 +39,8 @@
 ; now prove the bare-minimum theorems inline and avoid including the other
 ; books.
 
+; Mihir M. mod: list-fix-exec and list-fix were defined here earlier, but after
+; the migration of these definitions to the sources, we just have macros.
 (defmacro list-fix-exec (x) `(true-list-fix-exec ,x))
 
 (table macro-aliases-table 'list-fix-exec 'true-list-fix-exec)
