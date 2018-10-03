@@ -530,15 +530,6 @@ to confirm that the installation was successful.
 
 <h3>Allow the Build System to Find Z3</h3>
 <p>To make sure ACL2's build system can find Z3, Z3 should be installed in
-one's path.  In case if z3 is not installed in one's path by default, one way
-of achieving this purpose is to generate below bash script called ``z3'' and
-put it in one's path:</p>
-@({
-#!/bin/bash
-/path to z3 executable/z3 \"$@\"
-})
-
-<p>To make sure ACL2's build system can find Z3, Z3 should be installed in
 one's path.  There are two ways to achieve this:</p>
 <ul>
 <li>
