@@ -23,6 +23,11 @@ questions.
 
 {{Eliminate fix-true-list in favor of list-fix.}}
 
+**********
+**NOTE**: Mihir Mehta is in the middle of this, and would appreciate
+  assistance, especially with congruence rules.
+**********
+
 Replace the function fix-true-list in the ACL2 sources with the
 function list-fix defined in books/std/lists/list-fix.lisp.  Actually,
 the name true-list-fix seems preferable to list-fix (at least to Matt
@@ -586,5 +591,75 @@ on the applicability of the :LINEAR rule.
 [[.. non-warning output elided ..]]
 ******** FAILED ********
 ACL2 !>
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Consider an alias or name change: VALUE-EVENT for VALUE-TRIPLE.}}
+
+The name "VALUE-EVENT" seems more descriptive than "VALUE-TRIPLE".
+Such a change might well not be sufficiently important to be worth
+carrying out -- it should only be done so by someone who personally
+feels that this is important, and will deal with all details that
+arise from such a change.
+
+This change is trivial at some level, but it could affect a lot of
+books beyond just the community books.  So it seems important to query
+the community before changing VALUE-TRIPLE to VALUE-EVENT, or more
+likely, define one of them to be a macro for the other.
+
+Before anyone embarks on this, they should read the email thread
+below.
+
+From: Alessandro Coglio <coglio@kestrel.edu>
+Subject: Re: Value-triple => value-event ?
+Date: Sat, 29 Sep 2018 13:22:02 -0700
+To: Kaufmann Matt <kaufmann@cs.utexas.edu>
+In-Reply-To: <t4dy3bk8nma.fsf@ginger.cs.utexas.edu>
+
+Hi Matt, I understand. Adding it to the developer to-do list seems like a good idea to me. Thanks.
+
+
+
+> On Sep 29, 2018, at 6:00 AM, Matt Kaufmann <kaufmann@cs.utexas.edu> wrote:
+>
+> Hi, Alessandro --
+>
+> Yes, I think the "triple" in "value-triple" is intended to emphasize
+> that error triples are involved.  But I agree that "value-event" is a
+> more descriptive [hence, better] name.  What I'm not sure of is
+> whether it's sufficiently better to bother with the change.
+>
+> It might be very easy to make the change, by making value-event a
+> macro:
+>
+> (defmacro value-event (&rest args)
+>  `(value-triple ,@args))
+>
+> However, the :doc and, perhaps, error messages, would then still say
+> "value-triple", so that wouldn't help much.  Things could be the other
+> way around: all occurrences in the sources of value-triple could be
+> changed to value-event, and then:
+>
+> (defmacro value-triple (&rest args)
+>  `(value-event ,@args))
+>
+> I don't know if books changes would be needed.
+>
+> But even though I like your suggested "value-event" better than
+> "value-triple", I don't know that it's sufficiently better to warrant
+> the time spent on the changes, as there could easily be issues that
+> haven't occurred to me.  I suppose that I could put this email thread
+> into books/system/to-do.txt as a developer task, in case anyone wants
+> to take it on.  What do you think?
+>
+> Thanks --
+> -- Matt
+> Alessandro Coglio <coglio@kestrel.edu> writes:
+>
+>> Hi Matt,
+>>
+>> Please feel free to ignore this idea, but I was wondering if 'value-event' may be a more descriptive name for what is currently called 'value-triple'. In a sense, this function “lifts” an arbitrary value to an event. I’m sure there’s a reason for the ‘triple’ of ‘value-triple’, but it’s not immediately evident to me; I looked at value-triple-fn and I see that it uses the value function to return error triples, so maybe that’s the rationale?
+>>
+>> Thanks.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>

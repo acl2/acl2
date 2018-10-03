@@ -1,0 +1,14 @@
+Supporting Materials
+
+Title: A Simple Java Code Generator for ACL2
+       Based on a Deep Embedding of ACL2 in Java
+Author: Alessandro Coglio <coglio@kestrel.edu>
+
+The supporting materials for this paper are already in the ACL2 Community Books.
+They can be found on the web at
+https://github.com/acl2/acl2/tree/master/books/kestrel/java/aij and
+https://github.com/acl2/acl2/tree/master/books/kestrel/java/atj, or in an
+ACL2+books distribution in books/kestrel/java/aij and books/kestrel/java/atj.
+
+Each of these books has the copyright, license, and authorship information at
+its very beginning.

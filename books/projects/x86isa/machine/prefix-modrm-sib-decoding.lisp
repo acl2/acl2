@@ -43,6 +43,8 @@
 
 (include-book "../utils/constants")
 (include-book "opcode-maps")
+(include-book "top-level-memory")
+(include-book "dispatch-macros")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ----------------------------------------------------------------------
@@ -64,10 +66,9 @@
  for the efficient lookup of modr/m-related information from the opcode maps.
  See @(see ModR/M-decoding).</p>
 
- <h3>SIB Decoding</h3>
+ <h3>SIB Detecting and Decoding</h3>
 
- <p>The function @(tsee x86-decode-SIB-p) determines whether a SIB byte ought
- to follow a ModR/M byte or not.</p>")
+ <p>See @(see SIB-decoding) for details.</p>")
 
 (local (xdoc::set-default-parents prefix-modrm-sib-decoding))
 
@@ -392,22 +393,24 @@
      (and
       (equal 64-bit-compound-info 32-bit-compound-info)
       (equal 64-bit-compound-info
-	     '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-		 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)))))
+	     '(
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	       )))))
 
   (make-event
    (b* (((mv 64-bit-compound-info &)
@@ -712,22 +715,24 @@
 
   (make-event
    (b* ((precomputed-table
-	 '(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     0 0 0 0 0 0 2 0 0 0 0 0 0 0 2 0
-	     0 0 0 0 0 0 2 0 0 0 0 0 0 0 2 0
-	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     0 0 0 0 2 2 3 4 0 0 0 0 0 0 0 0
-	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	     1 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0))
+	 '(
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 2 0 0 0 0 0 0 0 2 0
+	   0 0 0 0 0 0 2 0 0 0 0 0 0 0 2 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 2 2 3 4 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	   1 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0
+	   ))
 	(computed-table
 	 (compute-prefix-byte-group-code *one-byte-opcode-map-lst*))
 	((unless (equal precomputed-table computed-table))
@@ -747,1006 +752,6 @@
     ///
     (defthm upper-bound-get-one-byte-prefix-array-code
       (<= (get-one-byte-prefix-array-code x) 4))))
-
-
-(defsection mandatory-prefixes-computation
-
-  :short "Functions to pick legal mandatory prefixes"
-
-  :long "<p><b>When should we interpret a SIMD prefix (@('66'), @('F2'),
- @('F3')) as the mandatory prefix for a given opcode in the two- and three-byte
- opcode maps?</b></p>
-
- <p>Here are some decoding rules for SIMD mandatory prefixes; note that these
- don't apply for VEX/EVEX-encoded instructions because the mandatory prefixes
- are explicitly stated there.  All the examples listed below are from Intel's
- XED (x86 Encoder Decoder: @('https://intelxed.github.io/')).</p>
-
- <ol>
-
- <li> <p> For opcodes that can take mandatory prefixes, @('66') is ignored when
- @('F2')/@('F3') are present. Also, a mandatory prefix does not have to
- <b>immediately</b> precede the opcode byte --- see (4) below.</p>
-
- <p> <b> Examples: </b> </p>
-
- <code>
-
- (1) xed -64 -d   660f6f00     ;; movdqa xmm0, xmmword ptr [rax]
- (2) xed -64 -d   f30f6f00     ;; movdqu xmm0, xmmword ptr [rax]
- (3) xed -64 -d 66f30f6f00     ;; movdqu xmm0, xmmword ptr [rax] (same as (2))
- (4) xed -64 -d f3660f6f00     ;; movdqu xmm0, xmmword ptr [rax] (same as (2))
-
- </code>
-
- </li>
-
- <li> <p> For opcodes that can take mandatory prefixes, the presence of an
- unsupported SIMD prefix translates to a reserved instruction; such a prefix
- does NOT act as a modifier prefix. </p>
-
- <p> <b> Examples: </b> Opcode @('0f 6b') has a no-prefix form and @('66')
- mandatory prefix form.  When used with @('f3'), it leads to an error; see (3)
- below.</p>
-
- <code>
-
- (1) xed -64 -d     0f6b00     ;; packssdw mmx0, qword ptr [rax]
- (2) xed -64 -d   660f6b00     ;; packssdw xmm0, xmmword ptr [rax]
- (3) xed -64 -d f3660f6b00     ;; GENERAL_ERROR Could not decode...
-
- </code>
-
- </li>
-
- </ol>"
-
-  (local (xdoc::set-default-parents mandatory-prefixes-computation))
-
-  ;; The following *error-** constants have been obtained by exhaustive testing
-  ;; using Intel's XED (x86 Encoder Decoder: https://intelxed.github.io/).
-  ;; That is, for every opcode in the two- and three-byte maps, we checked
-  ;; XED's decoding output with all three SIMD prefixes.  A value of 1
-  ;; associated with an opcode indicates that XED reported a decode error.
-  ;; These constants are only really relevant for compound opcodes (as can be
-  ;; seen in the compute-mandatory-prefix-* functions).  Also, they are the
-  ;; same in the 32- and 64-bit modes of operation.
-
-  (defconst *error-66-with-two-byte-opcode-alist*
-    '((#ux00 . 0) (#ux01 . 0) (#ux02 . 0) (#ux03 . 0)
-      (#ux04 . 1) (#ux05 . 0) (#ux06 . 0) (#ux07 . 0)
-      (#ux08 . 0) (#ux09 . 0) (#ux0A . 1) (#ux0B . 0)
-      (#ux0C . 1) (#ux0D . 0) (#ux0E . 1) (#ux0F . 1)
-      (#ux10 . 0) (#ux11 . 0) (#ux12 . 0) (#ux13 . 0)
-      (#ux14 . 0) (#ux15 . 0) (#ux16 . 0) (#ux17 . 0)
-      (#ux18 . 0) (#ux19 . 0) (#ux1A . 0) (#ux1B . 0)
-      (#ux1C . 0) (#ux1D . 0) (#ux1E . 0) (#ux1F . 0)
-      (#ux20 . 0) (#ux21 . 0) (#ux22 . 0) (#ux23 . 0)
-      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
-      (#ux28 . 0) (#ux29 . 0) (#ux2A . 0) (#ux2B . 0)
-      (#ux2C . 0) (#ux2D . 0) (#ux2E . 0) (#ux2F . 0)
-      (#ux30 . 0) (#ux31 . 0) (#ux32 . 0) (#ux33 . 0)
-      (#ux34 . 0) (#ux35 . 0) (#ux36 . 1) (#ux37 . 0)
-      (#ux38 . 0) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
-      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
-      (#ux40 . 0) (#ux41 . 0) (#ux42 . 0) (#ux43 . 0)
-      (#ux44 . 0) (#ux45 . 0) (#ux46 . 0) (#ux47 . 0)
-      (#ux48 . 0) (#ux49 . 0) (#ux4A . 0) (#ux4B . 0)
-      (#ux4C . 0) (#ux4D . 0) (#ux4E . 0) (#ux4F . 0)
-      (#ux50 . 1) (#ux51 . 0) (#ux52 . 1) (#ux53 . 1)
-      (#ux54 . 0) (#ux55 . 0) (#ux56 . 0) (#ux57 . 0)
-      (#ux58 . 0) (#ux59 . 0) (#ux5A . 0) (#ux5B . 0)
-      (#ux5C . 0) (#ux5D . 0) (#ux5E . 0) (#ux5F . 0)
-      (#ux60 . 0) (#ux61 . 0) (#ux62 . 0) (#ux63 . 0)
-      (#ux64 . 0) (#ux65 . 0) (#ux66 . 0) (#ux67 . 0)
-      (#ux68 . 0) (#ux69 . 0) (#ux6A . 0) (#ux6B . 0)
-      (#ux6C . 0) (#ux6D . 0) (#ux6E . 0) (#ux6F . 0)
-      (#ux70 . 0) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
-      (#ux74 . 0) (#ux75 . 0) (#ux76 . 0) (#ux77 . 1)
-      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
-      (#ux7C . 0) (#ux7D . 0) (#ux7E . 0) (#ux7F . 0)
-      (#ux80 . 0) (#ux81 . 0) (#ux82 . 0) (#ux83 . 0)
-      (#ux84 . 0) (#ux85 . 0) (#ux86 . 0) (#ux87 . 0)
-      (#ux88 . 0) (#ux89 . 0) (#ux8A . 0) (#ux8B . 0)
-      (#ux8C . 0) (#ux8D . 0) (#ux8E . 0) (#ux8F . 0)
-      (#ux90 . 0) (#ux91 . 0) (#ux92 . 0) (#ux93 . 0)
-      (#ux94 . 0) (#ux95 . 0) (#ux96 . 0) (#ux97 . 0)
-      (#ux98 . 0) (#ux99 . 0) (#ux9A . 0) (#ux9B . 0)
-      (#ux9C . 0) (#ux9D . 0) (#ux9E . 0) (#ux9F . 0)
-      (#uxA0 . 0) (#uxA1 . 0) (#uxA2 . 0) (#uxA3 . 0)
-      (#uxA4 . 0) (#uxA5 . 0) (#uxA6 . 1) (#uxA7 . 1)
-      (#uxA8 . 0) (#uxA9 . 0) (#uxAA . 0) (#uxAB . 0)
-      (#uxAC . 0) (#uxAD . 0) (#uxAE . 1) (#uxAF . 0)
-      (#uxB0 . 0) (#uxB1 . 0) (#uxB2 . 0) (#uxB3 . 0)
-      (#uxB4 . 0) (#uxB5 . 0) (#uxB6 . 0) (#uxB7 . 0)
-      (#uxB8 . 1) (#uxB9 . 0) (#uxBA . 1) (#uxBB . 0)
-      (#uxBC . 0) (#uxBD . 0) (#uxBE . 0) (#uxBF . 0)
-      (#uxC0 . 0) (#uxC1 . 0) (#uxC2 . 0) (#uxC3 . 1)
-      (#uxC4 . 0) (#uxC5 . 1) (#uxC6 . 0) (#uxC7 . 1)
-      (#uxC8 . 0) (#uxC9 . 0) (#uxCA . 0) (#uxCB . 0)
-      (#uxCC . 0) (#uxCD . 0) (#uxCE . 0) (#uxCF . 0)
-      (#uxD0 . 0) (#uxD1 . 0) (#uxD2 . 0) (#uxD3 . 0)
-      (#uxD4 . 0) (#uxD5 . 0) (#uxD6 . 0) (#uxD7 . 1)
-      (#uxD8 . 0) (#uxD9 . 0) (#uxDA . 0) (#uxDB . 0)
-      (#uxDC . 0) (#uxDD . 0) (#uxDE . 0) (#uxDF . 0)
-      (#uxE0 . 0) (#uxE1 . 0) (#uxE2 . 0) (#uxE3 . 0)
-      (#uxE4 . 0) (#uxE5 . 0) (#uxE6 . 0) (#uxE7 . 0)
-      (#uxE8 . 0) (#uxE9 . 0) (#uxEA . 0) (#uxEB . 0)
-      (#uxEC . 0) (#uxED . 0) (#uxEE . 0) (#uxEF . 0)
-      (#uxF0 . 1) (#uxF1 . 0) (#uxF2 . 0) (#uxF3 . 0)
-      (#uxF4 . 0) (#uxF5 . 0) (#uxF6 . 0) (#uxF7 . 1)
-      (#uxF8 . 0) (#uxF9 . 0) (#uxFA . 0) (#uxFB . 0)
-      (#uxFC . 0) (#uxFD . 0) (#uxFE . 0) (#uxFF . 0)))
-
-  (local
-   (defthm len-of-error-66-with-two-byte-opcode
-     (equal (len *error-66-with-two-byte-opcode-alist*) 256)))
-
-  (defconst *error-66-with-two-byte-opcode-ar*
-    (list-to-array
-     'error-66-with-two-byte-opcode
-     (ints-to-booleans (strip-cdrs *error-66-with-two-byte-opcode-alist*))))
-
-  (defconst *error-F2-with-two-byte-opcode-alist*
-    '((#ux00 . 0) (#ux01 . 0) (#ux02 . 0) (#ux03 . 0)
-      (#ux04 . 1) (#ux05 . 0) (#ux06 . 0) (#ux07 . 0)
-      (#ux08 . 0) (#ux09 . 0) (#ux0A . 1) (#ux0B . 0)
-      (#ux0C . 1) (#ux0D . 0) (#ux0E . 1) (#ux0F . 1)
-      (#ux10 . 0) (#ux11 . 0) (#ux12 . 0) (#ux13 . 1)
-      (#ux14 . 1) (#ux15 . 1) (#ux16 . 1) (#ux17 . 1)
-      (#ux18 . 0) (#ux19 . 0) (#ux1A . 0) (#ux1B . 0)
-      (#ux1C . 0) (#ux1D . 0) (#ux1E . 0) (#ux1F . 0)
-      (#ux20 . 0) (#ux21 . 0) (#ux22 . 0) (#ux23 . 0)
-      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
-      (#ux28 . 1) (#ux29 . 1) (#ux2A . 0) (#ux2B . 1)
-      (#ux2C . 0) (#ux2D . 0) (#ux2E . 1) (#ux2F . 1)
-      (#ux30 . 0) (#ux31 . 0) (#ux32 . 0) (#ux33 . 0)
-      (#ux34 . 0) (#ux35 . 0) (#ux36 . 1) (#ux37 . 0)
-      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
-      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
-      (#ux40 . 0) (#ux41 . 0) (#ux42 . 0) (#ux43 . 0)
-      (#ux44 . 0) (#ux45 . 0) (#ux46 . 0) (#ux47 . 0)
-      (#ux48 . 0) (#ux49 . 0) (#ux4A . 0) (#ux4B . 0)
-      (#ux4C . 0) (#ux4D . 0) (#ux4E . 0) (#ux4F . 0)
-      (#ux50 . 1) (#ux51 . 0) (#ux52 . 1) (#ux53 . 1)
-      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
-      (#ux58 . 0) (#ux59 . 0) (#ux5A . 0) (#ux5B . 1)
-      (#ux5C . 0) (#ux5D . 0) (#ux5E . 0) (#ux5F . 0)
-      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
-      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
-      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
-      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
-      (#ux70 . 0) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
-      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
-      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
-      (#ux7C . 0) (#ux7D . 0) (#ux7E . 1) (#ux7F . 1)
-      (#ux80 . 0) (#ux81 . 0) (#ux82 . 0) (#ux83 . 0)
-      (#ux84 . 0) (#ux85 . 0) (#ux86 . 0) (#ux87 . 0)
-      (#ux88 . 0) (#ux89 . 0) (#ux8A . 0) (#ux8B . 0)
-      (#ux8C . 0) (#ux8D . 0) (#ux8E . 0) (#ux8F . 0)
-      (#ux90 . 0) (#ux91 . 0) (#ux92 . 0) (#ux93 . 0)
-      (#ux94 . 0) (#ux95 . 0) (#ux96 . 0) (#ux97 . 0)
-      (#ux98 . 0) (#ux99 . 0) (#ux9A . 0) (#ux9B . 0)
-      (#ux9C . 0) (#ux9D . 0) (#ux9E . 0) (#ux9F . 0)
-      (#uxA0 . 0) (#uxA1 . 0) (#uxA2 . 0) (#uxA3 . 0)
-      (#uxA4 . 0) (#uxA5 . 0) (#uxA6 . 1) (#uxA7 . 1)
-      (#uxA8 . 0) (#uxA9 . 0) (#uxAA . 0) (#uxAB . 0)
-      (#uxAC . 0) (#uxAD . 0) (#uxAE . 1) (#uxAF . 0)
-      (#uxB0 . 0) (#uxB1 . 0) (#uxB2 . 0) (#uxB3 . 0)
-      (#uxB4 . 0) (#uxB5 . 0) (#uxB6 . 0) (#uxB7 . 0)
-      (#uxB8 . 1) (#uxB9 . 0) (#uxBA . 1) (#uxBB . 0)
-      (#uxBC . 0) (#uxBD . 0) (#uxBE . 0) (#uxBF . 0)
-      (#uxC0 . 0) (#uxC1 . 0) (#uxC2 . 0) (#uxC3 . 1)
-      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
-      (#uxC8 . 0) (#uxC9 . 0) (#uxCA . 0) (#uxCB . 0)
-      (#uxCC . 0) (#uxCD . 0) (#uxCE . 0) (#uxCF . 0)
-      (#uxD0 . 0) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
-      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
-      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
-      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 1)
-      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
-      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 0) (#uxE7 . 1)
-      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
-      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
-      (#uxF0 . 0) (#uxF1 . 1) (#uxF2 . 1) (#uxF3 . 1)
-      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 1) (#uxF7 . 1)
-      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
-      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 0)))
-
-  (local
-   (defthm len-of-error-F2-with-two-byte-opcode
-     (equal (len *error-F2-with-two-byte-opcode-alist*) 256)))
-
-  (defconst *error-F2-with-two-byte-opcode-ar*
-    (list-to-array
-     'error-F2-with-two-byte-opcode
-     (ints-to-booleans (strip-cdrs *error-F2-with-two-byte-opcode-alist*))))
-
-  (defconst *error-F3-with-two-byte-opcode-alist*
-    '((#ux00 . 0) (#ux01 . 0) (#ux02 . 0) (#ux03 . 0)
-      (#ux04 . 1) (#ux05 . 0) (#ux06 . 0) (#ux07 . 0)
-      (#ux08 . 0) (#ux09 . 0) (#ux0A . 1) (#ux0B . 0)
-      (#ux0C . 1) (#ux0D . 0) (#ux0E . 1) (#ux0F . 1)
-      (#ux10 . 0) (#ux11 . 0) (#ux12 . 0) (#ux13 . 1)
-      (#ux14 . 1) (#ux15 . 1) (#ux16 . 0) (#ux17 . 1)
-      (#ux18 . 0) (#ux19 . 0) (#ux1A . 0) (#ux1B . 0)
-      (#ux1C . 0) (#ux1D . 0) (#ux1E . 0) (#ux1F . 0)
-      (#ux20 . 0) (#ux21 . 0) (#ux22 . 0) (#ux23 . 0)
-      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
-      (#ux28 . 1) (#ux29 . 1) (#ux2A . 0) (#ux2B . 1)
-      (#ux2C . 0) (#ux2D . 0) (#ux2E . 1) (#ux2F . 1)
-      (#ux30 . 0) (#ux31 . 0) (#ux32 . 0) (#ux33 . 0)
-      (#ux34 . 0) (#ux35 . 0) (#ux36 . 1) (#ux37 . 0)
-      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
-      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
-      (#ux40 . 0) (#ux41 . 0) (#ux42 . 0) (#ux43 . 0)
-      (#ux44 . 0) (#ux45 . 0) (#ux46 . 0) (#ux47 . 0)
-      (#ux48 . 0) (#ux49 . 0) (#ux4A . 0) (#ux4B . 0)
-      (#ux4C . 0) (#ux4D . 0) (#ux4E . 0) (#ux4F . 0)
-      (#ux50 . 1) (#ux51 . 0) (#ux52 . 0) (#ux53 . 0)
-      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
-      (#ux58 . 0) (#ux59 . 0) (#ux5A . 0) (#ux5B . 0)
-      (#ux5C . 0) (#ux5D . 0) (#ux5E . 0) (#ux5F . 0)
-      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
-      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
-      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
-      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 0)
-      (#ux70 . 0) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
-      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
-      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
-      (#ux7C . 1) (#ux7D . 1) (#ux7E . 0) (#ux7F . 0)
-      (#ux80 . 0) (#ux81 . 0) (#ux82 . 0) (#ux83 . 0)
-      (#ux84 . 0) (#ux85 . 0) (#ux86 . 0) (#ux87 . 0)
-      (#ux88 . 0) (#ux89 . 0) (#ux8A . 0) (#ux8B . 0)
-      (#ux8C . 0) (#ux8D . 0) (#ux8E . 0) (#ux8F . 0)
-      (#ux90 . 0) (#ux91 . 0) (#ux92 . 0) (#ux93 . 0)
-      (#ux94 . 0) (#ux95 . 0) (#ux96 . 0) (#ux97 . 0)
-      (#ux98 . 0) (#ux99 . 0) (#ux9A . 0) (#ux9B . 0)
-      (#ux9C . 0) (#ux9D . 0) (#ux9E . 0) (#ux9F . 0)
-      (#uxA0 . 0) (#uxA1 . 0) (#uxA2 . 0) (#uxA3 . 0)
-      (#uxA4 . 0) (#uxA5 . 0) (#uxA6 . 1) (#uxA7 . 1)
-      (#uxA8 . 0) (#uxA9 . 0) (#uxAA . 0) (#uxAB . 0)
-      (#uxAC . 0) (#uxAD . 0) (#uxAE . 1) (#uxAF . 0)
-      (#uxB0 . 0) (#uxB1 . 0) (#uxB2 . 0) (#uxB3 . 0)
-      (#uxB4 . 0) (#uxB5 . 0) (#uxB6 . 0) (#uxB7 . 0)
-      (#uxB8 . 0) (#uxB9 . 0) (#uxBA . 1) (#uxBB . 0)
-      (#uxBC . 0) (#uxBD . 0) (#uxBE . 0) (#uxBF . 0)
-      (#uxC0 . 0) (#uxC1 . 0) (#uxC2 . 0) (#uxC3 . 1)
-      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
-      (#uxC8 . 0) (#uxC9 . 0) (#uxCA . 0) (#uxCB . 0)
-      (#uxCC . 0) (#uxCD . 0) (#uxCE . 0) (#uxCF . 0)
-      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
-      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
-      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
-      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 1)
-      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
-      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 0) (#uxE7 . 1)
-      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
-      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
-      (#uxF0 . 1) (#uxF1 . 1) (#uxF2 . 1) (#uxF3 . 1)
-      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 1) (#uxF7 . 1)
-      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
-      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 0)))
-
-  (local
-   (defthm len-of-error-F3-with-two-byte-opcode
-     (equal (len *error-F3-with-two-byte-opcode-alist*) 256)))
-
-  (defconst *error-F3-with-two-byte-opcode-ar*
-    (list-to-array
-     'error-F3-with-two-byte-opcode
-     (ints-to-booleans (strip-cdrs *error-F3-with-two-byte-opcode-alist*))))
-
-  (defconst *error-66-with-0F-38-three-byte-opcode-alist*
-    '((#ux00 . 0) (#ux01 . 0) (#ux02 . 0) (#ux03 . 0)
-      (#ux04 . 0) (#ux05 . 0) (#ux06 . 0) (#ux07 . 0)
-      (#ux08 . 0) (#ux09 . 0) (#ux0A . 0) (#ux0B . 0)
-      (#ux0C . 1) (#ux0D . 1) (#ux0E . 1) (#ux0F . 1)
-      (#ux10 . 0) (#ux11 . 1) (#ux12 . 1) (#ux13 . 1)
-      (#ux14 . 0) (#ux15 . 0) (#ux16 . 1) (#ux17 . 0)
-      (#ux18 . 1) (#ux19 . 1) (#ux1A . 1) (#ux1B . 1)
-      (#ux1C . 0) (#ux1D . 0) (#ux1E . 0) (#ux1F . 1)
-      (#ux20 . 0) (#ux21 . 0) (#ux22 . 0) (#ux23 . 0)
-      (#ux24 . 0) (#ux25 . 0) (#ux26 . 1) (#ux27 . 1)
-      (#ux28 . 0) (#ux29 . 0) (#ux2A . 0) (#ux2B . 0)
-      (#ux2C . 1) (#ux2D . 1) (#ux2E . 1) (#ux2F . 1)
-      (#ux30 . 0) (#ux31 . 0) (#ux32 . 0) (#ux33 . 0)
-      (#ux34 . 0) (#ux35 . 0) (#ux36 . 1) (#ux37 . 0)
-      (#ux38 . 0) (#ux39 . 0) (#ux3A . 0) (#ux3B . 0)
-      (#ux3C . 0) (#ux3D . 0) (#ux3E . 0) (#ux3F . 0)
-      (#ux40 . 0) (#ux41 . 0) (#ux42 . 1) (#ux43 . 1)
-      (#ux44 . 1) (#ux45 . 1) (#ux46 . 1) (#ux47 . 1)
-      (#ux48 . 1) (#ux49 . 1) (#ux4A . 1) (#ux4B . 1)
-      (#ux4C . 1) (#ux4D . 1) (#ux4E . 1) (#ux4F . 1)
-      (#ux50 . 1) (#ux51 . 1) (#ux52 . 1) (#ux53 . 1)
-      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
-      (#ux58 . 1) (#ux59 . 1) (#ux5A . 1) (#ux5B . 1)
-      (#ux5C . 1) (#ux5D . 1) (#ux5E . 1) (#ux5F . 1)
-      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
-      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
-      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
-      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
-      (#ux70 . 1) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
-      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
-      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
-      (#ux7C . 1) (#ux7D . 1) (#ux7E . 1) (#ux7F . 1)
-      (#ux80 . 0) (#ux81 . 0) (#ux82 . 0) (#ux83 . 1)
-      (#ux84 . 1) (#ux85 . 1) (#ux86 . 1) (#ux87 . 1)
-      (#ux88 . 1) (#ux89 . 1) (#ux8A . 1) (#ux8B . 1)
-      (#ux8C . 1) (#ux8D . 1) (#ux8E . 1) (#ux8F . 1)
-      (#ux90 . 1) (#ux91 . 1) (#ux92 . 1) (#ux93 . 1)
-      (#ux94 . 1) (#ux95 . 1) (#ux96 . 1) (#ux97 . 1)
-      (#ux98 . 1) (#ux99 . 1) (#ux9A . 1) (#ux9B . 1)
-      (#ux9C . 1) (#ux9D . 1) (#ux9E . 1) (#ux9F . 1)
-      (#uxA0 . 1) (#uxA1 . 1) (#uxA2 . 1) (#uxA3 . 1)
-      (#uxA4 . 1) (#uxA5 . 1) (#uxA6 . 1) (#uxA7 . 1)
-      (#uxA8 . 1) (#uxA9 . 1) (#uxAA . 1) (#uxAB . 1)
-      (#uxAC . 1) (#uxAD . 1) (#uxAE . 1) (#uxAF . 1)
-      (#uxB0 . 1) (#uxB1 . 1) (#uxB2 . 1) (#uxB3 . 1)
-      (#uxB4 . 1) (#uxB5 . 1) (#uxB6 . 1) (#uxB7 . 1)
-      (#uxB8 . 1) (#uxB9 . 1) (#uxBA . 1) (#uxBB . 1)
-      (#uxBC . 1) (#uxBD . 1) (#uxBE . 1) (#uxBF . 1)
-      (#uxC0 . 1) (#uxC1 . 1) (#uxC2 . 1) (#uxC3 . 1)
-      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
-      (#uxC8 . 1) (#uxC9 . 1) (#uxCA . 1) (#uxCB . 1)
-      (#uxCC . 1) (#uxCD . 1) (#uxCE . 1) (#uxCF . 1)
-      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
-      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
-      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 0)
-      (#uxDC . 0) (#uxDD . 0) (#uxDE . 0) (#uxDF . 0)
-      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
-      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 1) (#uxE7 . 1)
-      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
-      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
-      (#uxF0 . 0) (#uxF1 . 0) (#uxF2 . 1) (#uxF3 . 1)
-      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 0) (#uxF7 . 1)
-      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
-      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 1)))
-
-  (local
-   (defthm len-of-error-66-with-0F-38-three-byte-opcode
-     (equal (len *error-66-with-0F-38-three-byte-opcode-alist*) 256)))
-
-  (defconst *error-66-with-0F-38-three-byte-opcode-ar*
-    (list-to-array
-     'error-66-with-0F-38-three-byte-opcode
-     (ints-to-booleans (strip-cdrs
-			*error-66-with-0F-38-three-byte-opcode-alist*))))
-
-  (defconst *error-F2-with-0F-38-three-byte-opcode-alist*
-    '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
-      (#ux04 . 1) (#ux05 . 1) (#ux06 . 1) (#ux07 . 1)
-      (#ux08 . 1) (#ux09 . 1) (#ux0A . 1) (#ux0B . 1)
-      (#ux0C . 1) (#ux0D . 1) (#ux0E . 1) (#ux0F . 1)
-      (#ux10 . 1) (#ux11 . 1) (#ux12 . 1) (#ux13 . 1)
-      (#ux14 . 1) (#ux15 . 1) (#ux16 . 1) (#ux17 . 1)
-      (#ux18 . 1) (#ux19 . 1) (#ux1A . 1) (#ux1B . 1)
-      (#ux1C . 1) (#ux1D . 1) (#ux1E . 1) (#ux1F . 1)
-      (#ux20 . 1) (#ux21 . 1) (#ux22 . 1) (#ux23 . 1)
-      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
-      (#ux28 . 1) (#ux29 . 1) (#ux2A . 1) (#ux2B . 1)
-      (#ux2C . 1) (#ux2D . 1) (#ux2E . 1) (#ux2F . 1)
-      (#ux30 . 1) (#ux31 . 1) (#ux32 . 1) (#ux33 . 1)
-      (#ux34 . 1) (#ux35 . 1) (#ux36 . 1) (#ux37 . 1)
-      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
-      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
-      (#ux40 . 1) (#ux41 . 1) (#ux42 . 1) (#ux43 . 1)
-      (#ux44 . 1) (#ux45 . 1) (#ux46 . 1) (#ux47 . 1)
-      (#ux48 . 1) (#ux49 . 1) (#ux4A . 1) (#ux4B . 1)
-      (#ux4C . 1) (#ux4D . 1) (#ux4E . 1) (#ux4F . 1)
-      (#ux50 . 1) (#ux51 . 1) (#ux52 . 1) (#ux53 . 1)
-      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
-      (#ux58 . 1) (#ux59 . 1) (#ux5A . 1) (#ux5B . 1)
-      (#ux5C . 1) (#ux5D . 1) (#ux5E . 1) (#ux5F . 1)
-      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
-      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
-      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
-      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
-      (#ux70 . 1) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
-      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
-      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
-      (#ux7C . 1) (#ux7D . 1) (#ux7E . 1) (#ux7F . 1)
-      (#ux80 . 1) (#ux81 . 1) (#ux82 . 1) (#ux83 . 1)
-      (#ux84 . 1) (#ux85 . 1) (#ux86 . 1) (#ux87 . 1)
-      (#ux88 . 1) (#ux89 . 1) (#ux8A . 1) (#ux8B . 1)
-      (#ux8C . 1) (#ux8D . 1) (#ux8E . 1) (#ux8F . 1)
-      (#ux90 . 1) (#ux91 . 1) (#ux92 . 1) (#ux93 . 1)
-      (#ux94 . 1) (#ux95 . 1) (#ux96 . 1) (#ux97 . 1)
-      (#ux98 . 1) (#ux99 . 1) (#ux9A . 1) (#ux9B . 1)
-      (#ux9C . 1) (#ux9D . 1) (#ux9E . 1) (#ux9F . 1)
-      (#uxA0 . 1) (#uxA1 . 1) (#uxA2 . 1) (#uxA3 . 1)
-      (#uxA4 . 1) (#uxA5 . 1) (#uxA6 . 1) (#uxA7 . 1)
-      (#uxA8 . 1) (#uxA9 . 1) (#uxAA . 1) (#uxAB . 1)
-      (#uxAC . 1) (#uxAD . 1) (#uxAE . 1) (#uxAF . 1)
-      (#uxB0 . 1) (#uxB1 . 1) (#uxB2 . 1) (#uxB3 . 1)
-      (#uxB4 . 1) (#uxB5 . 1) (#uxB6 . 1) (#uxB7 . 1)
-      (#uxB8 . 1) (#uxB9 . 1) (#uxBA . 1) (#uxBB . 1)
-      (#uxBC . 1) (#uxBD . 1) (#uxBE . 1) (#uxBF . 1)
-      (#uxC0 . 1) (#uxC1 . 1) (#uxC2 . 1) (#uxC3 . 1)
-      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
-      (#uxC8 . 1) (#uxC9 . 1) (#uxCA . 1) (#uxCB . 1)
-      (#uxCC . 1) (#uxCD . 1) (#uxCE . 1) (#uxCF . 1)
-      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
-      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
-      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
-      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 1)
-      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
-      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 1) (#uxE7 . 1)
-      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
-      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
-      (#uxF0 . 0) (#uxF1 . 0) (#uxF2 . 1) (#uxF3 . 1)
-      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 1) (#uxF7 . 1)
-      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
-      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 1)))
-
-  (local
-   (defthm len-of-error-F2-with-0F-38-three-byte-opcode
-     (equal (len *error-F2-with-0F-38-three-byte-opcode-alist*) 256)))
-
-  (defconst *error-F2-with-0F-38-three-byte-opcode-ar*
-    (list-to-array
-     'error-F2-with-0F-38-three-byte-opcode
-     (ints-to-booleans (strip-cdrs
-			*error-F2-with-0F-38-three-byte-opcode-alist*))))
-
-  (defconst *error-F3-with-0F-38-three-byte-opcode-alist*
-    '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
-      (#ux04 . 1) (#ux05 . 1) (#ux06 . 1) (#ux07 . 1)
-      (#ux08 . 1) (#ux09 . 1) (#ux0A . 1) (#ux0B . 1)
-      (#ux0C . 1) (#ux0D . 1) (#ux0E . 1) (#ux0F . 1)
-      (#ux10 . 1) (#ux11 . 1) (#ux12 . 1) (#ux13 . 1)
-      (#ux14 . 1) (#ux15 . 1) (#ux16 . 1) (#ux17 . 1)
-      (#ux18 . 1) (#ux19 . 1) (#ux1A . 1) (#ux1B . 1)
-      (#ux1C . 1) (#ux1D . 1) (#ux1E . 1) (#ux1F . 1)
-      (#ux20 . 1) (#ux21 . 1) (#ux22 . 1) (#ux23 . 1)
-      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
-      (#ux28 . 1) (#ux29 . 1) (#ux2A . 1) (#ux2B . 1)
-      (#ux2C . 1) (#ux2D . 1) (#ux2E . 1) (#ux2F . 1)
-      (#ux30 . 1) (#ux31 . 1) (#ux32 . 1) (#ux33 . 1)
-      (#ux34 . 1) (#ux35 . 1) (#ux36 . 1) (#ux37 . 1)
-      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
-      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
-      (#ux40 . 1) (#ux41 . 1) (#ux42 . 1) (#ux43 . 1)
-      (#ux44 . 1) (#ux45 . 1) (#ux46 . 1) (#ux47 . 1)
-      (#ux48 . 1) (#ux49 . 1) (#ux4A . 1) (#ux4B . 1)
-      (#ux4C . 1) (#ux4D . 1) (#ux4E . 1) (#ux4F . 1)
-      (#ux50 . 1) (#ux51 . 1) (#ux52 . 1) (#ux53 . 1)
-      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
-      (#ux58 . 1) (#ux59 . 1) (#ux5A . 1) (#ux5B . 1)
-      (#ux5C . 1) (#ux5D . 1) (#ux5E . 1) (#ux5F . 1)
-      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
-      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
-      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
-      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
-      (#ux70 . 1) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
-      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
-      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
-      (#ux7C . 1) (#ux7D . 1) (#ux7E . 1) (#ux7F . 1)
-      (#ux80 . 1) (#ux81 . 1) (#ux82 . 1) (#ux83 . 1)
-      (#ux84 . 1) (#ux85 . 1) (#ux86 . 1) (#ux87 . 1)
-      (#ux88 . 1) (#ux89 . 1) (#ux8A . 1) (#ux8B . 1)
-      (#ux8C . 1) (#ux8D . 1) (#ux8E . 1) (#ux8F . 1)
-      (#ux90 . 1) (#ux91 . 1) (#ux92 . 1) (#ux93 . 1)
-      (#ux94 . 1) (#ux95 . 1) (#ux96 . 1) (#ux97 . 1)
-      (#ux98 . 1) (#ux99 . 1) (#ux9A . 1) (#ux9B . 1)
-      (#ux9C . 1) (#ux9D . 1) (#ux9E . 1) (#ux9F . 1)
-      (#uxA0 . 1) (#uxA1 . 1) (#uxA2 . 1) (#uxA3 . 1)
-      (#uxA4 . 1) (#uxA5 . 1) (#uxA6 . 1) (#uxA7 . 1)
-      (#uxA8 . 1) (#uxA9 . 1) (#uxAA . 1) (#uxAB . 1)
-      (#uxAC . 1) (#uxAD . 1) (#uxAE . 1) (#uxAF . 1)
-      (#uxB0 . 1) (#uxB1 . 1) (#uxB2 . 1) (#uxB3 . 1)
-      (#uxB4 . 1) (#uxB5 . 1) (#uxB6 . 1) (#uxB7 . 1)
-      (#uxB8 . 1) (#uxB9 . 1) (#uxBA . 1) (#uxBB . 1)
-      (#uxBC . 1) (#uxBD . 1) (#uxBE . 1) (#uxBF . 1)
-      (#uxC0 . 1) (#uxC1 . 1) (#uxC2 . 1) (#uxC3 . 1)
-      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
-      (#uxC8 . 1) (#uxC9 . 1) (#uxCA . 1) (#uxCB . 1)
-      (#uxCC . 1) (#uxCD . 1) (#uxCE . 1) (#uxCF . 1)
-      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
-      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
-      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
-      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 1)
-      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
-      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 1) (#uxE7 . 1)
-      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
-      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
-      (#uxF0 . 1) (#uxF1 . 1) (#uxF2 . 1) (#uxF3 . 1)
-      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 0) (#uxF7 . 1)
-      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
-      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 1)))
-
-  (local
-   (defthm len-of-error-F3-with-0F-38-three-byte-opcode
-     (equal (len *error-F3-with-0F-38-three-byte-opcode-alist*) 256)))
-
-  (defconst *error-F3-with-0F-38-three-byte-opcode-ar*
-    (list-to-array
-     'error-F3-with-0F-38-three-byte-opcode
-     (ints-to-booleans (strip-cdrs
-			*error-F3-with-0F-38-three-byte-opcode-alist*))))
-
-
-  (defconst *error-66-with-0F-3A-three-byte-opcode-alist*
-    '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
-      (#ux04 . 1) (#ux05 . 1) (#ux06 . 1) (#ux07 . 1)
-      (#ux08 . 0) (#ux09 . 0) (#ux0A . 0) (#ux0B . 0)
-      (#ux0C . 0) (#ux0D . 0) (#ux0E . 0) (#ux0F . 0)
-      (#ux10 . 1) (#ux11 . 1) (#ux12 . 1) (#ux13 . 1)
-      (#ux14 . 0) (#ux15 . 0) (#ux16 . 0) (#ux17 . 0)
-      (#ux18 . 1) (#ux19 . 1) (#ux1A . 1) (#ux1B . 1)
-      (#ux1C . 1) (#ux1D . 1) (#ux1E . 1) (#ux1F . 1)
-      (#ux20 . 0) (#ux21 . 0) (#ux22 . 0) (#ux23 . 1)
-      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
-      (#ux28 . 1) (#ux29 . 1) (#ux2A . 1) (#ux2B . 1)
-      (#ux2C . 1) (#ux2D . 1) (#ux2E . 1) (#ux2F . 1)
-      (#ux30 . 1) (#ux31 . 1) (#ux32 . 1) (#ux33 . 1)
-      (#ux34 . 1) (#ux35 . 1) (#ux36 . 1) (#ux37 . 1)
-      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
-      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
-      (#ux40 . 0) (#ux41 . 0) (#ux42 . 0) (#ux43 . 1)
-      (#ux44 . 0) (#ux45 . 1) (#ux46 . 1) (#ux47 . 1)
-      (#ux48 . 1) (#ux49 . 1) (#ux4A . 1) (#ux4B . 1)
-      (#ux4C . 1) (#ux4D . 1) (#ux4E . 1) (#ux4F . 1)
-      (#ux50 . 1) (#ux51 . 1) (#ux52 . 1) (#ux53 . 1)
-      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
-      (#ux58 . 1) (#ux59 . 1) (#ux5A . 1) (#ux5B . 1)
-      (#ux5C . 1) (#ux5D . 1) (#ux5E . 1) (#ux5F . 1)
-      (#ux60 . 0) (#ux61 . 0) (#ux62 . 0) (#ux63 . 0)
-      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
-      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
-      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
-      (#ux70 . 1) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
-      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
-      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
-      (#ux7C . 1) (#ux7D . 1) (#ux7E . 1) (#ux7F . 1)
-      (#ux80 . 1) (#ux81 . 1) (#ux82 . 1) (#ux83 . 1)
-      (#ux84 . 1) (#ux85 . 1) (#ux86 . 1) (#ux87 . 1)
-      (#ux88 . 1) (#ux89 . 1) (#ux8A . 1) (#ux8B . 1)
-      (#ux8C . 1) (#ux8D . 1) (#ux8E . 1) (#ux8F . 1)
-      (#ux90 . 1) (#ux91 . 1) (#ux92 . 1) (#ux93 . 1)
-      (#ux94 . 1) (#ux95 . 1) (#ux96 . 1) (#ux97 . 1)
-      (#ux98 . 1) (#ux99 . 1) (#ux9A . 1) (#ux9B . 1)
-      (#ux9C . 1) (#ux9D . 1) (#ux9E . 1) (#ux9F . 1)
-      (#uxA0 . 1) (#uxA1 . 1) (#uxA2 . 1) (#uxA3 . 1)
-      (#uxA4 . 1) (#uxA5 . 1) (#uxA6 . 1) (#uxA7 . 1)
-      (#uxA8 . 1) (#uxA9 . 1) (#uxAA . 1) (#uxAB . 1)
-      (#uxAC . 1) (#uxAD . 1) (#uxAE . 1) (#uxAF . 1)
-      (#uxB0 . 1) (#uxB1 . 1) (#uxB2 . 1) (#uxB3 . 1)
-      (#uxB4 . 1) (#uxB5 . 1) (#uxB6 . 1) (#uxB7 . 1)
-      (#uxB8 . 1) (#uxB9 . 1) (#uxBA . 1) (#uxBB . 1)
-      (#uxBC . 1) (#uxBD . 1) (#uxBE . 1) (#uxBF . 1)
-      (#uxC0 . 1) (#uxC1 . 1) (#uxC2 . 1) (#uxC3 . 1)
-      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
-      (#uxC8 . 1) (#uxC9 . 1) (#uxCA . 1) (#uxCB . 1)
-      (#uxCC . 1) (#uxCD . 1) (#uxCE . 1) (#uxCF . 1)
-      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
-      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
-      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
-      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 0)
-      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
-      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 1) (#uxE7 . 1)
-      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
-      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
-      (#uxF0 . 1) (#uxF1 . 1) (#uxF2 . 1) (#uxF3 . 1)
-      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 1) (#uxF7 . 1)
-      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
-      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 1)))
-
-  (local
-   (defthm len-of-error-66-with-0F-3A-three-byte-opcode
-     (equal (len *error-66-with-0F-3A-three-byte-opcode-alist*) 256)))
-
-  (defconst *error-66-with-0F-3A-three-byte-opcode-ar*
-    (list-to-array
-     'error-66-with-0F-3A-three-byte-opcode
-     (ints-to-booleans (strip-cdrs
-			*error-66-with-0F-3A-three-byte-opcode-alist*))))
-
-  (defconst *error-F2-with-0F-3A-three-byte-opcode-alist*
-    '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
-      (#ux04 . 1) (#ux05 . 1) (#ux06 . 1) (#ux07 . 1)
-      (#ux08 . 1) (#ux09 . 1) (#ux0A . 1) (#ux0B . 1)
-      (#ux0C . 1) (#ux0D . 1) (#ux0E . 1) (#ux0F . 1)
-      (#ux10 . 1) (#ux11 . 1) (#ux12 . 1) (#ux13 . 1)
-      (#ux14 . 1) (#ux15 . 1) (#ux16 . 1) (#ux17 . 1)
-      (#ux18 . 1) (#ux19 . 1) (#ux1A . 1) (#ux1B . 1)
-      (#ux1C . 1) (#ux1D . 1) (#ux1E . 1) (#ux1F . 1)
-      (#ux20 . 1) (#ux21 . 1) (#ux22 . 1) (#ux23 . 1)
-      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
-      (#ux28 . 1) (#ux29 . 1) (#ux2A . 1) (#ux2B . 1)
-      (#ux2C . 1) (#ux2D . 1) (#ux2E . 1) (#ux2F . 1)
-      (#ux30 . 1) (#ux31 . 1) (#ux32 . 1) (#ux33 . 1)
-      (#ux34 . 1) (#ux35 . 1) (#ux36 . 1) (#ux37 . 1)
-      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
-      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
-      (#ux40 . 1) (#ux41 . 1) (#ux42 . 1) (#ux43 . 1)
-      (#ux44 . 1) (#ux45 . 1) (#ux46 . 1) (#ux47 . 1)
-      (#ux48 . 1) (#ux49 . 1) (#ux4A . 1) (#ux4B . 1)
-      (#ux4C . 1) (#ux4D . 1) (#ux4E . 1) (#ux4F . 1)
-      (#ux50 . 1) (#ux51 . 1) (#ux52 . 1) (#ux53 . 1)
-      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
-      (#ux58 . 1) (#ux59 . 1) (#ux5A . 1) (#ux5B . 1)
-      (#ux5C . 1) (#ux5D . 1) (#ux5E . 1) (#ux5F . 1)
-      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
-      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
-      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
-      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
-      (#ux70 . 1) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
-      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
-      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
-      (#ux7C . 1) (#ux7D . 1) (#ux7E . 1) (#ux7F . 1)
-      (#ux80 . 1) (#ux81 . 1) (#ux82 . 1) (#ux83 . 1)
-      (#ux84 . 1) (#ux85 . 1) (#ux86 . 1) (#ux87 . 1)
-      (#ux88 . 1) (#ux89 . 1) (#ux8A . 1) (#ux8B . 1)
-      (#ux8C . 1) (#ux8D . 1) (#ux8E . 1) (#ux8F . 1)
-      (#ux90 . 1) (#ux91 . 1) (#ux92 . 1) (#ux93 . 1)
-      (#ux94 . 1) (#ux95 . 1) (#ux96 . 1) (#ux97 . 1)
-      (#ux98 . 1) (#ux99 . 1) (#ux9A . 1) (#ux9B . 1)
-      (#ux9C . 1) (#ux9D . 1) (#ux9E . 1) (#ux9F . 1)
-      (#uxA0 . 1) (#uxA1 . 1) (#uxA2 . 1) (#uxA3 . 1)
-      (#uxA4 . 1) (#uxA5 . 1) (#uxA6 . 1) (#uxA7 . 1)
-      (#uxA8 . 1) (#uxA9 . 1) (#uxAA . 1) (#uxAB . 1)
-      (#uxAC . 1) (#uxAD . 1) (#uxAE . 1) (#uxAF . 1)
-      (#uxB0 . 1) (#uxB1 . 1) (#uxB2 . 1) (#uxB3 . 1)
-      (#uxB4 . 1) (#uxB5 . 1) (#uxB6 . 1) (#uxB7 . 1)
-      (#uxB8 . 1) (#uxB9 . 1) (#uxBA . 1) (#uxBB . 1)
-      (#uxBC . 1) (#uxBD . 1) (#uxBE . 1) (#uxBF . 1)
-      (#uxC0 . 1) (#uxC1 . 1) (#uxC2 . 1) (#uxC3 . 1)
-      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
-      (#uxC8 . 1) (#uxC9 . 1) (#uxCA . 1) (#uxCB . 1)
-      (#uxCC . 1) (#uxCD . 1) (#uxCE . 1) (#uxCF . 1)
-      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
-      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
-      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
-      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 1)
-      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
-      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 1) (#uxE7 . 1)
-      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
-      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
-      (#uxF0 . 1) (#uxF1 . 1) (#uxF2 . 1) (#uxF3 . 1)
-      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 1) (#uxF7 . 1)
-      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
-      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 1)))
-
-  (local
-   (defthm len-of-error-F2-with-0F-3A-three-byte-opcode
-     (equal (len *error-F2-with-0F-3A-three-byte-opcode-alist*) 256)))
-
-  (defconst *error-F2-with-0F-3A-three-byte-opcode-ar*
-    (list-to-array
-     'error-F2-with-0F-3A-three-byte-opcode
-     (ints-to-booleans (strip-cdrs
-			*error-F2-with-0F-3A-three-byte-opcode-alist*))))
-
-  (defconst *error-F3-with-0F-3A-three-byte-opcode-alist*
-    '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
-      (#ux04 . 1) (#ux05 . 1) (#ux06 . 1) (#ux07 . 1)
-      (#ux08 . 1) (#ux09 . 1) (#ux0A . 1) (#ux0B . 1)
-      (#ux0C . 1) (#ux0D . 1) (#ux0E . 1) (#ux0F . 1)
-      (#ux10 . 1) (#ux11 . 1) (#ux12 . 1) (#ux13 . 1)
-      (#ux14 . 1) (#ux15 . 1) (#ux16 . 1) (#ux17 . 1)
-      (#ux18 . 1) (#ux19 . 1) (#ux1A . 1) (#ux1B . 1)
-      (#ux1C . 1) (#ux1D . 1) (#ux1E . 1) (#ux1F . 1)
-      (#ux20 . 1) (#ux21 . 1) (#ux22 . 1) (#ux23 . 1)
-      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
-      (#ux28 . 1) (#ux29 . 1) (#ux2A . 1) (#ux2B . 1)
-      (#ux2C . 1) (#ux2D . 1) (#ux2E . 1) (#ux2F . 1)
-      (#ux30 . 1) (#ux31 . 1) (#ux32 . 1) (#ux33 . 1)
-      (#ux34 . 1) (#ux35 . 1) (#ux36 . 1) (#ux37 . 1)
-      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
-      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
-      (#ux40 . 1) (#ux41 . 1) (#ux42 . 1) (#ux43 . 1)
-      (#ux44 . 1) (#ux45 . 1) (#ux46 . 1) (#ux47 . 1)
-      (#ux48 . 1) (#ux49 . 1) (#ux4A . 1) (#ux4B . 1)
-      (#ux4C . 1) (#ux4D . 1) (#ux4E . 1) (#ux4F . 1)
-      (#ux50 . 1) (#ux51 . 1) (#ux52 . 1) (#ux53 . 1)
-      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
-      (#ux58 . 1) (#ux59 . 1) (#ux5A . 1) (#ux5B . 1)
-      (#ux5C . 1) (#ux5D . 1) (#ux5E . 1) (#ux5F . 1)
-      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
-      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
-      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
-      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
-      (#ux70 . 1) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
-      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
-      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
-      (#ux7C . 1) (#ux7D . 1) (#ux7E . 1) (#ux7F . 1)
-      (#ux80 . 1) (#ux81 . 1) (#ux82 . 1) (#ux83 . 1)
-      (#ux84 . 1) (#ux85 . 1) (#ux86 . 1) (#ux87 . 1)
-      (#ux88 . 1) (#ux89 . 1) (#ux8A . 1) (#ux8B . 1)
-      (#ux8C . 1) (#ux8D . 1) (#ux8E . 1) (#ux8F . 1)
-      (#ux90 . 1) (#ux91 . 1) (#ux92 . 1) (#ux93 . 1)
-      (#ux94 . 1) (#ux95 . 1) (#ux96 . 1) (#ux97 . 1)
-      (#ux98 . 1) (#ux99 . 1) (#ux9A . 1) (#ux9B . 1)
-      (#ux9C . 1) (#ux9D . 1) (#ux9E . 1) (#ux9F . 1)
-      (#uxA0 . 1) (#uxA1 . 1) (#uxA2 . 1) (#uxA3 . 1)
-      (#uxA4 . 1) (#uxA5 . 1) (#uxA6 . 1) (#uxA7 . 1)
-      (#uxA8 . 1) (#uxA9 . 1) (#uxAA . 1) (#uxAB . 1)
-      (#uxAC . 1) (#uxAD . 1) (#uxAE . 1) (#uxAF . 1)
-      (#uxB0 . 1) (#uxB1 . 1) (#uxB2 . 1) (#uxB3 . 1)
-      (#uxB4 . 1) (#uxB5 . 1) (#uxB6 . 1) (#uxB7 . 1)
-      (#uxB8 . 1) (#uxB9 . 1) (#uxBA . 1) (#uxBB . 1)
-      (#uxBC . 1) (#uxBD . 1) (#uxBE . 1) (#uxBF . 1)
-      (#uxC0 . 1) (#uxC1 . 1) (#uxC2 . 1) (#uxC3 . 1)
-      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
-      (#uxC8 . 1) (#uxC9 . 1) (#uxCA . 1) (#uxCB . 1)
-      (#uxCC . 1) (#uxCD . 1) (#uxCE . 1) (#uxCF . 1)
-      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
-      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
-      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
-      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 1)
-      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
-      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 1) (#uxE7 . 1)
-      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
-      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
-      (#uxF0 . 1) (#uxF1 . 1) (#uxF2 . 1) (#uxF3 . 1)
-      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 1) (#uxF7 . 1)
-      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
-      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 1)))
-
-  (local
-   (defthm len-of-error-F3-with-0F-3A-three-byte-opcode
-     (equal (len *error-F3-with-0F-3A-three-byte-opcode-alist*) 256)))
-
-  (defconst *error-F3-with-0F-3A-three-byte-opcode-ar*
-    (list-to-array
-     'error-F3-with-0F-3A-three-byte-opcode
-     (ints-to-booleans (strip-cdrs
-			*error-F3-with-0F-3A-three-byte-opcode-alist*))))
-
-
-  (local (include-book "std/strings/decimal" :dir :system))
-
-
-  (local
-   (define gen-compute-mandatory-prefix-fn
-     ((map (member-equal map '(#ux0F #ux0F_38 #ux0F_3A)))
-      (mode (member-equal mode '(32 64))))
-
-     (b* ((mode-name (str::cat (str::natstr mode) "-BIT"))
-	  (pre-name (str::cat mode-name "-COMPUTE-MANDATORY-PREFIX-FOR-"))
-	  (map-name (case map
-		      (#ux0F    "TWO-BYTE")
-		      (#ux0F_38 "0F-38-THREE-BYTE")
-		      (#ux0F_3A "0F-3A-THREE-BYTE")))
-	  (name (intern$ (str::cat pre-name map-name "-OPCODE") "X86ISA"))
-	  (compound-opcode-name-crux
-	   (str::cat mode-name "-MODE-" map-name "-COMPOUND-OPCODES"))
-	  (compound-opcode-name
-	   (intern$ compound-opcode-name-crux "X86ISA"))
-	  (compound-opcode-const
-	   (intern$ (str::cat "*" compound-opcode-name-crux "-AR*")
-		    "X86ISA"))
-
-	  (F3-ok-crux
-	   (str::cat mode-name "-MODE-" map-name "-F3-OK"))
-	  (F3-ok (intern$ F3-ok-crux "X86ISA"))
-	  (F3-ok-const (intern$ (str::cat "*" F3-ok-crux "-AR*") "X86ISA"))
-	  (F3-error-crux
-	   (str::cat "ERROR-F3-WITH-" map-name "-OPCODE"))
-	  (F3-error
-	   (intern$ F3-error-crux "X86ISA"))
-	  (F3-error-const
-	   (intern$ (str::cat "*" F3-error-crux "-AR*") "X86ISA"))
-
-	  (F2-ok-crux
-	   (str::cat mode-name "-MODE-" map-name "-F2-OK"))
-	  (F2-ok (intern$ F2-ok-crux "X86ISA"))
-	  (F2-ok-const (intern$ (str::cat "*" F2-ok-crux "-AR*") "X86ISA"))
-	  (F2-error-crux
-	   (str::cat "ERROR-F2-WITH-" map-name "-OPCODE"))
-	  (F2-error
-	   (intern$ F2-error-crux "X86ISA"))
-	  (F2-error-const
-	   (intern$ (str::cat "*" F2-error-crux "-AR*") "X86ISA"))
-
-	  (66-ok-crux
-	   (str::cat mode-name "-MODE-" map-name "-66-OK"))
-	  (66-ok (intern$ 66-ok-crux "X86ISA"))
-	  (66-ok-const (intern$ (str::cat "*" 66-ok-crux "-AR*") "X86ISA"))
-	  (66-error-crux
-	   (str::cat "ERROR-66-WITH-" map-name "-OPCODE"))
-	  (66-error
-	   (intern$ 66-error-crux "X86ISA"))
-	  (66-error-const
-	   (intern$ (str::cat "*" 66-error-crux "-AR*") "X86ISA")))
-
-       `(define ,name
-	  ((opcode        :type (unsigned-byte 8)
-			  "Relevant opcode byte")
-	   (prefixes      :type (unsigned-byte #.*prefixes-width*)))
-	  :guard (prefixes-p prefixes)
-
-	  :returns (mv
-		    err-flg
-		    (mandatory-prefix
-		     (unsigned-byte-p 8 mandatory-prefix)
-		     :hints
-		     (("goal"
-		       :use ((:instance opr-p-of-prefixes->opr (x prefixes))
-			     (:instance rep-p-of-prefixes->rep (x prefixes)))
-		       :in-theory (e/d (opr-p rep-p)
-				       (opr-p-of-prefixes->opr
-					rep-p-of-prefixes->rep))))))
-
-	  (b* ((compound-opcode?
-		(aref1 ',compound-opcode-name
-		       ,compound-opcode-const
-		       opcode))
-	       ((unless compound-opcode?)
-		;; Return 0 if the opcode is not allowed to have any mandatory
-		;; prefixes.  In this case, if 66/F3/F2 are present, they assume
-		;; their normal roles as modifier prefixes.
-		(mv nil 0)))
-
-	    (let ((rep-pfx (the (unsigned-byte 8)
-			     (prefixes->rep prefixes))))
-
-	      ;; We first check for F2/F3 prefixes, because they have precedence over
-	      ;; 66.
-	      (if (not (eql rep-pfx 0))
-
-		  (if (or (and (equal rep-pfx  #.*mandatory-f3h*)
-			       (aref1 ',F3-ok ,F3-ok-const opcode))
-			  (and
-			   (equal rep-pfx #.*mandatory-f2h*)
-			   (aref1 ',F2-ok ,F2-ok-const opcode)))
-
-		      ;; If the opcode is allowed to have F2/F3, then rep-pfx is the
-		      ;; mandatory-prefix.
-
-		      (mv nil rep-pfx)
-
-		    ;; If F2/F3 is used with an opcode that does not support these
-		    ;; prefixes as mandatory prefixes, then we look whether the use
-		    ;; of these prefixes with this opcode causes an error.
-
-		    (if (or (and (equal rep-pfx #.*mandatory-f3h*)
-				 (not (aref1 ',F3-error ,F3-error-const opcode)))
-			    (and (equal rep-pfx #.*mandatory-f2h*)
-				 (not (aref1 ',F2-error ,F2-error-const opcode))))
-
-			;; F2/F3 are used as modifier prefixes.
-
-			(mv nil 0)
-
-		      (mv (list :illegal-use-of-mandatory-prefix rep-pfx
-				:opcode ,map opcode)
-			  0)))
-
-		;; If F2/F3 are not present, then we check for 66 prefix.
-		(let ((opr-pfx  (the (unsigned-byte 8)
-				  (prefixes->opr prefixes))))
-
-		  (if (not (eql opr-pfx 0))
-
-		      (if (aref1 ',66-ok ,66-ok-const opcode)
-
-			  (mv nil opr-pfx)
-
-			;; If 66 is used with an opcode that does not support it
-			;; as a mandatory prefix, then we look whether the use of
-			;; this prefixes with this opcode causes an error.
-
-			(if (not (aref1 ',66-error ,66-error-const opcode))
-
-			    ;; 66 is used as a modifier prefix.
-			    (mv nil 0)
-
-			  (mv (list :illegal-use-of-mandatory-prefix opr-pfx
-				    :opcode ,map opcode)
-			      0)))
-
-		    ;; No mandatory prefixes present.
-		    (mv nil 0))))))))))
-
-  (make-event
-   `(progn
-      ,(gen-compute-mandatory-prefix-fn #ux0F    64)
-      ,(gen-compute-mandatory-prefix-fn #ux0F    32)
-      ,(gen-compute-mandatory-prefix-fn #ux0F_38 64)
-      ,(gen-compute-mandatory-prefix-fn #ux0F_38 32)
-      ,(gen-compute-mandatory-prefix-fn #ux0F_3A 64)
-      ,(gen-compute-mandatory-prefix-fn #ux0F_3A 32)))
-
-  (define compute-mandatory-prefix-for-two-byte-opcode
-    ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
-     (opcode        :type (unsigned-byte 8)
-		    "Second byte of a two-byte opcode")
-     (prefixes      :type (unsigned-byte #.*prefixes-width*)))
-
-    :inline t
-    :no-function t
-    :returns (mv
-	      err-flg
-	      (mandatory-prefix
-	       (unsigned-byte-p 8 mandatory-prefix)
-	       :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))))
-    :short "Two-byte Opcodes: picks the appropriate SIMD prefix as the
-    mandatory prefix, if applicable"
-
-    (case proc-mode
-      (#.*64-bit-mode*
-       (64-bit-compute-mandatory-prefix-for-two-byte-opcode
-	opcode prefixes))
-      (otherwise
-       ;; TODO: Other modes.
-       (32-bit-compute-mandatory-prefix-for-two-byte-opcode
-	opcode prefixes))))
-
-  (define compute-mandatory-prefix-for-0F-38-three-byte-opcode
-    ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
-     (opcode             :type (unsigned-byte 8))
-     (prefixes           :type (unsigned-byte #.*prefixes-width*)))
-    :inline t
-    :no-function t
-    :returns (mv
-	      err-flg
-	      (mandatory-prefix
-	       (unsigned-byte-p 8 mandatory-prefix)
-	       :hints (("Goal" :in-theory (e/d ()
-					       (unsigned-byte-p))))))
-
-    (case proc-mode
-      (#.*64-bit-mode*
-       (64-bit-compute-mandatory-prefix-for-0F-38-three-byte-opcode
-	opcode prefixes))
-      (otherwise
-       (32-bit-compute-mandatory-prefix-for-0F-38-three-byte-opcode
-	opcode prefixes))))
-
-  (define compute-mandatory-prefix-for-0F-3A-three-byte-opcode
-    ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
-     (opcode             :type (unsigned-byte 8))
-     (prefixes           :type (unsigned-byte #.*prefixes-width*)))
-
-    :inline t
-    :no-function t
-    :returns (mv err-flg
-		 (mandatory-prefix
-		  (unsigned-byte-p 8 mandatory-prefix)
-		  :hints (("Goal" :in-theory (e/d ()
-						  (unsigned-byte-p))))))
-
-    (case proc-mode
-      (#.*64-bit-mode*
-       (64-bit-compute-mandatory-prefix-for-0F-3A-three-byte-opcode
-	opcode prefixes))
-      (otherwise
-       (32-bit-compute-mandatory-prefix-for-0F-3A-three-byte-opcode
-	opcode prefixes))))
-
-  (define compute-mandatory-prefix-for-three-byte-opcode
-    ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
-     (second-escape-byte :type (unsigned-byte 8)
-			 "Second byte of the three-byte opcode; either
-			 @('0x38') or @('0x3A')")
-     (opcode             :type (unsigned-byte 8)
-			 "Third byte of the three-byte opcode")
-     (prefixes           :type (unsigned-byte #.*prefixes-width*)))
-
-    :inline t
-    :no-function t
-    :guard (or (equal second-escape-byte #x38)
-	       (equal second-escape-byte #x3A))
-
-    :returns (mv err-flg
-		 (mandatory-prefix
-		  (unsigned-byte-p 8 mandatory-prefix)
-		  :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))))
-
-    :short "Three-byte opcodes: picks the appropriate SIMD prefix as the
-    mandatory prefix, if applicable"
-
-    (case second-escape-byte
-      (#x38
-       (compute-mandatory-prefix-for-0F-38-three-byte-opcode
-	proc-mode opcode prefixes))
-      (#x3A
-       (compute-mandatory-prefix-for-0F-3A-three-byte-opcode
-	proc-mode opcode prefixes))
-      (otherwise
-       (mv nil 0)))))
 
 ;; ----------------------------------------------------------------------
 
@@ -1806,7 +811,8 @@
 	      "Len of column info field is < 2: ~x0."
 	      cell))
 	 ((when (and (eq prop :modr/m?)
-		     (member-eq :1a cell)))
+		     (or (member-eq :1a cell)
+			 (member-eq :1c cell))))
 	  ;; [Rob Sumners] modr/m byte is used in this case for processing
 	  ;; opcode extensions.
 	  1)
@@ -2040,8 +1046,6 @@
 	       (list (compute-modr/m-for-vex-encoded-instructions-1 cells 64-bit-modep)))
 	 (compute-modr/m-for-vex-encoded-instructions
 	  (cdr vex-map) 64-bit-modep))))))
-
-;; ----------------------------------------------------------------------
 
 (defsection ModR/M-decoding
 
@@ -2983,9 +1987,7 @@
 
       (define two-byte-opcode-ModR/M-p
 	((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
-	 (mandatory-prefix :type (unsigned-byte 8)
-			   "As computed by @(tsee
-			   compute-mandatory-prefix-for-two-byte-opcode)")
+	 (mandatory-prefix :type (unsigned-byte 8))
 	 (opcode           :type (unsigned-byte 8)
 			   "Second byte of the two-byte opcode"))
 	:short "Returns @('t') if a two-byte opcode requires a ModR/M byte;
@@ -3218,37 +2220,12 @@
       ;; not require a ModR/M byte.  These have the opcode #ux0F_77.
       ;; Also see compute-modr/m-for-vex-encoded-instructions above for more
       ;; details.
-      (not (vex-prefixes-map-p #x0F vex-prefixes))))
-
-  (defbitstruct modr/m-r/m 3)
-  (defbitstruct modr/m-reg 3)
-  (defbitstruct modr/m-mod 2)
-
-  (defbitstruct modr/m
-    ((r/m modr/m-r/m-p)
-     (reg modr/m-reg-p)
-     (mod modr/m-mod-p))
-    :inline t)
-
-  (defthm return-type-of-ModR/M->r/m-linear
-    (< (ModR/M->r/m modr/m) 8)
-    :hints (("Goal" :in-theory (e/d (ModR/M->r/m) ())))
-    :rule-classes :linear)
-
-  (defthm return-type-of-ModR/M->reg-linear
-    (< (ModR/M->reg modr/m) 8)
-    :hints (("Goal" :in-theory (e/d (ModR/M->reg) ())))
-    :rule-classes :linear)
-
-  (defthm return-type-of-ModR/M->mod-linear
-    (< (ModR/M->mod modr/m) 4)
-    :hints (("Goal" :in-theory (e/d (ModR/M->mod modr/m-fix) ())))
-    :rule-classes :linear))
+      (not (vex-prefixes-map-p #x0F vex-prefixes)))))
 
 ;; ----------------------------------------------------------------------
 
 (defsection SIB-decoding
-
+  :parents (decoding-and-spec-utils)
   :short "Functions to detect and decode SIB bytes"
 
   (local (xdoc::set-default-parents SIB-decoding))
@@ -3257,7 +2234,8 @@
     ((ModR/M :type (unsigned-byte 8))
      (16-bit-addressp booleanp))
     :returns (bool booleanp :hyp (n08p ModR/M))
-    :short "Returns a boolean saying whether a SIB byte is expected."
+    :short "Returns a boolean saying whether a SIB byte is expected to follow a
+    ModR/M byte or not."
     :long
     "<p>
      This is based on Intel manual, Mar'17, Volume 2, Tables 2-1 and 2-2,
@@ -3278,31 +2256,1616 @@
 	 (b* ((r/m (modr/m->r/m ModR/M))
 	      (mod (modr/m->mod ModR/M)))
 	   (and (int= r/m 4)
-		(not (int= mod 3))))))
+		(not (int= mod 3)))))))
 
-  (defbitstruct sib-base  3)
-  (defbitstruct sib-index 3)
-  (defbitstruct sib-scale 2)
+;; ----------------------------------------------------------------------
 
-  (defbitstruct sib
-    ((base  sib-base-p)
-     (index sib-index-p)
-     (scale sib-scale-p))
-    :inline t)
+(defsection mandatory-prefixes-computation
 
-  (defthm return-type-of-sib->base-linear
-    (< (sib->base sib) 8)
-    :hints (("Goal" :in-theory (e/d (sib->base) ())))
-    :rule-classes :linear)
+  :short "Functions to pick legal mandatory prefixes"
 
-  (defthm return-type-of-sib->index-linear
-    (< (sib->index sib) 8)
-    :hints (("Goal" :in-theory (e/d (sib->index) ())))
-    :rule-classes :linear)
+  :long "<p><b>When should we interpret a SIMD prefix (@('66'), @('F2'),
+ @('F3')) as the mandatory prefix for a given opcode in the two- and three-byte
+ opcode maps?</b></p>
 
-  (defthm return-type-of-sib->scale-linear
-    (< (sib->scale sib) 4)
-    :hints (("Goal" :in-theory (e/d (sib->scale sib-fix) ())))
-    :rule-classes :linear))
+ <p>Here are some decoding rules for SIMD mandatory prefixes; note that these
+ do NOT apply for VEX/EVEX-encoded instructions because the mandatory prefixes
+ are explicitly stated there.  All the examples listed below are from Intel's
+ XED (x86 Encoder Decoder: @('https://intelxed.github.io/')).</p>
+
+ <ol>
+
+ <li> <p> For opcodes that can take mandatory prefixes, @('66') is ignored when
+ @('F2')/@('F3') are present. Also, a mandatory prefix does not have to
+ <b>immediately</b> precede the opcode byte --- see (4) below.</p>
+
+ <p> <b> Examples: </b> </p>
+
+ <code>
+
+ (1) xed -64 -d   660f6f00     ;; movdqa xmm0, xmmword ptr [rax]
+ (2) xed -64 -d   f30f6f00     ;; movdqu xmm0, xmmword ptr [rax]
+ (3) xed -64 -d 66f30f6f00     ;; movdqu xmm0, xmmword ptr [rax] (same as (2))
+ (4) xed -64 -d f3660f6f00     ;; movdqu xmm0, xmmword ptr [rax] (same as (2))
+
+ </code>
+
+ </li>
+
+ <li> <p> For opcodes that can take mandatory prefixes, the presence of an
+ unsupported SIMD prefix translates to a reserved instruction; such a prefix
+ does NOT act as a modifier prefix. </p>
+
+ <p> <b> Examples: </b> Opcode @('0f 6b') has a no-prefix form and @('66')
+ mandatory prefix form.  When used with @('f3'), it leads to an error; see (3)
+ below.</p>
+
+ <code>
+
+ (1) xed -64 -d     0f6b00     ;; packssdw mmx0, qword ptr [rax]
+ (2) xed -64 -d   660f6b00     ;; packssdw xmm0, xmmword ptr [rax]
+ (3) xed -64 -d f3660f6b00     ;; GENERAL_ERROR Could not decode...
+
+ </code>
+
+ </li>
+
+ </ol>"
+
+  (local (xdoc::set-default-parents mandatory-prefixes-computation))
+
+  ;; The following *error-** constants have been obtained by exhaustive testing
+  ;; using Intel's XED (x86 Encoder Decoder: https://intelxed.github.io/).
+  ;; That is, for every opcode in the two- and three-byte maps, we checked
+  ;; XED's decoding output with all three SIMD prefixes.  A value of 1
+  ;; associated with an opcode indicates that XED reported a decode error.
+  ;; These constants are only really relevant for compound opcodes (as can be
+  ;; seen in the compute-mandatory-prefix-* functions).  Also, they are the
+  ;; same in the 32- and 64-bit modes of operation.
+
+  (defconst *error-66-with-two-byte-opcode-alist*
+    '((#ux00 . 0) (#ux01 . 0) (#ux02 . 0) (#ux03 . 0)
+      (#ux04 . 1) (#ux05 . 0) (#ux06 . 0) (#ux07 . 0)
+      (#ux08 . 0) (#ux09 . 0) (#ux0A . 1) (#ux0B . 0)
+      (#ux0C . 1) (#ux0D . 0) (#ux0E . 1) (#ux0F . 1)
+      (#ux10 . 0) (#ux11 . 0) (#ux12 . 0) (#ux13 . 0)
+      (#ux14 . 0) (#ux15 . 0) (#ux16 . 0) (#ux17 . 0)
+      (#ux18 . 0) (#ux19 . 0) (#ux1A . 0) (#ux1B . 0)
+      (#ux1C . 0) (#ux1D . 0) (#ux1E . 0) (#ux1F . 0)
+      (#ux20 . 0) (#ux21 . 0) (#ux22 . 0) (#ux23 . 0)
+      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
+      (#ux28 . 0) (#ux29 . 0) (#ux2A . 0) (#ux2B . 0)
+      (#ux2C . 0) (#ux2D . 0) (#ux2E . 0) (#ux2F . 0)
+      (#ux30 . 0) (#ux31 . 0) (#ux32 . 0) (#ux33 . 0)
+      (#ux34 . 0) (#ux35 . 0) (#ux36 . 1) (#ux37 . 0)
+      (#ux38 . 0) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
+      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
+      (#ux40 . 0) (#ux41 . 0) (#ux42 . 0) (#ux43 . 0)
+      (#ux44 . 0) (#ux45 . 0) (#ux46 . 0) (#ux47 . 0)
+      (#ux48 . 0) (#ux49 . 0) (#ux4A . 0) (#ux4B . 0)
+      (#ux4C . 0) (#ux4D . 0) (#ux4E . 0) (#ux4F . 0)
+      (#ux50 . 1) (#ux51 . 0) (#ux52 . 1) (#ux53 . 1)
+      (#ux54 . 0) (#ux55 . 0) (#ux56 . 0) (#ux57 . 0)
+      (#ux58 . 0) (#ux59 . 0) (#ux5A . 0) (#ux5B . 0)
+      (#ux5C . 0) (#ux5D . 0) (#ux5E . 0) (#ux5F . 0)
+      (#ux60 . 0) (#ux61 . 0) (#ux62 . 0) (#ux63 . 0)
+      (#ux64 . 0) (#ux65 . 0) (#ux66 . 0) (#ux67 . 0)
+      (#ux68 . 0) (#ux69 . 0) (#ux6A . 0) (#ux6B . 0)
+      (#ux6C . 0) (#ux6D . 0) (#ux6E . 0) (#ux6F . 0)
+      (#ux70 . 0) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
+      (#ux74 . 0) (#ux75 . 0) (#ux76 . 0) (#ux77 . 1)
+      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
+      (#ux7C . 0) (#ux7D . 0) (#ux7E . 0) (#ux7F . 0)
+      (#ux80 . 0) (#ux81 . 0) (#ux82 . 0) (#ux83 . 0)
+      (#ux84 . 0) (#ux85 . 0) (#ux86 . 0) (#ux87 . 0)
+      (#ux88 . 0) (#ux89 . 0) (#ux8A . 0) (#ux8B . 0)
+      (#ux8C . 0) (#ux8D . 0) (#ux8E . 0) (#ux8F . 0)
+      (#ux90 . 0) (#ux91 . 0) (#ux92 . 0) (#ux93 . 0)
+      (#ux94 . 0) (#ux95 . 0) (#ux96 . 0) (#ux97 . 0)
+      (#ux98 . 0) (#ux99 . 0) (#ux9A . 0) (#ux9B . 0)
+      (#ux9C . 0) (#ux9D . 0) (#ux9E . 0) (#ux9F . 0)
+      (#uxA0 . 0) (#uxA1 . 0) (#uxA2 . 0) (#uxA3 . 0)
+      (#uxA4 . 0) (#uxA5 . 0) (#uxA6 . 1) (#uxA7 . 1)
+      (#uxA8 . 0) (#uxA9 . 0) (#uxAA . 0) (#uxAB . 0)
+      (#uxAC . 0) (#uxAD . 0) (#uxAE . 1) (#uxAF . 0)
+      (#uxB0 . 0) (#uxB1 . 0) (#uxB2 . 0) (#uxB3 . 0)
+      (#uxB4 . 0) (#uxB5 . 0) (#uxB6 . 0) (#uxB7 . 0)
+      (#uxB8 . 1) (#uxB9 . 0) (#uxBA . 1) (#uxBB . 0)
+      (#uxBC . 0) (#uxBD . 0) (#uxBE . 0) (#uxBF . 0)
+      (#uxC0 . 0) (#uxC1 . 0) (#uxC2 . 0) (#uxC3 . 1)
+      (#uxC4 . 0) (#uxC5 . 1) (#uxC6 . 0) (#uxC7 . 1)
+      (#uxC8 . 0) (#uxC9 . 0) (#uxCA . 0) (#uxCB . 0)
+      (#uxCC . 0) (#uxCD . 0) (#uxCE . 0) (#uxCF . 0)
+      (#uxD0 . 0) (#uxD1 . 0) (#uxD2 . 0) (#uxD3 . 0)
+      (#uxD4 . 0) (#uxD5 . 0) (#uxD6 . 0) (#uxD7 . 1)
+      (#uxD8 . 0) (#uxD9 . 0) (#uxDA . 0) (#uxDB . 0)
+      (#uxDC . 0) (#uxDD . 0) (#uxDE . 0) (#uxDF . 0)
+      (#uxE0 . 0) (#uxE1 . 0) (#uxE2 . 0) (#uxE3 . 0)
+      (#uxE4 . 0) (#uxE5 . 0) (#uxE6 . 0) (#uxE7 . 0)
+      (#uxE8 . 0) (#uxE9 . 0) (#uxEA . 0) (#uxEB . 0)
+      (#uxEC . 0) (#uxED . 0) (#uxEE . 0) (#uxEF . 0)
+      (#uxF0 . 1) (#uxF1 . 0) (#uxF2 . 0) (#uxF3 . 0)
+      (#uxF4 . 0) (#uxF5 . 0) (#uxF6 . 0) (#uxF7 . 1)
+      (#uxF8 . 0) (#uxF9 . 0) (#uxFA . 0) (#uxFB . 0)
+      (#uxFC . 0) (#uxFD . 0) (#uxFE . 0) (#uxFF . 0)))
+
+  (local
+   (defthm len-of-error-66-with-two-byte-opcode
+     (equal (len *error-66-with-two-byte-opcode-alist*) 256)))
+
+  (defconst *error-66-with-two-byte-opcode-ar*
+    (list-to-array
+     'error-66-with-two-byte-opcode
+     (ints-to-booleans (strip-cdrs *error-66-with-two-byte-opcode-alist*))))
+
+  (defconst *error-F2-with-two-byte-opcode-alist*
+    '((#ux00 . 0) (#ux01 . 0) (#ux02 . 0) (#ux03 . 0)
+      (#ux04 . 1) (#ux05 . 0) (#ux06 . 0) (#ux07 . 0)
+      (#ux08 . 0) (#ux09 . 0) (#ux0A . 1) (#ux0B . 0)
+      (#ux0C . 1) (#ux0D . 0) (#ux0E . 1) (#ux0F . 1)
+      (#ux10 . 0) (#ux11 . 0) (#ux12 . 0) (#ux13 . 1)
+      (#ux14 . 1) (#ux15 . 1) (#ux16 . 1) (#ux17 . 1)
+      (#ux18 . 0) (#ux19 . 0) (#ux1A . 0) (#ux1B . 0)
+      (#ux1C . 0) (#ux1D . 0) (#ux1E . 0) (#ux1F . 0)
+      (#ux20 . 0) (#ux21 . 0) (#ux22 . 0) (#ux23 . 0)
+      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
+      (#ux28 . 1) (#ux29 . 1) (#ux2A . 0) (#ux2B . 1)
+      (#ux2C . 0) (#ux2D . 0) (#ux2E . 1) (#ux2F . 1)
+      (#ux30 . 0) (#ux31 . 0) (#ux32 . 0) (#ux33 . 0)
+      (#ux34 . 0) (#ux35 . 0) (#ux36 . 1) (#ux37 . 0)
+      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
+      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
+      (#ux40 . 0) (#ux41 . 0) (#ux42 . 0) (#ux43 . 0)
+      (#ux44 . 0) (#ux45 . 0) (#ux46 . 0) (#ux47 . 0)
+      (#ux48 . 0) (#ux49 . 0) (#ux4A . 0) (#ux4B . 0)
+      (#ux4C . 0) (#ux4D . 0) (#ux4E . 0) (#ux4F . 0)
+      (#ux50 . 1) (#ux51 . 0) (#ux52 . 1) (#ux53 . 1)
+      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
+      (#ux58 . 0) (#ux59 . 0) (#ux5A . 0) (#ux5B . 1)
+      (#ux5C . 0) (#ux5D . 0) (#ux5E . 0) (#ux5F . 0)
+      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
+      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
+      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
+      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
+      (#ux70 . 0) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
+      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
+      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
+      (#ux7C . 0) (#ux7D . 0) (#ux7E . 1) (#ux7F . 1)
+      (#ux80 . 0) (#ux81 . 0) (#ux82 . 0) (#ux83 . 0)
+      (#ux84 . 0) (#ux85 . 0) (#ux86 . 0) (#ux87 . 0)
+      (#ux88 . 0) (#ux89 . 0) (#ux8A . 0) (#ux8B . 0)
+      (#ux8C . 0) (#ux8D . 0) (#ux8E . 0) (#ux8F . 0)
+      (#ux90 . 0) (#ux91 . 0) (#ux92 . 0) (#ux93 . 0)
+      (#ux94 . 0) (#ux95 . 0) (#ux96 . 0) (#ux97 . 0)
+      (#ux98 . 0) (#ux99 . 0) (#ux9A . 0) (#ux9B . 0)
+      (#ux9C . 0) (#ux9D . 0) (#ux9E . 0) (#ux9F . 0)
+      (#uxA0 . 0) (#uxA1 . 0) (#uxA2 . 0) (#uxA3 . 0)
+      (#uxA4 . 0) (#uxA5 . 0) (#uxA6 . 1) (#uxA7 . 1)
+      (#uxA8 . 0) (#uxA9 . 0) (#uxAA . 0) (#uxAB . 0)
+      (#uxAC . 0) (#uxAD . 0) (#uxAE . 1) (#uxAF . 0)
+      (#uxB0 . 0) (#uxB1 . 0) (#uxB2 . 0) (#uxB3 . 0)
+      (#uxB4 . 0) (#uxB5 . 0) (#uxB6 . 0) (#uxB7 . 0)
+      (#uxB8 . 1) (#uxB9 . 0) (#uxBA . 1) (#uxBB . 0)
+      (#uxBC . 0) (#uxBD . 0) (#uxBE . 0) (#uxBF . 0)
+      (#uxC0 . 0) (#uxC1 . 0) (#uxC2 . 0) (#uxC3 . 1)
+      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
+      (#uxC8 . 0) (#uxC9 . 0) (#uxCA . 0) (#uxCB . 0)
+      (#uxCC . 0) (#uxCD . 0) (#uxCE . 0) (#uxCF . 0)
+      (#uxD0 . 0) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
+      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
+      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
+      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 1)
+      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
+      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 0) (#uxE7 . 1)
+      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
+      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
+      (#uxF0 . 0) (#uxF1 . 1) (#uxF2 . 1) (#uxF3 . 1)
+      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 1) (#uxF7 . 1)
+      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
+      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 0)))
+
+  (local
+   (defthm len-of-error-F2-with-two-byte-opcode
+     (equal (len *error-F2-with-two-byte-opcode-alist*) 256)))
+
+  (defconst *error-F2-with-two-byte-opcode-ar*
+    (list-to-array
+     'error-F2-with-two-byte-opcode
+     (ints-to-booleans (strip-cdrs *error-F2-with-two-byte-opcode-alist*))))
+
+  (defconst *error-F3-with-two-byte-opcode-alist*
+    '((#ux00 . 0) (#ux01 . 0) (#ux02 . 0) (#ux03 . 0)
+      (#ux04 . 1) (#ux05 . 0) (#ux06 . 0) (#ux07 . 0)
+      (#ux08 . 0) (#ux09 . 0) (#ux0A . 1) (#ux0B . 0)
+      (#ux0C . 1) (#ux0D . 0) (#ux0E . 1) (#ux0F . 1)
+      (#ux10 . 0) (#ux11 . 0) (#ux12 . 0) (#ux13 . 1)
+      (#ux14 . 1) (#ux15 . 1) (#ux16 . 0) (#ux17 . 1)
+      (#ux18 . 0) (#ux19 . 0) (#ux1A . 0) (#ux1B . 0)
+      (#ux1C . 0) (#ux1D . 0) (#ux1E . 0) (#ux1F . 0)
+      (#ux20 . 0) (#ux21 . 0) (#ux22 . 0) (#ux23 . 0)
+      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
+      (#ux28 . 1) (#ux29 . 1) (#ux2A . 0) (#ux2B . 1)
+      (#ux2C . 0) (#ux2D . 0) (#ux2E . 1) (#ux2F . 1)
+      (#ux30 . 0) (#ux31 . 0) (#ux32 . 0) (#ux33 . 0)
+      (#ux34 . 0) (#ux35 . 0) (#ux36 . 1) (#ux37 . 0)
+      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
+      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
+      (#ux40 . 0) (#ux41 . 0) (#ux42 . 0) (#ux43 . 0)
+      (#ux44 . 0) (#ux45 . 0) (#ux46 . 0) (#ux47 . 0)
+      (#ux48 . 0) (#ux49 . 0) (#ux4A . 0) (#ux4B . 0)
+      (#ux4C . 0) (#ux4D . 0) (#ux4E . 0) (#ux4F . 0)
+      (#ux50 . 1) (#ux51 . 0) (#ux52 . 0) (#ux53 . 0)
+      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
+      (#ux58 . 0) (#ux59 . 0) (#ux5A . 0) (#ux5B . 0)
+      (#ux5C . 0) (#ux5D . 0) (#ux5E . 0) (#ux5F . 0)
+      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
+      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
+      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
+      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 0)
+      (#ux70 . 0) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
+      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
+      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
+      (#ux7C . 1) (#ux7D . 1) (#ux7E . 0) (#ux7F . 0)
+      (#ux80 . 0) (#ux81 . 0) (#ux82 . 0) (#ux83 . 0)
+      (#ux84 . 0) (#ux85 . 0) (#ux86 . 0) (#ux87 . 0)
+      (#ux88 . 0) (#ux89 . 0) (#ux8A . 0) (#ux8B . 0)
+      (#ux8C . 0) (#ux8D . 0) (#ux8E . 0) (#ux8F . 0)
+      (#ux90 . 0) (#ux91 . 0) (#ux92 . 0) (#ux93 . 0)
+      (#ux94 . 0) (#ux95 . 0) (#ux96 . 0) (#ux97 . 0)
+      (#ux98 . 0) (#ux99 . 0) (#ux9A . 0) (#ux9B . 0)
+      (#ux9C . 0) (#ux9D . 0) (#ux9E . 0) (#ux9F . 0)
+      (#uxA0 . 0) (#uxA1 . 0) (#uxA2 . 0) (#uxA3 . 0)
+      (#uxA4 . 0) (#uxA5 . 0) (#uxA6 . 1) (#uxA7 . 1)
+      (#uxA8 . 0) (#uxA9 . 0) (#uxAA . 0) (#uxAB . 0)
+      (#uxAC . 0) (#uxAD . 0) (#uxAE . 1) (#uxAF . 0)
+      (#uxB0 . 0) (#uxB1 . 0) (#uxB2 . 0) (#uxB3 . 0)
+      (#uxB4 . 0) (#uxB5 . 0) (#uxB6 . 0) (#uxB7 . 0)
+      (#uxB8 . 0) (#uxB9 . 0) (#uxBA . 1) (#uxBB . 0)
+      (#uxBC . 0) (#uxBD . 0) (#uxBE . 0) (#uxBF . 0)
+      (#uxC0 . 0) (#uxC1 . 0) (#uxC2 . 0) (#uxC3 . 1)
+      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
+      (#uxC8 . 0) (#uxC9 . 0) (#uxCA . 0) (#uxCB . 0)
+      (#uxCC . 0) (#uxCD . 0) (#uxCE . 0) (#uxCF . 0)
+      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
+      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
+      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
+      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 1)
+      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
+      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 0) (#uxE7 . 1)
+      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
+      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
+      (#uxF0 . 1) (#uxF1 . 1) (#uxF2 . 1) (#uxF3 . 1)
+      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 1) (#uxF7 . 1)
+      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
+      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 0)))
+
+  (local
+   (defthm len-of-error-F3-with-two-byte-opcode
+     (equal (len *error-F3-with-two-byte-opcode-alist*) 256)))
+
+  (defconst *error-F3-with-two-byte-opcode-ar*
+    (list-to-array
+     'error-F3-with-two-byte-opcode
+     (ints-to-booleans (strip-cdrs *error-F3-with-two-byte-opcode-alist*))))
+
+  (defconst *error-66-with-0F-38-three-byte-opcode-alist*
+    '((#ux00 . 0) (#ux01 . 0) (#ux02 . 0) (#ux03 . 0)
+      (#ux04 . 0) (#ux05 . 0) (#ux06 . 0) (#ux07 . 0)
+      (#ux08 . 0) (#ux09 . 0) (#ux0A . 0) (#ux0B . 0)
+      (#ux0C . 1) (#ux0D . 1) (#ux0E . 1) (#ux0F . 1)
+      (#ux10 . 0) (#ux11 . 1) (#ux12 . 1) (#ux13 . 1)
+      (#ux14 . 0) (#ux15 . 0) (#ux16 . 1) (#ux17 . 0)
+      (#ux18 . 1) (#ux19 . 1) (#ux1A . 1) (#ux1B . 1)
+      (#ux1C . 0) (#ux1D . 0) (#ux1E . 0) (#ux1F . 1)
+      (#ux20 . 0) (#ux21 . 0) (#ux22 . 0) (#ux23 . 0)
+      (#ux24 . 0) (#ux25 . 0) (#ux26 . 1) (#ux27 . 1)
+      (#ux28 . 0) (#ux29 . 0) (#ux2A . 0) (#ux2B . 0)
+      (#ux2C . 1) (#ux2D . 1) (#ux2E . 1) (#ux2F . 1)
+      (#ux30 . 0) (#ux31 . 0) (#ux32 . 0) (#ux33 . 0)
+      (#ux34 . 0) (#ux35 . 0) (#ux36 . 1) (#ux37 . 0)
+      (#ux38 . 0) (#ux39 . 0) (#ux3A . 0) (#ux3B . 0)
+      (#ux3C . 0) (#ux3D . 0) (#ux3E . 0) (#ux3F . 0)
+      (#ux40 . 0) (#ux41 . 0) (#ux42 . 1) (#ux43 . 1)
+      (#ux44 . 1) (#ux45 . 1) (#ux46 . 1) (#ux47 . 1)
+      (#ux48 . 1) (#ux49 . 1) (#ux4A . 1) (#ux4B . 1)
+      (#ux4C . 1) (#ux4D . 1) (#ux4E . 1) (#ux4F . 1)
+      (#ux50 . 1) (#ux51 . 1) (#ux52 . 1) (#ux53 . 1)
+      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
+      (#ux58 . 1) (#ux59 . 1) (#ux5A . 1) (#ux5B . 1)
+      (#ux5C . 1) (#ux5D . 1) (#ux5E . 1) (#ux5F . 1)
+      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
+      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
+      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
+      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
+      (#ux70 . 1) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
+      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
+      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
+      (#ux7C . 1) (#ux7D . 1) (#ux7E . 1) (#ux7F . 1)
+      (#ux80 . 0) (#ux81 . 0) (#ux82 . 0) (#ux83 . 1)
+      (#ux84 . 1) (#ux85 . 1) (#ux86 . 1) (#ux87 . 1)
+      (#ux88 . 1) (#ux89 . 1) (#ux8A . 1) (#ux8B . 1)
+      (#ux8C . 1) (#ux8D . 1) (#ux8E . 1) (#ux8F . 1)
+      (#ux90 . 1) (#ux91 . 1) (#ux92 . 1) (#ux93 . 1)
+      (#ux94 . 1) (#ux95 . 1) (#ux96 . 1) (#ux97 . 1)
+      (#ux98 . 1) (#ux99 . 1) (#ux9A . 1) (#ux9B . 1)
+      (#ux9C . 1) (#ux9D . 1) (#ux9E . 1) (#ux9F . 1)
+      (#uxA0 . 1) (#uxA1 . 1) (#uxA2 . 1) (#uxA3 . 1)
+      (#uxA4 . 1) (#uxA5 . 1) (#uxA6 . 1) (#uxA7 . 1)
+      (#uxA8 . 1) (#uxA9 . 1) (#uxAA . 1) (#uxAB . 1)
+      (#uxAC . 1) (#uxAD . 1) (#uxAE . 1) (#uxAF . 1)
+      (#uxB0 . 1) (#uxB1 . 1) (#uxB2 . 1) (#uxB3 . 1)
+      (#uxB4 . 1) (#uxB5 . 1) (#uxB6 . 1) (#uxB7 . 1)
+      (#uxB8 . 1) (#uxB9 . 1) (#uxBA . 1) (#uxBB . 1)
+      (#uxBC . 1) (#uxBD . 1) (#uxBE . 1) (#uxBF . 1)
+      (#uxC0 . 1) (#uxC1 . 1) (#uxC2 . 1) (#uxC3 . 1)
+      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
+      (#uxC8 . 1) (#uxC9 . 1) (#uxCA . 1) (#uxCB . 1)
+      (#uxCC . 1) (#uxCD . 1) (#uxCE . 1) (#uxCF . 1)
+      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
+      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
+      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 0)
+      (#uxDC . 0) (#uxDD . 0) (#uxDE . 0) (#uxDF . 0)
+      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
+      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 1) (#uxE7 . 1)
+      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
+      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
+      (#uxF0 . 0) (#uxF1 . 0) (#uxF2 . 1) (#uxF3 . 1)
+      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 0) (#uxF7 . 1)
+      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
+      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 1)))
+
+  (local
+   (defthm len-of-error-66-with-0F-38-three-byte-opcode
+     (equal (len *error-66-with-0F-38-three-byte-opcode-alist*) 256)))
+
+  (defconst *error-66-with-0F-38-three-byte-opcode-ar*
+    (list-to-array
+     'error-66-with-0F-38-three-byte-opcode
+     (ints-to-booleans (strip-cdrs
+			*error-66-with-0F-38-three-byte-opcode-alist*))))
+
+  (defconst *error-F2-with-0F-38-three-byte-opcode-alist*
+    '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
+      (#ux04 . 1) (#ux05 . 1) (#ux06 . 1) (#ux07 . 1)
+      (#ux08 . 1) (#ux09 . 1) (#ux0A . 1) (#ux0B . 1)
+      (#ux0C . 1) (#ux0D . 1) (#ux0E . 1) (#ux0F . 1)
+      (#ux10 . 1) (#ux11 . 1) (#ux12 . 1) (#ux13 . 1)
+      (#ux14 . 1) (#ux15 . 1) (#ux16 . 1) (#ux17 . 1)
+      (#ux18 . 1) (#ux19 . 1) (#ux1A . 1) (#ux1B . 1)
+      (#ux1C . 1) (#ux1D . 1) (#ux1E . 1) (#ux1F . 1)
+      (#ux20 . 1) (#ux21 . 1) (#ux22 . 1) (#ux23 . 1)
+      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
+      (#ux28 . 1) (#ux29 . 1) (#ux2A . 1) (#ux2B . 1)
+      (#ux2C . 1) (#ux2D . 1) (#ux2E . 1) (#ux2F . 1)
+      (#ux30 . 1) (#ux31 . 1) (#ux32 . 1) (#ux33 . 1)
+      (#ux34 . 1) (#ux35 . 1) (#ux36 . 1) (#ux37 . 1)
+      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
+      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
+      (#ux40 . 1) (#ux41 . 1) (#ux42 . 1) (#ux43 . 1)
+      (#ux44 . 1) (#ux45 . 1) (#ux46 . 1) (#ux47 . 1)
+      (#ux48 . 1) (#ux49 . 1) (#ux4A . 1) (#ux4B . 1)
+      (#ux4C . 1) (#ux4D . 1) (#ux4E . 1) (#ux4F . 1)
+      (#ux50 . 1) (#ux51 . 1) (#ux52 . 1) (#ux53 . 1)
+      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
+      (#ux58 . 1) (#ux59 . 1) (#ux5A . 1) (#ux5B . 1)
+      (#ux5C . 1) (#ux5D . 1) (#ux5E . 1) (#ux5F . 1)
+      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
+      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
+      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
+      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
+      (#ux70 . 1) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
+      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
+      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
+      (#ux7C . 1) (#ux7D . 1) (#ux7E . 1) (#ux7F . 1)
+      (#ux80 . 1) (#ux81 . 1) (#ux82 . 1) (#ux83 . 1)
+      (#ux84 . 1) (#ux85 . 1) (#ux86 . 1) (#ux87 . 1)
+      (#ux88 . 1) (#ux89 . 1) (#ux8A . 1) (#ux8B . 1)
+      (#ux8C . 1) (#ux8D . 1) (#ux8E . 1) (#ux8F . 1)
+      (#ux90 . 1) (#ux91 . 1) (#ux92 . 1) (#ux93 . 1)
+      (#ux94 . 1) (#ux95 . 1) (#ux96 . 1) (#ux97 . 1)
+      (#ux98 . 1) (#ux99 . 1) (#ux9A . 1) (#ux9B . 1)
+      (#ux9C . 1) (#ux9D . 1) (#ux9E . 1) (#ux9F . 1)
+      (#uxA0 . 1) (#uxA1 . 1) (#uxA2 . 1) (#uxA3 . 1)
+      (#uxA4 . 1) (#uxA5 . 1) (#uxA6 . 1) (#uxA7 . 1)
+      (#uxA8 . 1) (#uxA9 . 1) (#uxAA . 1) (#uxAB . 1)
+      (#uxAC . 1) (#uxAD . 1) (#uxAE . 1) (#uxAF . 1)
+      (#uxB0 . 1) (#uxB1 . 1) (#uxB2 . 1) (#uxB3 . 1)
+      (#uxB4 . 1) (#uxB5 . 1) (#uxB6 . 1) (#uxB7 . 1)
+      (#uxB8 . 1) (#uxB9 . 1) (#uxBA . 1) (#uxBB . 1)
+      (#uxBC . 1) (#uxBD . 1) (#uxBE . 1) (#uxBF . 1)
+      (#uxC0 . 1) (#uxC1 . 1) (#uxC2 . 1) (#uxC3 . 1)
+      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
+      (#uxC8 . 1) (#uxC9 . 1) (#uxCA . 1) (#uxCB . 1)
+      (#uxCC . 1) (#uxCD . 1) (#uxCE . 1) (#uxCF . 1)
+      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
+      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
+      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
+      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 1)
+      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
+      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 1) (#uxE7 . 1)
+      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
+      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
+      (#uxF0 . 0) (#uxF1 . 0) (#uxF2 . 1) (#uxF3 . 1)
+      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 1) (#uxF7 . 1)
+      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
+      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 1)))
+
+  (local
+   (defthm len-of-error-F2-with-0F-38-three-byte-opcode
+     (equal (len *error-F2-with-0F-38-three-byte-opcode-alist*) 256)))
+
+  (defconst *error-F2-with-0F-38-three-byte-opcode-ar*
+    (list-to-array
+     'error-F2-with-0F-38-three-byte-opcode
+     (ints-to-booleans (strip-cdrs
+			*error-F2-with-0F-38-three-byte-opcode-alist*))))
+
+  (defconst *error-F3-with-0F-38-three-byte-opcode-alist*
+    '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
+      (#ux04 . 1) (#ux05 . 1) (#ux06 . 1) (#ux07 . 1)
+      (#ux08 . 1) (#ux09 . 1) (#ux0A . 1) (#ux0B . 1)
+      (#ux0C . 1) (#ux0D . 1) (#ux0E . 1) (#ux0F . 1)
+      (#ux10 . 1) (#ux11 . 1) (#ux12 . 1) (#ux13 . 1)
+      (#ux14 . 1) (#ux15 . 1) (#ux16 . 1) (#ux17 . 1)
+      (#ux18 . 1) (#ux19 . 1) (#ux1A . 1) (#ux1B . 1)
+      (#ux1C . 1) (#ux1D . 1) (#ux1E . 1) (#ux1F . 1)
+      (#ux20 . 1) (#ux21 . 1) (#ux22 . 1) (#ux23 . 1)
+      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
+      (#ux28 . 1) (#ux29 . 1) (#ux2A . 1) (#ux2B . 1)
+      (#ux2C . 1) (#ux2D . 1) (#ux2E . 1) (#ux2F . 1)
+      (#ux30 . 1) (#ux31 . 1) (#ux32 . 1) (#ux33 . 1)
+      (#ux34 . 1) (#ux35 . 1) (#ux36 . 1) (#ux37 . 1)
+      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
+      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
+      (#ux40 . 1) (#ux41 . 1) (#ux42 . 1) (#ux43 . 1)
+      (#ux44 . 1) (#ux45 . 1) (#ux46 . 1) (#ux47 . 1)
+      (#ux48 . 1) (#ux49 . 1) (#ux4A . 1) (#ux4B . 1)
+      (#ux4C . 1) (#ux4D . 1) (#ux4E . 1) (#ux4F . 1)
+      (#ux50 . 1) (#ux51 . 1) (#ux52 . 1) (#ux53 . 1)
+      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
+      (#ux58 . 1) (#ux59 . 1) (#ux5A . 1) (#ux5B . 1)
+      (#ux5C . 1) (#ux5D . 1) (#ux5E . 1) (#ux5F . 1)
+      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
+      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
+      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
+      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
+      (#ux70 . 1) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
+      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
+      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
+      (#ux7C . 1) (#ux7D . 1) (#ux7E . 1) (#ux7F . 1)
+      (#ux80 . 1) (#ux81 . 1) (#ux82 . 1) (#ux83 . 1)
+      (#ux84 . 1) (#ux85 . 1) (#ux86 . 1) (#ux87 . 1)
+      (#ux88 . 1) (#ux89 . 1) (#ux8A . 1) (#ux8B . 1)
+      (#ux8C . 1) (#ux8D . 1) (#ux8E . 1) (#ux8F . 1)
+      (#ux90 . 1) (#ux91 . 1) (#ux92 . 1) (#ux93 . 1)
+      (#ux94 . 1) (#ux95 . 1) (#ux96 . 1) (#ux97 . 1)
+      (#ux98 . 1) (#ux99 . 1) (#ux9A . 1) (#ux9B . 1)
+      (#ux9C . 1) (#ux9D . 1) (#ux9E . 1) (#ux9F . 1)
+      (#uxA0 . 1) (#uxA1 . 1) (#uxA2 . 1) (#uxA3 . 1)
+      (#uxA4 . 1) (#uxA5 . 1) (#uxA6 . 1) (#uxA7 . 1)
+      (#uxA8 . 1) (#uxA9 . 1) (#uxAA . 1) (#uxAB . 1)
+      (#uxAC . 1) (#uxAD . 1) (#uxAE . 1) (#uxAF . 1)
+      (#uxB0 . 1) (#uxB1 . 1) (#uxB2 . 1) (#uxB3 . 1)
+      (#uxB4 . 1) (#uxB5 . 1) (#uxB6 . 1) (#uxB7 . 1)
+      (#uxB8 . 1) (#uxB9 . 1) (#uxBA . 1) (#uxBB . 1)
+      (#uxBC . 1) (#uxBD . 1) (#uxBE . 1) (#uxBF . 1)
+      (#uxC0 . 1) (#uxC1 . 1) (#uxC2 . 1) (#uxC3 . 1)
+      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
+      (#uxC8 . 1) (#uxC9 . 1) (#uxCA . 1) (#uxCB . 1)
+      (#uxCC . 1) (#uxCD . 1) (#uxCE . 1) (#uxCF . 1)
+      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
+      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
+      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
+      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 1)
+      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
+      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 1) (#uxE7 . 1)
+      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
+      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
+      (#uxF0 . 1) (#uxF1 . 1) (#uxF2 . 1) (#uxF3 . 1)
+      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 0) (#uxF7 . 1)
+      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
+      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 1)))
+
+  (local
+   (defthm len-of-error-F3-with-0F-38-three-byte-opcode
+     (equal (len *error-F3-with-0F-38-three-byte-opcode-alist*) 256)))
+
+  (defconst *error-F3-with-0F-38-three-byte-opcode-ar*
+    (list-to-array
+     'error-F3-with-0F-38-three-byte-opcode
+     (ints-to-booleans (strip-cdrs
+			*error-F3-with-0F-38-three-byte-opcode-alist*))))
+
+
+  (defconst *error-66-with-0F-3A-three-byte-opcode-alist*
+    '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
+      (#ux04 . 1) (#ux05 . 1) (#ux06 . 1) (#ux07 . 1)
+      (#ux08 . 0) (#ux09 . 0) (#ux0A . 0) (#ux0B . 0)
+      (#ux0C . 0) (#ux0D . 0) (#ux0E . 0) (#ux0F . 0)
+      (#ux10 . 1) (#ux11 . 1) (#ux12 . 1) (#ux13 . 1)
+      (#ux14 . 0) (#ux15 . 0) (#ux16 . 0) (#ux17 . 0)
+      (#ux18 . 1) (#ux19 . 1) (#ux1A . 1) (#ux1B . 1)
+      (#ux1C . 1) (#ux1D . 1) (#ux1E . 1) (#ux1F . 1)
+      (#ux20 . 0) (#ux21 . 0) (#ux22 . 0) (#ux23 . 1)
+      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
+      (#ux28 . 1) (#ux29 . 1) (#ux2A . 1) (#ux2B . 1)
+      (#ux2C . 1) (#ux2D . 1) (#ux2E . 1) (#ux2F . 1)
+      (#ux30 . 1) (#ux31 . 1) (#ux32 . 1) (#ux33 . 1)
+      (#ux34 . 1) (#ux35 . 1) (#ux36 . 1) (#ux37 . 1)
+      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
+      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
+      (#ux40 . 0) (#ux41 . 0) (#ux42 . 0) (#ux43 . 1)
+      (#ux44 . 0) (#ux45 . 1) (#ux46 . 1) (#ux47 . 1)
+      (#ux48 . 1) (#ux49 . 1) (#ux4A . 1) (#ux4B . 1)
+      (#ux4C . 1) (#ux4D . 1) (#ux4E . 1) (#ux4F . 1)
+      (#ux50 . 1) (#ux51 . 1) (#ux52 . 1) (#ux53 . 1)
+      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
+      (#ux58 . 1) (#ux59 . 1) (#ux5A . 1) (#ux5B . 1)
+      (#ux5C . 1) (#ux5D . 1) (#ux5E . 1) (#ux5F . 1)
+      (#ux60 . 0) (#ux61 . 0) (#ux62 . 0) (#ux63 . 0)
+      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
+      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
+      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
+      (#ux70 . 1) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
+      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
+      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
+      (#ux7C . 1) (#ux7D . 1) (#ux7E . 1) (#ux7F . 1)
+      (#ux80 . 1) (#ux81 . 1) (#ux82 . 1) (#ux83 . 1)
+      (#ux84 . 1) (#ux85 . 1) (#ux86 . 1) (#ux87 . 1)
+      (#ux88 . 1) (#ux89 . 1) (#ux8A . 1) (#ux8B . 1)
+      (#ux8C . 1) (#ux8D . 1) (#ux8E . 1) (#ux8F . 1)
+      (#ux90 . 1) (#ux91 . 1) (#ux92 . 1) (#ux93 . 1)
+      (#ux94 . 1) (#ux95 . 1) (#ux96 . 1) (#ux97 . 1)
+      (#ux98 . 1) (#ux99 . 1) (#ux9A . 1) (#ux9B . 1)
+      (#ux9C . 1) (#ux9D . 1) (#ux9E . 1) (#ux9F . 1)
+      (#uxA0 . 1) (#uxA1 . 1) (#uxA2 . 1) (#uxA3 . 1)
+      (#uxA4 . 1) (#uxA5 . 1) (#uxA6 . 1) (#uxA7 . 1)
+      (#uxA8 . 1) (#uxA9 . 1) (#uxAA . 1) (#uxAB . 1)
+      (#uxAC . 1) (#uxAD . 1) (#uxAE . 1) (#uxAF . 1)
+      (#uxB0 . 1) (#uxB1 . 1) (#uxB2 . 1) (#uxB3 . 1)
+      (#uxB4 . 1) (#uxB5 . 1) (#uxB6 . 1) (#uxB7 . 1)
+      (#uxB8 . 1) (#uxB9 . 1) (#uxBA . 1) (#uxBB . 1)
+      (#uxBC . 1) (#uxBD . 1) (#uxBE . 1) (#uxBF . 1)
+      (#uxC0 . 1) (#uxC1 . 1) (#uxC2 . 1) (#uxC3 . 1)
+      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
+      (#uxC8 . 1) (#uxC9 . 1) (#uxCA . 1) (#uxCB . 1)
+      (#uxCC . 1) (#uxCD . 1) (#uxCE . 1) (#uxCF . 1)
+      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
+      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
+      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
+      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 0)
+      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
+      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 1) (#uxE7 . 1)
+      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
+      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
+      (#uxF0 . 1) (#uxF1 . 1) (#uxF2 . 1) (#uxF3 . 1)
+      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 1) (#uxF7 . 1)
+      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
+      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 1)))
+
+  (local
+   (defthm len-of-error-66-with-0F-3A-three-byte-opcode
+     (equal (len *error-66-with-0F-3A-three-byte-opcode-alist*) 256)))
+
+  (defconst *error-66-with-0F-3A-three-byte-opcode-ar*
+    (list-to-array
+     'error-66-with-0F-3A-three-byte-opcode
+     (ints-to-booleans (strip-cdrs
+			*error-66-with-0F-3A-three-byte-opcode-alist*))))
+
+  (defconst *error-F2-with-0F-3A-three-byte-opcode-alist*
+    '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
+      (#ux04 . 1) (#ux05 . 1) (#ux06 . 1) (#ux07 . 1)
+      (#ux08 . 1) (#ux09 . 1) (#ux0A . 1) (#ux0B . 1)
+      (#ux0C . 1) (#ux0D . 1) (#ux0E . 1) (#ux0F . 1)
+      (#ux10 . 1) (#ux11 . 1) (#ux12 . 1) (#ux13 . 1)
+      (#ux14 . 1) (#ux15 . 1) (#ux16 . 1) (#ux17 . 1)
+      (#ux18 . 1) (#ux19 . 1) (#ux1A . 1) (#ux1B . 1)
+      (#ux1C . 1) (#ux1D . 1) (#ux1E . 1) (#ux1F . 1)
+      (#ux20 . 1) (#ux21 . 1) (#ux22 . 1) (#ux23 . 1)
+      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
+      (#ux28 . 1) (#ux29 . 1) (#ux2A . 1) (#ux2B . 1)
+      (#ux2C . 1) (#ux2D . 1) (#ux2E . 1) (#ux2F . 1)
+      (#ux30 . 1) (#ux31 . 1) (#ux32 . 1) (#ux33 . 1)
+      (#ux34 . 1) (#ux35 . 1) (#ux36 . 1) (#ux37 . 1)
+      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
+      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
+      (#ux40 . 1) (#ux41 . 1) (#ux42 . 1) (#ux43 . 1)
+      (#ux44 . 1) (#ux45 . 1) (#ux46 . 1) (#ux47 . 1)
+      (#ux48 . 1) (#ux49 . 1) (#ux4A . 1) (#ux4B . 1)
+      (#ux4C . 1) (#ux4D . 1) (#ux4E . 1) (#ux4F . 1)
+      (#ux50 . 1) (#ux51 . 1) (#ux52 . 1) (#ux53 . 1)
+      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
+      (#ux58 . 1) (#ux59 . 1) (#ux5A . 1) (#ux5B . 1)
+      (#ux5C . 1) (#ux5D . 1) (#ux5E . 1) (#ux5F . 1)
+      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
+      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
+      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
+      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
+      (#ux70 . 1) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
+      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
+      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
+      (#ux7C . 1) (#ux7D . 1) (#ux7E . 1) (#ux7F . 1)
+      (#ux80 . 1) (#ux81 . 1) (#ux82 . 1) (#ux83 . 1)
+      (#ux84 . 1) (#ux85 . 1) (#ux86 . 1) (#ux87 . 1)
+      (#ux88 . 1) (#ux89 . 1) (#ux8A . 1) (#ux8B . 1)
+      (#ux8C . 1) (#ux8D . 1) (#ux8E . 1) (#ux8F . 1)
+      (#ux90 . 1) (#ux91 . 1) (#ux92 . 1) (#ux93 . 1)
+      (#ux94 . 1) (#ux95 . 1) (#ux96 . 1) (#ux97 . 1)
+      (#ux98 . 1) (#ux99 . 1) (#ux9A . 1) (#ux9B . 1)
+      (#ux9C . 1) (#ux9D . 1) (#ux9E . 1) (#ux9F . 1)
+      (#uxA0 . 1) (#uxA1 . 1) (#uxA2 . 1) (#uxA3 . 1)
+      (#uxA4 . 1) (#uxA5 . 1) (#uxA6 . 1) (#uxA7 . 1)
+      (#uxA8 . 1) (#uxA9 . 1) (#uxAA . 1) (#uxAB . 1)
+      (#uxAC . 1) (#uxAD . 1) (#uxAE . 1) (#uxAF . 1)
+      (#uxB0 . 1) (#uxB1 . 1) (#uxB2 . 1) (#uxB3 . 1)
+      (#uxB4 . 1) (#uxB5 . 1) (#uxB6 . 1) (#uxB7 . 1)
+      (#uxB8 . 1) (#uxB9 . 1) (#uxBA . 1) (#uxBB . 1)
+      (#uxBC . 1) (#uxBD . 1) (#uxBE . 1) (#uxBF . 1)
+      (#uxC0 . 1) (#uxC1 . 1) (#uxC2 . 1) (#uxC3 . 1)
+      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
+      (#uxC8 . 1) (#uxC9 . 1) (#uxCA . 1) (#uxCB . 1)
+      (#uxCC . 1) (#uxCD . 1) (#uxCE . 1) (#uxCF . 1)
+      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
+      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
+      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
+      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 1)
+      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
+      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 1) (#uxE7 . 1)
+      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
+      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
+      (#uxF0 . 1) (#uxF1 . 1) (#uxF2 . 1) (#uxF3 . 1)
+      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 1) (#uxF7 . 1)
+      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
+      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 1)))
+
+  (local
+   (defthm len-of-error-F2-with-0F-3A-three-byte-opcode
+     (equal (len *error-F2-with-0F-3A-three-byte-opcode-alist*) 256)))
+
+  (defconst *error-F2-with-0F-3A-three-byte-opcode-ar*
+    (list-to-array
+     'error-F2-with-0F-3A-three-byte-opcode
+     (ints-to-booleans (strip-cdrs
+			*error-F2-with-0F-3A-three-byte-opcode-alist*))))
+
+  (defconst *error-F3-with-0F-3A-three-byte-opcode-alist*
+    '((#ux00 . 1) (#ux01 . 1) (#ux02 . 1) (#ux03 . 1)
+      (#ux04 . 1) (#ux05 . 1) (#ux06 . 1) (#ux07 . 1)
+      (#ux08 . 1) (#ux09 . 1) (#ux0A . 1) (#ux0B . 1)
+      (#ux0C . 1) (#ux0D . 1) (#ux0E . 1) (#ux0F . 1)
+      (#ux10 . 1) (#ux11 . 1) (#ux12 . 1) (#ux13 . 1)
+      (#ux14 . 1) (#ux15 . 1) (#ux16 . 1) (#ux17 . 1)
+      (#ux18 . 1) (#ux19 . 1) (#ux1A . 1) (#ux1B . 1)
+      (#ux1C . 1) (#ux1D . 1) (#ux1E . 1) (#ux1F . 1)
+      (#ux20 . 1) (#ux21 . 1) (#ux22 . 1) (#ux23 . 1)
+      (#ux24 . 1) (#ux25 . 1) (#ux26 . 1) (#ux27 . 1)
+      (#ux28 . 1) (#ux29 . 1) (#ux2A . 1) (#ux2B . 1)
+      (#ux2C . 1) (#ux2D . 1) (#ux2E . 1) (#ux2F . 1)
+      (#ux30 . 1) (#ux31 . 1) (#ux32 . 1) (#ux33 . 1)
+      (#ux34 . 1) (#ux35 . 1) (#ux36 . 1) (#ux37 . 1)
+      (#ux38 . 1) (#ux39 . 1) (#ux3A . 1) (#ux3B . 1)
+      (#ux3C . 1) (#ux3D . 1) (#ux3E . 1) (#ux3F . 1)
+      (#ux40 . 1) (#ux41 . 1) (#ux42 . 1) (#ux43 . 1)
+      (#ux44 . 1) (#ux45 . 1) (#ux46 . 1) (#ux47 . 1)
+      (#ux48 . 1) (#ux49 . 1) (#ux4A . 1) (#ux4B . 1)
+      (#ux4C . 1) (#ux4D . 1) (#ux4E . 1) (#ux4F . 1)
+      (#ux50 . 1) (#ux51 . 1) (#ux52 . 1) (#ux53 . 1)
+      (#ux54 . 1) (#ux55 . 1) (#ux56 . 1) (#ux57 . 1)
+      (#ux58 . 1) (#ux59 . 1) (#ux5A . 1) (#ux5B . 1)
+      (#ux5C . 1) (#ux5D . 1) (#ux5E . 1) (#ux5F . 1)
+      (#ux60 . 1) (#ux61 . 1) (#ux62 . 1) (#ux63 . 1)
+      (#ux64 . 1) (#ux65 . 1) (#ux66 . 1) (#ux67 . 1)
+      (#ux68 . 1) (#ux69 . 1) (#ux6A . 1) (#ux6B . 1)
+      (#ux6C . 1) (#ux6D . 1) (#ux6E . 1) (#ux6F . 1)
+      (#ux70 . 1) (#ux71 . 1) (#ux72 . 1) (#ux73 . 1)
+      (#ux74 . 1) (#ux75 . 1) (#ux76 . 1) (#ux77 . 1)
+      (#ux78 . 1) (#ux79 . 1) (#ux7A . 1) (#ux7B . 1)
+      (#ux7C . 1) (#ux7D . 1) (#ux7E . 1) (#ux7F . 1)
+      (#ux80 . 1) (#ux81 . 1) (#ux82 . 1) (#ux83 . 1)
+      (#ux84 . 1) (#ux85 . 1) (#ux86 . 1) (#ux87 . 1)
+      (#ux88 . 1) (#ux89 . 1) (#ux8A . 1) (#ux8B . 1)
+      (#ux8C . 1) (#ux8D . 1) (#ux8E . 1) (#ux8F . 1)
+      (#ux90 . 1) (#ux91 . 1) (#ux92 . 1) (#ux93 . 1)
+      (#ux94 . 1) (#ux95 . 1) (#ux96 . 1) (#ux97 . 1)
+      (#ux98 . 1) (#ux99 . 1) (#ux9A . 1) (#ux9B . 1)
+      (#ux9C . 1) (#ux9D . 1) (#ux9E . 1) (#ux9F . 1)
+      (#uxA0 . 1) (#uxA1 . 1) (#uxA2 . 1) (#uxA3 . 1)
+      (#uxA4 . 1) (#uxA5 . 1) (#uxA6 . 1) (#uxA7 . 1)
+      (#uxA8 . 1) (#uxA9 . 1) (#uxAA . 1) (#uxAB . 1)
+      (#uxAC . 1) (#uxAD . 1) (#uxAE . 1) (#uxAF . 1)
+      (#uxB0 . 1) (#uxB1 . 1) (#uxB2 . 1) (#uxB3 . 1)
+      (#uxB4 . 1) (#uxB5 . 1) (#uxB6 . 1) (#uxB7 . 1)
+      (#uxB8 . 1) (#uxB9 . 1) (#uxBA . 1) (#uxBB . 1)
+      (#uxBC . 1) (#uxBD . 1) (#uxBE . 1) (#uxBF . 1)
+      (#uxC0 . 1) (#uxC1 . 1) (#uxC2 . 1) (#uxC3 . 1)
+      (#uxC4 . 1) (#uxC5 . 1) (#uxC6 . 1) (#uxC7 . 1)
+      (#uxC8 . 1) (#uxC9 . 1) (#uxCA . 1) (#uxCB . 1)
+      (#uxCC . 1) (#uxCD . 1) (#uxCE . 1) (#uxCF . 1)
+      (#uxD0 . 1) (#uxD1 . 1) (#uxD2 . 1) (#uxD3 . 1)
+      (#uxD4 . 1) (#uxD5 . 1) (#uxD6 . 1) (#uxD7 . 1)
+      (#uxD8 . 1) (#uxD9 . 1) (#uxDA . 1) (#uxDB . 1)
+      (#uxDC . 1) (#uxDD . 1) (#uxDE . 1) (#uxDF . 1)
+      (#uxE0 . 1) (#uxE1 . 1) (#uxE2 . 1) (#uxE3 . 1)
+      (#uxE4 . 1) (#uxE5 . 1) (#uxE6 . 1) (#uxE7 . 1)
+      (#uxE8 . 1) (#uxE9 . 1) (#uxEA . 1) (#uxEB . 1)
+      (#uxEC . 1) (#uxED . 1) (#uxEE . 1) (#uxEF . 1)
+      (#uxF0 . 1) (#uxF1 . 1) (#uxF2 . 1) (#uxF3 . 1)
+      (#uxF4 . 1) (#uxF5 . 1) (#uxF6 . 1) (#uxF7 . 1)
+      (#uxF8 . 1) (#uxF9 . 1) (#uxFA . 1) (#uxFB . 1)
+      (#uxFC . 1) (#uxFD . 1) (#uxFE . 1) (#uxFF . 1)))
+
+  (local
+   (defthm len-of-error-F3-with-0F-3A-three-byte-opcode
+     (equal (len *error-F3-with-0F-3A-three-byte-opcode-alist*) 256)))
+
+  (defconst *error-F3-with-0F-3A-three-byte-opcode-ar*
+    (list-to-array
+     'error-F3-with-0F-3A-three-byte-opcode
+     (ints-to-booleans (strip-cdrs
+			*error-F3-with-0F-3A-three-byte-opcode-alist*))))
+
+  (local (include-book "std/strings/decimal" :dir :system))
+
+  (local
+   (define gen-compute-mandatory-prefix-fn
+     ((map (member-equal map '(#ux0F #ux0F_38 #ux0F_3A)))
+      (mode (member-equal mode '(32 64))))
+
+     (b* ((mode-name (str::cat (str::natstr mode) "-BIT"))
+	  (pre-name (str::cat mode-name "-COMPUTE-MANDATORY-PREFIX-FOR-"))
+	  (map-name (case map
+		      (#ux0F    "TWO-BYTE")
+		      (#ux0F_38 "0F-38-THREE-BYTE")
+		      (#ux0F_3A "0F-3A-THREE-BYTE")))
+	  (name (intern$ (str::cat pre-name map-name "-OPCODE") "X86ISA"))
+	  (name-aux (intern$ (str::cat pre-name map-name "-OPCODE-AUX") "X86ISA"))
+	  (compound-opcode-name-crux
+	   (str::cat mode-name "-MODE-" map-name "-COMPOUND-OPCODES"))
+	  (compound-opcode-name
+	   (intern$ compound-opcode-name-crux "X86ISA"))
+	  (compound-opcode-const
+	   (intern$ (str::cat "*" compound-opcode-name-crux "-AR*")
+		    "X86ISA"))
+
+	  (F3-ok-crux
+	   (str::cat mode-name "-MODE-" map-name "-F3-OK"))
+	  (F3-ok (intern$ F3-ok-crux "X86ISA"))
+	  (F3-ok-const (intern$ (str::cat "*" F3-ok-crux "-AR*") "X86ISA"))
+	  (F3-error-crux
+	   (str::cat "ERROR-F3-WITH-" map-name "-OPCODE"))
+	  (F3-error
+	   (intern$ F3-error-crux "X86ISA"))
+	  (F3-error-const
+	   (intern$ (str::cat "*" F3-error-crux "-AR*") "X86ISA"))
+
+	  (F2-ok-crux
+	   (str::cat mode-name "-MODE-" map-name "-F2-OK"))
+	  (F2-ok (intern$ F2-ok-crux "X86ISA"))
+	  (F2-ok-const (intern$ (str::cat "*" F2-ok-crux "-AR*") "X86ISA"))
+	  (F2-error-crux
+	   (str::cat "ERROR-F2-WITH-" map-name "-OPCODE"))
+	  (F2-error
+	   (intern$ F2-error-crux "X86ISA"))
+	  (F2-error-const
+	   (intern$ (str::cat "*" F2-error-crux "-AR*") "X86ISA"))
+
+	  (66-ok-crux
+	   (str::cat mode-name "-MODE-" map-name "-66-OK"))
+	  (66-ok (intern$ 66-ok-crux "X86ISA"))
+	  (66-ok-const (intern$ (str::cat "*" 66-ok-crux "-AR*") "X86ISA"))
+	  (66-error-crux
+	   (str::cat "ERROR-66-WITH-" map-name "-OPCODE"))
+	  (66-error
+	   (intern$ 66-error-crux "X86ISA"))
+	  (66-error-const
+	   (intern$ (str::cat "*" 66-error-crux "-AR*") "X86ISA")))
+
+       `(encapsulate
+	  ()
+
+	  (define ,name-aux
+	    ((opcode        :type (unsigned-byte 8)
+			    "Relevant opcode byte")
+	     (prefixes      :type (unsigned-byte #.*prefixes-width*)))
+	    :guard (and (prefixes-p prefixes)
+			(aref1 ',compound-opcode-name
+			       ,compound-opcode-const
+			       opcode))
+	    :guard-hints
+	    (("Goal" :in-theory (disable aref1 assoc-equal (tau-system))))
+	    :inline t
+
+	    :returns (mv
+		      err-flg
+		      (mandatory-prefix
+		       (unsigned-byte-p 8 mandatory-prefix)
+		       :hints
+		       (("goal"
+			 :use ((:instance opr-p-of-prefixes->opr (x prefixes))
+			       (:instance rep-p-of-prefixes->rep (x prefixes)))
+			 :in-theory (e/d (opr-p rep-p)
+					 (opr-p-of-prefixes->opr
+					  rep-p-of-prefixes->rep))))))
+
+	    (let ((rep-pfx (the (unsigned-byte 8)
+			     (prefixes->rep prefixes))))
+
+	      ;; We first check for F2/F3 prefixes, because they have precedence over
+	      ;; 66.
+	      (if (not (eql rep-pfx 0))
+
+		  (if (or (and (equal rep-pfx  #.*mandatory-f3h*)
+			       (aref1 ',F3-ok ,F3-ok-const opcode))
+			  (and
+			   (equal rep-pfx #.*mandatory-f2h*)
+			   (aref1 ',F2-ok ,F2-ok-const opcode)))
+
+		      ;; If the opcode is allowed to have F2/F3, then rep-pfx is the
+		      ;; mandatory-prefix.
+
+		      (mv nil rep-pfx)
+
+		    ;; If F2/F3 is used with an opcode that does not support these
+		    ;; prefixes as mandatory prefixes, then we look whether the use
+		    ;; of these prefixes with this opcode causes an error.
+
+		    (if (or (and (equal rep-pfx #.*mandatory-f3h*)
+				 (not (aref1 ',F3-error ,F3-error-const opcode)))
+			    (and (equal rep-pfx #.*mandatory-f2h*)
+				 (not (aref1 ',F2-error ,F2-error-const opcode))))
+
+			;; F2/F3 are used as modifier prefixes.
+
+			(mv nil 0)
+
+		      (mv (list :illegal-use-of-mandatory-prefix rep-pfx
+				:opcode ,map opcode)
+			  0)))
+
+		;; If F2/F3 are not present, then we check for 66 prefix.
+		(let ((opr-pfx  (the (unsigned-byte 8)
+				  (prefixes->opr prefixes))))
+
+		  (if (not (eql opr-pfx 0))
+
+		      (if (aref1 ',66-ok ,66-ok-const opcode)
+
+			  (mv nil opr-pfx)
+
+			;; If 66 is used with an opcode that does not support it
+			;; as a mandatory prefix, then we look whether the use of
+			;; this prefixes with this opcode causes an error.
+
+			(if (not (aref1 ',66-error ,66-error-const opcode))
+
+			    ;; 66 is used as a modifier prefix.
+			    (mv nil 0)
+
+			  (mv (list :illegal-use-of-mandatory-prefix opr-pfx
+				    :opcode ,map opcode)
+			      0)))
+
+		    ;; No mandatory prefixes present.
+		    (mv nil 0))))))
+
+	  (define ,name
+	    ((opcode        :type (unsigned-byte 8)
+			    "Relevant opcode byte")
+	     (prefixes      :type (unsigned-byte #.*prefixes-width*)))
+	    :guard (prefixes-p prefixes)
+	    :inline t
+
+	    :returns (mv
+		      err-flg
+		      (mandatory-prefix
+		       (unsigned-byte-p 8 mandatory-prefix)
+		       :hints
+		       (("goal" :in-theory (e/d () (unsigned-byte-p))))))
+
+	    (b* ((compound-opcode?
+		  (aref1 ',compound-opcode-name
+			 ,compound-opcode-const
+			 opcode))
+		 ((unless compound-opcode?)
+		  ;; Return 0 if the opcode is not allowed to have any mandatory
+		  ;; prefixes.  In this case, if 66/F3/F2 are present, they assume
+		  ;; their normal roles as modifier prefixes.
+		  (mv nil 0)))
+
+	      (,name-aux opcode prefixes)))))))
+
+  (make-event
+   `(progn
+      ,(gen-compute-mandatory-prefix-fn #ux0F    64)
+      ,(gen-compute-mandatory-prefix-fn #ux0F    32)
+      ,(gen-compute-mandatory-prefix-fn #ux0F_38 64)
+      ,(gen-compute-mandatory-prefix-fn #ux0F_38 32)
+      ,(gen-compute-mandatory-prefix-fn #ux0F_3A 64)
+      ,(gen-compute-mandatory-prefix-fn #ux0F_3A 32)))
+
+  ;; Note: for two-byte opcodes, determining and fetching the modr/m and
+  ;; mandatory prefix bytes is intertwined.  See
+  ;; two-byte-opcode-modr/m-and-mandatory-prefix.
+
+  (define compute-mandatory-prefix-for-0F-38-three-byte-opcode
+    ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
+     (opcode             :type (unsigned-byte 8))
+     (prefixes           :type (unsigned-byte #.*prefixes-width*)))
+    :inline t
+    :no-function t
+    :returns (mv
+	      err-flg
+	      (mandatory-prefix
+	       (unsigned-byte-p 8 mandatory-prefix)
+	       :hints (("Goal" :in-theory (e/d ()
+					       (unsigned-byte-p))))))
+
+    (case proc-mode
+      (#.*64-bit-mode*
+       (64-bit-compute-mandatory-prefix-for-0F-38-three-byte-opcode
+	opcode prefixes))
+      (otherwise
+       (32-bit-compute-mandatory-prefix-for-0F-38-three-byte-opcode
+	opcode prefixes))))
+
+  (define compute-mandatory-prefix-for-0F-3A-three-byte-opcode
+    ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
+     (opcode             :type (unsigned-byte 8))
+     (prefixes           :type (unsigned-byte #.*prefixes-width*)))
+
+    :inline t
+    :no-function t
+    :returns (mv err-flg
+		 (mandatory-prefix
+		  (unsigned-byte-p 8 mandatory-prefix)
+		  :hints (("Goal" :in-theory (e/d ()
+						  (unsigned-byte-p))))))
+
+    (case proc-mode
+      (#.*64-bit-mode*
+       (64-bit-compute-mandatory-prefix-for-0F-3A-three-byte-opcode
+	opcode prefixes))
+      (otherwise
+       (32-bit-compute-mandatory-prefix-for-0F-3A-three-byte-opcode
+	opcode prefixes))))
+
+  (define compute-mandatory-prefix-for-three-byte-opcode
+    ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
+     (second-escape-byte :type (unsigned-byte 8)
+			 "Second byte of the three-byte opcode; either
+			 @('0x38') or @('0x3A')")
+     (opcode             :type (unsigned-byte 8)
+			 "Third byte of the three-byte opcode")
+     (prefixes           :type (unsigned-byte #.*prefixes-width*)))
+
+    :inline t
+    :no-function t
+    :guard (or (equal second-escape-byte #x38)
+	       (equal second-escape-byte #x3A))
+
+    :returns (mv err-flg
+		 (mandatory-prefix
+		  (unsigned-byte-p 8 mandatory-prefix)
+		  :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))))
+
+    :short "Three-byte opcodes: picks the appropriate SIMD prefix as the
+    mandatory prefix, if applicable"
+
+    (case second-escape-byte
+      (#x38
+       (compute-mandatory-prefix-for-0F-38-three-byte-opcode
+	proc-mode opcode prefixes))
+      (#x3A
+       (compute-mandatory-prefix-for-0F-3A-three-byte-opcode
+	proc-mode opcode prefixes))
+      (otherwise
+       (mv nil 0)))))
+
+(defsection two-byte-opcodes-mandatory-prefixes-and-modr/m-computation
+
+  :parents (mandatory-prefixes-computation ModR/M-decoding ModR/M-detection)
+
+  :short "Functions to pick legal mandatory prefixes and fetch the modr/m byte
+  for two-byte opcodes"
+
+  :long "<p>For all non-AVX opcodes, we compute the mandatory prefix first and
+ then based on the mandatory prefix, we determine if a modr/m byte is required.
+ This order works for one- and three-byte (both @('0x0F_38') and @('0x0F_3A'))
+ opcodes, but not for two-byte opcodes.</p>
+
+ <p>Specifically, for two-byte simple opcodes without extensions (i.e., those
+ NOT in @('*opcode-extensions-by-group-number*')) and for compound opcodes, the
+ above order works, but for simple opcodes with extensions, determining the
+ mandatory prefix can hinge on the modr/m byte's fields.  In that case, we need
+ to fetch the modr/m byte before we can determine the right mandatory
+ prefix. See @(tsee two-byte-opcode-decode-and-execute) for details.</p>"
+
+  (local (xdoc::set-default-parents
+	  two-byte-opcodes-mandatory-prefixes-and-modr/m-computation))
+
+  (define prefix-in-desc-list? ((group-num (member-equal group-num *group-numbers*)))
+    :short "Do opcodes under @('group-num') require a mandatory prefix?"
+    (b* ((desc-list (cdr (assoc-equal group-num *opcode-extensions-by-group-number*)))
+	 (desc-list-keys (acl2::flatten (strip-cars desc-list))))
+      (and (member-equal :prefix (strip-cars desc-list-keys)) t)))
+
+  (define compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+    ((row          true-list-listp)
+     (64-bit-modep booleanp))
+
+    :guard-hints (("Goal" :in-theory (e/d (not-consp-not-assoc-equal
+					   opcode-row-p
+					   opcode-cell-p)
+					  (member-equal))))
+    :returns (extensions-info true-listp)
+
+    (if (opcode-row-p row)
+
+	(if (endp row)
+
+	    nil
+
+	  (b* ((cell (car row))
+	       (car-cell
+		;; We assume that if cells with *group-numbers* satisfy
+		;; simple-cell-p, then they satisfy basic-simple-cell-p only, and
+		;; if these cells satsify compound-cell-p, then they appear in
+		;; cells with keys :o64 and :i64.
+		(if (and (basic-simple-cell-p cell)
+			 (member-equal (car cell) *group-numbers*))
+		    (car cell)
+		  (if (compound-cell-p cell)
+		      (b* ((stripped-cell
+			    ;; In 64-bit mode, we ignore the opcode
+			    ;; information that is invalid in 64-bit mode,
+			    ;; while in 32-bit mode, we ignore the opcode
+			    ;; information that is valid only in 64-bit
+			    ;; mode.
+			    (if 64-bit-modep
+				(b* ((no-i64-cell (delete-assoc-equal :i64 cell))
+				     (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
+				  (or o64-cell no-i64-cell))
+			      (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
+				   (i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
+				(or i64-cell no-o64-cell)))))
+			(if (and (basic-simple-cell-p stripped-cell)
+				 (member-equal (car stripped-cell) *group-numbers*))
+			    (car stripped-cell)
+			  nil))
+		    nil)))
+	       ((if car-cell)
+		(if (prefix-in-desc-list? car-cell)
+		    (cons 't
+			  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+			   (cdr row) 64-bit-modep))
+		  (cons 'nil
+			(compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+			 (cdr row) 64-bit-modep)))))
+	    (cons 'nil
+		  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+		   (cdr row) 64-bit-modep))))
+
+      (b* ((- (cw "~%compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row:~% ~
+ Ill-formed opcode row: ~x0~%" row)))
+	nil)))
+
+  (define compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+    ((map          true-list-listp)
+     (64-bit-modep booleanp))
+
+    :guard-hints (("Goal" :in-theory (e/d (not-consp-not-assoc-equal
+					   opcode-map-p)
+					  ())))
+
+    (if (opcode-map-p map)
+
+	(if (endp map)
+
+	    nil
+
+	  (append
+	   (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-row
+	    (car map) 64-bit-modep)
+	   (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	    (cdr map) 64-bit-modep)))
+
+      (b* ((- (cw "~%compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map:~% ~
+ Ill-formed opcode map: ~x0~%" map)))
+	nil)))
+
+  (local
+   (assert-event
+    ;; One-byte opcodes: no extensions needing mandatory prefix
+    ;; Same in 32- and 64-bit modes
+    (b* ((64-bit-one-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *one-byte-opcode-map-lst* t))
+	 (32-bit-one-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *one-byte-opcode-map-lst* nil)))
+
+      (and
+       (acl2::all-nils 64-bit-one-byte-lst)
+       (acl2::all-nils 32-bit-one-byte-lst)))))
+
+  (local
+   (assert-event
+    ;; Two-byte opcodes: extensions needing mandatory prefix
+    ;; Same in 32- and 64-bit modes
+    (b* ((64-bit-two-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *two-byte-opcode-map-lst* t))
+	 (32-bit-two-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *two-byte-opcode-map-lst* nil)))
+      (and
+       (not (acl2::all-nils 64-bit-two-byte-lst))
+       (equal 64-bit-two-byte-lst 32-bit-two-byte-lst)))))
+
+  (defconst *two-byte-opcode-extensions-needing-pfx-ar*
+    (list-to-array
+     'two-byte-opcode-extensions-needing-pfx
+     (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+      *two-byte-opcode-map-lst* t)))
+
+  (local
+   (assert-event
+    ;; Three-byte opcodes: no extensions need mandatory prefix
+    ;; Same in 32- and 64-bit modes
+    (b* ((64-bit-0f-38-three-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *0F-38-three-byte-opcode-map-lst* t))
+	 (32-bit-0f-38-three-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *0F-38-three-byte-opcode-map-lst* nil))
+	 (64-bit-0f-3a-three-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *0F-38-three-byte-opcode-map-lst* t))
+	 (32-bit-0f-3a-three-byte-lst
+	  (compute-opcode-extensions-cell-needing-pfx-for-an-opcode-map
+	   *0F-38-three-byte-opcode-map-lst* nil)))
+      (and
+       (acl2::all-nils 64-bit-0f-38-three-byte-lst)
+       (equal 64-bit-0f-38-three-byte-lst 32-bit-0f-38-three-byte-lst)
+       (acl2::all-nils 64-bit-0f-3A-three-byte-lst)
+       (equal 64-bit-0f-3A-three-byte-lst 32-bit-0f-3A-three-byte-lst)))))
+
+  (define collect-all-vals-of-a-key ((key)
+				     (alst alistp)
+				     (acc true-listp))
+    ;; (collect-all-vals-of-a-key 1 '((1 . a) (2 . b) (1 . c)) nil)
+    ;; '(a c)
+    :returns (lst true-listp)
+    :prepwork
+    ((local
+      (defthm true-listp-flatten
+	(true-listp (acl2::flatten x))
+	:hints (("Goal" :in-theory (e/d (acl2::flatten) ()))))))
+    (b* ((val (cdr (assoc-equal key alst)))
+	 ((unless val)
+	  (if (alistp acc)
+	      (list (acl2::flatten (acl2::rev acc)))
+	    (acl2::rev acc)))
+	 (new-acc (cons val acc))
+	 (new-alst (delete-assoc-equal key alst)))
+      (collect-all-vals-of-a-key key new-alst new-acc)))
+
+  (define delete-all-keys ((key)
+			   (alst alistp))
+    :returns (new-alst alistp :hyp (alistp alst))
+    (if (endp alst)
+	nil
+      (if (assoc-equal key alst)
+	  (delete-all-keys key (delete-assoc-equal key alst))
+	alst))
+    ///
+
+    (local
+     (defthm len-reduced-by-delete-assoc-equal
+       (implies (and (alistp alst) (assoc-equal key alst))
+		(< (len (delete-assoc-equal key alst))
+		   (len alst)))
+       :hints (("Goal" :in-theory (e/d (delete-assoc-equal) ())))
+       :rule-classes :linear))
+
+    (defthm len-reduced-by-delete-all-keys
+      (implies (and (alistp alst) (assoc-equal key alst))
+	       (< (len (delete-all-keys key alst))
+		  (len alst)))))
+
+  (define insert-elem ((pos natp)
+		       (elem)
+		       (lst true-listp))
+    :returns (new-lst true-listp :hyp (true-listp lst))
+    (append (take pos lst)
+	    (list elem) (nthcdr pos lst)))
+
+  (define reorder-mand-pfx-vals ((lst true-listp))
+    ;; #x0 #x66 #xF3 #xF2, with nil for filler
+    (b* ((new-lst (if (member-equal #x0 lst)
+		      (insert-elem 0 #x0 (remove-equal #x0 lst))
+		    (insert-elem 0 nil lst)))
+	 (new-lst (if (member-equal #x66 new-lst)
+		      (insert-elem 1 #x66 (remove-equal #x66 new-lst))
+		    (insert-elem 1 nil new-lst)))
+	 (new-lst (if (member-equal #xF3 new-lst)
+		      (insert-elem 2 #xF3 (remove-equal #xF3 new-lst))
+		    (insert-elem 2 nil new-lst)))
+	 (new-lst (if (member-equal #xF2 new-lst)
+		      (insert-elem 2 #xF2 (remove-equal #xF2 new-lst))
+		    (insert-elem 2 nil new-lst))))
+      new-lst))
+
+  (define collect-vals-of-dup-keys ((alst alistp))
+    :measure (len alst)
+    :prepwork
+    ((local
+      (defthm true-listp-flatten
+	(true-listp (acl2::flatten x))
+	:hints (("Goal" :in-theory (e/d (acl2::flatten) ()))))))
+    (if (or (endp alst) (not (alistp alst)))
+	nil
+      (b* ((key (caar alst))
+	   (vals (collect-all-vals-of-a-key key alst nil))
+	   (vals (list (cons 'mv (reorder-mand-pfx-vals (acl2::flatten vals)))))
+	   ;; (- (cw "~% vals: ~p0 ~%" vals))
+	   ((unless (assoc-equal key alst)) nil)
+	   (new-alst (delete-all-keys key alst)))
+	(cons
+	 (cons key vals)
+	 (collect-vals-of-dup-keys new-alst)))))
+
+  (define gen-mandatory-prefix-for-opcode-extensions-aux
+    ((opcode natp)
+     (desc-list opcode-descriptor-list-p)
+     &key
+     ((escape-bytes natp) '0))
+    :guard-hints (("Goal"
+		   :in-theory (e/d (opcode-descriptor-list-p
+				    opcode-descriptor-p)
+				   ())
+		   :do-not-induct t))
+    :returns (cond-stmt alistp)
+
+    ;; Borrowed heavily from create-case-dispatch-for-opcode-extensions-aux in
+    ;; dispatch-utils.lisp.  Keep these two in sync.
+
+    (if (endp desc-list)
+	`((t 0))
+      (b* ((opcode-descriptor (car desc-list))
+	   (opcode-identifier (car opcode-descriptor))
+	   ((unless (equal (cdr (assoc-equal :opcode opcode-identifier))
+			   (+ escape-bytes opcode)))
+	    (gen-mandatory-prefix-for-opcode-extensions-aux
+	     opcode (cdr desc-list) :escape-bytes escape-bytes))
+	   ;; (opcode-cell (cdr opcode-descriptor))
+	   (feat        (cdr (assoc-equal :feat opcode-identifier)))
+	   (mode        (cdr (assoc-equal :mode opcode-identifier)))
+	   (reg         (cdr (assoc-equal :reg opcode-identifier)))
+	   (prefix      (cdr (assoc-equal :prefix opcode-identifier)))
+	   (prefix-val  (case prefix
+			  (:66 #x66)
+			  (:F3 #xF3)
+			  (:F2 #xF2)
+			  (t ;; :no-prefix
+			   #x0)))
+	   (mod         (cdr (assoc-equal :mod opcode-identifier)))
+	   (r/m         (cdr (assoc-equal :r/m opcode-identifier)))
+	   (condition
+	    `(and
+	      ,@(and mode
+		     (if (equal mode :o64)
+			 `((equal proc-mode #.*64-bit-mode*))
+		       `((not (equal proc-mode #.*64-bit-mode*)))))
+	      ,@(and feat
+		     `((equal (feature-flags-macro ',feat) 1)))
+	      ,@(and reg
+		     `((equal (modr/m->reg modr/m) ,reg)))
+	      ,@(and mod
+		     (if (equal mod :mem)
+			 `((not (equal (modr/m->mod modr/m) #b11)))
+		       `((equal (modr/m->mod modr/m) #b11))))
+	      ,@(and r/m
+		     `((equal (modr/m->r/m modr/m) ,r/m)))
+	      ;; ,@(and prefix
+	      ;;        `((equal mandatory-prefix ,prefix-val)))
+	      )))
+	(cons `(,condition ,prefix-val)
+	      (gen-mandatory-prefix-for-opcode-extensions-aux
+	       opcode (cdr desc-list) :escape-bytes escape-bytes)))))
+
+  (define gen-mandatory-prefix-for-opcode-extensions
+    ((opcode natp)
+     (desc-list opcode-descriptor-list-p)
+     &key
+     ((escape-bytes natp) '0))
+    ;; (gen-mandatory-prefix-for-opcode-extensions
+    ;;  #xC7
+    ;;  (acl2::flatten (strip-cdrs *opcode-extensions-by-group-number*))
+    ;;  :escape-bytes
+    ;;  #ux0F_00)
+
+    (b* ((cond-stmt
+	  (gen-mandatory-prefix-for-opcode-extensions-aux
+	   opcode desc-list :escape-bytes escape-bytes))
+	 (new-cond-stmt
+	  (collect-vals-of-dup-keys cond-stmt)))
+      new-cond-stmt))
+
+  (define gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
+    ((opcode :type (unsigned-byte 9)))
+    :measure (nfix (- 256 opcode))
+
+    (if (and (natp opcode)
+	     (<= opcode 255))
+
+	(if (aref1 'two-byte-opcode-extensions-needing-pfx
+		   *two-byte-opcode-extensions-needing-pfx-ar*
+		   opcode)
+	    (cons
+	     (cons opcode
+		   `((cond
+		      ,@(gen-mandatory-prefix-for-opcode-extensions
+			 opcode
+			 (acl2::flatten (strip-cdrs *opcode-extensions-by-group-number*))
+			 :escape-bytes
+			 #ux0F_00))))
+	     (gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
+	      (1+ opcode)))
+	  (gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
+	   (1+ opcode)))
+
+      nil))
+
+  (make-event
+   `(define compute-mandatory-prefix-for-two-byte-opcode-extensions
+      ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+       (opcode    :type (unsigned-byte 8) "Relevant opcode byte")
+       (prefixes  :type (unsigned-byte #.*prefixes-width*))
+       (modr/m    :type (unsigned-byte 8))
+       x86)
+      :guard
+      ;; We expect this function to be called only for opcodes with simple cells.
+      (case proc-mode
+	(#.*64-bit-mode*
+	 (not (aref1 '64-bit-mode-two-byte-compound-opcodes
+		     *64-bit-mode-two-byte-compound-opcodes-ar*
+		     opcode)))
+	(otherwise
+	 (not (aref1 '32-bit-mode-two-byte-compound-opcodes
+		     *32-bit-mode-two-byte-compound-opcodes-ar*
+		     opcode))))
+
+      :returns
+      (mv err-flg
+	  (mandatory-prefix (unsigned-byte-p 8 mandatory-prefix)))
+
+      :prepwork
+      ((local (in-theory (disable unsigned-byte-p aref1 assoc-equal (tau-system)))))
+
+      (b* (((mv no-pfx-ok 66-pfx-ok f3-pfx-ok f2-pfx-ok)
+	    (case opcode
+	      ,@(gen-cond-stmt-two-byte-opcode-extensions-mandatory-prefix
+		 0)
+	      (otherwise (mv 0 nil nil nil)))))
+
+	(let ((rep-pfx (prefixes->rep prefixes)))
+	  (if (not (eql rep-pfx 0))
+
+	      (if (or (and (equal rep-pfx #.*mandatory-F3h*)
+			   f3-pfx-ok)
+		      (and (equal rep-pfx #.*mandatory-F2h*)
+			   f2-pfx-ok))
+
+		  ;; If the opcode is allowed to have F2/F3, then rep-pfx is the
+		  ;; mandatory-prefix.
+
+		  (mv nil rep-pfx)
+
+		(mv (list :illegal-use-of-mandatory-prefix rep-pfx
+			  :opcode #x0F opcode)
+		    0))
+
+	    (let ((opr-pfx (prefixes->opr prefixes)))
+
+	      (if (not (eql opr-pfx 0))
+
+		  (if 66-pfx-ok
+
+		      (mv nil opr-pfx)
+
+		    (mv (list :illegal-use-of-mandatory-prefix opr-pfx
+			      :opcode #x0F opcode)
+			0))
+
+		(if no-pfx-ok
+
+		    ;; Okay to have no mandatory prefix.
+		    (mv nil 0)
+
+		  (mv (list :illegal-use-of-mandatory-prefix 0
+			    :opcode #x0F opcode)
+		      0)))))))))
+
+  (define two-byte-compound-opcode-modr/m-and-mandatory-prefix
+    ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+     (opcode    :type (unsigned-byte 8) "Relevant opcode byte")
+     (prefixes  :type (unsigned-byte 52))
+     (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
+     (x86))
+    :enabled t
+    :guard (and (prefixes-p prefixes)
+		(case proc-mode
+		  (#.*64-bit-mode*
+		   (aref1 '64-bit-mode-two-byte-compound-opcodes
+			  *64-bit-mode-two-byte-compound-opcodes-ar*
+			  opcode))
+		  (otherwise
+		   (aref1 '32-bit-mode-two-byte-compound-opcodes
+			  *32-bit-mode-two-byte-compound-opcodes-ar*
+			  opcode))))
+    :returns
+    (mv err-flg
+	(mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
+	modr/m?
+	(modr/m           (unsigned-byte-p 8 modr/m)
+			  :hyp (x86p x86))
+	(new-x86          x86p
+			  :hyp (x86p x86)))
+
+    :prepwork
+    ((local (in-theory (disable unsigned-byte-p aref1 assoc-equal (tau-system)))))
+
+    ;; We first get the mandatory prefix, and based on that, we determine if we
+    ;; need the modr/m byte; if yes, we get it.
+
+    (b* (((mv compound-mand-pfx-error (the (unsigned-byte 8) mand-pfx))
+	  (case proc-mode
+	    (#.*64-bit-mode*
+	     (64-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
+	      opcode prefixes))
+	    (otherwise
+	     (32-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
+	      opcode prefixes))))
+	 ((when compound-mand-pfx-error)
+	  (mv compound-mand-pfx-error 0 nil 0 x86))
+	 (modr/m?
+	  (two-byte-opcode-ModR/M-p proc-mode mand-pfx opcode))
+	 ((mv modr/m-flg (the (unsigned-byte 8) modr/m) x86)
+	  (if modr/m?
+	      (rme08 proc-mode temp-rip #.*cs* :x x86)
+	    (mv nil 0 x86)))
+	 ((when modr/m-flg)
+	  (mv (list :modr/m-byte-read-error modr/m-flg) 0 nil 0 x86)))
+      (mv nil mand-pfx modr/m? modr/m x86))
+
+    ///
+
+    (defthmd two-byte-compound-opcode-modr/m-and-mandatory-prefix.new-x86-rewrite
+      ;; Sanity checking
+      (b* (((mv compound-mand-pfx-error mand-pfx)
+	    (case proc-mode
+	      (#.*64-bit-mode*
+	       (64-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
+		opcode prefixes))
+	      (otherwise
+	       (32-bit-compute-mandatory-prefix-for-two-byte-opcode-aux
+		opcode prefixes)))))
+	(equal (mv-nth
+		4
+		(two-byte-compound-opcode-modr/m-and-mandatory-prefix
+		 proc-mode opcode prefixes temp-rip x86))
+	       (if (and (not compound-mand-pfx-error)
+			(two-byte-opcode-ModR/M-p proc-mode mand-pfx opcode))
+		   (mv-nth 2 (rme08 proc-mode temp-rip #.*cs* :x x86))
+		 x86)))))
+
+  (define two-byte-opcode-modr/m-and-mandatory-prefix
+    ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+     (opcode   :type (unsigned-byte 8) "Relevant opcode byte")
+     (prefixes :type (unsigned-byte 52))
+     (temp-rip :type (signed-byte   #.*max-linear-address-size*))
+     (x86))
+    :guard (prefixes-p prefixes)
+    :enabled t
+    :returns
+    (mv err-flg
+	(mandatory-prefix (unsigned-byte-p 8 mandatory-prefix))
+	modr/m?
+	(modr/m           (unsigned-byte-p 8 modr/m)
+			  :hyp (x86p x86))
+	(new-x86          x86p
+			  :hyp (x86p x86)))
+    :prepwork
+    ((local (in-theory (disable aref1 assoc-equal unsigned-byte-p (tau-system)))))
+
+    (b* ((compound-opcode?
+	  (case proc-mode
+	    (#.*64-bit-mode*
+	     (aref1 '64-bit-mode-two-byte-compound-opcodes
+		    *64-bit-mode-two-byte-compound-opcodes-ar*
+		    opcode))
+	    (otherwise
+	     (aref1 '32-bit-mode-two-byte-compound-opcodes
+		    *32-bit-mode-two-byte-compound-opcodes-ar*
+		    opcode))))
+	 ((when compound-opcode?)
+	  (two-byte-compound-opcode-modr/m-and-mandatory-prefix
+	   proc-mode opcode prefixes temp-rip x86))
+
+	 (simple-opcode-modr/m?
+	  (case proc-mode
+	    (#.*64-bit-mode*
+	     (aref1 '64-bit-mode-two-byte-no-prefix-has-modr/m
+		    *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))
+	    (otherwise
+	     (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
+		    *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))))
+	 ((when (not simple-opcode-modr/m?))
+	  ;; If the simple opcode doesn't require a modr/m byte, then it can't
+	  ;; have a mandatory-prefix too (because if it did, it'd be a compound
+	  ;; opcode, and we've already dealt with them at this point).
+	  (mv nil 0 simple-opcode-modr/m? 0 x86))
+	 ((mv modr/m-flg (the (unsigned-byte 8) modr/m) x86)
+	  (rme08 proc-mode temp-rip #.*cs* :x x86))
+	 ((when modr/m-flg)
+	  (mv (list :modr/m-byte-read-error modr/m-flg)
+	      0 simple-opcode-modr/m? 0 x86))
+
+	 ((if (not (aref1 'two-byte-opcode-extensions-needing-pfx
+			  *two-byte-opcode-extensions-needing-pfx-ar*
+			  opcode)))
+	  ;; If the simple opcode requires a modr/m byte but has no modr/m
+	  ;; extensions (i.e., isn't a "Group" opcode belonging in
+	  ;; *opcode-extensions-by-group-number*), then it doesn't require a
+	  ;; mandatory prefix.  In this case, even if the simple opcode has
+	  ;; modr/m extensions, they don't require a mandatory prefix.
+	  (mv nil 0 simple-opcode-modr/m? modr/m x86))
+	 ((mv mand-pfx-err (the (unsigned-byte 8) mand-pfx))
+	  ;; The opcode is simple but its opcode extensions require a mandatory
+	  ;; prefix (for the purpose of disambiguation).  We need the modr/m byte
+	  ;; below because the extensions may also depend on it.  We need x86
+	  ;; below to look up CPUID features, for example.
+	  (compute-mandatory-prefix-for-two-byte-opcode-extensions
+	   proc-mode opcode prefixes modr/m x86)))
+      (mv mand-pfx-err mand-pfx simple-opcode-modr/m? modr/m x86))
+
+    ///
+
+    (defthmd two-byte-opcode-modr/m-and-mandatory-prefix.new-x86-rewrite
+      ;; Sanity checking
+      (b* ((compound-opcode?
+	    (case proc-mode
+	      (#.*64-bit-mode*
+	       (aref1 '64-bit-mode-two-byte-compound-opcodes
+		      *64-bit-mode-two-byte-compound-opcodes-ar*
+		      opcode))
+	      (otherwise
+	       (aref1 '32-bit-mode-two-byte-compound-opcodes
+		      *32-bit-mode-two-byte-compound-opcodes-ar*
+		      opcode))))
+	   (simple-opcode-modr/m?
+	    (case proc-mode
+	      (#.*64-bit-mode*
+	       (aref1 '64-bit-mode-two-byte-no-prefix-has-modr/m
+		      *64-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode))
+	      (otherwise
+	       (aref1 '32-bit-mode-two-byte-no-prefix-has-modr/m
+		      *32-bit-mode-two-byte-no-prefix-has-modr/m-ar* opcode)))))
+	(equal (mv-nth
+		4
+		(two-byte-opcode-modr/m-and-mandatory-prefix
+		 proc-mode opcode prefixes temp-rip x86))
+	       (cond
+		(compound-opcode?
+		 (mv-nth
+		  4
+		  (two-byte-compound-opcode-modr/m-and-mandatory-prefix
+		   proc-mode opcode prefixes temp-rip x86)))
+		((not simple-opcode-modr/m?)
+		 x86)
+		(t
+		 (mv-nth 2 (rme08 proc-mode temp-rip #.*cs* :x x86)))))))))
 
 ;; ----------------------------------------------------------------------

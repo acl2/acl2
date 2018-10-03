@@ -18,9 +18,9 @@
  General Form:
 
  (orelse form1 form2
-         :quiet      q ; default nil
-         :no-error   n ; default nil
-         :expansion? e ; default t
+         :quiet       q ; default nil
+         :no-error    n ; default nil
+         :expansion?p e ; default t
  })
 
  <p>where @('form1') and @('form2') are @(see events) (see @(see
@@ -29,15 +29,15 @@
  that is, if the result is an @(see error-triple) @('(mv nil val state)')
  &mdash; then the @('orelse') call returns that error-triple.  Otherwise, it
  return the result of evaluating @('form2'), except that if that evaluation
- also fails and if @(':no-error') is @('nil') (the default), then evaluation
- concludes by submitting the event @('(value-triple :failed)').</p>
+ also fails and if @(':no-error') is non-@('nil'), then evaluation concludes by
+ submitting the event @('(value-triple :failed)').</p>
 
  <p>If @(':quiet') has a non-@('nil') value, then output is suppressed using
  @(tsee with-output) with argument @(':stack :push'), so that @('form1') and
  @('form2') may recover the original output environment using @('with-output')
  with argument @(':stack :pop').</p>
 
- <p>The sizes of @(see certificate) files may be reduced with @(':expansion?
+ <p>The sizes of @(see certificate) files may be reduced with @(':expansion?p
  t') (the default).  That argument avoids storing a @(tsee make-event)
  expansion for @('(orelse form1 form2 ...)') when evaluation of the first event
  form succeeds.</p>
@@ -49,16 +49,15 @@
   :parents (system-utilities)
   :short "Evaluate a sequence of @(see events), until one succeeds"
   :long "<p>@('Orelse*') behaves as described in the documentation for @(see
- orelse), except that @('orelse*') takes a list of forms, as shown below, and
- its default for @(':expansion?') is @('nil').</p>
+ orelse), except that @('orelse*') takes a list of forms.</p>
 
  @({
  General Form:
 
  (orelse* (form1 form2 ...)
-          :quiet      q ; default nil
-          :no-error   n ; default nil
-          :expansion? e ; default nil
+          :quiet       q ; default nil
+          :no-error    n ; default nil
+          :expansion?p e ; default t
  })")
 
 (defxdoc on-failure
@@ -177,7 +176,7 @@
                   &key
                   quiet
                   no-error
-                  expansion?p)
+                  (expansion?p 't))
   (orelse-fn form-list quiet no-error expansion?p))
 
 (defmacro orelse (form1 form2

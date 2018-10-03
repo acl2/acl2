@@ -71,14 +71,6 @@
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
        
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock prefixes))
-       (rep  (or (eql #.*repe* (prefixes->rep prefixes))
-                 (eql #.*repne* (prefixes->rep prefixes))))
-       ((when rep) (!!fault-fresh :ud nil :rep/repne prefixes))
-       (opr  (eql #.*operand-size-override* (prefixes->opr prefixes)))
-       ((when opr) (!!fault-fresh :ud nil :opr prefixes))
-
        (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))

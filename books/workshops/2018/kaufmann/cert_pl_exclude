@@ -1,0 +1,4 @@
+This file is included so that cert.pl does not try to certify files in
+this directory, which is a static snapshot of community books
+directory books/kestrel/auto-termination/.  Recertification could
+change file td-cands.lisp.

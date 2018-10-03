@@ -45,8 +45,6 @@
 
 (include-book "other-non-det"
 	      :ttags (:include-raw :undef-flg :syscall-exec :other-non-det))
-(include-book "prefix-modrm-sib-decoding")
-(include-book "opcode-maps")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (in-theory (e/d () (mv-nth)))

@@ -87,9 +87,6 @@
        (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (integer 4 8) reg-size)
         (if (logbitp #.*w* rex-byte) 8 4))
@@ -175,9 +172,6 @@
        (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (integer 4 8) reg/mem-size)
         (if (logbitp #.*w* rex-byte) 8 4))
@@ -265,9 +259,6 @@
        (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (integer 4 8) xmm-size)
         (if (equal dp-to-sp #.*DP-TO-SP*) 4 8))
@@ -348,12 +339,6 @@
        (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-       ;; [Shilpi]: The Intel manual doesn't mention that a lock
-       ;; prefix causes an exception for this opcode. Should the
-       ;; following be removed then?
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
@@ -455,9 +440,6 @@
        (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))

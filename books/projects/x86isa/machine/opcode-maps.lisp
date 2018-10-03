@@ -731,9 +731,10 @@
 	       ((:i64 . (:Group-1 :1a))
 		(:o64 . ("#UD" 0
 			 (:ud  . (t))
-			 (:fn . (x86-illegal-instruction
-				 (message .
-					  "Opcode 0x82 is illegal in the 64-bit mode!"))))))
+			 (:fn .
+			      (x86-illegal-instruction
+			       (message .
+					"Opcode 0x82 is illegal in the 64-bit mode!"))))))
 	       (:Group-1 :1a)
 	       ("TEST" 2 (E b) (G b)
 		(:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
@@ -863,7 +864,8 @@
 	       (:fn . (x86-movs))
 	       (:ud  . ((ud-Lock-used))))
 	      ("CMPS/B"   2 (X b) (Y b)
-	       (:fn . (x86-cmps)))
+	       (:fn . (x86-cmps))
+               (:ud  . ((ud-Lock-used))))
 	      ("CMPS/W/D" 2 (X v) (Y v)
 	       (:fn . (x86-cmps))
 	       (:ud  . ((ud-Lock-used))))
@@ -943,12 +945,10 @@
 	      (:Group-2 :1a)
 	      ("RET" 1 (I w) :f64
 	       (:fn . (x86-ret))
-	       ;; No UD Exception
-	       )
+               (:ud  . ((ud-Lock-used))))
 	      ("RET" 0 :f64
 	       (:fn . (x86-ret))
-	       ;; No UD Exception
-	       )
+	       (:ud  . ((ud-Lock-used))))
 	      ;; C4 and C5 are first bytes of the vex prefixes, both
 	      ;; in 32-bit and IA-32e modes.  However, in the 32-bit
 	      ;; and compatibility modes, the second byte determines
@@ -1095,7 +1095,8 @@
 	       (:fn . (:no-instruction)))
 	      ("HLT" 0
 	       (:fn . (x86-hlt))
-	       (:ud  . ((ud-Lock-used))))
+	       (:ud  . ((ud-Lock-used)))
+               (:gp  . ((gp-cpl-not-0))))
 	      ("CMC" 0
 	       (:fn . (x86-cmc/clc/stc/cld/std))
 	       (:ud  . ((ud-Lock-used))))
@@ -1224,7 +1225,8 @@
 
 	       (:66        . ("MOVLPD"    3 (V q)  (H q)  (M q)
 			      (:fn . (x86-movlps/movlpd-Op/En-RM))
-			      (:ex . ((chk-exc :type-5 (:sse2))))))
+			      (:ex . ((chk-exc :type-5 (:sse2))))
+			      (:ud  . ((ud-ModR/M.Mod-indicates-Register)))))
 	       (:F3        . ("MOVSLDUP"  2 (V x)  (W x)
 			      (:fn . (x86-movlps/movlpd-Op/En-RM))
 			      (:ex . ((chk-exc :type-4 (:sse3))))))
@@ -1234,10 +1236,12 @@
 
 	      ((:no-prefix . ("MOVLPS"    2 (M q)  (V q)
 			      (:fn . (x86-movlps/movlpd-Op/En-MR))
-			      (:ex . ((chk-exc :type-5 (:sse))))))
+			      (:ex . ((chk-exc :type-5 (:sse))))
+			      (:ud  . ((ud-ModR/M.Mod-indicates-Register)))))
 	       (:66        . ("MOVLPD"    2 (M q)  (V q)
 			      (:fn . (x86-movlps/movlpd-Op/En-MR))
-			      (:ex . ((chk-exc :type-5 (:sse2)))))))
+			      (:ex . ((chk-exc :type-5 (:sse2))))
+			      (:ud  . ((ud-ModR/M.Mod-indicates-Register))))))
 
 	      ((:no-prefix . ("UNPCKLPS"  3 (V x)  (H x)  (W x)
 			      (:fn . (x86-unpck?ps-Op/En-RM
@@ -1269,16 +1273,19 @@
 				 (:ex . ((chk-exc :type-7 (:sse))))))))
 	       (:66        . ("MOVHPD"    3 (V dq)  (H q)  (M q) :v1
 			      (:fn . (x86-movhps/movhpd-Op/En-RM))
-			      (:ex . ((chk-exc :type-5 (:sse2))))))
+			      (:ex . ((chk-exc :type-5 (:sse2))))
+			      (:ud  . ((ud-source-operand-is-a-register)))))
 	       (:F3        . ("MOVSHDUP"  2 (V x)   (W x)
 			      (:ex . ((chk-exc :type-4 (:sse3)))))))
 
 	      ((:no-prefix . ("MOVHPS"    2 (M q)  (V q) :v1
 			      (:fn . (x86-movhps/movhpd-Op/En-MR))
-			      (:ex . ((chk-exc :type-5 (:sse))))))
+			      (:ex . ((chk-exc :type-5 (:sse))))
+			      (:ud  . ((ud-ModR/M.Mod-indicates-Register)))))
 	       (:66        . ("MOVHPD"    2 (M q)  (V q) :v1
 			      (:fn . (x86-movhps/movhpd-Op/En-MR))
-			      (:ex . ((chk-exc :type-5 (:sse2)))))))
+			      (:ex . ((chk-exc :type-5 (:sse2))))
+			      (:ud  . ((ud-ModR/M.Mod-indicates-Register))))))
 
     #| 18 |#  (:Group-16 :1a)
 	      ("RESERVEDNOP" 0)
@@ -1363,9 +1370,11 @@
 			      (:ex . ((chk-exc :type-3 (:sse2)))))))
 
 	      ((:no-prefix . ("MOVNTPS"   2 (M ps)  (V ps)
-			      (:ex . ((chk-exc :type-1 (:sse))))))
+			      (:ex . ((chk-exc :type-1 (:sse))))
+			      (:ud  . ((ud-ModR/M.Mod-indicates-Register)))))
 	       (:66        . ("MOVNTPD"   2 (M pd)  (V pd)
-			      (:ex . ((chk-exc :type-1 (:sse2)))))))
+			      (:ex . ((chk-exc :type-1 (:sse2))))
+			      (:ud  . ((ud-ModR/M.Mod-indicates-Register))))))
 
 	      ((:no-prefix . ("CVTTPS2PI"  2 (P pi)  (W ps)
 			      (:ex . ((chk-exc :type-22-5 (:mmx))))))
@@ -1961,7 +1970,7 @@
 	       (:fn . (x86-setcc))
 	       (:ud  . ((ud-Lock-used)))))
 
-    #| a0 |# (("PUSH"  1 (:FS) :d64
+    #| a0 |# (("PUSH FS"  1 (:FS) :d64
 	       (:fn . (x86-push-segment-register))
 	       (:ud  . ((ud-Lock-used))))
 	      ("POP"   1 (:FS) :d64
@@ -1979,7 +1988,7 @@
 	       (:fn . (:no-instruction)))
 	      (:none
 	       (:fn . (:no-instruction)))
-    #| a8 |#  ("PUSH"  1 (:GS) :d64
+    #| a8 |#  ("PUSH GS"  1 (:GS) :d64
 	       (:fn . (x86-push-segment-register))
 	       (:ud  . ((ud-Lock-used))))
 	      ("POP"   1 (:GS) :d64
@@ -2072,6 +2081,7 @@
 
 	      ("MOVNTI"     2 (M y)   (G y)
 	       (:ud  . ((ud-Lock-used)
+			(ud-ModR/M.Mod-indicates-Register)
 			(equal
 			  ;; CPUID.01H:EDX.SSE2[bit 26]
 			  (cpuid-flag
@@ -2080,16 +2090,26 @@
 			   :bit 26)
 			  0))))
 
-	      ((:no-prefix . (:ALT
-			      (("PINSRW"     3 (P q)   (R y)  (I b)
-				(:ex . ((chk-exc :type-5 (:sse)))))
-			       ("PINSRW"    3 (P q)   (M w)  (I b)
-				(:ex . ((chk-exc :type-5 (:sse))))))))
-	       (:66        . (:ALT
-			      (("PINSRW"    4 (V dq)  (H dq) (R y)  (I b)
-				(:ex . ((chk-exc :type-5 (:sse2)))))
-			       ("PINSRW"    4 (V dq)  (H dq) (M w)  (I b)
-				(:ex . ((chk-exc :type-5 (:sse2)))))))))
+	      ((:no-prefix . (:EXT
+			      (((:opcode . #ux0F_C4)
+				(:mod    . #b11)) .
+				("PINSRW"     3 (P q)   (R y)  (I b)
+				 (:ex . ((chk-exc :type-5 (:sse))))))
+			      (((:opcode . #ux0F_C4)
+				(:mod    . :mem)) .
+				("PINSRW"    3 (P q)   (M w)  (I b)
+				 (:ex . ((chk-exc :type-5 (:sse))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_C4)
+				(:prefix . :66)
+				(:mod    . #b11)) .
+				("PINSRW"    4 (V dq)  (H dq) (R y)  (I b)
+				 (:ex . ((chk-exc :type-5 (:sse2))))))
+			      (((:opcode . #ux0F_C4)
+				(:prefix . :66)
+				(:mod    . :mem)) .
+				("PINSRW"    4 (V dq)  (H dq) (M w)  (I b)
+				 (:ex . ((chk-exc :type-5 (:sse2)))))))))
 
 	      ((:no-prefix . ("PEXTRW"     3 (G d)   (N q)  (I b)
 			      (:ex . ((chk-exc :type-5 (:sse))))))
@@ -2255,9 +2275,11 @@
 			    (:ex . ((chk-exc :type-2 (:sse2)))))))
 
 	    ((:no-prefix . ("MOVNTQ"    2 (M q)   (P q)
-			    (:ex . ((chk-exc :type-22-8 (:mmx))))))
+			    (:ex . ((chk-exc :type-22-8 (:mmx))))
+			    (:ud  . ((ud-ModR/M.Mod-indicates-Register)))))
 	     (:66        . ("MOVNTDQ"  2 (M x)   (V x)
-			    (:ex . ((chk-exc :type-1 (:sse2)))))))
+			    (:ex . ((chk-exc :type-1 (:sse2))))
+			    (:ud  . ((ud-ModR/M.Mod-indicates-Register))))))
 
   #| e8 |#  ((:no-prefix . ("PSUBSB"  2 (P q)  (Q q)
 			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
@@ -2307,7 +2329,8 @@
 			    (:ex . ((chk-exc :type-4 (:sse2))))))))
 
   #| f0 |# (((:F2        . ("LDDQU" 2 (V x)  (M x)
-			    (:ex . ((chk-exc :type-4 (:sse3)))))))
+			    (:ex . ((chk-exc :type-4 (:sse3))))
+			    (:ud  . ((ud-ModR/M.Mod-indicates-Register))))))
 
 	    ((:no-prefix . ("PSLLW"  2 (P q)  (Q q)
 			    (:ex . ((chk-exc :type-22-7 (:mmx))))))
@@ -2486,7 +2509,8 @@
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VBROADCASTF128"  2 (V qq) (M dq)
-			       (:ex . ((chk-exc :type-6 (:avx2)))))))
+			       (:ex . ((chk-exc :type-6 (:avx2))))
+			       (:ud  . ((ud-ModR/M.Mod-indicates-Register))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      ((:no-prefix . ("PABSB"           2 (P q)  (Q q)
@@ -2508,46 +2532,82 @@
 
     #| 20 |# (((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PMOVSXBW" 2 (V x) (U x)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PMOVSXBW" 2 (V x) (M q)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_38_20)
+				(:prefix . :66)
+				(:mod    . :mem)) .
+				("PMOVSXBW" 2 (V x) (M q)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_38_20)
+				(:prefix . :66)
+				(:mod    . #b11)) .
+				("PMOVSXBW" 2 (V x) (U x)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PMOVSXBD" 2 (V x) (U x)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PMOVSXBD" 2 (V x) (M d)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_38_21)
+				(:prefix . :66)
+				(:mod    . :mem)) .
+				("PMOVSXBD" 2 (V x) (M d)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_38_21)
+				(:prefix . :66)
+				(:mod    . #b11)) .
+				("PMOVSXBD" 2 (V x) (U x)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PMOVSXBQ" 2 (V x) (U x)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PMOVSXBQ" 2 (V x) (M w)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_38_22)
+				(:prefix . :66)
+				(:mod    . :mem)) .
+				("PMOVSXBQ" 2 (V x) (M w)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_38_22)
+				(:prefix . :66)
+				(:mod    . #b11)) .
+				("PMOVSXBQ" 2 (V x) (U x)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PMOVSXWD" 2 (V x) (U x)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PMOVSXWD" 2 (V x) (M q)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_38_23)
+				(:prefix . :66)
+				(:mod    . :mem)) .
+				("PMOVSXWD" 2 (V x) (M q)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_38_23)
+				(:prefix . :66)
+				(:mod    . #b11)) .
+				("PMOVSXWD" 2 (V x) (U x)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PMOVSXWQ" 2 (V x) (U x)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PMOVSXWQ" 2 (V x) (M d)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_38_23)
+				(:prefix . :66)
+				(:mod    . :mem)) .
+				("PMOVSXWQ" 2 (V x) (M d)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_38_23)
+				(:prefix . :66)
+				(:mod    . #b11)) .
+				("PMOVSXWQ" 2 (V x) (U x)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PMOVSXDQ" 2 (V x) (U x)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PMOVSXDQ" 2 (V x) (M q)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_38_23)
+				(:prefix . :66)
+				(:mod    . :mem)) .
+				("PMOVSXDQ" 2 (V x) (M q)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_38_23)
+				(:prefix . :66)
+				(:mod    . #b11)) .
+				("PMOVSXDQ" 2 (V x) (U x)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2563,7 +2623,8 @@
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . ("MOVNTDQA"   2 (V x) (M x)
-			      (:ex . ((chk-exc :type-1 (:avx2)))))))
+			      (:ex . ((chk-exc :type-1 (:avx2))))
+			      (:ud  . ((ud-ModR/M.Mod-indicates-Register))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . ("PACKUSDW"   3 (V x) (H x) (W x)
@@ -2571,69 +2632,109 @@
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VMASKMOVPS"  3 (V x) (H x) (M x)
-			       (:ex . ((chk-exc :type-6 (:avx2)))))))
+			       (:ex . ((chk-exc :type-6 (:avx2))))
+			       (:ud  . ((ud-ModR/M.Mod-indicates-Register))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VMASKMOVPD"  3 (V x) (H x) (M x)
-			       (:ex . ((chk-exc :type-6 (:avx2)))))))
+			       (:ex . ((chk-exc :type-6 (:avx2))))
+			       (:ud  . ((ud-ModR/M.Mod-indicates-Register))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VMASKMOVPS"  3 (M x) (H x) (V x)
-			       (:ex . ((chk-exc :type-6 (:avx2)))))))
+			       (:ex . ((chk-exc :type-6 (:avx2))))
+			       (:ud  . ((ud-ModR/M.Mod-indicates-Register))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VMASKMOVPD"  3 (M x) (H x) (V x)
-			       (:ex . ((chk-exc :type-6 (:avx2))))))))
+			       (:ex . ((chk-exc :type-6 (:avx2))))
+			       (:ud  . ((ud-ModR/M.Mod-indicates-Register)))))))
 
     #| 30 |# (((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PMOVZXBW" 2 (V x)  (U x)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PMOVZXBW" 2 (V x)  (M q)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_38_30)
+				(:mod    . :mem)
+				(:prefix . :66)) .
+				("PMOVZXBW" 2 (V x)  (M q)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_38_30)
+				(:mod    . #b11)
+				(:prefix . :66)) .
+				("PMOVZXBW" 2 (V x)  (U x)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PMOVZXBD" 2 (V x)  (U x)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PMOVZXBD" 2 (V x)  (M d)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_38_31)
+				(:mod    . :mem)
+				(:prefix . :66)) .
+				("PMOVZXBD" 2 (V x)  (M d)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_38_31)
+				(:mod    . #b11)
+				(:prefix . :66)) .
+				("PMOVZXBD" 2 (V x)  (U x)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PMOVZXBQ" 2 (V x)  (U x)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PMOVZXBQ" 2 (V x)  (M w)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_38_32)
+				(:mod    . :mem)
+				(:prefix . :66)) .
+				("PMOVZXBQ" 2 (V x)  (M w)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_38_32)
+				(:mod    . #b11)
+				(:prefix . :66)) .
+				("PMOVZXBQ" 2 (V x)  (U x)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PMOVZXWD" 2 (V x)  (U x)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PMOVZXWD" 2 (V x)  (M q)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_38_33)
+				(:mod    . :mem)
+				(:prefix . :66)) .
+				("PMOVZXWD" 2 (V x)  (M q)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_38_33)
+				(:mod    . #b11)
+				(:prefix . :66)) .
+				("PMOVZXWD" 2 (V x)  (U x)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PMOVZXWQ" 2 (V x)  (U x)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PMOVZXWQ" 2 (V x)  (M d)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_38_34)
+				(:mod    . :mem)
+				(:prefix . :66)) .
+				("PMOVZXWQ" 2 (V x)  (M d)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_38_34)
+				(:mod    . #b11)
+				(:prefix . :66)) .
+				("PMOVZXWQ" 2 (V x)  (U x)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PMOVZXDQ" 2 (V x)  (U x)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PMOVZXDQ" 2 (V x)  (M q)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_38_35)
+				(:mod    . :mem)
+				(:prefix . :66)) .
+				("PMOVZXDQ" 2 (V x)  (M q)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_38_35)
+				(:mod    . #b11)
+				(:prefix . :66)) .
+				("PMOVZXDQ" 2 (V x)  (U x)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VPERMD"     3 (V qq) (H qq) (W qq)
 			       (:ex . ((chk-exc :type-4 (:avx2)))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . ("PCMPGTQ"   3 (V x) (Hx) (W x)
+	       (:66        . ("PCMPGTQ"   3 (V x) (H x) (W x)
 			      (:ex . ((chk-exc :type-4 (:avx2)))))))
 
     #| 38 |#  ((:no-prefix . (:none
@@ -2739,7 +2840,8 @@
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:v66        . ("VBROADCASTI128" 2  (V qq) (M dq)
-			       (:ex . ((chk-exc :type-6 (:avx2)))))))
+			       (:ex . ((chk-exc :type-6 (:avx2))))
+			       (:ud  . ((ud-ModR/M.Mod-indicates-Register))))))
 	      (:none
 	       (:fn . (:no-instruction)))
 	      (:none
@@ -2826,20 +2928,23 @@
 		(:66        . ("INVEPT"  2 (G y) (M dq)
 			       (:ud  . ((ud-not-in-prot-or-64-mode)
 					(ud-not-in-vmx-operation)
-					(ud-invept-not-supported)))
+					(ud-invept-not-supported)
+					(ud-ModR/M.Mod-indicates-Register)))
 			       (:gp  . ((gp-cpl-not-0))))))
 	       ((:no-prefix . (:none
 			       (:fn . (:no-instruction))))
 		(:66        . ("INVVPID" 2 (G y) (M dq)
 			       (:ud  . ((ud-not-in-prot-or-64-mode)
 					(ud-not-in-vmx-operation)
-					(ud-invvpid-not-supported)))
+					(ud-invvpid-not-supported)
+					(ud-ModR/M.Mod-indicates-Register)))
 			       (:gp  . ((gp-cpl-not-0))))))
 	       ((:no-prefix . (:none
 			       (:fn . (:no-instruction))))
 		(:66        . ("INVPCID" 2 (G y) (M dq)
 			       (:ud  . ((ud-Lock-used)
-					(ud-invpcid-not-supported)))
+					(ud-invpcid-not-supported)
+					(ud-ModR/M.Mod-indicates-Register)))
 			       (:gp  . ((gp-cpl-not-0))))))
 	       (:none
 	       (:fn . (:no-instruction)))
@@ -2862,13 +2967,15 @@
 	       ((:no-prefix . (:none
 			       (:fn . (:no-instruction))))
 		(:v66        . ("VPMASKMOVD/Q" 3 (V x) (H x) (M x)
-				(:ex . ((chk-exc :type-6 (:avx2)))))))
+				(:ex . ((chk-exc :type-6 (:avx2))))
+				(:ud  . ((ud-ModR/M.Mod-indicates-Register))))))
 	       (:none
 	       (:fn . (:no-instruction)))
 	       ((:no-prefix . (:none
 			       (:fn . (:no-instruction))))
 		(:v66        . ("VPMASKMOVD/Q" 3 (M x) (V x) (H x)
-				(:ex . ((chk-exc :type-6 (:avx2)))))))
+				(:ex . ((chk-exc :type-6 (:avx2))))
+				(:ud  . ((ud-ModR/M.Mod-indicates-Register))))))
 	       (:none
 	       (:fn . (:no-instruction))))
 
@@ -3166,12 +3273,14 @@
 			       (:ud . ((= (cpuid-flag #ux_01 :reg #.*ecx* :bit 22) 0)
 				       (ud-Lock-used)
 				       (ud-repne-f2-V86-cpuid-case)
-				       (ud-rep-f3-used)))))
+				       (ud-rep-f3-used)
+				       (ud-ModR/M.Mod-indicates-Register)))))
 	     (:66           . ("MOVBE" 2 (G w)  (M w)
 			       (:ud . ((= (cpuid-flag #ux_01 :reg #.*ecx* :bit 22) 0)
 				       (ud-Lock-used)
 				       (ud-repne-f2-V86-cpuid-case)
-				       (ud-rep-f3-used)))))
+				       (ud-rep-f3-used)
+				       (ud-ModR/M.Mod-indicates-Register)))))
 	     (:F3           . (:none
 			       (:fn . (:no-instruction))))
 	     (:F2           . ("CRC32" 2 (G d)  (E b)
@@ -3183,12 +3292,14 @@
 			       (:ud . ((= (cpuid-flag #ux_01 :reg #.*ecx* :bit 22) 0)
 				       (ud-Lock-used)
 				       (ud-repne-f2-V86-cpuid-case)
-				       (ud-rep-f3-used)))))
+				       (ud-rep-f3-used)
+				       (ud-ModR/M.Mod-indicates-Register)))))
 	     (:66           . ("MOVBE" 2 (M w)  (G w)
 			       (:ud . ((= (cpuid-flag #ux_01 :reg #.*ecx* :bit 22) 0)
 				       (ud-Lock-used)
 				       (ud-repne-f2-V86-cpuid-case)
-				       (ud-rep-f3-used)))))
+				       (ud-rep-f3-used)
+				       (ud-ModR/M.Mod-indicates-Register)))))
 	     (:F3           . (:none
 			       (:fn . (:no-instruction))))
 	     (:F2           . ("CRC32" 2 (G d)  (E y)
@@ -3354,18 +3465,30 @@
 	       (:fn . (:no-instruction)))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PEXTRB"    3 (R d)  (V dq)  (I b)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PEXTRB"    3 (M b)  (V dq)  (I b)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_3A_14)
+				(:mod    . :mem)
+				(:prefix . :66)) .
+				("PEXTRB"    3 (M b)  (V dq)  (I b)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_3A_14)
+				(:mod    . #b11)
+				(:prefix . :66)) .
+				("PEXTRB"    3 (R d)  (V dq)  (I b)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PEXTRW"    3 (R d)  (V dq)  (I b)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PEXTRW"    3 (M w)  (V dq)  (I b)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_3A_15)
+				(:mod    . :mem)
+				(:prefix . :66)) .
+				("PEXTRW"    3 (M w)  (V dq)  (I b)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_3A_15)
+				(:mod    . #b11)
+				(:prefix . :66)) .
+				("PEXTRW"    3 (R d)  (V dq)  (I b)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . ("PEXTRD/Q"   3 (E y)  (V dq)  (I b)
@@ -3399,18 +3522,30 @@
 
     #| 20 |# (((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("PINSRB"   4 (V dq) (H dq) (R y)  (I b)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("PINSRB"   4 (V dq) (H dq) (M b) (I b)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_3A_21)
+				(:mod    . :mem)
+				(:prefix . :66)) .
+				("PINSRB"   4 (V dq) (H dq) (M b) (I b)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_3A_21)
+				(:mod    . #b11)
+				(:prefix . :66)) .
+				("PINSRB"   4 (V dq) (H dq) (R y)  (I b)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
-	       (:66        . (:ALT
-			      (("INSERTPS" 4 (V dq) (H dq) (U dq) (I b)
-				(:ex . ((chk-exc :type-5 (:avx2)))))
-			       ("INSERTPS" 4 (V dq) (H dq) (M d) (I b)
-				(:ex . ((chk-exc :type-5 (:avx2)))))))))
+	       (:66        . (:EXT
+			      (((:opcode . #ux0F_3A_22)
+				(:mod    . :mem)
+				(:prefix . :66)) .
+				("INSERTPS" 4 (V dq) (H dq) (M d) (I b)
+				 (:ex . ((chk-exc :type-5 (:avx2))))))
+			      (((:opcode . #ux0F_3A_22)
+				(:mod    . #b11)
+				(:prefix . :66)) .
+				("INSERTPS" 4 (V dq) (H dq) (U dq) (I b)
+				 (:ex . ((chk-exc :type-5 (:avx2)))))))))
 	      ((:no-prefix . (:none
 			      (:fn . (:no-instruction))))
 	       (:66        . ("PINSRD/Q"  4 (V dq) (H dq) (E y)  (I b)
@@ -3963,7 +4098,7 @@
 		 ("CMP" 2 (E b) (I b) :1a
 		  (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
 			  (operation . #.*OP-CMP*)))
-		  (:ud  . ((ud-Lock-used-Dest-not-Memory-Op)))))
+		  (:ud  . ((ud-Lock-used)))))
 
 	       (((:opcode . #x81)
 		 (:reg    . #b000)) .
@@ -4537,7 +4672,8 @@
 		  (:fn . (x86-near-jmp-Op/En-M))
 		  (:ud  . ((ud-Lock-used)))))
 	       (((:opcode . #xFF)
-		 (:reg    . #b101)) .
+		 (:reg    . #b101)
+		 (:mod    . :mem)) .
 		 ("far JMP"  1 (M p) :1a
 		  (:fn . (x86-far-jmp-Op/En-D))
 		  (:ud  . ((ud-Lock-used)))))
@@ -4663,14 +4799,7 @@
 		 ("CLAC" 0 :1a
 		  (:ud  . ((ud-Lock-used)
 			   (ud-cpl-is-not-zero)
-			   (equal
-			    ;; CPUID.(EAX=07H, ECX=0H):EBX.SMAP[bit 20]
-			    (cpuid-flag
-			     #ux_07
-			     :ecx #ux_00
-			     :reg #.*ebx*
-			     :bit 20)
-			    0)))))
+			   (equal (feature-flag-macro :smap) 0)))))
 	       (((:opcode . #ux0F_01)
 		 (:mod    . #b11)
 		 (:reg    . #b001)
@@ -4935,6 +5064,28 @@
 		 (:mod    . #b11)
 		 (:reg    . #b110)) .
 		 ("RDRAND" 1 (R v) :1a
+		  (:fn . (x86-rdrand))
+		  (:ud  . ((ud-Lock-used)
+			   (ud-Reps-used)
+			   (equal
+			    ;; CPUID.01H:ECX.RDRAND[bit 30]
+			    (cpuid-flag
+			     #ux_01
+			     :reg #.*ecx*
+			     :bit 30)
+			    t)))))
+	       ;; [Shilpi] RDRAND, with #x66 prefix, isn't listed in the Intel
+	       ;; manuals (May 2018 edition).  This is because all opcodes in
+	       ;; this table other than RDRAND throw an error if they're used
+	       ;; with a SIMD prefix that's not listed as an allowed mandatory
+	       ;; prefix for that opcode.  RDRAND can be used with :no-prefix
+	       ;; and :66, but not :F2 or :F3 (see (ud-Reps-used) in :ud
+	       ;; listing).
+	       (((:opcode . #ux0F_C7)
+		 (:prefix . :66)
+		 (:mod    . #b11)
+		 (:reg    . #b110)) .
+		 ("RDRAND" 1 (R w) :1a
 		  (:fn . (x86-rdrand))
 		  (:ud  . ((ud-Lock-used)
 			   (ud-Reps-used)
@@ -5322,7 +5473,8 @@
 		  (:mod    . :mem)
 		  (:reg    . #b010)) .
 		  ("LDMXCSR" 0 :1a
-		   (:fn . (x86-ldmxcsr/stmxcsr-Op/En-M))))
+		   (:fn . (x86-ldmxcsr/stmxcsr-Op/En-M))
+                   (:ex . ((chk-exc :type-5 (:sse))))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . :F3)
 		  (:mod    . #b11)
@@ -5344,7 +5496,8 @@
 		  (:mod    . :mem)
 		  (:reg    . #b011)) .
 		  ("STMXCSR" 0 :1a
-		   (:fn . (x86-ldmxcsr/stmxcsr-Op/En-M))))
+		   (:fn . (x86-ldmxcsr/stmxcsr-Op/En-M))
+                   (:ex . ((chk-exc :type-5 (:sse))))))
 		(((:opcode . #ux0F_AE)
 		  (:prefix . :F3)
 		  (:mod    . #b11)
@@ -5470,7 +5623,7 @@
 			      :bit 25)
 			     0)))))))
 
-    (:Group-16 . ;; Covers opcode 0F 18.
+    (:Group-16 . ;; Covers opcode 0F 18, 0F 1A, and 0F 1B.
 	       ((((:opcode . #ux0F_18)
 		  (:mod    . :mem)
 		  (:reg    . #b000)) .
@@ -5840,12 +5993,12 @@
     (#x12 ((:VEX :0F :128 :F2 :WIG)                  ("VMOVDDUP"             2 (V x)  (W x)))
 	  ((:VEX :0F :256 :F2 :WIG)                  ("VMOVDDUP"             2 (V x)  (W x)))
 	  ((:VEX :0F :NDS :128 :WIG (:mod . #b11))   ("VMOVHLPS"             3 (V q)  (H q)  (U q)))
-	  ((:VEX :0F :NDS :128 :66 :WIG)             ("VMOVLPD"              3 (V q)  (H q)  (M q)))
+	  ((:VEX :0F :NDS :128 :66 :WIG (:mod . :mem)) ("VMOVLPD"              3 (V q)  (H q)  (M q)))
 	  ((:VEX :0F :NDS :128 :WIG (:mod . :mem))   ("VMOVLPS"              3 (V q)  (H q)  (M q)))
 	  ((:VEX :0F :128 :F3 :WIG)                  ("VMOVSLDUP"            2 (V x)  (W x)))
 	  ((:VEX :0F :256 :F3 :WIG)                  ("VMOVSLDUP"            2 (V x)  (W x))))
-    (#x13 ((:VEX :0F :128 :66 :WIG)                  ("VMOVLPD"              3 (V q)  (H q)  (M q)))
-	  ((:VEX :0F :128 :WIG)                      ("VMOVLPS"              3 (V q)  (H q)  (M q))))
+    (#x13 ((:VEX :0F :128 :66 :WIG (:mod . :mem))    ("VMOVLPD"              3 (V q)  (H q)  (M q)))
+	  ((:VEX :0F :128 :WIG (:mod . :mem))        ("VMOVLPS"              3 (V q)  (H q)  (M q))))
     (#x14 ((:VEX :0F :NDS :128 :66 :WIG)             ("VUNPCKLPD"            3 (V x)  (H x)  (W x)))
 	  ((:VEX :0F :NDS :256 :66 :WIG)             ("VUNPCKLPD"            3 (V x)  (H x)  (W x)))
 	  ((:VEX :0F :NDS :128 :WIG)                 ("VUNPCKLPS"            3 (V x)  (H x)  (W x)))
@@ -5854,13 +6007,13 @@
 	  ((:VEX :0F :NDS :256 :66 :WIG)             ("VUNPCKHPD"            3 (V x)  (H x)  (W x)))
 	  ((:VEX :0F :NDS :128 :WIG)                 ("VUNPCKHPS"            3 (V x)  (H x)  (W x)))
 	  ((:VEX :0F :NDS :256 :WIG)                 ("VUNPCKHPS"            3 (V x)  (H x)  (W x))))
-    (#x16 ((:VEX :0F :NDS :128 :66 :WIG)             ("VMOVHPD"              3 (V dq)  (H q)  (M q) :v1))
+    (#x16 ((:VEX :0F :NDS :128 :66 :WIG (:mod . :mem)) ("VMOVHPD"              3 (V dq)  (H q)  (M q) :v1))
 	  ((:VEX :0F :NDS :128 :WIG (:mod . :mem))   ("VMOVHPS"              3 (V dq)  (H q)  (M q) :v1))
 	  ((:VEX :0F :NDS :128 :WIG (:mod . #b11))   ("VMOVLHPS"             3 (V dq)  (H q)  (U q)))
 	  ((:VEX :0F :128 :F3 :WIG)                  ("VMOVSHDUP"            2 (V x)   (W x)))
 	  ((:VEX :0F :256 :F3 :WIG)                  ("VMOVSHDUP"            2 (V x)   (W x))))
-    (#x17 ((:VEX :0F :128 :66 :WIG)                  ("VMOVHPD"              3 (V dq)  (H q)  (M q) :v1))
-	  ((:VEX :0F :128 :WIG)                      ("VMOVHPS"              3 (V dq)  (H q)  (M q) :v1)))
+    (#x17 ((:VEX :0F :128 :66 :WIG (:mod . :mem))    ("VMOVHPD"              3 (V dq)  (H q)  (M q) :v1))
+	  ((:VEX :0F :128 :WIG (:mod . :mem))        ("VMOVHPS"              3 (V dq)  (H q)  (M q) :v1)))
     (#x28 ((:VEX :0F :128 :66 :WIG)                  ("VMOVAPD"              2 (V pd)  (W pd)))
 	  ((:VEX :0F :256 :66 :WIG)                  ("VMOVAPD"              2 (V pd)  (W pd)))
 	  ((:VEX :0F :128 :WIG)                      ("VMOVAPS"              2 (V ps)  (W ps)))
@@ -5873,10 +6026,10 @@
 	  ((:VEX :0F :NDS :LIG :F2 :W1)              ("VCVTSI2SD"            3 (V sd)  (H sd)  (E y)))
 	  ((:VEX :0F :NDS :LIG :F3 :W0)              ("VCVTSI2SS"            3 (V ss)  (H ss)  (E y)))
 	  ((:VEX :0F :NDS :LIG :F3 :W1)              ("VCVTSI2SS"            3 (V ss)  (H ss)  (E y))))
-    (#x2B ((:VEX :0F :128 :66 :WIG)                  ("VMOVNTPD"             2 (M pd)  (V pd)))
-	  ((:VEX :0F :256 :66 :WIG)                  ("VMOVNTPD"             2 (M pd)  (V pd)))
-	  ((:VEX :0F :128 :WIG)                      ("VMOVNTPS"             2 (M ps)  (V ps)))
-	  ((:VEX :0F :256 :WIG)                      ("VMOVNTPS"             2 (M ps)  (V ps))))
+    (#x2B ((:VEX :0F :128 :66 :WIG (:mod . :mem))    ("VMOVNTPD"             2 (M pd)  (V pd)))
+	  ((:VEX :0F :256 :66 :WIG (:mod . :mem))    ("VMOVNTPD"             2 (M pd)  (V pd)))
+	  ((:VEX :0F :128 :WIG (:mod . :mem))        ("VMOVNTPS"             2 (M ps)  (V ps)))
+	  ((:VEX :0F :256 :WIG (:mod . :mem))        ("VMOVNTPS"             2 (M ps)  (V ps))))
     ;; Software should ensure VCVTTSD2SI, VC(VTTSS2SI are encoded with
     ;; VEX.L-0. Encoding VCVTTSD2SI with VEX(.L-1 may encounter unpredictable
     ;; behavior across different processor g(enerations.
@@ -6178,8 +6331,8 @@
 	  ((:VEX :0F :256 :F2 :WIG)                  ("VCVTPD2DQ"            2 (V x)   (W pd)))
 	  ((:VEX :0F :128 :66 :WIG)                  ("VCVTTPD2DQ"           2 (V x)   (W pd)))
 	  ((:VEX :0F :256 :66 :WIG)                  ("VCVTTPD2DQ"           2 (V x)   (W pd))))
-    (#xE7 ((:VEX :0F :128 :66 :WIG)                  ("VMOVNTDQ"             2 (M x)   (V x)))
-	  ((:VEX :0F :256 :66 :WIG)                  ("VMOVNTDQ"             2 (M x)   (V x))))
+    (#xE7 ((:VEX :0F :128 :66 :WIG (:mod . :mem))    ("VMOVNTDQ"             2 (M x)   (V x)))
+	  ((:VEX :0F :256 :66 :WIG (:mod . :mem))    ("VMOVNTDQ"             2 (M x)   (V x))))
     (#xE8 ((:VEX :0F :NDS :128 :66 :WIG)             ("VPSUBSB"              3 (V x)  (H x)  (W x)))
 	  ((:VEX :0F :NDS :256 :66 :WIG)             ("VPSUBSB"              3 (V x)  (H x)  (W x))))
     (#xE9 ((:VEX :0F :NDS :128 :66 :WIG)             ("VPSUBSW"              3 (V x)  (H x)  (W x)))
@@ -6196,8 +6349,8 @@
 	  ((:VEX :0F :NDS :256 :66 :WIG)             ("VPMAXSW"              3 (V x)  (H x)  (W x))))
     (#xEF ((:VEX :0F :NDS :128 :66 :WIG)             ("VPXOR"                3 (V x)  (H x)  (W x)))
 	  ((:VEX :0F :NDS :256 :66 :WIG)             ("VPXOR"                3 (V x)  (H x)  (W x))))
-    (#xF0 ((:VEX :0F :128 :F2 :WIG)                  ("VLDDQU"               2 (V x)  (M x)))
-	  ((:VEX :0F :256 :F2 :WIG)                  ("VLDDQU"               2 (V x)  (M x))))
+    (#xF0 ((:VEX :0F :128 :F2 :WIG (:mod . :mem))    ("VLDDQU"               2 (V x)  (M x)))
+	  ((:VEX :0F :256 :F2 :WIG (:mod . :mem))    ("VLDDQU"               2 (V x)  (M x))))
     (#xF1 ((:VEX :0F :NDS :128 :66 :WIG)             ("VPSLLW"               3 (V x)  (H x)  (W x)))
 	  ((:VEX :0F :NDS :256 :66 :WIG)             ("VPSLLW"               3 (V x)  (H x)  (W x))))
     (#xF2 ((:VEX :0F :NDS :128 :66 :WIG)             ("VPSLLD"               3 (V x)  (H x)  (W x)))
@@ -6270,7 +6423,7 @@
 	  ((:VEX :0F38 :128 :66 :W0 (:mod . #b11))   ("VBROADCASTSS"         2 (V x)  (W d)))) ;; AVX2
     (#x19 ((:VEX :0F38 :256 :66 :W0 (:mod . :mem))   ("VBROADCASTSD"         2 (V qq) (W q))) ;; AVX
 	  ((:VEX :0F38 :256 :66 :W0 (:mod . #b11))   ("VBROADCASTSD"         2 (V qq) (W q)))) ;; AVX2
-    (#x1A ((:VEX :0F38 :256 :66 :W0)                 ("VBROADCASTF128"       2 (V qq) (M dq))))
+    (#x1A ((:VEX :0F38 :256 :66 :W0 (:mod . :mem))   ("VBROADCASTF128"       2 (V qq) (M dq))))
     (#x1C ((:VEX :0F38 :128 :66 :WIG)                ("VPABSB"               2 (V x)  (W x)))
 	  ((:VEX :0F38 :256 :66 :WIG)                ("VPABSB"               2 (V x)  (W x))))
     (#x1D ((:VEX :0F38 :128 :66 :WIG)                ("VPABSW"               2 (V x)  (W x)))
@@ -6293,18 +6446,18 @@
 	  ((:VEX :0F38 :NDS :256 :66 :WIG)           ("VPMULDQ"              3 (V x) (H x) (W x))))
     (#x29 ((:VEX :0F38 :NDS :128 :66 :WIG)           ("VPCMPEQQ"             3 (V x) (H x) (W x)))
 	  ((:VEX :0F38 :NDS :256 :66 :WIG)           ("VPCMPEQQ"             3 (V x) (H x) (W x))))
-    (#x2A ((:VEX :0F38 :128 :66 :WIG)                ("VMOVNTDQA"            2 (V x) (M x)))
-	  ((:VEX :0F38 :256 :66 :WIG)                ("VMOVNTDQA"            2 (V x) (M x))))
+    (#x2A ((:VEX :0F38 :128 :66 :WIG (:mod . :mem))  ("VMOVNTDQA"            2 (V x) (M x)))
+	  ((:VEX :0F38 :256 :66 :WIG (:mod . :mem))  ("VMOVNTDQA"            2 (V x) (M x))))
     (#x2B ((:VEX :0F38 :NDS :128 :66)                ("VPACKUSDW"            3 (V x) (H x) (W x)))
 	  ((:VEX :0F38 :NDS :256 :66)                ("VPACKUSDW"            3 (V x) (H x) (W x))))
-    (#x2C ((:VEX :0F38 :NDS :128 :66 :W0)            ("VMASKMOVPS"           3 (V x) (H x) (M x)))
-	  ((:VEX :0F38 :NDS :256 :66 :W0)            ("VMASKMOVPS"           3 (V x) (H x) (M x))))
-    (#x2D ((:VEX :0F38 :NDS :128 :66 :W0)            ("VMASKMOVPD"           3 (V x) (H x) (M x)))
-	  ((:VEX :0F38 :NDS :256 :66 :W0)            ("VMASKMOVPD"           3 (V x) (H x) (M x))))
-    (#x2E ((:VEX :0F38 :NDS :128 :66 :W0)            ("VMASKMOVPS"           3 (V x) (H x) (M x)))
-	  ((:VEX :0F38 :NDS :256 :66 :W0)            ("VMASKMOVPS"           3 (V x) (H x) (M x))))
-    (#x2F ((:VEX :0F38 :NDS :128 :66 :W0)            ("VMASKMOVPD"           3 (V x) (H x) (M x)))
-	  ((:VEX :0F38 :NDS :256 :66 :W0)            ("VMASKMOVPD"           3 (V x) (H x) (M x))))
+    (#x2C ((:VEX :0F38 :NDS :128 :66 :W0 (:mod . :mem)) ("VMASKMOVPS"           3 (V x) (H x) (M x)))
+	  ((:VEX :0F38 :NDS :256 :66 :W0 (:mod . :mem)) ("VMASKMOVPS"           3 (V x) (H x) (M x))))
+    (#x2D ((:VEX :0F38 :NDS :128 :66 :W0 (:mod . :mem)) ("VMASKMOVPD"           3 (V x) (H x) (M x)))
+	  ((:VEX :0F38 :NDS :256 :66 :W0 (:mod . :mem)) ("VMASKMOVPD"           3 (V x) (H x) (M x))))
+    (#x2E ((:VEX :0F38 :NDS :128 :66 :W0 (:mod . :mem)) ("VMASKMOVPS"           3 (V x) (H x) (M x)))
+	  ((:VEX :0F38 :NDS :256 :66 :W0 (:mod . :mem)) ("VMASKMOVPS"           3 (V x) (H x) (M x))))
+    (#x2F ((:VEX :0F38 :NDS :128 :66 :W0 (:mod . :mem)) ("VMASKMOVPD"           3 (V x) (H x) (M x)))
+	  ((:VEX :0F38 :NDS :256 :66 :W0 (:mod . :mem)) ("VMASKMOVPD"           3 (V x) (H x) (M x))))
     (#x30 ((:VEX :0F38 :128 :66 :WIG)                ("VPMOVZXBW"            2 (V x)  (U x)))
 	  ((:VEX :0F38 :256 :66 :WIG)                ("VPMOVZXBW"            2 (V x)  (U x))))
     (#x31 ((:VEX :0F38 :128 :66 :WIG)                ("VPMOVZXBD"            2 (V x)  (U x)))
@@ -6352,19 +6505,19 @@
 	  ((:VEX :0F38 :256 :66 :W0)                 ("VPBROADCASTD"         2  (V x)  (W x))))
     (#x59 ((:VEX :0F38 :128 :66 :W0)                 ("VPBROADCASTQ"         2  (V x)  (W x)))
 	  ((:VEX :0F38 :256 :66 :W0)                 ("VPBROADCASTQ"         2  (V x)  (W x))))
-    (#x5A ((:VEX :0F38 :256 :66 :W0)                 ("VBROADCASTI128"       2  (V qq) (M dq))))
+    (#x5A ((:VEX :0F38 :256 :66 :W0 (:mod . :mem))   ("VBROADCASTI128"       2  (V qq) (M dq))))
     (#x78 ((:VEX :0F38 :128 :66 :W0)                 ("VPBROADCASTB"         2 (V x) (W x)))
 	  ((:VEX :0F38 :256 :66 :W0)                 ("VPBROADCASTB"         2 (V x) (W x))))
     (#x79 ((:VEX :0F38 :128 :66 :W0)                 ("VPBROADCASTW"         2 (V x) (W x)))
 	  ((:VEX :0F38 :256 :66 :W0)                 ("VPBROADCASTW"         2 (V x) (W x))))
-    (#x8C ((:VEX :0F38 :NDS :128 :66 :W0)            ("VPMASKMOVD"           3 (V x) (H x) (M x)))
-	  ((:VEX :0F38 :NDS :256 :66 :W0)            ("VPMASKMOVD"           3 (V x) (H x) (M x)))
-	  ((:VEX :0F38 :NDS :128 :66 :W1)            ("VPMASKMOVQ"           3 (V x) (H x) (M x)))
-	  ((:VEX :0F38 :NDS :256 :66 :W1)            ("VPMASKMOVQ"           3 (V x) (H x) (M x))))
-    (#x8E ((:VEX :0F38 :NDS :128 :66 :W0)            ("VPMASKMOVD"           3 (V x) (H x) (M x)))
-	  ((:VEX :0F38 :NDS :256 :66 :W0)            ("VPMASKMOVD"           3 (V x) (H x) (M x)))
-	  ((:VEX :0F38 :NDS :128 :66 :W1)            ("VPMASKMOVQ"           3 (V x) (H x) (M x)))
-	  ((:VEX :0F38 :NDS :256 :66 :W1)            ("VPMASKMOVQ"           3 (V x) (H x) (M x))))
+    (#x8C ((:VEX :0F38 :NDS :128 :66 :W0 (:mod . :mem)) ("VPMASKMOVD"           3 (V x) (H x) (M x)))
+	  ((:VEX :0F38 :NDS :256 :66 :W0 (:mod . :mem)) ("VPMASKMOVD"           3 (V x) (H x) (M x)))
+	  ((:VEX :0F38 :NDS :128 :66 :W1 (:mod . :mem)) ("VPMASKMOVQ"           3 (V x) (H x) (M x)))
+	  ((:VEX :0F38 :NDS :256 :66 :W1 (:mod . :mem)) ("VPMASKMOVQ"           3 (V x) (H x) (M x))))
+    (#x8E ((:VEX :0F38 :NDS :128 :66 :W0 (:mod . :mem)) ("VPMASKMOVD"           3 (V x) (H x) (M x)))
+	  ((:VEX :0F38 :NDS :256 :66 :W0 (:mod . :mem)) ("VPMASKMOVD"           3 (V x) (H x) (M x)))
+	  ((:VEX :0F38 :NDS :128 :66 :W1 (:mod . :mem)) ("VPMASKMOVQ"           3 (V x) (H x) (M x)))
+	  ((:VEX :0F38 :NDS :256 :66 :W1 (:mod . :mem)) ("VPMASKMOVQ"           3 (V x) (H x) (M x))))
     (#x90 ((:VEX :0F38 :DDS :128 :66 :W0)            ("VPGATHERDD"           3 (V x) (H x) (W x)))
 	  ((:VEX :0F38 :DDS :256 :66 :W0)            ("VPGATHERDD"           3 (V x) (H x) (W x)))
 	  ((:VEX :0F38 :DDS :128 :66 :W1)            ("VPGATHERDQ"           3 (V x) (H x) (W x)))
@@ -9892,7 +10045,7 @@
 	   ("VMOVSLDUP" (:CPUID-FLAG :AVX)))
 	  ((:VEX :NDS :128 :0F :WIG (:mod . :mem))
 	   ("VMOVLPS" (:CPUID-FLAG :AVX)))
-	  ((:VEX :NDS :128 :66 :0F :WIG)
+	  ((:VEX :NDS :128 :66 :0F :WIG (:mod . :mem))
 	   ("VMOVLPD" (:CPUID-FLAG :AVX)))
 	  ((:VEX :NDS :128 :0F :WIG (:mod . #b11))
 	   ("VMOVHLPS" (:CPUID-FLAG :AVX)))
@@ -9900,9 +10053,9 @@
 	   ("VMOVDDUP" (:CPUID-FLAG :AVX)))
 	  ((:VEX :128 :F2 :0F :WIG)
 	   ("VMOVDDUP" (:CPUID-FLAG :AVX))))
-    (#x13 ((:VEX :128 :0F :WIG)
+    (#x13 ((:VEX :128 :0F :WIG (:mod . :mem))
 	   ("VMOVLPS" (:CPUID-FLAG :AVX)))
-	  ((:VEX :128 :66 :0F :WIG)
+	  ((:VEX :128 :66 :0F :WIG (:mod . :mem))
 	   ("VMOVLPD" (:CPUID-FLAG :AVX))))
     (#x14 ((:VEX :NDS :256 :0F :WIG)
 	   ("VUNPCKLPS" (:CPUID-FLAG :AVX)))
@@ -9928,11 +10081,11 @@
 	   ("VMOVLHPS" (:CPUID-FLAG :AVX)))
 	  ((:VEX :NDS :128 :0F :WIG (:mod . :mem))
 	   ("VMOVHPS" (:CPUID-FLAG :AVX)))
-	  ((:VEX :NDS :128 :66 :0F :WIG)
+	  ((:VEX :NDS :128 :66 :0F :WIG (:mod . :mem))
 	   ("VMOVHPD" (:CPUID-FLAG :AVX))))
-    (#x17 ((:VEX :128 :0F :WIG)
+    (#x17 ((:VEX :128 :0F :WIG (:mod . :mem))
 	   ("VMOVHPS" (:CPUID-FLAG :AVX)))
-	  ((:VEX :128 :66 :0F :WIG)
+	  ((:VEX :128 :66 :0F :WIG (:mod . :mem))
 	   ("VMOVHPD" (:CPUID-FLAG :AVX))))
     (#x28 ((:VEX :256 :0F :WIG)
 	   ("VMOVAPS" (:CPUID-FLAG :AVX)))
@@ -9958,13 +10111,13 @@
 	   ("VCVTSI2SD" (:CPUID-FLAG :AVX)))
 	  ((:VEX :NDS :LIG :F2 :0F :W0)
 	   ("VCVTSI2SD" (:CPUID-FLAG :AVX))))
-    (#x2B ((:VEX :256 :0F :WIG)
+    (#x2B ((:VEX :256 :0F :WIG (:mod . :mem))
 	   ("VMOVNTPS" (:CPUID-FLAG :AVX)))
-	  ((:VEX :128 :0F :WIG)
+	  ((:VEX :128 :0F :WIG (:mod . :mem))
 	   ("VMOVNTPS" (:CPUID-FLAG :AVX)))
-	  ((:VEX :256 :66 :0F :WIG)
+	  ((:VEX :256 :66 :0F :WIG (:mod . :mem))
 	   ("VMOVNTPD" (:CPUID-FLAG :AVX)))
-	  ((:VEX :128 :66 :0F :WIG)
+	  ((:VEX :128 :66 :0F :WIG (:mod . :mem))
 	   ("VMOVNTPD" (:CPUID-FLAG :AVX))))
     (#x2C ((:VEX :LIG :F3 :0F :W1)
 	   ("VCVTTSS2SI" (:CPUID-FLAG :AVX)))
@@ -10556,9 +10709,9 @@
 	   ("VCVTDQ2PD" (:CPUID-FLAG :AVX)))
 	  ((:VEX :128 :F3 :0F :WIG)
 	   ("VCVTDQ2PD" (:CPUID-FLAG :AVX))))
-    (#xE7 ((:VEX :256 :66 :0F :WIG)
+    (#xE7 ((:VEX :256 :66 :0F :WIG (:mod . :mem))
 	   ("VMOVNTDQ" (:CPUID-FLAG :AVX)))
-	  ((:VEX :128 :66 :0F :WIG)
+	  ((:VEX :128 :66 :0F :WIG (:mod . :mem))
 	   ("VMOVNTDQ" (:CPUID-FLAG :AVX))))
     (#xE8 ((:VEX :NDS :256 :66 :0F :WIG)
 	   ("VPSUBSB" (:CPUID-FLAG :AVX2)))
@@ -10592,9 +10745,9 @@
 	   ("VPXOR" (:CPUID-FLAG :AVX2)))
 	  ((:VEX :NDS :128 :66 :0F :WIG)
 	   ("VPXOR" (:CPUID-FLAG :AVX))))
-    (#xF0 ((:VEX :256 :F2 :0F :WIG)
+    (#xF0 ((:VEX :256 :F2 :0F :WIG (:mod . :mem))
 	   ("VLDDQU" (:CPUID-FLAG :AVX)))
-	  ((:VEX :128 :F2 :0F :WIG)
+	  ((:VEX :128 :F2 :0F :WIG (:mod . :mem))
 	   ("VLDDQU" (:CPUID-FLAG :AVX))))
     (#xF1 ((:VEX :NDS :256 :66 :0F :WIG)
 	   ("VPSLLW" (:CPUID-FLAG :AVX2)))
@@ -10738,7 +10891,7 @@
 	   ("VBROADCASTSD" (:CPUID-FLAG :AVX2)))
 	  ((:VEX :256 :66 :0F38 :W0 (:mod . #b11))
 	   ("VBROADCASTSD" (:CPUID-FLAG :AVX))))
-    (#x1A ((:VEX :256 :66 :0F38 :W0)
+    (#x1A ((:VEX :256 :66 :0F38 :W0 (:mod . :mem))
 	   ("VBROADCASTF128" (:CPUID-FLAG :AVX))))
     (#x1C ((:VEX :256 :66 :0F38 :WIG)
 	   ("VPABSB" (:CPUID-FLAG :AVX2)))
@@ -10784,29 +10937,29 @@
 	   ("VPCMPEQQ" (:CPUID-FLAG :AVX2)))
 	  ((:VEX :NDS :128 :66 :0F38 :WIG)
 	   ("VPCMPEQQ" (:CPUID-FLAG :AVX))))
-    (#x2A ((:VEX :256 :66 :0F38 :WIG)
+    (#x2A ((:VEX :256 :66 :0F38 :WIG (:mod . :mem))
 	   ("VMOVNTDQA" (:CPUID-FLAG :AVX2)))
-	  ((:VEX :128 :66 :0F38 :WIG)
+	  ((:VEX :128 :66 :0F38 :WIG (:mod . :mem))
 	   ("VMOVNTDQA" (:CPUID-FLAG :AVX))))
     (#x2B ((:VEX :0F38 :NDS :128 :66)
 	   ("VPACKUSDW" (:CPUID-FLAG :AVX)))
 	  ((:VEX :0F38 :NDS :256 :66)
 	   ("VPACKUSDW" (:CPUID-FLAG :AVX2))))
-    (#x2C ((:VEX :NDS :256 :66 :0F38 :W0)
+    (#x2C ((:VEX :NDS :256 :66 :0F38 :W0 (:mod . :mem))
 	   ("VMASKMOVPS" (:CPUID-FLAG :AVX)))
-	  ((:VEX :NDS :128 :66 :0F38 :W0)
+	  ((:VEX :NDS :128 :66 :0F38 :W0 (:mod . :mem))
 	   ("VMASKMOVPS" (:CPUID-FLAG :AVX))))
-    (#x2D ((:VEX :NDS :256 :66 :0F38 :W0)
+    (#x2D ((:VEX :NDS :256 :66 :0F38 :W0 (:mod . :mem))
 	   ("VMASKMOVPD" (:CPUID-FLAG :AVX)))
-	  ((:VEX :NDS :128 :66 :0F38 :W0)
+	  ((:VEX :NDS :128 :66 :0F38 :W0 (:mod . :mem))
 	   ("VMASKMOVPD" (:CPUID-FLAG :AVX))))
-    (#x2E ((:VEX :NDS :256 :66 :0F38 :W0)
+    (#x2E ((:VEX :NDS :256 :66 :0F38 :W0 (:mod . :mem))
 	   ("VMASKMOVPS" (:CPUID-FLAG :AVX)))
-	  ((:VEX :NDS :128 :66 :0F38 :W0)
+	  ((:VEX :NDS :128 :66 :0F38 :W0 (:mod . :mem))
 	   ("VMASKMOVPS" (:CPUID-FLAG :AVX))))
-    (#x2F ((:VEX :NDS :256 :66 :0F38 :W0)
+    (#x2F ((:VEX :NDS :256 :66 :0F38 :W0 (:mod . :mem))
 	   ("VMASKMOVPD" (:CPUID-FLAG :AVX)))
-	  ((:VEX :NDS :128 :66 :0F38 :W0)
+	  ((:VEX :NDS :128 :66 :0F38 :W0 (:mod . :mem))
 	   ("VMASKMOVPD" (:CPUID-FLAG :AVX))))
     (#x30 ((:VEX :256 :66 :0F38 :WIG)
 	   ("VPMOVZXBW" (:CPUID-FLAG :AVX2)))
@@ -10902,7 +11055,7 @@
 	   ("VPBROADCASTQ" (:CPUID-FLAG :AVX2)))
 	  ((:VEX :128 :66 :0F38 :W0)
 	   ("VPBROADCASTQ" (:CPUID-FLAG :AVX2))))
-    (#x5A ((:VEX :256 :66 :0F38 :W0)
+    (#x5A ((:VEX :256 :66 :0F38 :W0 (:mod . :mem))
 	   ("VBROADCASTI128" (:CPUID-FLAG :AVX2))))
     (#x78 ((:VEX :256 :66 :0F38 :W0)
 	   ("VPBROADCASTB" (:CPUID-FLAG :AVX2)))
@@ -10912,21 +11065,21 @@
 	   ("VPBROADCASTW" (:CPUID-FLAG :AVX2)))
 	  ((:VEX :128 :66 :0F38 :W0)
 	   ("VPBROADCASTW" (:CPUID-FLAG :AVX2))))
-    (#x8C ((:VEX :NDS :256 :66 :0F38 :W1)
+    (#x8C ((:VEX :NDS :256 :66 :0F38 :W1 (:mod . :mem))
 	   ("VPMASKMOVQ" (:CPUID-FLAG :AVX2)))
-	  ((:VEX :NDS :128 :66 :0F38 :W1)
+	  ((:VEX :NDS :128 :66 :0F38 :W1 (:mod . :mem))
 	   ("VPMASKMOVQ" (:CPUID-FLAG :AVX2)))
-	  ((:VEX :NDS :256 :66 :0F38 :W0)
+	  ((:VEX :NDS :256 :66 :0F38 :W0 (:mod . :mem))
 	   ("VPMASKMOVD" (:CPUID-FLAG :AVX2)))
-	  ((:VEX :NDS :128 :66 :0F38 :W0)
+	  ((:VEX :NDS :128 :66 :0F38 :W0 (:mod . :mem))
 	   ("VPMASKMOVD" (:CPUID-FLAG :AVX2))))
-    (#x8E ((:VEX :NDS :256 :66 :0F38 :W1)
+    (#x8E ((:VEX :NDS :256 :66 :0F38 :W1 (:mod . :mem))
 	   ("VPMASKMOVQ" (:CPUID-FLAG :AVX2)))
-	  ((:VEX :NDS :128 :66 :0F38 :W1)
+	  ((:VEX :NDS :128 :66 :0F38 :W1 (:mod . :mem))
 	   ("VPMASKMOVQ" (:CPUID-FLAG :AVX2)))
-	  ((:VEX :NDS :256 :66 :0F38 :W0)
+	  ((:VEX :NDS :256 :66 :0F38 :W0 (:mod . :mem))
 	   ("VPMASKMOVD" (:CPUID-FLAG :AVX2)))
-	  ((:VEX :NDS :128 :66 :0F38 :W0)
+	  ((:VEX :NDS :128 :66 :0F38 :W0 (:mod . :mem))
 	   ("VPMASKMOVD" (:CPUID-FLAG :AVX2))))
     (#x90 ((:VEX :DDS :256 :66 :0F38 :W1)
 	   ("VPGATHERDQ" (:CPUID-FLAG :AVX2)))

@@ -6,6 +6,19 @@
 
 (include-book "directed-untranslate")
 
+(defmacro du-trans (x)
+  `(let ((x ,x))
+     (mv-let (erp val)
+     (translate-cmp x
+                    nil      ; stobjs-out
+                    nil      ; logic-modep (don't-care)
+                    t        ; known-stobjs
+                    'du-trans ; ctx
+                    (w state)
+                    (default-state-vars t))
+     (cond (erp (er hard erp "~@0" val))
+           (t val)))))
+
 ; Examples below includes annotated traces with DU for directed-untranslate, LF
 ; for lambdafy, and WO for weak-one-way-unify.  Note that all of these examples
 ; were developed to help guide code development; thus, all traces shown were
@@ -23,6 +36,30 @@
 (local (include-book "misc/eval" :dir :system))
 (defmacro local-test (&rest args)
   `(local (encapsulate () (local (progn ,@args)))))
+
+; ------------------------------
+
+; Shortcomings can go here.
+
+; The following fails, probably because of the test
+; (<= len-tformals (length sformals))
+; for the case
+; (and (lambda-applicationp tterm) (lambda-applicationp sterm) ...)
+; in the definition of directed-untranslate-rec.
+(local-test
+ (assert!
+  (let* ((uterm '(let ((v (first a)))
+                   (cons v (car (cons u x1)))))
+         (tterm (du-trans uterm))
+         (uterm2 '(let ((v (first a)))
+                    (cons v u)))
+         (sterm (du-trans uterm2)))
+    (equal (directed-untranslate uterm tterm sterm nil nil (w state))
+
+; The result should be uterm2, but it's not.
+
+           '(let ((v (car a)))
+              (cons v u))))))
 
 ; ------------------------------
 
@@ -44,14 +81,12 @@
            (CONS A (CONS B 'NIL))
            Y)))
  (assert! ; check directed-untranslate
-  (equal (let ((uterm '(let ((x (cons a (list b))))
-                         (> (foo x) y)))
-               (tterm '((LAMBDA (X Y) (< Y (FOO X)))
-                        (CONS A (CONS B 'NIL))
-                        Y))
-               (sterm '(< Y (BAR (CONS A (CONS B 'NIL)))))
-               (iff-flg nil)
-               (wrld (w state)))
+  (equal (let* ((uterm '(let ((x (cons a (list b))))
+                          (> (foo x) y)))
+                (tterm (du-trans uterm))
+                (sterm '(< Y (BAR (CONS A (CONS B 'NIL)))))
+                (iff-flg nil)
+                (wrld (w state)))
            (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET ((X (CONS A (LIST B))))
                (> (BAR X) Y)))))
@@ -162,19 +197,14 @@
            (CONS A (CONS B 'NIL))
            D C)))
  (assert!
-  (equal (let ((uterm '(let ((x (cons a (list b))))
-                         (let ((y (g (cons c (list d)))))
-                           (> (foo x) y))))
-               (tterm '((LAMBDA (X D C)
-                                ((LAMBDA (Y X) (< Y (FOO X)))
-                                 (G (CONS C (CONS D 'NIL)))
-                                 X))
-                        (CONS A (CONS B 'NIL))
-                        D C))
-               (sterm '(< (H (CONS C (CONS D 'NIL)))
-                          (BAR (CONS A (CONS B 'NIL)))))
-               (iff-flg nil)
-               (wrld (w state)))
+  (equal (let* ((uterm '(let ((x (cons a (list b))))
+                          (let ((y (g (cons c (list d)))))
+                            (> (foo x) y))))
+                (tterm (du-trans uterm))
+                (sterm '(< (H (CONS C (CONS D 'NIL)))
+                           (BAR (CONS A (CONS B 'NIL)))))
+                (iff-flg nil)
+                (wrld (w state)))
            (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET ((X (CONS A (LIST B))))
                (LET ((Y (H (CONS C (LIST D)))))
@@ -194,19 +224,14 @@
    (equal (foo x) (bar x)))
  (in-theory (disable g h))
  (assert!
-  (equal (let ((uterm '(let* ((x (cons a (list b)))
-                              (y (g (cons c (list d)))))
-                         (> (foo x) y)))
-               (tterm '((LAMBDA (X D C)
-                                ((LAMBDA (Y X) (< Y (FOO X)))
-                                 (G (CONS C (CONS D 'NIL)))
-                                 X))
-                        (CONS A (CONS B 'NIL))
-                        D C))
-               (sterm '(< (H (CONS C (CONS D 'NIL)))
-                          (BAR (CONS A (CONS B 'NIL)))))
-               (iff-flg nil)
-               (wrld (w state)))
+  (equal (let* ((uterm '(let* ((x (cons a (list b)))
+                               (y (g (cons c (list d)))))
+                          (> (foo x) y)))
+                (tterm (du-trans uterm))
+                (sterm '(< (H (CONS C (CONS D 'NIL)))
+                           (BAR (CONS A (CONS B 'NIL)))))
+                (iff-flg nil)
+                (wrld (w state)))
            (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET* ((X (CONS A (LIST B)))
                  (Y (H (CONS C (LIST D)))))
@@ -402,19 +427,14 @@
                     X))
            A D C)))
  (assert!
-  (equal (let ((uterm '(let ((x (dup a)))
-                         (let ((y (g (cons c (list d)))))
-                           (> (foo x) y))))
-               (tterm '((LAMBDA (X D C)
-                                ((LAMBDA (Y X) (< Y (FOO X)))
-                                 (G (CONS C (CONS D 'NIL)))
-                                 X))
-                        (DUP A)
-                        D C))
-               (sterm '(< (H (CONS C (CONS D 'NIL)))
-                          (MESS A)))
-               (iff-flg nil)
-               (wrld (w state)))
+  (equal (let* ((uterm '(let ((x (dup a)))
+                          (let ((y (g (cons c (list d)))))
+                            (> (foo x) y))))
+                (tterm (du-trans uterm))
+                (sterm '(< (H (CONS C (CONS D 'NIL)))
+                           (MESS A)))
+                (iff-flg nil)
+                (wrld (w state)))
            (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET ((X A))
                (LET ((Y (H (CONS C (LIST D)))))
@@ -436,19 +456,14 @@
    (equal (g x) (h x))
    :hints (("Goal" :in-theory (enable g h))))
  (assert!
-  (equal (let ((uterm '(let* ((x (dup a))
-                              (y (g (cons c (list d)))))
-                         (> (foo x) y)))
-               (tterm '((LAMBDA (X D C)
-                                ((LAMBDA (Y X) (< Y (FOO X)))
-                                 (G (CONS C (CONS D 'NIL)))
-                                 X))
-                        (DUP A)
-                        D C))
-               (sterm '(< (H (CONS C (CONS D 'NIL)))
-                          (MESS A)))
-               (iff-flg nil)
-               (wrld (w state)))
+  (equal (let* ((uterm '(let* ((x (dup a))
+                               (y (g (cons c (list d)))))
+                          (> (foo x) y)))
+                (tterm (du-trans uterm))
+                (sterm '(< (H (CONS C (CONS D 'NIL)))
+                           (MESS A)))
+                (iff-flg nil)
+                (wrld (w state)))
            (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET* ((X A)
                  (Y (H (CONS C (LIST D)))))
@@ -683,21 +698,15 @@
                     X))
            A D C)))
  (assert!
-  (equal (let ((uterm '(let ((x (dup a)))
-                         (let ((y (g (cons c (list d)))))
-                           (let ((z (foo x)))
-                             (> z y)))))
-               (tterm '((LAMBDA (X D C)
-                                ((LAMBDA (Y X)
-                                         ((LAMBDA (Z Y) (< Y Z)) (FOO X) Y))
-                                 (G (CONS C (CONS D 'NIL)))
-                                 X))
-                        (DUP A)
-                        D C))
-               (sterm '(< (H (CONS C (CONS D 'NIL)))
-                          (MESS A)))
-               (iff-flg nil)
-               (wrld (w state)))
+  (equal (let* ((uterm '(let ((x (dup a)))
+                          (let ((y (g (cons c (list d)))))
+                            (let ((z (foo x)))
+                              (> z y)))))
+                (tterm (du-trans uterm))
+                (sterm '(< (H (CONS C (CONS D 'NIL)))
+                           (MESS A)))
+                (iff-flg nil)
+                (wrld (w state)))
            (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET ((X A))
                (LET ((Y (H (CONS C (LIST D)))))
@@ -721,21 +730,15 @@
    :hints (("Goal" :in-theory (enable g h))))
 
  (assert!
-  (equal (let ((uterm '(let* ((x (dup a))
-                              (y (g (cons c (list d))))
-                              (z (foo x)))
-                         (> z y)))
-               (tterm '((LAMBDA (X D C)
-                                ((LAMBDA (Y X)
-                                         ((LAMBDA (Z Y) (< Y Z)) (FOO X) Y))
-                                 (G (CONS C (CONS D 'NIL)))
-                                 X))
-                        (DUP A)
-                        D C))
-               (sterm '(< (H (CONS C (CONS D 'NIL)))
-                          (MESS A)))
-               (iff-flg nil)
-               (wrld (w state)))
+  (equal (let* ((uterm '(let* ((x (dup a))
+                               (y (g (cons c (list d))))
+                               (z (foo x)))
+                          (> z y)))
+                (tterm (du-trans uterm))
+                (sterm '(< (H (CONS C (CONS D 'NIL)))
+                           (MESS A)))
+                (iff-flg nil)
+                (wrld (w state)))
            (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET* ((X A)
                  (Y (H (CONS C (LIST D))))
@@ -757,21 +760,15 @@
    :hints (("Goal" :in-theory (enable g h))))
 
  (assert!
-  (equal (let ((uterm '(let* ((x (dup a))
-                              (y (g (cons c (list d)))))
-                         (let ((z (foo x)))
-                           (> z y))))
-               (tterm '((LAMBDA (X D C)
-                                ((LAMBDA (Y X)
-                                         ((LAMBDA (Z Y) (< Y Z)) (FOO X) Y))
-                                 (G (CONS C (CONS D 'NIL)))
-                                 X))
-                        (DUP A)
-                        D C))
-               (sterm '(< (H (CONS C (CONS D 'NIL)))
-                          (MESS A)))
-               (iff-flg nil)
-               (wrld (w state)))
+  (equal (let* ((uterm '(let* ((x (dup a))
+                               (y (g (cons c (list d)))))
+                          (let ((z (foo x)))
+                            (> z y))))
+                (tterm (du-trans uterm))
+                (sterm '(< (H (CONS C (CONS D 'NIL)))
+                           (MESS A)))
+                (iff-flg nil)
+                (wrld (w state)))
            (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET* ((X A)
                  (Y (H (CONS C (LIST D)))))
@@ -793,21 +790,15 @@
    :hints (("Goal" :in-theory (enable g h))))
 
  (assert!
-  (equal (let ((uterm '(let ((x (dup a)))
-                         (let* ((y (g (cons c (list d))))
-                                (z (foo x)))
-                           (> z y))))
-               (tterm '((LAMBDA (X D C)
-                                ((LAMBDA (Y X)
-                                         ((LAMBDA (Z Y) (< Y Z)) (FOO X) Y))
-                                 (G (CONS C (CONS D 'NIL)))
-                                 X))
-                        (DUP A)
-                        D C))
-               (sterm '(< (H (CONS C (CONS D 'NIL)))
-                          (MESS A)))
-               (iff-flg nil)
-               (wrld (w state)))
+  (equal (let* ((uterm '(let ((x (dup a)))
+                          (let* ((y (g (cons c (list d))))
+                                 (z (foo x)))
+                            (> z y))))
+                (tterm (du-trans uterm))
+                (sterm '(< (H (CONS C (CONS D 'NIL)))
+                           (MESS A)))
+                (iff-flg nil)
+                (wrld (w state)))
            (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET ((X A))
                (let* ((Y (H (CONS C (LIST D))))
@@ -994,16 +985,13 @@
            (CONS A (CONS B 'NIL))
            A)))
  (assert!
-  (equal (let ((uterm '(let ((x (cons a (list b))))
-                         (let ((x (g x)))
-                           (> (foo x) a))))
-               (tterm '((LAMBDA (X A)
-                                ((LAMBDA (X A) (< A (FOO X))) (G X) A))
-                        (CONS A (CONS B 'NIL))
-                        A))
-               (sterm '(< A (BAR (H (CONS A (CONS B 'NIL))))))
-               (iff-flg nil)
-               (wrld (w state)))
+  (equal (let* ((uterm '(let ((x (cons a (list b))))
+                          (let ((x (g x)))
+                            (> (foo x) a))))
+                (tterm (du-trans uterm))
+                (sterm '(< A (BAR (H (CONS A (CONS B 'NIL))))))
+                (iff-flg nil)
+                (wrld (w state)))
            (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET ((X (CONS A (LIST B))))
                (LET ((X (H X)))
@@ -1024,16 +1012,13 @@
  (in-theory (disable g h))
 
  (assert!
-  (equal (let ((uterm '(let* ((x (cons a (list b)))
-                              (x (g x)))
-                         (> (foo x) a)))
-               (tterm '((LAMBDA (X A)
-                                ((LAMBDA (X A) (< A (FOO X))) (G X) A))
-                        (CONS A (CONS B 'NIL))
-                        A))
-               (sterm '(< A (BAR (H (CONS A (CONS B 'NIL))))))
-               (iff-flg nil)
-               (wrld (w state)))
+  (equal (let* ((uterm '(let* ((x (cons a (list b)))
+                               (x (g x)))
+                          (> (foo x) a)))
+                (tterm (du-trans uterm))
+                (sterm '(< A (BAR (H (CONS A (CONS B 'NIL))))))
+                (iff-flg nil)
+                (wrld (w state)))
            (directed-untranslate uterm tterm sterm iff-flg nil wrld))
          '(LET* ((X (CONS A (LIST B)))
                  (X (H X)))
@@ -1335,23 +1320,18 @@
 ; (which leads to the dropping of the outer let* binding).
 
 (assert!
- (equal
-  (directed-untranslate '(let* ((x3 (f3 x1))
-                                (x4 (f2 x3 x1 x2)))
-                           (f1 x1 x4))
-                        '((lambda (x3 x2 x1)
-                            ((lambda (x4 x1) (f1 x1 x4))
-                             (f2 x3 x1 x2)
-                             x1))
-                          (f3 x1)
-                          x2
-                          x1)
-                        '(f1 x1 (binary-append (f3 x1) x2))
-                        nil nil
-                        (w state))
-  '(LET* ((X3 (F3 X1))
-          (X4 (APPEND X3 X2)))
-         (F1 X1 X4))))
+ (let ((uterm '(let* ((x3 (f3 x1))
+                      (x4 (f2 x3 x1 x2)))
+                 (f1 x1 x4))))
+   (equal
+    (directed-untranslate uterm
+                          (du-trans uterm)
+                          '(f1 x1 (binary-append (f3 x1) x2))
+                          nil nil
+                          (w state))
+    '(LET* ((X3 (F3 X1))
+            (X4 (APPEND X3 X2)))
+           (F1 X1 X4)))))
 
 ; Worse yet, the result could be not only ugly, but confusing.  Consider the
 ; following variant of f4.
@@ -1365,21 +1345,18 @@
 ; current version of directed-untranslate, it does:
 
 (assert!
- (equal
-  (directed-untranslate '(let* ((z (f3 x))
-                                (y (f2 z x y)))
-                           (f1 x y))
-                        '((lambda (z y x)
-                            ((lambda (y x) (f1 x y)) (f2 z x y) x))
-                          (f3 x)
-                          y
-                          x)
-                        '(f1 x (binary-append (f3 x) y))
-                        nil nil
-                        (w state))
-  '(let* ((z (f3 x))
-          (y (append z y)))
-     (f1 x y))))
+ (let ((uterm '(let* ((z (f3 x))
+                      (y (f2 z x y)))
+                 (f1 x y))))
+   (equal
+    (directed-untranslate uterm
+                          (du-trans uterm)
+                          '(f1 x (binary-append (f3 x) y))
+                          nil nil
+                          (w state))
+    '(let* ((z (f3 x))
+            (y (append z y)))
+       (f1 x y)))))
 
 ; A preliminary attempt to deal with capture produced the following, which is
 ; quite confusing (though correct) because the second argument to append is
@@ -1410,16 +1387,14 @@
           (r all-r))
      (app3 r c 17)))
  (assert!
-  (equal (directed-untranslate
-          '(let* ((all-r (f2 c)) (r all-r))
-             (app3 r c 17))
-          '((lambda (all-r c)
-              ((lambda (r c) (app3 r c '17)) all-r c))
-            (f2 c)
-            c)
-          '(binary-append (f1 c) c)
-          nil nil (w state))
-         '(APPEND (F1 C) C))))
+  (let ((uterm '(let* ((all-r (f2 c)) (r all-r))
+                  (app3 r c 17))))
+    (equal (directed-untranslate
+            uterm
+            (du-trans uterm)
+            '(binary-append (f1 c) c)
+            nil nil (w state))
+           '(APPEND (F1 C) C)))))
 
 ; ------------------------------
 
@@ -1440,25 +1415,20 @@
 (defund bar2 (x y) (mv x y))
 
 (assert!
- (equal (let ((uterm '(mv-let (x y) (foo x y) (bar x y)))
-              (tterm '((lambda (mv) ((lambda (x y) (bar x y))
-                                     (mv-nth '0 mv)
-                                     (mv-nth '1 mv)))
-                       (foo x y)))
-              (sterm '(bar2 (mv-nth '0 (foo2 x y))
-                            (mv-nth '1 (foo2 x y)))))
-; !! Try '(nil nil) for exec-p.
-          (directed-untranslate uterm tterm sterm nil nil (w state)))
+ (equal (let* ((uterm '(mv-let (x y) (foo x y) (bar x y)))
+               (tterm (du-trans uterm))
+               (sterm '(bar2 (mv-nth '0 (foo2 x y))
+                             (mv-nth '1 (foo2 x y)))))
+          (directed-untranslate uterm tterm sterm nil
+                                '(nil nil) ; stobjs-out
+                                (w state)))
         '(mv-let (x y) (foo2 x y) (bar2 x y))))
 
 (assert!
- (equal (let ((uterm '(mv-let (x y) (foo x y) (bar x y)))
-              (tterm '((lambda (mv) ((lambda (x y) (bar x y))
-                                     (mv-nth '0 mv)
-                                     (mv-nth '1 mv)))
-                       (foo x y)))
-              (sterm '(bar2 (car (foo2 x y))
-                            (nth 1 (foo2 x y)))))
+ (equal (let* ((uterm '(mv-let (x y) (foo x y) (bar x y)))
+               (tterm (du-trans uterm))
+               (sterm '(bar2 (car (foo2 x y))
+                             (nth 1 (foo2 x y)))))
           (directed-untranslate uterm tterm sterm nil nil (w state)))
         '(mv-let (x y) (foo2 x y) (bar2 x y))))
 )
@@ -1490,19 +1460,14 @@
 (local-test
 
 (assert!
- (equal (let ((uterm '(let ((y (+ x x)))
-                        (declare (type integer y))
-                        (+ 0 y)))
-              (tterm '((lambda (y)
-                         (return-last 'progn
-                                      (check-dcl-guardian (integerp y)
-                                                          '(integerp y))
-                                      (binary-+ '0 y)))
-                       (binary-+ x x)))
-              (sterm '(binary-+ x x))
-              (iff-flg nil)
-              (stobjs-out '(nil))
-              (wrld (w state)))
+ (equal (let* ((uterm '(let ((y (+ x x)))
+                         (declare (type integer y))
+                         (+ 0 y)))
+               (tterm (du-trans uterm))
+               (sterm '(binary-+ x x))
+               (iff-flg nil)
+               (stobjs-out '(nil))
+               (wrld (w state)))
           (directed-untranslate
            uterm tterm sterm iff-flg stobjs-out wrld))
         '(let ((y (+ x x))) y)))
@@ -1510,29 +1475,17 @@
 ; Handling of LET* with type declaration form.
 
 (assert!
- (equal (let ((uterm '(let* ((y (* (first x) (first x)))
-                             (y2 (+ y y)))
-                        (declare (type integer y y2))
-                        (+ 0 y2)))
-              (tterm '((lambda
-                         (y)
-                         (return-last
-                          'progn
-                          (check-dcl-guardian (integerp y)
-                                              '(integerp y))
-                          ((lambda (y2)
-                             (return-last
-                              'progn
-                              (check-dcl-guardian (integerp y2)
-                                                  '(integerp y2))
-                              (binary-+ '0 y2)))
-                           (binary-+ y y))))
-                       (binary-* (car x) (car x))))
-              (sterm '(binary-+ (binary-* (car x) (car x))
-                                (binary-* (car x) (car x))))
-              (iff-flg nil)
-              (stobjs-out '(nil))
-              (wrld (w state)))
+ (equal (let* ((uterm '(let* ((y (* (first x) (first x)))
+                              (y2 (+ y y)))
+                         (declare (type integer y y2))
+                         (+ 0 y2)))
+               (tterm (du-trans uterm))
+               (uterm2 '(+ (* (car x) (car x))
+                           (* (car x) (car x))))
+               (sterm (du-trans uterm2))
+               (iff-flg nil)
+               (stobjs-out '(nil))
+               (wrld (w state)))
           (directed-untranslate
            uterm tterm sterm iff-flg stobjs-out wrld))
         '(let* ((y (* (first x) (first x)))
@@ -1547,42 +1500,50 @@
 (defund bar2 (x y) (mv x y))
 
 (assert!
- (equal (let ((uterm '(mv-let (x y)
-                        (foo x y)
-                        (declare (type integer x y))
-                        (bar x y)))
-              (tterm '((lambda
-                         (mv)
-                         ((lambda (x y)
-                            (return-last
-                             'progn
-                             (return-last
-                              'progn
-                              (check-dcl-guardian (integerp x)
-                                                  '(integerp x))
-                              (check-dcl-guardian (integerp y)
-                                                  '(integerp y)))
-                             (bar x y)))
-                          (mv-nth '0 mv)
-                          (mv-nth '1 mv)))
-                       (foo x y)))
-              (sterm '(bar2 (mv-nth 0 (foo2 x y))
-                            (mv-nth 1 (foo2 x y)))))
+ (equal (let* ((uterm '(mv-let (x y)
+                         (foo x y)
+                         (declare (type integer x y))
+                         (bar x y)))
+               (tterm (du-trans uterm))
+               (sterm '(bar2 (mv-nth '0 (foo2 x y))
+                             (mv-nth '1 (foo2 x y)))))
           (directed-untranslate uterm tterm sterm nil nil (w state)))
         '(mv-let (x y) (foo2 x y) (bar2 x y))))
 
-; Handling of LET with ignore declaration form.
+; Handling of LET with ignore declaration form for binding that is dropped.
 
 (assert!
- (equal (let ((uterm '(let ((y (first x)) (z x))
-                        (declare (ignore z))
-                        (+ y y)))
-              (tterm '((lambda (y z) (binary-+ y y))
-                       (car x)
-                       (hide x)))
-              (sterm '(binary-+ (car x) (car x))))
+ (equal (let* ((uterm '(let ((y (first x)) (z x))
+                         (declare (ignore z))
+                         (+ y y)))
+               (tterm (du-trans uterm))
+               (sterm '(binary-+ (car x) (car x))))
           (directed-untranslate uterm tterm sterm nil nil (w state)))
         '(let ((y (first x))) (+ y y))))
+
+; Handling of LET with ignorable declaration form for unused bound variable
+; that is dropped.
+
+(assert!
+ (equal (let* ((uterm '(let ((y (first x)) (z x))
+                         (declare (ignorable z))
+                         (+ y y)))
+               (tterm (du-trans uterm))
+               (sterm '(binary-+ (car x) (car x))))
+          (directed-untranslate uterm tterm sterm nil nil (w state)))
+        '(let ((y (first x))) (+ y y))))
+
+; Handling of LET with ignorable declaration form for used bound variable that
+; is not dropped.
+
+(assert!
+ (equal (let* ((uterm '(let ((y (first x)) (z (second x)))
+                         (declare (ignorable z))
+                         (+ y z)))
+               (tterm (du-trans uterm))
+               (sterm '(binary-+ (car x) (car (cdr x)))))
+          (directed-untranslate uterm tterm sterm nil nil (w state)))
+        '(let ((y (first x)) (z (second x))) (+ y z))))
 )
 
 ; ------------------------------
@@ -1599,33 +1560,16 @@
 (defstub drones-choose-and-execute-plans.1 (* * *) => (mv * *))
 (defstub replace-dr-st (* *) => *)
 (assert!
- (let ((uterm '(mv-let
-                 (drn-st-new coord-st-1)
-                 (drone-choose-and-execute-plan.1 plans drn-st coord-st)
-                 (mv-let (drn-sts-new coord-st-2)
-                   (drones-choose-and-execute-plans.1
-                    (rest drn-plan-pairs)
-                    (replace-dr-st drn-sts drn-st-new)
-                    coord-st-1)
-                   (mv drn-sts-new coord-st-2))))
-       (tterm '((lambda
-                  (mv drn-sts drn-plan-pairs)
-                  ((lambda
-                     (drn-st-new coord-st-1 drn-sts drn-plan-pairs)
-                     ((lambda (mv)
-                        ((lambda (drn-sts-new coord-st-2)
-                           (cons drn-sts-new (cons coord-st-2 'nil)))
-                         (mv-nth '0 mv)
-                         (mv-nth '1 mv)))
-                      (drones-choose-and-execute-plans.1
-                       (cdr drn-plan-pairs)
-                       (replace-dr-st drn-sts drn-st-new)
-                       coord-st-1)))
-                   (mv-nth '0 mv)
-                   (mv-nth '1 mv)
-                   drn-sts drn-plan-pairs))
-                (drone-choose-and-execute-plan.1 plans drn-st coord-st)
-                drn-sts drn-plan-pairs)))
+ (let* ((uterm '(mv-let
+                  (drn-st-new coord-st-1)
+                  (drone-choose-and-execute-plan.1 plans drn-st coord-st)
+                  (mv-let (drn-sts-new coord-st-2)
+                    (drones-choose-and-execute-plans.1
+                     (rest drn-plan-pairs)
+                     (replace-dr-st drn-sts drn-st-new)
+                     coord-st-1)
+                    (mv drn-sts-new coord-st-2))))
+        (tterm (du-trans uterm)))
    (equal
     (directed-untranslate uterm tterm tterm nil nil (w state))
     uterm)))
@@ -1633,9 +1577,49 @@
 
 ; ------------------------------
 
-; Example 10: Preserving b*
+; Example 10: Preserving prog2$, mbe, cw, and progn$
 
-; First let's re-do the mv-let test just above.
+(local-test
+ (assert!
+  (let* ((uterm '(progn$ (cw "u = ~x0; v = ~x1;~%" u v)
+                         (cw "second form")
+                         (+ 0 u v)))
+         (tterm (du-trans uterm))
+         (uterm2 '(progn$ (cw "u = ~x0; v = ~x1;~%" u v)
+                          (cw "second form")
+                          (+ u v)))
+         (sterm (du-trans uterm2)))
+    (equal (directed-untranslate-rec uterm tterm sterm nil t nil (w state))
+           uterm2)))
+
+(assert!
+  (let* ((uterm '(progn$
+                  (cw "howdy ~x0 ~x1"
+                      (list* (first x) (car (cons nil x)))
+                      (mbe :logic (list* (first y) (cdr (list x)))
+                           :exec (prog2$ (cw "hi ~s0" (car (cons 'there y)))
+                                         y)))
+                  (mbe :logic (list* (first x) (car (cons nil x)))
+                       :exec (list (nth 0 x)))))
+         (tterm (du-trans uterm))
+         (uterm2 '(progn$
+                   (cw "howdy ~x0 ~x1"
+                       (list* (first x) nil)
+                       (mbe :logic (list* (first y) nil)
+                            :exec (prog2$ (cw "hi ~s0" 'there)
+                                          y)))
+                   (mbe :logic (list* (first x) nil)
+                        :exec (and (consp x) (car x)))))
+         (sterm (du-trans uterm2)))
+    (equal (directed-untranslate-rec uterm tterm sterm nil t nil (w state))
+           uterm2)))
+)
+
+; ------------------------------
+
+; Example 11: Preserving b*
+
+; First let's re-do the mv-let test just above in Example 9.
 
 (local-test
 
@@ -1645,38 +1629,21 @@
 (defstub drones-choose-and-execute-plans.1 (* * *) => (mv * *))
 (defstub replace-dr-st (* *) => *)
 (assert!
- (let ((uterm '(b* (((mv drn-st-new coord-st-1)
-                     (drone-choose-and-execute-plan.1 plans drn-st coord-st))
-                    ((mv drn-sts-new coord-st-2)
-                     (drones-choose-and-execute-plans.1
-                      (rest drn-plan-pairs)
-                      (replace-dr-st drn-sts drn-st-new)
-                      coord-st-1)))
-                 (mv drn-sts-new coord-st-2)))
-       (tterm '((lambda
-                  (mv drn-sts drn-plan-pairs)
-                  ((lambda
-                     (drn-st-new coord-st-1 drn-sts drn-plan-pairs)
-                     ((lambda (mv)
-                        ((lambda (drn-sts-new coord-st-2)
-                           (cons drn-sts-new (cons coord-st-2 'nil)))
-                         (mv-nth '0 mv)
-                         (mv-nth '1 mv)))
+ (let* ((uterm '(b* (((mv drn-st-new coord-st-1)
+                      (drone-choose-and-execute-plan.1 plans drn-st coord-st))
+                     ((mv drn-sts-new coord-st-2)
                       (drones-choose-and-execute-plans.1
-                       (cdr drn-plan-pairs)
+                       (rest drn-plan-pairs)
                        (replace-dr-st drn-sts drn-st-new)
                        coord-st-1)))
-                   (mv-nth '0 mv)
-                   (mv-nth '1 mv)
-                   drn-sts drn-plan-pairs))
-                (drone-choose-and-execute-plan.1 plans drn-st coord-st)
-                drn-sts drn-plan-pairs)))
+                  (mv drn-sts-new coord-st-2)))
+        (tterm (du-trans uterm)))
    (equal
     (directed-untranslate uterm tterm tterm nil nil (w state))
     uterm)))
 )
 
-; Here's a simple test involving different kinds of bindings.
+; Here are simple tests involving different kinds of b* bindings.
 
 (local-test
 
@@ -1684,93 +1651,58 @@
 
 (defstub foo (x y) (mv x y))
 
+; Implicit progn of two forms.
 (assert!
- (let ((uterm '(b* (((mv x y) (foo y x))
-                    (x (+ (car x) (car y)))
-                    ((mv u v) (foo x x)))
-                 (+ 0 u v)))
-       (tterm '((lambda (mv)
-                  ((lambda (x y)
-                     ((lambda (x)
-                        ((lambda (mv)
-                           ((lambda (u v)
-                              (binary-+ '0 (binary-+ u v)))
-                            (mv-nth '0 mv)
-                            (mv-nth '1 mv)))
-                         (foo x x)))
-                      (binary-+ (car x) (car y))))
-                   (mv-nth '0 mv)
-                   (mv-nth '1 mv)))
-                (foo y x)))
-       (sterm '((lambda (mv)
-                  ((lambda (x y)
-                     ((lambda (x)
-                        ((lambda (mv)
-                           ((lambda (u v) (binary-+ u v))
-                            (mv-nth '0 mv)
-                            (mv-nth '1 mv)))
-                         (foo x x)))
-                      (binary-+ (car x) (car y))))
-                   (mv-nth '0 mv)
-                   (mv-nth '1 mv)))
-                (foo y x))))
+ (let* ((uterm '(b* (((mv x y) (foo y x))
+                     (x (+ (car x) (car y)))
+                     ((mv u v) (foo x x)))
+                  (cw "u = ~x0; v = ~x1;~%" u v)
+                  (+ 0 u v)))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* (((mv x y) (foo y x))
+                      (x (+ (car x) (car y)))
+                      ((mv u v) (foo x x)))
+                   (cw "u = ~x0; v = ~x1;~%" u v)
+                   (+ u v)))
+        (sterm (du-trans uterm2)))
    (equal
     (directed-untranslate uterm tterm sterm nil nil (w state))
-    '(b* (((mv x y) (foo y x))
-          (x (+ (car x) (car y)))
-          ((mv u v) (foo x x)))
-       (+ u v)))))
-)
+    uterm2)))
 
-; As above, but with a binding of - .
+; Implicit progn of three forms.
+(assert!
+ (let* ((uterm '(b* (((mv x y) (foo y x))
+                     (x (+ (car x) (car y)))
+                     ((mv u v) (foo x x)))
+                  (cw "u = ~x0; v = ~x1;~%" u v)
+                  (cw "second form")
+                  (+ 0 u v)))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* (((mv x y) (foo y x))
+                      (x (+ (car x) (car y)))
+                      ((mv u v) (foo x x)))
+                   (cw "u = ~x0; v = ~x1;~%" u v)
+                   (cw "second form")
+                   (+ u v)))
+        (sterm (du-trans uterm2)))
+   (equal
+    (directed-untranslate uterm tterm sterm nil nil (w state))
+    uterm2)))
 
-(local-test
-
-(local (include-book "std/util/bstar" :dir :system))
-
-(defstub foo (x y) (mv x y))
+; As above, but with a binding of - .  (We drop the multiple forms now.)
 
 (assert!
- (let ((uterm '(b* (((mv x y) (foo y x))
-                    (- (cw "Hello!~%"))
-                    (x (+ (car x) (car y)))
-                    ((mv u v) (foo x x)))
-                 (+ 0 u v)))
-       (tterm '((lambda
-                  (mv)
-                  ((lambda
-                     (x y)
-                     (return-last 'progn
-                                  (fmt-to-comment-window
-                                   '"Hello!~%"
-                                   (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
-                                             'nil)
-                                   '0
-                                   'nil
-                                   'nil)
-                                  ((lambda (x)
-                                     ((lambda (mv)
-                                        ((lambda (u v)
-                                           (binary-+ '0 (binary-+ u v)))
-                                         (mv-nth '0 mv)
-                                         (mv-nth '1 mv)))
-                                      (foo x x)))
-                                   (binary-+ (car x) (car y)))))
-                   (mv-nth '0 mv)
-                   (mv-nth '1 mv)))
-                (foo y x)))
-       (sterm '((lambda (mv)
-                  ((lambda (x y)
-                     ((lambda (x)
-                        ((lambda (mv)
-                           ((lambda (u v) (binary-+ u v))
-                            (mv-nth '0 mv)
-                            (mv-nth '1 mv)))
-                         (foo x x)))
-                      (binary-+ (car x) (car y))))
-                   (mv-nth '0 mv)
-                   (mv-nth '1 mv)))
-                (foo y x))))
+ (let* ((uterm '(b* (((mv x y) (foo y x))
+                     (- (cw "Hello!~%"))
+                     (x (+ (car x) (car y)))
+                     ((mv u v) (foo x x)))
+                  (+ 0 u v)))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* (((mv x y) (foo y x))
+                      (x (+ (car x) (car y)))
+                      ((mv u v) (foo x x)))
+                   (+ u v)))
+        (sterm (du-trans uterm2)))
    (equal
     (directed-untranslate uterm tterm sterm nil nil (w state))
     '(b* (((mv x y) (foo y x))
@@ -1786,29 +1718,7 @@
                      (x (+ (car x) (car y)))
                      ((mv u v) (foo x x)))
                   (+ 0 u v)))
-        (tterm '((lambda
-                   (mv)
-                   ((lambda
-                      (x y)
-                      (return-last 'progn
-                                   (fmt-to-comment-window
-                                    '"Hello!~%"
-                                    (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
-                                              'nil)
-                                    '0
-                                    'nil
-                                    'nil)
-                                   ((lambda (x)
-                                      ((lambda (mv)
-                                         ((lambda (u v)
-                                            (binary-+ '0 (binary-+ u v)))
-                                          (mv-nth '0 mv)
-                                          (mv-nth '1 mv)))
-                                       (foo x x)))
-                                    (binary-+ (car x) (car y)))))
-                    (mv-nth '0 mv)
-                    (mv-nth '1 mv)))
-                 (foo y x)))
+        (tterm (du-trans uterm))
         (sterm tterm))
    (equal
     (directed-untranslate uterm tterm sterm nil nil (w state))
@@ -1817,4 +1727,205 @@
           (x (+ (car x) (car y)))
           ((mv u v) (foo x x)))
        (+ 0 u v)))))
+
+; Handle a single binding that binds -.
+
+(assert!
+ (let* ((uterm '(b* ((- (cw "hi")))
+                  (car (cons x x))))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* ((- (cw "hi")))
+                   x))
+        (sterm (du-trans uterm2)))
+   (equal
+    (directed-untranslate uterm tterm sterm nil nil (w state))
+    uterm2)))
+
+; Throw away b* binding of &.
+
+(assert!
+ (let* ((uterm '(b* ((& (cw "hi")))
+                  (car (cons x x))))
+        (tterm '(car (cons x x)))
+        (sterm 'x))
+   (equal
+    (directed-untranslate uterm tterm sterm nil nil (w state))
+    'x)))
+
+; Handle mv with -, bound to function call.
+
+(assert!
+ (let* ((uterm '(b* (((mv x -)
+                      (foo a b))
+                     (u (cons x x)))
+                  (cons u u)))
+        (tterm (du-trans uterm))
+        (sterm tterm))
+   (equal (directed-untranslate uterm tterm sterm nil nil (w state))
+          uterm)))
+
+; Handle mv with -, bound to call of mv.
+
+(assert!
+ (let* ((uterm '(b* (((mv x -)
+                      (mv a b))
+                     (u (cons x x)))
+                  (cons u u)))
+        (tterm (du-trans uterm))
+        (sterm tterm))
+   (equal (directed-untranslate uterm tterm sterm nil nil (w state))
+          uterm)))
+
+; A variable binding unused dropped sterm is dropped in the result, just
+; as with let.
+
+(assert!
+ (let* ((uterm '(b* ((?v (cw "hi")))
+                  (car (cons u v))))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* ((?v (cw "hi")))
+                   u))
+        (sterm (du-trans uterm2)))
+   (equal (directed-untranslate uterm tterm sterm nil nil (w state))
+          'u)))
+
+(assert!
+ (let* ((uterm '(b* ((- (cw "-"))
+                     (& (cw "&")))
+                  (car (cons u x1))))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* ((- (cw "-")))
+                   u))
+        (sterm (du-trans uterm2)))
+   (equal (directed-untranslate uterm tterm sterm nil nil (w state))
+          uterm2)))
+
+(assert!
+ (let* ((uterm '(b* ((?v (cw "?v"))
+                     (- (cw "-"))
+                     (& (cw "&"))
+                     (?!w (cw "?!w")))
+                  (car (cons u x1))))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* ((- (cw "-")))
+                   u))
+        (sterm (du-trans uterm2)))
+   (equal (directed-untranslate uterm tterm sterm nil nil (w state))
+          uterm2)))
+
+(assert!
+ (let* ((uterm '(b* ((?v (cw "?v"))
+                     (- (cw "-"))
+                     (& (cw "&"))
+                     (?!w (cw "?!w")))
+                  (cons v (car (cons u u)))))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* ((?v (cw "?v"))
+                      (- (cw "-")))
+                   (cons v u)))
+        (sterm (du-trans uterm2)))
+   (equal (directed-untranslate uterm tterm sterm nil nil (w state))
+          uterm2)))
+
+(assert!
+ (let* ((uterm '(b* ((v (car a))
+                     (w (car b)))
+                  (cons (cons v w) (car (cons u u)))))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* ((v (car a))
+                      (w (car b)))
+                   (cons (cons v w) u)))
+        (sterm (du-trans uterm2)))
+   (equal (directed-untranslate uterm tterm sterm nil nil (w state))
+          uterm2)))
+
+; Handle various flavors of ignored and ignorable variables.
+
+(assert!
+ (let* ((uterm '(b* (((mv x1 ?x2 ?x3 ?!x4 - - & &)
+                      (mv a b c d e f g h))
+                     (u (cons x1 x2)))
+                  (car (cons u x1))))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* (((mv x1 ?x2 ?x3 ?!x4 - - & &)
+                      (mv a b c d e f g h))
+                     (u (cons x1 x2)))
+                  u))
+        (sterm (du-trans uterm2)))
+   (equal (directed-untranslate uterm tterm sterm nil nil (w state))
+          uterm2)))
+
+; When, if, unless
+
+(assert!
+ (let* ((uterm '(b* (((when (consp x)) (first x))
+                     (y (cons x x)))
+                  (list (rest x) (rest y) y)))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* (((when (consp x)) (first x))
+                      (y (cons x x)))
+                   (list (rest x) x y)))
+        (sterm (du-trans uterm2)))
+   (equal (directed-untranslate-rec uterm tterm sterm nil t nil (w state))
+          uterm2)))
+(assert!
+ (let* ((uterm '(b* (((if (consp x)) (first x))
+                     (y (cons x x)))
+                  (list (rest x) (rest y) y)))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* (((if (consp x)) (first x))
+                      (y (cons x x)))
+                   (list (rest x) x y)))
+        (sterm (du-trans uterm2)))
+   (equal (directed-untranslate-rec uterm tterm sterm nil t nil (w state))
+          uterm2)))
+(assert!
+ (let* ((uterm '(b* (((unless (atom x)) (first x))
+                     (y (cons x x)))
+                  (list (rest x) (rest y) y)))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* (((unless (atom x)) (first x))
+                      (y (cons x x)))
+                   (list (rest x) x y)))
+        (sterm (du-trans uterm2)))
+   (equal (directed-untranslate-rec uterm tterm sterm nil t nil (w state))
+          uterm2)))
+
+; When clause with no form after the test
+
+(assert!
+ (let* ((uterm '(b* (((when (consp x)))
+                     (y (cons x x)))
+                  (list (rest x) (rest y) y)))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* (((when (consp x)))
+                      (y (cons x x)))
+                   (list (rest x) x y)))
+        (sterm (du-trans uterm2)))
+   (equal (directed-untranslate-rec uterm tterm sterm nil t nil (w state))
+          uterm2)))
+#+skip ; Fails for now (9/28/2018) because of a b* bug, reported today
+(assert!
+ (let* ((uterm '(b* (((if (consp x)))
+                     (y (cons x x)))
+                  (list (rest x) (rest y) y)))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* (((if (consp x)))
+                      (y (cons x x)))
+                   (list (rest x) x y)))
+        (sterm (du-trans uterm2)))
+   (equal (directed-untranslate-rec uterm tterm sterm nil t nil (w state))
+          uterm2)))
+(assert!
+ (let* ((uterm '(b* (((unless (atom x)))
+                     (y (cons x x)))
+                  (list (rest x) (rest y) y)))
+        (tterm (du-trans uterm))
+        (uterm2 '(b* (((unless (atom x)))
+                      (y (cons x x)))
+                   (list (rest x) x y)))
+        (sterm (du-trans uterm2)))
+   (equal (directed-untranslate-rec uterm tterm sterm nil t nil (w state))
+          uterm2)))
+
 )

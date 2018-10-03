@@ -103,54 +103,51 @@
 
  <h4><see topic='@(url java::java)'>Java</see></h4>
 
- <p>
- Added a library for Java-related formalizations and tools, including:
- </p>
+ <p>Added a library for Java-related formalizations and tools, including:</p>
+
  <ul>
-  <li>
-  <see topic='@(url java::aij)'>AIJ (<b>A</b>CL2 <b>I</b>n <b>J</b>ava)</see>,
-  a deep embedding in Java
-  of an executable, side-effect-free, non-stobj-accessing
-  subset of the ACL2 language without guards.
-  </li>
-  <li>
-  <see topic='@(url java::atj)'>ATJ (<b>A</b>CL2 <b>T</b>o <b>J</b>ava)</see>,
-  a simple Java code generator
-  that turns ACL2 functions into AIJ representations
-  that are evaluated by the AIJ interpreter.
-  </li>
+
+ <li><see topic='@(url java::aij)'>AIJ (<b>A</b>CL2 <b>I</b>n
+ <b>J</b>ava)</see>, a deep embedding in Java of an executable,
+ side-effect-free, non-stobj-accessing subset of the ACL2 language without
+ guards.</li>
+
+ <li><see topic='@(url java::atj)'>ATJ (<b>A</b>CL2 <b>T</b>o
+ <b>J</b>ava)</see>, a simple Java code generator that turns ACL2 functions
+ into AIJ representations that are evaluated by the AIJ interpreter.</li>
+
  </ul>
 
  <h3>Changes to Existing Libraries</h3>
 
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
- <p>
- Finished adding support for 32-bit application-level execution
- for non-floating-point instructions.
- </p>
+ <p>Finished adding support for 32-bit application-level execution for
+ non-floating-point instructions.</p>
+
+ <p>Added support for enabling/disabling machine features that depend on CPUID
+ flags.</p>
+
+ <p>Detection of many decode-time exceptions is now done during opcode
+ dispatch, as opposed to inside the instruction semantic functions.  This not
+ only lets us catch exceptions early, but also allows us to specify them
+ even if the semantic functions themselves are missing.</p>
 
  <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
 
- <p>
- Improved the documentation of the Ethereum library.
- </p>
+ <p>Improved the documentation of the Ethereum library.</p>
 
  <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
 
- <p>
- Improved the documentation of the Bitcoin library.
- </p>
+ <p>Improved the documentation of the Bitcoin library.</p>
 
  <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
 
- <p>
- Added @(tsee ensure-string), an error-checking function for strings.
- </p>
+ <p>Added @(tsee ensure-string), an error-checking function for strings.</p>
 
  <h4>Filesystem Books</h4>
 
- <p>The filesystem books @('books/projects/filesystems/') have been
+ <p>The filesystem books @('[books]/projects/filesystems/') have been
  substantially expanded; in particular, they now contain a new model which
  faithfully represents the state of a FAT32 disk image. More details about this
  work are available in the paper <i>Formalising Filesystems in the ACL2 Theorem
@@ -168,12 +165,32 @@
  @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
  under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
 
- <h4>Other Kestrel Utilities</h4>
+ <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
 
- <p>In support of changes to the filesystem books (see above), the Kestrel
- string libraries as well as the byte-combining libraries
- @('books/std/io/combine.lisp') have been expanded with several new
- lemmas. Some existing lemmas have also been generalized.</p>
+ <p>Added new lemmas and generalized some existing lemmas.</p>
+
+ <h4>@(csee std/io)</h4>
+
+ <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
+ byte-combining libraries</see>.</p>
+
+ <h4>Digits in Arbitrary Bases</h4>
+
+ <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
+ moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
+ and renamed.  The uses of the macro to generate return type theorems for
+ specific power-of-2 bases have been split into several files so that they can
+ be included individually as needed.</p>
+
+ <h4>Other</h4>
+
+ <p>The utility, @(tsee directed-untranslate), has been improved in several
+ ways, including more complete handling of @(tsee mv-let), @(tsee let*), @(tsee
+ b*), @(tsee progn$), @(tsee er), @(tsee cw), and @(tsee mbe).</p>
+
+ <p>For the event macro @(tsee orelse*), the default for the @(':expansion?p')
+ argument has been changed from @('nil') to @('t'), for consistency with @(tsee
+ orelse).</p>
 
  <h3>Licensing Changes</h3>
 

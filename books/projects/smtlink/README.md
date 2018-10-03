@@ -43,9 +43,6 @@ It supports both ACL2 and *ACL2(r)*. The current default SMT solver integrated i
 
 * Setup smtlink configuration in file *smtlink-config* in either a user specified directory *$SMT_HOME* or in directory *$HOME*.  When both environment variables are set, *$SMT_HOME* is used. The configuration takes below format:
   ```
-  interface-dir=...
-  smt-module=...
-  smt-class=...
   smt-cmd=...
   ```
   When these variables are not set, smtlink finds the smtlink-config file in current directory.
@@ -54,9 +51,6 @@ It supports both ACL2 and *ACL2(r)*. The current default SMT solver integrated i
   
   Option        | Explanation                                         | Example
   ------------- | --------------------------------------------------- | -------------
-  interface-dir | The directory to SMT solver interface module files  | /Users/.../smtlink/z3_interface
-  smt-module    | The module name (i.e. the file name)                | ACL2_to_Z3
-  smt-class     | The class name                                      | ACL22SMT
   smt-cmd       | The command for running the SMT solver              | /usr/bin/env python
 
   
@@ -75,6 +69,10 @@ To use Smtlink, one needs to include book:
 Then one needs to enable *tshell* by doing
 ```
 (value-triple (tshell-ensure))
+```
+and add the Smtlink computed-hint:
+```
+(add-default-hints '((SMT::SMT-computed-hint clause)))
 ```
 
 ### Reference

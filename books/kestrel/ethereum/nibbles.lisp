@@ -23,3 +23,22 @@
     which consist of 4 bits.
     We use the library type @(tsee ubyte4) of unsigned 4-bit bytes
     to model nibbles in our Ethereum model."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc nibble-arrays
+  :parents (basics)
+  :short "Modeling of nibble arrays."
+  :long
+  (xdoc::topp
+   "[YP] does not use any specific symbol for nibble arrays
+    (unlike for byte arrays),
+    but nibble arrays are used in [YP],
+    e.g. @($y$) [YP:(190), YP:(191)] turns map keys as byte arrays
+    into map keys as nibble arrays.
+    Given our modeling of @(see nibbles),
+    we use the library type @(tsee ubyte4-list) of
+    true lists of unsigned 4-bit bytes
+    to model nibble arrays in our Ethereum model,
+    analogously to our model of
+    <see topic='@(url byte-arrays)'>byte arrays</see>."))

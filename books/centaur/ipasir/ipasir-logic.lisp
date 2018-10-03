@@ -802,49 +802,108 @@
                returns))))))
 
 
+(defxdoc building-an-ipasir-solver-library
+  :parents (ipasir)
+  :short "How to obtain an ipasir backend implementation."
+  :long #{""" <p>There are several SAT solver libraries that implement the
+IPASIR interface; in particular, the entrants in the <a
+href="http://baldur.iti.kit.edu/sat-competition-2016/">2016</a> and <a
+href="http://baldur.iti.kit.edu/sat-competition-2017/">2017</a> SAT
+Competitions are available, respectively, <a
+href="http://baldur.iti.kit.edu/sat-competition-2016/index.php?cat=solvers">here</a>
+and <a
+href="http://baldur.iti.kit.edu/sat-competition-2017/solvers/incremental/">here</a>.
+However, the build scripts for these libraries are configured to produce a
+static library, and we need a shared library so that we can link it into a
+running Lisp session.  We'll walk through the steps necessary to adapt the
+makefile to build a Linux shared library for glucose, whose sources are available <a
+href="https://baldur.iti.kit.edu/sat-competition-2017/solvers/incremental/glucose-ipasir.zip">here</a>.
+</p>
+
+<p>First, ensure that you have gcc and g++ version 6 or greater.</p>
+
+<p>
+Unzip the archive and edit the file "sat/glucose4/makefile" as follows:
+</p>
+
+<ul>
+
+<li>Add " -fPIC" to the CXXFLAGS to build position-independent code, required
+for shared libraries.</li>
+
+<li>Add the line "export CXXFLAGS" below the setting of CXXFLAGS, so that those
+flags apply to the recursive make of the core solver library.</li>
+
+<li>Fix a typo: replace the occurrence of "CXXLAGS" with "CXXFLAGS".</li>
+</ul>
+<p>Or apply the following patch instead:</p>
+@({
+32,33c32,33
+< CXXFLAGS= -g -std=c++11 -Wall -DNDEBUG -O3
+< 
+---
+> CXXFLAGS= -g -std=c++11 -Wall -DNDEBUG -O3 -fPIC
+> export CXXFLAGS
+70c70
+< 	$(CXX) -g  -std=c++11 $(CXXLAGS) \
+---
+> 	$(CXX) -g  -std=c++11 $(CXXFLAGS) \
+ })
+
+<p>After fixing the makefile, run "make".  This should produce
+files "ipasirglucoseglue.o" and "libipasirglucose4.a".</p>
+
+<p>Link those two files into a shared library.  For Linux, this can be done as follows:</p>
+@({
+ g++ -shared -Wl,-soname,libipasirglucose4.so -o libipasirglucose4.so \
+     ipasirglucoseglue.o libipasirglucose4.a
+ })
+<p>(Note: Counterintuitively, it is important that the .o file is listed before the .a file.)</p>
+
+<p>Finally, move the resulting shared library "libipasirglucose4.so" to a
+permanent location and set the IPASIR_SHARED_LIBRARY environment variable to
+its absolute path.  Or, ensure that its destination directory is listed in
+your LD_LIBRARY_PATH environment variable and set IPASIR_SHARED_LIBRARY
+to "libipasirglucose4.so".</p>
+
+"""})
 
 (defxdoc ipasir
   :parents (acl2::boolean-reasoning)
   :short "ACL2 bindings for the ipasir incremental SAT solving interface"
-  :long "<p>IPASIR is a simple C interface to incremental SAT solvers.  (It
+  :long #{"""<p>IPASIR is a simple C interface to incremental SAT solvers.  (It
 stands for Reentrant Incremental Sat solver API, in reverse.) This interface is
 supported by a few different solvers because it is used in the SAT
 competition's incremental track.  The ipasir distribution, containing the
 interface and some sample solvers, can be found at <a
-href=\"https://github.com/biotomas/ipasir\">this GitHub repository</a>.  The
+href="https://github.com/biotomas/ipasir">this GitHub repository</a>.  The
 ACL2 ipasir library is an attempt to semi-soundly allow ACL2 programs to
 interface with such SAT solver libraries.</p>
 
 <h3>Getting Started</h3>
 
 <p>First, if you just want to reason about an incremental solver without
-actually running it, you can include \"ipasir-logic.lisp\", which sets up the
+actually running it, you can include "ipasir-logic.lisp", which sets up the
 abstract stobj representing the solver and its logical story, but doesn't
 install the under-the-hood backend and therefore doesn't require any trust
-tags.  Additionally, \"ipasir-tools.lisp\" builds on that to create some useful
+tags.  Additionally, "ipasir-tools.lisp" builds on that to create some useful
 shortcuts, also without any trust tags.</p>
 
-<p>To load the backend, include \"ipasir-backend.lisp\".  This book first loads
+<p>To load the backend, include "ipasir-backend.lisp".  This book first loads
 the shared library specified by the environmnent variable
 IPASIR_SHARED_LIBRARY, which should contain the path to a SAT solver shared
 library. It then overrides the executable definitions of the ipasir interface
 functions so that they instead call the appropriate functions from the shared
 library.</p>
 
-<p>To build a suitable SAT solver shared library, you can start with the examples
-included in the ipasir distribution, available 
-<a href=\"https://github.com/biotomas/ipasir\">here</a>.
-Additionally, the incremental solvers that competed in the
-<a href=\"http://baldur.iti.kit.edu/sat-competition-2016/\">2016 SAT Competition</a>
-are available from its website
-<a href=\"http://baldur.iti.kit.edu/sat-competition-2016/index.php?cat=solvers\">here</a>.
-</p>
+<p>There are several SAT solver libraries that implement the IPASIR interface;
+to obtain one, see @(see building-an-ipasir-solver-library).</p>
 
 <h3>Using ipasir functions</h3>
 
 <p>Note: If you are familiar with ipasir, you'll notice that the ACL2 wrappers
 work slightly differently than the underlying ipasir implementation.  The
-differences are listed below under \"Departures from the C Interface.\"</p>
+differences are listed below under "Departures from the C Interface."</p>
 
 <p>The following interfacing
 functions are provided:</p>
@@ -927,7 +986,7 @@ which the callback is called varies by solver.</li>
 most of the ipasir functions.</li>
 
 <li>@('(ipasir-some-history ipasir) (ipasir-empty-new-clause ipasir)
-(ipasir-get-assumption ipasir) (ipasir-solved-assumption ipasir)') are
+ (ipasir-get-assumption ipasir) (ipasir-solved-assumption ipasir)') are
 functions similar in spirit to @('ipasir-get-status') in that they are intended
 to only be used to define executable guards for the ipasir stobj.</li>
 
@@ -964,8 +1023,8 @@ callback mechanism of ipasir_set_terminate.</li>
 
 <h3>Logical story</h3>
 
-<p>There are several problems to solve when trying to soundly model an
-interface with an external library in ACL2.  First, we need a logical
+<p>There are several problems to solve when trying to soundly model an 
+interface with an external library in ACL2.  First, we need a logical 
 description of the behavior of the external library that is specific enough to
 be useful, but not so specific that unexpected behaviors produce soundness
 bugs.  Second, we need to restrict user access to functions that break the
@@ -1031,7 +1090,7 @@ uses an ipasir solver has to take and return state.  This can be worked around
 using @('with-local-state') if necessary, at the cost of possible unsoundness
 due to nondeterminism in the external library.  Additionally,
 @('ipasir-reinit') can be used to reinitialize a previously released solver
-without involving state.</p>")
+without involving state.</p>"""})
 
 
 (defxdoc ipasir-init
