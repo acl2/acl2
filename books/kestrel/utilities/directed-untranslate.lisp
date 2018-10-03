@@ -2332,7 +2332,18 @@
                     (('mv-let !vars val2 . last)
                      (and last
                           (let ((body (car (last last))))
-                            (and (not (intersectp-eq ignores (all-vars body)))
+                            (mv-let
+                              (erp tbody)
+                              (translate-cmp body
+                                             nil ; stobjs-out
+                                             nil ; logic-modep (don't care)
+                                             t   ; known-stobjs
+                                             'directed-untranslate-b* ; ctx
+                                             wrld
+                                             (default-state-vars nil))
+                              (and (null erp)
+                                   (not (intersectp-eq ignores
+                                                       (all-vars tbody)))
 
 ; Originally we had
 ; (b* (((mv . args) val) ..) ...)
@@ -2342,14 +2353,14 @@
 ; and - with ignore-3.  In this case we want to use the original args, provided
 ; the ignored variables don't occur free in the body of the resulting mv-let.
 
-                                 (mv-let (bindings2 body2)
-                                   (case-match body
-                                     (('b* bindings2 . rest2) ; ignore declares
-                                      (mv bindings2 (car (last rest2))))
-                                     (& (mv nil body)))
-                                   `(b* (((mv ,@args) ,val2)
-                                         ,@bindings2)
-                                      ,body2)))))))
+                                   (mv-let (bindings2 body2)
+                                     (case-match body
+                                       (('b* bindings2 . rest2) ; ignore declares
+                                        (mv bindings2 (car (last rest2))))
+                                       (& (mv nil body)))
+                                     `(b* (((mv ,@args) ,val2)
+                                           ,@bindings2)
+                                        ,body2))))))))
                   x)))))
     (('b* ((var val) . bindings) rest)
      (cond
