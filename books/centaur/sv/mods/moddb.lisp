@@ -516,10 +516,29 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     ;; :hints (("goal" :induct (ind a b)
     ;;          :expand ((:free (a b) (remove-later-duplicates (cons a b)))))))
 
+  ;; Mihir M. mod: a subgoal hint was necessary below after list-fix was
+  ;; migrated to the sources and renamed.
+
+  ;; Matt K. comment: After tracing acl2::rewrite in a couple of ways, I
+  ;; noticed that both the type-alist and linear pot are affected by the
+  ;; ordering of two terms: one is (REMOVE-LATER-DUPLICATES (CDR X))), and the
+  ;; other is either (ACL2::TRUE-LIST-FIX (CDR X)) after the change to list-fix
+  ;; or (LIST-FIX (CDR X)) before that change.  It seems reasonable to assume
+  ;; that this term-order change is responsible for the failure to prove this
+  ;; theorem without hints.  Moreover, the proof fails if "Subgoal *1/3''" is
+  ;; replaced by "Goal", so avoiding a subgoal hint isn't as trivial as that.
+  ;; We can live with Mihir's fix, so that's what we'll do.
+
   (defthm remove-later-duplicates-when-no-duplicates
     (implies (no-duplicatesp x)
              (equal (remove-later-duplicates x)
-                    (list-fix x))))
+                    (list-fix x)))
+    :hints (("Subgoal *1/3''" :in-theory (e/d (list-equiv)
+                                              (acl2::list-equiv-implies-equal-remove-2))
+             :use (:instance acl2::list-equiv-implies-equal-remove-2
+                             (acl2::a (car x))
+                             (x (remove-later-duplicates (cdr x)))
+                             (acl2::x-equiv (cdr x))))))
 
   (defthm no-duplicatesp-of-remove-later-duplicates
     (no-duplicatesp (remove-later-duplicates x)))
@@ -6917,7 +6936,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
                           ((mv ans acl2::nrev) (acl2::nrev-finish acl2::nrev)))
                        (mv err ans acl2::nrev))
                      (mv err ans)))))
-    
+
     ///
     (local (defthm lhspairs-named->index-aux-nrev-elim
              (b* (((mv nrev-err nrev-ans)
@@ -7274,8 +7293,8 @@ checked to see if it is a valid bitselect and returned as a separate value."
          (nrev (acl2::nrev-append fails2 nrev))
          (nrev1 (acl2::nrev-push (cons lhs rhs) nrev1)))
       (lhspairs->absindexed-nrev (cdr x) scope moddb nrev nrev1)))
-  
-  
+
+
   (define lhspairs->absindexed ((x lhspairs-p) (scope modscope-p) (moddb moddb-ok))
     :guard (and (modscope-okp scope moddb)
                 (svarlist-idxaddr-okp (lhspairs-vars x) (modscope-local-bound scope moddb)))

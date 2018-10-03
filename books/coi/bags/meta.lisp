@@ -111,7 +111,7 @@ Without the :meta rule, this fails:
     (binary-append x y)
     (cons x y)
 ;   (quote x)
-    (acl2::list-fix x)
+    (acl2::true-list-fix x)
     ))
 
 ;TERM is a nest of conses and appends
@@ -785,7 +785,7 @@ old version:
    (meta-memberp x list)
    (any-subbagp x list) ;remove this?
    (finalcdr x)
-   (acl2::list-fix x)
+   (acl2::true-list-fix x)
    (subbagp x y) ;added by eric
    (list::memberp a x) ;added by eric
 ; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2

@@ -192,6 +192,11 @@
  argument has been changed from @('nil') to @('t'), for consistency with @(tsee
  orelse).</p>
 
+ <p>The definition of function @(see list-fix) from
+ @('\"books/std/lists/list-fix.lisp\"') has been incorporated into the ACL2
+ sources in a way that minimizes changes to existing books.  See @(see
+ note-8-2) for details.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
