@@ -3843,7 +3843,7 @@
              (:free (args)
                     (,evfn (CONS (CAR X) ARGS) NIL)))
             :in-theory '(eval-list-kwote-lst
-                         fix-true-list-ev-lst
+                         true-list-fix-ev-lst
                          car-cons cdr-cons))))
       ((1 2 3 6 7) `(("Goal" :expand ((,evfn X A)))))
       (otherwise
@@ -3907,7 +3907,7 @@
             o< o-finp o-first-expt o-first-coeff o-rst natp posp
             acl2-count
             alistp
-            fix-true-list kwote kwote-lst pairlis$-fix-true-list
+            true-list-fix kwote kwote-lst pairlis$-true-list-fix
             )))
 
 (defun defevaluator-form (evfn evfn-lst namedp fn-args-lst)
@@ -3965,16 +3965,16 @@
             (local
              (defthm eval-list-kwote-lst
                (equal (evfn-lst (kwote-lst args) a)
-                      (fix-true-list args))
+                      (true-list-fix args))
                :hints (("goal"
                         :expand ((:free (x y) (evfn-lst (cons x y) a))
                                  (evfn-lst nil a)
                                  (:free (x)
                                         (evfn (list 'quote x) a)))
-                        :induct (fix-true-list args)))))
+                        :induct (true-list-fix args)))))
             (local
-             (defthm fix-true-list-ev-lst
-               (equal (fix-true-list (evfn-lst x a))
+             (defthm true-list-fix-ev-lst
+               (equal (true-list-fix (evfn-lst x a))
                       (evfn-lst x a))
                :hints (("goal" :induct (len x)
                         :in-theory (e/d ((:induction len)))

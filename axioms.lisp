@@ -23042,16 +23042,56 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          ((t) (member-eq val *legal-rw-cache-states*))
          (t nil)))
 
-(defun fix-true-list (x)
-  (declare (xargs :guard t))
+; We thank Jared Davis for permission to adapt his function true-list-fix (and
+; supporting function true-list-fix-exec), below.  See :DOC note-8-2 for
+; further credits and explanation.
+
+(defun true-list-fix-exec (x)
+  (declare (xargs :guard t :mode :logic))
   (if (consp x)
-      (cons-with-hint (car x)
-                      (fix-true-list (cdr x))
-                      x)
+      (cons (car x)
+            (true-list-fix-exec (cdr x)))
     nil))
 
-(defthm pairlis$-fix-true-list
-  (equal (pairlis$ x (fix-true-list y))
+(defun true-list-fix (x)
+  (declare (xargs :guard t
+                  :mode :logic
+                  :verify-guards nil))
+  (mbe :logic
+       (if (consp x)
+           (cons (car x)
+                 (true-list-fix (cdr x)))
+         nil)
+       :exec
+       (if (true-listp x)
+           x
+         (true-list-fix-exec x))))
+
+(encapsulate
+  ()
+
+  (local (defthm true-list-fix-true-listp
+           (implies (true-listp x)
+                    (equal (true-list-fix x) x))
+           :hints (("Goal" :expand ((true-list-fix x))))))
+
+  (local (defthm true-list-fix-exec-removal
+           (equal (true-list-fix-exec x)
+                  (true-list-fix x))
+           :hints(("Goal" :in-theory (enable true-list-fix)))))
+
+  (verify-guards true-list-fix
+    :hints (("Goal" :expand ((true-list-fix x)))))
+  )
+
+(in-theory (disable true-list-fix-exec))
+
+(defmacro fix-true-list (x) `(true-list-fix ,x))
+
+(table macro-aliases-table 'fix-true-list 'true-list-fix)
+
+(defthm pairlis$-true-list-fix
+  (equal (pairlis$ x (true-list-fix y))
          (pairlis$ x y)))
 
 (defun boolean-listp (lst)
