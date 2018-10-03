@@ -1561,6 +1561,66 @@
          (& (list 'progn$ x y)))))
     (& uterm)))
 
+(defun append-dcls (x y)
+
+; Imagine we have (declare . x) and (declare . y).  We wish to combine these
+; into a single declare form that is "pretty".
+
+  (cond ((endp x) y)
+        (t (let* ((y (append-dcls (cdr x) y))
+                  (key (caar x))  ; ignore, ignorable, type ...
+                  (vars (cdar x)) ; variables for ignore, ignorable, type ...
+                  (d (assoc-eq key y)))
+             (cond (d (put-assoc-eq key
+                                    (union-eq vars (cdr d))
+                                    y))
+                   (t (cons (car x) y)))))))
+
+(defun reconstruct-let* (bindings x)
+
+; Return a term equivalent to x, but using bindings as a guide to try to create
+; a let* term.  The intended use is where x is a simplification of some let*
+; term with the indicated bindings, some of which may have disappeared in
+; simplifying to x.
+
+; Example:
+
+;   ACL2 !>:trans1 (let* ((x 3) (y 5) (z 6)) (declare (ignore x y)) z)
+;    (LET ((X 3))
+;         (DECLARE (IGNORE X))
+;         (LET ((Y 5))
+;              (DECLARE (IGNORE Y))
+;              (LET ((Z 6)) Z)))
+;   ACL2 !>
+
+; Then for that result, r, (reconstruct-let* '((x 3) (y 5) (z 6)) r)
+; is the original let*.
+
+  (cond ((endp bindings) x)
+        (t (let ((var (caar bindings)))
+             (case-match x
+               (('let ((!var &)) y)
+                (let ((x2 (reconstruct-let* (cdr bindings) y)))
+                  (case-match x2
+                    (('let* b2 . r2)
+                     `(let* ,(append (cadr x) b2)
+                        ,@r2))
+                    (& `(let* ,(cadr x) ,x2)))))
+               (('let ((!var &)) ('declare . d) y)
+                (let ((x2 (reconstruct-let* (cdr bindings) y)))
+                  (case-match x2
+                    (('let* b . r)
+                     `(let* ,(append (cadr x) b)
+                        ,@(case-match r
+                            ((('declare . d2) . r2)
+                             `((declare ,@(append-dcls d d2)) ,@r2))
+                            (& `((declare ,@d) ,@r)))))
+                    (& `(let* ,(cadr x) ,x2)))))
+               (&
+; We proceed in the hope that (car bindings) was dropped during
+; simplification.
+                (reconstruct-let* (cdr bindings) x)))))))
+
 (mutual-recursion
 
 (defun directed-untranslate-rec (uterm tterm sterm iff-flg lflg exec-p wrld)
@@ -1647,19 +1707,21 @@
             (('let ((& &)) . &)
              (cons 'let* (cdr x)))
             (& x))))
-       (('let* ((var val) . bindings) . rest)
-        (let ((x (directed-untranslate-rec
-                  `(let ((,var ,val))
-                     (let* ,bindings
-; Throw away declarations.
-                       ,(car (last rest))))
-                  tterm sterm iff-flg lflg exec-p wrld)))
-          (case-match x
-            (('let ((var2 val2))
-               ('let* bindings2 . rest2))
-             `(let* ((,var2 ,val2) ,@bindings2)
-                ,@rest2))
-            (& x))))
+       (('let* bindings . &)
+
+; At one time we avoided calling macroexpand1-cmp below, instead doing the
+; expansion ourselves.  But we threw away declarations, and that caused a
+; violation of check-du-inv-fn because an ignore declaration was needed to
+; match a HIDE in tterm.
+
+        (mv-let (erp let-term)
+          (macroexpand1-cmp uterm 'directed-untranslate-rec wrld
+                            (default-state-vars nil))
+          (and (not erp) ; always true?
+               (let ((x (directed-untranslate-rec
+                         let-term
+                         tterm sterm iff-flg lflg exec-p wrld)))
+                 (reconstruct-let* bindings x)))))
        (& ; impossible
         (er hard 'directed-untranslate-rec
             "Implementation error: unexpected uterm, ~x0."

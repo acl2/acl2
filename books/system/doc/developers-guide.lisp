@@ -1574,7 +1574,6 @@
 
  @({
  git commit -a -F tmp.msg
- git checkout master
  })
 
  Finally, Matt will run a @('merge') command so that @('master') contains all
@@ -1582,6 +1581,7 @@
  complete the update to @('master') in the GitHub repository.
 
  @({
+ git checkout master
  git merge my-branch
  git push https://github.com/acl2/acl2 master
  })</li>
