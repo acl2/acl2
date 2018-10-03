@@ -167,10 +167,9 @@
     (#.*compatibility-mode*
      (mbe
       :logic
-      (b* ((hidden (xr :seg-hidden seg-reg x86))
-	   (base (hidden-seg-reg-layout-slice :base-addr hidden))
-	   (limit (hidden-seg-reg-layout-slice :limit hidden))
-	   (attr (hidden-seg-reg-layout-slice :attr hidden))
+      (b* ((base (loghead 64 (xr :seg-hidden-base seg-reg x86)))
+	   (limit (loghead 32 (xr :seg-hidden-limit seg-reg x86)))
+	   (attr (loghead 16 (xr :seg-hidden-attr seg-reg x86)))
 	   (d/b (data-segment-descriptor-attributes-layout-slice :d/b attr))
 	   (e (data-segment-descriptor-attributes-layout-slice :e attr))
 	   (lower (if (= e 1) (1+ limit) 0))
@@ -182,15 +181,11 @@
       ;; (include-book "std/bitsets/bignum-extract-opt" :dir :system)
       ;; Note that this book requires a trust tag.
       :exec
-      (b* (((the (unsigned-byte 112) hidden) (xr :seg-hidden seg-reg x86))
+      (b* (((the (unsigned-byte 64) base) (xr :seg-hidden-base seg-reg x86))
 	   ((the (unsigned-byte 32) base)
-	    (bitsets::bignum-extract hidden 0))
-	   ((the (unsigned-byte 32) limit)
-	    (bitsets::bignum-extract hidden 2))
-	   ((the (unsigned-byte 32) attr-32)
-	    (bitsets::bignum-extract hidden 3))
-	   ((the (unsigned-byte 16) attr)
-	    (logand #xFFFF attr-32))
+	    (bitsets::bignum-extract base 0))
+	   ((the (unsigned-byte 32) limit) (xr :seg-hidden-limit seg-reg x86))
+	   ((the (unsigned-byte 16) attr) (xr :seg-hidden-attr seg-reg x86))
 	   (d/b (data-segment-descriptor-attributes-layout-slice :d/b attr))
 	   (e (data-segment-descriptor-attributes-layout-slice :e attr))
 	   (lower (if (= e 1) (1+ limit) 0))
@@ -227,7 +222,9 @@
   (defrule segment-base-and-bound-of-xw
     (implies
      (and (not (equal fld :msr))
-	  (not (equal fld :seg-hidden)))
+          (not (equal fld :seg-hidden-base))
+	  (not (equal fld :seg-hidden-limit))
+          (not (equal fld :seg-hidden-attr)))
      (equal (segment-base-and-bounds proc-mode seg-reg (xw fld index value x86))
 	    (segment-base-and-bounds proc-mode seg-reg x86)))))
 
@@ -360,7 +357,9 @@
   (defrule ea-to-la-of-xw
     (implies
      (and (not (equal fld :msr))
-	  (not (equal fld :seg-hidden)))
+	  (not (equal fld :seg-hidden-base))
+          (not (equal fld :seg-hidden-limit))
+          (not (equal fld :seg-hidden-attr)))
      (equal (ea-to-la proc-mode eff-addr seg-reg (xw fld index value x86))
 	    (ea-to-la proc-mode eff-addr seg-reg x86))))
 

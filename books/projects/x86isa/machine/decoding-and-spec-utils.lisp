@@ -162,8 +162,8 @@ the @('fault') field instead.</li>
       (case proc-mode
 	(#.*64-bit-mode* *ip)
 	(#.*compatibility-mode*
-	 (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	      (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	 (b* (((the (unsigned-byte 16) cs-attr)
+	       (xr :seg-hidden-attr #.*cs* x86))
 	      (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	   (if (= cs.d 1)
 	       (n32 *ip)
@@ -191,7 +191,10 @@ the @('fault') field instead.</li>
 		      (delta     :type (signed-byte #.*max-linear-address-size*))
 		      x86)
     :returns (mv flg
-		 (*ip+delta i48p :hyp (and (i48p *ip) (i48p delta))))
+		 (*ip+delta i48p
+			    :hyp (and (i48p *ip) (i48p delta))))
+    :prepwork
+    ((local (in-theory (e/d () (force (force))))))
     :parents (instruction-pointer-operations)
     :short "Add a specified amount to an instruction pointer."
     :long
@@ -237,8 +240,9 @@ the @('fault') field instead.</li>
 	   (mv (list :non-canonical-instruction-pointer *ip+delta) 0)))
 
 	(#.*compatibility-mode*
-	 (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden #.*cs* x86)))
-	      (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
+	 (b* (((the (unsigned-byte 32) cs.limit)
+	       (mbe :logic (loghead 32 (xr :seg-hidden-limit #.*cs* x86))
+		    :exec (xr :seg-hidden-limit #.*cs* x86))))
 	   (if (and (<= 0 *ip+delta)
 		    (<= *ip+delta cs.limit))
 	       (mv nil *ip+delta)
@@ -313,7 +317,9 @@ the @('fault') field instead.</li>
   (define write-*ip ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
 		     (*ip       :type (signed-byte #.*max-linear-address-size*))
 		     x86)
-    :returns (x86-new x86p :hyp (and (i48p *ip) (x86p x86)))
+    :returns (x86-new x86p 
+                      :hyp (and (i48p *ip) (x86p x86))
+                      :hints (("Goal" :in-theory (e/d () (force (force))))))
     :parents (instruction-pointer-operations)
     :short "Write an instruction pointer into the register RIP, EIP, or IP."
     :long
@@ -392,32 +398,31 @@ the @('fault') field instead.</li>
      the argument instruction pointer.
      </p>"
 
+    
     (case proc-mode
 
       (#.*64-bit-mode*
        (!rip *ip x86))
 
       (#.*compatibility-mode* ;; Maybe *protected-mode* too?
-       (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden #.*cs* x86)))
-	    (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
-	    (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
-	 (if (= cs.d 1)
-	     (!rip (n32 *ip) x86)
-	   ;; converting RIP to unsigned (via N48) and then back to signed (via
-	   ;; I48) lets the guard proofs go through easily, but at some point we
-	   ;; might look into adding theorems about PART-INSTALL and SIGNED-BYTE-P
-	   ;; to the BITOPS libraries to let the guard proofs here go through
-	   ;; without the conversions:
-	   (b* ((rip (rip x86))
-		(urip (n48 rip))
-		(urip-new (part-install (n16 *ip) urip :low 0 :width 16))
-		(rip-new (i48 urip-new)))
-	     (!rip rip-new x86)))))
+       (b* ((cs-attr (the (unsigned-byte 16) (xr :seg-hidden-attr #.*cs* x86)))
+            (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+         (if (= cs.d 1)
+             (!rip (n32 *ip) x86)
+           ;; converting RIP to unsigned (via N48) and then back to signed (via
+           ;; I48) lets the guard proofs go through easily, but at some point we
+           ;; might look into adding theorems about PART-INSTALL and SIGNED-BYTE-P
+           ;; to the BITOPS libraries to let the guard proofs here go through
+           ;; without the conversions:
+           (b* ((rip (rip x86))
+                (urip (n48 rip))
+                (urip-new (part-install (n16 *ip) urip :low 0 :width 16))
+                (rip-new (i48 urip-new)))
+             (!rip rip-new x86)))))
 
       (otherwise
        ;; Unimplemented for other modes!
        x86))
-
     :inline t
     :no-function t
     ///
@@ -469,8 +474,7 @@ the @('fault') field instead.</li>
 	(#.*64-bit-mode*
 	 *sp)
 	(#.*compatibility-mode*
-	 (b* ((ss-hidden (xr :seg-hidden #.*ss* x86))
-	      (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
+	 (b* (((the (unsigned-byte 16) ss-attr) (xr :seg-hidden-attr #.*ss* x86))
 	      (ss.b (data-segment-descriptor-attributes-layout-slice
 		     :d/b ss-attr)))
 	   (if (= ss.b 1)
@@ -547,9 +551,8 @@ the @('fault') field instead.</li>
 	     (mv nil *sp+delta)
 	   (mv (list :non-canonical-stack-address *sp+delta) 0)))
 	(#.*compatibility-mode*
-	 (b* ((ss-hidden (the (unsigned-byte 112) (xr :seg-hidden #.*ss* x86)))
-	      (ss.limit (hidden-seg-reg-layout-slice :limit ss-hidden))
-	      (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
+	 (b* (((the (unsigned-byte 32) ss.limit) (xr :seg-hidden-limit #.*ss* x86))
+	      ((the (unsigned-byte 16) ss-attr) (xr :seg-hidden-attr #.*ss* x86))
 	      (ss.b (data-segment-descriptor-attributes-layout-slice :d/b ss-attr))
 	      (ss.e (data-segment-descriptor-attributes-layout-slice :e ss-attr))
 	      (ss-lower (if (= ss.e 1) (1+ ss.limit) 0))
@@ -646,8 +649,7 @@ the @('fault') field instead.</li>
       (#.*64-bit-mode*
        (!rgfi #.*rsp* *sp x86))
       (#.*compatibility-mode*
-       (b* ((ss-hidden (the (unsigned-byte 112) (xr :seg-hidden #.*ss* x86)))
-	    (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
+       (b* (((the (unsigned-byte 16) ss-attr) (xr :seg-hidden-attr #.*ss* x86))
 	    (ss.b (data-segment-descriptor-attributes-layout-slice
 		   :d/b ss-attr)))
 	 (if (= ss.b 1)
@@ -712,8 +714,7 @@ the @('fault') field instead.</li>
   (case proc-mode
     (#.*64-bit-mode* (if p4? 4 8))
     (otherwise ;; #.*compatibility-mode* or #.*protected-mode*
-     (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden #.*cs* x86)))
-	  (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+     (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
 	  (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
        (if (= cs.d 1) (if p4? 2 4) (if p4? 4 2)))))
   ///
@@ -2210,8 +2211,7 @@ reference made from privilege level 3.</blockquote>"
 	    4   ;; Default 32-bit operand size (in 64-bit mode)
 	    ))
       ;; 32-bit mode or Compatibility Mode:
-      (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	   (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+      (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
 	   (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
 	   (p3? (eql #.*operand-size-override*
 		     (the (unsigned-byte 8) (prefixes->opr prefixes)))))

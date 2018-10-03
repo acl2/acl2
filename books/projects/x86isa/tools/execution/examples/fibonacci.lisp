@@ -1790,7 +1790,7 @@ int main (int argc, char *argv[], char *env[])
 	 ;; seg-visibles
 	 nil
 	 ;; seg-hiddens
-	 nil
+	 nil nil nil
 	 ;; Initial value of the Rflags Register
 	 2
 	 ;; Initial memory image

@@ -258,7 +258,9 @@
 	  (and (app-view x86)
 	       (not (equal fld :mem))
 	       (not (equal fld :app-view))
-	       (not (equal fld :seg-hidden))
+	       (not (equal fld :seg-hidden-base))
+	       (not (equal fld :seg-hidden-limit))
+	       (not (equal fld :seg-hidden-attr))
 	       (not (equal fld :msr)))
 	  (and
 	   (equal (mv-nth 0
@@ -286,7 +288,9 @@
 	  (and (not (app-view x86))
 	       (not (equal fld :fault))
 	       (not (equal fld :seg-visible))
-	       (not (equal fld :seg-hidden))
+	       (not (equal fld :seg-hidden-base))
+	       (not (equal fld :seg-hidden-limit))
+	       (not (equal fld :seg-hidden-attr))
 	       (not (equal fld :mem))
 	       (not (equal fld :ctr))
 	       (not (equal fld :msr))

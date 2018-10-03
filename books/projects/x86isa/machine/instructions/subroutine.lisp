@@ -107,8 +107,7 @@
        ((the (integer 0 4) offset-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d (code-segment-descriptor-attributes-layout-slice
 		      :d cs-attr)))
 	    ;; 16 or 32 bits (rel16 or rel32):
@@ -202,8 +201,8 @@
        ((the (integer 2 8) operand-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    8 ; Intel manual, Mar'17, Volume 1, Section 6.3.7
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr)
+                (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d (code-segment-descriptor-attributes-layout-slice
 		      :d cs-attr)))
 	    (if (= cs.d 1)
@@ -248,9 +247,10 @@
        ;; manual.
        ((unless (if (equal proc-mode #.*64-bit-mode*)
 		    (canonical-address-p call-rip)
-		  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-		       (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
-		    (and (<= 0 call-rip) (<= call-rip cs.limit)))))
+                  (and (<= 0 call-rip) 
+                       (<= call-rip
+                           (the (unsigned-byte 32) 
+                             (xr :seg-hidden-limit #.*cs* x86))))))
 	(!!fault-fresh :gp 0 :bad-return-address call-rip)) ;; #GP(0)
 
        (rsp (read-*sp proc-mode x86))
@@ -334,8 +334,7 @@
        ((the (integer 2 8) operand-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    8
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* ((cs-attr (the (unsigned-byte 16) (xr :seg-hidden-attr #.*cs* x86)))
 	       (cs.d
 		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	    (if (= cs.d 1) 4 2))))
@@ -401,8 +400,8 @@
        ;; manual.
        ((unless (if (equal proc-mode #.*64-bit-mode*)
 		    (canonical-address-p tos)
-		  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-		       (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
+		  (b* (((the (unsigned-byte 32) cs.limit)
+                        (xr :seg-hidden-limit #.*cs* x86)))
 		    (and (<= 0 tos) (<= tos cs.limit)))))
 	(!!fault-fresh :gp 0 :bad-return-address tos)) ;; #GP(0)
 
@@ -473,8 +472,7 @@
        ((the (integer 2 8) operand-size)
         (if (equal proc-mode #.*64-bit-mode*)
 	    (if p3? 2 8)
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d (code-segment-descriptor-attributes-layout-slice
                       :d cs-attr)))
 	    (if (= cs.d 1)

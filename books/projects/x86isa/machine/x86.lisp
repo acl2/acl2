@@ -965,8 +965,12 @@
 	      (and
 	       (equal (xr :msr idx new-x86)
 		      (xr :msr idx x86))
-	       (equal (xr :seg-hidden idx new-x86)
-		      (xr :seg-hidden idx x86))))
+	       (equal (xr :seg-hidden-base idx new-x86)
+		      (xr :seg-hidden-base idx x86))
+	       (equal (xr :seg-hidden-limit idx new-x86)
+		      (xr :seg-hidden-limit idx x86))
+	       (equal (xr :seg-hidden-attr idx new-x86)
+		      (xr :seg-hidden-attr idx x86))))
      :hints (("Goal"
 	      :in-theory (e/d () (las-to-pas rb rme08 rml08))))))
 
@@ -976,8 +980,12 @@
 	      (and
 	       (equal (xr :msr idx new-x86)
 		      (xr :msr idx x86))
-	       (equal (xr :seg-hidden idx new-x86)
-		      (xr :seg-hidden idx x86))))
+	       (equal (xr :seg-hidden-base idx new-x86)
+		      (xr :seg-hidden-base idx x86))
+	       (equal (xr :seg-hidden-limit idx new-x86)
+		      (xr :seg-hidden-limit idx x86))
+	       (equal (xr :seg-hidden-attr idx new-x86)
+		      (xr :seg-hidden-attr idx x86))))
      :hints (("Goal"
 	      :induct <call>
 	      :in-theory (e/d ()
@@ -991,8 +999,12 @@
      (and
       (equal (xr :msr idx new-x86)
 	     (xr :msr idx x86))
-      (equal (xr :seg-hidden idx new-x86)
-	     (xr :seg-hidden idx x86)))
+      (equal (xr :seg-hidden-base idx new-x86)
+	     (xr :seg-hidden-base idx x86))
+      (equal (xr :seg-hidden-limit idx new-x86)
+	     (xr :seg-hidden-limit idx x86))
+      (equal (xr :seg-hidden-attr idx new-x86)
+	     (xr :seg-hidden-attr idx x86)))
      :hints (("Goal"
 	      :cases ((app-view x86))
 	      :do-not-induct t

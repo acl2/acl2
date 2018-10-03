@@ -904,7 +904,9 @@
           (not (equal fld :rflags))
           (not (equal fld :ctr))
           (not (equal fld :seg-visible))
-          (not (equal fld :seg-hidden)) ; added
+          (not (equal fld :seg-hidden-base))
+          (not (equal fld :seg-hidden-limit))
+          (not (equal fld :seg-hidden-attr))
           (not (equal fld :msr))
           (not (equal fld :fault))
           (not (equal fld :app-view))
@@ -959,7 +961,9 @@
           (not (equal fld :rflags))
           (not (equal fld :ctr))
           (not (equal fld :seg-visible))
-          (not (equal fld :seg-hidden))
+          (not (equal fld :seg-hidden-base))
+          (not (equal fld :seg-hidden-limit))
+          (not (equal fld :seg-hidden-attr))
           (not (equal fld :msr))
           (not (equal fld :fault))
           (not (equal fld :app-view))
@@ -994,8 +998,9 @@
   (make-event
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault :app-view
-            :marking-view)
+     '(:mem :rflags :ctr :seg-visible 
+            :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
+            :msr :fault :app-view :marking-view)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element 'proc-mode #.*64-bit-mode*
@@ -1009,8 +1014,9 @@
   (make-event
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault :app-view
-            :marking-view)
+     '(:mem :rflags :ctr :seg-visible :seg-hidden-base
+            :seg-hidden-limit :seg-hidden-attr
+            :msr :fault :app-view :marking-view)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element 'proc-mode #.*64-bit-mode*
@@ -1024,8 +1030,9 @@
   (make-event
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault :app-view
-            :marking-view)
+     '(:mem :rflags :ctr :seg-visible 
+            :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
+            :msr :fault :app-view :marking-view)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element 'proc-mode #.*64-bit-mode*
@@ -1039,8 +1046,9 @@
   (make-event
    (generate-write-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault :app-view
-            :marking-view)
+     '(:mem :rflags :ctr :seg-visible 
+            :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
+            :msr :fault :app-view :marking-view)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element

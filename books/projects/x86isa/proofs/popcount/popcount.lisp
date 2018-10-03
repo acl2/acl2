@@ -311,7 +311,7 @@
               ((mv flg x86)
                (init-x86-state-64
                 nil start-address
-                nil nil nil nil nil 0
+                nil nil nil nil nil nil nil 0
                 *popcount-64*
                 x86))
               (x86 (wr32 *rdi* n x86))
@@ -338,7 +338,7 @@
               ((mv flg x86)
                (init-x86-state-64
                 nil start-address
-                nil nil nil nil nil 0
+                nil nil nil nil nil nil nil 0
                 *popcount-64*
                 x86))
               (x86 ;; (!rgfi *rdi* n x86)
@@ -467,7 +467,7 @@
                ((mv flg x86)
                 (init-x86-state-64
                  nil start-address
-                 nil nil nil nil nil 0
+                 nil nil nil nil nil nil nil 0
                  *popcount-32-buggy*
                  x86))
                (x86 (wr32 *rdi* n x86))
@@ -529,7 +529,7 @@
               ((mv flg x86)
                (init-x86-state-64
                 nil start-address
-                nil nil nil nil nil 0
+                nil nil nil nil nil nil nil 0
                 *popcount-32-buggy*
                 x86))
               (x86 (wr32 *rdi* n x86))
