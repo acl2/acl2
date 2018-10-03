@@ -189,8 +189,10 @@
 
  <p>The function @(see list-fix) from @('\"books/std/lists/list-fix.lisp\"')
  has been moved to the ACL2 sources in a way that minimizes changes to existing
- books. For more details, please see the section Changes to Existing Features
- in @(see note-8-2).</p>
+ books. Thanks are owed to Jared Davis for permitting this move to be made, and
+ for providing the list-fix documentation which is now in use for
+ true-list-fix. For more details, please see the section Changes to Existing
+ Features in @(see note-8-2).</p>
 
  <h3>Licensing Changes</h3>
 
