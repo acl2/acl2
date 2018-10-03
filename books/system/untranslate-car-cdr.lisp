@@ -278,6 +278,11 @@
            (T (CONS (EVAD (CAR X-LST) A)
                     (EVAD-LST (CDR X-LST) A)))))))
  (LOCAL (IN-THEORY (DISABLE EVAD EVAD-LST APPLY-FOR-DEFEVALUATOR)))
+ ;; Mihir M. mod: this is one of a small number of unusual books
+ ;; which use true-list fix (enabled by default) while also
+ ;; including books which bring in list-fix and disable the
+ ;; underlying function true-list-fix. It needs this theory hint for
+ ;; proofs to succeed.
  (LOCAL
   (DEFTHM EVAL-LIST-KWOTE-LST
     (EQUAL (EVAD-LST (KWOTE-LST ARGS) A)
@@ -285,7 +290,8 @@
     :HINTS (("goal" :EXPAND ((:FREE (X Y) (EVAD-LST (CONS X Y) A))
                              (EVAD-LST NIL A)
                              (:FREE (X) (EVAD (LIST 'QUOTE X) A)))
-             :INDUCT (FIX-TRUE-LIST ARGS)))))
+             :IN-THEORY (ENABLE TRUE-LIST-FIX)
+             :INDUCT (TRUE-LIST-FIX ARGS)))))
  (LOCAL
   (DEFTHM FIX-TRUE-LIST-EV-LST
     (EQUAL (FIX-TRUE-LIST (EVAD-LST X A))

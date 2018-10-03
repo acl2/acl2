@@ -516,10 +516,18 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     ;; :hints (("goal" :induct (ind a b)
     ;;          :expand ((:free (a b) (remove-later-duplicates (cons a b)))))))
 
+  ;; Mihir M. mod: a subgoal hint was necessary here after list-fix was
+  ;; migrated to the sources and renamed
   (defthm remove-later-duplicates-when-no-duplicates
     (implies (no-duplicatesp x)
              (equal (remove-later-duplicates x)
-                    (list-fix x))))
+                    (list-fix x)))
+    :hints (("Subgoal *1/3''" :in-theory (e/d (list-equiv)
+                                              (acl2::list-equiv-implies-equal-remove-2))
+             :use (:instance acl2::list-equiv-implies-equal-remove-2
+                             (acl2::a (car x))
+                             (x (remove-later-duplicates (cdr x)))
+                             (acl2::x-equiv (cdr x))))))
 
   (defthm no-duplicatesp-of-remove-later-duplicates
     (no-duplicatesp (remove-later-duplicates x)))
