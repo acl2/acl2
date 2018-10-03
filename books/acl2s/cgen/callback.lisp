@@ -450,6 +450,11 @@ Nested testing not allowed! Skipping testing of new goal...~%"
 ;; expansion result of the make-event in set-acl2s-random-testing-enabled
 `(make-event  
   '(progn 
+;;; PETE: If you call acl2s::enable-acl2s-random-testing multiple
+;;; times you get multiple backtrack hints which causes errors. This
+;;; happens during book certification if you're using an ACL2s
+;;; image. Disabling first fixes the problem.
+     (acl2s::disable-acl2s-random-testing)
      (acl2::add-override-hints!
       '((list* :backtrack 
 ;take parent pspv and hist, not the ones returned by clause-processor
