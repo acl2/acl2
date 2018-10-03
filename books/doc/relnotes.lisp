@@ -213,6 +213,12 @@
  sources in a way that minimizes changes to existing books.  See @(see
  note-8-2) for details.</p>
 
+ <p>The @('acl2::defbyte') macro, which generated fixtypes and additional
+ theorems for both bytes and lists of bytes, has been split into two macros
+ @(tsee fty::defbyte), which generates a fixtype and some additional theorems
+ for bytes, and @(tsee fty::defbytelist), which generates a fixtype and some
+ additional theorems for lists of byte.  See the documentation for details.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
@@ -322,7 +328,7 @@
  duplicates; and @(tsee subsetp-eq-linear), which is a linear-time subset test
  for sorted lists of symbols.</p>
 
- <p>Added a new macro @(tsee defbyte) for introducing fixtypes for unsigned and
+ <p>Added a new macro @('defbyte') for introducing fixtypes for unsigned and
  signed bytes of specified sizes, as well as fixtypes of lists of such bytes,
  along with theorems relating the fixtype recognizers to the built-in binary
  predicates @(tsee unsigned-byte-p) and @(tsee signed-byte-p) and to the
@@ -811,10 +817,10 @@
  messages. These utilities include a macro @(tsee def-error-checker) to
  concisely define error-checking functions.</p>
 
- <p>A new macro @(tsee defbyte) has been added that introduces <see
- topic='@(url fty)'>fixtypes</see> for signed or unsigned bytes of specified
- sizes. Several instances of applications of this macro for common sizes of
- both signed and unsigned bytes is also provided.</p>
+ <p>A new macro @('defbyte') has been added that introduces <see topic='@(url
+ fty)'>fixtypes</see> for signed or unsigned bytes of specified sizes. Several
+ instances of applications of this macro for common sizes of both signed and
+ unsigned bytes is also provided.</p>
 
  <p>Utilities @(tsee doublets-to-alist) and @(tsee keyword-value-list-to-alist)
  have been added that convert lists of doublets and keyword-value lists to

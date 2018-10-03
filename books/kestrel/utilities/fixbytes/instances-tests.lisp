@@ -1,4 +1,4 @@
-; Fixtypes for Unsigned and Signed Bytes -- Tests
+; Fixtypes for (Lists of) Unsigned and Signed Bytes of Common Sizes -- Tests
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;

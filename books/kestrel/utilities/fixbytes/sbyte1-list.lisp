@@ -1,4 +1,4 @@
-; Fixtype for Unsigned 256-Bit Bytes
+; Fixtype for Signed 1-Bit Byte Lists
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,11 +10,11 @@
 
 (in-package "ACL2")
 
-(include-book "defbyte")
+(include-book "defbytelist")
+(include-book "sbyte1")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defbyte 256
-  :signed nil
-  :pred ubyte256p
-  :parents (defbyte-instances))
+(fty::defbytelist sbyte1
+  :pred sbyte1-listp
+  :parents (defbytelist-instances))

@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/fixbytes/ubyte2" :dir :system)
+(include-book "kestrel/utilities/fixbytes/ubyte2-list" :dir :system)
 (include-book "pow2")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

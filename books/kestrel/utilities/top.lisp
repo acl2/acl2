@@ -31,7 +31,6 @@
 (include-book "error-checking")
 (include-book "event-forms")
 (include-book "fixbytes/instances")
-(include-book "fixbytes/instances-listoflen")
 (include-book "fresh-names")
 (include-book "include-book-paths")
 (include-book "install-not-norm-event")
