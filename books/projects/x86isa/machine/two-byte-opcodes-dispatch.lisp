@@ -97,7 +97,8 @@
      either @('#x38') or @('#x3A').</p>"
 	:guard (and (prefixes-p prefixes)
 		    (modr/m-p modr/m)
-		    (sib-p sib))
+		    (sib-p sib)
+		    (rip-guard-okp proc-mode temp-rip))
 	:guard-hints (("Goal"
 		       :do-not '(preprocess)
 		       :in-theory (e/d (member-equal)
@@ -124,6 +125,13 @@
 	first opcode byte is 0x0F); see @(see implemented-opcodes) for details."
 	:long ,table-doc-string))))
 
+(local
+ (defthm unsigned-byte-p-from-<=-loghead
+   (implies (and (<= x (loghead n y))
+		 (natp n)
+		 (natp x))
+	    (unsigned-byte-p n x))))
+
 (define two-byte-opcode-decode-and-execute
   ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
    (start-rip     :type (signed-byte #.*max-linear-address-size*))
@@ -135,14 +143,16 @@
 
   :ignore-ok t
   :guard (and (prefixes-p prefixes)
-	      (equal escape-byte #x0F))
+	      (equal escape-byte #x0F)
+	      (rip-guard-okp proc-mode temp-rip))
   :guard-hints (("Goal" :do-not '(preprocess)
 		 :in-theory (e/d*
-			     (add-to-*ip
+			     (rip-guard-okp
+			      add-to-*ip
 			      modr/m-p
 			      add-to-*ip-is-i48p-rewrite-rule)
 			     (two-byte-opcode-modr/m-and-mandatory-prefix
-                              unsigned-byte-p
+			      unsigned-byte-p
 			      (:type-prescription bitops::logand-natp-type-2)
 			      (:type-prescription bitops::ash-natp-type)
 			      acl2::loghead-identity

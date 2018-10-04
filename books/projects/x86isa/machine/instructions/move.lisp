@@ -779,7 +779,6 @@
 
   :parents (two-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
-  :guard-debug t
 
   :returns (x86 x86p :hyp (and (x86p x86)
 			       (canonical-address-p temp-rip)))

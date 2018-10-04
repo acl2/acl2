@@ -403,6 +403,8 @@ writes the final value of the instruction pointer into RIP.</p>")
                   x86-general-protection
                   x86-device-not-available))
 
+(in-theory (e/d () (rip-guard-okp)))
+
 ;; ======================================================================
 
 ;; To see the rules in the instruction-decoding-and-spec-rules

@@ -299,7 +299,6 @@
 	     (make-code-segment-attr-field
 	      (mv-nth 1 (rml-size 8 addr r-x x86)))))))
 
-
 (def-inst x86-far-jmp-Op/En-D
 
   :parents (one-byte-opcodes)
@@ -364,13 +363,14 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 			  nil)))
 
   :prepwork
-  ((local (in-theory (e/d* (far-jump-guard-helpers)
+  ((local (in-theory (e/d* (far-jump-guard-helpers
+			    bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand)
 			   (unsigned-byte-p
 			    member-equal
 			    acl2::logtail-identity
 			    not
 			    signed-byte-p
-                            (tau-system))))))
+			    (tau-system))))))
 
   :guard-hints (("Goal" :in-theory (enable
 				    signed-byte-p-64-when-unsigned-byte-p-48

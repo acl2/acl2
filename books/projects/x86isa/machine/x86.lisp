@@ -1064,7 +1064,8 @@
 
 	:guard (and (prefixes-p prefixes)
 		    (modr/m-p modr/m)
-		    (sib-p sib))
+		    (sib-p sib)
+		    (rip-guard-okp proc-mode temp-rip))
 	:guard-hints (("Goal"
 		       :do-not '(preprocess)
 		       :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
@@ -1141,6 +1142,13 @@
 	       (integerp (mv-nth 1 (rme08 proc-mode eff-addr seg-reg r-x x86))))
       :rule-classes (:rewrite :type-prescription)))
 
+   (local
+    (defthm unsigned-byte-p-from-<=
+      (implies (and (<= x y)
+		    (unsigned-byte-p n y)
+		    (natp x))
+	       (unsigned-byte-p n x))))
+
    (local (in-theory (e/d* ()
 			   (signed-byte-p
 			    unsigned-byte-p
@@ -1150,7 +1158,8 @@
   (("Goal" :in-theory (e/d (modr/m-p
 			    prefixes-p
 			    vex-prefixes-byte0-p
-			    add-to-*ip add-to-*ip-is-i48p-rewrite-rule)
+			    add-to-*ip
+			    add-to-*ip-is-i48p-rewrite-rule)
 			   ())))
 
   (b* ((ctx 'x86-fetch-decode-execute)

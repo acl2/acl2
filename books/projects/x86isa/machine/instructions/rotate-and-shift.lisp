@@ -55,11 +55,20 @@
 ;; INSTRUCTION: SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR
 ;; ======================================================================
 
+(local
+ (defrule add-to-*ip-integerp-type
+   (implies (and (integerp *ip)
+                 (integerp delta))
+            (integerp (mv-nth 1 (add-to-*ip proc-mode *ip delta x86))))
+   :in-theory (e/d (add-to-*ip) ())
+   :rule-classes (:rewrite :type-prescription)))
+
 (def-inst x86-sal/sar/shl/shr/rcl/rcr/rol/ror
   :guard (not (equal (modr/m->reg modr/m) 6))
   :guard-hints (("Goal"
-                 :in-theory (e/d () (unsigned-byte-p
-                                     not force (force)))))
+                 :in-theory (e/d () 
+                                 (unsigned-byte-p
+                                  not force (force)))))
 
   :parents (one-byte-opcodes)
 
