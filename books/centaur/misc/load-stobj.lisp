@@ -255,7 +255,7 @@
     length
     len-of-list-fix
     llist-fix
-    (:type-prescription list-fix)
+    (:t list-fix)
     (:type-prescription len)
     list-fix-when-true-listp))
 

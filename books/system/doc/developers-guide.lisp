@@ -1583,6 +1583,7 @@
  @({
  git checkout master
  git merge my-branch
+ # Possibly run ``regression-everything'' before the final push just below.
  git push https://github.com/acl2/acl2 master
  })</li>
  </ol>

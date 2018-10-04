@@ -4901,7 +4901,7 @@
     (e/d
      (fat32-in-memory-to-string nats=>chars-of-revappend
                                 data-region-length
-                                fix-true-list-when-true-listp)
+                                true-list-fix-when-true-listp)
      (reverse-removal)))))
 
 (encapsulate
@@ -5376,7 +5376,7 @@
                     fat32-in-memory
                     (fat-length fat32-in-memory))))))
   :hints
-  (("goal" :in-theory (enable fix-true-list-when-true-listp make-fat-string-ac))))
+  (("goal" :in-theory (enable true-list-fix-when-true-listp make-fat-string-ac))))
 
 (defthm
   fat32-in-memory-to-string-inversion-lemma-52
@@ -5427,7 +5427,7 @@
   (("goal" :in-theory (enable fat32-in-memory-to-string
                               nats=>chars-of-revappend
                               data-region-length
-                              fix-true-list-when-true-listp))))
+                              true-list-fix-when-true-listp))))
 
 (encapsulate
   ()
@@ -5458,7 +5458,7 @@
 (encapsulate
   ()
 
-  (local (in-theory (e/d (nthcdr-when->=-n-len-l fix-true-list-when-true-listp
+  (local (in-theory (e/d (nthcdr-when->=-n-len-l true-list-fix-when-true-listp
                                                  chars=>nats-of-revappend
                                                  nats=>chars-of-revappend
                                                  update-data-region-correctness-1

@@ -204,7 +204,7 @@
   '((:type-prescription intersection-equal)
     (:type-prescription set-difference-equal)
     (:type-prescription duplicated-members)
-    (:type-prescription list-fix)
+    (:t list-fix)
     (:type-prescription rev)
     (:type-prescription len)
     deflist-lemma-member-of-car

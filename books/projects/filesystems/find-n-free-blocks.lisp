@@ -214,8 +214,9 @@
 
 (defthm
   count-free-blocks-alt-correctness-2-lemma-1
-  (equal (count-free-blocks (fix-true-list alv))
-         (count-free-blocks alv)))
+  (equal (count-free-blocks (true-list-fix alv))
+         (count-free-blocks alv))
+  :hints (("Goal" :in-theory (enable true-list-fix))))
 
 (defthm
   count-free-blocks-alt-correctness-2

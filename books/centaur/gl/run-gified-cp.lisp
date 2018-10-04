@@ -1389,7 +1389,7 @@
                         (:META ACL2::CANCEL_PLUS-EQUAL-CORRECT)
                         ; (:REWRITE RUN-GIFIED-EV-CONSTRAINT-3)
                         ;; (:REWRITE ACL2::SYMBOLP-ASSOC-EQUAL)
-                        (:DEFINITION ACL2::LIST-FIX)
+                        (:d acl2::list-fix)
                         (:REWRITE GEVAL-LIST-DEF-THM-CORRECT)
                         (:DEFINITION SYMBOL-LISTP)
                         (:REWRITE CHEAP-DEFAULT-CDR)
