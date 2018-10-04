@@ -408,6 +408,10 @@
 (assert! (let ((topic (xdoc::find-topic 'm3 (xdoc::get-xdoc-table (w state)))))
            (not topic)))
 
+(deflist nonempty-intlist-p (x) (integerp x) :non-emptyp t)
+(deflist nonempty-intlist2-p (x) (integerp x) :non-emptyp t :elementp-of-nil nil)
+(deflist nonempty-int-truelist-p (x) (integerp x) :non-emptyp t :true-listp t)
+(deflist nonempty-int-truelist2-p (x) (integerp x) :non-emptyp t :true-listp t :elementp-of-nil nil)
 
 
 

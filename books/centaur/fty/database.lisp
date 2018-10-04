@@ -120,6 +120,7 @@
    elt-equiv          ;; element equiv function, e.g., foo-equiv
    measure            ;; termination measure, e.g., (two-nats-measure ...)
    xvar               ;; special x variable name, e.g., mypkg::x
+   non-emptyp         ;; require the list to be non-empty
    kwd-alist          ;; alist of options, see *flexlist-keywords*
    true-listp         ;; boolean -- should we require a nil final cdr?
    elementp-of-nil    ;; t, nil, or :unknown -- for optimizing theorems

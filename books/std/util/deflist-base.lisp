@@ -65,6 +65,7 @@ generates basic, automatic @(see xdoc) documentation.</p>
    :verify-guards           t
    :guard-hints             nil
    :guard-debug             nil
+   :non-emptyp              nil
    :mode                    current defun-mode
    :cheap                   nil
    :verbosep                nil
@@ -323,6 +324,7 @@ of which recognizers require true-listp and which don't.</p>")
     :guard-hints
     :already-definedp
     :elementp-of-nil
+    :non-emptyp
     :mode
     :parents
     :short
@@ -338,14 +340,18 @@ of which recognizers require true-listp and which don't.</p>")
 
 (defun deflist-substitution (name formals element kwd-alist x)
   (b* ((negatedp (getarg :negatedp nil kwd-alist))
-       (true-listp (getarg :true-listp nil kwd-alist)))
+       (true-listp (getarg :true-listp nil kwd-alist))
+       (non-emptyp (getarg :non-emptyp nil kwd-alist)))
     `((acl2::element-p ,(if negatedp
                             `(lambda (,x) (not ,element))
                           `(lambda (,x) ,element)))
       (acl2::non-element-p ,(if negatedp
                                 `(lambda (,x) ,element)
                               `(lambda (,x) (not ,element))))
-      (acl2::element-list-p (lambda (,x) (,name . ,formals)))
+      (,(if non-emptyp
+            'acl2::element-list-nonempty-p
+          'acl2::element-list-p)
+       (lambda (,x) (,name . ,formals)))
       (acl2::element-list-final-cdr-p ,(if true-listp
                                            'not
                                          '(lambda (x) t))))))
@@ -400,6 +406,8 @@ of which recognizers require true-listp and which don't.</p>")
             (list 'not call))))
        (acl2::element-list-p
         (cons name (subst (cadr body) x formals)))
+       (acl2::element-list-nonempty-p
+        (cons name (subst (cadr body) x formals)))
        (t (if (symbolp (car body))
               (cons (car body)
                     (deflist-thmbody-list-subst (cdr body) element name formals x negatedp))
@@ -413,7 +421,9 @@ of which recognizers require true-listp and which don't.</p>")
 
 (defun deflist-thmname-subst (thmname listp-name elementp)
   (b* ((thmname (symbol-name thmname))
-       (subst-list `(("ELEMENT-LIST-P" . ,(symbol-name listp-name))
+       (subst-list `(("ELEMENT-LIST-NONEMPTY-P" . ,(symbol-name listp-name))
+                     ("ELEMENT-LIST-NONEMPTY" . ,(symbol-name listp-name))
+                     ("ELEMENT-LIST-P" . ,(symbol-name listp-name))
                      ("ELEMENT-LIST" . ,(symbol-name listp-name))
                      ("ELEMENT-P" . ,(symbol-name elementp))
                      ("ELEMENT" . ,(symbol-name elementp)))))
@@ -485,13 +495,15 @@ of which recognizers require true-listp and which don't.</p>")
               formals kwd-alist x req-alist fn-subst world))))
 
 (defun deflist-instantiate-table-thms (name formals element kwd-alist x world)
-  (b* ((table
+  (b* ((non-emptyp (getarg :non-emptyp nil kwd-alist))
+       (table
         ;; [Jared] added this reverse because it's nice for documentation for
         ;; the simpler rules (atom, consp, etc.) to show up first.  Since new
         ;; rules just get consed onto the table, if we don't do this reverse
         ;; then the first things you see are rules about revappend, remove,
         ;; last, etc., which are kind of obscure.
-        (reverse (table-alist 'acl2::listp-rules world)))
+        
+        (reverse (table-alist (if non-emptyp 'acl2::nonempty-listp-rules 'acl2::listp-rules) world)))
        (fn-subst (deflist-substitution name formals element kwd-alist x))
        (req-alist (deflist-requirement-alist kwd-alist formals element)))
     (deflist-instantiate-table-thms-aux table element name formals kwd-alist x req-alist fn-subst world)))
@@ -558,7 +570,7 @@ of which recognizers require true-listp and which don't.</p>")
        (short            (getarg :short            nil      kwd-alist))
        (long             (getarg :long             nil      kwd-alist))
        (theory-hack      (getarg :theory-hack      nil      kwd-alist))
-
+       (non-emptyp       (getarg :non-emptyp       nil      kwd-alist))
 
 
        (rest             (append
@@ -613,6 +625,13 @@ of which recognizers require true-listp and which don't.</p>")
                          \"loose\" in that it does not care whether @('x') is
                          nil-terminated.</p>"))))
 
+       (car-test (if negatedp
+                     `(not (,elementp ,@(subst `(car ,x) x elem-formals)))
+                   `(,elementp ,@(subst `(car ,x) x elem-formals))))
+       (end-test (if true-listp
+                     `(null ,x)
+                   t))
+
        (def (if already-definedp
                 ;; Stupid hack to allow adding boilerplate documentation to
                 ;; already-defined functions.  This isn't quite as good as
@@ -654,14 +673,17 @@ of which recognizers require true-listp and which don't.</p>")
                          `(:verify-guards ,verify-guards
                            :guard-debug   ,guard-debug
                            :guard-hints   ,guard-hints))
-                  (if (consp ,x)
-                      (and ,(if negatedp
-                                `(not (,elementp ,@(subst `(car ,x) x elem-formals)))
-                              `(,elementp ,@(subst `(car ,x) x elem-formals)))
-                           (,name ,@(subst `(cdr ,x) x formals)))
-                    ,(if true-listp
-                         `(null ,x)
-                       t))))))
+                  ,(if non-emptyp
+                       `(and (consp ,x)
+                             ,car-test
+                             (let ((,x (cdr ,x)))
+                               (if (consp ,x)
+                                   (,name ,@formals)
+                                 ,end-test)))
+                     `(if (consp ,x)
+                          (and ,car-test
+                               (,name ,@(subst `(cdr ,x) x formals)))
+                        ,end-test))))))
 
        ((when (eq mode :program))
         `(encapsulate nil

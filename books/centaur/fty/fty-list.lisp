@@ -39,6 +39,7 @@
     :equiv
     :count
     :elt-type
+    :non-emptyp
     :measure
     :measure-debug
     :xvar
@@ -74,6 +75,7 @@
        (pred  (getarg! :pred  (intern-in-package-of-symbol (cat (symbol-name name) "-P") name) kwd-alist))
        (fix   (getarg! :fix   (intern-in-package-of-symbol (cat (symbol-name name) "-FIX") name) kwd-alist))
        (equiv (getarg! :equiv (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV") name) kwd-alist))
+       (non-emptyp (getarg :non-emptyp nil kwd-alist))
        (elementp-of-nil (getarg :elementp-of-nil :unknown kwd-alist))
        (cheap           (getarg :cheap           nil kwd-alist))
        (count (flextype-get-count-fn name kwd-alist))
@@ -96,6 +98,7 @@
                    :elementp-of-nil elementp-of-nil
                    :cheap cheap
                    :measure measure
+                   :non-emptyp non-emptyp
                    :kwd-alist (if post-///
                                   (cons (cons :///-events post-///)
                                         kwd-alist)
@@ -132,12 +135,21 @@
              :measure ,x.measure
              ,@(and (getarg :measure-debug nil x.kwd-alist)
                     `(:measure-debug t))
-             (if (atom ,x.xvar)
-                 ,(if x.true-listp
-                      `(eq ,x.xvar nil)
-                    t)
-               (and (,x.elt-type (car ,x.xvar))
-                    (,x.pred (cdr ,x.xvar))))
+             ,(if x.non-emptyp
+                  `(and (consp ,x.xvar)
+                        (,x.elt-type (car ,x.xvar))
+                        (let ((,x.xvar (cdr ,x.xvar)))
+                          (if (atom ,x.xvar)
+                              ,(if x.true-listp
+                                   `(eq ,x.xvar nil)
+                                 t)
+                            (,x.pred ,x.xvar))))
+                `(if (atom ,x.xvar)
+                     ,(if x.true-listp
+                          `(eq ,x.xvar nil)
+                        t)
+                   (and (,x.elt-type (car ,x.xvar))
+                        (,x.pred (cdr ,x.xvar)))))
              ///))
        (local (in-theory (disable ,x.pred)))
        (std::deflist ,x.pred (,stdx)
@@ -147,6 +159,7 @@
          ,@(and (not (eq x.elementp-of-nil :unknown))
                 `(:elementp-of-nil ,x.elementp-of-nil))
          :true-listp ,x.true-listp
+         :non-emptyp ,x.non-emptyp
          :cheap ,x.cheap)
        ;; (defthm ,(intern-in-package-of-symbol (cat (symbol-name x.pred) "-OF-CONS")
        ;;                                       x.pred)
@@ -211,12 +224,22 @@
        :progn t
        ;; [Jared]: inlining this since it's just an identity function
        :inline t
-       (mbe :logic (if (atom ,x.xvar)
-                       ,(if x.true-listp
-                            nil
-                          x.xvar)
-                     (cons (,x.elt-fix (car ,x.xvar))
-                           (,x.fix (cdr ,x.xvar))))
+       (mbe :logic
+            ,(if x.non-emptyp
+                 ;; ugly def to avoid needing ruler-extenders
+                 `(if (consp (cdr ,x.xvar))
+                      (cons (,x.elt-fix (car ,x.xvar))
+                            (,x.fix (cdr ,x.xvar)))
+                    (cons (,x.elt-fix (car ,x.xvar))
+                          ,(if x.true-listp
+                               nil
+                             `(cdr ,x.xvar))))
+               `(if (atom ,x.xvar)
+                    ,(if x.true-listp
+                         nil
+                       x.xvar)
+                  (cons (,x.elt-fix (car ,x.xvar))
+                        (,x.fix (cdr ,x.xvar)))))
             :exec ,x.xvar))))
 
 (define flexlist-fix-postevents (x)
@@ -225,6 +248,8 @@
        (stdx              (intern-in-package-of-symbol "X" x.pred))
        (stda              (intern-in-package-of-symbol "A" x.pred))
        (consp-of-foo-fix  (intern-in-package-of-symbol (cat "CONSP-OF-" (symbol-name x.fix)) x.fix))
+       (consp-cdr-of-foo-fix  (intern-in-package-of-symbol (cat "CONSP-CDR-OF-" (symbol-name x.fix)) x.fix))
+       (car-of-foo-fix    (intern-in-package-of-symbol (cat "CAR-OF-" (symbol-name x.fix)) x.fix))
        (foo-fix-under-iff (intern-in-package-of-symbol (cat (symbol-name x.fix) "-UNDER-IFF") x.fix))
        (foo-fix-of-cons   (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-CONS") x.fix))
        (len-of-foo-fix    (intern-in-package-of-symbol (cat "LEN-OF-" (symbol-name x.fix)) x.fix))
@@ -236,52 +261,82 @@
 
       (deffixcong ,x.equiv ,x.equiv (cdr x) x
         :pkg ,x.equiv
-        :hints (("goal" :expand ((,x.fix x)))))
+        :hints (("goal" :expand ((,x.fix x)
+                                 ,@(and x.non-emptyp
+                                        `((,x.fix (cdr x)))))
+                 ,@(and x.non-emptyp
+                        '(:in-theory (enable default-car))))))
 
       (deffixcong ,x.elt-equiv ,x.equiv (cons x y) x
         :pkg ,x.equiv
         :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
 
-      (deffixcong ,x.equiv ,x.equiv (cons x y) y
-        :pkg ,x.equiv
-        :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
+      ,@(and (not x.non-emptyp)
+             `((deffixcong ,x.equiv ,x.equiv (cons x y) y
+                 :pkg ,x.equiv
+                 :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))))
 
       (defthm ,consp-of-foo-fix
-        (equal (consp (,x.fix x))
-               (consp x))
+        ,(if x.non-emptyp
+             `(consp (,x.fix x))
+           `(equal (consp (,x.fix x))
+                   (consp x)))
         :hints (("goal" :expand ((,x.fix x)))))
 
-      ,@(and x.true-listp
+      ,@(and x.non-emptyp
+             `((defthm ,consp-cdr-of-foo-fix
+                 (equal (consp (cdr (,x.fix x)))
+                        (consp (cdr x)))
+                 :hints (("goal" :expand ((,x.fix x)))))
+
+               (defthm ,car-of-foo-fix
+                 (equal (car (,x.fix x))
+                        (,x.elt-fix (car x)))
+                 :hints (("goal" :expand ((,x.fix x)))))))
+
+      ,@(and (or x.true-listp x.non-emptyp)
              `((defthm ,foo-fix-under-iff
-                 (iff (,x.fix x)
-                      (consp x))
+                 ,(if x.non-emptyp
+                      `(,x.fix x)
+                    `(iff (,x.fix x)
+                          (consp x)))
                  :hints (("goal" :expand ((,x.fix x)))))))
 
       (defthm ,foo-fix-of-cons
         ;; bozo make sure this is compatible with defprojection
         (equal (,x.fix (cons ,stda ,stdx))
                (cons (,x.elt-fix ,stda)
-                     (,x.fix ,stdx)))
+                     ,(if x.non-emptyp
+                          (if x.true-listp
+                              `(and (consp ,stdx)
+                                    (,x.fix ,stdx))
+                            `(if (consp ,stdx)
+                                 (,x.fix ,stdx)
+                               ,stdx))
+                        `(,x.fix ,stdx))))
         :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
 
       (defthm ,len-of-foo-fix
         (equal (len (,x.fix x))
-               (len x))
+               ,(if x.non-emptyp
+                    `(max 1 (len x))
+                  `(len x)))
         :hints (("goal" :induct (len x)
                  :expand ((,x.fix x))
                  :in-theory (enable len))))
 
-      (defthm ,foo-fix-of-append
-        (equal (,x.fix (append std::a std::b))
-               (append (,x.fix std::a) (,x.fix std::b)))
-        :hints (("goal" :induct (append std::a std::b)
-                 :expand ((,x.fix std::a)
-                          (:free (a b) (,x.fix (cons a b)))
-                          (,x.fix nil)
-                          (:free (b) (append std::a b))
-                          (:free (b) (append nil b))
-                          (:free (a b c) (append (cons a b) c)))
-                 :in-theory (enable (:i append))))))))
+      ,@(and (not x.non-emptyp)
+             `((defthm ,foo-fix-of-append
+                 (equal (,x.fix (append std::a std::b))
+                        (append (,x.fix std::a) (,x.fix std::b)))
+                 :hints (("goal" :induct (append std::a std::b)
+                          :expand ((,x.fix std::a)
+                                   (:free (a b) (,x.fix (cons a b)))
+                                   (,x.fix nil)
+                                   (:free (b) (append std::a b))
+                                   (:free (b) (append nil b))
+                                   (:free (a b c) (append (cons a b) c)))
+                          :in-theory (enable (:i append))))))))))
 
 (define flexlist-fix-when-pred-thm (x flagp)
   (b* (((flexlist x))
@@ -302,21 +357,29 @@
        ((unless x.count) nil)
        (eltcount (flextypes-find-count-for-pred x.elt-type types)))
     `((define ,x.count ((,x.xvar ,x.pred))
-       :returns (count natp
-                       :rule-classes :type-prescription
-                       :hints ('(:expand (,x.count ,x.xvar)
-                                 :in-theory (disable ,x.count))))
-       :measure (let ((,x.xvar (,x.fix ,x.xvar)))
-                  ,x.measure)
-       ,@(and (getarg :measure-debug nil x.kwd-alist)
-              `(:measure-debug t))
-       :verify-guards nil
-       :progn t
-       (if (atom ,x.xvar)
-           1
-         (+ 1
-            ,@(and eltcount `((,eltcount (car ,x.xvar))))
-            (,x.count (cdr ,x.xvar))))))))
+        :returns (count natp
+                        :rule-classes :type-prescription
+                        :hints ('(:expand (,x.count ,x.xvar)
+                                  :in-theory (disable ,x.count))))
+        :measure (let ((,x.xvar (,x.fix ,x.xvar)))
+                   ,x.measure)
+        ,@(and (getarg :measure-debug nil x.kwd-alist)
+               `(:measure-debug t))
+        :verify-guards nil
+        :progn t
+        ,(if x.non-emptyp
+             ;; ugly def to avoid needing ruler-extenders
+             `(if (consp (cdr ,x.xvar))
+                  (+ 1
+                     ,@(and eltcount `((,eltcount (car ,x.xvar))))
+                     (,x.count (cdr ,x.xvar)))
+                (+ 1
+                   ,@(and eltcount `((,eltcount (car ,x.xvar))))))
+           `(if (atom ,x.xvar)
+                1
+              (+ 1
+                 ,@(and eltcount `((,eltcount (car ,x.xvar))))
+                 (,x.count (cdr ,x.xvar)))))))))
 
 
 (defun flexlist-count-post-events (x types)
@@ -328,20 +391,30 @@
        (foo-count-of-cdr  (intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-CDR") x.count))
        (foo-count-of-car  (intern-in-package-of-symbol (cat (symbol-name eltcount) "-OF-CAR") x.count)))
     `((defthm ,foo-count-of-cons
-        (> (,x.count (cons a b))
-           ,(if eltcount
-                `(+ (,eltcount a) (,x.count b))
-              `(,x.count b)))
+        ,(let ((body `(> (,x.count (cons a b))
+                         ,(if eltcount
+                              `(+ (,eltcount a) (,x.count b))
+                            `(,x.count b)))))
+           (if x.non-emptyp
+               `(implies (consp b)
+                         ,body)
+             body))
         :hints (("goal" :expand ((:free (a b) (,x.count (cons a b))))))
         :rule-classes :linear)
 
       ,@(and eltcount
              `((defthm ,foo-count-of-car
-                 (implies (consp ,x.xvar)
+                 (implies ,(if x.non-emptyp
+                               t
+                             `(consp ,x.xvar))
                           (< (,eltcount (car ,x.xvar)) (,x.count ,x.xvar)))
+                 ,@(and x.non-emptyp
+                        `(:hints (("goal" :expand ((,x.count ,x.xvar))))))
                  :rule-classes :linear)))
 
       (defthm ,foo-count-of-cdr
-        (implies (consp ,x.xvar)
+        (implies ,(if x.non-emptyp
+                      `(consp (cdr ,x.xvar))
+                    `(consp ,x.xvar))
                  (< (,x.count (cdr ,x.xvar)) (,x.count ,x.xvar)))
         :rule-classes :linear))))

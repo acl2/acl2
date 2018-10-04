@@ -1250,6 +1250,29 @@
     :measure (two-nats-measure (acl2-count x) 0)
     :elt-type inner-name))
 
+(deftypes outer-name2
+  (deftagsum inner-name2
+    :measure (two-nats-measure (acl2-count x) 1)
+    (:inner ((fn   integerp)
+             (args inner-name2list)))
+    (:outer ((fn symbolp))))
+  (deflist inner-name2list
+    :measure (two-nats-measure (acl2-count x) 2)
+    :elt-type inner-name2
+    :non-emptyp t))
+
+(deftypes outer-name3
+  (deftagsum inner-name3
+    :measure (two-nats-measure (acl2-count x) 1)
+    (:inner ((fn   integerp)
+             (args inner-name3list)))
+    (:outer ((fn symbolp))))
+  (deflist inner-name3list
+    :measure (two-nats-measure (acl2-count x) 2)
+    :elt-type inner-name3
+    :non-emptyp t
+    :true-listp t))
+
 
 (deftranssum nested-transsum-2
   (3ple-d inner-name)
