@@ -1,0 +1,13 @@
+
+(include-book "std/portcullis" :dir :system)
+(include-book "centaur/fty/portcullis" :dir :system)
+
+(defpkg "VIZ"
+  (append std::*std-exports*
+          '(fty::defprod
+             fty::deftypes
+             fty::deftagsum
+             b*)
+          acl2::*standard-acl2-imports*))
+
+; cert-flags: ? t :ttags :all

@@ -1272,9 +1272,11 @@ is returned.  I.e.,</p>
 instead of @('if').</p>"
   :decls ((declare (xargs :guard (and (consp args) (eq (cdr args) nil)))))
   :body
-  `(if ,(car args)
-       (progn$ . ,forms)
-     ,rest-expr))
+  (if forms
+      `(if ,(car args)
+           (progn$ . , forms)
+         ,rest-expr)
+    `(or ,(car args) ,rest-expr)))
 
 (def-b*-binder unless
   :short "@(see b*) control flow operator."

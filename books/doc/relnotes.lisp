@@ -45,6 +45,9 @@
 (include-book "kestrel/apt/portcullis" :dir :system)
 (include-book "kestrel/soft/portcullis" :dir :system)
 (include-book "kestrel/abnf/portcullis" :dir :system)
+(include-book "kestrel/java/portcullis" :dir :system)
+(include-book "kestrel/ethereum/portcullis" :dir :system)
+(include-book "kestrel/bitcoin/portcullis" :dir :system)
 
 ; Please note:
 ;
@@ -118,6 +121,11 @@
 
  </ul>
 
+ <h4>Other</h4>
+
+ <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
+ for the Graphviz @('.dot') file syntax and a printer for that syntax.</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
@@ -181,6 +189,14 @@
  and renamed.  The uses of the macro to generate return type theorems for
  specific power-of-2 bases have been split into several files so that they can
  be included individually as needed.</p>
+
+ <h4>FTY Type Definition Library</h4>
+
+ <p>Added an option @(':non-emptyp') to @('fty::deflist') and @('std::deflist')
+ to define list types that must contain at least one element.</p>
+
+ <p>Added a book @('[books]/centaur/fty/typegraph.lisp') containing a utility that
+ writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
 
  <h4>Other</h4>
 
