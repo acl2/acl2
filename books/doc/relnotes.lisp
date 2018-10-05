@@ -154,7 +154,7 @@
  Prover: an Application to FAT32</i>, to appear in the proceedings of
  ACL2-2018.</p>
 
- <h4>System-level Utilities</h4>
+ <h4>System Utilities</h4>
 
  <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
  inside @('lambda') (@('let')) bodies.</p>
