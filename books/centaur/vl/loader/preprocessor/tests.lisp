@@ -32,6 +32,7 @@
 (include-book "top")
 (include-book "print-defines")
 (include-book "../../mlib/print-warnings")
+(include-book "oslib/ls" :dir :system)
 (local (include-book "../../util/arithmetic"))
 
 ;; This will get run any time the book is included.

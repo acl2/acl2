@@ -51,6 +51,10 @@
 (include-book "../loader/preprocessor/tests")
 (include-book "../loader/parser/tests/top")
 
+; Fool the dependency scanner into building additional books loaded
+; in save.lsp
+(include-book "oslib/top" :dir :system)
+
 ||#
 
 (defconst *vl-generic-help*

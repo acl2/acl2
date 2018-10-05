@@ -60,6 +60,8 @@
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (include-book "std/util/defconsts" :dir :system)
+(include-book "oslib/ls" :dir :system)
+
 ;; (local (include-book "centaur/esim/stv/stv-decomp-proofs-even-better" :dir :system))
 ; (depends-on "boothpipe.v")
 ; cert_param: (hons-only)

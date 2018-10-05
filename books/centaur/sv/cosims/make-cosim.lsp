@@ -31,6 +31,7 @@
 (in-package "SV")
 (set-deferred-ttag-notes t state)
 (include-book "cosims")
+(include-book "oslib/top" :dir :system)
 (set-fmt-hard-right-margin 200 state)
 (set-fmt-soft-right-margin 160 state)
 :q
