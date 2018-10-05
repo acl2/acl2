@@ -154,9 +154,10 @@
 	 "-bit value from memory via an effective address."))
        (long-doc-string
 	(str::cat
-	 "<p>The effective address @('eff-addr') is translated to a linear
-	address and then @(see " lin-mem-fn ") is called.  If the resulting
-	linear address is not canonical, an error occurs.</p>")))
+	 "<p>The effective address @('eff-addr') is translated to a canonical
+	linear address using @(see ea-to-la).  If this translation is
+	successful and no other errors (like alignment errors) occur, then
+	@(see " lin-mem-fn ") is called.</p>")))
 
     `(define ,fn-name ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
 		       (eff-addr  :type (signed-byte 64))
@@ -179,8 +180,6 @@
 
        (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
 	    ((when flg) (mv flg 0 x86))
-	    ((unless (canonical-address-p lin-addr))
-	     (mv (list :non-canonical-address lin-addr) 0 x86))
 	    ,@(and
 	       check-alignment?-var
 	       `(((unless (or (not check-alignment?)
@@ -499,14 +498,11 @@
   :short "Read an unsigned value with the specified number of bytes
 	  from memory via an effective address."
   :long
-  "<p> The effective address is translated to a linear address and
-   then @('rml-size') is called.  If the resulting linear address is
-   not canonical or if it is mis-aligned and @('check-alignment?') is
-   @('t'), an error occurs. </p>"
+  "<p>The effective address is translated to a canonical linear address using
+   @(see ea-to-la). If this translation is successful and no other errors (like
+   alignment errors) occur, then @(see rml-size) is called.</p>"
   (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
        ((when flg) (mv flg 0 x86))
-       ((unless (canonical-address-p lin-addr))
-	(mv (list :non-canonical-address lin-addr) 0 x86))
        ((unless (or (not check-alignment?)
 		    (address-aligned-p lin-addr nbytes mem-ptr?)))
 	(mv (list :unaligned-linear-address lin-addr) 0 x86)))
@@ -639,14 +635,11 @@
   :short "Read a signed value with the specified number of bytes
 	  from memory via an effective address."
   :long
-  "<p> The effective address is translated to a linear address and
-   then @('riml-size') is called.  If the resulting linear address is
-   not canonical or if it is mis-aligned and @('check-alignment?')  is
-   @('t'), an error occurs.  </p>"
+  "<p>The effective address is translated to a canonical linear address using
+   @(see ea-to-la). If this translation is successful and no other errors (like
+   alignment errors) occur, then @(see riml-size) is called.</p>"
   (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
        ((when flg) (mv flg 0 x86))
-       ((unless (canonical-address-p lin-addr))
-	(mv (list :non-canonical-address lin-addr) 0 x86))
        ((unless (or (not check-alignment?)
 		    (address-aligned-p lin-addr nbytes mem-ptr?)))
 	(mv (list :unaligned-linear-address lin-addr) 0 x86)))
@@ -687,20 +680,20 @@
     :in-theory (e/d (ea-to-la) ()))
 
   (defthm rime-size-unaligned-when-64-bit-modep-and-not-fs/gs
-  ;; [Shilpi] Added for guard proof obligations generated from the expansion
-  ;; of rime-size-opt.
-  (implies (and (not (equal seg-reg #.*fs*))
-		(not (equal seg-reg #.*gs*))
-		(not
-		 (or (not check-alignment?)
-		     (address-aligned-p eff-addr nbytes mem-ptr?)))
-		(canonical-address-p eff-addr))
-	   (equal (rime-size #.*64-bit-mode*
-			     nbytes eff-addr seg-reg r-x check-alignment? x86
-			     :mem-ptr? mem-ptr?)
-		  (list (list :unaligned-linear-address eff-addr)
-			0 x86)))
-  :hints (("Goal" :in-theory (e/d (rime-size) ()))))
+    ;; [Shilpi] Added for guard proof obligations generated from the expansion
+    ;; of rime-size-opt.
+    (implies (and (not (equal seg-reg #.*fs*))
+		  (not (equal seg-reg #.*gs*))
+		  (not
+		   (or (not check-alignment?)
+		       (address-aligned-p eff-addr nbytes mem-ptr?)))
+		  (canonical-address-p eff-addr))
+	     (equal (rime-size #.*64-bit-mode*
+			       nbytes eff-addr seg-reg r-x check-alignment? x86
+			       :mem-ptr? mem-ptr?)
+		    (list (list :unaligned-linear-address eff-addr)
+			  0 x86)))
+    :hints (("Goal" :in-theory (e/d (rime-size) ()))))
 
   (defthm rime-size-non-canonical-when-64-bit-modep-and-not-fs/gs
     ;; [Shilpi] Added for guard proof obligations generated from the expansion
@@ -768,9 +761,10 @@
 	 "-bit value to memory via an effective address."))
        (long-doc-string
 	(str::cat
-	 "<p>The effective address @('eff-addr') is translated to a linear
-	address and then @(see " lin-mem-fn ") is called.  If the resulting
-	linear address is not canonical, an error occurs.</p>")))
+	 "<p>The effective address @('eff-addr') is translated to a canonical
+	linear address.  If this translation is successful and no other error
+	occurs (like alignment errors), then @(see " lin-mem-fn ") is
+	called.</p>")))
 
     `(define ,fn-name ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
 		       (eff-addr  :type (signed-byte 64))
@@ -790,8 +784,6 @@
 
        (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
 	    ((when flg) (mv flg x86))
-	    ((unless (canonical-address-p lin-addr))
-	     (mv (list :non-canonical-address lin-addr) x86))
 	    ,@(and
 	       check-alignment?-var
 	       `(((unless (or (not check-alignment?)
@@ -949,14 +941,11 @@
   :short "Write an unsigned value with the specified number of bytes
 	  to memory via an effective address."
   :long
-  "<p> The effective address is translated to a linear address and
-   then @('wml-size') is called.  If the resulting linear address is
-   not canonical or if it is mis-aligned and @('check-alignment?') is
-   @('t'), an error occurs.  </p>"
+  "<p>The effective address is translated to a canonical linear address.  If
+   this translation is successful and no other errors occur (like alignment
+   errors), then @(see wml-size) is called.</p>"
   (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
        ((when flg) (mv flg x86))
-       ((unless (canonical-address-p lin-addr))
-	(mv (list :non-canonical-address lin-addr) x86))
        ((unless (or (not check-alignment?)
 		    (address-aligned-p lin-addr nbytes mem-ptr?)))
 	(mv (list :unaligned-linear-address lin-addr) x86)))
@@ -1050,14 +1039,11 @@
   :short "Write a signed value with the specified number of bytes
 	  to memory via an effective address."
   :long
-  "<p> The effective address is translated to a linear address and
-   then @('wiml-size') is called.  If the resulting linear address is
-   not canonical or if it is mis-aligned and @('check-alignment?') is
-   @('t'), an error occurs.  </p>"
+  "<p>The effective address is translated to a canonical linear address.  If
+   this translation is successful and no other errors occur (like alignment
+   errors), then @(see wiml-size) is called.</p>"
   (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
        ((when flg) (mv flg x86))
-       ((unless (canonical-address-p lin-addr))
-	(mv (list :non-canonical-address lin-addr) x86))
        ((unless (or (not check-alignment?)
 		    (address-aligned-p lin-addr nbytes mem-ptr?)))
 	(mv (list :unaligned-linear-address lin-addr) x86)))

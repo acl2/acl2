@@ -222,9 +222,9 @@
   (defrule segment-base-and-bound-of-xw
     (implies
      (and (not (equal fld :msr))
-          (not (equal fld :seg-hidden-base))
+	  (not (equal fld :seg-hidden-base))
 	  (not (equal fld :seg-hidden-limit))
-          (not (equal fld :seg-hidden-attr)))
+	  (not (equal fld :seg-hidden-attr)))
      (equal (segment-base-and-bounds proc-mode seg-reg (xw fld index value x86))
 	    (segment-base-and-bounds proc-mode seg-reg x86)))))
 
@@ -235,7 +235,7 @@
   :returns (mv flg
 	       (lin-addr i64p :hyp (i64p eff-addr)))
   :parents (segmentation)
-  :short "Translate an effective address to a linear address."
+  :short "Translate an effective address to a <i>canonical</i> linear address."
   :long
   "<p>
    This translation is illustrated in Intel manual, Mar'17, Vol. 3A, Fig. 3-5,
@@ -291,16 +291,13 @@
    <p>
    If the translation is successful,
    this function returns a signed 64-bit integer
-   that represents a linear address.
-   In 64-bit mode, when the segment register is FS or GS,
-   the 64-bit linear address that results from the translation
-   is checked to be canonical before returning it.
-   In 64-bit mode, when the segment register is not FS or GS,
-   the effective address is returned unmodified as a linear address,
-   because segment translation should be a no-op in this case;
-   the returned linear address may be canonical or not,
-   but it is checked to be canonical elsewhere,
-   before accessing memory via paging.
+   that represents a <i>canonical</i> linear address.
+   In 64-bit mode, when the segment register is not FS or GS, the effective
+   address is returned unmodified as a linear address, because segment
+   translation should be a no-op in this case; otherwise, the effective address
+   is translated to a linear address.  In both cases, this linear address is
+   checked to be canonical; if not, an error flag is returned, otherwise, a
+   canonical linear address is returned.
    In 32-bit mode, the 32-bit linear address that results from the translation
    is always canonical.
    If the translation fails,
@@ -314,15 +311,17 @@
   (case proc-mode
 
     (#.*64-bit-mode*
-     (if (or (eql seg-reg #.*fs*)
-	     (eql seg-reg #.*gs*))
-	 (b* (((mv base & &)
-	       (segment-base-and-bounds #.*64-bit-mode* seg-reg x86))
-	      (lin-addr (i64 (+ base (n64 eff-addr)))))
-	   (if (canonical-address-p lin-addr)
-	       (mv nil lin-addr)
-	     (mv (list :non-canonical-address lin-addr) 0)))
-       (mv nil eff-addr)))
+     (b* ((lin-addr
+	   (if (or (eql seg-reg #.*fs*)
+		   (eql seg-reg #.*gs*))
+	       (b* (((mv base & &)
+		     (segment-base-and-bounds #.*64-bit-mode* seg-reg x86))
+		    (lin-addr (i64 (+ base (n64 eff-addr)))))
+		 lin-addr)
+	     eff-addr))
+	  ((unless (canonical-address-p lin-addr))
+	   (mv (list :non-canonical-address lin-addr) 0)))
+       (mv nil lin-addr)))
 
     (#.*compatibility-mode* ;; Maybe also *protected-mode*?
      (b* (((mv (the (unsigned-byte 32) base)
@@ -354,12 +353,19 @@
     :gen-type t
     :gen-linear t)
 
+  (defthm-sb ea-to-la-is-i48p-when-no-error
+    :hyp (not (mv-nth 0 (ea-to-la proc-mode eff-addr seg-reg x86)))
+    :bound 48
+    :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg x86))
+    :gen-type t
+    :gen-linear t)
+
   (defrule ea-to-la-of-xw
     (implies
      (and (not (equal fld :msr))
 	  (not (equal fld :seg-hidden-base))
-          (not (equal fld :seg-hidden-limit))
-          (not (equal fld :seg-hidden-attr)))
+	  (not (equal fld :seg-hidden-limit))
+	  (not (equal fld :seg-hidden-attr)))
      (equal (ea-to-la proc-mode eff-addr seg-reg (xw fld index value x86))
 	    (ea-to-la proc-mode eff-addr seg-reg x86))))
 
@@ -367,12 +373,10 @@
     (implies
      (and (not (equal seg-reg #.*fs*))
 	  (not (equal seg-reg #.*gs*)))
-     (and (equal
-	   (mv-nth 0 (ea-to-la #.*64-bit-mode* eff-addr seg-reg x86))
-	   nil)
-	  (equal
-	   (mv-nth 1 (ea-to-la #.*64-bit-mode* eff-addr seg-reg x86))
-	   eff-addr)))))
+     (equal (ea-to-la #.*64-bit-mode* eff-addr seg-reg x86)
+	    (if (canonical-address-p eff-addr)
+		(mv nil eff-addr)
+	      (mv (list :non-canonical-address eff-addr) 0))))))
 
 (define eas-to-las ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
 		    (n natp)

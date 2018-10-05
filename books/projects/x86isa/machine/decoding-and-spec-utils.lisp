@@ -2180,6 +2180,18 @@ reference made from privilege level 3.</blockquote>"
 (define rip-guard-okp
   ((proc-mode :type (integer 0     #.*num-proc-modes-1*))
    (rip       :type (signed-byte #.*max-linear-address-size*)))
+  :short "Size constraints on a memory address of some instruction byte"
+
+  :long "<p>This function specifies the maximum size of a memory address that
+  points to some instruction byte in a certain mode of operation.  We usually
+  use this function to specify the guard on @('start-rip') or @('temp-rip') ---
+  that way, we can put in suitable type declarations in our specification
+  functions.</p>
+
+  <p>This function doesn't really specify whether a memory address that points
+  to some instruction byte is valid or not --- that notion is much more
+  complicated; see @(see canonical-address-p), @(see ea-to-la), and @(see
+  instruction-pointer-operations) for details.</p>"
   :parents (decoding-and-spec-utils)
   :enabled t
   (if (equal proc-mode #.*64-bit-mode*)
