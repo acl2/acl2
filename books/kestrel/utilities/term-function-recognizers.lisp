@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc term-function-recognizers
-  :parents (term-utilities system-utilities)
+  :parents (term-utilities system-utilities-non-built-in)
   :short "Recognizers of functions in terms."
   :long
   "<p>

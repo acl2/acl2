@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection named-formulas
-  :parents (kestrel-utilities system-utilities)
+  :parents (kestrel-utilities system-utilities-non-built-in)
   :short "Utilities for named formulas."
   :long
   "<p>

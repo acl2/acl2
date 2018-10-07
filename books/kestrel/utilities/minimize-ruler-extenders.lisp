@@ -266,7 +266,7 @@
                         '(mod)))))
 
 (defxdoc minimize-ruler-extenders
-  :parents (kestrel-utilities system-utilities)
+  :parents (kestrel-utilities system-utilities-non-built-in)
   :short "Minimize the ruler-extenders necessary to admit a definition."
   :long "<p>@('Minimize-ruler-extenders') is really two utilities.  The first,
  which we call MIN_NEW below, admits a proposed @(tsee defun) or @(tsee defund)

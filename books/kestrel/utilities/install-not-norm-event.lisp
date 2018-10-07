@@ -1,6 +1,6 @@
 ; Non-Normalized Definition Installation Event
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2018, Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
@@ -26,7 +26,7 @@
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp): the name of the theorem."))
   :mode :program
-  :parents (kestrel-utilities system-utilities install-not-normalized)
+  :parents (system-utilities-non-built-in install-not-normalized)
   :short "Create an event form to
           <see topic='@(url install-not-normalized)'>install
           the non-normalized definition</see>
@@ -57,7 +57,7 @@
   :returns (mv (events "A list of @(tsee pseudo-event-formp) values.")
                (names "A @(tsee symbol-listp): the names of the theorems."))
   :mode :program
-  :parents (kestrel-utilities system-utilities install-not-normalized)
+  :parents (system-utilities-non-built-in install-not-normalized)
   :short "Create a list of event forms to
           <see topic='@(url install-not-normalized)'>install
           the non-normalized definitions</see>
@@ -103,7 +103,7 @@
   `(make-event (install-not-norm-fn ',fn ,allp ,names-to-avoid state)))
 
 (defxdoc install-not-norm
-  :parents (kestrel-utilities system-utilities install-not-normalized)
+  :parents (system-utilities-non-built-in install-not-normalized)
   :short "<see topic='@(url install-not-normalized)'>Install
           the non-normalized definition</see>
           of a function,

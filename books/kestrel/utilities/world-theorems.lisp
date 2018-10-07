@@ -1,6 +1,6 @@
 ; Theorems about World-Related Functions
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc theorems-about-world-related-functions
-  :parents (theorems-about-non-kestrel-books system-utilities)
+  :parents (theorems-about-non-kestrel-books system-utilities-non-built-in)
   :short "Theorems about world-related functions defined outside the
           <see topic='@(url kestrel-books)'>Kestrel Books</see>."
   :long

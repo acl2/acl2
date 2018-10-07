@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc term-utilities
-  :parents (kestrel-utilities system-utilities)
+  :parents (system-utilities-non-built-in)
   :short "Utilities for @(see term)s.")
 
 (define lambda-closedp ((lambd pseudo-lambdap))

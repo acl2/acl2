@@ -62,6 +62,7 @@
 (include-book "symbol-symbol-alists")
 (include-book "symbol-true-list-alists")
 (include-book "symbols")
+(include-book "system/top")
 (include-book "terms")
 (include-book "testing")
 (include-book "trans-eval-error-triple")

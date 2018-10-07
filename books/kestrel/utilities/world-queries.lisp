@@ -27,7 +27,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc world-queries
-  :parents (kestrel-utilities system-utilities)
+  :parents (system-utilities-non-built-in)
   :short "Utilities to query @(see world)s."
   :long
   "<p>

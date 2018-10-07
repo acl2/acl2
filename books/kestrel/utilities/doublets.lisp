@@ -17,14 +17,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection doublets-to-alist
-  :parents (kestrel-utilities system-utilities)
+  :parents (kestrel-utilities alist-to-doublets)
   :short "Turn a true list of doublets
           (i.e. lists of length 2)
           into the corresponding alist."
   :long
   "<p>
-   This is the inverse of
-   <see topic='@(url system-utilities)'>@('alist-to-doublets')</see>.
+   This is the inverse of @(tsee alist-to-doublets).
    </p>"
 
   (defun doublets-to-alist (doublets)

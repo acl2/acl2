@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defun-sk-queries
-  :parents (kestrel-utilities system-utilities defun-sk)
+  :parents (system-utilities-non-built-in defun-sk)
   :short "Utilities to query @(tsee defun-sk) functions."
   :long
   "<p>
