@@ -219,15 +219,24 @@
 ; event unless it's truly huge.
                       event
                       (evisc-tuple 12 12 nil nil)))))
-    `(orelse (with-output :stack :pop
+
+; It would be much simpler to use the following below:
+; (orelse ,event (fail-event ,ctx ,erp ,val ,msg))
+; The problem is that then output from make-event -- specifically, from its
+; summary -- can be printed.  The :stack :push from ORELSE by using :quiet t
+; prevents that, and the use of :stack :pop below (twice) undoes that ":push"
+; so that the ambient output environment is used for each event.
+
+    `(orelse (with-output :stack :pop ; see comment above for explanation
                ,event)
-             (with-output :stack :pop
+             (with-output :stack :pop ; see comment above for explanation
                (fail-event
                 ,ctx
                 ,erp ; erp
                 ,val ; val
                 ,msg))
-             :quiet t)))
+             :quiet t ; see comment above for explanation
+             )))
 
 ; Below is alternate code that takes advantage of the existing implementation
 ; of try-event.  It seems to me that the code above is a bit simpler; plus, it
