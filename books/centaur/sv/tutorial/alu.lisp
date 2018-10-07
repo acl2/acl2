@@ -54,6 +54,8 @@
 (include-book "tools/plev-ccl" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (include-book "support")
+(include-book "oslib/ls" :dir :system)
+
 ; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
 ; cert_param: (non-cmucl)

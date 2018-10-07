@@ -32,6 +32,8 @@
 (ld "cert.acl2")
 (in-package "VL")
 (include-book "top")
+(include-book "oslib/file-types" :dir :system)
+(include-book "oslib/top" :dir :system)
 (set-deferred-ttag-notes t state)
 (set-slow-alist-action :break)
 (set-gag-mode :goals)
