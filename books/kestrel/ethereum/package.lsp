@@ -14,7 +14,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpkg "ETHEREUM" (append *std-pkg-symbols*
+(defpkg "ETHEREUM" (append (set-difference-eq *std-pkg-symbols*
+                                              '(byte))
                            '(bendian=>nat
                              defxdoc+
                              lnfix

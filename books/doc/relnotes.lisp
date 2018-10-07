@@ -143,7 +143,10 @@
 
  <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
 
- <p>Improved the documentation of the Ethereum library.</p>
+ <p>Improved the documentation.</p>
+
+ <p>Improved several names by using @('byte') instead of @('ubyte8') and
+ @('nibble') instead of @('ubyte4').</p>
 
  <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
 

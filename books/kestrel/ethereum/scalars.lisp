@@ -18,7 +18,7 @@
 
 (defxdoc scalars
   :parents (basics)
-  :short "Modeling of scalars."
+  :short "Scalars."
   :long
   (xdoc::topp
    "[YP:3] says that scalars are
@@ -31,7 +31,7 @@
 
 (fty::defflexsum nat/error
   :parents (basics)
-  :short "Union of @(':error') and @(see scalars)."
+  :short "Union of @(see scalars) and @(':error')."
   (:error :fields () :ctor-body ':error :cond (eq x :error))
   (:bytes :fields ((nat :type nat :acc-body x)) :ctor-body nat))
 
