@@ -167,6 +167,10 @@
  <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
  inside @('lambda') (@('let')) bodies.</p>
 
+ <p>Several files @('[books]/kestrel/utilities/*.lisp') that contain system
+ utilities have been moved to the subdirectory
+ @('[books]/kestrel/utilities/system/').</p>
+
  <h4>Typed List Utilities</h4>
 
  <p>Refactored the old file

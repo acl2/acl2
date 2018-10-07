@@ -1,4 +1,4 @@
-; Non-Normalized Definition Installation Event -- Tests
+; System Utilities -- Non-Normalized Definition Installation Event -- Tests
 ;
 ; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,8 +11,8 @@
 (in-package "ACL2")
 
 (include-book "install-not-norm-event")
-(include-book "testing")
 (include-book "world-queries")
+(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

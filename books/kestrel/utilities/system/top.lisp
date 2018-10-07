@@ -12,6 +12,21 @@
 
 (include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 
+(include-book "all-vars-theorems")
+(include-book "arglistp-theorems")
+(include-book "defchoose-queries")
+(include-book "defun-sk-queries")
+(include-book "event-forms")
+(include-book "fresh-names")
+(include-book "install-not-norm-event")
+(include-book "named-formulas")
+(include-book "numbered-names")
+(include-book "paired-names")
+(include-book "term-function-recognizers")
+(include-book "terms")
+(include-book "world-queries")
+(include-book "world-theorems")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc system-utilities-non-built-in
