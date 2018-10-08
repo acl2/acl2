@@ -9,7 +9,7 @@
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 
 (defxdoc orelse
-  :parents (system-utilities)
+  :parents (system-utilities-non-built-in)
   :short "Evaluate an event and, if it fails, then evaluate a second event"
   :long "<p>NOTE: Also see @(see orelse*) for a similar utility that allows any
  number of @(see events).</p>
@@ -46,7 +46,7 @@
  encapsulate-report-errors), that employs @('orelse').</p>")
 
 (defxdoc orelse*
-  :parents (system-utilities)
+  :parents (system-utilities-non-built-in)
   :short "Evaluate a sequence of @(see events), until one succeeds"
   :long "<p>@('Orelse*') behaves as described in the documentation for @(see
  orelse), except that @('orelse*') takes a list of forms.</p>
@@ -61,7 +61,7 @@
  })")
 
 (defxdoc on-failure
-  :parents (system-utilities)
+  :parents (system-utilities-non-built-in)
   :short "Run an event, printing a custom error message if it fails."
   :long "
  @({
@@ -115,7 +115,7 @@
  @('books/kestrel/utilities/orelse.lisp').</p>")
 
 (defxdoc encapsulate-report-errors
-  :parents (system-utilities)
+  :parents (system-utilities-non-built-in)
   :short "Run @(tsee encapsulate), but with a helpful error at the first
  failure of one of its top-level events (if any)."
   :long "<p>This macro is equivalent to @(see encapsulate) except that it takes
@@ -269,7 +269,7 @@
 ||#
 
 (defxdoc identity-macro
-  :parents (system-utilities)
+  :parents (system-utilities-non-built-in)
   :short "The most trivial macro imaginable"
   :long "<p>@('(Identity-macro x)') macroexpands to @('x').</p>")
 

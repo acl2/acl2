@@ -1,4 +1,4 @@
-; DEFUN-SK Queries -- Tests
+; System Utilities -- DEFUN-SK Queries -- Tests
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "defun-sk-queries")
-(include-book "testing")
+(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

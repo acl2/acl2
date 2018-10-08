@@ -1,4 +1,4 @@
-; Event Forms -- Tests
+; System Utilities -- Event Forms -- Tests
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "event-forms")
-(include-book "testing")
+(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

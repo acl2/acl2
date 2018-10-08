@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection user-interface
-  :parents (kestrel-utilities system-utilities)
+  :parents (kestrel-utilities system-utilities-non-built-in)
   :short "Utilities for the user interface of event-generating macros
           (e.g. program transformations).")
 

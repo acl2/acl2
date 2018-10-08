@@ -22,7 +22,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc directed-untranslate
-  :parents (kestrel-utilities system-utilities)
+  :parents (kestrel-utilities system-utilities-non-built-in)
   :short "Create a user-level form that reflects a given user-level form's
  structure."
   :long "<p>See @(see term) for relevant background about user-level ``terms''

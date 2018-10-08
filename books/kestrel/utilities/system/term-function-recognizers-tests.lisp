@@ -1,4 +1,4 @@
-; Term Function Recognizers -- Tests
+; System Utilities -- Term Function Recognizers -- Tests
 ;
 ; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "term-function-recognizers")
-(include-book "testing")
+(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,4 +1,4 @@
-; Paired Names -- Tests
+; System Utilities -- Paired Names -- Tests
 ;
 ; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "paired-names")
-(include-book "testing")
+(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
