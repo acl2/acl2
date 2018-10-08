@@ -30,6 +30,7 @@
 
 (in-package "AIGNET")
 (include-book "semantics")
+(include-book "deps")
 (include-book "axi-reductions")
 (include-book "centaur/fty/bitstruct" :dir :system)
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
@@ -640,6 +641,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                                   no-measure
                                   (maybe-simpcode 't)
                                   (eval-hyp 't)
+                                  (syntax-hyp 't)
                                   (measure-hyp 't)
                                   eval-spec
                                   use-aignet)
@@ -683,8 +685,17 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                 (and (aignet-litp new0 aignet)
                      (aignet-litp new1 aignet))))
 
+     (defret deps-of-<fn>
+       (implies (and ,@(apply-template-to-lits lits '(not (depends-on (lit->var x) ci-id aignet)))
+                     ,syntax-hyp
+                     ;; ,@(and maybe-simpcode '(code))
+                     )
+                (and (not (depends-on (lit->var new0) ci-id aignet))
+                     (not (depends-on (lit->var new1) ci-id aignet)))))
+
      (defret eval-of-<fn>
        (implies (and ,eval-hyp
+                     ,syntax-hyp
                      ,@(and maybe-simpcode '(code)))
                 (equal (simpcode-eval code new0 new1 invals regvals aignet)
                        ,eval-spec))
@@ -692,6 +703,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
 
 (defmacro def-gatesimp-thms-existing (lits &key eval-hints
                                            (eval-hyp 't)
+                                           (syntax-hyp 't)
                                            eval-spec
                                            use-aignet)
   `(progn
@@ -713,9 +725,19 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                      ,@(apply-template-to-lits lits '(aignet-litp x aignet)))
                 (aignet-litp existing aignet)))
 
+     
+
+     (defret deps-of-<fn>
+       (implies (and ,@(apply-template-to-lits lits '(not (depends-on (lit->var x) ci-id aignet)))
+                     ,syntax-hyp
+                     ;; ,@(and maybe-simpcode '(code))
+                     )
+                (not (depends-on (lit->var existing) ci-id aignet))))
+
      (defret eval-of-<fn>
        (implies (and existing
-                     ,eval-hyp)
+                     ,eval-hyp
+                     ,syntax-hyp)
                 (equal (lit-eval existing invals regvals aignet)
                        ,eval-spec))
        :hints ,eval-hints)))
@@ -1544,7 +1566,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
   (def-gatesimp-thms (x0 x1)
     :eval-spec (b-and (lit-eval x0 invals regvals aignet)
                       (lit-eval x1 invals regvals aignet))
-    :eval-hyp (equal (id->type (lit-id x0) aignet) (gate-type))
+    :syntax-hyp (equal (id->type (lit-id x0) aignet) (gate-type))
     :measure-hyp (equal (id->type (lit-id x0) aignet) (gate-type))
     :eval-hints ((and stable-under-simplificationp
                       '(:expand ((lit-eval x0 invals regvals aignet)
@@ -1622,8 +1644,8 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
   (def-gatesimp-thms (x0 x1)
     :eval-spec (b-and (lit-eval x0 invals regvals aignet)
                       (lit-eval x1 invals regvals aignet))
-    :eval-hyp (and (equal (id->type (lit-id x0) aignet) (gate-type))
-                   (equal (id->type (lit-id x1) aignet) (gate-type)))
+    :syntax-hyp (and (equal (id->type (lit-id x0) aignet) (gate-type))
+                     (equal (id->type (lit-id x1) aignet) (gate-type)))
     :measure-hyp (and (equal (id->type (lit-id x0) aignet) (gate-type))
                       (equal (id->type (lit-id x1) aignet) (gate-type)))
     :eval-hints ((and stable-under-simplificationp
@@ -1696,7 +1718,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
   (def-gatesimp-thms (x0 x1)
     :eval-spec (b-xor (lit-eval x0 invals regvals aignet)
                       (lit-eval x1 invals regvals aignet))
-    :eval-hyp (equal (id->type (lit-id x0) aignet) (gate-type))
+    :syntax-hyp (equal (id->type (lit-id x0) aignet) (gate-type))
     :measure-hyp (equal (id->type (lit-id x0) aignet) (gate-type))
     :eval-hints ((and stable-under-simplificationp
                       '(:expand ((lit-eval x0 invals regvals aignet)
@@ -1763,7 +1785,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
   (def-gatesimp-thms (x0 x1)
     :eval-spec (b-xor (lit-eval x0 invals regvals aignet)
                       (lit-eval x1 invals regvals aignet))
-    :eval-hyp (and (equal (id->type (lit-id x0) aignet) (gate-type))
+    :syntax-hyp (and (equal (id->type (lit-id x0) aignet) (gate-type))
                    (equal (id->type (lit-id x1) aignet) (gate-type)))
     :measure-hyp (and (equal (id->type (lit-id x0) aignet) (gate-type))
                       (equal (id->type (lit-id x1) aignet) (gate-type)))
@@ -2107,6 +2129,14 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
              (and (aignet-litp new0 aignet)
                   (aignet-litp new1 aignet))))
 
+  (defret deps-of-<fn>
+    (implies (and (not (depends-on (lit->var x0) ci-id aignet))
+                  (not (depends-on (lit->var x1) ci-id aignet)))
+             (and (not (depends-on (lit->var new0) ci-id aignet))
+                  (not (depends-on (lit->var new1) ci-id aignet))))
+    :hints (("goal" :expand ((:Free (a b c)
+                              (depends-on (mv-nth 2 (strash-lookup a b c strash aignet)) ci-id aignet))))))
+
   (defret eval-of-<fn>
     (equal (simpcode-eval code new0 new1 invals regvals aignet)
            (simpcode-eval code-in x0 x1 invals regvals aignet))
@@ -2153,6 +2183,13 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
              (and (aignet-litp new0 aignet)
                   (aignet-litp new1 aignet))))
 
+  (defret deps-of-<fn>
+    (implies (and (not (depends-on (lit->var x0) ci-id aignet))
+                  (not (depends-on (lit->var x1) ci-id aignet)))
+             (and (not (depends-on (lit->var new0) ci-id aignet))
+                  (not (depends-on (lit->var new1) ci-id aignet)))))
+
+
   (defret eval-of-<fn>
     (equal (simpcode-eval code new0 new1 invals regvals aignet)
            (eval-xor-of-lits x0 x1 invals regvals aignet)))
@@ -2187,6 +2224,12 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                   (aignet-litp x1 aignet))
              (and (aignet-litp new0 aignet)
                   (aignet-litp new1 aignet))))
+
+  (defret deps-of-<fn>
+    (implies (and (not (depends-on (lit->var x0) ci-id aignet))
+                  (not (depends-on (lit->var x1) ci-id aignet)))
+             (and (not (depends-on (lit->var new0) ci-id aignet))
+                  (not (depends-on (lit->var new1) ci-id aignet)))))
 
   (defret eval-of-<fn>
     (equal (simpcode-eval code new0 new1 invals regvals aignet)
@@ -2242,6 +2285,13 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
     (implies (and (aignet-litp x0 aignet)
                   (aignet-litp x1 aignet))
              (aignet-litp lit new-aignet)))
+
+  (defret deps-of-<fn>
+    (implies (and (not (depends-on (lit->var x0) ci-id aignet))
+                  (not (depends-on (lit->var x1) ci-id aignet)))
+             (not (depends-on (lit->var lit) ci-id new-aignet)))
+    :hints (("goal" :expand ((:free (node)
+                              (depends-on (+ 1 (fanin-count aignet)) ci-id (cons node aignet)))))))
 
   (defret lit-eval-of-aignet-install-gate
     (equal (lit-eval lit invals regvals new-aignet)
@@ -2310,6 +2360,10 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
   (defret aignet-litp-of-aignet-hash-and
     (aignet-litp and-lit new-aignet))
 
+  (defret deps-of-<fn>
+    (implies (and (not (depends-on (lit->var lit1) ci-id aignet))
+                  (not (depends-on (lit->var lit2) ci-id aignet)))
+             (not (depends-on (lit->var and-lit) ci-id new-aignet))))
 
   (defret lit-eval-of-aignet-hash-and
     (equal (lit-eval and-lit invals regvals new-aignet)
@@ -2506,6 +2560,10 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
   (defret aignet-litp-of-aignet-hash-xor
     (aignet-litp xor-lit new-aignet))
 
+  (defret deps-of-<fn>
+    (implies (and (not (depends-on (lit->var lit1) ci-id aignet))
+                  (not (depends-on (lit->var lit2) ci-id aignet)))
+             (not (depends-on (lit->var xor-lit) ci-id new-aignet))))
 
   (defret lit-eval-of-aignet-hash-xor
     (equal (lit-eval xor-lit invals regvals new-aignet)
@@ -2796,6 +2854,10 @@ of the @('b*').</li>
                   (aignet-litp lit2 aignet))
              (aignet-litp result new-aignet)))
 
+  (defret deps-of-<fn>
+    (implies (and (not (depends-on (lit->var lit1) ci-id aignet))
+                  (not (depends-on (lit->var lit2) ci-id aignet)))
+             (not (depends-on (lit->var result) ci-id new-aignet))))
 
   (defret lit-eval-of-<fn>
     (equal (lit-eval result invals regvals new-aignet)
@@ -2868,6 +2930,11 @@ of the @('b*').</li>
     (implies (and (aignet-litp lit1 aignet)
                   (aignet-litp lit2 aignet))
              (aignet-litp result new-aignet)))
+
+  (defret deps-of-<fn>
+    (implies (and (not (depends-on (lit->var lit1) ci-id aignet))
+                  (not (depends-on (lit->var lit2) ci-id aignet)))
+             (not (depends-on (lit->var result) ci-id new-aignet))))
 
 
   (defret lit-eval-of-<fn>
@@ -2943,6 +3010,12 @@ of the @('b*').</li>
 
   (defret aignet-litp-of-<fn>
     (aignet-litp result new-aignet))
+
+  (defret deps-of-<fn>
+    (implies (and (not (depends-on (lit->var c) ci-id aignet))
+                  (not (depends-on (lit->var tb) ci-id aignet))
+                  (not (depends-on (lit->var fb) ci-id aignet)))
+             (not (depends-on (lit->var result) ci-id new-aignet))))
 
   ;; (local (defthm lit-eval-of-equal-aignet-lit-fix
   ;;          (implies (and (equal y (aignet-lit-fix x aignet))

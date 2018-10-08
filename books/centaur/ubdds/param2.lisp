@@ -525,7 +525,7 @@
                                  vars)
                   (bfix-list
                    (take n (nthcdr start vars)))))
-  :hints(("Goal" :in-theory (enable take))))
+  :hints(("Goal" :in-theory (enable take-redefinition))))
 
 (defthm ubdd-listp-make-list-ac
   (equal (ubdd-listp (make-list-ac n nil acc))
@@ -993,77 +993,3 @@
                     (unparam-env p env)
                     (:free (env) (eval-bdd x env))
                     (eval-bdd p env)))))
-
-
-
-
-
-
-
-
-
-
-;; This version doesn't change the variable basis for y.  Instead of "cinching
-;; up" pairs where one of the branches is constant-false, it duplicates the
-;; non-constant-false one.  The resulting BDD can be evaluated with the same
-;; environment as the original.
-(defn to-param-space2 (p y)
-  (cond ((atom p) y)
-        ((atom y) y)
-        ((eq (car p) nil)
-         (let ((x (to-param-space2 (cdr p) (cdr y))))
-           (qcons x x)))
-        ((eq (cdr p) nil)
-         (let ((x (to-param-space2 (car p) (car y))))
-           (qcons x x)))
-        (t (qcons (to-param-space2 (car p) (car y))
-                  (to-param-space2 (cdr p) (cdr y))))))
-
-;; [Jared]: tweaking this to only memoize when car&cdr are non-nil, to slightly
-;; reduce memo table overhead.
-
-(memoize 'to-param-space2 :condition '(and (consp p)
-                                          (consp y)
-                                          (car p)
-                                          (cdr p)))
-
-
-
-(defthm ubddp-to-param-space2
-  (implies (ubddp x)
-           (ubddp (to-param-space2 p x))))
-
-(encapsulate nil
-  (local (defun eval-of-to-param-space2-ind (p y env)
-           (cond ((atom p) env)
-                 ((atom y) env)
-                 ((eq (car p) nil)
-                  (eval-of-to-param-space2-ind (cdr p) (cdr y) (cdr env)))
-                 ((eq (cdr p) nil)
-                  (eval-of-to-param-space2-ind (car p) (car y) (cdr env)))
-                 (t (list (eval-of-to-param-space2-ind (car p) (car y) (cdr env))
-                          (eval-of-to-param-space2-ind (cdr p) (cdr y) (cdr env)))))))
-
-  (local (in-theory (disable iff not qcons)))
-
-  (defthm eval-of-to-param-space2
-    (implies (eval-bdd p env)
-             (equal (eval-bdd (to-param-space2 p y) env)
-                    (eval-bdd y env)))
-    :hints (("goal" :induct (eval-of-to-param-space2-ind p y env)))))
-
-
-(defn to-param-space2-list (p list)
-  (if (atom list)
-      nil
-    (cons (to-param-space2 p (car list))
-          (to-param-space2-list p (cdr list)))))
-
-(defthm eval-bdd-lst-to-param-space2-lst
-  (implies (eval-bdd p env)
-           (equal (eval-bdd-list (to-param-space2-list p list) env)
-                  (eval-bdd-list list env))))
-
-
-
-
