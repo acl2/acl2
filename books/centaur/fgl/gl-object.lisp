@@ -70,7 +70,7 @@
      :cond (eq (car x) :g-boolean)
      :fields ((bool :acc-body (cdr x)))
      :ctor-body (cons :g-boolean bool)
-     :type-name g-atom)
+     :type-name g-boolean)
     (:g-integer
      :cond (eq (car x) :g-integer)
      :fields ((bits :acc-body (cdr x) :type true-listp))
