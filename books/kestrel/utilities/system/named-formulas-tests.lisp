@@ -1,4 +1,4 @@
-; Named Formulas -- Tests
+; System Utilities -- Named Formulas -- Tests
 ;
 ; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,8 +11,8 @@
 (in-package "ACL2")
 
 (include-book "named-formulas")
-(include-book "testing")
 (include-book "world-queries")
+(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

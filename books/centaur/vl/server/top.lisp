@@ -38,7 +38,7 @@
 (include-book "../transforms/annotate/top")
 (include-book "../mlib/comment-writer")
 (include-book "../mlib/json")
-(include-book "oslib/file-types" :dir :system)
+(include-book "oslib/file-types-logic" :dir :system)
 (include-book "std/io/unsound-read" :dir :system)
 (include-book "quicklisp/hunchentoot" :dir :system)
 (include-book "quicklisp/bordeaux" :dir :system)

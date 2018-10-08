@@ -1,4 +1,4 @@
-; Fixtypes for Unsigned and Signed Bytes -- Instances -- Unsigned 4-Bit Bytes
+; Fixtype for Unsigned 4-Bit Bytes
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -14,8 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defbyte 4
+(fty::defbyte 4
   :signed nil
   :pred ubyte4p
-  :lpred ubyte4-listp
   :parents (defbyte-instances))

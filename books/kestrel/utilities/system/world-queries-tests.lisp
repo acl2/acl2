@@ -1,4 +1,4 @@
-; World Queries -- Tests
+; System Utilities -- World Queries -- Tests
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "world-queries")
-(include-book "testing")
+(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

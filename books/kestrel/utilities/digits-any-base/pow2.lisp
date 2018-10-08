@@ -79,7 +79,7 @@
      the conversions from natural numbers to digits in base @('(expt 2 n)')
      return true lists of unsigned bytes of size @('n').
      These are expressed using the fixtypes for true lists of unsigned bytes
-     introduced via @(tsee defbyte)."))
+     introduced via @(tsee fty::defbytelist)."))
   (b* ((ubyte<n> (packn (list 'ubyte n)))
        (ubyte<n>-listp (packn (list ubyte<n> '-listp)))
        (ubyte<n>-listp-of-nat=>bendian* (packn (list ubyte<n>-listp

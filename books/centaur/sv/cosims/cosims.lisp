@@ -37,6 +37,10 @@
 (include-book "std/bitsets/bignum-extract-opt" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
+#||
+# fool dependency scanner, really included in make-cosim.lsp
+(include-book "oslib/top" :dir :system)
+||#
 
 (local (in-theory (disable len nth)))
 
