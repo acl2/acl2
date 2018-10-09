@@ -1295,3 +1295,25 @@
 ;;     (3ple-d 3ple-e 3ple-f argle)))
 
 
+(deftypes funnyterm
+  (deftagsum funnyterm
+    (:var ((name symbolp :rule-classes :type-prescription)))
+    (:quote ((val)))
+    (:call ((fn symbol)
+            (args funnyterm-list)))
+    (:let ((bindings funnyalist)
+           (body funnyterm))))
+  (deflist funnyterm-list :elt-type funnyterm)
+  (defalist funnyalist :key-type symbol :val-type funnyterm :unique-keys t))
+
+
+(deftypes funny2term
+  (deftagsum funny2term
+    (:var ((name symbolp :rule-classes :type-prescription)))
+    (:quote ((val)))
+    (:call ((fn symbol)
+            (args funny2term-list)))
+    (:let ((bindings funny2alist)
+           (body funny2term))))
+  (deflist funny2term-list :elt-type funny2term)
+  (defmap funny2alist :key-type symbol :val-type funny2term :unique-keys t))
