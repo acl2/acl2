@@ -39,6 +39,7 @@
 (include-book "nat-var-aig")
 (include-book "std/stobjs/updater-independence" :dir :system)
 (include-book "centaur/misc/intstack" :dir :system)
+(include-book "centaur/aignet/mark-impls" :dir :system)
 (local (include-book "theory"))
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 
@@ -47,9 +48,12 @@
 
 (defstobj pathcond
   (pathcond-bdd :type (satisfies acl2::ubddp) :initially t)
-  (pathcond-calist :type (satisfies calistp) :initially nil)
-  (pathcond-valbits :type (array bit (0)) :resizable t :initially 0)
-  (pathcond-stack :type acl2::intstack))
+  (pathcond-calist :type calist-stobj)
+  (pathcond-valbits :type acl2::bitarr)
+  (pathcond-stack :type acl2::intstack)
+  (pathcond-memobits1 :type acl2::bitarr)
+  (pathcond-memobits0 :type acl2::bitarr)
+  (pathcond-memoseens :type aignet::eba))
 
 (defconst *logicman-fields*
   '((aignet :type aignet::aignet)

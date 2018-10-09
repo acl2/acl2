@@ -34,6 +34,8 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "centaur/aig/aig-vars" :dir :system)
+(include-book "centaur/misc/fast-alist-pop" :dir :system)
+(include-book "std/stobjs/absstobjs" :dir :system)
 
 (std::deflist nat-listp (x) (natp x) :already-definedp t :true-listp t :elementp-of-nil nil)
 
@@ -123,7 +125,12 @@
 
   (defthm aig-p-of-cdr
     (implies (aig-p x)
-             (aig-p (cdr x)))))
+             (aig-p (cdr x))))
+
+  (defthm aig-atom-p-when-aig-p
+    (implies (aig-p x)
+             (equal (acl2::aig-atom-p x)
+                    (atom x)))))
 
 (define aig-fix ((x aig-p))
   :returns (new-x aig-p :hints(("Goal" :in-theory (enable aig-p))))
@@ -210,6 +217,149 @@
 
   (fty::deffixtype calist :pred calistp :fix calist-fix :equiv calist-equiv :define t :forward t))
 
+(local (defthm bitp-lookup-when-calistp
+         (implies (and (calistp x)
+                       (hons-assoc-equal k x))
+                  (bitp (cdr (hons-assoc-equal k x))))
+         :hints(("Goal" :in-theory (e/d (calistp) (bitp))))))
+
+(local (defthm maybe-bitp-lookup-when-calistp
+         (implies (calistp x)
+                  (acl2::maybe-bitp (cdr (hons-assoc-equal k x))))
+         :hints(("Goal" :cases ((hons-assoc-equal k x))))))
+
+(local (defthm lookup-under-iffwhen-calistp
+         (implies (calistp x)
+                  (iff (cdr (hons-assoc-equal k x))
+                       (hons-assoc-equal k x)))
+         :hints (("goal" :use bitp-lookup-when-calistp
+                  :in-theory (disable bitp-lookup-when-calistp)))))
+
+(define calist-lookup ((x aig-p) (calist calistp))
+  :inline t
+  :returns (res acl2::maybe-bitp :rule-classes :type-prescription)
+  (cdr (hons-get (aig-fix x)
+                 (calist-fix calist))))
+
+(local (in-theory (enable calist-lookup)))
+
+
+
+(defstobj calist-stobj$c
+  (calist-stobj->calist$c :type (satisfies calistp) :initially nil)
+  (calist-stobj->len$c :type (integer 0 *) :initially 0))
+
+
+(local (in-theory (disable nth update-nth bitp)))
+
+(define calist-stobj-acons$c ((key aig-p)
+                              (val bitp)
+                              calist-stobj$c)
+  :guard (and (equal (calist-stobj->len$c calist-stobj$c)
+                     (len (calist-stobj->calist$c calist-stobj$c)))
+              (not (calist-lookup key (calist-stobj->calist$c calist-stobj$c))))
+  (mbe :logic 
+       (b* ((calist-stobj$c (update-calist-stobj->calist$c
+                             (calist-fix (hons-acons key val (calist-stobj->calist$c calist-stobj$c)))
+                             calist-stobj$c)))
+         (update-calist-stobj->len$c (len (calist-stobj->calist$c calist-stobj$c))
+                                     calist-stobj$c))
+       :exec
+       (b* ((calist-stobj$c (update-calist-stobj->calist$c
+                             (hons-acons key val (calist-stobj->calist$c calist-stobj$c))
+                             calist-stobj$c)))
+         (update-calist-stobj->len$c (+ 1 (calist-stobj->len$c calist-stobj$c))
+                                     calist-stobj$c))))
+
+(define calist-stobj-pop$c (calist-stobj$c)
+  :guard (and (equal (calist-stobj->len$c calist-stobj$c)
+                     (len (calist-stobj->calist$c calist-stobj$c)))
+              (consp (calist-stobj->calist$c calist-stobj$c)))
+  :prepwork ((local (in-theory (enable len)))
+             (local (defthm len-equal-0
+                      (equal (equal (len x) 0)
+                             (atom x))))
+             (local (defthm lookup-caar-in-cdr-when-calistp
+                      (implies (and (calistp x)
+                                    (consp x))
+                               (not (hons-assoc-equal (caar x) (cdr x))))
+                      :hints(("Goal" :in-theory (enable calistp))))))
+  (mbe :logic (b* ((calist-stobj$c (update-calist-stobj->calist$c
+                                    (acl2::fast-alist-pop (calist-fix (calist-stobj->calist$c calist-stobj$c)))
+                                    calist-stobj$c)))
+                (update-calist-stobj->len$c (len (calist-stobj->calist$c calist-stobj$c))
+                                            calist-stobj$c))
+       :exec (b* ((calist-stobj$c (update-calist-stobj->calist$c
+                                   (acl2::fast-alist-pop (calist-stobj->calist$c calist-stobj$c))
+                                   calist-stobj$c)))
+               (update-calist-stobj->len$c (1- (calist-stobj->len$c calist-stobj$c))
+                                           calist-stobj$c))))
+
+(define calist-stobjp$a (calist)
+  :enabled t
+  (calistp calist))
+
+(define create-calist-stobj$a ()
+  :enabled t
+  nil)
+
+(define calist-stobj-access$a ((calist calist-stobjp$a))
+  :enabled t
+  (calist-fix calist))
+
+(define calist-stobj-len$a ((calist calist-stobjp$a))
+  :enabled t
+  (len (calist-fix calist)))
+
+(define calist-stobj-acons$a ((key aig-p)
+                              (val bitp)
+                              (calist calist-stobjp$a))
+  :guard (not (calist-lookup key (calist-stobj-access$a calist)))
+  :enabled t
+  (calist-fix (hons-acons key val calist)))
+
+(define calist-stobj-pop$a ((calist calist-stobjp$a))
+  :guard (consp (calist-stobj-access$a calist))
+  :enabled t
+  :prepwork ((local (defthm lookup-caar-in-cdr-when-calistp
+                      (implies (and (calistp x)
+                                    (consp x))
+                               (not (hons-assoc-equal (caar x) (cdr x))))
+                      :hints(("Goal" :in-theory (enable calistp))))))
+  (calist-fix (acl2::fast-alist-pop calist)))
+
+
+(encapsulate nil
+  (local
+   (define calist-stobj-corr (calist-stobj$c calist)
+     :enabled t
+     (and (equal (calist-stobj->calist$c calist-stobj$c) calist)
+          (equal (calist-stobj->len$c calist-stobj$c) (len calist)))))
+
+  (local (in-theory (enable calist-stobj-acons$c
+                            calist-stobj-pop$c)))
+
+  (defabsstobj-events calist-stobj
+    :concrete calist-stobj$c
+    :corr-fn calist-stobj-corr
+    :recognizer (calist-stobjp :logic calist-stobjp$a
+                               :exec calist-stobj$cp)
+    :creator (create-calist-stobj :logic create-calist-stobj$a
+                                  :exec create-calist-stobj$c)
+    :exports ((calist-stobj-access :logic calist-stobj-access$a
+                                   :exec calist-stobj->calist$c)
+              (calist-stobj-len :logic calist-stobj-len$a
+                                :exec calist-stobj->len$c)
+              (calist-stobj-acons :logic calist-stobj-acons$a
+                                  :exec calist-stobj-acons$c
+                                  :protect t)
+              (calist-stobj-pop :logic calist-stobj-pop$a
+                                :exec calist-stobj-pop$c
+                                :protect t))))
+
+  
+    
+       
         
 
 
