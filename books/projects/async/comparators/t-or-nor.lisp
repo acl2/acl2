@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; October 2018
 
 ;; A tree based, reducing OR-NOR
 
@@ -163,8 +163,6 @@
                             open-se
                             t-or-nor&
                             t-or-nor*$destructure
-                            not-primp-t-or
-                            not-primp-t-nor
                             tr-or-nor
                             tree-size)
                            (de-module-disabled-rules)))))
@@ -277,7 +275,6 @@
            :in-theory (e/d (de-rules
                             tv-zp&
                             tv-zp*$destructure
-                            not-primp-tv-zp
                             f$tv-zp
                             t-or-nor$value)
                            (de-module-disabled-rules)))))

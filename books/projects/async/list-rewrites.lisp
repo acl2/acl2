@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; September 2018
 
 (in-package "ADE")
 
@@ -13,19 +13,25 @@
 ;; ======================================================================
 
 (defthmd list-rewrite-1
-   (implies (and (true-listp x)
-                 (equal (len x) 1))
+   (implies (and (equal (len x) 1)
+                 (true-listp x))
             (equal (list (car x)) x)))
 
+(defthmd list-rewrite-2
+  (implies (and (equal (len x) 2)
+                (true-listp x))
+           (equal (list (car x) (cadr x))
+                  x)))
+
 (defthmd list-rewrite-4
-  (implies (and (true-listp x)
-                (equal (len x) 4))
+  (implies (and (equal (len x) 4)
+                (true-listp x))
            (equal (list (car x) (cadr x) (caddr x) (cadddr x))
                   x)))
 
 (defthmd list-rewrite-5
-  (implies (and (true-listp x)
-                (equal (len x) 5))
+  (implies (and (equal (len x) 5)
+                (true-listp x))
            (equal (list (nth 0 x)
                         (nth 1 x)
                         (nth 2 x)
@@ -35,8 +41,8 @@
   :hints (("Goal" :in-theory (enable open-nth))))
 
 (defthmd list-rewrite-10
-  (implies (and (true-listp x)
-                (equal (len x) 10))
+  (implies (and (equal (len x) 10)
+                (true-listp x))
            (equal (list (nth 0 x)
                         (nth 1 x)
                         (nth 2 x)

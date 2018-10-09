@@ -30,6 +30,10 @@
            (< 0 (gcd-alg a b)))
   :rule-classes :linear)
 
+(defthmd gcd-alg-commutative
+  (equal (gcd-alg a b) (gcd-alg b a))
+  :rule-classes ((:rewrite :loop-stopper ((a b)))))
+
 (defthm gcd-alg-is-COMMON-divisor
   (implies (and (natp a)
                 (natp b))

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; Janurary 2018
+;; September 2018
 
 (in-package "ADE")
 
@@ -135,7 +135,7 @@
         (implies (bvp decoded-state)
                  (equal (f$next-state decoded-state)
                         (next-state decoded-state)))
-        :hints (("Goal" :in-theory (e/d (nth-of-bvp-is-booleanp)
+        :hints (("Goal" :in-theory (e/d (nth-of-bv-is-boolean)
                                         (b-gates)))))
 
       (in-theory (disable f$next-state next-state))
@@ -147,7 +147,7 @@
          (sis 's 0 32)
          ',next-sts
          ()
-         (append (list ,@(id-occs state-names 's 0))
+         (append (list ,@(wire-occs state-names 's 0))
                  ',(fn-to-module-body 0 (flatten-binding 'x 0 spec t)))))
 
       (defun next-state$netlist ()
@@ -311,7 +311,7 @@
                   (next-cntl-state st)))
   :hints (("Goal" :in-theory (e/d (next-cntl-state
                                    f$next-state=next-state
-                                   nth-of-bvp-is-booleanp)
+                                   nth-of-bv-is-boolean)
                                   (nth)))))
 
 (in-theory (disable f$next-cntl-state))

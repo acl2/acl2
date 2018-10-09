@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; March 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -230,8 +230,7 @@
            :expand (:free (inputs n)
                           (se (si 'ripple-add/sub n) inputs sts netlist))
            :in-theory (e/d* (de-rules
-                             ripple-add/sub&
-                             not-primp-ripple-add/sub)
+                             ripple-add/sub&)
                             (de-module-disabled-rules)))))
 
 (defthm ripple-add/sub$value-2
@@ -251,8 +250,7 @@
            :expand (:free (inputs n)
                           (se (si 'ripple-add/sub n) inputs sts netlist))
            :in-theory (e/d* (de-rules
-                             ripple-add/sub&
-                             not-primp-ripple-add/sub)
+                             ripple-add/sub&)
                             (de-module-disabled-rules)))))
 
 (encapsulate

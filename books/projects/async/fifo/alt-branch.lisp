@@ -4,12 +4,14 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2018
+;; October 2018
 
 (in-package "ADE")
 
 (include-book "../link-joint")
 (include-book "../vector-module")
+
+(local (in-theory (disable nth)))
 
 ;; ======================================================================
 
@@ -136,7 +138,7 @@
     (and (link1$valid-st select)
          (link1$valid-st select-buf))))
 
-;; Extract the input and output signals from ALT-BRANCH
+;; Extract the input and output signals for ALT-BRANCH
 
 (progn
   ;; Extract the input data
@@ -174,6 +176,12 @@
 
       (joint-act m-full-in m-empty-out0- go-alt-branch)))
 
+  (defthm alt-branch$act0-inactive
+    (implies (or (not (nth 0 inputs))
+                 (equal (nth 1 inputs) t))
+             (not (alt-branch$act0 inputs st data-width)))
+    :hints (("Goal" :in-theory (enable f-or3 alt-branch$act0))))
+
   ;; Extract the "act1" signal
 
   (defund alt-branch$act1 (inputs st data-width)
@@ -196,14 +204,29 @@
 
       (joint-act m-full-in m-empty-out1- go-alt-branch)))
 
+  (defthm alt-branch$act1-inactive
+    (implies (or (not (nth 0 inputs))
+                 (equal (nth 2 inputs) t))
+             (not (alt-branch$act1 inputs st data-width)))
+    :hints (("Goal" :in-theory (enable f-or3 alt-branch$act1))))
+
   ;; Extract the "act" signal
 
   (defund alt-branch$act (inputs st data-width)
     (f-or (alt-branch$act0 inputs st data-width)
           (alt-branch$act1 inputs st data-width)))
+
+  (defthm alt-branch$act-inactive
+    (implies (or (not (nth 0 inputs))
+                 (and (equal (nth 1 inputs) t)
+                      (equal (nth 2 inputs) t)))
+             (not (alt-branch$act inputs st data-width)))
+    :hints (("Goal" :in-theory (enable alt-branch$act))))
   )
 
-(not-primp-lemma alt-branch) ;; Prove that ALT-BRANCH is not a DE primitive.
+;; Prove that ALT-BRANCH is not a DE primitive.
+
+(not-primp-lemma alt-branch)
 
 ;; The value lemma for ALT-BRANCH
 
@@ -225,7 +248,6 @@
            :expand (:free (inputs data-width)
                           (se (si 'alt-branch data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            not-primp-alt-branch
                             alt-branch&
                             alt-branch*$destructure
                             link1$value
@@ -282,13 +304,13 @@
            :expand (:free (inputs data-width)
                           (de (si 'alt-branch data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            not-primp-alt-branch
                             alt-branch&
                             alt-branch*$destructure
                             alt-branch$act
                             alt-branch$act0
                             alt-branch$act1
-                            link1$value link1$state
+                            link1$value
+                            link1$state
                             joint-cntl$value
                             v-buf$value)
                            ((alt-branch*)
@@ -300,55 +322,16 @@
 
 ;; 2. Specify and Prove a State Invariant
 
-;; ALT-BRANCH simulator
-
-(progn
-  (defun alt-branch$map-to-links (st)
-    (b* ((select (get-field *alt-branch$select* st))
-         (select-buf (get-field *alt-branch$select-buf* st)))
-      (map-to-links1 (list (list* 'select select)
-                           (list* 'select-buf select-buf)))))
-
-  (defun alt-branch$map-to-links-list (x)
-    (if (atom x)
-        nil
-      (cons (alt-branch$map-to-links (car x))
-            (alt-branch$map-to-links-list (cdr x)))))
-
-  (defund alt-branch$sim (data-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp n))
-                    :verify-guards nil
-                    :stobjs state))
-    (b* ((num-signals (alt-branch$ins-len data-width))
-         ((mv inputs-lst state)
-          (signal-vals-gen num-signals n state nil))
-         ;;(- (cw "~x0~%" inputs-lst))
-         (full '(t))
-         (empty '(nil))
-         (st (list (list full '(nil))
-                   (list empty '(x)))))
-      (mv (pretty-list
-           (remove-dup-neighbors
-            (alt-branch$map-to-links-list
-             (de-sim-list (si 'alt-branch data-width)
-                          inputs-lst
-                          st
-                          (alt-branch$netlist data-width))))
-           0)
-          state)))
-  )
-
 ;; Conditions on the inputs
 
 (defund alt-branch$input-format (inputs data-width)
   (declare (xargs :guard (and (true-listp inputs)
                               (natp data-width))))
-  (b* ((full-in    (nth 0 inputs))
+  (b* ((full-in     (nth 0 inputs))
        (empty-out0- (nth 1 inputs))
        (empty-out1- (nth 2 inputs))
-       (data-in    (alt-branch$data-in inputs data-width))
-       (go-signals (nthcdr (alt-branch$data-ins-len data-width) inputs)))
+       (data-in     (alt-branch$data-in inputs data-width))
+       (go-signals  (nthcdr (alt-branch$data-ins-len data-width) inputs)))
     (and
      (booleanp full-in)
      (booleanp empty-out0-)
@@ -360,6 +343,31 @@
             (list* full-in empty-out0- empty-out1-
                    (append data-in go-signals))))))
 
+(defthm booleanp-alt-branch$act0
+  (implies (and (alt-branch$input-format inputs data-width)
+                (alt-branch$valid-st st))
+           (booleanp (alt-branch$act0 inputs st data-width)))
+  :hints (("Goal" :in-theory (enable alt-branch$input-format
+                                     alt-branch$valid-st
+                                     alt-branch$act0)))
+  :rule-classes :type-prescription)
+
+(defthm booleanp-alt-branch$act1
+  (implies (and (alt-branch$input-format inputs data-width)
+                (alt-branch$valid-st st))
+           (booleanp (alt-branch$act1 inputs st data-width)))
+  :hints (("Goal" :in-theory (enable alt-branch$input-format
+                                     alt-branch$valid-st
+                                     alt-branch$act1)))
+  :rule-classes :type-prescription)
+
+(defthm booleanp-alt-branch$act
+  (implies (and (alt-branch$input-format inputs data-width)
+                (alt-branch$valid-st st))
+           (booleanp (alt-branch$act inputs st data-width)))
+  :hints (("Goal" :in-theory (enable alt-branch$act)))
+  :rule-classes :type-prescription)
+
 (defthm alt-branch$valid-st-preserved
   (implies (and (alt-branch$input-format inputs data-width)
                 (alt-branch$valid-st st))
@@ -367,17 +375,14 @@
             (alt-branch$step inputs st data-width)))
   :hints (("Goal"
            :in-theory (e/d (get-field
+                            f-sr
                             alt-branch$input-format
                             alt-branch$valid-st
                             alt-branch$step
                             alt-branch$act
                             alt-branch$act0
-                            alt-branch$act1
-                            f-sr)
-                           (if*
-                            nth
-                            nthcdr
-                            acl2::true-listp-append)))))
+                            alt-branch$act1)
+                           ()))))
 
 ;; A state invariant
 
@@ -395,16 +400,13 @@
            (alt-branch$inv (alt-branch$step inputs st data-width)))
   :hints (("Goal"
            :in-theory (e/d (get-field
+                            f-sr
                             alt-branch$input-format
                             alt-branch$valid-st
                             alt-branch$inv
                             alt-branch$step
                             alt-branch$act
                             alt-branch$act0
-                            alt-branch$act1
-                            f-sr)
-                           (if*
-                            nth
-                            nthcdr
-                            acl2::true-listp-append)))))
+                            alt-branch$act1)
+                           ()))))
 

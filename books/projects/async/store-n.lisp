@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -120,7 +120,6 @@
            :in-theory (e/d* (de-rules
                              latch-n&
                              latch-n*$destructure
-                             not-primp-latch-n
                              latch-n-body$value)
                             (de-module-disabled-rules)))))
 
@@ -198,7 +197,6 @@
            :in-theory (e/d* (de-rules
                              latch-n&
                              latch-n*$destructure
-                             not-primp-latch-n
                              latch-n-body$state)
                             (de-module-disabled-rules)))))
 
@@ -304,7 +302,6 @@
            :in-theory (e/d* (de-rules
                              ff-n&
                              ff-n*$destructure
-                             not-primp-ff-n
                              ff-n-body$value)
                             (de-module-disabled-rules)))))
 
@@ -382,6 +379,5 @@
            :in-theory (e/d* (de-rules
                              ff-n&
                              ff-n*$destructure
-                             not-primp-ff-n
                              ff-n-body$state)
                             (de-module-disabled-rules)))))

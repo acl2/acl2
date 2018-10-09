@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2018
+;; October 2018
 
 ;; An n-bit, big-endian "less than" comparator
 
@@ -306,6 +306,5 @@
            :expand (:free (inputs n)
                           (se (si 'v-< n) inputs sts netlist))
            :in-theory (e/d* (de-rules
-                             v-<&
-                             not-primp-v-<)
+                             v-<&)
                             (de-module-disabled-rules)))))
