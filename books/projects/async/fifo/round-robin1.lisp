@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -17,12 +17,36 @@
 
 (local (in-theory (disable nth)))
 
+(local
+ (deftheory round-robin1$disabled-rules
+   '(if*
+     not
+     take-redefinition
+     pairlis$
+     strip-cars
+     true-listp
+     default-car
+     default-cdr
+     default-+-1
+     default-+-2
+     acl2::append-of-cons
+     acl2::simplify-products-gather-exponents-equal
+     acl2::normalize-terms-such-as-a/a+b-+-b/a+b
+     acl2::len-when-prefixp
+     bv-is-true-list
+     queue2$in-act-inactive
+     queue2$out-act-inactive
+     queue3$in-act-inactive
+     queue3$out-act-inactive
+     v-threefix
+     open-v-threefix)))
+
 ;; ======================================================================
 
 ;;; Table of Contents:
 ;;;
 ;;; 1. DE Module Generator of RR1
-;;; 2. Specify the Final State of RR1 After An N-Step Execution
+;;; 2. Multi-Step State Lemma
 ;;; 3. Single-Step-Update Property
 ;;; 4. Relationship Between the Input and Output Sequences
 
@@ -30,7 +54,7 @@
 
 ;; 1. DE Module Generator of RR1
 ;;
-;; Construct a DE module generator for a round-robin circuit, RR1, using the
+;; Construct a DE module generator for round-robin circuits using the
 ;; link-joint model.  Prove the value and state lemmas for this module
 ;; generator.
 
@@ -193,7 +217,7 @@
          (queue2$st-format q2 data-width)
          (queue3$st-format q3 data-width))))
 
-(defthm round-robin1$st-format=>posp-data-width
+(defthm round-robin1$st-format=>data-width-constraint
   (implies (round-robin1$st-format st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable round-robin1$st-format)))
@@ -221,13 +245,19 @@
          (alt-branch$valid-st br)
          (alt-merge$valid-st me))))
 
-(defthmd round-robin1$valid-st=>posp-data-width
+(defthmd round-robin1$valid-st=>data-width-constraint
   (implies (round-robin1$valid-st st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable round-robin1$valid-st)))
   :rule-classes :forward-chaining)
 
-;; Extract the input and output signals from RR1
+(defthmd round-robin1$valid-st=>st-format
+  (implies (round-robin1$valid-st st data-width)
+           (round-robin1$st-format st data-width))
+  :hints (("Goal" :in-theory (e/d (round-robin1$valid-st)
+                                  ()))))
+
+;; Extract the input and output signals for RR1
 
 (progn
   ;; Extract the input data
@@ -307,10 +337,11 @@
     (b* ((empty-out-  (nth 1 inputs))
          (go-signals (nthcdr (round-robin1$data-ins-len data-width) inputs))
 
-         (me-go-signals (nthcdr (+ *queue2$go-num*
-                                   *queue3$go-num*
-                                   *alt-branch$go-num*)
-                                go-signals))
+         (me-go-signals (take *alt-merge$go-num*
+                              (nthcdr (+ *queue2$go-num*
+                                         *queue3$go-num*
+                                         *alt-branch$go-num*)
+                                      go-signals)))
 
          (a1 (get-field *round-robin1$a1* st))
          (a1.s (get-field *link$s* a1))
@@ -331,12 +362,24 @@
          (br (get-field *round-robin1$br* st)))
       (alt-branch$act br-inputs br data-width)))
 
+  (defthm round-robin1$in-act-inactive
+    (implies (not (nth 0 inputs))
+             (not (round-robin1$in-act inputs st data-width)))
+    :hints (("Goal" :in-theory (enable round-robin1$br-inputs
+                                       round-robin1$in-act))))
+
   ;; Extract the "out-act" signal
 
   (defund round-robin1$out-act (inputs st data-width)
     (b* ((me-inputs (round-robin1$me-inputs inputs st data-width))
          (me (get-field *round-robin1$me* st)))
       (alt-merge$act me-inputs me data-width)))
+
+  (defthm round-robin1$out-act-inactive
+    (implies (equal (nth 1 inputs) t)
+             (not (round-robin1$out-act inputs st data-width)))
+    :hints (("Goal" :in-theory (enable round-robin1$me-inputs
+                                       round-robin1$out-act))))
 
   ;; Extract the output data
 
@@ -383,9 +426,16 @@
                                        alt-merge$act
                                        alt-merge$act0
                                        alt-merge$act1))))
+
+  (defun round-robin1$outputs (inputs st data-width)
+    (list* (round-robin1$in-act inputs st data-width)
+           (round-robin1$out-act inputs st data-width)
+           (round-robin1$data-out st)))
   )
 
-(not-primp-lemma round-robin1) ;; Prove that RR1 is not a DE primitive.
+;; Prove that RR1 is not a DE primitive.
+
+(not-primp-lemma round-robin1)
 
 ;; The value lemma for RR1
 
@@ -398,16 +448,13 @@
                   (equal (len go-signals) *round-robin1$go-num*)
                   (round-robin1$st-format st data-width))
              (equal (se (si 'round-robin1 data-width) inputs st netlist)
-                    (list* (round-robin1$in-act inputs st data-width)
-                           (round-robin1$out-act inputs st data-width)
-                           (round-robin1$data-out st)))))
+                    (round-robin1$outputs inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
            :expand (:free (inputs data-width)
                           (se (si 'round-robin1 data-width)
                               inputs st netlist))
            :in-theory (e/d (de-rules
-                            not-primp-round-robin1
                             round-robin1&
                             round-robin1*$destructure
                             round-robin1$data-in
@@ -476,9 +523,9 @@
      (queue2$step q2-inputs q2 data-width)
      ;; Joint Q3
      (queue3$step q3-inputs q3 data-width)
-     ;; Joint alt-branch
+     ;; Joint ALT-BRANCH
      (alt-branch$step br-inputs br data-width)
-     ;; Joint alt-merge
+     ;; Joint ALT-MERGE
      (alt-merge$step me-inputs me data-width))))
 
 (defthm len-of-round-robin1$step
@@ -503,7 +550,6 @@
                           (de (si 'round-robin1 data-width)
                               inputs st netlist))
            :in-theory (e/d (de-rules
-                            not-primp-round-robin1
                             round-robin1&
                             round-robin1*$destructure
                             round-robin1$st-format
@@ -512,11 +558,16 @@
                             round-robin1$q3-inputs
                             round-robin1$br-inputs
                             round-robin1$me-inputs
-                            link$value link$state
-                            queue2$value queue2$state
-                            queue3$value queue3$state
-                            alt-branch$value alt-branch$state
-                            alt-merge$value alt-merge$state)
+                            link$value
+                            link$state
+                            queue2$value
+                            queue2$state
+                            queue3$value
+                            queue3$state
+                            alt-branch$value
+                            alt-branch$state
+                            alt-merge$value
+                            alt-merge$state)
                            ((round-robin1*)
                             de-module-disabled-rules)))))
 
@@ -524,71 +575,7 @@
 
 ;; ======================================================================
 
-;; 2. Specify the Final State of RR1 After An N-Step Execution
-
-;; RR1 simulator
-
-(progn
-  (defun round-robin1$map-to-links (st)
-    (b* ((a0 (get-field *round-robin1$a0* st))
-         (b0 (get-field *round-robin1$b0* st))
-         (a1 (get-field *round-robin1$a1* st))
-         (b1 (get-field *round-robin1$b1* st))
-         (q2 (get-field *round-robin1$q2* st))
-         (q3 (get-field *round-robin1$q3* st))
-         (br (get-field *round-robin1$br* st))
-         (me (get-field *round-robin1$me* st)))
-      (append (list (cons 'alt-branch (alt-branch$map-to-links br)))
-              (map-to-links (list (list* 'a0 a0)
-                                  (list* 'b0 b0)))
-              (cons (cons 'Q2 (queue2$map-to-links q2))
-                    (cons (cons 'Q3 (queue3$map-to-links q3))
-                          (map-to-links (list (list* 'a1 a1)
-                                              (list* 'b1 b1)))))
-              (list (cons 'alt-merge (alt-merge$map-to-links me))))))
-
-  (defun round-robin1$map-to-links-list (x)
-    (if (atom x)
-        nil
-      (cons (round-robin1$map-to-links (car x))
-            (round-robin1$map-to-links-list (cdr x)))))
-
-  (defund round-robin1$sim (data-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp n))
-                    :verify-guards nil
-                    :stobjs state))
-    (b* ((num-signals (round-robin1$ins-len data-width))
-         ((mv inputs-lst state)
-          (signal-vals-gen num-signals n state nil))
-         ;;(- (cw "~x0~%" inputs-lst))
-         (full '(t))
-         (empty '(nil))
-         (invalid-data (make-list data-width :initial-element '(x)))
-         (q2 (list (list empty invalid-data)
-                   (list empty invalid-data)))
-         (q3 (list (list empty invalid-data)
-                   (list empty invalid-data)
-                   (list empty invalid-data)))
-         (br (list (list full '(nil))
-                   (list empty '(x))))
-         (me (list (list full '(nil))
-                   (list empty '(x))))
-         (st (list (list empty invalid-data)
-                   (list empty invalid-data)
-                   (list empty invalid-data)
-                   (list empty invalid-data)
-                   q2 q3 br me)))
-      (mv (pretty-list
-           (remove-dup-neighbors
-            (round-robin1$map-to-links-list
-             (de-sim-list (si 'round-robin1 data-width)
-                          inputs-lst
-                          st
-                          (round-robin1$netlist data-width))))
-           0)
-          state)))
-  )
+;; 2. Multi-Step State Lemma
 
 ;; Conditions on the inputs
 
@@ -608,11 +595,6 @@
      (equal inputs
             (list* full-in empty-out- (append data-in go-signals))))))
 
-(defthmd len-of-round-robin1$inputs
-  (implies (round-robin1$input-format inputs data-width)
-           (equal (len inputs) (round-robin1$ins-len data-width)))
-  :hints (("Goal" :in-theory (enable round-robin1$input-format))))
-
 (local
  (defthm round-robin1$input-format=>q2$input-format
    (implies (and (round-robin1$input-format inputs data-width)
@@ -627,9 +609,7 @@
                              round-robin1$valid-st
                              round-robin1$st-format
                              round-robin1$q2-inputs)
-                            (nthcdr
-                             len
-                             take-of-too-many))))))
+                            ())))))
 
 (local
  (defthm round-robin1$input-format=>q3$input-format
@@ -645,9 +625,7 @@
                              round-robin1$valid-st
                              round-robin1$st-format
                              round-robin1$q3-inputs)
-                            (nthcdr
-                             len
-                             take-of-too-many))))))
+                            ())))))
 
 (local
  (defthm round-robin1$input-format=>br$input-format
@@ -663,8 +641,7 @@
                              round-robin1$valid-st
                              round-robin1$st-format
                              round-robin1$br-inputs)
-                            (nthcdr
-                             take-of-too-many))))))
+                            ())))))
 
 (local
  (defthm round-robin1$input-format=>me$input-format
@@ -674,16 +651,36 @@
              (round-robin1$me-inputs inputs st data-width)
              data-width))
    :hints (("Goal"
-            :use len-of-round-robin1$inputs
             :in-theory (e/d (round-robin1$input-format
                              alt-merge$input-format
-                             alt-merge$data-in0
-                             alt-merge$data-in1
+                             alt-merge$data0-in
+                             alt-merge$data1-in
                              round-robin1$valid-st
                              round-robin1$st-format
                              round-robin1$me-inputs)
-                            (nthcdr
-                             take-of-too-many))))))
+                            ())))))
+
+(defthm booleanp-round-robin1$in-act
+  (implies (and (round-robin1$input-format inputs data-width)
+                (round-robin1$valid-st st data-width))
+           (booleanp (round-robin1$in-act inputs st data-width)))
+  :hints (("Goal"
+           :use round-robin1$input-format=>br$input-format
+           :in-theory (e/d (round-robin1$valid-st
+                            round-robin1$in-act)
+                           (round-robin1$input-format=>br$input-format))))
+  :rule-classes :type-prescription)
+
+(defthm booleanp-round-robin1$out-act
+  (implies (and (round-robin1$input-format inputs data-width)
+                (round-robin1$valid-st st data-width))
+           (booleanp (round-robin1$out-act inputs st data-width)))
+  :hints (("Goal"
+           :use round-robin1$input-format=>me$input-format
+           :in-theory (e/d (round-robin1$valid-st
+                            round-robin1$out-act)
+                           (round-robin1$input-format=>me$input-format))))
+  :rule-classes :type-prescription)
 
 (simulate-lemma round-robin1)
 
@@ -691,51 +688,51 @@
 
 ;; 3. Single-Step-Update Property
 
-(defun interleave (l1 l2)
+(defun intertwine (l1 l2)
   (declare (xargs :guard t))
   (cond ((atom l1) l2)
         ((atom l2) l1)
         (t (append (list (car l1) (car l2))
-                   (interleave (cdr l1) (cdr l2))))))
+                   (intertwine (cdr l1) (cdr l2))))))
 
-(defthm consp-interleave
+(defthm consp-intertwine
   (implies (or (consp l1) (consp l2)
                (< 0 (len l1)) (< 0 (len l2)))
-           (consp (interleave l1 l2)))
+           (consp (intertwine l1 l2)))
   :rule-classes :type-prescription)
 
-(defthm true-listp-interleave
+(defthm true-listp-intertwine
   (implies (and (true-listp l1)
                 (true-listp l2))
-           (true-listp (interleave l1 l2)))
+           (true-listp (intertwine l1 l2)))
   :rule-classes :type-prescription)
 
-(defthm len-interleave
-  (equal (len (interleave l1 l2))
+(defthm len-intertwine
+  (equal (len (intertwine l1 l2))
          (+ (len l1) (len l2))))
 
-(defthm len-of-cdr-interleave
+(defthm len-of-cdr-intertwine
   (implies (or (< 0 (len l1)) (< 0 (len l2)))
-           (equal (len (cdr (interleave l1 l2)))
+           (equal (len (cdr (intertwine l1 l2)))
                   (+ -1 (len l1) (len l2)))))
 
-(defthm interleave-append-1
+(defthm intertwine-append-1
   (implies (and (or (equal (len x1) (len x2))
                     (equal (len x1) (1+ (len x2))))
                 (consp y))
-           (equal (interleave (append x1 y) x2)
-                  (append (interleave x1 x2) y))))
+           (equal (intertwine (append x1 y) x2)
+                  (append (intertwine x1 x2) y))))
 
-(defthm interleave-append-2
+(defthm intertwine-append-2
   (implies (and (<= (len x1) (1+ (len x2)))
                 (consp y))
-           (equal (interleave x1 (append x2 y))
-                  (append (interleave x1 x2) y))))
+           (equal (intertwine x1 (append x2 y))
+                  (append (intertwine x1 x2) y))))
 
-(defthm interleave-append-append
+(defthm intertwine-append-append
   (implies (equal (len x1) (len x2))
-           (equal (interleave (append x1 y1) (append x2 y2))
-                  (append (interleave x1 x2) (interleave y1 y2)))))
+           (equal (intertwine (append x1 y1) (append x2 y2))
+                  (append (intertwine x1 x2) (intertwine y1 y2)))))
 
 ;; The extraction function for RR1 that extracts the future output sequence
 ;; from the current state.
@@ -766,11 +763,11 @@
                           (car me-select-buf.d))))
 
     (cond ((< (len a-seq) (len b-seq))
-           (interleave b-seq a-seq))
+           (intertwine b-seq a-seq))
           ((< (len b-seq) (len a-seq))
-           (interleave a-seq b-seq))
-          (valid-me-select (interleave a-seq b-seq))
-          (t (interleave b-seq a-seq)))))
+           (intertwine a-seq b-seq))
+          (valid-me-select (intertwine a-seq b-seq))
+          (t (intertwine b-seq a-seq)))))
 
 (defthm round-robin1$extract-not-empty
   (implies (and (round-robin1$out-act inputs st data-width)
@@ -785,7 +782,7 @@
                             round-robin1$valid-st
                             round-robin1$extract
                             round-robin1$out-act)
-                           (nfix))))
+                           ())))
   :rule-classes :linear)
 
 ;; Specify and prove a state invariant
@@ -838,49 +835,28 @@
                     valid-me-select)))))
 
   (local
-   (defthm booleanp-round-robin1$q2-in-act
-     (implies (and (or (equal (nth *link$s*
-                                   (nth *round-robin1$a0* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *round-robin1$a0* st))
-                              '(nil)))
-                   (queue2$valid-st (nth *round-robin1$q2* st)
-                                    data-width))
-              (booleanp
-               (queue2$in-act (round-robin1$q2-inputs inputs st data-width)
-                              (nth *round-robin1$q2* st)
-                              data-width)))
-     :hints (("Goal"
-              :in-theory (enable get-field
-                                 round-robin1$q2-inputs
-                                 queue2$valid-st
-                                 queue2$in-act)))
+   (defthm round-robin1$input-format-lemma-1
+     (implies (round-robin1$input-format inputs data-width)
+              (booleanp (nth 0 inputs)))
+     :hints (("Goal" :in-theory (enable round-robin1$input-format)))
      :rule-classes :type-prescription))
 
   (local
-   (defthm booleanp-round-robin1$q3-in-act
-     (implies (and (or (equal (nth *link$s*
-                                   (nth *round-robin1$b0* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *round-robin1$b0* st))
-                              '(nil)))
-                   (queue3$valid-st (nth *round-robin1$q3* st)
-                                    data-width))
-              (booleanp
-               (queue3$in-act (round-robin1$q3-inputs inputs st data-width)
-                              (nth *round-robin1$q3* st)
-                              data-width)))
-     :hints (("Goal"
-              :in-theory (enable get-field
-                                 round-robin1$q3-inputs
-                                 queue3$valid-st
-                                 queue3$in-act)))
+   (defthm round-robin1$input-format-lemma-2
+     (implies (round-robin1$input-format inputs data-width)
+              (booleanp (nth 1 inputs)))
+     :hints (("Goal" :in-theory (enable round-robin1$input-format)))
      :rule-classes :type-prescription))
 
   (local
-   (defthm round-robin1$q2-in-act-nil
+   (defthm round-robin1$input-format-lemma-3
+     (implies (and (round-robin1$input-format inputs data-width)
+                   (nth 0 inputs))
+              (bvp (round-robin1$data-in inputs data-width)))
+     :hints (("Goal" :in-theory (enable round-robin1$input-format)))))
+
+  (local
+   (defthm round-robin1$q2-in-act-inactive
      (implies (equal (nth *link$s*
                           (nth *round-robin1$a0* st))
                      '(nil))
@@ -890,11 +866,10 @@
                     data-width)))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 round-robin1$q2-inputs
-                                 queue2$in-act)))))
+                                 round-robin1$q2-inputs)))))
 
   (local
-   (defthm round-robin1$q3-in-act-nil
+   (defthm round-robin1$q3-in-act-inactive
      (implies (equal (nth *link$s*
                           (nth *round-robin1$b0* st))
                      '(nil))
@@ -904,53 +879,10 @@
                     data-width)))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 round-robin1$q3-inputs
-                                 queue3$in-act)))))
+                                 round-robin1$q3-inputs)))))
 
   (local
-   (defthm booleanp-round-robin1$q2-out-act
-     (implies (and (or (equal (nth *link$s*
-                                   (nth *round-robin1$a1* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *round-robin1$a1* st))
-                              '(nil)))
-                   (queue2$valid-st (nth *round-robin1$q2* st)
-                                    data-width))
-              (booleanp
-               (queue2$out-act (round-robin1$q2-inputs inputs st data-width)
-                               (nth *round-robin1$q2* st)
-                               data-width)))
-     :hints (("Goal"
-              :in-theory (enable get-field
-                                 round-robin1$q2-inputs
-                                 queue2$valid-st
-                                 queue2$out-act)))
-     :rule-classes :type-prescription))
-
-  (local
-   (defthm booleanp-round-robin1$q3-out-act
-     (implies (and (or (equal (nth *link$s*
-                                   (nth *round-robin1$b1* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *round-robin1$b1* st))
-                              '(nil)))
-                   (queue3$valid-st (nth *round-robin1$q3* st)
-                                    data-width))
-              (booleanp
-               (queue3$out-act (round-robin1$q3-inputs inputs st data-width)
-                               (nth *round-robin1$q3* st)
-                               data-width)))
-     :hints (("Goal"
-              :in-theory (enable get-field
-                                 round-robin1$q3-inputs
-                                 queue3$valid-st
-                                 queue3$out-act)))
-     :rule-classes :type-prescription))
-
-  (local
-   (defthm round-robin1$q2-out-act-nil
+   (defthm round-robin1$q2-out-act-inactive
      (implies (equal (nth *link$s*
                           (nth *round-robin1$a1* st))
                      '(t))
@@ -960,11 +892,10 @@
                     data-width)))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 round-robin1$q2-inputs
-                                 queue2$out-act)))))
+                                 round-robin1$q2-inputs)))))
 
   (local
-   (defthm round-robin1$q3-out-act-nil
+   (defthm round-robin1$q3-out-act-inactive
      (implies (equal (nth *link$s*
                           (nth *round-robin1$b1* st))
                      '(t))
@@ -974,192 +905,59 @@
                     data-width)))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 round-robin1$q3-inputs
-                                 queue3$out-act)))))
+                                 round-robin1$q3-inputs)))))
 
   (local
-   (defthm booleanp-round-robin1$br-act0
-     (implies (and (booleanp (nth 0 inputs))
-                   (or (equal (nth *link$s*
-                                   (nth *round-robin1$a0* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *round-robin1$a0* st))
-                              '(nil)))
-                   (or (equal (nth *link$s*
-                                   (nth *round-robin1$b0* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *round-robin1$b0* st))
-                              '(nil)))
-                   (alt-branch$valid-st (nth *round-robin1$br* st)))
-              (booleanp
-               (alt-branch$act0 (round-robin1$br-inputs inputs st data-width)
-                                (nth *round-robin1$br* st)
-                                data-width)))
-     :hints (("Goal" :in-theory (enable get-field
-                                        round-robin1$br-inputs
-                                        alt-branch$valid-st
-                                        alt-branch$act0
-                                        alt-branch$act)))
-     :rule-classes :type-prescription))
-
-  (local
-   (defthm booleanp-round-robin1$br-act1
-     (implies (and (booleanp (nth 0 inputs))
-                   (or (equal (nth *link$s*
-                                   (nth *round-robin1$a0* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *round-robin1$a0* st))
-                              '(nil)))
-                   (or (equal (nth *link$s*
-                                   (nth *round-robin1$b0* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *round-robin1$b0* st))
-                              '(nil)))
-                   (alt-branch$valid-st (nth *round-robin1$br* st)))
-              (booleanp
-               (alt-branch$act1 (round-robin1$br-inputs inputs st data-width)
-                                (nth *round-robin1$br* st)
-                                data-width)))
-     :hints (("Goal" :in-theory (enable get-field
-                                        round-robin1$br-inputs
-                                        alt-branch$valid-st
-                                        alt-branch$act1
-                                        alt-branch$act)))
-     :rule-classes :type-prescription))
-
-  (local
-   (defthm round-robin1$br-act0-nil
-     (implies (and (equal (nth *link$s*
-                               (nth *round-robin1$a0* st))
-                          '(t))
-                   (alt-branch$valid-st (nth *round-robin1$br* st)))
+   (defthm round-robin1$br-act0-inactive
+     (implies (equal (nth *link$s*
+                          (nth *round-robin1$a0* st))
+                     '(t))
               (not (alt-branch$act0
                     (round-robin1$br-inputs inputs st data-width)
                     (nth *round-robin1$br* st)
                     data-width)))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 f-if
-                                 round-robin1$br-inputs
-                                 alt-branch$valid-st
-                                 alt-branch$act0
-                                 alt-branch$act)))))
+                                 round-robin1$br-inputs)))))
 
   (local
-   (defthm round-robin1$br-act1-nil
-     (implies (and (equal (nth *link$s*
-                               (nth *round-robin1$b0* st))
-                          '(t))
-                   (alt-branch$valid-st (nth *round-robin1$br* st)))
+   (defthm round-robin1$br-act1-inactive
+     (implies (equal (nth *link$s*
+                          (nth *round-robin1$b0* st))
+                     '(t))
               (not (alt-branch$act1
                     (round-robin1$br-inputs inputs st data-width)
                     (nth *round-robin1$br* st)
                     data-width)))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 f-if
-                                 round-robin1$br-inputs
-                                 alt-branch$valid-st
-                                 alt-branch$act1
-                                 alt-branch$act)))))
+                                 round-robin1$br-inputs)))))
 
   (local
-   (defthm booleanp-round-robin1$me-act0
-     (implies (and (booleanp (nth 1 inputs))
-                   (or (equal (nth *link$s*
-                                   (nth *round-robin1$a1* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *round-robin1$a1* st))
-                              '(nil)))
-                   (or (equal (nth *link$s*
-                                   (nth *round-robin1$b1* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *round-robin1$b1* st))
-                              '(nil)))
-                   (alt-merge$valid-st (nth *round-robin1$me* st)))
-              (booleanp
-               (alt-merge$act0 (round-robin1$me-inputs inputs st data-width)
-                               (nth *round-robin1$me* st)
-                               data-width)))
-     :hints (("Goal" :in-theory (enable get-field
-                                        f-and3
-                                        round-robin1$me-inputs
-                                        alt-merge$valid-st
-                                        alt-merge$act0
-                                        alt-merge$act)))
-     :rule-classes :type-prescription))
-
-  (local
-   (defthm booleanp-round-robin1$me-act1
-     (implies (and (booleanp (nth 1 inputs))
-                   (or (equal (nth *link$s*
-                                   (nth *round-robin1$a1* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *round-robin1$a1* st))
-                              '(nil)))
-                   (or (equal (nth *link$s*
-                                   (nth *round-robin1$b1* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *round-robin1$b1* st))
-                              '(nil)))
-                   (alt-merge$valid-st (nth *round-robin1$me* st)))
-              (booleanp
-               (alt-merge$act1 (round-robin1$me-inputs inputs st data-width)
-                               (nth *round-robin1$me* st)
-                               data-width)))
-     :hints (("Goal" :in-theory (enable get-field
-                                        f-and3
-                                        round-robin1$me-inputs
-                                        alt-merge$valid-st
-                                        alt-merge$act1
-                                        alt-merge$act)))
-     :rule-classes :type-prescription))
-
-  (local
-   (defthm round-robin1$me-act0-nil
-     (implies (and (equal (nth *link$s*
-                               (nth *round-robin1$a1* st))
-                          '(nil))
-                   (alt-merge$valid-st (nth *round-robin1$me* st)))
+   (defthm round-robin1$me-act0-inactive
+     (implies (equal (nth *link$s*
+                          (nth *round-robin1$a1* st))
+                     '(nil))
               (not (alt-merge$act0
                     (round-robin1$me-inputs inputs st data-width)
                     (nth *round-robin1$me* st)
                     data-width)))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 f-and3
-                                 f-if
-                                 round-robin1$me-inputs
-                                 alt-merge$valid-st
-                                 alt-merge$act0
-                                 alt-merge$act)))))
+                                 round-robin1$me-inputs)))))
 
   (local
-   (defthm round-robin1$me-act1-nil
-     (implies (and (equal (nth *link$s*
-                               (nth *round-robin1$b1* st))
-                          '(nil))
-                   (alt-merge$valid-st (nth *round-robin1$me* st)))
+   (defthm round-robin1$me-act1-inactive
+     (implies (equal (nth *link$s*
+                          (nth *round-robin1$b1* st))
+                     '(nil))
               (not (alt-merge$act1
                     (round-robin1$me-inputs inputs st data-width)
                     (nth *round-robin1$me* st)
                     data-width)))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 f-and3
-                                 f-if
-                                 round-robin1$me-inputs
-                                 alt-merge$valid-st
-                                 alt-merge$act1
-                                 alt-merge$act)))))
+                                 round-robin1$me-inputs)))))
 
   (defthm round-robin1$inv-preserved
     (implies (and (round-robin1$input-format inputs data-width)
@@ -1168,15 +966,15 @@
              (round-robin1$inv
               (round-robin1$step inputs st data-width)))
     :hints (("Goal"
+             :use (round-robin1$input-format=>q2$input-format
+                   round-robin1$input-format=>q3$input-format)
              :in-theory (e/d (get-field
+                              f-sr
                               queue2$extracted-step
                               queue3$extracted-step
-                              round-robin1$input-format
                               round-robin1$valid-st
                               round-robin1$inv
                               round-robin1$step
-                              round-robin1$in-act
-                              round-robin1$out-act
                               round-robin1$br-inputs
                               round-robin1$me-inputs
                               alt-branch$valid-st
@@ -1190,44 +988,31 @@
                               alt-merge$step
                               alt-merge$act
                               alt-merge$act0
-                              alt-merge$act1
-                              f-sr)
-                             (if*
+                              alt-merge$act1)
+                             (round-robin1$input-format=>q2$input-format
+                              round-robin1$input-format=>q3$input-format
                               nfix
-                              nthcdr
                               append
-                              pairlis$
-                              strip-cars
-                              default-car
-                              default-cdr
-                              default-+-1
-                              default-+-2
-                              take-of-too-many
-                              open-v-threefix)))))
+                              round-robin1$disabled-rules)))))
   )
 
 ;; The extracted next-state function for RR1.  Note that this function avoids
 ;; exploring the internal computation of RR1.
 
 (defund round-robin1$extracted-step (inputs st data-width)
-  (b* ((data-in (round-robin1$data-in inputs data-width))
+  (b* ((data (round-robin1$data-in inputs data-width))
        (extracted-st (round-robin1$extract st))
        (n (1- (len extracted-st))))
     (cond
      ((equal (round-robin1$out-act inputs st data-width) t)
       (cond
        ((equal (round-robin1$in-act inputs st data-width) t)
-        (cons data-in (take n extracted-st)))
+        (cons data (take n extracted-st)))
        (t (take n extracted-st))))
      (t (cond
          ((equal (round-robin1$in-act inputs st data-width) t)
-          (cons data-in extracted-st))
+          (cons data extracted-st))
          (t extracted-st))))))
-
-(local
- (defthm len-0-is-atom
-   (equal (equal (len x) 0)
-          (atom x))))
 
 (local
  (defthmd cons-append-instances
@@ -1298,104 +1083,44 @@
                                  round-robin1$q3-inputs)))))
 
   (local
-   (defthm queue2$extract-singleton
-     (implies (and (equal (len (queue2$extract st))
-                          1)
-                   (queue2$valid-st st data-width)
-                   (queue2$out-act inputs st data-width))
-              (equal (queue2$extract st)
-                     (list (queue2$data-out st))))
-     :hints (("Goal"
-              :in-theory (enable get-field
-                                 queue2$valid-st
-                                 queue2$extract
-                                 queue2$out-act
-                                 queue2$data-out)))))
-
-  (local
-   (defthm cdr-queue2$extract-singleton
-     (implies (and (equal (len (queue2$extract st))
-                          2)
-                   (queue2$valid-st st data-width)
-                   (queue2$out-act inputs st data-width))
-              (equal (cdr (queue2$extract st))
-                     (list (queue2$data-out st))))
-     :hints (("Goal"
-              :in-theory (enable get-field
-                                 queue2$valid-st
-                                 queue2$extract
-                                 queue2$out-act
-                                 queue2$data-out)))))
-
-  (local
-   (defthm queue3$extract-singleton
-     (implies (and (equal (len (queue3$extract st))
-                          1)
-                   (queue3$valid-st st data-width)
-                   (queue3$out-act inputs st data-width))
-              (equal (queue3$extract st)
-                     (list (queue3$data-out st))))
-     :hints (("Goal"
-              :in-theory (enable get-field
-                                 queue3$valid-st
-                                 queue3$extract
-                                 queue3$out-act
-                                 queue3$data-out)))))
-
-  (local
-   (defthm cdr-queue3$extract-singleton
-     (implies (and (equal (len (queue3$extract st))
-                          2)
-                   (queue3$valid-st st data-width)
-                   (queue3$out-act inputs st data-width))
-              (equal (cdr (queue3$extract st))
-                     (list (queue3$data-out st))))
-     :hints (("Goal"
-              :in-theory (enable get-field
-                                 queue3$valid-st
-                                 queue3$extract
-                                 queue3$out-act
-                                 queue3$data-out)))))
-
-  (local
    (defthm round-robin1$extracted-step-correct-aux-1
-     (equal (cons e (append (interleave x y)
+     (equal (cons e (append (intertwine x y)
                             z))
-            (append (interleave (cons e y)
+            (append (intertwine (cons e y)
                                 x)
                     z))))
 
   (local
    (defthm round-robin1$extracted-step-correct-aux-2
-     (equal (cons e (append (cdr (interleave x y))
+     (equal (cons e (append (cdr (intertwine x y))
                             z))
-            (append (cons e (cdr (interleave x y)))
+            (append (cons e (cdr (intertwine x y)))
                     z))))
 
   (local
    (defthm round-robin1$extracted-step-correct-aux-3
      (implies (consp x)
               (equal (cons (car x)
-                           (interleave (queue2$extract st)
+                           (intertwine (queue2$extract st)
                                        (cdr x)))
-                     (interleave x (queue2$extract st))))))
+                     (intertwine x (queue2$extract st))))))
 
   (local
    (defthm round-robin1$extracted-step-correct-aux-4
      (implies (consp x)
               (equal (cons (car x)
-                           (interleave (queue3$extract st)
+                           (intertwine (queue3$extract st)
                                        (cdr x)))
-                     (interleave x (queue3$extract st))))))
+                     (intertwine x (queue3$extract st))))))
 
   (local
    (defthm round-robin1$extracted-step-correct-aux-5
      (implies (consp x)
               (equal (cons (car x)
-                           (interleave (append y z)
+                           (intertwine (append y z)
                                        (cdr x)))
-                     (interleave x (append y z))))
-     :hints (("Goal" :in-theory (disable interleave-append-2)))))
+                     (intertwine x (append y z))))
+     :hints (("Goal" :in-theory (disable intertwine-append-2)))))
 
   (defthm round-robin1$extracted-step-correct
     (b* ((next-st (round-robin1$step inputs st data-width)))
@@ -1405,15 +1130,17 @@
                (equal (round-robin1$extract next-st)
                       (round-robin1$extracted-step inputs st data-width))))
     :hints (("Goal"
+             :use (round-robin1$input-format=>q2$input-format
+                   round-robin1$input-format=>q3$input-format)
              :in-theory (e/d (get-field
                               f-sr
+                              joint-act
+                              len-0-is-atom
                               cons-append-instances
                               queue2$extracted-step
                               queue3$extracted-step
                               round-robin1$extracted-step
-                              round-robin1$input-format
                               round-robin1$valid-st
-                              round-robin1$st-format
                               round-robin1$inv
                               round-robin1$step
                               round-robin1$in-act
@@ -1432,102 +1159,17 @@
                               alt-merge$act
                               alt-merge$act0
                               alt-merge$act1)
-                             (nfix
+                             (round-robin1$input-format=>q2$input-format
+                              round-robin1$input-format=>q3$input-format
                               b-and3
                               b-or3
                               b-not
-                              not
-                              take-redefinition
-                              nthcdr
-                              len-nthcdr
-                              if*
-                              pairlis$
-                              strip-cars
-                              default-car
-                              default-cdr
-                              default-+-1
-                              default-+-2
-                              acl2::append-of-cons)))))
+                              round-robin1$disabled-rules)))))
   )
 
 ;; ======================================================================
 
 ;; 4. Relationship Between the Input and Output Sequences
-
-;; Extract the accepted input sequence
-
-(defun round-robin1$in-seq (inputs-lst st data-width n)
-  (declare (xargs :measure (acl2-count n)))
-  (if (zp n)
-      nil
-    (b* ((inputs (car inputs-lst)))
-      (if (equal (round-robin1$in-act inputs st data-width) t)
-          (append (round-robin1$in-seq
-                   (cdr inputs-lst)
-                   (round-robin1$step inputs st data-width)
-                   data-width
-                   (1- n))
-                  (list (round-robin1$data-in inputs data-width)))
-        (round-robin1$in-seq (cdr inputs-lst)
-                             (round-robin1$step inputs st data-width)
-                             data-width
-                             (1- n))))))
-
-;; Extract the valid output sequence
-
-(defun round-robin1$out-seq (inputs-lst st data-width n)
-  (declare (xargs :measure (acl2-count n)))
-  (if (zp n)
-      nil
-    (b* ((inputs (car inputs-lst)))
-      (if (equal (round-robin1$out-act inputs st data-width) t)
-          (append (round-robin1$out-seq
-                   (cdr inputs-lst)
-                   (round-robin1$step inputs st data-width)
-                   data-width
-                   (1- n))
-                  (list (round-robin1$data-out st)))
-        (round-robin1$out-seq (cdr inputs-lst)
-                              (round-robin1$step inputs st data-width)
-                              data-width
-                              (1- n))))))
-
-;; Input-output sequence simulator
-
-(defund round-robin1$in-out-seq-sim (data-width n state)
-  (declare (xargs :guard (and (natp data-width)
-                              (natp n))
-                  :verify-guards nil
-                  :stobjs state))
-  (b* ((num-signals (round-robin1$ins-len data-width))
-       ((mv inputs-lst state)
-        (signal-vals-gen num-signals n state nil))
-       (full '(t))
-       (empty '(nil))
-       (invalid-data (make-list data-width :initial-element '(x)))
-       (q2 (list (list empty invalid-data)
-                 (list empty invalid-data)))
-       (q3 (list (list empty invalid-data)
-                 (list empty invalid-data)
-                 (list empty invalid-data)))
-       (br (list (list full '(nil))
-                 (list empty '(x))))
-       (me (list (list full '(nil))
-                 (list empty '(x))))
-       (st (list (list empty invalid-data)
-                 (list empty invalid-data)
-                 (list empty invalid-data)
-                 (list empty invalid-data)
-                 q2 q3 br me)))
-    (mv
-     (append
-      (list (cons 'in-seq
-                  (v-to-nat-lst
-                   (round-robin1$in-seq inputs-lst st data-width n))))
-      (list (cons 'out-seq
-                  (v-to-nat-lst
-                   (round-robin1$out-seq inputs-lst st data-width n)))))
-     state)))
 
 ;; Prove that round-robin1$valid-st is an invariant.
 
@@ -1535,15 +1177,13 @@
   ()
 
   (local
-   (defthm round-robin1$valid-st-preserved-aux
+   (defthm round-robin1$br-acts-inactive
      (b* ((br-inputs (round-robin1$br-inputs inputs st data-width))
           (br (nth *round-robin1$br* st)))
        (implies (not (nth 0 inputs))
                 (and (not (alt-branch$act0 br-inputs br data-width))
                      (not (alt-branch$act1 br-inputs br data-width)))))
-     :hints (("Goal" :in-theory (enable round-robin1$br-inputs
-                                        alt-branch$act0
-                                        alt-branch$act1)))))
+     :hints (("Goal" :in-theory (enable round-robin1$br-inputs)))))
 
   (defthm round-robin1$valid-st-preserved
     (implies (and (round-robin1$input-format inputs data-width)
@@ -1552,56 +1192,42 @@
               (round-robin1$step inputs st data-width)
               data-width))
     :hints (("Goal"
-             :use ((:instance
-                    queue2$valid-st-preserved
-                    (inputs (round-robin1$q2-inputs inputs st data-width))
-                    (st (get-field *round-robin1$q2* st)))
-                   (:instance
-                    queue3$valid-st-preserved
-                    (inputs (round-robin1$q3-inputs inputs st data-width))
-                    (st (get-field *round-robin1$q3* st)))
-                   (:instance
-                    alt-branch$valid-st-preserved
-                    (inputs (round-robin1$br-inputs inputs st data-width))
-                    (st (get-field *round-robin1$br* st)))
-                   (:instance
-                    alt-merge$valid-st-preserved
-                    (inputs (round-robin1$me-inputs inputs st data-width))
-                    (st (get-field *round-robin1$me* st))))
+             :use (round-robin1$input-format=>q2$input-format
+                   round-robin1$input-format=>q3$input-format
+                   round-robin1$input-format=>br$input-format
+                   round-robin1$input-format=>me$input-format)
              :in-theory (e/d (get-field
+                              f-sr
                               round-robin1$input-format
                               round-robin1$valid-st
                               round-robin1$st-format
                               round-robin1$step
                               round-robin1$in-act
-                              round-robin1$out-act
-                              f-sr)
-                             (queue2$valid-st-preserved
-                              queue3$valid-st-preserved
-                              alt-branch$valid-st-preserved
-                              alt-merge$valid-st-preserved
-                              if*
+                              round-robin1$out-act)
+                             (round-robin1$input-format=>q2$input-format
+                              round-robin1$input-format=>q3$input-format
+                              round-robin1$input-format=>br$input-format
+                              round-robin1$input-format=>me$input-format
                               nfix
-                              nthcdr
-                              acl2::true-listp-append)))))
+                              acl2::true-listp-append
+                              round-robin1$disabled-rules)))))
   )
 
 (defthm round-robin1$extract-lemma
   (implies (and (round-robin1$valid-st st data-width)
                 (round-robin1$inv st)
-                (equal n (1- (len (round-robin1$extract st))))
                 (round-robin1$out-act inputs st data-width))
-           (equal (append (take n (round-robin1$extract st))
-                          (list (round-robin1$data-out st)))
-                  (round-robin1$extract st)))
+           (equal (list (round-robin1$data-out st))
+                  (nthcdr (1- (len (round-robin1$extract st)))
+                          (round-robin1$extract st))))
   :hints (("Goal"
            :do-not-induct t
-           :use round-robin1$valid-st=>posp-data-width
+           :use round-robin1$valid-st=>data-width-constraint
            :in-theory (e/d (f-and3
+                            len-0-is-atom
                             cons-append-instances
                             left-associativity-of-append
                             round-robin1$valid-st
-                            round-robin1$st-format
                             round-robin1$inv
                             round-robin1$extract
                             round-robin1$out-act
@@ -1613,19 +1239,22 @@
                             alt-merge$act1)
                            (nfix
                             b-not
-                            nthcdr
-                            len-nthcdr
-                            if*
                             append
-                            pairlis$
-                            strip-cars
-                            not
-                            default-car
-                            default-cdr
-                            default-+-1
-                            default-+-2
-                            acl2::append-of-cons
-                            acl2::associativity-of-append)))))
+                            acl2::associativity-of-append
+                            round-robin1$disabled-rules)))))
+
+;; Extract the accepted input sequence
+
+(seq-gen round-robin1 in in-act 0
+         (round-robin1$data-in inputs data-width))
+
+;; Extract the valid output sequence
+
+(seq-gen round-robin1 out out-act 1
+         (round-robin1$data-out st)
+         :netlist-data (nthcdr 2 outputs))
+
+;; The multi-step input-output relationship
 
 (in-out-stream-lemma round-robin1 :inv t)
 

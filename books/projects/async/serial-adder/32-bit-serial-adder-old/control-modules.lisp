@@ -4,12 +4,14 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2018
+;; September 2018
 
 (in-package "ADE")
 
+(include-book "de")
 (include-book "fm9001-spec")
-(include-book "primitives")
+(include-book "macros")
+(include-book "../../list-rewrites")
 
 ;; ======================================================================
 
@@ -91,7 +93,7 @@
      ((g0 (direct) b-nor (m0 m1))
       (g1 (m1-) b-not (m1))
       (g2 (pre-dec) b-nor (m0 m1-))
-      (g3 (side-effect) id (m1))))))
+      (g3 (side-effect) wire (m1))))))
 
 (assert-event (net-syntax-okp *decode-reg-mode*) :on-skip-proofs t)
 (assert-event (net-arity-okp *decode-reg-mode*) :on-skip-proofs t)
@@ -255,10 +257,10 @@
      (z0 z1 z2 z3)
      ()
      ((aa (aa) b-buf (a))
-      (g0 (z0) id (aa))
-      (g1 (z1) id (aa))
-      (g2 (z2) id (aa))
-      (g3 (z3) id (aa))))))
+      (g0 (z0) wire (aa))
+      (g1 (z1) wire (aa))
+      (g2 (z2) wire (aa))
+      (g3 (z3) wire (aa))))))
 
 (assert-event (net-syntax-okp *fanout-4*) :on-skip-proofs t)
 (assert-event (net-arity-okp *fanout-4*) :on-skip-proofs t)
@@ -281,11 +283,11 @@
      (z0 z1 z2 z3 z4)
      ()
      ((aa (aa) b-buf (a))
-      (g0 (z0) id (aa))
-      (g1 (z1) id (aa))
-      (g2 (z2) id (aa))
-      (g3 (z3) id (aa))
-      (g4 (z4) id (aa))))))
+      (g0 (z0) wire (aa))
+      (g1 (z1) wire (aa))
+      (g2 (z2) wire (aa))
+      (g3 (z3) wire (aa))
+      (g4 (z4) wire (aa))))))
 
 (assert-event (net-syntax-okp *fanout-5*) :on-skip-proofs t)
 (assert-event (net-arity-okp *fanout-5*) :on-skip-proofs t)
@@ -302,69 +304,69 @@
            :expand (se 'fanout-5 (list a) sts netlist)
            :in-theory (enable de-rules fanout-5& 3vp))))
 
-(defconst *fanout-32*
-  (cons
-  '(fanout-32
-    (a)
-    (s0 s1 s2 s3 s4 s5 s6 s7
-        s8 s9 s10 s11 s12 s13 s14 s15
-        s16 s17 s18 s19 s20 s21 s22 s23
-        s24 s25 s26 s27 s28 s29 s30 s31)
-    ()
-    ((ga (aa) b-buf-pwr (a))
-     (g0 (s0) id (aa))
-     (g1 (s1) id (aa))
-     (g2 (s2) id (aa))
-     (g3 (s3) id (aa))
-     (g4 (s4) id (aa))
-     (g5 (s5) id (aa))
-     (g6 (s6) id (aa))
-     (g7 (s7) id (aa))
-     (g8 (s8) id (aa))
-     (g9 (s9) id (aa))
-     (g10 (s10) id (aa))
-     (g11 (s11) id (aa))
-     (g12 (s12) id (aa))
-     (g13 (s13) id (aa))
-     (g14 (s14) id (aa))
-     (g15 (s15) id (aa))
-     (g16 (s16) id (aa))
-     (g17 (s17) id (aa))
-     (g18 (s18) id (aa))
-     (g19 (s19) id (aa))
-     (g20 (s20) id (aa))
-     (g21 (s21) id (aa))
-     (g22 (s22) id (aa))
-     (g23 (s23) id (aa))
-     (g24 (s24) id (aa))
-     (g25 (s25) id (aa))
-     (g26 (s26) id (aa))
-     (g27 (s27) id (aa))
-     (g28 (s28) id (aa))
-     (g29 (s29) id (aa))
-     (g30 (s30) id (aa))
-     (g31 (s31) id (aa))))
+;; (defconst *fanout-32*
+;;   (cons
+;;   '(fanout-32
+;;     (a)
+;;     (s0 s1 s2 s3 s4 s5 s6 s7
+;;         s8 s9 s10 s11 s12 s13 s14 s15
+;;         s16 s17 s18 s19 s20 s21 s22 s23
+;;         s24 s25 s26 s27 s28 s29 s30 s31)
+;;     ()
+;;     ((ga (aa) b-buf-pwr (a))
+;;      (g0 (s0) wire (aa))
+;;      (g1 (s1) wire (aa))
+;;      (g2 (s2) wire (aa))
+;;      (g3 (s3) wire (aa))
+;;      (g4 (s4) wire (aa))
+;;      (g5 (s5) wire (aa))
+;;      (g6 (s6) wire (aa))
+;;      (g7 (s7) wire (aa))
+;;      (g8 (s8) wire (aa))
+;;      (g9 (s9) wire (aa))
+;;      (g10 (s10) wire (aa))
+;;      (g11 (s11) wire (aa))
+;;      (g12 (s12) wire (aa))
+;;      (g13 (s13) wire (aa))
+;;      (g14 (s14) wire (aa))
+;;      (g15 (s15) wire (aa))
+;;      (g16 (s16) wire (aa))
+;;      (g17 (s17) wire (aa))
+;;      (g18 (s18) wire (aa))
+;;      (g19 (s19) wire (aa))
+;;      (g20 (s20) wire (aa))
+;;      (g21 (s21) wire (aa))
+;;      (g22 (s22) wire (aa))
+;;      (g23 (s23) wire (aa))
+;;      (g24 (s24) wire (aa))
+;;      (g25 (s25) wire (aa))
+;;      (g26 (s26) wire (aa))
+;;      (g27 (s27) wire (aa))
+;;      (g28 (s28) wire (aa))
+;;      (g29 (s29) wire (aa))
+;;      (g30 (s30) wire (aa))
+;;      (g31 (s31) wire (aa))))
 
-  *b-buf-pwr*))
+;;   *b-buf-pwr*))
 
-(assert-event (net-syntax-okp *fanout-32*) :on-skip-proofs t)
-(assert-event (net-arity-okp *fanout-32*) :on-skip-proofs t)
+;; (assert-event (net-syntax-okp *fanout-32*) :on-skip-proofs t)
+;; (assert-event (net-arity-okp *fanout-32*) :on-skip-proofs t)
 
-(defund fanout-32& (netlist)
-  (declare (xargs :guard (alistp netlist)))
-  (and (netlist-hyps netlist fanout-32)
-       (b-buf-pwr& (delete-to-eq 'fanout-32 netlist))))
+;; (defund fanout-32& (netlist)
+;;   (declare (xargs :guard (alistp netlist)))
+;;   (and (netlist-hyps netlist fanout-32)
+;;        (b-buf-pwr& (delete-to-eq 'fanout-32 netlist))))
 
-(defthmd fanout-32$value
-  (implies (fanout-32& netlist)
-           (equal (se 'fanout-32 (list a) sts netlist)
-                  (make-list 32 :initial-element (3v-fix a))))
-  :hints (("Goal"
-           :expand (se 'fanout-32 (list a) sts netlist)
-           :in-theory (enable de-rules
-                              fanout-32&
-                              b-buf-pwr$value
-                              3vp))))
+;; (defthmd fanout-32$value
+;;   (implies (fanout-32& netlist)
+;;            (equal (se 'fanout-32 (list a) sts netlist)
+;;                   (make-list 32 :initial-element (3v-fix a))))
+;;   :hints (("Goal"
+;;            :expand (se 'fanout-32 (list a) sts netlist)
+;;            :in-theory (enable de-rules
+;;                               fanout-32&
+;;                               b-buf-pwr$value
+;;                               3vp))))
 
 ;; ======================================================================
 

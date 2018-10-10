@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; September 2018
 
 ;; VECTOR-MODULE name (occ-name outputs type inputs) specs &key enable
 
@@ -34,7 +34,7 @@
 ;; * enable -- A list of events to be enabled.
 
 ;; Example: (vector-module v-pullup (g (y) pullup (a)) ((v-pullup a))
-;;                         :enable (v-pullup)) 
+;;                         :enable (v-pullup))
 
 ;; More examples in "vector-module.lisp".
 
@@ -122,16 +122,17 @@
          (type (caddr occ))
          (inputs (cadddr occ))
          (name-str (symbol-name name))
-         (body-defun (unstring name-str "$BODY"))
-         (generator (unstring name-str "*"))
-         (destructor (unstring (symbol-name generator) "$DESTRUCTURE"))
+         (body-defun (strings-to-symbol name-str "$BODY"))
+         (generator (strings-to-symbol name-str "*"))
+         (destructor (strings-to-symbol (symbol-name generator)
+                                        "$DESTRUCTURE"))
          (module-name `(SI ',name N))
-         (predicate (unstring name-str "&"))
-         (unbound-in-body-lemma (unstring name-str "$UNBOUND-IN-BODY"))
-         (body-value-lemma (unstring name-str "$BODY-VALUE"))
-         (not-primp-lemma-name (unstring "NOT-PRIMP-" name-str))
-         (value-lemma (unstring name-str "$VALUE"))
-         (netlist (unstring name-str "$NETLIST")))
+         (predicate (strings-to-symbol name-str "&"))
+         (unbound-in-body-lemma (strings-to-symbol name-str
+                                                   "$UNBOUND-IN-BODY"))
+         (body-value-lemma (strings-to-symbol name-str "$BODY-VALUE"))
+         (value-lemma (strings-to-symbol name-str "$VALUE"))
+         (netlist (strings-to-symbol name-str "$NETLIST")))
 
     `(PROGN
 
@@ -200,12 +201,11 @@
                   ,(mapAPPEND
                     (map-value-lemma-concl specs))))
         :hints (("Goal"
-                 :do-not '(preprocess)
-                 :expand (SE ,module-name ,(mapAPPEND inputs)
-                             STS NETLIST)
+                 :expand (:free (inputs N)
+                                (SE ,module-name ,(mapAPPEND inputs)
+                                    STS NETLIST))
                  :in-theory (ENABLE de-rules
-                                    ,destructor
-                                    ,not-primp-lemma-name))))
+                                    ,destructor))))
 
       (IN-THEORY (DISABLE ,body-defun
                           ,predicate

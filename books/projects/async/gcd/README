@@ -26,9 +26,15 @@ contains Q2 and Q3 as submodules.
 
 comp-gcd.lisp: a GCD circuit, c-gcd, that contains C as a submodule.
 
-queue3-gcd.lisp: a GCD circuit, q3-gcd, that concatenates Q3 with gcd
-through a link.
+comp-gcd-body.lisp: a circuit, comp-gcd-body, performing the GCD
+operation in one iteration.  It is constructed using the self-timed
+serial subtractor serial-sub.
 
-queue3-comp-gcd.lisp: a GCD circuit, q3-c-gcd, that concatenates Q3
-with c-gcd through a link.
+comp-gcd2.lisp: a GCD circuit, c-gcd2, that contains comp-gcd-body as
+a submodule.
+
+q3-gcd.lisp: a GCD circuit, q3-gcd, that concatenates Q3 and gcd.
+
+q3-comp-gcd.lisp: a GCD circuit, q3-c-gcd, that concatenates Q3 and
+c-gcd.
 

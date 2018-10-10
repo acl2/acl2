@@ -4,12 +4,11 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2018
+;; October 2018
 
 (in-package "ADE")
 
 (include-book "de")
-(include-book "macros")
 (include-book "store-n")
 
 (include-book "std/lists/flatten" :dir :system)
@@ -315,10 +314,14 @@
   (b* ((s (get-field *link1$s* st))
        (d (get-field *link1$d* st)))
     (and (validp s)
+         (true-listp d)
+         (equal (len d) 1)
          (or (emptyp s)
              (booleanp (car d))))))
 
-(not-primp-lemma link1) ;; Prove that LINK1 is not a DE primitive.
+;; Prove that LINK1 is not a DE primitive.
+
+(not-primp-lemma link1)
 
 ;; The value lemma for LINK1
 
@@ -335,7 +338,6 @@
            :expand (:free (inputs)
                           (se 'link1 inputs st netlist))
            :in-theory (e/d (de-rules
-                            not-primp-link1
                             link1&
                             link1*$destructure)
                            ((link1*)
@@ -368,7 +370,6 @@
            :do-not-induct t
            :expand (de 'link1 inputs st netlist)
            :in-theory (e/d (de-rules
-                            not-primp-link1
                             link1&
                             link1*$destructure)
                            ((link1*)
@@ -452,7 +453,7 @@
     (and (len-1-true-listp d)
          (equal (len d) data-width))))
 
-(defthm link$st-format=>natp-data-width
+(defthm link$st-format=>data-width-constraint
   (implies (link$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable link$st-format)))
@@ -467,13 +468,14 @@
          (or (emptyp s)               ;; When the link is full,
              (bvp (strip-cars d)))))) ;; its data must be a bit vector.
 
-(defthmd link$valid-st=>natp-data-width
+(defthmd link$valid-st=>data-width-constraint
   (implies (link$valid-st st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable link$valid-st)))
   :rule-classes :forward-chaining)
 
-(not-primp-lemma link) ;; Prove that LINK is not a DE primitive.
+;; Prove that LINK is not a DE primitive.
+
+(not-primp-lemma link)
 
 ;; The value lemma for LINK
 
@@ -493,7 +495,6 @@
            :expand (:free (inputs data-width)
                           (se (si 'link data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            not-primp-link
                             link&
                             link*$destructure
                             link$st-format
@@ -534,15 +535,26 @@
            :expand (:free (data-width)
                           (de (si 'link data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            not-primp-link
                             link&
                             link*$destructure
                             link$st-format
-                            latch-n$value latch-n$state)
+                            latch-n$value
+                            latch-n$state)
                            ((link*)
                             de-module-disabled-rules)))))
 
 ;;(in-theory (disable link$step))
+
+(defthm link$valid-st-preserved
+  (implies (and (booleanp (nth 0 inputs))
+                (booleanp (nth 1 inputs))
+                (not (and (nth 0 inputs) (nth 1 inputs)))
+                (or (not (nth 0 inputs))
+                    (bvp (nthcdr 2 inputs)))
+                (link$valid-st st data-width))
+           (link$valid-st (link$step inputs st data-width)
+                          data-width))
+  :hints (("Goal" :in-theory (enable get-field f-sr))))
 
 
 

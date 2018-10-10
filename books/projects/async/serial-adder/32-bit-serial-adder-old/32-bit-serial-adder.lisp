@@ -4,14 +4,14 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; September 2018
 
 (in-package "ADE")
 
-(include-book "async-serial-adder-control")
-(include-book "../link-joint")
-(include-book "../vector-module")
-(include-book "../adders/adder")
+(include-book "32-bit-serial-adder-control")
+(include-book "adder")
+(include-book "link-joint")
+(include-book "vector-module")
 
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "centaur/gl/gl" :dir :system))
@@ -760,7 +760,8 @@
                             async-adder&
                             async-adder*$destructure
                             joint-cntl$value
-                            latch-n$value latch-n$state
+                            latch-n$value
+                            latch-n$state
                             v-buf$value
                             next-cntl-state$value
                             serial-adder$value
@@ -890,7 +891,7 @@
 
 (input-format-n-gen async-adder)
 
-(defthmd de-sim-n$async-adder
+(defthmd de-n$async-adder
   (b* ((cntl (nth *async-adder$cntl* st))
        (next-cntl (nth *async-adder$next-cntl* st))
        (result (nth *async-adder$result* st))
@@ -900,7 +901,7 @@
        (reg1 (nth *serial-adder$reg1* serial-add))
        (reg2 (nth *serial-adder$reg2* serial-add)))
     (implies (and (async-adder& netlist)
-                  (async-adder$input-format-n inputs-lst n)
+                  (async-adder$input-format-n inputs-seq n)
 
                   (len-1-true-listp cntl)
                   (equal (len cntl) *async-adder$cntl-st-len*)
@@ -912,11 +913,11 @@
                   (equal (len (car reg1)) *data-width*)
                   (true-listp (car reg2))
                   (equal (len (car reg2)) *data-width*))
-             (equal (de-sim-n 'async-adder inputs-lst st netlist n)
-                    (async-adder$run inputs-lst st n))))
+             (equal (de-n 'async-adder inputs-seq st netlist n)
+                    (async-adder$run inputs-seq st n))))
   :hints (("Goal"
-           :induct (de-sim-n 'async-adder inputs-lst st netlist n)
-           :in-theory (e/d (de-sim-n
+           :induct (de-n 'async-adder inputs-seq st netlist n)
+           :in-theory (e/d (de-n
                             async-adder$state-alt
                             async-adder$step
                             serial-adder$step
@@ -1013,49 +1014,49 @@
 (defund extract-async-adder-result-value (st)
   (strip-cars (nth 7 st)))
 
-(defun async-adder$result-empty-n (inputs-lst st n)
+(defun async-adder$result-empty-n (inputs-seq st n)
   (declare (xargs :measure (acl2-count n)))
   (if (zp n)
       t
     (and (emptyp (extract-async-adder-result-status st))
          (async-adder$result-empty-n
-          (cdr inputs-lst)
-          (async-adder$step (car inputs-lst) st)
+          (cdr inputs-seq)
+          (async-adder$step (car inputs-seq) st)
           (1- n)))))
 
 (defthm open-async-adder$result-empty-n-zp
   (implies (zp n)
-           (equal (async-adder$result-empty-n inputs-lst st n)
+           (equal (async-adder$result-empty-n inputs-seq st n)
                   t)))
 
 (defthm open-async-adder$result-empty-n
   (implies (not (zp n))
-           (equal (async-adder$result-empty-n inputs-lst st n)
+           (equal (async-adder$result-empty-n inputs-seq st n)
                   (and (emptyp (extract-async-adder-result-status st))
                        (async-adder$result-empty-n
-                        (cdr inputs-lst)
-                        (async-adder$step (car inputs-lst) st)
+                        (cdr inputs-seq)
+                        (async-adder$step (car inputs-seq) st)
                         (1- n))))))
 
 (defthm async-adder$result-emptyp-m+n
   (implies (and (natp m)
                 (natp n))
-           (equal (async-adder$result-empty-n inputs-lst st (+ m n))
-                  (and (async-adder$result-empty-n inputs-lst st m)
+           (equal (async-adder$result-empty-n inputs-seq st (+ m n))
+                  (and (async-adder$result-empty-n inputs-seq st m)
                        (async-adder$result-empty-n
-                        (nthcdr m inputs-lst)
-                        (async-adder$run inputs-lst st m)
+                        (nthcdr m inputs-seq)
+                        (async-adder$run inputs-seq st m)
                         n))))
   :hints (("Goal"
-           :induct (async-adder$result-empty-n inputs-lst st m))))
+           :induct (async-adder$result-empty-n inputs-seq st m))))
 
 (defthm async-adder$result-empty-n-lemma
-  (implies (and (async-adder$result-empty-n inputs-lst st n)
+  (implies (and (async-adder$result-empty-n inputs-seq st n)
                 (natp m)
                 (natp n)
                 (< m n))
            (emptyp (extract-async-adder-result-status
-                    (async-adder$run inputs-lst st m))))
+                    (async-adder$run inputs-seq st m))))
   :hints (("Goal"
            :in-theory (enable async-adder$run))))
 
@@ -1082,10 +1083,10 @@
   (b* ((hyps
         '((async-adder$inv-st st)))
        (concl1
-        '(async-adder$result-empty-n inputs-lst st n))
+        '(async-adder$result-empty-n inputs-seq st n))
        (concl2
         '(equal
-          (async-adder$run inputs-lst st n)
+          (async-adder$run inputs-seq st n)
           (list '(nil)
                 next-cntl
                 '(t)
@@ -1130,9 +1131,9 @@
         `((defthmd async-adder$invalid-result
             (implies
              (and ,@hyps
-                  (async-adder$st-trans inputs-lst)
-                  (equal n (async-adder$st-trans->numsteps inputs-lst))
-                  (async-adder$input-format-n inputs-lst n))
+                  (async-adder$st-trans inputs-seq)
+                  (equal n (async-adder$st-trans->numsteps inputs-seq))
+                  (async-adder$input-format-n inputs-seq n))
              ,concl1)
             :hints (("Goal"
                      :in-theory (e/d* (async-adder$st-trans
@@ -1172,9 +1173,9 @@
                  (?co  (nth *1-bit-adder$co* bit-add)))
               (implies
                (and ,@hyps
-                    (async-adder$st-trans inputs-lst)
-                    (equal n (async-adder$st-trans->numsteps inputs-lst))
-                    (async-adder$input-format-n inputs-lst n))
+                    (async-adder$st-trans inputs-seq)
+                    (equal n (async-adder$st-trans->numsteps inputs-seq))
+                    (async-adder$input-format-n inputs-seq n))
                ,concl2))
             :hints (("Goal"
                      :in-theory (e/d* (async-adder$st-trans
@@ -1211,9 +1212,9 @@
             (defthm ,lemma-name-1
               (implies
                (and ,@hyps
-                    (,st-trans inputs-lst)
+                    (,st-trans inputs-seq)
                     (equal n ,st-trans->numsteps)
-                    (async-adder$input-format-n inputs-lst n))
+                    (async-adder$input-format-n inputs-seq n))
                ,concl1)
               :hints (("Goal"
                        :do-not-induct t
@@ -1269,9 +1270,9 @@
                    (?co  (nth *1-bit-adder$co* bit-add)))
                 (implies
                  (and ,@hyps
-                      (,st-trans inputs-lst)
+                      (,st-trans inputs-seq)
                       (equal n ,st-trans->numsteps)
-                      (async-adder$input-format-n inputs-lst n))
+                      (async-adder$input-format-n inputs-seq n))
                  ,concl2))
               :hints (("Goal"
                        :do-not-induct t
@@ -1393,10 +1394,10 @@
   (b* ((hyps
         '((last-round-st st)))
        (concl1
-        '(async-adder$result-empty-n inputs-lst st n))
+        '(async-adder$result-empty-n inputs-seq st n))
        (concl2
         '(equal
-          (async-adder$run inputs-lst st n)
+          (async-adder$run inputs-seq st n)
           (list '(nil)
                 cntl
                 '(t)
@@ -1449,10 +1450,10 @@
         `((defthmd async-adder-last-round$invalid-result
             (implies
              (and ,@hyps
-                  (async-adder-last-round$st-trans inputs-lst)
+                  (async-adder-last-round$st-trans inputs-seq)
                   (equal n (async-adder-last-round$st-trans->numsteps
-                            inputs-lst))
-                  (async-adder$input-format-n inputs-lst n))
+                            inputs-seq))
+                  (async-adder$input-format-n inputs-seq n))
              ,concl1)
             :hints (("Goal"
                      :in-theory (e/d* (async-adder-last-round$st-trans
@@ -1492,10 +1493,10 @@
                  (?co  (nth *1-bit-adder$co* bit-add)))
               (implies
                (and ,@hyps
-                    (async-adder-last-round$st-trans inputs-lst)
+                    (async-adder-last-round$st-trans inputs-seq)
                     (equal n (async-adder-last-round$st-trans->numsteps
-                              inputs-lst))
-                    (async-adder$input-format-n inputs-lst n))
+                              inputs-seq))
+                    (async-adder$input-format-n inputs-seq n))
                ,concl2))
             :hints (("Goal"
                      :in-theory (e/d* (async-adder-last-round$st-trans
@@ -1533,9 +1534,9 @@
             (defthm ,lemma-name-1
               (implies
                (and ,@hyps
-                    (,st-trans inputs-lst)
+                    (,st-trans inputs-seq)
                     (equal n ,st-trans->numsteps)
-                    (async-adder$input-format-n inputs-lst n))
+                    (async-adder$input-format-n inputs-seq n))
                ,concl1)
               :hints (("Goal"
                        :do-not-induct t
@@ -1592,9 +1593,9 @@
                    (?co  (nth *1-bit-adder$co* bit-add)))
                 (implies
                  (and ,@hyps
-                      (,st-trans inputs-lst)
+                      (,st-trans inputs-seq)
                       (equal n ,st-trans->numsteps)
-                      (async-adder$input-format-n inputs-lst n))
+                      (async-adder$input-format-n inputs-seq n))
                  ,concl2))
               :hints (("Goal"
                        :do-not-induct t
@@ -1751,7 +1752,7 @@
                                                        (car (car reg1)))
                                                 (car ci)))))))))
     (implies
-     (and (async-adder$input-format-n inputs-lst n)
+     (and (async-adder$input-format-n inputs-seq n)
 
           (len-1-true-listp cntl)
           (equal (len cntl) *async-adder$cntl-st-len*)
@@ -1765,7 +1766,7 @@
           (equal (len (car reg1)) *data-width*)
           (true-listp (car reg2))
           (equal (len (car reg2)) *data-width*))
-     (equal (async-adder$run inputs-lst st n)
+     (equal (async-adder$run inputs-seq st n)
             st)))
   :hints (("Goal"
            :in-theory (e/d (async-adder$run
@@ -1803,13 +1804,13 @@
        (?lco (nth *1-bit-adder$lco* bit-add))
        (?co  (nth *1-bit-adder$co* bit-add)))
     (implies
-     (and (async-adder-last-round$st-trans inputs-lst)
+     (and (async-adder-last-round$st-trans inputs-seq)
           (natp n)
-          (<= (async-adder-last-round$st-trans->numsteps inputs-lst)
+          (<= (async-adder-last-round$st-trans->numsteps inputs-seq)
               n)
-          (async-adder$input-format-n inputs-lst n)
+          (async-adder$input-format-n inputs-seq n)
           (last-round-st st))
-     (equal (async-adder$run inputs-lst st n)
+     (equal (async-adder$run inputs-seq st n)
             (list '(nil)
                   cntl
                   '(t)
@@ -1861,16 +1862,16 @@
   :hints (("Goal"
            :use ((:instance
                   async-adder$input-format-m+n
-                  (m (async-adder-last-round$st-trans->numsteps inputs-lst))
+                  (m (async-adder-last-round$st-trans->numsteps inputs-seq))
                   (n (- n
                         (async-adder-last-round$st-trans->numsteps
-                         inputs-lst))))
+                         inputs-seq))))
                  (:instance
                   async-adder$run-m+n
-                  (m (async-adder-last-round$st-trans->numsteps inputs-lst))
+                  (m (async-adder-last-round$st-trans->numsteps inputs-seq))
                   (n (- n
                         (async-adder-last-round$st-trans->numsteps
-                         inputs-lst)))))
+                         inputs-seq)))))
            :in-theory (e/d (async-adder-last-round$sim
                             async-adder$state-fixpoint
                             last-round-st)
@@ -1997,16 +1998,16 @@
 
 (in-theory (disable next-cntl-state-n))
 
-(defun simulate-async-adder-loop-induct (inputs-lst st n count)
+(defun simulate-async-adder-loop-induct (inputs-seq st n count)
   (if (zp count)
       (list st n)
     (simulate-async-adder-loop-induct
-     (nthcdr (async-adder$st-trans->numsteps inputs-lst)
-             inputs-lst)
-     (async-adder$run inputs-lst
+     (nthcdr (async-adder$st-trans->numsteps inputs-seq)
+             inputs-seq)
+     (async-adder$run inputs-seq
                              st
-                             (async-adder$st-trans->numsteps inputs-lst))
-     (- n (async-adder$st-trans->numsteps inputs-lst))
+                             (async-adder$st-trans->numsteps inputs-seq))
+     (- n (async-adder$st-trans->numsteps inputs-seq))
      (1- count))))
 
 (local
@@ -2033,19 +2034,19 @@
            (not
             (equal
              (async-adder$st-trans-n->numsteps
-              (nthcdr (async-adder$st-trans->numsteps inputs-lst)
-                      inputs-lst)
+              (nthcdr (async-adder$st-trans->numsteps inputs-seq)
+                      inputs-seq)
               (+ -1 count))
              (+ (async-adder$st-trans->numsteps
-                 (nthcdr (async-adder$st-trans->numsteps inputs-lst)
-                         inputs-lst))
+                 (nthcdr (async-adder$st-trans->numsteps inputs-seq)
+                         inputs-seq))
                 (async-adder$st-trans-n->numsteps
-                 (nthcdr (+ (async-adder$st-trans->numsteps inputs-lst)
+                 (nthcdr (+ (async-adder$st-trans->numsteps inputs-seq)
                             (async-adder$st-trans->numsteps
                              (nthcdr (async-adder$st-trans->numsteps
-                                      inputs-lst)
-                                     inputs-lst)))
-                         inputs-lst)
+                                      inputs-seq)
+                                     inputs-seq)))
+                         inputs-seq)
                  (+ -2 count))))))
       (equal count 1))
      :rule-classes nil))
@@ -2060,14 +2061,14 @@
             (< (+ (v-to-nat (strip-cars next-cntl))
                   count)
                *data-width*)
-            (async-adder$st-trans-n inputs-lst count)
-            (equal n (async-adder$st-trans-n->numsteps inputs-lst count))
-            (async-adder$input-format-n inputs-lst n)
+            (async-adder$st-trans-n inputs-seq count)
+            (equal n (async-adder$st-trans-n->numsteps inputs-seq count))
+            (async-adder$input-format-n inputs-seq n)
             (async-adder$inv-st st))
-       (async-adder$result-empty-n inputs-lst st n)))
+       (async-adder$result-empty-n inputs-seq st n)))
     :hints (("Goal"
              :induct
-             (simulate-async-adder-loop-induct inputs-lst st n count)
+             (simulate-async-adder-loop-induct inputs-seq st n count)
              :in-theory (e/d (async-adder$invalid-result
                               async-adder$state-invariant
                               async-adder$inv-st
@@ -2083,7 +2084,7 @@
                               car-cdr-elim
                               (:type-prescription bvp-cvzbv)
                               true-listp
-                              bvp-is-true-listp
+                              bv-is-true-list
                               fv-shift-right=v-shift-right
                               f-gates=b-gates
                               strip-cars)))
@@ -2132,12 +2133,12 @@
             (< (+ (v-to-nat (strip-cars next-cntl))
                   count)
                *data-width*)
-            (async-adder$st-trans-n inputs-lst count)
-            (equal n (async-adder$st-trans-n->numsteps inputs-lst count))
-            (async-adder$input-format-n inputs-lst n)
+            (async-adder$st-trans-n inputs-seq count)
+            (equal n (async-adder$st-trans-n->numsteps inputs-seq count))
+            (async-adder$input-format-n inputs-seq n)
             (async-adder$inv-st st))
        (equal
-        (async-adder$run inputs-lst st n)
+        (async-adder$run inputs-seq st n)
         (list
          '(nil)
          (pairlis$ (next-cntl-state-n (strip-cars next-cntl)
@@ -2193,7 +2194,7 @@
                                             count))))))))
     :hints (("Goal"
              :induct
-             (simulate-async-adder-loop-induct inputs-lst st n count)
+             (simulate-async-adder-loop-induct inputs-seq st n count)
              :in-theory (e/d (async-adder$state-invariant
                               async-adder$inv-st
                               pos-len=>consp
@@ -2208,7 +2209,7 @@
                               car-cdr-elim
                               (:type-prescription bvp-cvzbv)
                               true-listp
-                              bvp-is-true-listp
+                              bv-is-true-list
                               fv-shift-right=v-shift-right
                               f-gates=b-gates
                               strip-cars)))
@@ -2308,11 +2309,11 @@
 (defthmd simulate-async-adder-loop-invalid-result-instance
   (implies
    (and (equal count (1- *data-width*))
-        (async-adder$st-trans-n inputs-lst count)
-        (equal n (async-adder$st-trans-n->numsteps inputs-lst count))
-        (async-adder$input-format-n inputs-lst n)
+        (async-adder$st-trans-n inputs-seq count)
+        (equal n (async-adder$st-trans-n->numsteps inputs-seq count))
+        (async-adder$input-format-n inputs-seq n)
         (async-adder$init-st st))
-   (async-adder$result-empty-n inputs-lst st n))
+   (async-adder$result-empty-n inputs-seq st n))
   :hints (("Goal"
            :do-not-induct t
            :use simulate-async-adder-loop-invalid-result
@@ -2360,11 +2361,11 @@
        (?co  (nth *1-bit-adder$co* bit-add)))
     (implies
      (and (equal count (1- *data-width*))
-          (async-adder$st-trans-n inputs-lst count)
-          (equal n (async-adder$st-trans-n->numsteps inputs-lst count))
-          (async-adder$input-format-n inputs-lst n)
+          (async-adder$st-trans-n inputs-seq count)
+          (equal n (async-adder$st-trans-n->numsteps inputs-seq count))
+          (async-adder$input-format-n inputs-seq n)
           (async-adder$init-st st))
-     (equal (async-adder$run inputs-lst st n)
+     (equal (async-adder$run inputs-seq st n)
             (list
              '(nil)
              '((nil) (t) (t) (t) (t))
@@ -2491,32 +2492,32 @@
            :in-theory (enable fv-serial-carry
                               fv-shift-right-nil-n))))
 
-(defund async-adder-interleavings (inputs-lst operand-size)
-  (declare (xargs :guard (and (true-list-listp inputs-lst)
+(defund async-adder-interleavings (inputs-seq operand-size)
+  (declare (xargs :guard (and (true-list-listp inputs-seq)
                               (posp operand-size))))
-  (b* ((inv-steps (async-adder$st-trans-n->numsteps inputs-lst
+  (b* ((inv-steps (async-adder$st-trans-n->numsteps inputs-seq
                                                     (1- operand-size)))
-       (remained-inputs-lst (nthcdr inv-steps inputs-lst)))
-    (and (async-adder$st-trans-n inputs-lst (1- operand-size))
-         (async-adder-last-round$st-trans remained-inputs-lst))))
+       (remained-inputs-seq (nthcdr inv-steps inputs-seq)))
+    (and (async-adder$st-trans-n inputs-seq (1- operand-size))
+         (async-adder-last-round$st-trans remained-inputs-seq))))
 
-(defund async-adder-numsteps (inputs-lst operand-size)
-  (declare (xargs :guard (and (true-list-listp inputs-lst)
+(defund async-adder-numsteps (inputs-seq operand-size)
+  (declare (xargs :guard (and (true-list-listp inputs-seq)
                               (posp operand-size))))
-  (b* ((inv-steps (async-adder$st-trans-n->numsteps inputs-lst
+  (b* ((inv-steps (async-adder$st-trans-n->numsteps inputs-seq
                                                     (1- operand-size)))
-       (remained-inputs-lst (nthcdr inv-steps inputs-lst)))
+       (remained-inputs-seq (nthcdr inv-steps inputs-seq)))
     (+ inv-steps
-       (async-adder-last-round$st-trans->numsteps remained-inputs-lst))))
+       (async-adder-last-round$st-trans->numsteps remained-inputs-seq))))
 
 (defthmd simulate-async-adder-invalid-result
   (implies
    (and (equal operand-size *data-width*)
-        (async-adder-interleavings inputs-lst operand-size)
-        (equal n (async-adder-numsteps inputs-lst operand-size))
-        (async-adder$input-format-n inputs-lst n)
+        (async-adder-interleavings inputs-seq operand-size)
+        (equal n (async-adder-numsteps inputs-seq operand-size))
+        (async-adder$input-format-n inputs-seq n)
         (async-adder$init-st st))
-   (async-adder$result-empty-n inputs-lst st n))
+   (async-adder$result-empty-n inputs-seq st n))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (simulate-async-adder-loop-invalid-result-instance
@@ -2569,12 +2570,12 @@
        (?co  (nth *1-bit-adder$co* bit-add)))
     (implies
      (and (equal operand-size *data-width*)
-          (async-adder-interleavings inputs-lst operand-size)
+          (async-adder-interleavings inputs-seq operand-size)
           (natp n)
-          (>= n (async-adder-numsteps inputs-lst operand-size))
-          (async-adder$input-format-n inputs-lst n)
+          (>= n (async-adder-numsteps inputs-seq operand-size))
+          (async-adder$input-format-n inputs-seq n)
           (async-adder$init-st st))
-     (equal (async-adder$run inputs-lst st n)
+     (equal (async-adder$run inputs-seq st n)
             (list
              '(nil)
              '((nil) (t) (t) (t) (t))
@@ -2635,18 +2636,18 @@
            :use ((:instance
                   async-adder$run-m+n
                   (m (async-adder$st-trans-n->numsteps
-                      inputs-lst
+                      inputs-seq
                       (1- operand-size)))
                   (n (- n (async-adder$st-trans-n->numsteps
-                           inputs-lst
+                           inputs-seq
                            (1- operand-size)))))
                  (:instance
                   async-adder$input-format-m+n
                   (m (async-adder$st-trans-n->numsteps
-                      inputs-lst
+                      inputs-seq
                       (1- operand-size)))
                   (n (- n (async-adder$st-trans-n->numsteps
-                           inputs-lst
+                           inputs-seq
                            (1- operand-size))))))
            :in-theory (e/d (simulate-async-adder-loop-instance
                             async-adder$sim-last-round-to-fixpoint
@@ -2744,27 +2745,27 @@
 ;; Prove that the async serial adder indeed performs the addition.
 
 (defthmd async-adder$input-format-n-lemma
- (implies (and (async-adder$input-format-n inputs-lst n)
+ (implies (and (async-adder$input-format-n inputs-seq n)
                (natp n)
                (<= m n))
-          (async-adder$input-format-n inputs-lst m))
+          (async-adder$input-format-n inputs-seq m))
  :hints (("Goal" :in-theory (enable async-adder$input-format-n))))
 
 (defthmd async-adder$empty-result
   (implies
    (and (async-adder& netlist)
         (equal operand-size *data-width*)
-        (async-adder-interleavings inputs-lst operand-size)
+        (async-adder-interleavings inputs-seq operand-size)
         (natp m)
         (< m n)
-        (equal n (async-adder-numsteps inputs-lst operand-size))
-        (async-adder$input-format-n inputs-lst n)
+        (equal n (async-adder-numsteps inputs-seq operand-size))
+        (async-adder$input-format-n inputs-seq n)
         (async-adder$init-st st))
-   (b* ((final-st (de-sim-n 'async-adder inputs-lst st netlist m)))
+   (b* ((final-st (de-n 'async-adder inputs-seq st netlist m)))
      (emptyp (extract-async-adder-result-status final-st))))
   :hints (("Goal"
            :use async-adder$result-empty-n-lemma
-           :in-theory (e/d (de-sim-n$async-adder
+           :in-theory (e/d (de-n$async-adder
                             async-adder$input-format-n-lemma
                             async-adder$init-st
                             simulate-async-adder-invalid-result)
@@ -2772,7 +2773,7 @@
                             open-async-adder$result-empty-n
                             fullp
                             emptyp
-                            open-de-sim-n
+                            open-de-n
                             open-async-adder$run
                             open-async-adder$input-format-n
                             car-cdr-elim)))))
@@ -2791,12 +2792,12 @@
     (implies
      (and (async-adder& netlist)
           (equal operand-size *data-width*)
-          (async-adder-interleavings inputs-lst operand-size)
+          (async-adder-interleavings inputs-seq operand-size)
           (natp n)
-          (>= n (async-adder-numsteps inputs-lst operand-size))
-          (async-adder$input-format-n inputs-lst n)
+          (>= n (async-adder-numsteps inputs-seq operand-size))
+          (async-adder$input-format-n inputs-seq n)
           (async-adder$init-st st))
-     (b* ((final-st (de-sim-n 'async-adder inputs-lst st netlist n)))
+     (b* ((final-st (de-n 'async-adder inputs-seq st netlist n)))
        (and
         (fullp (extract-async-adder-result-status final-st)) ;; Terminate
         (implies (and (bvp (car reg0))
@@ -2810,14 +2811,14 @@
                            (v-to-nat (car reg1)))))))))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d (de-sim-n$async-adder
+           :in-theory (e/d (de-n$async-adder
                             simulate-async-adder-to-fixpoint
                             extract-async-adder-result-status
                             extract-async-adder-result-value
                             async-adder$init-st)
                            (fullp
                             emptyp
-                            open-de-sim-n
+                            open-de-n
                             open-async-adder$run
                             open-async-adder$input-format-n
                             open-fv-shift-right-nil-n
@@ -2847,12 +2848,12 @@
       (implies
        (and (async-adder& netlist)
             (equal operand-size *data-width*)
-            (async-adder-interleavings inputs-lst operand-size)
+            (async-adder-interleavings inputs-seq operand-size)
             (natp m)
-            (equal n (async-adder-numsteps inputs-lst operand-size))
-            (async-adder$input-format-n inputs-lst (max m n))
+            (equal n (async-adder-numsteps inputs-seq operand-size))
+            (async-adder$input-format-n inputs-seq (max m n))
             (async-adder$init-st st))
-       (b* ((final-st (de-sim-n 'async-adder inputs-lst st netlist m)))
+       (b* ((final-st (de-n 'async-adder inputs-seq st netlist m)))
          (implies (and (fullp (extract-async-adder-result-status final-st))
                        (bvp (car reg0))
                        (bvp (car reg1))
@@ -2869,7 +2870,7 @@
                               async-adder$termination)
                              (fullp
                               emptyp
-                              open-de-sim-n
+                              open-de-n
                               open-async-adder$run
                               open-async-adder$input-format-n
                               open-fv-shift-right-nil-n

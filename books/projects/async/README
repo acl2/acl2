@@ -18,14 +18,17 @@ Book Organization
 
 The DE simulator is implemented in de.lisp.
 
-The modeling and verification of the 32-bit self-timed serial adder
-are implemented in serial-adder/.
-
-The modeling and verification of FIFO self-timed circuits are
+The modeling and verification of self-timed FIFO circuits are
 implemented in fifo/.
+
+The modeling and verification of self-timed serial adders are
+implemented in serial-adder/.
 
 See gcd/ for the modeling and verification of iterative self-timed
 circuits that compute the Greatest Common Divisor (GCD) of two natural
 numbers.
+
+See arbitration/ for the modeling and verification of self-timed
+circuits that perform arbitrated merge operations.
 
 

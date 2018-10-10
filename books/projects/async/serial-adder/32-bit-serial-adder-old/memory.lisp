@@ -4,11 +4,11 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; September 2018
 
 (in-package "ADE")
 
-(include-book "../hard-spec")
+(include-book "../../hard-spec")
 
 ;; ======================================================================
 
@@ -265,7 +265,7 @@
                                    ramp-is-not-romp-nor-stubp
                                    stubp-is-not-romp-nor-ramp
                                    romp
-                                   bvp-is-true-listp)))))
+                                   bv-is-true-list)))))
 
 (defthm 4v-listp-of-car-write-mem1
   (equal (4v-listp (car (write-mem1 v-addr mem value)))
@@ -451,17 +451,17 @@
 (defthm romp-constant-ram
   (equal (romp (constant-ram mem value))
          (romp mem))
-  :hints (("Goal" :in-theory (disable stubp bvp-is-true-listp))))
+  :hints (("Goal" :in-theory (disable stubp bv-is-true-list))))
 
 (defthm ramp-constant-ram
   (equal (ramp (constant-ram mem value))
          (ramp mem))
-  :hints (("Goal" :in-theory (disable stubp bvp-is-true-listp))))
+  :hints (("Goal" :in-theory (disable stubp bv-is-true-list))))
 
 (defthm stubp-constant-ram
   (equal (stubp (constant-ram mem value))
          (stubp mem))
-  :hints (("Goal" :in-theory (disable bvp-is-true-listp))))
+  :hints (("Goal" :in-theory (disable bv-is-true-list))))
 
 ;; LEMMAS
 

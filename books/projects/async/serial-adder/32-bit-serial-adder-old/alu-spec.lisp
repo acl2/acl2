@@ -4,14 +4,14 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; September 2018
 
 ;; The high level specification of the ALU
 
 (in-package "ADE")
 
-(include-book "../constants")
-(include-book "../hard-spec")
+(include-book "../../constants")
+(include-book "../../hard-spec")
 
 ;; ======================================================================
 

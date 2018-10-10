@@ -20,17 +20,29 @@ queue2.lisp: a queue, Q2, of 2 links.
 
 queue3.lisp:  a queue, Q3, of 3 links.
 
-queue4-as-link.lisp: a queue, Q4', of 4 links. It is designed as a
+queue3-l.lisp: a queue, Q3', of 3 links. It is designed as a
 complex link.
 
-queue5-as-link.lisp: a queue, Q5', of 5 links. It is designed as a
+queue4-l.lisp: a queue, Q4', of 4 links. It is designed as a
 complex link.
 
-queue8-as-link.lisp: a queue, Q8', of 8 links. It is designed as a
+queue5-l.lisp: a queue, Q5', of 5 links. It is designed as a
+complex link.
+
+queue8-l.lisp: a queue, Q8', of 8 links. It is designed as a
 complex link and is composed of two instances of Q4'.
 
-queue10-as-link.lisp: a queue, Q10', of 10 links. It is designed as a
+queue9-l.lisp: a queue, Q9', of 9 links. It is designed as a
+complex link and is composed of Q4' and Q5'.
+
+queue10-l.lisp: a queue, Q10', of 10 links. It is designed as a
 complex link and is composed of two instances of Q5'.
+
+queue11-l.lisp: a queue, Q11', of 11 links. It is designed as a
+complex link and is composed of Q3' and Q8'.
+
+queue20-l.lisp: a queue, Q20', of 20 links. It is designed as a
+complex link and is composed of two instances of Q10'.
 
 comp-v-or.lisp: a circuit, C-V-OR, performing the bitwise OR
 operation. It contains Q2 and Q3 as submodules.

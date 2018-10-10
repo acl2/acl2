@@ -4,11 +4,11 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; September 2018
 
 (in-package "ADE")
 
-(include-book "utils")
+(include-book "index")
 
 (include-book "std/lists/repeat" :dir :system)
 

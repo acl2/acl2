@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; October 2018
 
 ;; An n-bit equality circuit -- An XOR vector and a zero detector.
 
@@ -69,12 +69,11 @@
            (equal (se (si 'v-equal n) (append a b) sts netlist)
                   (list (f$v-equal a b))))
   :hints (("Goal"
-           :do-not '(preprocess)
-           :expand (se (si 'v-equal n) (append a b) sts netlist)
+           :expand (:free (inputs n)
+                          (se (si 'v-equal n) inputs sts netlist))
            :in-theory (e/d (de-rules
                             v-equal&
                             v-equal*$destructure
-                            not-primp-v-equal
                             f$v-equal
                             v-xor$value
                             tv-zp$value)
