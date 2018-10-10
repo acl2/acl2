@@ -31,9 +31,9 @@
 
 ;; 1. DE Module Generator of SHIFT-REGISTER-SIPO
 ;;
-;; Construct a DE module generator that generates self-timed
-;; shift-register-sipo modules.  Prove the value and state lemmas for this
-;; module generator.
+;; Construct a DE module generator that generates self-timed serial-in,
+;; parallel-out (SIPO) shift register modules.  Prove the value and state
+;; lemmas for this module generator.
 
 (defconst *shift-register-sipo$go-num* 2)
 (defconst *shift-register-sipo$st-len* 4)

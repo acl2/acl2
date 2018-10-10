@@ -49,7 +49,7 @@
 
 ;; 1. DE Module Generator of SERIAL-SUB
 ;;
-;; Construct a DE module generator that generates self-timed serial-sub
+;; Construct a DE module generator that generates self-timed serial subtractor
 ;; modules.  Prove the value and state lemmas for this module generator.
 
 (defconst *serial-sub$prim-go-num* 2)

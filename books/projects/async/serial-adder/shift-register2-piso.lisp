@@ -46,9 +46,9 @@
 
 ;; 1. DE Module Generator of SHIFT-REGISTER2-PISO
 ;;
-;; Construct a DE module generator that generates self-timed
-;; shift-register2-piso modules.  Prove the value and state lemmas for this
-;; module generator.
+;; Construct a DE module generator for circuits consisting of two PISO shift
+;; registers that share the same communication signal at their input ports.
+;; Prove the value and state lemmas for this module generator.
 
 (defconst *shift-register2-piso$go-num* 5)
 (defconst *shift-register2-piso$st-len* 8)

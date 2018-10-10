@@ -49,7 +49,7 @@
 
 ;; 1. DE Module Generator of SERIAL-ADD
 ;;
-;; Construct a DE module generator that generates self-timed serial-add
+;; Construct a DE module generator that generates self-timed serial adder
 ;; modules.  Prove the value and state lemmas for this module generator.
 
 (defconst *serial-add$prim-go-num* 2)

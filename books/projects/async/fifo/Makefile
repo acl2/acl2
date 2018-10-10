@@ -1,4 +1,7 @@
-# Cuong Chau <ckcuong@cs.utexas.edu>
+# Copyright (C) 2017, Regents of the University of Texas
+# Written by Cuong Chau <ckcuong@cs.utexas.edu>
+# License: A 3-clause BSD license.  See the LICENSE file distributed with
+# ACL2.
 
 # Usage:
 
@@ -6,7 +9,7 @@
 #      ACL2=<Path of the ACL2 image>
 
 # To remove certificate files, etc., execute the following:
-# 
+#
 # make clean ACL2=<Path of the ACL2 image>
 
 #======================================================================

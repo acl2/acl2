@@ -46,7 +46,7 @@
 (defun make-subprod-fn (n)
   `(defprod ,(intern$ (cat "SUBPROD" (str::natstr n)) "FTY")
      :tag ,(intern$ (cat "SUBPROD" (str::natstr n)) "KEYWORD")
-     :layout :tree
+     :layout :fulltree
      (,@(make-prod-fields 3))))
 
 (defun make-transsum-prods-fn (n)
@@ -114,7 +114,7 @@
   (if (zp n)
       nil
     (cons `(,(intern$ (str::cat name ".PROD" (str::natstr n)) "KEYWORD")
-            :layout :tree
+            :layout :fulltree
             ,(make-prod-fields 3))
           (make-subtagsum-prods name (- n 1)))))
 

@@ -150,6 +150,7 @@
    keyp-of-nil        ;; t, nil, or :unknown -- for optimizing theorems
    valp-of-nil        ;; t, nil, or :unknown -- for optimizing theorems
    true-listp         ;; boolean -- should we require a nil final cdr?
+   unique-keys        ;; boolean -- require keys to be unique
    recp               ;; is this alist type part of the mutual recursion?
    already-definedp)
   :tag :alist)

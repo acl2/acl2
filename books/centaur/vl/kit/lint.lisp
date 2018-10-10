@@ -1665,8 +1665,7 @@ wide addition instead of a 10-bit wide addition.")))
        (state (must-be-directories! config.include-dirs))
 
        ((when config.shell)
-        (vl-shell-entry `((defconst *vl-user-lintconfig* ',config)
-                          (defconst *vl-user-loadconfig* (vl-lintconfig-loadconfig *vl-user-lintconfig*)))))
+        (vl-shell-entry `((defconst *vl-user-lintconfig* ',config))))
 
        ((mv result loadres loadconfig state)
         (cwtime (run-vl-lint config)

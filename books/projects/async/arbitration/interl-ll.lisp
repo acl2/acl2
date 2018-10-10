@@ -33,7 +33,8 @@
 ;; Construct a DE module generator for circuits performing the
 ;; first-come-first-served arbitrated merge using the link-joint model.  These
 ;; circuits consist of a 9-link queue and a 11-link queue connected to the two
-;; input ports of an arbitrated merge.
+;; input ports of an arbitrated merge.  INTERL-LL is designed as a left
+;; half-complex link.
 
 (defconst *interl-ll$select-num* *arb-merge$select-num*)
 (defconst *interl-ll$prim-go-num* 2)
