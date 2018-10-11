@@ -114,9 +114,8 @@
     (b* ((prim (car primitives))
          (fn (car prim))
          (expr (cadr prim))
-         (thm-name (strings-to-symbol (symbol-name eval)
-                                      "-"
-                                      (symbol-name fn)))
+         (value/state (if (equal eval 'se) "$VALUE" "$STATE"))
+         (thm-name (strings-to-symbol (symbol-name fn) value/state))
          (eval-primp-apply (strings-to-symbol (symbol-name eval)
                                               "-PRIMP-APPLY")))
       (cons `(defthm ,thm-name
