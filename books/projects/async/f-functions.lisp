@@ -800,7 +800,7 @@
 
 ;; A 4-valued gate theory
 
-(deftheory f-gates
+(defconst *f-gates*
   '(f-buf
     f-not
     f-nand f-nand3 f-nand4 f-nand5 f-nand6 f-nand8
@@ -811,6 +811,9 @@
     f-nor f-nor3 f-nor4 f-nor5 f-nor6 f-nor8
     f-if ft-buf ft-wire f-pullup
     f-bool f-sr))
+
+(deftheory f-gates
+  *f-gates*)
 
 ;; When the F-GATES theory is disabled, the following lemma lets us substitute
 ;; a B-GATE for each F-GATE under assumptions that the inputs are Boolean.
