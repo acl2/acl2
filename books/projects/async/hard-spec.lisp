@@ -305,7 +305,7 @@
 
 ;; A boolean gate theory
 
-(deftheory b-gates
+(defconst *b-gates*
   '(b-buf
     b-not
     b-nand b-nand3 b-nand4 b-nand5 b-nand6 b-nand8
@@ -315,6 +315,9 @@
     b-and b-and3 b-and4 b-and5
     b-nor b-nor3 b-nor4 b-nor5 b-nor6 b-nor8
     b-if))
+
+(deftheory b-gates
+  *b-gates*)
 
 ;; This lemma allows us to prove that specifications written in terms of
 ;; 4-valued gate-level functions (see below) are equivalent to Boolean

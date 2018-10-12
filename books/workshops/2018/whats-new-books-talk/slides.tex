@@ -393,6 +393,63 @@ TODO: add more
 
 \implibtitle
 
+\bookpath{std/io/combine.lisp}:
+Byte-combining libraries.
+\begin{itemize}
+\item
+Added invertibility theorems for \code{combine16u} and \code{combine32u}.
+\item
+TODO: make these invertibility theorems compatible with \code{part-select}.
+\item
+TODO: prove similar theorems for \code{combine64u} as well as for the
+signed-integer functions, \code{combine16s} et al.
+\end{itemize}
+
+\
+
+\bookpath{centaur/bitops/rotate.lisp}:
+Bit-vector rotation libraries.
+\begin{itemize}
+\item
+Generalized existing theorems and added a new theorem for compositions
+of \code{rotate-left} operations, as well as a theorem for
+compositions of \code{rotate-right} operations.
+\item
+TODO: Add theorems for compositions of \code{rotate-left} and
+\code{rotate-right} with each other.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/utilities/strings/*}:
+String manipulation libraries.
+\begin{itemize}
+\item Added several new rewrite rules.
+\end{itemize}
+
+\
+
+\bookpath{projects/filesystems/*}:
+Formal models of filesystems.
+\begin{itemize}
+\item
+\texttt{M1} and \texttt{M2}, new filesystem models for FAT32,
+described in a paper at this Workshop.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 TODO: add more contributions
 
 \end{frame}
