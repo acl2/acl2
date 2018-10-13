@@ -27,26 +27,26 @@
 
 \subtitle{Since the ACL2-2017 Workshop}
 
-\author{Cuong Chau\inst{4},
-        Alessandro Coglio\inst{1},
-        Jared Davis\inst{2},
-        Shilpi Goel\inst{3},
+\author{Cuong Chau\inst{1},
+        Alessandro Coglio\inst{2},
+        Jared Davis\inst{3},
         \\
-        Matt Kaufmann\inst{4},
+        Shilpi Goel\inst{4},
+        Matt Kaufmann\inst{1},
         Keshav Kini\inst{5},
-        Mihir Mehta\inst{4},
         \\
-        J Moore\inst{4},
+        Mihir Mehta\inst{1},
+        J Moore\inst{1},
         David Russinoff\inst{6},
-        Julien Schmaltz\inst{7},
         \\
-        Rob Sumners\inst{3},
-        Sol Swords\inst{3}}
+        Julien Schmaltz\inst{7},
+        Rob Sumners\inst{4},
+        Sol Swords\inst{4}}
 
-\institute{\inst{1}Kestrel Institute,
-           \inst{2}Apple,
-           \inst{3}Centaur,
-           \inst{4}UT Austin,
+\institute{\inst{1}UT Austin,
+           \inst{2}Kestrel Institute,
+           \inst{3}Apple,
+           \inst{4}Centaur,
            \inst{5}Oracle,
            \inst{6}ARM,
            \inst{7}???}
@@ -403,16 +403,16 @@ Developed a new compositional methodology for scalable formal
 verification of functional properties of self-timed circuit designs.
 \item
 Verified the functional correctness of data-loop-free self-timed
-circuits (see fifo/).
+circuits (see \code{fifo/}).
 \item
 Verified the functional correctness of a self-timed serial
-adder/subtractor model (see serial-adder/).
+adder/subtractor model (see \code{serial-adder/}).
 \item
 Verified the functional correctness of iterative self-timed circuit
-models that compute the greatest-common-divisor (GCD) (see gcd/).
+models that compute the greatest-common-divisor (GCD) (see \code{gcd/}).
 \item
 Verified the functional correctness of self-timed circuits performing
-arbitrated merge operations (see arbitration/).
+arbitrated merge operations (see \code{arbitration/}).
 \end{itemize}
 
 \end{frame}
@@ -429,9 +429,9 @@ Byte-combining libraries.
 \item
 Added invertibility theorems for \code{combine16u} and \code{combine32u}.
 \item
-TODO: make these invertibility theorems compatible with \code{part-select}.
+To do: make these invertibility theorems compatible with \code{part-select}.
 \item
-TODO: prove similar theorems for \code{combine64u} as well as for the
+To do: prove similar theorems for \code{combine64u} as well as for the
 signed-integer functions, \code{combine16s} et al.
 \end{itemize}
 
@@ -445,7 +445,7 @@ Generalized existing theorems and added a new theorem for compositions
 of \code{rotate-left} operations, as well as a theorem for
 compositions of \code{rotate-right} operations.
 \item
-TODO: Add theorems for compositions of \code{rotate-left} and
+To do: Add theorems for compositions of \code{rotate-left} and
 \code{rotate-right} with each other.
 \end{itemize}
 
