@@ -27,7 +27,8 @@
 
 \subtitle{Since the ACL2-2017 Workshop}
 
-\author{Alessandro Coglio\inst{1},
+\author{Cuong Chau\inst{4},
+        Alessandro Coglio\inst{1},
         Jared Davis\inst{2},
         Shilpi Goel\inst{3},
         \\
@@ -374,7 +375,7 @@ Reduced book dependencies.
 
 \implibtitle
 
-\bookpath{project/x86isa}:
+\bookpath{projects/x86isa}:
 X86ISA, the formal model of the x86 ISA.
 \begin{itemize}
 \item
@@ -383,6 +384,35 @@ Added support for 32-bit mode; see paper at this Workshop.
 Improved and extended some documentation.
 \item
 TODO: add more
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{projects/async}:
+ASYNC, the framework for modeling and verifying the functional correctness
+of asynchronous (self-timed) circuit models.
+\begin{itemize}
+\item
+Developed a new compositional methodology for scalable formal
+verification of functional properties of self-timed circuit designs.
+\item
+Verified the functional correctness of data-loop-free self-timed
+circuits (see fifo/).
+\item
+Verified the functional correctness of a self-timed serial
+adder/subtractor model (see serial-adder/).
+\item
+Verified the functional correctness of iterative self-timed circuit
+models that compute the greatest-common-divisor (GCD) (see gcd/).
+\item
+Verified the functional correctness of self-timed circuits performing
+arbitrated merge operations (see arbitration/).
 \end{itemize}
 
 \end{frame}
