@@ -1,4 +1,4 @@
-; Fixtypes for Unsigned and Signed Bytes -- Instances -- Signed 32-Bit Bytes
+; Fixtype for Signed 32-Bit Bytes
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -14,8 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defbyte 32
+(fty::defbyte 32
   :signed t
   :pred sbyte32p
-  :lpred sbyte32-listp
   :parents (defbyte-instances))

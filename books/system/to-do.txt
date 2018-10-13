@@ -21,91 +21,76 @@ questions.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
-{{Eliminate fix-true-list in favor of list-fix.}}
-
-**********
-**NOTE**: Mihir Mehta is in the middle of this, and would appreciate
-  assistance, especially with congruence rules.
-**********
-
-Replace the function fix-true-list in the ACL2 sources with the
-function list-fix defined in books/std/lists/list-fix.lisp.  Actually,
-the name true-list-fix seems preferable to list-fix (at least to Matt
-K. and Alessandro C.), since in Common Lisp, a "list" need not be a
-true list, and since the name true-list-fix "mirrors" true-listp,
-according to the pattern <x>-listp / <x>-list-fix.
-
-Note that Jared Davis, author and copyright holder (through Kookamara
-LLC) of the book above, has given his consent to integrate it into the
-ACL2 sources.
-
-Steps:
-
-   - Check with J to see if he is OK with the name list-fix, even
-     though true-list-fix is more accurate.
-
-   - Make a note of the starting git hash (see below).
-
-   - Do tags-search in sources and grep in books, e.g.:
-       time fgrep --include='*.l*sp' -ri fix-true-list .
-     Make replacements as appropriate.
-
-   - Maybe add fix-true-list as macro for (true-)list-fix, to avoid
-     having to replace calls of fix-true-list.
-
-   - Possibly remove definition of list-fix in the book, since it's
-     (to be) in the sources.
-
-   - Write short release note for note-8-2 (or whatever).
-
-   - Send Matt K. the starting git hash from (1) above, and also some
-     way to get your modified version.  Below I'll assume that: (a)
-     you have created a branch, called your-new-branch below, that has
-     the changes committed under books/ but _not_ in the ACL2 sources;
-     and (b) you also send me a tarball, which contains the ACL2
-     sources as modified from the starting git hash but _not_ books/
-
-Then I (Matt K.) likely will do the following; these steps are notes
-for me.  (If you notice something amiss, please let me know.)
-
-In a fresh directory:
-
-git clone https://github.com/acl2/acl2 .
-git fetch --all
-git checkout your-new-branch
-
-Then my state should be as shown here:
-
-$ git branch
-* your-new-branch
-  master
-$
-
-I'll merge into the ACL2 sources the changes from your tarball.  (Just
-FYI: first I'll clone a fresh copy and switch to your starting commit,
-and then I'll do a three-way merge.)
-
-Finally, I'll commit/push to that branch as follows.
-
-git commit -a -F tmp.msg
-git push
-
-where tmp.msg says something about the change, including credit to
-you.
-
-I figure that then, you'll do something to merge the branch into
-master.  (Or you can tell me what to do in order to accomplish that,
-if you prefer.)
-
-The reason why I'll be the one doing the commit to the sources is that
-this way, bin/purity.sh won't balk at someone else doing the commit.
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
 {{Consider redefining take using mbe, so that the :logic has a standard recursion.}}
 
 This might involve fixing a bunch of community books, perhaps by
 adding a book of lemmas that could also help proprietary books.
+
+Here is a relevant email thread, added by Matt with permission from
+Mihir.
+
+From: Matt Kaufmann <kaufmann@cs.utexas.edu>
+To: acl2-devel@utlists.utexas.edu
+In-Reply-To: <t4dr2h4tohm.fsf@ginger.cs.utexas.edu> (message from Matt Kaufmann on Fri, 05 Oct 2018 10:14:13 -0500)
+Date: Fri, 05 Oct 2018 10:22:23 -0500
+Subject: Re: [acl2-devel] redefining take
+
+P.S. Although I'd likely only want to be involved in vetting this
+work, this could be a great task for getting the acl2-devel community
+involved.  That could dovetail nicely with my goal for the two
+developer's workshops (last year and next month): to encouragement the
+evolution of that community.
+
+-- Matt
+Matt Kaufmann <kaufmann@cs.utexas.edu> writes:
+
+> Hi, Mihir --
+>
+> This all seems very reasonable to me.  Please feel free to add that
+> note to the to-do list.  Better yet, add this email thread, or ask me
+> to do so.
+>
+> As always, if you or someone wants to take this on, do check with me
+> first.  I'll probably respond that it's a great idea, but sufficiently
+> low priority that I don't want to spend time on it other than to vet
+> the proposed solution (and to go through my part of the process in
+> :doc developers-guide-maintenance).  I'm pretty sure you agree that
+> there will be likely some work needed for the books, even beyond your
+> own library of lemmas.  And for maintainers of books outside the
+> community books, it will probably be important to include a definition
+> rule somewhere that provides the old logical definition of take.
+>
+> A more ambitious project would be to try to remove the
+> #-acl2-loop-only code in take in favor of :exec code in an mbe.  This
+> would include experiments in at least CCL and SBCL to check
+> performance.
+>
+> Thanks --
+> -- Matt
+> Mihir Mehta <mihir@cs.utexas.edu> writes:
+>
+>> Hi folks,
+>>
+>> I see that the developers' to-do list (books/system/to-do.txt) has this
+>> item.
+>> --
+>> {{Consider redefining take using mbe, so that the :logic has a standard
+>> recursion.}}
+>> --
+>> There happens to be a :definition rule, take-redefinition, in
+>> books/std/lists/take.lisp. Do you all think that using this recursive
+>> definition for the :logic part of take would make sense? If yes, perhaps
+>> it would be good to note this in the to-do list for whoever takes it on.
+>>
+>> Speaking for myself, I've developed a library of lemmas about first-n-ac
+>> (which is currently used for the :logic of take) and I wouldn't be
+>> particularly adversely affected. In fact, I might be a little better
+>> off, since my books which include the Kestrel string libraries have take
+>> itself disabled in the theory and take-redefinition enabled, with
+>> unexpected results sometimes. Unifying these two would probably help
+>> others in the same way.
+>>
+>> Mihir.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 

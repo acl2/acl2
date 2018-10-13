@@ -33,13 +33,30 @@
 ; cert_param: (uses-quicklisp)
 
 (make-event
- (let* ((dir (cbd)))
-   ;; Keep these in sync with install.lsp
-   (progn$
-    (setenv$ "XDG_CONFIG_HOME" (concatenate 'string dir "asdf-home/config"))
-    (setenv$ "XDG_DATA_HOME"   (concatenate 'string dir "asdf-home/data"))
-    (setenv$ "XDG_CACHE_HOME"  (concatenate 'string dir "asdf-home/cache"))
-    (value '(value-triple :invisible))))
+ (mv-let (err override-dir state)
+   ;; Most users should never adjust QUICKLISP_ASDF_HOME.  In this case, we
+   ;; will install all Quicklisp files into, e.g.,
+   ;;     ..../acl2/books/quicklisp/asdf-home/
+   ;;
+   ;; But if for some reason you want to install the ASDF libraries somewhere
+   ;; else, you can set the QUICKLISP_ASDF_HOME environment variable.  This
+   ;; must be done:
+   ;;
+   ;;   1. *before* building the quicklisp books, and
+   ;;   2. *forever after* whenever you want to include them
+   ;;
+   ;; In short, you should not mess around with this unless you have some good
+   ;; reason to want the Quicklisp files to live somewhere other than your ACL2
+   ;; books directory.
+   (getenv$ "QUICKLISP_ASDF_HOME" state)
+   (let ((dir (if err
+                  (er hard? 'getenv$ "getenv failed")
+                (or override-dir (cbd)))))
+     (progn$
+      (setenv$ "XDG_CONFIG_HOME" (concatenate 'string dir "/asdf-home/config"))
+      (setenv$ "XDG_DATA_HOME"   (concatenate 'string dir "/asdf-home/data"))
+      (setenv$ "XDG_CACHE_HOME"  (concatenate 'string dir "/asdf-home/cache"))
+      (value '(value-triple :invisible)))))
  :check-expansion t)
 
 (defttag :quicklisp)

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -18,7 +18,7 @@
 ;;; Table of Contents:
 ;;;
 ;;; 1. DE Module Generator of Q2
-;;; 2. Specify the Final State of Q2 After An N-Step Execution
+;;; 2. Multi-Step State Lemma
 ;;; 3. Single-Step-Update Property
 ;;; 4. Relationship Between the Input and Output Sequences
 
@@ -161,7 +161,7 @@
     (and (link$st-format l0 data-width)
          (link$st-format l1 data-width))))
 
-(defthm queue2$st-format=>natp-data-width
+(defthm queue2$st-format=>data-width-constraint
   (implies (queue2$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue2$st-format)))
@@ -173,13 +173,20 @@
     (and (link$valid-st l0 data-width)
          (link$valid-st l1 data-width))))
 
-(defthmd queue2$valid-st=>natp-data-width
+(defthmd queue2$valid-st=>data-width-constraint
   (implies (queue2$valid-st st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue2$valid-st)))
   :rule-classes :forward-chaining)
 
-;; Extract the input and output signals from Q2
+(defthmd queue2$valid-st=>st-format
+  (implies (queue2$valid-st st data-width)
+           (queue2$st-format st data-width))
+  :hints (("Goal" :in-theory (e/d (queue2$st-format
+                                   queue2$valid-st)
+                                  (link$st-format)))))
+
+;; Extract the input and output signals for Q2
 
 (progn
   ;; Extract the input data
@@ -208,6 +215,11 @@
          (l0.s (get-field *link$s* l0)))
       (joint-act full-in (car l0.s) go-in)))
 
+  (defthm queue2$in-act-inactive
+    (implies (not (nth 0 inputs))
+             (not (queue2$in-act inputs st data-width)))
+    :hints (("Goal" :in-theory (enable queue2$in-act))))
+
   ;; Extract the "out-act" signal
 
   (defund queue2$out-act (inputs st data-width)
@@ -218,6 +230,11 @@
          (l1 (get-field *queue2$l1* st))
          (l1.s (get-field *link$s* l1)))
       (joint-act (car l1.s) empty-out- go-out)))
+
+  (defthm queue2$out-act-inactive
+    (implies (equal (nth 1 inputs) t)
+             (not (queue2$out-act inputs st data-width)))
+    :hints (("Goal" :in-theory (enable queue2$out-act))))
 
   ;; Extract the output data
 
@@ -246,9 +263,16 @@
     :hints (("Goal" :in-theory (enable queue2$valid-st
                                        queue2$out-act
                                        queue2$data-out))))
+
+  (defun queue2$outputs (inputs st data-width)
+    (list* (queue2$in-act inputs st data-width)
+           (queue2$out-act inputs st data-width)
+           (queue2$data-out st)))
   )
 
-(not-primp-lemma queue2) ;; Prove that Q2 is not a DE primitive.
+;; Prove that Q2 is not a DE primitive.
+
+(not-primp-lemma queue2)
 
 ;; The value lemma for Q2
 
@@ -260,15 +284,12 @@
                   (equal (len go-signals) *queue2$go-num*)
                   (queue2$st-format st data-width))
              (equal (se (si 'queue2 data-width) inputs st netlist)
-                    (list* (queue2$in-act inputs st data-width)
-                           (queue2$out-act inputs st data-width)
-                           (queue2$data-out st)))))
+                    (queue2$outputs inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
            :expand (:free (inputs data-width)
                           (se (si 'queue2 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            not-primp-queue2
                             queue2&
                             queue2*$destructure
                             link$value
@@ -329,14 +350,14 @@
            :expand (:free (inputs data-width)
                           (de (si 'queue2 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            not-primp-queue2
                             queue2&
                             queue2*$destructure
                             queue2$st-format
                             queue2$data-in
                             queue2$in-act
                             queue2$out-act
-                            link$value link$state
+                            link$value
+                            link$state
                             joint-cntl$value
                             v-buf$value)
                            ((queue2*)
@@ -346,46 +367,7 @@
 
 ;; ======================================================================
 
-;; 2. Specify the Final State of Q2 After An N-Step Execution
-
-;; Q2 simulator
-
-(progn
-  (defun queue2$map-to-links (st)
-    (b* ((l0 (get-field *queue2$l0* st))
-         (l1 (get-field *queue2$l1* st)))
-      (map-to-links (list (list* 'l0 l0)
-                          (list* 'l1 l1)))))
-
-  (defun queue2$map-to-links-list (x)
-    (if (atom x)
-        nil
-      (cons (queue2$map-to-links (car x))
-            (queue2$map-to-links-list (cdr x)))))
-
-  (defund queue2$sim (data-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp n))
-                    :verify-guards nil
-                    :stobjs state))
-    (b* ((num-signals (queue2$ins-len data-width))
-         ((mv inputs-lst state)
-          (signal-vals-gen num-signals n state nil))
-         ;;(- (cw "~x0~%" inputs-lst))
-         (empty '(nil))
-         (invalid-data (make-list data-width :initial-element '(x)))
-         (st (list (list empty invalid-data)
-                   (list empty invalid-data))))
-      (mv (pretty-list
-           (remove-dup-neighbors
-            (queue2$map-to-links-list
-             (de-sim-list (si 'queue2 data-width)
-                          inputs-lst
-                          st
-                          (queue2$netlist data-width))))
-           0)
-          state)))
-  )
+;; 2. Multi-Step State Lemma
 
 ;; Conditions on the inputs
 
@@ -404,6 +386,24 @@
      (= (len go-signals) *queue2$go-num*)
      (equal inputs
             (list* full-in empty-out- (append data-in go-signals))))))
+
+(defthm booleanp-queue2$in-act
+  (implies (and (queue2$input-format inputs data-width)
+                (queue2$valid-st st data-width))
+           (booleanp (queue2$in-act inputs st data-width)))
+  :hints (("Goal" :in-theory (enable queue2$input-format
+                                     queue2$valid-st
+                                     queue2$in-act)))
+  :rule-classes :type-prescription)
+
+(defthm booleanp-queue2$out-act
+  (implies (and (queue2$input-format inputs data-width)
+                (queue2$valid-st st data-width))
+           (booleanp (queue2$out-act inputs st data-width)))
+  :hints (("Goal" :in-theory (enable queue2$input-format
+                                     queue2$valid-st
+                                     queue2$out-act)))
+  :rule-classes :type-prescription)
 
 (simulate-lemma queue2)
 
@@ -427,25 +427,25 @@
            :in-theory (e/d (queue2$valid-st
                             queue2$extract
                             queue2$out-act)
-                           (nfix))))
+                           ())))
   :rule-classes :linear)
 
 ;; The extracted next-state function for Q2.  Note that this function avoids
 ;; exploring the internal computation of Q2.
 
 (defund queue2$extracted-step (inputs st data-width)
-  (b* ((data-in (queue2$data-in inputs data-width))
+  (b* ((data (queue2$data-in inputs data-width))
        (extracted-st (queue2$extract st))
        (n (1- (len extracted-st))))
     (cond
      ((equal (queue2$out-act inputs st data-width) t)
       (cond
        ((equal (queue2$in-act inputs st data-width) t)
-        (cons data-in (take n extracted-st)))
+        (cons data (take n extracted-st)))
        (t (take n extracted-st))))
      (t (cond
          ((equal (queue2$in-act inputs st data-width) t)
-          (cons data-in extracted-st))
+          (cons data extracted-st))
          (t extracted-st))))))
 
 ;; The single-step-update property
@@ -479,66 +479,6 @@
 
 ;; 4. Relationship Between the Input and Output Sequences
 
-;; Extract the accepted input sequence
-
-(defun queue2$in-seq (inputs-lst st data-width n)
-  (declare (xargs :measure (acl2-count n)))
-  (if (zp n)
-      nil
-    (b* ((inputs (car inputs-lst)))
-      (if (equal (queue2$in-act inputs st data-width) t)
-          (append (queue2$in-seq (cdr inputs-lst)
-                                 (queue2$step inputs st data-width)
-                                 data-width
-                                 (1- n))
-                  (list (queue2$data-in inputs data-width)))
-        (queue2$in-seq (cdr inputs-lst)
-                       (queue2$step inputs st data-width)
-                       data-width
-                       (1- n))))))
-
-;; Extract the valid output sequence
-
-(defun queue2$out-seq (inputs-lst st data-width n)
-  (declare (xargs :measure (acl2-count n)))
-  (if (zp n)
-      nil
-    (b* ((inputs (car inputs-lst)))
-      (if (equal (queue2$out-act inputs st data-width) t)
-          (append (queue2$out-seq (cdr inputs-lst)
-                                  (queue2$step inputs st data-width)
-                                  data-width
-                                  (1- n))
-                  (list (queue2$data-out st)))
-        (queue2$out-seq (cdr inputs-lst)
-                        (queue2$step inputs st data-width)
-                        data-width
-                        (1- n))))))
-
-;; Input-output sequence simulator
-
-(defund queue2$in-out-seq-sim (data-width n state)
-  (declare (xargs :guard (and (natp data-width)
-                              (natp n))
-                  :verify-guards nil
-                  :stobjs state))
-  (b* ((num-signals (queue2$ins-len data-width))
-       ((mv inputs-lst state)
-        (signal-vals-gen num-signals n state nil))
-       (empty '(nil))
-       (invalid-data (make-list data-width :initial-element '(x)))
-       (st (list (list empty invalid-data)
-                 (list empty invalid-data))))
-    (mv
-     (append
-      (list (cons 'in-seq
-                  (v-to-nat-lst
-                   (queue2$in-seq inputs-lst st data-width n))))
-      (list (cons 'out-seq
-                  (v-to-nat-lst
-                   (queue2$out-seq inputs-lst st data-width n)))))
-     state)))
-
 ;; Prove that queue2$valid-st is an invariant.
 
 (defthm queue2$valid-st-preserved
@@ -548,25 +488,21 @@
                             data-width))
   :hints (("Goal"
            :in-theory (e/d (get-field
+                            f-sr
                             queue2$input-format
                             queue2$valid-st
                             queue2$st-format
                             queue2$step
                             queue2$in-act
-                            queue2$out-act
-                            f-sr)
-                           (if*
-                            nthcdr
-                            acl2::true-listp-append)))))
+                            queue2$out-act)
+                           (nfix)))))
 
 (defthm queue2$extract-lemma
   (implies (and (queue2$valid-st st data-width)
-                (equal n (1- (len (queue2$extract st))))
                 (queue2$out-act inputs st data-width))
-           (equal (append
-                   (take n (queue2$extract st))
-                   (list (queue2$data-out st)))
-                  (queue2$extract st)))
+           (equal (list (queue2$data-out st))
+                  (nthcdr (1- (len (queue2$extract st)))
+                          (queue2$extract st))))
   :hints (("Goal"
            :in-theory (enable queue2$valid-st
                               queue2$st-format
@@ -574,4 +510,18 @@
                               queue2$out-act
                               queue2$data-out))))
 
+;; Extract the accepted input sequence
+
+(seq-gen queue2 in in-act 0
+         (queue2$data-in inputs data-width))
+
+;; Extract the valid output sequence
+
+(seq-gen queue2 out out-act 1
+         (queue2$data-out st)
+         :netlist-data (nthcdr 2 outputs))
+
+;; The multi-step input-output relationship
+
 (in-out-stream-lemma queue2)
+

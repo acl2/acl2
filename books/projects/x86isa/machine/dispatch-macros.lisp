@@ -136,7 +136,7 @@
 
 (defmacro ud-not-in-prot-or-64-mode ()
   `(not (or (eql proc-mode #.*64-bit-mode*)
-            (eql proc-mode #.*protected-mode*))))
+	    (eql proc-mode #.*protected-mode*))))
 
 (defmacro ud-not-in-vmx-operation ()
   ;; BOZO Rob -- this is not modeled yet in x86 model, so return nil..
@@ -192,8 +192,8 @@
   `(ifix (cpl x86)))
 
 (defmacro cs.d ()
-  `(b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-        (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden)))
+  `(b* (((the (unsigned-byte 16) cs-attr)
+	 (xr :seg-hidden-attr #.*cs* x86)))
      (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 
 (defmacro cr0 ()
@@ -217,46 +217,46 @@
 
 (defmacro chk-exc (type-id feature-flags)
   `(chk-exc-fn :legacy ,type-id ',feature-flags
-               ;; captured inputs:
-               proc-mode prefixes rex-byte opcode modr/m sib x86))
+	       ;; captured inputs:
+	       proc-mode prefixes rex-byte opcode modr/m sib x86))
 
 (defmacro chk-exc-vex (type-id feature-flags)
   `(chk-exc-fn :vex ,type-id ',feature-flags
-               ;; captured inputs:
-               proc-mode prefixes rex-byte opcode modr/m sib x86))
+	       ;; captured inputs:
+	       proc-mode prefixes rex-byte opcode modr/m sib x86))
 
 (defmacro chk-exc-evex (type-id feature-flags)
   `(chk-exc-fn :evex ,type-id ',feature-flags
-               ;; captured inputs:
-               proc-mode prefixes rex-byte opcode modr/m sib x86))
+	       ;; captured inputs:
+	       proc-mode prefixes rex-byte opcode modr/m sib x86))
 
 ;;;;;;
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (define chk-exc-fn ((decode-context symbolp)
-                    (type-id        symbolp)
-                    (feature-flags  symbol-listp)
-                    ;; these parameters are captured from the expected
-                    ;; environment in which chk-exc calls should expand:
-                    (proc-mode     :type (integer 0 #.*num-proc-modes-1*))
-                    (prefixes      :type (unsigned-byte #.*prefixes-width*))
-                    (rex-byte      :type (unsigned-byte 8))
-                    (opcode        :type (unsigned-byte 8))
-                    (modr/m        :type (unsigned-byte 8))
-                    (sib           :type (unsigned-byte 8))
-                    x86)
+		    (type-id        symbolp)
+		    (feature-flags  symbol-listp)
+		    ;; these parameters are captured from the expected
+		    ;; environment in which chk-exc calls should expand:
+		    (proc-mode     :type (integer 0 #.*num-proc-modes-1*))
+		    (prefixes      :type (unsigned-byte #.*prefixes-width*))
+		    (rex-byte      :type (unsigned-byte 8))
+		    (opcode        :type (unsigned-byte 8))
+		    (modr/m        :type (unsigned-byte 8))
+		    (sib           :type (unsigned-byte 8))
+		    x86)
 
   :guard (and (member-eq decode-context '(:legacy :vex :evex))
-              (subset-equal feature-flags *supported-feature-flags*))
+	      (subset-equal feature-flags *supported-feature-flags*))
   :guard-hints (("Goal" :in-theory (e/d () (x86$ap xr ifix))))
   (declare (ignore opcode modr/m sib)) ;; don't use these yet, but include them anyways..
-  
+
   ;; *** UD checks for conditions that can be detected at decode time ***
-  
+
   ;; This macro is applicable to non-AVX instructions in only
   ;; protected/compatibility and 64-bit modes.
-  
+
   ;; Note that we don't check for "If an unmasked SIMD floating-point exception
   ;; and CR4.OSXMMEXCPT[bit 10] = 0."  here (which shows up in Types 2 and 3,
   ;; Intel Vol. 2, and in Tables 22-4, 22-5, and 22-6 Intel Vol. 3) --- this is
@@ -316,12 +316,12 @@
    ;; guard proof is excruciatingly (although it does go through) and I need to
    ;; figure out how to get it to go through quicker..
    ((and (eq decode-context :vex)
-         (or (ud-Reps-used)
-             (ud-Opr-used)
-             (not (eql rex-byte 0))
-             (not (or (eql proc-mode #.*64-bit-mode*)
-                      (eql proc-mode #.*compatibility-mode*)
-                      (eql proc-mode #.*protected-mode*)))))
+	 (or (ud-Reps-used)
+	     (ud-Opr-used)
+	     (not (eql rex-byte 0))
+	     (not (or (eql proc-mode #.*64-bit-mode*)
+		      (eql proc-mode #.*compatibility-mode*)
+		      (eql proc-mode #.*protected-mode*)))))
     :ud)
    ((eq type-id :type-vex-gpr)
     ;; from table 2.5.1 from volume 2.. we only need to additionally check
@@ -330,18 +330,18 @@
    ((equal (cr0-slice :cr0-ts (cr0)) 1)
     :nm)
    ((and (not (member-eq type-id '(:type-22-7 :type-22-8 :type-22-9)))
-         (equal (cr4-slice :cr4-osfxsr (cr4)) 0))
+	 (equal (cr4-slice :cr4-osfxsr (cr4)) 0))
     :ud)
    ;; BOZO -- Rob -- still need to add more here :(
    ((or (equal (cr0-slice :cr0-em (cr0)) 1)
-        (ud-lock-used)
-        ;; If a corresponding CPUID feature flag is 0.
-        ;; Source: Intel Vol. 2 (May 2018 edition)
-        ;; Figure 3-7 (Feature Information Returned in the ECX register)
-        ;; Table 3-10 (Feature Information Returned in the ECX register)
-        ;; Figure 3-8 (Feature Information Returned in the EDX register)
-        ;; Table 3-11 (More on Feature Information Returned in the EDX register)
-        (equal (feature-flags feature-flags x86) 0))
+	(ud-lock-used)
+	;; If a corresponding CPUID feature flag is 0.
+	;; Source: Intel Vol. 2 (May 2018 edition)
+	;; Figure 3-7 (Feature Information Returned in the ECX register)
+	;; Table 3-10 (Feature Information Returned in the ECX register)
+	;; Figure 3-8 (Feature Information Returned in the EDX register)
+	;; Table 3-11 (More on Feature Information Returned in the EDX register)
+	(equal (feature-flags feature-flags x86) 0))
     :ud)))
 
 ;; ----------------------------------------------------------------------

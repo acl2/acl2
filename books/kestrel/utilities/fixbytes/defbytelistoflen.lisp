@@ -8,7 +8,7 @@
 ; Alessandro Coglio (coglio@kestrel.edu)
 ; and Eric McCarthy (last name at same site).
 
-; This file is based on defbyte.lisp,
+; This file is based on defbyte.lisp and defbytelist.lisp,
 ; modified to define fixed-length lists of 8-bit bytes.
 
 
@@ -21,7 +21,7 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "kestrel/utilities/event-forms" :dir :system)
 
-(include-book "defbyte")
+(include-book "defbytelist")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,7 +42,7 @@
 
 ;; Preliminaries.
 
-;; Using defbyte,
+;; Using defbyte and defbytelist,
 ;; define predicates, fixing functions, and fixtypes for unsigned 8-bit bytes
 ;; and lists of unsigned 8-bit bytes, for use by defbytelistoflen.
 
@@ -60,11 +60,13 @@
 ;; This will be redundant if fixbytes/instances.lisp
 ;; has been loaded, but if not, we need it here.
 
-(defbyte 8
+(fty::defbyte 8
   :signed nil
   :pred ubyte8p
-  :lpred ubyte8-listp
   :parents (defbyte-instances))
+
+(fty::defbytelist ubyte8
+  :pred ubyte8-listp)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -76,8 +78,8 @@
           fixed-length true lists of unsigned 8-bit bytes."
   :long
   "<p>
-   Currently, @(tsee defbyte) can be used to define fixtypes
-   for unsigned or signed bytes of specified sizes, as well
+   Currently, @(tsee fty::defbyte) and @(tsee fty::defbytelist) can be used to
+   define fixtypes for unsigned or signed bytes of specified sizes,
    as for true lists thereof.  @('defbytelistoflen') defines a fixtype
    that also constrains the length of the list to be fixed,
    but only supports unsigned 8-bit bytes.

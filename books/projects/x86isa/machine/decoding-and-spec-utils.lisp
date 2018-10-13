@@ -130,6 +130,7 @@ the @('fault') field instead.</li>
   (define read-*ip ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
 		    x86)
     :returns (*ip i48p :hyp (x86p x86))
+
     :parents (instruction-pointer-operations)
     :short "Read the instruction pointer from the register RIP, EIP, or IP."
     :long
@@ -162,8 +163,8 @@ the @('fault') field instead.</li>
       (case proc-mode
 	(#.*64-bit-mode* *ip)
 	(#.*compatibility-mode*
-	 (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	      (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	 (b* (((the (unsigned-byte 16) cs-attr)
+	       (xr :seg-hidden-attr #.*cs* x86))
 	      (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	   (if (= cs.d 1)
 	       (n32 *ip)
@@ -184,14 +185,24 @@ the @('fault') field instead.</li>
 
     (defrule read-*ip-when-64-bit-modep
       (equal (read-*ip #.*64-bit-mode* x86)
-	     (rip x86))))
+	     (rip x86)))
+
+    (defthm-usb read-*ip-when-not-64-bit-modep
+      :hyp (not (equal proc-mode #.*64-bit-mode*))
+      :bound 32
+      :concl (read-*ip proc-mode x86)
+      :gen-type t
+      :gen-linear t))
 
   (define add-to-*ip ((proc-mode :type (integer     0 #.*num-proc-modes-1*))
 		      (*ip       :type (signed-byte #.*max-linear-address-size*))
 		      (delta     :type (signed-byte #.*max-linear-address-size*))
 		      x86)
     :returns (mv flg
-		 (*ip+delta i48p :hyp (and (i48p *ip) (i48p delta))))
+		 (*ip+delta i48p
+			    :hyp (and (i48p *ip) (i48p delta))))
+    :prepwork
+    ((local (in-theory (e/d () (force (force))))))
     :parents (instruction-pointer-operations)
     :short "Add a specified amount to an instruction pointer."
     :long
@@ -237,11 +248,12 @@ the @('fault') field instead.</li>
 	   (mv (list :non-canonical-instruction-pointer *ip+delta) 0)))
 
 	(#.*compatibility-mode*
-	 (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden #.*cs* x86)))
-	      (cs.limit (hidden-seg-reg-layout-slice :limit cs-hidden)))
+	 (b* (((the (unsigned-byte 32) cs.limit)
+	       (mbe :logic (loghead 32 (xr :seg-hidden-limit #.*cs* x86))
+		    :exec (xr :seg-hidden-limit #.*cs* x86))))
 	   (if (and (<= 0 *ip+delta)
 		    (<= *ip+delta cs.limit))
-	       (mv nil *ip+delta)
+	       (mv nil (the (unsigned-byte 32) *ip+delta))
 	     (mv (list :out-of-segment-instruction-pointer cs.limit *ip+delta)
 		 0))))
 
@@ -308,12 +320,39 @@ the @('fault') field instead.</li>
       (equal (mv-nth 1 (add-to-*ip #.*64-bit-mode* *ip delta x86))
 	     (if (canonical-address-p (+ *ip delta))
 		 (+ *ip delta)
-	       0))))
+	       0)))
+
+    (defthm-usb mv-nth-1-of-add-to-*ip-when-compatibility-modep
+      :hyp (and (not (equal proc-mode #.*64-bit-mode*))
+		(integerp (+ *ip delta))
+		(not (mv-nth 0
+			     (add-to-*ip
+			      proc-mode *ip delta x86))))
+      :bound 32
+      :concl (mv-nth 1 (add-to-*ip proc-mode *ip delta x86))
+      :gen-linear t
+      :gen-type t))
 
   (define write-*ip ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
 		     (*ip       :type (signed-byte #.*max-linear-address-size*))
 		     x86)
-    :returns (x86-new x86p :hyp (and (i48p *ip) (x86p x86)))
+    :returns (x86-new x86p
+		      :hyp (and (i48p *ip) (x86p x86))
+		      :hints (("Goal" :in-theory (e/d () (force (force))))))
+
+    :guard (if (equal proc-mode #.*64-bit-mode*)
+	       t
+	     ;; Could strengthen the following, based on cs.d value...
+	     (unsigned-byte-p 32 *ip)
+	     ;; (b* (((the (unsigned-byte 16) cs-attr)
+	     ;;       (xr :seg-hidden-attr #.*cs* x86))
+	     ;;      (cs.d
+	     ;;       (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+	     ;;   (case cs.d
+	     ;;     (0 (unsigned-byte-p 16 *ip))
+	     ;;     (otherwise (unsigned-byte-p 32 *ip))))
+	     )
+
     :parents (instruction-pointer-operations)
     :short "Write an instruction pointer into the register RIP, EIP, or IP."
     :long
@@ -392,32 +431,44 @@ the @('fault') field instead.</li>
      the argument instruction pointer.
      </p>"
 
+    :prepwork
+    ((local
+      (in-theory (e/d ()
+		      (bitops::logand-with-bitmask
+		       bitops::logand-with-negated-bitmask))))
+
+     (local
+      (defthm logtail-logbitp-lemma
+	(equal (logand 1 (logtail n x))
+	       (bool->bit (logbitp n x)))
+	:hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+					  bitops::ihsext-recursive-redefs)
+					 ()))))))
+
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand) ())))
+
     (case proc-mode
 
       (#.*64-bit-mode*
        (!rip *ip x86))
 
       (#.*compatibility-mode* ;; Maybe *protected-mode* too?
-       (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden #.*cs* x86)))
-	    (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+       (b* ((cs-attr (the (unsigned-byte 16) (xr :seg-hidden-attr #.*cs* x86)))
 	    (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	 (if (= cs.d 1)
-	     (!rip (n32 *ip) x86)
-	   ;; converting RIP to unsigned (via N48) and then back to signed (via
-	   ;; I48) lets the guard proofs go through easily, but at some point we
-	   ;; might look into adding theorems about PART-INSTALL and SIGNED-BYTE-P
-	   ;; to the BITOPS libraries to let the guard proofs here go through
-	   ;; without the conversions:
-	   (b* ((rip (rip x86))
-		(urip (n48 rip))
-		(urip-new (part-install (n16 *ip) urip :low 0 :width 16))
-		(rip-new (i48 urip-new)))
+	     (mbe :logic (!rip (n32 *ip) x86)
+		  :exec (!rip (the (unsigned-byte 32) *ip) x86))
+	   (b* ((rip (the (signed-byte #.*max-linear-address-size*)
+		       (rip x86)))
+		((the (signed-byte #.*max-linear-address-size*) rip-new)
+		 (mbe :logic (part-install (n16 *ip) rip :low 0 :width 16)
+		      :exec (logior (logand #ux-1_0000  rip)
+				    (logand #uxFFFF *ip)))))
 	     (!rip rip-new x86)))))
 
       (otherwise
        ;; Unimplemented for other modes!
        x86))
-
     :inline t
     :no-function t
     ///
@@ -469,8 +520,7 @@ the @('fault') field instead.</li>
 	(#.*64-bit-mode*
 	 *sp)
 	(#.*compatibility-mode*
-	 (b* ((ss-hidden (xr :seg-hidden #.*ss* x86))
-	      (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
+	 (b* (((the (unsigned-byte 16) ss-attr) (xr :seg-hidden-attr #.*ss* x86))
 	      (ss.b (data-segment-descriptor-attributes-layout-slice
 		     :d/b ss-attr)))
 	   (if (= ss.b 1)
@@ -491,7 +541,14 @@ the @('fault') field instead.</li>
       :gen-linear t)
 
     (defrule read-*sp-when-64-bit-modep
-      (equal (read-*sp #.*64-bit-mode* x86) (rgfi *rsp* x86))))
+      (equal (read-*sp #.*64-bit-mode* x86) (rgfi *rsp* x86)))
+
+    (defthm-usb read-*sp-when-not-64-bit-modep
+      :hyp (not (equal proc-mode #.*64-bit-mode*))
+      :bound 32
+      :concl (read-*sp proc-mode x86)
+      :gen-type t
+      :gen-linear t))
 
   (define add-to-*sp ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
 		      (*sp   :type (signed-byte 64))
@@ -547,16 +604,24 @@ the @('fault') field instead.</li>
 	     (mv nil *sp+delta)
 	   (mv (list :non-canonical-stack-address *sp+delta) 0)))
 	(#.*compatibility-mode*
-	 (b* ((ss-hidden (the (unsigned-byte 112) (xr :seg-hidden #.*ss* x86)))
-	      (ss.limit (hidden-seg-reg-layout-slice :limit ss-hidden))
-	      (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
-	      (ss.b (data-segment-descriptor-attributes-layout-slice :d/b ss-attr))
-	      (ss.e (data-segment-descriptor-attributes-layout-slice :e ss-attr))
+	 (b* (((the (unsigned-byte 32) ss.limit)
+	       (xr :seg-hidden-limit #.*ss* x86))
+	      ((the (unsigned-byte 16) ss-attr)
+	       (xr :seg-hidden-attr #.*ss* x86))
+	      (ss.b (data-segment-descriptor-attributes-layout-slice
+		     :d/b ss-attr))
+	      (ss.e (data-segment-descriptor-attributes-layout-slice
+		     :e ss-attr))
 	      (ss-lower (if (= ss.e 1) (1+ ss.limit) 0))
-	      (ss-upper (if (= ss.e 1) (if (= ss.b 1) #xffffffff #xffff) ss.limit))
+	      (ss-upper (if (= ss.e 1)
+			    (if (= ss.b 1)
+				#xffffffff
+			      #xffff)
+			  ss.limit))
 	      ((unless (and (<= ss-lower *sp+delta)
 			    (<= *sp+delta ss-upper)))
-	       (mv (list :out-of-segment-stack-address *sp+delta ss-lower ss-upper)
+	       (mv (list :out-of-segment-stack-address
+			 *sp+delta ss-lower ss-upper)
 		   0)))
 	   (if (= ss.b 1)
 	       (mv nil (n32 *sp+delta))
@@ -584,13 +649,38 @@ the @('fault') field instead.</li>
       (equal (mv-nth 1 (add-to-*sp #.*64-bit-mode* *sp delta x86))
 	     (if (canonical-address-p (+ *sp delta))
 		 (+ *sp delta)
-	       0))))
+	       0)))
+
+    (defthm-usb mv-nth-1-of-add-to-*sp-when-compatibility-modep
+      :hyp (and (not (equal proc-mode #.*64-bit-mode*))
+		(integerp (+ *sp delta))
+		(not (mv-nth 0 (add-to-*sp proc-mode *sp delta x86))))
+      :bound 32
+      :concl (mv-nth 1 (add-to-*sp proc-mode *sp delta x86))
+      :hints (("Goal" :in-theory (e/d () (force (force)))))
+      :gen-linear t
+      :gen-type t))
 
   (define write-*sp ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
 		     (*sp :type (signed-byte 64))
 		     x86)
     :returns (x86-new x86p :hyp (and (i64p *sp) (x86p x86)))
     :parents (stack-pointer-operations)
+
+    :guard (if (equal proc-mode #.*64-bit-mode*)
+	       t
+	     ;; Could strengthen the following, based on ss.d.
+	     (unsigned-byte-p 32 *sp)
+	     ;; (b* (((the (unsigned-byte 16) ss-attr)
+	     ;;       (xr :seg-hidden-attr #.*ss* x86))
+	     ;;      (ss.d
+	     ;;       (data-segment-descriptor-attributes-layout-slice
+	     ;;        :d/b ss-attr)))
+	     ;;   (case ss.d
+	     ;;     (0 (unsigned-byte-p 16 *sp))
+	     ;;     (otherwise (unsigned-byte-p 32 *sp))))
+	     )
+
     :short "Write a stack pointer into the register RSP, ESP, or SP."
     :long
     "<p>
@@ -642,25 +732,38 @@ the @('fault') field instead.</li>
      to verify guards;
      these coercions are expected not to change the argument stack pointer.
      </p>"
+
+    :prepwork
+    ((local
+      (in-theory (e/d ()
+		      (bitops::logand-with-bitmask
+		       bitops::logand-with-negated-bitmask))))
+
+     (local
+      (defthm logtail-logbitp-lemma
+	(equal (logand 1 (logtail n x))
+	       (bool->bit (logbitp n x)))
+	:hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+					  bitops::ihsext-recursive-redefs)
+					 ()))))))
+
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand) ())))
+
     (case proc-mode
       (#.*64-bit-mode*
        (!rgfi #.*rsp* *sp x86))
       (#.*compatibility-mode*
-       (b* ((ss-hidden (the (unsigned-byte 112) (xr :seg-hidden #.*ss* x86)))
-	    (ss-attr (hidden-seg-reg-layout-slice :attr ss-hidden))
+       (b* (((the (unsigned-byte 16) ss-attr) (xr :seg-hidden-attr #.*ss* x86))
 	    (ss.b (data-segment-descriptor-attributes-layout-slice
 		   :d/b ss-attr)))
 	 (if (= ss.b 1)
-	     (!rgfi #.*rsp* (n32 *sp) x86)
-	   ;; converting RSP to unsigned (via N64) and then back to signed (via
-	   ;; I64) lets the guard proofs go through easily, but at some point we
-	   ;; might look into adding theorems about PART-INSTALL and
-	   ;; SIGNED-BYTE-P to the BITOPS libraries to let the guard proofs here
-	   ;; go through without the conversions:
-	   (b* ((rsp (rgfi #.*rsp* x86))
-		(ursp (n64 rsp))
-		(ursp-new (part-install (n16 *sp) ursp :low 0 :width 16))
-		(rsp-new (i64 ursp-new)))
+	     (mbe :logic (!rgfi #.*rsp* (n32 *sp) x86)
+		  :exec (!rgfi #.*rsp* (the (unsigned-byte 32) *sp) x86))
+	   (b* (((the (signed-byte 64) rsp) (rgfi #.*rsp* x86))
+		((the (signed-byte 64) rsp-new)
+		 (mbe :logic (part-install (n16 *sp) rsp :low 0 :width 16)
+		      :exec (logior (logand #ux-1_0000  rsp)
+				    (logand #xFFFF *sp)))))
 	     (!rgfi #.*rsp* rsp-new x86)))))
       (otherwise
        ;; Unimplemented for other modes!
@@ -712,8 +815,7 @@ the @('fault') field instead.</li>
   (case proc-mode
     (#.*64-bit-mode* (if p4? 4 8))
     (otherwise ;; #.*compatibility-mode* or #.*protected-mode*
-     (b* ((cs-hidden (the (unsigned-byte 112) (xr :seg-hidden #.*cs* x86)))
-	  (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+     (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
 	  (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
        (if (= cs.d 1) (if p4? 2 4) (if p4? 4 2)))))
   ///
@@ -1887,6 +1989,24 @@ reference made from privilege level 3.</blockquote>"
     :gen-type t
     :hints (("Goal" :in-theory (enable rme-size))))
 
+  (defthm-usb bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand
+    :hyp (and (member operand-size '(1 2 4 8 16))
+	      (<= (ash operand-size 3) bound)
+	      (integerp bound)
+	      (x86p x86))
+    :bound bound
+    :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
+		      proc-mode reg-type operand-size inst-ac? memory-ptr?
+		      seg-reg p4? temp-RIP rex-byte r/m mod sib num-imm-bytes
+		      x86))
+    :hints (("Goal" :in-theory (e/d ()
+				    (x86-operand-from-modr/m-and-sib-bytes$
+				     unsigned-byte-p)))))
+
+  (in-theory
+   (disable
+    bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand))
+
   (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand-6-and-10-bytes-read
     :hyp (and (member operand-size '(6 10))
 	      (equal bound (ash operand-size 3))
@@ -2057,6 +2177,44 @@ reference made from privilege level 3.</blockquote>"
 
 ;; ======================================================================
 
+(define rip-guard-okp
+  ((proc-mode :type (integer 0     #.*num-proc-modes-1*))
+   (rip       :type (signed-byte #.*max-linear-address-size*)))
+  :short "Size constraints on a memory address of some instruction byte"
+
+  :long "<p>This function specifies the maximum size of a memory address that
+  points to some instruction byte in a certain mode of operation.  We usually
+  use this function to specify the guard on @('start-rip') or @('temp-rip') ---
+  that way, we can put in suitable type declarations in our specification
+  functions.</p>
+
+  <p>This function doesn't really specify whether a memory address that points
+  to some instruction byte is valid or not --- that notion is much more
+  complicated; see @(see canonical-address-p), @(see ea-to-la), and @(see
+  instruction-pointer-operations) for details.</p>"
+  :parents (decoding-and-spec-utils)
+  :enabled t
+  (if (equal proc-mode #.*64-bit-mode*)
+      (signed-byte-p 48 rip)
+    (unsigned-byte-p 32 rip))
+
+  ///
+
+  (defthm rip-guard-okp-equiv-for-non-64-bit-modes
+    (implies (and (rip-guard-okp proc-mode-1 rip)
+		  (not (equal proc-mode-1 0))
+		  (not (equal proc-mode-2 0)))
+	     (rip-guard-okp proc-mode-2 rip)))
+
+  (defthm rip-guard-okp-for-64-bit-modep
+    (equal (rip-guard-okp #.*64-bit-mode* rip)
+	   (signed-byte-p #.*max-linear-address-size* rip)))
+
+  (defthm rip-guard-okp-for-compatibility-mode
+    (equal (rip-guard-okp #.*compatibility-mode* rip)
+	   (unsigned-byte-p 32 rip))))
+
+
 (defmacro def-inst
   (name &key
 	(operation   'nil)
@@ -2108,6 +2266,7 @@ reference made from privilege level 3.</blockquote>"
 	 :guard (and (prefixes-p prefixes)
 		     (ModR/M-p modr/m)
 		     (sib-p sib)
+		     (rip-guard-okp proc-mode temp-rip)
 		     ,@(and guard `(,guard)))
 
 	 ,@(and enabled `(:enabled ,enabled))
@@ -2210,8 +2369,7 @@ reference made from privilege level 3.</blockquote>"
 	    4   ;; Default 32-bit operand size (in 64-bit mode)
 	    ))
       ;; 32-bit mode or Compatibility Mode:
-      (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	   (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+      (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
 	   (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
 	   (p3? (eql #.*operand-size-override*
 		     (the (unsigned-byte 8) (prefixes->opr prefixes)))))

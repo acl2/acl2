@@ -4,11 +4,11 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; September 2018
 
 (in-package "ADE")
 
-(include-book "utils")
+(include-book "index")
 
 (include-book "std/lists/repeat" :dir :system)
 
@@ -217,20 +217,6 @@
                 (<= (+ n1 n2) (len l)))
            (not (member x (take n1 (nthcdr n2 l))))))
 
-(defthm assoc-eq-values-take-nthcdr
-  (implies (and (no-duplicatesp l)
-                (<= 0 n2)
-                (<= (+ n1 n2) (len l))
-                (true-listp x)
-                (equal (len l) (len x)))
-           (equal (assoc-eq-values (take n1 (nthcdr n2 l))
-                                   (pairlis$ l x))
-                  (take n1 (nthcdr n2 x))))
-  :hints (("Subgoal *1/1"
-           :in-theory (disable assoc-eq-values-take-1)
-           :use (:instance assoc-eq-values-take-1
-                           (n n1)))))
-
 (defthm assoc-eq-values-cons
   (equal (assoc-eq-values (cons a b) alist)
          (cons (assoc-eq-value a alist)
@@ -262,6 +248,20 @@
   (equal (assoc-eq-values (make-list n :initial-element name) alist)
          (make-list n :initial-element (assoc-eq-value name alist)))
   :hints (("Goal" :in-theory (enable repeat))))
+
+(defthm assoc-eq-values-take-nthcdr
+  (implies (and (no-duplicatesp l)
+                (<= 0 n2)
+                (<= (+ n1 n2) (len l))
+                (true-listp x)
+                (<= (len l) (len x)))
+           (equal (assoc-eq-values (take n1 (nthcdr n2 l))
+                                   (pairlis$ l x))
+                  (take n1 (nthcdr n2 x))))
+  :hints (("Subgoal *1/1"
+           :in-theory (disable assoc-eq-values-take-1)
+           :use (:instance assoc-eq-values-take-1
+                           (n n1)))))
 
 (defthm assoc-eq-values-subseq-args-pairlis$-args
   (implies (and (<= 0 m)
@@ -312,10 +312,8 @@
                 (<= m i)
                 (<= (+ i j) (+ m n))
                 (true-listp vals)
-                (= n (len vals)))
+                (<= n (len vals)))
            (equal (assoc-eq-values (sis s i j)
                                    (pairlis$ (sis s m n) vals))
                   (take j (nthcdr (- i m) vals))))
   :hints (("Goal" :use sis-of-subset)))
-
-

@@ -204,25 +204,25 @@ int main (int argc, char *argv[], char *env[]) {
 (define make-fib32-addr-alst (start-addr halt-addr)
   :measure (nfix (- halt-addr start-addr))
   (if (or (not (integerp start-addr))
-          (not (integerp halt-addr))
-          (not (< start-addr halt-addr)))
+	  (not (integerp halt-addr))
+	  (not (< start-addr halt-addr)))
       (list halt-addr)
     (cons start-addr
-          (make-fib32-addr-alst (1+ start-addr) halt-addr))))
+	  (make-fib32-addr-alst (1+ start-addr) halt-addr))))
 
 (defconst *fibonacci32-binary*
   (append
    (pairlis$ (make-fib32-addr-alst #x00001e90  #x00001ecf)
-             *fibonacci-bytes*)
+	     *fibonacci-bytes*)
    (pairlis$ (make-fib32-addr-alst #x00001ef2  #x00001eff)
-             *some-main-bytes*)))
+	     *some-main-bytes*)))
 
 (define fib32 ((n natp))
   ;; Specification Function in ACL2
   (declare (xargs :guard (natp n)))
   (cond ((zp n) 0)
-        ((eql n 1) 1)
-        (t (+ (fib32 (- n 1)) (fib32 (- n 2))))))
+	((eql n 1) 1)
+	(t (+ (fib32 (- n 1)) (fib32 (- n 2))))))
 
 ;; ======================================================================
 
@@ -234,29 +234,29 @@ int main (int argc, char *argv[], char *env[]) {
    (x86 "Output x86 State"))
 
   (cond ((or (fault x86)
-             (not (equal (ms x86)
-                         `((x86-fetch-decode-execute-halt
-                            :rip ,halt-address)))))
+	     (not (equal (ms x86)
+			 `((x86-fetch-decode-execute-halt
+			    :rip ,halt-address)))))
 
-         (cw "~|(ms x86) = ~x0 (fault x86) = ~x1~%"
-             (ms x86) (fault x86)))
+	 (cw "~|(ms x86) = ~x0 (fault x86) = ~x1~%"
+	     (ms x86) (fault x86)))
 
-        (t (let ((expected (fib32 input)))
+	(t (let ((expected (fib32 input)))
 
-             (cond
-              ((equal (rgfi *eax* x86) expected)
-               (prog2$
-                (cw
-                 "~|(x86isa-fib ~x0) was correctly computed as ~x1.~%"
-                 input
-                 expected)
-                t))
-              (t
-               (prog2$
-                (cw
-                 "~|(x86isa-fib ~x0) = ~x1, but eax is ~x2.~%"
-                 input expected (rgfi *eax* x86))
-                t)))))))
+	     (cond
+	      ((equal (rgfi *eax* x86) expected)
+	       (prog2$
+		(cw
+		 "~|(x86isa-fib ~x0) was correctly computed as ~x1.~%"
+		 input
+		 expected)
+		t))
+	      (t
+	       (prog2$
+		(cw
+		 "~|(x86isa-fib ~x0) = ~x1, but eax is ~x2.~%"
+		 input expected (rgfi *eax* x86))
+		t)))))))
 
 (define x86isa-one-fib32-cosim
   ((input         :type (unsigned-byte 8))
@@ -267,64 +267,57 @@ int main (int argc, char *argv[], char *env[]) {
 
   (b* ((ctx __function__)
        ((mv flg x86)
-        (init-x86-state
-         ;; Status (MS and fault field)
-         nil
-         start-address
-         ;; Initial values of General-Purpose Registers
-         `((#.*RAX* . ,input)
-           (#.*RBX* . #xbffff954)
-           (#.*RCX* . #xffffffff)
-           (#.*RDX* . ,input)
-           (#.*RDI* . #x00001edd)
-           (#.*RSI* . ,input)
-           (#.*RBP* . #xbffff898)
-           (#.*RSP* . #xbffff880))
-         ;; Initial values of Control Registers (already initialized in
-         ;; init-sys-view)
-         nil
-         ;; Initial values of Model-Specific Registers (already initialized
-         ;; in init-sys-view)
-         nil
-         ;; seg-visibles
-         `((#.*cs* . #x0000001b)
-           (#.*ss* . #x00000023)
-           (#.*ds* . #x00000023))
-         ;; seg-hiddens
-         (acons
-          #.*cs*
-          ;; See segment-base-and-bounds:
-          ;; (b* ((hidden 0)
-          ;;      (hidden (!hidden-seg-reg-layout-slice :base-addr 0 hidden))
-          ;;      (hidden (!hidden-seg-reg-layout-slice :limit #uxffff hidden))
-          ;;      (attr (!code-segment-descriptor-attributes-layout-slice :d 1 0)) ;; for op size 4
-          ;;      (hidden (!hidden-seg-reg-layout-slice :attr attr hidden)))
-          ;;   hidden)
-          #x4000000FFFF0000000000000000
-          (acons
-           #.*ss*
-           ;; See add-to-*sp.
-           ;; (b* ((hidden 0)
-           ;;      (hidden (!hidden-seg-reg-layout-slice :base-addr #ux0 hidden))
-           ;;      (hidden (!hidden-seg-reg-layout-slice :limit #uxffff_ffff hidden)))
-           ;;   hidden)
-           #xFFFFFFFF0000000000000000
-           (acons
-            #.*ds*
-            #xFFFFFFFF0000000000000000
-            nil)))
-         ;; Initial value of the Rflags Register
-         #x282
-         ;; Initial memory image
-         (acons
-          #xbffff880 ;; init value of esp (i.e., just before the call to _fib.)
-          input
-          *fibonacci32-binary*)
-         ;; x86 state
-         x86))
+	(init-x86-state
+	 ;; Status (MS and fault field)
+	 nil
+	 start-address
+	 ;; Initial values of General-Purpose Registers
+	 `((#.*RAX* . ,input)
+	   (#.*RBX* . #xbffff954)
+	   (#.*RCX* . #xffffffff)
+	   (#.*RDX* . ,input)
+	   (#.*RDI* . #x00001edd)
+	   (#.*RSI* . ,input)
+	   (#.*RBP* . #xbffff898)
+	   (#.*RSP* . #xbffff880))
+	 ;; Initial values of Control Registers (already initialized in
+	 ;; init-sys-view)
+	 nil
+	 ;; Initial values of Model-Specific Registers (already initialized
+	 ;; in init-sys-view)
+	 nil
+	 ;; seg-visibles
+	 `((#.*cs* . #x0000001b)
+	   (#.*ss* . #x00000023)
+	   (#.*ds* . #x00000023))
+
+	 ;; For initial seg-hidden values:
+	 ;; See segment-base-and-bounds.
+	 ;; See add-to-*sp.
+
+	 ;; seg-hidden base
+	 (acons #.*cs* 0 (acons #.*ss* 0 (acons #.*ds* 0 nil)))
+	 ;; seg-hidden limit
+	 (acons #.*cs* #uxffff
+		(acons #.*ss* #uxffff_ffff
+		       (acons #.*ds* #uxffff_ffff nil)))
+	 ;; seg-hidden attr
+	 (acons
+	  #.*cs*
+	  (!code-segment-descriptor-attributes-layout-slice :d 1 0) ;; op size = 4
+	  nil)
+	 ;; Initial value of the Rflags Register
+	 #x282
+	 ;; Initial memory image
+	 (acons
+	  #xbffff880 ;; init value of esp (i.e., just before the call to _fib.)
+	  input
+	  *fibonacci32-binary*)
+	 ;; x86 state
+	 x86))
        ((when flg)
-        (let ((x86 (!!ms-fresh :init-x86-state-error flg)))
-          (mv nil 0 x86)))
+	(let ((x86 (!!ms-fresh :init-x86-state-error flg)))
+	  (mv nil 0 x86)))
        ((mv steps x86) (time$ (x86-run-halt-count halt-address xrun-limit x86 xrun-limit)))
        (ok? (check-fib32-output input halt-address x86))
        ((unless ok?) (mv nil 0 x86)))
@@ -342,12 +335,12 @@ int main (int argc, char *argv[], char *env[]) {
       (mv t 0 x86)
 
     (b* (((mv flg steps x86)
-          (x86isa-one-fib32-cosim
-           (1- input) start-address halt-address xrun-limit x86))
-         ((unless flg)
-          (cw "~% Mismatch found!~%")
-          (mv flg 0 x86))
-         (- (cw "Input: ~p0 Steps: ~p1 ~%" input steps)))
+	  (x86isa-one-fib32-cosim
+	   (1- input) start-address halt-address xrun-limit x86))
+	 ((unless flg)
+	  (cw "~% Mismatch found!~%")
+	  (mv flg 0 x86))
+	 (- (cw "Input: ~p0 Steps: ~p1 ~%" input steps)))
 
       (run-x86isa-fib32
        (1- input) start-address halt-address xrun-limit x86))))
@@ -373,7 +366,7 @@ int main (int argc, char *argv[], char *env[]) {
       (input         20)
       ((mv flg & x86)
        (run-x86isa-fib32
-        input start-address halt-address *fib32-xrun-limit* x86)))
+	input start-address halt-address *fib32-xrun-limit* x86)))
    (mv flg x86))
  x86)
 

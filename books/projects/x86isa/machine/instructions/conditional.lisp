@@ -282,8 +282,7 @@
        ((the (integer 0 4) offset-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
 	       (p3? (eql #.*operand-size-override* (prefixes->opr prefixes))))
 	    ;; 16 or 32 bits (rel16 or rel32):

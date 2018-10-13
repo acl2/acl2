@@ -22,7 +22,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc directed-untranslate
-  :parents (kestrel-utilities system-utilities)
+  :parents (kestrel-utilities system-utilities-non-built-in)
   :short "Create a user-level form that reflects a given user-level form's
  structure."
   :long "<p>See @(see term) for relevant background about user-level ``terms''
@@ -518,6 +518,15 @@
                     nil)
                   alist))))))
 
+(defun mv-nths-p (mv-var mv-nths k)
+  (cond ((endp mv-nths) t)
+        (t (let ((term (car mv-nths)))
+             (and (ffn-symb-p term 'mv-nth)
+                  (quotep (fargn term 1))
+                  (eql k (unquote (fargn term 1)))
+                  (eq mv-var (fargn term 2))
+                  (mv-nths-p mv-var (cdr mv-nths) (1+ k)))))))
+
 (defun adjust-sterm-for-tterm (tterm sterm)
 
 ; This function can return a term logically equivalent to sterm that is a
@@ -583,6 +592,18 @@
                                sfbr)))
            (& (mv nil sterm))))
         (t (mv nil sterm))))
+      ((('lambda (mv-var)
+          (('lambda formals &) . mv-nths))
+        &)
+       (cond ((mv-nths-p mv-var mv-nths 0)
+              (case-match sterm
+                ((('lambda !formals s-lambda-body) . s-args)
+                 (mv t
+                     `((lambda (,mv-var)
+                         ((lambda ,formals ,s-lambda-body) ,@mv-nths))
+                       ,(make-true-list-cons-nest s-args))))
+                (& (mv nil sterm))))
+             (t (mv nil sterm))))
       ((equality-fn & &)
        (cond ((and (ffn-symb-p sterm 'equal)
                    (member-eq equality-fn '(eq eql =)))
@@ -1395,6 +1416,64 @@
                                         (cons (car formals) ignore-vars)))
                    (t (mv nil nil nil)))))))
 
+(defun make-mv-args (uterm k)
+
+; Uterm is an untranslated term.  Return a list of untranslated terms of length
+; k such that the application of mv to that list is provably equal to uterm, or
+; else return nil.  The intended use is for when directed-untranslate is
+; applied to a first argument of the form (mv-let ...)  to produce:
+
+; ('LET ((mv-var mv-let-body)) ('LET & &))
+
+; We want to call du-make-mv-let to reconstruct a form (mv-let & body &), but
+; the problem is that body, having been produced by directed-untranslate, might
+; not have suitable stobjs-out -- for example, it might be (cons & &), which is
+; a single value.  Such a call of cons might, for example, be generated because
+; the sterm given to directed-untranslate comes from function
+; adjust-sterm-for-tterm, which may call make-true-list-cons-nest to produce a
+; call of cons.
+
+; If mv-let-body is already suitable as body, or if we don't see how to put
+; mv-let-body into suitable form, we return nil here.  Otherwise we return a
+; list (u1 ... uk) so that we can replace mv-let-body by (mv u1 ... uk).
+
+  (declare (xargs :guard (posp k)))
+  (cond ((atom uterm) nil)
+        (t (case-match uterm
+             (('quote evg)
+              (and (true-listp evg)
+                   (equal (length evg) k)
+                   (maybe-kwote-lst evg)))
+             (('mv . &) ; no need to convert
+              nil)
+             (('list . y)
+              (and (true-listp y) ; always true?
+                   (equal (length y) k)
+                   y))
+             (('cons x y)
+              (cond ((= k 1)
+                     (and (member-equal y '(nil 'nil))
+                          (list x)))
+                    (t (let ((args (make-mv-args y (1- k))))
+                         (and args (cons x args))))))
+             (('list* ('quote x))
+              (cond ((= k 1)
+                     (and (consp x)
+                          (null (cdr x))
+                          (list (maybe-kwote (car x)))))
+                    (t (and (consp x)
+                            (let ((args (make-mv-args `(list* (quote ,(cdr x)))
+                                                      (1- k))))
+                              (and args
+                                   (cons (maybe-kwote (car x)) args)))))))
+             (('list* x . y)
+              (cond ((= k 1)
+                     (and (equal y '(nil))
+                          (list x)))
+                    (t (let ((args (make-mv-args (cons 'list* y) (1- k))))
+                         (and args (cons x args))))))
+             (& nil)))))
+
 (defun du-make-mv-let (formals x wrld state-vars)
 
 ; This function returns an untranslated term that is provably equal to the
@@ -1465,9 +1544,14 @@
                                     (('mv-list & y)
                                      y)
                                     (& mv-let-body)))
+                     (formals-len (length formals))
+                     (mv-let-body-args (make-mv-args mv-let-body formals-len))
+                     (mv-let-body (if mv-let-body-args
+                                      (cons 'mv mv-let-body-args)
+                                    mv-let-body))
                      (values-len (uterm-values-len mv-let-body wrld))
                      (bindings-len (length bindings)))
-                (and (= values-len (length formals)) ; always true?
+                (and (= values-len formals-len) ; always true?
                      (<= bindings-len values-len)
                      (mv-let (flg vars ignore-vars)
                        (du-make-mv-let-aux bindings formals mv-var 0 nil nil)
@@ -1499,7 +1583,14 @@
               `(mv-let ,(strip-cars bindings)
                  (mv ,@(strip-cadrs bindings))
                  ,main-body))))
-      x))
+
+; We failed to construct an mv-let term.  At least undo the damage from
+; creating a LET-binding (let ((mv (mv ...))) ...).
+
+      (case-match x
+        (('let ((mv-var ('mv . a))) . b)
+         `(let ((,mv-var (list ,@a))) ,@b))
+        (& x))))
 
 (defun expand-mv-let (uterm tterm)
 
@@ -2332,7 +2423,18 @@
                     (('mv-let !vars val2 . last)
                      (and last
                           (let ((body (car (last last))))
-                            (and (not (intersectp-eq ignores (all-vars body)))
+                            (mv-let
+                              (erp tbody)
+                              (translate-cmp body
+                                             nil ; stobjs-out
+                                             nil ; logic-modep (don't care)
+                                             t   ; known-stobjs
+                                             'directed-untranslate-b* ; ctx
+                                             wrld
+                                             (default-state-vars nil))
+                              (and (null erp)
+                                   (not (intersectp-eq ignores
+                                                       (all-vars tbody)))
 
 ; Originally we had
 ; (b* (((mv . args) val) ..) ...)
@@ -2342,14 +2444,14 @@
 ; and - with ignore-3.  In this case we want to use the original args, provided
 ; the ignored variables don't occur free in the body of the resulting mv-let.
 
-                                 (mv-let (bindings2 body2)
-                                   (case-match body
-                                     (('b* bindings2 . rest2) ; ignore declares
-                                      (mv bindings2 (car (last rest2))))
-                                     (& (mv nil body)))
-                                   `(b* (((mv ,@args) ,val2)
-                                         ,@bindings2)
-                                      ,body2)))))))
+                                   (mv-let (bindings2 body2)
+                                     (case-match body
+                                       (('b* bindings2 . rest2) ; ignore declares
+                                        (mv bindings2 (car (last rest2))))
+                                       (& (mv nil body)))
+                                     `(b* (((mv ,@args) ,val2)
+                                           ,@bindings2)
+                                        ,body2))))))))
                   x)))))
     (('b* ((var val) . bindings) rest)
      (cond

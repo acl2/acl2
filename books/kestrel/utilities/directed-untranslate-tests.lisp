@@ -1928,4 +1928,366 @@
    (equal (directed-untranslate-rec uterm tterm sterm nil t nil (w state))
           uterm2)))
 
+; And now, here are a bunch of tests that benefit from a change made
+; to adjust-sterm-for-tterm by adding the case
+;      (('lambda (mv-var)
+;         (('lambda formals &) . mv-nths))
+;       &)
+; and a corresponding change to du-make-mv-let by adding a call of
+; make-mv-args.
+
+(assert!
+ (let ((uterm '(mv-let (a b)
+                 (mv x y)
+                 (prog2$ (first a)
+                         (list (car (cons a b)) b))))
+       (tterm '((lambda (mv)
+                        ((lambda (a b)
+                                 (return-last 'progn
+                                              (car a)
+                                              (cons (car (cons a b)) (cons b 'nil))))
+                         (mv-nth '0 mv)
+                         (mv-nth '1 mv)))
+                (cons x (cons y 'nil))))
+       (sterm '((lambda (a b)
+                        (return-last 'progn
+                                     (car a)
+                                     (cons a (cons b 'nil))))
+                x y)))
+   (equal (directed-untranslate uterm tterm sterm nil '(nil) (w state))
+          '(mv-let (a b)
+             (mv x y)
+             (prog2$ (first a) (list a b))))))
+
+(assert!
+ (let ((uterm '(b* (((mv a b) (mv (car (cons x y)) y))
+                    (- (cw "second -")))
+                 (list a b)))
+       (tterm '((lambda
+                 (mv)
+                 ((lambda (a b)
+                          (return-last
+                           'progn
+                           (fmt-to-comment-window
+                            '"second -"
+                            (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                      'nil)
+                            '0
+                            'nil
+                            'nil)
+                           (cons a (cons b 'nil))))
+                  (mv-nth '0 mv)
+                  (mv-nth '1 mv)))
+                (cons (car (cons x y)) (cons y 'nil))))
+       (sterm '((lambda (a b)
+                        (return-last 'progn
+                                     (fmt-to-comment-window '"second -"
+                                                            'nil
+                                                            '0
+                                                            'nil
+                                                            'nil)
+                                     (cons a (cons b 'nil))))
+                x y)))
+   (equal (directed-untranslate uterm tterm sterm nil '(nil) (w state))
+          '(b* (((mv a b) (mv x y))
+                (- (cw "second -")))
+             (list a b)))))
+
+(assert!
+ (let ((uterm '(b* (((mv a b) (mv x y))
+                    (- (cw "second -")))
+                 (list (car (cons a b)) b)))
+       (tterm '((lambda
+                 (mv)
+                 ((lambda (a b)
+                          (return-last
+                           'progn
+                           (fmt-to-comment-window
+                            '"second -"
+                            (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                      'nil)
+                            '0
+                            'nil
+                            'nil)
+                           (cons (car (cons a b)) (cons b 'nil))))
+                  (mv-nth '0 mv)
+                  (mv-nth '1 mv)))
+                (cons x (cons y 'nil))))
+       (sterm '((lambda (a b)
+                        (return-last 'progn
+                                     (fmt-to-comment-window '"second -"
+                                                            'nil
+                                                            '0
+                                                            'nil
+                                                            'nil)
+                                     (cons a (cons b 'nil))))
+                x y)))
+   (equal (directed-untranslate uterm tterm sterm nil '(nil) (w state))
+          '(b* (((mv a b) (mv x y))
+                (- (cw "second -")))
+             (list a b)))))
+
+(assert!
+ (let ((uterm '(b* ((- (cw "first -"))
+                    (u (cons x y))
+                    (v (car u))
+                    ((mv ?a b) (mv u v))
+                    (- (cw "second -"))
+                    (? (cw "throw away ?")))
+                 (list a b)))
+       (tterm '(return-last
+                'progn
+                (fmt-to-comment-window
+                 '"first -"
+                 (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                           'nil)
+                 '0
+                 'nil
+                 'nil)
+                ((lambda
+                  (u)
+                  ((lambda
+                    (v u)
+                    ((lambda
+                      (mv)
+                      ((lambda
+                        (a b)
+                        (return-last
+                         'progn
+                         (fmt-to-comment-window
+                          '"second -"
+                          (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                    'nil)
+                          '0
+                          'nil
+                          'nil)
+                         ((lambda (|| b a) (cons a (cons b 'nil)))
+                          (fmt-to-comment-window
+                           '"throw away ?"
+                           (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                     'nil)
+                           '0
+                           'nil
+                           'nil)
+                          b a)))
+                       (mv-nth '0 mv)
+                       (mv-nth '1 mv)))
+                     (cons u (cons v 'nil))))
+                   (car u)
+                   u))
+                 (cons x y))))
+       (sterm '(return-last
+                'progn
+                (fmt-to-comment-window '"first -"
+                                       'nil
+                                       '0
+                                       'nil
+                                       'nil)
+                ((lambda
+                  (u x)
+                  ((lambda
+                    (v u)
+                    ((lambda (a b)
+                             (return-last 'progn
+                                          (fmt-to-comment-window '"second -"
+                                                                 'nil
+                                                                 '0
+                                                                 'nil
+                                                                 'nil)
+                                          ((lambda (|| b a) (cons a (cons b 'nil)))
+                                           (fmt-to-comment-window '"throw away ?"
+                                                                  'nil
+                                                                  '0
+                                                                  'nil
+                                                                  'nil)
+                                           b a)))
+                     u v))
+                   x u))
+                 (cons x y)
+                 x))))
+   (equal (directed-untranslate uterm tterm sterm nil '(nil) (w state))
+          '(b* ((- (cw "first -"))
+                (u (cons x y))
+                (v x)
+                ((mv ?a b) (mv u v))
+                (- (cw "second -")))
+             (list a b)))))
+
+(assert!
+ (let ((uterm '(b* ((- (cw "first -"))
+                    (u (cons x y))
+                    (v (car u))
+                    (? (cw "throw away ?"))
+                    ((mv ?a b) (mv u (first v)))
+                    (- (cw "second -")))
+                 (list a b)))
+       (tterm '(return-last
+                'progn
+                (fmt-to-comment-window
+                 '"first -"
+                 (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                           'nil)
+                 '0
+                 'nil
+                 'nil)
+                ((lambda
+                  (u)
+                  ((lambda
+                    (v u)
+                    ((lambda
+                      (|| v u)
+                      ((lambda
+                        (mv)
+                        ((lambda
+                          (a b)
+                          (return-last
+                           'progn
+                           (fmt-to-comment-window
+                            '"second -"
+                            (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                      'nil)
+                            '0
+                            'nil
+                            'nil)
+                           (cons a (cons b 'nil))))
+                         (mv-nth '0 mv)
+                         (mv-nth '1 mv)))
+                       (cons u (cons (car v) 'nil))))
+                     (fmt-to-comment-window
+                      '"throw away ?"
+                      (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                'nil)
+                      '0
+                      'nil
+                      'nil)
+                     v u))
+                   (car u)
+                   u))
+                 (cons x y))))
+       (sterm '(return-last
+                'progn
+                (fmt-to-comment-window '"first -"
+                                       'nil
+                                       '0
+                                       'nil
+                                       'nil)
+                ((lambda
+                  (u x)
+                  ((lambda
+                    (v u)
+                    ((lambda (|| v u)
+                             ((lambda (a b)
+                                      (return-last 'progn
+                                                   (fmt-to-comment-window '"second -"
+                                                                          'nil
+                                                                          '0
+                                                                          'nil
+                                                                          'nil)
+                                                   (cons a (cons b 'nil))))
+                              u (car v)))
+                     (fmt-to-comment-window '"throw away ?"
+                                            'nil
+                                            '0
+                                            'nil
+                                            'nil)
+                     v u))
+                   x u))
+                 (cons x y)
+                 x))))
+   (equal (directed-untranslate uterm tterm sterm nil '(nil) (w state))
+          '(b* ((- (cw "first -"))
+                (u (cons x y))
+                (v x)
+                ((mv ?a b) (mv u (first v)))
+                (- (cw "second -")))
+             (list a b)))))
+
+(assert!
+ (let ((uterm '(b* ((- (cw "first -"))
+                    (u (cons x y))
+                    (v (car u))
+                    (? (cw "throw away ?"))
+                    ((mv ?a b) (mv u v))
+                    (- (cw "second -")))
+                 (list a b)))
+       (tterm '(return-last
+                'progn
+                (fmt-to-comment-window
+                 '"first -"
+                 (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                           'nil)
+                 '0
+                 'nil
+                 'nil)
+                ((lambda
+                  (u)
+                  ((lambda
+                    (v u)
+                    ((lambda
+                      (|| v u)
+                      ((lambda
+                        (mv)
+                        ((lambda
+                          (a b)
+                          (return-last
+                           'progn
+                           (fmt-to-comment-window
+                            '"second -"
+                            (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                      'nil)
+                            '0
+                            'nil
+                            'nil)
+                           (cons a (cons b 'nil))))
+                         (mv-nth '0 mv)
+                         (mv-nth '1 mv)))
+                       (cons u (cons v 'nil))))
+                     (fmt-to-comment-window
+                      '"throw away ?"
+                      (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                'nil)
+                      '0
+                      'nil
+                      'nil)
+                     v u))
+                   (car u)
+                   u))
+                 (cons x y))))
+       (sterm '(return-last
+                'progn
+                (fmt-to-comment-window '"first -"
+                                       'nil
+                                       '0
+                                       'nil
+                                       'nil)
+                ((lambda
+                  (u x)
+                  ((lambda
+                    (v u)
+                    ((lambda (|| v u)
+                             ((lambda (a b)
+                                      (return-last 'progn
+                                                   (fmt-to-comment-window '"second -"
+                                                                          'nil
+                                                                          '0
+                                                                          'nil
+                                                                          'nil)
+                                                   (cons a (cons b 'nil))))
+                              u v))
+                     (fmt-to-comment-window '"throw away ?"
+                                            'nil
+                                            '0
+                                            'nil
+                                            'nil)
+                     v u))
+                   x u))
+                 (cons x y)
+                 x))))
+   (equal (directed-untranslate uterm tterm sterm nil '(nil) (w state))
+          '(b* ((- (cw "first -"))
+                (u (cons x y))
+                (v x)
+                ((mv ?a b) (mv u v))
+                (- (cw "second -")))
+             (list a b)))))
 )

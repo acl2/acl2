@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "../util/warnings")
-(include-book "oslib/ls" :dir :system)
+(include-book "oslib/ls-logic" :dir :system)
 (local (include-book "std/io/base" :dir :system))
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))

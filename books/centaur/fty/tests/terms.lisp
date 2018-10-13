@@ -1250,6 +1250,29 @@
     :measure (two-nats-measure (acl2-count x) 0)
     :elt-type inner-name))
 
+(deftypes outer-name2
+  (deftagsum inner-name2
+    :measure (two-nats-measure (acl2-count x) 1)
+    (:inner ((fn   integerp)
+             (args inner-name2list)))
+    (:outer ((fn symbolp))))
+  (deflist inner-name2list
+    :measure (two-nats-measure (acl2-count x) 2)
+    :elt-type inner-name2
+    :non-emptyp t))
+
+(deftypes outer-name3
+  (deftagsum inner-name3
+    :measure (two-nats-measure (acl2-count x) 1)
+    (:inner ((fn   integerp)
+             (args inner-name3list)))
+    (:outer ((fn symbolp))))
+  (deflist inner-name3list
+    :measure (two-nats-measure (acl2-count x) 2)
+    :elt-type inner-name3
+    :non-emptyp t
+    :true-listp t))
+
 
 (deftranssum nested-transsum-2
   (3ple-d inner-name)
@@ -1272,3 +1295,25 @@
 ;;     (3ple-d 3ple-e 3ple-f argle)))
 
 
+(deftypes funnyterm
+  (deftagsum funnyterm
+    (:var ((name symbolp :rule-classes :type-prescription)))
+    (:quote ((val)))
+    (:call ((fn symbol)
+            (args funnyterm-list)))
+    (:let ((bindings funnyalist)
+           (body funnyterm))))
+  (deflist funnyterm-list :elt-type funnyterm)
+  (defalist funnyalist :key-type symbol :val-type funnyterm :unique-keys t))
+
+
+(deftypes funny2term
+  (deftagsum funny2term
+    (:var ((name symbolp :rule-classes :type-prescription)))
+    (:quote ((val)))
+    (:call ((fn symbol)
+            (args funny2term-list)))
+    (:let ((bindings funny2alist)
+           (body funny2term))))
+  (deflist funny2term-list :elt-type funny2term)
+  (defmap funny2alist :key-type symbol :val-type funny2term :unique-keys t))

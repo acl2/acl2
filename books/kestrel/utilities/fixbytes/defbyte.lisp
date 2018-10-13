@@ -8,24 +8,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "FTY")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
-(include-book "std/typed-lists/signed-byte-listp" :dir :system)
-(include-book "std/util/defrule" :dir :system)
 (include-book "kestrel/utilities/event-forms" :dir :system)
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
+(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/defrule" :dir :system)
+(include-book "std/util/defval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defbyte
 
-  :parents (kestrel-utilities fty::fty)
+  :parents (acl2::kestrel-utilities fty)
 
   :short "Introduce <see topic='@(url fty)'>fixtypes</see> for
-          unsigned or signed bytes of a specified size,
-          and true lists thereof."
+          unsigned or signed bytes of a specified size."
 
   :long
 
@@ -36,15 +35,13 @@
    (xdoc::p
     "Currently fixtypes can only be associated to unary predicates,
      but @(tsee unsigned-byte-p) and @(tsee signed-byte-p)
-     are binary predicates,
-     as are @(tsee unsigned-byte-listp) and @(tsee signed-byte-listp).")
+     are binary predicates.")
 
    (xdoc::p
     "This macro introduces unary recognizers, and associated fixtypes,
-     for unsigned or signed bytes of specified sizes,
-     as well as for true lists thereof.
-     It also generates various theorems that relate the unary recognizers
-     to the binary predicates and to other built-in predicates.")
+     for unsigned or signed bytes of specified sizes.
+     It also generates various theorems that relate
+     the unary recognizers to the binary predicates.")
 
    (xdoc::h3 "General Form")
 
@@ -55,14 +52,9 @@
     "         :pred ..."
     "         :fix ..."
     "         :equiv ..."
-    "         :ltype ..."
-    "         :lpred ..."
-    "         :lfix ..."
-    "         :lequiv ..."
     "         :parents ..."
     "         :description ..."
     "         :long ..."
-    "         :llong ..."
     "  )")
 
    (xdoc::h3 "Inputs")
@@ -75,7 +67,7 @@
       (1) an explicit positive integer value;
       (2) a named constant whose value is a positive integer;
       (3) a call of a nullary function (defined or constrained)
-      that provably denotes a positive integer."))
+      that is guard-verified and provably denotes a positive integer."))
 
    (xdoc::desc
     "@(':signed')"
@@ -86,7 +78,7 @@
    (xdoc::desc
     "@(':type')"
     (xdoc::p
-     "A symbol that specifies the name of the fixtype for the bytes.
+     "A symbol that specifies the name of the fixtype.
       If this is @('nil') (the default),
       the name of the type is @('ubyte<size>') or @('sbyte<size>'),
       based on whether @(':signed') is @('nil') or @('t'),
@@ -97,76 +89,35 @@
    (xdoc::desc
     "@(':pred')"
     (xdoc::p
-     "A symbol that specifies the name of the unary recognizer for the bytes.
+     "A symbol that specifies the name of the unary recognizer.
       If this is @('nil') (the default),
       the name of the recognizer is @('<type>-p'),
-      where @('<type>') is the name of the fixtype for bytes,
+      where @('<type>') is the name of the fixtype,
       as specified via the @(':type') input."))
 
    (xdoc::desc
     "@(':fix')"
     (xdoc::p
-     "A symbol that specifies the name of the fixer for the bytes.
+     "A symbol that specifies the name of the fixer.
       If this is @('nil') (the default),
       the name of the fixer is @('<type>-fix'),
-      where @('<type>') is the name of the fixtype for bytes,
+      where @('<type>') is the name of the fixtype,
       as specified via the @(':type') input."))
 
    (xdoc::desc
     "@(':equiv')"
     (xdoc::p
-     "A symbol that specifies the name of the equivalence for the bytes.
+     "A symbol that specifies the name of the equivalence.
       If this is @('nil') (the default),
       the name of the equivalence is @('<type>-equiv'),
-      where @('<type>') is the name of the fixtype for bytes,
+      where @('<type>') is the name of the fixtype,
       as specified via the @(':type') input."))
-
-   (xdoc::desc
-    "@(':ltype')"
-    (xdoc::p
-     "A symbol that specifies the name of
-      the fixtype for the true lists of bytes.
-      If this is @('nil') (the default),
-      the name of the fixtype is @('<type>-list'),
-      where @('<type>') is the name of the fixtype for bytes,
-      as specified via the @(':type') input."))
-
-   (xdoc::desc
-    "@(':lpred')"
-    (xdoc::p
-     "A symbol that specifies the name of
-      the unary recognizer for the true lists of bytes.
-      If this is @('nil') (the default),
-      the name of the recognizer is @('<ltype>-p'),
-      where @('<ltype>') is the name of the fixtype for lists of bytes,
-      as specified via the @(':ltype') input."))
-
-   (xdoc::desc
-    "@(':lfix')"
-    (xdoc::p
-     "A symbol that specifies the name of
-      the fixer for the true lists of bytes.
-      If this is @('nil') (the default),
-      the name of the fixer is @('<ltype>-fix'),
-      where @('<ltype>') is the name of the fixtype for lists of bytes,
-      as specified via the @(':ltype') input."))
-
-   (xdoc::desc
-    "@(':lequiv')"
-    (xdoc::p
-     "A symbol that specifies the name of
-      the equivalence for the true lists of bytes.
-      If this is @('nil') (the default),
-      the name of the recognizer is @('<ltype>-equiv'),
-      where @('<ltype>') is the name of the fixtype for lists of bytes,
-      as specified via the @(':ltype') input."))
 
    (xdoc::desc
     "@(':parents')"
     (xdoc::p
      "A list of symbols to use as XDOC parents of
-      the generated fixtype of
-      unsigned or signed bytes of the specified size.
+      the generated fixtype.
       The default is @('nil'), i.e. no parents.
       All the other generated XDOC topics are (directly or indirectly)
       under the XDOC topic for this generated fixtype."))
@@ -177,7 +128,7 @@
      "A string that describes the bytes for which the fixtype is generated,
       or @('nil') (the default).
       If this is a string,
-      it is inserted into the generated XDOC @(':short') strings;
+      it is inserted into the generated XDOC @(':short');
       the string must start with a lowercase letter
       (because it is used to complete the phrase in the @(':short')),
       must not end with any punctuation
@@ -195,25 +146,13 @@
    (xdoc::desc
     "@(':long')"
     (xdoc::p
-     "A string that provides additional documentation for the fixtype of bytes,
+     "A string that provides additional documentation for the fixtype,
       or @('nil') (the default).
       If this is a string,
       it is used as the XDOC @(':long') string
-      of the generated fixtype of bytes.
-      If this is is @('nil') instead,
-      no @(':long') is generated for the fixtype of bytes."))
-
-   (xdoc::desc
-    "@(':llong')"
-    (xdoc::p
-     "A string that provides additional documentation for
-      the fixtype of lists of bytes,
-      or @('nil') (the default).
-      If this is a string,
-      it is used as the XDOC @(':long') string
-      of the generated fixtype of lists of bytes.
-      If this is is @('nil') instead,
-      no @(':long') is generated for the fixtype of lists of bytes."))
+      of the generated fixtype.
+      If this is @('nil') instead,
+      no @(':long') is generated for the fixtype."))
 
    (xdoc::p
     "This macro currently does not perform a thorough validation of its inputs.
@@ -235,36 +174,18 @@
       for unsigned or signed bytes of the specified size.")
 
     (xdoc::li
-     "A unary recognizer, a fixer, an equivalence, and a fixtype
-      for true lists of unsigned or signed bytes of the specified size.")
-
-    (xdoc::li
      "Forward chaining rules
-      from the unary recognizers to the binary predicates,
-      which can combine with
+      from the unary recognizers to the binary predicates
+      @(tsee unsigned-byte-p) and @(tsee signed-byte-p).
+      These rules can combine with
       forward chaining rules from the binary predicates.")
 
     (xdoc::li
-     "A rule that rewrites the binary predicate for unsigned or signed bytes
-      to the unary recognizer for unsigned or signed bytes.
+     "A rule that rewrites the binary predicate to the unary recognizer.
       This rule is disabled by default, but may be useful in some proofs.
       Since this is the converse of the definition of the unary recognizer,
       a theory invariant is also generated preventing the enabling of
-      both this rule and the definition of the unary recognizer.")
-
-    (xdoc::li
-     "Rules that rewrite between
-      the binary predicate for lists of unsigned or signed bytes
-      and the unary recognizer for lists of unsigned or signed bytes.
-      These rules are disabled by default, but may be useful in some proofs.
-      Since these are converse rules,
-      a theory invariant is also generated preventing the enabling of both.")
-
-    (xdoc::li
-     "A rule to prove @(tsee true-listp)
-      from the unary recognizer of lists of unsigned or signed bytes.
-      Since @(tsee true-listp) is relatively common,
-      this rule is disabled by default for efficiency."))
+      both this rule and the definition of the unary recognizer."))
 
    (xdoc::p
     "See the implementation, which uses a readable backquote notation,
@@ -272,24 +193,101 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(acl2::defxdoc+ defbyte-implementation
+  :parents (defbyte)
+  :short "Implementation of @(tsee defbyte)."
+  :order-subtopics t
+  :default-parent t)
+
+(std::defaggregate defbyte-info
+  :short "Information about a @(tsee defbyte) type,
+          recorded as a pair's value in the
+          <see topic='@(url defbyte-table)'>@(tsee defbyte) table</see>."
+  :long
+  "<p>
+   The name of the type is the key of the pair in the table.
+   </p>"
+  ((size "The @('size') input."
+         (or (posp size)
+             (symbolp size)
+             (and (acl2::tuplep 1 size)
+                  (symbolp (car size)))))
+   (signed "Whether the bytes are signed or not." booleanp)
+   (pred "The name of the recognizer." symbolp)
+   (fix "The name of the fixer." symbolp)
+   (equiv "The name of the equivalence." symbolp)
+   (description "The description of the bytes used in the documentation."
+                stringp))
+  :pred defbyte-infop)
+
+(defval *defbyte-table-name*
+  'defbyte-table
+  :short "Name of the
+          <see topic='@(url defbyte-table)'>@(tsee defbyte) table</see>.")
+
+(defsection defbyte-table
+  :short "@(csee table) of @(tsee defbyte) types."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "For each successful call of @(tsee defbyte),
+     this table includes a pair whose key is the name of the type
+     and whose value contains other information about the call
+     (see @(tsee defbyte-infop)).")
+   (xdoc::p
+    "This table is used by @(tsee defbytelist)."))
+
+  (make-event
+   `(table ,*defbyte-table-name* nil nil
+      :guard (and (symbolp acl2::key) ; name of the type
+                  (defbyte-infop acl2::val)))))
+
+(define defbyte-check-size (size (wrld plist-worldp))
+  :returns (mv (valid "A @(tsee booleanp).")
+               (value "A @(tsee acl2::maybe-posp)"))
+  :mode :program
+  :short "Check if the @('size') input is valid."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The first result is @('t') if the input is valid,
+     otherwise it is @('nil').
+     If the input is a call of a unary function,
+     we do not check here that it is guard-verified
+     and that it provably denotes a positive integer.
+     In these cases, the call to the macro will fail
+     (hopefully in a comprehensible way).")
+   (xdoc::p
+    "If the input is valid and is not a call of a unary function,
+     the second result is the value of the input,
+     which is known in this case.
+     Otherwise, the second result is @('nil')."))
+  (b* (((when (posp size)) (mv t size))
+       (const? (acl2::defined-constant size wrld))
+       ((when const?)
+        (b* ((value (unquote const?)))
+          (if (posp value)
+              (mv t value)
+            (mv nil nil))))
+       ((unless (acl2::tuplep 1 size)) (mv nil nil))
+       (fn (car size)))
+    (if (and (function-symbolp fn wrld)
+             (= 0 (arity fn wrld)))
+        (mv t nil)
+      (mv nil nil))))
+
 (define defbyte-fn (size
                     signed
                     type
                     pred
                     fix
                     equiv
-                    ltype
-                    lpred
-                    lfix
-                    lequiv
                     parents
                     description
                     long
-                    llong
                     (wrld plist-worldp))
-  :returns (event "A @(tsee maybe-pseudo-event-formp).")
+  :returns (event "A @(tsee acl2::maybe-pseudo-event-formp).")
   :mode :program
-  :parents (defbyte-macro-definition)
   :short "Event generated by the @(tsee defbyte) macro."
   :long
   (xdoc::topapp
@@ -308,13 +306,8 @@
      as a rewrite rule:
      this theorem serves to prove the return type theorems of the fixer."))
   (b* (;; validate the SIZE input:
-       (size-value (b* (((when (posp size)) size)
-                        (const-val (unquote (defined-constant size wrld)))
-                        ((when (posp const-val)) const-val))
-                     nil)) ; SIZE must be a call to a nullary function
-       ((unless (or size-value
-                    (and (tuplep 1 size)
-                         (= 0 (arity (car size) wrld)))))
+       ((mv size-valid size-value) (defbyte-check-size size wrld))
+       ((unless size-valid)
         (raise "The SIZE input must be ~
                 (1) an explicit positive integer value, or ~
                 (2) a named constant whose value is a positive integer, or ~
@@ -340,59 +333,35 @@
        ((unless (symbolp equiv))
         (raise "The :EQUIV input must be a symbol, ~
                 but it is ~x0 instead." equiv))
-       ((unless (symbolp ltype))
-        (raise "The :LTYPE input must be a symbol, ~
-                but it is ~x0 instead." ltype))
-       ((unless (symbolp lpred))
-        (raise "The :LPRED input must be a symbol, ~
-                but it is ~x0 instead." lpred))
-       ((unless (symbolp lfix))
-        (raise "The :LFIX input must be a symbol, ~
-                but it is ~x0 instead." lfix))
-       ((unless (symbolp lequiv))
-        (raise "The :LEQUIV input must be a symbol, ~
-                but it is ~x0 instead." lequiv))
        ((unless (symbol-listp parents))
         (raise "The :PARENTS input must be a true list of symbols, ~
                 but it is ~x0 instead." parents))
-       ((unless (maybe-stringp description))
+       ((unless (acl2::maybe-stringp description))
         (raise "The :DESCRIPTION input must be a string or NIL, ~
                 but it is ~x0 instead." description))
        ((unless (or size-value description))
         (raise "Since the SIZE input is a call of a nullary function, ~
                 the :DESCRIPTION input must be supplied and not be NIL."))
-       ((unless (maybe-stringp long))
+       ((unless (acl2::maybe-stringp long))
         (raise "The :LONG input must be a string or NIL, ~
                 but it is ~x0 instead." long))
-       ((unless (maybe-stringp llong))
-        (raise "The :LLONG input must be a string or NIL, ~
-                but it is ~x0 instead." llong))
-       ;; names of the binary predicates:
-       (binpred (if signed 'signed-byte-p 'unsigned-byte-p))
-       (lbinpred (if signed 'signed-byte-listp 'unsigned-byte-listp))
-       ;; names of the generated fixtypes:
-       (type (or type (packn (list (if signed 'sbyte 'ubyte) size-value))))
-       (ltype (or ltype (packn (list type '-list))))
+       ;; name of the binary predicate:
+       (binpred (if signed 'acl2::signed-byte-p 'acl2::unsigned-byte-p))
+       ;; name of the generated fixtype:
+       (type (or type (acl2::packn (list (if signed 'acl2::sbyte 'acl2::ubyte)
+                                         size-value))))
        ;; names of the generated functions:
-       (pred (or pred (packn (list type '-p))))
-       (fix (or fix (packn (list type '-fix))))
-       (equiv (or equiv (packn (list type '-equiv))))
-       (lpred (or lpred (packn (list ltype '-p))))
-       (lfix (or lfix (packn (list ltype '-fix))))
-       (lequiv (or lequiv (packn (list ltype '-equiv))))
+       (pred (or pred (acl2::add-suffix-to-fn type "-P")))
+       (fix (or fix (acl2::add-suffix-to-fn type "-FIX")))
+       (equiv (or equiv (acl2::add-suffix-to-fn type "-EQUIV")))
        ;; names of the generated theorems:
-       (fix-when-pred (packn (list fix '-when- pred)))
-       (pred-forward-binpred (packn (list pred '-forward- binpred)))
-       (lpred-forward-lbinpred (packn (list lpred '-forward- lbinpred)))
-       (binpred-rewrite-pred (packn (list binpred '-rewrite- pred)))
-       (lpred-rewrite-lbinpred (packn (list lpred '-rewrite- lbinpred)))
-       (lbinpred-rewrite-lpred (packn (list lbinpred '-rewrite- lpred)))
-       (true-listp-when-lpred-rewrite (packn (list 'true-listp-when-
-                                                   lpred
-                                                   '-rewrite)))
-       ;; parts of the generated XDOC:
-       (ltype-theorems (packn (list ltype '-theorems)))
-       (bytes-string
+       (fix-when-pred (acl2::packn (list fix '-when- pred)))
+       (pred-forward-binpred (acl2::packn (list pred '-forward- binpred)))
+       (binpred-rewrite-pred (acl2::packn-pos (list binpred '-rewrite- pred)
+                                              (pkg-witness
+                                               (symbol-package-name pred))))
+       ;; description of the bytes used in the generated XDOC:
+       (description
         (or description
             (concatenate 'string
                          (if signed "signed" "unsigned")
@@ -411,7 +380,7 @@
          :parents (,type)
          :short ,(concatenate 'string
                               "Recognize "
-                              bytes-string
+                              description
                               ".")
          (,binpred ,size x)
          :no-function t
@@ -436,7 +405,7 @@
          :parents (,type)
          :short ,(concatenate 'string
                               "Fix values to "
-                              bytes-string
+                              description
                               ".")
          (mbe :logic (if (,pred x) x 0)
               :exec x)
@@ -450,7 +419,7 @@
          :parents ,parents
          :short ,(concatenate 'string
                               "<see topic='@(url acl2::fty)'>Fixtype</see> of "
-                              bytes-string
+                              description
                               ".")
          ,@(and long `(:long ,long))
          (fty::deffixtype ,type
@@ -459,45 +428,16 @@
            :equiv ,equiv
            :define t
            :forward t))
-       (fty::deflist ,ltype
-         :elt-type ,type
-         :parents (,type)
-         :short ,(concatenate 'string
-                              "<see topic='@(url acl2::fty)'>Fixtype</see> of "
-                              "true lists of "
-                              bytes-string
-                              ".")
-         ,@(and llong `(:long ,llong))
-         :true-listp t
-         :pred ,lpred
-         :fix ,lfix
-         :equiv ,lequiv)
-       (defsection ,ltype-theorems
-         :extension ,ltype
-         (defrule ,lpred-forward-lbinpred
-           (implies (,lpred x)
-                    (,lbinpred ,size x))
-           :rule-classes :forward-chaining
-           :enable (,lpred ,pred))
-         (defruled ,lpred-rewrite-lbinpred
-           (equal (,lpred x)
-                  (,lbinpred ,size x))
-           :enable (,lpred ,pred))
-         (defruled ,lbinpred-rewrite-lpred
-           (equal (,lbinpred ,size x)
-                  (,lpred x))
-           :enable ,lpred-rewrite-lbinpred)
-         (theory-invariant
-          (incompatible (:rewrite ,lpred-rewrite-lbinpred)
-                        (:rewrite ,lbinpred-rewrite-lpred)))
-         (defruled ,true-listp-when-lpred-rewrite
-           (implies (,lpred x)
-                    (true-listp x)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       (table ,*defbyte-table-name*
+         ',type
+         ',(make-defbyte-info :size size
+                              :signed signed
+                              :pred pred
+                              :fix fix
+                              :equiv equiv
+                              :description description)))))
 
 (defsection defbyte-macro-definition
-  :parents (defbyte)
   :short "Definition of the @(tsee defbyte) macro."
   :long "@(def defbyte)"
   (defmacro defbyte (size
@@ -507,14 +447,9 @@
                      pred
                      fix
                      equiv
-                     ltype
-                     lpred
-                     lfix
-                     lequiv
                      parents
                      description
-                     long
-                     llong)
+                     long)
     `(make-event (defbyte-fn
                    ',size
                    ',signed
@@ -522,12 +457,7 @@
                    ',pred
                    ',fix
                    ',equiv
-                   ',ltype
-                   ',lpred
-                   ',lfix
-                   ',lequiv
                    ',parents
                    ,description
                    ,long
-                   ,llong
                    (w state)))))

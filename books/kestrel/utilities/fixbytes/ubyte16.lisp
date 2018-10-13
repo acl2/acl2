@@ -1,4 +1,4 @@
-; Fixtypes for Unsigned and Signed Bytes -- Instances -- Unsigned 16-Bit Bytes
+; Fixtype for Unsigned 16-Bit Bytes
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -14,8 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defbyte 16
+(fty::defbyte 16
   :signed nil
   :pred ubyte16p
-  :lpred ubyte16-listp
   :parents (defbyte-instances))

@@ -5,7 +5,7 @@
 
 ;; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; September 2018
 
 ; (ld "de.lisp" :ld-pre-eval-print t)
 
@@ -16,6 +16,7 @@
 
 (in-package "ADE")
 
+(include-book "assoc-eq-value")
 (include-book "f-functions")
 (include-book "macros")
 (include-book "primp-database")
@@ -23,50 +24,6 @@
 (include-book "tools/flag" :dir :system)
 
 ;; ======================================================================
-
-(defun read-reg (reg)
-  (declare (xargs :guard t))
-  reg)
-
-;; The write operation on shift registers is allowed to write only one bit at a
-;; time at the most-significant-bit (msb) position. More precisely, there are
-;; two steps when performing the write: (1) shift right the register by 1, (2)
-;; write the new (bit) value to the msb position of the right-shifted
-;; register. See the definition of function write-shift-reg below for details.
-
-(defun write-shift-reg (we bit reg)
-  (declare (xargs :guard t))
-  (cond ((not we) reg)
-        (t (fv-shift-right reg bit))))
-
-(defthm true-listp-write-shift-reg
-  (implies (true-listp reg)
-           (true-listp (write-shift-reg we bit reg)))
-  :rule-classes :type-prescription)
-
-(defthm len-write-shift-reg
-  (equal (len (write-shift-reg we bit reg))
-         (len reg)))
-
-(defthm write-shift-reg-of-f-buf-canceled
-  (equal (write-shift-reg we (f-buf bit) reg)
-         (write-shift-reg we bit reg)))
-
-(in-theory (disable write-shift-reg))
-
-(defun write-par-shift-reg (we bitp bit vec reg)
-  (declare (xargs :guard t))
-  (cond ((not we) reg)
-        (bitp (fv-shift-right reg bit))
-        ((= (len vec) (len reg))
-         vec)
-        (t reg)))
-
-(defthm len-write-par-shift-reg
-  (equal (len (write-par-shift-reg we bitp bit vec reg))
-         (len reg)))
-
-(in-theory (disable write-par-shift-reg))
 
 ;;;  Macros to simplify specifications.
 
@@ -104,20 +61,16 @@
   (declare (xargs :guard (and (primp-call-syntaxp fn ins sts)
                               (primp-call-arityp  fn ins sts))))
   (case fn
-    (ao2         (list (f-nor (f-and (car ins) (cadr ins))
-                              (f-and (caddr ins) (cadddr ins)))))
-    (ao6         (list (f-nor (f-and (car ins) (cadr ins))
-                              (caddr ins))))
     (b-and       (list (f-and  (car ins) (cadr ins))))
     (b-and3      (list (f-and3 (car ins) (cadr ins) (caddr ins))))
     (b-and4      (list (f-and4 (car ins) (cadr ins)
                                (caddr ins) (cadddr ins))))
-    (b-AndOrInv  (list (f-not (f-or (f-and (car ins) (cadr ins))
-                                    (caddr ins)))))
+    (b-and5      (list (f-and5 (car ins) (cadr ins)
+                               (caddr ins) (cadddr ins)
+                               (car (cddddr ins)))))
     (b-bool      (list (f-bool (car ins))))
     (b-buf       (list (f-buf  (car ins))))
     (b-equv      (list (f-equv (car ins) (cadr ins))))
-    (b-equv3     (list (f-equv3 (car ins) (cadr ins) (caddr ins))))
     (b-if        (list (f-if (car ins) (cadr ins) (caddr ins))))
     (b-nand      (list (f-nand (car ins) (cadr ins))))
     (b-nand3     (list (f-nand3 (car ins) (cadr ins) (caddr ins))))
@@ -133,7 +86,6 @@
                                 (caddr ins) (cadddr ins)
                                 (car (cddddr ins)) (cadr (cddddr ins))
                                 (caddr (cddddr ins)) (cadddr (cddddr ins)))))
-    (b-nbuf      (list (f-not  (car ins)) (f-buf (car ins))))
     (b-nor       (list (f-nor  (car ins) (cadr ins))))
     (b-nor3      (list (f-nor3 (car ins) (cadr ins) (caddr ins))))
     (b-nor4      (list (f-nor4 (car ins) (cadr ins)
@@ -149,7 +101,6 @@
                                (car (cddddr ins)) (cadr (cddddr ins))
                                (caddr (cddddr ins)) (cadddr (cddddr ins)))))
     (b-not       (list (f-not  (car ins))))
-    (b-not-b4ip  (list (f-not  (car ins))))
     (b-or        (list (f-or   (car ins) (cadr ins))))
     (b-or3       (list (f-or3  (car ins) (cadr ins) (caddr ins))))
     (b-or4       (list (f-or4  (car ins) (cadr ins)
@@ -160,59 +111,25 @@
     (b-xnor      (list (f-xnor (car ins) (cadr ins))))
     (b-xor       (list (f-xor  (car ins) (cadr ins))))
 
-    (del4        (list (f-buf (car ins))))
-    (procmon     (list (f-if (caddr ins)
-                             (f-if (cadr ins)
-                                   (f-if (car ins) NIL NIL)
-                                   (car ins))
-                             (cadddr ins))))
-
     (fd1         (list (f-buf (car sts))
                        (f-not (car sts))))
-    (fd1s        (list (f-buf (car sts))
-                       (f-not (car sts))))
-    (fd1slp      (list (f-buf (car sts))
-                       (f-not (car sts))))
-
     (latch       (list (f-if (car ins)
                              (cadr ins)
                              (car sts))
                        (f-if (car ins)
                              (f-not (cadr ins))
                              (f-not (car sts)))))
+
+    ;; LINK-CNTL is a new primitive for modeling self-timed modules using the
+    ;; link-joint model.
     (link-cntl   (list (f-buf (car sts))))
 
-    (id          (list (car ins)))
-
-    (ram-enable-circuit  (list (f-nand (caddr ins) (cadddr ins))))
-
-    (par-shift-reg32 (read-reg (car sts)))
-    (shift-reg32     (read-reg (car sts)))
-
+    (pullup      (list (f-pullup (car ins))))
     (t-buf       (list (ft-buf (car ins) (cadr ins))))
     (t-wire      (list (ft-wire (car ins) (cadr ins))))
-    (pullup      (list (f-pullup (car ins))))
-    (ttl-bidirect           (list
-                             (ft-buf (f-not (caddr ins)) (cadr ins))
-                             (f-buf (ft-wire (car ins)
-                                             (ft-buf (f-not (caddr ins))
-                                                     (cadr ins))))
-                             (f-nand (ft-wire (car ins)
-                                              (ft-buf (f-not (caddr ins))
-                                                      (cadr ins)))
-                                     (cadddr ins))))
-    (ttl-clk-input          (list (f-buf (car ins))
-                                  (f-nand (car ins) (cadr ins))))
-    (ttl-input              (list (f-buf (car ins))
-                                  (f-nand (car ins) (cadr ins))))
-    (ttl-output             (list (f-buf (car ins))))
-    (ttl-output-parametric  (list (f-buf (car ins))))
-    (ttl-output-fast        (list (f-buf (car ins))))
-    (ttl-tri-output         (list (ft-buf (f-not (cadr ins)) (car ins))))
-    (ttl-tri-output-fast    (list (ft-buf (f-not (cadr ins)) (car ins))))
-    (vdd                    (list T))
-    (vdd-parametric         (list T))
-    (vss                    (list NIL))
+    (vdd         (list T))
+    (vss         (list NIL))
+    (wire        (list (car ins)))
 
     (otherwise   nil)))
 
@@ -221,93 +138,27 @@
                               (primp-call-arityp  fn ins sts))))
   (case fn
     (fd1       (list (f-if (car ins) (cadr ins) (car sts))))
-    (fd1s      (list (f-if (cadddr ins) (caddr ins) (car ins))))
-    (fd1slp    (list (f-if (car (cddddr ins))
-                           (cadddr ins)
-                           (f-if (caddr ins) (car ins) (car sts)))))
-
     (latch     (list (f-if (car ins) (cadr ins) (car sts))))
 
-    (par-shift-reg32
-     (list (write-par-shift-reg (car ins) (cadr ins) (caddr ins)
-                                (list (nth 3 ins)
-                                      (nth 4 ins)
-                                      (nth 5 ins)
-                                      (nth 6 ins)
-                                      (nth 7 ins)
-                                      (nth 8 ins)
-                                      (nth 9 ins)
-                                      (nth 10 ins)
-                                      (nth 11 ins)
-                                      (nth 12 ins)
-                                      (nth 13 ins)
-                                      (nth 14 ins)
-                                      (nth 15 ins)
-                                      (nth 16 ins)
-                                      (nth 17 ins)
-                                      (nth 18 ins)
-                                      (nth 19 ins)
-                                      (nth 20 ins)
-                                      (nth 21 ins)
-                                      (nth 22 ins)
-                                      (nth 23 ins)
-                                      (nth 24 ins)
-                                      (nth 25 ins)
-                                      (nth 26 ins)
-                                      (nth 27 ins)
-                                      (nth 28 ins)
-                                      (nth 29 ins)
-                                      (nth 30 ins)
-                                      (nth 31 ins)
-                                      (nth 32 ins)
-                                      (nth 33 ins)
-                                      (nth 34 ins))
-                                (car sts))))
-    (shift-reg32 (list (write-shift-reg (car ins) (cadr ins) (car sts))))
-
-    (link-cntl   (list (f-sr (car ins) (cadr ins) (car sts))))
+    ;; LINK-CNTL is a new primitive for modeling self-timed modules using the
+    ;; link-joint model.
+    (link-cntl (list (f-sr (car ins) (cadr ins) (car sts))))
 
     (otherwise nil)))
-
-; se-primp-apply lemmas
-
-;; (defthm true-listp-se-primp-apply
-;;   (true-listp (se-primp-apply fn ins sts))
-;;   :rule-classes ((:type-prescription
-;;                   :typed-term (se-primp-apply fn ins sts))))
 
 (defun len-se-primp-apply (fn ins sts)
   (declare (xargs :guard t)
            (ignore ins sts))
   (case fn
-    ((b-nbuf fd1 fd1s fd1slp latch link-cntl ttl-clk-input ttl-input) 2)
-    ((par-shift-reg32 shift-reg32) 32)
-    (ttl-bidirect  3)
-    (otherwise     1)))
-
-;; (defthm len-se-primp-apply-lemma
-;;   (implies (primp fn)
-;;            (equal (len (se-primp-apply fn ins sts))
-;;                   (len-se-primp-apply fn ins sts)))
-;;   :hints (("Goal" :in-theory (enable primp))))
-
-; de-primp-apply lemmas
-
-;; (defthm true-listp-de-primp-apply
-;;   (true-listp (de-primp-apply fn ins sts))
-;;   :rule-classes ((:type-prescription
-;;                   :typed-term (de-primp-apply fn ins sts))))
+    ((fd1 latch) 2)
+    (otherwise   1)))
 
 (defun len-de-primp-apply (fn ins sts)
   (declare (xargs :guard (true-listp ins))
            (ignore ins sts))
   (case fn
-    ((fd1 fd1s fd1slp
-      latch
-      par-shift-reg32 shift-reg32
-      link-cntl)
-     1)
-    (otherwise 0)))
+    ((fd1 latch link-cntl) 1)
+    (otherwise             0)))
 
 (defthm len-de-primp-apply-lemma
   (equal (len (de-primp-apply fn ins sts))
@@ -418,8 +269,8 @@
           (symbol-listp      md-outs)
           (no-duplicatesp-eq md-outs)
           ;; No degenerative modules
-          (or (consp         md-ins)             ; Module must have at least
-              (consp         md-outs))           ; one input or one output
+          (or (consp         md-ins)   ; Module must have at least
+              (consp         md-outs)) ; one input or one output
           ;; Occurrences
           (occs-syntax-okp   md-occs)
           (no-duplicatesp-eq (strip-cars md-occs))
@@ -606,7 +457,6 @@
        (no-duplicatesp-eq (strip-cars occs))
        ;;What about adding (no-duplicatesp-eq (strip-cars sts-alist)) ?
        ))
-
 
 ; The STS-OKP and STS-OCC-OKP functions check structure of state
 ; argument.  These functions are intended to make assure that the STS
@@ -898,21 +748,17 @@
  `(progn
     ,@(primitives-lemmas-gen
        'se
-       '((ao2         (list (f-nor (f-and (car ins) (cadr ins))
-                                   (f-and (caddr ins) (cadddr ins)))))
-         (ao6         (list (f-nor (f-and (car ins) (cadr ins))
-                                   (caddr ins))))
-         (b-and       (list (f-and  (car ins) (cadr ins))))
+       '((b-and       (list (f-and  (car ins) (cadr ins))))
          (b-and3      (list (f-and3 (car ins) (cadr ins) (caddr ins))))
          (b-and4      (list (f-and4 (car ins) (cadr ins)
                                     (caddr ins) (cadddr ins))))
-         (b-AndOrInv  (list (f-not (f-or (f-and (car ins) (cadr ins))
-                                         (caddr ins)))))
+         (b-and5      (list (f-and5 (car ins) (cadr ins)
+                                    (caddr ins) (cadddr ins)
+                                    (car (cddddr ins)))))
          (b-bool      (list (f-bool (car ins))))
          (b-buf       (list (f-buf  (car ins))))
-         (b-equv      (list (f-equv  (car ins) (cadr ins))))
-         (b-equv3     (list (f-equv3 (car ins) (cadr ins) (caddr ins))))
-         (b-if        (list (f-if   (car ins) (cadr ins) (caddr ins))))
+         (b-equv      (list (f-equv (car ins) (cadr ins))))
+         (b-if        (list (f-if (car ins) (cadr ins) (caddr ins))))
          (b-nand      (list (f-nand (car ins) (cadr ins))))
          (b-nand3     (list (f-nand3 (car ins) (cadr ins) (caddr ins))))
          (b-nand4     (list (f-nand4 (car ins) (cadr ins)
@@ -927,7 +773,6 @@
                                      (caddr ins) (cadddr ins)
                                      (car (cddddr ins)) (cadr (cddddr ins))
                                      (caddr (cddddr ins)) (cadddr (cddddr ins)))))
-         (b-nbuf      (list (f-not  (car ins)) (f-buf (car ins))))
          (b-nor       (list (f-nor  (car ins) (cadr ins))))
          (b-nor3      (list (f-nor3 (car ins) (cadr ins) (caddr ins))))
          (b-nor4      (list (f-nor4 (car ins) (cadr ins)
@@ -943,7 +788,6 @@
                                     (car (cddddr ins)) (cadr (cddddr ins))
                                     (caddr (cddddr ins)) (cadddr (cddddr ins)))))
          (b-not       (list (f-not  (car ins))))
-         (b-not-b4ip  (list (f-not  (car ins))))
          (b-or        (list (f-or   (car ins) (cadr ins))))
          (b-or3       (list (f-or3  (car ins) (cadr ins) (caddr ins))))
          (b-or4       (list (f-or4  (car ins) (cadr ins)
@@ -954,20 +798,8 @@
          (b-xnor      (list (f-xnor (car ins) (cadr ins))))
          (b-xor       (list (f-xor  (car ins) (cadr ins))))
 
-         (del4        (list (f-buf (car ins))))
-         (procmon     (list (f-if (caddr ins)
-                                  (f-if (cadr ins)
-                                        (f-if (car ins) NIL NIL)
-                                        (car ins))
-                                  (cadddr ins))))
-
          (fd1         (list (f-buf (car sts))
                             (f-not (car sts))))
-         (fd1s        (list (f-buf (car sts))
-                            (f-not (car sts))))
-         (fd1slp      (list (f-buf (car sts))
-                            (f-not (car sts))))
-
          (latch       (list (f-if (car ins)
                                   (cadr ins)
                                   (car sts))
@@ -976,37 +808,12 @@
                                   (f-not (car sts)))))
          (link-cntl   (list (f-buf (car sts))))
 
-         (id          (list (car ins)))
-
-         (ram-enable-circuit  (list (f-nand (caddr ins) (cadddr ins))))
-
-         (par-shift-reg32 (read-reg (car sts)))
-         (shift-reg32     (read-reg (car sts)))
-
+         (pullup      (list (f-pullup (car ins))))
          (t-buf       (list (ft-buf (car ins) (cadr ins))))
          (t-wire      (list (ft-wire (car ins) (cadr ins))))
-         (pullup      (list (f-pullup (car ins))))
-         (ttl-bidirect           (list
-                                  (ft-buf (f-not (caddr ins)) (cadr ins))
-                                  (f-buf (ft-wire (car ins)
-                                                  (ft-buf (f-not (caddr ins))
-                                                          (cadr ins))))
-                                  (f-nand (ft-wire (car ins)
-                                                   (ft-buf (f-not (caddr ins))
-                                                           (cadr ins)))
-                                          (cadddr ins))))
-         (ttl-clk-input          (list (f-buf (car ins))
-                                       (f-nand (car ins) (cadr ins))))
-         (ttl-input              (list (f-buf (car ins))
-                                       (f-nand (car ins) (cadr ins))))
-         (ttl-output             (list (f-buf (car ins))))
-         (ttl-output-parametric  (list (f-buf (car ins))))
-         (ttl-output-fast        (list (f-buf (car ins))))
-         (ttl-tri-output         (list (ft-buf (f-not (cadr ins)) (car ins))))
-         (ttl-tri-output-fast    (list (ft-buf (f-not (cadr ins)) (car ins))))
-         (vdd                    (list T))
-         (vdd-parametric         (list T))
-         (vss                    (list NIL))))))
+         (vdd         (list T))
+         (vss         (list NIL))
+         (wire        (list (car ins)))))))
 
 ; de lemmas
 
@@ -1110,51 +917,8 @@
     ,@(primitives-lemmas-gen
        'de
        '((fd1       (list (f-if (car ins) (cadr ins) (car sts))))
-         (fd1s      (list (f-if (cadddr ins) (caddr ins) (car ins))))
-         (fd1slp    (list (f-if (car (cddddr ins))
-                                (cadddr ins)
-                                (f-if (caddr ins) (car ins) (car sts)))))
-
          (latch     (list (f-if (car ins) (cadr ins) (car sts))))
-
-         (par-shift-reg32
-          (list (write-par-shift-reg (car ins) (cadr ins) (caddr ins)
-                                     (list (nth 3 ins)
-                                           (nth 4 ins)
-                                           (nth 5 ins)
-                                           (nth 6 ins)
-                                           (nth 7 ins)
-                                           (nth 8 ins)
-                                           (nth 9 ins)
-                                           (nth 10 ins)
-                                           (nth 11 ins)
-                                           (nth 12 ins)
-                                           (nth 13 ins)
-                                           (nth 14 ins)
-                                           (nth 15 ins)
-                                           (nth 16 ins)
-                                           (nth 17 ins)
-                                           (nth 18 ins)
-                                           (nth 19 ins)
-                                           (nth 20 ins)
-                                           (nth 21 ins)
-                                           (nth 22 ins)
-                                           (nth 23 ins)
-                                           (nth 24 ins)
-                                           (nth 25 ins)
-                                           (nth 26 ins)
-                                           (nth 27 ins)
-                                           (nth 28 ins)
-                                           (nth 29 ins)
-                                           (nth 30 ins)
-                                           (nth 31 ins)
-                                           (nth 32 ins)
-                                           (nth 33 ins)
-                                           (nth 34 ins))
-                                     (car sts))))
-         (shift-reg32 (list (write-shift-reg (car ins) (cadr ins) (car sts))))
-
-         (link-cntl   (list (f-sr (car ins) (cadr ins) (car sts))))))))
+         (link-cntl (list (f-sr (car ins) (cadr ins) (car sts))))))))
 
 ;; ======================================================================
 
@@ -1364,8 +1128,8 @@
 (make-flag flag-de ; flag function name
            de      ; any member of the clique
            ;; optional arguments:
-           :flag-mapping ((de      . term)
-                          (de-occ  . list))
+           :flag-mapping ((de     . term)
+                          (de-occ . list))
            :defthm-macro-name defthm-de
            :flag-var flag)
 
@@ -1405,11 +1169,7 @@
                  (NET-ARITY-OKP NETLIST)
                  (EQUAL (PRIMP-STS FN) (LEN STS))
                  (NOT (EQUAL FN 'FD1))
-                 (NOT (EQUAL FN 'FD1S))
-                 (NOT (EQUAL FN 'FD1SLP))
                  (NOT (EQUAL FN 'LATCH))
-                 (NOT (EQUAL FN 'SHIFT-REG32))
-                 (NOT (EQUAL FN 'PAR-SHIFT-REG32))
                  (NOT (EQUAL FN 'LINK-CNTL)))
             (EQUAL (LEN STS) 0))
    :hints (("Goal" :in-theory (enable primp)))))
@@ -1461,101 +1221,101 @@
 
 ;; Simulation functions
 
-(defun de-sim-guard (fn ins-list netlist)
+(defun de-sim-guard (fn inputs-seq netlist)
   (declare (xargs :guard t))
-  (if (atom ins-list)
+  (if (atom inputs-seq)
       t
-    (and (se-ins-guard fn (car ins-list) netlist)
-         (de-sim-guard fn (cdr ins-list) netlist))))
+    (and (se-ins-guard fn (car inputs-seq) netlist)
+         (de-sim-guard fn (cdr inputs-seq) netlist))))
 
-(defun de-sim (fn ins-list sts netlist)
-  (declare (xargs :guard (and (de-sim-guard fn ins-list netlist)
+(defun de-sim (fn inputs-seq sts netlist)
+  (declare (xargs :guard (and (de-sim-guard fn inputs-seq netlist)
                               (well-formed-sts fn sts netlist))
                   :verify-guards nil))
-  (if (atom ins-list)
+  (if (atom inputs-seq)
       sts
     (de-sim fn
-            (cdr ins-list)
-            (de fn (car ins-list) sts netlist)
+            (cdr inputs-seq)
+            (de fn (car inputs-seq) sts netlist)
             netlist)))
 
 (defthm open-de-sim-atom
-  (implies (atom ins-list)
-           (equal (de-sim fn ins-list sts netlist)
+  (implies (atom inputs-seq)
+           (equal (de-sim fn inputs-seq sts netlist)
                   sts)))
 
 (defthm open-de-sim
-  (implies (consp ins-list)
-           (equal (de-sim fn ins-list sts netlist)
-                  (de-sim fn (cdr ins-list)
-                          (de fn (car ins-list) sts netlist)
+  (implies (consp inputs-seq)
+           (equal (de-sim fn inputs-seq sts netlist)
+                  (de-sim fn (cdr inputs-seq)
+                          (de fn (car inputs-seq) sts netlist)
                           netlist))))
 
 (in-theory (disable de-sim))
 
-(defun de-sim-list (fn ins-list sts netlist)
-  (declare (xargs :guard (and (de-sim-guard fn ins-list netlist)
+(defun de-sim-trace (fn inputs-seq sts netlist)
+  (declare (xargs :guard (and (de-sim-guard fn inputs-seq netlist)
                               (well-formed-sts fn sts netlist))
                   :verify-guards nil))
-  (if (atom ins-list)
+  (if (atom inputs-seq)
       (list sts)
     (cons sts
-          (de-sim-list fn
-                       (cdr ins-list)
-                       (de fn (car ins-list) sts netlist)
-                       netlist))))
+          (de-sim-trace fn
+                        (cdr inputs-seq)
+                        (de fn (car inputs-seq) sts netlist)
+                        netlist))))
 
-(defun simulate (fn ins-list sts netlist)
-  (declare (xargs :guard (and (de-sim-guard fn ins-list netlist)
+(defun simulate (fn inputs-seq sts netlist)
+  (declare (xargs :guard (and (de-sim-guard fn inputs-seq netlist)
                               (well-formed-sts fn sts netlist))
                   :verify-guards nil))
-  (if (atom ins-list)
+  (if (atom inputs-seq)
       nil
-    (let ((value (se fn (car ins-list) sts netlist))
-          (new-sts (de fn (car ins-list) sts netlist)))
+    (let ((value (se fn (car inputs-seq) sts netlist))
+          (new-sts (de fn (car inputs-seq) sts netlist)))
       (cons (list value new-sts)
-            (simulate fn (cdr ins-list) new-sts netlist)))))
+            (simulate fn (cdr inputs-seq) new-sts netlist)))))
 
-(defun de-sim-n (fn ins-list sts netlist n)
-  (declare (xargs :guard (and (de-sim-guard fn ins-list netlist)
+(defun de-n (fn inputs-seq sts netlist n)
+  (declare (xargs :guard (and (de-sim-guard fn inputs-seq netlist)
                               (well-formed-sts fn sts netlist)
-                              (equal (len ins-list) n)
+                              (equal (len inputs-seq) n)
                               (natp n))
                   :verify-guards nil))
   (if (zp n)
       sts
-    (de-sim-n fn
-              (cdr ins-list)
-              (de fn (car ins-list) sts netlist)
-              netlist
-              (1- n))))
+    (de-n fn
+          (cdr inputs-seq)
+          (de fn (car inputs-seq) sts netlist)
+          netlist
+          (1- n))))
 
-(defthm de-sim-m+n
+(defthm de-m+n
   (implies (and (natp m)
                 (natp n))
-           (equal (de-sim-n fn ins-list sts netlist (+ m n))
-                  (de-sim-n fn (nthcdr m ins-list)
-                            (de-sim-n fn ins-list sts netlist m)
-                            netlist
-                            n)))
+           (equal (de-n fn inputs-seq sts netlist (+ m n))
+                  (de-n fn (nthcdr m inputs-seq)
+                        (de-n fn inputs-seq sts netlist m)
+                        netlist
+                        n)))
   :hints (("Goal"
-           :induct (de-sim-n fn ins-list sts netlist m))))
+           :induct (de-n fn inputs-seq sts netlist m))))
 
-(defthm open-de-sim-n-zp
+(defthm open-de-n-zp
   (implies (zp n)
-           (equal (de-sim-n fn ins-list sts netlist n)
+           (equal (de-n fn inputs-seq sts netlist n)
                   sts)))
 
-(defthm open-de-sim-n
+(defthm open-de-n
   (implies (not (zp n))
-           (equal (de-sim-n fn ins-list sts netlist n)
-                  (de-sim-n fn
-                            (cdr ins-list)
-                            (de fn (car ins-list) sts netlist)
-                            netlist
-                            (1- n)))))
+           (equal (de-n fn inputs-seq sts netlist n)
+                  (de-n fn
+                        (cdr inputs-seq)
+                        (de fn (car inputs-seq) sts netlist)
+                        netlist
+                        (1- n)))))
 
-(in-theory (disable de-sim-n))
+(in-theory (disable de-n))
 
 (verify-guards
  de-sim
@@ -1565,7 +1325,7 @@
    :in-theory (disable de sts-okp))))
 
 (verify-guards
- de-sim-list
+ de-sim-trace
  :hints
  (("Goal"
    :in-theory (disable de sts-okp))))
@@ -1577,7 +1337,7 @@
    :in-theory (disable se de sts-okp))))
 
 (verify-guards
- de-sim-n
+ de-n
  :hints
  (("Goal"
    :in-theory (disable de sts-okp))))

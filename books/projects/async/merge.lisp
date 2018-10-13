@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -94,7 +94,7 @@
         (net-arity-okp (merge$netlist 64))
         (merge& (merge$netlist 64) 64))))
 
-;; Extract the input and output signals from MERGE
+;; Extract the input and output signals for MERGE
 
 (progn
   ;; Extract the 1st input data item
@@ -142,6 +142,12 @@
 
       (joint-act ready-in0 empty-out- go-merge)))
 
+  (defthm merge$act0-inactive
+    (implies (or (not (nth 0 inputs))
+                 (equal (nth 2 inputs) t))
+             (not (merge$act0 inputs data-width)))
+    :hints (("Goal" :in-theory (enable merge$act0))))
+
   ;; Extract the "act1" signal
 
   (defund merge$act1 (inputs data-width)
@@ -156,11 +162,24 @@
 
       (joint-act ready-in1 empty-out- go-merge)))
 
+  (defthm merge$act1-inactive
+    (implies (or (not (nth 1 inputs))
+                 (equal (nth 2 inputs) t))
+             (not (merge$act1 inputs data-width)))
+    :hints (("Goal" :in-theory (enable merge$act1))))
+
   ;; Extract the "act" signal
 
   (defund merge$act (inputs data-width)
     (f-or (merge$act0 inputs data-width)
           (merge$act1 inputs data-width)))
+
+  (defthm merge$act-inactive
+    (implies (or (and (not (nth 0 inputs))
+                      (not (nth 1 inputs)))
+                 (equal (nth 2 inputs) t))
+             (not (merge$act inputs data-width)))
+    :hints (("Goal" :in-theory (enable merge$act))))
   )
 
 (not-primp-lemma merge) ;; Prove that MERGE is not a DE primitive.
@@ -188,7 +207,6 @@
            :expand (:free (inputs data-width)
                           (se (si 'merge data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            not-primp-merge
                             merge&
                             merge*$destructure
                             joint-cntl$value

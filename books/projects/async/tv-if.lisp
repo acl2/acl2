@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -225,11 +225,11 @@
                   (fv-if c a b)))
   :hints (("Goal"
            :induct (tv-if-induction tree n c a b sts netlist)
+           :expand (:free (inputs n)
+                          (se (si 'tv-if n) inputs sts netlist))
            :in-theory (e/d (de-rules
-                            open-se
                             tv-if&
                             tv-if*$destructure
-                            not-primp-tv-if
                             f-if
                             tree-size
                             open-v-threefix

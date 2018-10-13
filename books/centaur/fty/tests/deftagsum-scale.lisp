@@ -42,7 +42,7 @@
   (if (zp numprods)
       nil
     (cons `(,(intern$ (str::cat "SUBPROD" (str::natstr numprods)) "KEYWORD")
-            :layout :tree
+            :layout :fulltree
             ,(make-prod-fields numfields))
           (make-tagsum-prods (- numprods 1) numfields))))
 

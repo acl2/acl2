@@ -127,8 +127,8 @@
        ((the (integer 1 8) operand-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    (if p3? 2 8)
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr)
+		(xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
 		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	    (if (= cs.d 1)
@@ -218,8 +218,8 @@
        ((the (integer 1 8) operand-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    (if p3? 2 8)
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr)
+		(xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
 		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	    (if (= cs.d 1)
@@ -322,8 +322,8 @@
        ((the (integer 1 8) operand-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    (if p3? 2 8)
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr)
+                (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
 		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	    (if (= cs.d 1)
@@ -423,8 +423,8 @@
        ((the (integer 1 8) operand-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    (if p3? 2 8)
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr)
+                (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
 		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	    (if (= cs.d 1)
@@ -512,8 +512,8 @@
        ((the (integer 1 8) operand-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    (if p3? 2 8)
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr)
+                (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
 		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	    (if (= cs.d 1)
@@ -605,8 +605,8 @@
        ((the (integer 1 8) operand-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    (if p3? 2 8)
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr)
+                (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
 		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	    (if (= cs.d 1)
@@ -829,8 +829,8 @@
        ((the (integer 1 8) operand-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    (if p3? 2 8)
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr)
+                (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
 		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	    (if (= cs.d 1)
@@ -964,8 +964,8 @@
        ((the (integer 1 8) operand-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    (if p3? 2 8)
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr)
+                (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
 		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	    (if (= cs.d 1)
@@ -1175,8 +1175,8 @@
 		:hyp (and (x86p x86)
 			  (canonical-address-p temp-rip))
 		:hints (("Goal" :in-theory (e/d ()
-						(!rgfi-size 
-                                                 select-operand-size
+						(!rgfi-size
+						 select-operand-size
 						 signed-byte-p
 						 unsigned-byte-p)))))
 

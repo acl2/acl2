@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; October 2018
 
 ;; Definitions of basic 3- and 4-valued specifications for DE.
 ;; This file also includes some 3- and 4-valued vector specifications.
@@ -27,6 +27,10 @@
   (equal (nth n (v-threefix l))
          (f-buf (nth n l))))
 
+(defthm booleanp-of-f-buf
+  (equal (booleanp (f-buf x))
+         (booleanp x)))
+
 (defun f-and (a b)
   (declare (xargs :guard t))
   (if (or (equal a nil) (equal b nil))
@@ -46,6 +50,10 @@
 (defun f-and4 (a b c d)
   (declare (xargs :guard t))
   (f-and a (f-and b (f-and c d))))
+
+(defun f-and5 (a b c d e)
+  (declare (xargs :guard t))
+  (f-and a (f-and b (f-and c (f-and d e)))))
 
 (defun f-not (a)
   (declare (xargs :guard t))
@@ -402,6 +410,8 @@
           (f-and3 a b c))
    (equal (f-buf (f-and4 a b c d))
           (f-and4 a b c d))
+   (equal (f-buf (f-and5 a b c d e))
+          (f-and5 a b c d e))
    (equal (f-buf (f-nor a b))
           (f-nor a b))
    (equal (f-buf (f-nor3 a b c))
@@ -449,6 +459,17 @@
           (f-and4 a b c d))
    (equal (f-and4 a b c (f-buf d))
           (f-and4 a b c d))
+
+   (equal (f-and5 (f-buf a) b c d e)
+          (f-and5 a b c d e))
+   (equal (f-and5 a (f-buf b) c d e)
+          (f-and5 a b c d e))
+   (equal (f-and5 a b (f-buf c) d e)
+          (f-and5 a b c d e))
+   (equal (f-and5 a b c (f-buf d) e)
+          (f-and5 a b c d e))
+   (equal (f-and5 a b c d (f-buf e))
+          (f-and5 a b c d e))
 
    (equal (f-or (f-buf x) y)
           (f-or x y))
@@ -697,6 +718,17 @@
    (equal (f-and4 a b c (3v-fix d))
           (f-and4 a b c d))
 
+   (equal (f-and5 (3v-fix a) b c d e)
+          (f-and5 a b c d e))
+   (equal (f-and5 a (3v-fix b) c d e)
+          (f-and5 a b c d e))
+   (equal (f-and5 a b (3v-fix c) d e)
+          (f-and5 a b c d e))
+   (equal (f-and5 a b c (3v-fix d) e)
+          (f-and5 a b c d e))
+   (equal (f-and5 a b c d (3v-fix e))
+          (f-and5 a b c d e))
+
    (equal (f-nor (3v-fix a) b)
           (f-nor a b))
    (equal (f-nor a (3v-fix b))
@@ -768,17 +800,20 @@
 
 ;; A 4-valued gate theory
 
-(deftheory f-gates
+(defconst *f-gates*
   '(f-buf
     f-not
     f-nand f-nand3 f-nand4 f-nand5 f-nand6 f-nand8
     f-or f-or3 f-or4 f-or5
     f-xor f-xor3 f-xnor
     f-equv f-equv3
-    f-and f-and3 f-and4
+    f-and f-and3 f-and4 f-and5
     f-nor f-nor3 f-nor4 f-nor5 f-nor6 f-nor8
     f-if ft-buf ft-wire f-pullup
     f-bool f-sr))
+
+(deftheory f-gates
+  *f-gates*)
 
 ;; When the F-GATES theory is disabled, the following lemma lets us substitute
 ;; a B-GATE for each F-GATE under assumptions that the inputs are Boolean.
@@ -829,6 +864,9 @@
             (equal (f-and3 a b c) (b-and3 a b c)))
    (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d))
             (equal (f-and4 a b c d) (b-and4 a b c d)))
+   (implies (and (booleanp a) (booleanp b) (booleanp c) (booleanp d)
+                 (booleanp e))
+            (equal (f-and5 a b c d e) (b-and5 a b c d e)))
    (implies (and (booleanp a) (booleanp b))
             (equal (f-nor a b) (b-nor a b)))
    (implies (and (booleanp a) (booleanp b) (booleanp c))
@@ -860,6 +898,10 @@
   (equal (len (fv-not x))
          (len x)))
 
+(defthm fv-not-of-v-threefix-canceled
+  (equal (fv-not (v-threefix x))
+         (fv-not x)))
+
 (defthm fv-not=v-not
   (implies (bvp x)
            (equal (fv-not x)
@@ -880,6 +922,12 @@
 (defthm len-fv-and
   (equal (len (fv-and a b))
          (len a)))
+
+(defthm fv-and-of-v-threefix-canceled
+  (and (equal (fv-and (v-threefix a) b)
+              (fv-and a b))
+       (equal (fv-and a (v-threefix b))
+              (fv-and a b))))
 
 (defthm fv-and=v-and
   (implies (and (bvp a)
@@ -1033,43 +1081,43 @@
 
 (in-theory (disable fv-if))
 
-;; V-WIRE
+;; VFT-WIRE
 
-(defun v-wire (a b)
+(defun vft-wire (a b)
   (declare (xargs :guard (true-listp b)))
   (if (atom a)
       nil
     (cons (ft-wire (car a) (car b))
-          (v-wire (cdr a) (cdr b)))))
+          (vft-wire (cdr a) (cdr b)))))
 
-(defthm v-wire-x-x=x
-  (equal (v-wire x x)
+(defthm vft-wire-x-x=x
+  (equal (vft-wire x x)
          (v-fourfix x))
   :hints (("Goal" :in-theory (enable v-fourfix))))
 
-(defthm v-wire-make-list-z-1
+(defthm vft-wire-make-list-z-1
   (implies (equal (len v) n)
-           (equal (v-wire (make-list n :initial-element *z*) v)
+           (equal (vft-wire (make-list n :initial-element *z*) v)
                   (v-fourfix v)))
   :hints (("Goal" :in-theory (enable v-fourfix))))
 
-(defthm v-wire-make-list-z-2
+(defthm vft-wire-make-list-z-2
   (implies (equal (len v) n)
-           (equal (v-wire v (make-list n :initial-element *z*))
+           (equal (vft-wire v (make-list n :initial-element *z*))
                   (v-fourfix v)))
   :hints (("Goal" :in-theory (enable v-fourfix))))
 
-(defthm len-v-wire
-  (equal (len (v-wire a b))
+(defthm len-vft-wire
+  (equal (len (vft-wire a b))
          (len a)))
 
-(defthm v-wire-make-list-x
+(defthm vft-wire-make-list-x
   (implies (equal n (len x))
-           (equal (v-wire x (make-list n :initial-element *x*))
+           (equal (vft-wire x (make-list n :initial-element *x*))
                   (make-list n :initial-element *x*)))
   :hints (("Goal" :in-theory (enable repeat))))
 
-(in-theory (disable v-wire))
+(in-theory (disable vft-wire))
 
 ;; V-PULLUP
 

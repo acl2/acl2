@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; September 2018
 
 (in-package "ADE")
 
@@ -82,12 +82,12 @@
     (and (booleanp (car x))
          (bvp (cdr x)))))
 
-(defthmd booleanp-car-of-bvp
+(defthmd booleanp-car-of-bv
   (implies (bvp x)
            (booleanp (car x)))
   :rule-classes :type-prescription)
 
-(defthmd nth-of-bvp-is-booleanp
+(defthmd nth-of-bv-is-boolean
   (implies (bvp x)
            (booleanp (nth n x)))
   :rule-classes :type-prescription)
@@ -103,7 +103,7 @@
            (bvp (nthcdr n x)))
   :rule-classes (:rewrite :type-prescription))
 
-(defthm bvp-repeat-of-booleanp
+(defthm bvp-repeat-of-boolean
   (implies (booleanp x)
            (bvp (repeat n x)))
   :hints (("Goal" :in-theory (enable bvp repeat)))
@@ -119,7 +119,7 @@
            (bvp (rev x)))
   :rule-classes (:rewrite :type-prescription))
 
-(defthm bvp-is-true-listp
+(defthm bv-is-true-list
   (implies (bvp x)
            (true-listp x)))
 
@@ -127,7 +127,7 @@
   (true-listp (make-list n :initial-element v))
   :rule-classes :type-prescription)
 
-(defthm bvp-make-list
+(defthm bvp-make-list-rewrite
   (equal (bvp (make-list n :initial-element v))
          (or (zp n) (booleanp v)))
   :hints (("Goal" :in-theory (enable repeat))))
@@ -271,6 +271,10 @@
   (declare (xargs :guard t))
   (and a b c (bool-fix d)))
 
+(defun b-and5 (a b c d e)
+  (declare (xargs :guard t))
+  (and a b c d (bool-fix e)))
+
 (defun b-nor (a b)
   (declare (xargs :guard t))
   (not (or a b)))
@@ -301,16 +305,19 @@
 
 ;; A boolean gate theory
 
-(deftheory b-gates
+(defconst *b-gates*
   '(b-buf
     b-not
     b-nand b-nand3 b-nand4 b-nand5 b-nand6 b-nand8
     b-or b-or3 b-or4 b-or5
     b-xor b-xor3 b-xnor
     b-equv b-equv3
-    b-and b-and3 b-and4
+    b-and b-and3 b-and4 b-and5
     b-nor b-nor3 b-nor4 b-nor5 b-nor6 b-nor8
     b-if))
+
+(deftheory b-gates
+  *b-gates*)
 
 ;; This lemma allows us to prove that specifications written in terms of
 ;; 4-valued gate-level functions (see below) are equivalent to Boolean
@@ -340,6 +347,7 @@
    (booleanp (b-and a b))
    (booleanp (b-and3 a b c))
    (booleanp (b-and4 a b c d))
+   (booleanp (b-and5 a b c d e))
    (booleanp (b-nor a b))
    (booleanp (b-nor3 a b c))
    (booleanp (b-nor4 a b c d))
@@ -679,6 +687,14 @@
     (cons (v-to-nat (car x))
           (v-to-nat-lst (cdr x)))))
 
+(defun v-to-nat2-lst (x)
+    (declare (xargs :guard (alistp x)))
+    (if (atom x)
+        nil
+      (cons (list (v-to-nat (caar x))
+                  (v-to-nat (cdar x)))
+            (v-to-nat2-lst (cdr x)))))
+
 (in-theory (disable v-to-nat))
 
 (defun bit->bool (x)
@@ -1010,6 +1026,10 @@
   (equal (car (v-threefix x))
          (3v-fix (car x))))
 
+(defthm cadr-v-threefix
+  (equal (cadr (v-threefix x))
+         (3v-fix (cadr x))))
+
 (defthm append-v-threefix
   (equal (append (v-threefix a)
                  (v-threefix b))
@@ -1023,7 +1043,7 @@
   (equal (v-threefix (v-threefix x))
          (v-threefix x)))
 
-(defthm bvp-v-threefix
+(defthm bvp-of-v-threefix
   (implies (true-listp v)
            (equal (bvp (v-threefix v))
                   (bvp v)))
@@ -1042,6 +1062,13 @@
   (equal (v-threefix (make-list n :initial-element *x*))
          (make-list n :initial-element *x*))
   :hints (("Goal" :in-theory (enable repeat))))
+
+(defthm v-or-of-v-threefix-canceled
+  (and (equal (v-or (v-threefix x) y)
+              (v-or x y))
+       (equal (v-or x (v-threefix y))
+              (v-or x y)))
+  :hints (("Goal" :in-theory (enable v-or))))
 
 ;; V-FOURFIX
 

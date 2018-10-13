@@ -1,4 +1,4 @@
-; Fixtypes for Unsigned and Signed Bytes -- Instances -- Signed 2-Bit Bytes
+; Fixtype for Signed 2-Bit Bytes
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -14,8 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defbyte 2
+(fty::defbyte 2
   :signed t
   :pred sbyte2p
-  :lpred sbyte2-listp
   :parents (defbyte-instances))

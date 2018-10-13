@@ -965,8 +965,12 @@
 	      (and
 	       (equal (xr :msr idx new-x86)
 		      (xr :msr idx x86))
-	       (equal (xr :seg-hidden idx new-x86)
-		      (xr :seg-hidden idx x86))))
+	       (equal (xr :seg-hidden-base idx new-x86)
+		      (xr :seg-hidden-base idx x86))
+	       (equal (xr :seg-hidden-limit idx new-x86)
+		      (xr :seg-hidden-limit idx x86))
+	       (equal (xr :seg-hidden-attr idx new-x86)
+		      (xr :seg-hidden-attr idx x86))))
      :hints (("Goal"
 	      :in-theory (e/d () (las-to-pas rb rme08 rml08))))))
 
@@ -976,8 +980,12 @@
 	      (and
 	       (equal (xr :msr idx new-x86)
 		      (xr :msr idx x86))
-	       (equal (xr :seg-hidden idx new-x86)
-		      (xr :seg-hidden idx x86))))
+	       (equal (xr :seg-hidden-base idx new-x86)
+		      (xr :seg-hidden-base idx x86))
+	       (equal (xr :seg-hidden-limit idx new-x86)
+		      (xr :seg-hidden-limit idx x86))
+	       (equal (xr :seg-hidden-attr idx new-x86)
+		      (xr :seg-hidden-attr idx x86))))
      :hints (("Goal"
 	      :induct <call>
 	      :in-theory (e/d ()
@@ -991,8 +999,12 @@
      (and
       (equal (xr :msr idx new-x86)
 	     (xr :msr idx x86))
-      (equal (xr :seg-hidden idx new-x86)
-	     (xr :seg-hidden idx x86)))
+      (equal (xr :seg-hidden-base idx new-x86)
+	     (xr :seg-hidden-base idx x86))
+      (equal (xr :seg-hidden-limit idx new-x86)
+	     (xr :seg-hidden-limit idx x86))
+      (equal (xr :seg-hidden-attr idx new-x86)
+	     (xr :seg-hidden-attr idx x86)))
      :hints (("Goal"
 	      :cases ((app-view x86))
 	      :do-not-induct t
@@ -1052,7 +1064,8 @@
 
 	:guard (and (prefixes-p prefixes)
 		    (modr/m-p modr/m)
-		    (sib-p sib))
+		    (sib-p sib)
+		    (rip-guard-okp proc-mode temp-rip))
 	:guard-hints (("Goal"
 		       :do-not '(preprocess)
 		       :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
@@ -1129,6 +1142,13 @@
 	       (integerp (mv-nth 1 (rme08 proc-mode eff-addr seg-reg r-x x86))))
       :rule-classes (:rewrite :type-prescription)))
 
+   (local
+    (defthm unsigned-byte-p-from-<=
+      (implies (and (<= x y)
+		    (unsigned-byte-p n y)
+		    (natp x))
+	       (unsigned-byte-p n x))))
+
    (local (in-theory (e/d* ()
 			   (signed-byte-p
 			    unsigned-byte-p
@@ -1138,7 +1158,8 @@
   (("Goal" :in-theory (e/d (modr/m-p
 			    prefixes-p
 			    vex-prefixes-byte0-p
-			    add-to-*ip add-to-*ip-is-i48p-rewrite-rule)
+			    add-to-*ip
+			    add-to-*ip-is-i48p-rewrite-rule)
 			   ())))
 
   (b* ((ctx 'x86-fetch-decode-execute)

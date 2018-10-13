@@ -196,7 +196,7 @@ so.</p>
  nil
  ;; Segment Registers: a value of nil will not nullify existing values.
  nil ; visible portion
- nil ; hidden portion
+ nil nil nil ; hidden portion
  ;; Rflags Register
  2
  ;; Memory image: a value of nil will not nullify existing values.

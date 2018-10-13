@@ -45,6 +45,9 @@
 (include-book "kestrel/apt/portcullis" :dir :system)
 (include-book "kestrel/soft/portcullis" :dir :system)
 (include-book "kestrel/abnf/portcullis" :dir :system)
+(include-book "kestrel/java/portcullis" :dir :system)
+(include-book "kestrel/ethereum/portcullis" :dir :system)
+(include-book "kestrel/bitcoin/portcullis" :dir :system)
 
 ; Please note:
 ;
@@ -118,6 +121,11 @@
 
  </ul>
 
+ <h4>Other</h4>
+
+ <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
+ for the Graphviz @('.dot') file syntax and a printer for that syntax.</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
@@ -154,10 +162,14 @@
  Prover: an Application to FAT32</i>, to appear in the proceedings of
  ACL2-2018.</p>
 
- <h4>System-level Utilities</h4>
+ <h4>System Utilities</h4>
 
  <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
  inside @('lambda') (@('let')) bodies.</p>
+
+ <p>Several files @('[books]/kestrel/utilities/*.lisp') that contain system
+ utilities have been moved to the subdirectory
+ @('[books]/kestrel/utilities/system/').</p>
 
  <h4>Typed List Utilities</h4>
 
@@ -182,6 +194,14 @@
  specific power-of-2 bases have been split into several files so that they can
  be included individually as needed.</p>
 
+ <h4>FTY Type Definition Library</h4>
+
+ <p>Added an option @(':non-emptyp') to @('fty::deflist') and @('std::deflist')
+ to define list types that must contain at least one element.</p>
+
+ <p>Added a book @('[books]/centaur/fty/typegraph.lisp') containing a utility that
+ writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
+
  <h4>Other</h4>
 
  <p>The utility, @(tsee directed-untranslate), has been improved in several
@@ -191,6 +211,17 @@
  <p>For the event macro @(tsee orelse*), the default for the @(':expansion?p')
  argument has been changed from @('nil') to @('t'), for consistency with @(tsee
  orelse).</p>
+
+ <p>The definition of function @(see list-fix) from
+ @('\"books/std/lists/list-fix.lisp\"') has been incorporated into the ACL2
+ sources in a way that minimizes changes to existing books.  See @(see
+ note-8-2) for details.</p>
+
+ <p>The @('acl2::defbyte') macro, which generated fixtypes and additional
+ theorems for both bytes and lists of bytes, has been split into two macros
+ @(tsee fty::defbyte), which generates a fixtype and some additional theorems
+ for bytes, and @(tsee fty::defbytelist), which generates a fixtype and some
+ additional theorems for lists of byte.  See the documentation for details.</p>
 
  <h3>Licensing Changes</h3>
 
@@ -301,7 +332,7 @@
  duplicates; and @(tsee subsetp-eq-linear), which is a linear-time subset test
  for sorted lists of symbols.</p>
 
- <p>Added a new macro @(tsee defbyte) for introducing fixtypes for unsigned and
+ <p>Added a new macro @('defbyte') for introducing fixtypes for unsigned and
  signed bytes of specified sizes, as well as fixtypes of lists of such bytes,
  along with theorems relating the fixtype recognizers to the built-in binary
  predicates @(tsee unsigned-byte-p) and @(tsee signed-byte-p) and to the
@@ -790,10 +821,10 @@
  messages. These utilities include a macro @(tsee def-error-checker) to
  concisely define error-checking functions.</p>
 
- <p>A new macro @(tsee defbyte) has been added that introduces <see
- topic='@(url fty)'>fixtypes</see> for signed or unsigned bytes of specified
- sizes. Several instances of applications of this macro for common sizes of
- both signed and unsigned bytes is also provided.</p>
+ <p>A new macro @('defbyte') has been added that introduces <see topic='@(url
+ fty)'>fixtypes</see> for signed or unsigned bytes of specified sizes. Several
+ instances of applications of this macro for common sizes of both signed and
+ unsigned bytes is also provided.</p>
 
  <p>Utilities @(tsee doublets-to-alist) and @(tsee keyword-value-list-to-alist)
  have been added that convert lists of doublets and keyword-value lists to

@@ -10,11 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/fixbytes/ubyte3" :dir :system)
+(include-book "kestrel/utilities/fixbytes/ubyte3-list" :dir :system)
 (include-book "pow2")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm-digit-byte-return-types 3)
-;; (defthm-digit-byte-return-types 4)
-;; (defthm-digit-byte-return-types 8)

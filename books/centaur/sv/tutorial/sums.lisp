@@ -39,6 +39,7 @@
 (include-book "centaur/gl/bfr-fraig-satlink" :dir :system)
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "centaur/ipasir/ipasir-backend" :dir :system)
+(include-book "oslib/top" :dir :system)
 
 ;; (local (include-book "centaur/esim/stv/stv-decomp-proofs-even-better" :dir :system))
 ; (depends-on "sums.sv")

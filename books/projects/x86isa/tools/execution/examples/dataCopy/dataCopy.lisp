@@ -125,7 +125,7 @@
         ;; seg-visibles
         nil
         ;; seg-hiddens
-        nil
+        nil nil nil
         ;; Rflags Register
         #x202
         (append

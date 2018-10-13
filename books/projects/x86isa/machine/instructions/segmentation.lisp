@@ -143,8 +143,8 @@
        (operand-size
 	(if (eql base-size 8)
 	    8
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr)
+		(xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
 		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	    (if (= cs.d 1)
@@ -262,8 +262,8 @@
        (operand-size
 	(if (eql base-size 8)
 	    8
-	  (b* ((cs-hidden (xr :seg-hidden #.*cs* x86))
-	       (cs-attr (hidden-seg-reg-layout-slice :attr cs-hidden))
+	  (b* (((the (unsigned-byte 16) cs-attr)
+		(xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
 		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
 	    (if (= cs.d 1)
@@ -484,33 +484,20 @@ a non-canonical form, raise the SS exception.</p>"
 			 :limit15-0 descriptor))
        (ldtr-limit19-16 (system-segment-descriptor-layout-slice
 			 :limit19-16 descriptor))
-       (ldtr-limit (part-install ldtr-limit15-0
-				 (ash ldtr-limit19-16 16)
-				 :low 0 :width 16))
+       ((the (unsigned-byte 32) ldtr-limit)
+	(part-install ldtr-limit15-0
+		      (ash ldtr-limit19-16 16)
+		      :low 0 :width 16))
 
        ;; LDTR Attributes:
        (ldtr-attr (the (unsigned-byte 16)
 		    (make-system-segment-attr-field descriptor)))
-
-       ;; LDTR Hidden:
-       (ldtr-hidden
-	(!hidden-seg-reg-layout-slice
-	 :base-addr
-	 ldtr-base
-	 (!hidden-seg-reg-layout-slice
-	  :limit
-	  ldtr-limit
-	  (!hidden-seg-reg-layout-slice
-	   :attr
-	   ldtr-attr
-	   0))))
-
        ;; Update the x86 state:
        ;; Load the visible and hidden portions of the LDTR register:
-       (x86
-	(!ssr-visiblei *ldtr* selector x86))
-       (x86
-	(!ssr-hiddeni *ldtr* ldtr-hidden x86))
+       (x86 (!ssr-visiblei #.*ldtr* selector x86))
+       (x86 (!ssr-hidden-basei #.*ldtr* ldtr-base x86))
+       (x86 (!ssr-hidden-limiti #.*ldtr* ldtr-limit x86))
+       (x86 (!ssr-hidden-attri #.*ldtr* ldtr-attr x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
