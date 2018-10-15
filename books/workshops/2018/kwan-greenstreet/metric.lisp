@@ -1,3 +1,5 @@
+; cert_param: (uses-acl2r)
+
 (in-package "ACL2")
 
 ;; theorem used later on that fails if nsa books are loaded

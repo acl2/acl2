@@ -1,11 +1,10 @@
-(in-package "ACL2")
-
 ;; This book is mostly the same as ftc-2.lisp from the integral books
 ;; with some minor modifications to pass the FTC for the desired 
 ;; functions.
 
+; cert_param: (uses-acl2r)
 
-
+(in-package "ACL2")
 
 ;;
 ;; A rather inelegant work-around for passing some theorems that don't

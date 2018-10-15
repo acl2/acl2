@@ -1,8 +1,9 @@
-(in-package "ACL2")
+; cert_param: (uses-acl2r)
 
 ;;
 ;; This book includes all the books included in "top.lisp"
-;; and also Nesterov's theorem. 
+;; and also Nesterov's theorem. To use them, ACL2(r) is 
+;; required.
 ;; 
 ;; "nesterov-1.lisp" includes:
 ;; - the basic definitions and theorems involving the
@@ -39,4 +40,5 @@
 ;; 					     nesterov-1 -> convex -> ...
 ;;
 
+(in-package "ACL2")
 (include-book "nesterov-4")

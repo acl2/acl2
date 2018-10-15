@@ -1,5 +1,3 @@
-(in-package "ACL2")
-
 ;;
 ;; This book contains the proofs of 
 ;;  ineq. 0 implies ineq. 4
@@ -8,6 +6,10 @@
 ;;  ineq. 2 implies ineq. 3
 ;;  ineq. 3 implies ineq. 0
 ;;
+
+; cert_param: (uses-acl2r)
+
+(in-package "ACL2")
 
 ;; The necessary lemma that doesn't pass if nsa books are loaded
 (local (defthm i-small-standard-part-zero

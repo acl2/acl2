@@ -1,10 +1,12 @@
-(in-package "ACL2")
-
 ;; 
 ;; This book contains the proofs for
 ;;  ineq. 2 implies 5
 ;;  ineq. 1 implies 6
 ;;
+
+; cert_param: (uses-acl2r)
+
+(in-package "ACL2")
 
 (include-book "nesterov-2")
 

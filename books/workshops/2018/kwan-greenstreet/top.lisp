@@ -1,7 +1,7 @@
-(in-package "ACL2")
+; cert_param: (uses-acl2r)
 
 ;; 
-;; This book includes:
+;; This book requires ACL2(r) and includes:
 ;;  - the vector space axioms contained in vectors.lisp
 ;;  - the inner product space axioms contained in 
 ;;    norm.lisp and partially in vectors.lisp
@@ -21,6 +21,7 @@
 ;; continuity -> metric -> ...
 ;;
 
+(in-package "ACL2")
 (include-book "convex")
 (include-book "continuity")
 

@@ -1,12 +1,10 @@
+; cert_param: (uses-acl2r)
+
 (in-package "ACL2")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/deflist-base" :dir :system)
 (include-book "arithmetic/top" :dir :system)
-
-
-;(define maybe-realp (x) ;; someone forgot to include this in the community books
-;  (or (not x) (realp x)))
 
 ;; recognizer of the zero vector
 (define zvecp ((vec real-listp))

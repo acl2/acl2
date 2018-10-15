@@ -2,6 +2,8 @@
 ;; This book provides some examples of multivariate continuous functions
 ;;
 
+; cert_param: (uses-acl2r)
+
 (in-package "ACL2")
 (include-book "metric")
 

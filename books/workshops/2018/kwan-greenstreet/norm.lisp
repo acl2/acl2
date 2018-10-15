@@ -1,7 +1,9 @@
+; cert_param: (uses-acl2r)
+
 (in-package "ACL2")
 (include-book "vectors")
 
-;; this is actually norm squared - TODO: rename to norm-sq
+;; this is actually norm squared 
 (define norm^2 ((vec real-listp))
  :returns (ret realp)
  (cond ((null vec) 0)

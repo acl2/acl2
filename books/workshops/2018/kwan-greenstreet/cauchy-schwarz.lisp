@@ -1,3 +1,5 @@
+; cert_param: (uses-acl2r)
+
 (in-package "ACL2")
 
 (include-book "norm")

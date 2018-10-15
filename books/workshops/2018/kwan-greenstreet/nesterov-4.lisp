@@ -1,10 +1,11 @@
-(in-package "ACL2")
-
 ;;
 ;; This book defines the Skolem functions of the inequalities 
 ;; and states the final form of Nesterov's theorem
 ;;
 
+; cert_param: (uses-acl2r)
+
+(in-package "ACL2")
 
 (include-book "nesterov-3")
 

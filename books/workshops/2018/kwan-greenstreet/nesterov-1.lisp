@@ -1,11 +1,13 @@
-(in-package "ACL2")
-
 ;; 
 ;; This book contains the basic definitions for Nesterov's theorem
 ;; and the proofs of:
 ;;  ineq. 5 implies ineq. 2
 ;;  ineq. 6 implies ineq. 1
 ;;
+
+; cert_param: (uses-acl2r)
+
+(in-package "ACL2")
 
 ;; A necessary lemma that doesn't pass if nsa books are loaded
 (local (defthm i-small-standard-part-zero
