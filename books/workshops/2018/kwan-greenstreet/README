@@ -1,0 +1,10 @@
+Supporting Materials
+
+Titles:  Real Vector Spaces and the Cauchy-Schwarz Inequality in ACL2(r)
+	 Convex Functions in ACL2(r)
+Authors: Carl Kwan 	     <carlkwan@cs.ubc.ca>
+	 Mark R. Greenstreet <mrg@cs.ubc.ca>
+
+Details on material pertaining to "Real Vector Spaces and the Cauchy-Schwarz Inequality in ACL2(r)" can be found in "top.lisp".
+
+Details on material pertaining to "Convex Functions in ACL2(r)" can be found in "nesterov-top.lisp".
