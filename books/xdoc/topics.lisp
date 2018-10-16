@@ -1048,7 +1048,7 @@ utilities that comes with ACL2:</p>
 
 <p>For emacs to make sense of the links you follow, it will need to have the
 appropriate <a
-href=\"http://www.gnu.org/software/emacs/manual/html_node/emacs/Tags.html\">tags
+href=\"https://www.gnu.org/software/emacs/manual/html_node/emacs/Tags-Tables.html\">tags
 tables</a> loaded for all of the libraries you are using.</p>
 
 <p>If you aren't familiar with tags, you basically just need to:</p>

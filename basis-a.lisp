@@ -1,5 +1,5 @@
-; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2017, Regents of the University of Texas
+; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2018, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -7339,28 +7339,9 @@
                              (oneify producer flet-fns w program-p)
                            producer)))
                   (if (eq st 'state)
-
-; We should lock this computation when #+acl2-par, even though special
-; variables that are let-bound (including those bound above) are thread-local.
-
                       `(if (f-get-global 'parallel-execution-enabled
                                          *the-live-state*)
-
-; Parallelism wart: this isn't really the right check for ACL2(p), because
-; we've effectively disallowed the use of with-local-state, even when we're not
-; executing in parallel!  This bothers Rager, because he wants to use
-; with-local-state in code that isn't executing in parallel (in his
-; dissertation's supporting evidence, for reading in files that contain
-; performance results).  Instead, we should be calling
-; warn-about-parallelism-hazard (similar to what we do in the definition of
-; state-global-let*).
-
-                           (er hard! 'with-local-state
-                               "The use of with-local-state (or, ~
-                                with-local-stobj where STATE is the stobj) is ~
-                                disallowed with parallel execution enabled.  ~
-                                To disable parallel execution, see :DOC ~
-                                set-parallel-execution.")
+                           (with-local-state-lock ,p)
                          ,p)
                     p)))
              (declare (ignore ,st))

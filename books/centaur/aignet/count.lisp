@@ -35,11 +35,11 @@
 (local (in-theory (disable acl2::resize-list-when-atom)))
 
 (define count-gates-rec ((id natp)
-                           (traversal-num natp)
-                           (u32arr) ;; traversal number
-                           (aignet))
-  :guard (and (<= id (max-fanin aignet))
-              (< (max-fanin aignet) (u32-length u32arr)))
+                         (traversal-num natp)
+                         (u32arr) ;; traversal number
+                         (aignet))
+  :guard (and (< id (num-fanins aignet))
+              (<= (num-fanins aignet) (u32-length u32arr)))
   :returns (mv (num-subnodes natp :rule-classes :type-prescription)
                new-u32arr)
   :measure (nfix id)
@@ -54,8 +54,7 @@
       :gate (b* (((mv subs0 u32arr) (count-gates-rec (lit-id (snode->fanin slot0)) traversal-num u32arr aignet))
                  ((mv subs1 u32arr) (count-gates-rec (lit-id (gate-id->fanin1 id aignet)) traversal-num u32arr aignet)))
               (mv (+ 1 subs0 subs1) u32arr))
-      :const (mv 0 u32arr)
-      :out (count-gates-rec (lit-id (snode->fanin slot0)) traversal-num u32arr aignet)))
+      :const (mv 0 u32arr)))
   ///
   (local (in-theory (disable (:d count-gates-rec) nth update-nth)))
 
@@ -64,8 +63,8 @@
                     (equal (len (update-nth n val x)) (len x)))))
 
   (defret len-u32arr-of-count-gates-rec
-    (implies (and (<= (nfix id) (max-fanin aignet))
-                  (< (max-fanin aignet) (len u32arr)))
+    (implies (and (< (nfix id) (num-fanins aignet))
+                  (<= (num-fanins aignet) (len u32arr)))
              (equal (len new-u32arr) (len u32arr)))
     :hints (("goal" :induct <call>
              :expand ((:free (traversal-num) <call>)))))
@@ -77,7 +76,8 @@
                                 (u32arr)
                                 (aignet))
   :guard (and (aignet-lit-listp lits aignet)
-              (< (max-fanin aignet) (u32-length u32arr)))
+              (<= (num-fanins aignet) (u32-length u32arr)))
+  :guard-hints (("goal" :in-theory (enable aignet-lit-listp aignet-idp)))
   (b* (((When (atom lits)) (mv nil u32arr))
        (new-trav-num  (+ 1 (lnfix traversal-num)))
        ((mv size u32arr) (count-gates-rec (lit-id (car lits)) new-trav-num u32arr aignet))
@@ -88,5 +88,5 @@
                             (aignet))
   :guard (aignet-lit-listp lits aignet)
   (b* (((acl2::local-stobjs u32arr) (mv sizes u32arr))
-       (u32arr (resize-u32 (+ 1 (max-fanin aignet)) u32arr)))
+       (u32arr (resize-u32 (num-fanins aignet) u32arr)))
     (count-gates-list-rec lits 0 u32arr aignet)))

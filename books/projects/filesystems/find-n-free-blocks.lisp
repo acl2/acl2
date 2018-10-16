@@ -4,7 +4,9 @@
 
 (in-package "ACL2")
 
-(include-book "file-system-lemmas")
+;  find-n-free-blocks.lisp                     Mihir Mehta
+
+(local (include-book "file-system-lemmas"))
 (include-book "bounded-nat-listp")
 
 (defthm mv-nth-replacement
@@ -209,6 +211,12 @@
                                          (+ n (len ac)))
                   (count-free-blocks (first-n-ac n alv ac))))
   :hints (("goal" :induct (first-n-ac n alv ac))))
+
+(defthm
+  count-free-blocks-alt-correctness-2-lemma-1
+  (equal (count-free-blocks (true-list-fix alv))
+         (count-free-blocks alv))
+  :hints (("Goal" :in-theory (enable true-list-fix))))
 
 (defthm
   count-free-blocks-alt-correctness-2

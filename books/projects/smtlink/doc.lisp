@@ -8,6 +8,7 @@
 (in-package "SMT")
 (include-book "centaur/sv/tutorial/support" :dir :system)
 (include-book "examples/examples")
+(include-book "examples/ringosc")
 
 ;; ------------------------------------------------------- ;;
 ;;    Documentation
@@ -132,7 +133,7 @@ configuration in smtlink-config.
 <h4>Load and Setup Smtlink</h4>
 <p>To use @('Smtlink'), one needs to include book:</p>
 @({
-  (include-book \"/dir/to/smtlink/top\")
+   (include-book \"projects/smtlink/top\" :dir :system)
   })
 <p>Then one needs to enable @(tsee acl2::tshell) by doing:</p>
 @({
@@ -426,10 +427,15 @@ this directory is in your PYTHONPATH environment variable. @echo Z3 was
 successfully installed.
 })
 </li>
-<li>So the last step is to add this path to PYTHONPATH.
+<li>So the last step is to add this path to PYTHONPATH. Adding this path to
+  existing PYTHONPATH:
 @({
 export PYTHONPATH=$HOME/usr/lib/python-2.7/site-packages:$PYTHONPATH
 })
+If PYTHONPATH is undefined, do:
+@({
+export PYTHONPATH=$HOME/usr/lib/python-2.7/site-packages
+@})
 </li>
 <li>Now one should be able to import z3 into Python.
 Run Python, which will put you in an interactive loop.
@@ -520,6 +526,29 @@ which are typically owned by @('root') (see comments above about this).
 Run the Z3 example in Python described in the instructions above,
 to confirm that the installation was successful.
 </li>
-</ol>")
+</ol>
+
+<h3>Allow the Build System to Find Z3</h3>
+<p>To make sure ACL2's build system can find Z3, Z3 should be installed in
+one's path.  There are two ways to achieve this:</p>
+<ul>
+<li>
+Add the path to where Z3 is installed into one's path.  For example,
+@({
+export PATH=/path to z3 executable/:$PATH
+})
+</li>
+<li>
+Another way of achieving this purpose is to create the following bash script
+called ``z3'' and put it in one's path:
+@({
+#!/bin/bash
+/path to z3 executable/z3 \"$@\"
+})
+In some systems, after creating that script, one needs to run ``rehash'' in the
+shell.
+</li>
+</ul>
+")
 
 ;; (xdoc::save "./manual" :redef-okp t)  ;; write the manual

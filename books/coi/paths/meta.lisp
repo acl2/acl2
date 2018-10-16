@@ -2155,7 +2155,7 @@
   (bag::meta-memberp x list)
   (bag::any-subbagp x list) ;remove this?
   (list::finalcdr x)
-  (acl2::list-fix x)
+  (acl2::true-list-fix x)
   (bag::subbagp x y)
   (list::memberp a x)
 ; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2

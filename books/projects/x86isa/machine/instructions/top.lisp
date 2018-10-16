@@ -153,15 +153,7 @@ writes the final value of the instruction pointer into RIP.</p>")
   :body
 
   (b* ((ctx 'x86-hlt)
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
-       (cpl (cpl x86))
-       ((unless (eql cpl 0))
-        (!!fault-fresh :gp 0 :lock-prefix prefixes)) ;; #GP(0)
-
        ;; Update the x86 state:
-
        ;; Intel Vol. 2A, HLT specification: Instruction pointer is saved.
        ;; "If an interrupt ... is used to resume execution after a HLT
        ;; instruction, the saved instruction pointer points to the instruction
@@ -189,10 +181,7 @@ writes the final value of the instruction pointer into RIP.</p>")
                                (canonical-address-p temp-rip)))
   :body
 
-  (b* ((ctx 'x86-cmc/clc/stc/cld/std)
-
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+  (b* ((?ctx 'x86-cmc/clc/stc/cld/std)
 
        (x86 (case opcode
               (#xF5 ;; CMC
@@ -220,9 +209,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   ;; Opcode: #x9E
 
-  ;; TO-DO@Shilpi: The following instruction is valid in 64-bit mode
-  ;; only if the CPUID.80000001H:ECX.LAHF-SAHF[bit0] = 1.
-
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
@@ -230,9 +216,7 @@ writes the final value of the instruction pointer into RIP.</p>")
                                (canonical-address-p temp-rip)))
   :body
 
-  (b* ((ctx 'x86-sahf)
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+  (b* ((?ctx 'x86-sahf)
        ((the (unsigned-byte 16) ax)
         (mbe :logic (rgfi-size 2 *rax* rex-byte x86)
              :exec (rr16 *rax* x86)))
@@ -253,9 +237,6 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   ;; Opcode: #x9F
 
-  ;; TO-DO@Shilpi: The following instruction is valid in 64-bit mode
-  ;; only if the CPUID.80000001H:ECX.LAHF-LAHF[bit0] = 1.
-
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
@@ -263,9 +244,7 @@ writes the final value of the instruction pointer into RIP.</p>")
                                (canonical-address-p temp-rip)))
   :body
 
-  (b* ((ctx 'x86-lahf)
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+  (b* ((?ctx 'x86-lahf)
        ((the (unsigned-byte 8) ah)
         (logand #xff (the (unsigned-byte 32) (rflags x86))))
        ((the (unsigned-byte 16) ax)
@@ -315,17 +294,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   (b* ((ctx 'x86-rdrand)
 
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-
-       ;; TODO: throw #UD if CPUID.01H:ECX.RDRAND[bit 30] = 0
-       ;; (see Intel manual, Mar'17, Vol 2, RDRAND)
-
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       (rep (prefixes-slice :seg prefixes))
-       (rep-p (or (equal #.*repe* rep)
-                  (equal #.*repne* rep)))
-       ((when (or lock? rep-p))
-        (!!fault-fresh :ud nil :lock-prefix-or-rep-p prefixes)) ;; #UD
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes x86))
@@ -390,9 +359,51 @@ writes the final value of the instruction pointer into RIP.</p>")
        (x86 (!rip temp-rip x86)))
     (!!fault-fresh :ud message :instruction-address start-rip)))
 
+(define x86-general-protection
+  (message
+   (start-rip :type (signed-byte   #.*max-linear-address-size*))
+   (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
+   x86)
+  :parents (instructions)
+  :short "Semantic function corresponding to a general protection fault"
+  :long "<p>Note that the @('#GP') (general protection) exception should be
+  thrown here, which is why the @('fault') field is populated with
+  @('message').</p>"
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
+  (b* ((ctx 'x86-general-protection)
+       ;; We update the RIP to point to the next instruction --- in case we
+       ;; ever get to the point that we can recover from #GP exceptions, this
+       ;; may be the right thing to do.
+       (x86 (!rip temp-rip x86)))
+    (!!fault-fresh :gp message :instruction-address start-rip)))
+
+(define x86-device-not-available
+  (message
+   (start-rip :type (signed-byte   #.*max-linear-address-size*))
+   (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
+   x86)
+  :parents (instructions)
+  :short "Semantic function corresponding to a device not available (no math coprocessor) fault"
+  :long "<p>Note that the @('#NM') (device not available) exception should be
+  thrown here, which is why the @('fault') field is populated with
+  @('message').</p>"
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
+  (b* ((ctx 'x86-device-not-available)
+       ;; We update the RIP to point to the next instruction --- in case we
+       ;; ever get to the point that we can recover from #NM exceptions, this
+       ;; may be the right thing to do.
+       (x86 (!rip temp-rip x86)))
+    (!!fault-fresh :nm message :instruction-address start-rip)))
+
 (add-to-ruleset instruction-decoding-and-spec-rules
                 '(x86-step-unimplemented
-                  x86-illegal-instruction))
+                  x86-illegal-instruction
+                  x86-general-protection
+                  x86-device-not-available))
+
+(in-theory (e/d () (rip-guard-okp)))
 
 ;; ======================================================================
 

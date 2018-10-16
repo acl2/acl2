@@ -301,7 +301,7 @@
 (def-gl-export page-dir-ptr-table-entry-addr-to-C-program-optimized-form
   :hyp (and (canonical-address-p v-addr)
             (equal (loghead 12 base-addr) 0)
-            (unsigned-byte-p 52 base-addr))
+            (unsigned-byte-p #.*physical-address-size* base-addr))
   :concl (equal (page-dir-ptr-table-entry-addr v-addr base-addr)
                 (logior (logand 4088 (loghead 32 (logtail 27 v-addr)))
                         base-addr))
@@ -380,11 +380,11 @@
   :g-bindings
   (gl::auto-bindings (:nat n 64)))
 
-(def-gl-thm unsigned-byte-p-52-of-dest-pdpte
+(def-gl-thm dest-pdpte-is-of-physical-address-size
   :hyp (and (signed-byte-p 64 reg)
             (unsigned-byte-p 64 val))
   :concl (unsigned-byte-p
-          52
+          #.*physical-address-size*
           (logior (logand 4088 (loghead 32 (logtail 27 reg)))
                   (ash (loghead 40 (logtail 12 val)) 12)))
   :g-bindings

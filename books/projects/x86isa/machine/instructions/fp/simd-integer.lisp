@@ -69,6 +69,7 @@
   ((define pcmpeqb32 ((xmm n32p)
                       (xmm/mem n32p))
      :inline t
+     :no-function t
 
      (let* ((xmm0 (mbe :logic (part-select xmm :low 0 :high 7)
                        :exec  (the (unsigned-byte 8)
@@ -122,19 +123,16 @@
   (b* ((ctx 'x86-pcmpeqb-Op/En-RM)
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p2 (prefixes-slice :seg prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
        ;; non 16-byte aligned addresses on a real machine.
@@ -233,6 +231,7 @@
 
   ((define pmovmskb8 ((xmm n64p))
      :inline t
+     :no-function t
 
      (let* ((bit0  (logbit   7 xmm))
             (bit1  (logbit  15 xmm))
@@ -280,18 +279,15 @@
   (b* ((ctx 'x86-pmovmskb-Op/En-RM)
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (unsigned-byte 4) rgf-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :seg prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
        (inst-ac? ;; Exceptions Type 7
         nil)
 

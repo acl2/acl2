@@ -914,13 +914,15 @@
 
  <p>As of this writing, six Common Lisp implementations support ACL2: Allegro
  Common Lisp (ACL), Clozure CL (CCL), CMU Common Lisp (CMUCL), GNU Common
- Lisp (GCL), LispWorks, and Steel Bank Common Lisp (SBCL).  Some ACL2 raw-Lisp
- code is implementation-specific, that is, depends on which of these six Common
- Lisp implementations is the host lisp.  See for example the definitions of
- @('exit-lisp') and @('getenv$-raw').  Here is an elided version of the
- definition of @('exit-lisp').  Notice the readtime conditional used for each
- of the six supported Lisp implementations and also some that are no longer
- supported, like CLISP.  (Note: Normally we see ``@('gcl')'' for GCL but
+ Lisp (GCL), LispWorks, and Steel Bank Common Lisp (SBCL).  (Note: As of
+ Sept. 2018 there remains a problem with CMUCL that was reported several months
+ ago, which the implementor has indicated that he intends to try to fix.)  Some
+ ACL2 raw-Lisp code is implementation-specific, that is, depends on which of
+ these six Common Lisp implementations is the host lisp.  See for example the
+ definitions of @('exit-lisp') and @('getenv$-raw').  Here is an elided version
+ of the definition of @('exit-lisp').  Notice the readtime conditional used for
+ each of the six supported Lisp implementations and also some that are no
+ longer supported, like CLISP.  (Note: Normally we see ``@('gcl')'' for GCL but
  sometimes, as below, we see the somewhat archaic (but still acceptable)
  ``@('akcl')''.)</p>
 
@@ -1015,14 +1017,14 @@
 
  <h3>Building with `@('make')'</h3>
 
- <p>The preceding chapter (see @(see developers-guide-background)) notes six
- different Lisps on which ACL2 may be built.  There have been occasions when an
- ACL2 bug only showed up with one of those Lisps; so, it is a good idea to
- build ACL2 in each of them from time to time, when feasible.  Just specify
+ <p>The preceding chapter (see @(see developers-guide-background)) notes five
+ or six different Lisps on which ACL2 may be built.  There have been occasions
+ when an ACL2 bug only showed up with one of those Lisps; so, it is a good idea
+ to build ACL2 in each of them from time to time, when feasible.  Just specify
  @('LISP') on the command line, typically with @('PREFIX') specified as well,
  which is put on the front of @('saved_acl2').  For example, to build ACL2 in
- SBCL, you might issue the following shell command to create an SBCL-based
- ACL2 executable named @('sbcl-saved_acl2').</p>
+ SBCL, you might issue the following shell command to create an SBCL-based ACL2
+ executable named @('sbcl-saved_acl2').</p>
 
  @({
  (make PREFIX=sbcl- LISP=sbcl) >& make-sbcl.log&
@@ -1079,6 +1081,16 @@
  developers to be able to follow the source code and @('GNUmakefile') where
  they lead when it is important to understand details.</p>
 
+ <h3>Debugging a failed build</h3>
+
+ <p>When a build fails using ``@('make')'', you can generally re-create the
+ failure in an interactive session as follows, so that you can use the Lisp
+ debugger to investigate.  First, look for a file ``@('workxxx')'' in the build
+ directory.  It should contain the forms that were executed in Lisp to get to
+ the error.  So, start Lisp, and then execute each of those forms until you get
+ to the error &mdash; it's as simple as that!  (Of course, the debugging that
+ ensues may be simple or complex.)</p>
+
  <h3>Documentation</h3>
 
  <p>The generated file @('doc.lisp') can be built in the ACL2 sources directory
@@ -1123,13 +1135,19 @@
 (defxdoc developers-guide-maintenance
   :parents (developers-guide)
   :short "Modifying, Testing, and Debugging"
-  :long "<p>Before working on changes to ACL2, consider <a
- href='acl2-devel@utlists.utexas.edu'>sending email to the acl2-devel list</a>
- (@('acl2-devel@utlists.utexas.edu')), explaining what you have in mind.  This
- will avoid duplication and also provide an opportunity for feedback.  In
- particular, you may want to wait for confirmation from Kaufmann or Moore that
- at least one of them will be willing to review your patch; otherwise they make
- no commitment to do so.</p>
+  :long "<p>Before working on changes to ACL2, consider sending email to the
+ acl2-devel list (@('acl2-devel@utlists.utexas.edu')), explaining what you have
+ in mind.  This will avoid duplication and also provide an opportunity for
+ feedback.  In particular, you may want to wait for confirmation from Kaufmann
+ or Moore that at least one of them will be willing to review your patch;
+ otherwise they make no commitment to do so, and your efforts might be
+ wasted!</p>
+
+ <p>Please try to limit your modification to those that are directly related to
+ what you intend to change.  For example, please don't delete comments in a
+ source file or a book.  (If you feel moved to do so, at least first check with
+ an author of the file you propose to change.)  That said, it's certainly it's
+ fine to fix typos.</p>
 
  <h3>Development</h3>
 
@@ -1153,8 +1171,9 @@
 
  <p>The reason to record the github commit hash is so that Kaufmann and Moore
  can correctly merge in your changes even after there have been several ACL2
- commits.  You can get that hash by running the following command under the
- main ACL2 directory.</p>
+ commits.  (The process for doing so is outlined in the topic, @(see
+ developers-guide-contributing).)  You can get that hash by running the
+ following command under the main ACL2 directory.</p>
 
  @({
  git rev-parse HEAD
@@ -1310,7 +1329,7 @@
  <h3>Documentation</h3>
 
  <p>Be sure to document your changes.  This will typically involve adding a
- release note to a topic like @(see note-8-1).  The XDOC source code
+ release note to a topic like @(see note-8-2).  The XDOC source code
  documentation for ACL2 resides in the community book
  @('books/system/doc/acl2-doc.lisp').  If the change is not user visible, then
  a Lisp comment in the corresponding @('defxdoc') form is probably best; the
@@ -1471,6 +1490,104 @@
  longer than the implementation work itself.</li>
 
  </ul>")
+
+(defxdoc developers-guide-contributing
+  :parents (developers-guide)
+  :short "Contributing changes"
+  :long "<p><b>WARNING</b>: This is just a draft.  Suggestions for improvements
+ would be great; please send them to kaufmann@cs.utexas.edu</p>
+
+ <p><b>IMPORTANT</b>: Before reading this topic, be sure to read the topic,
+ @(see developers-guide-maintenance).  The present topic assumes that you have
+ followed the process there to make changes in your copy of ACL2 and the @(see
+ community-books), including testing and documentation.  Here are the steps for
+ contributing your changes when they are complete and fully tested and
+ documented.</p>
+
+ <ol>
+
+ <li>Create your modifications by following the processes outlined in the
+ topic, @(see developers-guide-maintenance).  Have you added at least one
+ release note item?  If not, then please look again at the topic, @(see
+ developers-guide-maintenance), where that and other prerequisites are
+ covered.</li>
+
+ <li>Create a tarball that contains your changes that are <i>NOT</i> under the
+ @('books/') directory.  For example, if (as is typical) those changes are all
+ in the top-level ACL2 @('*.lisp') source files, you can do the following while
+ standing in the ACL2 sources directory:
+ @({
+ tar cfz acl2-sources.tgz *.lisp
+ })</li>
+
+ <li>Create a git branch on your local machine, called @('my-branch') below
+ (but give it a more descriptive name, for example, @('true-list-fix')):
+ @({
+ git checkout -b my-branch
+ })</li>
+
+ <li>Commit your updates that are under @('books/'), but <i>ONLY</i> those
+ updates.  Be sure that the file with your commit message, @('tmp.msg') (or
+ whatever you decide to call it, but below it is called @('tmp.msg')),
+ describes your changes to the books.  The description can generally be brief
+ (use @('git log') if you want to see examples), often quoting your new release
+ note item.
+ @({
+ git add books
+ git commit -F tmp.msg
+ })</li>
+
+ <li>Create your own GitHub fork if you don't already have one (for example, as
+ explained in the documentation topic, @(see
+ github-commit-code-using-pull-requests), Section (A)).  Assuming your GitHub
+ username is @('my-username') and (again) your branch name is @('my-branch'),
+ this should make your branch publicly accessible at the following URL: @({
+ https://github.com/my-username/acl2/tree/my-branch })</li>
+
+ <li>Push to your own GitHub fork, as follows:
+ @({
+ git push https://github.com/my-username/acl2 my-branch
+ })</li>
+
+ <li>Send the commit hash and tarball (see ``Create a tarball'' above), as well
+ as the name and URL of your new branch (as discussed above), to an ACL2
+ author.  As of this writing, those are to be sent to Matt Kaufmann, at
+ @('kaufmann@cs.utexas.edu').</li>
+
+ <li>The last steps will be done by Matt, who will start by getting your
+ changes as follows.
+
+ @({
+ git clone https://github.com/acl2/acl2 .
+ git fetch https://github.com/my-username/acl2 my-branch:my-branch
+ git checkout my-branch
+ })
+
+ Note that after the @('checkout') command just above, @('my-branch') will
+ contain only your changes.  Matt will then install your source code
+ changes (from the tarball) into the branch, @('my-branch'), possibly make some
+ edits, and run an @('`everything'') regression.  When this passes, Matt will
+ run the following two commands, where @('tmp.msg') says something about the
+ changes, with credit to you.  Note that the @('commit') command will cause
+ @('my-branch') to contain all changes, both under @('books/') and from the
+ sources tarball, possibly after edits from Matt.
+
+ @({
+ git commit -a -F tmp.msg
+ })
+
+ Finally, Matt will run a @('merge') command so that @('master') contains all
+ changes (both from @('books/') and from outside @('books/')), and then
+ complete the update to @('master') in the GitHub repository.
+
+ @({
+ git checkout master
+ git merge my-branch
+ # Possibly run ``regression-everything'' before the final push just below.
+ git push https://github.com/acl2/acl2 master
+ })</li>
+ </ol>
+ ")
 
 (defxdoc developers-guide-utilities
   :parents (developers-guide)
@@ -2718,10 +2835,3 @@
 (xdoc::order-subtopics developers-guide
                        ()
                        t)
-
-; The following forms cause certification to save a fancy manual.
-; (include-book "xdoc/save" :dir :system)
-; (make-event (er-progn (xdoc::save "./manual"
-;                                   :error t
-;                                   :broken-links-limit nil)
-;                       (value '(value-triple :manual-built))))

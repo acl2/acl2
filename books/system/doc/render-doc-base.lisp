@@ -55,21 +55,30 @@
       (substitute new old seq)
     seq))
 
-; The following comment was an attempt by Matt K. to deal with a new topic name
-; that contained the square-bracket character: SV::4VEC-[= .  That name was
-; breaking the acl2-doc Emacs browser.  My thought was to escape the square
-; bracket, "...\[..."; but that got messy to handle for both Common Lisp and
-; Emacs Lisp, perhaps in particular because Common Lisp was escaping the "\",
-; and "\\[" didn't help Emacs.  So I'm taking the easy way out instead, simply
-; replacing [ and ] by { and }, respectively.  I'm not happy that
-; rendered-name-acl2-doc already replaces ( and ) by those characters, but {
-; and } seem less likely to cause confusion; in particular, there are topics
-; SV::4VEC-< and SV::4VEC-[= that don't seem much related, so it would be sad
-; to convert the latter to SV::4VEC-<=.  I may revisit this solution in the
-; future; Jared has suggested a possible path to a solution.  For now, since
-; there is only one affected topic, I can live with the simple replacement.
+; Comment from Matt K.
 
-#||
+; Some of the complexity below first arose from an attempt by me to deal with a
+; new topic name that contained the square-bracket character: SV::4VEC-[= .
+; That name was breaking the acl2-doc Emacs browser.  My thought was to escape
+; the square bracket, "...\[..."; but that got messy to handle for both Common
+; Lisp and Emacs Lisp, in particular because Common Lisp was escaping the "\",
+; and "\\[" didn't help Emacs.  So in part, I'm taking the easy way out
+; instead, simply replacing [ and ] by { and }, respectively.  I'm not happy
+; that rendered-name-acl2-doc already replaces ( and ) by those characters, but
+; { and } seem less likely to cause confusion; in particular, there are topics
+; SV::4VEC-< and SV::4VEC-[= that don't seem much related, so it would be sad
+; to convert the latter to SV::4VEC-<=.
+
+; But on 9/26/2018 I noticed a new problem, caused by the following topic
+; (presumably added recently) in community book books/centaur/sv/vl/trunc.lisp.
+
+; VL::|VL-EXPR-IS-{'0,_...}-P|
+
+; Both the single-quote and the comma caused problems, and I see no obvious way
+; to replace each by a character that suggests it (as I did for square
+; brackets, described above).  So I'll replace ' by {{quote}} and , by
+; {{comma}}.
+
 (encapsulate
  ()
 
@@ -119,34 +128,22 @@
                         (- (len x) n)
                       0)))))
 
- (defun escape-char (c name)
+ (defun escape-char (c replacement name)
    (declare (xargs :guard (and (characterp c)
+                               (stringp replacement)
                                (stringp name))))
    (let ((pos (position c name)))
      (cond ((not (mbt (stringp name)))
             "")
            ((null pos)
             name)
-           ((or (eql pos 0)
-                (not (eql (char name (1- pos)) #\\))) ; then escape
+           (t
             (concatenate 'string
                          (subseq name 0 pos)
-                         (coerce (list #\\ c) 'string)
-                         (escape-char c (subseq name (1+ pos) nil))))
-           (t ; don't escape, but keep looking
-            (concatenate 'string
-                         (subseq name 0 (1+ pos))
-                         (escape-char c (subseq name (1+ pos) nil))))))))
-
-(defun rendered-name-acl2-doc (name)
-  (declare (xargs :guard (stringp name)))
-  (substitute? #\_ #\Space
-               (substitute? #\{ #\(
-                            (substitute? #\} #\)
-                                         (escape-char #\[
-                                                      (escape-char #\]
-                                                                   name))))))
-||#
+                         replacement
+                         (escape-char c
+                                      replacement
+                                      (subseq name (1+ pos) nil))))))))
 
 (defun rendered-name-acl2-doc (name)
   (declare (xargs :guard (stringp name)))
@@ -158,7 +155,13 @@
      #\} #\)
      (substitute?
       #\{ #\[
-      (substitute? #\} #\] name))))))
+      (substitute?
+       #\} #\]
+       (escape-char
+        #\' "<<quote>>"
+        (escape-char
+         #\, "<<comma>>"
+         name))))))))
 
 (defattach rendered-name rendered-name-acl2-doc)
 

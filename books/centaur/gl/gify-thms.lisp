@@ -36,7 +36,6 @@
 (include-book "general-objects")
 (include-book "gl-mbe")
 (local (include-book "gtype-thms"))
-(local (include-book "gobjectp-thms"))
 (local (include-book "general-object-thms"))
 (local (include-book "hyp-fix"))
 

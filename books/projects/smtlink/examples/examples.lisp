@@ -28,7 +28,7 @@
     (implies (and (real/rationalp x) (real/rationalp y)
                   (<= (+ (* (/ 9 8) x x) (* y y)) 1)
                   (<=  (x^2-y^2 x y) 1))
-             (<= y (* 3 (- x (/ 17 8)) (- x (/ 17 8)))))
+             (< y (- (* 3 (- x (/ 17 8)) (- x (/ 17 8))) 3)))
     :hints(("Goal"
             :smtlink nil)))
   )
@@ -45,7 +45,7 @@ prove below theorem:</p>
 <p>
 <b><color rgb='#323cbe'>Theorem 1.</color></b>
 @($\\forall x\\in R$) and @($\\forall y \\in R$), if @($ \\frac{9x^2}{8}+y^2 \\le 1$) and
-@($ x^2+y^2 \\le 1$), then @($ y\\le3(x-\\frac{17}{8})^2$).
+@($ x^2-y^2 \\le 1$), then @($ y < 3(x-\\frac{17}{8})^2 - 3$).
 </p>
 </box>
 

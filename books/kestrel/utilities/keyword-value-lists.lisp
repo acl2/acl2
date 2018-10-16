@@ -21,7 +21,7 @@
 
 (define keyword-value-list-to-alist ((kvlist keyword-value-listp))
   :returns (alist alistp)
-  :parents (kestrel-utilities system-utilities)
+  :parents (kestrel-utilities)
   :short "Turn a true list of even length
           with keywords at its even-numbered positions (counting from 0),
           into the corresponding alist."
@@ -63,7 +63,7 @@
                                                      val)
   :returns (kvlist keyword-value-listp
                    :hyp :guard)
-  :parents (kestrel-utilities system-utilities)
+  :parents (kestrel-utilities)
   :short "Make a list satisfying @(tsee keyword-value-listp) by associating
           each member of a true-list of keywords list of keywords with a
           given value."

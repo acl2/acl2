@@ -1,4 +1,4 @@
-; Fixtypes for Unsigned and Signed Bytes -- Instances -- Signed 256-Bit Bytes
+; Fixtype for Signed 256-Bit Bytes
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -14,8 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defbyte 256
+(fty::defbyte 256
   :signed t
   :pred sbyte256p
-  :lpred sbyte256-listp
   :parents (defbyte-instances))

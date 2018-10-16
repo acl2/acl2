@@ -59,6 +59,7 @@
 ;; (acl2::why x86-run-opener-not-ms-not-zp-n)
 ;; (acl2::why x86-fetch-decode-execute-opener)
 ;; (acl2::why get-prefixes-opener-lemma-no-prefix-byte)
+;; (acl2::why get-prefixes-opener-lemma-no-legacy-prefix-but-rex-prefix)
 ;; (acl2::why one-read-with-rb-from-program-at)
 ;; (acl2::why program-at-wb-disjoint)
 

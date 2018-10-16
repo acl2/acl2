@@ -4,16 +4,19 @@
 
 ; Description:
 
-; This file connects xdoc with David Russinoff's online rtl manual,
-; http://russinoff.com/libman/index.html.
+; This file formerly connected xdoc with David Russinoff's online rtl manual.
+; That manual has been replaced by a book, "Formal Verification of
+; Floating-Point Hardware Design: A Mathematical Approach" by
+; David M. Russinoff, at:
+; https://www.springer.com/us/book/9783319955124
 
 (in-package "RTL")
 
 (defconst *rtl-node-tree*
 
-; Nodes from mousing over topics at http://russinoff.com/libman/top.html, with
-; spaces replaced by underscores and commas deleted.  These are organized to
-; match the hierarchy on that page.
+; Nodes from mousing over topics at (the now defunct)
+; http://russinoff.com/libman/top.html, with spaces replaced by underscores and
+; commas deleted.  These are organized to match the hierarchy on that page.
 
 ; We use "/" rather than ":" as a separator so that ACL2-Doc can include the
 ; node, since ACL2-Doc ignores names that ACL2 prints using vertical bars.
@@ -76,8 +79,7 @@
      |Examples|)
     (|SRT Division and Square Root| ; srt.lisp
      |SRT Division and Quotient Digit Selection|
-     |SRT Square Root Extraction|
-     |Square Root Seed Tables|))
+     |SRT Square Root Extraction|))
    |Modeling Algorithms in C++ and ACL2| ; rac.lisp
    |Bibliography|))
 
@@ -166,15 +168,12 @@
 (defmacro defsection-rtl (name parent &rest events)
   (let* ((entry (rtl-node-entry name))
          (section-name (cadr entry))
-         (url (caddr entry)))
+         ;; (url (caddr entry)) ; no longer used
+         )
     `(defsection ,section-name
        :parents (,(if (eq parent 'rtl) 'rtl (cadr (rtl-node-entry parent))))
        :short ,(symbol-name name)
-       :long ,(concatenate 'string
-                           "<p>See also <a href='" url "'>"
-                           "the corresponding section in David Russinoff's "
-                           "online rtl manual</a>.</p>"
-                           (defsection-rtl-defs events))
+       :long ,(defsection-rtl-defs events)
        (deflabel ,(intern-in-package-of-symbol
                    (concatenate 'string (symbol-name name) "$SECTION")
                    name))
@@ -198,22 +197,12 @@
 (defxdoc rtl
   :parents (acl2::bit-vectors acl2::hardware-verification)
   :short "A library of register-transfer logic and computer arithmetic"
-  :long "<p>This @(see documentation) for @(see community-books) residing under
-  @('rtl/rel11') contains links to David Russinoff's online rtl manual, <i><a
-  href='http://russinoff.com/libman/index.html'>A Formal Theory of
-  Register-Transfer Logic and Computer Arithmetic</a></i>.  The organization of
-  that manual is essentially isomorphic to the organization of the tree of
-  documentation topics under this RTL topic.  Each leaf topic of that tree
-  corresponds to a section of a book in the directory @('rtl/rel11/lib/').  The
-  (leaf) topic for a section has two parts: (1) a link near the top of the page
-  points to the corresponding page in the online rtl manual, which contains
-  discussion and proofs written in mathematical English; and (2) the rest of
-  the page displays definitions and theorems from that section.  Note that the
-  books in @('rtl/rel11/lib/') contain additional definitions and theorems not
-  documented here or in the rtl online manual.</p>
-
-  <p>See file @('rtl/rel11/README') for additional information about this
-  library.</p>")
+  :long "<p>This @(see documentation) is based on the directory @('rtl') of the
+  ACL2 @(see community-books).  For a more thorough treatment, see <a
+  href='https://www.springer.com/us/book/9783319955124'>\"Formal Verification
+  of Floating-Point Hardware Design: A Mathematical Approach\"</a> by David
+  M. Russinoff.  See file @('rtl/README') for additional information about this
+  library and its connection to this book.</p>")
 
 (rtl-order-subtopics rtl (|Register-Transfer Logic|
                           |Floating-Point Arithmetic|

@@ -4,32 +4,18 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; October 2018
 
 (in-package "ADE")
 
+(include-book "std/lists/suffixp" :dir :system)
 (include-book "std/lists/take" :dir :system)
-(include-book "std/strings/decimal" :dir :system)
-(include-book "std/strings/istrprefixp" :dir :system)
+
+(local (include-book "std/lists/sets" :dir :system))
 
 (in-theory (disable take-of-len-free))
 
 ;; ======================================================================
-
-; The atoms of the DE description language are symbols.  We define
-; functions to aid their manipulation.
-
-;; (defthm alistp-symbol-listp-symbol-alistp-are-true-listp
-;;   (implies (or (alistp        lst)
-;; 	       (symbol-listp  lst)
-;; 	       (symbol-alistp lst))
-;; 	   (true-listp lst)))
-
-(defun true-list-alistp (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (alistp (car x))
-                (true-list-alistp (cdr x))))))
 
 ; We might further investigate whether we are getting the performance
 ; we expect (which we can observe using the disassemble$ command).
@@ -49,7 +35,7 @@
   (implies (alistp alist)
            (alistp (delete-to-eq name alist))))
 
-;; Update an alist.
+;; Update an alist
 
 (defun update-alist (key datum alist)
   (declare (xargs :guard (alistp alist)))
@@ -89,6 +75,14 @@
 (defthm nfix-of-nat
   (implies (natp x)
            (equal (nfix x) x)))
+
+(defthmd len-0-is-atom
+  (equal (equal (len x) 0)
+         (atom x)))
+
+(defthmd pos-len=>cons
+  (implies (< 0 (len x))
+           (consp x)))
 
 (defthmd open-len
   (and
@@ -152,6 +146,11 @@
                 (< n (len x)))
            (member (nth n x) y)))
 
+(defthmd member-of-true-list-list-is-true-list
+  (implies (and (member e x)
+                (true-list-listp x))
+           (true-listp e)))
+
 (defun pair-with-nil (x)
   (declare (xargs :guard t))
   (if (atom x)
@@ -211,13 +210,13 @@
 	   (symbol-alistp (append x y))))
 
 (defthm symbol-alistp-append-two-pairlis$
-  ;; Proved by TAU.
+  ;; Proved by TAU
   (implies (and (symbol-listp keys)
                 (symbol-alistp wire-alist))
            (symbol-alistp (append (pairlis$ keys values)
                                   wire-alist))))
 
-(defthm strip-cars-of-symbol-alist-is-symbol-listp
+(defthm strip-cars-of-symbol-alist-is-symbol-list
   (implies (symbol-alistp alst)
            (and (symbol-listp (strip-cars alst))
                 (eqlable-listp (strip-cars alst))))
@@ -237,73 +236,6 @@
 (defthm len-strip-cars
   (equal (len (strip-cars x))
          (len x)))
-
-;; ======================================================================
-
-;; BINARY-AND*
-
-(defun binary-and* (x y)
-  (declare (xargs :guard t))
-  (if x y nil))
-
-(defthm booleanp-binary-and*
-  (implies (booleanp y)
-           (booleanp (binary-and* x y)))
-  :rule-classes :type-prescription)
-
-(in-theory (disable binary-and*))
-
-(defund and*-macro (x)
-  (declare (xargs :guard t))
-  (cond ((atom x)
-         t)
-        ((atom (cdr x))
-         (car x))
-        (t
-         `(binary-and* ,(car x)
-                       ,(and*-macro (cdr x))))))
-
-(defmacro and* (&rest args)
-  (and*-macro args))
-
-;; BINARY-OR*
-
-(defun binary-or* (x y)
-  (declare (xargs :guard t))
-  (if x x y))
-
-(defthm booleanp-binary-or*
-  (implies (and (booleanp x)
-                (booleanp y))
-           (booleanp (binary-or* x y)))
-  :rule-classes :type-prescription)
-
-(in-theory (disable binary-or*))
-
-(defund or*-macro (x)
-  (declare (xargs :guard t))
-  (cond ((atom x)
-         nil)
-        ((atom (cdr x))
-         (car x))
-        (t
-         `(binary-or* ,(car x)
-                      ,(or*-macro (cdr x))))))
-
-(defmacro or* (&rest args)
-  (or*-macro args))
-
-;; NOT*
-
-(defun not* (x)
-  (declare (xargs :guard t))
-  (not x))
-
-(defthm booleanp-not*
-  (booleanp (not* x))
-  :rule-classes :type-prescription)
-
-(in-theory (disable not*))
 
 ;; ======================================================================
 
@@ -345,7 +277,7 @@
                 (< n (len x)))
            (not (member (nth n x) y))))
 
-(defthmd disjoint-commutative
+(defthm disjoint-commutative
   (implies (disjoint x y)
            (disjoint y x)))
 
@@ -436,10 +368,8 @@
   :rule-classes :type-prescription)
 
 (defthm nthcdr-of-nthcdr
-  (implies (and (natp m)
-                (natp n))
-           (equal (nthcdr m (nthcdr n l))
-                  (nthcdr (+ m n) l))))
+  (equal (nthcdr m (nthcdr n l))
+         (nthcdr (+ (nfix m) (nfix n)) l)))
 
 (encapsulate
   ()
@@ -497,24 +427,6 @@
                 (<= n2 (len l2)))
            (disjoint (nthcdr n1 l1) (take n2 l2))))
 
-;; POSITION1
-
-(defun position1 (x l)
-  (declare (xargs :guard t))
-  (if (atom l)
-      nil
-    (if (equal x (car l))
-        0
-      (if (position1 x (cdr l))
-          (1+ (position1 x (cdr l)))
-        nil))))
-
-(defthm member==>position1
-  (implies (member x l)
-           (position1 x l)))
-
-(in-theory (disable position1))
-
 ;; TREE-SIZE
 
 (defun tree-size (tree)
@@ -552,7 +464,7 @@
             (equal (- size (tree-size (cdr tree)))
                    (tree-size (car tree))))))
 
-(defthmd make-list-append-tree-crock
+(defthm make-list-append-tree-crock
   (implies (consp tree)
            (equal (make-list (+ (tree-size (car tree))
                                 (tree-size (cdr tree)))
@@ -585,7 +497,7 @@
     (1+ (max (tree-height (car tree))
              (tree-height (cdr tree))))))
 
-;; MAKE-TREE n  -- Makes a tree of size N.
+;; MAKE-TREE n  -- Makes a tree of size N
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
@@ -627,6 +539,29 @@
     (cons (append (car x) y)
           (prepend-rec (cdr x) y))))
 
+(defthm true-list-listp-prepend-rec
+  (implies (true-listp y)
+           (true-list-listp (prepend-rec x y)))
+  :rule-classes :type-prescription)
+
+(defthm member-append-prepend-rec
+  (implies (member e x)
+           (member (append e e1)
+                   (prepend-rec x e1))))
+
+(defthm subsetp-prepend-rec
+  (implies (subsetp x y)
+           (subsetp (prepend-rec x z)
+                    (prepend-rec y z))))
+
+(defthm prepend-rec-of-append
+  (equal (prepend-rec (append x y) e)
+         (append (prepend-rec x e) (prepend-rec y e))))
+
+(defthm prepend-rec-of-prepend-rec
+  (equal (prepend-rec (prepend-rec x y) z)
+         (prepend-rec x (append y z))))
+
 ;; BOOL->BIT
 
 (defun-inline bool->bit (x)
@@ -634,6 +569,20 @@
   (if x 1 0))
 
 (in-theory (disable bool->bit))
+
+;; CONS-REC
+
+(defun cons-rec (e l)
+  (declare (xargs :guard t))
+  (if (atom l)
+      nil
+    (cons (cons e (car l))
+          (cons-rec e (cdr l)))))
+
+(defthm member-cons-cons-rec
+  (implies (member x y)
+           (member (cons e x)
+                   (cons-rec e y))))
 
 ;; GET-FIELD
 
@@ -644,6 +593,121 @@
   (declare (xargs :guard (and (natp n)
                               (true-listp l))))
   (nth n l))
+
+;; INTERLEAVE
+
+(defun interleave (l1 l2)
+  (declare (xargs :guard t
+                  :measure (acl2-count (list l1 l2))))
+  (cond ((and (atom l1) (atom l2)) nil)
+        ((atom l1) (list l2))
+        ((atom l2) (list l1))
+        (t (append (cons-rec (car l1) (interleave (cdr l1) l2))
+                   (cons-rec (car l2) (interleave l1 (cdr l2)))))))
+
+(defthm true-list-listp-interleave
+  (implies (and (true-listp l1)
+                (true-listp l2))
+           (true-list-listp (interleave l1 l2)))
+  :rule-classes :type-prescription)
+
+(defthm subsetp-prepend-rec-interleave-1
+  (implies (and (true-listp y)
+                (true-listp z))
+           (subsetp (prepend-rec (interleave x y) z)
+                    (interleave (append x z) y))))
+
+(defthm subsetp-prepend-rec-interleave-2
+  (implies (and (true-listp x)
+                (true-listp z))
+           (subsetp (prepend-rec (interleave x y) z)
+                    (interleave x (append y z)))))
+
+(defthm member-append-interleave-1
+  (implies (and (member x (interleave y z))
+                (true-listp x1)
+                (true-listp z))
+           (member (append x x1)
+                   (interleave (append y x1) z)))
+  :hints (("Goal"
+           :in-theory (disable subsetp-prepend-rec-interleave-1)
+           :use (:instance subsetp-prepend-rec-interleave-1
+                           (x y)
+                           (y z)
+                           (z x1)))))
+
+(defthm member-append-interleave-2
+  (implies (and (member x (interleave y z))
+                (true-listp x1)
+                (true-listp y))
+           (member (append x x1)
+                   (interleave y (append z x1))))
+  :hints (("Goal"
+           :in-theory (disable subsetp-prepend-rec-interleave-2)
+           :use (:instance subsetp-prepend-rec-interleave-2
+                           (x y)
+                           (y z)
+                           (z x1)))))
+
+(defthm subsetp-prepend-rec-interleave-cons-1
+  (implies (and (equal xe (append x (list e)))
+                (true-listp y))
+           (subsetp (prepend-rec (interleave x y) (cons e z))
+                    (prepend-rec (interleave xe y) z)))
+  :hints (("Goal"
+           :in-theory (disable prepend-rec-of-prepend-rec)
+           :use (:instance prepend-rec-of-prepend-rec
+                           (x (interleave x y))
+                           (y (list e))))))
+
+(defthm subsetp-prepend-rec-interleave-cons-2
+  (implies (and (equal ye (append y (list e)))
+                (true-listp x))
+           (subsetp (prepend-rec (interleave x y) (cons e z))
+                    (prepend-rec (interleave x ye) z)))
+  :hints (("Goal"
+           :in-theory (disable prepend-rec-of-prepend-rec)
+           :use (:instance prepend-rec-of-prepend-rec
+                           (x (interleave x y))
+                           (y (list e))))))
+
+(in-theory (disable interleave))
+
+;; INTERLEAVE-OF
+
+(defun interleave-of (x y z)
+  (declare (xargs :guard t
+                  :measure (acl2-count (list x y))))
+  (cond ((atom z)
+         (and (atom x) (atom y)))
+        ((atom x)
+         (equal y z))
+        ((atom y)
+         (equal x z))
+        (t (or (and (equal (car x) (car z))
+                    (interleave-of (cdr x) y (cdr z)))
+               (and (equal (car y) (car z))
+                    (interleave-of x (cdr y) (cdr z)))))))
+
+(defthm interleave-of-list-fix
+  (implies (and (interleave-of x y z)
+                (true-listp x)
+                (true-listp y))
+           (interleave-of x y (list-fix z))))
+
+(defthm interleave-of-append-1
+  (implies (and (interleave-of x y z)
+                (true-listp z)
+                (true-listp a))
+           (interleave-of (append x a) y (append z a))))
+
+(defthm interleave-of-append-2
+  (implies (and (interleave-of x y z)
+                (true-listp z)
+                (true-listp a))
+           (interleave-of x (append y a) (append z a))))
+
+(in-theory (disable interleave-of))
 
 ;; LEN-1-LISTP
 
@@ -679,6 +743,24 @@
  :rule-classes (:rewrite :type-prescription))
 
 (in-theory (disable len-1-true-listp))
+
+;; POSITION1
+
+(defun position1 (x l)
+  (declare (xargs :guard t))
+  (if (atom l)
+      nil
+    (if (equal x (car l))
+        0
+      (if (position1 x (cdr l))
+          (1+ (position1 x (cdr l)))
+        nil))))
+
+(defthm member==>position1
+  (implies (member x l)
+           (position1 x l)))
+
+(in-theory (disable position1))
 
 ;; REMOVE-LST
 
@@ -717,432 +799,6 @@
   :hints (("Goal" :in-theory (enable make-tree)))
   :rule-classes :type-prescription)
 
-;; ======================================================================
 
-;; Shuffle two lists
-
-(defun insert (x i l)
-  (declare (xargs :guard (natp i)))
-  (cond
-   ((atom l)
-    (list x))
-   ((zp i)
-    (cons x l))
-   (t (cons (car l)
-            (insert x (1- i) (cdr l))))))
-
-(defthm true-listp-insert
-  (implies (true-listp l)
-           (true-listp (insert x i l)))
-  :rule-classes :type-prescription)
-
-(in-theory (disable insert))
-
-(defun insert-up-to-i (x i l)
-  (declare (xargs :guard (natp i)))
-  (if (zp i)
-      (list (insert x i l))
-    (cons (insert x i l)
-          (insert-up-to-i x (1- i) l))))
-
-(defthm true-list-listp-insert-up-to-i
-  (implies (true-listp l)
-           (true-list-listp (insert-up-to-i x i l)))
-  :rule-classes :type-prescription)
-
-(in-theory (disable insert-up-to-i))
-
-(defund cons-or-append (x y)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (if (atom y)
-          (cons x (list y))
-        (cons x y))
-    (if (atom y)
-        (append (list-fix x) (list y))
-      (append (list-fix x) y))))
-
-(defun cons-or-append-at-i (x i l)
-  (declare (xargs :guard (integerp i)))
-  (cond
-   ((atom l)
-    (list x))
-   ((= i 0)
-    (cons (cons-or-append x (car l))
-          (cdr l)))
-   ((not (natp i)) nil)
-   (t (cons (car l)
-            (cons-or-append-at-i x (1- i) (cdr l))))))
-
-(defthm true-listp-cons-or-append-at-i
-  (implies (true-listp l)
-           (true-listp (cons-or-append-at-i x i l)))
-  :rule-classes :type-prescription)
-
-(in-theory (disable cons-or-append-at-i))
-
-(defun cons-or-append-up-to-i (x i l)
-  (declare (xargs :measure (acl2-count (1+ i))
-                  :guard (integerp i)))
-  (if (not (natp i))
-      nil
-    (cons (cons-or-append-at-i x i l)
-          (cons-or-append-up-to-i x (1- i) l))))
-
-(defthm true-list-listp-cons-or-append-up-to-i
-  (implies (true-listp l)
-           (true-list-listp (cons-or-append-up-to-i x i l)))
-  :rule-classes :type-prescription)
-
-(in-theory (disable cons-or-append-up-to-i))
-
-(defund index-of-nested (k x)
-  (declare (xargs :guard t))
-  (cond ((atom x) nil)
-        ((equal k (car x)) 0)
-        ((atom (car x))
-         (b* ((res (index-of-nested k (cdr x))))
-           (and res (1+ res))))
-        (t (b* ((res1 (index-of-nested k (car x))))
-             (if res1
-                 0
-               (b* ((res (index-of-nested k (cdr x))))
-                 (and res (1+ res))))))))
-
-(defun insert-up-to-rec (x y l)
-  (declare (xargs :guard (true-list-listp l)))
-  (if (atom l)
-      nil
-    (b* ((i (index-of-nested y (car l)))
-         (i (if (natp i) i (len (car l)))))
-      (append (append (insert-up-to-i x i (car l))
-                      (cons-or-append-up-to-i x (1- i) (car l)))
-              (insert-up-to-rec x y (cdr l))))))
-
-(defthm true-list-listp-of-append
-  (implies (and (true-list-listp x)
-                (true-list-listp y))
-           (true-list-listp (append x y)))
-  :rule-classes :type-prescription)
-
-(defthm true-list-listp-insert-up-to-rec
-  (implies (true-list-listp l)
-           (true-list-listp (insert-up-to-rec x y l)))
-  :rule-classes :type-prescription)
-
-(in-theory (disable insert-up-to-rec))
-
-(defun shuffle (l1 l2)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2))))
-  (if (atom l1)
-      (list l2)
-    (insert-up-to-rec (car l1) (cadr l1)
-                      (shuffle (cdr l1) l2))))
-
-(defthm true-list-listp-shuffle
-  (implies (and (true-listp l1)
-                (true-listp l2))
-           (true-list-listp (shuffle l1 l2)))
-  :rule-classes :type-prescription)
-
-(in-theory (disable shuffle))
-
-(defun shuffle-rec1 (x y)
-  (declare (xargs :guard (and (true-list-listp x)
-                              (true-listp y))))
-  (if (atom x)
-      nil
-    (append (shuffle (car x) y)
-            (shuffle-rec1 (cdr x) y))))
-
-(defun shuffle-rec2 (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-list-listp y))))
-  (if (atom y)
-      nil
-    (append (shuffle x (car y))
-            (shuffle-rec2 x (cdr y)))))
-
-;; Compute a powerset
-
-(defund combine (x y)
-  (declare (xargs :guard t))
-  (list y (cons x y)))
-
-(defund combine-rec (x y)
-  (declare (xargs :guard (true-listp y)))
-  (if (atom y)
-      (list (list x))
-    (append (combine x (car y))
-            (combine-rec x (cdr y)))))
-
-(defund no-empty-powerset (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (combine-rec (car x)
-                 (no-empty-powerset (cdr x)))))
-
-(defund powerset (x)
-  (declare (xargs :guard t))
-  (cons nil (no-empty-powerset x)))
-
-;; ======================================================================
-
-;; Utility functions for indices.
-
-(defun str-append-symbol-underscore (s)
-  (declare (xargs :guard (symbolp s)))
-  (string-append (symbol-name s) "_"))
-
-(defun append-symbol-string (s str)
-  (declare (xargs :guard (and (symbolp s)
-                              (stringp str))))
-  (string-append (str-append-symbol-underscore s)
-                 str))
-
-(defun si (s idx)
-  (declare (xargs :guard (and (symbolp s)
-                              (natp idx))))
-  (intern$ (append-symbol-string s (str::natstr (nfix idx)))
-           "ADE"))
-
-(defun sis (s start-idx count)
-  (declare (xargs :guard (and (symbolp s)
-                              (natp start-idx)
-                              (natp count))))
-  (if (zp count)
-      nil
-    (cons (si s start-idx)
-          (sis s (1+ start-idx) (1- count)))))
-
-(defthm consp-sis
-  (implies (posp n)
-           (consp (sis s m n)))
-  :hints (("Goal" :expand (sis s m n)))
-  :rule-classes :type-prescription)
-
-(local
- (defthm symbol-inequality
-   (implies (and (symbolp s1)
-                 (symbolp s2)
-                 (not (equal (symbol-name s1)
-                             (symbol-name s2))))
-            (not (equal s1 s2)))))
-
-(local
- (defthm intern$-diff-strings
-   (implies (and (stringp str1)
-                 (stringp str2)
-                 (not (equal str1 str2)))
-            (not (equal (intern$ str1 "ADE")
-                        (intern$ str2 "ADE"))))
-   :hints (("Goal"
-            :in-theory (disable (pkg-imports)
-                                acl2-package)))))
-
-(local
- (defthm not-prefixp-not-equal
-   (implies (not (prefixp x y))
-            (not (equal x y)))
-   :hints (("Goal" :in-theory (enable prefixp)))))
-
-(defthm prefixp-append-relation-1
-  (implies (and (not (prefixp x y))
-                (not (prefixp y x)))
-           (and (not (prefixp (append x a) (append y b)))
-                (not (prefixp (append y b) (append x a)))))
-  :hints (("Goal" :in-theory (enable prefixp))))
-
-(defthm prefixp-append-relation-2
- (implies (not (prefixp x y))
-          (not (prefixp (append x a) y)))
- :hints (("Goal" :in-theory (enable prefixp))))
-
-(local
- (defthm istrprefixp-prefixp-explode-relation
-   (implies (not (str::istrprefixp str1 str2))
-            (not (prefixp (explode str1) (explode str2))))))
-
-(defthm istrprefixp-string-append-relation-1
-  (implies (and (not (str::istrprefixp str1 str2))
-                (not (str::istrprefixp str2 str1)))
-           (not (equal (string-append str1 str3)
-                       (string-append str2 str4))))
-  :hints (("Goal"
-           :in-theory (disable istrprefixp-prefixp-explode-relation)
-           :use (istrprefixp-prefixp-explode-relation
-                 (:instance istrprefixp-prefixp-explode-relation
-                            (str1 str2)
-                            (str2 str1))))))
-
-(defthm append-diff-symbols-string-1
-  (implies (and (not (str::istrprefixp (str-append-symbol-underscore s1)
-                                       (str-append-symbol-underscore s2)))
-                (not (str::istrprefixp (str-append-symbol-underscore s2)
-                                       (str-append-symbol-underscore s1))))
-           (not (equal (append-symbol-string s1 str1)
-                       (append-symbol-string s2 str2))))
-  :hints (("Goal"
-           :in-theory (disable str::istrprefixp
-                               string-append))))
-
-(defthm istrprefixp-string-append-relation-2
-  (implies (not (str::istrprefixp str2 str1))
-           (not (equal str1
-                       (string-append str2 str3)))))
-
-(defthm append-diff-symbols-string-2
-  (implies (not (str::istrprefixp (str-append-symbol-underscore s2)
-                                  (symbol-name s1)))
-           (not (equal (symbol-name s1)
-                       (append-symbol-string s2 str2))))
-  :hints (("Goal"
-           :in-theory (disable str::istrprefixp
-                               string-append))))
-
-(in-theory (disable str-append-symbol-underscore
-                    append-symbol-string))
-
-(defthm si-of-diff-symbols-1
-  (implies (and (not (str::istrprefixp (str-append-symbol-underscore s1)
-                                       (str-append-symbol-underscore s2)))
-                (not (str::istrprefixp (str-append-symbol-underscore s2)
-                                       (str-append-symbol-underscore s1))))
-           (not (equal (si s1 m) (si s2 n)))))
-
-(defthm si-of-diff-symbols-2
-  (implies (not (str::istrprefixp (str-append-symbol-underscore s2)
-                                  (symbol-name s1)))
-           (not (equal s1 (si s2 n))))
-  :hints (("Goal" :in-theory (enable append-symbol-string))))
-
-(defthm append-symbol-diff-strings
-  (implies (and (stringp str1)
-                (stringp str2)
-                (not (equal str1 str2)))
-           (not (equal (append-symbol-string s str1)
-                       (append-symbol-string s str2))))
-  :hints (("Goal"
-           :in-theory (enable append-symbol-string))))
-
-(defthm si-of-diff-idxes
-  (implies (and (natp m)
-                (natp n)
-                (not (equal m n)))
-           (not (equal (si s m) (si s n)))))
-
-(in-theory (disable si))
-
-(defthm si-sis-diff-symbols-1
-  (implies (and (not (str::istrprefixp (str-append-symbol-underscore s1)
-                                       (str-append-symbol-underscore s2)))
-                (not (str::istrprefixp (str-append-symbol-underscore s2)
-                                       (str-append-symbol-underscore s1))))
-           (not (member (si s1 k) (sis s2 m n)))))
-
-(defthm si-sis-diff-symbols-2
-  (implies (not (str::istrprefixp (str-append-symbol-underscore s2)
-                                  (symbol-name s1)))
-           (not (member s1 (sis s2 m n)))))
-
-(defthm si-sis-diff-idxes
-  (implies (and (natp k)
-                (natp m)
-                (< k m))
-           (not (member (si s k) (sis s m n)))))
-
-(defthm len-sis
-  (equal (len (sis s m n))
-         (nfix n)))
-
-(defthm no-duplicatesp-sis
-  (implies (natp m)
-           (no-duplicatesp (sis s m n))))
-
-(defthm sis-of-singleton
-  (equal (sis s m 1)
-         (list (si s m)))
-  :hints (("Goal" :expand (sis s m 1))))
-
-(defthm disjoint-sis-diff-syms
-  (implies (and (not (str::istrprefixp (str-append-symbol-underscore s1)
-                                       (str-append-symbol-underscore s2)))
-                (not (str::istrprefixp (str-append-symbol-underscore s2)
-                                       (str-append-symbol-underscore s1))))
-           (disjoint (sis s1 m1 n1) (sis s2 m2 n2))))
-
-(defthm disjoint-sis-same-sym-1
-  (implies (and (natp i)
-                (natp m)
-                (<= (+ i j) m))
-           (disjoint (sis s i j) (sis s m n))))
-
-(defthm disjoint-sis-same-sym-2
-  (implies (and (natp i)
-                (natp m)
-                (<= (+ m n) i))
-           (disjoint (sis s i j) (sis s m n)))
-  :hints (("Goal" :in-theory (enable disjoint-commutative))))
-
-(defthm si-member-sis
-  (implies (and (natp m)
-                (natp n)
-                (natp i)
-                (<= m i)
-                (< i (+ m n)))
-           (member (si s i) (sis s m n)))
-  :hints (("Goal"
-           :expand ((sis s 0 n)
-                    (sis s i 1)
-                    (sis s i n)))))
-
-(defthm sis-subset-sis
-  (implies (and (natp m)
-                (natp n)
-                (natp i)
-                (<= m i)
-                (<= (+ i j) (+ m n)))
-           (subsetp (sis s i j)
-                    (sis s m n))))
-
-(defthmd si-is-nth-of-sis
-  (implies (and (natp m)
-                (natp n)
-                (natp i)
-                (<= m i)
-                (< i (+ m n)))
-           (equal (si s i)
-                  (nth (- i m) (sis s m n))))
-  :hints (("Goal"
-           :expand ((sis s 0 n)
-                    (sis s i 1)
-                    (sis s i n)))))
-
-(defthmd nth-of-sis-is-si
-  (implies (and (natp m)
-                (natp n)
-                (natp i)
-                (<= m i)
-                (< i (+ m n)))
-           (equal (nth (- i m) (sis s m n))
-                  (si s i)))
-  :hints (("Goal" :use si-is-nth-of-sis)))
-
-(defthmd sis-of-subset
-  (implies (and (natp m)
-                (natp n)
-                (natp i)
-                (<= m i)
-                (<= (+ i j) (+ m n)))
-           (equal (sis s i j)
-                  (take j (nthcdr (- i m) (sis s m n)))))
-  :hints (("Goal"
-           :in-theory (enable nth-of-sis-is-si
-                              car-nthcdr
-                              cdr-nthcdr))))
-
-(in-theory (disable sis))
 
 

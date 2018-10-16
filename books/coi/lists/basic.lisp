@@ -314,6 +314,7 @@
 ;; unaffected if we call fix on their arguments.
 
 ; [Jared] unifying this with std/lists/list-fix
+; [Mihir] unifying this with true-list-fix (built-in)
 
 ;; (defund fix (x)
 ;;   (declare (type t x))
@@ -322,8 +323,8 @@
 ;;             (fix (cdr x)))
 ;;     nil))
 
-(defmacro fix (x) `(acl2::list-fix ,x))
-(add-macro-alias fix acl2::list-fix)
+(defmacro fix (x) `(acl2::true-list-fix ,x))
+(add-macro-alias fix acl2::true-list-fix)
 
 
 (defthm fix-iff-consp

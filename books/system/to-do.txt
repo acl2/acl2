@@ -26,6 +26,72 @@ questions.
 This might involve fixing a bunch of community books, perhaps by
 adding a book of lemmas that could also help proprietary books.
 
+Here is a relevant email thread, added by Matt with permission from
+Mihir.
+
+From: Matt Kaufmann <kaufmann@cs.utexas.edu>
+To: acl2-devel@utlists.utexas.edu
+In-Reply-To: <t4dr2h4tohm.fsf@ginger.cs.utexas.edu> (message from Matt Kaufmann on Fri, 05 Oct 2018 10:14:13 -0500)
+Date: Fri, 05 Oct 2018 10:22:23 -0500
+Subject: Re: [acl2-devel] redefining take
+
+P.S. Although I'd likely only want to be involved in vetting this
+work, this could be a great task for getting the acl2-devel community
+involved.  That could dovetail nicely with my goal for the two
+developer's workshops (last year and next month): to encouragement the
+evolution of that community.
+
+-- Matt
+Matt Kaufmann <kaufmann@cs.utexas.edu> writes:
+
+> Hi, Mihir --
+>
+> This all seems very reasonable to me.  Please feel free to add that
+> note to the to-do list.  Better yet, add this email thread, or ask me
+> to do so.
+>
+> As always, if you or someone wants to take this on, do check with me
+> first.  I'll probably respond that it's a great idea, but sufficiently
+> low priority that I don't want to spend time on it other than to vet
+> the proposed solution (and to go through my part of the process in
+> :doc developers-guide-maintenance).  I'm pretty sure you agree that
+> there will be likely some work needed for the books, even beyond your
+> own library of lemmas.  And for maintainers of books outside the
+> community books, it will probably be important to include a definition
+> rule somewhere that provides the old logical definition of take.
+>
+> A more ambitious project would be to try to remove the
+> #-acl2-loop-only code in take in favor of :exec code in an mbe.  This
+> would include experiments in at least CCL and SBCL to check
+> performance.
+>
+> Thanks --
+> -- Matt
+> Mihir Mehta <mihir@cs.utexas.edu> writes:
+>
+>> Hi folks,
+>>
+>> I see that the developers' to-do list (books/system/to-do.txt) has this
+>> item.
+>> --
+>> {{Consider redefining take using mbe, so that the :logic has a standard
+>> recursion.}}
+>> --
+>> There happens to be a :definition rule, take-redefinition, in
+>> books/std/lists/take.lisp. Do you all think that using this recursive
+>> definition for the :logic part of take would make sense? If yes, perhaps
+>> it would be good to note this in the to-do list for whoever takes it on.
+>>
+>> Speaking for myself, I've developed a library of lemmas about first-n-ac
+>> (which is currently used for the :logic of take) and I wouldn't be
+>> particularly adversely affected. In fact, I might be a little better
+>> off, since my books which include the Kestrel string libraries have take
+>> itself disabled in the theory and take-redefinition enabled, with
+>> unexpected results sometimes. Unifying these two would probably help
+>> others in the same way.
+>>
+>> Mihir.
+
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
 {{Perhaps avoid iteration for guessing type-prescriptions for non-rec functions.}}
@@ -510,5 +576,75 @@ on the applicability of the :LINEAR rule.
 [[.. non-warning output elided ..]]
 ******** FAILED ********
 ACL2 !>
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Consider an alias or name change: VALUE-EVENT for VALUE-TRIPLE.}}
+
+The name "VALUE-EVENT" seems more descriptive than "VALUE-TRIPLE".
+Such a change might well not be sufficiently important to be worth
+carrying out -- it should only be done so by someone who personally
+feels that this is important, and will deal with all details that
+arise from such a change.
+
+This change is trivial at some level, but it could affect a lot of
+books beyond just the community books.  So it seems important to query
+the community before changing VALUE-TRIPLE to VALUE-EVENT, or more
+likely, define one of them to be a macro for the other.
+
+Before anyone embarks on this, they should read the email thread
+below.
+
+From: Alessandro Coglio <coglio@kestrel.edu>
+Subject: Re: Value-triple => value-event ?
+Date: Sat, 29 Sep 2018 13:22:02 -0700
+To: Kaufmann Matt <kaufmann@cs.utexas.edu>
+In-Reply-To: <t4dy3bk8nma.fsf@ginger.cs.utexas.edu>
+
+Hi Matt, I understand. Adding it to the developer to-do list seems like a good idea to me. Thanks.
+
+
+
+> On Sep 29, 2018, at 6:00 AM, Matt Kaufmann <kaufmann@cs.utexas.edu> wrote:
+>
+> Hi, Alessandro --
+>
+> Yes, I think the "triple" in "value-triple" is intended to emphasize
+> that error triples are involved.  But I agree that "value-event" is a
+> more descriptive [hence, better] name.  What I'm not sure of is
+> whether it's sufficiently better to bother with the change.
+>
+> It might be very easy to make the change, by making value-event a
+> macro:
+>
+> (defmacro value-event (&rest args)
+>  `(value-triple ,@args))
+>
+> However, the :doc and, perhaps, error messages, would then still say
+> "value-triple", so that wouldn't help much.  Things could be the other
+> way around: all occurrences in the sources of value-triple could be
+> changed to value-event, and then:
+>
+> (defmacro value-triple (&rest args)
+>  `(value-event ,@args))
+>
+> I don't know if books changes would be needed.
+>
+> But even though I like your suggested "value-event" better than
+> "value-triple", I don't know that it's sufficiently better to warrant
+> the time spent on the changes, as there could easily be issues that
+> haven't occurred to me.  I suppose that I could put this email thread
+> into books/system/to-do.txt as a developer task, in case anyone wants
+> to take it on.  What do you think?
+>
+> Thanks --
+> -- Matt
+> Alessandro Coglio <coglio@kestrel.edu> writes:
+>
+>> Hi Matt,
+>>
+>> Please feel free to ignore this idea, but I was wondering if 'value-event' may be a more descriptive name for what is currently called 'value-triple'. In a sense, this function “lifts” an arbitrary value to an event. I’m sure there’s a reason for the ‘triple’ of ‘value-triple’, but it’s not immediately evident to me; I looked at value-triple-fn and I see that it uses the value function to return error triples, so maybe that’s the rationale?
+>>
+>> Thanks.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>

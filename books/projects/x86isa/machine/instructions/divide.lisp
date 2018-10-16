@@ -44,9 +44,9 @@
 ;; ======================================================================
 
 (include-book "divide-spec"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "../decoding-and-spec-utils"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
@@ -57,18 +57,18 @@
 (local
  (defthm x86-div-guard-proof-helper-1
    (implies (n16p rr16-a)
-            (equal (logand 18446462598732906495 rr16-a)
-                   rr16-a))
+	    (equal (logand 18446462598732906495 rr16-a)
+		   rr16-a))
    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))))
 
 (local
  (defthm x86-div-guard-proof-helper-2
    (implies (forced-and (n08p val08-1)
-                        (n08p val08-2))
-            (equal
-             (logior (ash val08-2 8)
-                     (logand 4294902015 val08-1))
-             (logior val08-1 (ash val08-2 8))))
+			(n08p val08-2))
+	    (equal
+	     (logior (ash val08-2 8)
+		     (logand 4294902015 val08-1))
+	     (logior val08-1 (ash val08-2 8))))
    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))))
 
 (def-inst x86-div
@@ -76,10 +76,10 @@
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip))
-                :hints (("Goal" :in-theory (e/d () (force (force))))))
+			       (canonical-address-p temp-rip))
+		:hints (("Goal" :in-theory (e/d () (force (force))))))
 
-  :guard (equal (mrm-reg modr/m) 6)
+  :guard (equal (modr/m->reg modr/m) 6)
 
   :long
   "<h4>Op/En: M</h4>
@@ -95,92 +95,88 @@
 
   (b* ((ctx 'x86-div)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
-       (p2 (prefixes-slice :seg prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (select-byte-operand (equal opcode #xF6))
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
+	(select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg0
-            reg/mem
-            (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte 64) ?addr)
-            x86)
-        (x86-operand-from-modr/m-and-sib-bytes$
-         proc-mode #.*gpr-access* reg/mem-size inst-ac?
-         nil ;; Not a memory pointer operand
-         seg-reg p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+	    reg/mem
+	    (the (unsigned-byte 3) increment-RIP-by)
+	    (the (signed-byte 64) ?addr)
+	    x86)
+	(x86-operand-from-modr/m-and-sib-bytes$
+	 proc-mode #.*gpr-access* reg/mem-size inst-ac?
+	 nil ;; Not a memory pointer operand
+	 seg-reg p4? temp-rip rex-byte r/m mod sib
+	 0 ;; No immediate operand
+	 x86))
        ((when flg0)
-        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+	(!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((when (equal reg/mem 0))
-        (!!fault-fresh :de nil :DE-exception-source-operand-zero reg/mem)) ;; #DE
+	(!!fault-fresh :de nil :DE-exception-source-operand-zero reg/mem)) ;; #DE
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+	(add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment--error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+	(!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (rAX (rgfi-size
-             (if select-byte-operand 2 reg/mem-size)
-             *rax* rex-byte x86))
+	     (if select-byte-operand 2 reg/mem-size)
+	     *rax* rex-byte x86))
        (rDX (if select-byte-operand
-                0
-              (rgfi-size reg/mem-size *rdx* rex-byte x86)))
+		0
+	      (rgfi-size reg/mem-size *rdx* rex-byte x86)))
 
        ;; Computing the result:
        (dividend (if select-byte-operand
-                     rAX
-                   (mbe :logic (part-install rDX rAX
-                                             :low   (ash reg/mem-size 3)
-                                             :width (ash reg/mem-size 4))
-                        :exec (logior (ash rDX (ash reg/mem-size 3)) rAX))))
+		     rAX
+		   (mbe :logic (part-install rDX rAX
+					     :low   (ash reg/mem-size 3)
+					     :width (ash reg/mem-size 4))
+			:exec (logior (ash rDX (ash reg/mem-size 3)) rAX))))
        ((mv overflow? quotient remainder)
-        (div-spec reg/mem-size dividend reg/mem))
+	(div-spec reg/mem-size dividend reg/mem))
 
        ;; Updating the x86 state:
 
        ((when overflow?)
-        (!!ms-fresh :unsigned-divide-error-overflow
-                    (cons 'dividend  dividend)
-                    (cons 'divisor   reg/mem)))
+	(!!ms-fresh :unsigned-divide-error-overflow
+		    (cons 'dividend  dividend)
+		    (cons 'divisor   reg/mem)))
 
        (x86
-        (case reg/mem-size
+	(case reg/mem-size
 
-          (1 ;; (AX div r/m8), AH := Remainder, AL := Quotient
-           (let* ((result
-                   (mbe :logic (part-install remainder quotient
-                                             :low 8 :width 8)
-                        :exec (logior (ash (the (unsigned-byte 8)
-                                             remainder) 8)
-                                      (the (unsigned-byte 8) quotient))))
-                  (x86 (!rgfi-size 2 *rax* result rex-byte x86)))
-             x86))
+	  (1 ;; (AX div r/m8), AH := Remainder, AL := Quotient
+	   (let* ((result
+		   (mbe :logic (part-install remainder quotient
+					     :low 8 :width 8)
+			:exec (logior (ash (the (unsigned-byte 8)
+					     remainder) 8)
+				      (the (unsigned-byte 8) quotient))))
+		  (x86 (!rgfi-size 2 *rax* result rex-byte x86)))
+	     x86))
 
-          (otherwise
-           ;; (DX:AX   div r/m16), DX := Remainder, AX := Quotient
-           ;; (EDX:EAX div r/m8), EDX := Remainder, EAX := Quotient
-           ;; (RDX:RAX div r/m8), RDX := Remainder, RAX := Quotient
-           (let* ((x86 (!rgfi-size reg/mem-size *rax* quotient  rex-byte x86))
-                  (x86 (!rgfi-size reg/mem-size *rdx* remainder rex-byte x86)))
-             x86))))
+	  (otherwise
+	   ;; (DX:AX   div r/m16), DX := Remainder, AX := Quotient
+	   ;; (EDX:EAX div r/m8), EDX := Remainder, EAX := Quotient
+	   ;; (RDX:RAX div r/m8), RDX := Remainder, RAX := Quotient
+	   (let* ((x86 (!rgfi-size reg/mem-size *rax* quotient  rex-byte x86))
+		  (x86 (!rgfi-size reg/mem-size *rdx* remainder rex-byte x86)))
+	     x86))))
 
        ;; All the flags are undefined.
        (x86 (!flgi-undefined #.*cf* x86))
@@ -202,10 +198,10 @@
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip))
-                :hints (("Goal" :in-theory (e/d () (force (force))))))
+			       (canonical-address-p temp-rip))
+		:hints (("Goal" :in-theory (e/d () (force (force))))))
 
-  :guard (equal (mrm-reg modr/m) 7)
+  :guard (equal (modr/m->reg modr/m) 7)
 
   :long
   "<h4>Op/En: M</h4>
@@ -222,91 +218,87 @@
 
   (b* ((ctx 'x86-idiv)
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
-
-       (p2 (prefixes-slice :seg prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (select-byte-operand (equal opcode #xF6))
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
+	(select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        (inst-ac? t)
        ((mv flg0
-            reg/mem
-            (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte 64) ?addr)
-            x86)
-        (x86-operand-from-modr/m-and-sib-bytes$
-         proc-mode #.*gpr-access* reg/mem-size inst-ac?
-         nil ;; Not a memory pointer operand
-         seg-reg p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
+	    reg/mem
+	    (the (unsigned-byte 3) increment-RIP-by)
+	    (the (signed-byte 64) ?addr)
+	    x86)
+	(x86-operand-from-modr/m-and-sib-bytes$
+	 proc-mode #.*gpr-access* reg/mem-size inst-ac?
+	 nil ;; Not a memory pointer operand
+	 seg-reg p4? temp-rip rex-byte r/m mod sib
+	 0 ;; No immediate operand
+	 x86))
        ((when flg0)
-        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+	(!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((when (equal reg/mem 0))
-        (!!fault-fresh :de nil :DE-exception-source-operand-zero reg/mem)) ;; #DE
+	(!!fault-fresh :de nil :DE-exception-source-operand-zero reg/mem)) ;; #DE
 
        ((mv flg (the (signed-byte #.*max-linear-address-size+1*) temp-rip))
-        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+	(add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+	(!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        (rAX (rgfi-size
-             (if select-byte-operand 2 reg/mem-size)
-             *rax* rex-byte x86))
+	     (if select-byte-operand 2 reg/mem-size)
+	     *rax* rex-byte x86))
        (rDX (if select-byte-operand
-                0
-              (rgfi-size reg/mem-size *rdx* rex-byte x86)))
+		0
+	      (rgfi-size reg/mem-size *rdx* rex-byte x86)))
 
        (dividend (if select-byte-operand
-                     rAX
-                   (mbe :logic (part-install rDX rAX
-                                             :low   (ash reg/mem-size 3)
-                                             :width (ash reg/mem-size 4))
-                        :exec (logior (ash rDX (ash reg/mem-size 3)) rAX))))
+		     rAX
+		   (mbe :logic (part-install rDX rAX
+					     :low   (ash reg/mem-size 3)
+					     :width (ash reg/mem-size 4))
+			:exec (logior (ash rDX (ash reg/mem-size 3)) rAX))))
 
        ;; Compute the result
        ((mv overflow? quotient remainder)
-        (idiv-spec reg/mem-size dividend reg/mem))
+	(idiv-spec reg/mem-size dividend reg/mem))
 
        ((when overflow?)
-        (!!ms-fresh :unsigned-divide-error-overflow
-                    (cons 'dividend  dividend)
-                    (cons 'divisor   reg/mem)))
+	(!!ms-fresh :unsigned-divide-error-overflow
+		    (cons 'dividend  dividend)
+		    (cons 'divisor   reg/mem)))
 
        (x86
-        (case reg/mem-size
+	(case reg/mem-size
 
-          (1 ;; (AX div r/m8), AH := Remainder, AL := Quotient
-           (let* ((result
-                   (mbe :logic (part-install remainder quotient
-                                             :low 8 :width 8)
-                        :exec (logior (ash (the (unsigned-byte 8)
-                                             remainder) 8)
-                                      (the (unsigned-byte 8) quotient))))
-                  (x86 (!rgfi-size 2 *rax* result rex-byte x86)))
-             x86))
+	  (1 ;; (AX div r/m8), AH := Remainder, AL := Quotient
+	   (let* ((result
+		   (mbe :logic (part-install remainder quotient
+					     :low 8 :width 8)
+			:exec (logior (ash (the (unsigned-byte 8)
+					     remainder) 8)
+				      (the (unsigned-byte 8) quotient))))
+		  (x86 (!rgfi-size 2 *rax* result rex-byte x86)))
+	     x86))
 
-          (otherwise
-           ;; (DX:AX   idiv r/m16), DX := Remainder, AX := Quotient
-           ;; (EDX:EAX idiv r/m8), EDX := Remainder, EAX := Quotient
-           ;; (RDX:RAX idiv r/m8), RDX := Remainder, RAX := Quotient
-           (let* ((x86 (!rgfi-size reg/mem-size *rax* quotient  rex-byte x86))
-                  (x86 (!rgfi-size reg/mem-size *rdx* remainder rex-byte x86)))
-             x86))))
+	  (otherwise
+	   ;; (DX:AX   idiv r/m16), DX := Remainder, AX := Quotient
+	   ;; (EDX:EAX idiv r/m8), EDX := Remainder, EAX := Quotient
+	   ;; (RDX:RAX idiv r/m8), RDX := Remainder, RAX := Quotient
+	   (let* ((x86 (!rgfi-size reg/mem-size *rax* quotient  rex-byte x86))
+		  (x86 (!rgfi-size reg/mem-size *rdx* remainder rex-byte x86)))
+	     x86))))
 
        ;; All the flags are undefined.
        (x86 (!flgi-undefined #.*cf* x86))

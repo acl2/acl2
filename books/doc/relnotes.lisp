@@ -45,6 +45,9 @@
 (include-book "kestrel/apt/portcullis" :dir :system)
 (include-book "kestrel/soft/portcullis" :dir :system)
 (include-book "kestrel/abnf/portcullis" :dir :system)
+(include-book "kestrel/java/portcullis" :dir :system)
+(include-book "kestrel/ethereum/portcullis" :dir :system)
+(include-book "kestrel/bitcoin/portcullis" :dir :system)
 
 ; Please note:
 ;
@@ -75,6 +78,160 @@
 
  <p>The current version of ACL2 is the value of the constant @('(@
  acl2-version)').</p>")
+
+(defxdoc note-8-2-books
+
+; Please add information about your library in the appropriate
+; category below --- the category title is enclosed in <h3>..</h3>
+; tags (of course, feel free to add a new category if needed).  To
+; ensure consistency with the style of previous book release doc
+; topics, please follow the following convention:
+
+;  <h4>Your Library Title</h4>
+;  <p>Details go here.</p>
+
+; If you are stuck, see comments in previous (defxdoc note-xxx-books ...).
+
+  :parents (note-8-2 release-notes-books)
+  :short "Release notes for the ACL2 Community Books for ACL2 8.2"
+
+  :long "<p>The following is a brief summary of changes made to the @(see
+ community-books) between the releases of ACL2 8.1 and 8.2.</p>
+
+ <p>See also @(see note-8-2) for the changes made to ACL2 itself.  For
+ additional details, you may also see the raw <a
+ href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
+
+ <h3>New Libraries</h3>
+
+ <h4><see topic='@(url java::java)'>Java</see></h4>
+
+ <p>Added a library for Java-related formalizations and tools, including:</p>
+
+ <ul>
+
+ <li><see topic='@(url java::aij)'>AIJ (<b>A</b>CL2 <b>I</b>n
+ <b>J</b>ava)</see>, a deep embedding in Java of an executable,
+ side-effect-free, non-stobj-accessing subset of the ACL2 language without
+ guards.</li>
+
+ <li><see topic='@(url java::atj)'>ATJ (<b>A</b>CL2 <b>T</b>o
+ <b>J</b>ava)</see>, a simple Java code generator that turns ACL2 functions
+ into AIJ representations that are evaluated by the AIJ interpreter.</li>
+
+ </ul>
+
+ <h4>Other</h4>
+
+ <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
+ for the Graphviz @('.dot') file syntax and a printer for that syntax.</p>
+
+ <h3>Changes to Existing Libraries</h3>
+
+ <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
+
+ <p>Finished adding support for 32-bit application-level execution for
+ non-floating-point instructions.</p>
+
+ <p>Added support for enabling/disabling machine features that depend on CPUID
+ flags.</p>
+
+ <p>Detection of many decode-time exceptions is now done during opcode
+ dispatch, as opposed to inside the instruction semantic functions.  This not
+ only lets us catch exceptions early, but also allows us to specify them
+ even if the semantic functions themselves are missing.</p>
+
+ <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
+
+ <p>Improved the documentation of the Ethereum library.</p>
+
+ <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
+
+ <p>Improved the documentation of the Bitcoin library.</p>
+
+ <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
+
+ <p>Added @(tsee ensure-string), an error-checking function for strings.</p>
+
+ <h4>Filesystem Books</h4>
+
+ <p>The filesystem books @('[books]/projects/filesystems/') have been
+ substantially expanded; in particular, they now contain a new model which
+ faithfully represents the state of a FAT32 disk image. More details about this
+ work are available in the paper <i>Formalising Filesystems in the ACL2 Theorem
+ Prover: an Application to FAT32</i>, to appear in the proceedings of
+ ACL2-2018.</p>
+
+ <h4>System Utilities</h4>
+
+ <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
+ inside @('lambda') (@('let')) bodies.</p>
+
+ <p>Several files @('[books]/kestrel/utilities/*.lisp') that contain system
+ utilities have been moved to the subdirectory
+ @('[books]/kestrel/utilities/system/').</p>
+
+ <h4>Typed List Utilities</h4>
+
+ <p>Refactored the old file
+ @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
+ under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
+
+ <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
+
+ <p>Added new lemmas and generalized some existing lemmas.</p>
+
+ <h4>@(csee std/io)</h4>
+
+ <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
+ byte-combining libraries</see>.</p>
+
+ <h4>Digits in Arbitrary Bases</h4>
+
+ <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
+ moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
+ and renamed.  The uses of the macro to generate return type theorems for
+ specific power-of-2 bases have been split into several files so that they can
+ be included individually as needed.</p>
+
+ <h4>FTY Type Definition Library</h4>
+
+ <p>Added an option @(':non-emptyp') to @('fty::deflist') and @('std::deflist')
+ to define list types that must contain at least one element.</p>
+
+ <p>Added a book @('[books]/centaur/fty/typegraph.lisp') containing a utility that
+ writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
+
+ <h4>Other</h4>
+
+ <p>The utility, @(tsee directed-untranslate), has been improved in several
+ ways, including more complete handling of @(tsee mv-let), @(tsee let*), @(tsee
+ b*), @(tsee progn$), @(tsee er), @(tsee cw), and @(tsee mbe).</p>
+
+ <p>For the event macro @(tsee orelse*), the default for the @(':expansion?p')
+ argument has been changed from @('nil') to @('t'), for consistency with @(tsee
+ orelse).</p>
+
+ <p>The definition of function @(see list-fix) from
+ @('\"books/std/lists/list-fix.lisp\"') has been incorporated into the ACL2
+ sources in a way that minimizes changes to existing books.  See @(see
+ note-8-2) for details.</p>
+
+ <p>The @('acl2::defbyte') macro, which generated fixtypes and additional
+ theorems for both bytes and lists of bytes, has been split into two macros
+ @(tsee fty::defbyte), which generates a fixtype and some additional theorems
+ for bytes, and @(tsee fty::defbytelist), which generates a fixtype and some
+ additional theorems for lists of byte.  See the documentation for details.</p>
+
+ <h3>Licensing Changes</h3>
+
+ <h3>Build System Updates</h3>
+
+ <h3>Testing</h3>
+
+ <h3>Miscellaneous</h3>
+
+ ")
 
 (defxdoc note-8-1-books
 
@@ -175,7 +332,7 @@
  duplicates; and @(tsee subsetp-eq-linear), which is a linear-time subset test
  for sorted lists of symbols.</p>
 
- <p>Added a new macro @(tsee defbyte) for introducing fixtypes for unsigned and
+ <p>Added a new macro @('defbyte') for introducing fixtypes for unsigned and
  signed bytes of specified sizes, as well as fixtypes of lists of such bytes,
  along with theorems relating the fixtype recognizers to the built-in binary
  predicates @(tsee unsigned-byte-p) and @(tsee signed-byte-p) and to the
@@ -185,6 +342,11 @@
  <p>Started a new library for <a href=\"https://ethereum.org\">Ethereum</a>.</p>
 
  <p>Started a new library for <a href=\"https://bitcoin.org\">Bitcoin</a>.</p>
+
+ <p>A new book, @('clause-processors/bindinglist.lisp'), supports a meta-level
+ structure for a list of bindings of variables to values, with functions that
+ convert these to and from nests of lambdas and proofs that establish these
+ functions' semantics with respect to an evaluator.</p>
 
  <h3>Changes to Existing Libraries</h3>
 
@@ -265,8 +427,8 @@
  utilities</see> with several error-checking functions.</p>
 
  <p>Extended the <see topic='@(url world-queries)'>world query utilities</see>
- with a function to collect the names of all the packages in the ACL2 @(see
- world).</p>
+ with functions to collect the names of all the known packages in the ACL2
+ @(see world) and to check if a function is primitive.</p>
 
  <p>Extended the <see topic='@(url term-function-recognizers)'>term function
  recognizers</see> with recognizers for true lists of
@@ -288,11 +450,11 @@
  <p>Extended the <see topic='@(url set::oset-utilities)'>oset utilities</see>
  with a <see topic='@(url fty)'>fixtype</see> for osets.</p>
 
- <p>Added some <see topic='@(url theorems-about-nat-lists)'>theorems about
- lists of natural numbers</see>.</p>
+ <p>Added some <see topic='@(url nat-list-fix-theorems)'>theorems about lists
+ of natural numbers</see>.</p>
 
- <p>Added a <see topic='@(url theorems-about-string-lists)'>theorem about lists
- of strings</see>.</p>
+ <p>Added a <see topic='@(url string-listp-theorems)'>theorem about lists of
+ strings</see>.</p>
 
  <p>Merged the utilities in @('[books]/kestrel/utilities/characters.lisp') into
  the <see topic='@(url string-utilities)'>string utilities</see>.  Extended the
@@ -347,16 +509,13 @@
 
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
- <p>The model includes more support for 32-bit mode.  In particular: (some
- variants of) the PUSH, PUSHF, POP, POPF, MOV, MOVZX, MOVSX, MOVSXD, LEA, XCHG,
- CMPXCHG, ADD, ADC, SUB, SBB, OR, AND, XOR, NEG, NOT, CMP, TEST, MUL, IMUL,
- DIV, IDIV, INC with opcodes FEh-FFh, DEC with opcodes FEh-FFh, CBW, CWDE,
- CDQE, CWD, CDQ, CQO, ROL, ROR, RCL, RCR, SAL, SAR, SHL, SHR, BT, JMP, Jcc,
- JCXZ, JECXZ, JRCXZ, CMOVcc, SETcc, MOVS, CMPS, STOS, LOOP, LOOPcc, CALL, RET,
- CMC, CLC, STC, CLD, STD, SAHF, LAHF, RDRAND, LGDT,LIDT, HLT, and NOP
- instructions also work in 32-bit mode now; the 32-bit instructions PUSHA,
- POPA, INC with opcodes 40h-47h, DEC with opcodes 48h-4Fh, and PUSH CS/SS/DS/ES
- are now part of the model.</p>
+ <p>Most of the model has been extended to 32-bit mode.  The only instructions
+ that remain to be extended to 32-bit mode are JMP far and the floating-point
+ instructions.  The 32-bit-only instructions PUSHA, POPA, INC with opcodes
+ 40h-47h, DEC with opcodes 48h-4Fh, and PUSH CS/SS/DS/ES have been added to the
+ model.  Support for the kinds of paging in 32-bit mode is still missing, but
+ this is only needed for the system view of the model, not the application
+ view.</p>
 
  <p>Some of the XDOC documentation and some of the comments have been slightly
  expanded.</p>
@@ -407,6 +566,24 @@
  by recoding several functions that previously used Lisp bignums to use a
  @(see bitops::sparseint) based encoding.</p>
 
+ <h4><see topic='@(url gl::gl)'>GL</see></h4>
+ <p>Added optional accumulated-persistence-style profiling of attempted rule
+ applications, available with keyword argument @(':prof-enabledp t').</p>
+
+ <p>Changed the representation of symbolic objects, removing the @(':g-number')
+ form which could represent complex rationals and replacing it with a simpler
+ @(':g-integer') form.  (Complex rationals may still be supported using
+ rewriting.  Also, the @(':g-number') shape specifier is still supported for
+ backward compatibility, though it is restricted to only represent integers and
+ translates directly into @(':g-integer') symbolic objects.)  Removed some
+ native symbolic counterparts for functions that can be dealt with more cleanly
+ via rewrite rules.</p>
+
+ <h4><see topic='@(url gl::glmc)'>GLMC</see></h4>
+ <p>Added option to bind some variables that can be used by the nextstate, property,
+ constraint, and initstate terms.  These bindings will be symbolically evaluated once,
+ which can perhaps improve performance by not requiring them to be repeated.</p>
+
  <h4><see topic='@(url acl2::xdoc)'>Xdoc</see></h4>
 
  <p>Added a utility, @(see xdoc::archive-xdoc), that saves the documentation
@@ -450,6 +627,15 @@
  ``system-development'' topic.</p>
 
  <p>The download button now works in the web-based manual.</p>
+
+ <p>When the @(tsee include-raw) utility with option @(':do-not-compile t') was
+ followed by @(':')@(tsee comp), it was possible for that subsequent
+ compilation to overwrite intended raw Lisp definitions, for a host Lisp that
+ does not compile on-the-fly (i.e., for a host Lisp other than CCL or SBCL).
+ The way to prevent such overwrites is to extend @(see state) globals
+ @('program-fns-with-raw-code') and @('logic-fns-with-raw-code'), which however
+ was not always done.  This is now done automatically, which fixes the
+ overwrite problem.</p>
 
  ")
 
@@ -635,10 +821,10 @@
  messages. These utilities include a macro @(tsee def-error-checker) to
  concisely define error-checking functions.</p>
 
- <p>A new macro @(tsee defbyte) has been added that introduces <see
- topic='@(url fty)'>fixtypes</see> for signed or unsigned bytes of specified
- sizes. Several instances of applications of this macro for common sizes of
- both signed and unsigned bytes is also provided.</p>
+ <p>A new macro @('defbyte') has been added that introduces <see topic='@(url
+ fty)'>fixtypes</see> for signed or unsigned bytes of specified sizes. Several
+ instances of applications of this macro for common sizes of both signed and
+ unsigned bytes is also provided.</p>
 
  <p>Utilities @(tsee doublets-to-alist) and @(tsee keyword-value-list-to-alist)
  have been added that convert lists of doublets and keyword-value lists to
@@ -658,8 +844,8 @@
  several improvements and extensions.</p>
 
  <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
- about world-related functions</see> and <see topic='@(url
- theorems-about-lists)'>theorems about lists</see> have been added.</p>
+ about world-related functions</see> and theorems about lists (in
+ @('kestrel/utilities/list-theorems.lisp')) have been added.</p>
 
  <p>A new @(see logic)-mode utility, @(tsee magic-macroexpand), performs
  macroexpansion when all macros to be expanded are in logic mode.</p>

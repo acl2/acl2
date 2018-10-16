@@ -21,39 +21,34 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ethereum
-
   :parents (acl2::kestrel-books acl2::projects)
-
   :short "A library for Ethereum."
-
   :long
-
   (xdoc::topapp
-
    (xdoc::p
     "Currently this library contains a formal model of some aspects of
      the <a href=\"https://ethereum.org\">Ethereum</a> ``world computer''.
      It is expected that this library will be extended with more
      Ethereum-related formalizations and tools.")
-
    (xdoc::p
-    "This library is based on
-     the <a href=\"https://github.com/ethereum/wiki/wiki\">Ethereum Wiki</a>
-     (`Wiki' for short),
-     in particular the BYZANTIUM VERSION e94ebda 2018-06-05 of
-     the <a href=\"https://github.com/ethereum/yellowpaper\">Ethereum
-     Yellow Paper</a>
-     (`YP' for short).
-     In the documentation of this library,
-     (sub)sections and equations of YP are referenced
-     by appending their (possibly dotted or parenthesized) numbers
-     to `YP:',
-     e.g.
-     `YP:3' references Section 3 (not page 3) of YP,
-     `YP:6.1' references Section 6.1 of YP,
-     `YP:B' references Appendix B of YP, and
-     `YP:(4)' references Equation (4) of YP.
-     These references are enclosed in square brackets when used parenthetically,
-     as often done with bibliographic references."))
-
+    "This library is based on the following sources:")
+   (xdoc::ul
+    (xdoc::li
+     "The <a href=\"https://github.com/ethereum/wiki/wiki\">Ethereum Wiki</a>,
+      referenced as `[Wiki]' in the documentation of this library.")
+    (xdoc::li
+     "The BYZANTIUM VERSION e94ebda 2018-06-05 of
+      the <a href=\"https://github.com/ethereum/yellowpaper\">Ethereum
+      Yellow Paper</a>,
+      referenced as `[YP]' in the documentation of this library.
+      Sections, appendices, and equations are referenced
+      by appending their designations separated by colon,
+      e.g.
+      `[YP:3]' references Section 3,
+      `[YP:6.1]' references Section 6.1,
+      `[YP:B]' references Appendix B, and
+      `[YP:(4)]' references Equation (4)."))
+   (xdoc::p
+    "These square-bracketed references may be used
+     as nouns or parenthentically."))
   :order-subtopics t)

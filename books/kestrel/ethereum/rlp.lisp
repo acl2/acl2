@@ -11,7 +11,7 @@
 (in-package "ETHEREUM")
 
 (include-book "kestrel/utilities/define-sk" :dir :system)
-(include-book "kestrel/utilities/digits-any-base-pow2" :dir :system)
+(include-book "kestrel/utilities/digits-any-base/pow2-8" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
 
@@ -25,8 +25,10 @@
   :long
   (xdoc::topp
    "RLP is a serialization (encoding) method for Ethereum,
-    described in YP:B and in the `RLP' page of Wiki
-    (which we refer to as `Wiki:RLP').")
+    described in [YP:B] and in
+    <a href=\"https://github.com/ethereum/wiki/wiki/RLP\">Page `RLP'
+    of [Wiki]</a>;
+    we reference that page of [Wiki] as `[Wiki:RLP]').")
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -38,7 +40,7 @@
   (xdoc::topp
    "The library function @(tsee nat=>bendian*),
     when the @('base') argument is 256,
-    corresponds to the function @($\\mathtt{BE}$), defined by YP:(181).
+    corresponds to @($\\mathtt{BE}$) [YP:(181)].
     Note that no leading 0 is allowed, even for representing 0,
     which is thus represented by the empty list of digits."))
 
@@ -59,32 +61,32 @@
      </p>
      <p>
      The definition of type @('rlp-tree')
-     corresponds to the set @($\\mathbb{T}$), defined by YP:(176).
+     corresponds to @($\\mathbb{T}$) [YP:(176)].
      The definition of type @('rlp-tree-list')
-     corresponds to the set @($\\mathbb{L}$), defined by YP:(177);
+     corresponds to @($\\mathbb{L}$) [YP:(177)];
      we use true lists to model sequences of subtrees.
      </p>
      <p>
-     These trees are called `items' in Wiki:RLP;
+     These trees are called `items' in [Wiki:RLP];
      we prefer the term `tree', because it seems clearer.
      The byte sequences at the leaves are called
-     `byte arrays' in YP:B and Wiki:RLP, and also `strings' in Wiki:RLP;
-     we use the former in preference to the latter,
+     `byte arrays' in [YP:B] and [Wiki:RLP], and also `strings' in [Wiki:RLP];
+     we use the former term in preference to the latter,
      because it seems clearer.
      </p>
      <p>
      It may be unclear, at first,
-     if the empty sequence in the set @($\\mathbb{L}$) in YP:(177)
+     whether the empty sequence in @($\\mathbb{L}$) [YP:(177)]
      is distinct from
-     the empty sequence in the set @($\\mathbb{B}$) in YP:(178),
-     and if the set @($\\mathbb{T}$) in YP:(176),
+     the empty sequence in @($\\mathbb{B}$) [YP:(178)],
+     and whether @($\\mathbb{T}$) [YP:(176)],
      which is defined as a non-disjoint union,
      contains a single empty sequence or two distinct ones.
-     According to YP:(180) (see @(tsee rlp-encode-bytes)),
-     the empty sequence from the set @($\\mathbb{B}$)
+     According to [YP:(180)] (see @(tsee rlp-encode-bytes)),
+     the empty sequence from @($\\mathbb{B}$)
      is encoded as the singleton byte array containing 128.
-     According to YP:(183) (see @(tsee rlp-encode-tree)),
-     the empty sequence from the set @($\\mathbb{L}$)
+     According to [YP:(183)] (see @(tsee rlp-encode-tree)),
+     the empty sequence from @($\\mathbb{L}$)
      is encoded as the singleton byte array containing 192.
      Given these two different encodings, it seems reasonable to assume
      that the two empty sequences from the two sets are distinct.
@@ -92,7 +94,7 @@
      the leaf tree with the empty byte array is distinct from
      the non-leaf tree with no subtrees.
      This disambiguation is also supported by the fact that
-     the code in Wiki:RLP treats those two empty sequences differently
+     the code in [Wiki:RLP] treats those two empty sequences differently
      (one is a string, the other one is a list).
      </p>"
     (:leaf ((bytes ubyte8-list)))
@@ -116,11 +118,19 @@
    These are the possible results of RLP decoding.
    </p>"
   (:error :fields () :ctor-body ':error :cond (eq x :error))
-  (:bytes :fields ((tree :type rlp-tree :acc-body x)) :ctor-body tree)
-  ///
+  (:bytes :fields ((tree :type rlp-tree :acc-body x)) :ctor-body tree))
+
+(defsection rlp-tree/error-ext
+  :extension (rlp-tree/error)
+
+  (defruled rlp-tree/error-p-alt-def
+    (equal (rlp-tree/error-p x)
+           (or (eq x :error)
+               (rlp-treep x)))
+    :enable rlp-tree/error-p)
 
   (defrule disjoint-tree/error
-    (not (and (eq :error x)
+    (not (and (eq x :error)
               (rlp-treep x)))
     :rule-classes nil)
 
@@ -154,12 +164,11 @@
   :long
   (xdoc::topapp
    (xdoc::p
-    "This corresponds to the function @($R_{\\mathrm{b}}$),
-     defined by YP:(180).")
+    "This corresponds to @($R_{\\mathrm{b}}$) [YP:(180)].")
    (xdoc::p
     "That equation does not explicitly say that the byte array
      can be encoded only if its length is below @($2^{64}$).
-     This can be inferred from the fact that, according to YP:(183),
+     This can be inferred from the fact that, according to [YP:(183)],
      encodings whose first byte is 192 or higher
      are used for non-leaf trees.
      In order for the encoding to be unambiguous
@@ -173,7 +182,7 @@
      of the length of the byte array
      must have at most 8 digits,
      i.e. it must be below @($256^8$), which is @($2^{64}$).
-     The encoding code in Wiki:RLP confirms this, via an explicit check.")
+     The encoding code in [Wiki:RLP] confirms this, via an explicit check.")
    (xdoc::p
     "If a byte array cannot be encoded, we return @(':error')."))
   (b* ((bytes (ubyte8-list-fix bytes)))
@@ -197,17 +206,17 @@
   (xdoc::topapp
    (xdoc::p
     "This corresponds to
-     the function @($\\mathtt{RLP}$) defined by YP:(179),
-     the function @($R_{\\mathrm{l}}$) defined by YP:(183),
-     and the function @($s$) defined by YP:(184).
+     @($\\mathtt{RLP}$) [YP:(179)],
+     @($R_{\\mathrm{l}}$) [YP:(183)],
+     and @($s$) [YP:(184)].
      More precisely,
      @(tsee rlp-encode-tree) corresponds to @($\\mathtt{RLP}$),
      the non-leaf case of @(tsee rlp-encode-tree)
      corresponds to @($R_{\\mathrm{l}}$),
      and @(tsee rlp-encode-tree-list) corresponds to @($s$).")
    (xdoc::p
-    "YP:(183) does not explicitly say that the tree can be encoded
-     only if the length of its encoded subtrees is below @($2^{64}$).
+    "[YP:(183)] does not explicitly say that the tree can be encoded
+     only if the total length of its encoded subtrees is below @($2^{64}$).
      This can be inferred from the fact that the first byte, being a byte,
      cannot exceed 255.
      Thus, the length of the base-256 big-endian representation
@@ -218,14 +227,14 @@
      of the length of the encoded subtrees
      must have at most 8 digits,
      i.e. it must be below @($256^8$), which is @($2^{64}$).
-     The encoding code in Wiki:RLP confirms this, via an explicit check.")
+     The encoding code in [Wiki:RLP] confirms this, via an explicit check.")
    (xdoc::p
-    "Similarly, YP:(184) does not explicitly say that
+    "Similarly, [YP:(184)] does not explicitly say that
      the concatenation of the encoded subtrees
      cannot be encoded if any subtree cannot be encoded.
      This can be inferred from the fact that if a subtree encoding is too long,
-     the supertree encoding is also even longer.
-     The encoding code in Wiki:RLP confirms this, by propagating exceptions.")
+     the supertree encoding is at least that long.
+     The encoding code in [Wiki:RLP] confirms this, by propagating exceptions.")
    (xdoc::p
     "If a tree cannot be encoded, we return @(':error').")
    (xdoc::def "rlp-encode-tree")
@@ -286,7 +295,7 @@
   :long
   (xdoc::topapp
    (xdoc::p
-    "This corresponds to the function @($\\mathtt{RLP}$) defined by YP:(185).")
+    "This corresponds to @($\\mathtt{RLP}$) [YP:(185)].")
    (xdoc::p
     "Note that @(':error') is returned if the scalar is so large that
      its big-endian representation exceeds @($2^{64}$) in length."))
@@ -327,14 +336,14 @@
    (xdoc::p
     "This is a declarative, non-executable definition,
      which says that decoding is the inverse of encoding.
-     This is the intention of YP:B, which only specifies encoding,
+     This is the intention of [YP:B], which only specifies encoding,
      leaving decoding implicit.")
    (xdoc::p
     "More precisely, we define decoding as the right inverse of encoding
-     (over byte arrays that are valid encodings of trees),
+     (with respect to byte arrays that are valid encodings of trees),
      as explicated by the theorem @('rlp-encode-tree-of-rlp-decode-tree').
      To prove that decoding is left inverse of encoding
-     (over trees that can be encoded),
+     (with respect to trees that can be encoded),
      we need to show that encoding is injective over trees that can be encoded.
      We conjecture that the proof of this property
      may be a by-product of deriving an executable implementation of decoding
@@ -347,7 +356,7 @@
      and therefore could be either tree.
      Thus, we defer the injectivity and left inverse proofs for now.")
    (xdoc::p
-    "The decoding code in Wiki:RLP provides a reference implementation.
+    "The decoding code in [Wiki:RLP] provides a reference implementation.
      Note that it is considerably more complicated than the encoding code.
      Thus, our high-level specification of decoding seems appropriate."))
   (b* ((bytes (ubyte8-list-fix bytes)))

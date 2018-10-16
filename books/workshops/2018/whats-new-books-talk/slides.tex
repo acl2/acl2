@@ -1,0 +1,508 @@
+\documentclass{beamer}
+\usecolortheme{seahorse}
+\usepackage{inconsolata}
+\usepackage{alltt}
+
+\beamertemplatenavigationsymbolsempty
+
+\setbeamertemplate{footline}[frame number]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newenvironment{codeblock}{\begin{alltt}}{\end{alltt}}
+
+\newcommand{\bookpath}[1]{\textbf{\code{#1}}}
+
+\newcommand{\newlibtitle}{\frametitle{New Libraries}}
+\newcommand{\implibtitle}{\frametitle{Improved Libraries}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{What's New in the Community Books}
+
+\subtitle{Since the ACL2-2017 Workshop}
+
+\author{Cuong Chau\inst{1},
+        Alessandro Coglio\inst{2},
+        Jared Davis\inst{3},
+        \\
+        Shilpi Goel\inst{4},
+        Matt Kaufmann\inst{1},
+        Keshav Kini\inst{5},
+        \\
+        Mihir Mehta\inst{1},
+        J Moore\inst{1},
+        David Russinoff\inst{6},
+        \\
+        Julien Schmaltz\inst{7},
+        Rob Sumners\inst{4},
+        Sol Swords\inst{4}}
+
+\institute{\inst{1}UT Austin,
+           \inst{2}Kestrel Institute,
+           \inst{3}Apple,
+           \inst{4}Centaur,
+           \inst{5}Oracle,
+           \inst{6}ARM,
+           \inst{7}???}
+
+\date{ACL2-2018 Workshop}
+
+\frame[noframenumbering,plain]{\titlepage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/apt}:
+APT (Automated Program Transformations),
+a toolkit
+to transform programs and program specifications with automated support.
+\begin{itemize}
+\item
+Includes two of Kestrel's $\sim$40 transformations.
+\item
+Also includes some utilities used across transformations.
+\item
+More forthcoming.
+\end{itemize}
+
+\
+
+\bookpath{kestrel/java}:
+A library for Java.
+\begin{itemize}
+\item
+AIJ (ACL2 In Java), the deep embedding of ACL2 in Java
+described in a paper at this Workshop.
+\item
+ATJ (ACL2 To Java), the Java code generator for ACL2
+described in a paper at this Workshop.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/bitcoin}:
+A (small start towards a) library for the Bitcoin cryptocurrency and ecosystem.
+\begin{itemize}
+\item
+Executable specification of Base58 encoding and decoding.
+\item
+Executable specification of Base58Check encoding.
+\end{itemize}
+
+\
+
+\bookpath{kestrel/ethereum}:
+A library for the Ethereum
+cryptocurrency and ecosystem.
+\begin{itemize}
+\item
+Executable specification of RLP (Recursive Length Prefix) encoding;
+declarative specification of RLP decoding.
+\item
+Executable specification of hex-prefix encoding.
+\item
+Kestrel is actively working on this.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]
+
+\newlibtitle
+
+\bookpath{kestrel/utilities/digits-any-base}:
+Conversions between natural numbers
+and their representations in arbitrary bases.
+\begin{itemize}
+\item
+Big and little endian.
+\item
+Minimal, minimal non-zero, or specified length.
+\item
+Several theorems, e.g.\ about inversions.
+\end{itemize}
+
+\
+
+\bookpath{kestrel/utilities/xdoc}:
+XDOCumentation utilities.
+\begin{itemize}
+\item
+Constructors of well-tagged XDOC strings, e.g.
+\begin{codeblock}
+(xdoc::p "This is a paragraph.")
+(xdoc::ul
+  (xdoc::li "First unordered item.")
+  (xdoc::li "Second unordered item."))
+\end{codeblock}
+\item
+\code{defxdoc+} extends \code{defxdoc} with
+\code{:order-subtopics t/nil} and \code{:default-parent t/nil}.
+\item
+These are candidate extensions of the \code{xdoc} library.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/utilities/fixbytes}:
+Fixtypes for unsigned and signed bytes, and true lists thereof.
+\begin{itemize}
+\item
+Macros to create fixtypes and theorems for a specified size.
+The size may be a constrained nullary function,
+e.g.\ useful to formalize C bytes.
+\item
+Several instances available; just include the respective file(s).
+\item
+These are candidate extensions of the \code{fty} library.
+\end{itemize}
+
+\
+
+\bookpath{kestrel/utilities/integer-range-*.lisp}:
+Utilities related to \code{integer-range-p}.
+\begin{itemize}
+\item
+Parameterized recognizer \code{integer-range-listp}.
+\item
+Parameterized fixers
+\code{integer-range-fix} and \code{integer-range-list-fix}.
+\item
+Several theorems.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/utilities/messages.lisp}:
+A few utilities for \code{msgp} values,
+e.g.\ to convert the first character to upper/lower case.
+
+\
+
+\bookpath{kestrel/utilities/untranslate-preprocessing.lisp}:
+A macro \code{add-const-to-untranslate-preprocess}
+to keep a named constant unexpanded in the screen output.
+
+\
+
+\bookpath{kestrel/utilities/symbols.lisp}:
+Some utilities for symbols.
+\begin{itemize}
+\item
+These could become a new \code{std/symbols} library.
+\end{itemize}
+
+\
+
+\bookpath{kestrel/utilities/system/paired-names.lisp}:
+Utilities for names consisting of
+two parts with a customizable separator in between.
+(Used by APT, but more general.)
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+TODO: add more contributions
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/soft}:
+SOFT (Second-Order Functions and Theorems),
+macros to mimic second-order functions and theorems.
+\begin{itemize}
+\item
+Added full support for \code{defun-sk2}.
+\item
+Improved user interface.
+\end{itemize}
+
+\
+
+\bookpath{kestrel/utilities/osets.lisp}:
+Utilities for osets.
+\begin{itemize}
+\item
+Added a fixtype for osets.
+\item
+These are candidate extensions of the \code{std/osets} library.
+\end{itemize}
+
+\
+
+\bookpath{kestrel/utilities/error-checking.lisp}:
+Utilities to check error conditions and return customizable error messages.
+\begin{itemize}
+\item
+Improved the \code{def-error-checker} macro,
+e.g.\ to support logic-mode error-checking functions.
+\item
+Added several error-checking functions.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/system/world-queries.lisp}:
+Utilities to query worlds.
+\begin{itemize}
+\item
+Added and improved several utilities.
+\item
+There are two variants for most of these utilities:
+a ``fast'' one and a ``logic-friendly'' one
+(see documentation for details).
+\item
+These could become part of a new \code{std/system} library.
+\end{itemize}
+
+\
+
+\bookpath{kestrel/utilities/defun-sk-queries.lisp}:
+Utilities to query \code{defun-sk} functions.
+\begin{itemize}
+\item
+Added support for the recently added \code{:constrain} option.
+\item
+These could become part of a new \code{std/system} library.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/system/terms.lisp}:
+Utilities to manipulate terms.
+\begin{itemize}
+\item
+Added and improved several utilities.
+\item
+Moved some utilities to a separate file
+\code{term-function-recognizers.lisp}.
+\item
+These could become part of a new \code{std/system} library.
+\end{itemize}
+
+\
+
+\bookpath{kestrel/utilities/user-interface.lisp}:
+Utilities for customizing screen output of user-defined events.
+\begin{itemize}
+\item
+Added several utilities.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/utilities/...}:
+Started refactoring some of these utilities to reduce book dependencies.
+
+\
+
+\bookpath{misc/assert.lisp} \& \bookpath{misc/eval.lisp}:
+Testing utilities.
+\begin{itemize}
+\item
+Added some utilities moved from \code{kestrel/utilities/testing.lisp}.
+\item
+Added some XDOCumentation.
+\item
+Renamed some utilities for greater uniformity
+(deprecated the old names).
+\item
+Reduced book dependencies.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{projects/x86isa}:
+X86ISA, the formal model of the x86 ISA.
+\begin{itemize}
+\item
+Added support for 32-bit mode; see paper at this Workshop.
+\item
+Improved and extended some documentation.
+\item
+TODO: add more
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{projects/async}:
+ASYNC, the framework for modeling and verifying the functional correctness
+of asynchronous (self-timed) circuit models.
+\begin{itemize}
+\item
+Developed a new compositional methodology for scalable formal
+verification of functional properties of self-timed circuit designs.
+\item
+Verified the functional correctness of data-loop-free self-timed
+circuits (see \code{fifo/}).
+\item
+Verified the functional correctness of a self-timed serial
+adder/subtractor model (see \code{serial-adder/}).
+\item
+Verified the functional correctness of iterative self-timed circuit
+models that compute the greatest-common-divisor (GCD) (see \code{gcd/}).
+\item
+Verified the functional correctness of self-timed circuits performing
+arbitrated merge operations (see \code{arbitration/}).
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{std/io/combine.lisp}:
+Byte-combining libraries.
+\begin{itemize}
+\item
+Added invertibility theorems for \code{combine16u} and \code{combine32u}.
+\item
+To do: make these invertibility theorems compatible with \code{part-select}.
+\item
+To do: prove similar theorems for \code{combine64u} as well as for the
+signed-integer functions, \code{combine16s} et al.
+\end{itemize}
+
+\
+
+\bookpath{centaur/bitops/rotate.lisp}:
+Bit-vector rotation libraries.
+\begin{itemize}
+\item
+Generalized existing theorems and added a new theorem for compositions
+of \code{rotate-left} operations, as well as a theorem for
+compositions of \code{rotate-right} operations.
+\item
+To do: Add theorems for compositions of \code{rotate-left} and
+\code{rotate-right} with each other.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/utilities/strings/*}:
+String manipulation libraries.
+\begin{itemize}
+\item Added several new rewrite rules.
+\end{itemize}
+
+\
+
+\bookpath{projects/filesystems/*}:
+Formal models of filesystems.
+\begin{itemize}
+\item
+\texttt{M1} and \texttt{M2}, new filesystem models for FAT32,
+described in a paper at this Workshop.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+TODO: add more contributions
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\frametitle{Additional Contributions}
+
+\bookpath{workshop/references}:
+BibTeX references for all the ACL2 Workshop papers,
+and a LaTeX document that shows them.
+TODO: add/improve as needed
+
+\
+
+\textbf{Developers Guide}:
+Several XDOCumentation pages intended for ACL2 developers.
+TODO: add/improve as needed
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

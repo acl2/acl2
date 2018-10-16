@@ -120,6 +120,7 @@
    elt-equiv          ;; element equiv function, e.g., foo-equiv
    measure            ;; termination measure, e.g., (two-nats-measure ...)
    xvar               ;; special x variable name, e.g., mypkg::x
+   non-emptyp         ;; require the list to be non-empty
    kwd-alist          ;; alist of options, see *flexlist-keywords*
    true-listp         ;; boolean -- should we require a nil final cdr?
    elementp-of-nil    ;; t, nil, or :unknown -- for optimizing theorems
@@ -149,6 +150,7 @@
    keyp-of-nil        ;; t, nil, or :unknown -- for optimizing theorems
    valp-of-nil        ;; t, nil, or :unknown -- for optimizing theorems
    true-listp         ;; boolean -- should we require a nil final cdr?
+   unique-keys        ;; boolean -- require keys to be unique
    recp               ;; is this alist type part of the mutual recursion?
    already-definedp)
   :tag :alist)

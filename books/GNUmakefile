@@ -1095,6 +1095,13 @@ BOOKS_SKIP_COMP += acl2s/mode-acl2s-dependencies.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += centaur/bridge/top.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += doc/top.$(ACL2_COMP_EXT)
 
+# Stack overflow in GCL, Allegro CL, and LispWorks:
+BOOKS_SKIP_COMP += system/tests/apply-timings.$(ACL2_COMP_EXT)
+
+# Errors (using LispWorks) involve quicklisp, so I won't bother to debug:
+BOOKS_SKIP_COMP += oslib/tests/ls.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += oslib/tests/mkdir.$(ACL2_COMP_EXT)
+
 OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
 
 # Avoid trying to make compiled files; target %.$(ACL2_COMP_EXT) still
@@ -1456,16 +1463,17 @@ dummy:
 # presumably these books mess with raw mode.  Since we have had such
 # problems with acl2s/ccg/ccg.lisp (presumably because it includes
 # hacking/hacker), and acl2s/doc.lisp, we exclude all books under
-# acl2s/ as well as doc/top.lisp.  Finally, we exclude books in
-# books/build/test/, since some have caused problems; there's nothing
-# of interest in those books from a world perspective, so it's not
-# worth figuring out the problem.
+# acl2s/ as well as doc/top.lisp and doc/top-fast.lisp.  Finally, we
+# exclude books in books/build/test/, since some have caused problems;
+# there's nothing of interest in those books from a world perspective,
+# so it's not worth figuring out the problem.
 
 BOOKS_BKCHK_OUT := $(patsubst %.cert,%.bkchk.out,$(OK_CERTS))
 BOOKS_BKCHK_OUT := $(filter-out hacking/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out acl2s/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out doc/top-fast.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out build/test/%, $(BOOKS_BKCHK_OUT))
 
 .PHONY: chk-include-book-worlds

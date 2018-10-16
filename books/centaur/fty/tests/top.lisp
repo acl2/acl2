@@ -36,6 +36,7 @@
 (include-book "doc")
 (include-book "fixequiv")
 (include-book "visitor")
+(include-book "bitstruct")
 
 ;; Performance tests
 (include-book "defprod-scale")

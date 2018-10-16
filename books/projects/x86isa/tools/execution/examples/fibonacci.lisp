@@ -47,8 +47,6 @@
 
 (local (xdoc::set-default-parents fibonacci-cosim))
 
-;; (include-book "centaur/memoize/old/profile" :dir :system)
-
 ;; ======================================================================
 
 #||
@@ -1720,8 +1718,8 @@ int main (int argc, char *argv[], char *env[])
   ;; Specification Function in ACL2
   (declare (xargs :guard (natp n)))
   (cond ((zp n) 0)
-        ((eql n 1) 1)
-        (t (+ (fib (- n 1)) (fib (- n 2))))))
+	((eql n 1) 1)
+	(t (+ (fib (- n 1)) (fib (- n 2))))))
 
 ;; ======================================================================
 
@@ -1733,29 +1731,29 @@ int main (int argc, char *argv[], char *env[])
    (x86 "Output x86 State"))
 
   (cond ((or (fault x86)
-             (not (equal (ms x86)
-                         `((x86-fetch-decode-execute-halt
-                            :rip ,halt-address)))))
+	     (not (equal (ms x86)
+			 `((x86-fetch-decode-execute-halt
+			    :rip ,halt-address)))))
 
-         (cw "~|(ms x86) = ~x0 (fault x86) = ~x1~%"
-             (ms x86) (fault x86)))
+	 (cw "~|(ms x86) = ~x0 (fault x86) = ~x1~%"
+	     (ms x86) (fault x86)))
 
-        (t (let ((expected (fib input)))
+	(t (let ((expected (fib input)))
 
-             (cond
-              ((equal (rgfi *rax* x86) expected)
-               (prog2$
-                (cw
-                 "~|(x86isa-fib ~x0) was correctly computed as ~x1.~%"
-                 input
-                 expected)
-                t))
-              (t
-               (prog2$
-                (cw
-                 "~|(x86isa-fib ~x0) = ~x1, but rax is ~x2.~%"
-                 input expected (rgfi *rax* x86))
-                t)))))))
+	     (cond
+	      ((equal (rgfi *rax* x86) expected)
+	       (prog2$
+		(cw
+		 "~|(x86isa-fib ~x0) was correctly computed as ~x1.~%"
+		 input
+		 expected)
+		t))
+	      (t
+	       (prog2$
+		(cw
+		 "~|(x86isa-fib ~x0) = ~x1, but rax is ~x2.~%"
+		 input expected (rgfi *rax* x86))
+		t)))))))
 
 (define x86isa-one-fib-cosim
   ((input         :type (unsigned-byte 50))
@@ -1767,45 +1765,45 @@ int main (int argc, char *argv[], char *env[])
 
   (b* ((ctx __function__)
        (x86 (if sys-view?
-                ;; The following initializes the system-level mode and sets up
-                ;; the page tables at address #x402000.
-                (init-sys-view #x402000 x86)
-              x86))
+		;; The following initializes the system-level mode and sets up
+		;; the page tables at address #x402000.
+		(init-sys-view #x402000 x86)
+	      x86))
        ((mv flg x86)
-        (init-x86-state-64
-         ;; Status (MS and fault field)
-         nil
-         start-address
-         ;; Initial values of General-Purpose Registers
-         (acons
-          ;; Input is in RAX.
-          #.*rax* input
-          (acons
-           #.*rsp* #.*2^45*
-           nil))
-         ;; Initial values of Control Registers (already initialized in
-         ;; init-sys-view)
-         nil
-         ;; Initial values of Model-Specific Registers (already initialized
-         ;; in init-sys-view)
-         nil
-         ;; seg-visibles
-         nil
-         ;; seg-hiddens
-         nil
-         ;; Initial value of the Rflags Register
-         2
-         ;; Initial memory image
-         *fibonacci-binary*
-         ;; x86 state
-         x86))
+	(init-x86-state-64
+	 ;; Status (MS and fault field)
+	 nil
+	 start-address
+	 ;; Initial values of General-Purpose Registers
+	 (acons
+	  ;; Input is in RAX.
+	  #.*rax* input
+	  (acons
+	   #.*rsp* #.*2^45*
+	   nil))
+	 ;; Initial values of Control Registers (already initialized in
+	 ;; init-sys-view)
+	 nil
+	 ;; Initial values of Model-Specific Registers (already initialized
+	 ;; in init-sys-view)
+	 nil
+	 ;; seg-visibles
+	 nil
+	 ;; seg-hiddens
+	 nil nil nil
+	 ;; Initial value of the Rflags Register
+	 2
+	 ;; Initial memory image
+	 *fibonacci-binary*
+	 ;; x86 state
+	 x86))
        ((when flg)
-        (let ((x86 (!!ms-fresh :init-x86-state-64-error flg)))
-          (mv nil x86)))
-       (x86 (time$ (x86-run-halt halt-address xrun-limit x86)))
+	(let ((x86 (!!ms-fresh :init-x86-state-64-error flg)))
+	  (mv nil 0 x86)))
+       ((mv steps x86) (time$ (x86-run-halt-count halt-address xrun-limit x86 xrun-limit)))
        (ok? (check-fib-output input halt-address x86))
-       ((unless ok?) (mv nil x86)))
-    (mv t x86)))
+       ((unless ok?) (mv nil steps x86)))
+    (mv t steps x86)))
 
 (define run-x86isa-fib
   ((input         :type (unsigned-byte 50))
@@ -1817,35 +1815,51 @@ int main (int argc, char *argv[], char *env[])
 
   (if (zp input)
 
-      (mv t x86)
+      (mv t 0 x86)
 
-    (b* (((mv flg x86)
-          (x86isa-one-fib-cosim
-           (1- input) start-address halt-address xrun-limit sys-view? x86))
-         ((unless flg)
-          (cw "~% Mismatch found!~%")
-          (mv flg x86)))
+    (b* (((mv flg steps x86)
+	  (x86isa-one-fib-cosim
+	   (1- input) start-address halt-address xrun-limit sys-view? x86))
+	 ((unless flg)
+	  (cw "~% Mismatch found!~%")
+	  (mv flg steps x86)))
 
       (run-x86isa-fib
        (1- input) start-address halt-address xrun-limit sys-view? x86))))
 
 ;; ----------------------------------------------------------------------
 
+;; For efficient execution of 64-BIT-MODEP:
+(local (include-book "std/bitsets/bignum-extract-opt" :dir :system))
+
+;; Multiple Runs
 (acl2::assert!-stobj
  (b* ((start-address #x400666)
       (halt-address  #x400670)
       (input         22)
       (sys-view?     nil)
-      ((mv flg x86)
+      ((mv flg & x86)
        (run-x86isa-fib
-        input start-address halt-address *fib-xrun-limit* sys-view? x86)))
+	input start-address halt-address *fib-xrun-limit* sys-view? x86)))
    (mv flg x86))
  x86)
 
-;; ----------------------------------------------------------------------
+;; Single Runs:
+;; (include-book "centaur/memoize/old/profile" :dir :system)
+;; (acl2::profile-acl2)
 
-;; (run-fib 33 x86) ;; ~200s
-;; (run-fib 36 x86) ;; ~630s
-;; (run-fib 39 x86) ;; ~2673s
+;; (acl2::assert!-stobj
+;;  (b* ((start-address #x400666)
+;;       (halt-address  #x400670)
+;;       (input         30)
+;;       (sys-view?     nil)
+;;       ((mv flg steps x86)
+;;        (x86isa-one-fib-cosim
+;; 	input start-address halt-address *fib-xrun-limit* sys-view? x86))
+;;       (- (cw "~% Steps: ~p0 ~%" steps)))
+;;    (mv flg x86))
+;;  x86)
+
+;; (memsum)
 
 ;; ----------------------------------------------------------------------

@@ -200,7 +200,7 @@
 
   (defthm-usb n52p-of-pml4t-base-addr
     :hyp (x86p x86)
-    :bound 52
+    :bound #.*physical-address-size*
     :concl (pml4t-base-addr x86))
 
   (defthm pml4t-base-addr-and-mv-nth-1-wb
@@ -218,7 +218,8 @@
 ;; pdpt-base-addr enabled.
 (defthm unsigned-byte-p-52-of-left-shifting-a-40-bit-vector-by-12
   (implies (unsigned-byte-p 64 x)
-           (unsigned-byte-p 52 (ash (loghead 40 (logtail 12 x)) 12))))
+           (unsigned-byte-p #.*physical-address-size*
+                            (ash (loghead 40 (logtail 12 x)) 12))))
 
 (defthm pdpt-base-addr-and-mv-nth-1-wb
   (implies (and
@@ -250,7 +251,7 @@
 (def-gl-export page-dir-ptr-table-entry-addr-to-C-program-optimized-form
   :hyp (and (canonical-address-p v-addr)
             (equal (loghead 12 base-addr) 0)
-            (unsigned-byte-p 52 base-addr))
+            (unsigned-byte-p #.*physical-address-size* base-addr))
   :concl (equal (page-dir-ptr-table-entry-addr v-addr base-addr)
                 (logior (logand 4088 (loghead 32 (logtail 27 v-addr)))
                         base-addr))

@@ -10,8 +10,6 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/utilities/fixbytes/ubyte4" :dir :system)
-
 (include-book "basics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -21,11 +19,12 @@
   :short "Hex-prefix encoding."
   :long
   (xdoc::topp
-   "Hex-prefix encoding is an encoding method for Ethereum,
-    described in YP:C and in the section
+   "Hex-prefix is an encoding method for Ethereum,
+    described in [YP:C] and in
+    <a href=\"https://github.com/ethereum/wiki/wiki/Patricia-Tree#specification-compact-encoding-of-hex-sequence-with-optional-terminator\"
+    >Section
     `Specification: Compact encoding of hex sequence with optional terminator'
-    of the `Patricia Tree' page of Wiki
-    (we refer to that section as `Wiki:HP').")
+    of Page `Patricia Tree' of [Wiki]</a>.")
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -40,14 +39,13 @@
   :long
   (xdoc::topapp
    (xdoc::p
-    "This corresponds to the function @($\\mathtt{HP}$) in YP:C,
-     defined by YP:(186) and YP:(187).")
+    "This corresponds to @($\\mathtt{HP}$) [YP:(186)] [YP:(187)].")
    (xdoc::p
     "The @($t$) flag is effectively treated as a boolean (i.e. 0 or not 0),
      so we use directly a boolean as argument to this function.
      Note also that @($\\mathtt{HP}$)
-     is called with @($\\mathit{true}$) and @($\\mathit{false}$) in YP:(194),
-     so perhaps YP:(187) should be rephrased
+     is called with @($\\mathit{true}$) and @($\\mathit{false}$) in [YP:(194)],
+     so perhaps [YP:(187)] should be rephrased
      to treat @($t$) as an actual boolean."))
   (b* ((ft (if flag 2 0))
        (len-nibbles (len nibbles))
@@ -77,7 +75,7 @@
      (xdoc::topp
       "This calculates the bytes of the result of @($\\mathtt{HP}$)
        that come after the first byte,
-       in the way described by YP:(186).")
+       in the way described by [YP:(186)].")
      (b* (((when (endp nibbles)) nil)
           (nibble-hi (ubyte4-fix (car nibbles)))
           (nibble-lo (ubyte4-fix (cadr nibbles)))

@@ -14,7 +14,7 @@
      (include-book "leftist-trees/top")
      (include-book "quadratic-reciprocity/euler")
      (include-book "sidekick/server")
-     (include-book "x86isa/doc")  ; no-port
+     (include-book "x86isa/doc")
      (include-book "farray/farray")
      (include-book "sat/proof-checker-itp13/top")
      (include-book "sat/proof-checker-array/top")

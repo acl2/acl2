@@ -39,6 +39,7 @@
 (include-book "centaur/gl/bfr-fraig-satlink" :dir :system)
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "centaur/ipasir/ipasir-backend" :dir :system)
+(include-book "oslib/top" :dir :system)
 
 ;; (local (include-book "centaur/esim/stv/stv-decomp-proofs-even-better" :dir :system))
 ; (depends-on "sums.sv")
@@ -84,6 +85,7 @@
             ("shift" shift))
   :outputs '(("sum" sum)))
 
+
 (define sums-spec-aux ((n natp)
                        (a natp)
                        (b natp)
@@ -92,7 +94,7 @@
   (b* (((when (zp n)) 0)
        (i (1- n))
        (shifted (nth-slice 8 (loghead 4 (+ shift i)) b))
-       (prod (loghead 8 (* (nth-slice 8 i a) shifted)))
+       (prod (loghead 8 (* shifted (nth-slice 8 i a))))
        (rest (sums-spec-aux (1- n) a b shift)))
     (+ prod rest)))
 
@@ -102,24 +104,6 @@
   :returns (sum natp :rule-classes :type-prescription)
   (loghead 16 (sums-spec-aux 16 a b shift)))
 
-
-(local (defun transforms-config ()
-         (declare (Xargs :guard t))
-         #!aignet
-         (list (make-observability-config)
-               (make-balance-config :search-higher-levels t
-                                    :search-second-lit t)
-               (change-fraig-config *fraig-default-config*
-                                    :random-seed-name 'my-random-seed
-                                    :ctrex-queue-limit 32
-                                    :sim-words 1
-                                    :ctrex-force-resim nil
-                                    :ipasir-limit 1)
-
-               (change-fraig-config *fraig-default-config*
-                                    :random-seed-name 'my-random-seed
-                                    :ctrex-queue-limit 32
-                                    :ipasir-limit 20))))
 
 
 (local
@@ -133,26 +117,139 @@
 
    (defattach gl::gl-satlink-config my-glucose-config)))
 
-(local (defattach gl::gl-transforms-config transforms-config))
+
+
 ;; (local (setup-satlink))
 (local (gl::gl-simplify-satlink-mode))
 
 (value-triple (clear-memoize-statistics))
 
-;; Observability and balance transforms aren't necessary but fraiging
-;; is highly effective -- around 0.5 sec to solve versus 2 minutes for glucose
-;; via satlink alone.
-(gl::def-gl-thm sums-correct
-  :hyp (sums-run-autohyps)
-  :concl (b* ((spec (sums-spec a b shift))
-              (impl (cdr (assoc 'sum (svtv-run (sums-run)
-                                               (sums-run-autoins))))))
-           (cw "a:     ~s0~%" (str::hexify a))
-           (cw "b:     ~s0~%" (str::hexify b))
-           (cw "shift: ~s0~%" (str::hexify shift))
-           (cw "spec:  ~s0~%" (str::hexify spec))
-           (cw "impl:  ~s0~%" (str::hexify impl))
-           (equal impl spec))
-  :g-bindings (sums-run-autobinds))
-    
-                       
+(encapsulate nil
+  (local (defun transforms-config ()
+           (declare (Xargs :guard t))
+           #!aignet
+           (list (make-prune-config :gatesimp (default-gatesimp))
+                 (make-constprop-config)
+
+                 (make-balance-config :search-higher-levels t
+                                      :search-second-lit t)
+
+                 (change-fraig-config *fraig-default-config*
+                                      :random-seed-name 'my-random-seed
+                                      :ctrex-queue-limit 32
+                                      :sim-words 1
+                                      :ctrex-force-resim nil
+                                      :ipasir-limit 1)
+
+                 (change-fraig-config *fraig-default-config*
+                                      :random-seed-name 'my-random-seed
+                                      :ctrex-queue-limit 32
+                                      :ipasir-limit 20))))
+  (local (defattach gl::gl-transforms-config transforms-config))
+
+  ;; With shift assumed to be 0, using either the observability or constprop
+  ;; transforms before fraiging suffices to reduce the problem from about 140
+  ;; sec to about 8 sec.  Without either of these, fraiging doesn't achieve
+  ;; much reduction (9616 to 7807 gates in the first pass).  Constprop itself
+  ;; reduces the network from 9692 post-prune to 5098 gates, balance to 5002,
+  ;; fraiging first pass to 4435, second pass to 0.  Observability reduces the
+  ;; network from 9692 post-prune to 9230, balance to 9159, fraiging to 4370,
+  ;; second pass to 0 -- constprop is marginally faster.
+
+  (gl::def-gl-thm sums-correct-when-shift-0
+    :hyp (sums-run-autohyps)
+    :concl (implies (equal shift 0)
+                    (b* ((spec (sums-spec a b 0))
+                         (impl (cdr (assoc 'sum (svtv-run (sums-run)
+                                                          (sums-run-autoins))))))
+                      (cw "a:     ~s0~%" (str::hexify a))
+                      (cw "b:     ~s0~%" (str::hexify b))
+                      (cw "shift: ~s0~%" (str::hexify shift))
+                      (cw "spec:  ~s0~%" (str::hexify spec))
+                      (cw "impl:  ~s0~%" (str::hexify impl))
+                      (equal impl spec)))
+    :g-bindings (sums-run-autobinds)))
+
+
+(encapsulate nil
+  (local (defun transforms-config ()
+           (declare (Xargs :guard t))
+           #!aignet
+           (list (make-prune-config :gatesimp (default-gatesimp))
+                 (make-observability-config)
+
+                 (make-balance-config :search-higher-levels t
+                                      :search-second-lit t)
+
+                 (change-fraig-config *fraig-default-config*
+                                      :random-seed-name 'my-random-seed
+                                      :ctrex-queue-limit 32
+                                      :sim-words 1
+                                      :ctrex-force-resim nil
+                                      :ipasir-limit 1)
+
+                 (change-fraig-config *fraig-default-config*
+                                      :random-seed-name 'my-random-seed
+                                      :ctrex-queue-limit 32
+                                      :ipasir-limit 20))))
+  (local (defattach gl::gl-transforms-config transforms-config))
+
+  ;; With shift assumed to be either 0 or 15, using constprop doesn't reduce
+  ;; much because none of those bits are constant.  Observability still does
+  ;; the job nicely, however -- this solves in about 9 sec, versus 226 sec with
+  ;; constprop instead of observability.
+
+  (gl::def-gl-thm sums-correct-when-shift-0-or-1
+    :hyp (sums-run-autohyps)
+    :concl (implies (or (equal shift 0)
+                        (equal shift #xf))
+                    (b* ((spec (sums-spec a b (if (eql shift #xf) #xf 0)))
+                         (impl (cdr (assoc 'sum (svtv-run (sums-run)
+                                                          (sums-run-autoins))))))
+                      (cw "a:     ~s0~%" (str::hexify a))
+                      (cw "b:     ~s0~%" (str::hexify b))
+                      (cw "shift: ~s0~%" (str::hexify shift))
+                      (cw "spec:  ~s0~%" (str::hexify spec))
+                      (cw "impl:  ~s0~%" (str::hexify impl))
+                      (equal impl spec)))
+    :g-bindings (sums-run-autobinds)))
+
+(encapsulate nil
+  (local (defun transforms-config ()
+           (declare (Xargs :guard t))
+           #!aignet
+           (list (make-prune-config :gatesimp (default-gatesimp))
+
+                 (make-balance-config :search-higher-levels t
+                                      :search-second-lit t)
+
+                 (change-fraig-config *fraig-default-config*
+                                      :random-seed-name 'my-random-seed
+                                      :ctrex-queue-limit 32
+                                      :sim-words 1
+                                      :ctrex-force-resim nil
+                                      :ipasir-limit 1)
+
+                 (change-fraig-config *fraig-default-config*
+                                      :random-seed-name 'my-random-seed
+                                      :ctrex-queue-limit 32
+                                      :ipasir-limit 20))))
+  (local (defattach gl::gl-transforms-config transforms-config))
+
+  ;; This version doesn't require observability or constprop, just fraiging --
+  ;; but it illustrates how important fraiging is relative to relying only on
+  ;; SAT at the top level.  Fraiging solves in 9 sec -- omitting fraiging made
+  ;; it take 16 minutes.
+  
+  (gl::def-gl-thm sums-correct
+    :hyp (sums-run-autohyps)
+    :concl (b* ((spec (sums-spec a b shift))
+                (impl (cdr (assoc 'sum (svtv-run (sums-run)
+                                                 (sums-run-autoins))))))
+             (cw "a:     ~s0~%" (str::hexify a))
+             (cw "b:     ~s0~%" (str::hexify b))
+             (cw "shift: ~s0~%" (str::hexify shift))
+             (cw "spec:  ~s0~%" (str::hexify spec))
+             (cw "impl:  ~s0~%" (str::hexify impl))
+             (equal impl spec))
+    :g-bindings (sums-run-autobinds)))

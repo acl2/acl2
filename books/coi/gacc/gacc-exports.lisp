@@ -694,6 +694,7 @@ sblk-when-size-is-not-an-integerp
      SYNTAX-REMOVE-BAG-1-IMPLEMENTS-SUBBAGP
      SYNTAX-REMOVE-1-IMPLEMENTS-MEMBERP
      SUBBAGP-APPEND SYNTAX-EV-LIST
+     SYNTAX-EV-constraint-26
      SYNTAX-EV-constraint-25
      SYNTAX-EV-constraint-24
      SYNTAX-EV-constraint-23
@@ -712,7 +713,6 @@ sblk-when-size-is-not-an-integerp
      SYNTAX-EV-constraint-10
      SYNTAX-EV-constraint-9
      SYNTAX-EV-constraint-8
-     SYNTAX-EV-constraint-7
      SYNTAX-EV-CONSTRAINT-5
      SYNTAX-EV-CONSTRAINT-4
      SYNTAX-EV-CONSTRAINT-3

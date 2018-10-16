@@ -681,8 +681,8 @@ differently:</p>
                                                invals regvals input-aignet)
                                       0))
                       (implies (< (nfix n) (num-regs input-aignet))
-                               (equal (lit-eval (fanin-if-co (lookup-regnum->nxst n input-aignet))
-                                               invals regvals input-aignet)
+                               (equal (lit-eval (lookup-reg->nxst n input-aignet)
+                                                invals regvals input-aignet)
                                       0))))))
 
     (defthm aignet-abc-comb-simp-correct
@@ -729,7 +729,7 @@ differently:</p>
                                                     invals regvals input-aignet)
                                            0))
                            (implies (< (nfix n) (num-regs input-aignet))
-                                    (equal (lit-eval (fanin-if-co (lookup-regnum->nxst n input-aignet))
+                                    (equal (lit-eval (lookup-reg->nxst n input-aignet)
                                                     invals regvals input-aignet)
                                            0))))
              (implies (and (not (stringp status)) ;; not error msg

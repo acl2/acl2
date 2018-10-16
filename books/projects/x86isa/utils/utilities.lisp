@@ -564,6 +564,7 @@ constants and functions; it also proves some associated lemmas.</p>"
      `(define ,nXYp (x)
         ;; XY-bit natural number recognizer
         :inline t
+        :no-function t
         :enabled t
         :parents (constants-conversions-and-bounds)
         (unsigned-byte-p ,n x))
@@ -574,6 +575,7 @@ constants and functions; it also proves some associated lemmas.</p>"
         ;; to a 32-bit natural number.  We choose to keep this function
         ;; enabled.
         :inline t
+        :no-function t
         :enabled t
         :parents (constants-conversions-and-bounds)
         (mbe :logic (loghead ,n x)
@@ -581,6 +583,7 @@ constants and functions; it also proves some associated lemmas.</p>"
 
      `(define ,iXYp (x)
         :inline t
+        :no-function t
         :enabled t
         :parents (constants-conversions-and-bounds)
         ;; XY-bit integer recognizer
@@ -592,12 +595,14 @@ constants and functions; it also proves some associated lemmas.</p>"
         ;; to a 32-bit integer.  We choose to keep this function
         ;; enabled.
         :inline t
+        :no-function t
         :enabled t
         :parents (constants-conversions-and-bounds)
         (logext ,n x))
 
      `(define ,ntoi
         :inline t
+        :no-function t
         :enabled t
         :parents (constants-conversions-and-bounds)
         ;; Convert natural number to integer
@@ -611,6 +616,7 @@ constants and functions; it also proves some associated lemmas.</p>"
 
      `(define ,iton
         :inline t
+        :no-function t
         :enabled t
         :parents (constants-conversions-and-bounds)
         ;; Convert integer to natural number
@@ -670,6 +676,7 @@ constants and functions; it also proves some associated lemmas.</p>"
   ((n :type (integer 0 *))
    (x :type integer))
   :inline t
+  :no-function t
   :enabled t
   (case n
     (1  (n08 x))

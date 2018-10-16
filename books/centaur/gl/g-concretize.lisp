@@ -52,20 +52,8 @@
      (pattern-match x
        ((g-concrete obj) (mv t obj))
        ((g-boolean bool) (mv t (bfr-eval bool (car env))))
-       ((g-number num)
-        (b* (((mv real-num
-                  real-denom
-                  imag-num
-                  imag-denom)
-              (break-g-number num)))
-          (flet ((uval (n env)
-                       (bfr-list->u n (car env)))
-                 (sval (n env)
-                       (bfr-list->s n (car env))))
-            (mv t (components-to-number (sval real-num env)
-                                        (uval real-denom env)
-                                        (sval imag-num env)
-                                        (uval imag-denom env))))))
+       ((g-integer bits)
+        (mv t (bfr-list->s (list-fix bits) (car env))))
        ((g-ite test then else)
         (b* (((mv ok test) (eval-g-base-or-err test env))
              ((unless ok) (mv nil nil)))
@@ -109,7 +97,9 @@
     :hints ('(:expand ((:with eval-g-base (eval-g-base x env)))
               :in-theory (e/d (eval-g-base-apply-agrees-with-eval-g-base-ev)
                               (eval-g-base-apply
-                                  eval-g-base-alt-def))))
+                               eval-g-base-alt-def
+                               general-concretep-def
+                               general-concrete-obj-when-atom))))
     :flag gobj)
   (defthm eval-g-base-or-err-list-correct
     (b* (((mv ok res) (eval-g-base-or-err-list x env)))

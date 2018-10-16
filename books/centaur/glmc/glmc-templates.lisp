@@ -44,7 +44,9 @@
      :returns (mv hyp-bfr er new-pathcond new-interp-st new-bvar-db new-state)
      (b* (((glcp-config config))
           ((mv hyp-bfr er pathcond interp-st bvar-db state)
-           (interp-test hypo alist pathcond config.hyp-clk config interp-st bvar-db state))
+           (time$ (interp-test hypo alist pathcond config.hyp-clk config interp-st bvar-db state)
+                  :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+                  :args (list hyp-name)))
           ((when er)
            (mv nil
                (msg "Error interpreting ~s0 hyp: ~@1" hyp-name er)
@@ -98,7 +100,7 @@
           (next-bvar (shape-spec-max-bvar-list (shape-spec-bindings->sspecs config.shape-spec-alist)))
           (bvar-db (init-bvar-db next-bvar bvar-db))
 
-          ((mv er interp-st) (init-interp-st interp-st state))
+          ((mv er interp-st) (init-interp-st interp-st config state))
           ((when er)
            (mv nil nil er pathcond interp-st bvar-db state))
 
@@ -118,6 +120,34 @@
            (mv nil nil er pathcond interp-st bvar-db state)))
 
        (mv st-hyp-bfr in-hyp-bfr nil pathcond interp-st bvar-db state))))
+
+(defconst *glmc-ev-bindinglist-template*
+  '(define glmc-ev-bindinglist ((x acl2::bindinglist-p) (a alistp))
+     ;; Returns the alist for evaluating a body term nested inside all the
+     ;; bindings.
+     :returns (final-alist alistp)
+     (b* (((when (atom x)) (acl2::alist-fix a))
+          ((cons formals actuals) (car x))
+          (new-bindings (pairlis$ formals (geval-ev-lst actuals a))))
+       (glmc-ev-bindinglist (cdr x) (append new-bindings a)))))
+
+(defconst *glmc-interp-bindinglist-template*
+  '(define glmc-interp-bindinglist ((x acl2::bindinglist-p)
+                                    (alist)
+                                    (pathcond)
+                                    (clk natp)
+                                    (config glcp-config-p)
+                                    interp-st bvar-db state)
+     :guard (and (acl2::interp-defs-alistp (is-obligs interp-st))
+                 (acl2::interp-defs-alistp (glcp-config->overrides config)))
+     :returns (mv new-alist err new-pathcond new-interp-st new-bvar-db new-state)
+     (b* (((when (atom x))
+           (b* ((pathcond (lbfr-hyp-fix pathcond)))
+             (glcp-value alist)))
+          ((cons formals actuals) (car x))
+          ((glcp-er actuals) (interp-list actuals alist pathcond clk config interp-st bvar-db state))
+          (new-alist (append (pairlis$ formals actuals) alist)))
+       (glmc-interp-bindinglist (cdr x) new-alist pathcond clk config interp-st bvar-db state))))
 
 
 (defconst *glmc-interp-nonhyps-template*
@@ -144,10 +174,17 @@
                "Contradiction in constraints or hypothesis"
                pathcond interp-st bvar-db state))
 
-          (alist (gobj-alist-to-param-space (shape-specs-to-interp-al config.shape-spec-alist) hyp-bfr))
+          (alist1 (gobj-alist-to-param-space (shape-specs-to-interp-al config.shape-spec-alist) hyp-bfr))
+          ((mv alist er pathcond interp-st bvar-db state)
+           (time$ (glmc-interp-bindinglist config.bindings alist1 pathcond config.concl-clk config.glcp-config interp-st bvar-db state)
+                  :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+                  :args '(glmc-interp-bindinglist)))
+          ((when er)
+           (mv nil nil nil nil nil er pathcond interp-st bvar-db state))
 
           ((mv nextst er pathcond interp-st bvar-db state)
-           (interp-term-equivs config.nextst alist nil pathcond config.concl-clk config.glcp-config interp-st bvar-db state))
+           (time$ (interp-term-equivs config.nextst alist nil pathcond config.concl-clk config.glcp-config interp-st bvar-db state)
+                  :msg "; glmc interp nextst: ~st seconds, ~sa bytes.~%"))
           ((when er)
            (mv nil nil nil nil nil er pathcond interp-st bvar-db state))
           
@@ -179,12 +216,13 @@
                   er new-interp-st new-bvar-db new-state)
      (b* (((acl2::local-stobjs hyp-bvar-db)
            (mv nextst prop-bfr constraint-bfr initstp-bfr st-hyp-bfr hyp-bfr st-hyp-next-bfr hyp-max-bvar er interp-st bvar-db hyp-bvar-db state))
-          
           ((glmc-config+ config))
           (bvar-db (init-bvar-db 0 bvar-db)) ;; nonsense
 
           ((mv st-hyp-bfr in-hyp-bfr er interp-st hyp-bvar-db state)
-           (glmc-interp-hyps config interp-st hyp-bvar-db state))
+           (time$ (glmc-interp-hyps config interp-st hyp-bvar-db state)
+                  :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+                  :args '(glmc-interp-hyps)))
           ((when er)
            (mv nil nil nil nil nil nil nil nil er interp-st bvar-db hyp-bvar-db state))
 
@@ -193,7 +231,9 @@
           (hyp-max-bvar (next-bvar hyp-bvar-db))
 
           ((mv initst-bfr constr-bfr prop-bfr st-hyp-next-bfr nextst er interp-st bvar-db state)
-           (glmc-interp-nonhyps config hyp-bfr interp-st bvar-db hyp-bvar-db state))
+           (time$ (glmc-interp-nonhyps config hyp-bfr interp-st bvar-db hyp-bvar-db state)
+                  :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+                  :args '(glmc-interp-nonhyps)))
           ((when er)
            (mv nil nil nil nil nil nil nil nil er interp-st bvar-db hyp-bvar-db state)))
 
@@ -201,7 +241,7 @@
 
 
 
-
+;; x is the bindings of 
 (defconst *glmc-interp-bvar-alist-template*
   '(define glmc-interp-bvar-alist ((x pseudo-term-alistp)
                                    (alist)
@@ -309,7 +349,8 @@
                                   (pseudo-termp x))
                          :hints(("Goal" :in-theory (enable pseudo-termp))))))
      
-     (b* (((glmc-config+ config) (glmc-config-update-param hyp-bfr config))
+     (b* ((config (glmc-config-update-param hyp-bfr config))
+          ((glmc-config+ config))
           ((acl2::local-stobjs pathcond)
            (mv updates er pathcond interp-st bvar-db state))
 
@@ -324,30 +365,50 @@
 
           (st-alist `((,config.st-var . ,nextst-obj)))
 
+          (- (cw "; glmc-next-state: ~x0 shape-spec Boolean variables to be ~
+                  extracted from the next-state object~%"
+                 (len bvar-bindings)))
+
           ((mv updates1 er pathcond interp-st bvar-db state)
-           (glmc-interp-bvar-alist
-            bvar-bindings st-alist
-            pathcond config.glcp-config interp-st bvar-db state))
+           (time$ (glmc-interp-bvar-alist
+                   bvar-bindings st-alist
+                   pathcond config.glcp-config interp-st bvar-db state)
+                  :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+                  :args '(glmc-interp-bvar-alist)))
           ((when er)
            (mv nil
                (msg "Error extracting the shape spec bits from the next state object: ~@0"
                     (if (or (stringp er) (consp er)) er (msg "~x0" er)))
                pathcond interp-st bvar-db state))
 
+          (- (cw "; glmc-next-state: ~x0 shape-spec object variables to be ~
+                  extracted from the next-state object~%"
+                 (len gvar-bindings)))
+
           ((mv gvar-updates er pathcond interp-st bvar-db state)
-           (glmc-interp-gvar-alist
-            gvar-bindings st-alist pathcond config.glcp-config interp-st bvar-db state))
+           (time$ (glmc-interp-gvar-alist
+                   gvar-bindings st-alist pathcond config.glcp-config interp-st bvar-db state)
+                  :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+                  :args '(glmc-interp-gvar-alist)))
           ((when er)
            (mv nil
                (msg "Error extracting the shape spec variables from the next state object: ~@0"
                     (if (or (stringp er) (consp er)) er (msg "~x0" er)))
                pathcond interp-st bvar-db state))
 
-          (bvar-db-alist (glmc-bvar-db-to-state-updates (base-bvar bvar-db) (alist-keys gvar-updates) bvar-db))
+          (bvar-db-alist
+           (time$ (glmc-bvar-db-to-state-updates (base-bvar bvar-db) (alist-keys gvar-updates) bvar-db)
+                  :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+                  :args '(glmc-bvar-db-to-state-updates)))
+
+          (- (cw "; glmc-next-state: ~x0 bvar-db variables to be extracted from the next-state object~%"
+                 (len bvar-db-alist)))
 
           ((mv updates2 er pathcond interp-st bvar-db state)
-           (glmc-interp-bvar-alist
-            bvar-db-alist gvar-updates pathcond config.glcp-config interp-st bvar-db state))
+           (time$ (glmc-interp-bvar-alist
+                   bvar-db-alist gvar-updates pathcond config.glcp-config interp-st bvar-db state)
+                  :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+                  :args '(glmc-interp-bvar-alist)))
           ((when er)
            (mv nil
                (msg "Error extracting bvar-db variable updates: ~@0"
@@ -366,27 +427,41 @@
 (defconst *glmc-mcheck-to-fsm-template*
   '(define glmc-mcheck-to-fsm ((config glmc-config-p)
                                bvar-db
+                               interp-st
                                state)
      :returns (mv fsm
-                  er new-bvar-db new-state)
+                  er new-bvar-db new-interp-st new-state)
      :guard (b* (((glmc-config+ config)))
               (acl2::interp-defs-alistp config.overrides))
 
-     (b* (((acl2::local-stobjs interp-st)
-           (mv fsm er interp-st bvar-db state))
+     (b* (((glmc-config+ config))
+          (interp-st (reset-interp-st interp-st))
 
           (bvar-db (init-bvar-db 0 bvar-db))
           (er (glmc-syntax-checks config))
-          ((when er) (mv nil er interp-st bvar-db state))
+          ((when er) (mv nil er bvar-db interp-st state))
 
           ((mv nextst-obj prop-bfr fsm-constr-bfr initst-bfr st-hyp-bfr hyp-bfr st-hyp-next-bfr ?hyp-max-bvar
                er interp-st bvar-db state)
-           (glmc-mcheck-main-interps config interp-st bvar-db state))
-          ((when er) (mv nil er interp-st bvar-db state))
+           (b* ((config (b* (((glmc-config+ config1) config))
+                          (glmc-config-update-rewrites
+                           config config1.main-rewrite-rules config1.main-branch-merge-rules))))
+             (time$ (glmc-mcheck-main-interps config interp-st bvar-db state)
+                    :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+                    :args '(glmc-mcheck-main-interps))))
+          (interp-st (is-prof-report interp-st))
+          (interp-st (is-prof-reset interp-st))
+          ((when er) (mv nil er bvar-db interp-st state))
 
           ((mv nextst-bfrs er interp-st bvar-db state)
-           (glmc-next-state nextst-obj hyp-bfr config interp-st bvar-db state))
-          ((when er) (mv nil er interp-st bvar-db state))
+           (b* ((config (b* (((glmc-config+ config1) config))
+                          (glmc-config-update-rewrites
+                           config config1.extract-rewrite-rules config1.extract-branch-merge-rules))))
+             (time$ (glmc-next-state nextst-obj hyp-bfr config interp-st bvar-db state)
+                    :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+                    :args '(glmc-next-state))))
+          (interp-st (is-prof-report interp-st))
+          ((when er) (mv nil er bvar-db interp-st state))
 
           (bit-constr-bfr (bfr-constr->bfr (is-constraint interp-st))))
 
@@ -401,42 +476,46 @@
                           :hyp-var-bound hyp-max-bvar
                           :interp-clauses (acl2::interp-defs-alist-clauses (is-obligs interp-st))
                           :var-bound (next-bvar bvar-db))
-           nil interp-st bvar-db state))))
+           nil bvar-db interp-st state))))
 
 
 (defconst *glmc-template*
   '(define glmc ((clause pseudo-term-listp)
                  config
+                 interp-st
                  state)
      :returns (mv er
                   new-clauses
+                  new-interp-st
                   new-state)
      (b* (((unless (glmc-config-p config))
-           (mv "Bad GLMC config" nil state))
+           (mv "Bad GLMC config" nil interp-st state))
           ((mv er config state) (glmc-config-load-overrides config state))
-          ((when er) (mv er nil state))
+          ((when er) (mv er nil interp-st state))
           ((glmc-config+ config))
           ((unless (acl2::interp-defs-alistp config.overrides))
-           (mv "Bad overrides in GLMC config" nil state))
+           (mv "Bad overrides in GLMC config" nil interp-st state))
           (er (glmc-clause-syntax-checks config))
           ((when er)
-           (mv er nil state))
+           (mv er nil interp-st state))
           ((unless (bfr-mode))
-           (mv "Glmc only works in AIG mode" nil state))
+           (mv "Glmc only works in AIG mode" nil interp-st state))
           ((acl2::local-stobjs bvar-db)
-           (mv er clauses bvar-db state))
-          ((mv (glmc-fsm fsm) er bvar-db state)
-           (glmc-mcheck-to-fsm config bvar-db state))
+           (mv er clauses bvar-db interp-st state))
+          ((mv (glmc-fsm fsm) er bvar-db interp-st state)
+           (time$ (glmc-mcheck-to-fsm config bvar-db interp-st state)
+                  :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+                  :args '(glmc-mcheck-to-fsm)))
           ((when er)
-           (mv er nil bvar-db state))
+           (mv er nil bvar-db interp-st state))
 
           ((mv er state) (glmc-check-st-hyp-inductive config fsm bvar-db state))
           ((when er)
-           (mv er nil bvar-db state))
+           (mv er nil bvar-db interp-st state))
 
           ((mv er state) (glmc-fsm-perform-mcheck config fsm bvar-db state))
           ((when er)
-           (mv er nil bvar-db state))
+           (mv er nil bvar-db interp-st state))
 
           (clause-clauses (glmc-clause-check clause config))
           (cov-clause (glmc-cov-clause config)))
@@ -444,13 +523,15 @@
            (cons cov-clause
                  (append clause-clauses
                          (glmc-fsm->interp-clauses fsm)))
-           bvar-db state))))
+           bvar-db interp-st state))))
 
 
 (defconst *glmc-fnnames*
   '(glmc-interp-hyp
     glmc-interp-hyp-tuples
     glmc-interp-hyps
+    glmc-ev-bindinglist
+    glmc-interp-bindinglist
     glmc-interp-nonhyps
     glmc-mcheck-main-interps
     glmc-interp-bvar-alist
@@ -463,6 +544,8 @@
   `(progn ,*glmc-interp-hyp-template*
           ,*glmc-interp-hyp-tuples-template*
           ,*glmc-interp-hyps-template*
+          ,*glmc-ev-bindinglist-template*
+          ,*glmc-interp-bindinglist-template*
           ,*glmc-interp-nonhyps-template*
           ,*glmc-mcheck-main-interps-template*
           ,*glmc-interp-bvar-alist-template*

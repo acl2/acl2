@@ -125,6 +125,7 @@
 	   (otherwise nil))
 
   :inline t
+  :no-function t
 
   :parents (instruction-semantic-functions)
   :short "Specification for the @('MUL') (unsigned multiply) instruction"
@@ -278,6 +279,7 @@
 	   (otherwise nil))
 
   :inline t
+  :no-function t
 
   :parents (instruction-semantic-functions)
   :short "Specification for the @('IMUL') (unsigned imultiply) instruction"

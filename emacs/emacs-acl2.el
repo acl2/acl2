@@ -1,5 +1,5 @@
-; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2017, Regents of the University of Texas
+; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2018, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1022,7 +1022,12 @@ the expression beginning at the margin.  Leaves one at the original point."
       (setq quit-point (point))
       (goto-char old-point)
       (while (not (equal (point) quit-point))
-        (setq result (cons (move-up-one-level) result)))
+        (let ((n (move-up-one-level)))
+; We drop trailing zeros.  It doesn't make sense to dive into a function
+; symbol, and anyhow, the ACL2 function expand-address ignores trailing zeros.
+          (unless (and (null result)
+                       (equal n 0))
+            (setq result (cons n result)))))
       (goto-char old-point)
       result)))
 

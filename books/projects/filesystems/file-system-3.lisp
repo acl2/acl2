@@ -13,6 +13,7 @@
 (include-book "misc/assert" :dir :system)
 (include-book "bounded-nat-listp")
 (include-book "block-listp")
+(include-book "generate-index-list")
 (include-book "file-system-2")
 
 ;; This function serves to get the specified blocks from a disk. If the block
@@ -399,28 +400,9 @@
 
 ;; (defthm l3-unlink-works (implies (l3-fs-p fs) (not (l3-stat hns (l3-unlink hns fs)))))
 
-;; If one's going to append some blocks at the end of the disk, one needs to
-;; generate the indices for those blocks - that's what this function does.
-(defun generate-index-list (disk-length block-list-length)
-  (declare (xargs :guard (and (natp disk-length) (natp block-list-length))))
-  (if (zp block-list-length)
-      nil
-    (cons disk-length
-          (generate-index-list (1+ disk-length) (1- block-list-length)))))
+(encapsulate
+  ()
 
-(defthm
-    generate-index-list-correctness-1
-    (implies (and (natp disk-length)
-                  (natp block-list-length))
-             (nat-listp (generate-index-list disk-length block-list-length))))
-
-(defthm
-    generate-index-list-correctness-2
-    (implies (natp block-list-length)
-             (equal (len (generate-index-list disk-length block-list-length))
-                    block-list-length)))
-
-(encapsulate ()
   (local (defun induction-scheme (x y)
            (if (atom y)
                x
@@ -435,9 +417,7 @@
                                      (generate-index-list (len disk)
                                                           (len newblocks)))
             newblocks))
-     :hints (("Goal" :induct (induction-scheme disk newblocks))))
-  
-  )
+     :hints (("Goal" :induct (induction-scheme disk newblocks)))))
 
 ; This function writes a specified text string to a specified position to a
 ; text file at a specified path.
@@ -705,7 +685,7 @@
            (equal (stringp (l3-stat hns (mv-nth 0 (l3-wrchs hns fs disk start text))
                                     (mv-nth 1 (l3-wrchs hns fs disk start text))))
                   (stringp (l3-stat hns fs disk))))
-  :hints (("Subgoal *1/7.2'" 
+  :hints (("Subgoal *1/7.2'"
            :in-theory (disable l3-wrchs-returns-fs)
            :use (:instance l3-wrchs-returns-fs (hns (cdr hns))
                            (fs (cdr (assoc-equal (car hns) fs))))) ))
@@ -893,7 +873,7 @@
                      (l3-rdchs hns1 fs disk start1 n1)))))
   :hints (("Goal"
            :in-theory (disable
-                       (:rewrite l2-read-after-create-2) 
+                       (:rewrite l2-read-after-create-2)
                        (:rewrite l3-to-l2-fs-correctness-1)
                        (:rewrite l3-stat-correctness-2)
                        (:rewrite l3-create-returns-fs)

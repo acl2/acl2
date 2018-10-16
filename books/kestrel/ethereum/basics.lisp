@@ -13,6 +13,7 @@
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
 (include-book "bytes")
+(include-book "nibbles")
 (include-book "scalars")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

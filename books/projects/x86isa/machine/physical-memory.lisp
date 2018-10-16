@@ -74,6 +74,7 @@ recommend using these functions at the top-level.</p>")
 (define physical-address-p (phy-addr)
   :parents (physical-memory)
   :inline t
+  :no-function t
   :enabled t
   (mbe :logic (unsigned-byte-p #.*physical-address-size* phy-addr)
        :exec  (and (integerp phy-addr)
@@ -132,6 +133,7 @@ recommend using these functions at the top-level.</p>")
               (<= 0 addr)
               (< (+ 3 addr) *mem-size-in-bytes*))
   :inline t
+  :no-function t
   :parents (physical-memory)
 
   (if (mbt (not (app-view x86)))
@@ -245,6 +247,7 @@ recommend using these functions at the top-level.</p>")
    (val :type (unsigned-byte 32))
    (x86))
   :inline t
+  :no-function t
   :guard (and (not (app-view x86))
               (< (+ 3 addr) *mem-size-in-bytes*))
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))

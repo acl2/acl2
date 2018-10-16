@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "oslib/file-types" :dir :system)
+(include-book "oslib/file-types-logic" :dir :system)
 (include-book "centaur/getopt/parsers" :dir :system)
 (include-book "../util/defs")
 (local (include-book "../util/arithmetic"))

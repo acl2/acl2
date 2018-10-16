@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2018
+;; October 2018
 
 ;; An n-bit, big-endian "less than" comparator
 
@@ -42,7 +42,7 @@
         (net-arity-okp (1-bit-<$netlist))
         (1-bit-<& (1-bit-<$netlist)))))
 
-(defthmd 1-bit-<$value
+(defthm 1-bit-<$value
   (implies (1-bit-<& netlist)
            (equal (se '1-bit-< (list ind-in flag-in a b) sts netlist)
                   (list (f-or (f-and3 flag-in (f-not a) b)
@@ -262,7 +262,6 @@
                     (assoc-eq-values (sis 'b m n) wire-alist))))
    :hints (("Goal"
             :in-theory (enable de-rules
-                               1-bit-<$value
                                fv-<
                                sis)
             :induct (v-<-body-induct m n
@@ -290,7 +289,7 @@
 
 (not-primp-lemma v-<)
 
-(defthmd v-<$value
+(defthm v-<$value
   (implies (and (v-<& netlist n)
                 (natp n)
                 (true-listp a)
@@ -306,6 +305,5 @@
            :expand (:free (inputs n)
                           (se (si 'v-< n) inputs sts netlist))
            :in-theory (e/d* (de-rules
-                             v-<&
-                             not-primp-v-<)
+                             v-<&)
                             (de-module-disabled-rules)))))

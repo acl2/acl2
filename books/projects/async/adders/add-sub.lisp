@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; March 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -134,7 +134,6 @@
                     (assoc-eq-values (sis 'b-in m n) wire-alist))))
    :hints (("Goal"
             :in-theory (e/d* (de-rules
-                              full-adder$value
                               fv-adder
                               sis)
                              ((si)))
@@ -163,7 +162,6 @@
                      (assoc-eq-values (sis 'b-in m n) wire-alist)))))
    :hints (("Goal"
             :in-theory (e/d* (de-rules
-                              full-adder$value
                               fv-adder
                               fv-not
                               sis)
@@ -230,8 +228,7 @@
            :expand (:free (inputs n)
                           (se (si 'ripple-add/sub n) inputs sts netlist))
            :in-theory (e/d* (de-rules
-                             ripple-add/sub&
-                             not-primp-ripple-add/sub)
+                             ripple-add/sub&)
                             (de-module-disabled-rules)))))
 
 (defthm ripple-add/sub$value-2
@@ -251,8 +248,7 @@
            :expand (:free (inputs n)
                           (se (si 'ripple-add/sub n) inputs sts netlist))
            :in-theory (e/d* (de-rules
-                             ripple-add/sub&
-                             not-primp-ripple-add/sub)
+                             ripple-add/sub&)
                             (de-module-disabled-rules)))))
 
 (encapsulate
@@ -395,8 +391,3 @@
   :hints (("Goal" :in-theory (disable logext
                                       v-adder-works
                                       v-adder-sub-works))))
-
-(in-theory (disable ripple-add/sub$value-1
-                    ripple-add/sub$value-2
-                    ripple-add/sub$value-correct-1
-                    ripple-add/sub$value-correct-2))

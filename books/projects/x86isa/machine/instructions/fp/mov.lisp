@@ -73,20 +73,17 @@
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
        
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (integer 4 8) operand-size)
         (if (equal sp/dp #.*OP-DP*) 8 4))
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :seg prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
        (inst-ac? ;; Exceptions Type 5
         t)
 
@@ -150,12 +147,9 @@
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (integer 4 8) operand-size)
         (if (equal sp/dp #.*OP-DP*) 8 4))
@@ -163,7 +157,7 @@
         (reg-index reg rex-byte #.*r*))
        (xmm (xmmi-size operand-size xmm-index x86))
 
-       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
 
        ((mv flg0
             (the (signed-byte 64) v-addr)
@@ -225,18 +219,15 @@
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :seg prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
        (inst-ac? ;; Exceptions Type 1
         t)
 
@@ -294,19 +285,16 @@
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
 
-       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
        ((mv flg0
             (the (signed-byte 64) v-addr)
             (the (unsigned-byte 3) increment-RIP-by)
@@ -374,18 +362,15 @@
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :seg prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
        (inst-ac?
         ;; Exceptions Type 4 but treatment of #AC varies. For now, we
         ;; check the alignment.
@@ -445,12 +430,9 @@
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
@@ -459,7 +441,7 @@
         (xmmi-size 16 xmm-index x86))
 
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :adr prefixes)))
+                 (prefixes->adr prefixes)))
 
        ((mv flg0
             (the (signed-byte 64) v-addr)
@@ -524,19 +506,16 @@
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
 
-       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
        (inst-ac? ;; Exceptions Type 5
         t)
 
@@ -595,19 +574,16 @@
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
        ((the (unsigned-byte 64) xmm)
         (xmmi-size 8 xmm-index x86))
 
-       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
        ((mv flg0
             (the (signed-byte 64) v-addr)
             (the (unsigned-byte 3) increment-RIP-by)
@@ -666,18 +642,15 @@
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
        
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :seg prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes-slice :adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
        (inst-ac? ;; Exceptions Type 5
         t)
 
@@ -737,12 +710,9 @@
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
 
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
@@ -756,7 +726,7 @@
                                          (ash xmm -64)))))
 
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :adr prefixes)))
+                 (prefixes->adr prefixes)))
 
        ((mv flg0
             (the (signed-byte 64) v-addr)

@@ -11,13 +11,47 @@
 (include-book "std/alists/top" :dir :system)
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
-; I (Pete) went through the built-in functions and added
-; signature rules where appropriate. This list is not complete
-; for two reasons. First, there are some cases in which we fail
-; due to the algorithm not being as general as it can be. See the
-; acl2s-issues file. Second, I made one pass through the
-; documentation of ACL2-built-ins. I should check again and I
-; should check functions defined in the books we load 
+; Pete 9/14/2018: Useful for must-fail
+(include-book "misc/eval" :dir :system)
+
+; Pete 9/16/2018: Better range support
+(include-book "tau/bounders/elementary-bounders" :dir :system)
+
+; Pete 9/27/2018: Include utilities book
+(include-book "utilities")
+
+; Pete 9/14/2018: I am enabling some of the functions that
+; std/lists/top disables, since this causes problems where simple
+; theorems do not getting proved.
+
+(in-theory (enable
+            true-listp
+            len
+            append
+            rev
+            revappend
+            no-duplicatesp-equal
+            make-character-list
+            nthcdr
+            subseq-list
+            resize-list
+            last
+            butlast
+            remove
+            member
+            subsetp
+            intersectp
+            union-equal
+            set-difference-equal
+            intersection-equal))
+
+; I (Pete) went through the built-in functions and added signature
+; rules where appropriate. This list is not complete for two
+; reasons. First, there are some cases in which we fail due to the
+; algorithm not being as general as it can be. See the acl2s-issues
+; file. Second, I made one pass through the documentation of
+; ACL2-built-ins. I should check again and I should check functions
+; defined in the books we load.
 
 (sig append ((listof :a) (listof :a)) => (listof :a))
 (sig acl2::rev ((listof :a)) => (listof :a))
@@ -56,6 +90,15 @@
      :satisfies (<= x1 (len x3)))
 
 (include-book "arithmetic-5/top" :dir :system)
+(include-book "rtl/rel11/lib/top" :dir :system)
+(in-theory
+ (disable
+  acl2::|(mod (+ x y) z) where (<= 0 z)| acl2::|(mod (+ x (- (mod a b))) y)| 
+  acl2::|(mod (mod x y) z)| acl2::|(mod (+ x (mod a b)) y)| acl2::cancel-mod-+
+  acl2::mod-cancel-*-const acl2::simplify-products-gather-exponents-equal 
+  acl2::simplify-products-gather-exponents-<
+  acl2::cancel-mod-+ acl2::reduce-additive-constant-< acl2::|(floor x 2)|
+  acl2::|(equal x (if a b c))| acl2::|(equal (if a b c) x)|))
 
 (defthm natp-implies-acl2-numberp
   (implies (natp x)
@@ -122,6 +165,3 @@
            :use ((:instance numerator-1-decreases 
                             (n (+ r (- n) 1))))))
   :rule-classes ((:linear) (:rewrite)))
-
-
-

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -212,7 +212,7 @@
 
 (not-primp-lemma tv-if)
 
-(defthmd tv-if$value
+(defthm tv-if$value
   (implies (and (tv-if& netlist tree)
                 (equal n (tree-number tree))
                 (true-listp a) (true-listp b)
@@ -225,11 +225,11 @@
                   (fv-if c a b)))
   :hints (("Goal"
            :induct (tv-if-induction tree n c a b sts netlist)
+           :expand (:free (inputs n)
+                          (se (si 'tv-if n) inputs sts netlist))
            :in-theory (e/d (de-rules
-                            open-se
                             tv-if&
                             tv-if*$destructure
-                            not-primp-tv-if
                             f-if
                             tree-size
                             open-v-threefix

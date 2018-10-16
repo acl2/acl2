@@ -38,6 +38,8 @@
 (include-book "centaur/sv/svtv/fsm" :dir :system)
 (include-book "centaur/vl/loader/top" :dir :system)
 (include-book "centaur/sv/svex/gl-rules" :dir :system)
+(include-book "oslib/ls" :dir :system)
+
 (local (in-theory (disable (tau-system))))
 ; (depends-on "counter.sv")
 ; cert_param: (hons-only)
@@ -143,16 +145,14 @@
              (counter-ok st ins)))
   :hints ((gl::glmc-hint
            :state-var st
-           :nextstate (b* (((mv & nextst) (counter-run-step in st)))
-                        nextst)
-           :prop (b* (((mv step &) (counter-run-step in st))
-                      (count (svex-env-lookup 'count step)))
+           :body-bindings (((mv step nextst) (counter-run-step in st)))
+           :nextstate nextst
+           :prop (b* ((count (svex-env-lookup 'count step)))
                    (and (2vec-p count)
                         (not (equal (2vec->val count) 14))))
            :constraint (and (2vec-p (4vec-zero-ext 1 (svex-env-lookup 'reset in)))
                             (2vec-p (4vec-zero-ext 1 (svex-env-lookup 'incr in))))
-           :initstatep (b* (((mv step &) (counter-run-step in st))
-                            (count (svex-env-lookup 'count step)))
+           :initstatep (b* ((count (svex-env-lookup 'count step)))
                          (and (2vec-p count)
                               (< count 5)))
            :frame-input-bindings ((in (car ins)))

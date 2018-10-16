@@ -67,6 +67,7 @@
 	  (input-rflags  :type (unsigned-byte 32)))
 	 :parents (,(mk-name "gpr-arith/logic-spec-" operand-size))
 	 :inline t
+         :no-function t
 
 	 (b* ((dst (mbe :logic (n-size ,result-nbits dst)
 			:exec dst))

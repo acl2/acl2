@@ -276,126 +276,12 @@
          (implies (rationalp x)
                   (equal (realpart x) x))))
 
-(define number-spec-widths-fix ((num number-specp)
-                                (x acl2-numberp))
-  :returns (new-x)
-  :guard-hints (("Goal" :in-theory (enable number-specp)))
-  (components-to-number (if (consp (car num))
-                            (logext (len (car num)) (numerator (realpart x)))
-                          0)
-                        (if (consp (cdr num))
-                            (loghead (len (cadr num)) (denominator (realpart x)))
-                          1)
-                        (if (consp (caddr num))
-                            (logext (len (caddr num)) (numerator (imagpart x)))
-                          0)
-                        (if (consp (cdddr num))
-                            (loghead (len (cadddr num)) (denominator (imagpart x)))
-                          1))
-  ///
-  (local (defthm len-equal-0
-           (equal (equal (len x) 0) (not (consp x)))))
-
-  (local (defthmd ash-1-when-natp
-           (implies (natp n)
-                    (posp (ash 1 n)))
-           :rule-classes :type-prescription))
-
-  (local (defthm ash-1-gt-1
-           (equal (< 1 (ash 1 n))
-                  (posp n))
-           :hints(("Goal" :in-theory (enable acl2::ash** acl2::logtail**
-                                             ash-1-when-natp)
-                   :expand ((:with acl2::ash** (ash 1 n)))))))
-
-  (std::defret number-spec-widths-fix-in-range
-    (implies (number-specp num)
-             (number-spec-in-range num (number-spec-widths-fix num x)))
-    :hints(("Goal" :in-theory (e/d (number-spec-in-range
-                                    number-specp
-                                    integer-in-range
-                                    natural-in-range
-                                    components-to-number)))
-           (and stable-under-simplificationp
-                '(:use ((:instance acl2::signed-byte-p-logext
-                         (size (len (car num)))
-                         (size1 (len (car num)))
-                         (i (numerator (realpart x)))))
-                  :in-theory (e/d (bitops::expt-2-is-ash)
-                                  (acl2::signed-byte-p-logext
-                                   bitops::signed-byte-p-of-logext))))))
-
-  (local (defthm num-denom-elim
-           (implies (rationalp x)
-                    (equal (/ (numerator x) (denominator x)) x))
-           :rule-classes :elim))
-
-  (std::defret number-spec-widths-fix-when-in-range
-    (implies (number-spec-in-range num x)
-             (equal (number-spec-widths-fix num x) x))
-    :hints(("Goal" :in-theory (e/d (number-spec-in-range
-                                    components-to-number
-                                    integer-in-range natural-in-range
-                                    bitops::expt-2-is-ash))))))
-
 
 
 (local (defthm alist-keys-of-append
          (equal (alist-keys (append a b))
                 (append (alist-keys a) (alist-keys b)))))
 
-(define g-number-shape-spec-invert ((num number-specp)
-                                    (term pseudo-termp))
-  :guard-hints (("goal" :in-theory (enable number-specp)))
-  :returns (bvar-bindings alistp)
-  (append (integer-bits-shape-spec-invert 0 (car num) `(numerator (realpart ,term)))
-          (integer-bits-shape-spec-invert 0 (cadr num) `(denominator (realpart ,term)))
-          (integer-bits-shape-spec-invert 0 (caddr num) `(numerator (imagpart ,term)))
-          (integer-bits-shape-spec-invert 0 (cadddr num) `(denominator (imagpart ,term))))
-  ///
-  (std::Defret g-number-shape-spec-invert-correct
-    (implies (and (no-duplicatesp (number-spec-indices num))
-                  (number-specp num))
-             (equal (sspec-geval (shape-spec-to-gobj (g-number num))
-                                 (cons (slice-to-bdd-env (sspec-geval-ev-alist bvar-bindings a) rest-env)
-                                       var-env))
-                    (number-spec-widths-fix num (sspec-geval-ev term a))))
-    :hints(("Goal" :in-theory (enable sspec-geval shape-spec-to-gobj
-                                      break-g-number
-                                      ;; components-to-number
-                                      num-spec-to-num-gobj
-                                      number-specp
-                                      number-spec-indices
-                                      number-spec-widths-fix)
-            :expand ((:free (term) (integer-bits-shape-spec-invert 0 nil term))))))
-
-  (std::Defret g-number-shape-spec-invert-correct-rw
-    (b* ((bvar-bindings (g-number-shape-spec-invert (g-number->num x) term))
-         (num (g-number->num x)))
-      (implies (and (no-duplicatesp (number-spec-indices num))
-                    (number-specp num)
-                    (equal (tag x) :g-number))
-             (equal (sspec-geval (shape-spec-to-gobj x)
-                                 (cons (slice-to-bdd-env (sspec-geval-ev-alist bvar-bindings a) rest-env)
-                                       var-env))
-                    (number-spec-widths-fix num (sspec-geval-ev term a)))))
-    :hints(("Goal" :in-theory (e/d ()
-                                   (g-number-shape-spec-invert
-                                    g-number-shape-spec-invert-correct))
-            :use ((:instance g-number-shape-spec-invert-correct
-                   (num (g-number->num x))))
-            :expand ((shape-spec-to-gobj x)
-                     (shape-spec-to-gobj (g-number (g-number->num x)))))))
-
-  (std::defret vars-of-g-number-shape-spec-invert
-    (implies (number-specp num)
-             (equal (alist-keys bvar-bindings)
-                    (number-spec-indices num)))
-    :hints(("Goal" :in-theory (enable number-spec-indices number-specp))))
-
-  (std::defret pseudo-term-alistp-of-g-number-shape-spec-invert
-    (implies (pseudo-termp term)
-             (pseudo-term-alistp bvar-bindings))))
                     
 
 (local (include-book "std/alists/alistp" :dir :system))
@@ -450,24 +336,9 @@
     (if (atom x)
         (mv nil nil)
       (pattern-match x
-        ((g-number num) (mv (g-number-shape-spec-invert num term) nil))
-        ((g-integer sign bits var)
-         (b* ((bvar-bindings (integer-bits-shape-spec-invert
-                              0 bits term))
-              (bvar-bindings (cons (cons sign `(< ,term '0))
-                                   bvar-bindings))
-              (gvar-bindings `((,var . (acl2::logtail$inline ',(len bits) ,term)))))
-           (mv bvar-bindings gvar-bindings)))
-        ((g-integer? sign bits var intp)
-         (b* ((bvar-bindings (integer-bits-shape-spec-invert 0 bits term))
-              (bvar-bindings (cons (cons sign `(< ,term '0)) bvar-bindings))
-              (bvar-bindings (cons (cons intp `(integerp ,term)) bvar-bindings))
-              (gvar-bindings `((,var . ((lambda (x)
-                                          (if (integerp x)
-                                              (acl2::logtail$inline ',(len bits) x)
-                                            x))
-                                        ,term)))))
-           (mv bvar-bindings gvar-bindings)))
+        ((g-number num) (mv (integer-bits-shape-spec-invert 0 (car num) term) nil))
+        ((g-integer bits)
+         (mv (integer-bits-shape-spec-invert 0 bits term) nil))
         ((g-boolean n) (mv `((,n . ,term)) nil))
         ((g-var v) (mv nil `((,v . ,term))))
         ((g-concrete &) (mv nil nil))
@@ -508,26 +379,10 @@
     (if (atom x)
         (mv nil nil)
       (pattern-match x
-        ((g-number num) (mv (g-number-shape-spec-invert num `(if ,term 't 'nil)) nil))
-        ((g-integer sign bits var)
-         (b* ((term `(if ,term 't 'nil))
-              (bvar-bindings (integer-bits-shape-spec-invert
-                              0 bits term))
-              (bvar-bindings (cons (cons sign `(< ,term '0))
-                                   bvar-bindings))
-              (gvar-bindings `((,var . (acl2::logtail$inline ',(len bits) ,term)))))
-           (mv bvar-bindings gvar-bindings)))
-        ((g-integer? sign bits var intp)
-         (b* ((term `(if ,term 't 'nil))
-              (bvar-bindings (integer-bits-shape-spec-invert 0 bits term))
-              (bvar-bindings (cons (cons sign `(< ,term '0)) bvar-bindings))
-              (bvar-bindings (cons (cons intp `(integerp ,term)) bvar-bindings))
-              (gvar-bindings `((,var . ((lambda (x)
-                                          (if (integerp x)
-                                              (acl2::logtail$inline ',(len bits) x)
-                                            x))
-                                        ,term)))))
-           (mv bvar-bindings gvar-bindings)))
+        ((g-number num)
+         (mv (integer-bits-shape-spec-invert 0 (car num) `(if ,term 't 'nil)) nil))
+        ((g-integer bits)
+         (mv (integer-bits-shape-spec-invert 0 bits `(if ,term 't 'nil)) nil))
         ((g-boolean n) (mv `((,n . (if ,term 't 'nil))) nil))
         ((g-var v) (mv nil `((,v . (if ,term 't 'nil)))))
         ((g-concrete &) (mv nil nil))
@@ -583,7 +438,9 @@
       :rule-classes :type-prescription))
   ///
 
-  (verify-guards shape-spec-invert)
+  (verify-guards shape-spec-invert
+    :hints (("goal" :do-not-induct t))
+    :guard-debug t)
 
   (defthm-shape-spec-invert-flag
     (defthm bvars-of-shape-spec-invert
@@ -990,7 +847,15 @@
                   (bfr-set-var var val (slice-to-bdd-env rest env)))
            :hints(("Goal" :in-theory (enable slice-to-bdd-env)))))
 
-  
+
+  (local (defthm integer-in-range-is-signed-byte-p
+           (equal (integer-in-range lst obj)
+                  (if (atom lst)
+                      (equal obj 0)
+                    (signed-byte-p (len lst) obj)))
+           :hints(("Goal" :in-theory (enable signed-byte-p integer-in-range
+                                             bitops::ash-is-expt-*-x
+                                             len)))))
 
   
   (defthm-shape-spec-invert-flag
@@ -1190,29 +1055,41 @@
   ;;                        (shape-spec-list-invert x terms)
   ;;                        (shape-spec-list-indices x))))
   ;;     :flag shape-spec-list-invert))
-  
-  (local (defthm collect-vars-list-of-append
-           (acl2::set-equiv (collect-vars-list (append a b))
-                            (append (collect-vars-list a) (collect-vars-list b)))
-           :hints(("Goal" :in-theory (enable collect-vars-list append)))))
+  (local (defthm open-simple-term-vars
+           (equal (simple-term-vars (cons fn args))
+                  (and (not (eq fn 'quote))
+                       (simple-term-vars-lst args)))
+           :hints(("Goal" :in-theory (enable simple-term-vars)))))
 
-  (local (defthm collect-vars-list-of-make-nth-terms
-           (implies (not (member v (collect-vars x)))
-                    (not (member v (collect-vars-list (make-nth-terms x start n)))))
+  (local (defthm simple-term-vars-lst-of-consp
+           (implies (consp x)
+                    (equal (simple-term-vars-lst x)
+                           (union-eq (simple-term-vars-lst (cdr x))
+                                     (simple-term-vars (car x)))))
+           :hints(("Goal" :in-theory (enable simple-term-vars-lst)))))
+
+  (local (defthm simple-term-vars-lst-of-append
+           (acl2::set-equiv (simple-term-vars-lst (append a b))
+                            (append (simple-term-vars-lst a) (simple-term-vars-lst b)))
+           :hints(("Goal" :in-theory (enable simple-term-vars-lst append)))))
+
+  (local (defthm simple-term-vars-lst-of-make-nth-terms
+           (implies (not (member v (simple-term-vars x)))
+                    (not (member v (simple-term-vars-lst (make-nth-terms x start n)))))
            :hints(("Goal" :in-theory (enable make-nth-terms)))))
 
   (local (defthm member-vars-of-car-term
-           (implies (not (member v (collect-vars x)))
-                    (not (member v (collect-vars (car-term x)))))
+           (implies (not (member v (simple-term-vars x)))
+                    (not (member v (simple-term-vars (car-term x)))))
            :hints(("Goal" :in-theory (enable car-term)))))
   (local (defthm member-vars-of-cdr-term
-           (implies (not (member v (collect-vars x)))
-                    (not (member v (collect-vars (cdr-term x)))))
+           (implies (not (member v (simple-term-vars x)))
+                    (not (member v (simple-term-vars (cdr-term x)))))
            :hints(("Goal" :in-theory (enable cdr-term)))))
 
   (defthm vars-of-integer-bits-shape-spec-invert
-    (implies (not (member v (collect-vars term)))
-             (not (member v (collect-vars-list (alist-vals (integer-bits-shape-spec-invert idx bits term))))))
+    (implies (not (member v (simple-term-vars term)))
+             (not (member v (simple-term-vars-lst (alist-vals (integer-bits-shape-spec-invert idx bits term))))))
     :hints(("Goal" :in-theory (enable integer-bits-shape-spec-invert alist-vals))))
 
   (local (defthm ss-unary-function-fix-not-equal-quote
@@ -1227,42 +1104,38 @@
 
   (defthm-shape-spec-invert-flag
     (defthm vars-of-shape-spec-invert-bvars
-      (implies (not (member v (collect-vars term)))
-               (not (member v (collect-vars-list (alist-vals (mv-nth 0 (shape-spec-invert x term)))))))
-      :hints ('(:expand ((shape-spec-invert x term))
-                :in-theory (enable g-number-shape-spec-invert)))
+      (implies (not (member v (simple-term-vars term)))
+               (not (member v (simple-term-vars-lst (alist-vals (mv-nth 0 (shape-spec-invert x term)))))))
+      :hints ('(:expand ((shape-spec-invert x term))))
       :flag shape-spec-invert)
     (defthm vars-of-shape-spec-invert-iff-bvars
-      (implies (not (member v (collect-vars term)))
-               (not (member v (collect-vars-list (alist-vals (mv-nth 0 (shape-spec-invert-iff x term)))))))
+      (implies (not (member v (simple-term-vars term)))
+               (not (member v (simple-term-vars-lst (alist-vals (mv-nth 0 (shape-spec-invert-iff x term)))))))
       :hints ('(:expand ((shape-spec-invert-iff x term))
-                :in-theory (enable car-term cdr-term
-                                   g-number-shape-spec-invert)))
+                :in-theory (enable car-term cdr-term)))
       :flag shape-spec-invert-iff)
     (defthm vars-of-shape-spec-list-invert-bvars
-      (implies (not (member v (collect-vars-list terms)))
-               (not (member v (collect-vars-list (alist-vals (mv-nth 0 (shape-spec-list-invert x terms)))))))
+      (implies (not (member v (simple-term-vars-lst terms)))
+               (not (member v (simple-term-vars-lst (alist-vals (mv-nth 0 (shape-spec-list-invert x terms)))))))
       :hints ('(:expand ((shape-spec-list-invert x terms))))
       :flag shape-spec-list-invert))
 
 
   (defthm-shape-spec-invert-flag
     (defthm vars-of-shape-spec-invert-gvars
-      (implies (not (member v (collect-vars term)))
-               (not (member v (collect-vars-list (alist-vals (mv-nth 1 (shape-spec-invert x term)))))))
-      :hints ('(:expand ((shape-spec-invert x term))
-                :in-theory (enable g-number-shape-spec-invert)))
+      (implies (not (member v (simple-term-vars term)))
+               (not (member v (simple-term-vars-lst (alist-vals (mv-nth 1 (shape-spec-invert x term)))))))
+      :hints ('(:expand ((shape-spec-invert x term))))
       :flag shape-spec-invert)
     (defthm vars-of-shape-spec-invert-iff-gvars
-      (implies (not (member v (collect-vars term)))
-               (not (member v (collect-vars-list (alist-vals (mv-nth 1 (shape-spec-invert-iff x term)))))))
+      (implies (not (member v (simple-term-vars term)))
+               (not (member v (simple-term-vars-lst (alist-vals (mv-nth 1 (shape-spec-invert-iff x term)))))))
       :hints ('(:expand ((shape-spec-invert-iff x term))
-                :in-theory (enable car-term cdr-term
-                                   g-number-shape-spec-invert)))
+                :in-theory (enable car-term cdr-term)))
       :flag shape-spec-invert-iff)
     (defthm vars-of-shape-spec-list-invert-gvars
-      (implies (not (member v (collect-vars-list terms)))
-               (not (member v (collect-vars-list (alist-vals (mv-nth 1 (shape-spec-list-invert x terms)))))))
+      (implies (not (member v (simple-term-vars-lst terms)))
+               (not (member v (simple-term-vars-lst (alist-vals (mv-nth 1 (shape-spec-list-invert x terms)))))))
       :hints ('(:expand ((shape-spec-list-invert x terms))))
       :flag shape-spec-list-invert))
 

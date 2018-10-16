@@ -31,10 +31,11 @@
 
 (include-book "tools/flag" :dir :system)
 (include-book "join-thms")
-(include-book "unify-subst")
+(include-book "term-vars")
+(include-book "meta/pseudo-termp-lemmas" :dir :system)
 
 
-(defevaluator gen-eval gen-eval-lst ((if x y z)))
+(defevaluator gen-eval gen-eval-lst ((if x y z)) :namedp t)
 
 (def-join-thms gen-eval)
 
@@ -64,17 +65,26 @@
 ;; misc lemmas
 (local
  (progn
+   (local (defthm member-of-union
+            (iff (member x (union-equal y z))
+                 (or (member x y)
+                     (member x z)))))
+   (local (defthm intersectp-of-union
+            (iff (intersectp-equal x (union-equal y z))
+                 (or (intersectp-equal x y)
+                     (intersectp-equal x z)))))
+
    (defthm intersectp-equal-of-components-of-simple-term-vars-1
      (implies (and (not (intersectp-equal lst (simple-term-vars-lst x)))
                    (consp x))
               (not (intersectp-equal lst (simple-term-vars (car x)))))
-     :hints(("Goal" :in-theory (enable simple-term-vars-lst))))
+     :hints(("Goal" :expand ((simple-term-vars-lst x)))))
 
    (defthm intersectp-equal-of-components-of-simple-term-vars-2
      (implies (and (not (intersectp-equal lst (simple-term-vars-lst x)))
                    (consp x))
               (not (intersectp-equal lst (simple-term-vars-lst (cdr x)))))
-     :hints(("Goal" :in-theory (enable simple-term-vars-lst))))
+     :hints(("Goal" :expand ((simple-term-vars-lst x)))))
 
    (defthm intersectp-equal-of-components-of-simple-term-vars-3
      (implies (and (consp x) (not (equal (car x) 'quote))
@@ -83,7 +93,7 @@
      :hints(("Goal" :in-theory (enable simple-term-vars))))
 
    (defthm simple-term-vars-of-variable
-     (implies (and (atom X) x)
+     (implies (and (symbolp X) x)
               (equal (simple-term-vars x) (list x)))
      :hints(("Goal" :in-theory (enable simple-term-vars)))
      :rule-classes ((:rewrite :backchain-limit-lst 0)))
@@ -152,14 +162,18 @@
                     (symbol-listp (strip-cdrs alist))
                     (not (member-equal nil (strip-cdrs alist)))
                     (no-duplicatesp-equal (strip-cdrs alist))
-                    (pseudo-termp x))
+                    ;; (pseudo-termp x)
+                    )
                (equal (gen-eval (replace-subterms x alist)
                                 (append
                                  (replace-alist-to-bindings alist env)
                                  env))
                       (gen-eval x env)))
       :hints ((and stable-under-simplificationp
-                   '(:in-theory (enable gen-eval-constraint-0))))
+                   '(:in-theory (enable gen-eval-of-fncall-args
+                                        gen-eval-of-nonsymbol-atom)))
+              (and stable-under-simplificationp
+                   '(:cases ((and (symbolp x) x)))))
       :flag term)
     (defthm replace-subterms-list-identity
       (implies (and (not (intersectp-equal (strip-cdrs alist)
@@ -167,7 +181,8 @@
                     (symbol-listp (strip-cdrs alist))
                     (not (member-equal nil (strip-cdrs alist)))
                     (no-duplicatesp-equal (strip-cdrs alist))
-                    (pseudo-term-listp x))
+                    ;; (pseudo-term-listp x)
+                    )
                (equal (gen-eval-lst (replace-subterms-list x alist)
                                     (append
                                      (replace-alist-to-bindings alist env)
@@ -183,8 +198,7 @@
                                          (simple-term-vars-lst x)))
                   (symbol-listp (strip-cdrs alist))
                   (not (member-equal nil (strip-cdrs alist)))
-                  (no-duplicatesp-equal (strip-cdrs alist))
-                  (pseudo-term-listp x))
+                  (no-duplicatesp-equal (strip-cdrs alist)))
              (iff (gen-eval (disjoin (replace-subterms-list x alist))
                             (append (replace-alist-to-bindings alist env)
                                     env))

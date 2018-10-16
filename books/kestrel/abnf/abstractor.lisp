@@ -12,9 +12,10 @@
 
 (include-book "parser")
 
-(local (include-book "kestrel/utilities/list-theorems" :dir :system))
+(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
+
 (local (include-book "kestrel/utilities/oset-theorems" :dir :system))
-(local (include-book "kestrel/utilities/typed-list-theorems" :dir :system))
+(local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 (local (include-book "std/typed-lists/top" :dir :system))

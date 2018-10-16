@@ -134,32 +134,7 @@
 (defthm natp-next-idx-of-uniquify-nat-list
   (natp (mv-nth 1 (uniquify-nat-list x next-idx used-idxs))))
 
-(defun nat-list-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (eq x nil)
-    (and (nat-listp (car x))
-         (nat-list-listp (cdr x)))))
 
-(local (defthm nat-list-listp-when-number-specp
-         (implies (number-specp x)
-                  (nat-list-listp x))
-         :hints(("Goal" :in-theory (enable nat-list-listp
-                                           number-specp)))))
-
-(defun uniquify-number-spec (x next-idx used-idxs)
-  (declare (xargs :guard (and (nat-list-listp x)
-                              (natp next-idx))))
-  (if (atom x)
-      (mv nil (lnfix next-idx))
-    (b* (((mv field next-idx)
-          (uniquify-nat-list (car x) next-idx used-idxs))
-         ((mv rest next-idx)
-          (uniquify-number-spec (cdr X) next-idx used-idxs)))
-      (mv (cons field rest) next-idx))))
-
-(defthm natp-next-idx-of-uniquify-number-spec
-  (natp (mv-nth 1 (uniquify-number-spec x next-idx used-idxs))))
 
 (defun to-symb (n)
   (declare (xargs :guard (natp n)))
@@ -202,26 +177,10 @@
   (if (atom x)
       (mv x (lnfix next-idx) (lnfix next-var))
     (case (tag x)
-      (:g-number (mv-let (numspec next-idx)
-                   (uniquify-number-spec (g-number->num x) next-idx used-idxs)
-                   (mv (g-number numspec) next-idx (lnfix next-var))))
-      (:g-integer (b* ((sign next-idx)
-                       ((mv bits next-idx)
-                        (uniquify-nat-list (g-integer->bits x)
-                                           (+ 1 (lnfix next-idx))
-                                           used-idxs))
-                       (var next-var))
-                    (mv (g-integer sign bits var)
-                        next-idx (+ 1 (lnfix next-var)))))
-      (:g-integer? (b* ((intp next-idx)
-                        (sign (+ 1 (lnfix next-idx)))
-                        ((mv bits next-idx)
-                         (uniquify-nat-list (g-integer?->bits x)
-                                            (+ 2 (lnfix next-idx))
-                                            used-idxs))
-                        (var next-var))
-                     (mv (g-integer? sign bits var intp)
-                         next-idx (+ 1 (lnfix next-var)))))
+      (:g-number (b* (((mv bits next-idx) (uniquify-nat-list (car (g-number->num x)) next-idx used-idxs)))
+                   (mv (g-number (list bits)) next-idx (lnfix next-var))))
+      (:g-integer (b* (((mv bits next-idx) (uniquify-nat-list (g-integer->bits x) next-idx used-idxs)))
+                    (mv (g-integer bits) next-idx (lnfix next-var))))
       (:g-boolean (if (hons-get (g-boolean->bool x) used-idxs)
                       (mv (g-boolean next-idx) (+ 1 (lnfix next-idx)) (lnfix next-var))
                     (mv x (lnfix next-idx) (lnfix next-var))))
@@ -263,22 +222,11 @@
 (verify-guards uniquify-shape-spec
   :hints(("Goal" :in-theory (enable shape-specp))))
 
-(defun integer-with-nbitsp (n x)
-  (declare (xargs :guard t)
-           (ignore n))
-  (integerp x))
-
-(defun integer?-with-nbitsp (n x)
-  (declare (xargs :guard t)
-           (ignore n x))
-  t)
 
 (defconst *default-symobj-generators*
   '(((booleanp x) (g-boolean 0))
-    ((unsigned-byte-p n x) (g-number (list (numlist 0 1 (+ 1 n)))))
-    ((signed-byte-p n x) (g-number (list (numlist 0 1 n))))
-    ((integer-with-nbitsp n x) (g-integer 0 (numlist 0 1 n) 0))
-    ((integer?-with-nbitsp n x) (g-integer? 0 (numlist 0 1 n) 0 0))))
+    ((unsigned-byte-p n x) (g-integer (numlist 0 1 (+ 1 n))))
+    ((signed-byte-p n x) (g-integer (numlist 0 1 n)))))
 
 (defun translate-term-alist (gens wrld state-vars)
   (declare (xargs :mode :program))
@@ -545,6 +493,7 @@
        (untr-concl (untranslate concl nil (w state)))
        (call `(,gl-clause-proc
                clause '(,g-bindings nil ,(dumb-negate-lit hyp) nil ,concl ,untr-concl ,config)
+               interp-st
                state)))
     (glcp-combine-hints call cov-hints nil nil nil)))
 
@@ -710,7 +659,7 @@
 ;;                   (b-xor (logbit 3 a)
 ;;                          (logbit 3 (loghead 8 b)))))
 ;;   :hints ((try-gl :subterms-types
-;;                   #!acl2 (((loghead n b) (unsigned-byte-p n *))))))
+;;                   #!acl2 (((loghead n b) (unsigned-byte-p n x))))))
 
 
 

@@ -84,12 +84,9 @@
   (b* ((ctx 'x86-cvts?2si/cvtts?2si-Op/En-RM)
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (integer 4 8) reg-size)
         (if (logbitp #.*w* rex-byte) 8 4))
@@ -100,10 +97,10 @@
        ((the (unsigned-byte 4) rgf-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
 
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :adr prefixes)))
+                 (prefixes->adr prefixes)))
 
        (inst-ac? ;; Exceptions Type 3
         t)
@@ -172,12 +169,9 @@
   (b* ((ctx 'x86-cvtsi2s?-Op/En-RM)
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (integer 4 8) reg/mem-size)
         (if (logbitp #.*w* rex-byte) 8 4))
@@ -188,10 +182,10 @@
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
 
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :adr prefixes)))
+                 (prefixes->adr prefixes)))
 
        (inst-ac? ;; Exceptions Type 3
         t)
@@ -262,12 +256,9 @@
   (b* ((ctx 'x86-cvts?2s?-Op/En-RM)
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (integer 4 8) xmm-size)
         (if (equal dp-to-sp #.*DP-TO-SP*) 4 8))
@@ -278,10 +269,10 @@
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
 
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :adr prefixes)))
+                 (prefixes->adr prefixes)))
 
        (inst-ac? ;; Exceptions Type 3
         t)
@@ -345,23 +336,17 @@
   (b* ((ctx 'x86-cvtps2pd-Op/En-RM)
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       ;; [Shilpi]: The Intel manual doesn't mention that a lock
-       ;; prefix causes an exception for this opcode. Should the
-       ;; following be removed then?
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
 
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :adr prefixes)))
+                 (prefixes->adr prefixes)))
 
        (inst-ac? ;; Note that VEX.256 version follows Exception Type 3
         ;; without #AC. We haven't implemented VEX.256 yet.
@@ -452,20 +437,17 @@
   (b* ((ctx 'x86-cvtpd2ps-Op/En-RM)
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
 
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :adr prefixes)))
+                 (prefixes->adr prefixes)))
 
        (inst-ac?
         ;; Exceptions Type 2

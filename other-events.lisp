@@ -1,5 +1,5 @@
-; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2017, Regents of the University of Texas
+; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2018, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -21080,6 +21080,28 @@
   #-acl2-loop-only
   (stobj-let-fn-raw x))
 
+(defun collect-badged-fns (fns wrld)
+
+; Note that executable-badge is not yet defined in the boot-strap, so we work
+; around that issue here.  The result may suffer a bit in performance.
+
+  (cond ((endp fns) nil)
+        ( ;(executable-badge (car fns) wrld)
+         (mv-let (erp val)
+           (ev-fncall-w 'executable-badge
+                        (list (car fns) wrld)
+                        wrld
+                        nil  ; user-stobj-alist
+                        nil  ; safe-mode
+                        nil  ; gc-off
+                        t    ; hard-error-returns-nilp
+                        nil) ; aok
+           (assert$ (not erp)
+                    val))
+         (cons (car fns)
+               (collect-badged-fns (cdr fns) wrld)))
+        (t (collect-badged-fns (cdr fns) wrld))))
+
 (defun push-untouchable-fn (name fn-p state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
@@ -21106,52 +21128,65 @@
       ((subsetp-eq names (global-val untouchable-prop wrld))
        (stop-redundant-event ctx state))
       (t
-       (let ((bad (if fn-p
-                      (collect-never-untouchable-fns-entries
-                       names
-                       (global-val 'never-untouchable-fns wrld))
-                      nil)))
+       (let ((bad1 (if fn-p
+                       (collect-never-untouchable-fns-entries
+                        names
+                        (global-val 'never-untouchable-fns wrld))
+                     nil))
+             (bad2 (if fn-p
+                       (collect-badged-fns names wrld)
+                     nil)))
          (cond
-          ((null bad)
-           (install-event name
-                          event-form
-                          'push-untouchable
-                          0
-                          nil
-                          nil
-                          nil
-                          nil
-                          (global-set
-                           untouchable-prop
-                           (union-eq names (global-val untouchable-prop wrld))
-                           wrld)
-                          state))
-          (t (er soft ctx
-                 "You have tried to make ~&0 an untouchable function.  ~
-                  However, ~#0~[this function is~/these functions are~] ~
-                  sometimes introduced into proofs by one or more ~
-                  metatheorems or clause processors having well-formedness ~
-                  guarantees.   If you insist on making ~#0~[this name~/these ~
-                  names~] untouchable you must redefine the relevant ~
-                  metafunctions and clause processors so they do not create ~
-                  terms involving ~#0~[it~/them~] and prove and cite ~
-                  appropriate :WELL-FORMEDNESS-GUARANTEE theorems.  The ~
-                  following data structure may help you find the relevant ~
-                  events to change.  The data structure is an alist pairing ~
-                  each function name above with information about all the ~
-                  metatheorems or clause processors that may introduce that ~
-                  name.  The information for each metatheorem or clause ~
-                  processor is the name of the correctness theorem, the name ~
-                  of the metafunction or clause processor verified by that ~
-                  metatheorem, the name of the well-formedness guarantee for ~
-                  that metafunction or clause processor, and analogous ~
-                  information about any hypothesis metafunction involved.  ~
-                  All of these events (and possibly their supporting ~
-                  functions and lemmas) must be fixed so that the names you ~
-                  now want to be untouchable are not produced.~%~X12"
-                 (strip-cars bad)
-                 bad
-                 nil)))))))))
+          (bad1 (er soft ctx
+                    "You have tried to make untouchable the ~
+                     function~#0~[~/s~], ~&0.  However, ~#0~[this function ~
+                     is~/these functions are~] sometimes introduced into ~
+                     proofs by one or more metatheorems or clause processors ~
+                     having well-formedness guarantees.   If you insist on ~
+                     making ~#0~[this name~/these names~] untouchable you ~
+                     must redefine the relevant metafunctions and clause ~
+                     processors so they do not create terms involving ~
+                     ~#0~[it~/them~] and prove and cite appropriate ~
+                     :WELL-FORMEDNESS-GUARANTEE theorems.  The following data ~
+                     structure may help you find the relevant events to ~
+                     change.  The data structure is an alist pairing each ~
+                     function name above with information about all the ~
+                     metatheorems or clause processors that may introduce ~
+                     that name.  The information for each metatheorem or ~
+                     clause processor is the name of the correctness theorem, ~
+                     the name of the metafunction or clause processor ~
+                     verified by that metatheorem, the name of the ~
+                     well-formedness guarantee for that metafunction or ~
+                     clause processor, and analogous information about any ~
+                     hypothesis metafunction involved.  All of these events ~
+                     (and possibly their supporting functions and lemmas) ~
+                     must be fixed so that the names you now want to be ~
+                     untouchable are not produced.~%~X12"
+                    (strip-cars bad1)
+                    bad1
+                    nil))
+          (bad2 (er soft ctx
+                    "You have tried to make untouchable the ~
+                     function~#0~[~/s~], ~&0.  However, ~#0~[this function ~
+                     has a badge~/these functions have badges~] (see :DOC ~
+                     apply$).  We do not allow a badged function F to be ~
+                     untouchable because (apply$ 'F (list arg1 arg2 ...)) is ~
+                     still a legal term that, however, is a proxy for (F arg1 ~
+                     arg2 ...)."
+                    bad2))
+          (t (install-event name
+                            event-form
+                            'push-untouchable
+                            0
+                            nil
+                            nil
+                            nil
+                            nil
+                            (global-set
+                             untouchable-prop
+                             (union-eq names (global-val untouchable-prop wrld))
+                             wrld)
+                            state)))))))))
 
 (defun remove-untouchable-fn (name fn-p state event-form)
 
@@ -27873,7 +27908,7 @@
            (er soft ctx
                "It is illegal for supporters of DEFAXIOM events to receive ~
                 attachments, but ~*0.  See :DOC defattach."
-               `(impossible
+               `("impossible" ; This case shouldn't occur.
                  "~@*"
                  "~@*, and "
                  "~@*, "
@@ -30212,6 +30247,95 @@
 
 (defmacro read-file-into-string (filename &key (start '0) bytes)
   `(read-file-into-string2 ,filename ,start ,bytes state))
+
+; The following two functions support the community books utility,
+; include-raw.
+
+(defun sort-fboundps (lst wrld ps ls ms)
+
+; Accumulate, into ps, ls, and ms, the symbols of lst that are program-mode
+; function symbols, logic-mode function symbols, and macro names, respectively.
+
+  (declare (xargs :mode :program))
+  (cond ((endp lst) (mv ps ls ms))
+        (t (let ((s (car lst)))
+             (cond ((getpropc s 'macro-body nil wrld)
+                    (sort-fboundps (cdr lst) wrld ps ls (cons s ms)))
+                   ((member (symbol-class s wrld)
+                            '(:ideal :common-lisp-compliant)
+                            :test 'eq)
+                    (sort-fboundps (cdr lst) wrld ps (cons s ls) ms))
+                   ((not (eq (getpropc s 'formals t wrld)
+                             t))
+                    (sort-fboundps (cdr lst) wrld (cons s ps) ls ms))
+                   (t
+                    (sort-fboundps (cdr lst) wrld ps ls ms)))))))
+
+#-acl2-loop-only
+(defun extend-with-raw-code (form state)
+
+; The popular macro include-raw, defined in community book
+; books/tools/include-raw.lisp, can be used to smash the symbol-functions of
+; ACL2 functions and macros.  If one uses include-raw and then (comp t), one
+; doesn't want to lose those new symbol-functions!  It is thus important, in
+; support of (comp t), to extend the values of state globals
+; 'program-fns-with-raw-code and 'logic-fns-with-raw-code, with those
+; program-mode function symbols whose definitions that have been smashed.  It
+; may be less important to extend the value of state global
+; 'macros-with-raw-code, but that also seems the right thing to do.
+
+; Thus, this function is essentially (eval form), except that instead of
+; returning the value(s) from that evaluation, it retuns a new state where the
+; xxx-with-raw-code state globals are extended, according to the definitions of
+; ACL2 macros and functions that have changed when form is evaluated.
+
+; We considered making such a modification within the definition of the
+; include-raw macro.  However, the do-all-symbols call took well over a half
+; second on a small example when it was run interpreted in LispWorks, and that
+; time was virtually eliminated when running compiled.  The simplest way to
+; compile was to place this definition in the ACL2 sources (so, we added the
+; definition of supporting function, sort-fboundps, as well).
+
+  (let ((ht (make-hash-table :test 'eq)))
+    (do-all-symbols (s)
+      (when (fboundp s)
+        (setf (gethash s ht)
+              (symbol-function s))))
+    (eval form) ; may overwrite some symbol-functions
+    (let (lst)
+      (maphash (lambda (key val)
+                 (when (not (and (fboundp key) ; always true?
+
+; It is tempting to use eq rather than equal just below.  However, in GCL we
+; found that the symbol-function for a macro need not be EQ to itself (more
+; accurately: fetching the symbol-function twice can give non-EQ results).
+; Should we go further and use EQUALP?  So far, at least, that doesn't seem
+; necessary.
+
+                                 (equal val (symbol-function key))))
+                   (push key lst)))
+               ht)
+      (mv-let (ps ls ms)
+        (sort-fboundps lst (w state) nil nil nil)
+        (pprogn
+         (cond
+          (ps (f-put-global
+               'program-fns-with-raw-code
+               (append ps (f-get-global 'program-fns-with-raw-code state))
+               state))
+          (t state))
+         (cond
+          (ls (f-put-global
+               'logic-fns-with-raw-code
+               (append ls (f-get-global 'logic-fns-with-raw-code state))
+               state))
+          (t state))
+         (cond
+          (ms (f-put-global
+               'macros-with-raw-code
+               (append ms (f-get-global 'macros-with-raw-code state))
+               state))
+          (t state)))))))
 
 ; Below we define two ``acl2-magic-concrete...'' functions whose only uses are
 ; to allow us to introduce concrete-badge-userfn and concrete-apply$-userfn as

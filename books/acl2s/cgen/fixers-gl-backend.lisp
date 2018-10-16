@@ -1211,29 +1211,31 @@ bindings:
                 :abort-ctrex t
                 :abort-vacuous t
                 :n-counterexamples 1))
-       ((mv erp ?val state) 
+       ((acl2::local-stobjs gl::interp-st)
+        (mv err ans gl::interp-st state))
+       ((mv erp ?val gl::interp-st state) 
         (gl::glcp nil (list bindings param-bindings
                             trhyp trparam trconcl
-                            concl config) state))
+                            concl config)
+                  gl::interp-st state))
 ;if no error, return as it is, o.w. below report sat assignment
        ((mv end-sat-query state) (acl2::read-run-time state))
        (- (cw? (verbose-stats-flag vl)
                "~|Cgen/Note: GL/SAT Engine: Time taken = "))
-       ((er &) (if (verbose-stats-flag vl)
-                       (pprogn (print-rational-as-decimal (- end-sat-query start-sat-query)
-                                                      (standard-co state)
-                                                      state)
-                           (princ$ " seconds" (standard-co state) state)
-                           (newline (standard-co state) state)
-                           (newline (standard-co state) state)
-                           (value :invisible))
-                 (value nil)))
-       
-        ((unless erp) (mv :unsat nil state)) 
-        (x  (car (@ gl::glcp-counterex-assignments))) ;only pick the first
-        (sat-A (gl::glcp-obj-ctrex->obj-alist x))
-        )
-      (mv nil sat-A state)))
+       ((mv err & state) (if (verbose-stats-flag vl)
+                             (pprogn (print-rational-as-decimal (- end-sat-query start-sat-query)
+                                                                (standard-co state)
+                                                                state)
+                                     (princ$ " seconds" (standard-co state) state)
+                                     (newline (standard-co state) state)
+                                     (newline (standard-co state) state)
+                                     (value :invisible))
+                           (value nil)))
+       ((when err) (mv err nil gl::interp-st state))
+       ((unless erp) (mv :unsat nil gl::interp-st state))
+       (x  (car (@ gl::glcp-counterex-assignments))) ;only pick the first
+       (sat-A (gl::glcp-obj-ctrex->obj-alist x)))
+    (mv nil sat-A gl::interp-st state)))
       
 (defun fixers-maxsat-glcp-query-loop (n top-hyps bindings trhyp concl-hyp mode vl state)
   (declare (xargs :mode :program :stobjs (state)))

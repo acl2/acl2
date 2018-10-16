@@ -289,7 +289,7 @@
 
 (gl::def-gl-rewrite logapp-expand
   (implies (syntaxp (and (integerp n)
-                         (not (or (atom x) (eq (car x) :g-number)))))
+                         (not (or (atom x) (eq (car x) :g-integer)))))
            (equal (logapp n x y)
                   (if (zp n)
                       (ifix y)

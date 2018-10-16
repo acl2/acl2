@@ -66,6 +66,7 @@
     :long
     :no-count
     :true-listp
+    :unique-keys
     :prepwork
     :strategy
     :keyp-of-nil
@@ -130,7 +131,8 @@
                     :recp (or key-recp val-recp)
                     :already-definedp already-defined
                     :keyp-of-nil (getarg :keyp-of-nil :unknown kwd-alist)
-                    :valp-of-nil (getarg :valp-of-nil :unknown kwd-alist))))
+                    :valp-of-nil (getarg :valp-of-nil :unknown kwd-alist)
+                    :unique-keys (getarg :unique-keys nil kwd-alist))))
 
 (define flexalist-predicate-def (alist)
   (b* (((flexalist alist) alist)
@@ -138,21 +140,22 @@
        (stdx (intern-in-package-of-symbol "X" alist.pred))
        (bool (intern-in-package-of-symbol "BOOL" alist.name))
        ;; (stda (intern-in-package-of-symbol "A" alist.pred)))
-       (std-defalist-call `(std::defalist ,alist.pred (,stdx)
-                             ,@(and alist.key-type `(:key (,alist.key-type ,stdx)))
-                             ,@(and alist.val-type `(:val (,alist.val-type ,stdx)))
-                             :true-listp ,alist.true-listp
-                             :keyp-of-nil ,alist.keyp-of-nil
-                             :valp-of-nil ,alist.valp-of-nil
-                             :already-definedp t
-                             ;; Try to turn off all doc generation here
-                             :parents nil
-                             :short nil
-                             :long nil)))
+       (std-defalist-call (and (not alist.unique-keys)
+                               `((std::defalist ,alist.pred (,stdx)
+                                   ,@(and alist.key-type `(:key (,alist.key-type ,stdx)))
+                                   ,@(and alist.val-type `(:val (,alist.val-type ,stdx)))
+                                   :true-listp ,alist.true-listp
+                                   :keyp-of-nil ,alist.keyp-of-nil
+                                   :valp-of-nil ,alist.valp-of-nil
+                                   :already-definedp t
+                                   ;; Try to turn off all doc generation here
+                                   :parents nil
+                                   :short nil
+                                   :long nil)))))
     (if alist.already-definedp
         `(progn
            (local (in-theory (disable ,alist.pred)))
-           ,std-defalist-call)
+           . ,std-defalist-call)
       `(define ,alist.pred (,alist.xvar)
          :parents (,alist.name)
          :returns ,bool
@@ -166,12 +169,47 @@
                   `(eq ,alist.xvar nil)
                 t)
            (and (consp (car ,alist.xvar))
+                ,@(and alist.unique-keys `((not (hons-assoc-equal (caar ,alist.xvar) (cdr ,alist.xvar)))))
                 ,@(and alist.key-type `((,alist.key-type (caar ,alist.xvar))))
                 ,@(and alist.val-type `((,alist.val-type (cdar ,alist.xvar))))
                 (,alist.pred (cdr ,alist.xvar))))
          ///
          (local (in-theory (disable ,alist.pred)))
-         ,std-defalist-call))))
+         ,@(and alist.unique-keys
+                ;; Enough theorems to get on with for now...
+                `((defthm ,(intern-in-package-of-symbol (cat (symbol-name alist.pred) "-OF-CDR")
+                                                        alist.pred)
+                    (implies (,alist.pred ,alist.xvar)
+                             (,alist.pred (cdr ,alist.xvar)))
+                    :hints (("goal" :expand ((,alist.pred ,alist.xvar)))))
+
+                  ,@(and alist.key-type
+                         `((defthm ,(intern-in-package-of-symbol (cat (symbol-name alist.key-type) "-OF-CAAR-WHEN-"
+                                                                      (symbol-name alist.pred))
+                                                                 alist.pred)
+                             (implies (and (,alist.pred ,alist.xvar)
+                                           (consp ,alist.xvar))
+                                      (,alist.key-type (caar ,alist.xvar)))
+                             :hints (("goal" :expand ((,alist.pred ,alist.xvar)))))))
+                  ,@(and alist.val-type
+                         `((defthm ,(intern-in-package-of-symbol (cat (symbol-name alist.val-type) "-OF-CDAR-WHEN-"
+                                                                      (symbol-name alist.pred))
+                                                                 alist.pred)
+                             (implies (and (,alist.pred ,alist.xvar)
+                                           (consp ,alist.xvar))
+                                      (,alist.val-type (cdar ,alist.xvar)))
+                             :hints (("goal" :expand ((,alist.pred ,alist.xvar)))))))
+                  (defthm ,(intern-in-package-of-symbol (cat (symbol-name alist.pred) "-OF-CONS")
+                                                        alist.pred)
+                    (equal (,alist.pred (cons a ,alist.xvar))
+                           (and (and (consp a)
+                                     ,@(and alist.key-type `((,alist.key-type (car a))))
+                                     ,@(and alist.val-type `((,alist.val-type (cdr a))))
+                                     (not (hons-assoc-equal (car a) ,alist.xvar)))
+                                (,alist.pred ,alist.xvar)))
+                    :hints (("goal" :expand ((,alist.pred (cons a ,alist.xvar))))))
+                  ))
+         . ,std-defalist-call))))
 
 (define flexalist-fix-def (x flagp)
   (b* (((flexalist x) x))
@@ -202,30 +240,37 @@
        :inline t
        (mbe :logic (if (atom ,x.xvar)
                        ,(if x.true-listp nil x.xvar)
-                     ,(if x.key-fix
-                          (if (eq x.strategy :fix-keys)
-                              `(if (consp (car ,x.xvar))
-                                   (cons (cons (,x.key-fix (caar ,x.xvar))
-                                               ,(if x.val-fix
-                                                    `(,x.val-fix (cdar ,x.xvar))
-                                                  `(cdar ,x.xvar)))
-                                         (,x.fix (cdr ,x.xvar)))
-                                 (,x.fix (cdr ,x.xvar)))
-                            `(if (and (consp (car ,x.xvar))
-                                      (,x.key-type (caar ,x.xvar)))
-                                 (cons (cons (caar ,x.xvar)
-                                             ,(if x.val-fix
-                                                  `(,x.val-fix (cdar ,x.xvar))
-                                                `(cdar ,x.xvar)))
-                                       (,x.fix (cdr ,x.xvar)))
-                               (,x.fix (cdr ,x.xvar))))
-                        `(if (consp (car ,x.xvar))
-                             (cons (cons (caar ,x.xvar)
-                                         ,(if x.val-fix
-                                              `(,x.val-fix (cdar ,x.xvar))
-                                            `(cdar ,x.xvar)))
-                                   (,x.fix (cdr ,x.xvar)))
-                           (,x.fix (cdr ,x.xvar)))))
+                     ,(if (and (or (not x.key-fix)
+                                   (eq x.strategy :fix-keys))
+                               (not x.unique-keys))
+                          
+                          `(if (consp (car ,x.xvar))
+                               (cons (cons ,(if x.key-fix
+                                                `(,x.key-fix (caar ,x.xvar))
+                                              `(caar ,x.xvar))
+                                           ,(if x.val-fix
+                                                `(,x.val-fix (cdar ,x.xvar))
+                                              `(cdar ,x.xvar)))
+                                     (,x.fix (cdr ,x.xvar)))
+                             (,x.fix (cdr ,x.xvar)))
+                        `(let ((rest (,x.fix (cdr ,x.xvar))))
+                           (if (and (consp (car ,x.xvar))
+                                    ,@(and x.key-fix
+                                           (not (eq x.strategy :fix-keys))
+                                           `((,x.key-type (caar ,x.xvar)))))
+                               (let ((first-key ,(if (and x.key-fix
+                                                          (eq x.strategy :fix-keys))
+                                                     `(,x.key-fix (caar ,x.xvar))
+                                                   `(caar ,x.xvar)))
+                                     (first-val ,(if x.val-fix
+                                                     `(,x.val-fix (cdar ,x.xvar))
+                                                   `(cdar ,x.xvar))))
+                                 ,(if x.unique-keys
+                                      `(if (hons-assoc-equal first-key rest)
+                                           rest
+                                         (cons (cons first-key first-val) rest))
+                                    `(cons (cons first-key first-val) rest)))
+                             rest))))
             :exec ,x.xvar))))
 
 (define flexalist-fix-postevents (x)
@@ -250,17 +295,32 @@
                                             x.fix)
         ;; bozo make sure this is compatible with defprojection
         (equal (,x.fix (cons (cons a b) ,stdx))
-               ,(if (or (eq x.strategy :fix-keys) (not x.key-fix))
+               ,(if (and (or (eq x.strategy :fix-keys) (not x.key-fix))
+                         (not x.unique-keys))
                     `(cons (cons ,(if x.key-fix `(,x.key-fix a) 'a)
                                  ,(if x.val-fix `(,x.val-fix b) 'b))
                            (,x.fix ,stdx))
-                  `(if (,x.key-type a)
-                       (cons (cons a ,(if x.val-fix `(,x.val-fix b) 'b))
-                             (,x.fix ,stdx))
-                     (,x.fix ,stdx))))
+                  `(let ((rest (,x.fix ,stdx)))
+                     (if (and ,@(and x.key-fix
+                                     (not (eq x.strategy :fix-keys))
+                                     `((,x.key-type a))))
+                         (let ((first-key ,(if (and x.key-fix
+                                                    (eq x.strategy :fix-keys))
+                                               `(,x.key-fix a)
+                                             'a))
+                               (first-val ,(if x.val-fix
+                                               `(,x.val-fix b)
+                                             'b)))
+                           ,(if x.unique-keys
+                                `(if (hons-assoc-equal first-key rest)
+                                     rest
+                                   (cons (cons first-key first-val) rest))
+                              `(cons (cons first-key first-val) rest)))
+                       rest))))
         :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
 
       ,@(and (not (eq x.strategy :fix-keys))
+             (not x.unique-keys)
              `((defthm ,(intern-in-package-of-symbol
                          (cat "HONS-ASSOC-EQUAL-OF-" (symbol-name x.fix))
                          x.fix)
@@ -277,17 +337,18 @@
                                    (hons-assoc-equal k x)
                                    (:free (a b) (hons-assoc-equal k (cons a b)))))))))
 
-      (defthm ,(intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-APPEND") x.fix)
-        (equal (,x.fix (append std::a std::b))
-               (append (,x.fix std::a) (,x.fix std::b)))
-        :hints (("goal" :induct (append std::a std::b)
-                 :expand ((,x.fix std::a)
-                          (:free (a b) (,x.fix (cons a b)))
-                          (,x.fix nil)
-                          (:free (b) (append std::a b))
-                          (:free (b) (append nil b))
-                          (:free (a b c) (append (cons a b) c)))
-                 :in-theory (enable (:i append)))))
+      ,@(and (not x.unique-keys)
+             `((defthm ,(intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-APPEND") x.fix)
+                 (equal (,x.fix (append std::a std::b))
+                        (append (,x.fix std::a) (,x.fix std::b)))
+                 :hints (("goal" :induct (append std::a std::b)
+                          :expand ((,x.fix std::a)
+                                   (:free (a b) (,x.fix (cons a b)))
+                                   (,x.fix nil)
+                                   (:free (b) (append std::a b))
+                                   (:free (b) (append nil b))
+                                   (:free (a b c) (append (cons a b) c)))
+                          :in-theory (enable (:i append)))))))
 
       (defthm ,(intern-in-package-of-symbol (cat "CONSP-CAR-OF-" (symbol-name x.fix)) x.fix)
         (equal (consp (car  (,x.fix ,x.xvar)))
@@ -358,8 +419,9 @@
 
       ,@(and (or keycount valcount)
              `((defthm ,foo-count-of-acons
-                 ,(if (or (eq x.strategy :fix-keys)
-                          (not x.key-fix))
+                 ,(if (and (or (eq x.strategy :fix-keys)
+                               (not x.key-fix))
+                           (not x.unique-keys))
                       `(> (,x.count (cons (cons a b) c))
                           (+ ,@(if keycount
                                    (if valcount
@@ -368,7 +430,14 @@
                                      `((,keycount a)))
                                  `((,valcount b)))
                              (,x.count c)))
-                    `(implies (,x.key-type a)
+                    `(implies (and ,@(and x.key-type (not (eq x.strategy :fix-keys))
+                                         `((,x.key-type a)))
+                                   ,@(and x.unique-keys
+                                          `((not (hons-assoc-equal
+                                                  ,(if (and x.key-type (eq x.strategy :fix-keys))
+                                                       `(,x.key-fix a)
+                                                     'a)
+                                                  (,x.fix c))))))
                               (> (,x.count (cons (cons a b) c))
                                  (+ ,@(if keycount
                                           (if valcount
@@ -401,7 +470,13 @@
                                    (,x.pred ,x.xvar))
                                ,@(and (not (eq x.strategy :fix-keys))
                                       x.key-fix
-                                      `((,x.key-type (caar ,x.xvar)))))
+                                      `((,x.key-type (caar ,x.xvar))))
+                               ,@(and x.unique-keys
+                                      `((not (hons-assoc-equal
+                                              ,(if (and x.key-fix (eq x.strategy :fix-keys))
+                                                   `(,x.key-fix (caar ,x.xvar))
+                                                 `(caar ,x.xvar))
+                                              (,x.fix (cdr ,x.xvar)))))))
                           (< (,valcount (cdar ,x.xvar)) (,x.count ,x.xvar)))
                  :rule-classes :linear)))
 

@@ -288,21 +288,6 @@
           (and (subsetp-equal a c)
                (subsetp-equal b c))))
 
-   (defthm subsetp-of-symbol-<-merge-1
-     (iff (subsetp (symbol-<-merge x y) z)
-          (and (subsetp x z) (subsetp y z)))
-     :hints(("Goal" :in-theory (enable symbol-<-merge))))
-   (defthm subsetp-of-symbol-<-merge-2
-     (iff (subsetp z (symbol-<-merge x y))
-          (subsetp z (append x y)))
-     :hints(("Goal" :in-theory (enable symbol-<-merge)
-             :induct (len z))))
-
-   (defthm symbol-<-merge-under-set-equiv
-     (set-equiv (symbol-<-merge x y)
-                (append x y))
-     :hints(("Goal" :in-theory (enable set-equiv))))
-
    (defthm-simple-term-vars-flag
      (defthm normalize-sym-alist-eval
        (implies (and (subsetp-equal (simple-term-vars x) keys)
@@ -738,8 +723,8 @@
                               len mk-list-term kwote-lst get-mv-nths
                               pairlis$ true-listp
                               done-retval-next-from-body
+                              partial-ev-constraint-10
                               partial-ev-constraint-9
-                              partial-ev-constraint-8
                               symbol-listp pseudo-termp
                               (:type-prescription kwote-lst)
                               (:type-prescription pseudo-termp)
@@ -1120,7 +1105,8 @@
                        (partial-ev x nil)))
        :hints ('(:expand (simple-term-vars x))
                (and stable-under-simplificationp
-                    '(:in-theory (enable partial-ev-constraint-0)
+                    '(:in-theory (enable partial-ev-constraint-0
+                                         partial-ev-constraint-6)
                       :use ((:instance partial-ev-constraint-0 (a nil))))))
        :flag simple-term-vars)
 
@@ -1156,11 +1142,11 @@
    (encapsulate nil
      (local (in-theory (disable fsubst-into-tail-recursion-body
                                 done-retval-next-from-body
+                                partial-ev-constraint-11
                                 partial-ev-constraint-10
                                 partial-ev-constraint-9
-                                partial-ev-constraint-8
+                                partial-ev-constraint-13
                                 partial-ev-constraint-12
-                                partial-ev-constraint-11
                                 partial-ev-constraint-0-rewrite
                                 default-car default-cdr len
                                 append-to-nil

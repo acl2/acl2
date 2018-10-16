@@ -146,7 +146,7 @@
         ;; seg-visibles
         nil
         ;; seg-hiddens
-        nil
+        nil nil nil
         ;; Rflags Register
         2
         ;; Memory image
@@ -250,7 +250,7 @@
         ;; seg-visibles
         nil
         ;; seg-hiddens
-        nil
+        nil nil nil
         ;; Rflags Register
         2
         ;; Memory image

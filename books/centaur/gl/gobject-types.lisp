@@ -36,10 +36,14 @@
 
 (defagg g-concrete (obj))
 (defagg g-boolean (bool))
-(defagg g-number (num))
+(defagg g-integer (bits))
 (defagg g-ite (test then else))
 (defagg g-apply (fn args) :notinline t)
 (defagg g-var (name))
+
+; Note: g-number used to be defined here.  It is no longer a core symbolic
+; object type, so we don't define it here anymore, but we still support it as a
+; shape spec construct so it is defined in shape-spec-defs.lisp.
 
 (defsection g-int
   :parents (shape-specs)
@@ -52,10 +56,10 @@ auto-bindings).</p>"
     (declare (xargs :guard (and (acl2-numberp start)
                                 (acl2-numberp by)
                                 (natp n))))
-    (g-number (list (numlist start by n)))))
+    (g-integer (numlist start by n))))
 
 (defconst *g-keywords*
-  '(:g-boolean :g-number :g-concrete :g-ite :g-apply :g-var))
+  '(:g-boolean :g-integer :g-concrete :g-ite :g-apply :g-var))
 
 
 
@@ -116,7 +120,7 @@ auto-bindings).</p>"
                      nil)
             :exec
             (or (eq x :g-boolean)
-                (eq x :g-number)
+                (eq x :g-integer)
                 (eq x :g-concrete)
                 (eq x :g-ite)
                 (eq x :g-apply)

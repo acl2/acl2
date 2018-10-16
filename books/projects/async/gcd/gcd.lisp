@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -12,6 +12,7 @@
 (include-book "gcd-cond")
 
 (local (include-book "gcd-alg"))
+
 (local (include-book "arithmetic-3/top" :dir :system))
 
 (local (in-theory (disable nth)))
@@ -21,7 +22,7 @@
 ;;; Table of Contents:
 ;;;
 ;;; 1. DE Module Generator of GCD
-;;; 2. Specify the Final State of GCD After An N-Step Execution
+;;; 2. Multi-Step State Lemma
 ;;; 3. Single-Step-Update Property
 ;;; 4. Relationship Between the Input and Output Sequences
 
@@ -34,7 +35,9 @@
 ;; module generator.  We follow the link-joint model in building this
 ;; generator.
 
-(defconst *gcd$go-num* 3)
+(defconst *gcd$go-num* (+ *merge$go-num*
+                          *gcd-cond$go-num*
+                          *gcd-body$go-num*))
 (defconst *gcd$st-len* 4)
 
 (defun gcd$data-ins-len (data-width)
@@ -93,13 +96,13 @@
   (list 'l1
         (list* 'l1-status (sis 'd1-out 0 (* 2 data-width)))
         (si 'link (* 2 data-width))
-        (list* 'branch-act1 'op-act (sis 'd1-in 0 (* 2 data-width))))
+        (list* 'branch-act1 'body-act (sis 'd1-in 0 (* 2 data-width))))
 
   ;; L2
   (list 'l2
         (list* 'l2-status (sis 'd2-out 0 (* 2 data-width)))
         (si 'link (* 2 data-width))
-        (list* 'op-act 'merge-act1 (sis 'd2-in 0 (* 2 data-width))))
+        (list* 'body-act 'merge-act1 (sis 'd2-in 0 (* 2 data-width))))
 
   ;; JOINTS
   ;; Merge-in
@@ -124,16 +127,19 @@
         (si 'gcd-cond data-width)
         (list* 'l0-status 'br-empty-out0- 'br-empty-out1-
                (append (sis 'd0-out 0 (* 2 data-width))
-                       (sis 'go 1 *gcd-cond$go-num*))))
+                       (sis 'go *merge$go-num* *gcd-cond$go-num*))))
 
-  ;; Op
-  (list 'op
-        (list* 'op-act 'op-act0 'op-act1
+  ;; Body
+  (list 'body
+        (list* 'body-act
                (sis 'd2-in 0 (* 2 data-width)))
         (si 'gcd-body data-width)
         (list* 'l1-status 'l2-status
                (append (sis 'd1-out 0 (* 2 data-width))
-                       (sis 'go 2 *gcd-body$go-num*)))))
+                       (sis 'go
+                            (+ *merge$go-num*
+                               *gcd-cond$go-num*)
+                            *gcd-body$go-num*)))))
 
  :guard (natp data-width))
 
@@ -213,7 +219,13 @@
   :hints (("Goal" :in-theory (enable gcd$valid-st)))
   :rule-classes :forward-chaining)
 
-;; Extract the input and output signals from GCD
+(defthmd gcd$valid-st=>st-format
+  (implies (gcd$valid-st st data-width)
+           (gcd$st-format st data-width))
+  :hints (("Goal" :in-theory (e/d (gcd$valid-st)
+                                  ()))))
+
+;; Extract the input and output signals for GCD
 
 (progn
   ;; Extract the input data
@@ -281,15 +293,15 @@
              (append (v-threefix (strip-cars l0.d))
                      br-go-signals))))
 
-  ;; Extract the inputs for the "op" joint
+  ;; Extract the inputs for the "body" joint
 
-  (defund gcd$op-inputs (inputs st data-width)
+  (defund gcd$body-inputs (inputs st data-width)
     (b* ((go-signals (nthcdr (gcd$data-ins-len data-width) inputs))
 
-         (op-go-signals (take *gcd-body$go-num*
-                              (nthcdr (+ *merge$go-num*
-                                         *gcd-cond$go-num*)
-                                      go-signals)))
+         (body-go-signals (take *gcd-body$go-num*
+                                (nthcdr (+ *merge$go-num*
+                                           *gcd-cond$go-num*)
+                                        go-signals)))
 
          (l1 (get-field *gcd$l1* st))
          (l1.s (get-field *link$s* l1))
@@ -299,7 +311,7 @@
 
       (list* (f-buf (car l1.s)) (f-buf (car l2.s))
              (append (v-threefix (strip-cars l1.d))
-                     op-go-signals))))
+                     body-go-signals))))
 
   ;; Extract the "in-act" signal
 
@@ -307,16 +319,28 @@
     (merge$act0 (gcd$me-inputs inputs st data-width)
                 (* 2 data-width)))
 
+  (defthm gcd$in-act-inactive
+    (implies (not (nth 0 inputs))
+             (not (gcd$in-act inputs st data-width)))
+    :hints (("Goal" :in-theory (enable gcd$me-inputs
+                                       gcd$in-act))))
+
   ;; Extract the "out-act" signal
 
   (defund gcd$out-act (inputs st data-width)
     (gcd-cond$act0 (gcd$br-inputs inputs st data-width)
                    data-width))
 
+  (defthm gcd$out-act-inactive
+    (implies (equal (nth 1 inputs) t)
+             (not (gcd$out-act inputs st data-width)))
+    :hints (("Goal" :in-theory (enable gcd$br-inputs
+                                       gcd$out-act))))
+
   ;; Extract the output data
 
   (defund gcd$data-out (inputs st data-width)
-    (gcd-cond$data-out0 (gcd$br-inputs inputs st data-width)
+    (gcd-cond$data0-out (gcd$br-inputs inputs st data-width)
                         data-width))
 
   (defthm len-gcd$data-out-1
@@ -338,7 +362,6 @@
                   (gcd$out-act inputs st data-width))
              (bvp (gcd$data-out inputs st data-width)))
     :hints (("Goal" :in-theory (enable gcd$valid-st
-                                       gcd$st-format
                                        gcd$out-act
                                        gcd$data-out
                                        gcd$br-inputs
@@ -346,15 +369,20 @@
                                        gcd-cond$act0
                                        gcd-cond$data-in
                                        branch$act0))))
+
+  (defun gcd$outputs (inputs st data-width)
+    (list* (gcd$in-act inputs st data-width)
+           (gcd$out-act inputs st data-width)
+           (gcd$data-out inputs st data-width)))
   )
 
 ;; Prove that GCD is not a DE primitive.
 
-(not-primp-lemma gcd) ;; Prove that GCD is not a DE primitive.
+(not-primp-lemma gcd)
 
 ;; The value lemma for GCD
 
-(defthmd gcd$value
+(defthm gcd$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (gcd& netlist data-width)
                   (true-listp data-in)
@@ -363,39 +391,24 @@
                   (equal (len go-signals) *gcd$go-num*)
                   (gcd$st-format st data-width))
              (equal (se (si 'gcd data-width) inputs st netlist)
-                    (list* (gcd$in-act inputs st data-width)
-                           (gcd$out-act inputs st data-width)
-                           (gcd$data-out inputs st data-width)))))
+                    (gcd$outputs inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
            :expand (:free (inputs data-width)
                           (se (si 'gcd data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             nthcdr-of-pos-const-idx
-                            not-primp-gcd
                             gcd&
                             gcd*$destructure
                             gcd$data-in
                             merge$act0
-                            branch$value
-                            merge$value
-                            gcd-cond$value
-                            gcd-body$value
-                            link1$value
-                            link$value
                             gcd$st-format
                             gcd$in-act
                             gcd$out-act
                             gcd$data-out
                             gcd$br-inputs
                             gcd$me-inputs)
-                           ((gcd*)
-                            nfix
-                            acl2::take-of-append
-                            if*
-                            b-not
-                            cons-equal
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of GCD.
 
@@ -411,23 +424,23 @@
 
        (me-inputs (gcd$me-inputs inputs st data-width))
        (br-inputs (gcd$br-inputs inputs st data-width))
-       (op-inputs (gcd$op-inputs inputs st data-width))
+       (body-inputs (gcd$body-inputs inputs st data-width))
 
-       (d1-in (gcd-cond$data-out1 br-inputs data-width))
-       (d2-in (gcd-body$data-out op-inputs data-width))
+       (d1-in (gcd-cond$data1-out br-inputs data-width))
+       (d2-in (gcd-body$data-out body-inputs data-width))
 
        (done- (gcd-cond$flag br-inputs data-width))
        (merge-act1 (merge$act1 me-inputs (* 2 data-width)))
        (merge-act (merge$act me-inputs (* 2 data-width)))
        (branch-act1 (gcd-cond$act1 br-inputs data-width))
        (branch-act (gcd-cond$act br-inputs data-width))
-       (op-act (gcd-body$act op-inputs data-width))
+       (body-act (gcd-body$act body-inputs data-width))
 
        (s-inputs (list branch-act merge-act done-))
        (l0-inputs (list* merge-act branch-act
                          (fv-if (car s.d) (strip-cars l2.d) data-in)))
-       (l1-inputs (list* branch-act1 op-act d1-in))
-       (l2-inputs (list* op-act merge-act1 d2-in)))
+       (l1-inputs (list* branch-act1 body-act d1-in))
+       (l2-inputs (list* body-act merge-act1 d2-in)))
     (list
      ;; S
      (link1$step s-inputs s)
@@ -444,7 +457,7 @@
 
 ;; The state lemma for GCD
 
-(defthmd gcd$state
+(defthm gcd$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (gcd& netlist data-width)
                   (true-listp data-in)
@@ -460,89 +473,24 @@
                           (de (si 'gcd data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             nthcdr-of-pos-const-idx
-                            not-primp-gcd
                             gcd&
                             gcd*$destructure
                             merge$act
                             merge$act0
                             merge$act1
-                            merge$value
                             gcd$st-format
                             gcd$data-in
                             gcd$data-out
                             gcd$br-inputs
                             gcd$me-inputs
-                            gcd$op-inputs
-                            gcd-cond$value
-                            gcd-body$value
-                            link1$value link1$state
-                            link$value link$state)
-                           ((gcd*)
-                            nfix
-                            if*
-                            b-not
-                            append-take-nthcdr
-                            acl2::take-of-append
-                            acl2::prefer-positive-addends-equal
-                            acl2::simplify-sums-equal
-                            acl2::simplify-products-gather-exponents-equal
-                            acl2::|(equal (- x) (- y))|
-                            append
-                            cons-equal
-                            true-listp
-                            de-module-disabled-rules)))))
+                            gcd$body-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable gcd$step))
 
 ;; ======================================================================
 
-;; 2. Specify the Final State of GCD After An N-Step Execution
-
-;; GCD simulator
-
-(progn
-  (defun gcd$map-to-links (st)
-    (b* ((s (get-field *gcd$s* st))
-         (l0 (get-field *gcd$l0* st))
-         (l1 (get-field *gcd$l1* st))
-         (l2 (get-field *gcd$l2* st)))
-      (append (map-to-links1 (list (list* 's s)))
-              (map-to-links (list (list* 'l0 l0)
-                                  (list* 'l1 l1)
-                                  (list* 'l2 l2))))))
-
-  (defun gcd$map-to-links-list (x)
-    (if (atom x)
-        nil
-      (cons (gcd$map-to-links (car x))
-            (gcd$map-to-links-list (cdr x)))))
-
-  (defund gcd$sim (data-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp n))
-                    :verify-guards nil
-                    :stobjs state))
-    (b* ((num-signals (gcd$ins-len data-width))
-         ((mv inputs-lst state)
-          (signal-vals-gen num-signals n state nil))
-         ;;(- (cw "~x0~%" inputs-lst))
-         (full '(t))
-         (empty '(nil))
-         (invalid-data (make-list (* 2 data-width) :initial-element '(x)))
-         (st (list (list full '(nil))
-                   (list empty invalid-data)
-                   (list empty invalid-data)
-                   (list empty invalid-data))))
-      (mv (pretty-list
-           (remove-dup-neighbors
-            (gcd$map-to-links-list
-             (de-sim-list (si 'gcd data-width)
-                          inputs-lst
-                          st
-                          (gcd$netlist data-width))))
-           0)
-          state)))
-  )
+;; 2. Multi-Step State Lemma
 
 ;; Conditions on the inputs
 
@@ -561,6 +509,32 @@
      (= (len go-signals) *gcd$go-num*)
      (equal inputs
             (list* full-in empty-out- (append data-in go-signals))))))
+
+(defthm booleanp-gcd$in-act
+  (implies (and (gcd$input-format inputs data-width)
+                (gcd$valid-st st data-width))
+           (booleanp (gcd$in-act inputs st data-width)))
+  :hints (("Goal" :in-theory (enable merge$act0
+                                     gcd$input-format
+                                     gcd$valid-st
+                                     gcd$in-act
+                                     gcd$me-inputs)))
+  :rule-classes :type-prescription)
+
+(defthm booleanp-gcd$out-act
+  (implies (and (gcd$input-format inputs data-width)
+                (gcd$valid-st st data-width))
+           (booleanp (gcd$out-act inputs st data-width)))
+  :hints (("Goal" :in-theory (enable branch$act0
+                                     gcd-cond$act0
+                                     gcd-cond$br-inputs
+                                     gcd-cond$flag
+                                     gcd-cond$data-in
+                                     gcd$input-format
+                                     gcd$valid-st
+                                     gcd$out-act
+                                     gcd$br-inputs)))
+  :rule-classes :type-prescription)
 
 (simulate-lemma gcd)
 
@@ -603,13 +577,12 @@
               (v-to-nat (nthcdr (/ (len x) 2) x))))))
 
   (local
-   (defund gcd$op (x)
-     (declare
-      (xargs :hints (("Goal"
-                      :in-theory (e/d ()
-                                      (v-not-take
-                                       v-not-nthcdr))))
-             :measure (my-count x)))
+   (defun gcd$op (x)
+     (declare (xargs :hints (("Goal"
+                              :in-theory (e/d ()
+                                              (v-not-take
+                                               v-not-nthcdr))))
+                     :measure (my-count x)))
      (b* ((data-width (/ (len x) 2))
           (a (take data-width x))
           (b (nthcdr data-width x))
@@ -631,7 +604,7 @@
                   (append a b-a)
                   (append a-b b))))))))
 
-  (defund gcd$op (x)
+  (defun gcd$op (x)
     (declare (xargs :measure (:? x)))
     (b* ((data-width (/ (len x) 2))
          (a (take data-width x))
@@ -681,7 +654,7 @@
                       (gcd$op x))))
     :hints (("Goal"
              :induct (gcd$op x)
-             :in-theory (e/d (gcd$op)
+             :in-theory (e/d ()
                              (v-to-nat-equality
                               v-not-take
                               v-not-nthcdr)))
@@ -713,26 +686,28 @@
               (equal (v-to-nat (gcd$op x))
                      (gcd-alg (v-to-nat (take data-width x))
                               (v-to-nat (nthcdr data-width x)))))
-     :hints (("Goal" :in-theory (e/d (gcd$op)
+     :hints (("Goal" :in-theory (e/d ()
                                      (v-not-take
                                       v-not-nthcdr))))))
+
+  (in-theory (disable gcd$op))
   )
 
 ;; The operation of GCD over a data sequence
 
-(defun gcd$op-seq (seq)
-  (if (atom seq)
+(defun gcd$op-map (x)
+  (if (atom x)
       nil
-    (cons (gcd$op (car seq))
-          (gcd$op-seq (cdr seq)))))
+    (cons (gcd$op (car x))
+          (gcd$op-map (cdr x)))))
 
-(defthm len-of-gcd$op-seq
-  (equal (len (gcd$op-seq x))
+(defthm len-of-gcd$op-map
+  (equal (len (gcd$op-map x))
          (len x)))
 
-(defthm gcd$op-seq-of-append
-  (equal (gcd$op-seq (append x y))
-         (append (gcd$op-seq x) (gcd$op-seq y))))
+(defthm gcd$op-map-of-append
+  (equal (gcd$op-map (append x y))
+         (append (gcd$op-map x) (gcd$op-map y))))
 
 ;; The extraction function for GCD that extracts the future output sequence
 ;; from the current state.
@@ -741,7 +716,7 @@
   (b* ((l0 (get-field *gcd$l0* st))
        (l1 (get-field *gcd$l1* st))
        (l2 (get-field *gcd$l2* st)))
-    (gcd$op-seq
+    (gcd$op-map
      (extract-valid-data (list l1 l2 l0)))))
 
 (defthm gcd$extract-not-empty
@@ -756,7 +731,7 @@
                             gcd$extract
                             gcd$br-inputs
                             gcd$out-act)
-                           (nfix))))
+                           ())))
   :rule-classes :linear)
 
 ;; Specify and prove a state invariant
@@ -773,8 +748,29 @@
            1))))
 
   (local
-   (defthm booleanp-gcd$op-act
-     (b* ((op-inputs (gcd$op-inputs inputs st data-width))
+   (defthm gcd$input-format-lemma-1
+     (implies (gcd$input-format inputs data-width)
+              (booleanp (nth 0 inputs)))
+     :hints (("Goal" :in-theory (enable gcd$input-format)))
+     :rule-classes :type-prescription))
+
+  (local
+   (defthm gcd$input-format-lemma-2
+     (implies (gcd$input-format inputs data-width)
+              (booleanp (nth 1 inputs)))
+     :hints (("Goal" :in-theory (enable gcd$input-format)))
+     :rule-classes :type-prescription))
+
+  (local
+   (defthm gcd$input-format-lemma-3
+     (implies (and (gcd$input-format inputs data-width)
+                   (nth 0 inputs))
+              (bvp (gcd$data-in inputs data-width)))
+     :hints (("Goal" :in-theory (enable gcd$input-format)))))
+
+  (local
+   (defthm booleanp-gcd$body-act
+     (b* ((body-inputs (gcd$body-inputs inputs st data-width))
           (l1 (nth *gcd$l1* st))
           (l1.d (nth *link$d* l1)))
        (implies (or (equal (nth *link$s*
@@ -788,37 +784,30 @@
                                 '(nil))
                          (equal (len l1.d) (* 2 data-width))
                          (bvp (strip-cars l1.d))))
-                (booleanp (gcd-body$act op-inputs data-width))))
+                (booleanp (gcd-body$act body-inputs data-width))))
      :hints (("Goal" :in-theory (enable get-field
                                         merge$act0
                                         merge$act1
+                                        merge$act
                                         gcd-body$data-in
                                         gcd-body$me-inputs
                                         gcd-body$act
-                                        gcd-body$act0
-                                        gcd-body$act1
                                         gcd-body$a<b
-                                        gcd$op-inputs)))
+                                        gcd$body-inputs)))
      :rule-classes :type-prescription))
 
   (local
-   (defthm gcd$op-act-nil
-     (b* ((op-inputs (gcd$op-inputs inputs st data-width)))
+   (defthm gcd$body-act-inactive
+     (b* ((body-inputs (gcd$body-inputs inputs st data-width)))
        (implies (or (equal (nth *link$s*
                                 (nth *gcd$l1* st))
                            '(nil))
                     (equal (nth *link$s*
                                 (nth *gcd$l2* st))
                            '(t)))
-                (not (gcd-body$act op-inputs data-width))))
+                (not (gcd-body$act body-inputs data-width))))
      :hints (("Goal" :in-theory (enable get-field
-                                        merge$act0
-                                        merge$act1
-                                        gcd-body$me-inputs
-                                        gcd-body$act
-                                        gcd-body$act0
-                                        gcd-body$act1
-                                        gcd$op-inputs)))))
+                                        gcd$body-inputs)))))
 
   (defthm gcd$inv-preserved
     (implies (and (gcd$input-format inputs data-width)
@@ -827,7 +816,7 @@
              (gcd$inv (gcd$step inputs st data-width)))
     :hints (("Goal"
              :in-theory (e/d (get-field
-                              gcd$input-format
+                              f-sr
                               gcd$valid-st
                               gcd$st-format
                               gcd$inv
@@ -845,14 +834,8 @@
                               branch$act1
                               merge$act
                               merge$act0
-                              merge$act1
-                              f-sr)
-                             (if*
-                              v-if-works
-                              b-nor3
-                              b-not
-                              nfix
-                              nthcdr)))))
+                              merge$act1)
+                             (b-nor3)))))
   )
 
 ;; The extracted next-state function for GCD.  Note that this function avoids
@@ -885,14 +868,14 @@
 (progn
   (local
    (defthm gcd-body$data-out-expand
-     (b* ((op-inputs (gcd$op-inputs inputs st data-width))
+     (b* ((body-inputs (gcd$body-inputs inputs st data-width))
           (l1 (nth *gcd$l1* st))
           (l1.d (nth *link$d* l1)))
        (implies
         (and (natp data-width)
              (equal (len l1.d) (* 2 data-width))
              (bvp (strip-cars l1.d)))
-        (equal (gcd-body$data-out op-inputs data-width)
+        (equal (gcd-body$data-out body-inputs data-width)
                (v-if (v-< nil t
                           (rev (take data-width (strip-cars l1.d)))
                           (rev (nthcdr data-width (strip-cars l1.d))))
@@ -915,9 +898,9 @@
                                  gcd-body$data-in
                                  gcd-body$a<b
                                  gcd-body$data-out
-                                 gcd-body$data-out0
-                                 gcd-body$data-out1
-                                 gcd$op-inputs)))))
+                                 gcd-body$data0-out
+                                 gcd-body$data1-out
+                                 gcd$body-inputs)))))
 
   (defthm gcd$extracted-step-correct
     (b* ((next-st (gcd$step inputs st data-width)))
@@ -928,9 +911,9 @@
                       (gcd$extracted-step inputs st data-width))))
     :hints (("Goal"
              :in-theory (e/d (get-field
-                              take-of-len-free
+                              f-sr
+                              joint-act
                               gcd$extracted-step
-                              gcd$input-format
                               gcd$valid-st
                               gcd$st-format
                               gcd$inv
@@ -946,106 +929,22 @@
                               gcd-cond$act
                               gcd-cond$act0
                               gcd-cond$act1
-                              gcd-cond$data-out1
+                              gcd-cond$data1-out
                               gcd-cond$br-inputs
                               branch$act0
                               branch$act1
                               merge$act
                               merge$act0
-                              merge$act1
-                              f-sr)
-                             (if*
+                              merge$act1)
+                             (b-nor3
                               v-if-works
                               v-not-take
-                              v-not-nthcdr
-                              b-if
-                              b-not
-                              take-of-too-many
-                              acl2::simplify-products-gather-exponents-<
-                              acl2::prefer-positive-addends-<
-                              acl2::prefer-positive-addends-equal
-                              acl2::|(< (if a b c) x)|
-                              nfix)))))
+                              v-not-nthcdr)))))
   )
 
 ;; ======================================================================
 
 ;; 4. Relationship Between the Input and Output Sequences
-
-;; Extract the accepted input sequence
-
-(defun gcd$in-seq (inputs-lst st data-width n)
-  (declare (xargs :measure (acl2-count n)))
-  (if (zp n)
-      nil
-    (b* ((inputs (car inputs-lst)))
-      (if (equal (gcd$in-act inputs st data-width) t)
-          (append (gcd$in-seq (cdr inputs-lst)
-                               (gcd$step inputs st data-width)
-                               data-width
-                               (1- n))
-                  (list (gcd$data-in inputs data-width)))
-        (gcd$in-seq (cdr inputs-lst)
-                     (gcd$step inputs st data-width)
-                     data-width
-                     (1- n))))))
-
-;; Extract the valid output sequence
-
-(defun gcd$out-seq (inputs-lst st data-width n)
-  (declare (xargs :measure (acl2-count n)))
-  (if (zp n)
-      nil
-    (b* ((inputs (car inputs-lst)))
-      (if (equal (gcd$out-act inputs st data-width) t)
-          (append (gcd$out-seq (cdr inputs-lst)
-                               (gcd$step inputs st data-width)
-                               data-width
-                               (1- n))
-                  (list (gcd$data-out inputs st data-width)))
-        (gcd$out-seq (cdr inputs-lst)
-                     (gcd$step inputs st data-width)
-                     data-width
-                     (1- n))))))
-
-;; Input-output sequence simulator
-
-(progn
-  (defun v-to-nat-split-lst (seq data-width)
-    (declare (xargs :guard (and (true-list-listp seq)
-                                (natp data-width))))
-    (if (atom seq)
-        nil
-      (cons (list (v-to-nat (take data-width (car seq)))
-                  (v-to-nat (nthcdr data-width (car seq))))
-            (v-to-nat-split-lst (cdr seq) data-width))))
-
-  (defund gcd$in-out-seq-sim (data-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp n))
-                    :verify-guards nil
-                    :stobjs state))
-    (b* ((num-signals (gcd$ins-len data-width))
-         ((mv inputs-lst state)
-          (signal-vals-gen num-signals n state nil))
-         (full '(t))
-         (empty '(nil))
-         (invalid-data (make-list (* 2 data-width) :initial-element '(x)))
-         (st (list (list full '(nil))
-                   (list empty invalid-data)
-                   (list empty invalid-data)
-                   (list empty invalid-data))))
-      (mv
-       (append
-        (list (cons 'in-seq
-                    (v-to-nat-split-lst
-                     (gcd$in-seq inputs-lst st data-width n)
-                     data-width)))
-        (list (cons 'out-seq
-                    (v-to-nat-lst
-                     (gcd$out-seq inputs-lst st data-width n)))))
-       state)))
-  )
 
 ;; Prove that gcd$valid-st is an invariant.
 
@@ -1056,7 +955,8 @@
                          data-width))
   :hints (("Goal"
            :in-theory (e/d (get-field
-                            gcd$input-format
+                            f-sr
+                            joint-act
                             gcd$valid-st
                             gcd$st-format
                             gcd$step
@@ -1072,22 +972,15 @@
                             branch$act1
                             merge$act
                             merge$act0
-                            merge$act1
-                            f-sr)
-                           (if*
-                            nthcdr
-                            b-if
-                            b-nor3
-                            acl2::true-listp-append)))))
+                            merge$act1)
+                           (b-nor3)))))
 
 (defthm gcd$extract-lemma
   (implies (and (gcd$valid-st st data-width)
-                (equal n (1- (len (gcd$extract st))))
                 (gcd$out-act inputs st data-width))
-           (equal (append
-                   (take n (gcd$extract st))
-                   (list (gcd$data-out inputs st data-width)))
-                  (gcd$extract st)))
+           (equal (list (gcd$data-out inputs st data-width))
+                  (nthcdr (1- (len (gcd$extract st)))
+                          (gcd$extract st))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (branch$act0
@@ -1095,15 +988,27 @@
                             gcd-cond$br-inputs
                             gcd-cond$act0
                             gcd-cond$flag
-                            gcd-cond$data-out0
+                            gcd-cond$data0-out
                             gcd$valid-st
-                            gcd$st-format
                             gcd$extract
                             gcd$op
                             gcd$br-inputs
                             gcd$out-act
                             gcd$data-out)
                            (v-if-works)))))
+
+;; Extract the accepted input sequence
+
+(seq-gen gcd in in-act 0
+         (gcd$data-in inputs data-width))
+
+;; Extract the valid output sequence
+
+(seq-gen gcd out out-act 1
+         (gcd$data-out inputs st data-width)
+         :netlist-data (nthcdr 2 outputs))
+
+;; The multi-step input-output relationship
 
 (in-out-stream-lemma gcd :op t :inv t)
 

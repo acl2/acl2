@@ -32,7 +32,7 @@
 (include-book "tools/flag" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/lists/acl2-count" :dir :system)
-
+(include-book "clause-processors/term-vars" :dir :system)
 
 
 (verify-termination acl2::def-body)
@@ -256,6 +256,7 @@ passed to ~x2 in that theorem.~%"
          '(g-boolean
            g-boolean-p g-boolean->bool
            g-number g-number-p g-number->num
+           g-integer g-integer-p g-integer->bits
            g-concrete g-concrete-p g-concrete->obj
            g-ite g-ite-p g-ite->test g-ite->then g-ite->else
            g-apply g-apply-p g-apply->fn g-apply->args
@@ -264,17 +265,6 @@ passed to ~x2 in that theorem.~%"
 
 (logic)
 
-(mutual-recursion
- (defun collect-vars (x)
-   (cond ((null x) nil)
-         ((atom x) (list x))
-         ((eq (car x) 'quote) nil)
-         (t (collect-vars-list (cdr x)))))
- (defun collect-vars-list (x)
-   (if (atom x)
-       nil
-     (union-equal (collect-vars (car x))
-                  (collect-vars-list (cdr x))))))
 
 
 

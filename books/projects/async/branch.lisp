@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -89,7 +89,7 @@
         (net-arity-okp (branch$netlist 64))
         (branch& (branch$netlist 64) 64))))
 
-;; Extract the input and output signals from BRANCH
+;; Extract the input and output signals for BRANCH
 
 (progn
   ;; Extract the input data
@@ -121,6 +121,12 @@
 
       (joint-act full-in ready-out0- go-branch)))
 
+  (defthm branch$act0-inactive
+    (implies (or (not (nth 0 inputs))
+                 (equal (nth 1 inputs) t))
+             (not (branch$act0 inputs data-width)))
+    :hints (("Goal" :in-theory (enable branch$act0))))
+
   ;; Extract the "act1" signal
 
   (defund branch$act1 (inputs data-width)
@@ -135,18 +141,31 @@
 
       (joint-act full-in ready-out1- go-branch)))
 
+  (defthm branch$act1-inactive
+    (implies (or (not (nth 0 inputs))
+                 (equal (nth 2 inputs) t))
+             (not (branch$act1 inputs data-width)))
+    :hints (("Goal" :in-theory (enable branch$act1))))
+
   ;; Extract the "act" signal
 
   (defund branch$act (inputs data-width)
     (f-or (branch$act0 inputs data-width)
           (branch$act1 inputs data-width)))
+
+  (defthm branch$act-inactive
+    (implies (or (not (nth 0 inputs))
+                 (and (equal (nth 1 inputs) t)
+                      (equal (nth 2 inputs) t)))
+             (not (branch$act inputs data-width)))
+    :hints (("Goal" :in-theory (enable branch$act))))
   )
 
 (not-primp-lemma branch) ;; Prove that BRANCH is not a DE primitive.
 
 ;; The value lemma for BRANCH
 
-(defthmd branch$value
+(defthm branch$value
   (b* ((inputs (list* full-in empty-out0- empty-out1- select
                       (append data-in go-signals))))
     (implies (and (branch& netlist data-width)
@@ -164,15 +183,11 @@
            :expand (:free (inputs data-width)
                           (se (si 'branch data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            not-primp-branch
                             branch&
                             branch*$destructure
-                            joint-cntl$value
-                            v-buf$value
                             branch$act
                             branch$act0
                             branch$act1)
-                           ((branch*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 

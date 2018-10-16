@@ -9,7 +9,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc trans-eval-error-triple
-  :parents (kestrel-utilities system-utilities)
+  :parents (kestrel-utilities system-utilities-non-built-in)
   :short "An ACL2 evaluator for forms that return @(see error-triple)s"
   :long "@({
  General Form:
@@ -28,7 +28,7 @@
  require @('form') to evaluate to an error-triple.</p>")
 
 (defxdoc trans-eval-state
-  :parents (kestrel-utilities system-utilities)
+  :parents (kestrel-utilities system-utilities-non-built-in)
   :short "An ACL2 evaluator that returns @(see state)"
   :long "@({
  General Form:

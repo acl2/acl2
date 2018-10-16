@@ -1,5 +1,5 @@
-; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2017, Regents of the University of Texas
+; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2018, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -3371,7 +3371,7 @@
 ; clauses.  (One of the five fixed clauses below is about only
 ; evfn-lst and not about evfn and hence wouldn't be among the
 ; constraints of evfn.)  If this changes, change chk-evaluator.
-; (Note there are now at least 6 constraints about each evaluator.)
+; (Note there are now at least 7 constraints about each evaluator.)
 
 ; The functions guess-fn-args-lst-for-evfn and guess-evfn-lst-for-evfn take the
 ; known constraints on an evfn and guess the evfn-lst and list of fns for which
@@ -3447,6 +3447,10 @@
                                   (evfn-lst (cdr x-lst) a))))
                     ((consp x)
                      (symbolp x)
+                     (equal (evfn x a) 'nil))
+                    ((not (consp x))
+                     (consp (car x))
+                     (symbolp (car x))
                      (equal (evfn x a) 'nil))))
           (evaluator-clauses1 evfn fn-args-lst)))
 
@@ -3778,9 +3782,10 @@
 ; 4             evfn-lst-OF-ATOM
 ; 5             evfn-lst-OF-CONS
 ; 6             evfn-of-nonsymbol-atom
-; 7 ...         evfn-OF-fn-CALL, ... for each interpreted fn
+; 7             evfn-of-bad-fncall
+; 8 ...         evfn-OF-fn-CALL, ... for each interpreted fn
 
-; When i>6, clause is always of the form:
+; When i>7, clause is always of the form:
 ; ((NOT (CONSP X)) (NOT (EQUAL (CAR X) 'fn)) (EQUAL (evfn X A) (fn ...)))
 ; and we recover fn from the second literal as shown in the binding of
 ; fn below.
@@ -3807,6 +3812,7 @@
 
                    (concatenate 'string prefix "NONSYMBOL-ATOM")
                    nil nil))
+        (7 (genvar evfn (concatenate 'string prefix "BAD-FNCALL") nil nil))
         (otherwise
          (genvar evfn
                  (concatenate 'string prefix (symbol-name fn) "-CALL")
@@ -3823,7 +3829,7 @@
 ; for which suitable i would be 0, 1, ..., 8.
 
   (cond
-   ((> i 6)
+   ((> i 7)
     `(("Goal" :expand
        ((,evfn X A)
         (:free (x) (HIDE x))
@@ -3837,19 +3843,19 @@
              (:free (args)
                     (,evfn (CONS (CAR X) ARGS) NIL)))
             :in-theory '(eval-list-kwote-lst
-                         fix-true-list-ev-lst
+                         true-list-fix-ev-lst
                          car-cons cdr-cons))))
-      ((1 2 3 6) `(("Goal" :expand ((,evfn X A)))))
+      ((1 2 3 6 7) `(("Goal" :expand ((,evfn X A)))))
       (otherwise
        `(("Goal" :expand ((,evfn-lst X-LST A)))))))))
 
 (defun defevaluator-form/defthm (evfn evfn-lst namedp prefix i clause)
 
 ; We generate the defthm event for the ith constraint, given the clause
-; expressing that constraint.  Constraints 0 and 6 are disabled; the
+; expressing that constraint.  Constraints 0, 6, and 7 are disabled; the
 ; others are only locally disabled.
 
-  (let* ((defthm (if (or (eql i 0) (eql i 6)) 'defthmd 'defthm))
+  (let* ((defthm (if (or (eql i 0) (eql i 6) (eql i 7)) 'defthmd 'defthm))
          (name (defevaluator-form/defthm-name
                  evfn evfn-lst namedp prefix i clause))
          (formula (prettyify-clause clause nil nil))
@@ -3901,7 +3907,7 @@
             o< o-finp o-first-expt o-first-coeff o-rst natp posp
             acl2-count
             alistp
-            fix-true-list kwote kwote-lst pairlis$-fix-true-list
+            true-list-fix kwote kwote-lst pairlis$-true-list-fix
             )))
 
 (defun defevaluator-form (evfn evfn-lst namedp fn-args-lst)
@@ -3947,6 +3953,7 @@
                         (evfn (car (cdr (cdr (car x))))
                               (pairlis$ (car (cdr (car x)))
                                         args)))
+                       ((not (symbolp (car x))) nil)
                        (t (apply-for-defevaluator (car x) args)))))))
                 (defun-nx evfn-lst (x-lst a)
                   (declare (xargs :measure (acl2-count x-lst)
@@ -3958,16 +3965,16 @@
             (local
              (defthm eval-list-kwote-lst
                (equal (evfn-lst (kwote-lst args) a)
-                      (fix-true-list args))
+                      (true-list-fix args))
                :hints (("goal"
                         :expand ((:free (x y) (evfn-lst (cons x y) a))
                                  (evfn-lst nil a)
                                  (:free (x)
                                         (evfn (list 'quote x) a)))
-                        :induct (fix-true-list args)))))
+                        :induct (true-list-fix args)))))
             (local
-             (defthm fix-true-list-ev-lst
-               (equal (fix-true-list (evfn-lst x a))
+             (defthm true-list-fix-ev-lst
+               (equal (true-list-fix (evfn-lst x a))
                       (evfn-lst x a))
                :hints (("goal" :induct (len x)
                         :in-theory (e/d ((:induction len)))

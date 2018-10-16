@@ -55,14 +55,34 @@
 ;; INSTRUCTION: SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR
 ;; ======================================================================
 
+(local
+ (defrule add-to-*ip-integerp-type
+   (implies (and (integerp *ip)
+                 (integerp delta))
+            (integerp (mv-nth 1 (add-to-*ip proc-mode *ip delta x86))))
+   :in-theory (e/d (add-to-*ip) ())
+   :rule-classes (:rewrite :type-prescription)))
+
 (def-inst x86-sal/sar/shl/shr/rcl/rcr/rol/ror
-  :guard (not (equal (mrm-reg modr/m) 6))
+  :guard (not (equal (modr/m->reg modr/m) 6))
+  :guard-hints (("Goal"
+                 :in-theory (e/d () 
+                                 (unsigned-byte-p
+                                  not force (force)))))
 
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip))
-                :hints (("Goal" :in-theory (e/d () (force (force))))))
+                :hints (("Goal" :in-theory
+                         (e/d ()
+                              (trunc
+                               select-operand-size
+                               mv-nth-0-of-add-to-*ip-when-64-bit-modep
+                               mv-nth-1-of-add-to-*ip-when-64-bit-modep
+                               signed-byte-p
+                               unsigned-byte-p
+                               not force (force))))))
 
   :long
   "<p>
@@ -123,16 +143,12 @@
 
   (b* ((ctx 'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
 
-       (lock (equal #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+       (r/m (modr/m->r/m modr/m))
+       (mod (modr/m->mod modr/m))
+       (reg (modr/m->reg modr/m))
 
-       (r/m (mrm-r/m modr/m))
-       (mod (mrm-mod modr/m))
-       (reg (mrm-reg modr/m))
-
-       (p2 (prefixes-slice :seg prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes-slice :adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (byte-operand? (or (equal opcode #xC0)
                           (equal opcode #xD0)
@@ -169,7 +185,7 @@
           ((#xD2 #xD3)
            (mv nil (rr08 *rcx* rex-byte x86) x86))
           ((#xC0 #xC1)
-           (rme-size proc-mode 1 temp-rip *cs* :x nil x86))
+           (rme-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86))
           (otherwise ;; will not be reached
            (mv nil 0 x86))))
        ((when flg1)

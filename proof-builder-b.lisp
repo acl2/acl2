@@ -1,5 +1,5 @@
-; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2017, Regents of the University of Texas
+; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2018, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1703,11 +1703,10 @@
                           :ans (append val rest-addr)
                           :new-iff-flg nil
                           :new-term (fetch-term term val))))))
-            ((or (eq (car term) 'list)
-                 (let ((pair (rassoc-eq-as-car (car raw-term)
-                                               (untrans-table wrld))))
-                   (and pair
-                        (eql (arity (car pair) wrld) 2))))
+            ((let ((pair (rassoc-eq-as-car (car raw-term)
+                                           (untrans-table wrld))))
+               (and pair
+                    (eql (arity (car pair) wrld) 2)))
 
 ; E.g., (append a b c d) is (binary-append a (binary-append b (binary-append c
 ; d))), so diving 3 into this (to c) generates address (2 2 1), but diving 4
@@ -1729,8 +1728,12 @@
             (t
              (case
                (car raw-term)
-               (list*
-                (let* ((lst (make-list (1- (car addr)) :initial-element 2))
+               ((list list*)
+                (let* ((lst0 (make-list (1- (car addr))
+                                        :initial-element 2))
+                       (lst (if (eq (car raw-term) 'list)
+                                (append lst0 '(1))
+                              lst0))
                        (subterm (fetch-term term lst)))
                   (if subterm
                       (expand-address-recurse

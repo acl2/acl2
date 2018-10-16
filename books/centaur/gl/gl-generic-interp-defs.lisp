@@ -44,7 +44,8 @@
 (include-book "centaur/misc/beta-reduce-full" :dir :system)
 (include-book "glcp-geval")
 (include-book "constraint-db-deps")
-
+(include-book "prof")
+(include-book "rewrite-tables")
 (verify-termination acl2::evisc-tuple)
 (verify-guards acl2::evisc-tuple)
 
@@ -55,12 +56,12 @@
 
 (set-state-ok t)
 
-(defun glcp-error-fn (msg state)
-  (declare (xargs :guard t))
-  (mv msg nil state))
+(defun glcp-error-fn (msg interp-st state)
+  (declare (xargs :guard t :stobjs (state interp-st)))
+  (mv msg nil interp-st state))
 
 (defmacro glcp-error (msg)
-  `(glcp-error-fn ,msg state))
+  `(glcp-error-fn ,msg interp-st state))
 
 (add-macro-alias glcp-error glcp-error-fn)
 
@@ -72,44 +73,49 @@
           (preferred-defs-to-overrides (cdr alist) state))
          ((cons fn defname) (car alist))
          ((unless (and (symbolp fn) (symbolp defname) (not (eq fn 'quote))))
-          (glcp-error
+          (mv
            (acl2::msg "~
 The GL preferred-defs table contains an invalid entry ~x0.
 The key and value of each entry should both be function symbols."
-                      (car alist))))
+                      (car alist))
+           nil state))
          (rule (ec-call (fgetprop defname 'theorem nil (w state))))
          ((unless rule)
-          (glcp-error
+          (mv
            (acl2::msg "~
 The preferred-defs table contains an invalid entry ~x0.
 The :definition rule ~x1 was not found in the ACL2 world."
-                      (car alist) defname)))
+                      (car alist) defname)
+           nil state))
          ((unless (case-match rule
                     (('equal (rulefn . &) &) (equal fn rulefn))))
-          (glcp-error
+          (mv
            (acl2::msg "~
 The preferred-defs table contains an invalid entry ~x0.
 The :definition rule ~x1 is not suitable as a GL override.
 Either it is a conditional definition rule, it uses a non-EQUAL
 equivalence relation, or its format is unexpected.  The rule
-found is ~x2." (car alist) defname rule)))
+found is ~x2." (car alist) defname rule)
+           nil state))
          (formals (cdadr rule))
          (body (caddr rule))
          ((unless (and (nonnil-symbol-listp formals)
                        (acl2::no-duplicatesp formals)))
-          (glcp-error
+          (mv
            (acl2::msg "~
 The preferred-defs table contains an invalid entry ~x0.
 The formals used in :definition rule ~x1 either are not all
 variable symbols or have duplicates, making this an unsuitable
 definition for use in a GL override.  The formals listed are
-~x2." (car alist) defname formals)))
+~x2." (car alist) defname formals)
+           nil state))
          ((unless (pseudo-termp body))
-          (glcp-error
+          (mv
            (acl2::msg "~
 The preferred-defs table contains an invalid entry ~x0.
 The definition body, ~x1, is not a pseudo-term."
-                      (car alist) body)))
+                      (car alist) body)
+           nil state))
          ((er rest) (preferred-defs-to-overrides (cdr alist) state)))
       (value (hons-acons fn (list* formals body defname)
                          rest)))))
@@ -306,8 +312,9 @@ The definition body, ~x1, is not a pseudo-term."
  (defun gl-term-to-apply-obj (x alist)
    (declare (xargs :guard (pseudo-termp x)
                    :verify-guards nil))
-   (b* (((when (not x)) nil)
-        ((when (atom x)) (cdr (hons-assoc-equal x alist)))
+   (b* (((when (atom x))
+         (and x (mbt (symbolp x))
+              (cdr (hons-assoc-equal x alist))))
         ((when (eq (car x) 'quote)) (g-concrete-quote (cadr x)))
         (args (gl-termlist-to-apply-obj-list (cdr x) alist))
         (fn (car x))
@@ -929,12 +936,12 @@ The definition body, ~x1, is not a pseudo-term."
        ;; The rest is just a heuristic determination of which should rewrite to
        ;; the other.
        (a-goodp (or (atom a)
-                    (member (tag a) '(:g-number :g-boolean))
+                    (member (tag a) '(:g-integer :g-boolean))
                     (general-concretep a)))
        ((when a-goodp)
         (add-term-equiv b bvar bvar-db))
        (b-goodp (or (atom b)
-                    (member (tag b) '(:g-number :g-boolean))
+                    (member (tag b) '(:g-integer :g-boolean))
                     (general-concretep b)))
        ((when b-goodp)
         (add-term-equiv a bvar bvar-db)))

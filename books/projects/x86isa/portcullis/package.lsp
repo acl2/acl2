@@ -40,6 +40,7 @@
 (in-package "ACL2")
 
 (include-book "centaur/bitops/portcullis" :dir :system)
+(include-book "centaur/fty/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 
 (defpkg "X86ISA"
@@ -73,6 +74,7 @@
 
      ;; TOOLS
      defprod
+     fty::defbitstruct
      def-ruleset
      def-ruleset!
      add-to-ruleset

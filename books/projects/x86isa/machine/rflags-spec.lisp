@@ -61,6 +61,7 @@ unsigned-integer arithmetic. It is also used in multiple-precision
 arithmetic.</p>"
   :parents (rflag-specifications)
   :inline t
+  :no-function t
   :guard (and (natp result-nbits)
               (natp raw-result))
   (acl2::bool->bit (not (unsigned-byte-p result-nbits raw-result)))
@@ -79,6 +80,7 @@ arithmetic.</p>"
   `(define ,(mk-name "cf-spec" result-nbits)
      ((raw-result :type (unsigned-byte ,(1+ result-nbits))))
      :inline t
+     :no-function t
      :parents (rflag-specifications)
      (acl2::bool->bit (mbe :logic (not (unsigned-byte-p ,result-nbits raw-result))
                            :exec (not (< raw-result ,(expt 2 result-nbits)))))
@@ -139,6 +141,7 @@ complement) arithmetic.</p>"
   `(define ,(mk-name "of-spec" result-nbits)
      ((signed-raw-result :type (signed-byte ,(1+ result-nbits))))
      :inline t
+     :no-function t
      :parents (rflag-specifications)
      (acl2::bool->bit (mbe :logic (not (signed-byte-p ,result-nbits signed-raw-result))
                            :exec (or
@@ -179,6 +182,7 @@ complement) arithmetic.</p>"
   ;; declarations.
   ((result :type (integer 0 *)))
   :inline t
+  :no-function t
   :long "<p>General @('ZF') Specification (Source: Intel Manuals,
   Vol. 1, Section 3.4.3.1):</p>
 
@@ -272,6 +276,7 @@ otherwise.</p>"
   ((x :type (unsigned-byte 8)))
   :measure (integer-length x)
   :inline t
+  :no-function t
   :verify-guards nil
   :enabled t
   (if (zp x)
@@ -321,6 +326,7 @@ otherwise.</p>"
      ((result :type (unsigned-byte ,result-nbits)))
      :parents (rflag-specifications)
      :inline t
+     :no-function t
      :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
      (mbe :logic (acl2::bool->bit (not
@@ -363,6 +369,7 @@ otherwise.</p>"
 result contains an even number of 1 bits; cleared otherwise.</p>"
   :parents (rflag-specifications)
   :inline t
+  :no-function t
   :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
   :guard (unsigned-byte-p result-nbits result)
   (mbe :logic (acl2::bool->bit (not (logbitp 0 (logcount (loghead 8 result)))))
@@ -408,6 +415,7 @@ result contains an even number of 1 bits; cleared otherwise.</p>"
   `(define ,(mk-name "sf-spec" result-nbits)
      ((result       :type (unsigned-byte ,result-nbits)))
      :inline t
+     :no-function t
 
      :parents (rflag-specifications)
 
@@ -435,6 +443,7 @@ result contains an even number of 1 bits; cleared otherwise.</p>"
   ((result-nbits :type (member 8 16 32 64))
    (result       :type (integer 0 *)))
   :inline t
+  :no-function t
   :guard (unsigned-byte-p result-nbits result)
   :long "<p>General @('SF') Specification (Source: Intel Manuals,
   Vol. 1, Section 3.4.3.1):</p>
@@ -490,6 +499,7 @@ positive value and 1 indicates a negative value.)</p>"
      ((dst         :type (unsigned-byte ,result-nbits))
       (src         :type (unsigned-byte ,result-nbits)))
      :inline t
+     :no-function t
      :parents (rflag-specifications)
 
      (b* (((the (unsigned-byte 4) dst-3-0)
@@ -539,6 +549,7 @@ positive value and 1 indicates a negative value.)</p>"
      ((dst         :type (unsigned-byte ,result-nbits))
       (src         :type (unsigned-byte ,result-nbits)))
      :inline t
+     :no-function t
      :parents (rflag-specifications)
 
      (b* (((the (unsigned-byte 4) dst-3-0)
@@ -591,6 +602,7 @@ positive value and 1 indicates a negative value.)</p>"
       (src         :type (unsigned-byte ,result-nbits))
       (cf          :type (unsigned-byte 1)))
      :inline t
+     :no-function t
      :parents (rflag-specifications)
 
      (b* (((the (unsigned-byte 4) dst-3-0)
@@ -644,6 +656,7 @@ positive value and 1 indicates a negative value.)</p>"
       (src         :type (unsigned-byte ,result-nbits))
       (cf          :type (unsigned-byte 1)))
      :inline t
+     :no-function t
      :parents (rflag-specifications)
 
      (b* (((the (unsigned-byte 4) dst-3-0)

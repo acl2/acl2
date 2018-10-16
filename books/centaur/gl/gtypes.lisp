@@ -30,8 +30,6 @@
 
 (in-package "GL")
 
-(include-book "gobjectp")
-
 (include-book "generic-geval")
 
 ;; (defun gobj-count (x)
@@ -88,7 +86,7 @@
          (cond
           ((g-concrete-p x) 'general)
           ((g-boolean-p x)  nil)
-          ((g-number-p x)   nil)
+          ((g-integer-p x)   nil)
           ((g-ite-p x)      nil)
           ((g-apply-p x)    nil)
           ((g-var-p x)      nil)
@@ -106,7 +104,7 @@
              (case (tag x)
                (:g-concrete 'general)
                (:g-boolean  nil)
-               (:g-number   nil)
+               (:g-integer  nil)
                (:g-ite      nil)
                (:g-apply    nil)
                (:g-var      nil)
@@ -272,7 +270,7 @@
         ((not (g-keyword-symbolp (tag c)))
          ;; c is just a cons
          x)
-        ((eq (tag c) :g-number) x)
+        ((eq (tag c) :g-integer) x)
         ((eq (tag c) :g-concrete)
          (if (g-concrete->obj c) x y))
         (t (g-ite c x y))))
@@ -302,52 +300,11 @@
 ;; Number
 ;; -------------------------
 
-(defun norm-bvec-s (v)
-  (declare (xargs :guard T))
-  (if (boolean-listp v)
-      (bfr-list->s v nil)
-    v))
 
-(defun norm-bvec-u (v)
-  (declare (xargs :guard t))
-  (if (boolean-listp v)
-      (bfr-list->u v nil)
-    v))
-
-
-(defun mk-g-number-fn (rnum rden inum iden)
-  (declare (xargs :guard t))
-  (b* ((rnum-norm (norm-bvec-s rnum))
-       (rden-norm (norm-bvec-u rden))
-       (inum-norm (norm-bvec-s inum))
-       (iden-norm (norm-bvec-u iden)))
-    (if (and (integerp rnum-norm) (natp rden-norm)
-             (integerp inum-norm) (natp iden-norm))
-        (components-to-number rnum-norm rden-norm inum-norm iden-norm)
-      (flet ((to-uvec (n)
-                      (if (natp n)
-                          (n2v n)
-                        n))
-             (to-svec (n)
-                      (if (integerp n)
-                          (i2v n)
-                        n)))
-        (let* ((rst (and (not (or (eql iden 1) (equal iden '(t)))) (list (to-uvec iden))))
-               (rst (and (not (or (eql inum 0) (equal inum '(nil)))) (cons (to-svec inum) rst)))
-               (rst (and (or rst (not (or (eql rden 1) (equal rden '(t))))) (cons (to-uvec rden) rst))))
-          (g-number (cons (to-svec rnum) rst)))))))
-
-
-(defmacro mk-g-number (rnum &optional
-                              (rden '1)
-                              (inum '0)
-                              (iden '1))
-  `(mk-g-number-fn ,rnum ,rden ,inum ,iden))
-
-(add-macro-alias mk-g-number mk-g-number-fn)
-
-
-(in-theory (disable mk-g-number))
+(define mk-g-integer (bits)
+  (if (boolean-listp bits)
+      (bfr-list->s bits nil)
+    (g-integer bits)))
 
 
 ;; -------------------------
@@ -392,12 +349,7 @@
        nil
      (pattern-match x
        ((g-boolean b) (pbfr-depends-on k p b))
-       ((g-number n)
-        (b* (((mv rn rd in id) (break-g-number n)))
-          (or (pbfr-list-depends-on k p rn)
-              (pbfr-list-depends-on k p rd)
-              (pbfr-list-depends-on k p in)
-              (pbfr-list-depends-on k p id))))
+       ((g-integer bits) (pbfr-list-depends-on k p bits))
        ((g-ite test then else)
         (or (gobj-depends-on k p test)
             (gobj-depends-on k p then)

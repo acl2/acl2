@@ -30,45 +30,14 @@
 
 (in-package "ACL2")
 
-(include-book "tools/include-raw" :dir :system)
+; Matt K. mod: This book and the corresponding book,
+; centaur/vl/util/cw-unformatted, were the same before 9/10/2018.  However, now
+; that include-raw automatically extends state globals
+; program-fns-with-raw-code and logic-fns-with-raw-code, an attempt to include
+; both books under doc/top would cause an error, because redundant definitions
+; are now allowed for functions with raw code (at least, by default).  It seems
+; best anyhow to have just one version of the utility, cw-unformatted.  So:
+; here, we just include the other version.  Perhaps that single version should
+; be in a third location, other than centaur/vl2014/util/ or centaur/vl/util/.
 
-; There doesn't seem to be any mechanism for just printing the contents of a
-; string without any formatting using cw.  Using ~s mostly works, but it will
-; insert its own line breaks.  Using ~f fixes that, but puts quotes around the
-; string.  So, here we introduce a routine that just prints the contents of a
-; string without any automatic line breaks and without the surrounding quotes.
-; This can be combined usefully with our printer (see print.lisp).
-
-(defun cw-unformatted (x)
-  (declare (xargs :guard (stringp x))
-           (ignore x))
-  (er hard? 'cw-unformatted "Raw lisp definition not installed?"))
-
-(defttag cw-unformatted)
-
-; (depends-on "cw-unformatted-raw.lsp")
-(include-raw "cw-unformatted-raw.lsp")
-
-(defttag nil)
-
-
-#||
-;; Alternate implementation doesn't need a trust tag...
-
-(defun cw-princ$ (str)
-  ;; Same as princ$ to *standard-co*, but doesn't require state.
-  (declare (xargs :guard t))
-  (mbe :logic nil
-       :exec
-       (wormhole 'cw-raw-wormhole
-                 '(lambda (whs) whs)
-                 nil
-                 `(let ((state (princ$ ',str *standard-co* state)))
-                    (value :q))
-                 :ld-prompt nil
-                 :ld-pre-eval-print nil
-                 :ld-post-eval-print nil
-                 :ld-verbose nil)))
-
-
-||#
+(include-book "centaur/vl/util/cw-unformatted" :dir :system)

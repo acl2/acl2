@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2018
+;; October 2018
 
 ;; A tree based, reducing OR-NOR
 
@@ -149,7 +149,7 @@
 (not-primp-lemma t-or)
 (not-primp-lemma t-nor)
 
-(defthmd t-or-nor$value
+(defthm t-or-nor$value
   (implies (and (t-or-nor& netlist tree parity)
                 (equal call-name (if parity 't-nor 't-or))
                 (true-listp a)
@@ -163,8 +163,6 @@
                             open-se
                             t-or-nor&
                             t-or-nor*$destructure
-                            not-primp-t-or
-                            not-primp-t-nor
                             tr-or-nor
                             tree-size)
                            (de-module-disabled-rules)))))
@@ -262,7 +260,7 @@
 
 (not-primp-lemma tv-zp)
 
-(defthmd tv-zp$value
+(defthm tv-zp$value
   (implies (and (tv-zp& netlist tree)
                 (equal (len a) (tree-size tree))
                 (true-listp a))
@@ -277,9 +275,7 @@
            :in-theory (e/d (de-rules
                             tv-zp&
                             tv-zp*$destructure
-                            not-primp-tv-zp
-                            f$tv-zp
-                            t-or-nor$value)
+                            f$tv-zp)
                            (de-module-disabled-rules)))))
 
 (defthm f$tv-zp=v-zp

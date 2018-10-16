@@ -149,16 +149,16 @@ symbolic objects, but numbers are a good start.  GL represents symbolic, signed
 integers as</p>
 
 @({
-    (:g-number <lsb-bits>)
+    (:g-integer . <lsb-bits>)
 })
 
 <p>Where @('lsb-bits') is a list of Boolean expressions that represent the
 two's complement bits of the number.  The bits are in lsb-first order, and the
 last, most significant bit is the sign bit.  For instance, if @('p') is the
-following @(':g-number'),</p>
+following @(':g-integer),</p>
 
 @({
-    p = (:g-number (true   false   A & B   false))
+    p = (:g-integer true   false   A & B   false)
 })
 
 <p>Then @('p') represents a 4-bit, signed integer whose value is either 1 or 5,
@@ -209,7 +209,7 @@ of @('<else>'), depending on the value of @('<test>').  For example,</p>
 
 @({
      (:g-ite  (:g-boolean . A)
-              (:g-number (B  A  false))
+              (:g-integer B  A  false)
               . #\\C)
 })
 
@@ -230,27 +230,27 @@ executions on those objects.  For instance, recall the symbolic number @('p')
 which can have value 1 or 5,</p>
 
 @({
-    p = (:g-number (true   false   A & B   false))
+    p = (:g-integer  true   false   A & B   false)
 })
 
 <p>We might symbolically add 1 to @('p') to obtain a new symbolic number, say
 @('q'),</p>
 
 @({
-    q = (:g-number (false   true    A & B   false))
+    q = (:g-integer  false   true    A & B   false)
 })
 
 <p>which represents either 2 or 6.  Suppose @('r') is another symbolic number,</p>
 
 @({
-    r = (:g-number (A   false   true   false))
+    r = (:g-integer  A   false   true   false)
 })
 
 <p>which represents either 4 or 5.  We might add @('q') and @('r') to obtain
 @('s'),</p>
 
 @({
-    s = (:g-number (A    true    ~(A & B)    (A & B)    false))
+    s = (:g-integer  A    true    ~(A & B)    (A & B)    false)
 })
 
 <p>whose value can be 6, 7, or 11.</p>
@@ -268,9 +268,9 @@ ubdds) or @(see aig)s, depending on which mode is being used.</p>
 <p>GL has built-in support for symbolically executing most ACL2 primitives.
 Generally, this is done by cases on the types of the symbolic objects being
 passed in as arguments.  For instance, if we want to symbolically execute @(see
-consp) on @('s'), then we are asking whether a @(':g-number') may ever
+consp) on @('s'), then we are asking whether a @(':g-integer') may ever
 represent a cons, so the answer is simply @('nil').  Similarly, if we ever try
-to add a @(':g-boolean') to a @(':g-number'), by the ACL2 axioms the
+to add a @(':g-boolean') to a @(':g-integer'), by the ACL2 axioms the
 @(':g-boolean') is simply treated as 0.</p>
 
 <p>Beyond these primitives, GL provides what is essentially a <a
@@ -308,7 +308,7 @@ represent independent Boolean variables in our Boolean expression
 representation.  Then, one suitable object is:</p>
 
 @({
-    Xinit = (:g-number (b0 b1 ... b31 b32)).
+    Xinit = (:g-integer b0 b1 ... b31 b32).
 })
 
 <p>Why does this have 33 variables?  The final bit, @('b32'), represents the
@@ -318,7 +318,7 @@ creation involving @(':g-ite') forms.  But perhaps the best object to use would
 be:</p>
 
 @({
-   Xbest = (:g-number (b0 b1 ... b31 false)).
+   Xbest = (:g-integer b0 b1 ... b31 false).
 })
 
 <p>since it covers exactly the desired range using the simplest possible
@@ -334,7 +334,7 @@ symbolic result @('t'), since it is always true of the possible values of
 possible.</p>
 
 <p>Next, the @('(fast-logcount-32 x)') and @('(logcount x)') forms each yield
-@(':g-number') objects whose bits are Boolean expressions in the variables
+@(':g-integer') objects whose bits are Boolean expressions in the variables
 @('b0, ..., b31').  For example, the least significant bit will be an
 expression representing the XOR of all these variables.</p>
 
@@ -402,7 +402,7 @@ used a convenient function, @('g-int'), to construct the @(':g-bindings').
 Expanding this away, here are the actual bindings:</p>
 
 @({
-   ((x (:g-number (0 1 2 ... 32))))
+   ((x (:g-integer 0 1 2 ... 32)))
 })
 
 <p>The @(':g-bindings') argument uses a slight modification of the symbolic
@@ -411,7 +411,7 @@ numbers, each representing a Boolean variable.  In this case, our binding for
 @('x') stands for the following symbolic object:</p>
 
 @({
-    Xinit = (:g-number (b0 b1 ... b31 b32))
+    Xinit = (:g-integer b0 b1 ... b31 b32)
 })
 
 <p>Note that @('Xinit') is not the same object as @('Xbest') from @(see
@@ -451,8 +451,8 @@ some typical bindings.</p>
 
 @({
     :g-bindings '((flag   (:g-boolean . 0))
-                  (a-bus  (:g-number (1 3 5 7 9)))
-                  (b-bus  (:g-number (2 4 6 8 10)))
+                  (a-bus  (:g-integer 1 3 5 7 9))
+                  (b-bus  (:g-integer 2 4 6 8 10))
                   (mode   (:g-ite (:g-boolean . 11) exact . fast))
                   (opcode #b0010100))
 })
@@ -462,11 +462,11 @@ some typical bindings.</p>
 the symbol @('exact') or @('fast'), and @('opcode') only the value 20.</p>
 
 <p>(Aside: Note that since @('#b0010100') is not within a @(':g-boolean') or
-@(':g-number') form, it is <b>not</b> the index of a Boolean variable.
+@(':g-integer') form, it is <b>not</b> the index of a Boolean variable.
 Instead, like the symbols @('exact') and @('fast'), it is just an ordinary ACL2
 constant that stands for itself, i.e., 20.)</p>
 
-<p>These @(':g-boolean') and @(':g-number') are called @(see shape-specs).
+<p>These @(':g-boolean') and @(':g-integer') are called @(see shape-specs).
 They are similar to the symbolic objects GL uses to compute with, except that
 natural number indices take the places of Boolean expressions.  The indices
 used throughout all of the bindings must be distinct, and represent free,
@@ -489,14 +489,14 @@ convenient function is</p>
 
 @({(g-int start by n)})
 
-<p>which generates a @(':g-number') form with @('n') bits, using
+<p>which generates a @(':g-integer') form with @('n') bits, using
 indices that start at @('start') and increment by @('by').  This is
 particularly useful for interleaving the bits of numbers, as we did for the
 @('a-bus') and @('b-bus') bindings above:</p>
 
 @({
-     (g-int 1 2 5)  ---> (:g-number (1 3 5 7 9))
-     (g-int 2 2 5)  ---> (:g-number (2 4 6 8 10))
+     (g-int 1 2 5)  ---> (:g-integer 1 3 5 7 9)
+     (g-int 2 2 5)  ---> (:g-integer 2 4 6 8 10)
 })
 
 <p>Writing out @(':g-bindings') and getting all the indices can be tedious.
@@ -520,7 +520,7 @@ our binding for @('x') is able to represent every integer from 0 to @('2^32 -
 1').  This is true of @('Xinit'), and the coverage proof goes through
 automatically.</p>
 
-<p>But suppose we forget that @(':g-number')s use a signed representation, and
+<p>But suppose we forget that @(':g-integer')s use a signed representation, and
 attempt to prove @('fast-logcount-32-correct') using the following (incorrect)
 g-bindings.</p>
 

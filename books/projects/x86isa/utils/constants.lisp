@@ -42,7 +42,11 @@
 (in-package "X86ISA")
 
 (include-book "utilities")
+(include-book "centaur/fty/bitstruct" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+;; [Shilpi] The following rule from bitstruct-theory breaks quite a lot of
+;; proofs.  Maybe it should be removed from that book too.
+(in-theory (e/d () (fty::unsigned-byte-p-1-when-bitp)))
 
 ;; ======================================================================
 
@@ -101,7 +105,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   )
 
-(local (xdoc::set-default-parents x86-layout-constants))
+(local (xdoc::set-default-parents x86-constants))
 
 ;; ======================================================================
 
@@ -162,51 +166,28 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   :short "Functions to collect legacy prefix bytes from an x86 instruction"
 
-  (defconst *prefixes-layout*
-    '((:num-prefixes      0  4) ;; Number of prefixes
-      (:lck               4  8) ;; Lock prefix
-      (:rep              12  8) ;; Repeat prefix
-      (:seg              20  8) ;; Segment Override prefix
-      (:opr              28  8) ;; Operand-Size Override prefix
-      (:adr              36  8) ;; Address-Size Override prefix
-      (:next-byte        44  8) ;; Byte immediately following the prefixes
-      (:last-prefix      52  3) ;; Last prefix byte:
-				;; 001b: lck (*lck-pfx*)
-				;; 010b: rep (*rep-pfx*)
-				;; 011b: seg (*seg-pfx*)
-				;; 100b: opr (*opr-pfx*)
-				;; 101b: adr (*adr-pfx*)
-				;; otherwise: none
-      ))
+  :long "<p>The field @('num') of @('prefixes') not only includes the number of
+  legacy prefixes present in an instruction, but also the number of REX bytes,
+  even though REX bytes are not stored in this structure.  See @(tsee
+  get-prefixes) for details.</p>"
 
-  ;; Comment about why we need the :last-prefix field:
+  (defbitstruct num-prefixes 4)
+  (defbitstruct lck          8)
+  (defbitstruct rep          8)
+  (defbitstruct seg          8)
+  (defbitstruct opr          8)
+  (defbitstruct adr          8)
+  (defbitstruct next-byte    8)
 
-  ;; The :last-prefix field stores the last prefix byte (if any) that comes
-  ;; immediately before the escape/opcode/rex byte (or, the last prefix to appear
-  ;; in the instruction stream).  That the position of prefix bytes is irrelevant
-  ;; is a myth; case in point: mandatory prefixes.  Here's an example: if both 66
-  ;; and F2 are present, then the byte which is present later in the instruction
-  ;; stream is the mandatory prefix and the earlier byte is simply a modifier
-  ;; prefix.  Also see
-  ;; http://lists.llvm.org/pipermail/llvm-dev/2010-December/037102.html
-
-  ;; More accurately, :last-prefix helps in distinguishing between instructions
-  ;; with the same opcode bytes but different mandatory prefixes in the two- and
-  ;; three-byte opcode maps: if, for certain opcodes (see function
-  ;; compute-compound-cell-for-an-opcode-map), the last prefix is 0x66, 0xF2, or
-  ;; 0xF3, then it is a mandatory prefix, otherwise, it is a usual modifier.  All
-  ;; prefixes before a mandatory prefix also act as the usual modifiers or cause
-  ;; errors when appropriate.
-
-  (defthm prefixes-table-ok
-    (layout-constant-alistp *prefixes-layout* 0 55)
-    :rule-classes nil)
-
-  (defmacro prefixes-slice (flg prefixes)
-    (slice flg prefixes 55 *prefixes-layout*))
-
-  (defmacro !prefixes-slice (flg val reg)
-    (!slice flg val reg 55 *prefixes-layout*)))
+  (defbitstruct prefixes
+    ((num         num-prefixes-p)
+     (lck         lck-p)
+     (rep         rep-p)
+     (seg         seg-p)
+     (opr         opr-p)
+     (adr         adr-p)
+     (nxt         next-byte-p))
+    :inline t))
 
 (defsection vex-prefixes-layout-structures
 
@@ -220,16 +201,16 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
       ))
 
   (defthm vex-prefixes-table-ok
-    (layout-constant-alistp *vex-prefixes-layout* 0 24)
+    (layout-constant-alistp *vex-prefixes-layout* 0 #.*vex-width*)
     :rule-classes nil)
 
   (defmacro vex-prefixes-slice (flg vex-prefixes)
-    (slice flg vex-prefixes 24 *vex-prefixes-layout*))
+    (slice flg vex-prefixes #.*vex-width* *vex-prefixes-layout*))
 
   (defmacro !vex-prefixes-slice (flg val reg)
-    (!slice flg val reg 24 *vex-prefixes-layout*))
+    (!slice flg val reg #.*vex-width* *vex-prefixes-layout*))
 
-  (define vex-prefixes-byte0-p ((vex-prefixes :type (unsigned-byte 24)))
+  (define vex-prefixes-byte0-p ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Returns @('t') if byte0 of the @('vex-prefixes') structure is
     either @('*vex2-byte0*') or @('*vex3-byte0*'); returns @('nil') otherwise"
     :returns (ok booleanp)
@@ -367,7 +348,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (!slice flg val reg 8 *vex3-byte2-layout*))
 
   (define vex-prefixes-map-p ((bytes        :type (unsigned-byte 16))
-			      (vex-prefixes :type (unsigned-byte 24)))
+			      (vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :guard (and (vex-prefixes-byte0-p vex-prefixes)
 		(or (equal bytes #ux0F)
 		    (equal bytes #ux0F38)
@@ -392,11 +373,12 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   ;; Some convenient accessor functions for those fields of the VEX prefixes
   ;; that are common to both the two- and three-byte forms:
 
-  (define vex-vvvv-slice ((vex-prefixes :type (unsigned-byte 24)))
+  (define vex-vvvv-slice ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Get the @('VVVV') field of @('vex-prefixes'); cognizant of the two-
     or three-byte VEX prefixes form"
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :inline t
+    :no-function t
     :returns (vvvv (unsigned-byte-p 4 vvvv)
 		   :hyp (vex-prefixes-byte0-p vex-prefixes)
 		   :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
@@ -407,11 +389,12 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
        (vex3-byte2-slice :vvvv (vex-prefixes-slice :byte2 vex-prefixes)))
       (otherwise -1)))
 
-  (define vex-l-slice ((vex-prefixes :type (unsigned-byte 24)))
+  (define vex-l-slice ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Get the @('L') field of @('vex-prefixes'); cognizant of the two- or
     three-byte VEX prefixes form"
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :inline t
+    :no-function t
     :returns (l (unsigned-byte-p 1 l)
 		:hyp (vex-prefixes-byte0-p vex-prefixes)
 		:hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
@@ -422,11 +405,12 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
        (vex3-byte2-slice :l (vex-prefixes-slice :byte2 vex-prefixes)))
       (otherwise -1)))
 
-  (define vex-pp-slice ((vex-prefixes :type (unsigned-byte 24)))
+  (define vex-pp-slice ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Get the @('PP') field of @('vex-prefixes'); cognizant of the two- or
     three-byte VEX prefixes form"
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :inline t
+    :no-function t
     :returns (pp (unsigned-byte-p 2 pp)
 		 :hyp (vex-prefixes-byte0-p vex-prefixes)
 		 :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
@@ -437,11 +421,12 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
        (vex3-byte2-slice :pp (vex-prefixes-slice :byte2 vex-prefixes)))
       (otherwise -1)))
 
-  (define vex-w-slice ((vex-prefixes :type (unsigned-byte 24)))
+  (define vex-w-slice ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Get the @('W') field of @('vex-prefixes'); cognizant of the two- or
     three-byte VEX prefixes form"
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :inline t
+    :no-function t
     :returns (w (unsigned-byte-p 1 w)
 		:hyp (and (vex-prefixes-byte0-p vex-prefixes)
 			  (equal (vex-prefixes-slice :byte0 vex-prefixes) #.*vex3-byte0*))
@@ -474,14 +459,14 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
       ))
 
   (defthm evex-prefixes-table-ok
-    (layout-constant-alistp *evex-prefixes-layout* 0 32)
+    (layout-constant-alistp *evex-prefixes-layout* 0 #.*evex-width*)
     :rule-classes nil)
 
   (defmacro evex-prefixes-slice (flg evex-prefixes)
-    (slice flg evex-prefixes 32 *evex-prefixes-layout*))
+    (slice flg evex-prefixes #.*evex-width* *evex-prefixes-layout*))
 
   (defmacro !evex-prefixes-slice (flg val reg)
-    (!slice flg val reg 32 *evex-prefixes-layout*))
+    (!slice flg val reg #.*evex-width* *evex-prefixes-layout*))
 
   (defconst *evex-byte1-layout*
     '((:mm                0  2) ;; Identical to low two bits of VEX.m-mmmm.
@@ -549,35 +534,103 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   ;; Some wrapper functions to the macros above to make the EVEX dispatch
   ;; functions' guard proofs simpler:
 
-  (define evex-vvvv-slice ((evex-prefixes :type (unsigned-byte 32)))
+  (define evex-vvvv-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('VVVV') field of @('evex-prefixes')"
     :inline t
+    :no-function t
     :returns (vvvv (unsigned-byte-p 4 vvvv) :hyp :guard)
     (evex-byte2-slice :vvvv (evex-prefixes-slice :byte2 evex-prefixes)))
 
-  (define evex-v-prime-slice ((evex-prefixes :type (unsigned-byte 32)))
+  (define evex-v-prime-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('v-prime') field of @('evex-prefixes')"
     :inline t
+    :no-function t
     :returns (v-prime (unsigned-byte-p 1 v-prime) :hyp :guard)
     (evex-byte3-slice :v-prime (evex-prefixes-slice :byte3 evex-prefixes)))
 
-  (define evex-vl/rc-slice ((evex-prefixes :type (unsigned-byte 32)))
+  (define evex-vl/rc-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('vl/rc') field of @('evex-prefixes')"
     :inline t
+    :no-function t
     :returns (vl/rc (unsigned-byte-p 2 vl/rc) :hyp :guard)
     (evex-byte3-slice :vl/rc (evex-prefixes-slice :byte3 evex-prefixes)))
 
-  (define evex-pp-slice ((evex-prefixes :type (unsigned-byte 32)))
+  (define evex-pp-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('PP') field of @('evex-prefixes')"
     :inline t
+    :no-function t
     :returns (pp (unsigned-byte-p 2 pp) :hyp :guard)
     (evex-byte2-slice :pp (evex-prefixes-slice :byte2 evex-prefixes)))
 
-  (define evex-w-slice ((evex-prefixes :type (unsigned-byte 32)))
+  (define evex-w-slice ((evex-prefixes :type (unsigned-byte #.*evex-width*)))
     :short "Get the @('W') field of @('evex-prefixes')"
     :inline t
+    :no-function t
     :returns (w (unsigned-byte-p 1 w) :hyp :guard)
     (evex-byte2-slice :w (evex-prefixes-slice :byte2 evex-prefixes))))
+
+;; ----------------------------------------------------------------------
+
+(defsection ModR/M-structures
+  :parents (ModR/M-decoding x86-constants)
+  :short "Bitstruct definitions to store a ModR/M byte and its fields"
+
+  (local (xdoc::set-default-parents ModR/M-structures))
+
+  (defbitstruct modr/m-r/m 3)
+  (defbitstruct modr/m-reg 3)
+  (defbitstruct modr/m-mod 2)
+
+  (defbitstruct modr/m
+    ((r/m modr/m-r/m-p)
+     (reg modr/m-reg-p)
+     (mod modr/m-mod-p))
+    :inline t)
+
+  (defthm return-type-of-ModR/M->r/m-linear
+    (< (ModR/M->r/m modr/m) 8)
+    :hints (("Goal" :in-theory (e/d (ModR/M->r/m) ())))
+    :rule-classes :linear)
+
+  (defthm return-type-of-ModR/M->reg-linear
+    (< (ModR/M->reg modr/m) 8)
+    :hints (("Goal" :in-theory (e/d (ModR/M->reg) ())))
+    :rule-classes :linear)
+
+  (defthm return-type-of-ModR/M->mod-linear
+    (< (ModR/M->mod modr/m) 4)
+    :hints (("Goal" :in-theory (e/d (ModR/M->mod modr/m-fix) ())))
+    :rule-classes :linear))
+
+(defsection SIB-structures
+
+  :parents (SIB-decoding x86-constants)
+  :short "Bitstruct definitions to store a SIB byte and its fields"
+
+  (defbitstruct sib-base  3)
+  (defbitstruct sib-index 3)
+  (defbitstruct sib-scale 2)
+
+  (defbitstruct sib
+    ((base  sib-base-p)
+     (index sib-index-p)
+     (scale sib-scale-p))
+    :inline t)
+
+  (defthm return-type-of-sib->base-linear
+    (< (sib->base sib) 8)
+    :hints (("Goal" :in-theory (e/d (sib->base) ())))
+    :rule-classes :linear)
+
+  (defthm return-type-of-sib->index-linear
+    (< (sib->index sib) 8)
+    :hints (("Goal" :in-theory (e/d (sib->index) ())))
+    :rule-classes :linear)
+
+  (defthm return-type-of-sib->scale-linear
+    (< (sib->scale sib) 4)
+    :hints (("Goal" :in-theory (e/d (sib->scale sib-fix) ())))
+    :rule-classes :linear))
 
 ;; ======================================================================
 
@@ -659,7 +712,8 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (:cr4-pce         8  1) ;; Performance Monitoring Counter Enable
     (:cr4-osfxsr      9  1) ;; OS Support for FXSAVE and FXRSTOR
     (:cr4-osxmmexcpt 10  1) ;; OS Support for unmasked SIMD FP Exceptions
-    (0               11  2) ;; 0 (Reserved)
+    (:cr4-umip       11  1) ;; User-mode instruction prevention
+    (:cr4-la57       12  1) ;; enables 5-level paging
     (:cr4-vmxe       13  1) ;; VMX Enable Bit
     (:cr4-smxe       14  1) ;; SMX Enable Bit
     (0               15  1) ;; 0 (Reserved)
@@ -672,8 +726,9 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (0               19  1) ;; 0 (Reserved)
     (:cr4-smep       20  1) ;; Supervisor Mode Execution Prevention
     (:cr4-smap       21  1)
+;;     (:cr4-pke        22  1) ;; Protection Key Enable
     ;; Bit
-    ;;  (0               21 43) ;; 0 (Reserved)
+    ;;  (0               22 42) ;; 0 (Reserved)
 
     ))
 

@@ -29,10 +29,6 @@
 ; Original authors: Sol Swords <sswords@centtech.com>
 (defpackage :ipasir-raw (:use :common-lisp :cffi))
 
-;; BOZO -- for Sol, should we explicitly disallow or check for add-lit being
-;; passed 0, since this would finalize the clause, but the logic model will not
-;; necessarily match?
-
 (in-package :ipasir-raw)
 
 
@@ -130,7 +126,7 @@
 
 ;; /**
 ;;  * Check if the given assumption literal was used to prove the
-;;  * unsatisfiability of the formula under the assumptions
+o;;  * unsatisfiability of the formula under the assumptions
 ;;  * used for the last SAT search. Return 1 if so, 0 otherwise.
 ;;  * This function can only be used if ipasir_solve has returned 20 and
 ;;  * no ipasir_add or ipasir_assume has been called since then, i.e.,
@@ -164,6 +160,27 @@
   (solver :pointer)
   (state :pointer)
   (terminate :pointer))
+
+;; /**
+;;  * Set a callback function used to extract learned clauses up to a given lenght from the
+;;  * solver. The solver will call this function for each learned clause that satisfies
+;;  * the maximum length (literal count) condition. The ipasir_set_learn function can be called in any
+;;  * state of the solver, the state remains unchanged after the call.
+;;  * The callback function is of the form "void learn(void * state, int * clause)"
+;;  *   - the solver calls the callback function with the parameter "state"
+;;  *     having the value passed in the ipasir_set_terminate function (2nd parameter).
+;;  *   - the argument "clause" is a pointer to a null terminated integer array containing the learned clause.
+;;  *     the solver can change the data at the memory location that "clause" points to after the function call.
+;;  *
+;;  * Required state: INPUT or SAT or UNSAT
+;;  * State after: INPUT or SAT or UNSAT
+;;  */
+;; void ipasir_set_learn (void * solver, void * state, int max_length, void (*learn)(void * state, int * clause));
+(defcfun "ipasir_set_learn" :void
+  (solver :pointer)
+  (state :pointer)
+  (max_length :int)
+  (learn :pointer))
 
 ;; The state-ptr is either NULL (meaning no limit) or a foreign array of two
 ;; ints of which the first is the current count and the second is the limit.
@@ -212,6 +229,15 @@
     (mem-aref limit-ptr :int)))
       
   
+(defun ipasir-set-null-learn-callback (solver)
+  (ignore-errors
+    ;; Note: this API was added later so some libraries may not have it.  We
+    ;; are just calling it to tell it not to use any callbacks, so if we get an
+    ;; error that the function doesn't exist, we just ignore it.
+    (ipasir-set-learn solver
+                      (null-pointer) ;; callback state
+                      65535 ;; max length -- should not be important
+                      (null-pointer))))
 
 
 (in-package "IPASIR")
@@ -341,6 +367,7 @@
   (setf (ipasir-get-limit-raw ipasir) (ipasir-raw::ipasir-set-limit (ipasir-get-raw ipasir)
                                                                     (ipasir-get-limit-raw ipasir)
                                                                     nil))
+  (ipasir-raw::ipasir-set-null-learn-callback (ipasir-get-raw ipasir))
   (setf (ipasir-get-status-raw ipasir) :input)
   (setf (ipasir-get-empty-new-clause-raw ipasir) t)
   (setf (ipasir-get-some-history-raw ipasir) t)

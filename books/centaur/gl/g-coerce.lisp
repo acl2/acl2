@@ -141,7 +141,7 @@
                 (coerce-string else pre hyp)))
          ((g-apply & &) (gret (g-apply 'coerce (gl-list (revappend-concrete pre x) 'string))))
          ((g-var &) (gret (g-apply 'coerce (gl-list (revappend-concrete pre x) 'string))))
-         ((g-number &)
+         ((g-integer &)
           (gret (mk-g-concrete
                  (ec-call (coerce (revappend pre nil) 'string)))))
          ((g-boolean &)
@@ -300,8 +300,8 @@
                      (not (consp (eval-g-base x env))))
             :hints(("Goal" :in-theory (enable eval-g-base)))))
 
-   (local (defthm consp-eval-g-base-number
-            (implies (g-number-p x)
+   (local (defthm consp-eval-g-base-integer
+            (implies (g-integer-p x)
                      (not (consp (eval-g-base x env))))
             :hints(("Goal" :in-theory (enable eval-g-base)))))
 
@@ -347,7 +347,6 @@
                                       bool-cond-itep-eval
                                       default-car
                                       eval-g-base-alt-def
-                                      general-number-components-ev
                                       ))
              :induct (coerce-string x pre hyp)
              :expand ((coerce-string x pre hyp)
@@ -365,7 +364,6 @@
                          bool-cond-itep-eval
                          default-car
                          eval-g-base-alt-def
-                         general-number-components-ev
                          ))
                    :expand ((:with eval-g-base (eval-g-base (car x) env)))))))))
 
@@ -506,7 +504,7 @@
                                      ; eval-g-non-keyword-cons
                                      equal-of-booleans-rewrite
                                      ; g-eval-non-consp
-                                     general-number-components-ev
+                                     ;; general-number-components-ev
                                      hyp-fix-of-hyp-fixedp
                                      ; hyp-and-not-false-test-is-and
                                      default-car default-cdr

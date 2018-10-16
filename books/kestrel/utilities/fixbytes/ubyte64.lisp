@@ -1,4 +1,4 @@
-; Fixtypes for Unsigned and Signed Bytes -- Instances -- Unsigned 64-Bit Bytes
+; Fixtype for Unsigned 64-Bit Bytes
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -14,8 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defbyte 64
+(fty::defbyte 64
   :signed nil
   :pred ubyte64p
-  :lpred ubyte64-listp
   :parents (defbyte-instances))

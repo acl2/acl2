@@ -1,6 +1,6 @@
 ; Kestrel Books
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,7 @@
 (include-book "auto-termination/top") ; omits some books (see file for why)
 (include-book "bitcoin/top")
 (include-book "ethereum/top")
+(include-book "java/top")
 (include-book "soft/top")
 (include-book "utilities/top")
 

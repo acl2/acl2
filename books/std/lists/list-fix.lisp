@@ -41,57 +41,25 @@
   :short "@(call list-fix) converts @('x') into a @(see true-listp) by, if
 necessary, changing its @(see final-cdr) to @('nil')."
 
-  :long "<p>Many functions that processes lists follows the <b>list-fix
-convention</b>: whenever @('f') is given a some non-@('true-listp') @('a')
-where it expected a list, it will act as though it had been given @('(list-fix
-a)') instead.  As a few examples, logically,</p>
-
-<ul>
-<li>@('(endp x)') ignores the final @('cdr') of @('x'),</li>
-<li>@('(len x)') ignores the final @('cdr') of @('x'),</li>
-<li>@('(append x y)') ignores the final @('cdr') of @('x') (but not @('y'))</li>
-<li>@('(member a x)') ignores the final @('cdr') of @('x'), etc.</li>
-</ul>
-
-<p>Having a @('list-fix') function is often useful when writing theorems about
-how list-processing functions behave.  For example, it allows us to write
-strong, hypothesis-free theorems such as:</p>
-
-@({
-    (equal (character-listp (append x y))
-           (and (character-listp (list-fix x))
-                (character-listp y)))
-})
-
-<p>Indeed, @('list-fix') is the basis for @(see list-equiv), an extremely
-common @(see equivalence) relation.</p>
-
-<p>Efficiency note.  In practice, non nil-terminated lists are fairly rare.  As
-an optimization, @('list-fix') tries to avoid any consing by first checking
-whether its argument is a @(see true-listp), and, in that case, it simply
-returns its argument unchanged.</p>
+  :long "<p>@('list-fix') is really a macro which expands to a call to
+  @(tsee true-list-fix) with the same argument.</p>
 
 <p>See also @(see llist-fix), a \"logical list fix\" that is guarded with
-@(see true-listp) for greater efficiency.</p>"
+@(see true-listp) for greater efficiency.</p>
 
-  (defund list-fix-exec (x)
-    (declare (xargs :guard t))
-    (if (consp x)
-        (cons (car x)
-              (list-fix-exec (cdr x)))
-      nil))
+ @(def list-fix-exec)
 
-  (defund list-fix (x)
-    (declare (xargs :guard t :verify-guards nil))
-    (mbe :logic
-         (if (consp x)
-             (cons (car x)
-                   (list-fix (cdr x)))
-           nil)
-         :exec
-         (if (true-listp x)
-             x
-           (list-fix-exec x))))
+ @(def list-fix)"
+
+  (defmacro list-fix-exec (x) `(true-list-fix-exec ,x))
+
+  (table macro-aliases-table 'list-fix-exec 'true-list-fix-exec)
+
+  (defmacro list-fix (x) `(true-list-fix ,x))
+
+  (table macro-aliases-table 'list-fix 'true-list-fix)
+
+  (in-theory (disable list-fix))
 
   (local (in-theory (enable list-fix-exec)))
 
@@ -110,8 +78,6 @@ returns its argument unchanged.</p>
     (equal (list-fix-exec x)
            (list-fix x))
     :hints(("Goal" :in-theory (enable list-fix))))
-
-  (verify-guards list-fix)
 
   (defthm car-of-list-fix
     (equal (car (list-fix x))

@@ -131,6 +131,7 @@
 	      (integerp sign1)
 	      (integerp sign2))
   :inline t
+  :no-function t
   (if (eql rat rat1) sign1 sign2)
   ///
 

@@ -31,6 +31,7 @@
 
 (in-package "AIGNET")
 (include-book "centaur/aignet/prune" :dir :system)
+(include-book "self-constprop")
 (include-book "transform-utils")
 
 (local (include-book "std/lists/resize-list" :dir :system ))
@@ -50,124 +51,7 @@
 
 (local (xdoc::set-default-parents constprop))
 
-(defstobj-clone vals bitarr :strsubst (("BIT" . "AIGNET-VAL")))
 
-(define aignet-mark-const-nodes-rec ((lit litp :type (integer 0 *))
-                                     aignet
-                                     mark
-                                     vals)
-  :guard (and (fanin-litp lit aignet)
-              (< (lit-id lit) (bits-length mark))
-              (< (lit-id lit) (bits-length vals)))
-  :split-types t
-  :measure (lit->var lit)
-  :returns (mv new-mark new-vals)
-  :verify-guards nil
-  (b* ((id (lit->var lit))
-       ((when (int= (get-bit id mark) 1))
-        (mv mark vals))
-       (slot0 (id->slot id 0 aignet))
-       (type (snode->type slot0))
-       ((when (int= type (in-type)))
-        (b* ((mark (set-bit id 1 mark))
-             (vals (set-bit id (b-not (lit->neg lit)) vals)))
-          (mv mark vals)))
-       ((unless (int= type (gate-type)))
-        (mv mark vals))
-
-       (slot1 (id->slot id 1 aignet))
-       (xor (snode->regp slot1))
-       ((when (or (int= (lit->neg lit) 1)
-                  (int= xor 1)))
-        ;; can't go through a negated AND or an xor
-        (mv mark vals))
-       
-       (mark (set-bit id 1 mark))
-
-       ((mv mark vals) (aignet-mark-const-nodes-rec (snode->fanin slot0) aignet mark vals)))
-    (aignet-mark-const-nodes-rec (snode->fanin slot1) aignet mark vals))
-  ///
-
-  (defun-sk marked-nodes-invar (mark vals invals regvals aignet)
-    (forall id
-            (implies (and (equal (id->type id aignet) (in-type))
-                          (equal (get-bit id mark) 1))
-                     (equal (id-eval id invals regvals aignet)
-                            (get-bit id vals))))
-    :rewrite :direct)
-
-  (in-theory (disable marked-nodes-invar))
-
-
-  (defthm marked-nodes-invar-of-update-non-input
-    (implies (and (marked-nodes-invar mark vals invals regvals aignet)
-                  (not (equal (id->type id aignet) (in-type))))
-             (marked-nodes-invar (update-nth id n mark) vals invals regvals aignet))
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))))
-
-  (local (in-theory (disable (:d aignet-mark-const-nodes-rec))))
-
-  (local (defthm equal-1-bit-equiv-congruence
-           (implies (bit-equiv a b)
-                    (equal (equal 1 a) (equal 1 b)))
-           :rule-classes :congruence))
-
-  (defret aignet-mark-const-nodes-rec-preserves-marked-nodes
-    (implies (bit-equiv (nth n mark) 1)
-             (bit-equiv (nth n new-mark) 1))
-    :hints (("goal" :induct <call>
-             :expand (<call>))))
-
-  (defret aignet-mark-const-nodes-rec-preserves-marked-node-vals
-    (implies (bit-equiv (nth n mark) 1)
-             (equal (nth n new-vals)
-                    (nth n vals)))
-    :hints (("goal" :induct <call>
-             :expand (<call>))))
-
-
-  (local (defthm b-xor-equals-1
-           (equal (equal (b-xor a b) 1)
-                  (equal (bfix b) (b-not a)))
-           :hints(("Goal" :in-theory (enable b-xor)))))
-
-  (defret aignet-mark-const-nodes-rec-preserves-marked-nodes-invar
-    (implies (and (equal (lit-eval lit invals regvals aignet) 1)
-                  (aignet-litp lit aignet)
-                  (marked-nodes-invar mark vals invals regvals aignet))
-             (marked-nodes-invar new-mark new-vals invals regvals aignet))
-    :hints (("goal" :induct <call>
-             :expand (<call>))
-            (and stable-under-simplificationp
-                 `(:expand ((lit-eval lit invals regvals aignet)
-                            (id-eval (lit->var lit) invals regvals aignet))
-                   :in-theory (enable eval-and-of-lits)))
-            (and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))
-            (and stable-under-simplificationp
-                  (let ((witness (acl2::find-call-lst
-                                  'marked-nodes-invar-witness
-                                  clause)))
-                    `(:clause-processor
-                      (acl2::simple-generalize-cp
-                       clause '((,witness . witness))))))
-            (and stable-under-simplificationp
-                 `(:expand ((id-eval (lit->var lit) invals regvals aignet))))))
-
-  (defret mark-length-of-<fn>
-    (implies (< (lit->var lit) (len mark))
-             (equal (len new-mark) (len mark)))
-    :hints (("goal" :induct <call>
-             :expand (<call>))))
-
-  (defret vals-length-of-<fn>
-    (implies (< (lit->var lit) (len vals))
-             (equal (len new-vals) (len vals)))
-    :hints (("goal" :induct <call>
-             :expand (<call>))))
-
-  (verify-guards aignet-mark-const-nodes-rec))
 
 ;; (define aignet-unmark-non-inputs ((n natp :type (integer 0 *)) mark aignet)
 ;;   :guard (and (<= n (+ 1 (max-fanin aignet)))
@@ -210,9 +94,9 @@
                                    aignet2)
   :guard (and (eql (num-ins aignet) (num-ins aignet2))
               (<= n (num-ins aignet))
-              (< (max-fanin aignet) (bits-length constmarks))
-              (< (max-fanin aignet) (bits-length vals))
-              (< (max-fanin aignet) (lits-length copy)))
+              (<= (num-fanins aignet) (bits-length constmarks))
+              (<= (num-fanins aignet) (bits-length vals))
+              (<= (num-fanins aignet) (lits-length copy)))
   :returns (new-copy)
   :verify-guards nil
   :measure (nfix (- (num-ins aignet) (nfix n)))
@@ -230,16 +114,16 @@
     (equal (nth-lit k new-copy)
            (if (and (equal (id->type k aignet) (in-type))
                     (equal (id->regp k aignet) 0)
-                    (<= (nfix n) (io-id->ionum k aignet)))
+                    (<= (nfix n) (ci-id->ionum k aignet)))
                (if (eql 1 (nth k constmarks))
                        (mk-lit 0 (get-bit k vals))
-                 (mk-lit (innum->id (io-id->ionum k aignet) aignet2) 0))
+                 (mk-lit (innum->id (ci-id->ionum k aignet) aignet2) 0))
              (nth-lit k copy)))
     :hints (("goal" :induct <call>
              :in-theory (enable* arith-equiv-forwarding))))
 
   (defret length-of-<fn>
-    (implies (< (max-fanin aignet) (len copy))
+    (implies (<= (num-fanins aignet) (len copy))
              (equal (len new-copy) (len copy))))
 
   (verify-guards aignet-constprop-init-pis))
@@ -252,9 +136,9 @@
                                     aignet2)
   :guard (and (eql (num-regs aignet) (num-regs aignet2))
               (<= n (num-regs aignet))
-              (< (max-fanin aignet) (bits-length constmarks))
-              (< (max-fanin aignet) (bits-length vals))
-              (< (max-fanin aignet) (lits-length copy)))
+              (<= (num-fanins aignet) (bits-length constmarks))
+              (<= (num-fanins aignet) (bits-length vals))
+              (<= (num-fanins aignet) (lits-length copy)))
   :returns (new-copy)
   :verify-guards nil
   :measure (nfix (- (num-regs aignet) (nfix n)))
@@ -272,16 +156,16 @@
     (equal (nth-lit k new-copy)
            (if (and (equal (id->type k aignet) (in-type))
                     (equal (id->regp k aignet) 1)
-                    (<= (nfix n) (io-id->ionum k aignet)))
+                    (<= (nfix n) (ci-id->ionum k aignet)))
                (if (eql 1 (nth k constmarks))
                        (mk-lit 0 (get-bit k vals))
-                 (mk-lit (regnum->id (io-id->ionum k aignet) aignet2) 0))
+                 (mk-lit (regnum->id (ci-id->ionum k aignet) aignet2) 0))
              (nth-lit k copy)))
     :hints (("goal" :induct <call>
              :in-theory (enable* arith-equiv-forwarding))))
 
   (defret length-of-<fn>
-    (implies (< (max-fanin aignet) (len copy))
+    (implies (<= (num-fanins aignet) (len copy))
              (equal (len new-copy) (len copy))))
 
   (verify-guards aignet-constprop-init-regs))
@@ -292,183 +176,11 @@
     (implies (and (equal (num-ins aignet) (num-ins aignet2))
                   (equal (num-regs aignet) (num-regs aignet2)))
              (aignet-input-copies-in-bounds copy aignet aignet2)))
-  :hints(("Goal" :in-theory (enable aignet-input-copies-in-bounds aignet-litp))))
+  :hints(("Goal" :in-theory (enable aignet-input-copies-in-bounds))))
        
 
-(defthm aignet-marked-copies-in-bounds-of-resize-empty
-  (aignet-marked-copies-in-bounds copy (resize-list nil n 0) aignet)
-  :hints(("Goal" :in-theory (enable aignet-marked-copies-in-bounds))))
-
-(defthm dfs-copy-onto-invar-of-resize-empty
-  (dfs-copy-onto-invar  aignet (resize-list nil n 0) copy aignet2)
-  :hints(("Goal" :in-theory (enable dfs-copy-onto-invar))))
-
-(defsection constprop-marked-pis-true
-  (defun-sk constprop-marked-pis-true (n
-                                       constmarks
-                                       vals
-                                       aignet
-                                       invals
-                                       regvals)
-    (forall id
-            (implies (and (equal (id->type id aignet) (in-type))
-                          (equal (id->regp id aignet) 0)
-                          (<= (nfix n) (io-id->ionum id aignet))
-                          (equal (get-bit id constmarks) 1))
-                     (equal (id-eval id invals regvals aignet)
-                            (get-bit id vals))))
-    :rewrite :direct)
-
-  (in-theory (disable constprop-marked-pis-true))
-
-  (local (in-theory (disable id-eval-of-input-index)))
-
-  (defthm constprop-marked-pis-true-when-true-for-one-greater
-    (implies (and (constprop-marked-pis-true (+ 1 (nfix n)) constmarks vals aignet invals regvals)
-                  (let ((id (innum->id n aignet)))
-                    (implies (and (equal (id->type id aignet) (in-type))
-                                  (equal (id->regp id aignet) 0)
-                                  (<= (nfix n) (io-id->ionum id aignet))
-                                  (equal (get-bit id constmarks) 1))
-                             (equal (id-eval id invals regvals aignet)
-                                    (get-bit id vals)))))
-             (constprop-marked-pis-true n constmarks vals aignet invals regvals))
-    :hints (("goal" :in-theory (enable* arith-equiv-forwarding))
-            (and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))
-            (and stable-under-simplificationp
-                 (let ((witness (acl2::find-call-lst
-                                 'constprop-marked-pis-true-witness
-                                 clause)))
-                   `(:clause-processor
-                     (acl2::simple-generalize-cp
-                      clause '((,witness . witness))))))
-            (and stable-under-simplificationp
-                 '(:cases ((nat-equiv n (io-id->ionum witness aignet))))))
-    :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-  (defthm constprop-marked-pis-true-end
-    (implies (<= (num-ins aignet) (nfix n))
-             (constprop-marked-pis-true n constmarks vals aignet invals regvals))
-    :hints(("Goal" :in-theory (enable constprop-marked-pis-true))))
 
 
-  (defthm constprop-marked-pis-true-implies-one-greater
-    (implies (constprop-marked-pis-true n constmarks vals aignet invals regvals)
-             (constprop-marked-pis-true (+ 1 (nfix n)) constmarks vals aignet invals regvals))
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))))
-
-  
-  (defthm constprop-marked-pis-true-implies-nth-invals
-    (implies (and (constprop-marked-pis-true n constmarks vals aignet invals regvals)
-                  (<= (nfix n) (nfix k))
-                  (< (nfix k) (num-ins aignet))
-                  (equal (nth (innum->id k aignet) constmarks) 1))
-             (bit-equiv (nth k invals)
-                        (get-bit (innum->id k aignet) vals)))
-    :hints (("goal" :use ((:instance constprop-marked-pis-true-necc
-                           (id (innum->id k aignet))))
-             :in-theory (e/d (id-eval-of-input-index)
-                             (constprop-marked-pis-true-necc)))))
-
-  (defthm constprop-marked-pis-true-of-mark-const-nodes
-    (implies (and (constprop-marked-pis-true 0 constmarks vals aignet invals regvals)
-                  (marked-nodes-invar constmarks vals invals regvals aignet)
-                  (equal (lit-eval lit invals regvals aignet) 1)
-                  (aignet-litp lit aignet))
-             (b* (((mv new-constmarks new-vals)
-                   (aignet-mark-const-nodes-rec lit aignet constmarks vals)))
-               (constprop-marked-pis-true 0 new-constmarks new-vals aignet invals regvals)))
-    :hints (("goal" :use ((:instance aignet-mark-const-nodes-rec-preserves-marked-nodes-invar
-                           (mark constmarks)))
-             :in-theory (disable aignet-mark-const-nodes-rec-preserves-marked-nodes-invar))
-            (and stable-under-simplificationp
-                 `(:expand (,(car (last clause))))))))
-
-(defsection constprop-marked-regs-true
-  (defun-sk constprop-marked-regs-true (n
-                                       constmarks
-                                       vals
-                                       aignet
-                                       invals
-                                       regvals)
-    (forall id
-            (implies (and (equal (id->type id aignet) (in-type))
-                          (equal (id->regp id aignet) 1)
-                          (<= (nfix n) (io-id->ionum id aignet))
-                          (equal (get-bit id constmarks) 1))
-                     (equal (id-eval id invals regvals aignet)
-                            (get-bit id vals))))
-    :rewrite :direct)
-
-  (in-theory (disable constprop-marked-regs-true))
-
-  (local (in-theory (disable id-eval-of-reg-index)))
-
-  (defthm constprop-marked-regs-true-when-true-for-one-greater
-    (implies (and (constprop-marked-regs-true (+ 1 (nfix n)) constmarks vals aignet invals regvals)
-                  (let ((id (regnum->id n aignet)))
-                    (implies (and (equal (id->type id aignet) (in-type))
-                                  (equal (id->regp id aignet) 1)
-                                  (<= (nfix n) (io-id->ionum id aignet))
-                                  (equal (get-bit id constmarks) 1))
-                             (equal (id-eval id invals regvals aignet)
-                                    (get-bit id vals)))))
-             (constprop-marked-regs-true n constmarks vals aignet invals regvals))
-    :hints (("goal" :in-theory (enable* arith-equiv-forwarding))
-            (and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))
-            (and stable-under-simplificationp
-                 (let ((witness (acl2::find-call-lst
-                                 'constprop-marked-regs-true-witness
-                                 clause)))
-                   `(:clause-processor
-                     (acl2::simple-generalize-cp
-                      clause '((,witness . witness))))))
-            (and stable-under-simplificationp
-                 '(:cases ((nat-equiv n (io-id->ionum witness aignet))))))
-    :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-
-  (defthm constprop-marked-regs-true-end
-    (implies (<= (num-regs aignet) (nfix n))
-             (constprop-marked-regs-true n constmarks vals aignet invals regvals))
-    :hints(("Goal" :in-theory (enable constprop-marked-regs-true))))
-
-
-  (defthm constprop-marked-regs-true-implies-one-greater
-    (implies (constprop-marked-regs-true n constmarks vals aignet invals regvals)
-             (constprop-marked-regs-true (+ 1 (nfix n)) constmarks vals aignet invals regvals))
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))))
-
-  
-  (defthm constprop-marked-regs-true-implies-nth-regvals
-    (implies (and (constprop-marked-regs-true n constmarks vals aignet invals regvals)
-                  (<= (nfix n) (nfix k))
-                  (< (nfix k) (num-regs aignet))
-                  (equal (nth (regnum->id k aignet) constmarks) 1))
-             (bit-equiv (nth k regvals)
-                        (get-bit (regnum->id k aignet) vals)))
-    :hints (("goal" :use ((:instance constprop-marked-regs-true-necc
-                           (id (regnum->id k aignet))))
-             :in-theory (e/d (id-eval-of-reg-index)
-                             (constprop-marked-regs-true-necc)))))
-
-  (defthm constprop-marked-regs-true-of-mark-const-nodes
-    (implies (and (constprop-marked-regs-true 0 constmarks vals aignet invals regvals)
-                  (marked-nodes-invar constmarks vals invals regvals aignet)
-                  (equal (lit-eval lit invals regvals aignet) 1)
-                  (aignet-litp lit aignet))
-             (b* (((mv new-constmarks new-vals)
-                   (aignet-mark-const-nodes-rec lit aignet constmarks vals)))
-               (constprop-marked-regs-true 0 new-constmarks new-vals aignet invals regvals)))
-    :hints (("goal" :use ((:instance aignet-mark-const-nodes-rec-preserves-marked-nodes-invar
-                           (mark constmarks)))
-             :in-theory (disable aignet-mark-const-nodes-rec-preserves-marked-nodes-invar))
-            (and stable-under-simplificationp
-                 `(:expand (,(car (last clause))))))))
                         
 
 
@@ -483,8 +195,8 @@
   :guard (and (eql (num-ins aignet) (num-ins aignet2))
               (fanin-litp lit aignet2)
               (<= n (num-ins aignet))
-              (< (max-fanin aignet) (bits-length constmarks))
-              (< (max-fanin aignet) (bits-length vals)))
+              (<= (num-fanins aignet) (bits-length constmarks))
+              (<= (num-fanins aignet) (bits-length vals)))
   :returns (mv (new-lit litp :rule-classes :type-prescription)
                new-strash new-aignet2)
   :verify-guards nil
@@ -561,8 +273,8 @@
   :guard (and (eql (num-regs aignet) (num-regs aignet2))
               (fanin-litp lit aignet2)
               (<= n (num-regs aignet))
-              (< (max-fanin aignet) (bits-length constmarks))
-              (< (max-fanin aignet) (bits-length vals)))
+              (<= (num-fanins aignet) (bits-length constmarks))
+              (<= (num-fanins aignet) (bits-length vals)))
   :returns (mv (new-lit litp :rule-classes :type-prescription)
                new-strash new-aignet2)
   :verify-guards nil
@@ -642,10 +354,10 @@
   :verify-guards nil
   (b* (((acl2::local-stobjs mark constmarks vals copy)
         (mv new-lit strash aignet2 mark constmarks vals copy))
-       (mark (resize-bits (+ 1 (max-fanin aignet)) mark))
-       (vals (resize-bits (+ 1 (max-fanin aignet)) vals))
-       (copy (resize-lits (+ 1 (max-fanin aignet)) copy))
-       (constmarks (resize-bits (+ 1 (max-fanin aignet)) constmarks))
+       (mark (resize-bits (num-fanins aignet) mark))
+       (vals (resize-bits (num-fanins aignet) vals))
+       (copy (resize-lits (num-fanins aignet) copy))
+       (constmarks (resize-bits (num-fanins aignet) constmarks))
        
        ((mv constmarks vals)
         (aignet-mark-const-nodes-rec
@@ -665,7 +377,9 @@
         strash aignet2 mark constmarks vals copy))
 
   ///
-  (verify-guards aignet-lit-constprop)
+  (verify-guards aignet-lit-constprop
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable aignet-idp)))))
 
   (local (acl2::use-trivial-ancestors-check))
 
@@ -784,14 +498,15 @@
     :hints (("goal" :in-theory (enable bool->bit)
              :do-not-induct t)
             (and stable-under-simplificationp
-                 '(:expand ((lit-eval lit invals regvals aignet)))))
+                 '(:expand ((lit-eval lit invals regvals aignet))
+                   :in-theory (enable lit-copy))))
     :otf-flg t))
 
 (fty::defprod constprop-config
   ((gatesimp gatesimp-p :default (default-gatesimp)
              "Gate simplification parameters")
    (iterations posp :default 1
-               "Number of times to run the transform."))
+               "Number of times to repeat the transform."))
   :parents (constprop comb-transform)
   :short "Configuration object for the @(see constprop) aignet transform."
   :tag :constprop-config)
@@ -808,11 +523,11 @@
               (equal (num-regs aignet) 0))
   (b* (((acl2::local-stobjs strash)
         (mv strash aignet2))
-       (aignet2 (aignet-init 1 (num-regs aignet) (num-ins aignet) (num-nodes aignet) aignet2))
+       (aignet2 (aignet-init 1 (num-regs aignet) (num-ins aignet) (num-fanins aignet) aignet2))
        (aignet2 (aignet-add-ins (num-ins aignet) aignet2))
        (aignet2 (aignet-add-regs (num-regs aignet) aignet2))
        ((mv out-lit strash aignet2)
-        (aignet-lit-constprop (co-id->fanin (outnum->id 0 aignet) aignet)
+        (aignet-lit-constprop (outnum->fanin 0 aignet)
                               aignet gatesimp strash aignet2))
        (aignet2 (aignet-add-out out-lit aignet2)))
     (mv strash aignet2))
@@ -832,6 +547,7 @@
              (comb-equiv new-aignet2 aignet))
     :hints(("Goal" :in-theory (e/d (comb-equiv outs-comb-equiv nxsts-comb-equiv output-eval nxst-eval)
                                    (acl2::zp-open))
+            :expand ((:free (a b) (lookup-stype 0 :po (cons a b))))
             :cases ((zp (mv-nth 0 (outs-comb-equiv-witness new-aignet2 aignet)))))))
 
   (defret normalize-inputs-of-<fn>
@@ -849,7 +565,8 @@
   :measure (lposfix iters)
   :verify-guards nil
   (b* (((when (eql (lposfix iters) 1))
-        (constprop-once aignet gatesimp aignet2))
+        (time$ (constprop-once aignet gatesimp aignet2)
+               :msg "   - constprop-once: ~st seconds, ~sa bytes.~%"))
        ((acl2::local-stobjs aignet-tmp)
         (mv aignet-tmp aignet2))
        ;; Doing it this way is awkward, but makes it so that we don't keep
@@ -858,7 +575,10 @@
        ;; aignet2 as its last step, and all the previous transforms are done
        ;; in a recursive call that writes to an empty local aignet.
        (aignet-tmp (constprop-iter (1- (lposfix iters)) aignet gatesimp aignet-tmp))
-       (aignet2 (constprop-once aignet-tmp gatesimp aignet2)))
+       (- (cw "Constprop iteration ~x0:" (1- (lposfix iters)))
+          (print-aignet-stats "" aignet-tmp))
+       (aignet2 (time$ (constprop-once aignet-tmp gatesimp aignet2)
+                       :msg "   - constprop-once: ~st seconds, ~sa bytes.~%")))
     (mv aignet-tmp aignet2))
   ///
   (defret stype-count-of-<fn>

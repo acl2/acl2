@@ -305,6 +305,20 @@ references to untyped parameters.</p>"
 ;;                                :otherwise nil)
 ;;                     :otherwise nil))
 
+(define vl-is-integer-valued-syscall ((x vl-expr-p))
+  :guard (vl-expr-case x :vl-call)
+  ;; Many system functions (e.g., $countones, $clog2, $test$plusargs) return
+  ;; integers.  Treating these as 32 bits would make very little sense.  So,
+  ;; treat any integer-valued system functions as if they were unsized atoms.
+  (b* (((vl-call x)))
+    (and x.systemp
+         (b* ((info (vl-syscall->returninfo x))
+              ((unless info)
+               nil)
+              ((vl-coredatatype-info info)))
+           (or (vl-coretypename-equiv info.coretypename :vl-integer)
+               (vl-coretypename-equiv info.coretypename :vl-int))))))
+
 (define vl-is-unsized-int ((x vl-expr-p)
                            (ss vl-scopestack-p)
                            (scopes vl-elabscopes-p))
@@ -313,10 +327,20 @@ references to untyped parameters.</p>"
     (vl-expr-case x1
       :vl-literal (vl-value-case x1.val
                     :vl-constint x1.val.wasunsized
-                    :otherwise nil)
+                    :otherwise
+                    ;; Note.  We treat these differently here (for fussy
+                    ;; warnings) than in vl-unsized-atom-p (for truncation
+                    ;; warnings).  The rationale is that if we are truncating
+                    ;; something like 'bx (which is 32 bits of Xes) then that
+                    ;; is OK -- the user is going to get the desired number of
+                    ;; Xes.  However, for fussy warnings, if we are doing
+                    ;; something like (a[3:0] == 'bx) then this is almost
+                    ;; surely an error, because a[3:0] gets zero extended
+                    ;; and these will not match with the Xes.
+                    nil)
       :vl-index (vl-unsized-index-p x ss)
+      :vl-call  (vl-is-integer-valued-syscall x)
       :otherwise nil)))
-
 
 (define vl-collect-unsized-ints
   ((x vl-exprlist-p)
@@ -641,9 +665,9 @@ details.</p>"
        ;; collecting them, see if they fit into the size of the other expr.
        (atoms         (vl-expr-interesting-size-atoms expr-32))
        (unsized       (vl-collect-unsized-ints atoms ss scopes))
-       (unsized-fit-p (ints-probably-fit-p size-other
-                                  (vl-exprlist-resolved->vals
-                                   (vl-collect-resolved-exprs unsized))))
+       (unsized-vals  (vl-exprlist-resolved->vals (vl-collect-resolved-exprs unsized)))
+       (unsized-fit-p (ints-probably-fit-p size-other unsized-vals))
+
        ((unless unsized-fit-p)
         ;; Well, hrmn, there's some integer here that doesn't fit into the size
         ;; of the other argument.  This is especially interesting because

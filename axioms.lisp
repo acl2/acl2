@@ -1,5 +1,5 @@
-; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2017, Regents of the University of Texas
+; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2018, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -9463,6 +9463,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Developer note.  A substantial test suite is stored at this UT CS file:
 ; /projects/acl2/devel-misc/books-devel/examples/defattach/test.lisp
 
+; It may be tempting to allow defattach events to be redundant.  There is at
+; least one good reason not to do so: the value of keyword :attach is not
+; stored in the world, at least not in an easily accessible way.  It seems
+; possible that there are such issues with the :skip-checks keyword too.
+
+; We could add a new macro, (defattach? f g), which skips the defattach when g
+; is already attached to f, regardless of keywords.  But more generally, we
+; would want to support (defattach? (f1 g1) ... (fn gn)), in which case thought
+; would need to be given to the case that some, but not all, fi already have gi
+; as an attachment.  Whatever the decision in that case, the result could be
+; confusing to some.  Also confusing could be the issue described above, of
+; keywords not being checked.  On a more mundane level, attention might be
+; needed to ensure that errors and warnings reference "defattach?" rather than
+; "defattach".
+
+; So, at least until a reasonably convincing case is presented for why
+; redundancy is important for defattach events, we leave things as they are.
+
   (list 'defattach-fn
         (list 'quote args)
         'state
@@ -9977,6 +9995,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               :exec  (delete-assoc-eql-exec key alist)))
    (t ; (equal test 'equal)
     `(delete-assoc-equal ,key ,alist))))
+
+(defun delete-assoc-eq-all (key alist)
+  (declare (xargs :guard (if (symbolp key)
+                             (alistp alist)
+                           (symbol-alistp alist))))
+  (cond ((endp alist) nil)
+        ((eq key (caar alist))
+         (delete-assoc-eq-all key (cdr alist)))
+        (t (cons (car alist)
+                 (delete-assoc-eq-all key (cdr alist))))))
 
 (defun getprops1 (alist)
 
@@ -13393,7 +13421,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 8.0
+; ACL2 Version 8.1
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed in .cert files.
@@ -13418,7 +13446,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 8.0"
+                                "ACL2 Version 8.1"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))
@@ -17662,11 +17690,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (defmacro ,macro-symbol (&rest args)
          (list* 'with-lock ',lock-symbol args)))))
 
-(deflock
-
-; Keep in sync with :DOC topic with-output-lock.
-
-  *output-lock*)
+(deflock *output-lock*) ; Keep in sync with :DOC with-output-lock.
+(deflock *local-state-lock*)
 
 (skip-proofs ; as with open-output-channel
 (defun get-output-stream-string$-fn (channel state-state)
@@ -23017,16 +23042,56 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          ((t) (member-eq val *legal-rw-cache-states*))
          (t nil)))
 
-(defun fix-true-list (x)
-  (declare (xargs :guard t))
+; We thank Jared Davis for permission to adapt his function true-list-fix (and
+; supporting function true-list-fix-exec), below.  See :DOC note-8-2 for
+; further credits and explanation.
+
+(defun true-list-fix-exec (x)
+  (declare (xargs :guard t :mode :logic))
   (if (consp x)
-      (cons-with-hint (car x)
-                      (fix-true-list (cdr x))
-                      x)
+      (cons (car x)
+            (true-list-fix-exec (cdr x)))
     nil))
 
-(defthm pairlis$-fix-true-list
-  (equal (pairlis$ x (fix-true-list y))
+(defun true-list-fix (x)
+  (declare (xargs :guard t
+                  :mode :logic
+                  :verify-guards nil))
+  (mbe :logic
+       (if (consp x)
+           (cons (car x)
+                 (true-list-fix (cdr x)))
+         nil)
+       :exec
+       (if (true-listp x)
+           x
+         (true-list-fix-exec x))))
+
+(encapsulate
+  ()
+
+  (local (defthm true-list-fix-true-listp
+           (implies (true-listp x)
+                    (equal (true-list-fix x) x))
+           :hints (("Goal" :expand ((true-list-fix x))))))
+
+  (local (defthm true-list-fix-exec-removal
+           (equal (true-list-fix-exec x)
+                  (true-list-fix x))
+           :hints(("Goal" :in-theory (enable true-list-fix)))))
+
+  (verify-guards true-list-fix
+    :hints (("Goal" :expand ((true-list-fix x)))))
+  )
+
+(in-theory (disable true-list-fix-exec))
+
+(defmacro fix-true-list (x) `(true-list-fix ,x))
+
+(table macro-aliases-table 'fix-true-list 'true-list-fix)
+
+(defthm pairlis$-true-list-fix
+  (equal (pairlis$ x (true-list-fix y))
          (pairlis$ x y)))
 
 (defun boolean-listp (lst)

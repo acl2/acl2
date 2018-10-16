@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -12,6 +12,7 @@
 (include-book "gcd-body")
 
 (local (include-book "gcd-alg"))
+
 (local (include-book "arithmetic-3/top" :dir :system))
 
 (local (in-theory (disable nth)))
@@ -21,7 +22,7 @@
 ;;; Table of Contents:
 ;;;
 ;;; 1. DE Module Generator of COMP-GCD
-;;; 2. Specify the Final State of COMP-GCD After An N-Step Execution
+;;; 2. Multi-Step State Lemma
 ;;; 3. Single-Step-Update Property
 ;;; 4. Relationship Between the Input and Output Sequences
 
@@ -76,13 +77,13 @@
   (list 'l1
         (list* 'l1-status (sis 'd1-out 0 (* 2 data-width)))
         (si 'link (* 2 data-width))
-        (list* 'branch-act1 'op-act (sis 'd1-in 0 (* 2 data-width))))
+        (list* 'branch-act1 'body-act (sis 'd1-in 0 (* 2 data-width))))
 
   ;; L2
   (list 'l2
         (list* 'l2-status (sis 'd2-out 0 (* 2 data-width)))
         (si 'link (* 2 data-width))
-        (list* 'op-act 'merge-act1 (sis 'd2-in 0 (* 2 data-width))))
+        (list* 'body-act 'merge-act1 (sis 'd2-in 0 (* 2 data-width))))
 
   ;; JOINTS
   ;; Merge-in
@@ -111,9 +112,9 @@
                             *merge$go-num*
                             *comp-gcd-cond$go-num*))))
 
-  ;; Op
-  (list 'op
-        (list* 'op-act 'op-act0 'op-act1
+  ;; Body
+  (list 'body
+        (list* 'body-act
                (sis 'd2-in 0 (* 2 data-width)))
         (si 'gcd-body data-width)
         (list* 'l1-status 'l2-status
@@ -208,7 +209,15 @@
                               comp-gcd$valid-st)))
   :rule-classes :forward-chaining)
 
-;; Extract the input and output signals from COMP-GCD
+(defthmd comp-gcd$valid-st=>st-format
+  (implies (comp-gcd$valid-st st data-width)
+           (comp-gcd$st-format st data-width))
+  :hints (("Goal" :in-theory (e/d (comp-gcd-cond$valid-st=>st-format
+                                   comp-gcd$st-format
+                                   comp-gcd$valid-st)
+                                  (link$st-format)))))
+
+;; Extract the input and output signals for COMP-GCD
 
 (progn
   ;; Extract the input data
@@ -276,15 +285,15 @@
              (append (v-threefix (strip-cars l0.d))
                      br-go-signals))))
 
-  ;; Extract the inputs for the "op" joint
+  ;; Extract the inputs for the "body" joint
 
-  (defund comp-gcd$op-inputs (inputs st data-width)
+  (defund comp-gcd$body-inputs (inputs st data-width)
     (b* ((go-signals (nthcdr (comp-gcd$data-ins-len data-width) inputs))
 
-         (op-go-signals (take *gcd-body$go-num*
-                              (nthcdr (+ *merge$go-num*
-                                         *comp-gcd-cond$go-num*)
-                                      go-signals)))
+         (body-go-signals (take *gcd-body$go-num*
+                                (nthcdr (+ *merge$go-num*
+                                           *comp-gcd-cond$go-num*)
+                                        go-signals)))
 
          (l1 (get-field *comp-gcd$l1* st))
          (l1.s (get-field *link$s* l1))
@@ -294,13 +303,19 @@
 
       (list* (f-buf (car l1.s)) (f-buf (car l2.s))
              (append (v-threefix (strip-cars l1.d))
-                     op-go-signals))))
+                     body-go-signals))))
 
   ;; Extract the "in-act" signal
 
   (defund comp-gcd$in-act (inputs st data-width)
     (merge$act0 (comp-gcd$me-inputs inputs st data-width)
                 (* 2 data-width)))
+
+  (defthm comp-gcd$in-act-inactive
+    (implies (not (nth 0 inputs))
+             (not (comp-gcd$in-act inputs st data-width)))
+    :hints (("Goal" :in-theory (enable comp-gcd$me-inputs
+                                       comp-gcd$in-act))))
 
   ;; Extract the "out-act" signal
 
@@ -309,10 +324,16 @@
                             (get-field *comp-gcd$br* st)
                             data-width))
 
+  (defthm comp-gcd$out-act-inactive
+    (implies (equal (nth 1 inputs) t)
+             (not (comp-gcd$out-act inputs st data-width)))
+    :hints (("Goal" :in-theory (enable comp-gcd$br-inputs
+                                       comp-gcd$out-act))))
+
   ;; Extract the output data
 
   (defund comp-gcd$data-out (inputs st data-width)
-    (comp-gcd-cond$data-out0 (comp-gcd$br-inputs inputs st data-width)
+    (comp-gcd-cond$data0-out (comp-gcd$br-inputs inputs st data-width)
                              (get-field *comp-gcd$br* st)
                              data-width))
 
@@ -337,13 +358,20 @@
     :hints (("Goal" :in-theory (enable comp-gcd$valid-st
                                        comp-gcd$out-act
                                        comp-gcd$data-out))))
+
+  (defun comp-gcd$outputs (inputs st data-width)
+    (list* (comp-gcd$in-act inputs st data-width)
+           (comp-gcd$out-act inputs st data-width)
+           (comp-gcd$data-out inputs st data-width)))
   )
 
-(not-primp-lemma comp-gcd) ;; Prove that COMP-GCD is not a DE primitive.
+;; Prove that COMP-GCD is not a DE primitive.
+
+(not-primp-lemma comp-gcd)
 
 ;; The value lemma for COMP-GCD
 
-(defthmd comp-gcd$value
+(defthm comp-gcd$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (comp-gcd& netlist data-width)
                   (true-listp data-in)
@@ -352,9 +380,7 @@
                   (equal (len go-signals) *comp-gcd$go-num*)
                   (comp-gcd$st-format st data-width))
              (equal (se (si 'comp-gcd data-width) inputs st netlist)
-                    (list* (comp-gcd$in-act inputs st data-width)
-                           (comp-gcd$out-act inputs st data-width)
-                           (comp-gcd$data-out inputs st data-width)))))
+                    (comp-gcd$outputs inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
            :expand (:free (inputs data-width)
@@ -362,26 +388,17 @@
            :in-theory (e/d (de-rules
                             nthcdr-of-pos-const-idx
                             comp-gcd-cond$st-format=>data-width-constraint
-                            not-primp-comp-gcd
                             comp-gcd&
                             comp-gcd*$destructure
                             comp-gcd$data-in
                             merge$act0
-                            merge$value
-                            comp-gcd-cond$value
-                            gcd-body$value
-                            link1$value
-                            link$value
                             comp-gcd$st-format
                             comp-gcd$in-act
                             comp-gcd$out-act
                             comp-gcd$data-out
                             comp-gcd$br-inputs
                             comp-gcd$me-inputs)
-                           ((comp-gcd*)
-                            nfix
-                            append
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of COMP-GCD.
 
@@ -398,10 +415,10 @@
 
        (me-inputs (comp-gcd$me-inputs inputs st data-width))
        (br-inputs (comp-gcd$br-inputs inputs st data-width))
-       (op-inputs (comp-gcd$op-inputs inputs st data-width))
+       (body-inputs (comp-gcd$body-inputs inputs st data-width))
 
-       (d1-in (comp-gcd-cond$data-out1 br-inputs br data-width))
-       (d2-in (gcd-body$data-out op-inputs data-width))
+       (d1-in (comp-gcd-cond$data1-out br-inputs br data-width))
+       (d2-in (gcd-body$data-out body-inputs data-width))
 
        (done- (comp-gcd-cond$flag br-inputs br data-width))
        (merge-act1 (merge$act1 me-inputs (* 2 data-width)))
@@ -409,13 +426,13 @@
        (cond-in-act (comp-gcd-cond$in-act br-inputs br data-width))
        (branch-act1 (comp-gcd-cond$out-act1 br-inputs br data-width))
        (branch-act (comp-gcd-cond$out-act br-inputs br data-width))
-       (op-act (gcd-body$act op-inputs data-width))
+       (body-act (gcd-body$act body-inputs data-width))
 
        (s-inputs (list branch-act merge-act done-))
        (l0-inputs (list* merge-act cond-in-act
                          (fv-if (car s.d) (strip-cars l2.d) data-in)))
-       (l1-inputs (list* branch-act1 op-act d1-in))
-       (l2-inputs (list* op-act merge-act1 d2-in)))
+       (l1-inputs (list* branch-act1 body-act d1-in))
+       (l2-inputs (list* body-act merge-act1 d2-in)))
     (list
      ;; S
      (link1$step s-inputs s)
@@ -435,7 +452,7 @@
 
 ;; The state lemma for COMP-GCD
 
-(defthmd comp-gcd$state
+(defthm comp-gcd$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (comp-gcd& netlist data-width)
                   (true-listp data-in)
@@ -452,7 +469,6 @@
            :in-theory (e/d (de-rules
                             nthcdr-of-pos-const-idx
                             comp-gcd-cond$st-format=>data-width-constraint
-                            not-primp-comp-gcd
                             comp-gcd&
                             comp-gcd*$destructure
                             merge$act
@@ -463,81 +479,14 @@
                             comp-gcd$data-in
                             comp-gcd$br-inputs
                             comp-gcd$me-inputs
-                            comp-gcd$op-inputs
-                            comp-gcd-cond$value comp-gcd-cond$state
-                            gcd-body$value
-                            link1$value link1$state
-                            link$value link$state)
-                           ((comp-gcd*)
-                            nfix
-                            append
-                            de-module-disabled-rules)))))
+                            comp-gcd$body-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable comp-gcd$step))
 
 ;; ======================================================================
 
-;; 2. Specify the Final State of COMP-GCD After An N-Step Execution
-
-;; COMP-GCD simulator
-
-(progn
-  (defun comp-gcd$map-to-links (st)
-    (b* ((s (get-field *comp-gcd$s* st))
-         (l0 (get-field *comp-gcd$l0* st))
-         (l1 (get-field *comp-gcd$l1* st))
-         (l2 (get-field *comp-gcd$l2* st))
-         (br (get-field *comp-gcd$br* st)))
-      (append (map-to-links1 (list (list* 's s)))
-              (map-to-links (list (list* 'l0 l0)
-                                  (list* 'l1 l1)
-                                  (list* 'l2 l2)))
-              (list (cons 'br (comp-gcd-cond$map-to-links br))))))
-
-  (defun comp-gcd$map-to-links-list (x)
-    (if (atom x)
-        nil
-      (cons (comp-gcd$map-to-links (car x))
-            (comp-gcd$map-to-links-list (cdr x)))))
-
-  (defund comp-gcd$sim (data-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp n))
-                    :verify-guards nil
-                    :stobjs state))
-    (b* ((num-signals (comp-gcd$ins-len data-width))
-         ((mv inputs-lst state)
-          (signal-vals-gen num-signals n state nil))
-         ;;(- (cw "~x0~%" inputs-lst))
-         (full '(t))
-         (empty '(nil))
-         (invalid-data (make-list (* 2 data-width) :initial-element '(x)))
-         (br-invalid-data (make-list data-width :initial-element '(x)))
-         (q2 (list (list empty br-invalid-data)
-                   (list empty br-invalid-data)))
-         (q3 (list (list empty br-invalid-data)
-                   (list empty br-invalid-data)
-                   (list empty br-invalid-data)))
-         (br (list (list empty br-invalid-data)
-                   (list empty br-invalid-data)
-                   (list empty br-invalid-data)
-                   (list empty br-invalid-data)
-                   q2 q3))
-         (st (list (list full '(nil))
-                   (list empty invalid-data)
-                   (list empty invalid-data)
-                   (list empty invalid-data)
-                   br)))
-      (mv (pretty-list
-           (remove-dup-neighbors
-            (comp-gcd$map-to-links-list
-             (de-sim-list (si 'comp-gcd data-width)
-                          inputs-lst
-                          st
-                          (comp-gcd$netlist data-width))))
-           0)
-          state)))
-  )
+;; 2. Multi-Step State Lemma
 
 ;; Conditions on the inputs
 
@@ -570,11 +519,30 @@
                              comp-gcd-cond$input-format
                              comp-gcd-cond$data-in
                              comp-gcd$valid-st
-                             comp-gcd$st-format
                              comp-gcd$br-inputs)
-                            (nthcdr
-                             len
-                             take-of-too-many))))))
+                            ())))))
+
+(defthm booleanp-comp-gcd$in-act
+  (implies (and (comp-gcd$input-format inputs data-width)
+                (comp-gcd$valid-st st data-width))
+           (booleanp (comp-gcd$in-act inputs st data-width)))
+  :hints (("Goal" :in-theory (enable merge$act0
+                                     comp-gcd$input-format
+                                     comp-gcd$valid-st
+                                     comp-gcd$in-act
+                                     comp-gcd$me-inputs)))
+  :rule-classes :type-prescription)
+
+(defthm booleanp-comp-gcd$out-act
+  (implies (and (comp-gcd$input-format inputs data-width)
+                (comp-gcd$valid-st st data-width))
+           (booleanp (comp-gcd$out-act inputs st data-width)))
+  :hints (("Goal"
+           :use comp-gcd$input-format=>br$input-format
+           :in-theory (e/d (comp-gcd$valid-st
+                            comp-gcd$out-act)
+                           (comp-gcd$input-format=>br$input-format))))
+  :rule-classes :type-prescription)
 
 (simulate-lemma comp-gcd)
 
@@ -618,7 +586,7 @@
               (v-to-nat (nthcdr (/ (len x) 2) x))))))
 
   (local
-   (defund comp-gcd$op (x)
+   (defun comp-gcd$op (x)
      (declare
       (xargs :hints (("Goal"
                       :in-theory (e/d ()
@@ -646,7 +614,7 @@
                   (append a b-a)
                   (append a-b b))))))))
 
-  (defund comp-gcd$op (x)
+  (defun comp-gcd$op (x)
     (declare (xargs :measure (:? x)))
     (b* ((data-width (/ (len x) 2))
          (a (take data-width x))
@@ -696,7 +664,7 @@
                       (comp-gcd$op x))))
     :hints (("Goal"
              :induct (comp-gcd$op x)
-             :in-theory (e/d (comp-gcd$op)
+             :in-theory (e/d ()
                              (v-to-nat-equality
                               v-not-take
                               v-not-nthcdr)))
@@ -728,26 +696,28 @@
               (equal (v-to-nat (comp-gcd$op x))
                      (gcd-alg (v-to-nat (take data-width x))
                               (v-to-nat (nthcdr data-width x)))))
-     :hints (("Goal" :in-theory (e/d (comp-gcd$op)
+     :hints (("Goal" :in-theory (e/d ()
                                      (v-not-take
                                       v-not-nthcdr))))))
+
+  (in-theory (disable comp-gcd$op))
   )
 
 ;; The operation of COMP-GCD over a data sequence
 
-(defun comp-gcd$op-seq (seq)
-  (if (atom seq)
+(defun comp-gcd$op-map (x)
+  (if (atom x)
       nil
-    (cons (comp-gcd$op (car seq))
-          (comp-gcd$op-seq (cdr seq)))))
+    (cons (comp-gcd$op (car x))
+          (comp-gcd$op-map (cdr x)))))
 
-(defthm len-of-comp-gcd$op-seq
-  (equal (len (comp-gcd$op-seq x))
+(defthm len-of-comp-gcd$op-map
+  (equal (len (comp-gcd$op-map x))
          (len x)))
 
-(defthm comp-gcd$op-seq-of-append
-  (equal (comp-gcd$op-seq (append x y))
-         (append (comp-gcd$op-seq x) (comp-gcd$op-seq y))))
+(defthm comp-gcd$op-map-of-append
+  (equal (comp-gcd$op-map (append x y))
+         (append (comp-gcd$op-map x) (comp-gcd$op-map y))))
 
 ;; The extraction function for COMP-GCD that extracts the future output
 ;; sequence from the current state.
@@ -757,7 +727,7 @@
        (l1 (get-field *comp-gcd$l1* st))
        (l2 (get-field *comp-gcd$l2* st))
        (br (get-field *comp-gcd$br* st)))
-    (comp-gcd$op-seq
+    (comp-gcd$op-map
      (append (extract-valid-data (list l1 l2 l0))
              (comp-gcd-cond$extract br)))))
 
@@ -769,7 +739,7 @@
            :in-theory (e/d (comp-gcd$valid-st
                             comp-gcd$extract
                             comp-gcd$out-act)
-                           (nfix))))
+                           ())))
   :rule-classes :linear)
 
 ;; Specify and prove a state invariant
@@ -788,29 +758,28 @@
                 1)))))
 
   (local
-   (defthm booleanp-comp-gcd-cond$in-act
-     (implies (and (or (equal (nth *link$s*
-                                   (nth *comp-gcd$l0* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *comp-gcd$l0* st))
-                              '(nil)))
-                   (comp-gcd-cond$valid-st (nth *comp-gcd$br* st)
-                                           data-width))
-              (booleanp (comp-gcd-cond$in-act
-                         (comp-gcd$br-inputs inputs st data-width)
-                         (nth *comp-gcd$br* st)
-                         data-width)))
-     :hints (("Goal" :in-theory (e/d (get-field
-                                      comp-gcd$br-inputs
-                                      comp-gcd-cond$valid-st
-                                      comp-gcd-cond$st-format
-                                      comp-gcd-cond$in-act)
-                                     ())))
+   (defthm comp-gcd$input-format-lemma-1
+     (implies (comp-gcd$input-format inputs data-width)
+              (booleanp (nth 0 inputs)))
+     :hints (("Goal" :in-theory (enable comp-gcd$input-format)))
      :rule-classes :type-prescription))
 
   (local
-   (defthm comp-gcd-cond$in-act-nil
+   (defthm comp-gcd$input-format-lemma-2
+     (implies (comp-gcd$input-format inputs data-width)
+              (booleanp (nth 1 inputs)))
+     :hints (("Goal" :in-theory (enable comp-gcd$input-format)))
+     :rule-classes :type-prescription))
+
+  (local
+   (defthm comp-gcd$input-format-lemma-3
+     (implies (and (comp-gcd$input-format inputs data-width)
+                   (nth 0 inputs))
+              (bvp (comp-gcd$data-in inputs data-width)))
+     :hints (("Goal" :in-theory (enable comp-gcd$input-format)))))
+
+  (local
+   (defthm comp-gcd-cond$in-act-inactive
      (implies (equal (nth *link$s*
                           (nth *comp-gcd$l0* st))
                      '(nil))
@@ -819,83 +788,11 @@
                     (nth *comp-gcd$br* st)
                     data-width)))
      :hints (("Goal" :in-theory (e/d (get-field
-                                      comp-gcd$br-inputs
-                                      comp-gcd-cond$valid-st
-                                      comp-gcd-cond$in-act)
+                                      comp-gcd$br-inputs)
                                      ())))))
 
   (local
-   (defthm booleanp-comp-gcd-cond$out-act0
-     (implies (and (booleanp (nth 1 inputs))
-                   (or (equal (nth *link$s*
-                                   (nth *comp-gcd$s* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *comp-gcd$s* st))
-                              '(nil)))
-                   (or (equal (nth *link$s*
-                                   (nth *comp-gcd$l1* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *comp-gcd$l1* st))
-                              '(nil)))
-                   (comp-gcd-cond$valid-st (nth *comp-gcd$br* st)
-                                           data-width))
-              (booleanp (comp-gcd-cond$out-act0
-                         (comp-gcd$br-inputs inputs st data-width)
-                         (nth *comp-gcd$br* st)
-                         data-width)))
-     :hints (("Goal" :in-theory (e/d (get-field
-                                      branch$act0
-                                      gcd-cond$br-inputs
-                                      gcd-cond$data-in
-                                      gcd-cond$flag
-                                      gcd-cond$act0
-                                      comp-gcd$br-inputs
-                                      comp-gcd-cond$valid-st
-                                      comp-gcd-cond$st-format
-                                      comp-gcd-cond$br-inputs
-                                      comp-gcd-cond$out-act0)
-                                     (b-nor3))))
-     :rule-classes :type-prescription))
-
-  (local
-   (defthm booleanp-comp-gcd-cond$out-act1
-     (implies (and (booleanp (nth 1 inputs))
-                   (or (equal (nth *link$s*
-                                   (nth *comp-gcd$s* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *comp-gcd$s* st))
-                              '(nil)))
-                   (or (equal (nth *link$s*
-                                   (nth *comp-gcd$l1* st))
-                              '(t))
-                       (equal (nth *link$s*
-                                   (nth *comp-gcd$l1* st))
-                              '(nil)))
-                   (comp-gcd-cond$valid-st (nth *comp-gcd$br* st)
-                                           data-width))
-              (booleanp (comp-gcd-cond$out-act1
-                         (comp-gcd$br-inputs inputs st data-width)
-                         (nth *comp-gcd$br* st)
-                         data-width)))
-     :hints (("Goal" :in-theory (e/d (get-field
-                                      branch$act1
-                                      gcd-cond$br-inputs
-                                      gcd-cond$data-in
-                                      gcd-cond$flag
-                                      gcd-cond$act1
-                                      comp-gcd$br-inputs
-                                      comp-gcd-cond$valid-st
-                                      comp-gcd-cond$st-format
-                                      comp-gcd-cond$br-inputs
-                                      comp-gcd-cond$out-act1)
-                                     (b-nor3))))
-     :rule-classes :type-prescription))
-
-  (local
-   (defthm comp-gcd-cond$out-act0-nil
+   (defthm comp-gcd-cond$out-act0-inactive
      (implies (equal (nth *link$s*
                           (nth *comp-gcd$s* st))
                      '(t))
@@ -904,16 +801,11 @@
                     (nth *comp-gcd$br* st)
                     data-width)))
      :hints (("Goal" :in-theory (e/d (get-field
-                                      branch$act0
-                                      gcd-cond$br-inputs
-                                      gcd-cond$act0
-                                      comp-gcd$br-inputs
-                                      comp-gcd-cond$br-inputs
-                                      comp-gcd-cond$out-act0)
-                                     (b-nor3))))))
+                                      comp-gcd$br-inputs)
+                                     ())))))
 
   (local
-   (defthm comp-gcd-cond$out-act1-nil
+   (defthm comp-gcd-cond$out-act1-inactive
      (implies (or (equal (nth *link$s*
                               (nth *comp-gcd$s* st))
                          '(t))
@@ -925,16 +817,11 @@
                     (nth *comp-gcd$br* st)
                     data-width)))
      :hints (("Goal" :in-theory (e/d (get-field
-                                      branch$act1
-                                      gcd-cond$br-inputs
-                                      gcd-cond$act1
-                                      comp-gcd$br-inputs
-                                      comp-gcd-cond$br-inputs
-                                      comp-gcd-cond$out-act1)
-                                     (b-nor3))))))
+                                      comp-gcd$br-inputs)
+                                     ())))))
 
   (local
-   (defthm comp-gcd-cond$flag-nil
+   (defthm comp-gcd-cond$flag-inactive
      (implies (and (comp-gcd-cond$valid-st (nth *comp-gcd$br* st)
                                            data-width)
                    (comp-gcd-cond$out-act0
@@ -953,14 +840,13 @@
                                       gcd-cond$act0
                                       comp-gcd$br-inputs
                                       comp-gcd-cond$valid-st
-                                      comp-gcd-cond$st-format
                                       comp-gcd-cond$br-inputs
                                       comp-gcd-cond$out-act0
                                       comp-gcd-cond$flag)
                                      (b-nor3))))))
 
   (local
-   (defthm comp-gcd-cond$flag-t
+   (defthm comp-gcd-cond$flag-active
      (implies (and (comp-gcd-cond$valid-st (nth *comp-gcd$br* st)
                                            data-width)
                    (comp-gcd-cond$out-act1
@@ -980,15 +866,14 @@
                                       gcd-cond$act1
                                       comp-gcd$br-inputs
                                       comp-gcd-cond$valid-st
-                                      comp-gcd-cond$st-format
                                       comp-gcd-cond$br-inputs
                                       comp-gcd-cond$out-act1
                                       comp-gcd-cond$flag)
                                      (b-nor3))))))
 
   (local
-   (defthm booleanp-comp-gcd$op-act
-     (b* ((op-inputs (comp-gcd$op-inputs inputs st data-width))
+   (defthm booleanp-comp-gcd$body-act
+     (b* ((body-inputs (comp-gcd$body-inputs inputs st data-width))
           (l1 (nth *comp-gcd$l1* st))
           (l1.d (nth *link$d* l1)))
        (implies (or (equal (nth *link$s*
@@ -1002,107 +887,42 @@
                                 '(nil))
                          (equal (len l1.d) (* 2 data-width))
                          (bvp (strip-cars l1.d))))
-                (booleanp (gcd-body$act op-inputs data-width))))
+                (booleanp (gcd-body$act body-inputs data-width))))
      :hints (("Goal" :in-theory (enable get-field
                                         merge$act0
                                         merge$act1
+                                        merge$act
                                         gcd-body$data-in
                                         gcd-body$me-inputs
                                         gcd-body$act
-                                        gcd-body$act0
-                                        gcd-body$act1
                                         gcd-body$a<b
-                                        comp-gcd$op-inputs)))
+                                        comp-gcd$body-inputs)))
      :rule-classes :type-prescription))
 
   (local
-   (defthm comp-gcd$op-act-nil
-     (b* ((op-inputs (comp-gcd$op-inputs inputs st data-width)))
+   (defthm comp-gcd$body-act-inactive
+     (b* ((body-inputs (comp-gcd$body-inputs inputs st data-width)))
        (implies (or (equal (nth *link$s*
                                 (nth *comp-gcd$l1* st))
                            '(nil))
                     (equal (nth *link$s*
                                 (nth *comp-gcd$l2* st))
                            '(t)))
-                (not (gcd-body$act op-inputs data-width))))
+                (not (gcd-body$act body-inputs data-width))))
      :hints (("Goal" :in-theory (enable get-field
-                                        merge$act0
-                                        merge$act1
-                                        gcd-body$me-inputs
-                                        gcd-body$act
-                                        gcd-body$act0
-                                        gcd-body$act1
-                                        comp-gcd$op-inputs)))))
+                                        comp-gcd$body-inputs)))))
 
   (local
-   (defthm bvp-comp-gcd$op-data-out
-     (b* ((op-inputs (comp-gcd$op-inputs inputs st data-width))
+   (defthm bvp-comp-gcd$body-data-out
+     (b* ((body-inputs (comp-gcd$body-inputs inputs st data-width))
           (l1 (nth *comp-gcd$l1* st))
           (l1.d (nth *link$d* l1)))
        (implies (and (equal (len l1.d) (* 2 data-width))
                      (bvp (strip-cars l1.d)))
-                (bvp (gcd-body$data-out op-inputs data-width))))
+                (bvp (gcd-body$data-out body-inputs data-width))))
      :hints (("Goal" :in-theory (enable get-field
                                         gcd-body$data-in
-                                        comp-gcd$op-inputs)))))
-
-  (local
-   (defthm comp-gcd$inv-preserved-aux-1
-     (implies (and (comp-gcd-cond$valid-st st data-width)
-                   (comp-gcd-cond$out-act0 inputs st data-width))
-              (not (comp-gcd-cond$out-act1 inputs st data-width)))
-     :hints (("Goal" :in-theory (e/d (branch$act0
-                                      branch$act1
-                                      gcd-cond$data-in
-                                      gcd-cond$br-inputs
-                                      gcd-cond$flag
-                                      gcd-cond$act0
-                                      gcd-cond$act1
-                                      comp-gcd-cond$valid-st
-                                      comp-gcd-cond$st-format
-                                      comp-gcd-cond$br-inputs
-                                      comp-gcd-cond$out-act0
-                                      comp-gcd-cond$out-act1)
-                                     (b-nor3))))))
-
-  (local
-   (defthm comp-gcd$inv-preserved-aux-2
-     (implies (and (comp-gcd-cond$valid-st st data-width)
-                   (comp-gcd-cond$out-act1 inputs st data-width))
-              (not (comp-gcd-cond$out-act0 inputs st data-width)))
-     :hints (("Goal" :in-theory (e/d (branch$act0
-                                      branch$act1
-                                      gcd-cond$data-in
-                                      gcd-cond$br-inputs
-                                      gcd-cond$flag
-                                      gcd-cond$act0
-                                      gcd-cond$act1
-                                      comp-gcd-cond$valid-st
-                                      comp-gcd-cond$br-inputs
-                                      comp-gcd-cond$out-act0
-                                      comp-gcd-cond$out-act1)
-                                     (b-nor3))))))
-
-  (local
-   (defthm comp-gcd$inv-preserved-aux-3
-     (implies (and (comp-gcd-cond$valid-st st data-width)
-                   (equal (len (comp-gcd-cond$extract st))
-                          0))
-              (and (not (comp-gcd-cond$out-act0 inputs st data-width))
-                   (not (comp-gcd-cond$out-act1 inputs st data-width))))
-     :hints (("Goal" :in-theory (e/d (branch$act0
-                                      branch$act1
-                                      gcd-cond$br-inputs
-                                      gcd-cond$act0
-                                      gcd-cond$act1
-                                      comp-gcd-cond$br-inputs
-                                      comp-gcd-cond$valid-st
-                                      comp-gcd-cond$out-act0
-                                      comp-gcd-cond$out-act1
-                                      comp-gcd-cond$extract)
-                                     (b-not
-                                      b-or
-                                      b-nor3))))))
+                                        comp-gcd$body-inputs)))))
 
   (defthm comp-gcd$inv-preserved
     (implies (and (comp-gcd$input-format inputs data-width)
@@ -1110,12 +930,11 @@
                   (comp-gcd$inv st))
              (comp-gcd$inv (comp-gcd$step inputs st data-width)))
     :hints (("Goal"
+             :use comp-gcd$input-format=>br$input-format
              :in-theory (e/d (get-field
-                              comp-gcd-cond$valid-st=>data-width-constraint
+                              f-sr
                               comp-gcd-cond$extracted-step
-                              comp-gcd$input-format
                               comp-gcd$valid-st
-                              comp-gcd$st-format
                               comp-gcd$inv
                               comp-gcd$step
                               comp-gcd$extract
@@ -1123,14 +942,9 @@
                               comp-gcd-cond$out-act
                               merge$act
                               merge$act0
-                              merge$act1
-                              f-sr)
-                             (if*
-                              v-if-works
-                              b-nor3
-                              b-not
-                              nfix
-                              nthcdr)))))
+                              merge$act1)
+                             (comp-gcd$input-format=>br$input-format
+                              nfix)))))
   )
 
 ;; The extracted next-state function for COMP-GCD.  Note that this function
@@ -1151,42 +965,10 @@
           (cons data extracted-st))
          (t extracted-st))))))
 
-(local
- (defthm len-0-is-atom
-   (equal (equal (len x) 0)
-          (atom x))))
-
 ;; The single-step-update property
 
 (encapsulate
   ()
-
-  (local
-   (defthm comp-gcd$extracted-step-correct-aux-1
-     (implies (and (<= (len (comp-gcd-cond$extract st))
-                       1)
-                   (comp-gcd-cond$valid-st st data-width)
-                   (comp-gcd-cond$inv st)
-                   (comp-gcd-cond$out-act1 inputs st data-width))
-              (equal (comp-gcd-cond$extract st)
-                     (list (comp-gcd-cond$data-out1 inputs st data-width))))
-     :hints (("Goal"
-              :in-theory (e/d (branch$act1
-                               gcd-cond$data-in
-                               gcd-cond$br-inputs
-                               gcd-cond$act1
-                               gcd-cond$data-out1
-                               comp-gcd-cond$op
-                               comp-gcd-cond$valid-st
-                               comp-gcd-cond$st-format
-                               comp-gcd-cond$inv
-                               comp-gcd-cond$extract
-                               comp-gcd-cond$br-inputs
-                               comp-gcd-cond$out-act1
-                               comp-gcd-cond$data-out1)
-                              (b-nor3
-                               b-not
-                               acl2::car-of-append))))))
 
   (local
    (defthm fv-if=v-if
@@ -1197,15 +979,15 @@
               (equal (fv-if c a b) (v-if c a b)))))
 
   (local
-   (defthm comp-gcd$extracted-step-correct-aux-2
-     (b* ((op-inputs (comp-gcd$op-inputs inputs st data-width))
+   (defthm comp-gcd$extracted-step-correct-aux-1
+     (b* ((body-inputs (comp-gcd$body-inputs inputs st data-width))
           (l1 (nth *comp-gcd$l1* st))
           (l1.d (nth *link$d* l1)))
        (implies (and (natp data-width)
                      (equal (len l1.d) (* 2 data-width))
                      (bvp (strip-cars l1.d)))
                 (equal
-                 (comp-gcd$op (gcd-body$data-out op-inputs data-width))
+                 (comp-gcd$op (gcd-body$data-out body-inputs data-width))
                  (comp-gcd$op (strip-cars l1.d)))))
      :hints (("Goal"
               :do-not-induct t
@@ -1213,15 +995,15 @@
                                gcd-body$data-in
                                gcd-body$a<b
                                gcd-body$data-out
-                               gcd-body$data-out0
-                               gcd-body$data-out1
-                               comp-gcd$op-inputs)
+                               gcd-body$data0-out
+                               gcd-body$data1-out
+                               comp-gcd$body-inputs)
                               (v-if-works
                                v-not-take
                                v-not-nthcdr))))))
 
   (local
-   (defthm comp-gcd$extracted-step-correct-aux-3
+   (defthm comp-gcd$extracted-step-correct-aux-2
      (b* ((br-inputs (comp-gcd$br-inputs inputs st data-width))
           (l0 (nth *comp-gcd$l0* st))
           (l0.d (nth *link$d* l0)))
@@ -1249,14 +1031,14 @@
                (equal (comp-gcd$extract next-st)
                       (comp-gcd$extracted-step inputs st data-width))))
     :hints (("Goal"
+             :use comp-gcd$input-format=>br$input-format
              :in-theory (e/d (get-field
-                              take-of-len-free
+                              f-sr
+                              joint-act
                               comp-gcd-cond$valid-st=>data-width-constraint
                               comp-gcd-cond$extracted-step
                               comp-gcd$extracted-step
-                              comp-gcd$input-format
                               comp-gcd$valid-st
-                              comp-gcd$st-format
                               comp-gcd$inv
                               comp-gcd$step
                               comp-gcd$in-act
@@ -1267,109 +1049,14 @@
                               comp-gcd-cond$out-act
                               merge$act
                               merge$act0
-                              merge$act1
-                              f-sr)
-                             (if*
-                              b-if
-                              b-not
-                              take-of-too-many
-                              acl2::simplify-products-gather-exponents-<
-                              acl2::prefer-positive-addends-<
-                              acl2::prefer-positive-addends-equal
-                              acl2::|(< (if a b c) x)|
+                              merge$act1)
+                             (comp-gcd$input-format=>br$input-format
                               nfix)))))
   )
 
 ;; ======================================================================
 
 ;; 4. Relationship Between the Input and Output Sequences
-
-;; Extract the accepted input sequence
-
-(defun comp-gcd$in-seq (inputs-lst st data-width n)
-  (declare (xargs :measure (acl2-count n)))
-  (if (zp n)
-      nil
-    (b* ((inputs (car inputs-lst)))
-      (if (equal (comp-gcd$in-act inputs st data-width) t)
-          (append (comp-gcd$in-seq (cdr inputs-lst)
-                                   (comp-gcd$step inputs st data-width)
-                                   data-width
-                                   (1- n))
-                  (list (comp-gcd$data-in inputs data-width)))
-        (comp-gcd$in-seq (cdr inputs-lst)
-                         (comp-gcd$step inputs st data-width)
-                         data-width
-                         (1- n))))))
-
-;; Extract the valid output sequence
-
-(defun comp-gcd$out-seq (inputs-lst st data-width n)
-  (declare (xargs :measure (acl2-count n)))
-  (if (zp n)
-      nil
-    (b* ((inputs (car inputs-lst)))
-      (if (equal (comp-gcd$out-act inputs st data-width) t)
-          (append (comp-gcd$out-seq (cdr inputs-lst)
-                                    (comp-gcd$step inputs st data-width)
-                                    data-width
-                                    (1- n))
-                  (list (comp-gcd$data-out inputs st data-width)))
-        (comp-gcd$out-seq (cdr inputs-lst)
-                          (comp-gcd$step inputs st data-width)
-                          data-width
-                          (1- n))))))
-
-;; Input-output sequence simulator
-
-(progn
-  (defun v-to-nat-split-lst (seq data-width)
-    (declare (xargs :guard (and (true-list-listp seq)
-                                (natp data-width))))
-    (if (atom seq)
-        nil
-      (cons (list (v-to-nat (take data-width (car seq)))
-                  (v-to-nat (nthcdr data-width (car seq))))
-            (v-to-nat-split-lst (cdr seq) data-width))))
-
-  (defund comp-gcd$in-out-seq-sim (data-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp n))
-                    :verify-guards nil
-                    :stobjs state))
-    (b* ((num-signals (comp-gcd$ins-len data-width))
-         ((mv inputs-lst state)
-          (signal-vals-gen num-signals n state nil))
-         (full '(t))
-         (empty '(nil))
-         (invalid-data (make-list (* 2 data-width) :initial-element '(x)))
-         (br-invalid-data (make-list data-width :initial-element '(x)))
-         (q2 (list (list empty br-invalid-data)
-                   (list empty br-invalid-data)))
-         (q3 (list (list empty br-invalid-data)
-                   (list empty br-invalid-data)
-                   (list empty br-invalid-data)))
-         (br (list (list empty br-invalid-data)
-                   (list empty br-invalid-data)
-                   (list empty br-invalid-data)
-                   (list empty br-invalid-data)
-                   q2 q3))
-         (st (list (list full '(nil))
-                   (list empty invalid-data)
-                   (list empty invalid-data)
-                   (list empty invalid-data)
-                   br)))
-      (mv
-       (append
-        (list (cons 'in-seq
-                    (v-to-nat-split-lst
-                     (comp-gcd$in-seq inputs-lst st data-width n)
-                     data-width)))
-        (list (cons 'out-seq
-                    (v-to-nat-lst
-                     (comp-gcd$out-seq inputs-lst st data-width n)))))
-       state)))
-  )
 
 ;; Prove that comp-gcd$valid-st is an invariant.
 
@@ -1379,27 +1066,20 @@
            (comp-gcd$valid-st (comp-gcd$step inputs st data-width)
                               data-width))
   :hints (("Goal"
-           :use (:instance comp-gcd-cond$valid-st-preserved
-                           (inputs (comp-gcd$br-inputs inputs st data-width))
-                           (st (get-field *comp-gcd$br* st)))
+           :use comp-gcd$input-format=>br$input-format
            :in-theory (e/d (get-field
+                            f-sr
+                            joint-act
                             comp-gcd-cond$valid-st=>data-width-constraint
-                            comp-gcd$input-format
                             comp-gcd$valid-st
-                            comp-gcd$st-format
                             comp-gcd$step
                             comp-gcd$me-inputs
                             comp-gcd-cond$out-act
                             merge$act
                             merge$act0
-                            merge$act1
-                            f-sr)
-                           (if*
-                            nthcdr
-                            b-if
-                            b-nor3
-                            comp-gcd-cond$valid-st-preserved
-                            acl2::true-listp-append)))))
+                            merge$act1)
+                           (comp-gcd$input-format=>br$input-format
+                            nfix)))))
 
 (encapsulate
   ()
@@ -1412,21 +1092,21 @@
                    (comp-gcd-cond$inv st)
                    (comp-gcd-cond$out-act0 inputs st data-width))
               (equal (comp-gcd-cond$extract st)
-                     (list (comp-gcd-cond$data-out1 inputs st data-width))))
+                     (list (comp-gcd-cond$data1-out inputs st data-width))))
      :hints (("Goal"
-              :in-theory (e/d (branch$act0
+              :in-theory (e/d (len-0-is-atom
+                               branch$act0
                                gcd-cond$data-in
                                gcd-cond$br-inputs
                                gcd-cond$act0
-                               gcd-cond$data-out1
+                               gcd-cond$data1-out
                                comp-gcd-cond$op
                                comp-gcd-cond$valid-st
-                               comp-gcd-cond$st-format
                                comp-gcd-cond$inv
                                comp-gcd-cond$extract
                                comp-gcd-cond$br-inputs
                                comp-gcd-cond$out-act0
-                               comp-gcd-cond$data-out1)
+                               comp-gcd-cond$data1-out)
                               (b-nor3
                                b-not
                                acl2::car-of-append))))))
@@ -1436,43 +1116,53 @@
      (implies (and (comp-gcd-cond$valid-st st data-width)
                    (comp-gcd-cond$out-act0 inputs st data-width))
               (equal (comp-gcd$op
-                      (comp-gcd-cond$data-out1 inputs st data-width))
-                     (comp-gcd-cond$data-out0 inputs st data-width)))
+                      (comp-gcd-cond$data1-out inputs st data-width))
+                     (comp-gcd-cond$data0-out inputs st data-width)))
      :hints (("Goal" :in-theory (enable branch$act0
                                         gcd-cond$data-in
                                         gcd-cond$br-inputs
                                         gcd-cond$act0
                                         gcd-cond$flag
-                                        gcd-cond$data-out0
-                                        gcd-cond$data-out1
+                                        gcd-cond$data0-out
+                                        gcd-cond$data1-out
                                         comp-gcd-cond$valid-st
-                                        comp-gcd-cond$st-format
                                         comp-gcd-cond$br-inputs
                                         comp-gcd-cond$out-act0
-                                        comp-gcd-cond$data-out0
-                                        comp-gcd-cond$data-out1
+                                        comp-gcd-cond$data0-out
+                                        comp-gcd-cond$data1-out
                                         comp-gcd$op)))))
 
   (defthm comp-gcd$extract-lemma
     (implies (and (comp-gcd$valid-st st data-width)
                   (comp-gcd$inv st)
-                  (equal n (1- (len (comp-gcd$extract st))))
                   (comp-gcd$out-act inputs st data-width))
-             (equal (append
-                     (take n (comp-gcd$extract st))
-                     (list (comp-gcd$data-out inputs st data-width)))
-                    (comp-gcd$extract st)))
+             (equal (list (comp-gcd$data-out inputs st data-width))
+                    (nthcdr (1- (len (comp-gcd$extract st)))
+                            (comp-gcd$extract st))))
     :hints (("Goal"
              :do-not-induct t
              :in-theory (e/d (comp-gcd$valid-st
-                              comp-gcd$st-format
                               comp-gcd$inv
                               comp-gcd$extract
                               comp-gcd$br-inputs
                               comp-gcd$out-act
                               comp-gcd$data-out)
-                             (v-if-works)))))
+                             (v-if-works
+                              comp-gcd-cond$extract-lemma)))))
   )
+
+;; Extract the accepted input sequence
+
+(seq-gen comp-gcd in in-act 0
+         (comp-gcd$data-in inputs data-width))
+
+;; Extract the valid output sequence
+
+(seq-gen comp-gcd out out-act 1
+         (comp-gcd$data-out inputs st data-width)
+         :netlist-data (nthcdr 2 outputs))
+
+;; The multi-step input-output relationship
 
 (in-out-stream-lemma comp-gcd :op t :inv t)
 

@@ -44,7 +44,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================
@@ -61,41 +61,38 @@
 
   :parents (one-byte-opcodes)
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+			       (canonical-address-p temp-rip)))
   :guard-hints (("Goal" :in-theory (e/d (n08-to-i08
-                                         n16-to-i16
-                                         n32-to-i32
-                                         n64-to-i64)
-                                        ())))
+					 n16-to-i16
+					 n32-to-i32
+					 n64-to-i64)
+					())))
   :body
 
-  (b* ((ctx 'x86-cbw/cwd/cdqe)
-
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+  (b* ((?ctx 'x86-cbw/cwd/cdqe)
 
        ((the (integer 1 8) register-size)
-        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
+	(select-operand-size proc-mode nil rex-byte nil prefixes x86))
        ((the (integer 1 4) src-size) (ash register-size -1))
 
        ((the (unsigned-byte 32) src)
-        (mbe :logic
-             (rgfi-size src-size *rax* rex-byte x86)
-             :exec
-             (case src-size
-               (1 (rr08 *rax* rex-byte x86))
-               (2 (rr16 *rax* x86))
-               (4 (rr32 *rax* x86))
-               (otherwise 0))))
+	(mbe :logic
+	     (rgfi-size src-size *rax* rex-byte x86)
+	     :exec
+	     (case src-size
+	       (1 (rr08 *rax* rex-byte x86))
+	       (2 (rr16 *rax* x86))
+	       (4 (rr32 *rax* x86))
+	       (otherwise 0))))
 
        (dst (if (logbitp (the (integer 0 32)
-                           (1- (the (integer 0 32) (ash src-size 3))))
-                         src)
-                (trunc register-size (case src-size
-                                       (1 (n08-to-i08 src))
-                                       (2 (n16-to-i16 src))
-                                       (t (n32-to-i32 src))))
-              src))
+			   (1- (the (integer 0 32) (ash src-size 3))))
+			 src)
+		(trunc register-size (case src-size
+				       (1 (n08-to-i08 src))
+				       (2 (n16-to-i16 src))
+				       (t (n32-to-i32 src))))
+	      src))
 
        ;; Update the x86 state:
        (x86 (!rgfi-size register-size *rax* dst rex-byte x86))
@@ -118,22 +115,19 @@
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+			       (canonical-address-p temp-rip)))
   :body
 
-  (b* ((ctx 'x86-cwd/cdq/cqo)
-
-       (lock? (equal #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock?) (!!fault-fresh :ud nil :lock-prefix prefixes)) ;; #UD
+  (b* ((?ctx 'x86-cwd/cdq/cqo)
 
        ((the (integer 1 8) src-size)
-        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
+	(select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
        (src (rgfi-size src-size *rax* rex-byte x86))
 
        (rDX (if (logbitp (1- (ash src-size 3)) src)
-                (trunc src-size -1)
-              0))
+		(trunc src-size -1)
+	      0))
 
        ;; Update the x86 state:
        (x86 (!rgfi-size src-size *rdx* rDX rex-byte x86))

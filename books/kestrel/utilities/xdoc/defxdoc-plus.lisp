@@ -34,7 +34,7 @@
      @(':default-parent'), which must be @('t') or @('nil').
      If it is @('t'),
      a book-@(see local) call of @(tsee set-default-parents) is generated
-     to use the singletong list of this topic as default parents.
+     to use the singleton list of this topic as default parents.
      </li>
    </ul>
    @(def defxdoc+)"

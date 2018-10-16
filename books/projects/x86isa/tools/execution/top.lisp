@@ -40,8 +40,8 @@
 
 (include-book "init-page-tables" :ttags :all)
 (include-book "../../proofs/utilities/row-wow-thms" :ttags :all)
-(include-book "exec-loaders/elf/elf-reader" :ttags :all)
-(include-book "exec-loaders/mach-o/mach-o-reader" :ttags :all)
+(include-book "exec-loaders/elf/elf-reader" :ttags :all) ; no-port
+(include-book "exec-loaders/mach-o/mach-o-reader" :ttags :all) ; no-port
 (include-book "instrument/top" :ttags :all)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
@@ -196,7 +196,7 @@ so.</p>
  nil
  ;; Segment Registers: a value of nil will not nullify existing values.
  nil ; visible portion
- nil ; hidden portion
+ nil nil nil ; hidden portion
  ;; Rflags Register
  2
  ;; Memory image: a value of nil will not nullify existing values.
@@ -422,15 +422,15 @@ remember to initialize the x86 state appropriately.</p>
         (b* ((elf-header (read-elf-header file-header))
              (magic (combine-bytes (cdr (assoc 'magic elf-header))))
              (class (cdr (assoc 'class elf-header)))
-             ((when (and (equal magic #.*ELFMAG*)
+             ((when (and (equal magic *ELFMAG*)
                          (equal class 2)))
               (mv nil 'ELF))
              (mach-o-header (read-mach_header (take 32 file-header)))
              (magic (nfix (cdr (assoc 'MAGIC mach-o-header))))
-             ((when (or (equal magic #.*MH_MAGIC*)
-                        (equal magic #.*MH_CIGAM*)
-                        (equal magic #.*MH_MAGIC_64*)
-                        (equal magic #.*MH_CIGAM_64*)))
+             ((when (or (equal magic *MH_MAGIC*)
+                        (equal magic *MH_CIGAM*)
+                        (equal magic *MH_MAGIC_64*)
+                        (equal magic *MH_CIGAM_64*)))
               (mv nil 'MACH-O)))
             (mv t nil)))
        ((when flg)

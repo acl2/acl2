@@ -10,404 +10,199 @@
 
 (in-package "ACL2")
 
-(include-book "defbyte")
 (include-book "kestrel/utilities/testing" :dir :system)
+(include-book "defbyte")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; test the SIZE input:
+; test successful calls with a positive integer as size:
 
 (must-succeed*
- (defbyte 10)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+ (fty::defbyte 8)
+ (assert! (function-symbolp 'ubyte8-p (w state)))
+ (assert! (function-symbolp 'ubyte8-fix (w state)))
+ (assert! (function-symbolp 'ubyte8-equiv$inline (w state))))
 
 (must-succeed*
- (defconst *size* 10)
- (defbyte *size*)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+ (fty::defbyte 1)
+ (assert! (function-symbolp 'ubyte1-p (w state)))
+ (assert! (function-symbolp 'ubyte1-fix (w state)))
+ (assert! (function-symbolp 'ubyte1-equiv$inline (w state))))
+
+(must-succeed*
+ (fty::defbyte 100)
+ (assert! (function-symbolp 'ubyte100-p (w state)))
+ (assert! (function-symbolp 'ubyte100-fix (w state)))
+ (assert! (function-symbolp 'ubyte100-equiv$inline (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; test successful calls with a named constant as size:
+
+(must-succeed*
+ (defconst *size* 7)
+ (fty::defbyte *size*)
+ (assert! (function-symbolp 'ubyte7-p (w state)))
+ (assert! (function-symbolp 'ubyte7-fix (w state)))
+ (assert! (function-symbolp 'ubyte7-equiv$inline (w state))))
+
+(must-succeed*
+ (defconst *size* 16)
+ (fty::defbyte *size*)
+ (assert! (function-symbolp 'ubyte16-p (w state)))
+ (assert! (function-symbolp 'ubyte16-fix (w state)))
+ (assert! (function-symbolp 'ubyte16-equiv$inline (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; test successful calls with a call of a unary function as size:
+
+(must-succeed*
+ (define size () 32)
+ (fty::defbyte (size) :type mybyte :description "my bytes")
+ (assert! (function-symbolp 'mybyte-p (w state)))
+ (assert! (function-symbolp 'mybyte-fix (w state)))
+ (assert! (function-symbolp 'mybyte-equiv$inline (w state))))
 
 (must-succeed*
  (encapsulate
    (((size) => *))
-   (local (defun size () 100))
-   (defthm size-constraint (posp (size))))
- (defbyte (size) :type byte :description "bytes")
- (fty::defprod test-types ((one byte) (two byte-list)))
- (assert! (function-symbolp 'byte-p (w state)))
- (assert! (function-symbolp 'byte-fix (w state)))
- (assert! (function-symbolp 'byte-equiv$inline (w state)))
- (assert! (function-symbolp 'byte-list-p (w state)))
- (assert! (function-symbolp 'byte-list-fix$inline (w state)))
- (assert! (function-symbolp 'byte-list-equiv$inline (w state))))
+   (local (defun size () 2))
+   (defthm posp-of-size (posp (size))))
+ (fty::defbyte (size) :type mybyte :description "my bytes")
+ (assert! (function-symbolp 'mybyte-p (w state)))
+ (assert! (function-symbolp 'mybyte-fix (w state)))
+ (assert! (function-symbolp 'mybyte-equiv$inline (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; test calls with a bad size:
+
+(must-fail (fty::defbyte "8"))
+
+(must-fail (fty::defbyte 0))
+
+(must-fail (fty::defbyte 3/4))
+
+(must-fail (fty::defbyte :key))
+
+(must-fail (fty::defbyte *not-a-const*))
 
 (must-succeed*
- (encapsulate
-   (((size) => *))
-   (local (defun size () 100))
-   (defthm size-constraint (posp (size))))
- (defbyte (size) :signed t :type byte :description "bytes")
- (fty::defprod test-types ((one byte) (two byte-list)))
- (assert! (function-symbolp 'byte-p (w state)))
- (assert! (function-symbolp 'byte-fix (w state)))
- (assert! (function-symbolp 'byte-equiv$inline (w state)))
- (assert! (function-symbolp 'byte-list-p (w state)))
- (assert! (function-symbolp 'byte-list-fix$inline (w state)))
- (assert! (function-symbolp 'byte-list-equiv$inline (w state))))
+ (defconst *not-a-posp-const* '(1 2 3))
+ (must-fail (fty::defbyte *not-a-posp-const*)))
+
+(must-fail (fty::defbyte (not-a-fn)))
+
+(must-fail (fty::defbyte (len)))
+
+(must-fail (fty::defbyte (cons)))
+
+(must-succeed*
+ (defun not-guard-verif () 8)
+ (must-fail
+  (fty::defbyte (not-guard-verif) :type mybyte :description "my bytes")))
+
+(must-succeed*
+ (defun not-provably-posp () "a")
+ (must-fail
+  (fty::defbyte (not-provably-posp) :type mybyte :description "my bytes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :SIGNED input:
 
-(must-succeed*
- (defbyte 10 :signed nil)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-fail (fty::defbyte 8 :signed "no"))
 
 (must-succeed*
- (defbyte 10 :signed t)
- (fty::defprod test-types ((one sbyte10) (two sbyte10-list)))
- (assert! (function-symbolp 'sbyte10-p (w state)))
- (assert! (function-symbolp 'sbyte10-fix (w state)))
- (assert! (function-symbolp 'sbyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'sbyte10-list-p (w state)))
- (assert! (function-symbolp 'sbyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'sbyte10-list-equiv$inline (w state))))
+ (fty::defbyte 8 :signed nil)
+ (assert! (ubyte8-p 255))
+ (assert! (not (ubyte8-p -1))))
+
+(must-succeed*
+ (fty::defbyte 8 :signed t)
+ (assert! (sbyte8-p -128))
+ (assert! (not (sbyte8-p 255))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :TYPE input:
 
-(must-succeed*
- (defbyte 10 :type nil)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-fail (fty::defbyte 8 :type "mybyte"))
 
 (must-succeed*
- (defbyte 10 :type word)
- (fty::defprod test-types ((one word) (two word-list)))
- (assert! (function-symbolp 'word-p (w state)))
- (assert! (function-symbolp 'word-fix (w state)))
- (assert! (function-symbolp 'word-equiv$inline (w state)))
- (assert! (function-symbolp 'word-list-p (w state)))
- (assert! (function-symbolp 'word-list-fix$inline (w state)))
- (assert! (function-symbolp 'word-list-equiv$inline (w state))))
+ (fty::defbyte 8 :type mybyte)
+ (assert! (function-symbolp 'mybyte-p (w state)))
+ (assert! (function-symbolp 'mybyte-fix (w state)))
+ (assert! (function-symbolp 'mybyte-equiv$inline (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :PRED input:
 
-(must-succeed*
- (defbyte 10 :pred nil)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-fail (fty::defbyte 8 :pred 55))
 
 (must-succeed*
- (defbyte 10 :pred ubyte10p)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+ (fty::defbyte 8 :pred mypred)
+ (assert! (function-symbolp 'mypred (w state)))
+ (assert! (function-symbolp 'ubyte8-fix (w state)))
+ (assert! (function-symbolp 'ubyte8-equiv$inline (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :FIX input:
 
-(must-succeed*
- (defbyte 10 :fix nil)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-fail (fty::defbyte 8 :fix '(1 a #\c)))
 
 (must-succeed*
- (defbyte 10 :fix ubyte10fix)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+ (fty::defbyte 8 :fix myfix)
+ (assert! (function-symbolp 'ubyte8-p (w state)))
+ (assert! (function-symbolp 'myfix (w state)))
+ (assert! (function-symbolp 'ubyte8-equiv$inline (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :EQUIV input:
 
-(must-succeed*
- (defbyte 10 :equiv nil)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-fail (fty::defbyte 8 :equiv "EQ"))
 
 (must-succeed*
- (defbyte 10 :equiv ubyte10equiv)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; test the :LTYPE input:
-
-(must-succeed*
- (defbyte 10 :ltype nil)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
-
-(must-succeed*
- (defbyte 10 :ltype ubyte10list)
- (fty::defprod test-types ((one ubyte10) (two ubyte10list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10list-p (w state)))
- (assert! (function-symbolp 'ubyte10list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10list-equiv$inline (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; test the :LPRED input:
-
-(must-succeed*
- (defbyte 10 :lpred nil)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
-
-(must-succeed*
- (defbyte 10 :lpred ubyte10-listp)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listp (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; test the :LFIX input:
-
-(must-succeed*
- (defbyte 10 :lfix nil)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
-
-(must-succeed*
- (defbyte 10 :lfix ubyte10-listfix)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-listfix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; test the :LEQUIV input:
-
-(must-succeed*
- (defbyte 10 :lequiv nil)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
-
-(must-succeed*
- (defbyte 10 :lequiv ubyte10-listequiv)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-listequiv$inline (w state))))
+ (fty::defbyte 8 :equiv myequiv)
+ (assert! (function-symbolp 'ubyte8-p (w state)))
+ (assert! (function-symbolp 'ubyte8-fix (w state)))
+ (assert! (function-symbolp 'myequiv$inline (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :PARENTS input:
 
-(must-succeed*
- (defbyte 10 :parents nil)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-fail (fty::defbyte 8 :parents "123"))
 
-(must-succeed*
- (defbyte 10 :parents (unsigned-byte-p))
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-succeed (fty::defbyte 8 :parents nil))
+
+(must-succeed (fty::defbyte 8 :parents (this that)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :DESCRIPTION input:
 
-(must-succeed*
- (defbyte 10 :description nil)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-fail (fty::defbyte 8 :description 'something))
 
-(must-succeed*
- (defbyte 10 :description "10-bit unsigned bytes")
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-succeed (fty::defbyte 8 :description nil))
 
-(must-succeed*
- (defbyte 10 :description (concatenate 'string "10-bit " "unsigned bytes"))
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-succeed (fty::defbyte 8 :description "my bytes"))
+
+(must-succeed
+ (fty::defbyte 8 :description (concatenate 'string "my" " " "bytes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :LONG input:
 
-(must-succeed*
- (defbyte 10 :long nil)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-fail (fty::defbyte 8 :long #\a))
 
-(must-succeed*
- (defbyte 10 :long "<p>These are unsigned bytes made of 10 bits.</p>")
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-succeed (fty::defbyte 8 :long nil))
 
-(must-succeed*
- (defbyte 10 :long (xdoc::topapp
-                    (xdoc::p "These are unsigned bytes made of 10 bits.")))
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-succeed (fty::defbyte 8 :long "<p>More doc.</p>"))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; test the :LLONG input:
-
-(must-succeed*
- (defbyte 10 :llong nil)
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
-
-(must-succeed*
- (defbyte 10
-   :llong "<p>These are true lists of unsigned bytes made of 10 bits.</p>")
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
-
-(must-succeed*
- (defbyte 10
-   :llong (xdoc::topapp
-           (xdoc::p "These are true lists of unsigned bytes made of 10 bits.")))
- (fty::defprod test-types ((one ubyte10) (two ubyte10-list)))
- (assert! (function-symbolp 'ubyte10-p (w state)))
- (assert! (function-symbolp 'ubyte10-fix (w state)))
- (assert! (function-symbolp 'ubyte10-equiv$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-p (w state)))
- (assert! (function-symbolp 'ubyte10-list-fix$inline (w state)))
- (assert! (function-symbolp 'ubyte10-list-equiv$inline (w state))))
+(must-succeed (fty::defbyte 8 :long (xdoc::topp "More doc.")))

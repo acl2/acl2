@@ -28,6 +28,12 @@
 (include-book "std/lists/top" :dir :system)
 (include-book "std/alists/top" :dir :system)
 (include-book "acl2s/cgen/top" :dir :system :ttags :all)
+(include-book "xdoc/defxdoc-raw" :dir :system)
+(include-book "tools/include-raw" :dir :system)
+(include-book "xdoc/topics" :dir :system)
+(include-book "system/doc/acl2-doc-wrap" :dir :system)
+(include-book "misc/eval" :dir :system)
+(include-book "rtl/rel11/lib/top" :dir :system)
 
 ; Added for fixers support. [2016-02-19 Fri]
 ;; (make-event

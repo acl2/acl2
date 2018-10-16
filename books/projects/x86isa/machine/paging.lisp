@@ -419,6 +419,7 @@
                                            member-equal
                                            not))))
     :inline t
+    :no-function t
 
     (if (mbt (and (unsigned-byte-p *physical-address-size* base-addr)
                   (equal (loghead 12 base-addr) 0)))
@@ -475,6 +476,7 @@
                                            member-equal
                                            not))))
     :inline t
+    :no-function t
 
     (if (mbt (and (unsigned-byte-p *physical-address-size* base-addr)
                   (equal (loghead 12 base-addr) 0)))
@@ -537,6 +539,7 @@
                                            member-equal
                                            not))))
     :inline t
+    :no-function t
 
     (if (mbt (and (unsigned-byte-p *physical-address-size* base-addr)
                   (equal (loghead 12 base-addr) 0)))
@@ -597,6 +600,7 @@
                                            member-equal
                                            not))))
     :inline t
+    :no-function t
 
     (if (mbt (and (unsigned-byte-p *physical-address-size* base-addr)
                   (equal (loghead 12 base-addr) 0)))
@@ -693,7 +697,6 @@
      "@('0'): Explicit; @('1'): Implicit")
     ;; Default value is 0.
     '0))
-  :inline t
   :short "Determining access rights and detecting page faults"
   :long "<p>Source for determining the access rights: Section 4.6 in
    the Intel Manuals, Vol. 3A.</p>
@@ -2369,7 +2372,7 @@ accesses.</p>
 (defabbrev cpl (x86)
   (the (unsigned-byte 2)
     (seg-sel-layout-slice
-     :rpl (the (unsigned-byte 16) (xr :seg-visible *cs* x86)))))
+     :rpl (the (unsigned-byte 16) (xr :seg-visible #.*cs* x86)))))
 
 (define ia32e-la-to-pa
   ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
@@ -2604,7 +2607,8 @@ accesses.</p>
   (defrule 64-bit-modep-of-ia32e-la-to-pa
     (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
            (64-bit-modep x86))
-    :enable 64-bit-modep)
+    :enable (64-bit-modep)
+    :disable (force (force)))
 
   (defrule x86-operation-mode-of-ia32e-la-to-pa
     (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
@@ -3195,6 +3199,7 @@ accesses.</p>
    (x86 "x86 state"))
 
   :inline t
+  :no-function t
   :enabled t
 
   :guard (not (app-view x86))

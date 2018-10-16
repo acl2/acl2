@@ -11,7 +11,7 @@
 (in-package "BITCOIN")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/utilities/digits-any-base-pow2" :dir :system)
+(include-book "kestrel/utilities/digits-any-base/pow2-8" :dir :system)
 (include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
@@ -27,10 +27,13 @@
   :long
   (xdoc::topapp
    (xdoc::p
-    "Base58 encoding is specified in
+    "Base58 encoding is described in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding\"
-     >Topic `Base58Check encoding' of Wiki</a>.
-     Base58 encoding is part of Base58Check encoding.")
+     >Page `Base58Check encoding' of [Wiki]</a>;
+     Base58 encoding is part of Base58Check encoding.
+     Base58 encoding is also described
+     in Section `Base58 and Base58Check Encoding' of Chapter 4 of [MB].
+     [WP] does not mention Base58 encoding.")
    (xdoc::p
     "Base58 decoding is the inverse of Base58 encoding."))
   :order-subtopics t
@@ -42,9 +45,9 @@
   :short "List of characters used in Base58 encoding."
   :long
   "<p>
-   These characters are specified in the table in
+   These characters are listed in the table in
    <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding#Base58_symbol_chart\"
-   >Section `Base58 symbol chart' of Topic `Base58Check encoding' of Wiki</a>,
+   >Section `Base58 symbol chart' of Page `Base58Check encoding' of [Wiki]</a>,
    along with their corresponding values in base 58.
    This list is ordered according to increasing values.
    </p>"
@@ -56,6 +59,17 @@
   (assert-event (equal (len *base58-characters*) 58))
 
   (assert-event (no-duplicatesp *base58-characters*)))
+
+(defval *base58-zero*
+  :short "Character that encodes 0 in the Base58 encoding."
+  :long
+  "<p>
+   This is the first character of @(tsee *base58-characters*).
+   </p>"
+  (car *base58-characters*)
+  ///
+
+  (assert-event (equal *base58-zero* #\1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -75,7 +89,7 @@
   :returns (fixed-x base58-characterp)
   :parents (base58-character)
   :short "Fixer for @(tsee base58-character)."
-  (mbe :logic (if (base58-characterp x) x #\1)
+  (mbe :logic (if (base58-characterp x) x *base58-zero*)
        :exec x)
   ///
 
@@ -232,8 +246,8 @@
    "The correspondence is given
     in the table
     in Section `Base58 symbol chart'
-    of Topic `Base58Check encoding'
-    of Wiki.
+    of Page `Base58Check encoding'
+    of [Wiki].
     Since the list @(tsee *base58-characters*)
     is ordered according to increasing values,
     this function is essentially @(tsee nth).")
@@ -255,7 +269,7 @@
 (defsection base58-val<=>char-inversion-theorems
   :parents (base58-val=>char base58-char=>val)
   :short "@(tsee base58-val=>char) and @(tsee base58-char=>val)
-          are each other's inverses."
+          are mutual inverses."
 
   (defrule base58-char=>val=>char
     (equal (base58-val=>char (base58-char=>val char))
@@ -320,7 +334,7 @@
 (defsection base58-vals<=>chars-inversion-theorems
   :parents (base58-vals=>chars base58-chars=>vals)
   :short "@(tsee base58-vals=>chars) and @(tsee base58-chars=>vals)
-          are each other's inverses."
+          are mutual inverses."
 
   (defrule base58-chars=>vals=>chars
     (equal (base58-vals=>chars (base58-chars=>vals chars))
@@ -336,14 +350,15 @@
 
 (define base58-encode ((bytes ubyte8-listp))
   :returns (chars base58-character-listp)
-  :short "Base58 encoding."
+  :short "Turn a list of bytes into
+          the corresponding list of Base58 characters."
   :long
   (xdoc::topapp
    (xdoc::p
-    "This is specified in bullets 4, 5, and 6 in
+    "This is described in bullets 4, 5, and 6 in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding#Creating_a_Base58Check_string\"
-     >Section `Creating a Base58Check string' of Topic `Base58Check encoding'
-     of Wiki</a>.")
+     >Section `Creating a Base58Check string' of Page `Base58Check encoding'
+     of [Wiki]</a>.")
    (xdoc::p
     "The bytes are treated as big bendian digits in base 256
      and converted into the natural number that they denote.
@@ -372,7 +387,7 @@
                            (len (trim-bendian*
                                  (mbe :logic (ubyte8-list-fix bytes)
                                       :exec bytes)))))
-       (chars (append (repeat number-of-zeros #\1)
+       (chars (append (repeat number-of-zeros *base58-zero*)
                       (base58-vals=>chars vals))))
     chars)
   :guard-hints (("Goal"
@@ -396,21 +411,23 @@
 
 (define base58-decode ((chars base58-character-listp))
   :returns (bytes ubyte8-listp)
-  :short "Base58 decoding."
+  :short "Turn a list of Base58 characters
+          into the corresponding list of bytes."
   :long
   (xdoc::topapp
    (xdoc::p
-    "This is implicitly specified as the inverse of encoding.")
+    "This is not explicitly described in [Wiki] or [MB],
+     but is, implicitly, the inverse of encoding.")
    (xdoc::p
-    "From a specification perspective,
+    "From a formal specification perspective,
      we could define this function as the inverse of @(tsee base58-encode).
      But since decoding is quite analogous to encoding,
      and not more complicated than encoding,
      instead we define it in an executable way,
      and prove that it is indeed the inverse of encoding.
-     This way, the specification of decoding is executable.")
+     This way, the formal specification of decoding is executable.")
    (xdoc::p
-    "This executable specification of decoding essentially runs
+    "This executable formal specification of decoding essentially runs
      the encoding steps ``in reverse''.
      Instead of counting
      the number of leading ``zero'' (i.e. @('1')) characters
@@ -445,7 +462,7 @@
 (defsection base58-encode/decode-inversion-theorems
   :parents (base58-encode base58-decode)
   :short "@(tsee base58-encode) and @(tsee base58-decode)
-          are each other's inverses."
+          are mutual inverses."
 
   (defrule base58-decode-of-base58-encode
     (equal (base58-decode (base58-encode bytes))

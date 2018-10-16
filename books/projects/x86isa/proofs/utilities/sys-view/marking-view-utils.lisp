@@ -805,10 +805,12 @@
       (and (not (app-view x86))
            (not (equal fld :mem))
            (not (equal fld :fault)))
-      (equal (xr fld index (mv-nth 2 (get-prefixes proc-mode start-rip prefixes cnt x86)))
+      (equal (xr fld index
+                 (mv-nth
+                  3 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
              (xr fld index x86)))
      :hints (("Goal"
-              :induct (get-prefixes proc-mode start-rip prefixes cnt x86)
+              :induct (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
               :in-theory (e/d* (get-prefixes rml08 rb las-to-pas)
                                (rme08
                                 negative-logand-to-positive-logand-with-integerp-x
@@ -820,7 +822,10 @@
     (implies
      (and (not (equal fld :mem))
           (not (equal fld :fault)))
-     (equal (xr fld index (mv-nth 2 (get-prefixes proc-mode start-rip prefixes cnt x86)))
+     (equal (xr fld index (mv-nth
+                           3
+                           (get-prefixes
+                            proc-mode start-rip prefixes rex-byte cnt x86)))
             (xr fld index x86)))
     :hints
     (("Goal"
@@ -842,7 +847,7 @@
      *x86-field-names-as-keywords*)
     'get-prefixes
     (acl2::formals 'get-prefixes (w state))
-    :output-index 2
+    :output-index 3
     :prepwork '((local (in-theory (e/d (xr-not-mem-and-get-prefixes) ()))))))
 
   (local
@@ -853,11 +858,13 @@
            (not (mv-nth 0 (las-to-pas cnt start-rip :x x86))))
       (equal
        (xr :fault index
-           (mv-nth 2 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))
+           (mv-nth
+            3
+            (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))
        (xr :fault index x86)))
      :hints
      (("Goal"
-       :induct (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
+       :induct (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
        :in-theory
        (e/d*
         (get-prefixes rb las-to-pas)
@@ -873,7 +880,9 @@
           (not (mv-nth 0 (las-to-pas cnt start-rip :x x86))))
      (equal
       (xr :fault index
-          (mv-nth 2 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))
+          (mv-nth
+           3
+           (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))
       (xr :fault index x86)))
     :hints
     (("Goal"
@@ -895,22 +904,39 @@
           (not (equal fld :rflags))
           (not (equal fld :ctr))
           (not (equal fld :seg-visible))
-          (not (equal fld :seg-hidden)) ; added
+          (not (equal fld :seg-hidden-base))
+          (not (equal fld :seg-hidden-limit))
+          (not (equal fld :seg-hidden-attr))
           (not (equal fld :msr))
           (not (equal fld :fault))
           (not (equal fld :app-view))
           (not (equal fld :marking-view)))
      (and
       (equal
-       (mv-nth 0 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt (xw fld index value x86)))
-       (mv-nth 0 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))
+       (mv-nth
+        0
+        (get-prefixes
+         #.*64-bit-mode* start-rip prefixes rex-byte cnt
+         (xw fld index value x86)))
+       (mv-nth
+        0
+        (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))
       (equal
-       (mv-nth 1 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt (xw fld index value x86)))
-       (mv-nth 1 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))))
+       (mv-nth 1 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt
+                  (xw fld index value x86)))
+       (mv-nth 1 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))
+      (equal
+       (mv-nth 2 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt
+                  (xw fld index value x86)))
+       (mv-nth 2 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))))
     :hints
     (("Goal"
-      :induct (get-prefixes *64-bit-mode* start-rip prefixes cnt x86)
-      :expand (get-prefixes *64-bit-mode* start-rip prefixes cnt
+      :induct (get-prefixes *64-bit-mode* start-rip prefixes rex-byte cnt x86)
+      :expand (get-prefixes *64-bit-mode* start-rip prefixes rex-byte cnt
                             (xw fld index value x86))
       :in-theory (e/d* (get-prefixes
                         rb
@@ -923,7 +949,8 @@
                         acl2::ifix-when-not-integerp
                         acl2::loghead-identity
                         (:t bitops::logior-natp-type)
-                        (:t natp-get-prefixes)
+                        (:t natp-of-get-prefixes.new-prefixes)
+                        (:t natp-of-get-prefixes.new-rex-byte)
                         (:t n08p-mv-nth-1-rml08)
                         force (force))))))
 
@@ -934,20 +961,24 @@
           (not (equal fld :rflags))
           (not (equal fld :ctr))
           (not (equal fld :seg-visible))
-          (not (equal fld :seg-hidden))
+          (not (equal fld :seg-hidden-base))
+          (not (equal fld :seg-hidden-limit))
+          (not (equal fld :seg-hidden-attr))
           (not (equal fld :msr))
           (not (equal fld :fault))
           (not (equal fld :app-view))
           (not (equal fld :marking-view)))
      (equal
-      (mv-nth 2 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt
+      (mv-nth 3 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt
                               (xw fld index value x86)))
       (xw fld index value
-          (mv-nth 2 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))))
+          (mv-nth 3 (get-prefixes
+                     #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))))
     :hints
     (("Goal"
-      :induct (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
-      :expand (get-prefixes #.*64-bit-mode* start-rip prefixes cnt (xw fld index value x86))
+      :induct (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
+      :expand (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt
+                            (xw fld index value x86))
       :in-theory (e/d* (get-prefixes
                         las-to-pas
                         rb)
@@ -959,15 +990,17 @@
                         acl2::ifix-when-not-integerp
                         acl2::loghead-identity
                         (:t bitops::logior-natp-type)
-                        (:t natp-get-prefixes)
+                        (:t natp-of-get-prefixes.new-prefixes)
+                        (:t natp-of-get-prefixes.new-rex-byte)
                         (:t n08p-mv-nth-1-rml08)
                         force (force))))))
 
   (make-event
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault :app-view
-            :marking-view)
+     '(:mem :rflags :ctr :seg-visible 
+            :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
+            :msr :fault :app-view :marking-view)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element 'proc-mode #.*64-bit-mode*
@@ -981,8 +1014,9 @@
   (make-event
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault :app-view
-            :marking-view)
+     '(:mem :rflags :ctr :seg-visible :seg-hidden-base
+            :seg-hidden-limit :seg-hidden-attr
+            :msr :fault :app-view :marking-view)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element 'proc-mode #.*64-bit-mode*
@@ -994,15 +1028,32 @@
     :hyps '(not (app-view x86))))
 
   (make-event
+   (generate-read-fn-over-xw-thms
+    (remove-elements-from-list
+     '(:mem :rflags :ctr :seg-visible 
+            :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
+            :msr :fault :app-view :marking-view)
+     *x86-field-names-as-keywords*)
+    'get-prefixes
+    (replace-element 'proc-mode #.*64-bit-mode*
+                     (acl2::formals 'get-prefixes (w state)))
+    :output-index 2
+    :prepwork '((local (in-theory (e/d (get-prefixes-xw-values-in-sys-view
+                                        get-prefixes-xw-state-in-sys-view)
+                                       ()))))
+    :hyps '(not (app-view x86))))
+
+  (make-event
    (generate-write-fn-over-xw-thms
     (remove-elements-from-list
-     '(:mem :rflags :ctr :seg-visible :seg-hidden :msr :fault :app-view
-            :marking-view)
+     '(:mem :rflags :ctr :seg-visible 
+            :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
+            :msr :fault :app-view :marking-view)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element
      'proc-mode #.*64-bit-mode* (acl2::formals 'get-prefixes (w state)))
-    :output-index 2
+    :output-index 3
     :prepwork '((local (in-theory (e/d (get-prefixes-xw-values-in-sys-view
                                         get-prefixes-xw-state-in-sys-view)
                                        ()))))
@@ -1014,15 +1065,17 @@
           (equal (rflags-slice :ac value)
                  (rflags-slice :ac (rflags x86))))
      (equal
-      (mv-nth 2 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt
+      (mv-nth 3 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt
                               (xw :rflags 0 value x86)))
       (xw :rflags 0 value
-          (mv-nth 2 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))))
+          (mv-nth 3 (get-prefixes
+                     #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))))
     :hints
     (("Goal"
-      :induct (get-prefixes *64-bit-mode* start-rip prefixes cnt x86)
+      :induct (get-prefixes *64-bit-mode* start-rip prefixes rex-byte cnt x86)
       :expand
-      (get-prefixes *64-bit-mode* start-rip prefixes cnt (xw :rflags 0 value x86))
+      (get-prefixes *64-bit-mode* start-rip prefixes rex-byte cnt
+                    (xw :rflags 0 value x86))
       :in-theory (e/d* (get-prefixes)
                        (negative-logand-to-positive-logand-with-integerp-x
                         unsigned-byte-p-of-logior
@@ -1031,7 +1084,8 @@
                         acl2::ifix-when-not-integerp
                         acl2::loghead-identity
                         (:t bitops::logior-natp-type)
-                        (:t natp-get-prefixes)
+                        (:t natp-of-get-prefixes.new-prefixes)
+                        (:t natp-of-get-prefixes.new-rex-byte)
                         (:t n08p-mv-nth-1-rml08)
                         force (force))))))
 
@@ -1041,10 +1095,11 @@
           (not (app-view x86))
           (x86p x86))
      (equal
-      (mv-nth 2 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt
+      (mv-nth 3 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt
                               (!flgi index value x86)))
       (!flgi index value
-             (mv-nth 2 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))))
+             (mv-nth 3 (get-prefixes
+                        #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))))
     :hints
     (("Goal"
       :do-not-induct t
@@ -1070,15 +1125,28 @@
                  (rflags-slice :ac (rflags x86))))
      (and
       (equal
-       (mv-nth 0 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt (xw :rflags 0 value x86)))
-       (mv-nth 0 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))
+       (mv-nth 0 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt
+                  (xw :rflags 0 value x86)))
+       (mv-nth 0 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))
       (equal
-       (mv-nth 1 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt (xw :rflags 0 value x86)))
-       (mv-nth 1 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))))
+       (mv-nth 1 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt
+                  (xw :rflags 0 value x86)))
+       (mv-nth 1 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))
+      (equal
+       (mv-nth 2 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt
+                  (xw :rflags 0 value x86)))
+       (mv-nth 2 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))))
     :hints
     (("Goal"
-      :induct (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
-      :expand (get-prefixes #.*64-bit-mode* start-rip prefixes cnt (xw :rflags 0 value x86))
+      :induct (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
+      :expand (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt
+                            (xw :rflags 0 value x86))
       :in-theory (e/d* (get-prefixes)
                        (bitops::logtail-of-logior
                         bitops::logtail-of-logand
@@ -1098,11 +1166,23 @@
           (x86p x86))
      (and
       (equal
-       (mv-nth 0 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt (!flgi index value x86)))
-       (mv-nth 0 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))
+       (mv-nth 0 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt
+                  (!flgi index value x86)))
+       (mv-nth 0 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))
       (equal
-       (mv-nth 1 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt (!flgi index value x86)))
-       (mv-nth 1 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)))))
+       (mv-nth 1 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt
+                  (!flgi index value x86)))
+       (mv-nth 1 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))
+      (equal
+       (mv-nth 2 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt
+                  (!flgi index value x86)))
+       (mv-nth 2 (get-prefixes
+                  #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))))
     :hints
     (("Goal"
       :do-not-induct t
@@ -1153,128 +1233,118 @@
         (not flg)
         (equal prefix-byte-group-code 1))
        (equal
-        (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
+        (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
         (get-prefixes #.*64-bit-mode* (+ 1 start-rip)
                       (if (equal byte #.*lock*)
-                          (!prefixes-slice
-                           :lck byte
-                           (!prefixes-slice
-                            :last-prefix #.*lck-pfx* prefixes))
-                        (!prefixes-slice
-                         :rep byte
-                         (!prefixes-slice
-                          :last-prefix #.*rep-pfx* prefixes)))
+                          (!prefixes->lck byte prefixes)
+                        (!prefixes->rep byte prefixes))
+                      0
                       (+ -1 cnt)
                       new-x86))))
-    :hints (("Goal"
-             :induct (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
-             :in-theory (e/d* (get-prefixes
-                               las-to-pas)
-                              (acl2::ash-0
-                               acl2::zip-open
-                               byte-listp
-                               unsigned-byte-p-of-logior
-                               negative-logand-to-positive-logand-with-integerp-x
-                               force (force))))))
+    :hints
+    (("Goal"
+      :induct (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
+      :in-theory (e/d* (get-prefixes
+                        las-to-pas)
+                       (acl2::ash-0
+                        acl2::zip-open
+                        byte-listp
+                        unsigned-byte-p-of-logior
+                        negative-logand-to-positive-logand-with-integerp-x
+                        force (force))))))
 
   (defthm get-prefixes-opener-lemma-group-2-prefix-in-marking-view
-    (implies (and
-              (canonical-address-p (1+ start-rip))
-              (not (zp cnt))
-              (let*
-                  ((flg (mv-nth 0 (rml08 start-rip :x x86)))
-                   (prefix-byte-group-code
-                    (get-one-byte-prefix-array-code
-                     (mv-nth 1 (rml08 start-rip :x x86)))))
-                (and (not flg)
-                     (equal prefix-byte-group-code 2))))
-             (equal (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
-                    (get-prefixes #.*64-bit-mode* (1+ start-rip)
-                                  (!prefixes-slice
-                                   :seg
-                                   (mv-nth 1 (rml08 start-rip :x x86))
-                                   (!prefixes-slice
-                                    :last-prefix
-                                    #.*seg-pfx*
-                                    prefixes))
+    (b* (((mv flg byte new-x86) (rml08 start-rip :x x86))
+         (prefix-byte-group-code
+          (get-one-byte-prefix-array-code byte)))
+      (implies (and
+                (canonical-address-p (1+ start-rip))
+                (not (zp cnt))
+                (not flg)
+                (equal prefix-byte-group-code 2))
+               (equal
+                (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
+                (if (or (equal byte #.*fs-override*)
+                        (equal byte #.*gs-override*))
+                    (get-prefixes #.*64-bit-mode*
+                                  (1+ start-rip)
+                                  (!prefixes->seg byte prefixes)
+                                  0
                                   (1- cnt)
-                                  (mv-nth 2 (rml08 start-rip :x x86)))))
-    :hints (("Goal"
-             :induct (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
-             :in-theory (e/d* (get-prefixes
-                               las-to-pas)
-                              (acl2::ash-0
-                               acl2::zip-open
-                               byte-listp
-                               unsigned-byte-p-of-logior
-                               negative-logand-to-positive-logand-with-integerp-x
-                               force (force))))))
+                                  new-x86)
+                  (get-prefixes
+                   #.*64-bit-mode* (1+ start-rip) prefixes 0 (1- cnt)
+                   new-x86)))))
+    :hints
+    (("Goal"
+      :induct (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
+      :in-theory (e/d* (get-prefixes
+                        las-to-pas)
+                       (acl2::ash-0
+                        acl2::zip-open
+                        byte-listp
+                        unsigned-byte-p-of-logior
+                        negative-logand-to-positive-logand-with-integerp-x
+                        force (force))))))
 
   (defthm get-prefixes-opener-lemma-group-3-prefix-in-marking-view
-    (implies (and
-              (canonical-address-p (1+ start-rip))
-              (not (zp cnt))
-              (let*
-                  ((flg (mv-nth 0 (rml08 start-rip :x x86)))
-                   (prefix-byte-group-code
-                    (get-one-byte-prefix-array-code
-                     (mv-nth 1 (rml08 start-rip :x x86)))))
-                (and (not flg)
-                     (equal prefix-byte-group-code 3))))
-             (equal (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
-                    (get-prefixes #.*64-bit-mode* (1+ start-rip)
-                                  (!prefixes-slice
-                                   :opr
-                                   (mv-nth 1 (rml08 start-rip :x x86))
-                                   (!prefixes-slice
-                                    :last-prefix
-                                    #.*opr-pfx*
-                                    prefixes))
-                                  (1- cnt)
-                                  (mv-nth 2 (rml08 start-rip :x x86)))))
-    :hints (("Goal"
-             :induct (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
-             :in-theory (e/d* (get-prefixes
-                               las-to-pas)
-                              (acl2::ash-0
-                               acl2::zip-open
-                               byte-listp
-                               unsigned-byte-p-of-logior
-                               negative-logand-to-positive-logand-with-integerp-x
-                               force (force))))))
+    (b* (((mv flg byte new-x86)
+          (rml08 start-rip :x x86))
+         (prefix-byte-group-code
+          (get-one-byte-prefix-array-code byte)))
+      (implies
+       (and
+        (canonical-address-p (1+ start-rip))
+        (not (zp cnt))
+        (not flg)
+        (equal prefix-byte-group-code 3))
+       (equal
+        (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
+        (get-prefixes #.*64-bit-mode*
+                      (1+ start-rip)
+                      (!prefixes->opr byte prefixes)
+                      0
+                      (1- cnt)
+                      new-x86))))
+    :hints
+    (("Goal"
+      :induct (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
+      :in-theory (e/d* (get-prefixes
+                        las-to-pas)
+                       (acl2::ash-0
+                        acl2::zip-open
+                        byte-listp
+                        unsigned-byte-p-of-logior
+                        negative-logand-to-positive-logand-with-integerp-x
+                        force (force))))))
 
   (defthm get-prefixes-opener-lemma-group-4-prefix-in-marking-view
-    (implies (and
-              (canonical-address-p (1+ start-rip))
-              (not (zp cnt))
-              (let*
-                  ((flg (mv-nth 0 (rml08 start-rip :x x86)))
-                   (prefix-byte-group-code
-                    (get-one-byte-prefix-array-code
-                     (mv-nth 1 (rml08 start-rip :x x86)))))
-                (and (not flg)
-                     (equal prefix-byte-group-code 4))))
-             (equal (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
-                    (get-prefixes #.*64-bit-mode* (1+ start-rip)
-                                  (!prefixes-slice
-                                   :adr
-                                   (mv-nth 1 (rml08 start-rip :x x86))
-                                   (!prefixes-slice
-                                    :last-prefix
-                                    #.*adr-pfx*
-                                    prefixes))
-                                  (1- cnt)
-                                  (mv-nth 2 (rml08 start-rip :x x86)))))
-    :hints (("Goal"
-             :induct (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
-             :in-theory (e/d* (get-prefixes
-                               las-to-pas)
-                              (acl2::ash-0
-                               acl2::zip-open
-                               byte-listp
-                               unsigned-byte-p-of-logior
-                               negative-logand-to-positive-logand-with-integerp-x
-                               force (force))))))
+    (b* (((mv flg byte new-x86)
+          (rml08 start-rip :x x86))
+         (prefix-byte-group-code
+          (get-one-byte-prefix-array-code byte)))
+      (implies (and (canonical-address-p (1+ start-rip))
+                    (not (zp cnt))
+                    (not flg)
+                    (equal prefix-byte-group-code 4))
+               (equal
+                (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
+                (get-prefixes #.*64-bit-mode* (1+ start-rip)
+                              (!prefixes->adr byte prefixes)
+                              0
+                              (1- cnt)
+                              new-x86))))
+    :hints
+    (("Goal"
+      :induct (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
+      :in-theory (e/d* (get-prefixes
+                        las-to-pas)
+                       (acl2::ash-0
+                        acl2::zip-open
+                        byte-listp
+                        unsigned-byte-p-of-logior
+                        negative-logand-to-positive-logand-with-integerp-x
+                        force (force))))))
 
   ;; Get-prefixes and xlate-equiv-memory:
 
@@ -1287,7 +1357,7 @@
   ;; utilities to include 32-bit mode, then we will probably need to edit the
   ;; following definition to mirror GET-PREFIXES in using ADD-TO-*IP.
   (defun-nx get-prefixes-two-x86-induct-hint
-    (start-rip prefixes cnt x86-1 x86-2)
+    (start-rip prefixes rex-byte cnt x86-1 x86-2)
     (declare (xargs :measure (nfix cnt)))
     (if (zp cnt)
         ;; Error, too many prefix bytes
@@ -1310,108 +1380,117 @@
            (prefix-byte-group-code
             (get-one-byte-prefix-array-code byte)))
 
-        (if (zp prefix-byte-group-code)
-            (let ((prefixes
-                   (!prefixes-slice :next-byte byte prefixes)))
-              (mv nil (!prefixes-slice :num-prefixes (- 5 cnt) prefixes)
-                  x86-1 x86-2))
 
-          (case prefix-byte-group-code
+        (case prefix-byte-group-code
 
-            (1
-             (let ((next-rip (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               (1+ start-rip))))
-               (if (mbe :logic (canonical-address-p next-rip)
-                        :exec
-                        (< (the (signed-byte
-                                 #.*max-linear-address-size+1*)
-                             next-rip)
-                           #.*2^47*))
-                   ;; Storing the group 1 prefix and going on...
-                   (get-prefixes-two-x86-induct-hint
-                    next-rip
-                    (if (equal byte *lock*)
-                        (!prefixes-slice :lck byte
-                                         (!prefixes-slice
-                                          :last-prefix *lck-pfx* prefixes))
-                      (!prefixes-slice
-                       :rep byte
-                       (!prefixes-slice
-                        :last-prefix *rep-pfx* prefixes)))
-                    (1- cnt)
-                    x86-1
-                    x86-2)
+          (0
+           (b* ((rex? (equal (the (unsigned-byte 4) (ash byte -4)) 4))
+                ((when rex?)
+                 (let ((next-rip (the (signed-byte
+                                       #.*max-linear-address-size+1*)
+                                   (1+ start-rip))))
+                   (if (canonical-address-p next-rip)
+                       (get-prefixes-two-x86-induct-hint
+                        next-rip prefixes
+                        byte ;; REX prefix, overwriting a previously encountered REX,
+                        ;; if any
+                        (the (integer 0 15) (1- cnt))
+                        x86-1 x86-2)
+                     (mv (cons 'non-canonical-address next-rip)
+                         prefixes rex-byte x86-1 x86-2)))))
+             ;; Storing the number of prefixes seen and the first byte
+             ;; following the prefixes in "prefixes":
+             (let ((prefixes
+                    (!prefixes->nxt byte prefixes)))
+               (mv nil
+                   (!prefixes->num (- 15 cnt) prefixes)
+                   rex-byte ;; Preserving rex-byte
+                   x86-1 x86-2))))
+
+          (1
+           ;; LOCK (F0), REPE (F3), REPNE (F2)
+           (b* ((next-rip (the (signed-byte
+                                #.*max-linear-address-size+1*)
+                            (1+ start-rip)))
+                ((when (not (canonical-address-p next-rip)))
                  (mv (cons 'non-canonical-address next-rip)
-                     prefixes x86-1 x86-2))))
+                     prefixes rex-byte x86-1 x86-2))
+                (prefixes
+                 (if (equal byte #.*lock*)
+                     (!prefixes->lck byte prefixes)
+                   (!prefixes->rep byte prefixes))))
+             ;; Storing the group 1 prefix (possibly overwriting a
+             ;; previously seen group 1 prefix) and going on...
+             (get-prefixes-two-x86-induct-hint
+              next-rip prefixes
+              0 ;; Nullify a previously read REX prefix, if any
+              (the (integer 0 15) (1- cnt)) x86-1 x86-2)))
 
-            (2
-             (let ((next-rip (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               (1+ start-rip))))
-               (if (mbe :logic (canonical-address-p next-rip)
-                        :exec
-                        (< (the (signed-byte
-                                 #.*max-linear-address-size+1*)
-                             next-rip)
-                           #.*2^47*))
-                   ;; Storing the group 2 prefix and going on...
-                   (get-prefixes-two-x86-induct-hint
-                    next-rip
-                    (!prefixes-slice
-                     :seg byte
-                     (!prefixes-slice
-                      :last-prefix *seg-pfx* prefixes))
-                    (1- cnt)
-                    x86-1 x86-2)
+          (2
+           ;; ES (26), CS (2E), SS (36), DS (3E), FS (64), GS (65)
+           (b* ((next-rip (the (signed-byte
+                                #.*max-linear-address-size+1*)
+                            (1+ start-rip)))
+                ((when (not (canonical-address-p next-rip)))
                  (mv (cons 'non-canonical-address next-rip)
-                     prefixes x86-1 x86-2))))
+                     prefixes rex-byte x86-1 x86-2)))
 
-            (3
-             (let ((next-rip (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               (1+ start-rip))))
-               (if (mbe :logic (canonical-address-p next-rip)
-                        :exec
-                        (< (the (signed-byte
-                                 #.*max-linear-address-size+1*)
-                             next-rip)
-                           #.*2^47*))
-                   ;; Storing the group 3 prefix and going on...
-                   (get-prefixes-two-x86-induct-hint
-                    next-rip
-                    (!prefixes-slice
-                     :opr byte
-                     (!prefixes-slice
-                      :last-prefix *opr-pfx* prefixes))
-                    (1- cnt) x86-1 x86-2)
+             (if (or (equal byte #.*fs-override*)
+                     (equal byte #.*gs-override*))
+
+                 ;; Storing the group 2 prefix (possibly overwriting a
+                 ;; previously seen group 2 prefix) and going on...
+                 (get-prefixes-two-x86-induct-hint
+                  next-rip
+                  (!prefixes->seg byte prefixes)
+                  0 ;; Nullify a previously read REX prefix, if any
+                  (the (integer 0 15) (1- cnt))
+                  x86-1 x86-2)
+
+               ;; We will be here if we are in the 64-bit mode and have seen a
+               ;; null segment override prefix; we will not store the prefix
+               ;; but simply decrement cnt.
+               (get-prefixes-two-x86-induct-hint
+                next-rip prefixes
+                0 ;; Nullify a previously read REX prefix, if any
+                (the (integer 0 15) (1- cnt)) x86-1 x86-2))))
+
+          (3
+           ;; Operand-Size Override (66)
+           (b* ((next-rip (the (signed-byte
+                                #.*max-linear-address-size+1*)
+                            (1+ start-rip)))
+                ((when (not (canonical-address-p next-rip)))
                  (mv (cons 'non-canonical-address next-rip)
-                     prefixes x86-1 x86-2))))
+                     prefixes rex-byte x86-1 x86-2)))
+             ;; Storing the group 3 prefix (possibly overwriting a
+             ;; previously seen group 3 prefix) and going on...
+             (get-prefixes-two-x86-induct-hint
+              next-rip
+              (!prefixes->opr byte prefixes)
+              0 ;; Nullify a previously read REX prefix, if any
+              (the (integer 0 15) (1- cnt))
+              x86-1 x86-2)))
 
-            (4
-             (let ((next-rip (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               (1+ start-rip))))
-               (if (mbe :logic (canonical-address-p next-rip)
-                        :exec
-                        (< (the (signed-byte
-                                 #.*max-linear-address-size+1*)
-                             next-rip)
-                           #.*2^47*))
-                   ;; Storing the group 4 prefix and going on...
-                   (get-prefixes-two-x86-induct-hint
-                    next-rip
-                    (!prefixes-slice
-                     :adr byte
-                     (!prefixes-slice
-                      :last-prefix *adr-pfx* prefixes))
-                    (1- cnt)
-                    x86-1 x86-2)
+          (4
+           ;; Address-Size Override (67)
+           (b* ((next-rip (the (signed-byte
+                                #.*max-linear-address-size+1*)
+                            (1+ start-rip)))
+                ((when (not (canonical-address-p next-rip)))
                  (mv (cons 'non-canonical-address next-rip)
-                     prefixes x86-1 x86-2))))
+                     prefixes rex-byte x86-1 x86-2)))
+             ;; Storing the group 4 prefix (possibly overwriting a
+             ;; previously seen group 4 prefix) and going on...
+             (get-prefixes-two-x86-induct-hint
+              next-rip
+              (!prefixes->adr byte prefixes)
+              0 ;; Nullify a previously read REX prefix, if any
+              (the (integer 0 15) (1- cnt))
+              x86-1 x86-2)))
 
-            (otherwise
-             (mv t prefixes x86-1 x86-2)))))))
+          (otherwise
+           (mv t prefixes rex-byte x86-1 x86-2))))))
 
   (local
    (in-theory (e/d ()
@@ -1443,44 +1522,60 @@
        (mv-nth 1 (las-to-pas cnt start-rip :x x86-1))
        (open-qword-paddr-list
         (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))))
-     (and (equal (mv-nth 0 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86-1))
-                 (mv-nth 0 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86-2)))
-          (equal (mv-nth 1 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86-1))
-                 (mv-nth 1 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86-2)))))
+     (and
+      (equal
+       (mv-nth
+        0 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1))
+       (mv-nth
+        0 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2)))
+      (equal
+       (mv-nth
+        1 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1))
+       (mv-nth
+        1 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2)))
+      (equal
+       (mv-nth
+        2 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1))
+       (mv-nth
+        2 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2)))))
     :hints
     (("Goal"
-      :induct (get-prefixes-two-x86-induct-hint start-rip prefixes cnt x86-1 x86-2)
-      :in-theory (e/d* (get-prefixes disjoint-p
-                                     member-p las-to-pas
-                                     mv-nth-0-las-to-pas-subset-p)
-                       ()))
+      :induct
+      (get-prefixes-two-x86-induct-hint
+       start-rip prefixes rex-byte cnt x86-1 x86-2)
+      :in-theory
+      (e/d* (get-prefixes disjoint-p
+                          member-p las-to-pas
+                          mv-nth-0-las-to-pas-subset-p)
+            ()))
      (if
          ;; Apply to all subgoals under a top-level induction.
          (and (consp (car id))
               (< 1 (len (car id))))
-         '(:expand ((las-to-pas cnt start-rip :x x86-1)
-                    (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86-1)
-                    (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86-2))
-                   :use
-                   ((:instance xlate-equiv-memory-and-mv-nth-0-rml08-cong
-                               (lin-addr start-rip)
-                               (r-w-x :x))
-                    (:instance xlate-equiv-memory-and-mv-nth-1-rml08
-                               (lin-addr start-rip)
-                               (r-w-x :x)))
-                   :in-theory
-                   (e/d* (disjoint-p
-                          member-p
-                          get-prefixes
-                          las-to-pas
-                          mv-nth-0-las-to-pas-subset-p)
-                         (rml08
-                          xlate-equiv-memory-and-mv-nth-0-rml08-cong
-                          xlate-equiv-memory-and-mv-nth-1-rml08
-                          (:rewrite mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p))))
+         '(:expand
+           ((las-to-pas cnt start-rip :x x86-1)
+            (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1)
+            (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2))
+           :use
+           ((:instance xlate-equiv-memory-and-mv-nth-0-rml08-cong
+                       (lin-addr start-rip)
+                       (r-w-x :x))
+            (:instance xlate-equiv-memory-and-mv-nth-1-rml08
+                       (lin-addr start-rip)
+                       (r-w-x :x)))
+           :in-theory
+           (e/d* (disjoint-p
+                  member-p
+                  get-prefixes
+                  las-to-pas
+                  mv-nth-0-las-to-pas-subset-p)
+                 (rml08
+                  xlate-equiv-memory-and-mv-nth-0-rml08-cong
+                  xlate-equiv-memory-and-mv-nth-1-rml08
+                  (:rewrite mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p))))
        nil)))
 
-  (defthm xlate-equiv-memory-and-mv-nth-2-get-prefixes
+  (defthm xlate-equiv-memory-and-mv-nth-3-get-prefixes
     (implies
      (and (64-bit-modep x86) ; added
           (not (app-view (double-rewrite x86)))
@@ -1488,11 +1583,12 @@
           (canonical-address-p start-rip)
           (not (mv-nth 0 (las-to-pas cnt start-rip :x (double-rewrite x86)))))
      (xlate-equiv-memory
-      (mv-nth 2 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86))
+      (mv-nth 3 (get-prefixes
+                 #.*64-bit-mode* start-rip prefixes rex-byte cnt x86))
       (double-rewrite x86)))
     :hints
     (("Goal"
-      :induct (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86)
+      :induct (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
       :in-theory (e/d* (get-prefixes mv-nth-0-las-to-pas-subset-p subset-p)
                        (rml08
                         acl2::ash-0
@@ -1519,7 +1615,7 @@
                                        (x86-2 x86))))
        nil)))
 
-  (defthmd xlate-equiv-memory-and-two-mv-nth-2-get-prefixes
+  (defthmd xlate-equiv-memory-and-two-mv-nth-3-get-prefixes
     (implies
      (and (64-bit-modep x86-2) ; added
           (xlate-equiv-memory x86-1 x86-2)
@@ -1528,15 +1624,17 @@
           (canonical-address-p start-rip)
           (not (mv-nth 0 (las-to-pas cnt start-rip :x (double-rewrite x86-2)))))
      (xlate-equiv-memory
-      (mv-nth 2 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86-1))
-      (mv-nth 2 (get-prefixes #.*64-bit-mode* start-rip prefixes cnt x86-2))))
+      (mv-nth
+       3 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1))
+      (mv-nth
+       3 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2))))
     :hints
     (("Goal"
       :use
-      ((:instance xlate-equiv-memory-and-mv-nth-2-get-prefixes (x86 x86-1))
-       (:instance xlate-equiv-memory-and-mv-nth-2-get-prefixes (x86 x86-2)))
+      ((:instance xlate-equiv-memory-and-mv-nth-3-get-prefixes (x86 x86-1))
+       (:instance xlate-equiv-memory-and-mv-nth-3-get-prefixes (x86 x86-2)))
       :in-theory (e/d* ()
-                       (xlate-equiv-memory-and-mv-nth-2-get-prefixes
+                       (xlate-equiv-memory-and-mv-nth-3-get-prefixes
                         acl2::ash-0
                         acl2::zip-open
                         cdr-create-canonical-address-list))))))
@@ -1725,13 +1823,15 @@
     (gather-all-paging-structure-qword-addresses
      (write-to-physical-memory p-addrs value x86))
     (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-  :hints (("Goal" :in-theory (e/d* (write-to-physical-memory
-                                    byte-listp
-                                    n08p
-                                    len
-                                    disjoint-p
-                                    gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint)
-                                   ()))))
+  :hints (("Goal"
+           :in-theory
+           (e/d* (write-to-physical-memory
+                  byte-listp
+                  n08p
+                  len
+                  disjoint-p
+                  gather-all-paging-structure-qword-addresses-xw-fld=mem-disjoint)
+                 ()))))
 
 (defthm gather-all-paging-structure-qword-addresses-and-wb-disjoint
   (implies
@@ -1755,15 +1855,16 @@
 
 ;; Lemmas about program-at:
 
-(local (in-theory (e/d* (rb
-                         wb
-                         canonical-address-p
-                         program-at
-                         las-to-pas
-                         all-xlation-governing-entries-paddrs
-                         unsigned-byte-p
-                         signed-byte-p)
-                        ())))
+(local (in-theory
+        (e/d* (rb
+               wb
+               canonical-address-p
+               program-at
+               las-to-pas
+               all-xlation-governing-entries-paddrs
+               unsigned-byte-p
+               signed-byte-p)
+              ())))
 
 (defthmd program-at-and-xlate-equiv-memory
   (implies
@@ -2054,23 +2155,24 @@
                              (addr (+ 1 addr))))))))
 
 (defthmd rb-rb-same-start-address-different-op-sizes
-  (implies (and (64-bit-modep x86) ; added
-                (equal (mv-nth 1 (rb i addr r-w-x x86)) val)
-                (not (mv-nth 0 (las-to-pas i addr r-w-x x86)))
-                (disjoint-p
-                 (mv-nth 1 (las-to-pas i addr r-w-x (double-rewrite x86)))
-                 (all-xlation-governing-entries-paddrs i addr (double-rewrite x86)))
-                (posp j)
-                (<= j i)
-                (canonical-address-p (+ -1 i addr))
-                (canonical-address-p (+ -1 j addr))
-                (canonical-address-p addr)
-                (integerp addr)
-                (not (app-view x86))
-                (marking-view x86)
-                (x86p x86))
-           (equal (mv-nth 1 (rb j addr r-w-x x86))
-                  (loghead (ash j 3) val)))
+  (implies
+   (and (64-bit-modep x86) ; added
+        (equal (mv-nth 1 (rb i addr r-w-x x86)) val)
+        (not (mv-nth 0 (las-to-pas i addr r-w-x x86)))
+        (disjoint-p
+         (mv-nth 1 (las-to-pas i addr r-w-x (double-rewrite x86)))
+         (all-xlation-governing-entries-paddrs i addr (double-rewrite x86)))
+        (posp j)
+        (<= j i)
+        (canonical-address-p (+ -1 i addr))
+        (canonical-address-p (+ -1 j addr))
+        (canonical-address-p addr)
+        (integerp addr)
+        (not (app-view x86))
+        (marking-view x86)
+        (x86p x86))
+   (equal (mv-nth 1 (rb j addr r-w-x x86))
+          (loghead (ash j 3) val)))
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance rb-rb-same-start-address-different-op-sizes-helper)
@@ -2242,34 +2344,35 @@
                       (:linear bitops::upper-bound-of-logior-for-naturals)))))
 
    (defthmd rb-rb-subset-in-marking-view-aux
-     (implies (and (64-bit-modep x86) ; added
-                   (equal (mv-nth 1 (rb i addr-i r-w-x x86)) val)
-                   (not (mv-nth 0 (las-to-pas i addr-i r-w-x x86)))
-                   (disjoint-p
-                    (mv-nth 1 (las-to-pas i addr-i r-w-x (double-rewrite x86)))
-                    (all-xlation-governing-entries-paddrs i addr-i (double-rewrite x86)))
-                   ;; Ugh, the following hyp is aggravating --- I can
-                   ;; eliminate it via rb-rb-subset-helper-4 though...
-                   (disjoint-p (mv-nth 1 (las-to-pas j addr-i r-w-x x86))
-                               (all-xlation-governing-entries-paddrs j addr-i x86))
-                   ;; <j,addr-j> is a subset (not strict) of <i,addr-i>.
-                   ;; This non-strictness is nice because it lets me have
-                   ;; a better hyp in one-read-with-rb-from-program-at-in-non-marking-view ---
-                   ;; (< lin-addr (+ (len bytes) prog-addr))
-                   ;; instead of
-                   ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr))
-                   (<= (+ j addr-j) (+ i addr-i))
-                   (<= addr-i addr-j)
-                   (canonical-address-p addr-i)
-                   (canonical-address-p (+ -1 i addr-i))
-                   (canonical-address-p (+ -1 j addr-i))
-                   (canonical-address-p addr-j)
-                   (posp i) (posp j)
-                   (not (app-view x86))
-                   (marking-view x86)
-                   (x86p x86))
-              (equal (mv-nth 1 (rb j addr-j r-w-x x86))
-                     (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
+     (implies
+      (and (64-bit-modep x86) ; added
+           (equal (mv-nth 1 (rb i addr-i r-w-x x86)) val)
+           (not (mv-nth 0 (las-to-pas i addr-i r-w-x x86)))
+           (disjoint-p
+            (mv-nth 1 (las-to-pas i addr-i r-w-x (double-rewrite x86)))
+            (all-xlation-governing-entries-paddrs i addr-i (double-rewrite x86)))
+           ;; Ugh, the following hyp is aggravating --- I can
+           ;; eliminate it via rb-rb-subset-helper-4 though...
+           (disjoint-p (mv-nth 1 (las-to-pas j addr-i r-w-x x86))
+                       (all-xlation-governing-entries-paddrs j addr-i x86))
+           ;; <j,addr-j> is a subset (not strict) of <i,addr-i>.
+           ;; This non-strictness is nice because it lets me have
+           ;; a better hyp in one-read-with-rb-from-program-at-in-non-marking-view ---
+           ;; (< lin-addr (+ (len bytes) prog-addr))
+           ;; instead of
+           ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr))
+           (<= (+ j addr-j) (+ i addr-i))
+           (<= addr-i addr-j)
+           (canonical-address-p addr-i)
+           (canonical-address-p (+ -1 i addr-i))
+           (canonical-address-p (+ -1 j addr-i))
+           (canonical-address-p addr-j)
+           (posp i) (posp j)
+           (not (app-view x86))
+           (marking-view x86)
+           (x86p x86))
+      (equal (mv-nth 1 (rb j addr-j r-w-x x86))
+             (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
      :hints (("Goal"
               :induct (list (rb-rb-induction-scheme j addr-j i addr-i val x86)
                             (las-to-pas i addr-i r-w-x x86)
@@ -2280,40 +2383,41 @@
                                 rb-1-opener-theorem)
                                (unsigned-byte-p)))
              (if (equal (car id) '(0 1))
-                 '(:expand ((las-to-pas i addr-i r-w-x x86))
-                           :use ((:instance rb-rb-same-start-address-different-op-sizes
-                                            (addr addr-i))
-                                 (:instance mv-nth-0-las-to-pas-subset-p
-                                            (n-1 i)
-                                            (addr-1 addr-i)
-                                            (n-2 j)
-                                            (addr-2 addr-j))
-                                 (:instance mv-nth-0-las-to-pas-subset-p
-                                            (n-1 i)
-                                            (addr-1 addr-i)
-                                            (n-2 j)
-                                            (addr-2 addr-i))
-                                 ;; (:instance mv-nth-1-las-to-pas-subset-p
-                                 ;;            (n-1 i)
-                                 ;;            (addr-1 addr-i)
-                                 ;;            (n-2 j)
-                                 ;;            (addr-2 addr-j))
-                                 ;; (:instance mv-nth-1-las-to-pas-subset-p
-                                 ;;            (n-1 i)
-                                 ;;            (addr-1 addr-i)
-                                 ;;            (n-2 j)
-                                 ;;            (addr-2 addr-i))
-                                 )
-                           :in-theory (e/d* (rb-rb-subset-helper-1
-                                             rb-rb-subset-helper-2
-                                             rb-rb-subset-helper-3
-                                             signed-byte-p
-                                             ifix
-                                             nfix
-                                             rb-1-opener-theorem)
-                                            (unsigned-byte-p
-                                             ;; mv-nth-1-las-to-pas-subset-p
-                                             signed-byte-p)))
+                 '(:expand
+                   ((las-to-pas i addr-i r-w-x x86))
+                   :use ((:instance rb-rb-same-start-address-different-op-sizes
+                                    (addr addr-i))
+                         (:instance mv-nth-0-las-to-pas-subset-p
+                                    (n-1 i)
+                                    (addr-1 addr-i)
+                                    (n-2 j)
+                                    (addr-2 addr-j))
+                         (:instance mv-nth-0-las-to-pas-subset-p
+                                    (n-1 i)
+                                    (addr-1 addr-i)
+                                    (n-2 j)
+                                    (addr-2 addr-i))
+                         ;; (:instance mv-nth-1-las-to-pas-subset-p
+                         ;;            (n-1 i)
+                         ;;            (addr-1 addr-i)
+                         ;;            (n-2 j)
+                         ;;            (addr-2 addr-j))
+                         ;; (:instance mv-nth-1-las-to-pas-subset-p
+                         ;;            (n-1 i)
+                         ;;            (addr-1 addr-i)
+                         ;;            (n-2 j)
+                         ;;            (addr-2 addr-i))
+                         )
+                   :in-theory (e/d* (rb-rb-subset-helper-1
+                                     rb-rb-subset-helper-2
+                                     rb-rb-subset-helper-3
+                                     signed-byte-p
+                                     ifix
+                                     nfix
+                                     rb-1-opener-theorem)
+                                    (unsigned-byte-p
+                                     ;; mv-nth-1-las-to-pas-subset-p
+                                     signed-byte-p)))
                nil)))))
 
 (local
@@ -2349,30 +2453,31 @@
 
 
 (defthmd rb-rb-subset-in-marking-view
-  (implies (and (64-bit-modep x86) ; added
-                (equal (mv-nth 1 (rb i addr-i r-w-x x86)) val)
-                (not (mv-nth 0 (las-to-pas i addr-i r-w-x x86)))
-                (disjoint-p
-                 (mv-nth 1 (las-to-pas i addr-i r-w-x (double-rewrite x86)))
-                 (all-xlation-governing-entries-paddrs i addr-i (double-rewrite x86)))
-                ;; <j,addr-j> is a subset (not strict) of <i,addr-i>.
-                ;; This non-strictness is nice because it lets me have
-                ;; a better hyp in one-read-with-rb-from-program-at-in-non-marking-view ---
-                ;; (< lin-addr (+ (len bytes) prog-addr))
-                ;; instead of
-                ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr))
-                (<= (+ j addr-j) (+ i addr-i))
-                (<= addr-i addr-j)
-                (canonical-address-p addr-i)
-                (canonical-address-p (+ -1 i addr-i))
-                (canonical-address-p (+ -1 j addr-i))
-                (canonical-address-p addr-j)
-                (posp i) (posp j)
-                (not (app-view x86))
-                (marking-view x86)
-                (x86p x86))
-           (equal (mv-nth 1 (rb j addr-j r-w-x x86))
-                  (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
+  (implies
+   (and (64-bit-modep x86) ; added
+        (equal (mv-nth 1 (rb i addr-i r-w-x x86)) val)
+        (not (mv-nth 0 (las-to-pas i addr-i r-w-x x86)))
+        (disjoint-p
+         (mv-nth 1 (las-to-pas i addr-i r-w-x (double-rewrite x86)))
+         (all-xlation-governing-entries-paddrs i addr-i (double-rewrite x86)))
+        ;; <j,addr-j> is a subset (not strict) of <i,addr-i>.
+        ;; This non-strictness is nice because it lets me have a better hyp in
+        ;; one-read-with-rb-from-program-at-in-non-marking-view ---
+        ;; (< lin-addr (+ (len bytes) prog-addr))
+        ;; instead of
+        ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr))
+        (<= (+ j addr-j) (+ i addr-i))
+        (<= addr-i addr-j)
+        (canonical-address-p addr-i)
+        (canonical-address-p (+ -1 i addr-i))
+        (canonical-address-p (+ -1 j addr-i))
+        (canonical-address-p addr-j)
+        (posp i) (posp j)
+        (not (app-view x86))
+        (marking-view x86)
+        (x86p x86))
+   (equal (mv-nth 1 (rb j addr-j r-w-x x86))
+          (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
   :hints (("Goal"
            :use ((:instance rb-rb-subset-helper-4)
                  (:instance rb-rb-subset-in-marking-view-aux)))))

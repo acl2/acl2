@@ -126,6 +126,14 @@
             (and stable-under-simplificationp
                  '(:expand ((:free (invals regvals) (lit-eval (make-lit m 0) invals regvals aignet)))))))
 
+  (defthm aignet-copy-is-comb-equivalent-implies-lit-eval-copy
+    (implies (and (aignet-copy-is-comb-equivalent n aignet copy aignet2)
+                  (< (lit->var m) (nfix n))
+                  (not (equal (id->type (lit->var m) aignet) (out-type))))
+             (equal (lit-eval (lit-copy m copy) invals regvals aignet2)
+                    (lit-eval m invals regvals aignet)))
+    :hints(("Goal" :in-theory (enable lit-copy))))
+
   (defthm aignet-copy-is-comb-equivalent-of-aignet-extension
     (implies (and (aignet-extension-binding)
                   (aignet-copy-is-comb-equivalent n aignet copy orig)
@@ -212,7 +220,7 @@
                              resize-list)))
 
   (defret comb-equivalent-of-sweep-init-copy-lemma
-    (implies (<= (nfix n) (num-nodes aignet))
+    (implies (<= (nfix n) (num-fanins aignet))
              (aignet-copy-is-comb-equivalent-for-non-gates n aignet new-copy new-aignet2))
     :hints(("Goal" :in-theory (enable aignet-copy-is-comb-equivalent-for-non-gates
                                       aignet-lits-comb-equivalent)
@@ -230,7 +238,7 @@
            (and stable-under-simplificationp
                 '(:expand ((:free (n neg aignet) (lit-eval (make-lit n neg) invals regvals aignet))
                            (:free (count stype aignet aignet2)
-                            (id-eval (node-count (lookup-stype count stype aignet))
+                            (id-eval (fanin-count (lookup-stype count stype aignet))
                                      invals regvals aignet2))
                            (id-eval (+ -1 n) invals regvals aignet)))))
     :fn init-copy-comb))
@@ -240,19 +248,19 @@
   (local (std::set-define-current-function finish-copy-comb))
 
   (local (defthm aignet-copy-is-comb-equivalent-implies-output-fanins-comb-equiv
-           (implies (aignet-copy-is-comb-equivalent (+ 1 (max-fanin aignet)) aignet copy aignet2)
+           (implies (aignet-copy-is-comb-equivalent (num-fanins aignet) aignet copy aignet2)
                     (output-fanins-comb-equiv aignet copy aignet2))
            :hints(("Goal" :in-theory (e/d (output-fanins-comb-equiv)
                                           (output-fanins-comb-equiv-necc))))))
 
   (local (defthm aignet-copy-is-comb-equivalent-implies-nxst-fanins-comb-equiv
-           (implies (aignet-copy-is-comb-equivalent (+ 1 (max-fanin aignet)) aignet copy aignet2)
+           (implies (aignet-copy-is-comb-equivalent (num-fanins aignet) aignet copy aignet2)
                     (nxst-fanins-comb-equiv aignet copy aignet2))
            :hints(("Goal" :in-theory (e/d (nxst-fanins-comb-equiv)
                                           (nxst-fanins-comb-equiv-necc))))))
 
   (defret sweep-finish-copy-comb-equivalent
-    (implies (and (aignet-copy-is-comb-equivalent (+ 1 (max-fanin aignet)) aignet copy aignet2)
+    (implies (and (aignet-copy-is-comb-equivalent (num-fanins aignet) aignet copy aignet2)
                   (aignet-copies-in-bounds copy aignet2)
                   (equal (stype-count :po aignet2) 0)
                   (equal (stype-count :nxst aignet2) 0)

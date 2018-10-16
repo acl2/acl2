@@ -193,6 +193,7 @@
 		(otherwise nil)))
 
   :inline t
+  :no-function t
 
   :parents (instruction-semantic-functions)
   :short "Specification for the @('RCL') instruction"
@@ -365,6 +366,7 @@ the most-significant bit of the result.</p>"
 	    (otherwise nil)))
 
   :inline t
+  :no-function t
   :parents (instruction-semantic-functions)
   :short "Specification for the @('ROL') instruction"
 
@@ -553,6 +555,7 @@ most-significant bit of the result.</p>"
 
 
   :inline t
+  :no-function t
 
   :parents (instruction-semantic-functions)
   :short "Specification for the @('RCR') instruction"
@@ -735,6 +738,7 @@ the result.</p>"
 		(otherwise nil)))
 
   :inline t
+  :no-function t
 
   :parents (instruction-semantic-functions)
 

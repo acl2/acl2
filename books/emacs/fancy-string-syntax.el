@@ -74,17 +74,18 @@
 ; as a generic string quote to start the fancystring.
 
 
-; Syntax table to be applied only to the opening and closing braces of
-; fancystring delimiters, labelling them Generic String Quote syntax
-(defvar fancystring-syntax-table
-  (let ((table (make-syntax-table)))
-    (modify-syntax-entry ?\{ "|" table)
-    (modify-syntax-entry ?\} "|" table)
-    table))
-
 ; Change body to (cons 'message args) and resubmit the following
 ; functions to debug
 (defmacro fancystring-debug (&rest args) nil)
+
+; From emacs manual 35.4 Syntax Properties, if the 'syntax-table
+; property of a character is a cons (syntax-code . matching-char),
+; this directly specifies a syntax class for the character.  So here
+; we set the 'syntax-table property of the close brace to (15 . nil),
+; where 15 specifies "generic string delimiter" (from 35.7, Syntax
+; Table Internals).
+(defun set-generic-string-delimiter (pos)
+  (put-text-property pos (+ 1 pos) 'syntax-table '(15)))
 
 (defun fancystring-syntax-propertize-when-inside-generic-string (end quotestart)
 ; Call this function when we're inside a generic string.  Assume it is a
@@ -111,8 +112,7 @@
   (when (search-forward "\"\"\"}" nil t)
     (let ((after-close-brace (point)))
       (fancystring-debug "Found close fancyquote at %d" after-close-brace quotestart)
-      (put-text-property (- after-close-brace 1) after-close-brace 'syntax-table
-			 fancystring-syntax-table)
+      (set-generic-string-delimiter (- after-close-brace 1))
       (when (< (point) end)
 	(fancystring-syntax-propertize-when-not-inside-generic-string end)))))
 
@@ -141,8 +141,7 @@
 	    (t
 ; Not in a string or comment. Set this up as an open delimiter.
 	     (fancystring-debug "Found open fancyquote at %d" after-open-quote)
-	     (put-text-property openbrace (+ 1 openbrace) 'syntax-table
-				fancystring-syntax-table)
+	     (set-generic-string-delimiter openbrace)
 ; Now we should be inside a generic string, so recur by calling that function.
 	     (fancystring-syntax-propertize-when-inside-generic-string end openbrace))))))
 

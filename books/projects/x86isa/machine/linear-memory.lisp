@@ -775,7 +775,7 @@ memory.</li>
     (defrule 64-bit-modep-of-las-to-pas
       (equal (64-bit-modep (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
              (64-bit-modep x86))
-      :hints (("Goal" :in-theory (e/d* (64-bit-modep) ()))))
+      :hints (("Goal" :in-theory (e/d* (64-bit-modep) (force (force))))))
 
     (defrule x86-operation-mode-of-las-to-pas
       (equal (x86-operation-mode (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
@@ -1131,7 +1131,8 @@ memory.</li>
     (defrule 64-bit-modep-of-rb
       (equal (64-bit-modep (mv-nth 2 (rb n addr r-x x86)))
              (64-bit-modep x86))
-      :enable 64-bit-modep)
+      :enable 64-bit-modep
+      :disable (force (force)))
 
     (defrule x86-operation-mode-of-rb
       (equal (x86-operation-mode (mv-nth 2 (rb n addr r-x x86)))
@@ -1231,7 +1232,8 @@ memory.</li>
     (defrule 64-bit-modep-of-write-to-physical-memory
       (equal (64-bit-modep (write-to-physical-memory p-addrs value x86))
              (64-bit-modep x86))
-      :enable 64-bit-modep)
+      :enable 64-bit-modep
+      :disable (force (force)))
 
     (defrule x86-operation-mode-of-write-to-physical-memory
       (equal (x86-operation-mode (write-to-physical-memory p-addrs value x86))
@@ -1554,7 +1556,8 @@ memory.</li>
   (defrule 64-bit-modep-of-mv-nth-1-of-wb ; contributed by Eric Smith
     (equal (64-bit-modep (mv-nth 1 (wb n addr w value x86)))
            (64-bit-modep x86))
-    :hints (("Goal" :in-theory (e/d* (64-bit-modep) ()))))
+    :hints (("Goal" :in-theory (e/d* (64-bit-modep)
+                                     (force (force))))))
 
   (defrule x86-operation-mode-of-mv-nth-1-of-wb
     (equal (x86-operation-mode (mv-nth 1 (wb n addr w value x86)))
@@ -1897,7 +1900,8 @@ memory.</li>
   (defrule 64-bit-modep-of-rml08
     (equal (64-bit-modep (mv-nth 2 (rml08 li-addr r-x x86)))
            (64-bit-modep x86))
-    :enable 64-bit-modep)
+    :enable 64-bit-modep
+    :disable (force (force)))
 
   (defrule x86-operation-mode-of-rml08
     (equal (x86-operation-mode (mv-nth 2 (rml08 li-addr r-x x86)))
@@ -3964,6 +3968,7 @@ memory.</li>
     :guard (natp nbytes)
     :guard-hints (("Goal" :in-theory (e/d* (signed-byte-p) ())))
     :inline t
+    :no-function t
     :enabled t
     (case nbytes
       (1 (rml08 addr r-x x86))
@@ -4012,6 +4017,7 @@ memory.</li>
                     (r-x  :type (member :r :x))
                     (x86))
     :inline t
+    :no-function t
     :enabled t
     (case nbytes
       (1 (riml08 addr r-x x86))
@@ -4034,6 +4040,7 @@ memory.</li>
              (10 (n80p val))
              (16 (n128p val)))
     :inline t
+    :no-function t
     :enabled t
     (case nbytes
       (1 (wml08 addr val x86))
@@ -4088,6 +4095,7 @@ memory.</li>
              (4 (i32p val))
              (8 (i64p val)))
     :inline t
+    :no-function t
     :enabled t
     (case nbytes
       (1 (wiml08 addr val x86))
@@ -4117,6 +4125,7 @@ memory.</li>
                  (e/d* (signed-byte-p rml08 rml128 rml32 rml48 rml64 rml80 rml16)
                        (create-canonical-address-list-1))))
   :inline t
+  :no-function t
 
   (if (mbt (canonical-address-p lin-addr))
 
@@ -4188,6 +4197,7 @@ memory.</li>
                                           wml08 wml128 wml32 wml48 wml64 wml80 wml16)
                                          ())))
   :inline t
+  :no-function t
   (if (mbt (canonical-address-p lin-addr))
       (let* ((last-lin-addr (the (signed-byte 49)
                               (+ -1 nbytes lin-addr))))
@@ -4271,6 +4281,7 @@ memory.</li>
    (x86))
 
   :inline t
+  :no-function t
   :parents (linear-memory)
 
   :guard (and (canonical-address-p lin-addr)

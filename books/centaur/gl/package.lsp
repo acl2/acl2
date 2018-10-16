@@ -151,6 +151,8 @@
 
                  conjoin-clauses conjoin disjoin disjoin-lst
                  pseudo-term-list-listp
+                 simple-term-vars
+                 simple-term-vars-lst
 
                  two-nats-measure
 
@@ -160,7 +162,7 @@
                  def-gl-clause-processor gl-hint
                  def-gl-thm def-gl-param-thm
                  def-g-thm def-g-param-thm make-g-world
-                 mk-g-number mk-g-boolean mk-g-ite mk-g-concrete
+                 mk-g-number mk-g-integer mk-g-boolean mk-g-ite mk-g-concrete
                  gobjectp glc glr gl-fnsym gl-interp
                  gl-interp-raw gl-interp
                  gl-aside gl-ignore nonnil-symbol-listp

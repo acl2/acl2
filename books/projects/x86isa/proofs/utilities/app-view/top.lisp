@@ -85,7 +85,8 @@
     that a hypothesis involving @(see get-prefixes) was not rewritten
     to @('t'): <br/>
     Monitor
-    @('get-prefixes-opener-lemma-no-prefix-byte'). <br/>
+    @('get-prefixes-opener-lemma-no-prefix-byte') or
+    @('get-prefixes-opener-lemma-no-legacy-prefix-but-rex-prefix'). <br/>
     Note that if the instruction under consideration has prefix
     bytes, you should monitor one of these rules instead: <br/>
     @('get-prefixes-opener-lemma-group-1-prefix') <br/>
@@ -146,6 +147,8 @@
  <h3>Rules about @('get-prefixes')</h3>
 
  @(def get-prefixes-opener-lemma-no-prefix-byte)
+
+ @(def get-prefixes-opener-lemma-no-legacy-prefix-but-rex-prefix)
 
  @(def get-prefixes-opener-lemma-group-1-prefix)
 

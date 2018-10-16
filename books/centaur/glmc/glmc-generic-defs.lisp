@@ -39,6 +39,7 @@
 (include-book "std/util/defenum" :dir :system)
 (include-book "centaur/gl/shape-spec-defs" :dir :system)
 (include-book "std/alists/fal-extract" :dir :system)
+(include-book "clause-processors/bindinglist" :dir :system)
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "system/f-put-global" :dir :system))
 ;; (local (include-book "clause-processors/just-expand" :dir :system))
@@ -98,12 +99,18 @@
    (run pseudo-termp)
    (st-hyp pseudo-termp)
    (in-hyp pseudo-termp)
+   (bindings acl2::bindinglist-p)
+   (bound-vars symbol-listp)
    (initstp pseudo-termp)
    (nextst pseudo-termp)
    (constr pseudo-termp)
    (prop pseudo-termp)
    (st-hyp-method st-hyp-method-p :default 'nil)
-   (hints)))
+   (hints)
+   (main-rewrite-rules :default ':default)
+   (main-branch-merge-rules :default ':default)
+   (extract-rewrite-rules :default ':default)
+   (extract-branch-merge-rules :default ':default)))
 
 (acl2::def-b*-binder glmc-config+
   :decls ((declare (xargs :guard (symbolp (car args)))))
@@ -157,12 +164,96 @@
     :hints(("Goal" :in-theory (enable glmc-config-update-param)))))
 
 
-(define init-interp-st (interp-st state)
+(define glcp-config-update-rewrites ((config glcp-config-p)
+                                     (rewrites)
+                                     (branch-merges))
+  :returns (new-config glcp-config-p :hyp :guard)
+  (b* (((glcp-config config)))
+    (change-glcp-config config
+                        :rewrite-rule-table (if (eq rewrites :default)
+                                                config.rewrite-rule-table
+                                              rewrites)
+                        :branch-merge-rules (if (eq branch-merges :default)
+                                                config.branch-merge-rules
+                                              branch-merges)))
+  ///
+  (std::defret glcp-config->overrides-of-glcp-config-update-rewrites
+    (equal (glcp-config->overrides new-config)
+           (glcp-config->overrides config)))
+
+  (std::defret glcp-config->shape-spec-alist-of-glcp-config-update-rewrites
+    (equal (glcp-config->shape-spec-alist new-config)
+           (glcp-config->shape-spec-alist config))))
+
+(define glmc-config-update-rewrites ((config glmc-config-p)
+                                     (rewrites)
+                                     (branch-merges))
+  :returns (new-config glmc-config-p :hyp :guard) 
+  (b* (((glmc-config config))
+       (glcp-config (glcp-config-update-rewrites config.glcp-config rewrites branch-merges)))
+    (change-glmc-config config :glcp-config glcp-config))
+  ///
+
+  (std::defret other-fields-of-glmc-config-update-rewrites
+    (b* (((glmc-config+ new-config))
+         ((glmc-config+ config)))
+      (and (equal new-config.st-hyp config.st-hyp)
+           (equal new-config.in-hyp config.in-hyp)
+           (equal new-config.prop config.prop)
+           (equal new-config.initstp config.initstp)
+           (equal new-config.constr config.constr)
+           (equal new-config.nextst config.nextst)
+           (equal new-config.st-var config.st-var)
+           (equal new-config.bindings config.bindings))))
+
+  (std::defret glcp-config-of-glmc-config-update-rewrites
+    (equal (glmc-config->glcp-config new-config)
+           (glcp-config-update-rewrites (glmc-config->glcp-config config) rewrites branch-merges))
+    :hints(("Goal" :in-theory (enable glmc-config-update-rewrites)))))
+
+
+(define reset-interp-st (interp-st)
+  :returns (new-interp-st (equal new-interp-st (create-interp-st)))
+  :prepwork ((local (defthmd take-open
+                      (implies (syntaxp (quotep n))
+                               (equal (take n x)
+                                      (if (zp n)
+                                          nil
+                                        (cons (car x) (take (1- n) (cdr x))))))))
+             (local (defthm cddddddr-of-take-6
+                      (equal (cddr (cddddr (take 6 x))) nil)
+                      :hints(("Goal" :in-theory (enable take-open))))))
+  (b* ((interp-st (mbe :logic (non-exec (take 6 interp-st))
+                       :exec interp-st))
+       (interp-st (update-is-obligs nil interp-st))
+       (interp-st (update-is-constraint nil interp-st))
+       (interp-st (update-is-constraint-db nil interp-st))
+       (interp-st (update-is-add-bvars-allowed nil interp-st))
+       (interp-st (update-is-backchain-limit nil interp-st)))
+    (acl2::stobj-let
+     ((interp-profiler (is-prof interp-st)))
+     (interp-profiler)
+     (b* ((interp-profiler (mbe :logic (non-exec (take 6 interp-profiler))
+                                :exec interp-profiler))
+          (interp-profiler (update-prof-enabledp nil interp-profiler))
+          (interp-profiler (update-prof-indextable nil interp-profiler))
+          (interp-profiler (update-prof-totalcount 0 interp-profiler))
+          (interp-profiler (update-prof-nextindex 0 interp-profiler))
+          (interp-profiler (resize-prof-array 0 interp-profiler))
+          (interp-profiler (update-prof-stack nil interp-profiler)))
+       interp-profiler)
+     interp-st)))
+       
+
+
+(define init-interp-st (interp-st (config glmc-config-p) state)
   :guard (non-exec (equal interp-st (create-interp-st)))
   :returns (mv er new-interp-st)
   (b* ((interp-st (mbe :logic (non-exec (create-interp-st)) :exec interp-st))
+       ((glmc-config+ config))
        (interp-st (update-is-constraint (bfr-constr-init) interp-st))
        (interp-st (update-is-add-bvars-allowed t interp-st))
+       (interp-st (update-is-prof-enabledp config.prof-enabledp interp-st))
        (constraint-db (ec-call (gbc-db-make-fast (table-alist 'gl-bool-constraints (w state)))))
        ((unless (ec-call (gbc-db-emptyp constraint-db)))
         (mv "The constraint database stored in the table ~
@@ -187,8 +278,8 @@
 
   (std::defret init-interp-st-normalize
     (implies (syntaxp (not (equal interp-st ''nil)))
-             (equal (init-interp-st interp-st state)
-                    (init-interp-st nil state)))))
+             (equal (init-interp-st interp-st config state)
+                    (init-interp-st nil config state)))))
 
 
 (define alist-extract (keys alist)
@@ -261,7 +352,7 @@
     (if (atom x)
         nil
       (case (tag x)
-        ((:g-number :g-boolean :g-concrete) nil)
+        ((:g-integer :g-boolean :g-concrete) nil)
         (:g-var (set::insert (g-var->name x) nil))
         (:g-apply (gobj-list-vars (g-apply->args x)))
         (:g-ite (set::union (gobj-vars (g-ite->test x))
@@ -287,8 +378,8 @@
       (case (tag x)
         (:g-boolean
          (mv "contained a symbolic Boolean" '<symbolic-bool>))
-        (:g-number
-         (mv "contained a symbolic number" '<symbolic-num>))
+        (:g-integer
+         (mv "contained a symbolic integer" '<symbolic-num>))
         (:g-var (b* ((name (g-var->name x)))
                   (if (and (symbolp name) name)
                       (mv nil name)
@@ -350,35 +441,62 @@
             (glmc-bvar-db-to-state-updates (1+ idx) state-vars bvar-db))))
 
 
-(encapsulate nil
-  (flag::make-flag collect-vars)
-  (defthm-flag-collect-vars
-    (defthm true-listp-collect-vars
-      (true-listp (collect-vars x))
-      :flag collect-vars
-      :rule-classes :type-prescription)
-    (defthm true-listp-collect-vars-list
-      (true-listp (collect-vars-list x))
-      :flag collect-vars-list
-      :rule-classes :type-prescription))
 
-  (verify-guards collect-vars))
+(defthm true-listp-caar-of-bindinglist
+  (implies (acl2::bindinglist-p x)
+           (true-listp (caar x)))
+  :hints(("Goal" :in-theory (enable acl2::bindinglist-p))))
+
+(defthm true-listp-cdar-of-bindinglist
+  (implies (acl2::bindinglist-p x)
+           (true-listp (cdar x)))
+  :hints(("Goal" :in-theory (enable acl2::bindinglist-p))))
+
+(defthm true-listp-of-union-equal
+  (implies (true-listp y)
+           (true-listp (union-equal x y)))
+  :rule-classes :type-prescription)
+
+(local
+ (defthm symbol-listp-of-set-diff
+   (implies (symbol-listp x)
+            (symbol-listp (set-difference-eq x y)))
+   :hints(("Goal" :in-theory (enable set-difference-eq)))))
+
+
+(local (defthm symbol-listp-of-union
+         (implies (and (symbol-listp x)
+                       (symbol-listp y))
+                  (symbol-listp (union-eq x y)))))
+
+
+                               
+
+(local (defthm symbol-listp-when-variable-listp
+         (implies (and (variable-listp x)
+                       (true-listp x))
+                  (symbol-listp x))))
+
+(defthm variable-listp-alist-keys-of-shape-spec-bindings
+  (implies (shape-spec-bindingsp x)
+           (variable-listp (alist-keys x)))
+  :hints(("Goal" :in-theory (enable alist-keys))))
 
 (define glmc-syntax-checks ((config glmc-config-p))
   :returns (er)
   (b* (((glmc-config+ config))
 
-       (non-st-hyp-vars (remove config.st-var (collect-vars config.st-hyp)))
+       (non-st-hyp-vars (remove config.st-var (simple-term-vars config.st-hyp)))
        ((when (consp non-st-hyp-vars))
         (msg "State hyp contains variables other than the state var ~x0: ~x1~%"
              config.st-var non-st-hyp-vars))
 
-       ;; (non-st-initst-vars (remove config.st-var (collect-vars config.initstp)))
+       ;; (non-st-initst-vars (remove config.st-var (simple-term-vars config.initstp)))
        ;; ((when (consp non-st-initst-vars))
        ;;  (msg "Init state predicate contains variables other than the state var ~x0: ~x1~%"
        ;;       config.st-var non-st-initst-vars))
 
-       (in-hyp-vars (collect-vars config.in-hyp))
+       (in-hyp-vars (simple-term-vars config.in-hyp))
 
        ;; ((when (member config.st-var in-hyp-vars))
        ;;  (msg "Input hyp refers to the state variable ~x0~%" config.st-var))
@@ -386,35 +504,48 @@
        ((unless (hons-assoc-equal config.st-var config.shape-spec-alist))
         (msg "State var ~x0 is not bound in the shape spec bindings~%" config.st-var))
 
-       (bound-vars (alist-keys config.shape-spec-alist))
+       (shape-spec-bound-vars (alist-keys config.shape-spec-alist))
 
-       (in-hyp-unbound-vars (acl2::hons-set-diff in-hyp-vars bound-vars))
+       (in-hyp-unbound-vars (acl2::hons-set-diff in-hyp-vars shape-spec-bound-vars))
        ((when (consp in-hyp-unbound-vars))
         (msg "Input hyp contains variables not bound in the shape spec bindings: ~x0~%"
              in-hyp-unbound-vars))
 
-       (initst-vars (collect-vars config.initstp))
-       (initst-unbound-vars (acl2::hons-set-diff initst-vars bound-vars))
+       (bindings-vars (acl2::bindinglist-free-vars config.bindings))
+       (bindings-unbound-vars (acl2::hons-set-diff bindings-vars shape-spec-bound-vars))
+       ((when (consp bindings-unbound-vars))
+        (msg "B* bindings contain variables not bound in the shape spec bindings: ~x0~%"
+             bindings-unbound-vars))
+
+       (bindings-bound-vars (acl2::bindinglist-bound-vars config.bindings))
+       ((when (member config.st-var bindings-bound-vars))
+        (msg "B* bindings rebind the state variable"))
+
+       (all-bound-vars (union-eq shape-spec-bound-vars
+                                      bindings-bound-vars))
+
+       (initst-vars (simple-term-vars config.initstp))
+       (initst-unbound-vars (acl2::hons-set-diff initst-vars all-bound-vars))
        ((when (consp initst-unbound-vars))
-        (msg "Initial state predicate contains variables not bound in the shape spec bindings: ~x0~%"
+        (msg "Initial state predicate contains unbound variables: ~x0~%"
              initst-unbound-vars))
 
-       (nextst-vars (collect-vars config.nextst))
-       (nextst-unbound-vars (acl2::hons-set-diff nextst-vars bound-vars))
+       (nextst-vars (simple-term-vars config.nextst))
+       (nextst-unbound-vars (acl2::hons-set-diff nextst-vars all-bound-vars))
        ((when (consp nextst-unbound-vars))
-        (msg "Nextstate contains variables not bound in the shape spec bindings: ~x0~%"
+        (msg "Nextstate contains unbound variables: ~x0~%"
              nextst-unbound-vars))
 
-       (prop-vars (collect-vars config.prop))
-       (prop-unbound-vars (acl2::hons-set-diff prop-vars bound-vars))
+       (prop-vars (simple-term-vars config.prop))
+       (prop-unbound-vars (acl2::hons-set-diff prop-vars all-bound-vars))
        ((when (consp prop-unbound-vars))
-        (msg "Property contains variables not bound in the shape spec bindings: ~x0~%"
+        (msg "Property contains unbound variables: ~x0~%"
              prop-unbound-vars))
 
-       (constr-vars (collect-vars config.constr))
-       (constr-unbound-vars (acl2::hons-set-diff constr-vars bound-vars))
+       (constr-vars (simple-term-vars config.constr))
+       (constr-unbound-vars (acl2::hons-set-diff constr-vars all-bound-vars))
        ((when (consp constr-unbound-vars))
-        (msg "Constraint contains variables not bound in the shape spec bindings: ~x0~%"
+        (msg "Constraint contains unbound variables: ~x0~%"
              constr-unbound-vars))
 
        (shape-specs (shape-spec-bindings->sspecs config.shape-spec-alist))
@@ -448,19 +579,23 @@
     (implies (not er)
              (b* (((glmc-config config))
                   (shape-specs (glcp-config->shape-spec-alist config.glcp-config))
-                  (bound-vars (alist-keys shape-specs)))
-               (and (subsetp-equal (collect-vars config.st-hyp) (list config.st-var))
-                    ;; (subsetp-equal (collect-vars config.initstp) (list config.st-var))
-                    (subsetp-equal (collect-vars config.in-hyp) bound-vars)
-                    ;; (not (member config.st-var (collect-vars config.in-hyp)))
-                    ;; (subsetp-equal (collect-vars config.in-hyp) (remove config.st-var bound-vars))
-                    (subsetp-equal (collect-vars config.nextst) bound-vars)
-                    (subsetp-equal (collect-vars config.st-hyp) bound-vars)
-                    (subsetp-equal (collect-vars config.initstp) bound-vars)
-                    (subsetp-equal (collect-vars config.prop) bound-vars)
-                    (subsetp-equal (collect-vars config.constr) bound-vars)
+                  (shape-spec-bound-vars (alist-keys shape-specs))
+                  (bindings-bound-vars (acl2::bindinglist-bound-vars config.bindings))
+                  (all-bound-vars (append shape-spec-bound-vars bindings-bound-vars)))
+               (and (subsetp-equal (simple-term-vars config.st-hyp) (list config.st-var))
+                    (subsetp-equal (simple-term-vars config.st-hyp) shape-spec-bound-vars)
+                    (subsetp-equal (acl2::bindinglist-free-vars config.bindings) shape-spec-bound-vars)
+                    ;; (subsetp-equal (simple-term-vars config.initstp) (list config.st-var))
+                    (subsetp-equal (simple-term-vars config.in-hyp) shape-spec-bound-vars)
+                    ;; (not (member config.st-var (simple-term-vars config.in-hyp)))
+                    ;; (subsetp-equal (simple-term-vars config.in-hyp) (remove config.st-var bound-vars))
+                    (not (member config.st-var bindings-bound-vars))
+                    (subsetp-equal (simple-term-vars config.nextst) all-bound-vars)
+                    (subsetp-equal (simple-term-vars config.initstp) all-bound-vars)
+                    (subsetp-equal (simple-term-vars config.prop) all-bound-vars)
+                    (subsetp-equal (simple-term-vars config.constr) all-bound-vars)
                     (hons-assoc-equal config.st-var shape-specs)
-                    (member config.st-var bound-vars))))))
+                    (member config.st-var shape-spec-bound-vars))))))
 
 
 (std::defaggregate glmc-fsm
@@ -480,9 +615,9 @@
 (define glmc-clause-syntax-checks ((config glmc-config-p))
   (b* (((glmc-config+ config))
        (config.in-vars (list-fix config.in-vars))
-       ((unless (subsetp-equal (collect-vars config.in-measure) config.in-vars))
+       ((unless (subsetp-equal (simple-term-vars config.in-measure) config.in-vars))
         (msg "Measure should only depend on the input vars ~x0." config.in-vars))
-       ((unless (subsetp-equal (collect-vars-list config.rest-ins) config.in-vars))
+       ((unless (subsetp-equal (simple-term-vars-lst config.rest-ins) config.in-vars))
         (msg "Rest-ins should only depend on the input vars ~x0." config.in-vars))
        ((unless (equal (len config.frame-ins) (len config.frame-in-vars)))
         (msg "Frame-ins should be the same length as frame-in-vars."))
@@ -495,8 +630,8 @@
   (defthm glmc-clause-syntax-checks-implies
     (implies (not (glmc-clause-syntax-checks config))
              (b* (((glmc-config+ config)))
-               (and (subsetp (collect-vars config.in-measure) config.in-vars)
-                    (subsetp (collect-vars-list config.rest-ins) config.in-vars)
+               (and (subsetp (simple-term-vars config.in-measure) config.in-vars)
+                    (subsetp (simple-term-vars-lst config.rest-ins) config.in-vars)
                     (equal (len config.frame-ins) (len config.frame-in-vars))
                     (equal (len config.in-vars) (len config.rest-ins))
                     (no-duplicatesp config.in-vars)
@@ -505,12 +640,12 @@
                     (not (intersectp-equal config.frame-in-vars config.in-vars))
                     (not (member config.st-var config.in-vars))
                     (not (member config.st-var config.frame-in-vars))
-                    (not (member config.st-var (collect-vars config.in-measure)))
-                    (not (intersectp-equal config.frame-in-vars (collect-vars config.in-measure)))
-                    (not (intersectp-equal (collect-vars config.in-measure) config.frame-in-vars))
-                    (not (member config.st-var (collect-vars-list config.rest-ins)))
-                    (not (intersectp-equal config.frame-in-vars (collect-vars-list config.rest-ins)))
-                    (not (intersectp-equal (collect-vars-list config.rest-ins) config.frame-in-vars)))))
+                    (not (member config.st-var (simple-term-vars config.in-measure)))
+                    (not (intersectp-equal config.frame-in-vars (simple-term-vars config.in-measure)))
+                    (not (intersectp-equal (simple-term-vars config.in-measure) config.frame-in-vars))
+                    (not (member config.st-var (simple-term-vars-lst config.rest-ins)))
+                    (not (intersectp-equal config.frame-in-vars (simple-term-vars-lst config.rest-ins)))
+                    (not (intersectp-equal (simple-term-vars-lst config.rest-ins) config.frame-in-vars)))))
     :hints ((acl2::set-reasoning))))
 
 
@@ -518,10 +653,6 @@
   :guard (not (glmc-clause-syntax-checks config))
   :returns (measure-clauses pseudo-term-list-listp :hyp :guard
                             :hints(("Goal" :in-theory (enable length pseudo-termp))))
-  :prepwork ((local (defthm symbol-listp-when-variable-listp
-                      (implies (variable-listp x)
-                               (symbol-listp (list-fix x)))
-                      :hints(("Goal" :in-theory (enable variable-listp))))))
   (b* (((glmc-config+ config)))
     (list `((not (gl-cp-hint 'measure-check))
             (o-p ,config.in-measure))
@@ -557,15 +688,19 @@
              ((lambda (,@(list-fix config.frame-in-vars) ,@(list-fix config.in-vars) ,config.st-var)
                 (if (not ,config.in-hyp)
                     't
-                  (if (not ,config.constr)
+                  (if (not ,(acl2::bindinglist-to-lambda-nest-exec
+                             config.bindings config.constr))
                       't
-                    (if (not ,config.prop)
+                    (if (not ,(acl2::bindinglist-to-lambda-nest-exec
+                               config.bindings config.prop))
                         'nil
                       ((lambda (,@(list-fix config.in-vars) ,config.st-var)
                          (if (not ,config.st-hyp)
                              'nil
                            ,config.run))
-                       ,@(list-fix config.in-vars) ,config.nextst)))))
+                       ,@(list-fix config.in-vars)
+                       ,(acl2::bindinglist-to-lambda-nest-exec 
+                         config.bindings config.nextst))))))
               ,@config.frame-ins
               ,@config.rest-ins
               ,config.st-var)))
@@ -593,7 +728,7 @@
   (b* (((glmc-config config)))
     `((not (gl-cp-hint 'clause-check))
       (not (implies (if ((lambda (,@(list-fix config.frame-in-vars) ,@(list-fix config.in-vars) ,config.st-var)
-                           ,config.initstp)
+                           ,(acl2::bindinglist-to-lambda-nest-exec config.bindings config.initstp))
                          ,@config.frame-ins
                          ,@config.rest-ins
                          ,config.st-var)
@@ -613,7 +748,7 @@
        (not ,config.in-hyp)
        ((lambda (,config.st-var)
           ,config.st-hyp)
-        ,config.nextst)))))
+        ,(acl2::bindinglist-to-lambda-nest-exec config.bindings config.nextst))))))
 
 (local (defthm pseudo-term-list-listp-of-append
          (implies (and (pseudo-term-list-listp a)
@@ -833,17 +968,15 @@
         (preferred-defs-to-overrides
          (table-alist 'preferred-defs (w state)) state))
        ((glmc-config+ config))
-       (glcp-config (change-glcp-config config.glcp-config :overrides overrides)))
+       (glcp-config (change-glcp-config config.glcp-config
+                                        :overrides overrides
+                                        :rewrite-rule-table (table-alist 'gl-rewrite-rules (w state))
+                                        :branch-merge-rules (gl-branch-merge-rules (w state)))))
     (value (change-glmc-config config :glcp-config glcp-config))))
-
-
-
 
 
 (defsection glmc-generic
   (set-verify-guards-eagerness 0)
-
-
 
   (make-event
    (sublis *glmc-generic-name-subst*

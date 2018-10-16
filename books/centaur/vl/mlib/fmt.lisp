@@ -209,7 +209,7 @@ formerly the \"location directive\" and printed a location.</p>")
         :vl-typedef :vl-fwdtypedef :vl-assertion :vl-cassertion
         :vl-property :vl-sequence :vl-clkdecl :vl-gclkdecl
         :vl-import :vl-dpiimport :vl-dpiexport :vl-bind :vl-class
-        :vl-covergroup :vl-elabtask
+        :vl-covergroup :vl-elabtask :vl-defaultdisable
         :vl-genarray :vl-genbegin :vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-modport)
        (vl-fmt-tilde-a-case vl-ctxelement-p vl-pp-ctxelement-summary))
       ((:vl-genvar)

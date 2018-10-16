@@ -1,0 +1,76 @@
+This is a test for a filesystem model aiming for binary compatibility
+with FAT32 (specifically, the Linux implementation.) The model relies
+on ACL2's single threaded objects (stobjs) in order to slurp FAT32
+disk images into memory quickly by placing their contents in stobj
+arrays, which provide constant time random access. This is in contrast
+to a list representation, which is expensive to construct because
+there are as many cons pairs as there are elements in the
+list. Another performance improvement comes from the use of
+read-file-into-string, which allows us to use a string representation
+of the contents of a file, which again allows us to have constant time
+random access to the characters within the string. This is in contrast
+to the functions described in read-bytes$-n, which use list
+representations for the data read from files and suffer from the same
+drawbacks described above. In this test, we attempt to test the
+ability of our stobj model (and the "cat" implementation which rests
+atop it) to reckon with regular files which span across multiple FAT32
+clusters. This requires a traversal of the file allocation table,
+which contains a linked list of cluster indices for each file.
+
+This traversal of the file allocation table goes about as one would
+expect a linked list traversal to go: for each cluster, we look up the
+cluster index in the file allocation table to get the next cluster
+index, and continue doing so until we reach an end-of-file
+value. However, this may not be straightforward to justify termination
+for, which ACL2 requires. More precisely, we run into the risk of
+entering a cycle of dereferences, which would cause an infinite
+loop. The way around this is to rely on the file length, which is a
+piece of metadata provided by FAT32 as well as other filesystems. By
+decrementing the length of the read for each recursive call, we can
+ensure that the read terminates. Moreover, we can actually place a
+sanity check on the filesystem by asserting that an end-of-file value
+in the file allocation table must be reached when the remaining length
+of the read becomes zero.
+
+One behaviour that we have not yet addressed is the fact that
+directories, too, can span across multiple clusters. This is actually
+not as far-fetched a scenario as one might think: given that each
+directory entry in FAT32 is 32 bytes long (this is a coincidence; the
+reason for the name FAT32 is that each entry in the
+file allocation table is 32 bits wide), each sector is at least 512
+bytes long and each cluster is at least one sector long, we could
+exceed one cluster for the contents of a directory with few as 17
+entries. Thus, our functions for reading directory entries, or
+searching for a directory entry given a filename, must account for
+this and either fetch the entire contents of the directory, or adopt a
+buffered reading algorithm which recognises that multiple clusters may
+need to be read into the buffer, a few at a time.
+
+There are limitations on this behaviour, however. One limitation that
+applies to all files, including directories, is that their length
+cannot exceed 0xffffffff bytes, in order to allow the file length to
+be stored in a 32-bit segment of the directory entry. Another,
+specific to directories, is that a directory cannot be larger that
+0x200000 bytes in size, thus allowing for 0x10000 directory entries -
+this ensures that programs which need to count the number of entries
+in a directory with a 16-bit counter can do so.
+
+One goal of this cat(1) re-implementation is to co-simulate with the
+actual system utility, to ensure our filesystem can do the basic
+things we need it to. Another goal is to serve as an ACL2
+specification for another implementation of cat, which uses only
+system calls instead of manipulating the disk image directly. Towards
+this latter goal, we can actually construct a proof of equivalence
+between cat implementations. This will continue to be useful as and
+when we add a realistic buffer cache to our filesystem.
+
+Once we are done with this, we expect to move into file operations
+which actually modify our filesystem. This would also entail proofs
+that converting a string to our stobj representation, and converting a
+stobj to a string, are operations which are mathematically
+inverses. In parallel, we also plan to figure out a means for
+programs, which use filesystem operations, to interact with our
+filesystem implementation. It's not exactly clear how a FUSE driver,
+for instance, could get an in-memory buffer from a calling program and
+provide it for ACL2 to write a struct stat into (how would we
+represent a struct stat, anyway?)

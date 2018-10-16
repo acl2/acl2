@@ -1,5 +1,5 @@
-; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2017, Regents of the University of Texas
+; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2018, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -2296,22 +2296,19 @@
            (logicp (car (car user-table)) w)
            (arities-okp (cdr user-table) w)))))
 
-(defconst *user-defined-functions-table-keys*
-
-; Although it would be very odd to add return-last to this list, we state here
-; explicitly that it is illegal to do so, because user-defined-functions-table
-; has a :guard that relies on this in order to avoid applying stobjs-out to
-; return-last.
-
-  '(untranslate untranslate-lst untranslate-preprocess))
-
 (table user-defined-functions-table nil nil
        :guard
-       (and (member-eq key *user-defined-functions-table-keys*)
-            (symbolp val)
-            (not (eq (getpropc val 'formals t world)
-                     t))
-            (all-nils (stobjs-out val world))))
+       (and (symbolp val)
+            (case key
+              ((untranslate untranslate-lst)
+               (equal (length (getpropc val 'formals nil world))
+                      (length (getpropc key 'formals nil world))))
+              (untranslate-preprocess
+               (equal (length (getpropc val 'formals nil world))
+                      2))
+              (otherwise nil))
+            (equal (getpropc val 'stobjs-out '(nil) world)
+                   '(nil))))
 
 (defrec def-body
 

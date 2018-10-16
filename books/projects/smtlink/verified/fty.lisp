@@ -421,6 +421,7 @@
         t nil))
 
   (define fncall-of-flextype ((fn-name symbolp) (fty-info fty-info-alist-p))
+    :parents (fty-support)
     :returns (flex? t)
     :short "Checking if a function call is a flextype related call.  These calls
     will be translated directly to SMT solver, therefore won't need to be expanded."

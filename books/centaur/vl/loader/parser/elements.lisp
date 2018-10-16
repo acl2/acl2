@@ -458,10 +458,18 @@ rules:</p>
                (gclkdecl := (vl-parse-global-clocking-declaration atts))
                (return (list gclkdecl))))
 
-         ((when (eq type1 :vl-kwd-clocking))
+         ((when (or (and (eq type1 :vl-kwd-default)
+                         (vl-lookahead-is-token? :vl-kwd-clocking (cdr tokens)))
+                    (eq type1 :vl-kwd-clocking)))
           (seq tokstream
                (clkdecl := (vl-parse-normal-clocking-declaration atts))
                (return (list clkdecl))))
+
+         ((when (eq type1 :vl-kwd-default))
+          ;; Note that we already checked for 'default clocking' above
+          (seq tokstream
+               (disable := (vl-parse-defaultdisable atts))
+               (return (list disable))))
 
          ((when (eq type1 :vl-kwd-let))
           (vl-parse-error "BOZO not yet implemented: let declarations"))
@@ -964,6 +972,7 @@ returns a @(see vl-genblock).</li>
     (:vl-sequence   "sequence declaration")
     (:vl-clkdecl    "clocking declaration")
     (:vl-gclkdecl   "global clocking declaration")
+    (:vl-defaultdisable "default disable")
     (:vl-dpiimport  "DPI import")
     (:vl-dpiexport  "DPI export")
     (:vl-bind       "bind declaration")

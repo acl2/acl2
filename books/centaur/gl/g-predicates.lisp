@@ -200,8 +200,6 @@
                                   booleanp-compound-recognizer
                                   eval-g-base-g-apply
                                   (:type-prescription bfr-eval)
-                                  (:type-prescription
-                                   components-to-number-fn)
                                   ;; gobjectp-cons gobjectp-gobj-fix
                                   eval-g-base-apply
                                   nth-open-when-constant-idx
@@ -215,11 +213,14 @@
                                   ;; booleanp-gobjectp
                                   )
                                  (;; bfr-p-of-boolean
-                                  general-number-components-ev
                                   (:type-prescription booleanp)
 
                                   bfr-eval-booleanp
+                                  general-concretep-def
                                   general-boolean-value-correct
+                                  booleanp-of-geval-for-eval-g-base
+                                  integerp-of-geval-for-eval-g-base
+                                  consp-of-geval-for-eval-g-base
                                   bool-cond-itep-eval
                                   eval-g-base-alt-def
                                   ; eval-g-non-keyword-cons
@@ -258,14 +259,16 @@
 (def-g-predicate not
   (((g-boolean bdd) (gret (mk-g-boolean (bfr-not bdd))))
    (& (gret nil)))
-  :formals (p))
+  :formals (p)
+  :corr-hints ((and stable-under-simplificationp
+                    '(:cases ((eval-g-base (g-ite->test p) env))))))
 
 (def-g-predicate symbolp
   (((g-boolean &) (gret t))
    (& (gret nil))))
 
 (def-g-predicate acl2-numberp
-  (((g-number &) (gret t))
+  (((g-integer &) (gret t))
    (& (gret nil))))
 
 (def-g-predicate stringp ((& (gret nil))))
@@ -274,57 +277,19 @@
 
 (def-g-predicate consp
   (((g-boolean &) (gret nil))
-   ((g-number &) (gret nil))
+   ((g-integer &) (gret nil))
    (& (gret t))))
 
 
 
-(encapsulate nil
-
-  (def-g-predicate integerp
-    (((g-number num)
-      (mv-let (arn ard ain aid)
-        (break-g-number num)
-        (declare (ignore arn))
-        (if (equal ard '(t))
-            (gret (mk-g-boolean
-                   (bfr-or (bfr-=-ss ain nil)
-                           (bfr-=-uu aid nil))))
-          (gret (g-apply 'integerp (list x))))))
-     (& (gret nil)))
-    :encap ((local (in-theory (enable bfr-eval-bfr-binary-or
-                                      bfr-or-of-t
-                                      bfr-=-uu-correct
-                                      bfr-=-ss-correct
-                                      (:type-prescription break-g-number)))))
-    :guard-encap ((local (bfr-reasoning-mode t))
-                  (local (add-bfr-pats (bfr-=-uu . &) (bfr-=-ss . &))))
-    :corr-hints ((and stable-under-simplificationp
-                      (append '(:in-theory (enable components-to-number))
-                              (flag::expand-calls-computed-hint
-                               clause '(eval-g-base)))))))
+(def-g-predicate integerp
+  (((g-integer &) (gret t))
+   (& (gret nil))))
 
 
-(encapsulate nil
-  (def-g-predicate rationalp
-    (((g-number num)
-      (mv-let (arn ard ain aid)
-        (break-g-number num)
-        (declare (ignore arn ard))
-        (gret (mk-g-boolean
-               (bfr-or (bfr-=-ss ain nil)
-                       (bfr-=-uu aid nil))))))
-     (& (gret nil)))
-    :encap ((local (in-theory (enable bfr-eval-bfr-binary-or
-                                      bfr-=-uu-correct
-                                      bfr-=-ss-correct
-                                      bfr-or-of-t
-                                      (:type-prescription break-g-number)))))
-    :guard-encap ((local (bfr-reasoning-mode t)))
-    :corr-hints ((and stable-under-simplificationp
-                      (append '(:in-theory (enable components-to-number))
-                              (flag::expand-calls-computed-hint
-                               clause '(eval-g-base)))))))
+(def-g-predicate rationalp
+  (((g-integer &) (gret t))
+   (& (gret nil))))
 
 
 

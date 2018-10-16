@@ -1,5 +1,5 @@
-; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2017, Regents of the University of Texas
+; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2018, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1053,7 +1053,7 @@ ACL2 from scratch.")
    (setq acl2::*copy-of-acl2-version*
 ;  Keep this in sync with the value of acl2-version in *initial-global-table*.
          (concatenate 'string
-                      "ACL2 Version 8.0"
+                      "ACL2 Version 8.1"
                       #+non-standard-analysis
                       "(r)"
                       #+(and mcl (not ccl))
@@ -2707,4 +2707,3 @@ You are using version ~s.~s.~s."
 
 #+ccl ; originally for ACL2(h), but let's make behavior the same for ACL2
 (setq ccl::*quit-on-eof* t)
-

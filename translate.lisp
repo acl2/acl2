@@ -1,5 +1,5 @@
-; ACL2 Version 8.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2017, Regents of the University of Texas
+; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2018, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -7390,6 +7390,9 @@
 ; actuals.  See translate11-let for how this function may be called to "hide"
 ; unused formals.
 
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (pseudo-term-listp actuals)
+                              (pseudo-termp body))))
   (let* ((body-vars (all-vars body))
          (extra-body-vars (set-difference-eq body-vars formals)))
     (fcons-term (make-lambda (append formals extra-body-vars)
@@ -7611,8 +7614,8 @@
                             stobjs-out)
                      (if (eq new-stobjs-out t)
                          bindings
-                       (delete-assoc-eq new-stobjs-out
-                                        bindings))))))))))))))))))
+                       (delete-assoc-eq-all new-stobjs-out
+                                            bindings))))))))))))))))))
 
 (defun translate11-flet (x stobjs-out bindings known-stobjs flet-alist
                            ctx wrld state-vars)

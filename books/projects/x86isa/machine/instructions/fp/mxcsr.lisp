@@ -67,21 +67,13 @@
   (b* ((ctx 'x86-ldmxcsr/stmxcsr-Op/En-M)
        ((when (not (equal proc-mode #.*64-bit-mode*)))
         (!!ms-fresh :unimplemented-in-32-bit-mode))
-       (r/m (the (unsigned-byte 3) (mrm-r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (mrm-mod  modr/m)))
-       (reg (the (unsigned-byte 3) (mrm-reg  modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
        
-       (lock (eql #.*lock* (prefixes-slice :lck prefixes)))
-       ((when lock) (!!fault-fresh :ud nil :lock prefixes))
-       (rep  (or (eql #.*repe* (prefixes-slice :rep prefixes))
-                 (eql #.*repne* (prefixes-slice :rep prefixes))))
-       ((when rep) (!!fault-fresh :ud nil :rep/repne prefixes))
-       (opr  (eql #.*operand-size-override* (prefixes-slice :opr prefixes)))
-       ((when opr) (!!fault-fresh :ud nil :opr prefixes))
-
-       (p2 (prefixes-slice :seg prefixes))
+       (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
-                 (prefixes-slice :adr prefixes)))
+                 (prefixes->adr prefixes)))
        (inst-ac? ;; Exceptions Type 5
         t)
 

@@ -1,0 +1,39 @@
+----------------------------------------------------------------------
+Book Certification
+----------------------------------------------------------------------
+
+To certify books, execute the following:
+
+make ACL2=<Path of the ACL2 image>
+
+To remove certificate files, etc., execute the following:
+
+make clean ACL2=<Path of the ACL2 image>
+
+See Makefile file for the detail.
+
+----------------------------------------------------------------------
+Book Organization
+----------------------------------------------------------------------
+
+arb-merge.lisp: an arbitrated merge joint arb-merge.
+
+interl.lisp: a circuit, interl, that connects two instances of Q20' to
+the two input ports of arb-merge.
+
+interl-ll.lisp: a circuit, interl-ll, that connects Q9' and Q11' to
+the two input ports of arb-merge.  It is designed as a left
+half-complex link.
+
+interl-gcd.lisp: a circuit, interl-gcd, that concatenates interl and
+gcd.
+
+comp-interl.lisp: a circuit, comp-interl, that connects the outputs
+from two instances of interl to the inputs of a third instance of
+interl.
+
+comp-interl2.lisp: a circuit, comp-interl2, that connects the outputs
+from two instances of interl to the inputs of an instance of
+interl-ll.
+
+

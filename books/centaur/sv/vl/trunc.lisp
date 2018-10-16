@@ -92,8 +92,19 @@ We basically don't want to complain about things like</p>
   ;; (:gateport ((portname stringp)
   ;;             (expr vl-expr-p))))
 
-
-
+(define vl-expr-is-{n{0}}-p ((x vl-expr-p))
+  (vl-expr-case x
+    :vl-multiconcat
+    (and (equal (len x.parts) 1)
+         (let ((first (car x.parts)))
+           (vl-expr-case first
+             :vl-literal
+             (vl-value-case first.val
+               :vl-constint (equal first.val.value 0)
+               :vl-extint   (vl-bit-equiv first.val.value :vl-0val)
+               :otherwise   nil)
+             :otherwise nil)))
+    :otherwise nil))
 
 (define vl-okay-to-truncate-expr ((width natp       "Width being truncated to.")
                                   (x     vl-expr-p  "Expression being truncated.")
@@ -152,10 +163,11 @@ We basically don't want to complain about things like</p>
       (and (vl-okay-to-truncate-expr width x.then ss)
            (vl-okay-to-truncate-expr width x.else ss))
       :vl-call
-      ;; $test$plusargs always returns 0 or 1, but returns it as an integer, so
-      ;; it looks like it's 32 bits but we don't want to warn about it.
-      (vl-unary-syscall-p "$test$plusargs" x)
-
+      (vl-is-integer-valued-syscall x)
+      :vl-multiconcat
+      ;; If someone is replicating a zero, it's all just zero, so that seems OK
+      ;; to truncate even if they've replicated it some incorrect number of times.
+      (vl-expr-is-{n{0}}-p x)
       :otherwise nil))
   ///
   (local (assert!
@@ -181,11 +193,8 @@ We basically don't want to complain about things like</p>
                         (assoc-equal "VL_PARAMNAME" x.atts)))
       (:vl-weirdint x.val.wasunsized)
       (:otherwise nil))
-    :vl-index
-    (vl-unsized-index-p x ss)
-    :vl-call
-    ;; 0 or 1 as an integer -- basically like an unsized atom.
-    (vl-unary-syscall-p "$test$plusargs" x)
+    :vl-index (vl-unsized-index-p x ss)
+    :vl-call  (vl-is-integer-valued-syscall x)
     :otherwise nil))
 
 (define vl-some-unsized-atom-p ((x  vl-exprlist-p)
@@ -326,6 +335,19 @@ expensive or inefficient here.</p>
 
 
 
+(define vl-expr-is-|{'0, ...}|-p ((x vl-expr-p))
+  (vl-expr-case x
+    :vl-concat
+    (and (consp x.parts)
+         (let ((first (car x.parts)))
+           (vl-expr-case first
+             :vl-literal
+             (vl-value-case first.val
+               :vl-extint (vl-bit-equiv first.val.value :vl-0val)
+               :otherwise nil)
+             :otherwise nil)))
+    :otherwise nil))
+
 (define vl-classify-extension-warning-default
   :parents (vl-classify-extension-warning-hook)
   :short "Default heuristic for filtering extension warnings."
@@ -371,10 +393,24 @@ minor warning for assignments where the rhs is a constant.</p>"
                           :vl-warn-extension))
       ;; For any other literals go ahead and warn?
       :otherwise :vl-warn-extension)
+    :vl-concat
+    ;; If someone is trying to concatenate an extension 0 onto something, it
+    ;; seems like they want it to be zero extended, and they will get their
+    ;; wish.
+    (if (vl-expr-is-|{'0, ...}|-p x)
+        nil
+      :vl-warn-extension)
+    :vl-multiconcat
+    ;; If someone is replicating a zero, it's all just zero, so that seems OK
+    ;; to extend.
+    (if (vl-expr-is-{n{0}}-p x)
+        nil
+      :vl-warn-extension)
     :otherwise
     (b* ((ops    (vl-expr-ops x))
          (minorp (and (or (member-equal :vl-binary-plus ops)
-                          (member-equal :vl-binary-minus ops))
+                          (member-equal :vl-binary-minus ops)
+                          (member-equal :vl-binary-times ops))
                       (subsetp-equal ops '(:vl-binary-plus
                                            :vl-binary-minus
                                            :vl-partselect-colon

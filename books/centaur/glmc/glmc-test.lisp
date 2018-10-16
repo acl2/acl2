@@ -167,6 +167,7 @@
              :constr ''t
              :prop '(not (equal st '14))
              :st-hyp-method :mcheck)
+            interp-st
             state)
            :do-not-induct t)
           (and stable-under-simplificationp

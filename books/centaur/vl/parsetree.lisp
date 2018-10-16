@@ -3521,6 +3521,18 @@ flops, and to set up other simulation events.  A simple example would be:</p>
 (fty::deflist vl-gclkdecllist
   :elt-type vl-gclkdecl)
 
+(defprod vl-defaultdisable
+  :short "Representation of a @('default disable iff') construct."
+  :tag :vl-defaultdisable
+  :layout :tree
+  ((exprdist vl-exprdist-p
+             "The argument, e.g., @('reset') in @('default disable iff reset')")
+   (loc  vl-location-p)
+   (atts vl-atts-p)))
+
+(fty::deflist vl-defaultdisablelist
+  :elt-type vl-defaultdisable)
+
 
 ;; (defenum vl-taskporttype-p
 ;;   (:vl-unsigned
@@ -4200,6 +4212,7 @@ be non-sliceable, at least if it's an input.</p>"
       sequence
       clkdecl
       gclkdecl
+      defaultdisable
       dpiimport
       dpiexport
       bind
@@ -4969,6 +4982,9 @@ the type information between the variable and port declarations.</p>"
                  allow a list here because it makes things work much more
                  smoothly with modelements.")
 
+   (defaultdisables vl-defaultdisablelist-p
+                    "Any @('default disable ...') constructs for the module.")
+
    (dpiimports  vl-dpiimportlist-p
                 "DPI imports for this module.")
 
@@ -5330,6 +5346,7 @@ packages.  Eventually there will be new fields here.</p>")
    (sequences   vl-sequencelist-p)   ;; allowed via package_or_generate_item (assertion_item_declaration)
    (clkdecls    vl-clkdecllist-p)
    (gclkdecls   vl-gclkdecllist-p)
+   (defaultdisables vl-defaultdisablelist-p)
    (binds       vl-bindlist-p)
    (classes     vl-classlist-p)
    ;; can interfaces have covergroups?? (covergroups vl-covergrouplist-p)
