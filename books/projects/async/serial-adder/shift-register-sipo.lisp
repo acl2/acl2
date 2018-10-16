@@ -445,7 +445,7 @@
 
 ;; The value lemma for SHIFT-REGISTER-SIPO
 
-(defthmd shift-register-sipo$value
+(defthm shift-register-sipo$value
   (b* ((inputs (list* full-in empty-out- bit-in go-signals)))
     (implies (and (shift-register-sipo& netlist data-width cnt-width)
                   (true-listp go-signals)
@@ -461,20 +461,12 @@
            :in-theory (e/d (de-rules
                             shift-register-sipo&
                             shift-register-sipo*$destructure
-                            link$value
-                            joint-cntl$value
-                            fast-zero$value
-                            counter$value
-                            v-buf$value
-                            v-wire$value
-                            tv-if$value
                             shift-register-sipo$st-format
                             shift-register-sipo$in-act
                             shift-register-sipo$out-act
                             shift-register-sipo$data-out
                             shift-register-sipo$cnt-out)
-                           ((shift-register-sipo*)
-                            car-cdr-elim
+                           (car-cdr-elim
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of SHIFT-REGISTER-SIPO.
@@ -541,7 +533,7 @@
 
 ;; The state lemma for SHIFT-REGISTER-SIPO
 
-(defthmd shift-register-sipo$state
+(defthm shift-register-sipo$state
   (b* ((inputs (list* full-in empty-out- bit-in go-signals)))
     (implies
      (and (shift-register-sipo& netlist data-width cnt-width)
@@ -558,20 +550,11 @@
            :in-theory (e/d (de-rules
                             shift-register-sipo&
                             shift-register-sipo*$destructure
-                            link$value
-                            link$state
-                            joint-cntl$value
-                            fast-zero$value
-                            counter$value
-                            v-buf$value
-                            v-wire$value
-                            tv-if$value
                             shift-register-sipo$bit-in
                             shift-register-sipo$in-act
                             shift-register-sipo$out-act
                             shift-register-sipo$st-format)
-                           ((shift-register-sipo*)
-                            append-v-threefix
+                           (append-v-threefix
                             acl2::associativity-of-append
                             de-module-disabled-rules)))))
 
@@ -643,8 +626,7 @@
           (shift-register-sipo$st-format st data-width cnt-width))
      (equal (se (si 'shift-register-sipo data-width) inputs st netlist)
             (shift-register-sipo$outputs inputs st)))
-    :hints (("Goal" :in-theory (enable shift-register-sipo$input-format
-                                       shift-register-sipo$value))))
+    :hints (("Goal" :in-theory (enable shift-register-sipo$input-format))))
 
   (defthmd shift-register-sipo$state-alt
     (implies
@@ -653,8 +635,7 @@
           (shift-register-sipo$st-format st data-width cnt-width))
      (equal (de (si 'shift-register-sipo data-width) inputs st netlist)
             (shift-register-sipo$step inputs st data-width cnt-width)))
-    :hints (("Goal" :in-theory (enable shift-register-sipo$input-format
-                                       shift-register-sipo$state))))
+    :hints (("Goal" :in-theory (enable shift-register-sipo$input-format))))
 
   (run-gen shift-register-sipo data-width cnt-width)
   (input-format-n-gen shift-register-sipo)

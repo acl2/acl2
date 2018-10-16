@@ -249,7 +249,7 @@
 
 ;; The value lemma for ALT-MERGE
 
-(defthmd alt-merge$value
+(defthm alt-merge$value
   (b* ((inputs (list* full-in0 full-in1 empty-out-
                       (append data0-in data1-in go-signals)))
        (select (get-field *alt-merge$select* st))
@@ -274,14 +274,10 @@
            :in-theory (e/d (de-rules
                             alt-merge&
                             alt-merge*$destructure
-                            link1$value
-                            joint-cntl$value
-                            tv-if$value
                             alt-merge$act
                             alt-merge$act0
                             alt-merge$act1)
-                           ((alt-merge*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of ALT-MERGE.
 
@@ -314,7 +310,7 @@
 
 ;; The state lemma for ALT-MERGE
 
-(defthmd alt-merge$state
+(defthm alt-merge$state
   (b* ((inputs (list* full-in0 full-in1 empty-out-
                       (append data0-in data1-in go-signals))))
     (implies (and (alt-merge& netlist data-width)
@@ -333,13 +329,8 @@
                             alt-merge*$destructure
                             alt-merge$act
                             alt-merge$act0
-                            alt-merge$act1
-                            link1$value
-                            link1$state
-                            joint-cntl$value
-                            tv-if$value)
-                           ((alt-merge*)
-                            de-module-disabled-rules)))))
+                            alt-merge$act1)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable alt-merge$step))
 

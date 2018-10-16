@@ -380,7 +380,7 @@
 
 ;; The value lemma for ARB-MERGE
 
-(defthmd arb-merge$value
+(defthm arb-merge$value
   (b* ((inputs (list* full-in0 full-in1 empty-out-
                       (append data0-in data1-in
                               (cons select go-signals)))))
@@ -405,19 +405,13 @@
                             arb-merge&
                             arb-merge*$destructure
                             arb-merge$st-format
-                            link$value
-                            joint-cntl$value
-                            v-buf$value
-                            v-if$value
-                            tv-if$value
                             arb-merge$act
                             arb-merge$act0
                             arb-merge$act1
                             arb-merge$data0-in
                             arb-merge$data1-in
                             arb-merge$data-out)
-                           ((arb-merge*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of ARB-MERGE.
 
@@ -470,7 +464,7 @@
               (equal (list (3v-fix (car x)) (3v-fix (cadr x)))
                      (v-threefix x)))))
 
-  (defthmd arb-merge$state
+  (defthm arb-merge$state
     (b* ((inputs (list* full-in0 full-in1 empty-out-
                         (append data0-in data1-in
                                 (cons select go-signals)))))
@@ -503,15 +497,8 @@
                               arb-merge$act
                               arb-merge$act0
                               arb-merge$act1
-                              list-rewrite-2
-                              link$value
-                              link$state
-                              joint-cntl$value
-                              v-buf$value
-                              ;;v-if$value
-                              tv-if$value)
-                             ((arb-merge*)
-                              3v-fix
+                              list-rewrite-2)
+                             (3v-fix
                               de-module-disabled-rules)))))
 
   (in-theory (disable arb-merge$step))

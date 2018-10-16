@@ -413,7 +413,7 @@
 
 ;; The value lemma for SERIAL-ADD
 
-(defthmd serial-add$value
+(defthm serial-add$value
   (b* ((inputs (list* full-in empty-out-
                       (append data0-in data1-in go-signals))))
     (implies (and (serial-add& netlist data-width cnt-width)
@@ -434,12 +434,6 @@
            :in-theory (e/d (de-rules
                             serial-add&
                             serial-add*$destructure
-                            link1$value
-                            joint-cntl$value
-                            fast-zero$value
-                            full-adder$value
-                            shift-register2-piso$value
-                            shift-register-sipo$value
                             serial-add$data0-in
                             serial-add$data1-in
                             serial-add$sregs2-inputs
@@ -448,8 +442,7 @@
                             serial-add$in-act
                             serial-add$out-act
                             serial-add$data-out)
-                           ((serial-add*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of SERIAL-ADD.
 
@@ -534,7 +527,7 @@
 
 ;; The state lemma for SERIAL-ADD
 
-(defthmd serial-add$state
+(defthm serial-add$state
   (b* ((inputs (list* full-in empty-out-
                       (append data0-in data1-in go-signals))))
     (implies
@@ -556,22 +549,12 @@
            :in-theory (e/d (de-rules
                             serial-add&
                             serial-add*$destructure
-                            link1$value
-                            link1$state
-                            joint-cntl$value
-                            fast-zero$value
-                            full-adder$value
-                            shift-register2-piso$value
-                            shift-register2-piso$state
-                            shift-register-sipo$value
-                            shift-register-sipo$state
                             serial-add$data0-in
                             serial-add$data1-in
                             serial-add$sregs2-inputs
                             serial-add$sreg-inputs
                             serial-add$st-format)
-                           ((serial-add*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable serial-add$step))
 

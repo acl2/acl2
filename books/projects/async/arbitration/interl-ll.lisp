@@ -411,7 +411,7 @@
 
 ;; The value lemma for INTERL-LL
 
-(defthmd interl-ll$value
+(defthm interl-ll$value
   (b* ((inputs (list* in0-act in1-act empty-out-
                       (append data0-in data1-in
                               (cons select go-signals)))))
@@ -433,10 +433,6 @@
                             interl-ll&
                             interl-ll*$destructure
                             interl-ll$st-format
-                            joint-cntl$value
-                            queue9-l$value
-                            queue11-l$value
-                            arb-merge$value
                             arb-merge$act
                             interl-ll$arb-merge-inputs
                             interl-ll$ready-in0-
@@ -447,8 +443,7 @@
                             interl-ll$out-act1
                             interl-ll$out-act
                             interl-ll$data-out)
-                           ((interl-ll*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of INTERL-LL.
 
@@ -474,7 +469,7 @@
 
 ;; The state lemma for INTERL-LL
 
-(defthmd interl-ll$state
+(defthm interl-ll$state
   (b* ((inputs (list* in0-act in1-act empty-out-
                       (append data0-in data1-in
                               (cons select go-signals)))))
@@ -496,13 +491,6 @@
                             interl-ll&
                             interl-ll*$destructure
                             interl-ll$st-format
-                            joint-cntl$value
-                            queue9-l$value
-                            queue9-l$state
-                            queue11-l$value
-                            queue11-l$state
-                            arb-merge$value
-                            arb-merge$state
                             interl-ll$data0-in
                             interl-ll$data1-in
                             interl-ll$q9-l-inputs
@@ -510,8 +498,7 @@
                             interl-ll$arb-merge-inputs
                             interl-ll$in0-act
                             interl-ll$in1-act)
-                           ((interl-ll*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable interl-ll$step))
 

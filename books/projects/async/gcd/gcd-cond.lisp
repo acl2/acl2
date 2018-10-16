@@ -238,7 +238,7 @@
               (equal (list (car l))
                      l))))
 
-  (defthmd gcd-cond$value
+  (defthm gcd-cond$value
     (b* ((inputs (list* full-in empty-out0- empty-out1-
                         (append data-in go-signals))))
       (implies (and (natp data-width)
@@ -264,6 +264,7 @@
              :in-theory (e/d (de-rules
                               gcd-cond&
                               gcd-cond*$destructure
+                              branch$act
                               gcd-cond$data-in
                               gcd-cond$br-inputs
                               gcd-cond$act
@@ -271,13 +272,7 @@
                               gcd-cond$act1
                               gcd-cond$flag
                               gcd-cond$data0-out
-                              gcd-cond$data1-out
-                              branch$act
-                              branch$value
-                              fast-zero$value
-                              v-equal$value
-                              tv-if$value)
-                             ((gcd-cond*)
-                              append-take-nthcdr
+                              gcd-cond$data1-out)
+                             (append-take-nthcdr
                               de-module-disabled-rules)))))
   )

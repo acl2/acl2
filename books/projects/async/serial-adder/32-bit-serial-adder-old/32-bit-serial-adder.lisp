@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; September 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -132,7 +132,7 @@
     (f-and (car lci)
            (car ls))))
 
-(defthmd 1-bit-adder$value
+(defthm 1-bit-adder$value
   (b* ((ci  (nth *1-bit-adder$ci* st))
        (s   (nth *1-bit-adder$s* st)))
     (implies (1-bit-adder& netlist)
@@ -147,8 +147,6 @@
            :in-theory (e/d (de-rules
                             1-bit-adder&
                             1-bit-adder*$destructure
-                            joint-cntl$value
-                            full-adder$value
                             1-bit-adder$ready-out
                             1-bit-adder$empty-a-
                             1-bit-adder$empty-b-)
@@ -218,7 +216,7 @@
             (and (not (car x))
                  (not (cdr x))))))
 
-(defthmd 1-bit-adder$state
+(defthm 1-bit-adder$state
   (b* ((inputs (list* a-act a-in b-act b-in dr-lci s-act go-signals)))
     (implies (and (1-bit-adder& netlist)
                   (equal (len go-signals) *1-bit-adder$go-num*))
@@ -230,9 +228,7 @@
            :in-theory (e/d (de-rules
                             1-bit-adder&
                             1-bit-adder*$destructure
-                            car-and-cdr-of-atom
-                            joint-cntl$value
-                            full-adder$value)
+                            car-and-cdr-of-atom)
                            ((1-bit-adder*)
                             acl2::hons-duplicity-alist-p-of-cons
                             acl2::alistp-when-hons-duplicity-alist-p
@@ -364,7 +360,7 @@
   (b* ((lreg2 (nth *serial-adder$lreg2* st)))
     (f-buf (car lreg2))))
 
-(defthmd serial-adder$value
+(defthm serial-adder$value
   (b* ((reg2    (nth *serial-adder$reg2* st))
        (bit-add (nth *serial-adder$bit-add* st))
        (ci      (nth *1-bit-adder$ci* bit-add)))
@@ -381,8 +377,6 @@
            :in-theory (e/d (de-rules
                             serial-adder&
                             serial-adder*$destructure
-                            joint-cntl$value
-                            1-bit-adder$value
                             serial-adder$ready-out
                             serial-adder$ready-in-)
                            ((serial-adder*)
@@ -441,7 +435,7 @@
   (equal (len (serial-adder$step inputs st))
          *serial-adder$st-len*))
 
-(defthmd serial-adder$state
+(defthm serial-adder$state
   (b* ((inputs (list* cntl-act bit-in result-act go-signals))
        (reg0   (nth *serial-adder$reg0* st))
        (reg1   (nth *serial-adder$reg1* st)))
@@ -460,10 +454,7 @@
            :in-theory (e/d (de-rules
                             serial-adder&
                             serial-adder*$destructure
-                            car-and-cdr-of-atom
-                            joint-cntl$value
-                            1-bit-adder$value
-                            1-bit-adder$state)
+                            car-and-cdr-of-atom)
                            ((serial-adder*)
                             acl2::hons-duplicity-alist-p-of-cons
                             acl2::alistp-when-hons-duplicity-alist-p
@@ -619,7 +610,7 @@
   (b* ((lresult (nth *async-adder$lresult* st)))
     (f-buf (car lresult))))
 
-(defthmd async-adder$value
+(defthm async-adder$value
   (b* ((result     (nth *async-adder$result* st))
        (serial-add (nth *async-adder$serial-add* st))
        (reg2       (nth *serial-adder$reg2* serial-add)))
@@ -637,11 +628,6 @@
            :in-theory (e/d (de-rules
                             async-adder&
                             async-adder*$destructure
-                            joint-cntl$value
-                            latch-n$value
-                            v-buf$value
-                            next-cntl-state$value
-                            serial-adder$value
                             async-adder$ready-out
                             async-adder$ready-in-)
                            ((async-adder*)
@@ -725,7 +711,7 @@
   (equal (len (async-adder$step inputs st))
          *async-adder$st-len*))
 
-(defthmd async-adder$state
+(defthm async-adder$state
   (b* ((inputs (list* dr-lresult go-signals))
 
        (cntl       (nth *async-adder$cntl* st))
@@ -759,13 +745,6 @@
            :in-theory (e/d (de-rules
                             async-adder&
                             async-adder*$destructure
-                            joint-cntl$value
-                            latch-n$value
-                            latch-n$state
-                            v-buf$value
-                            next-cntl-state$value
-                            serial-adder$value
-                            serial-adder$state
                             open-nthcdr
                             list-rewrite-5
                             len-1-true-listp)
@@ -1222,7 +1201,6 @@
                                          async-adder$st-trans-rules
                                          async-adder$input-format
                                          async-adder$go-signals
-                                         async-adder$state
                                          async-adder$step
                                          serial-adder$step
                                          serial-adder$ready-out
@@ -1279,7 +1257,6 @@
                        :in-theory (e/d* (async-adder$st-trans-rules
                                          async-adder$input-format
                                          async-adder$go-signals
-                                         async-adder$state
                                          async-adder$step
                                          serial-adder$step
                                          serial-adder$ready-out
@@ -1544,7 +1521,6 @@
                                          async-adder-last-round$st-trans-rules
                                          async-adder$input-format
                                          async-adder$go-signals
-                                         async-adder$state
                                          async-adder$step
                                          serial-adder$step
                                          serial-adder$ready-out
@@ -1602,7 +1578,6 @@
                        :in-theory (e/d* (async-adder-last-round$st-trans-rules
                                          async-adder$input-format
                                          async-adder$go-signals
-                                         async-adder$state
                                          async-adder$step
                                          serial-adder$step
                                          serial-adder$ready-out

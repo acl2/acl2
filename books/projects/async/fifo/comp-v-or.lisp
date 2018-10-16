@@ -387,7 +387,7 @@
 
 ;; The value lemma for COMP-V-OR
 
-(defthmd comp-v-or$value
+(defthm comp-v-or$value
   (b* ((inputs (list* full-in empty-out- (append a b go-signals))))
     (implies (and (comp-v-or& netlist data-width)
                   (equal (len a) data-width)
@@ -404,18 +404,11 @@
            :in-theory (e/d (de-rules
                             comp-v-or&
                             comp-v-or*$destructure
-                            queue2$value
-                            queue3$value
-                            link$value
-                            joint-cntl$value
-                            v-buf$value
-                            v-or$value
                             comp-v-or$st-format
                             comp-v-or$in-act
                             comp-v-or$out-act
                             comp-v-or$data-out)
-                           ((comp-v-or*)
-                            append
+                           (append
                             append-v-threefix
                             de-module-disabled-rules)))))
 
@@ -471,7 +464,7 @@
 
 ;; The state lemma for COMP-V-OR
 
-(defthmd comp-v-or$state
+(defthm comp-v-or$state
   (b* ((inputs (list* full-in empty-out- (append a b go-signals))))
     (implies (and (comp-v-or& netlist data-width)
                   (true-listp a)
@@ -496,18 +489,8 @@
                             comp-v-or$in-act
                             comp-v-or$out-act
                             comp-v-or$q2-inputs
-                            comp-v-or$q3-inputs
-                            queue2$value
-                            queue2$state
-                            queue3$value
-                            queue3$state
-                            link$value
-                            link$state
-                            joint-cntl$value
-                            v-buf$value
-                            v-or$value)
-                           ((comp-v-or*)
-                            append
+                            comp-v-or$q3-inputs)
+                           (append
                             de-module-disabled-rules)))))
 
 (in-theory (disable comp-v-or$step))

@@ -230,7 +230,7 @@
 
 ;; The value lemma for ALT-BRANCH
 
-(defthmd alt-branch$value
+(defthm alt-branch$value
   (b* ((inputs (list* full-in empty-out0- empty-out1-
                       (append data-in go-signals))))
     (implies (and (alt-branch& netlist data-width)
@@ -250,14 +250,10 @@
            :in-theory (e/d (de-rules
                             alt-branch&
                             alt-branch*$destructure
-                            link1$value
-                            joint-cntl$value
-                            v-buf$value
                             alt-branch$act
                             alt-branch$act0
                             alt-branch$act1)
-                           ((alt-branch*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of ALT-BRANCH.
 
@@ -290,7 +286,7 @@
 
 ;; The state lemma for ALT-BRANCH
 
-(defthmd alt-branch$state
+(defthm alt-branch$state
   (b* ((inputs (list* full-in empty-out0- empty-out1-
                       (append data-in go-signals))))
     (implies (and (alt-branch& netlist data-width)
@@ -308,13 +304,8 @@
                             alt-branch*$destructure
                             alt-branch$act
                             alt-branch$act0
-                            alt-branch$act1
-                            link1$value
-                            link1$state
-                            joint-cntl$value
-                            v-buf$value)
-                           ((alt-branch*)
-                            de-module-disabled-rules)))))
+                            alt-branch$act1)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable alt-branch$step))
 

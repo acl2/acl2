@@ -240,7 +240,7 @@
               (equal (list (car l))
                      l))))
 
-  (defthmd gcd-body$value
+  (defthm gcd-body$value
     (b* ((inputs (list* full-in empty-out-
                         (append data-in go-signals))))
       (implies (and (posp data-width)
@@ -265,13 +265,8 @@
                               gcd-body$act
                               gcd-body$data-out
                               gcd-body$data0-out
-                              gcd-body$data1-out
-                              merge$value
-                              v-buf$value
-                              v-<$value
-                              ripple-sub$value)
-                             ((gcd-body*)
-                              append-take-nthcdr
+                              gcd-body$data1-out)
+                             (append-take-nthcdr
                               de-module-disabled-rules)))))
   )
 

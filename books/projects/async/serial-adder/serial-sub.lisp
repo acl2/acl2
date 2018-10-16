@@ -414,7 +414,7 @@
 
 ;; The value lemma for SERIAL-SUB
 
-(defthmd serial-sub$value
+(defthm serial-sub$value
   (b* ((inputs (list* full-in empty-out-
                       (append data0-in data1-in go-signals))))
     (implies (and (serial-sub& netlist data-width cnt-width)
@@ -435,12 +435,6 @@
            :in-theory (e/d (de-rules
                             serial-sub&
                             serial-sub*$destructure
-                            link1$value
-                            joint-cntl$value
-                            fast-zero$value
-                            full-adder$value
-                            shift-register2-piso$value
-                            shift-register-sipo$value
                             serial-sub$data0-in
                             serial-sub$data1-in
                             serial-sub$sregs2-inputs
@@ -449,8 +443,7 @@
                             serial-sub$in-act
                             serial-sub$out-act
                             serial-sub$data-out)
-                           ((serial-sub*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of SERIAL-SUB.
 
@@ -536,7 +529,7 @@
 
 ;; The state lemma for SERIAL-SUB
 
-(defthmd serial-sub$state
+(defthm serial-sub$state
   (b* ((inputs (list* full-in empty-out-
                       (append data0-in data1-in go-signals))))
     (implies
@@ -558,22 +551,12 @@
            :in-theory (e/d (de-rules
                             serial-sub&
                             serial-sub*$destructure
-                            link1$value
-                            link1$state
-                            joint-cntl$value
-                            fast-zero$value
-                            full-adder$value
-                            shift-register2-piso$value
-                            shift-register2-piso$state
-                            shift-register-sipo$value
-                            shift-register-sipo$state
                             serial-sub$data0-in
                             serial-sub$data1-in
                             serial-sub$sregs2-inputs
                             serial-sub$sreg-inputs
                             serial-sub$st-format)
-                           ((serial-sub*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable serial-sub$step))
 

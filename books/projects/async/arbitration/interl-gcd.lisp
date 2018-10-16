@@ -351,7 +351,7 @@
      (implies (equal m (* 2 n))
               (equal (* 2 m) (* 4 n)))))
 
-  (defthmd interl-gcd$value
+  (defthm interl-gcd$value
     (b* ((inputs (list* full-in0 full-in1 empty-out-
                         (append data0-in data1-in
                                 (cons select go-signals)))))
@@ -373,9 +373,6 @@
                               interl-gcd&
                               interl-gcd*$destructure
                               interl-gcd$st-format
-                              link$value
-                              interl$value
-                              gcd$value
                               interl-gcd$data0-in
                               interl-gcd$data1-in
                               interl-gcd$interl-inputs
@@ -384,8 +381,7 @@
                               interl-gcd$in1-act
                               interl-gcd$out-act
                               interl-gcd$data-out)
-                             ((interl-gcd*)
-                              de-module-disabled-rules)))))
+                             (de-module-disabled-rules)))))
 
   ;; This function specifies the next state of INTERL-GCD.
 
@@ -417,7 +413,7 @@
 
   ;; The state lemma for INTERL-GCD
 
-  (defthmd interl-gcd$state
+  (defthm interl-gcd$state
     (b* ((inputs (list* full-in0 full-in1 empty-out-
                         (append data0-in data1-in
                                 (cons select go-signals)))))
@@ -439,12 +435,6 @@
                               interl-gcd&
                               interl-gcd*$destructure
                               interl-gcd$st-format
-                              link$value
-                              link$state
-                              interl$value
-                              interl$state
-                              gcd$value
-                              gcd$state
                               interl-gcd$data0-in
                               interl-gcd$data1-in
                               interl-gcd$interl-inputs
@@ -452,8 +442,7 @@
                               interl-gcd$in0-act
                               interl-gcd$in1-act
                               interl-gcd$out-act)
-                             ((interl-gcd*)
-                              de-module-disabled-rules)))))
+                             (de-module-disabled-rules)))))
 
   (in-theory (disable interl-gcd$step))
   )

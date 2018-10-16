@@ -277,7 +277,7 @@
 
 ;; The value lemma for Q3
 
-(defthmd queue3$value
+(defthm queue3$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (queue3& netlist data-width)
                   (equal (len data-in) data-width)
@@ -293,15 +293,11 @@
            :in-theory (e/d (de-rules
                             queue3&
                             queue3*$destructure
-                            link$value
-                            joint-cntl$value
-                            v-buf$value
                             queue3$st-format
                             queue3$in-act
                             queue3$out-act
                             queue3$data-out)
-                           ((queue3*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of Q3, namely, the next states of
 ;; three links L0, L1, and L2.
@@ -344,7 +340,7 @@
 
 ;; The state lemma for Q3
 
-(defthmd queue3$state
+(defthm queue3$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (queue3& netlist data-width)
                   (true-listp data-in)
@@ -364,13 +360,8 @@
                             queue3$st-format
                             queue3$data-in
                             queue3$in-act
-                            queue3$out-act
-                            link$value
-                            link$state
-                            joint-cntl$value
-                            v-buf$value)
-                           ((queue3*)
-                            de-module-disabled-rules)))))
+                            queue3$out-act)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable queue3$step))
 

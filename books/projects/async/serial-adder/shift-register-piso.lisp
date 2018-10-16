@@ -386,7 +386,7 @@
 
 ;; The value lemma for SHIFT-REGISTER-PISO
 
-(defthmd shift-register-piso$value
+(defthm shift-register-piso$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (shift-register-piso& netlist data-width cnt-width)
                   (true-listp data-in)
@@ -404,19 +404,12 @@
            :in-theory (e/d (de-rules
                             shift-register-piso&
                             shift-register-piso*$destructure
-                            link$value
-                            joint-cntl$value
-                            fast-zero$value
-                            counter$value
-                            v-buf$value
-                            tv-if$value
                             shift-register-piso$data-in
                             shift-register-piso$st-format
                             shift-register-piso$in-act
                             shift-register-piso$out-act
                             shift-register-piso$bit-out)
-                           ((shift-register-piso*)
-                            car-cdr-elim
+                           (car-cdr-elim
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of SHIFT-REGISTER-PISO.
@@ -484,7 +477,7 @@
 
 ;; The state lemma for SHIFT-REGISTER-PISO
 
-(defthmd shift-register-piso$state
+(defthm shift-register-piso$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies
      (and (shift-register-piso& netlist data-width cnt-width)
@@ -503,19 +496,11 @@
            :in-theory (e/d (de-rules
                             shift-register-piso&
                             shift-register-piso*$destructure
-                            link$value
-                            link$state
-                            joint-cntl$value
-                            fast-zero$value
-                            counter$value
-                            v-buf$value
-                            tv-if$value
                             shift-register-piso$data-in
                             shift-register-piso$in-act
                             shift-register-piso$out-act
                             shift-register-piso$st-format)
-                           ((shift-register-piso*)
-                            append-v-threefix
+                           (append-v-threefix
                             acl2::associativity-of-append
                             de-module-disabled-rules)))))
 

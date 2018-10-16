@@ -600,7 +600,7 @@
 
 ;; The value lemma for SHIFT-REGISTER2-PISO
 
-(defthmd shift-register2-piso$value
+(defthm shift-register2-piso$value
   (b* ((inputs (list* full-in empty-out0- empty-out1-
                       (append data0-in data1-in go-signals))))
     (implies
@@ -622,12 +622,6 @@
            :in-theory (e/d (de-rules
                             shift-register2-piso&
                             shift-register2-piso*$destructure
-                            link$value
-                            joint-cntl$value
-                            fast-zero$value
-                            counter$value
-                            v-buf$value
-                            tv-if$value
                             shift-register2-piso$data0-in
                             shift-register2-piso$data1-in
                             shift-register2-piso$st-format
@@ -636,8 +630,7 @@
                             shift-register2-piso$out1-act
                             shift-register2-piso$bit0-out
                             shift-register2-piso$bit1-out)
-                           ((shift-register2-piso*)
-                            shift-register2-piso$disabled-rules
+                           (shift-register2-piso$disabled-rules
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of SHIFT-REGISTER2-PISO.
@@ -757,7 +750,7 @@
 
 ;; The state lemma for SHIFT-REGISTER2-PISO
 
-(defthmd shift-register2-piso$state
+(defthm shift-register2-piso$state
   (b* ((inputs (list* full-in empty-out0- empty-out1-
                       (append data0-in data1-in go-signals))))
     (implies
@@ -779,21 +772,13 @@
            :in-theory (e/d (de-rules
                             shift-register2-piso&
                             shift-register2-piso*$destructure
-                            link$value
-                            link$state
-                            joint-cntl$value
-                            fast-zero$value
-                            counter$value
-                            v-buf$value
-                            tv-if$value
                             shift-register2-piso$data0-in
                             shift-register2-piso$data1-in
                             shift-register2-piso$in-act
                             shift-register2-piso$out0-act
                             shift-register2-piso$out1-act
                             shift-register2-piso$st-format)
-                           ((shift-register2-piso*)
-                            shift-register2-piso$disabled-rules
+                           (shift-register2-piso$disabled-rules
                             de-module-disabled-rules)))))
 
 (in-theory (disable shift-register2-piso$step))

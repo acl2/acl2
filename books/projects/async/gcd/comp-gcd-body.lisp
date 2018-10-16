@@ -354,7 +354,7 @@
 
 ;; The value lemma for COMP-GCD-BODY
 
-(defthmd comp-gcd-body$value
+(defthm comp-gcd-body$value
   (b* ((inputs (list* full-in empty-out-
                       (append data-in go-signals))))
     (implies (and (comp-gcd-body& netlist data-width cnt-width)
@@ -376,15 +376,8 @@
                             comp-gcd-body$st-format
                             comp-gcd-body$in-act
                             comp-gcd-body$out-act
-                            comp-gcd-body$data-out
-                            link$value
-                            joint-cntl$value
-                            tv-if$value
-                            v-wire$value
-                            v-<$value
-                            serial-sub$value)
-                           ((comp-gcd-body*)
-                            de-module-disabled-rules)))))
+                            comp-gcd-body$data-out)
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of COMP-GCD-BODY.
 
@@ -431,7 +424,7 @@
 
 ;; The state lemma for COMP-GCD-BODY
 
-(defthmd comp-gcd-body$state
+(defthm comp-gcd-body$state
   (b* ((inputs (list* full-in empty-out-
                       (append data-in go-signals))))
     (implies (and (comp-gcd-body& netlist data-width cnt-width)
@@ -455,17 +448,8 @@
                             comp-gcd-body$a<b
                             comp-gcd-body$sub-inputs
                             comp-gcd-body$in-act
-                            comp-gcd-body$out-act
-                            link$value
-                            link$state
-                            joint-cntl$value
-                            tv-if$value
-                            v-wire$value
-                            v-<$value
-                            serial-sub$value
-                            serial-sub$state)
-                           ((comp-gcd-body*)
-                            acl2::associativity-of-append
+                            comp-gcd-body$out-act)
+                           (acl2::associativity-of-append
                             append-take-nthcdr
                             de-module-disabled-rules)))))
 

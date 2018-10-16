@@ -32,7 +32,7 @@
         (net-arity-okp *half-adder*)
         (half-adder& *half-adder*))))
 
-(defthmd half-adder$value
+(defthm half-adder$value
   (implies (half-adder& netlist)
            (equal (se 'half-adder (list a b) st netlist)
                   (list (f-xor a b)
@@ -68,7 +68,7 @@
         (net-arity-okp *full-adder*)
         (full-adder& *full-adder*))))
 
-(defthmd full-adder$value
+(defthm full-adder$value
   (implies (full-adder& netlist)
            (equal (se 'full-adder (list c a b) st netlist)
                   (list (f-xor3 c a b)
@@ -78,7 +78,6 @@
            :expand (se 'full-adder (list c a b) st netlist)
            :in-theory (enable de-rules
                               full-adder&
-                              half-adder$value
                               3vp
                               f-gates))))
 
@@ -185,13 +184,12 @@
                     (assoc-eq-values (sis 'b m n) wire-alist))))
    :hints (("Goal"
             :in-theory (enable de-rules
-                               full-adder$value
                                fv-adder
                                sis)
             :induct (ripple-add-body-induct m n
-                                              wire-alist
-                                              st-alist
-                                              netlist)))))
+                                            wire-alist
+                                            st-alist
+                                            netlist)))))
 
 (local
  (defthm ripple-add-body$value-m=0
@@ -248,6 +246,3 @@
                      (v-to-nat a)
                      (v-to-nat b))))
   :hints (("Goal" :in-theory (enable bool->bit))))
-
-(in-theory (disable ripple-add$value
-                    ripple-add$value-correct))

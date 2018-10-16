@@ -85,24 +85,26 @@
   (declare (xargs :guard (natp n)))
   (list (v-wire* n)))
 
-(defthm v-wire$unbound-in-body
-  (implies (and (natp l) (natp m) (< l m))
-           (unbound-in-body (si 'y l)
-                            (v-wire$body m n)))
-  :hints (("Goal" :in-theory (enable occ-outs))))
+(local
+ (defthm v-wire$unbound-in-body
+   (implies (and (natp l) (natp m) (< l m))
+            (unbound-in-body (si 'y l)
+                             (v-wire$body m n)))
+   :hints (("Goal" :in-theory (enable occ-outs)))))
 
-(defthm v-wire$body-value
-  (implies
-   (and (natp m)
-        (equal body (v-wire$body m n)))
-   (equal (assoc-eq-values (sis 'y m n)
-                           (se-occ body bindings state-bindings netlist))
-          (assoc-eq-values (sis 'a m n)
-                           bindings)))
-  :hints (("Goal"
-           :induct (vector-module-induction
-                    body m n bindings state-bindings netlist)
-           :in-theory (enable de-rules sis))))
+(local
+ (defthm v-wire$body-value
+   (implies
+    (and (natp m)
+         (equal body (v-wire$body m n)))
+    (equal (assoc-eq-values (sis 'y m n)
+                            (se-occ body bindings state-bindings netlist))
+           (assoc-eq-values (sis 'a m n)
+                            bindings)))
+   :hints (("Goal"
+            :induct (vector-module-induction
+                     body m n bindings state-bindings netlist)
+            :in-theory (enable de-rules sis)))))
 
 (not-primp-lemma v-wire)
 
@@ -115,14 +117,10 @@
   :hints (("Goal"
            :expand (:free (n)
                           (se (si 'v-wire n) a sts netlist))
-           :in-theory (enable de-rules
-                              v-wire*$destructure))))
+           :in-theory (enable de-rules v-wire*$destructure))))
 
 (in-theory (disable v-wire$body
-                    v-wire&
-                    v-wire$unbound-in-body
-                    v-wire$body-value
-                    v-wire$value))
+                    v-wire&))
 
 ;; V-IF
 
@@ -155,25 +153,27 @@
   (declare (xargs :guard (natp n)))
   (list (v-if* n)))
 
-(defthm v-if$unbound-in-body
-  (implies (and (natp l) (natp m) (< l m))
-           (unbound-in-body (si 'y l)
-                            (v-if$body m n)))
-  :hints (("Goal" :in-theory (enable occ-outs))))
+(local
+ (defthm v-if$unbound-in-body
+   (implies (and (natp l) (natp m) (< l m))
+            (unbound-in-body (si 'y l)
+                             (v-if$body m n)))
+   :hints (("Goal" :in-theory (enable occ-outs)))))
 
-(defthm v-if$body-value
-  (implies
-   (and (natp m)
-        (equal body (v-if$body m n)))
-   (equal (assoc-eq-values (sis 'y m n)
-                           (se-occ body bindings state-bindings netlist))
-          (fv-if (assoc-eq-value 'c bindings)
-                 (assoc-eq-values (sis 'a m n) bindings)
-                 (assoc-eq-values (sis 'b m n) bindings))))
-  :hints (("Goal"
-           :induct (vector-module-induction
-                    body m n bindings state-bindings netlist)
-           :in-theory (enable de-rules sis fv-if))))
+(local
+ (defthm v-if$body-value
+   (implies
+    (and (natp m)
+         (equal body (v-if$body m n)))
+    (equal (assoc-eq-values (sis 'y m n)
+                            (se-occ body bindings state-bindings netlist))
+           (fv-if (assoc-eq-value 'c bindings)
+                  (assoc-eq-values (sis 'a m n) bindings)
+                  (assoc-eq-values (sis 'b m n) bindings))))
+   :hints (("Goal"
+            :induct (vector-module-induction
+                     body m n bindings state-bindings netlist)
+            :in-theory (enable de-rules sis fv-if)))))
 
 (not-primp-lemma v-if)
 
@@ -186,11 +186,7 @@
   :hints (("Goal"
            :expand (:free (inputs n)
                           (se (si 'v-if n) inputs sts netlist))
-           :in-theory (enable de-rules
-                              v-if*$destructure))))
+           :in-theory (enable de-rules v-if*$destructure))))
 
 (in-theory (disable v-if$body
-                    v-if&
-                    v-if$unbound-in-body
-                    v-if$body-value
-                    v-if$value))
+                    v-if&))

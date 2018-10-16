@@ -307,7 +307,7 @@
 
 ;; The value lemma for WW
 
-(defthmd wig-wag$value
+(defthm wig-wag$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (wig-wag& netlist data-width)
                   (true-listp data-in)
@@ -325,17 +325,13 @@
                             wig-wag&
                             wig-wag*$destructure
                             wig-wag$data-in
-                            alt-branch$value
-                            alt-merge$value
-                            link$value
                             wig-wag$st-format
                             wig-wag$in-act
                             wig-wag$out-act
                             wig-wag$data-out
                             wig-wag$br-inputs
                             wig-wag$me-inputs)
-                           ((wig-wag*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of WW.
 
@@ -374,7 +370,7 @@
 
 ;; The state lemma for WW
 
-(defthmd wig-wag$state
+(defthm wig-wag$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (wig-wag& netlist data-width)
                   (true-listp data-in)
@@ -394,15 +390,8 @@
                             wig-wag$st-format
                             wig-wag$data-in
                             wig-wag$br-inputs
-                            wig-wag$me-inputs
-                            alt-branch$value
-                            alt-branch$state
-                            alt-merge$value
-                            alt-merge$state
-                            link$value
-                            link$state)
-                           ((wig-wag*)
-                            de-module-disabled-rules)))))
+                            wig-wag$me-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable wig-wag$step))
 

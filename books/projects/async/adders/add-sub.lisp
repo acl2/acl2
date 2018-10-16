@@ -134,7 +134,6 @@
                     (assoc-eq-values (sis 'b-in m n) wire-alist))))
    :hints (("Goal"
             :in-theory (e/d* (de-rules
-                              full-adder$value
                               fv-adder
                               sis)
                              ((si)))
@@ -163,7 +162,6 @@
                      (assoc-eq-values (sis 'b-in m n) wire-alist)))))
    :hints (("Goal"
             :in-theory (e/d* (de-rules
-                              full-adder$value
                               fv-adder
                               fv-not
                               sis)
@@ -393,8 +391,3 @@
   :hints (("Goal" :in-theory (disable logext
                                       v-adder-works
                                       v-adder-sub-works))))
-
-(in-theory (disable ripple-add/sub$value-1
-                    ripple-add/sub$value-2
-                    ripple-add/sub$value-correct-1
-                    ripple-add/sub$value-correct-2))

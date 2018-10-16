@@ -212,7 +212,7 @@
 
 (not-primp-lemma tv-if)
 
-(defthmd tv-if$value
+(defthm tv-if$value
   (implies (and (tv-if& netlist tree)
                 (equal n (tree-number tree))
                 (true-listp a) (true-listp b)

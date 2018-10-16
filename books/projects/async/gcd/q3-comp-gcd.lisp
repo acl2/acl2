@@ -286,7 +286,7 @@
 
 ;; The value lemma for Q3-COMP-GCD
 
-(defthmd q3-comp-gcd$value
+(defthm q3-comp-gcd$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies
      (and (q3-comp-gcd& netlist data-width)
@@ -305,9 +305,6 @@
            :in-theory (e/d (de-rules
                             q3-comp-gcd&
                             q3-comp-gcd*$destructure
-                            link$value
-                            queue3$value
-                            comp-gcd$value
                             q3-comp-gcd$data-in
                             q3-comp-gcd$st-format
                             q3-comp-gcd$in-act
@@ -315,8 +312,7 @@
                             q3-comp-gcd$data-out
                             q3-comp-gcd$q3-inputs
                             q3-comp-gcd$comp-gcd-inputs)
-                           ((q3-comp-gcd*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of Q3-COMP-GCD.
 
@@ -350,7 +346,7 @@
 
 ;; The state lemma for Q3-COMP-GCD
 
-(defthmd q3-comp-gcd$state
+(defthm q3-comp-gcd$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies
      (and (q3-comp-gcd& netlist data-width)
@@ -373,15 +369,8 @@
                             q3-comp-gcd$data-in
                             q3-comp-gcd$data-out
                             q3-comp-gcd$q3-inputs
-                            q3-comp-gcd$comp-gcd-inputs
-                            queue3$value
-                            queue3$state
-                            comp-gcd$value
-                            comp-gcd$state
-                            link$value
-                            link$state)
-                           ((q3-comp-gcd*)
-                            de-module-disabled-rules)))))
+                            q3-comp-gcd$comp-gcd-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable q3-comp-gcd$step))
 
