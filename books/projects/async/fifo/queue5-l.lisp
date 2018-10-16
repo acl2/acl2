@@ -324,7 +324,7 @@
 
 ;; The value lemma for QUEUE5-L
 
-(defthmd queue5-l$value
+(defthm queue5-l$value
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue5-l& netlist data-width)
                   (queue5-l$st-format st data-width))
@@ -337,15 +337,11 @@
            :in-theory (e/d (de-rules
                             queue5-l&
                             queue5-l*$destructure
-                            link$value
-                            joint-cntl$value
-                            v-buf$value
                             queue5-l$st-format
                             queue5-l$ready-in-
                             queue5-l$ready-out
                             queue5-l$data-out)
-                           ((queue5-l*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of QUEUE5-L.
 
@@ -421,7 +417,7 @@
 
 ;; The state lemma for QUEUE5-L
 
-(defthmd queue5-l$state
+(defthm queue5-l$state
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue5-l& netlist data-width)
                   (true-listp data-in)
@@ -441,13 +437,8 @@
                             queue5-l$st-format
                             queue5-l$in-act
                             queue5-l$out-act
-                            queue5-l$data-in
-                            link$value
-                            link$state
-                            joint-cntl$value
-                            v-buf$value)
-                           ((queue5-l*)
-                            de-module-disabled-rules)))))
+                            queue5-l$data-in)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable queue5-l$step))
 

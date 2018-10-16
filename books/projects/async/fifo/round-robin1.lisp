@@ -439,7 +439,7 @@
 
 ;; The value lemma for RR1
 
-(defthmd round-robin1$value
+(defthm round-robin1$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (round-robin1& netlist data-width)
                   (true-listp data-in)
@@ -458,19 +458,13 @@
                             round-robin1&
                             round-robin1*$destructure
                             round-robin1$data-in
-                            link$value
-                            queue2$value
-                            queue3$value
-                            alt-branch$value
-                            alt-merge$value
                             round-robin1$st-format
                             round-robin1$in-act
                             round-robin1$out-act
                             round-robin1$data-out
                             round-robin1$br-inputs
                             round-robin1$me-inputs)
-                           ((round-robin1*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of RR1.
 
@@ -534,7 +528,7 @@
 
 ;; The state lemma for RR1
 
-(defthmd round-robin1$state
+(defthm round-robin1$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (round-robin1& netlist data-width)
                   (true-listp data-in)
@@ -557,19 +551,8 @@
                             round-robin1$q2-inputs
                             round-robin1$q3-inputs
                             round-robin1$br-inputs
-                            round-robin1$me-inputs
-                            link$value
-                            link$state
-                            queue2$value
-                            queue2$state
-                            queue3$value
-                            queue3$state
-                            alt-branch$value
-                            alt-branch$state
-                            alt-merge$value
-                            alt-merge$state)
-                           ((round-robin1*)
-                            de-module-disabled-rules)))))
+                            round-robin1$me-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable round-robin1$step))
 

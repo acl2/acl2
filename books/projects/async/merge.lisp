@@ -186,7 +186,7 @@
 
 ;; The value lemma for MERGE
 
-(defthmd merge$value
+(defthm merge$value
   (b* ((inputs (list* full-in0 full-in1 empty-out- select
                       (append data-in0 data-in1 go-signals))))
     (implies (and (posp data-width)
@@ -209,11 +209,8 @@
            :in-theory (e/d (de-rules
                             merge&
                             merge*$destructure
-                            joint-cntl$value
-                            tv-if$value
                             merge$act
                             merge$act0
                             merge$act1)
-                           ((merge*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 

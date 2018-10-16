@@ -303,7 +303,7 @@
 
 ;; The value lemma for QUEUE8-L
 
-(defthmd queue8-l$value
+(defthm queue8-l$value
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue8-l& netlist data-width)
                   (queue8-l$st-format st data-width))
@@ -316,15 +316,11 @@
            :in-theory (e/d (de-rules
                             queue8-l&
                             queue8-l*$destructure
-                            joint-cntl$value
-                            v-buf$value
-                            queue4-l$value
                             queue8-l$st-format
                             queue8-l$ready-in-
                             queue8-l$ready-out
                             queue8-l$data-out)
-                           ((queue8-l*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of QUEUE8-L.
 
@@ -365,7 +361,7 @@
 
 ;; The state lemma for QUEUE8-L
 
-(defthmd queue8-l$state
+(defthm queue8-l$state
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue8-l& netlist data-width)
                   (true-listp data-in)
@@ -387,13 +383,8 @@
                             queue8-l$out-act
                             queue8-l$data-in
                             queue8-l$q4-l0-inputs
-                            queue8-l$q4-l1-inputs
-                            joint-cntl$value
-                            v-buf$value
-                            queue4-l$value
-                            queue4-l$state)
-                           ((queue8-l*)
-                            de-module-disabled-rules)))))
+                            queue8-l$q4-l1-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable queue8-l$step))
 

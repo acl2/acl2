@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; September 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -277,7 +277,7 @@
                 (< n (len x)))
            (not (member (nth n x) y))))
 
-(defthmd disjoint-commutative
+(defthm disjoint-commutative
   (implies (disjoint x y)
            (disjoint y x)))
 
@@ -464,7 +464,7 @@
             (equal (- size (tree-size (cdr tree)))
                    (tree-size (car tree))))))
 
-(defthmd make-list-append-tree-crock
+(defthm make-list-append-tree-crock
   (implies (consp tree)
            (equal (make-list (+ (tree-size (car tree))
                                 (tree-size (cdr tree)))

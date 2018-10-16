@@ -60,7 +60,7 @@
 
 (not-primp-lemma v-equal)
 
-(defthmd v-equal$value
+(defthm v-equal$value
   (implies (and (v-equal& netlist n)
                 (< 0 n)
                 (true-listp a) (true-listp b)
@@ -74,9 +74,7 @@
            :in-theory (e/d (de-rules
                             v-equal&
                             v-equal*$destructure
-                            f$v-equal
-                            v-xor$value
-                            tv-zp$value)
+                            f$v-equal)
                            (de-module-disabled-rules)))))
 
 (defthm f$v-equal=equal*

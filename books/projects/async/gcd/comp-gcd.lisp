@@ -371,7 +371,7 @@
 
 ;; The value lemma for COMP-GCD
 
-(defthmd comp-gcd$value
+(defthm comp-gcd$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (comp-gcd& netlist data-width)
                   (true-listp data-in)
@@ -392,19 +392,13 @@
                             comp-gcd*$destructure
                             comp-gcd$data-in
                             merge$act0
-                            merge$value
-                            comp-gcd-cond$value
-                            gcd-body$value
-                            link1$value
-                            link$value
                             comp-gcd$st-format
                             comp-gcd$in-act
                             comp-gcd$out-act
                             comp-gcd$data-out
                             comp-gcd$br-inputs
                             comp-gcd$me-inputs)
-                           ((comp-gcd*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of COMP-GCD.
 
@@ -458,7 +452,7 @@
 
 ;; The state lemma for COMP-GCD
 
-(defthmd comp-gcd$state
+(defthm comp-gcd$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (comp-gcd& netlist data-width)
                   (true-listp data-in)
@@ -485,16 +479,8 @@
                             comp-gcd$data-in
                             comp-gcd$br-inputs
                             comp-gcd$me-inputs
-                            comp-gcd$body-inputs
-                            comp-gcd-cond$value
-                            comp-gcd-cond$state
-                            gcd-body$value
-                            link1$value
-                            link1$state
-                            link$value
-                            link$state)
-                           ((comp-gcd*)
-                            de-module-disabled-rules)))))
+                            comp-gcd$body-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable comp-gcd$step))
 

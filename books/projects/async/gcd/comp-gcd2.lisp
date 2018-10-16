@@ -395,7 +395,7 @@
 
 ;; The value lemma for COMP-GCD2
 
-(defthmd comp-gcd2$value
+(defthm comp-gcd2$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (comp-gcd2& netlist data-width cnt-width)
                   (true-listp data-in)
@@ -414,19 +414,13 @@
                             comp-gcd2&
                             comp-gcd2*$destructure
                             merge$act0
-                            merge$value
-                            gcd-cond$value
-                            comp-gcd-body$value
-                            link1$value
-                            link$value
                             comp-gcd2$st-format
                             comp-gcd2$in-act
                             comp-gcd2$out-act
                             comp-gcd2$data-out
                             comp-gcd2$br-inputs
                             comp-gcd2$me-inputs)
-                           ((comp-gcd2*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of COMP-GCD2.
 
@@ -479,7 +473,7 @@
 
 ;; The state lemma for COMP-GCD2
 
-(defthmd comp-gcd2$state
+(defthm comp-gcd2$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (comp-gcd2& netlist data-width cnt-width)
                   (true-listp data-in)
@@ -500,21 +494,12 @@
                             merge$act
                             merge$act0
                             merge$act1
-                            merge$value
                             comp-gcd2$st-format
                             comp-gcd2$data-in
                             comp-gcd2$br-inputs
                             comp-gcd2$me-inputs
-                            comp-gcd2$body-inputs
-                            gcd-cond$value
-                            comp-gcd-body$value
-                            comp-gcd-body$state
-                            link1$value
-                            link1$state
-                            link$value
-                            link$state)
-                           ((comp-gcd2*)
-                            de-module-disabled-rules)))))
+                            comp-gcd2$body-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable comp-gcd2$step))
 

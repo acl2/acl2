@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; September 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -187,7 +187,7 @@
               32)
        :hints (("Goal" :in-theory (enable f$next-state))))
 
-     (defthmd next-state$value
+     (defthm next-state$value
        (implies (and (next-state& netlist)
                      (true-listp decoded-state)
                      (equal (len decoded-state) 32))
@@ -388,7 +388,7 @@
 
 (in-theory (disable compute-done-))
 
-(defthmd next-cntl-state$value
+(defthm next-cntl-state$value
   (implies (and (next-cntl-state& netlist)
                 (true-listp inputs)
                 (equal (len inputs) 5))
@@ -401,11 +401,8 @@
            :in-theory (e/d (de-rules
                             next-cntl-state&
                             next-cntl-state*$destructure
-                            compute-done-
                             f$next-cntl-state
-                            decode-5$value
-                            next-state$value
-                            encode-32$value-on-a-vector)
+                            compute-done-)
                            ((next-cntl-state*)
                             de-module-disabled-rules)))))
 

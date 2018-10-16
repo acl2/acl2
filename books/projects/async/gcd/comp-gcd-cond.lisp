@@ -525,7 +525,7 @@
 
   ;; The value lemma for COMP-GCD-COND
 
-  (defthmd comp-gcd-cond$value
+  (defthm comp-gcd-cond$value
     (b* ((inputs (list* full-in empty-out0- empty-out1-
                         (append data-in go-signals))))
       (implies
@@ -545,11 +545,6 @@
                               nthcdr-of-pos-const-idx
                               comp-gcd-cond&
                               comp-gcd-cond*$destructure
-                              queue2$value
-                              queue3$value
-                              link$value
-                              joint-cntl$value
-                              v-buf$value
                               gcd-cond$act
                               comp-gcd-cond$st-format
                               comp-gcd-cond$br-inputs
@@ -560,8 +555,7 @@
                               comp-gcd-cond$flag
                               comp-gcd-cond$data0-out
                               comp-gcd-cond$data1-out)
-                             ((comp-gcd-cond*)
-                              nfix
+                             (nfix
                               append
                               append-v-threefix
                               de-module-disabled-rules)))))
@@ -619,7 +613,7 @@
 
   ;; The state lemma for COMP-GCD-COND
 
-  (defthmd comp-gcd-cond$state
+  (defthm comp-gcd-cond$state
     (b* ((inputs (list* full-in empty-out0- empty-out1-
                         (append data-in go-signals))))
       (implies (and (comp-gcd-cond& netlist data-width)
@@ -648,17 +642,8 @@
                               comp-gcd-cond$out-act1
                               comp-gcd-cond$q2-inputs
                               comp-gcd-cond$q3-inputs
-                              gcd-cond$act
-                              queue2$value
-                              queue2$state
-                              queue3$value
-                              queue3$state
-                              link$value
-                              link$state
-                              joint-cntl$value
-                              v-buf$value)
-                             ((comp-gcd-cond*)
-                              nfix
+                              gcd-cond$act)
+                             (nfix
                               append
                               append-v-threefix
                               de-module-disabled-rules)))))

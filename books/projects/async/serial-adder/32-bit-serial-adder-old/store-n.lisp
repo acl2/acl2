@@ -8,8 +8,8 @@
 
 (in-package "ADE")
 
+(include-book "macros")
 (include-book "unbound")
-(include-book "../../macros")
 
 ;; ======================================================================
 
@@ -84,7 +84,7 @@
    :hints (("Goal" :in-theory (enable latch-n-body occ-outs)))))
 
 (local
- (defthmd latch-n-body$value
+ (defthm latch-n-body$value
    (implies (natp m)
             (equal (assoc-eq-values
                     (sis 'Q m n)
@@ -106,7 +106,7 @@
 
 (not-primp-lemma latch-n)
 
-(defthmd latch-n$value
+(defthm latch-n$value
   (implies (and (latch-n& netlist n)
                 (equal (len d) n)
                 (true-listp d)
@@ -115,12 +115,11 @@
            (equal (se (si 'latch-n n) (list* clk d) sts netlist)
                   (fv-if clk d (strip-cars sts))))
   :hints (("Goal"
-           :do-not '(preprocess)
-           :expand (se (si 'latch-n n) (list* clk d) sts netlist)
+           :expand (:free (inputs n)
+                          (se (si 'latch-n n) inputs sts netlist))
            :in-theory (e/d* (de-rules
                              latch-n&
-                             latch-n*$destructure
-                             latch-n-body$value)
+                             latch-n*$destructure)
                             (de-module-disabled-rules)))))
 
 ;; LATCH-N state
@@ -155,7 +154,7 @@
             :in-theory (enable latch-n-body)))))
 
 (local
- (defthmd latch-n-body$state
+ (defthm latch-n-body$state
    (implies (and (natp m)
                  (subsetp (sis 'G m n) (strip-cars sts-alist)))
             (equal (assoc-eq-values
@@ -182,7 +181,7 @@
                             (s2 'g)
                             (n m))))))
 
-(defthmd latch-n$state
+(defthm latch-n$state
   (implies (and (latch-n& netlist n)
                 (equal (len d) n)
                 (true-listp d)
@@ -192,12 +191,11 @@
                   (pairlis$ (fv-if clk d (strip-cars sts))
                             nil)))
   :hints (("Goal"
-           :do-not '(preprocess)
-           :expand (de (si 'latch-n n) (list* clk d) sts netlist)
+           :expand (:free (inputs n)
+                          (de (si 'latch-n n) inputs sts netlist))
            :in-theory (e/d* (de-rules
                              latch-n&
-                             latch-n*$destructure
-                             latch-n-body$state)
+                             latch-n*$destructure)
                             (de-module-disabled-rules)))))
 
 ;; ======================================================================
@@ -273,7 +271,7 @@
    :hints (("Goal" :in-theory (enable ff-n-body occ-outs)))))
 
 (local
- (defthmd ff-n-body$value
+ (defthm ff-n-body$value
    (implies (natp m)
             (equal (assoc-eq-values
                     (sis 'Q m n)
@@ -290,19 +288,18 @@
 
 (not-primp-lemma ff-n)
 
-(defthmd ff-n$value
+(defthm ff-n$value
   (implies (and (ff-n& netlist n)
                 (equal (len sts) n)
                 (true-listp sts))
            (equal (se (si 'ff-n n) ins sts netlist)
                   (v-threefix (strip-cars sts))))
   :hints (("Goal"
-           :do-not '(preprocess)
-           :expand (se (si 'ff-n n) ins sts netlist)
+           :expand (:free (n)
+                          (se (si 'ff-n n) ins sts netlist))
            :in-theory (e/d* (de-rules
                              ff-n&
-                             ff-n*$destructure
-                             ff-n-body$value)
+                             ff-n*$destructure)
                             (de-module-disabled-rules)))))
 
 ;; FF-N state
@@ -337,7 +334,7 @@
             :in-theory (enable ff-n-body)))))
 
 (local
- (defthmd ff-n-body$state
+ (defthm ff-n-body$state
    (implies (and (natp m)
                  (subsetp (sis 'G m n) (strip-cars sts-alist)))
             (equal (assoc-eq-values
@@ -364,7 +361,7 @@
                             (s2 'g)
                             (n m))))))
 
-(defthmd ff-n$state
+(defthm ff-n$state
   (implies (and (ff-n& netlist n)
                 (equal (len d) n)
                 (true-listp d)
@@ -374,10 +371,9 @@
                   (pairlis$ (fv-if clk d (strip-cars sts))
                             nil)))
   :hints (("Goal"
-           :do-not '(preprocess)
-           :expand (de (si 'ff-n n) (list* clk d) sts netlist)
+           :expand (:free (inputs n)
+                          (de (si 'ff-n n) inputs sts netlist))
            :in-theory (e/d* (de-rules
                              ff-n&
-                             ff-n*$destructure
-                             ff-n-body$state)
+                             ff-n*$destructure)
                             (de-module-disabled-rules)))))

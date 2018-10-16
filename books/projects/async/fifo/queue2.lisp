@@ -276,7 +276,7 @@
 
 ;; The value lemma for Q2
 
-(defthmd queue2$value
+(defthm queue2$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (queue2& netlist data-width)
                   (equal (len data-in) data-width)
@@ -292,15 +292,11 @@
            :in-theory (e/d (de-rules
                             queue2&
                             queue2*$destructure
-                            link$value
-                            joint-cntl$value
-                            v-buf$value
                             queue2$st-format
                             queue2$in-act
                             queue2$out-act
                             queue2$data-out)
-                           ((queue2*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of Q2, namely, the next states of two
 ;; links L0 and L1.
@@ -335,7 +331,7 @@
 
 ;; The state lemma for Q2
 
-(defthmd queue2$state
+(defthm queue2$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (queue2& netlist data-width)
                   (true-listp data-in)
@@ -355,13 +351,8 @@
                             queue2$st-format
                             queue2$data-in
                             queue2$in-act
-                            queue2$out-act
-                            link$value
-                            link$state
-                            joint-cntl$value
-                            v-buf$value)
-                           ((queue2*)
-                            de-module-disabled-rules)))))
+                            queue2$out-act)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable queue2$step))
 

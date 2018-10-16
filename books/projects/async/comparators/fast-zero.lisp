@@ -82,7 +82,7 @@
 
 (not-primp-lemma fast-zero)
 
-(defthmd fast-zero$value
+(defthm fast-zero$value
   (implies (and (fast-zero& netlist n)
                 (equal (len v) n)
                 (>= n 3))
@@ -98,8 +98,7 @@
                             f-nor3
                             f-nor
                             car-nthcdr
-                            cdr-nthcdr
-                            t-or-nor$value)
+                            cdr-nthcdr)
                            (de-module-disabled-rules)))))
 
 (in-theory (disable f$fast-zero=tr-or-nor))

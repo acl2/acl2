@@ -382,7 +382,7 @@
 
 ;; The value lemma for GCD
 
-(defthmd gcd$value
+(defthm gcd$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (gcd& netlist data-width)
                   (true-listp data-in)
@@ -402,19 +402,13 @@
                             gcd*$destructure
                             gcd$data-in
                             merge$act0
-                            merge$value
-                            gcd-cond$value
-                            gcd-body$value
-                            link1$value
-                            link$value
                             gcd$st-format
                             gcd$in-act
                             gcd$out-act
                             gcd$data-out
                             gcd$br-inputs
                             gcd$me-inputs)
-                           ((gcd*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of GCD.
 
@@ -463,7 +457,7 @@
 
 ;; The state lemma for GCD
 
-(defthmd gcd$state
+(defthm gcd$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (gcd& netlist data-width)
                   (true-listp data-in)
@@ -484,21 +478,13 @@
                             merge$act
                             merge$act0
                             merge$act1
-                            merge$value
                             gcd$st-format
                             gcd$data-in
                             gcd$data-out
                             gcd$br-inputs
                             gcd$me-inputs
-                            gcd$body-inputs
-                            gcd-cond$value
-                            gcd-body$value
-                            link1$value
-                            link1$state
-                            link$value
-                            link$state)
-                           ((gcd*)
-                            de-module-disabled-rules)))))
+                            gcd$body-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable gcd$step))
 

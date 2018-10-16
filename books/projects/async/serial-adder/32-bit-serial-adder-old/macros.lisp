@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; September 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -168,7 +168,7 @@
          (declare (xargs :guard (alistp netlist)))
          (netlist-hyps netlist ,name))
 
-       (defthmd ,value-lemma
+       (defthm ,value-lemma
          (implies (,netlist-properp netlist)
                   (equal (se ',name (list ,@ins) sts netlist)
                          ,(if (atom outs)

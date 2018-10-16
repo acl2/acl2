@@ -149,7 +149,7 @@
 (not-primp-lemma t-or)
 (not-primp-lemma t-nor)
 
-(defthmd t-or-nor$value
+(defthm t-or-nor$value
   (implies (and (t-or-nor& netlist tree parity)
                 (equal call-name (if parity 't-nor 't-or))
                 (true-listp a)
@@ -260,7 +260,7 @@
 
 (not-primp-lemma tv-zp)
 
-(defthmd tv-zp$value
+(defthm tv-zp$value
   (implies (and (tv-zp& netlist tree)
                 (equal (len a) (tree-size tree))
                 (true-listp a))
@@ -275,8 +275,7 @@
            :in-theory (e/d (de-rules
                             tv-zp&
                             tv-zp*$destructure
-                            f$tv-zp
-                            t-or-nor$value)
+                            f$tv-zp)
                            (de-module-disabled-rules)))))
 
 (defthm f$tv-zp=v-zp

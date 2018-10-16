@@ -389,7 +389,7 @@
 
 ;; The value lemma for RR3
 
-(defthmd round-robin3$value
+(defthm round-robin3$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (round-robin3& netlist data-width)
                   (true-listp data-in)
@@ -407,18 +407,13 @@
                             round-robin3&
                             round-robin3*$destructure
                             round-robin3$data-in
-                            queue8-l$value
-                            queue10-l$value
-                            alt-branch$value
-                            alt-merge$value
                             round-robin3$st-format
                             round-robin3$in-act
                             round-robin3$out-act
                             round-robin3$data-out
                             round-robin3$br-inputs
                             round-robin3$me-inputs)
-                           ((round-robin3*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of RR3.
 
@@ -449,7 +444,7 @@
 
 ;; The state lemma for RR3
 
-(defthmd round-robin3$state
+(defthm round-robin3$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (round-robin3& netlist data-width)
                   (true-listp data-in)
@@ -471,17 +466,8 @@
                             round-robin3$q8-l-inputs
                             round-robin3$q10-l-inputs
                             round-robin3$br-inputs
-                            round-robin3$me-inputs
-                            queue8-l$value
-                            queue8-l$state
-                            queue10-l$value
-                            queue10-l$state
-                            alt-branch$value
-                            alt-branch$state
-                            alt-merge$value
-                            alt-merge$state)
-                           ((round-robin3*)
-                            de-module-disabled-rules)))))
+                            round-robin3$me-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable round-robin3$step))
 

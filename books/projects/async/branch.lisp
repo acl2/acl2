@@ -165,7 +165,7 @@
 
 ;; The value lemma for BRANCH
 
-(defthmd branch$value
+(defthm branch$value
   (b* ((inputs (list* full-in empty-out0- empty-out1- select
                       (append data-in go-signals))))
     (implies (and (branch& netlist data-width)
@@ -185,12 +185,9 @@
            :in-theory (e/d (de-rules
                             branch&
                             branch*$destructure
-                            joint-cntl$value
-                            v-buf$value
                             branch$act
                             branch$act0
                             branch$act1)
-                           ((branch*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 

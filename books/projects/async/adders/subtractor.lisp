@@ -74,7 +74,7 @@
 
 ;; The value lemma for RIPPLE-SUB
 
-(defthmd ripple-sub$value
+(defthm ripple-sub$value
   (implies (and (ripple-sub& netlist n)
                 (natp n)
                 (true-listp a)
@@ -88,11 +88,8 @@
                           (se (si 'ripple-sub n) inputs st netlist))
            :in-theory (e/d* (de-rules
                              ripple-sub&
-                             ripple-sub*$destructure
-                             v-not$value
-                             ripple-add$value)
-                            ((ripple-sub*)
-                             de-module-disabled-rules)))))
+                             ripple-sub*$destructure)
+                            (de-module-disabled-rules)))))
 
 (encapsulate
   ()
@@ -205,7 +202,7 @@
                              (b (v-to-nat b))))))
   )
 
-(defthmd ripple-sub$value-correct
+(defthm ripple-sub$value-correct
   (implies (and (ripple-sub& netlist n)
                 (posp n) ;; n must be positive.
                 (equal n (len a))

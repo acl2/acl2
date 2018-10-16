@@ -63,7 +63,7 @@
 
 ;; The value lemma for COUNTER
 
-(defthmd counter$value
+(defthm counter$value
   (implies
    (and (posp data-width)
         (counter& netlist data-width)
@@ -81,10 +81,8 @@
                           (se (si 'counter data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             counter&
-                            counter*$destructure
-                            ripple-sub$value)
-                           ((counter*)
-                            de-module-disabled-rules)))))
+                            counter*$destructure)
+                           (de-module-disabled-rules)))))
 
 (local
  (defthm counter-works-aux

@@ -529,7 +529,7 @@
 
 ;; The value lemma for COMP-INTERL2
 
-(defthmd comp-interl2$value
+(defthm comp-interl2$value
   (b* ((inputs (list* full-in0 full-in1 full-in2 full-in3 empty-out-
                       (append data0-in data1-in data2-in data3-in
                               selects go-signals))))
@@ -558,8 +558,6 @@
                             comp-interl2&
                             comp-interl2*$destructure
                             comp-interl2$st-format
-                            interl$value
-                            interl-ll$value
                             interl-ll$arb-merge-inputs
                             interl-ll$out-act0
                             interl-ll$out-act1
@@ -582,8 +580,7 @@
                             comp-interl2$out-act1
                             comp-interl2$out-act
                             comp-interl2$data-out)
-                           ((comp-interl2*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of COMP-INTERL2.
 
@@ -610,7 +607,7 @@
 
 ;; The state lemma for COMP-INTERL2
 
-(defthmd comp-interl2$state
+(defthm comp-interl2$state
   (b* ((inputs (list* full-in0 full-in1 full-in2 full-in3 empty-out-
                       (append data0-in data1-in data2-in data3-in
                               selects go-signals))))
@@ -639,10 +636,6 @@
                             comp-interl2&
                             comp-interl2*$destructure
                             comp-interl2$st-format
-                            interl$value
-                            interl$state
-                            interl-ll$value
-                            interl-ll$state
                             interl$out-act
                             comp-interl2$data0-in
                             comp-interl2$data1-in
@@ -659,8 +652,7 @@
                             comp-interl2$interl0-inputs
                             comp-interl2$interl1-inputs
                             comp-interl2$interl-ll-inputs)
-                           ((comp-interl2*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable comp-interl2$step))
 
