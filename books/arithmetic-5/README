@@ -13,6 +13,9 @@ Robert Krug, and repeated in ../arithmetic/README):
   Don't use arithmetic-3.  It's not as powerful as arithmetic-5
   (Robert doesn't know if it's faster), and it may have more rewriting
   loops than arithmetic-5.
+  [NOTE added by Matt K.: I have seen at least one example in which
+  arithmetic-3 proves the theorem in 0.30 seconds but arithmetic-5
+  takes 7.97 seconds.  So clearly arithmetic-3 is better sometimes!]
 
   Note that arithmetic-2 is totally obsolete.  We may stop
   distributing it.
