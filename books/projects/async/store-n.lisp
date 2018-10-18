@@ -176,7 +176,7 @@
                                repeat
                                sis))
            ("Subgoal *1/2"
-            :use (:instance si-of-diff-symbols-2
+            :use (:instance not-equal-with-si-of-diff-symbol
                             (s1 nil)
                             (s2 'g)
                             (n m))))))
@@ -356,7 +356,7 @@
                                repeat
                                sis))
            ("Subgoal *1/2"
-            :use (:instance si-of-diff-symbols-2
+            :use (:instance not-equal-with-si-of-diff-symbol
                             (s1 nil)
                             (s2 'g)
                             (n m))))))

@@ -5,7 +5,7 @@
 
 ;; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; September 2018
+;; October 2018
 
 ; (ld "de.lisp" :ld-pre-eval-print t)
 

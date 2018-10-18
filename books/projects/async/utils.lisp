@@ -107,7 +107,13 @@
   (equal (append a (append b c))
          (append (append a b) c)))
 
-(defthm nth-append
+(defthm nth-append-<-len
+  (implies (and (natp i)
+                (< i (len x)))
+           (equal (nth i (append x y))
+                  (nth i x))))
+
+(defthm nth-append->=-len
   (implies (and (natp i)
                 (<= (len x) i))
            (equal (nth i (append x y))
@@ -135,10 +141,9 @@
            (not (member e (append x y)))))
 
 (defthmd not-member=>not-equal-nth
-  (implies (and (not (member e x))
-                (<= 0 n)
-                (< n (len x)))
-           (not (equal e (nth n x)))))
+   (implies (and (not (member a x))
+                 a)
+            (not (equal (nth n x) a))))
 
 (defthm subsetp=>member-nth
   (implies (and (subsetp x y)
