@@ -383,7 +383,23 @@ Added support for 32-bit mode; see paper at this Workshop.
 \item
 Improved and extended some documentation.
 \item
-TODO: add more
+The model's modes are now called ``views'' to avoid overloading the
+word ``mode'', which refers to an x86 processor's own modes of
+operation.
+\item
+Opcode dispatch functions and coverage data are generated from
+annotated opcode maps, which are taken from the Intel manuals.
+\item
+Added support for decoding VEX- and EVEX-encoded instructions
+(AVX/AVX2/AVX512).
+\item
+Decode-time exceptions are detected during opcode dispatch now, as
+opposed to inside individual instruction semantic functions.
+\item 
+Added support for enabling/disabling machine features that depend on
+CPUID feature flags.
+\item
+Codewalker can now be used to reason about x86 programs.
 \end{itemize}
 
 \end{frame}
@@ -479,6 +495,17 @@ described in a paper at this Workshop.
 \begin{frame}
 
 \implibtitle
+
+\bookpath{centaur/fty/bitstruct}:
+Define a bitvector type with accessor/updater functions for its fields
+\begin{itemize}
+\item 
+The \code{:exec} part of the \code{mbe} in accessor and updater
+functions now has efficient, heavily type-declared code that avoids
+bignum operations whenever possible.
+\item 
+Accessor and updater functions can now be inlined.
+\end{itemize}
 
 TODO: add more contributions
 
