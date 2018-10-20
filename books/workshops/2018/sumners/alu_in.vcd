@@ -1,0 +1,93 @@
+$date
+	January 4, 2018 23:23:07$end $v
+$end
+$version
+	unknown
+$end
+$timescale
+	1s
+$end
+$scope module top $end
+$var wire 1 ! reset $end
+$var wire 1 " clk $end
+$var wire 3 # opcode $end
+$var wire 16 $ abus $end
+$var wire 16 % bbus $end
+$var wire 16 * out  $end
+$var wire 16 0 abus_d1 $end
+$var wire 16 1 bbus_d1 $end
+$var wire 16 2 spec  $end
+$var wire 1 & fail_out $end
+$var wire 3 , wave_opcode $end
+$scope module des $end
+$var wire 16 ' abus1 $end
+$var wire 16 ( bbus1 $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+#10
+0!
+0"
+bxxx #
+bxxxxxxxxxxxxxxxx $
+bxxxxxxxxxxxxxxxx %
+bxxxxxxxxxxxxxxxx *
+bxxxxxxxxxxxxxxxx 0
+bxxxxxxxxxxxxxxxx 1
+bxxxxxxxxxxxxxxxx 2
+0&
+b000 ,
+bxxxxxxxxxxxxxxxx '
+bxxxxxxxxxxxxxxxx (
+#20
+1"
+#30
+0"
+b000 ,
+#40
+1"
+#50
+0"
+b001 ,
+#60
+1"
+#70
+0"
+b010 ,
+#80
+1"
+#90
+0"
+b011 ,
+#100
+1"
+#110
+0"
+b100 ,
+#120
+1"
+#130
+0"
+b101 ,
+#140
+1"
+#150
+0"
+b110 ,
+#160
+1"
+#170
+0"
+b111 ,
+#180
+1"
+#190
+0"
+#200
+1"
+#210
+0"
+#220
+1"
+#230
+0"
