@@ -27,6 +27,7 @@ could load using "gtkwave <module>_out.vcd" to view the result).
 |#
 
 (in-package "EXSIM")
+(include-book "oslib/ls" :dir :system)
 (include-book "exa")
 (include-book "exsim")
 (include-book "extra")
