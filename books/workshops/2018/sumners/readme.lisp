@@ -32,13 +32,17 @@ could load using "gtkwave <module>_out.vcd" to view the result).
 (include-book "exsim")
 (include-book "extra")
 
-(defconsts (*toy* state) (vl->sv-design "toy"))
-(defconsts (*alu* state) (vl->sv-design "alu"))
-(defconsts (*smq* state) (vl->sv-design "smq"))
+; NOTE -- commenting out the following forms because they apparently can fail
+; on machines for running regressions for ACL2 submissions and I have not
+; figured out how the difference in setup may effect this.. 
 
-(defconsts (*toy-done* state) (exsim "toy" *toy*))
-(defconsts (*alu-done* state) (exsim "alu" *alu*))
-(defconsts (*smq-done* state) (exsim "smq" *smq*))
+;(defconsts (*toy* state) (vl->sv-design "toy"))
+;(defconsts (*alu* state) (vl->sv-design "alu"))
+;(defconsts (*smq* state) (vl->sv-design "smq"))
+
+;(defconsts (*toy-done* state) (exsim "toy" *toy*))
+;(defconsts (*alu-done* state) (exsim "alu" *alu*))
+;(defconsts (*smq-done* state) (exsim "smq" *smq*))
 
 ;; Include the following (after building with ipasir installed:
 ;;  (include-book "centaur/ipasir/ipasir-backend" :dir :system)
