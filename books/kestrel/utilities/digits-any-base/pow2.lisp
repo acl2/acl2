@@ -32,7 +32,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection digit-byte-equivalence
+(defsection digit-pow2-unsigned-byte-equivalence
   :short "Equivalences between digits and bytes."
   :long
   (xdoc::topapp
