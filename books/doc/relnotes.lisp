@@ -190,10 +190,9 @@
 
  <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
  moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
- and renamed.  Some files have been refactored into smaller files.  A new macro
- has been added to generate additional return type theorems for conversions
- from natural numbers to digits; this macro generalizes the one for power-of-2
- bases.</p>
+ and renamed.  Some files have been refactored into smaller files.  The macro
+ to generate additional return types for conversions from natural numbers to
+ digits has been generalized and renamed.</p>
 
  <h4>FTY Type Definition Library</h4>
 
