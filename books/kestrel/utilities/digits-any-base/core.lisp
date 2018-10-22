@@ -1473,9 +1473,9 @@
      @(tsee nat=>bendian*), @(tsee nat=>bendian+), @(tsee nat=>bendian),
      @(tsee nat=>lendian*), @(tsee nat=>lendian+), and @(tsee nat=>lendian),
      where @('TERM<(CONV BASE nat)>') is the result of
-     replacing @('VAR') with @('(CONV BASE nat)') in @('TERM'),
+     replacing @('VAR') with @('(CONV BASE nat)') in @('TERM<VAR>'),
      and where @('TERM<(CONV BASE width nat)>') is the result of
-     replacing @('VAR') with @('(CONV BASE width nat)') in @('TERM')
+     replacing @('VAR') with @('(CONV BASE width nat)') in @('TERM<VAR>')
      These are additional return type theorems for these conversions.")
    (xdoc::p
     "The name of the equality theorem
@@ -1487,16 +1487,16 @@
     "The theorems are generated inside a @(tsee defsection)
      whose topic (name), @(':parents'), @(':short'), and @(':long')
      are supplied as keyword arguments.
-     If the topic is not supplied, no @(tsee defsection) is supplied).
+     If the topic is not supplied, no @(tsee defsection) is generated.
      If any of @(':parents'), @(':short'), or @(':long') is not supplied,
      the @(tsee defsection) has no corresponding
      @(':parents'), @(':short'), or @(':long').")
    (xdoc::p
-    "This macro does not do a thorough validation of the inputs.
+    "This macro does not thoroughly validates its inputs.
      However, its implementation is quite simple,
      and understanding failures due to incorrect inputs should be easy.
      Regardless, this macro may be extended
-     to do more thorough input validation in the future.")
+     to more thoroughly validate its inputs in the future.")
    (xdoc::def "defthm-dab-return-types"))
 
   (defmacro defthm-dab-return-types (eq-thm-name
