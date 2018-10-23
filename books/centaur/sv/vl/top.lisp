@@ -71,7 +71,7 @@
 
        ;; Throw away problem modules before doing anything else.
        (good          (xf-cwtime (vl-design-problem-mods good config.problem-mods)))
-       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad config.suppress-fatal-warning-types)))
 
        ;; ((mv good ?use-set-report) (vl-simplify-maybe-use-set good config))
 
@@ -86,13 +86,13 @@
        ;; (good          (xf-cwtime (vl-design-check-reasonable good)))
        ;; (good          (xf-cwtime (vl-design-check-complete good)))
        ;; (good          (xf-cwtime (vl-design-check-good-paramdecls good)))
-       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad config.suppress-fatal-warning-types)))
        ;; We eliminate initial blocks early because they tend to have
        ;; constructs that we can't handle.
        (good          (xf-cwtime (vl-design-eliminitial good)))
        ;;(- (sneaky-save :pre-unparam good))
        (good          (xf-cwtime (vl-design-elaborate good config)))
-       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad config.suppress-fatal-warning-types)))
 
 
 ; PART 2 ----------------
@@ -144,7 +144,7 @@
 
        ;; (good          (xf-cwtime (vl-design-gatesplit good)))
        ;; (good          (xf-cwtime (vl-design-gate-elim good :primalist primalist)))
-       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
+       ;; ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
        ;; (good          (xf-cwtime (vl-design-elim-supplies good)))
        ;; ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
@@ -171,8 +171,8 @@
   (;; This is a pretty large definition.  We make special use of HIDE, which we
    ;; exploit using the rule vl-design-p-of-hide-meta.  See the documentation
    ;; there for more information.
-   (defmacro vl-design-propagate-errors* (good bad)
-     `(vl-design-propagate-errors (hide ,good) (hide ,bad)))
+   (defmacro vl-design-propagate-errors* (good bad suppress-fatals)
+     `(vl-design-propagate-errors (hide ,good) (hide ,bad) ,suppress-fatals))
    (local (in-theory (disable (:executable-counterpart tau-system)
                               acl2::mv-nth-cons-meta)))
    (set-default-hints '('(:do-not '(preprocess))))))

@@ -395,9 +395,9 @@ references to untyped parameters.</p>"
   (if (atom consts)
       t
     (and (b* ((size (lnfix size)))
-           (or (unsigned-byte-p size (car consts))
+           (or (unsigned-byte-p size (lifix (car consts)))
                (and (< 0 size)
-                    (signed-byte-p size (car consts)))))
+                    (signed-byte-p size (lifix (car consts))))))
          (ints-probably-fit-p size (cdr consts)))))
 
 
@@ -581,6 +581,8 @@ details.</p>"
        (op    (acl2::symbol-fix op))
        (asize (lnfix asize))
        (bsize (lnfix bsize))
+       (ss (vl-scopestack-fix ss))
+       (scopes (vl-elabscopes-fix scopes))
 
        ;; Note that throughout this function, you can freely rewrite A and B in
        ;; any crazy, unsound, heuristic way you please.  Also this function is

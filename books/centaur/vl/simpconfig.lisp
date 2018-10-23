@@ -32,6 +32,7 @@
 (include-book "util/defs")
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
+(include-book "centaur/fty/baselists" :dir :system)
 
 (defprod vl-simpconfig
   :parents (vl-design->svex-design)
@@ -148,7 +149,13 @@
 
    (unparam-bad-instance-fatalp
     booleanp :default t
-    "Make a fatal warning when a nonexistent parameter is overridden by a module instance.")))
+    "Make a fatal warning when a nonexistent parameter is overridden by a module instance.")
+
+   (suppress-fatal-warning-types
+    symbol-listp :default nil
+    "Treat the listed warnings as non-fatal during vl-design-propagate-errors.
+     Such warnings will still show up as fatal, but the modules in which they exist
+     will not be labeled \"bad\".")))
 
 (defconst *vl-default-simpconfig*
   (make-vl-simpconfig))

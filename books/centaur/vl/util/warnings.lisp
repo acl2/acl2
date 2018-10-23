@@ -32,7 +32,7 @@
 (include-book "defs")
 (include-book "defsort/remove-dups" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
-(include-book "centaur/fty/basetypes" :dir :system)
+(include-book "centaur/fty/baselists" :dir :system)
 (local (include-book "arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 (local (xdoc::set-default-parents warnings))
@@ -296,7 +296,7 @@ fatal warnings instead of non-fatal warnings.</p>"
 want to bother the user with.</p>"
   (cond ((atom x)
          nil)
-        ((member (vl-warning->type (car x)) types)
+        ((member (vl-warning->type (car x)) (acl2::symbol-list-fix types))
          (vl-remove-warnings types (cdr x)))
         (t
          (cons (vl-warning-fix (car x))
@@ -311,7 +311,7 @@ want to bother the user with.</p>"
 particular interest.</p>"
   (cond ((atom x)
          nil)
-        ((member (vl-warning->type (car x)) types)
+        ((member (vl-warning->type (car x)) (acl2::symbol-list-fix types))
          (cons (vl-warning-fix (car x))
                (vl-keep-warnings types (cdr x))))
         (t
@@ -319,49 +319,56 @@ particular interest.</p>"
 
 (define vl-some-warning-fatalp
   :short "Check if any warning is marked as fatal."
-  ((x vl-warninglist-p))
+  ((x vl-warninglist-p)
+   (suppress-fatals symbol-listp))
   :returns (bool booleanp :rule-classes :type-prescription)
   (cond ((atom x)
          nil)
-        ((vl-warning->fatalp (car x))
+        ((and (vl-warning->fatalp (car x))
+              (not (member-eq (vl-warning->type (car x)) (acl2::symbol-list-fix suppress-fatals))))
          t)
         (t
-         (vl-some-warning-fatalp (cdr x))))
+         (vl-some-warning-fatalp (cdr x) suppress-fatals)))
   ///
   (defthm vl-some-warning-fatalp-when-not-consp
     (implies (not (consp x))
-             (equal (vl-some-warning-fatalp x)
+             (equal (vl-some-warning-fatalp x suppress-fatals)
                     nil)))
 
   (defthm vl-some-warning-fatalp-of-cons
-    (equal (vl-some-warning-fatalp (cons a x))
-           (or (if (vl-warning->fatalp a) t nil)
-               (vl-some-warning-fatalp x))))
+    (equal (vl-some-warning-fatalp (cons a x) suppress-fatals)
+           (or (if (and (vl-warning->fatalp a)
+                        (not (member (vl-warning->type a)
+                                     (acl2::symbol-list-fix suppress-fatals))))
+                   t nil)
+               (vl-some-warning-fatalp x suppress-fatals))))
 
   (defthm vl-some-warning-fatalp-of-append
-    (equal (vl-some-warning-fatalp (append x y))
-           (or (vl-some-warning-fatalp x)
-               (vl-some-warning-fatalp y))))
+    (equal (vl-some-warning-fatalp (append x y) suppress-fatals)
+           (or (vl-some-warning-fatalp x suppress-fatals)
+               (vl-some-warning-fatalp y suppress-fatals))))
 
   (defthm vl-some-warning-fatalp-of-list-fix
-    (equal (vl-some-warning-fatalp (list-fix x))
-           (vl-some-warning-fatalp x)))
+    (equal (vl-some-warning-fatalp (list-fix x) suppress-fatals)
+           (vl-some-warning-fatalp x suppress-fatals)))
 
   (local (defthm l0
            (implies (and (vl-warning->fatalp a)
+                         (not (member (vl-warning->type a)
+                                      (acl2::symbol-list-fix suppress-fatals)))
                          (member-equal a x))
-                    (vl-some-warning-fatalp x))))
+                    (vl-some-warning-fatalp x suppress-fatals))))
 
   (local (defthm l1
            (implies (and (subsetp-equal x y)
-                         (vl-some-warning-fatalp x))
-                    (vl-some-warning-fatalp y))
+                         (vl-some-warning-fatalp x suppress-fatals))
+                    (vl-some-warning-fatalp y suppress-fatals))
            :hints(("Goal" :in-theory (enable subsetp-equal)))))
 
-  (defcong set-equiv equal (vl-some-warning-fatalp x) 1
+  (defcong set-equiv equal (vl-some-warning-fatalp x suppress-fatals) 1
     :event-name vl-some-warning-fatalp-preserves-set-equiv
     :hints(("Goal"
-            :cases ((vl-some-warning-fatalp x))
+            :cases ((vl-some-warning-fatalp x suppress-fatals))
             :in-theory (enable set-equiv)
             :do-not-induct t))))
 
@@ -372,7 +379,7 @@ particular interest.</p>"
   :returns (bool booleanp :rule-classes :type-prescription)
   :long "<p>Note: we just leave this function enabled.</p>"
   (mbe :logic
-       (intersectp-equal types (vl-warninglist->types x))
+       (intersectp-equal (acl2::symbol-list-fix types) (vl-warninglist->types x))
        :exec
        (cond ((atom x)
               nil)
