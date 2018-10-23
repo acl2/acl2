@@ -167,7 +167,7 @@
 
 ;; DE netlist generator.  A generated netlist will contain an instance of RR1.
 
-(defun round-robin1$netlist (data-width)
+(defund round-robin1$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (round-robin1* data-width)
         (union$ (queue2$netlist data-width)
@@ -181,14 +181,14 @@
 (defund round-robin1& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'round-robin1 data-width) netlist)
-              (round-robin1* data-width))
-       (b* ((netlist (delete-to-eq (si 'round-robin1 data-width) netlist)))
-         (and (link& netlist data-width)
-              (queue2& netlist data-width)
-              (queue3& netlist data-width)
-              (alt-branch& netlist data-width)
-              (alt-merge& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'round-robin1 data-width) netlist)))
+    (and (equal (assoc (si 'round-robin1 data-width) netlist)
+                (round-robin1* data-width))
+         (link& subnetlist data-width)
+         (queue2& subnetlist data-width)
+         (queue3& subnetlist data-width)
+         (alt-branch& subnetlist data-width)
+         (alt-merge& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -648,22 +648,18 @@
                 (round-robin1$valid-st st data-width))
            (booleanp (round-robin1$in-act inputs st data-width)))
   :hints (("Goal"
-           :use round-robin1$input-format=>br$input-format
-           :in-theory (e/d (round-robin1$valid-st
-                            round-robin1$in-act)
-                           (round-robin1$input-format=>br$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable round-robin1$valid-st
+                              round-robin1$in-act)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-round-robin1$out-act
   (implies (and (round-robin1$input-format inputs data-width)
                 (round-robin1$valid-st st data-width))
            (booleanp (round-robin1$out-act inputs st data-width)))
   :hints (("Goal"
-           :use round-robin1$input-format=>me$input-format
-           :in-theory (e/d (round-robin1$valid-st
-                            round-robin1$out-act)
-                           (round-robin1$input-format=>me$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable round-robin1$valid-st
+                              round-robin1$out-act)))
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma round-robin1)
 
@@ -682,13 +678,13 @@
   (implies (or (consp l1) (consp l2)
                (< 0 (len l1)) (< 0 (len l2)))
            (consp (intertwine l1 l2)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm true-listp-intertwine
   (implies (and (true-listp l1)
                 (true-listp l2))
            (true-listp (intertwine l1 l2)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm len-intertwine
   (equal (len (intertwine l1 l2))
@@ -822,14 +818,14 @@
      (implies (round-robin1$input-format inputs data-width)
               (booleanp (nth 0 inputs)))
      :hints (("Goal" :in-theory (enable round-robin1$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm round-robin1$input-format-lemma-2
      (implies (round-robin1$input-format inputs data-width)
               (booleanp (nth 1 inputs)))
      :hints (("Goal" :in-theory (enable round-robin1$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm round-robin1$input-format-lemma-3
@@ -1023,7 +1019,7 @@
                                  queue2$valid-st
                                  queue2$extract
                                  queue2$out-act)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm consp-queue3$extract
@@ -1035,7 +1031,7 @@
                                  queue3$valid-st
                                  queue3$extract
                                  queue3$out-act)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm round-robin1$q2-get-$data-in-rewrite

@@ -125,7 +125,7 @@
 
 ;; DE netlist generator.  A generated netlist will contain an instance of Q2.
 
-(defun queue2$netlist (data-width)
+(defund queue2$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (queue2* data-width)
         (union$ (link$netlist data-width)
@@ -138,12 +138,12 @@
 (defund queue2& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'queue2 data-width) netlist)
-              (queue2* data-width))
-       (b* ((netlist (delete-to-eq (si 'queue2 data-width) netlist)))
-         (and (link& netlist data-width)
-              (joint-cntl& netlist)
-              (v-buf& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'queue2 data-width) netlist)))
+    (and (equal (assoc (si 'queue2 data-width) netlist)
+                (queue2* data-width))
+         (link& subnetlist data-width)
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -385,7 +385,7 @@
   :hints (("Goal" :in-theory (enable queue2$input-format
                                      queue2$valid-st
                                      queue2$in-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue2$out-act
   (implies (and (queue2$input-format inputs data-width)
@@ -394,7 +394,7 @@
   :hints (("Goal" :in-theory (enable queue2$input-format
                                      queue2$valid-st
                                      queue2$out-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma queue2)
 

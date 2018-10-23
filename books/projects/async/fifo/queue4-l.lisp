@@ -132,7 +132,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; QUEUE4-L.
 
-(defun queue4-l$netlist (data-width)
+(defund queue4-l$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (queue4-l* data-width)
         (union$ (link$netlist data-width)
@@ -145,12 +145,12 @@
 (defund queue4-l& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'queue4-l data-width) netlist)
-              (queue4-l* data-width))
-       (b* ((netlist (delete-to-eq (si 'queue4-l data-width) netlist)))
-         (and (joint-cntl& netlist)
-              (link& netlist data-width)
-              (v-buf& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'queue4-l data-width) netlist)))
+    (and (equal (assoc (si 'queue4-l data-width) netlist)
+                (queue4-l* data-width))
+         (joint-cntl& subnetlist)
+         (link& subnetlist data-width)
+         (v-buf& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -241,7 +241,7 @@
              (booleanp (queue4-l$ready-in- st)))
     :hints (("Goal" :in-theory (enable queue4-l$valid-st
                                        queue4-l$ready-in-)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the "ready-out" signal
 
@@ -255,7 +255,7 @@
              (booleanp (queue4-l$ready-out st)))
     :hints (("Goal" :in-theory (enable queue4-l$valid-st
                                        queue4-l$ready-out)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the output data
 
@@ -445,14 +445,14 @@
            (booleanp (queue4-l$in-act inputs)))
   :hints (("Goal" :in-theory (enable queue4-l$input-format
                                      queue4-l$in-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue4-l$out-act
   (implies (queue4-l$input-format inputs st data-wisth)
            (booleanp (queue4-l$out-act inputs)))
   :hints (("Goal" :in-theory (enable queue4-l$input-format
                                      queue4-l$out-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma queue4-l :clink t)
 

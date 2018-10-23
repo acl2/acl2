@@ -132,7 +132,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; COMP-GCD-BODY.
 
-(defun comp-gcd-body$netlist (data-width cnt-width)
+(defund comp-gcd-body$netlist (data-width cnt-width)
   (declare (xargs :guard (and (posp data-width)
                               (natp cnt-width)
                               (<= 3 cnt-width))))
@@ -151,17 +151,17 @@
                               (posp data-width)
                               (natp cnt-width)
                               (<= 3 cnt-width))))
-  (and (equal (assoc (si 'comp-gcd-body data-width) netlist)
-              (comp-gcd-body* data-width))
-       (b* ((netlist (delete-to-eq (si 'comp-gcd-body data-width) netlist)))
-         (and (link& netlist data-width)
-              (link& netlist (* 2 data-width))
-              (joint-cntl& netlist)
-              (tv-if& netlist (make-tree data-width))
-              (tv-if& netlist (make-tree (* 2 data-width)))
-              (v-wire& netlist (* 2 data-width))
-              (v-<& netlist data-width)
-              (serial-sub& netlist data-width cnt-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'comp-gcd-body data-width) netlist)))
+    (and (equal (assoc (si 'comp-gcd-body data-width) netlist)
+                (comp-gcd-body* data-width))
+         (link& subnetlist data-width)
+         (link& subnetlist (* 2 data-width))
+         (joint-cntl& subnetlist)
+         (tv-if& subnetlist (make-tree data-width))
+         (tv-if& subnetlist (make-tree (* 2 data-width)))
+         (v-wire& subnetlist (* 2 data-width))
+         (v-<& subnetlist data-width)
+         (serial-sub& subnetlist data-width cnt-width))))
 
 ;; Sanity check
 
@@ -504,7 +504,7 @@
                             comp-gcd-body$valid-st
                             comp-gcd-body$in-act)
                            ())))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-comp-gcd-body$out-act
   (implies (and (comp-gcd-body$input-format inputs data-width)
@@ -515,7 +515,7 @@
                             comp-gcd-body$valid-st
                             comp-gcd-body$out-act)
                            ())))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma comp-gcd-body :sizes (data-width cnt-width))
 
@@ -657,14 +657,14 @@
    (implies (comp-gcd-body$input-format inputs data-width)
             (booleanp (nth 0 inputs)))
    :hints (("Goal" :in-theory (enable comp-gcd-body$input-format)))
-   :rule-classes :type-prescription))
+   :rule-classes (:rewrite :type-prescription)))
 
 (local
  (defthm comp-gcd-body$input-format-lemma-2
    (implies (comp-gcd-body$input-format inputs data-width)
             (booleanp (nth 1 inputs)))
    :hints (("Goal" :in-theory (enable comp-gcd-body$input-format)))
-   :rule-classes :type-prescription))
+   :rule-classes (:rewrite :type-prescription)))
 
 (local
  (defthm comp-gcd-body$input-format-lemma-3

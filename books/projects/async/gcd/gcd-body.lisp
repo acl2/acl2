@@ -81,7 +81,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; GCD-BODY.
 
-(defun gcd-body$netlist (data-width)
+(defund gcd-body$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (gcd-body* data-width)
         (union$ (merge$netlist (* 2 data-width))
@@ -95,13 +95,13 @@
 (defund gcd-body& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'gcd-body data-width) netlist)
-              (gcd-body* data-width))
-       (b* ((netlist (delete-to-eq (si 'gcd-body data-width) netlist)))
-         (and (merge& netlist (* 2 data-width))
-              (v-buf& netlist (* 2 data-width))
-              (v-<& netlist data-width)
-              (ripple-sub& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'gcd-body data-width) netlist)))
+    (and (equal (assoc (si 'gcd-body data-width) netlist)
+                (gcd-body* data-width))
+         (merge& subnetlist (* 2 data-width))
+         (v-buf& subnetlist (* 2 data-width))
+         (v-<& subnetlist data-width)
+         (ripple-sub& subnetlist data-width))))
 
 ;; Sanity check
 

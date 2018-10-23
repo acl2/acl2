@@ -109,18 +109,23 @@
 
      (ripple-add-body (1+ m) (1- n)))))
 
-(defun ripple-add* (n)
+(destructuring-lemma
+ ripple-add* (n)
+ (declare (xargs :guard (natp n)))
+ nil                           ; Bindings
+ (si 'ripple-add n)            ; Name
+ (cons (si 'carry 0)           ; Inputs are
+       (append (sis 'a 0 n)    ; (carry_0 a_0 a_1 ... a_n-1
+               (sis 'b 0 n)))  ;          b_0 b_1 ... b_n-1)
+ (append (sis 'sum 0 n)        ; Outputs are
+         (list (si 'carry n))) ; (sum_0 sum_1 ... sum_n-1 carry_n)
+ nil                           ; State
+ (ripple-add-body 0 n))        ; Occurrences
+
+(defund ripple-add$netlist (n)
   (declare (xargs :guard (natp n)))
-  ;; n-bit wide input vectors
-  (list (si 'ripple-add n)            ; (index ripple-add n),
-                                      ; intuitively ripple-add_n
-        (cons (si 'carry 0)           ; inputs are
-              (append (sis 'a 0 n)    ; (carry_0 a_0 a_1 ... a_n-1
-                      (sis 'b 0 n)))  ;          b_0 b_1 ... b_n-1)
-        (append (sis 'sum 0 n)        ; outputs are
-                (list (si 'carry n))) ; (sum_0 sum_1 ... sum_n-1 carry_n)
-        nil                           ; no state
-        (ripple-add-body 0 n)))       ; occurrences
+  (cons (ripple-add* n)
+        *full-adder*))
 
 (defund ripple-add& (netlist n)
   (declare (xargs :guard (and (alistp netlist)
@@ -129,11 +134,6 @@
               (ripple-add* n))
        (full-adder& (delete-to-eq (si 'ripple-add n)
                                   netlist))))
-
-(defun ripple-add$netlist (n)
-  (declare (xargs :guard (natp n)))
-  (cons (ripple-add* n)
-        *full-adder*))
 
 (local
  (defthmd check-ripple-add$netlist-64
@@ -165,15 +165,40 @@
                              (ripple-add-body m n)))
    :hints (("Goal" :in-theory (enable occ-outs)))))
 
+(defthm ripple-add-body$values-of-two-netlists
+  (implies (and (syntaxp (not (and (quotep netlist)
+                                   (equal (cadr netlist) *full-adder*))))
+                (full-adder& netlist)
+                (equal m+n (+ m n))
+                (natp m))
+           (equal (assoc-eq-values (append (sis 'sum m n)
+                                           (list (si 'carry m+n)))
+                                   (se-occ (ripple-add-body m n)
+                                           wire-alist
+                                           st-alist
+                                           netlist))
+                  (assoc-eq-values (append (sis 'sum m n)
+                                           (list (si 'carry m+n)))
+                                   (se-occ (ripple-add-body m n)
+                                           wire-alist
+                                           st-alist
+                                           *full-adder*))))
+  :hints (("Goal"
+           :induct (ripple-add-body-induct m n wire-alist st-alist netlist)
+           :in-theory (enable de-rules
+                              fv-adder
+                              sis))))
+
 (local
  (defthm ripple-add-body$value
    (implies (and (full-adder& netlist)
                  (natp m)
                  (natp n)
+                 (equal m+n (+ m n))
                  ;; We need the following hypothesis for the case of (zp n)
                  (3vp (assoc-eq-value (si 'carry m) wire-alist)))
             (equal (assoc-eq-values (append (sis 'sum m n)
-                                            (list (si 'carry (+ m n))))
+                                            (list (si 'carry m+n)))
                                     (se-occ (ripple-add-body m n)
                                             wire-alist
                                             st-alist
@@ -183,13 +208,10 @@
                     (assoc-eq-values (sis 'a m n) wire-alist)
                     (assoc-eq-values (sis 'b m n) wire-alist))))
    :hints (("Goal"
-            :in-theory (enable de-rules
-                               fv-adder
-                               sis)
-            :induct (ripple-add-body-induct m n
-                                            wire-alist
-                                            st-alist
-                                            netlist)))))
+           :induct (ripple-add-body-induct m n wire-alist st-alist netlist)
+           :in-theory (enable de-rules
+                              fv-adder
+                              sis)))))
 
 (local
  (defthm ripple-add-body$value-m=0
@@ -205,9 +227,7 @@
                    (fv-adder
                     (assoc-eq-value (si 'carry 0) wire-alist)
                     (assoc-eq-values (sis 'a 0 n) wire-alist)
-                    (assoc-eq-values (sis 'b 0 n) wire-alist))))
-   :hints (("Goal" :use (:instance ripple-add-body$value
-                                   (m 0))))))
+                    (assoc-eq-values (sis 'b 0 n) wire-alist))))))
 
 (not-primp-lemma ripple-add)
 
@@ -228,7 +248,8 @@
            :expand (:free (inputs n)
                           (se (si 'ripple-add n) inputs st netlist))
            :in-theory (e/d* (de-rules
-                             ripple-add&)
+                             ripple-add&
+                             ripple-add*$destructure)
                             (de-module-disabled-rules)))))
 
 (defthm ripple-add$value-correct

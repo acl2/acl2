@@ -62,20 +62,20 @@
         (list 'zfront (si 'a (- n 2)) (si 'a (1- n)))))
  :guard (and (natp n) (<= 2 n)))
 
-(defund fast-zero& (netlist n)
-  (declare (xargs :guard (and (alistp netlist)
-                              (natp n)
-                              (<= 2 n))))
-  (and (equal (assoc (si 'fast-zero n) netlist)
-              (fast-zero* n))
-       (let ((netlist (delete-to-eq (si 'fast-zero n) netlist)))
-         (t-or-nor& netlist (make-tree (- n 2)) nil))))
-
-(defun fast-zero$netlist (n)
+(defund fast-zero$netlist (n)
   (declare (xargs :guard (and (natp n)
                               (<= 2 n))))
   (cons (fast-zero* n)
         (t-or-nor$netlist (make-tree (- n 2)) nil)))
+
+(defund fast-zero& (netlist n)
+  (declare (xargs :guard (and (alistp netlist)
+                              (natp n)
+                              (<= 2 n))))
+  (b* ((subnetlist (delete-to-eq (si 'fast-zero n) netlist)))
+    (and (equal (assoc (si 'fast-zero n) netlist)
+                (fast-zero* n))
+         (t-or-nor& subnetlist (make-tree (- n 2)) nil))))
 
 (defthm check-fast-zero$netlist-5
   (fast-zero& (fast-zero$netlist 5) 5))

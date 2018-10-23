@@ -289,7 +289,7 @@
 
 ;; DE netlist containing LINK1
 
-(defun link1$netlist ()
+(defund link1$netlist ()
   (declare (xargs :guard t))
   (list (link1*)))
 
@@ -420,7 +420,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; LINK.
 
-(defun link$netlist (data-width)
+(defund link$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (link* data-width)
         (union$ (latch-n$netlist data-width)
@@ -431,10 +431,10 @@
 (defund link& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'link data-width) netlist)
-              (link* data-width))
-       (b* ((netlist (delete-to-eq (si 'link data-width) netlist)))
-         (latch-n& netlist data-width))))
+  (b* ((subnetlist (delete-to-eq (si 'link data-width) netlist)))
+    (and (equal (assoc (si 'link data-width) netlist)
+                (link* data-width))
+         (latch-n& subnetlist data-width))))
 
 ;; Sanity check
 

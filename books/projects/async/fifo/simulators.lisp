@@ -10,6 +10,7 @@
 
 (include-book "comp-v-or")
 (include-book "queue9-l")
+(include-book "queue10")
 (include-book "queue11-l")
 (include-book "queue20-l")
 (include-book "round-robin1")
@@ -23,21 +24,24 @@
 ;;;
 ;;; 1.  Q2
 ;;; 2.  Q3
-;;; 3.  Q3-L
-;;; 4.  Q4-L
-;;; 5.  Q5-L
-;;; 6.  Q8-L
-;;; 7.  Q9-L
-;;; 8.  Q10-L
-;;; 9.  Q11-L
-;;; 10. Q20-L
-;;; 11. COMP-V-OR
-;;; 12. ALT-MERGE
-;;; 13. ALT-BRANCH
-;;; 14. WW
-;;; 15. RR1
-;;; 16. RR2
-;;; 17. RR3
+;;; 3.  Q4
+;;; 4.  Q5
+;;; 5.  Q10
+;;; 6.  Q3-L
+;;; 7.  Q4-L
+;;; 8.  Q5-L
+;;; 9.  Q8-L
+;;; 10. Q9-L
+;;; 11. Q10-L
+;;; 12. Q11-L
+;;; 13. Q20-L
+;;; 14. COMP-V-OR
+;;; 15. ALT-MERGE
+;;; 16. ALT-BRANCH
+;;; 17. WW
+;;; 18. RR1
+;;; 19. RR2
+;;; 20. RR3
 
 ;; ======================================================================
 
@@ -193,7 +197,248 @@
        state)))
   )
 
-;; 3. Q3-L
+;; 3. Q4
+
+(progn
+  (defun queue4$map-to-links (st)
+    (b* ((l0 (get-field *queue4$l0* st))
+         (l1 (get-field *queue4$l1* st))
+         (l2 (get-field *queue4$l2* st))
+         (l3 (get-field *queue4$l3* st)))
+      (map-to-links (list (cons 'l0 l0)
+                          (cons 'l1 l1)
+                          (cons 'l2 l2)
+                          (cons 'l3 l3)))))
+
+  (defun queue4$map-to-links-list (x)
+    (if (atom x)
+        nil
+      (cons (queue4$map-to-links (car x))
+            (queue4$map-to-links-list (cdr x)))))
+
+  (defund queue4$st-gen (data-width)
+    (declare (xargs :guard (natp data-width)))
+    (b* ((empty '(nil))
+         (invalid-data (make-list data-width :initial-element '(x))))
+      (list (list empty invalid-data)
+            (list empty invalid-data)
+            (list empty invalid-data)
+            (list empty invalid-data))))
+
+  (defund queue4$ins-and-st-test (data-width n state)
+    (declare (xargs :guard (and (natp data-width)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (queue4$ins-len data-width))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (queue4$st-gen data-width)))
+      (mv (and (queue4$input-format-n inputs-seq data-width n)
+               (queue4$valid-st st data-width))
+          state)))
+
+  (defund queue4$sim (data-width n state)
+    (declare (xargs :guard (and (natp data-width)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (queue4$ins-len data-width))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (queue4$st-gen data-width)))
+      (mv (pretty-list
+           (remove-dup-neighbors
+            (queue4$map-to-links-list
+             (de-sim-trace (si 'queue4 data-width)
+                           inputs-seq
+                           st
+                           (queue4$netlist data-width))))
+           0)
+          state)))
+
+  (defund queue4$in-out-sim (data-width n state)
+    (declare (xargs :guard (and (natp data-width)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (queue4$ins-len data-width))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (queue4$st-gen data-width)))
+      (mv
+       (append
+        (list (cons 'in-seq
+                    (v-to-nat-lst
+                     (queue4$in-seq inputs-seq st data-width n))))
+        (list (cons 'out-seq
+                    (v-to-nat-lst
+                     (queue4$out-seq inputs-seq st data-width n)))))
+       state)))
+  )
+
+;; 4. Q5
+
+(progn
+  (defun queue5$map-to-links (st)
+    (b* ((l0 (get-field *queue5$l0* st))
+         (l1 (get-field *queue5$l1* st))
+         (l2 (get-field *queue5$l2* st))
+         (l3 (get-field *queue5$l3* st))
+         (l4 (get-field *queue5$l4* st)))
+      (map-to-links (list (cons 'l0 l0)
+                          (cons 'l1 l1)
+                          (cons 'l2 l2)
+                          (cons 'l3 l3)
+                          (cons 'l4 l4)))))
+
+  (defun queue5$map-to-links-list (x)
+    (if (atom x)
+        nil
+      (cons (queue5$map-to-links (car x))
+            (queue5$map-to-links-list (cdr x)))))
+
+  (defund queue5$st-gen (data-width)
+    (declare (xargs :guard (natp data-width)))
+    (b* ((empty '(nil))
+         (invalid-data (make-list data-width :initial-element '(x))))
+      (list (list empty invalid-data)
+            (list empty invalid-data)
+            (list empty invalid-data)
+            (list empty invalid-data)
+            (list empty invalid-data))))
+
+  (defund queue5$ins-and-st-test (data-width n state)
+    (declare (xargs :guard (and (natp data-width)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (queue5$ins-len data-width))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (queue5$st-gen data-width)))
+      (mv (and (queue5$input-format-n inputs-seq data-width n)
+               (queue5$valid-st st data-width))
+          state)))
+
+  (defund queue5$sim (data-width n state)
+    (declare (xargs :guard (and (natp data-width)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (queue5$ins-len data-width))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (queue5$st-gen data-width)))
+      (mv (pretty-list
+           (remove-dup-neighbors
+            (queue5$map-to-links-list
+             (de-sim-trace (si 'queue5 data-width)
+                           inputs-seq
+                           st
+                           (queue5$netlist data-width))))
+           0)
+          state)))
+
+  (defund queue5$in-out-sim (data-width n state)
+    (declare (xargs :guard (and (natp data-width)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (queue5$ins-len data-width))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (queue5$st-gen data-width)))
+      (mv
+       (append
+        (list (cons 'in-seq
+                    (v-to-nat-lst
+                     (queue5$in-seq inputs-seq st data-width n))))
+        (list (cons 'out-seq
+                    (v-to-nat-lst
+                     (queue5$out-seq inputs-seq st data-width n)))))
+       state)))
+  )
+
+;; 5. Q10
+
+(progn
+  (defun queue10$map-to-links (st)
+    (b* ((l (get-field *queue10$l* st))
+         (q4 (get-field *queue10$q4* st))
+         (q5 (get-field *queue10$q5* st)))
+      (append (list (cons 'q4 (queue4$map-to-links q4)))
+              (map-to-links (list (cons 'l l)))
+              (list (cons 'q5 (queue5$map-to-links q5))))))
+
+  (defun queue10$map-to-links-list (x)
+    (if (atom x)
+        nil
+      (cons (queue10$map-to-links (car x))
+            (queue10$map-to-links-list (cdr x)))))
+
+  (defund queue10$st-gen (data-width)
+    (declare (xargs :guard (natp data-width)))
+    (b* ((empty '(nil))
+         (invalid-data (make-list data-width :initial-element '(x)))
+         (q4 (queue4$st-gen data-width))
+         (q5 (queue5$st-gen data-width)))
+      (list (list empty invalid-data)
+            q4 q5)))
+
+  (defund queue10$ins-and-st-test (data-width n state)
+    (declare (xargs :guard (and (natp data-width)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (queue10$ins-len data-width))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (queue10$st-gen data-width)))
+      (mv (and (queue10$input-format-n inputs-seq data-width n)
+               (queue10$valid-st st data-width))
+          state)))
+
+  (defund queue10$sim (data-width n state)
+    (declare (xargs :guard (and (natp data-width)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (queue10$ins-len data-width))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (queue10$st-gen data-width)))
+      (mv (pretty-list
+           (remove-dup-neighbors
+            (queue10$map-to-links-list
+             (de-sim-trace (si 'queue10 data-width)
+                           inputs-seq
+                           st
+                           (queue10$netlist data-width))))
+           0)
+          state)))
+
+  (defund queue10$in-out-sim (data-width n state)
+    (declare (xargs :guard (and (natp data-width)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (queue10$ins-len data-width))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (queue10$st-gen data-width)))
+      (mv
+       (append
+        (list (cons 'in-seq
+                    (v-to-nat-lst
+                     (queue10$in-seq inputs-seq st data-width n))))
+        (list (cons 'out-seq
+                    (v-to-nat-lst
+                     (queue10$out-seq inputs-seq st data-width n)))))
+       state)))
+  )
+
+;; 6. Q3-L
 
 (progn
   (defun queue3-l$map-to-links (st)
@@ -270,7 +515,7 @@
        state)))
   )
 
-;; 4. Q4-L
+;; 7. Q4-L
 
 (progn
   (defun queue4-l$map-to-links (st)
@@ -350,7 +595,7 @@
        state)))
   )
 
-;; 5. Q5-L
+;; 8. Q5-L
 
 (progn
   (defun queue5-l$map-to-links (st)
@@ -433,7 +678,7 @@
        state)))
   )
 
-;; 6. Q8-L
+;; 9. Q8-L
 
 (progn
   (defun queue8-l$map-to-links (st)
@@ -506,7 +751,7 @@
        state)))
   )
 
-;; 7. Q9-L
+;; 10. Q9-L
 
 (progn
   (defun queue9-l$map-to-links (st)
@@ -579,7 +824,7 @@
        state)))
   )
 
-;; 8. Q10-L
+;; 11. Q10-L
 
 (progn
   (defun queue10-l$map-to-links (st)
@@ -652,7 +897,7 @@
        state)))
   )
 
-;; 9. Q11-L
+;; 12. Q11-L
 
 (progn
   (defun queue11-l$map-to-links (st)
@@ -725,7 +970,7 @@
        state)))
   )
 
-;; 10. Q20-L
+;; 13. Q20-L
 
 (progn
   (defun queue20-l$map-to-links (st)
@@ -798,7 +1043,7 @@
        state)))
   )
 
-;; 11. COMP-V-OR
+;; 14. COMP-V-OR
 
 (progn
   (defun comp-v-or$map-to-links (st)
@@ -886,7 +1131,7 @@
        state)))
   )
 
-;; 12. ALT-MERGE
+;; 15. ALT-MERGE
 
 (progn
   (defun alt-merge$map-to-links (st)
@@ -924,7 +1169,7 @@
           state)))
   )
 
-;; 13. ALT-BRANCH
+;; 16. ALT-BRANCH
 
 (progn
   (defun alt-branch$map-to-links (st)
@@ -962,7 +1207,7 @@
           state)))
   )
 
-;; 14. WW
+;; 17. WW
 
 (progn
   (defun wig-wag$map-to-links (st)
@@ -1047,7 +1292,7 @@
        state)))
   )
 
-;; 15. RR1
+;; 18. RR1
 
 (progn
   (defun round-robin1$map-to-links (st)
@@ -1144,7 +1389,7 @@
        state)))
   )
 
-;; 16. RR2
+;; 19. RR2
 
 (progn
   (defun round-robin2$map-to-links (st)
@@ -1228,7 +1473,7 @@
        state)))
   )
 
-;; 17. RR3
+;; 20. RR3
 
 (progn
   (defun round-robin3$map-to-links (st)

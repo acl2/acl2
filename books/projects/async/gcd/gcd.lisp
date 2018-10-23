@@ -149,7 +149,7 @@
 
 ;; DE netlist generator.  A generated netlist will contain an instance of GCD.
 
-(defun gcd$netlist (data-width)
+(defund gcd$netlist (data-width)
   (declare (xargs :guard (and (natp data-width)
                               (<= 2 data-width))))
   (cons (gcd* data-width)
@@ -165,14 +165,14 @@
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width)
                               (<= 2 data-width))))
-  (and (equal (assoc (si 'gcd data-width) netlist)
-              (gcd* data-width))
-       (b* ((netlist (delete-to-eq (si 'gcd data-width) netlist)))
-         (and (link1& netlist)
-              (link& netlist (* 2 data-width))
-              (gcd-cond& netlist data-width)
-              (gcd-body& netlist data-width)
-              (merge& netlist (* 2 data-width))))))
+  (b* ((subnetlist (delete-to-eq (si 'gcd data-width) netlist)))
+    (and (equal (assoc (si 'gcd data-width) netlist)
+                (gcd* data-width))
+         (link1& subnetlist)
+         (link& subnetlist (* 2 data-width))
+         (gcd-cond& subnetlist data-width)
+         (gcd-body& subnetlist data-width)
+         (merge& subnetlist (* 2 data-width)))))
 
 ;; Sanity check
 
@@ -519,7 +519,7 @@
                                      gcd$valid-st
                                      gcd$in-act
                                      gcd$me-inputs)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-gcd$out-act
   (implies (and (gcd$input-format inputs data-width)
@@ -534,7 +534,7 @@
                                      gcd$valid-st
                                      gcd$out-act
                                      gcd$br-inputs)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma gcd)
 
@@ -752,14 +752,14 @@
      (implies (gcd$input-format inputs data-width)
               (booleanp (nth 0 inputs)))
      :hints (("Goal" :in-theory (enable gcd$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm gcd$input-format-lemma-2
      (implies (gcd$input-format inputs data-width)
               (booleanp (nth 1 inputs)))
      :hints (("Goal" :in-theory (enable gcd$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm gcd$input-format-lemma-3
@@ -794,7 +794,7 @@
                                         gcd-body$act
                                         gcd-body$a<b
                                         gcd$body-inputs)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm gcd$body-act-inactive

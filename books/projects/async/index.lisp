@@ -65,8 +65,21 @@
 (defthm not-equal-with-si-of-diff-symbol
   (implies (not (istrprefixp (str-append-symbol-underscore s2)
                              (symbol-name s1)))
-           (not (equal s1 (si s2 n))))
-  :hints (("Goal" :in-theory (disable str-append-symbol-underscore))))
+           (and (not (equal (symbol-name s1)
+                            (symbol-name (si s2 n))))
+                (not (equal s1 (si s2 n)))))
+  :hints (("Goal" :in-theory (disable str-append-symbol-underscore)))
+  :rule-classes ((:rewrite
+                  :corollary
+                  (implies (not (istrprefixp (str-append-symbol-underscore s2)
+                                             (symbol-name s1)))
+                           (not (equal (symbol-name s1)
+                                       (symbol-name (si s2 n))))))
+                 (:rewrite
+                  :corollary
+                  (implies (not (istrprefixp (str-append-symbol-underscore s2)
+                                             (symbol-name s1)))
+                           (not (equal s1 (si s2 n)))))))
 
 (encapsulate
   ()

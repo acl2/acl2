@@ -107,7 +107,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; ALT-MERGE.
 
-(defun alt-merge$netlist (data-width)
+(defund alt-merge$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (alt-merge* data-width)
         (union$ (link1$netlist)
@@ -120,12 +120,12 @@
 (defund alt-merge& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'alt-merge data-width) netlist)
-              (alt-merge* data-width))
-       (b* ((netlist (delete-to-eq (si 'alt-merge data-width) netlist)))
-         (and (link1& netlist)
-              (joint-cntl& netlist)
-              (tv-if& netlist (make-tree data-width))))))
+  (b* ((subnetlist (delete-to-eq (si 'alt-merge data-width) netlist)))
+    (and (equal (assoc (si 'alt-merge data-width) netlist)
+                (alt-merge* data-width))
+         (link1& subnetlist)
+         (joint-cntl& subnetlist)
+         (tv-if& subnetlist (make-tree data-width)))))
 
 ;; Sanity check
 
@@ -369,7 +369,7 @@
                                      alt-merge$input-format
                                      alt-merge$valid-st
                                      alt-merge$act0)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-alt-merge$act1
   (implies (and (alt-merge$input-format inputs data-width)
@@ -379,14 +379,14 @@
                                      alt-merge$input-format
                                      alt-merge$valid-st
                                      alt-merge$act1)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-alt-merge$act
   (implies (and (alt-merge$input-format inputs data-width)
                 (alt-merge$valid-st st))
            (booleanp (alt-merge$act inputs st data-width)))
   :hints (("Goal" :in-theory (enable alt-merge$act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm alt-merge$valid-st-preserved
   (implies (and (alt-merge$input-format inputs data-width)
