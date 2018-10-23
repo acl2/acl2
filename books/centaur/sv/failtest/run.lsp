@@ -111,8 +111,8 @@ $ fvq ../cosims/cosim-core
           (mv t good bad state)))
        ;; For some warnings (like bind errors) it's probably necessary to check for
        ;; fatal floating warnings.
-       ((when (or (vl-some-warning-fatalp (vl-design->warnings good))
-                  (vl-some-warning-fatalp (vl-design->warnings bad))))
+       ((when (or (vl-some-warning-fatalp (vl-design->warnings good) nil)
+                  (vl-some-warning-fatalp (vl-design->warnings bad) nil)))
         (cw "~%+++Status: GOOD: No clear error but design has fatal floating warnings. +++~%~%")
         (let ((state (write-passed-file testname edition)))
           (mv t good bad state)))
@@ -122,7 +122,7 @@ $ fvq ../cosims/cosim-core
        ((unless mod)
         (cw "~%+++Status: WEIRD: No clear error but didn't find top in good or bad? +++~%~%")
         (mv nil good bad state))
-       (fatalp (vl-some-warning-fatalp (vl-module->warnings mod)))
+       (fatalp (vl-some-warning-fatalp (vl-module->warnings mod) nil))
        ((when fatalp)
         (cw "~%+++Status: GOOD: No clear error but top has fatal warnings. +++~%~%")
         (let ((state (write-passed-file testname edition)))
