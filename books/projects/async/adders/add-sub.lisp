@@ -228,7 +228,8 @@
            :expand (:free (inputs n)
                           (se (si 'ripple-add/sub n) inputs sts netlist))
            :in-theory (e/d* (de-rules
-                             ripple-add/sub&)
+                             ripple-add/sub&
+                             ripple-add/sub*$destructure)
                             (de-module-disabled-rules)))))
 
 (defthm ripple-add/sub$value-2
@@ -248,7 +249,8 @@
            :expand (:free (inputs n)
                           (se (si 'ripple-add/sub n) inputs sts netlist))
            :in-theory (e/d* (de-rules
-                             ripple-add/sub&)
+                             ripple-add/sub&
+                             ripple-add/sub*$destructure)
                             (de-module-disabled-rules)))))
 
 (encapsulate
