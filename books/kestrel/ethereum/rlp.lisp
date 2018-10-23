@@ -144,7 +144,7 @@
                (rlp-treep x)))
     :enable rlp-tree/error-p)
 
-  (defrule disjoint-tree/error
+  (defrule disjoint-rlp-tree/error
     (not (and (eq x :error)
               (rlp-treep x)))
     :rule-classes nil)
