@@ -133,7 +133,7 @@
    These are the possible results of RLP decoding.
    </p>"
   (:error :fields () :ctor-body ':error :cond (eq x :error))
-  (:bytes :fields ((tree :type rlp-tree :acc-body x)) :ctor-body tree))
+  (:tree :fields ((tree :type rlp-tree :acc-body x)) :ctor-body tree))
 
 (defsection rlp-tree/error-ext
   :extension (rlp-tree/error)

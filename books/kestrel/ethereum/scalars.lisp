@@ -33,7 +33,7 @@
   :parents (basics)
   :short "Union of @(see scalars) and @(':error')."
   (:error :fields () :ctor-body ':error :cond (eq x :error))
-  (:bytes :fields ((nat :type nat :acc-body x)) :ctor-body nat))
+  (:nat :fields ((nat :type nat :acc-body x)) :ctor-body nat))
 
 (defsection nat/error-ext
   :extension nat/error
