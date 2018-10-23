@@ -102,7 +102,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; ALT-BRANCH.
 
-(defun alt-branch$netlist (data-width)
+(defund alt-branch$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (alt-branch* data-width)
         (union$ (link1$netlist)
@@ -115,12 +115,12 @@
 (defund alt-branch& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'alt-branch data-width) netlist)
-              (alt-branch* data-width))
-       (b* ((netlist (delete-to-eq (si 'alt-branch data-width) netlist)))
-         (and (link1& netlist)
-              (joint-cntl& netlist)
-              (v-buf& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'alt-branch data-width) netlist)))
+    (and (equal (assoc (si 'alt-branch data-width) netlist)
+                (alt-branch* data-width))
+         (link1& subnetlist)
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -341,7 +341,7 @@
   :hints (("Goal" :in-theory (enable alt-branch$input-format
                                      alt-branch$valid-st
                                      alt-branch$act0)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-alt-branch$act1
   (implies (and (alt-branch$input-format inputs data-width)
@@ -350,14 +350,14 @@
   :hints (("Goal" :in-theory (enable alt-branch$input-format
                                      alt-branch$valid-st
                                      alt-branch$act1)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-alt-branch$act
   (implies (and (alt-branch$input-format inputs data-width)
                 (alt-branch$valid-st st))
            (booleanp (alt-branch$act inputs st data-width)))
   :hints (("Goal" :in-theory (enable alt-branch$act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm alt-branch$valid-st-preserved
   (implies (and (alt-branch$input-format inputs data-width)

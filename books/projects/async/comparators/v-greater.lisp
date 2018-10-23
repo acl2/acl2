@@ -27,7 +27,7 @@
    (h (ind-out) b-or (c ind-in)))
  :guard t)
 
-(defun 1-bit->$netlist ()
+(defund 1-bit->$netlist ()
   (declare (xargs :guard t))
   (list (1-bit->*)))
 
@@ -191,6 +191,11 @@
          (list 'flag-in (list (si 'flag 0)) 'vdd ())
          (v->-body 0 n))))
 
+(defund v->$netlist (n)
+  (declare (xargs :guard (natp n)))
+  (cons (v->* n)
+        (1-bit->$netlist)))
+
 (defund v->& (netlist n)
   (declare (xargs :guard (and (alistp netlist)
                               (natp n))))
@@ -198,11 +203,6 @@
               (v->* n))
        (1-bit->& (delete-to-eq (si 'v-> n)
                                netlist))))
-
-(defun v->$netlist (n)
-  (declare (xargs :guard (natp n)))
-  (cons (v->* n)
-        (1-bit->$netlist)))
 
 (local
  (defthmd check-v->$netlist-64
@@ -230,9 +230,10 @@
    (implies (and (1-bit->& netlist)
                  (natp m)
                  (natp n)
+                 (equal m+n (+ m n))
                  ;; We need the following hypothesis for the case of (zp n)
                  (3vp (assoc-eq-value (si 'ind m) wire-alist)))
-            (equal (assoc-eq-value (si 'ind (+ m n))
+            (equal (assoc-eq-value (si 'ind m+n)
                                    (se-occ (v->-body m n)
                                            wire-alist
                                            sts-alist
@@ -265,9 +266,7 @@
                     (assoc-eq-value (si 'ind 0) wire-alist)
                     (assoc-eq-value (si 'flag 0) wire-alist)
                     (assoc-eq-values (sis 'a 0 n) wire-alist)
-                    (assoc-eq-values (sis 'b 0 n) wire-alist))))
-   :hints (("Goal" :use (:instance v->-body$value
-                                   (m 0))))))
+                    (assoc-eq-values (sis 'b 0 n) wire-alist))))))
 
 (not-primp-lemma v->)
 

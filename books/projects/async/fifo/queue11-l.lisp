@@ -104,7 +104,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; QUEUE11-L.
 
-(defun queue11-l$netlist (data-width)
+(defund queue11-l$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (queue11-l* data-width)
         (union$ (queue3-l$netlist data-width)
@@ -116,13 +116,13 @@
 (defund queue11-l& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'queue11-l data-width) netlist)
-              (queue11-l* data-width))
-       (b* ((netlist (delete-to-eq (si 'queue11-l data-width) netlist)))
-         (and (joint-cntl& netlist)
-              (v-buf& netlist data-width)
-              (queue3-l& netlist data-width)
-              (queue8-l& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'queue11-l data-width) netlist)))
+    (and (equal (assoc (si 'queue11-l data-width) netlist)
+                (queue11-l* data-width))
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist data-width)
+         (queue3-l& subnetlist data-width)
+         (queue8-l& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -252,7 +252,7 @@
              (booleanp (queue11-l$ready-in- st)))
     :hints (("Goal" :in-theory (enable queue11-l$valid-st
                                        queue11-l$ready-in-)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the "ready-out" signal
 
@@ -265,7 +265,7 @@
              (booleanp (queue11-l$ready-out st)))
     :hints (("Goal" :in-theory (enable queue11-l$valid-st
                                        queue11-l$ready-out)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the output data
 
@@ -468,14 +468,14 @@
            (booleanp (queue11-l$in-act inputs)))
   :hints (("Goal" :in-theory (enable queue11-l$input-format
                                      queue11-l$in-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue11-l$out-act
   (implies (queue11-l$input-format inputs st data-wisth)
            (booleanp (queue11-l$out-act inputs)))
   :hints (("Goal" :in-theory (enable queue11-l$input-format
                                      queue11-l$out-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma queue11-l :clink t)
 

@@ -60,16 +60,23 @@
 
      (ripple-add/sub-body (1+ m) (1- n)))))
 
-(defun ripple-add/sub* (n)
+(destructuring-lemma
+ ripple-add/sub* (n)
+ (declare (xargs :guard (natp n)))
+ nil                             ; Bindings
+ (si 'ripple-add/sub n)          ; Name
+ (cons (si 'carry 0)             ; Inputs are
+       (append (sis 'a 0 n)      ; (carry_0 a_0    a_1    ... a_n-1
+               (sis 'b-in 0 n))) ;          b-in_0 b-in_1 ... b-in_n-1)
+ (append (sis 'sum 0 n)          ; Outputs are
+         (list (si 'carry n)))   ; (sum_0 sum_1 ... sum_n-1 carry_n)
+ nil                             ; State
+ (ripple-add/sub-body 0 n))      ; Occurrences
+
+(defund ripple-add/sub$netlist (n)
   (declare (xargs :guard (natp n)))
-  (list (si 'ripple-add/sub n)          ; ripple-add/sub_n
-        (cons (si 'carry 0)             ; inputs are
-              (append (sis 'a 0 n)      ; (carry_0 a_0    a_1    ... a_n-1
-                      (sis 'b-in 0 n))) ;          b-in_0 b-in_1 ... b-in_n-1)
-        (append (sis 'sum 0 n)          ; outputs are
-                (list (si 'carry n)))   ; (sum_0 sum_1 ... sum_n-1 carry_n)
-        nil                             ; no state
-        (ripple-add/sub-body 0 n)))     ; occurrences
+  (cons (ripple-add/sub* n)
+        *full-adder*))
 
 (defund ripple-add/sub& (netlist n)
   (declare (xargs :guard (and (alistp netlist)
@@ -78,11 +85,6 @@
               (ripple-add/sub* n))
        (full-adder& (delete-to-eq (si 'ripple-add/sub n)
                                   netlist))))
-
-(defun ripple-add/sub$netlist (n)
-  (declare (xargs :guard (natp n)))
-  (cons (ripple-add/sub* n)
-        *full-adder*))
 
 (local
  (defthmd check-ripple-add/sub$netlist-64
@@ -119,11 +121,12 @@
    (implies (and (full-adder& netlist)
                  (natp m)
                  (natp n)
+                 (equal m+n (+ m n))
                  (equal (assoc-eq-value (si 'carry 0) wire-alist)
                         NIL) ;; Add
                  (3vp (assoc-eq-value (si 'carry m) wire-alist)))
             (equal (assoc-eq-values (append (sis 'sum m n)
-                                            (list (si 'carry (+ m n))))
+                                            (list (si 'carry m+n)))
                                     (se-occ (ripple-add/sub-body m n)
                                             wire-alist
                                             sts-alist
@@ -133,24 +136,25 @@
                     (assoc-eq-values (sis 'a m n) wire-alist)
                     (assoc-eq-values (sis 'b-in m n) wire-alist))))
    :hints (("Goal"
+            :induct (ripple-add/sub-body-induct m n
+                                                wire-alist sts-alist
+                                                netlist)
             :in-theory (e/d* (de-rules
                               fv-adder
                               sis)
-                             ((si)))
-            :induct (ripple-add/sub-body-induct m n
-                                                wire-alist sts-alist
-                                                netlist)))))
+                             ((si)))))))
 
 (local
  (defthm ripple-add/sub-body$value-2
    (implies (and (full-adder& netlist)
                  (natp m)
                  (natp n)
+                 (equal m+n (+ m n))
                  (equal (assoc-eq-value (si 'carry 0) wire-alist)
                         T) ;; Sub
                  (3vp (assoc-eq-value (si 'carry m) wire-alist)))
             (equal (assoc-eq-values (append (sis 'sum m n)
-                                            (list (si 'carry (+ m n))))
+                                            (list (si 'carry m+n)))
                                     (se-occ (ripple-add/sub-body m n)
                                             wire-alist
                                             sts-alist
@@ -161,14 +165,14 @@
                     (fv-not
                      (assoc-eq-values (sis 'b-in m n) wire-alist)))))
    :hints (("Goal"
+            :induct (ripple-add/sub-body-induct m n
+                                                wire-alist sts-alist
+                                                netlist)
             :in-theory (e/d* (de-rules
                               fv-adder
                               fv-not
                               sis)
-                             ((si)))
-            :induct (ripple-add/sub-body-induct m n
-                                                wire-alist sts-alist
-                                                netlist)))))
+                             ((si)))))))
 
 (local
  (defthm ripple-add/sub-body$value-m=0-1
@@ -185,9 +189,7 @@
                    (fv-adder
                     (assoc-eq-value (si 'carry 0) wire-alist)
                     (assoc-eq-values (sis 'a 0 n) wire-alist)
-                    (assoc-eq-values (sis 'b-in 0 n) wire-alist))))
-   :hints (("Goal" :use (:instance ripple-add/sub-body$value-1
-                                   (m 0))))))
+                    (assoc-eq-values (sis 'b-in 0 n) wire-alist))))))
 
 (local
  (defthm ripple-add/sub-body$value-m=0-2
@@ -205,9 +207,7 @@
                     (assoc-eq-value (si 'carry 0) wire-alist)
                     (assoc-eq-values (sis 'a 0 n) wire-alist)
                     (fv-not
-                     (assoc-eq-values (sis 'b-in 0 n) wire-alist)))))
-   :hints (("Goal" :use (:instance ripple-add/sub-body$value-2
-                                   (m 0))))))
+                     (assoc-eq-values (sis 'b-in 0 n) wire-alist)))))))
 
 (not-primp-lemma ripple-add/sub)
 

@@ -74,7 +74,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; GCD-COND.
 
-(defun gcd-cond$netlist (data-width)
+(defund gcd-cond$netlist (data-width)
   (declare (xargs :guard (and (natp data-width)
                               (<= 2 data-width))))
   (cons (gcd-cond* data-width)
@@ -90,13 +90,13 @@
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width)
                               (<= 2 data-width))))
-  (and (equal (assoc (si 'gcd-cond data-width) netlist)
-              (gcd-cond* data-width))
-       (b* ((netlist (delete-to-eq (si 'gcd-cond data-width) netlist)))
-         (and (branch& netlist (* 2 data-width))
-              (fast-zero& netlist data-width)
-              (v-equal& netlist data-width)
-              (tv-if& netlist (make-tree data-width))))))
+  (b* ((subnetlist (delete-to-eq (si 'gcd-cond data-width) netlist)))
+    (and (equal (assoc (si 'gcd-cond data-width) netlist)
+                (gcd-cond* data-width))
+         (branch& subnetlist (* 2 data-width))
+         (fast-zero& subnetlist data-width)
+         (v-equal& subnetlist data-width)
+         (tv-if& subnetlist (make-tree data-width)))))
 
 ;; Sanity check
 

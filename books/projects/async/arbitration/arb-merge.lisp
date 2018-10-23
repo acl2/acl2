@@ -147,7 +147,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; ARB-MERGE.
 
-(defun arb-merge$netlist (data-width)
+(defund arb-merge$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (arb-merge* data-width)
         (union$ (link$netlist 2)
@@ -162,14 +162,14 @@
 (defund arb-merge& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'arb-merge data-width) netlist)
-              (arb-merge* data-width))
-       (b* ((netlist (delete-to-eq (si 'arb-merge data-width) netlist)))
-         (and (link& netlist 2)
-              (joint-cntl& netlist)
-              (v-buf& netlist 2)
-              (v-if& netlist 2)
-              (tv-if& netlist (make-tree data-width))))))
+  (b* ((subnetlist (delete-to-eq (si 'arb-merge data-width) netlist)))
+    (and (equal (assoc (si 'arb-merge data-width) netlist)
+                (arb-merge* data-width))
+         (link& subnetlist 2)
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist 2)
+         (v-if& subnetlist 2)
+         (tv-if& subnetlist (make-tree data-width)))))
 
 ;; Sanity check
 
@@ -333,7 +333,7 @@
      (implies (bvp x)
               (booleanp (cadr x)))
      :hints (("Goal" :in-theory (enable bvp)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (defthm arb-merge$act-mutually-exclusive
     (implies (and (booleanp (nth 0 inputs))

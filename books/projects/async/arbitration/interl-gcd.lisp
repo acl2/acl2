@@ -101,7 +101,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; INTERL-GCD.
 
-(defun interl-gcd$netlist (data-width)
+(defund interl-gcd$netlist (data-width)
   (declare (xargs :guard (and (natp data-width)
                               (<= 2 data-width))))
   (cons (interl-gcd* data-width)
@@ -115,12 +115,12 @@
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width)
                               (<= 2 data-width))))
-  (and (equal (assoc (si 'interl-gcd data-width) netlist)
-              (interl-gcd* data-width))
-       (b* ((netlist (delete-to-eq (si 'interl-gcd data-width) netlist)))
-         (and (link& netlist (* 2 data-width))
-              (interl& netlist (* 2 data-width))
-              (gcd& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'interl-gcd data-width) netlist)))
+    (and (equal (assoc (si 'interl-gcd data-width) netlist)
+                (interl-gcd* data-width))
+         (link& subnetlist (* 2 data-width))
+         (interl& subnetlist (* 2 data-width))
+         (gcd& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -516,33 +516,27 @@
                 (interl-gcd$valid-st st data-width))
            (booleanp (interl-gcd$in0-act inputs st data-width)))
   :hints (("Goal"
-           :use interl-gcd$input-format=>interl$input-format
-           :in-theory (e/d (interl-gcd$valid-st
-                            interl-gcd$in0-act)
-                           (interl-gcd$input-format=>interl$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable interl-gcd$valid-st
+                              interl-gcd$in0-act)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-interl-gcd$in1-act
   (implies (and (interl-gcd$input-format inputs data-width)
                 (interl-gcd$valid-st st data-width))
            (booleanp (interl-gcd$in1-act inputs st data-width)))
   :hints (("Goal"
-           :use interl-gcd$input-format=>interl$input-format
-           :in-theory (e/d (interl-gcd$valid-st
-                            interl-gcd$in1-act)
-                           (interl-gcd$input-format=>interl$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable interl-gcd$valid-st
+                              interl-gcd$in1-act)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-interl-gcd$out-act
   (implies (and (interl-gcd$input-format inputs data-width)
                 (interl-gcd$valid-st st data-width))
            (booleanp (interl-gcd$out-act inputs st data-width)))
   :hints (("Goal"
-           :use interl-gcd$input-format=>gcd$input-format
-           :in-theory (e/d (interl-gcd$valid-st
-                            interl-gcd$out-act)
-                           (interl-gcd$input-format=>gcd$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable interl-gcd$valid-st
+                              interl-gcd$out-act)))
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma interl-gcd)
 
@@ -802,7 +796,9 @@
                               interl-gcd$interl-data-out
                               interl-gcd$out-act
                               interl-gcd$extract2)
-                             (interl-gcd$input-format=>gcd$input-format)))))
+                             (interl-gcd$input-format=>gcd$input-format
+                              interl$extract0-lemma
+                              interl$extract1-lemma)))))
   )
 
 ;; ======================================================================
@@ -827,7 +823,7 @@
      (implies (link$valid-st st data-width)
               (booleanp (car (nth *link$s* st))))
      :hints (("Goal" :in-theory (enable get-field)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (defthm interl-gcd$valid-st-preserved
     (implies (and (interl-gcd$input-format inputs data-width)

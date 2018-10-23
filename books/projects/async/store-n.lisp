@@ -15,7 +15,7 @@
 
 ;; LATCH-N
 
-(defund latch-n-body (m n)
+(defun latch-n-body (m n)
   (declare (xargs :guard (and (natp m)
                               (natp n))))
   (if (zp n)
@@ -43,7 +43,7 @@
   (equal (assoc (si 'LATCH-N n) netlist)
          (latch-n* n)))
 
-(defun latch-n$netlist (n)
+(defund latch-n$netlist (n)
   (declare (xargs :guard (natp n)))
   (list (latch-n* n)))
 
@@ -56,15 +56,15 @@
 ;; LATCH-N value
 
 (local
- (defun latch-n-body-induct (m n wire-alist sts-alist netlist)
+ (defun latch-n-body-induct (m n wire-alist st-alist netlist)
    (if (zp n)
        wire-alist
      (latch-n-body-induct
       (1+ m)
       (1- n)
       (se-occ-bindings 1 (latch-n-body m n)
-                       wire-alist sts-alist netlist)
-      sts-alist
+                       wire-alist st-alist netlist)
+      st-alist
       netlist))))
 
 (local
@@ -83,21 +83,37 @@
    (all-unbound-in-body (sis 'D x y) (latch-n-body m n))
    :hints (("Goal" :in-theory (enable latch-n-body occ-outs)))))
 
+(defthm latch-n-body$values-of-two-netlists
+  (implies (and (syntaxp (not (and (consp netlist)
+                                   (equal (car netlist) 'latch-n$netlist))))
+                (natp m))
+           (equal (assoc-eq-values
+                   (sis 'Q m n)
+                   (se-occ (latch-n-body m n)
+                           wire-alist st-alist netlist))
+                  (assoc-eq-values
+                   (sis 'Q m n)
+                   (se-occ (latch-n-body m n)
+                           wire-alist st-alist (latch-n$netlist k)))))
+  :hints (("Goal"
+           :induct (latch-n-body-induct m n wire-alist st-alist netlist)
+           :in-theory (enable de-rules
+                              sis))))
+
 (local
  (defthm latch-n-body$value
    (implies (natp m)
             (equal (assoc-eq-values
                     (sis 'Q m n)
                     (se-occ (latch-n-body m n)
-                            wire-alist sts-alist netlist))
+                            wire-alist st-alist netlist))
                    (fv-if (assoc-eq-value 'clk wire-alist)
                           (assoc-eq-values (sis 'D m n) wire-alist)
                           (strip-cars
-                           (assoc-eq-values (sis 'G m n) sts-alist)))))
+                           (assoc-eq-values (sis 'G m n) st-alist)))))
    :hints (("Goal"
-            :induct (latch-n-body-induct m n wire-alist sts-alist netlist)
+            :induct (latch-n-body-induct m n wire-alist st-alist netlist)
             :in-theory (enable de-rules
-                               latch-n-body
                                fv-if-rewrite
                                f-gates
                                repeat
@@ -110,13 +126,13 @@
   (implies (and (latch-n& netlist n)
                 (equal (len d) n)
                 (true-listp d)
-                (equal (len sts) n)
-                (true-listp sts))
-           (equal (se (si 'latch-n n) (list* clk d) sts netlist)
-                  (fv-if clk d (strip-cars sts))))
+                (equal (len st) n)
+                (true-listp st))
+           (equal (se (si 'latch-n n) (list* clk d) st netlist)
+                  (fv-if clk d (strip-cars st))))
   :hints (("Goal"
            :expand (:free (inputs n)
-                          (se (si 'latch-n n) inputs sts netlist))
+                          (se (si 'latch-n n) inputs st netlist))
            :in-theory (e/d* (de-rules
                              latch-n&
                              latch-n*$destructure)
@@ -125,15 +141,15 @@
 ;; LATCH-N state
 
 (local
- (defun latch-n-body-state-induct (m n wire-alist sts-alist netlist)
+ (defun latch-n-body-state-induct (m n wire-alist st-alist netlist)
    (if (zp n)
-       sts-alist
+       st-alist
      (latch-n-body-state-induct
       (1+ m)
       (1- n)
       wire-alist
       (de-occ-bindings 1 (latch-n-body m n)
-                       wire-alist sts-alist netlist)
+                       wire-alist st-alist netlist)
       netlist))))
 
 (local
@@ -153,24 +169,41 @@
    :hints (("Goal"
             :in-theory (enable latch-n-body)))))
 
+(defthm latch-n-body$states-of-two-netlists
+  (implies (and (syntaxp (not (and (consp netlist)
+                                   (equal (car netlist) 'latch-n$netlist))))
+                (natp m))
+           (equal (assoc-eq-values
+                   (sis 'G m n)
+                   (de-occ (latch-n-body m n)
+                           wire-alist st-alist netlist))
+                  (assoc-eq-values
+                   (sis 'G m n)
+                   (de-occ (latch-n-body m n)
+                           wire-alist st-alist (latch-n$netlist k)))))
+  :hints (("Goal"
+           :induct (latch-n-body-state-induct
+                    m n wire-alist st-alist netlist)
+           :in-theory (enable de-rules
+                              sis))))
+
 (local
  (defthm latch-n-body$state
    (implies (and (natp m)
-                 (subsetp (sis 'G m n) (strip-cars sts-alist)))
+                 (subsetp (sis 'G m n) (strip-cars st-alist)))
             (equal (assoc-eq-values
                     (sis 'G m n)
-                    (de-occ (latch-n-body m n) wire-alist sts-alist netlist))
+                    (de-occ (latch-n-body m n) wire-alist st-alist netlist))
                    (pairlis$
                     (fv-if (assoc-eq-value 'clk wire-alist)
                            (assoc-eq-values (sis 'D m n) wire-alist)
                            (strip-cars
-                            (assoc-eq-values (sis 'G m n) sts-alist)))
+                            (assoc-eq-values (sis 'G m n) st-alist)))
                     nil)))
    :hints (("Goal"
             :induct (latch-n-body-state-induct
-                     m n wire-alist sts-alist netlist)
+                     m n wire-alist st-alist netlist)
             :in-theory (enable de-rules
-                               latch-n-body
                                fv-if-rewrite
                                f-gates
                                repeat
@@ -185,14 +218,14 @@
   (implies (and (latch-n& netlist n)
                 (equal (len d) n)
                 (true-listp d)
-                (equal (len sts) n)
-                (true-listp sts))
-           (equal (de (si 'latch-n n) (list* clk d) sts netlist)
-                  (pairlis$ (fv-if clk d (strip-cars sts))
+                (equal (len st) n)
+                (true-listp st))
+           (equal (de (si 'latch-n n) (list* clk d) st netlist)
+                  (pairlis$ (fv-if clk d (strip-cars st))
                             nil)))
   :hints (("Goal"
            :expand (:free (inputs n)
-                          (de (si 'latch-n n) inputs sts netlist))
+                          (de (si 'latch-n n) inputs st netlist))
            :in-theory (e/d* (de-rules
                              latch-n&
                              latch-n*$destructure)
@@ -202,7 +235,7 @@
 
 ;; FF-N
 
-(defund ff-n-body (m n)
+(defun ff-n-body (m n)
   (declare (xargs :guard (and (natp m)
                               (natp n))))
   (if (zp n)
@@ -230,7 +263,7 @@
   (equal (assoc (si 'FF-N n) netlist)
          (ff-n* n)))
 
-(defun ff-n$netlist (n)
+(defund ff-n$netlist (n)
   (declare (xargs :guard (natp n)))
   (list (ff-n* n)))
 
@@ -243,15 +276,15 @@
 ;; FF-N value
 
 (local
- (defun ff-n-body-induct (m n wire-alist sts-alist netlist)
+ (defun ff-n-body-induct (m n wire-alist st-alist netlist)
    (if (zp n)
        wire-alist
      (ff-n-body-induct
       (1+ m)
       (1- n)
       (se-occ-bindings 1 (ff-n-body m n)
-                       wire-alist sts-alist netlist)
-      sts-alist
+                       wire-alist st-alist netlist)
+      st-alist
       netlist))))
 
 (local
@@ -270,33 +303,49 @@
    (all-unbound-in-body (sis 'D x y) (ff-n-body m n))
    :hints (("Goal" :in-theory (enable ff-n-body occ-outs)))))
 
+(defthm ff-n-body$values-of-two-netlists
+  (implies (and (syntaxp (not (and (consp netlist)
+                                   (equal (car netlist) 'ff-n$netlist))))
+                (natp m))
+           (equal (assoc-eq-values
+                   (sis 'Q m n)
+                   (se-occ (ff-n-body m n)
+                           wire-alist st-alist netlist))
+                  (assoc-eq-values
+                   (sis 'Q m n)
+                   (se-occ (ff-n-body m n)
+                           wire-alist st-alist (ff-n$netlist k)))))
+  :hints (("Goal"
+           :induct (ff-n-body-induct m n wire-alist st-alist netlist)
+           :in-theory (enable de-rules
+                              sis))))
+
 (local
  (defthm ff-n-body$value
    (implies (natp m)
             (equal (assoc-eq-values
                     (sis 'Q m n)
                     (se-occ (ff-n-body m n)
-                            wire-alist sts-alist netlist))
+                            wire-alist st-alist netlist))
                    (v-threefix (strip-cars
                                 (assoc-eq-values (sis 'G m n)
-                                                 sts-alist)))))
+                                                 st-alist)))))
    :hints (("Goal"
-            :induct (ff-n-body-induct m n wire-alist sts-alist netlist)
+            :induct (ff-n-body-induct m n wire-alist st-alist netlist)
             :in-theory (enable de-rules
-                               ff-n-body
                                sis)))))
 
 (not-primp-lemma ff-n)
 
 (defthm ff-n$value
   (implies (and (ff-n& netlist n)
-                (equal (len sts) n)
-                (true-listp sts))
-           (equal (se (si 'ff-n n) ins sts netlist)
-                  (v-threefix (strip-cars sts))))
+                (equal (len st) n)
+                (true-listp st))
+           (equal (se (si 'ff-n n) ins st netlist)
+                  (v-threefix (strip-cars st))))
   :hints (("Goal"
            :expand (:free (n)
-                          (se (si 'ff-n n) ins sts netlist))
+                          (se (si 'ff-n n) ins st netlist))
            :in-theory (e/d* (de-rules
                              ff-n&
                              ff-n*$destructure)
@@ -305,15 +354,15 @@
 ;; FF-N state
 
 (local
- (defun ff-n-body-state-induct (m n wire-alist sts-alist netlist)
+ (defun ff-n-body-state-induct (m n wire-alist st-alist netlist)
    (if (zp n)
-       sts-alist
+       st-alist
      (ff-n-body-state-induct
       (1+ m)
       (1- n)
       wire-alist
       (de-occ-bindings 1 (ff-n-body m n)
-                       wire-alist sts-alist netlist)
+                       wire-alist st-alist netlist)
       netlist))))
 
 (local
@@ -333,24 +382,41 @@
    :hints (("Goal"
             :in-theory (enable ff-n-body)))))
 
+(defthm ff-n-body$states-of-two-netlists
+  (implies (and (syntaxp (not (and (consp netlist)
+                                   (equal (car netlist) 'ff-n$netlist))))
+                (natp m))
+           (equal (assoc-eq-values
+                    (sis 'G m n)
+                    (de-occ (ff-n-body m n)
+                            wire-alist st-alist netlist))
+                  (assoc-eq-values
+                   (sis 'G m n)
+                   (de-occ (ff-n-body m n)
+                           wire-alist st-alist (ff-n$netlist k)))))
+  :hints (("Goal"
+           :induct (ff-n-body-state-induct
+                    m n wire-alist st-alist netlist)
+           :in-theory (enable de-rules
+                              sis))))
+
 (local
  (defthm ff-n-body$state
    (implies (and (natp m)
-                 (subsetp (sis 'G m n) (strip-cars sts-alist)))
+                 (subsetp (sis 'G m n) (strip-cars st-alist)))
             (equal (assoc-eq-values
                     (sis 'G m n)
-                    (de-occ (ff-n-body m n) wire-alist sts-alist netlist))
+                    (de-occ (ff-n-body m n) wire-alist st-alist netlist))
                    (pairlis$
                     (fv-if (assoc-eq-value 'clk wire-alist)
                            (assoc-eq-values (sis 'D m n) wire-alist)
                            (strip-cars
-                            (assoc-eq-values (sis 'G m n) sts-alist)))
+                            (assoc-eq-values (sis 'G m n) st-alist)))
                     nil)))
    :hints (("Goal"
             :induct (ff-n-body-state-induct
-                     m n wire-alist sts-alist netlist)
+                     m n wire-alist st-alist netlist)
             :in-theory (enable de-rules
-                               ff-n-body
                                fv-if-rewrite
                                f-gates
                                repeat
@@ -365,14 +431,14 @@
   (implies (and (ff-n& netlist n)
                 (equal (len d) n)
                 (true-listp d)
-                (equal (len sts) n)
-                (true-listp sts))
-           (equal (de (si 'ff-n n) (list* clk d) sts netlist)
-                  (pairlis$ (fv-if clk d (strip-cars sts))
+                (equal (len st) n)
+                (true-listp st))
+           (equal (de (si 'ff-n n) (list* clk d) st netlist)
+                  (pairlis$ (fv-if clk d (strip-cars st))
                             nil)))
   :hints (("Goal"
            :expand (:free (inputs n)
-                          (de (si 'ff-n n) inputs sts netlist))
+                          (de (si 'ff-n n) inputs st netlist))
            :in-theory (e/d* (de-rules
                              ff-n&
                              ff-n*$destructure)

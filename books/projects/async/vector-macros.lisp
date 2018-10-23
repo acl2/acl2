@@ -122,7 +122,7 @@
          (type (caddr occ))
          (inputs (cadddr occ))
          (name-str (symbol-name name))
-         (body-defun (strings-to-symbol name-str "$BODY"))
+         (body-defun (strings-to-symbol name-str "-BODY"))
          (generator (strings-to-symbol name-str "*"))
          (destructor (strings-to-symbol (symbol-name generator)
                                         "$DESTRUCTURE"))
@@ -130,7 +130,7 @@
          (predicate (strings-to-symbol name-str "&"))
          (unbound-in-body-lemma (strings-to-symbol name-str
                                                    "$UNBOUND-IN-BODY"))
-         (body-value-lemma (strings-to-symbol name-str "$BODY-VALUE"))
+         (body-value-lemma (strings-to-symbol name-str "-BODY$VALUE"))
          (value-lemma (strings-to-symbol name-str "$VALUE"))
          (netlist (strings-to-symbol name-str "$NETLIST")))
 
@@ -164,7 +164,7 @@
         (EQUAL (ASSOC ,module-name NETLIST)
                (,generator N)))
 
-      (DEFUN ,netlist (N)
+      (DEFUND ,netlist (N)
         (DECLARE (XARGS :GUARD (NATP N)))
         (LIST (,generator N)))
 
@@ -177,19 +177,18 @@
          :HINTS (("GOAL"
                   :IN-THEORY (ENABLE OCC-OUTS)))))
 
-      (LOCAL
-       (DEFTHM ,body-value-lemma
-         (IMPLIES (AND (NATP M)
-                       (EQUAL BODY (,body-defun M N)))
-                  ,(mapAND
-                    (map-equal-assoc-eq-values outputs specs 'M 'N)))
-         :hints (("Goal"
-                  :INDUCT (VECTOR-MODULE-INDUCTION BODY
-                                                   M N
-                                                   BINDINGS
-                                                   STATE-BINDINGS
-                                                   NETLIST)
-                  :in-theory (ENABLE de-rules sis ,@enable)))))
+      (DEFTHM ,body-value-lemma
+        (IMPLIES (AND (NATP M)
+                      (EQUAL BODY (,body-defun M N)))
+                 ,(mapAND
+                   (map-equal-assoc-eq-values outputs specs 'M 'N)))
+        :hints (("Goal"
+                 :INDUCT (VECTOR-MODULE-INDUCTION BODY
+                                                  M N
+                                                  BINDINGS
+                                                  STATE-BINDINGS
+                                                  NETLIST)
+                 :in-theory (ENABLE de-rules sis ,@enable))))
 
       (NOT-PRIMP-LEMMA ,name)
 

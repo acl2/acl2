@@ -135,7 +135,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; INTERL.
 
-(defun interl$netlist (data-width)
+(defund interl$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (interl* data-width)
         (union$ (queue20-l$netlist data-width)
@@ -147,13 +147,13 @@
 (defund interl& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'interl data-width) netlist)
-              (interl* data-width))
-       (b* ((netlist (delete-to-eq (si 'interl data-width) netlist)))
-         (and (joint-cntl& netlist)
-              (v-buf& netlist data-width)
-              (queue20-l& netlist data-width)
-              (arb-merge& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'interl data-width) netlist)))
+    (and (equal (assoc (si 'interl data-width) netlist)
+                (interl* data-width))
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist data-width)
+         (queue20-l& subnetlist data-width)
+         (arb-merge& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -555,7 +555,7 @@
    (implies (bvp x)
             (booleanp (cadr x)))
    :hints (("Goal" :in-theory (enable bvp)))
-   :rule-classes :type-prescription))
+   :rule-classes (:rewrite :type-prescription)))
 
 (local
  (defthm interl$input-format=>q20-l0$input-format
@@ -634,7 +634,7 @@
   :hints (("Goal" :in-theory (enable interl$input-format
                                      interl$valid-st
                                      interl$in0-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-interl$in1-act
   (implies (and (interl$input-format inputs data-width)
@@ -643,7 +643,7 @@
   :hints (("Goal" :in-theory (enable interl$input-format
                                      interl$valid-st
                                      interl$in1-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-interl$out0-act
   (implies (and (interl$input-format inputs data-width)
@@ -658,7 +658,7 @@
                                      interl$arb-merge-inputs
                                      interl$out-act0
                                      interl$out-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-interl$out1-act
   (implies (and (interl$input-format inputs data-width)
@@ -673,14 +673,14 @@
                                      interl$arb-merge-inputs
                                      interl$out-act1
                                      interl$out-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-interl$out-act
   (implies (and (interl$input-format inputs data-width)
                 (interl$valid-st st data-width))
            (booleanp (interl$out-act inputs st data-width)))
   :hints (("Goal" :in-theory (enable interl$out-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm bvp-interl$data-out
   (implies (and (interl$input-format inputs data-width)

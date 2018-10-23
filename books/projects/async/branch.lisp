@@ -63,7 +63,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; BRANCH.
 
-(defun branch$netlist (data-width)
+(defund branch$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (branch* data-width)
         (union$ (v-buf$netlist data-width)
@@ -75,11 +75,11 @@
 (defund branch& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'branch data-width) netlist)
-              (branch* data-width))
-       (b* ((netlist (delete-to-eq (si 'branch data-width) netlist)))
-         (and (joint-cntl& netlist)
-              (v-buf& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'branch data-width) netlist)))
+    (and (equal (assoc (si 'branch data-width) netlist)
+                (branch* data-width))
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist data-width))))
 
 ;; Sanity check
 

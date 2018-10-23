@@ -94,7 +94,7 @@
                            '(la a lb b lci ci ls s lco co)
                            0)))
 
-(defun 1-bit-adder$netlist ()
+(defund 1-bit-adder$netlist ()
   (declare (xargs :guard t))
   (cons (1-bit-adder*)
         (union$ *joint-cntl* *full-adder*
@@ -102,11 +102,11 @@
 
 (defund 1-bit-adder& (netlist)
   (declare (xargs :guard (alistp netlist)))
-  (and (equal (assoc '1-bit-adder netlist)
-              (1-bit-adder*))
-       (b* ((netlist (delete-to-eq '1-bit-adder netlist)))
-         (and (joint-cntl& netlist)
-              (full-adder& netlist)))))
+  (b* ((subnetlist (delete-to-eq '1-bit-adder netlist)))
+    (and (equal (assoc '1-bit-adder netlist)
+                (1-bit-adder*))
+         (joint-cntl& subnetlist)
+         (full-adder& subnetlist))))
 
 (local
  (defthmd check-1-bit-adder$netlist
@@ -329,18 +329,18 @@
                            '(lreg0 reg0 lreg1 reg1 lreg2 reg2 bit-add)
                            0)))
 
-(defun serial-adder$netlist ()
+(defund serial-adder$netlist ()
   (declare (xargs :guard t))
   (cons (serial-adder*)
         (1-bit-adder$netlist)))
 
 (defund serial-adder& (netlist)
   (declare (xargs :guard (alistp netlist)))
-  (and (equal (assoc 'serial-adder netlist)
-              (serial-adder*))
-       (b* ((netlist (delete-to-eq 'serial-adder netlist)))
-         (and (joint-cntl& netlist)
-              (1-bit-adder& netlist)))))
+  (b* ((subnetlist (delete-to-eq 'serial-adder netlist)))
+    (and (equal (assoc 'serial-adder netlist)
+                (serial-adder*))
+         (joint-cntl& subnetlist)
+         (1-bit-adder& subnetlist))))
 
 (local
  (defthmd check-serial-adder$netlist
@@ -570,7 +570,7 @@
                serial-add)
        0)))
 
-(defun async-adder$netlist ()
+(defund async-adder$netlist ()
   (declare (xargs :guard t))
   (cons (async-adder*)
         (union$ (latch-n$netlist *async-adder$cntl-st-len*)
@@ -582,15 +582,15 @@
 
 (defund async-adder& (netlist)
   (declare (xargs :guard (alistp netlist)))
-  (and (equal (assoc 'async-adder netlist)
-              (async-adder*))
-       (b* ((netlist (delete-to-eq 'async-adder netlist)))
-         (and (joint-cntl& netlist)
-              (latch-n& netlist *async-adder$cntl-st-len*)
-              (latch-n& netlist (1+ *data-width*))
-              (v-buf& netlist *async-adder$cntl-st-len*)
-              (serial-adder& netlist)
-              (next-cntl-state& netlist)))))
+  (b* ((subnetlist (delete-to-eq 'async-adder netlist)))
+    (and (equal (assoc 'async-adder netlist)
+                (async-adder*))
+         (joint-cntl& subnetlist)
+         (latch-n& subnetlist *async-adder$cntl-st-len*)
+         (latch-n& subnetlist (1+ *data-width*))
+         (v-buf& subnetlist *async-adder$cntl-st-len*)
+         (serial-adder& subnetlist)
+         (next-cntl-state& subnetlist))))
 
 (local
  (defthmd check-async-adder$netlist
