@@ -81,7 +81,7 @@
   (if (atom x)
       nil
     (cons `(assoc-eq-values (sis ',(car x) ,m ,n)
-                            bindings)
+                            wire-alist)
           (map-assoc-eq-values (cdr x) m n))))
 
 (defun map-equal-assoc-eq-values (x y m n)
@@ -90,8 +90,8 @@
       nil
     (cons `(equal (assoc-eq-values (sis ',(car x) ,m ,n)
                                    (se-occ body
-                                           bindings
-                                           state-bindings
+                                           wire-alist
+                                           st-alist
                                            netlist))
                   ,(let* ((spec (car y))
                           (fn (car spec))
@@ -158,7 +158,7 @@
        (,body-defun 0 N)
        :guard (natp n))
 
-      (DEFUN ,predicate (NETLIST N)
+      (DEFUND ,predicate (NETLIST N)
         (DECLARE (XARGS :GUARD (AND (ALISTP NETLIST)
                                     (NATP N))))
         (EQUAL (ASSOC ,module-name NETLIST)
@@ -177,18 +177,19 @@
          :HINTS (("GOAL"
                   :IN-THEORY (ENABLE OCC-OUTS)))))
 
-      (DEFTHM ,body-value-lemma
-        (IMPLIES (AND (NATP M)
-                      (EQUAL BODY (,body-defun M N)))
-                 ,(mapAND
-                   (map-equal-assoc-eq-values outputs specs 'M 'N)))
-        :hints (("Goal"
-                 :INDUCT (VECTOR-MODULE-INDUCTION BODY
-                                                  M N
-                                                  BINDINGS
-                                                  STATE-BINDINGS
-                                                  NETLIST)
-                 :in-theory (ENABLE de-rules sis ,@enable))))
+      (LOCAL
+       (DEFTHM ,body-value-lemma
+         (IMPLIES (AND (NATP M)
+                       (EQUAL BODY (,body-defun M N)))
+                  ,(mapAND
+                    (map-equal-assoc-eq-values outputs specs 'M 'N)))
+         :hints (("Goal"
+                  :INDUCT (VECTOR-MODULE-INDUCTION BODY
+                                                   M N
+                                                   WIRE-ALIST
+                                                   ST-ALIST
+                                                   NETLIST)
+                  :in-theory (ENABLE de-rules sis ,@enable)))))
 
       (NOT-PRIMP-LEMMA ,name)
 
@@ -205,8 +206,5 @@
                  :expand (:free (inputs N)
                                 (SE ,module-name ,(mapAPPEND inputs)
                                     STS NETLIST))
-                 :in-theory (ENABLE de-rules ,destructor))))
-
-      (IN-THEORY (DISABLE ,body-defun
-                          ,predicate))
+                 :in-theory (ENABLE de-rules ,predicate ,destructor))))
       )))

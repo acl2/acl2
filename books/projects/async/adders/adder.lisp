@@ -141,20 +141,19 @@
         (net-arity-okp (ripple-add$netlist 64))
         (ripple-add& (ripple-add$netlist 64) 64))))
 
-(local
- (defun ripple-add-body-induct (m n wire-alist st-alist netlist)
-   (if (zp n)
-       wire-alist
-     (ripple-add-body-induct
-      (1+ m)
-      (1- n)
-      (se-occ-bindings 1
-                       (ripple-add-body m n)
-                       wire-alist
-                       st-alist
-                       netlist)
-      st-alist
-      netlist))))
+(defun ripple-add-body-induct (m n wire-alist st-alist netlist)
+  (if (zp n)
+      wire-alist
+    (ripple-add-body-induct
+     (1+ m)
+     (1- n)
+     (se-occ-bindings 1
+                      (ripple-add-body m n)
+                      wire-alist
+                      st-alist
+                      netlist)
+     st-alist
+     netlist)))
 
 (local
  (defthm ripple-add$unbound-in-body-sum
@@ -164,30 +163,6 @@
             (unbound-in-body (si 'sum k)
                              (ripple-add-body m n)))
    :hints (("Goal" :in-theory (enable occ-outs)))))
-
-(defthm ripple-add-body$values-of-two-netlists
-  (implies (and (syntaxp (not (and (quotep netlist)
-                                   (equal (cadr netlist) *full-adder*))))
-                (full-adder& netlist)
-                (equal m+n (+ m n))
-                (natp m))
-           (equal (assoc-eq-values (append (sis 'sum m n)
-                                           (list (si 'carry m+n)))
-                                   (se-occ (ripple-add-body m n)
-                                           wire-alist
-                                           st-alist
-                                           netlist))
-                  (assoc-eq-values (append (sis 'sum m n)
-                                           (list (si 'carry m+n)))
-                                   (se-occ (ripple-add-body m n)
-                                           wire-alist
-                                           st-alist
-                                           *full-adder*))))
-  :hints (("Goal"
-           :induct (ripple-add-body-induct m n wire-alist st-alist netlist)
-           :in-theory (enable de-rules
-                              fv-adder
-                              sis))))
 
 (local
  (defthm ripple-add-body$value

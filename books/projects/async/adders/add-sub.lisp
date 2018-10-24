@@ -92,20 +92,19 @@
         (net-arity-okp (ripple-add/sub$netlist 64))
         (ripple-add/sub& (ripple-add/sub$netlist 64) 64))))
 
-(local
- (defun ripple-add/sub-body-induct (m n wire-alist sts-alist netlist)
-   (if (zp n)
-       wire-alist
-     (ripple-add/sub-body-induct
-      (1+ m)
-      (1- n)
-      (se-occ-bindings 3
-                       (ripple-add/sub-body m n)
-                       wire-alist
-                       sts-alist
-                       netlist)
-      sts-alist
-      netlist))))
+(defun ripple-add/sub-body-induct (m n wire-alist sts-alist netlist)
+  (if (zp n)
+      wire-alist
+    (ripple-add/sub-body-induct
+     (1+ m)
+     (1- n)
+     (se-occ-bindings 3
+                      (ripple-add/sub-body m n)
+                      wire-alist
+                      sts-alist
+                      netlist)
+     sts-alist
+     netlist)))
 
 (local
  (defthm ripple-add/sub$unbound-in-body-sum
