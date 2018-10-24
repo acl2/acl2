@@ -129,11 +129,10 @@
                             (v-> ind flag y1 y2)))))
    :hints (("Goal" :in-theory (enable bool-fix bvp)))))
 
-(local
- (defun v->-correct-induct (a b)
-   (if (atom a)
-       b
-     (v->-correct-induct (cdr a) (cdr b)))))
+(defun v->-correct-induct (a b)
+  (if (atom a)
+      b
+    (v->-correct-induct (cdr a) (cdr b))))
 
 (defthm v->-correct-1
   (implies (and (bv2p a b)
@@ -210,20 +209,19 @@
         (net-arity-okp (v->$netlist 64))
         (v->& (v->$netlist 64) 64))))
 
-(local
- (defun v->-body-induct (m n wire-alist sts-alist netlist)
-   (if (zp n)
-       wire-alist
-     (v->-body-induct
-      (1+ m)
-      (1- n)
-      (se-occ-bindings 1
-                       (v->-body m n)
-                       wire-alist
-                       sts-alist
-                       netlist)
-      sts-alist
-      netlist))))
+(defun v->-body-induct (m n wire-alist sts-alist netlist)
+  (if (zp n)
+      wire-alist
+    (v->-body-induct
+     (1+ m)
+     (1- n)
+     (se-occ-bindings 1
+                      (v->-body m n)
+                      wire-alist
+                      sts-alist
+                      netlist)
+     sts-alist
+     netlist)))
 
 (local
  (defthm v->-body$value

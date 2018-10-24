@@ -55,17 +55,16 @@
 
 ;; LATCH-N value
 
-(local
- (defun latch-n-body-induct (m n wire-alist st-alist netlist)
-   (if (zp n)
-       wire-alist
-     (latch-n-body-induct
-      (1+ m)
-      (1- n)
-      (se-occ-bindings 1 (latch-n-body m n)
-                       wire-alist st-alist netlist)
-      st-alist
-      netlist))))
+(defun latch-n-body-induct (m n wire-alist st-alist netlist)
+  (if (zp n)
+      wire-alist
+    (latch-n-body-induct
+     (1+ m)
+     (1- n)
+     (se-occ-bindings 1 (latch-n-body m n)
+                      wire-alist st-alist netlist)
+     st-alist
+     netlist)))
 
 (local
  (defthm latch-n$unbound-in-body
@@ -82,23 +81,6 @@
  (defthm latch-n$all-unbound-in-body
    (all-unbound-in-body (sis 'D x y) (latch-n-body m n))
    :hints (("Goal" :in-theory (enable latch-n-body occ-outs)))))
-
-(defthm latch-n-body$values-of-two-netlists
-  (implies (and (syntaxp (not (and (consp netlist)
-                                   (equal (car netlist) 'latch-n$netlist))))
-                (natp m))
-           (equal (assoc-eq-values
-                   (sis 'Q m n)
-                   (se-occ (latch-n-body m n)
-                           wire-alist st-alist netlist))
-                  (assoc-eq-values
-                   (sis 'Q m n)
-                   (se-occ (latch-n-body m n)
-                           wire-alist st-alist (latch-n$netlist k)))))
-  :hints (("Goal"
-           :induct (latch-n-body-induct m n wire-alist st-alist netlist)
-           :in-theory (enable de-rules
-                              sis))))
 
 (local
  (defthm latch-n-body$value
@@ -140,17 +122,16 @@
 
 ;; LATCH-N state
 
-(local
- (defun latch-n-body-state-induct (m n wire-alist st-alist netlist)
-   (if (zp n)
-       st-alist
-     (latch-n-body-state-induct
-      (1+ m)
-      (1- n)
-      wire-alist
-      (de-occ-bindings 1 (latch-n-body m n)
-                       wire-alist st-alist netlist)
-      netlist))))
+(defun latch-n-body-state-induct (m n wire-alist st-alist netlist)
+  (if (zp n)
+      st-alist
+    (latch-n-body-state-induct
+     (1+ m)
+     (1- n)
+     wire-alist
+     (de-occ-bindings 1 (latch-n-body m n)
+                      wire-alist st-alist netlist)
+     netlist)))
 
 (local
  (defthm latch-n-body$state-aux-1
@@ -168,24 +149,6 @@
                          (strip-cars (latch-n-body m n)))))
    :hints (("Goal"
             :in-theory (enable latch-n-body)))))
-
-(defthm latch-n-body$states-of-two-netlists
-  (implies (and (syntaxp (not (and (consp netlist)
-                                   (equal (car netlist) 'latch-n$netlist))))
-                (natp m))
-           (equal (assoc-eq-values
-                   (sis 'G m n)
-                   (de-occ (latch-n-body m n)
-                           wire-alist st-alist netlist))
-                  (assoc-eq-values
-                   (sis 'G m n)
-                   (de-occ (latch-n-body m n)
-                           wire-alist st-alist (latch-n$netlist k)))))
-  :hints (("Goal"
-           :induct (latch-n-body-state-induct
-                    m n wire-alist st-alist netlist)
-           :in-theory (enable de-rules
-                              sis))))
 
 (local
  (defthm latch-n-body$state
@@ -275,17 +238,16 @@
 
 ;; FF-N value
 
-(local
- (defun ff-n-body-induct (m n wire-alist st-alist netlist)
-   (if (zp n)
-       wire-alist
-     (ff-n-body-induct
-      (1+ m)
-      (1- n)
-      (se-occ-bindings 1 (ff-n-body m n)
-                       wire-alist st-alist netlist)
-      st-alist
-      netlist))))
+(defun ff-n-body-induct (m n wire-alist st-alist netlist)
+  (if (zp n)
+      wire-alist
+    (ff-n-body-induct
+     (1+ m)
+     (1- n)
+     (se-occ-bindings 1 (ff-n-body m n)
+                      wire-alist st-alist netlist)
+     st-alist
+     netlist)))
 
 (local
  (defthm ff-n$unbound-in-body
@@ -302,23 +264,6 @@
  (defthm ff-n$all-unbound-in-body
    (all-unbound-in-body (sis 'D x y) (ff-n-body m n))
    :hints (("Goal" :in-theory (enable ff-n-body occ-outs)))))
-
-(defthm ff-n-body$values-of-two-netlists
-  (implies (and (syntaxp (not (and (consp netlist)
-                                   (equal (car netlist) 'ff-n$netlist))))
-                (natp m))
-           (equal (assoc-eq-values
-                   (sis 'Q m n)
-                   (se-occ (ff-n-body m n)
-                           wire-alist st-alist netlist))
-                  (assoc-eq-values
-                   (sis 'Q m n)
-                   (se-occ (ff-n-body m n)
-                           wire-alist st-alist (ff-n$netlist k)))))
-  :hints (("Goal"
-           :induct (ff-n-body-induct m n wire-alist st-alist netlist)
-           :in-theory (enable de-rules
-                              sis))))
 
 (local
  (defthm ff-n-body$value
@@ -353,17 +298,16 @@
 
 ;; FF-N state
 
-(local
- (defun ff-n-body-state-induct (m n wire-alist st-alist netlist)
-   (if (zp n)
-       st-alist
-     (ff-n-body-state-induct
-      (1+ m)
-      (1- n)
-      wire-alist
-      (de-occ-bindings 1 (ff-n-body m n)
-                       wire-alist st-alist netlist)
-      netlist))))
+(defun ff-n-body-state-induct (m n wire-alist st-alist netlist)
+  (if (zp n)
+      st-alist
+    (ff-n-body-state-induct
+     (1+ m)
+     (1- n)
+     wire-alist
+     (de-occ-bindings 1 (ff-n-body m n)
+                      wire-alist st-alist netlist)
+     netlist)))
 
 (local
  (defthm ff-n-body$state-aux-1
@@ -381,24 +325,6 @@
                          (strip-cars (ff-n-body m n)))))
    :hints (("Goal"
             :in-theory (enable ff-n-body)))))
-
-(defthm ff-n-body$states-of-two-netlists
-  (implies (and (syntaxp (not (and (consp netlist)
-                                   (equal (car netlist) 'ff-n$netlist))))
-                (natp m))
-           (equal (assoc-eq-values
-                    (sis 'G m n)
-                    (de-occ (ff-n-body m n)
-                            wire-alist st-alist netlist))
-                  (assoc-eq-values
-                   (sis 'G m n)
-                   (de-occ (ff-n-body m n)
-                           wire-alist st-alist (ff-n$netlist k)))))
-  :hints (("Goal"
-           :induct (ff-n-body-state-induct
-                    m n wire-alist st-alist netlist)
-           :in-theory (enable de-rules
-                              sis))))
 
 (local
  (defthm ff-n-body$state
