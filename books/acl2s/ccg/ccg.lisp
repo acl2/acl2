@@ -6126,6 +6126,8 @@ e2-e1+1.
 ;              - list of translated terms, each corresponding to type
 ;                declarations made for a definition with XARGS keyword
 ;                :SPLIT-TYPES T
+;    new-lambda$-alist-pairs
+;              - list of pairs to add to the world global lambda$-alist
 
   (er-let*
    ((fives (chk-defuns-tuples lst nil ctx wrld state))
@@ -7268,7 +7270,8 @@ e2-e1+1.
          verbose time-limit hierarchy ;ccg
          hints guard-hints std-hints
          otf-flg guard-debug measure-debug bodies symbol-class
-         normalizeps split-types-terms non-executablep
+         normalizeps split-types-terms new-lambda$-alist-pairs
+         non-executablep
          #+:non-standard-analysis std-p
          ctx wrld state)
   (cond
@@ -7313,6 +7316,7 @@ e2-e1+1.
          symbol-class
          normalizeps
          split-types-terms
+         new-lambda$-alist-pairs
          non-executablep
          #+:non-standard-analysis std-p
          ctx
@@ -7432,10 +7436,11 @@ e2-e1+1.
                 (guard-debug (nth 21 tuple))
                 (measure-debug (nth 22 tuple))
                 (split-types-terms (nth 23 tuple))
-                (ccms (nth 24 tuple))
-                (verbose (nth 25 tuple))
-                (time-limit (nth 26 tuple))
-                (hierarchy (nth 27 tuple)))
+                (new-lambda$-alist-pairs (nth 24 tuple))
+                (ccms (nth 25 tuple))
+                (verbose (nth 26 tuple))
+                (time-limit (nth 27 tuple))
+                (hierarchy (nth 28 tuple)))
             (er-let*
              ((pair (ccg-defuns-fn0
                      names
@@ -7462,6 +7467,7 @@ e2-e1+1.
                      symbol-class
                      normalizeps
                      split-types-terms
+                     new-lambda$-alist-pairs
                      non-executablep
                      #+:non-standard-analysis std-p
                      ctx

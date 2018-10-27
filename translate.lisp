@@ -129,7 +129,7 @@
 
 ; This is a special case for errors detected by the code that supports the
 ; evaluation (at the top-level of the ACL2 loop) of terms ancestrally dependent
-; upon the constrained functions in apply$ development.  In particular, if
+; upon the constrained functions in the apply$ development.  In particular, if
 ; (consp fn) is true -- which only happens when we're executing the attachments
 ; for those constrained functions -- then fn is the msg we're supposed to
 ; return.  The basic idea is that those attachments detect a wide variety of
@@ -1691,29 +1691,63 @@
         (t
          (rev-union-equal (cdr x) (cons (car x) y)))))
 
-(defun translate-declaration-to-guard-var-lst (x var-lst wrld)
+(defun translate-declaration-to-guard-gen-var-lst (x var-lst tflg wrld)
 
-; It is assumed that (translate-declaration-to-guard x 'var wrld) is
-; non-nil.  This function translates the declaration x for each of the
-; vars in var-lst and returns the list of translations.
+; It is assumed that (translate-declaration-to-guard-gen x 'var tflg wrld) is
+; non-nil.  This function translates the declaration x for each of the vars in
+; var-lst and returns the list of translations.  Use of the word
+; ``translation'' in this comment and the name of this function is a bit
+; misleading since the result is a list of UNtranslated terms if tflg is nil.
 
   (declare (xargs :guard (and (true-listp var-lst)
                               (plist-worldp wrld))))
-  (cond ((null var-lst) nil)
-        (t (cons (translate-declaration-to-guard x (car var-lst) wrld)
-                 (translate-declaration-to-guard-var-lst x
-                                                         (cdr var-lst)
-                                                         wrld)))))
+  (cond
+   ((null var-lst) nil)
+   (t (cons (translate-declaration-to-guard-gen x (car var-lst) tflg wrld)
+            (translate-declaration-to-guard-gen-var-lst x
+                                                        (cdr var-lst)
+                                                        tflg
+                                                        wrld)))))
 
-(defun get-guards2 (edcls targets wrld stobjs-acc guards-acc)
+(defun translate-declaration-to-guard-var-lst (x var-lst wrld)
+  (declare (xargs :guard (and (true-listp var-lst)
+                              (plist-worldp wrld))))
+
+; This is just the special case of translate-declaration-to-guard-gen-var-lst
+; for tflg = nil for backwards compatibility.  See get-guards2 for a discussion
+; of tflg.
+
+  (translate-declaration-to-guard-gen-var-lst x var-lst nil wrld))
+
+(defun get-guards2 (edcls targets tflg wrld stobjs-acc guards-acc)
 
 ; Targets is a subset of (GUARDS TYPES), where we pick up expressions from
 ; :GUARD and :STOBJS XARGS declarations if GUARDS is in the list and we pick up
 ; expressions corresponding to TYPE declarations if TYPES is in the list.
 
+; Tflg specifies whether we want translated or user-level terms when we
+; construct the type expressions.  Note that tflg does not affect how we treat
+; the :guard term!  The :guard term is either already translated in edcls or is
+; not and whatever it is is how we treat it.  But we have to assemble type
+; expressions from TYPE specs and tflg affects that assembly.  For example
+; (TYPE (INTEGER 1 5) X) can either produce (AND (INTEGERP X) (<= 1 X) (<= X
+; 5)) or its translation into IFs, NOT, <, and quoted constants.
+
+; Historical Note on tflg: This function originally did not have tflg and
+; always returned untranslated type expressions.  We need the type expressions
+; to be in translated form in translate11-lambda-object and
+; well-formed-lambda-objectp because we must confirm that the (translated) type
+; expressions are among the conjuncts of the (translated) :guard.  We could
+; have avoided adding tflg and just always returned fully translated terms but
+; that might have changed behavior assumed by user books that called various
+; system translation functions.  So we introduced tflg in versions of those
+; functions that needed it and added ``-gen'' (for ``-generalized'') to their
+; names and then defined the old functions as instances, for backwards
+; compatibility.
+
 ; See get-guards for an example of what edcls looks like.  We require that
 ; edcls contains only valid type declarations, as explained in the comment
-; below about translate-declaration-to-guard-var-lst.
+; below about translate-declaration-to-guard-gen-var-lst.
 
 ; We are careful to preserve the order, except that we consider :stobjs as
 ; going before :guard.  (An example is (defun load-qs ...) in community book
@@ -1749,8 +1783,8 @@
                          (or (cdr (cadr temp1))
 ; The following (list t) avoids ignoring :guard (and).
                              (list t))
-                       (list (cadr temp1)))
-                   nil))
+                         (list (cadr temp1)))
+                     nil))
                 (temp2 (assoc-keyword :STOBJS (cdar edcls)))
                 (stobj-conjuncts
                  (if temp2
@@ -1763,9 +1797,10 @@
                         (list (cadr temp2)))
                        (t nil))
                       wrld)
-                   nil)))
+                     nil)))
            (get-guards2 (cdr edcls)
                         targets
+                        tflg
                         wrld
                         (rev-union-equal stobj-conjuncts
                                          stobjs-acc)
@@ -1775,21 +1810,24 @@
               (member-eq 'types targets))
          (get-guards2 (cdr edcls)
                       targets
+                      tflg
                       wrld
 
-; The call of translate-declaration-to-guard-var-lst below assumes that
-; (translate-declaration-to-guard (cadr (car edcls)) 'var wrld) is non-nil.
-; This is indeed the case, because edcls is as created by chk-defuns-tuples,
-; which leads to a call of chk-dcl-lst to check that the type declarations are
-; legal.
+; The call of translate-declaration-to-guard-gen-var-lst below assumes that
+; (translate-declaration-to-guard-gen (cadr (car edcls)) 'var tflg wrld) is
+; non-nil.  This is indeed the case, because edcls is as created by
+; chk-defuns-tuples, which leads to a call of chk-dcl-lst to check that the
+; type declarations are legal.
 
                       stobjs-acc
-                      (rev-union-equal (translate-declaration-to-guard-var-lst
+                      (rev-union-equal (translate-declaration-to-guard-gen-var-lst
                                         (cadr (car edcls))
                                         (cddr (car edcls))
+                                        tflg
                                         wrld)
                                        guards-acc)))
-        (t (get-guards2 (cdr edcls) targets wrld stobjs-acc guards-acc))))
+        (t (get-guards2 (cdr edcls)
+                        targets tflg wrld stobjs-acc guards-acc))))
 
 (defun get-guards1 (edcls targets args name wrld)
 
@@ -1810,7 +1848,7 @@
 ; example when defining a macro.  In that case name is ignored, so it is safe
 ; to pass in name = nil.
 
-  (let ((conjuncts (get-guards2 edcls targets wrld nil nil)))
+  (let ((conjuncts (get-guards2 edcls targets nil wrld nil nil)))
     (cond ((and (member-eq 'guards targets) ; (1)
                 (member-eq 'state args) ; (2)
                 (not (member-equal '(state-p state) conjuncts)) ; (3)
@@ -2865,6 +2903,8 @@
 ; applies the lambda expression to the most recent output of the named wormhole
 ; and stores the result as the most recent output.
 
+; (Remember: the quoted lambda of wormhole-eval is not related to apply$)
+
          #+acl2-loop-only
          (mv nil nil latches)
          #-acl2-loop-only
@@ -3450,7 +3490,8 @@
 
   (prog2$
    (save-ev-fncall-guard-er fn guard stobjs-in args)
-   (let ((form (cdr (assoc-eq fn (table-alist 'guard-msg-table w)))))
+   (let ((form (and (symbolp fn)
+                    (cdr (assoc-eq fn (table-alist 'guard-msg-table w))))))
      (mv-let
       (erp msg)
       (cond (form (ev-w form
@@ -3477,8 +3518,10 @@
           (msg
            "The guard for the~#0~[ :program~/~] function call ~x1, which is ~
             ~P23, is violated by the arguments in the call ~P45.~@6"
-           (if (programp fn w) 0 1)
-           (cons fn (formals fn w))
+           (if (and (symbolp fn) (programp fn w)) 0 1)
+           (cons fn (if (symbolp fn)
+                        (formals fn w)
+                        (lambda-object-formals fn)))
            guard
            nil ; might prefer (term-evisc-tuple nil state) if we had state here
            (cons fn
@@ -5061,6 +5104,662 @@
              (rst (collect-dcls (cdr l) ctx)))
             (value-cmp (append (cdr expansion) rst))))))
 
+; Essay on Lambda Objects and Lambda$
+
+; Executive Summary: When apply$ was introduced in Version 8.0, lambda objects
+; were all of the form (LAMBDA formals body) with an implicit guard of T.  Body
+; has to be fully translated, closed, and tame for the lambda object to have
+; the expected meaning under apply$.  But the defuns of apply$ and ev$ do not
+; check anything but tameness and so can meaningfully interpret some ill-formed
+; lambda objects.  To support top-level execution, Version 8.0 had a cache that
+; mapped well-formed lambda objects to their compiled counterparts.  It used
+; the Tau System at apply$-time to do CLTL compliance checking (against the
+; implicit input guard of T).
+
+; In Version_8.2 we introduced a second form of lambda object, (LAMBDA
+; formals dcl body), allowing for guards and the compiler directives TYPE and
+; IGNORE.  This was motivated by the desire to support CLTL's loop efficiently.
+; (As of this writing, Version_8.2 does not support loop, but only supports the
+; infrastructure needed to implement loop as an ACL2 macro.)
+
+; But top-level forms to be evaluated may involve lambda objects that have
+; never been seen before, e.g., because the user just typed a lambda object
+; to some mapping function or, more likely, used a macro like loop that
+; generates lambda objects.  Thus, to apply$ a lambda object at the
+; top-level to some ground input it may be necessary to prove the guard clauses
+; to confirm that the lambda object is CLTL compliant and then run the guard
+; on the ground input to confirm that the lambda object's guard is satisfied.
+
+; The manipulation of non-trivial guards, including both the generation of
+; guard clauses and the attempt to prove them with Tau, during the top-level
+; evaluation of forms suggests that lambda objects should always be found in
+; some standard form so that fully translated guards encorporating all TYPE
+; declarations can be recovered quickly from the object.
+
+; Another new feature of Version_8.2 is that when verify-guards is called on a
+; function name, we generate the guard obligation clauses for the well-formed
+; lambda objects in the defun.  The user can thus provide :hints, etc., to
+; prove those obligations and the lambda objects are marked as being CLTL
+; compliant (by being stored on the world global common-lisp-compliant-lambdas)
+; and entered as such into the lambda cache.  This means we less often have to
+; rely on Tau to verify guards of lambda objects.  Of course, lambda objects
+; typed by the user for top-level evaluation still rely on Tau for guard
+; verification.
+
+; To mitigate Tau's inadequacies still further, Version_8.2 allows the user to
+; call verify-guards on a lambda object, again gaining the opportunity to
+; supply :hints, etc., and to record the object as compliant.  Of course, to
+; use this feature the user would have to realize his top-level evaluations are
+; slowed by failure to establish compliance.  So we've extended the lambda
+; cache to provide more information in this regard.
+
+; To make it easier to enter well-formed lambda objects, in Version_8.2 we
+; added a new ``macro'' named lambda$ which allows the user to type lambda-like
+; objects that are appropriately translated, checked, and normalized to produce
+; well-formed quoted lambda objects.  Such a facility is essential if the user
+; is going to type untranslated loop bodies (which are turned into lambda
+; objects).  To preserve soundness, lambda$ can only be used in :FN slots --
+; where we know the object is destined only for apply$ -- because the quoted
+; object generated by a lambda$ in a :logic mode defun will be different from
+; the quoted object appearing in the same location of the raw Lisp version of
+; that defun.
+
+; Lambda$ is not actually a macro but is built into translate because it must
+; inspect the world.  It will allow us to implement loop as a macro that
+; generates lambda$ expressions from untranslated loop statements.  E.g.,
+
+; (loop for v in lst sum (+ 1 v))
+
+; can be defmacro'd to expand to
+
+; (sum (lambda$ (v) (+ 1 v)) lst)
+
+; and the subsequent expansion of lambda$ will take care of the untranslated
+; arithmetic expression, rendering (binary-+ '1 v).
+
+; Lambda$ forms may, of course, be used in defuns and thus will find their way
+; into raw Lisp defuns.  Because of loading of precompiled files and other
+; book-related issues, raw Lisp cannot handle lambda$s in defuns simply by
+; calling translate: the world may not be the same as the logical world in
+; which the defun was (will be) processed.  So raw Lisp must macroexpand
+; lambda$ expressions in a world-independent way.  In raw Lisp, lambda$ is a
+; macro that just expands to a quoted but marked constant containing the
+; original lambda$ expression.  See the raw Lisp defmacro for lambda$.  The raw
+; Lisp marker is *lambda$-marker*, whose value is in the ACL2_INVISIBLE
+; package.  If and when the strange lambda$ object reaches the raw lisp version
+; of apply$ it will be mapped to its translation by virtue of the following
+; feature.
+
+; When non-erroneous lambda$s are encountered during defun-processing in the
+; ACL2 loop, a world global alist, lambda$-alist, is updated to map the
+; original lambda$ expression to its :logic translation.  This alist is used by
+; the raw lisp version of apply$.
+
+; [Remark.  The above idea -- that lambda$ expands in raw Lisp to a marked
+; untranslated object whose translation is obtained from a world global set
+; during defun-processing in the ACL2 loop -- is going to FAIL if the lambda$
+; is apply$'d during pre-loading of files!  See the hard error in the defun of
+; apply$-lambda in apply-raw.lisp.  End of Remark.]
+
+; However, in order to construct the new entries to this alist from the
+; translated body of a defun we have to be able to identify which lambda
+; objects in it were produced by lambda$ expansion.  To do that we arrange for
+; the expansion of lambda$ to tag the body of the resultant lambda object with
+; a return-last form which includes the original lambda$ expression as a quoted
+; object.  See tag-translated-lambda$-body and lambda$-bodyp.  Thus, after
+; successful translation we can sweep the translated body and find all the
+; untranslated lambda$ expressions.
+
+; While we expect users to enter most (if not all) lambda objects via lambda$
+; syntax, there is no way to prevent the user from just typing a quoted lambda
+; object.  When a quoted object occupies a :FN slot during translation,
+; translate checks that it is either a (tame) function symbol or a well-formed
+; lambda object and causes an error otherwise.
+
+; Translate does not check that quoted lambda objects outside :FN slots are
+; well-formed because the regression contains hundreds of such objects that
+; are, in fact, never destined for apply$ but instead are fed to various
+; macros, like those in books/data-structures/defalist.lisp, to generate code.
+
+; It is possible for macros, metafunctions, or even user-typein to cons up a
+; lambda object destined for apply$, eliminating all hope that every lambda
+; object will have been checked by translate.
+
+; So the translate-time support for well-formed lambda objects must be
+; regarded purely as a convenience for the user.  The ACL2 system developers
+; may not assume that every lambda object has been checked by translate and
+; is thus well-formed!  That must be explicitly checked with
+; well-formed-lambda-objectp before looking for :guards, verifying guards,
+; compiling, etc.
+
+; Finally, to make this fairly complex process more efficient, the compiled
+; lambda cache of Version 8.0 has been extensively elaborated.  We discuss
+; caching in the Essay on the CL-Cache Implementation Details.  Like the
+; Version 8.0 cache, the Version_8.2 cache is based on a circular alist of
+; default size 1000.  But the entries are no longer just (lambda-object
+; . compiled-code) pairs.  Roughly put, each cache line contains a lambda
+; object, a status, the max absolute event number of a world, possibly the
+; compiled code for the guard and lambda expression, plus other items.  The
+; status of each line is :GOOD, :BAD, :UGLY, or :UNKNOWN and tells us about the
+; lambda object relative to the current world.
+
+; :GOOD means that the lambda is well-formed and guard verified in the current
+; world.  The max absolute event number is the number of the event in which the
+; object was shown to be :GOOD.  If apply$-lambda is asked to apply a :GOOD
+; lambda object, it runs the compiled code for the guard to check whether it
+; holds on the actuals.  If the guard holds, it runs the compiled code for the
+; lambda.  If the guard doesn't hold, we use the slow *1*apply$-lambda which
+; interprets the object formally.
+
+; :BAD generally means the lambda used to be :GOOD but the world has been
+; rolled back and we have so far been unable to confirm well-formedness and
+; compliance in the current world.  If apply$-lambda is asked to apply a :BAD
+; lambda object it just uses *1*apply$-lambda.
+
+; :UGLY means the object is so ill-formed it won't be :GOOD in any world.
+; Examples of :UGLY lambdas are (lambda (t) '123) which has an illegal formal
+; variable, (lambda (x) (cadr x)), which uses a primitive macro in an allegedly
+; fully translated body, (lambda (x) (setq x '3)) which calls a function symbol
+; that can never be defined by the user, and (lambda (x) (cons (foo x) (foo x
+; x))), which would require foo to be defined with two different arities.
+; Apply$-lambda always reverts to *1*apply$-lambda on :UGLY lambdas.
+
+; :UNKNOWN means that the lambda object used to be either :GOOD or :BAD but the
+; world has changed since the last time apply$-lambda saw this object.  In this
+; case, apply$-lambda tries to revalidate the line by checking well-formedness
+; and guard obligations (using Tau for the latter).  This either sets the
+; :status to :GOOD or :BAD in the current world and apply$-lambda then behaves
+; as described for the new status.
+
+; To maintain these meanings of status we have to invalidate certain cache
+; lines every time the world changes.  When the world is extended, as by a new
+; DEFUN, VERIFY-GUARDS, or DEFTHM (or any other event), all :BAD lines are
+; changed to :UNKNOWN.  When the world is retracted, as by :ubt, all :GOOD
+; lines whose event numbers are now too big are changed to :UNKNOWN.
+
+; The cache is managed in raw Lisp and updated destructively.  For example, if
+; an undo is performed, producing a line with :UNKNOWN status, and then that
+; line's lambda object is used in a mapping function, the first apply$-lambda
+; will see the :UNKNOWN and destructively resolve it to :GOOD or :BAD, at the
+; expense of well-formedness checks and guard verification.  Subsequent
+; apply$-lambdas done as part of that map will be faster.
+
+; Note: It is possible for a lambda object to be perfectly well-formed but to
+; have guard obligations that are unprovable.  Such an object will end up with
+; :status :BAD when it ought to have status :UGLY.  The expense of classifying
+; such an object as merely :BAD is that every time the world is extended and we
+; subsequently try to apply the object, we will attempt again to verify its
+; guards.  It would be more efficient to classify it as :UGLY.  Ah, if only we
+; could solve the decideability problem of this logic!
+
+; The rest of this essay is an assortment of random details that may help fill
+; in the gaps.  Topics are separated by three hyphens.
+
+; ---
+
+; For translate (actually translate11) to know whether it's looking at a :FN
+; slot, translate11 has been given an extra argument, ilk, in Version_8.2.  As
+; it recurs through an untranslated term it keeps track of the ilk of each
+; subterm.  See ilks-per-argument-slot.
+
+; Aside: A problem with translate being sensitive to ilks arises from the fact
+; that mapping functions are introduced in two steps: a defun and then a
+; def-warrant.  So the user may (DEFUN map (fn lst) ...)  with the intention of
+; later doing (def-warrant map) and having fn classified as having ilk :FN.
+; But perhaps before calling def-warrant on map, the user defuns another
+; function and uses (map (lambda$ vars dcls* body) lst) in its body.  That will
+; fail because the lambda$ is not in a :FN slot.  Our attitude is: tough luck!
+; We cause an error if the user writes a lambda$ term in a slot not known to be
+; a :FN slot.  Call def-warrant before using map elsewhere!
+
+; ---
+
+; When translate sees a quoted object, (quote x), in a :FN slot it insists
+; that x be a tame function symbol or a well-formed lambda object.  But there
+; is an exception: translate will allow a quoted non-tame function symbol in
+; the :FN slot of apply$.  The reason for this is that the warrant for non-tame
+; function fn involves (apply$ 'fn ...).
+
+; Instead of using well-formed-lambda-objectp to check lambda objects,
+; translate checks individual properties so it can generate better error
+; messages.
+
+; ---
+
+; When translate sees (lambda$ ...) it must be in a :FN slot or an error is
+; caused.
+
+; ---
+
+; For what it is worth, apply$ itself does not care much about well-formedness.
+; It treats any cons as a lambda!  Furthermore, while badge and tameness
+; analysis only work when :FN slots are either formal variables or quoted
+; objects, the defun of apply$ does not care where the fn comes from.  (How
+; could it know?)  E.g., in the logic we can prove
+
+; (thm (equal (sum `(lamby-pamby (x) x) '(1 2 3)) 6)
+;      :hints (("Goal" :in-theory (enable applY$))))
+
+; Note the backquote, meaning this ``lambda object'' was consed up fresh and
+; could have been generated any number of ways.  Had we tried to simply quote
+; this object a translate error would have been caused.  (Here we are relying
+; on the fact that the ACL2 backquote reader -- see the function, backquote, in
+; acl2-fns.lisp -- reads such a backquote as a call of cons.)
+
+; We can execute such ill-formed ``lambda objects'' (although we may need to set
+; guard-checking to :NONE, depending on how ill-formed the object is):
+
+; ACL2 >(apply$ `(lamby-pamby (x) (cons x (cons y z))) '(one))
+; (ONE NIL)
+
+; Here, free variables y and z are treated as though they're bound to nil by
+; ev$.
+
+; The motivation for checking well-formedness of lambda objects is three-fold.
+; First, apply$ really only works as ``expected'' on well-formed objects.
+; Second, we can only do badge and tameness analysis on (pretty) well-formed
+; lambda objects, so quietly allowing the user to inject bad objects may block
+; subsequent analysis.  Third, we can only guard check and compile well-formed
+; lambda objects, so bad objects prevent fast execution.
+
+; ---
+
+; Intentionally using an ill-formed lambda object can be an instructive way
+; to explore the behavior of apply$, ev$, etc.
+
+; The user who intentionally wants to inject an ill-formed lambda object
+; into a term should probably just backquote the object.  For example,
+
+; `(lambda (x) (cons x y))
+
+; looks like a lambda object but is actually being consed up fresh (i.e., it's
+; not obviously a constant).  It is ill-formed and would not be permitted in a
+; :FN slot if written with a single quote mark.
+
+; If the user objects to the repeated consing up of this lambda ``object'' he
+; or she might
+
+; (defconst *my-ill-formed-lambda* `(lambda (x) (cons x y)))
+
+; and then use *my-ill-formed-lambda* in :FN slots as desired.  Translate goes
+; out of its way to support this idiom.
+
+; ---
+
+; The following are examples of well-formed lambda objects.  Slight
+; variations may not be well-formed!
+
+; '(lambda (x) (binary-+ '1 x))          ; body must be closed and translated
+
+; '(lambda (x)
+;    (declare (xargs :guard (natp x)     ; :guard must come first
+;                    :split-types t))    ; :split-types must always be T
+;    (binary-+ '1 x))
+
+; '(lambda (x)
+;    (declare (type integer x)           ; TYPE, IGNORE, IGNOREABLE allowed
+;  	      (xargs :guard (if (integerp x) (natp x) 'nil) ; guard must be
+;                    :split-types t))                       ; translated and
+;   (binary-+ '1 x))                                        ; include types
+
+; One can write lambda$ expressions (in :FN slots) like:
+
+; (lambda$ (x) (declare (type integer x)) (+ 1 x))
+
+; which will translate to the well-formed lambda object:
+
+;  '(LAMBDA (X)
+;     (DECLARE (TYPE INTEGER X)
+;              (XARGS :GUARD (INTEGERP X)
+;                     :SPLIT-TYPES T))
+;     (RETURN-LAST 'PROGN                  ; tagged as coming from lambda$
+;                  '(LAMBDA$ (X)
+;                            (DECLARE (TYPE INTEGER X))
+;                            (+ 1 X))
+;                  (BINARY-+ '1 X)))
+
+; ---
+
+; Here is a careful explanation of well-formedness.  The notion of a
+; well-formed lambda object is formalized by the :program mode function
+; well-formed-lambda-objectp.
+
+; A well-formed lambda object has one of two forms:
+
+; '(LAMBDA vars body')          ; ``simple''  lambda object
+; '(LAMBDA vars dcl' body')     ; ``declared'' lambda object
+
+; where
+
+; (a) vars is a list of distinct legal variable names
+
+; (b) dcl', if present, is a DECLARE containing, at most, TYPE, IGNORE,
+;     IGNORABLE, and XARGS keys.
+
+; (c) If an XARGS key is present it has exactly this form (XARGS :GUARD guard
+;     :SPLIT-TYPES T), where guard is a fully translated logic mode term
+;     involving only the formal variables, vars.  Note that the user of lambda$
+;     may supply :SPLIT-TYPES NIL and may do so before or after the :GUARD, but
+;     the resulting lambda object has the form described here.  Note: One might
+;     wonder why we do not allow other XARGS keywords in lambda DECLAREs.
+;     There is a discussion of that in the comment after
+;     *acceptable-dcls-alist*.
+
+; (d) The :GUARD specified in XARGS must include as a conjunct every TYPE
+;     expression generated by any TYPE specs.  That is consistent with the
+;     :SPLIT-TYPES T setting and means the quoted guard does not need to be
+;     extended any further with the TYPES.  The point of this restriction is to
+;     guarantee that the guard implies the types declared to the compiler.  But
+;     this is a purely syntactic check and so may at times require entering
+;     silly-looking guards.  For example, (declare (type rational x) (xargs
+;     :guard (integerp x) :split-types t)) is ruled ill-formed because
+;     (rationalp x) is not a conjunct of the guard, even though it is logically
+;     implied by the guard.  So you'd have to use (declare (type rational x)
+;     (xargs :guard (if (integerp x) (rationalp x) 'nil) :split-types t)).
+;     Note that the guard is a fully translated conjunction, i.e., an IF, not
+;     an AND!  Order of the conjuncts does not matter.
+
+; (e) body' is a fully translated, tame, logic mode term, involving no free
+;     variables and respecting the declared IGNORE and IGNORABLE declarations.
+;     Note: The guard need not be tame (or even fully badged) because guards
+;     are irrelevant to the axioms of apply$.  But guards must be in :logic
+;     mode from the outset because we may have to prove guard obligations
+;     on-the-fly in evaluation (no time for converting functions called from
+;     :program to :logic mode).
+
+;     Furthermore, in the case of a lambda object generated by lambda$, body'
+;     is a tagged version of the translation of the given body.  Tagging
+;     involves use of a special form generated by tag-translated-lambda$-body
+;     and recognized by lambda$-bodyp.  This form contains the untranslated
+;     lambda$ expression as well as the translation of its body.  We say such a
+;     lambda object was ``tagged by lambda$'' or simply ``tagged'' in this
+;     context.  For example, (LAMBDA$ (X) (+ 1 X)) translates to the tagged
+;     lambda object '(LAMBDA (X) (RETURN-LAST 'PROGN 'orig-form tbody)), where
+;     orig-form is (LAMBDA$ (X) (+ 1 X)) and tbody is (BINARY-+ '1 X).
+
+; (f) A sort of negative property: There is no assurance that the :GUARD
+;     guarantees that body' is well guarded.  That is, no guard verification is
+;     done by translate.
+
+; ---
+
+; The reader may wonder why well-formed lambda objects handle DECLAREd types
+; differently than, say, fully translated LET expressions containing DECLARED
+; types.  For example, if you write:
+
+; (let ((x expr)) (declare (type integer x)) (/ x 2))
+
+; you get an application of a lambda-expressions whose body encodes the
+; guard:
+
+; ((LAMBDA (X)
+;          (RETURN-LAST 'PROGN
+;                       (CHECK-DCL-GUARDIAN (integerp X)
+;                                           '(integerp X))
+;                       (BINARY-* X (UNARY-/ '2))))
+;  expr')
+
+; So why, when you write
+
+; (lambda$ (x)
+;          (declare (type integer x))
+;          (/ x 2))
+
+; don't we translate it to the quoted version of the lambda-expression above?
+; Put another way, why did we elect for our lambda objects to preserve the
+; DECLARE form instead of building it into the body of the lambda in a way that
+; allows guard verification to account for it?
+
+; The answer is that lambda objects are compiled when they're applied and so
+; the DECLARE forms, in particular, the TYPE, IGNORE, and IGNORABLE
+; declarations, must be present for the compiler to see.
+
+; ---
+
+; The raw Lisp expansion of (lambda$ ...) is (quote (,*lambda-marker*
+; . (lambda$ ...))), where *lambda-marker* is a raw lisp constant symbol whose
+; value is in the ACL2_INVISIBLE package.  Any raw Lisp object thus marked
+; had to have come from a successfully translated lambda$ which means the
+; (lambda$ ...) form will be on the lambda$-alist world global.
+
+; We cannot translate a lambda$ expression in raw Lisp because during loading
+; of books, etc., we do not know the world will be the same as the world in
+; which the expression was first used.
+
+; Because the raw Lisp object generated by lambda$ is different from the ACL2
+; object generated in the ACL2 loop, we cannot allow lambda$ anywhere but :FN
+; slots, where we know the object will only be seen by apply$.
+
+; ---
+
+; This translation stuff just provides a convenience for the user.  System code
+; encountering a lambda object may not assume the object is well-formed.
+; That must be checked at runtime with well-formed-lambda-objectp.
+
+; No amount of translate-time enforcement or tagging logically prevents
+; ill-formed lambda objects from finding their way into terms or into apply$!
+
+; Termp does not enforce well-formedness of lambda objects.
+
+; ACL2 system developers must not assume well-formedness.
+
+; ---
+
+; We have a confusing variety of concepts competing for the job of recognizing
+; lambda expressions.  We **highlight** the names of the various available
+; recognizers and then summarize them below.
+
+; (1) Apply$ considers any **consp** object passed into the :FN slot to be a
+; lambda expression.  We defined apply$ that way to keep the logic definition
+; simple, thereby simplifying proofs about it.  Note that apply$ makes
+; absolutely no use of the DECLARE that might be found in a lambda object.
+
+; (2) But we can only analyze ilks for objects that more truly resemble Lisp
+; lambda expressions.  We need to know that the binding environments really
+; assign distinct variable symbols, and we need to know that the bodies are
+; closed terms wrt the formals.  Again, the optional DECLARE is irrelevant.  We
+; define the function named **weak-well-formed-lambda-objectp** to recognize
+; the lambda-like objects we can do ilk analysis on.
+
+; (3) We also need to recognize when a lambda expression is tame so apply$ can
+; dive into it safely.  Since this is a :logic mode activity we want to keep it
+; as simple as possible while still enabling guard verification of the apply$
+; clique and the existence of the model of apply$.  It is sufficient to check
+; merely that the formals are symbols (not necessarily distinct variables) and
+; the body is tame (but not necessarily closed).  The optional DECLARE is
+; irrelevant.  So for this purpose we define the :LOGIC mode **tamep-lambdap**.
+; We define an executable version of that concept (i.e., one that takes the
+; world so we're not relying on the attachment theory to execute it) called
+; **executable-tamep-lambdap**.  By the way, these two lambda recognizers use
+; lambda-object-shapep to check that the expression is either (LAMBDA & &) or
+; (LAMBDA & & &), but we don't consider lambda-object-shapep per se as a
+; recognizer, just a way to keep the logic code in tamep-lambdap short.
+
+; (4) Finally, we want to compile any lambda for which we can do guard
+; verification.  This imposes many constraints, including the legitimacy of the
+; DECLARE form, the legality of the variable names, etc.  For this purpose we
+; define **well-formed-lambda-objectp**.  Even this function does not
+; completely finish the job needed to compile and run the lambda: this function
+; doesn't check that the guard and body are composed of guard verified
+; functions or that the guard implies the guards of the body.
+; Well-formed-lambda-objectp is partitioned into two phases, a syntactic one
+; called syntactically-plausible-lambda-objectp and one that inspects the TYPE
+; expressions, guard and body (supplied by the successful syntactic
+; plausibility check) wrt the world to check things like termp and tameness.
+; By dividing the work this way we can partition cl-cache lines into :GOOD,
+; :BAD, and :UGLY status and save some work at apply$ time.  (We actually
+; introduce a stricter test than syntactic plausibility in managing the cache.
+; Syntactic plausibility is independent of the world; the stricter test takes
+; the world as an argument and uses it to determine not just that the body,
+; say, is not a termp but that it can NEVER be a termp because it uses a
+; primitive in an unacceptable way.  (lambda (x) (cadr x)) and (lambda (x)
+; (setq x '3)) are examples of lambdas are syntactically plausible -- among
+; other things their bodies are pseudo-terms -- but which in fact fail this
+; stricter test.  See potential-termp.)
+
+; Summarizing the lambda recognizers then we have:
+
+; recognizer                        purpose
+
+; consp                             apply$
+
+; weak-well-formed-lambda-objectp   ilk analysis
+
+; tamep-lambdap                     apply$ guard verif and recursion control
+;  and executable-tamep-lambdap      in the apply$ clique
+
+; well-formed-lambda-objectp        cl-cache and compilation
+
+; The last three concepts above participate in the generation of precise error
+; messages.
+
+; The question arises: can't we eliminate some of these?  For example, can't we
+; we use well-formed-lambda-objectp for everything?  The answer is yes, we
+; could; but it would complicate logical definitions and proofs.  From the
+; user's perspective, apply$ assigns lambda-like meaning to any consp object
+; and we can even evaluate such applications, albeit slowly compared to the
+; evaluation of applications of well-formed guard verified lambda expressions.
+; In short, we haven't minded complicating the system code with these various
+; lambda recognizers if it truly gives us a simple logical story for the user
+; and clear error messages for situations in which we can't do ilk analysis,
+; guard verification, compilation, etc.
+
+; Except for consp, all of these recognizers insist on the object being of one
+; of two forms: (LAMBDA formals body) or (LAMBDA formals dcl body).  But do we
+; really need to insist on those terminal nils?  We go out of our way to check
+; them.
+
+; We could probably have gotten away with looser forms, like (LAMBDA formals
+; body . atom) or (LAMBDA formals dcl body . anything), except for
+; well-formed-lambda-objectp which really must insist on a CLTL compliant
+; lambda expression since we'll compile it.  But we decided we are confused
+; enough!  And so we insist for sanity's sake alone that all these recognizers
+; (except consp) require that the object be a true-list of length 3 or 4.  Even
+; the two accessors lambda-object-dcl and lambda-object-body use (and
+; (true-listp x) (eql (len x) ...))  to recognize and distinguish the two
+; forms.
+
+; We have not yet explained how lambda$ is handled in raw Lisp.  In the logic,
+; apply$ handles lambdas by calling apply$-lambda.  The raw Lisp counterpart to
+; apply$-lambda is specially defined in apply-raw.lisp, to implement the
+; evaluation theory.  In the following when we refer to apply$-lambda we mean
+; the raw Lisp function of that name.
+
+; ---
+
+; The lambda objects given to apply$-lambda for evaluation can actually have
+; either of two forms depending on where they originated: either they were
+; typed by the user at the top-level loop of ACL2 or they were embedded in
+; defuns.
+
+; Suppose the user types
+
+; ACL2 !>(sum (lambda$ (x) (declare (type integer x)) (* x x)) '(1 2 3))
+
+; The entire expression is translated and the lambda$ is expanded to:
+
+; '(LAMBDA (X)                                                   ; [1]
+;          (DECLARE (TYPE INTEGER X)
+;                   (XARGS :GUARD (INTEGERP X)
+;                          :SPLIT-TYPES T))
+;          (RETURN-LAST 'PROGN
+;                       '(LAMBDA$ (X)
+;                                 (DECLARE (TYPE INTEGER X))
+;                                 (* X X))
+;                       (BINARY-* X X)))
+
+; When the sum is evaluated, the raw Lisp apply$-lambda repeatedly sees the
+; fully translated lambda expression [1].  Carrying out the basic idea of
+; guard-checked evaluation is straightforward but potentially time consuming:
+; Is [1] well formed?  If so, we can recover the guard.  Has [1] been guard
+; verified or, if not, can we verify the guards in the current world?  If so,
+; is the guard true of whatever we're applying this lambda to?  If all those
+; tests succeed, we can compile [1] and apply it with CLTL's apply.  Since sum
+; is mapping this lambda over a list of length 3, these questions are
+; theoretically raised three times each in the evaluation of this one form.
+
+; We can speed this up by caching the results of the various tests and of the
+; compilation.  We discuss caching in the Essay on the CL-Cache Implementation
+; Details.
+
+; So far we've considered a lambda object that was literally part of a
+; top-level evaluation command.
+
+; Now consider another possibility.  Suppose the user introduces this function:
+
+; (defun sum-sq (lst)
+;   (sum (lambda$ (x) (declare (type integer x)) (* x x)) lst))
+
+; Two versions of this defun get into raw Lisp, *1*sum-sq and sum-sq.  The *1*
+; function will actually contain the translated lambda$, which is done by
+; virtue of oneify calling translate11-lambda-object.  So the *1* version of
+; sum-sq is handled as in [1] above.
+
+; But the raw Lisp version of sum-sq will actually contain the lambda$, which
+; will macroexpand to
+
+; '(,*lambda$-mark* . (lambda$ (x) (declare (type integer x)) (* x x))) ; [2]
+
+; in accordance with the expansion of lambda$ in raw Lisp.  So if
+
+; ACL2 !>(sum-sq '(1 2 3))
+
+; were evaluated at the top-level, the raw Lisp apply$-lambda would repeatedly
+; see the marked untranslated lambda$ object [2].
+
+; If apply$-lambda just followed the basic idea sketched above, it would find
+; this untranslated lambda ill-formed.
+
+; What apply$-lambda needs to know is (a) that this marked lambda$ object
+; came from a successfully translated lambda$, and (b) what is the logical
+; translation of that lambda$?
+
+; We solve (a) by checking for the *lambda-marker* mark, which is only
+; generated by the raw Lisp lambda$.
+
+; As for problem (b), apply$-lambda answers that by using the lambda$-alist (a
+; world global maintained by defun).  Every time defun successfully concludes
+; it updates the lambda$-alist to map each of the lambda$s in the defun to the
+; corresponding translated lambda.  One might wonder how we find the lambda$s
+; in the fully translated body?  The answer is: we tagged them with the
+; RETURN-LAST tagging mentioned earlier.  So even though we explore a fully
+; translated body at the end of the defun-processing, we can recover
+; untranslated lambda$s.  One might also wonder how the tags stayed in place
+; since we remove-guard-holders before storing bodies.  The answer is: these
+; RETURN-LAST taggings are inside quoted objects and remove-guard-holders
+; does not dive into objects.
+
+; So when apply$-lambda sees the *lambda$-marker* it gets the translated
+; version of the lambda$ from the lambda$-alist and then goes to the cache
+; as described for [1].
+
+; ---
+
+; We have noted that every well-formed lambda object in a defun is subjected to
+; guard verification when guard verification is performed on the defun'd
+; function.  First, this is a bit odd since the lambda objects mentioned in the
+; body are quoted objects.  So a strange thing about Version_8.2 verify-guards
+; is that it dives into some quoted objects to generate guard obligations.
+; (Think of those quoted objects as non-recursive functions defined
+; simultaneously with the defun; we generate guard obligations for all of the
+; functions.)
+
+; This has the advantage of allowing the user to provide :hints for the
+; successful guard verification of lambda objects used in defuns.  It also
+; surreptiously adds those lambda objects to the cache.
+
+; But it is possible that a :GOOD lambda object in the cache gets pushed out by
+; 1000 other lambda objects.  To avoid having to re-verify the guards of lambda
+; objects verified with verify-guards, we maintain the world global
+; common-lisp-compliant-lambdas.  When apply$-lambda encounters a lambda object
+; not in the cache it sets up an :UNKNOWN cache line and tries to re-validate
+; it (that's the general mechanism for building a :GOOD cache line).  In
+; maybe-re-validate-cl-cache-line you'll see we check
+; common-lisp-compliant-lambdas to ``instantly'' re-validate formerly known
+; compliant lambda objects processed through verify-guards.
+
+; End of Essay on Lambda Objects and Lambda$
+
 ; The following alist maps "binders" to the permitted types of
 ; declarations at the top-level of the binding environment.
 
@@ -5078,7 +5777,45 @@
     (mv-let ignore ignorable type)
     (flet ignore ignorable type) ; for each individual definition in the flet
     (defmacro ignore ignorable type xargs)
-    (defuns ignore ignorable irrelevant type optimize xargs)))
+    (defuns ignore ignorable irrelevant type optimize xargs)
+    (lambda-object ignore ignorable type xargs)))
+
+; In the case of lambda-object we allow XARGS but we only handle the keywords
+; :GUARD and :SPLIT-TYPES.  The other XARGS keywords and why they were omitted
+; are (as of ACL2 Version_8.1):
+
+; :GUARD-DEBUG - proof time (see below)
+; :GUARD-HINTS - proof time
+; :HINTS - recursion (see below)
+; :MEASURE - recursion
+; :MEASURE-DEBUG - recursion
+; :MODE - all lambda objects have to be in :LOGIC mode because APPLY$ can't
+;         run programs
+; :NON-EXECUTABLE - irrelevant for lambda objects?
+; :NORMALIZE - might this flag be useful someday?
+; :OTF-FLG - proof time
+; :RULER-EXTENDERS - recursion
+; :STOBJS - lambda objects must be stobj-free
+; :VERIFY-GUARDS - proof time
+; :WELL-FOUNDED-RELATION - recursion
+
+; Notes:
+
+; Proof time: The keywords marked ``proof time'' are only relevant when we're
+; doing guard verification.  Lambda objects can occur in four contexts: in
+; DEFUN, DEFTHM, and VERIFY-GUARD events, or in top-level evaluations.  Guard
+; verification of DEFUN and DEFTHM events allow the provision of goal-specific
+; hints, which can be used to guide the proofs of obligations stemming from
+; lambda objects being guard verified.  Top-level evaluation is not intended to
+; require heavy duty proofs: either we knock out the proof obligations and do
+; fast evaluation or we don't and do slow evaluation, but we don't expect the
+; user to interact with the proof attempt while trying to evaluate something at
+; the top-level.  If the user wants fast evaluation there he or she ought to
+; define a suitable function and verify its guards instead of using a lambda
+; object.
+
+; Recursion:  The keywords marked "recursion" are relevant only to recursive
+; functions and lambda objects are never recursive.
 
 ; The following list gives the names of binders that permit at most
 ; one documentation string among their declarations.  If this list is
@@ -5220,6 +5957,11 @@
                   (type
                    (cond
                     ((not (>= (length entry) 3))
+
+; Warning: If you weaken the test above to (>= (length entry) 2), then consider
+; changing type-expressions-from-type-spec, whose definition has a comment
+; saying that a "nil answer is unambiguous".
+
                      (er-cmp ctx
                              "The length of a type declaration must be at ~
                               least 3, but ~x0 does not satisfy this ~
@@ -5380,15 +6122,18 @@
 
 (defun translate-dcl-lst (edcls wrld)
 
-; Given a bunch of expanded dcls we find all the (TYPE x v1 ... vn)
-; dcls among them and make a list of untranslated terms expressing the
-; type restriction x for each vi.
+; Given a bunch of expanded dcls we find all the (TYPE x v1 ... vn) dcls among
+; them and make a list of untranslated terms expressing the type restriction x
+; for each vi.  (If we ever need to make a list of translated terms, replace
+; the nil in the call of translate-declaration-to-guard-gen-var-lst below
+; with t.)
 
   (cond ((null edcls) nil)
         ((eq (caar edcls) 'type)
-         (append (translate-declaration-to-guard-var-lst (cadr (car edcls))
-                                                         (cddr (car edcls))
-                                                         wrld)
+         (append (translate-declaration-to-guard-var-lst
+                  (cadr (car edcls))
+                  (cddr (car edcls))
+                  wrld)
                  (translate-dcl-lst (cdr edcls) wrld)))
         (t (translate-dcl-lst (cdr edcls) wrld))))
 
@@ -7399,6 +8144,873 @@
                              body)
                 (append actuals extra-body-vars))))
 
+(defmacro get-badge (fn wrld)
+  `(cdr (assoc-eq ,fn
+                  (cdr (assoc-eq :badge-userfn-structure
+                                 (table-alist 'badge-table ,wrld))))))
+
+(defrec apply$-badge (authorization-flg arity . ilks) nil)
+
+; We originally defined the apply$-badge and the commonly used generic badges in
+; apply-prim.lisp but they're needed earlier now.
+
+(defconst *generic-tame-badge-1*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 1 :ILKS t))
+(defconst *generic-tame-badge-2*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS t))
+(defconst *generic-tame-badge-3*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 3 :ILKS t))
+(defconst *apply$-badge*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:FN NIL)))
+(defconst *ev$-badge*
+  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:EXPR NIL)))
+
+; In order to infer badges of new functions as will be done in def-warrant we
+; must be able to determine the badges of already-badged functions.  Similarly,
+; we must be able to determine that certain quoted expressions are tame.  So we
+; define executable versions of badge and tamep that look at data structures
+; maintained by def-warrant.
+
+(defun executable-badge (fn wrld)
+
+; Find the badge, if any, for fn in wrld; else return nil.  Aside from
+; primitives and the apply$ boot functions, all badges are stored in the
+; badge-table entry :badge-userfn-structure.
+
+; Aside: Finding a badge doesn't mean there is a warrant: if the
+; :authorization-flg of the badge is nil, there is no warrant, which means
+; badge-userfn and thus badge are logically undefined on fn.  But this
+; function is used during the analysis of a newly submitted function to
+; determine its badge and (possibly) its warrant.
+
+; There's nothing wrong with putting this in logic mode but we don't need it in
+; logic mode here.  This function is only used by def-warrant, to analyze and
+; determine the badge, if any, of a newly submitted function, and in translate,
+; to determine if a lambda body is legal.  (To be accurate, this function is
+; called from several places, but all of them are in support of those two
+; issues.)  Of course, the badge computed by a non-erroneous (def-warrant fn)
+; is then built into the defun of APPLY$-WARRANT-fn and thus participates in
+; logical reasoning; so the results computed by this function are used in
+; proofs.
+
+  (declare (xargs :mode :program))
+  (cond
+   ((global-val 'boot-strap-flg wrld)
+    (er hard 'executable-badge
+        "It is illegal to call this function during boot strapping because ~
+         primitives have not yet been identified and badges not yet computed!"))
+   ((symbolp fn)
+    (let ((temp
+           (hons-get fn ; *badge-prim-falist* is not yet defined!
+                     (unquote
+                      (getpropc '*badge-prim-falist* 'const nil wrld)))))
+      (cond
+       (temp (cdr temp))
+       ((eq fn 'BADGE) *generic-tame-badge-1*)
+       ((eq fn 'TAMEP) *generic-tame-badge-1*)
+       ((eq fn 'TAMEP-FUNCTIONP) *generic-tame-badge-1*)
+       ((eq fn 'SUITABLY-TAMEP-LISTP) *generic-tame-badge-3*)
+       ((eq fn 'APPLY$) *apply$-badge*)
+       ((eq fn 'EV$) *ev$-badge*)
+       (t (get-badge fn wrld)))))
+   (t nil)))
+
+; Compare this to the TAMEP clique.
+
+(defabbrev executable-tamep-lambdap (fn wrld)
+
+; This function expects a consp fn (which is treated as a lambda expression by
+; apply$) and checks whether fn is a tame lambda.  Compare to tamep-lambdap.
+; It does not check full well-formedness.  It is possible for an ill-formed
+; lambda expression to pass this test!
+
+; Note: The word ``executable'' in the name means this function is executable,
+; not that the purported lambda expression is executable!
+
+; This function is one of the ways of recognizing a lambda object.  See the end
+; of the Essay on Lambda Objects and Lambda$ for a discussion of the various
+; recognizers and their purposes.
+
+  (and (lambda-object-shapep fn)
+       (symbol-listp (lambda-object-formals fn))
+       (executable-tamep (lambda-object-body fn) wrld)))
+
+(mutual-recursion
+
+(defun executable-tamep (x wrld)
+  (declare (xargs :mode :program))
+  (cond ((atom x) (symbolp x))
+        ((eq (car x) 'quote)
+         (and (consp (cdr x))
+              (null (cddr x))))
+        ((symbolp (car x))
+         (let ((bdg (executable-badge (car x) wrld)))
+           (cond
+            ((null bdg) nil)
+            ((eq (access apply$-badge bdg :ilks) t)
+             (executable-suitably-tamep-listp
+              (access apply$-badge bdg :arity)
+              nil
+              (cdr x)
+              wrld))
+            (t (executable-suitably-tamep-listp
+                (access apply$-badge bdg :arity)
+                (access apply$-badge bdg :ilks)
+                (cdr x)
+                wrld)))))
+        ((consp (car x))
+         (let ((fn (car x)))
+           (and (executable-tamep-lambdap fn wrld)
+                (executable-suitably-tamep-listp (length (cadr fn))
+; Given (tamep-lambdap fn), (cadr fn) = (lambda-object-formals fn).
+                                                 nil
+                                                 (cdr x)
+                                                 wrld))))
+        (t nil)))
+
+(defun executable-tamep-functionp (fn wrld)
+  (declare (xargs :mode :program))
+  (if (symbolp fn)
+      (let ((bdg (executable-badge fn wrld)))
+        (and bdg
+             (eq (access apply$-badge bdg :ilks)
+                 t)))
+    (and (consp fn)
+         (executable-tamep-lambdap fn wrld))))
+
+(defun executable-suitably-tamep-listp (n flags args wrld)
+  (declare (xargs :mode :program))
+  (cond
+   ((zp n) (null args))
+   ((atom args) nil)
+   (t (and
+       (let ((arg (car args)))
+         (case (car flags)
+           (:FN
+            (and (consp arg)
+                 (eq (car arg) 'QUOTE)
+                 (consp (cdr arg))
+                 (null (cddr arg))
+                 (executable-tamep-functionp (cadr arg) wrld)))
+           (:EXPR
+            (and (consp arg)
+                 (eq (car arg) 'QUOTE)
+                 (consp (cdr arg))
+                 (null (cddr arg))
+                 (executable-tamep (cadr arg) wrld)))
+           (otherwise
+            (executable-tamep arg wrld))))
+       (executable-suitably-tamep-listp (- n 1) (cdr flags) (cdr args) wrld)))))
+)
+
+(defun mapping-fnp (fn wrld)
+
+; We return t iff fn has a badge and at least one non-ordinary (:FN or :EXPR)
+; slot.  Recall that the :ilks of a badge is T iff all ilks are NIL.
+
+  (let ((bdg (executable-badge fn wrld)))
+    (and bdg
+         (not (eq t (access apply$-badge bdg :ilks))))))
+
+(mutual-recursion
+
+(defun all-unbadged-fnnames (term wrld acc)
+
+; Returns the list of all unbadged function symbols in term.
+
+  (cond ((variablep term) acc)
+        ((fquotep term) acc)
+        (t
+         (all-unbadged-fnnames-list
+          (fargs term)
+          wrld
+          (cond
+           ((flambda-applicationp term)
+            (all-unbadged-fnnames
+             (lambda-body (ffn-symb term))
+             wrld
+             acc))
+           ((executable-badge (ffn-symb term) wrld)
+            acc)
+           (t (add-to-set-eq (ffn-symb term) acc)))))))
+
+(defun all-unbadged-fnnames-list (terms wrld acc)
+  (cond ((endp terms) acc)
+        (t (all-unbadged-fnnames-list
+            (cdr terms) wrld
+            (all-unbadged-fnnames (car terms) wrld acc))))))
+
+(defconst *gratuitous-lambda-object-restriction-msg*
+
+; When relevant documentation exists, change to:
+; "See :DOC gratuitous-lambda-object-restrictions for a workaround if you ~
+;  really mean to have an ill-formed LAMBDA-like constant in your code."
+
+  "If you really want an ill-formed lambda-like object here, backquote the ~
+   constant or cons up a suitable constant from quoted parts, or refer to a ~
+   previously defined defconst containing such an object.")
+
+(defun edcls-from-lambda-object-dcls (dcls x bindings cform ctx wrld)
+
+; Dcls is the part of the lambda/lambda$ expression after the formals and
+; before the body.  In general ACL2 permits multiple DECLARE expressions, each
+; of which may contain TYPE, IGNORE, IGNORABLE, and XARGS.  However, in the
+; case of LAMBDA there can be at most one DECLARE.  We check that each TYPE,
+; IGNORE, and IGNORABLE are well-formed and mention only the formals of the
+; purported lambda expression x.  The XARGS on lambda objects are restricted.
+; We check that XARGS occurs at most once and may specify, at most, a :GUARD
+; and :SPLIT-TYPES.  See the comment after *acceptable-dcls-alist* for a
+; discussion of omitted XARGS keywords.  LAMBDAs must specify both :GUARD and
+; :SPLIT-TYPES T, if XARGS is present at all.  We return the resulting edcls,
+; without yet translating the :GUARD.  A typical answer might be ((TYPE INTEGER
+; X Y) (XARGS :GUARD (AND (NATP X) (EVENP Y)) :SPLIT-TYPES NIL) (TYPE CONS
+; AC)).
+
+  (cond
+   ((and (eq (car x) 'LAMBDA)
+         (< 1 (length dcls)))
+    (trans-er+? cform x
+                ctx
+                "A lambda object must have no more than one DECLARE form and ~
+                 ~x0 has ~x1.  ~@2"
+                x
+                (length dcls)
+                *gratuitous-lambda-object-restriction-msg*))
+   (t
+    (mv-let (erp edcls)
+      (collect-declarations-cmp dcls (cadr x) 'lambda-object ctx wrld)
+
+; Even if we are in the lambda-casep we do the collection above to check for the
+; legality of the vars used in the TYPE/IGNORE/IGNORABLE declarations.
+
+      (cond
+       (erp (mv erp edcls bindings))
+       (t (let ((xargs (assoc-eq 'XARGS edcls)))
+            (cond
+             ((null xargs) (trans-value edcls))
+             ((assoc-eq 'XARGS (cdr (member xargs edcls)))
+              (trans-er+? cform x
+                          ctx
+                          "Lambda objects and lambda$ expressions are allowed ~
+                           to have at most one XARGS declaration.  ~@0"
+                          *gratuitous-lambda-object-restriction-msg*))
+             ((not (and (true-listp xargs)
+                        ;; (eq (car xargs) 'XARGS)
+                        (or (and (eql 3 (length xargs))
+                                 (eq (cadr xargs) :GUARD))
+                            (and (eql 5 (length xargs))
+                                 (or (and (eq (cadr xargs) :GUARD)
+                                          (eq (cadddr xargs) :SPLIT-TYPES))
+                                     (and (eq (cadr xargs) :SPLIT-TYPES)
+                                          (eq (cadddr xargs) :GUARD)))))
+                        (member-eq (cadr (assoc-keyword :SPLIT-TYPES (cdr xargs)))
+                                   '(NIL T))))
+              (trans-er+? cform x
+                          ctx
+                          "The XARGS of a lambda object or lambda$ ~
+                           expression, when present, must specify a :GUARD, ~
+                           may additionally specify :SPLIT-TYPES, and must ~
+                           not specify any other keywords.  For quoted ~
+                           LAMBDAs the :SPLIT-TYPES keyword must be present, ~
+                           must follow the :GUARD keyword and value, and must ~
+                           be assigned T.  For lambda$s, the keywords may ~
+                           appear in either order and :SPLIT-TYPES, if ~
+                           present, must be assigned NIL or T.  ~x0 violates ~
+                           this.  ~@1"
+                          xargs
+                          *gratuitous-lambda-object-restriction-msg*))
+             ((eq (car x) 'LAMBDA)
+              (cond ((not (and (eq (cadr xargs) :GUARD)
+                               (eq (cadddr xargs) :SPLIT-TYPES)
+                               (eq (car (cddddr xargs)) T)))
+                     (trans-er+? cform x
+                                 ctx
+                                 "The XARGS declaration of a lambda object, ~
+                                  when present, must have the form (XARGS ~
+                                  :GUARD term :SPLIT-TYPES T) -- the order of ~
+                                  the keys matters! -- and ~x0 does not have ~
+                                  this form.  ~@1"
+                                 xargs
+                                 *gratuitous-lambda-object-restriction-msg*))
+                    (t (trans-value edcls))))
+             (t (trans-value edcls))))))))))
+
+; In raw Lisp, (lambda$ ...) expands to just (quote (,*lambda$-marker*
+; . (lambda$ ...))), where *lambda$-marker* is a symbol in the ACL2_INVISIBLE
+; package.
+
+#-acl2-loop-only
+(defconst *lambda$-marker* 'acl2_invisible::lambda$-marker)
+
+#-acl2-loop-only
+(defmacro lambda$ (&rest args)
+  `(quote (,*lambda$-marker* . (lambda$ ,@args))))
+
+(defun collect-programs (names wrld)
+
+; Names is a list of function symbols.  Collect the :program ones.
+
+  (cond ((null names) nil)
+        ((programp (car names) wrld)
+         (cons (car names) (collect-programs (cdr names) wrld)))
+        (t (collect-programs (cdr names) wrld))))
+
+; The following is made more efficient below by eliminating the mutual
+; recursion.  This cut the time of a proof using bdds by nearly a factor of 4;
+; it was of the form (implies (pred n) (prop n)) where pred has about 1800
+; conjuncts.  The culprit was the call(s) of all-fnnames in bdd-rules-alist1, I
+; think.
+
+; (mutual-recursion
+;
+; (defun all-fnnames (term)
+;   (cond ((variablep term) nil)
+;         ((fquotep term) nil)
+;         ((flambda-applicationp term)
+;          (union-eq (all-fnnames (lambda-body (ffn-symb term)))
+;                    (all-fnnames-lst (fargs term))))
+;         (t
+;          (add-to-set-eq (ffn-symb term)
+;                         (all-fnnames-lst (fargs term))))))
+;
+; (defun all-fnnames-lst (lst)
+;   (cond ((null lst) nil)
+;         (t (union-eq (all-fnnames (car lst))
+;                      (all-fnnames-lst (cdr lst))))))
+; )
+
+(defun all-fnnames1 (flg x acc)
+
+; Flg is nil for all-fnnames, t for all-fnnames-lst.  Note that this includes
+; function names occurring in the :exec part of an mbe.  Keep this in sync with
+; all-fnnames1-exec.
+
+  (declare (xargs :guard (and (true-listp acc)
+                              (cond (flg (pseudo-term-listp x))
+                                    (t (pseudo-termp x))))))
+  (cond (flg ; x is a list of terms
+         (cond ((endp x) acc)
+               (t (all-fnnames1 nil (car x)
+                                (all-fnnames1 t (cdr x) acc)))))
+        ((variablep x) acc)
+        ((fquotep x) acc)
+        ((flambda-applicationp x)
+         (all-fnnames1 nil (lambda-body (ffn-symb x))
+                       (all-fnnames1 t (fargs x) acc)))
+        (t
+         (all-fnnames1 t (fargs x)
+                       (add-to-set-eq (ffn-symb x) acc)))))
+
+(defmacro all-fnnames (term)
+  `(all-fnnames1 nil ,term nil))
+
+(defmacro all-fnnames-lst (lst)
+  `(all-fnnames1 t ,lst nil))
+
+(defun flatten-ands-in-lit (term)
+  (case-match term
+              (('if t1 t2 t3)
+               (cond ((equal t2 *nil*)
+                      (append (flatten-ands-in-lit (dumb-negate-lit t1))
+                              (flatten-ands-in-lit t3)))
+                     ((equal t3 *nil*)
+                      (append (flatten-ands-in-lit t1)
+                              (flatten-ands-in-lit t2)))
+                     (t (list term))))
+              (& (cond ((equal term *t*) nil)
+                       (t (list term))))))
+
+(defun translate11-var-or-quote-exit
+  (x term stobjs-out bindings known-stobjs flet-alist
+     cform ctx wrld state-vars)
+
+; Term is the translation of x and we know term is a variable symbol or a
+; QUOTEed evg.  If term is a variable symbol, it may be a stobj name.  We wish
+; to return term as the result of translation, but must first consider the
+; specified stobjs-out.  Stobjs-out is fully dereferenced.  So there are three
+; cases: (1) we don't care about stobjs-out, (2) stobjs-out tells us exactly
+; what kind of output is legal here and we must check, or (3) stobjs-out is an
+; unknown but we now know its value and can bind it.
+
+; Note: We pass in the same arguments as for translate11 (except for term which
+; is the result of translating x) just for sanity.  We don't use two of them:
+
+  (declare (ignore flet-alist state-vars))
+  (cond
+   ((eq stobjs-out t) ;;; (1)
+    (trans-value term))
+   ((consp stobjs-out) ;;; (2)
+    (cond
+     ((cdr stobjs-out)
+      (trans-er+? cform x
+                  ctx
+                  "One value, ~x0, is being returned where ~x1 values were ~
+                   expected."
+                  x (length stobjs-out)))
+     ((and (null (car stobjs-out))
+           (stobjp term known-stobjs wrld))
+      (trans-er+? cform x
+                  ctx
+                  "A single-threaded object, namely ~x0, is being used where ~
+                   an ordinary object is expected."
+                  term))
+     ((and (car stobjs-out)
+           (not (eq (car stobjs-out) term)))
+      (cond
+       ((stobjp term known-stobjs wrld)
+        (trans-er+? cform x
+                    ctx
+                    "The single-threaded object ~x0 is being used where the ~
+                     single-threaded object ~x1 was expected."
+                    term (car stobjs-out)))
+       (t
+        (trans-er+? cform x
+                    ctx
+                    "The ordinary object ~x0 is being used where the ~
+                     single-threaded object ~x1 was expected."
+                    term (car stobjs-out)))))
+     (t (trans-value term))))
+   (t ;;; (3)
+    (trans-value term
+                 (translate-bind
+                  stobjs-out
+                  (list (if (stobjp term known-stobjs wrld)
+                            term
+                            nil))
+                  bindings)))))
+
+(defun ilks-per-argument-slot (fn wrld)
+
+; This function is used by translate11 to keep track of the required ilk of
+; each actual expression being translated.  The ``ilks'' we return include an
+; odd non-ilk.  In particular, we give the first arg of APPLY$ an ``ilk'' of
+; :FN? instead of :FN.  APPLY$ is allowed looser restrictions on its :fn args
+; for purposes of translation.  See the Explanation of a Messy Restriction on
+; :FN Slots in translate11.
+
+; The get-badge function doesn't record badges for APPLY$ and EV$ because
+; they're built into BADGE.  So we have to supply them below.  All other
+; symbols with no badges are assigned nil as the list of ilks, which is treated
+; as a list of n nils, meaning for current purposes that translate allows
+; anything but lambda$.
+
+; A consequence of this default is that translate cannot detect the difference
+; between a lambda$, say, encountered in an ordinary slot versus one
+; encountered in a slot of unknown ilk in a call of an unbadged function.  It
+; will just report an illegal occurrence of lambda$.
+
+; Historical Note: Ideally, we would return a list of ilks corresponding to the
+; formals of fn, with some list of pseudo-ilks like (:unknown :unknown ...) for
+; unbadged fns.  If translate11 always received one of the ``ilks'' :FN, :EXPR,
+; NIL, or :UNKNOWN then it could distinguish lambda$s passed into
+; known-inappropriate slots from lambda$s passed into unknown slots of unbadged
+; functions, thereby possibly alerting the user that def-warrant ought to be
+; called on the offending function.
+
+; But this ideal spec would require us to find the badge (or ``pseudo-badge''
+; for unbadged functions) of every function encountered by translate11.  To
+; determine if a function has a badge we have to scan the 800+ entries in
+; *badge-prim-falist*, the six apply$ boot fns, and the entries in the
+; :badge-userfn-structure component of the badge-table.  But the only functions
+; with non-trivial ilks are apply$ and ev$ among the boot functions and perhaps
+; some functions among the userfns.  All other fns are either tame or unbadged
+; and by returning nil for those we don't have to search through the primitives
+; as we would to implement the ideal spec.
+
+; While this spec is faster to implement than the ideal one it prevents
+; translate from distinguishing supplying a lambda$ in an ordinary slot versus
+; supplying it to an unbadged function.  Oh well!
+
+  (cond ((eq fn 'apply$) '(:FN? NIL)) ; Note change of :FN to :FN?
+        ((eq fn 'ev$) '(:EXPR NIL))
+        (t (let ((bdg (get-badge fn wrld)))
+             (cond
+              ((null bdg) ; unbadged fn
+               nil)
+              (t (let ((ilks (access apply$-badge bdg :ilks)))
+                   (if (eq ilks t) ; tame userfn
+                       nil
+                       ilks))))))))
+
+; The next few functions develop the notion of a well-formed lambda object.
+
+; Here is one of the most basic functions in the theorem prover.
+
+; (Students of our code should study this elementary function just to see how
+; we recur through terms.  The function instantiates a variable, i.e.,
+; (subst-var new old form) substitutes the term new for the variable old in the
+; term form.  For example, (subst-var '(car a) 'x '(foo x y)) = '(foo (car a)
+; y).)
+
+(mutual-recursion
+
+(defun subst-var (new old form)
+  (declare (xargs :guard (and (pseudo-termp new)
+                              (variablep old)
+                              (pseudo-termp form))))
+  (cond ((variablep form)
+         (cond ((eq form old) new)
+               (t form)))
+        ((fquotep form) form)
+        (t (cons-term (ffn-symb form)
+                      (subst-var-lst new old (fargs form))))))
+
+(defun subst-var-lst (new old l)
+  (declare (xargs :guard (and (pseudo-termp new)
+                              (variablep old)
+                              (pseudo-term-listp l))))
+  (cond ((endp l) nil)
+        (t (cons (subst-var new old (car l))
+                 (subst-var-lst new old (cdr l))))))
+
+)
+
+(defun subst-each-for-var (new-lst old term)
+
+; Successively substitute each element of new-lst for the variable old in term
+; and collect the results.
+
+  (cond
+   ((endp new-lst) nil)
+   (t (cons (subst-var (car new-lst) old term)
+            (subst-each-for-var (cdr new-lst) old term)))))
+
+; We now formalize the notion of a well-formed lambda object as the function
+; well-formed-lambda-objectp. That function is not actually used in
+; translation; translate11 guarantees it for lambda objects and lambda$
+; results, but translate11 checks the various well-formedness conditions
+; individually and reports violation-specific error messages.  The
+; well-formedness function is used elsewhere in our system code when we
+; encounter a lambda object to be guard verified or compiled.
+
+; There are aspects of well-formedness that are independent of the world.  For
+; example, (lambda (x) (declare (type integer y)) (body x y)) is ill-formed in
+; all worlds (e.g., whether body is a tame :logic-mode function in the world or
+; not).  So we divide the well-formedness predicate into two parts, one
+; independent of world, called ``syntactically plausible,'' and one dependent
+; on it.  This partitioning becomes important when we develop the cl-cache in
+; which we store lambda objects for evaluation purposes.
+
+(defun type-expressions-from-type-spec (spec vars wrld)
+
+; Given an alleged type spec, like INTEGER, (SATISFIES EVENP), or (OR STRING
+; CONS), and a list of variables, var, we generate the non-empty list of
+; equivalent type expressions (one for each variable) or nil if x is not a
+; legal type spec.  There must be at least one variable in vars or else (TYPE
+; spec . vars) is illegal, so the nil answer is unambiguous.
+
+; This function is akin to translate-declaration-to-guard-gen-var-lst except
+; that function assumes x is legal and this one doesn't.  Thus, this can be
+; used as either a predicate, ``is (TYPE x . vars) legal?,'' or as a function
+; that returns the corresponding list of type expressions.  We use this
+; function both ways when checking that the DECLARE in a lambda object is
+; legal: we have to check each TYPE declaration and we have to check that each
+; type expression is a conjunct of the :GUARD.
+
+; Efficiency: Rather than translate every declaration to its guard expression
+; for each var in vars we just translate the first one and then use
+; substitution to get the rest of the expressions.  The legality of a type spec
+; is independent of the var constrained.
+
+  (cond ((null vars) nil)
+        (t (let ((expr (translate-declaration-to-guard-gen
+                        spec (car vars) t wrld)))
+             (cond
+              ((null expr) nil)
+              (t (cons expr (subst-each-for-var (cdr vars) (car vars) expr))))))))
+
+(defun syntactically-plausible-lambda-objectp1
+  (edcls formals ignores ignorables type-exprs satisfies-exprs guard)
+
+; Edcls is supposed to be a list as might be used in (DECLARE . edcls) in a
+; lambda object.  We construct the lists of all ignored and ignorable vars, the
+; type expressions implied by any TYPE declarations in edcls, an instance of
+; each (TYPE (SATISFIES p) ...) expression, and we recover the :guard.  We also
+; check all the purely syntactic stuff.  If we find syntactic errors we return
+; (mv nil ...).  If the syntax is ok we return (mv t ignores ignorables
+; type-exprs satisfies-exprs guard).  Note that to be truly well-formed the
+; TYPE expressions in a lambda DECLARE have to be conjuncts of the guard, the
+; guard has to be a logic-mode term closed on the formals, etc.  We can't check
+; those properties without the world, so we're just returning the parts whose
+; complete well-formedness depends on a world.
+
+; BTW: We need the full list of type-exprs to check that the guard contains
+; them all as conjuncts.  We need the satisfies-exprs separated out so we can
+; check, once we have a world in mind, that each satisfies expression is a
+; term.
+
+; Initially guard is NIL, meaning we have not yet seen a guard.  There can be
+; be only one (XARGS :GUARD ...) form and this flag is used to confirm that we
+; haven't seen a guard yet.  If the user writes (XARGS :GUARD NIL ...) we will
+; act like he or she wrote (XARGS :GUARD 'NIL ...) to avoid confusion (though a
+; case could be made that a lambda expression with a nil guard is pretty
+; useless).
+
+  (cond
+   ((atom edcls)
+
+; The edcls must be a true list.  In addition, every TYPE expr must be a
+; conjunct of the guard.  But we don't know the guard is a term yet so we can't
+; explore it for conjuncts.  However, we know that the lambda is ill-formed if
+; no guard has been seen but there are TYPE declarations.  Furthermore, we know
+; it's ill-formed if the guard is 'NIL and there are TYPE declarations.
+
+    (mv (and (eq edcls nil)
+             (not (and (or (null guard)
+                           (equal guard *nil*))
+                       type-exprs)))
+        ignores
+        ignorables
+        type-exprs
+        satisfies-exprs
+        (or guard *t*)))
+   (t
+    (let ((item (car edcls)))
+      (case-match item
+        (('TYPE spec . vars)
+         (cond
+          ((and (true-listp vars)
+                (subsetp-eq vars formals))
+           (let ((exprs (type-expressions-from-type-spec spec vars nil)))
+
+; We use wrld=nil in type-expressions-from-type-spec, which short-cuts the
+; check that each (SATISFIES p) always mentions a unary function symbol p.
+; We'll have to come back and check that when we have a world.  But syntactic
+; check will rule out (type (SATISFIES p var)), for example, where the user
+; should have written (type (SATISFIES p) var).
+
+             (cond (exprs
+                    (syntactically-plausible-lambda-objectp1
+                     (cdr edcls)
+                     formals ignores ignorables
+
+; When we use get-guards to collect type expressions in
+; translate11-lambda-object we're collecting the expressions in a different
+; order.  But we don't care about order.
+
+                     (revappend exprs type-exprs)
+                     (if (and (consp spec)
+                              (eq (car spec) 'satisfies))
+                         (add-to-set-equal (list (cadr spec) 'X) satisfies-exprs)
+                         satisfies-exprs)
+                     guard))
+                   (t (mv nil nil nil nil nil nil)))))
+          (t (mv nil nil nil nil nil nil))))
+        (('IGNORE . vars)
+         (cond
+          ((and (true-listp vars)
+                (subsetp-eq vars formals))
+           (syntactically-plausible-lambda-objectp1
+            (cdr edcls)
+            formals
+
+; Note: When we ignore-vars in translate11-lambda-object we're collecting the
+; variables in a different order.  But we don't care about order.
+
+            (revappend vars ignores)
+            ignorables type-exprs satisfies-exprs guard))
+          (t (mv nil nil nil nil nil nil))))
+        (('IGNORABLE . vars)
+         (cond
+          ((and (true-listp vars)
+                (subsetp-eq vars formals))
+           (syntactically-plausible-lambda-objectp1
+            (cdr edcls)
+            formals ignores
+
+; Note: When we ignorable-vars in translate11-lambda-object we're collecting
+; the variables in a different order.  But we don't care about order.
+
+            (revappend vars ignorables)
+            type-exprs satisfies-exprs guard))
+          (t (mv nil nil nil nil nil nil))))
+        (('XARGS :GUARD g :SPLIT-TYPES 'T)
+         (cond
+          ((null guard) ; no guard seen yet
+           (syntactically-plausible-lambda-objectp1
+            (cdr edcls)
+            formals ignores ignorables
+            type-exprs satisfies-exprs
+            (if (null g) *nil* g)))
+          (t (mv nil nil nil nil nil nil))))
+        (& (mv nil nil nil nil nil nil)))))))
+
+(defun syntactically-plausible-lambda-objectp (x)
+
+; This function takes a purported lambda expression and determines if it is
+; syntactically well-formed -- at least as far as that can be determined
+; without access to the world.  Since some parts of the well-formedness check
+; require the world, this function returns those parts of the lambda expression
+; needed to finish: the type expressions steming from SATISFIES specs, the
+; guard, and the body.  We return (mv t formals satisfies-exprs guard body) if
+; the syntactic checks succeed and (mv nil nil nil nil nil) if they don't.
+
+; We would like to believe that if x is syntactically plausible then there is
+; some world in which it is well-formed.  But our plausibility check, which
+; relies on pseudo-termp to check alleged terms (without access to world), is
+; insufficient.  Here are some examples of syntactically plausible lambda
+; objects that no world makes well-formed.  Each example suggests a
+; strengthening of the test on body below.
+
+; (lambda (x) (cons (undef x) (undef x x))) - symb with multiple arities
+; (lambda (x) (cadr x)) - primitive macro assumed to be a function symbol
+
+; It will turn out that even though these lambdas pass the syntactic
+; plausibility test the cache will treat them as :UGLY (hopelessly doomed)
+; because it uses the stronger potential-termp test (which needs a world to
+; detect all primitives) instead of mere pseudo-termp.  But historically we
+; relied initially on syntactic plausibility alone and the only :UGLY lambdas
+; were the implausible ones.
+
+; The consequence of that weakness of the simple pseudo-termp test was that
+; make-new-cl-cache-line assigned the status :BAD to these lambda expressions
+; when they should be assigned :UGLY.  Anthropomorphically speaking, the
+; cl-cache was hoping it would eventually encounter a world that makes these
+; :BAD lambdas well-formed and will check termp on them every time they're
+; apply$'d in a different world.  If we assigned status :UGLY we would,
+; correctly, never try to validate them.  See potential-term-listp and its use
+; in managing the cl-cache in make-new-cl-cache-line.
+
+; Because of the translate-time enforcement of well-formedness on explicitly
+; quoted lambda objects and lambda$s, the only way to get an :ugly lambda into
+; the cache is to sneak it past translate, e.g., write (cons 'lambda '((x)
+; (cadr x))) or better yet `(lambda (x) (cadr x)).  If, for example, a lambda
+; object was created by a lambda$ then there really is a world in which it's
+; well-formed, i.e., the one translate used, even if in the current world the
+; lambda is :BAD because of undos.
+
+; Furthermore, we'd really like to check that the body and guard satisfy the
+; syntactic rules on the use of formals vis-a-vis the free-vars and IGNORE and
+; IGNORABLE declarations.  Those rules can't be checked unless we can sweep the
+; body and guard to collect the vars, and we can do that if we know merely
+; pseudo-termp.  The resultant vars are in fact the free vars in any world that
+; makes body and guard terms.  Any lambda that fails the vars checks will be
+; correctly classed as :UGLY.
+
+  (case-match x
+    (('LAMBDA formals body)
+     (if (and (arglistp formals)
+              (pseudo-termp body)
+              (let ((used-vars (all-vars body)))
+
+; In the general case below, where there's a DECLARE form with IGNORE and
+; IGNORABLE, we check conformance with those declarations.  But here there are
+; no such declarations.  This just means that there must be no free vars and
+; every var is used.
+
+                (and (subsetp-eq used-vars formals)
+                     (subsetp-eq formals used-vars))))
+         (mv t formals nil *t* body)
+         (mv nil nil nil nil nil)))
+    (('LAMBDA formals ('DECLARE . edcls) body)
+     (if (arglistp formals)
+         (mv-let (flg ignores ignorables type-exprs satisfies-exprs guard)
+           (syntactically-plausible-lambda-objectp1 edcls formals
+                                                    nil nil nil nil nil)
+           (if (and flg
+                    (pseudo-termp guard)
+                    (subsetp-equal type-exprs
+                                   (flatten-ands-in-lit guard))
+                    (pseudo-termp body)
+                    (subsetp-eq (all-vars guard) formals)
+                    (let ((used-vars (all-vars body)))
+
+; We check that (a) there are no free vars, (b) that no var declared IGNOREd is
+; actually used, and (c) that all unused vars that aren't declared IGNOREd are
+; declared IGNORABLE.
+                      (and (subsetp-eq used-vars formals)          ; (a)
+                           (not (intersectp-eq used-vars ignores)) ; (b)
+                           (subsetp-eq (set-difference-eq          ; (c)
+                                        (set-difference-eq formals used-vars)
+                                        ignores)
+                                       ignorables))))
+               (mv t formals satisfies-exprs guard body)
+               (mv nil nil nil nil nil)))
+         (mv nil nil nil nil nil)))
+    (& (mv nil nil nil nil nil))))
+
+(defun well-formed-lambda-objectp1
+  (formals satisfies-exprs guard body wrld)
+
+; All the arguments except wrld are the obvious extracts from a syntactically
+; plausible lambda expression.
+
+; We know formals is a list of distinct legal variables, that the ignores and
+; ignorables are each subsets of formals, and that satisfies-exprs is a list of
+; ``fully translated pseudo terms'' (if we can use that oxymoronic phrase) in
+; those formals because we constructed them from TYPE declarations, checking
+; the relevant vars in formals but without checking that the (SATISFIES p) all
+; mention unary function symbols.  Furthermore, we don't know anything about
+; guard and body.  We complete the well-formedness check on the lambda
+; expression from which these components were extracted.
+
+; We passed in formals merely because it's one of the results of
+; syntactically-plausible-lambda-objectp.  That result is needed in other
+; places that syntactically-plausible-lambda-objectp is called, but not here.
+
+  (declare (ignore formals))
+  (and (term-listp satisfies-exprs wrld)
+       (termp guard wrld)
+       (null (collect-programs (all-fnnames guard) wrld))
+       (termp body wrld)
+       (executable-tamep body wrld)))
+
+(defun well-formed-lambda-objectp (x wrld)
+
+; We check that x is a well-formed lambda object.  This means it is either
+; (lambda formals body) or (lambda formals dcl body) where the formals are
+; distinct variables, the dcl is as expected in a lambda object, the :guard is
+; a term closed under formals in wrld and the body is a tame term closed under
+; formals in wrld.  See the Essay on Lambda Objects and Lambda$.
+
+; We do not check that the :guard and/or body are composed of guard verified
+; functions, nor do we prove the guard conjectures for x.
+
+  (mv-let (flg formals satisfies-exprs guard body)
+    (syntactically-plausible-lambda-objectp x)
+    (cond
+     ((null flg) nil)
+     (t (well-formed-lambda-objectp1 formals satisfies-exprs
+                                     guard body wrld)))))
+
+(defun lambda-object-guard (x)
+
+; X must be a well-formed lambda object.  We return the guard.  This function
+; is not defined in axioms (where we define its namesakes
+; lambda-object-formals, -dcl, and -body) because those are :logic mode
+; functions with a guard of T and are guard verified.  This function is in
+; :program mode and if it had a guard it would be
+; (syntactically-plausible-lambda-objectp x).
+
+  (or (cadr (assoc-keyword :guard
+                           (cdr (assoc-eq 'xargs
+                                          (cdr (lambda-object-dcl x))))))
+      *t*))
+
+(defun tag-translated-lambda$-body (lambda$-expr tbody)
+
+; This function takes a lambda$ expression whose body has been successfully
+; translated to tbody and returns a term equivalent to tbody but marked in a
+; way that allows us to (a) identify the resulting lambda-expression as having
+; come from a lambda$ and (b) recover the original lambda$ expression that raw
+; Lisp will see.
+
+  `(RETURN-LAST 'PROGN
+                (QUOTE ,lambda$-expr)
+                ,tbody))
+
+(defun lambda$-bodyp (body)
+
+; This function recognizes the special idiom used to tag translated
+; lambda$ bodies.  See the Essay on Lambda Objects and Lambda$.
+
+  (and (consp body)
+       (eq (ffn-symb body) 'RETURN-LAST)
+       (equal (fargn body 1) ''PROGN)
+       (quotep (fargn body 2))
+       (consp (unquote (fargn body 2)))
+       (eq (car (unquote (fargn body 2))) 'LAMBDA$)))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -7461,12 +9073,15 @@
      (t
       (trans-er-let*
        ((tdcls (translate11-lst (translate-dcl-lst edcls wrld)
-                                nil           ;;; '(nil ... nil)
+                                nil           ;;; ilks = '(nil ... nil)
+                                nil           ;;; stobjs-out = '(nil ... nil)
                                 bindings
                                 known-stobjs
                                 "in a DECLARE form in an FLET binding"
                                 flet-alist form ctx wrld state-vars))
-        (tbody (translate11 body new-stobjs-out
+        (tbody (translate11 body
+                            nil               ;;; ilk
+                            new-stobjs-out
                             (if (eq stobjs-out t)
                                 bindings
                               (translate-bind new-stobjs-out new-stobjs-out
@@ -7682,6 +9297,7 @@
                                                   known-stobjs flet-alist ctx wrld
                                                   state-vars)))
              (translate11 body
+                          nil ; ilk
                           stobjs-out bindings known-stobjs flet-alist x
                           ctx wrld state-vars)))))))))))
 
@@ -7715,7 +9331,10 @@
 ; restriction someday, and because a symbol can be a variable or a constant, we
 ; do not rely on that fact here.
 
-                   (translate11 (cadr call) '(nil) bindings known-stobjs
+; Note: No stobj accessor or updater accepts functional arguments so we can use
+; ilk = nil below.
+
+                   (translate11 (cadr call) nil '(nil) bindings known-stobjs
                                 flet-alist cform ctx wrld state-vars)))
                  (trans-value (cons (list* (car call) index (cddr call))
                                     rest))))
@@ -7798,26 +9417,31 @@
 
                         (trans-er-let*
                          ((val (translate11 (cadr (car (cadr x)))
+                                            nil ; ilk
                                             (list (car bound-vars))
                                             bindings known-stobjs flet-alist
                                             x ctx wrld state-vars)))
                          (trans-value (list val))))
                        (t (translate11-lst (strip-cadrs (cadr x))
+                                           nil ; ilks = '(nil nil ...)
                                            (if (eq stobjs-out t)
                                                t
                                              stobj-flags)
                                            bindings known-stobjs
                                            "in a LET binding (or LAMBDA ~
-                                           application)"
+                                            application)"
                                            flet-alist x ctx wrld
                                            state-vars))))
                 (tbody
                  (if tbody0
                      (trans-value tbody0)
-                   (translate11 (car (last x)) stobjs-out bindings known-stobjs
+                   (translate11 (car (last x))
+                                nil
+                                stobjs-out bindings known-stobjs
                                 flet-alist x ctx wrld state-vars)))
                 (tdcls (translate11-lst
                         (translate-dcl-lst edcls wrld)
+                        nil ; ilks = '(nil nil ...)
                         (if (eq stobjs-out t)
                             t
                           nil) ;;; '(nil ... nil)
@@ -7891,11 +9515,12 @@
                         (cond
                          ((eq ignore-ok :warn)
                           (warning$-cw1 ctx "Ignored-variables"
-                                        "The variable~#0~[ ~&0 is~/s ~&0 are~] ~
-                                        not used in the body of the LET ~
-                                        expression that binds ~&1.  But ~&0 ~
-                                        ~#0~[is~/are~] not declared IGNOREd ~
-                                        or IGNORABLE.  See :DOC set-ignore-ok."
+                                        "The variable~#0~[ ~&0 is~/s ~&0 ~
+                                         are~] not used in the body of the ~
+                                         LET expression that binds ~&1.  But ~
+                                         ~&0 ~#0~[is~/are~] not declared ~
+                                         IGNOREd or IGNORABLE.  See :DOC ~
+                                         set-ignore-ok."
                                         diff
                                         bound-vars))
                          (t nil))
@@ -8022,11 +9647,13 @@
         (t
          (trans-er-let*
           ((tcall (translate11 (caddr x)
+                               nil
                                bound-stobjs-out
                                bindings
                                producer-known-stobjs
                                flet-alist x ctx wrld state-vars))
            (tdcls (translate11-lst (translate-dcl-lst edcls wrld)
+                                   nil ; ilks = '(nil nil ...)
                                    (if (eq stobjs-out t)
                                        t
                                      nil) ;;; '(nil ... nil)
@@ -8036,6 +9663,7 @@
            (tbody (if tbody0
                       (trans-value tbody0)
                     (translate11 (car (last x))
+                                 nil
                                  stobjs-out bindings known-stobjs flet-alist x
                                  ctx wrld state-vars))))
           (let ((used-vars (union-eq (all-vars tbody)
@@ -8173,6 +9801,8 @@
 ; and ignore it!  We translated it just for sanity's sake: no point in allowing
 ; the user ever to write an ill-formed term in a well-formed term.
 
+; Remember: The quoted lambda of wormholes are not related to apply$.
+
   (declare (ignore z))
   (cond
    ((not (and (true-listp x)
@@ -8205,6 +9835,11 @@
               y))
    (t (let ((lambda-formals (cadr (cadr y)))
             (lambda-body (caddr (cadr y))))
+
+; Recall that wormhole's quoted lambdas are not related to apply$.  Wormhole's
+; lambdas are always of length 3, so we just use lambda-formals and lambda-body
+; above.
+
         (cond
          ((not (arglistp lambda-formals))
           (mv-let (culprit explan)
@@ -8222,6 +9857,7 @@
             (mv-let
                (body-erp tlambda-body body-bindings)
                (translate11 lambda-body
+                            nil
                             '(nil)           ; stobjs-out
                             nil
                             '(state) ; known-stobjs
@@ -8282,6 +9918,7 @@
             (translate11-lst (if (eq fn 'wormhole-eval)
                                  (list *nil* *nil* (nth 2 args))
                                args)
+                             (ilks-per-argument-slot fn wrld)
                              stobjs-in-call
                              bindings
                              known-stobjs
@@ -8314,6 +9951,7 @@
             (and (eq flg :failed)
                  (stobj-recognizer-p fn wrld))
             (translate11-lst args
+                             nil ; ilks = '(nil)
                              '(nil)
                              bindings
                              known-stobjs
@@ -8537,6 +10175,7 @@
                                bindings)))
           (trans-er-let*
            ((args (translate11-lst args
+                                   (ilks-per-argument-slot fn wrld)
                                    stobjs-in-call
                                    bindings known-stobjs
                                    msg flet-alist form ctx wrld state-vars)))
@@ -8549,6 +10188,7 @@
                   (translate11-lst (if (eq fn 'wormhole-eval)
                                        (list *nil* *nil* (nth 2 args))
                                      args)
+                                   (ilks-per-argument-slot fn wrld)
                                    stobjs-in-call
                                    bindings known-stobjs
                                    msg flet-alist form ctx wrld state-vars)
@@ -8559,6 +10199,7 @@
                   (and (eq flg :failed)
                        (stobj-recognizer-p fn wrld))
                   (translate11-lst args
+                                   (ilks-per-argument-slot fn wrld)
                                    '(nil)
                                    bindings known-stobjs
                                    msg flet-alist form ctx wrld state-vars)
@@ -8591,17 +10232,358 @@
                  (translate-bind stobjs-out2 stobjs-out bindings))))
           (trans-er-let*
            ((args (translate11-lst args
+                                   (ilks-per-argument-slot fn wrld)
                                    stobjs-in-call
                                    bindings known-stobjs
                                    msg flet-alist form ctx wrld state-vars)))
            (trans-value (fcons-term fn args))))))))
 
-(defun translate11 (x stobjs-out bindings known-stobjs flet-alist
+(defun translate11-lambda-object
+  (x stobjs-out bindings known-stobjs flet-alist cform ctx wrld state-vars)
+
+; Warning: The name of this function is a bit of a misnomer.  X is of the form
+; (LAMBDA vars dcls* body) or (LAMBDA$ vars dcls* body) and is presumed to be
+; destined for apply$.  The car of X is LAMBDA (or LAMBDA$), not QUOTE!
+
+; See the Essay on Lambda Objects and Lambda$ for a discussion of these
+; concepts.
+
+; The LAMBDA case will have been found inside a QUOTE and the LAMBDA$ case will
+; be translated into a lambda object.  The error-free result will satisfy
+; well-formed-lambda-objectp.
+
+; In the case of LAMBDA$, we translate the components and combine multiple
+; DECLAREs into a single DECLARE with the various parts listed in the same
+; order.  We insist that there is at most one XARGS and that it have only the
+; :GUARD and/or :SPLIT-TYPES keys.  A lambda object must look exactly like it
+; came from a translated LAMBDA$, including having exactly one DECLARE form.
+; We return the translated version of x (in the trans-value format) or cause a
+; translate error (in trans-er format).
+
+  (cond
+   ((and (eq stobjs-out t)
+         (eq (car x) 'LAMBDA))
+
+; Since we are not translating for execution, our intent is simply to let
+; normal logic run its course.
+
+    (translate11-var-or-quote-exit
+     x
+     `(QUOTE ,x)
+     stobjs-out bindings known-stobjs flet-alist
+     cform ctx wrld state-vars))
+   ((and (or (eq (car x) 'LAMBDA)
+             (eq (car x) 'LAMBDA$))
+         (true-listp x)
+         (<= 3 (length x)))
+    (let ((lambda-casep (eq (car x) 'LAMBDA))
+          (vars (cadr x))
+          (dcls (butlast (cddr x) 1))
+          (body (car (last x))))
+      (cond
+       ((not (arglistp vars))
+        (trans-er+? cform x
+                    ctx
+                    "The second element of a well-formed LAMBDA or LAMBDA$ ~
+                     expression must be a true list of distinct legal ~
+                     variable symbols and ~x0 is not.  ~@1"
+                    vars
+                    *gratuitous-lambda-object-restriction-msg*))
+       (t
+        (trans-er-let*
+         ((edcls (edcls-from-lambda-object-dcls dcls x bindings
+                                                cform ctx wrld)))
+
+; The :GUARD in the edcls is untranslated and may or may not include the TYPEs,
+; depending on split-types below.  If split-types is T then the guard must
+; include (actually must just imply but we check syntactic inclusion) the TYPEs
+; and otherwise the TYPEs will be automatically added to the guard by
+; get-guards.  But split-types can be NIL only in the lambda$ case.
+
+         (let* ((bindings0 bindings)
+                (fives (list (list :lambda vars nil edcls body)))
+                (xargs (assoc-eq 'XARGS edcls))
+                (split-types
+                 (or lambda-casep
+                     (cadr (assoc-keyword :SPLIT-TYPES (cdr xargs)))))
+                (guard1-tail (assoc-keyword :guard (cdr xargs)))
+
+; Guard1 is the the actual, untranslated expression the user supplied with
+; XARGS :GUARD.
+
+                (guard1 ; only valid if guard1-tail is non-nil
+                 (cadr guard1-tail))
+
+; Guard2 is the untranslated guard expression generated by possibly (according
+; to :split-types) conjoining in the TYPE expressions.
+
+                (guard2 (and (not lambda-casep) ; optimization (else, not used)
+                             (car (get-guards
+                                   fives
+                                   (list split-types) ; per 5-tuple above
+                                   nil ; collect merged types and guards
+                                   wrld))))
+                (guard (if lambda-casep
+                           (if (null guard1-tail)
+                               *T*
+                               guard1)
+                           guard2))
+                (ignores (ignore-vars edcls))
+                (ignorables (ignorable-vars edcls)))
+           (trans-er-let*
+            ((tguard (if lambda-casep
+                         (if (termp guard wrld)
+                             (trans-value guard)
+                           (trans-er+?
+                            cform x
+                            ctx
+                            "The guard of a LAMBDA must be a fully translated ~
+                             term and ~x0 is not.  ~@1"
+                            guard
+                            *gratuitous-lambda-object-restriction-msg*))
+                         (translate11 guard
+                                      nil    ; ilk
+                                      '(nil) ; stobjs-out
+                                      nil    ; bindings
+                                      nil    ; known-stobjs
+                                      nil    ; flet-alist
+                                      cform ctx wrld state-vars))))
+            (let* ((bindings bindings0) ; Restore original bindings
+                   (type-exprs (if split-types
+                                   (get-guards2 edcls '(TYPES) t wrld nil nil)
+                                 nil))
+                   (guard-conjuncts (if split-types
+                                        (flatten-ands-in-lit tguard)
+                                      nil))
+                   (missing-type-exprs (if split-types
+                                           (set-difference-equal
+                                            type-exprs
+                                            guard-conjuncts)
+                                         nil))
+                   (bad-fns (collect-programs (all-fnnames tguard) wrld))
+                   (free-vars (set-difference-eq (all-vars tguard) vars)))
+              (cond
+               (bad-fns
+                (trans-er+? cform x
+                            ctx
+                            "The guard of a lambda object or LAMBDA$ must be ~
+                             in :logic mode but ~x0 calls the :program mode ~
+                             function~#1~[~/s~] ~&1.  ~@2"
+                            (untranslate tguard t wrld)
+                            bad-fns
+                            *gratuitous-lambda-object-restriction-msg*))
+               (free-vars
+                (trans-er+? cform x
+                            ctx
+                            "The guard of a lambda object or LAMBDA$ may ~
+                             contain no free variables.  This is violated by ~
+                             the guard ~x0, which uses the variable~#1~[~/s~] ~
+                             ~&1 which ~#1~[is~/are~] not among the formals ~
+                             of the LAMBDA expression. ~@2"
+                            (untranslate tguard t wrld)
+                            free-vars
+                            *gratuitous-lambda-object-restriction-msg*))
+               (missing-type-exprs
+
+; We know by construction that missing-type-exprs will be nil for LAMBDA$ with
+; :SPLIT-TYPES NIL, so our error message talks about lambda objects or
+; :SPLIT-TYPE T situations only.
+
+                (trans-er+? cform x
+                            ctx
+                            "In a lambda object or a LAMBDA$ with ~
+                             :SPLIT-TYPES T, every TYPE expression derived ~
+                             from the TYPE specifiers must be an explicit ~
+                             conjunct in the :GUARD, and the guard ~x0 is ~
+                             missing ~&1.  ~@2"
+                            tguard ; (untranslate tguard t wrld)
+                            missing-type-exprs
+                            *gratuitous-lambda-object-restriction-msg*))
+               (t
+                (trans-er-let*
+                 ((tbody
+                   (if lambda-casep
+                       (if (termp body wrld)
+                           (if (lambda$-bodyp body)
+                               (trans-er+?
+                                cform x
+                                ctx
+                                "The body of a lambda object may not be of ~
+                                 the form (RETURN-LAST 'PROGN '(LAMBDA$ ...) ~
+                                 ...) because that idiom is used to flag ~
+                                 lambda objects generated by translating ~
+                                 LAMBDA$s. But you wrote a lambda object with ~
+                                 body ~x0.  ~@1"
+                                body
+                                *gratuitous-lambda-object-restriction-msg*)
+                               (trans-value body))
+                           (trans-er+?
+                            cform x
+                            ctx
+                            "The body of a lambda object must be in fully ~
+                             translated form and ~x0 is not.  ~@1"
+                            body
+                            *gratuitous-lambda-object-restriction-msg*))
+                       (translate11 body
+                                    nil    ; ilk
+                                    '(nil) ; stobjs-out
+                                    bindings
+                                    nil ; known-stobjs
+
+; It is perhaps a bit subtle why we use flet-list = nil here.  The function
+; apply$-lambda can reduce a call of apply$ on a lambda object to a
+; corresponding call of apply on a suitable function.  But what is that
+; function?  In Common Lisp, flet creates a lexical environment, and lambda --
+; the macro, not the quoted symbol -- creates a closure that uses that lexical
+; environment: for example, (flet ((f (x) x)) (apply (lambda (x) (f x)) (list
+; 3))) evaluates to 3, regardless of the global definition of f.  So if we used
+; closures, we could be in trouble here using nil for flet-alist!  However,
+; instead we build the function to be apply'd by compiling the lambda object
+; outside the flet lexical environment, with compile-lambda-object.
+
+; By the way: in Common Lisp, (flet ((f (x) x)) (apply 'f (list 3))) evaluates
+; to the same result as (apply 'f (list 3)); that is, the flet binding is
+; ignored.
+
+                                    nil ; flet-alist
+                                    cform ctx wrld state-vars))))
+                 (let* ((bad-fns (collect-programs (all-fnnames tbody) wrld))
+                        (body-vars (all-vars tbody))
+                        (free-vars (set-difference-eq body-vars vars))
+                        (used-ignores (intersection-eq body-vars ignores))
+                        (unused-not-ignorables
+                         (set-difference-eq
+                          (set-difference-eq
+                           (set-difference-eq vars body-vars)
+                           ignores)
+                          ignorables)))
+                   (cond
+                    (bad-fns
+                     (trans-er+? cform x
+                                 ctx
+                                 "The body of a lambda object or LAMBDA$ must ~
+                                  be in :logic mode but ~x0 calls the ~
+                                  :program mode function~#1~[~/s~] ~&1.  ~@2"
+                                 (untranslate tbody t wrld)
+                                 bad-fns
+                                 *gratuitous-lambda-object-restriction-msg*))
+                    (free-vars
+                     (trans-er+? cform x
+                                 ctx
+                                 "The body of a lambda object or LAMBDA$ may ~
+                                  contain no free variables.  This is ~
+                                  violated by the body ~x0, which uses the ~
+                                  variable~#1~[~/s~] ~&1 which ~#1~[is~/are~] ~
+                                  not among the formals of the LAMBDA ~
+                                  expression.  ~@2"
+                                 (untranslate tbody nil wrld)
+                                 free-vars
+                                 *gratuitous-lambda-object-restriction-msg*))
+                    (used-ignores
+                     (trans-er+? cform x
+                                 ctx
+                                 "The body of a lambda object or LAMBDA$ may ~
+                                  not use a variable declared IGNOREd.  This ~
+                                  is violated by the body ~x0, which uses the ~
+                                  variable~#1~[~/s~] ~&1 which ~#1~[is~/are~] ~
+                                  declare IGNOREd. ~@2"
+                                 (untranslate tbody nil wrld)
+                                 used-ignores
+                                 *gratuitous-lambda-object-restriction-msg*))
+                    (unused-not-ignorables
+                     (trans-er+? cform x
+                                 ctx
+                                 "Every formal variable that is unused in the ~
+                                  body of a lambda object or LAMBDA$ must be ~
+                                  declared IGNOREd or IGNORABLE.  This is ~
+                                  violated by the body ~x0, which fails to ~
+                                  use the variable~#1~[~/s~] ~&1 which ~
+                                  ~#1~[is~/are~] not declared IGNOREd or ~
+                                  IGNORABLE. ~@2"
+                                 (untranslate tbody nil wrld)
+                                 unused-not-ignorables
+                                 *gratuitous-lambda-object-restriction-msg*))
+                    (t (let ((bad-fns (all-unbadged-fnnames tbody wrld nil)))
+                         (cond
+                          (bad-fns
+                           (trans-er+
+                            x ctx
+                            "The body of a lambda object or LAMBDA$ should be ~
+                             fully badged but ~&0 ~#0~[is~/are~] used in ~x1 ~
+                             and ~#0~[has no badge~/have no badges~].  ~@2"
+                            (reverse bad-fns)
+                            tbody
+                            *gratuitous-lambda-object-restriction-msg*))
+                          ((not (executable-tamep tbody wrld))
+                           (trans-er+?
+                            cform x
+                            ctx
+                            "The body of a lambda object or LAMBDA$ constant ~
+                             must be tame and ~x0 is not.  ~@1"
+                            body
+                            *gratuitous-lambda-object-restriction-msg*))
+                          (t (translate11-var-or-quote-exit
+                              x
+                              (if lambda-casep
+                                  `(QUOTE ,x)
+
+; We need to normalize the edcls.  If the tguard is *T* then we can simply
+; remove the XARGS and leave any IGNORE and IGNORABLE declarations.  (We know
+; there aren't any TYPE declarations if the tguard is *T*.)  If the tguard is
+; not *T* then what the user wrote may have been augmented by the TYPE
+; declarations so we have to put tguard into the xargs and, in any case, we
+; need to set :SPLIT-TYPES to T.
+
+                                  (let ((edcls1
+                                         (if (equal tguard *T*)
+                                             (remove-equal xargs edcls)
+                                           (put-assoc-eq
+                                            'XARGS
+                                            `(:GUARD ,tguard :SPLIT-TYPES T)
+                                            edcls))))
+
+                                    (cond
+                                     ((null edcls1)
+                                      `(QUOTE
+                                        (LAMBDA ,vars
+                                                ,(tag-translated-lambda$-body
+                                                  x tbody))))
+                                     (t
+                                      `(QUOTE
+                                        (LAMBDA
+                                         ,vars
+                                         (DECLARE ,@edcls1)
+                                         ,(tag-translated-lambda$-body
+                                                  x tbody)))))))
+                              stobjs-out bindings known-stobjs flet-alist
+                              cform ctx wrld state-vars))))))))))))))))))
+   (t (trans-er+? cform x ctx
+                  "Every lambda object and lambda$ expressions must be a true ~
+                   list of at least 3 elements, e.g., (LAMBDA vars ...dcls... ~
+                   body) and ~x0 is not.  ~@1"
+                  x *gratuitous-lambda-object-restriction-msg*))))
+
+(defun translate11 (x ilk stobjs-out bindings known-stobjs flet-alist
                       cform ctx wrld state-vars)
 
 ; Warning: Keep this in sync with macroexpand1*-cmp.  Also, for any new special
 ; operators (e.g., let and translate-and-test), consider extending
 ; *special-ops* in community book books/misc/check-acl2-exports.lisp.
+
+; Note: Ilk is the ilk of the slot in which x was found, and is always one of
+; :FN, :EXPR, or NIL.  It is almost always NIL, e.g., when first entering from
+; translate or during the translation of any actual to any ACL2 primitive
+; (badged or unbadged) except for the two primitives apply$ and ev$.  In fact,
+; the only values of ilk that actually matter are :FN and :FN?.  If x is being
+; passed into such a slot then lambda objects and lambda$ expressions are
+; allowed.  Otherwise such expressions trigger errors.  So providing an ilk of
+; NIL just has the effect of prohibiting x from being a lambda object or
+; lambda$.
+
+; (There is no special treatment of ilk :EXPR, i.e., we do not support any way
+; for the user to type an untranslated term and have it turn into a quoted
+; translated term, because we believe the overwhelmingly more common case is
+; the need to pass quoted, fully translated lambda constants.)
 
 ; Bindings is an alist binding symbols either to their corresponding STOBJS-OUT
 ; or to symbols.  The only symbols used are (about-to-be introduced) function
@@ -8691,62 +10673,94 @@
 
 ; We now know that x denotes a term.  Let transx be that term.
 
-       (t (let ((transx (cond ((keywordp x) (kwote x))
-                              ((symbolp x)
-                               (cond ((eq vc 'constant) const)
-                                     (t x)))
-                              ((atom x) (kwote x))
-                              (t x))))
+       (t (trans-er-let*
+           ((transx
+             (cond
+              ((keywordp x) (trans-value (kwote x)))
+              ((symbolp x)
+               (trans-value
+                (cond ((eq vc 'constant) const)
+                      (t x))))
+              ((atom x) (trans-value (kwote x)))
+              ((and (consp (cadr x))
+                    (eq (car (cadr x)) 'lambda)
+                    (not (global-val 'boot-strap-flg wrld)))
 
-; Now consider the specified stobjs-out.  It is fully dereferenced.
-; So there are three cases: (1) we don't care about stobjs-out, (2)
-; stobjs-out tells us exactly what kind of output is legal here and we
-; must check, or (3) stobjs-out is an unknown but we now know its
-; value and can bind it.
+; If a lambda object appears in a :FN or :FN? slot, we enforce the
+; well-formedness rules for apply$.
 
+               (if (or (eq ilk :FN) (eq ilk :FN?))
+                   (translate11-lambda-object
+                    (cadr x)
+                    stobjs-out bindings known-stobjs flet-alist
+                    cform ctx wrld state-vars)
+
+; Historical Note: We once tried to cause an error on lambda objects outside
+; :FN slots but found hundreds of problems in the Community Books.  The problem
+; is that there are many lambda objects in the regression that have nothing to
+; do with apply$ due to utilities like books/data-structures/defalist.lisp that
+; encourage users to write lambda expressions that become incorporated into
+; macro-generated defuns.  So instead of causing an error now we just allow it.
+
+                   (trans-value x)))
+              (t (trans-value x)))))
             (cond
-             ((eq stobjs-out t) ;;; (1)
-              (trans-value transx))
-             ((consp stobjs-out) ;;; (2)
-              (cond
-               ((cdr stobjs-out)
-                (trans-er+? cform x
-                            ctx
-                            "One value, ~x0, is being returned where ~x1 ~
-                             values were expected."
-                            x (length stobjs-out)))
-               ((and (null (car stobjs-out))
-                     (stobjp transx known-stobjs wrld))
-                (trans-er+? cform x
-                            ctx
-                            "A single-threaded object, namely ~x0, is being ~
-                             used where an ordinary object is expected."
-                            transx))
-               ((and (car stobjs-out)
-                     (not (eq (car stobjs-out) transx)))
-                (cond
-                 ((stobjp transx known-stobjs wrld)
-                  (trans-er+? cform x
-                              ctx
-                              "The single-threaded object ~x0 is being used ~
-                               where the single-threaded object ~x1 was ~
-                               expected."
-                              transx (car stobjs-out)))
-                 (t
-                  (trans-er+? cform x
-                              ctx
-                              "The ordinary object ~x0 is being used where ~
-                               the single-threaded object ~x1 was expected."
-                              transx (car stobjs-out)))))
-               (t (trans-value transx))))
-             (t ;;; (3)
-              (trans-value transx
-                           (translate-bind
-                            stobjs-out
-                            (list (if (stobjp transx known-stobjs wrld)
-                                      transx
-                                    nil))
-                            bindings)))))))))
+
+; Explanation of a Messy Restriction on :FN Slots
+
+; If we are in a :FN slot and see a quoted object, then we insist the object be
+; a tame symbol or a LAMBDA.  If it's a LAMBDA we know it's well-formed by the
+; use of translate11-lambda-object in the binding of transx above.  So we focus
+; here on all manner of quoted objects except conses starting with LAMBDA and
+; we cause an error unless it's a tame symbol.  However, there are three
+; exceptions.
+
+; (1) We allow a non-tame symbol into the :FN slot of APPLY$ because the
+; warrants for mapping functions call APPLY$ on quoted non-tame symbols, e.g.,
+; (APPLY$ 'COLLECT ...) = (COLLECT ...).  Recall that the ``ilk'' for the first
+; arg of APPLY$ is :FN? as per ilks-per-argument-slot.
+
+; (2) We allow a defconst symbol to slip any kind of quoted object into a :FN
+; slot.  This is a deliberate choice.  We wanted an escape mechanism for the
+; rules on :fn slots and chose defconsts.
+
+; (3) Anything goes during boot-strapping, for obvious reasons.
+
+; The following test recognizes the error cases.  Read this as follows: we're
+; looking a fn slot containing a quoted object that didn't come from a defconst
+; and that is not during boot-strapping.  The quoted object is not a LAMBDA
+; (because we know any lambda here is well-formed).  So then consider the cases
+; on ilk.  If it's :FN we insist the quoted object is a tame symbol and if it's
+; :FN? (which means we're in an apply$) it must be a symbol.
+
+             ((and (or (eq ilk :FN)
+                       (eq ilk :FN?))
+                   (quotep transx)
+                   (not (eq vc 'constant))
+                   (not (global-val 'boot-strap-flg wrld))
+                   (not (and (consp (unquote transx))
+                             (eq (car (unquote transx)) 'lambda)))
+                   (cond
+                    ((eq ilk :FN)
+                     (not (and (symbolp (unquote transx))
+                               (executable-tamep-functionp (unquote transx)
+                                                           wrld))))
+                    (t ; ilk is :FN? so we're in apply$
+                     (not (symbolp (unquote transx))))))
+              (trans-er+?
+               cform x
+               ctx
+               "The quoted object ~x0 occurs in a :FN slot of a function call ~
+                but ~x0 is not a tame function symbol or lambda constant (or, ~
+                in the case of calls of APPLY$, even a symbol).  We see no ~
+                reason to allow this!  To insist on having such a call, ~
+                defconst some symbol and use that symbol constant here ~
+                instead."
+               (unquote transx)))
+             (t
+              (translate11-var-or-quote-exit x transx stobjs-out bindings
+                                             known-stobjs flet-alist
+                                             cform ctx wrld state-vars))))))))
    ((not (true-listp (cdr x)))
     (trans-er ctx
               "Function (and macro) applications in ACL2 must end in NIL.  ~
@@ -8780,8 +10794,30 @@
               (list* 'let
                      (listlis (cadr (car x)) (cdr x))
                      (cddr (car x)))
+              nil ; ilk
               stobjs-out bindings known-stobjs flet-alist x ctx wrld
               state-vars))))
+   ((eq (car x) 'lambda$)
+    (cond ((not (or (eq ilk :FN)
+                    (eq ilk :FN?)))
+
+; We have encountered a LAMBDA$ among the actuals in a non-:FN slot of a call
+; of some function fn.  But we don't know which function so we can't
+; distinguish a vanilla slot from a slot of an unbadged function.
+
+           (trans-er+? cform x
+                       ctx
+                       "It is illegal for a LAMBDA$ expression to occur ~
+                        except in a :FN slot of a mapping function, and ~x0 ~
+                        occurs either in a slot reserved for ~#1~[an ordinary ~
+                        object of a badged function or a slot of unknown ilk ~
+                        in an unbadged function~/a quoted expression or ~
+                        variable of ilk :EXPR~]."
+                       x
+                       (if (eq ilk :EXPR) 1 0)))
+          (t (translate11-lambda-object
+              x stobjs-out bindings known-stobjs
+              flet-alist cform ctx wrld state-vars))))
    ((and (not (eq stobjs-out t)) (eq (car x) 'mv))
 
 ; If stobjs-out is t we let normal macroexpansion handle mv.
@@ -8818,7 +10854,9 @@
                       (length (cdr x))))
          (t
           (trans-er-let*
-           ((args (translate11-lst (cdr x) stobjs-out bindings known-stobjs 'mv
+           ((args (translate11-lst (cdr x)
+                                   nil ; ilks, where (eq (car x) 'mv)
+                                   stobjs-out bindings known-stobjs 'mv
                                    flet-alist x ctx wrld state-vars)))
            (trans-value (listify args))))))
        (t (let* ((new-stobjs-out (compute-stobj-flags (cdr x)
@@ -8842,7 +10880,9 @@
              (t
               (mv-let
                 (erp args bindings)
-                (translate11-lst (cdr x) new-stobjs-out
+                (translate11-lst (cdr x)
+                                 nil ; ilks, where (eq (car x) 'mv)
+                                 new-stobjs-out
                                  bindings known-stobjs
                                  'mv flet-alist x ctx wrld state-vars)
                 (cond
@@ -8897,8 +10937,10 @@
                        nil))
             ((eq stobjs-out t)
              (trans-er-let*
-              ((args (translate11-lst (cdr x) t bindings known-stobjs
-                                      nil flet-alist x ctx wrld state-vars)))
+              ((args (translate11-lst (cdr x)
+                                      nil ;;; ilks = '(nil ... nil)
+                                      t bindings known-stobjs nil flet-alist x
+                                      ctx wrld state-vars)))
               (trans-value (fcons-term lambda-fn args))))
             (t
              (translate11-call x lambda-fn (cdr x) stobjs-out stobjs-out2
@@ -9037,7 +11079,14 @@
            (trans-er+ x ctx
                       "CHECK-VARS-NOT-FREE requires exactly two arguments."))
           ((null (cadr x)) ; optimization for perhaps a common case
-           (translate11 (caddr x) stobjs-out bindings
+
+; We pass ilk = nil below because a non-erroneous lambda$ always yields a
+; quoted object, so there's no reason to support check-vars-not-free dealing
+; with lambda$s.
+
+           (translate11 (caddr x)
+                        nil ; ilk (see comment above)
+                        stobjs-out bindings
                         known-stobjs flet-alist x ctx wrld
                         state-vars))
           ((not (symbol-listp (cadr x)))
@@ -9046,7 +11095,9 @@
                        a true-list of symbols."))
           (t
            (trans-er-let*
-            ((ans (translate11 (caddr x) stobjs-out bindings
+            ((ans (translate11 (caddr x)
+                               nil ; ilk
+                               stobjs-out bindings
                                known-stobjs flet-alist x ctx wrld
                                state-vars)))
             (let ((msg (check-vars-not-free-test (cadr x) ans)))
@@ -9061,7 +11112,9 @@
            (trans-er+ x ctx
                       "TRANSLATE-AND-TEST requires exactly two arguments."))
           (t (trans-er-let*
-              ((ans (translate11 (caddr x) stobjs-out bindings
+              ((ans (translate11 (caddr x)
+                                 nil ; ilk
+                                 stobjs-out bindings
                                  known-stobjs flet-alist x ctx wrld
                                  state-vars)))
 
@@ -9074,6 +11127,7 @@
               (mv-let
                (test-erp test-term test-bindings)
                (translate11 (list (cadr x) 'form)
+                            nil ; ilk
                             '(nil) nil known-stobjs flet-alist x ctx wrld
                             state-vars)
                (declare (ignore test-bindings))
@@ -9272,7 +11326,9 @@
                 (translate-stobj-calls updaters 4 bindings new-known-stobjs
                                        flet-alist x ctx wrld state-vars))
                (tconsumer
-                (translate11 guarded-consumer stobjs-out bindings known-stobjs
+                (translate11 guarded-consumer
+                             nil ; ilk
+                             stobjs-out bindings known-stobjs
                              flet-alist x ctx wrld state-vars))
                (tbody1 (translate11-let* body1 tconsumer tupdaters stobjs-out
                                          bindings known-stobjs flet-alist ctx
@@ -9361,6 +11417,7 @@
                    (cond (no-dups-exprs
                           (trans-er-let*
                            ((chk (translate11 (cons 'and no-dups-exprs)
+                                              nil ; ilk
                                               '(nil) bindings known-stobjs
                                               flet-alist cform ctx wrld
                                               state-vars)))
@@ -9423,7 +11480,9 @@
        (macroexpand1-cmp x ctx wrld state-vars)
        (cond
         (erp (mv erp expansion bindings))
-        (t (translate11 expansion stobjs-out bindings known-stobjs flet-alist x
+        (t (translate11 expansion
+                        ilk
+                        stobjs-out bindings known-stobjs flet-alist x
                         ctx wrld state-vars)))))))
    ((eq (car x) 'let)
     (translate11-let x nil nil stobjs-out bindings known-stobjs
@@ -9467,6 +11526,7 @@
             (t
              (trans-er-let*
               ((arg1 (translate11 (cadr x)
+                                  nil ; ilk
                                   (if (eq stobjs-out t)
                                       t
                                     '(nil))
@@ -9476,6 +11536,7 @@
                (erp2 arg2 bindings2)
                (trans-er-let*
                 ((arg2 (translate11 (caddr x)
+                                    nil ; ilk
                                     stobjs-out bindings known-stobjs
                                     flet-alist x ctx wrld state-vars)))
                 (trans-value arg2))
@@ -9486,12 +11547,14 @@
                    (mv-let
                     (erp3 arg3 bindings)
                     (translate11 (cadddr x)
+                                 nil ; ilk
                                  stobjs-out bindings known-stobjs
                                  flet-alist x ctx wrld state-vars)
                     (cond
                      (erp3 (mv erp2 arg2 bindings2))
                      (t (trans-er-let*
                          ((arg2 (translate11 (caddr x)
+                                             nil ; ilk
                                              stobjs-out bindings known-stobjs
                                              flet-alist x ctx wrld state-vars)))
                          (trans-value (fcons-term* 'if arg1 arg2 arg3)))))))
@@ -9500,6 +11563,7 @@
                  (let ((bindings bindings2))
                    (trans-er-let*
                     ((arg3 (translate11 (cadddr x)
+                                        nil ; ilk
                                         stobjs-out bindings known-stobjs
                                         flet-alist x ctx wrld state-vars)))
                     (trans-value (fcons-term* 'if arg1 arg2 arg3)))))))))))
@@ -9541,17 +11605,20 @@
                    (erp val bindings)
                    (trans-er-let*
                     ((quoted-vars (translate11 (cadr x)
+                                               nil ; ilk
                                                '(nil) ; stobjs-out
                                                bindings
                                                '(state) ; known-stobjs
                                                flet-alist x ctx wrld state-vars))
                      (quoted-user-form (translate11 (caddr x)
+                                                    nil ; ilk
                                                     '(nil) ; stobjs-out
                                                     bindings
                                                     '(state) ; known-stobjs
                                                     flet-alist x ctx wrld
                                                     state-vars))
                      (quoted-term (translate11 (cadddr x)
+                                               nil ; ilk
                                                '(nil) ; stobjs-out
                                                bindings
                                                '(state) ; known-stobjs
@@ -9563,6 +11630,7 @@
                              (trans-er-let*
                               ((term-to-be-evaluated
                                 (translate11 (cadr quoted-term)
+                                             nil ; ilk
                                              '(nil) ; stobjs-out
                                              bindings
                                              '(state) ; known-stobjs
@@ -9608,12 +11676,15 @@
                             x))))
           ((eq stobjs-out t)
            (trans-er-let*
-            ((args (translate11-lst (cdr x) t bindings known-stobjs
+            ((args (translate11-lst (cdr x)
+                                    (ilks-per-argument-slot (car x) wrld)
+                                    t bindings known-stobjs
                                     nil flet-alist x ctx wrld state-vars)))
             (trans-value (fcons-term (car x) args))))
           ((eq (car x) 'mv-list) ; and stobjs-out is not t
            (trans-er-let*
             ((arg1 (translate11 (cadr x)
+                                nil ; ilk
                                 stobjs-out bindings known-stobjs
                                 flet-alist x ctx wrld state-vars)))
             (cond ((not (and (quotep arg1)
@@ -9627,6 +11698,7 @@
                   (t
                    (trans-er-let*
                     ((arg2 (translate11 (caddr x)
+                                        nil ; ilk
                                         (make-list (unquote arg1)
                                                    :initial-element nil)
                                         bindings known-stobjs
@@ -9650,6 +11722,7 @@
                   (keyp (and (symbolp key) key)))
              (trans-er-let*
               ((targ1 (translate11 arg1
+                                   nil ; ilk
                                    '(nil) bindings known-stobjs
                                    flet-alist x ctx wrld state-vars)))
               (cond
@@ -9677,12 +11750,15 @@
 
                 (trans-er-let*
                  ((targ2 (translate11 arg2
+                                      nil ; ilk
                                       (if (inside-defabsstobj wrld)
                                           t
                                         stobjs-out)
                                       bindings known-stobjs
                                       flet-alist x ctx wrld state-vars))
-                  (targ3 (translate11 arg3 stobjs-out bindings known-stobjs
+                  (targ3 (translate11 arg3
+                                      nil ; ilk
+                                      stobjs-out bindings known-stobjs
                                       flet-alist x ctx wrld state-vars)))
                  (trans-value
                   (fcons-term* 'return-last targ1 targ2 targ3))))
@@ -9818,7 +11894,9 @@
                (t
                 (mv-let
                  (erp targ2 targ2-bindings)
-                 (translate11 arg2 '(nil) bindings known-stobjs flet-alist x
+                 (translate11 arg2
+                              nil ; ilk
+                              '(nil) bindings known-stobjs flet-alist x
                               ctx wrld state-vars)
                  (declare (ignore targ2-bindings))
                  (cond
@@ -9828,6 +11906,7 @@
                     (erp targ3 targ3-bindings)
                     (translate11
                      arg3
+                     nil ; ilk
                      t ; stobjs-out
                      bindings
                      nil ; known-stobjs is irrelevant
@@ -9840,7 +11919,9 @@
                                       targ1 targ2 targ3))))))
                   (t
                    (trans-er-let*
-                    ((targ3 (translate11 arg3 stobjs-out bindings known-stobjs
+                    ((targ3 (translate11 arg3
+                                         nil ; ilk
+                                         stobjs-out bindings known-stobjs
                                          flet-alist x ctx wrld state-vars)))
                     (trans-value
                      (fcons-term* 'return-last
@@ -9851,7 +11932,9 @@
                                                            known-stobjs
                                                            wrld)))
              (trans-er-let*
-              ((args (translate11-lst (cdr x) computed-stobjs-out bindings
+              ((args (translate11-lst (cdr x)
+                                      (ilks-per-argument-slot (car x) wrld)
+                                      computed-stobjs-out bindings
                                       known-stobjs nil flet-alist x ctx wrld
                                       state-vars)))
               (trans-value (fcons-term (car x) args)))))
@@ -9986,7 +12069,7 @@
                            with the same name but in a different package: ~v0."
                           syms))))))))
 
-(defun translate11-lst (lst stobjs-out bindings known-stobjs
+(defun translate11-lst (lst ilks stobjs-out bindings known-stobjs
                             msg flet-alist cform ctx wrld state-vars)
 
 ; WARNING: This function's treatment of stobjs-out is unusual:
@@ -10020,10 +12103,11 @@
   (cond ((atom lst) (trans-value nil))
         ((eq stobjs-out t)
          (trans-er-let*
-          ((x (translate11 (car lst) t bindings known-stobjs flet-alist
+          ((x (translate11 (car lst) (car ilks) t bindings known-stobjs
+                           flet-alist
                            (car lst) ctx wrld state-vars))
-           (y (translate11-lst (cdr lst) t bindings known-stobjs msg flet-alist
-                               cform ctx wrld state-vars)))
+           (y (translate11-lst (cdr lst) (cdr ilks) t bindings known-stobjs msg
+                               flet-alist cform ctx wrld state-vars)))
           (trans-value (cons x y))))
         ((car stobjs-out)
          (trans-er-let*
@@ -10094,12 +12178,12 @@
                              (if (null msg) 0 (if (symbolp msg) 1 2))
                              msg
                              (car stobjs-out)))))
-           (y (translate11-lst (cdr lst) (cdr stobjs-out)
+           (y (translate11-lst (cdr lst) (cdr ilks) (cdr stobjs-out)
                                bindings known-stobjs msg flet-alist cform ctx
                                wrld state-vars)))
           (trans-value (cons x y))))
         (t (trans-er-let*
-            ((x (translate11 (car lst) '(nil) bindings known-stobjs flet-alist
+            ((x (translate11 (car lst) (car ilks) '(nil) bindings known-stobjs flet-alist
 
 ; At one time we passed in (car lst) here for cform (to represent the
 ; surrounding context).  But it makes more sense to preserve cform.  To see
@@ -10112,7 +12196,7 @@
 ; ordinary object is expected.
 
                              cform ctx wrld state-vars))
-             (y (translate11-lst (cdr lst) (cdr stobjs-out)
+             (y (translate11-lst (cdr lst) (cdr ilks) (cdr stobjs-out)
                                  bindings known-stobjs msg flet-alist cform ctx
                                  wrld state-vars)))
             (trans-value (cons x y))))))
@@ -10166,7 +12250,9 @@
 
   (trans-er-let*
    ((result
-     (translate11 x stobjs-out bindings known-stobjs nil x ctx w state-vars)))
+     (translate11 x
+                  nil ; ilk
+                  stobjs-out bindings known-stobjs nil x ctx w state-vars)))
    (cond ((and bindings
                (null (cdr bindings))
                (symbolp (caar bindings))
@@ -10191,67 +12277,6 @@
   (cmp-and-value-to-error-quadruple@par
    (translate1-cmp x stobjs-out bindings known-stobjs ctx w
                    (default-state-vars t))))
-
-(defun collect-programs (names wrld)
-
-; Names is a list of function symbols.  Collect the :program ones.
-
-  (cond ((null names) nil)
-        ((programp (car names) wrld)
-         (cons (car names) (collect-programs (cdr names) wrld)))
-        (t (collect-programs (cdr names) wrld))))
-
-; The following is made more efficient below by eliminating the mutual
-; recursion.  This cut the time of a proof using bdds by nearly a factor of 4;
-; it was of the form (implies (pred n) (prop n)) where pred has about 1800
-; conjuncts.  The culprit was the call(s) of all-fnnames in bdd-rules-alist1, I
-; think.
-
-; (mutual-recursion
-;
-; (defun all-fnnames (term)
-;   (cond ((variablep term) nil)
-;         ((fquotep term) nil)
-;         ((flambda-applicationp term)
-;          (union-eq (all-fnnames (lambda-body (ffn-symb term)))
-;                    (all-fnnames-lst (fargs term))))
-;         (t
-;          (add-to-set-eq (ffn-symb term)
-;                         (all-fnnames-lst (fargs term))))))
-;
-; (defun all-fnnames-lst (lst)
-;   (cond ((null lst) nil)
-;         (t (union-eq (all-fnnames (car lst))
-;                      (all-fnnames-lst (cdr lst))))))
-; )
-
-(defun all-fnnames1 (flg x acc)
-
-; Flg is nil for all-fnnames, t for all-fnnames-lst.  Note that this includes
-; function names occurring in the :exec part of an mbe.  Keep this in sync with
-; all-fnnames1-exec.
-
-  (declare (xargs :guard (and (true-listp acc)
-                              (cond (flg (pseudo-term-listp x))
-                                    (t (pseudo-termp x))))))
-  (cond (flg ; x is a list of terms
-         (cond ((endp x) acc)
-               (t (all-fnnames1 nil (car x)
-                                (all-fnnames1 t (cdr x) acc)))))
-        ((variablep x) acc)
-        ((fquotep x) acc)
-        ((flambda-applicationp x)
-         (all-fnnames1 nil (lambda-body (ffn-symb x))
-                       (all-fnnames1 t (fargs x) acc)))
-        (t
-         (all-fnnames1 t (fargs x)
-                       (add-to-set-eq (ffn-symb x) acc)))))
-
-(defmacro all-fnnames (term)
-  `(all-fnnames1 nil ,term nil))
-
-(defmacro all-fnnames-lst (lst)
-  `(all-fnnames1 t ,lst nil))
 
 (mutual-recursion
 
@@ -10795,6 +12820,274 @@
   (trans-eval0 form ctx state aok
                (f-get-global 'ld-user-stobjs-modified-warning state)))
 
+(defun lambda-object-guard-lst (objs)
+  (cond
+   ((endp objs) nil)
+   (t (let ((guard (lambda-object-guard (car objs))))
+        (if guard
+            (cons guard (lambda-object-guard-lst (cdr objs)))
+            (lambda-object-guard-lst (cdr objs)))))))
+
+(defun lambda-object-body-lst (objs)
+  (cond
+   ((endp objs) nil)
+   (t (cons (lambda-object-body (car objs))
+            (lambda-object-body-lst (cdr objs))))))
+
+(defun filter-lambda$-objects (lst)
+  (cond ((endp lst) nil)
+        ((lambda$-bodyp (lambda-object-body (car lst)))
+         (cons (car lst)
+               (filter-lambda$-objects (cdr lst))))
+        (t (filter-lambda$-objects (cdr lst)))))
+
+(mutual-recursion
+
+(defun collect-certain-lambda-objects (flg term wrld ans)
+
+; We walk through term looking for lambda objects and we collect into ans
+; certain ones of them as per flg:
+
+; :all -- every lambda object whether well-formed or not
+; :well-formed -- every well-formed lambda object
+; :lambda$ -- every well-formed lambda object tagged as having come from
+;             a lambda$ translation
+
+; We collect lambda objects within well-formed lambda objects but not within
+; ill-formed ones.  In particular, if a lambda object is well-formed we'll dive
+; into its :guard and body looking for other lambda objects.  But if we
+; encounter an ill-formed lambda object we will not attempt to explore its
+; :guard or body since they may be ill-formed.  This means that if a
+; well-formed lambda object is hidden inside an ill-formed one we do not
+; collect it.
+
+; Motivation: uses of this function include guard verification (where we try to
+; verify the guards of every well-formed lambda object in a defun) and the
+; pre-loading of the cl-cache.  What are the consequences of not collecting a
+; well-formed lambda object hidden inside an ill-formed one?  We wouldn't
+; verify the guards of the hidden well-formed lambda object at defun-time.  If
+; the ill-formed one is ever applied, the cache will force apply$ to use *1*
+; apply$.  As the axiomatic interpretion of the ill-formed lambda object
+; proceeds it may encounter the well-formed one and not find it in the
+; pre-loaded cache.  But the cache will add a line for the just-found lambda
+; object, attempting guard verification then and there just as though the user
+; had typed in a new lambda object to apply.  So the consequences of this
+; failure to collect is just the weakening of the proof techniques we bring to
+; bear while verifying guards on such lambda objects: Had they been collected,
+; the user would have the opportunity to add hints to get the guard
+; verification to go through, whereas by not collecting them we delay guard
+; verification to top-level eval time, where only weaker techniques are tried.
+
+  (cond
+   ((variablep term) ans)
+   ((fquotep term)
+    (let* ((evg (unquote term))
+           (lambda-objectp (and (consp evg)
+                                (eq (car evg) 'lambda)))
+           (well-formedp (and lambda-objectp
+                              (well-formed-lambda-objectp evg wrld)))
+           (collectp
+            (case flg
+              (:all lambda-objectp)
+              (:well-formed well-formedp)
+              (otherwise
+               (and well-formedp
+                    (lambda$-bodyp (lambda-object-body evg))))))
+           (ans1 (if collectp (add-to-set-equal evg ans) ans)))
+      (if well-formedp
+          (let* ((guard (lambda-object-guard evg))
+                 (body (lambda-object-body evg)))
+            (collect-certain-lambda-objects
+             flg guard wrld
+             (collect-certain-lambda-objects flg body wrld ans1)))
+          ans1)))
+   ((flambda-applicationp term)
+    (collect-certain-lambda-objects
+     flg
+     (lambda-body (ffn-symb term))
+     wrld
+     (collect-certain-lambda-objects-lst flg (fargs term) wrld ans)))
+   (t (collect-certain-lambda-objects-lst flg (fargs term) wrld ans))))
+
+(defun collect-certain-lambda-objects-lst (flg terms wrld ans)
+  (cond
+   ((endp terms) ans)
+   (t (collect-certain-lambda-objects
+       flg
+       (car terms)
+       wrld
+       (collect-certain-lambda-objects-lst flg (cdr terms) wrld ans)))))
+)
+
+(mutual-recursion
+
+(defun ancestral-lambda$s-by-caller1 (caller guard body wrld alist)
+
+; Caller is a symbol or a string.  Guard and body should either both be terms
+; or both be nil.  If both are nil, caller must be a function symbol and guard
+; and body default to the guard and body of caller.  If guard and body are
+; non-nil, then they are used as the guard and body of some ficticious function
+; described by the string, caller (which will ultimately be printed by a ~s fmt
+; directive).
+
+; By ``ancestors'' in this function we mean function symbols reachable through
+; the guard, the body, or the guard or body of any well-formed lambda object in
+; caller or any of these ancestors.  We extend alist with pairs (fn
+; . lambda$-lst), where fn is any of these extended ancestors and lambda$-lst
+; is the list of every lambda object produced by a lambda$ expression in fn.
+; We use alist during this calculation to avoid repeated visits to the same fn,
+; thus, we will add the pair (fn . nil) whenever fn has no lambda$s in it.  We
+; filter out these empty pairs in ancestral-lambda$s-by-caller.
+
+; We do nothing during boot-strap (there should be no lambda$s) and, as an
+; optimization, we do not explore apply$-primp callers or the apply$ clique.
+
+  (cond
+   ((or (global-val 'boot-strap-flg wrld)
+; The following hons-get is equivalent to ; (apply$-primp caller).
+        (hons-get caller ; *badge-prim-falist* is not yet defined!
+                  (unquote
+                   (getpropc '*badge-prim-falist* 'const nil wrld)))
+        (eq caller 'apply$)
+        (eq caller 'ev$)
+        (assoc-eq caller alist))
+    alist)
+   (t
+    (let* ((guard (or guard (getpropc caller 'guard *t* wrld)))
+           (body (or body (getpropc caller 'unnormalized-body *nil* wrld)))
+           (objs (collect-certain-lambda-objects
+                  :well-formed
+                  body
+                  wrld
+                  (collect-certain-lambda-objects
+                   :well-formed
+                   guard
+                   wrld
+                   nil)))
+
+; Note: Objs is the list of all well-formed lambda objects in caller.  Objs
+; includes all lambda$ objects in caller but may include well-formed lambda
+; objects not generated by lambda$.
+
+; Fns is the list of all functions called in the guards or bodies of the just
+; collected well-formed lambda object in caller.  We have to explore them too.
+
+           (fns (all-fnnames1
+                 nil ; all-fnnames
+                 guard
+                 (all-fnnames1
+                  nil ; all-fnnames
+                  body
+                  (all-fnnames1
+                   t ; all-fnnames-lst
+                   (lambda-object-body-lst objs)
+                   (all-fnnames1
+                    t ; all-fnnames-lst
+                    (lambda-object-guard-lst objs)
+                    nil))))))
+      (ancestral-lambda$s-by-caller1-lst
+       fns wrld
+       (cons (cons caller (filter-lambda$-objects objs)) alist))))))
+
+(defun ancestral-lambda$s-by-caller1-lst (callers wrld alist)
+  (cond ((endp callers) alist)
+        (t (ancestral-lambda$s-by-caller1-lst
+            (cdr callers)
+            wrld
+            (ancestral-lambda$s-by-caller1 (car callers) nil nil wrld alist))))))
+
+(defun collect-non-empty-pairs (alist)
+  (cond ((endp alist) nil)
+        ((cdr (car alist))
+         (cons (car alist) (collect-non-empty-pairs (cdr alist))))
+        (t
+         (collect-non-empty-pairs (cdr alist)))))
+
+(defun ancestral-lambda$s-by-caller (caller term wrld)
+
+; Caller is a string (ultimately printed with a ~s fmt directive) describing
+; the context in which we found term.  Explore all function symbols reachable
+; from the guards and bodies of functions and well-formed lambda objects in
+; term and collect an alist mapping each such reachable function symbol to all
+; of the lambda$ expressions occurring in it.  The alist omits pairs for
+; function symbols having no lambda$s.  If the result is nil, there are no
+; reachable lambda$s.  Otherwise, the function
+; tilde-*-lambda$-replacement-phrase5 can create a ~* fmt phrase that
+; interprets the alist as a directive to replace, in certain functions, certain
+; lambda$s by quoted lambdas.
+
+  (let ((alist (ancestral-lambda$s-by-caller1 caller *T* term wrld nil)))
+    (collect-non-empty-pairs alist)))
+
+(mutual-recursion
+
+(defun eliminate-lambda$ (term wrld)
+  (cond
+   ((variablep term) term)
+   ((fquotep term)
+    (let ((x (unquote term)))
+      (cond ((and (well-formed-lambda-objectp x wrld)
+                  (lambda$-bodyp (lambda-object-body x)))
+             (let* ((formals (lambda-object-formals x))
+                    (dcl (lambda-object-dcl x))
+                    (xbody (eliminate-lambda$ (fargn (lambda-object-body x) 3)
+                                              wrld))
+                    (guardp (assoc-keyword :guard
+                                           (cdr (assoc-eq 'xargs (cdr dcl)))))
+                    (xguard (if guardp
+                                (eliminate-lambda$ (cadr guardp) wrld)
+                                nil))
+                    (xdcl (if guardp
+                              (cons 'DECLARE
+                                    (put-assoc-eq
+                                     'xargs
+                                     `(:GUARD ,xguard :SPLIT-TYPES T)
+                                     (cdr dcl)))
+                              nil)))
+               (list 'quote
+                     (make-lambda-object formals xdcl xbody))))
+            (t term))))
+   ((flambdap (ffn-symb term))
+    (fcons-term `(lambda ,(lambda-formals (ffn-symb term))
+                   (eliminate-lambda$ (lambda-body (ffn-symb term)) wrld))
+                (eliminate-lambda$-lst (fargs term) wrld)))
+   (t (fcons-term (ffn-symb term)
+                  (eliminate-lambda$-lst (fargs term) wrld)))))
+
+(defun eliminate-lambda$-lst (terms wrld)
+  (cond ((endp terms) nil)
+        (t (cons (eliminate-lambda$ (car terms) wrld)
+                 (eliminate-lambda$-lst (cdr terms) wrld)))))
+)
+
+(defun tilde-@-lambda$-replacement-phrase1 (lst wrld)
+  (cond ((endp lst) nil)
+        (t (cons (msg "replace~%~X02 by~%~X12"
+                      (unquote (fargn (lambda-object-body (car lst)) 2))
+                      (eliminate-lambda$ (kwote (car lst)) wrld)
+                      nil)
+                 (tilde-@-lambda$-replacement-phrase1 (cdr lst) wrld)))))
+
+(defun tilde-*-lambda$-replacement-phrase2 (lst wrld)
+  (list "" "~@*.~%" "~@*~%~%and~%~%" "~*~%"
+        (tilde-@-lambda$-replacement-phrase1 lst wrld)))
+
+(defun tilde-@-lambda$-replacement-phrase3 (caller lst wrld)
+  (msg "In ~s0:~%~*1"
+       caller
+       (tilde-*-lambda$-replacement-phrase2 lst wrld)))
+
+(defun tilde-@-lambda$-replacement-phrase4 (alist wrld)
+  (cond ((endp alist) nil)
+        (t (cons (tilde-@-lambda$-replacement-phrase3 (car (car alist))
+                                                      (cdr (car alist))
+                                                      wrld)
+                 (tilde-@-lambda$-replacement-phrase4 (cdr alist) wrld)))))
+
+(defun tilde-*-lambda$-replacement-phrase5 (alist wrld)
+  (list "" "~@*~%~%" "~@*~%~%" "~@*~%~%"
+        (tilde-@-lambda$-replacement-phrase4 alist wrld)))
+
 (defun simple-translate-and-eval (x alist ok-stobj-names msg ctx wrld state
                                     aok)
 
@@ -10862,32 +13155,54 @@
                         legal-vars
                         x
                         (reverse vars)))
-                   (t (mv-let (erp val latches)
-                              (ev term
-                                  (append alist
-                                          (cons (cons 'state
-                                                      (coerce-state-to-object
-                                                       state))
-                                                (user-stobj-alist-safe
-                                                 'simple-translate-and-eval
-                                                 (intersection-eq
-                                                  ok-stobj-names
-                                                  vars)
-                                                 state)))
-                                  state nil nil aok)
-                              (declare (ignore latches))
+                   (t (let ((ancestral-lambda$s
+                             (and (f-get-global 'safe-mode state)
+                                  (ancestral-lambda$s-by-caller
+                                   "the offending term"
+                                   term wrld))))
+                        (cond
+                         ((null ancestral-lambda$s)
+                          (mv-let (erp val latches)
+                            (ev term
+                                (append alist
+                                        (cons (cons 'state
+                                                    (coerce-state-to-object
+                                                     state))
+                                              (user-stobj-alist-safe
+                                               'simple-translate-and-eval
+                                               (intersection-eq
+                                                ok-stobj-names
+                                                vars)
+                                               state)))
+                                state nil nil aok)
+                            (declare (ignore latches))
 
 ; Parallelism wart: since we ignore latches, we should be able to create a
 ; version of simple-translate-and-eval that returns cmp's.
 
-                              (cond
-                               (erp (pprogn
-                                     (error-fms nil ctx (car val) (cdr val)
-                                                state)
-                                     (er soft ctx
-                                         "~@0 could not be evaluated."
-                                         msg)))
-                               (t (value (cons term val))))))))))
+                            (cond
+                             (erp (pprogn
+                                   (error-fms nil ctx (car val) (cdr val)
+                                              state)
+                                   (er soft ctx
+                                       "~@0 could not be evaluated."
+                                       msg)))
+                             (t (value (cons term val))))))
+                         (t (er soft ctx
+                                "We do not allow lambda$ expressions to be ~
+                                 evaluated in certain events, including ~
+                                 DEFCONST, DEFPKG, and DEFMACRO events.  This ~
+                                 restriction has to do with the loading of ~
+                                 compiled books before the events in the book ~
+                                 are processed.  The term ~x0 occurs in one ~
+                                 of these sensitive contexts (possibly as a ~
+                                 guard).  You can remedy this by replacing ~
+                                 the lambda$ expressions reachable from this ~
+                                 term by their translations.~%~%~*1"
+                                x
+                                (tilde-*-lambda$-replacement-phrase5
+                                 ancestral-lambda$s
+                                 wrld))))))))))
 
 (defun error-fms-cw (hardp ctx str alist)
   (wormhole 'comment-window-io

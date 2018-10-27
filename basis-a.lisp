@@ -255,6 +255,8 @@
 ; The guard is declared below to be t but actually we compute the guard for the
 ; body of the quoted lambda, with some fiddling about the bound variable.
 
+; (Remember: the quoted lambda of wormhole-eval is unrelated to apply$.)
+
   (declare (xargs :mode :logic
                   :guard t)
            (ignore qname qlambda free-vars))
@@ -6800,7 +6802,7 @@
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
 
 ; It is permissible for wrld to be nil, as this merely defeats additional
-; checking by translate-declaration-to-guard.
+; checking by translate-declaration-to-guard-gen.
 
 ; We return a list of defs (see defstobj-axiomatic-defs) for all the
 ; recognizers for the single-threaded resource named name with the given
@@ -6897,7 +6899,7 @@
 ; of these functions anticipate application to the live object itself.
 
 ; It is permissible for wrld to be nil, as this merely defeats additional
-; checking by translate-declaration-to-guard.  If wrld is nil, then
+; checking by translate-declaration-to-guard-gen.  If wrld is nil, then
 ; congruent-stobj-rep should be the result of calling congruent-stobj-rep on
 ; name and the world where the corresponding defstobj is executed.  If wrld is
 ; non-nil, then it should be an ACL2 world and congruent-stobj-rep is

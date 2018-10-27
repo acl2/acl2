@@ -154,19 +154,6 @@
         (t (cons (cons (append hyps (caar lst)) (cdar lst))
                  (unprettyify/add-hyps-to-pairs hyps (cdr lst))))))
 
-(defun flatten-ands-in-lit (term)
-  (case-match term
-              (('if t1 t2 t3)
-               (cond ((equal t2 *nil*)
-                      (append (flatten-ands-in-lit (dumb-negate-lit t1))
-                              (flatten-ands-in-lit t3)))
-                     ((equal t3 *nil*)
-                      (append (flatten-ands-in-lit t1)
-                              (flatten-ands-in-lit t2)))
-                     (t (list term))))
-              (& (cond ((equal term *t*) nil)
-                       (t (list term))))))
-
 (defun unprettyify (term)
 
 ; This function returns a list of pairs (hyps . concl) such that the
@@ -747,38 +734,6 @@
      (push-lemma (access type-set-inverter-rule (car rules) :rune)
                  ttree)))
    (t (convert-type-set-to-term-lst ts (cdr rules) ens lst ttree))))
-
-; Here is one of the most basic functions in the theorem prover.  It is
-; surprising we got so far into the sources without defining it!
-
-; (Students of our code should study this elementary function just to see how
-; we recur through terms.  The function instantiates a variable, i.e.,
-; (subst-var new old form) substitutes the term new for the variable old in the
-; term form.  For example, (subst-var '(car a) 'x '(foo x y)) = '(foo (car a)
-; y).)
-
-(mutual-recursion
-
-(defun subst-var (new old form)
-  (declare (xargs :guard (and (pseudo-termp new)
-                              (variablep old)
-                              (pseudo-termp form))))
-  (cond ((variablep form)
-         (cond ((eq form old) new)
-               (t form)))
-        ((fquotep form) form)
-        (t (cons-term (ffn-symb form)
-                      (subst-var-lst new old (fargs form))))))
-
-(defun subst-var-lst (new old l)
-  (declare (xargs :guard (and (pseudo-termp new)
-                              (variablep old)
-                              (pseudo-term-listp l))))
-  (cond ((endp l) nil)
-        (t (cons (subst-var new old (car l))
-                 (subst-var-lst new old (cdr l))))))
-
-)
 
 (defun convert-type-set-to-term1 (x ts flg ens w ttree)
 
