@@ -886,7 +886,7 @@
 ; - We need to look up the value of special variable *aokp*.
 ; - We need to compute query-badge-userfn-structure.
 ; - We need to call apply.
-; 
+;
 ; Maybe we can install a cache on apply$-userfn (or its concrete counterpart?)
 ; to short-circuit a lot of this?
 
@@ -1316,10 +1316,10 @@
                  nil ; debug-p
                  ens w
                  nil nil nil)) ; safe-mode gc-off ttree
-            (declare (ignore ttree))
+            (declare (ignore ttree)) ; assumption-free ttree
             (mv-let (cl-set1 ttree calist)
               (tau-clausep-lst cl-set ens w nil nil state nil)
-              (declare (ignore ttree calist))
+              (declare (ignore ttree calist)) ; assumption-free ttree
               (cond
                ((null cl-set1)
 
@@ -1644,7 +1644,7 @@
               :hits 1
               :guard-code nil
               :lambda-code nil))
-       (t 
+       (t
 
 ; There is no point in trying to re-validate since we know something is wrong
 ; -- the lambda object is not well-formed in w -- but it might eventually be.
