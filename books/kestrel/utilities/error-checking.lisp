@@ -1075,7 +1075,7 @@
   :long
   "<p>
    If the term is a call to @(tsee if),
-   return its test, then&rdquo; branch, and else&rdquo; branch.
+   return its test, `then' branch, and `else' branch.
    </p>")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
