@@ -134,8 +134,8 @@ More forthcoming.
 
 \
 
-\bookpath{kestrel/auto-termination/}:
-{\tt DefunT is a variant of [defun] that can prove termination
+\bookpath{kestrel/auto-termination}:
+\code{defunt} is a variant of \code{defun} that can prove termination
 using previously-proved termination theorems from a large set of
 community books, as described in a paper at this workshop.
 
@@ -198,13 +198,9 @@ Apply a function, expressed as a package and a name, if it exists.
 \
 
 \bookpath{kestrel/utilities/auto-instance.lisp}:
-{\tt Defthm<w} will attempt to prove a theorem directly
-  from previously-proved theorems by generating
-  suitable hints, using {\tt previous-subsumer-hints}.
-
-\bookpath{kestrel/utilities/skip-in-book.lisp}
-The utility, {\tt skip-in-book}, wraps around a form to prevent its
-evaluation during book certification or inclusion.
+\code{Defthm<w} will attempt to prove a theorem directly
+from previously-proved theorems by generating
+suitable hints, using \code{previous-subsumer-hints}.
 
 \
 
@@ -219,14 +215,20 @@ Minimal, minimal non-zero, or specified length.
 \item
 Several theorems, e.g.\ about inversions.
 \end{itemize}
-
+ 
 \
 
 \bookpath{kestrel/utilities/er-soft-plus.lisp}:
-Logic-mode utilities {\tt er-soft+} and {\tt er-soft-logic} produce
+The logic-mode utilities \code{er-soft+} and \code{er-soft-logic} produce
 soft errors with specified error triples.
 
-\
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
 
 \bookpath{kestrel/utilities/fixbytes}:
 Fixtypes for unsigned and signed bytes, and true lists thereof.
@@ -241,6 +243,12 @@ Several instances available; just include the respective file(s).
 These are candidate extensions of the \code{fty} library.
 \end{itemize}
 
+\
+
+\bookpath{kestrel/utilities/include-book-paths.lisp}:
+List paths via \code{include-book} down to a given book; may be useful
+for reducing book dependencies.
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -248,12 +256,6 @@ These are candidate extensions of the \code{fty} library.
 \begin{frame}
 
 \newlibtitle
-
-\bookpath{kestrel/utilities/include-book-paths.lisp}:
-List paths via {\tt include-book} down to a given book; may be useful
-for reducing book dependencies.
-
-\
 
 \bookpath{kestrel/utilities/integer-range-*.lisp}:
 Utilities related to \code{integer-range-p}.
@@ -269,7 +271,7 @@ Several theorems.
 
 \
 
-\bookpath{kestrel/utilities/magic-macroexpand}:
+\bookpath{kestrel/utilities/magic-macroexpand.lisp}:
 Logic-mode macroexpansion.
 
 \
@@ -283,19 +285,34 @@ e.g.\ to convert the first character to upper/lower case.
 \bookpath{kestrel/utilities/orelse.lisp}:
 Try one event, then a second one if the first fails.
 
-\
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
 
 \bookpath{kestrel/utilities/proof-builder-macros.lisp}:
 A book that defines some proof-builder macros.  Current contents
 include definitions of:
 \begin{itemize}
-\item {\tt when-not-proved} to skip instructions when all goals have
-  been proved;
-\item {\tt prove-guard} and {\tt prove-termination}, for using
-  previously-proved guard or termination theorems efficiently; and
-\item a more general macro, {\tt fancy-use}, for using lemma
-  instances efficiently.
+\item
+\code{when-not-proved} to skip instructions when all goals have
+been proved;
+\item
+\code{prove-guard} and \code{prove-termination}, for using
+previously-proved guard or termination theorems efficiently; and
+\item
+a more general macro, \code{fancy-use}, for using lemma
+instances efficiently.
 \end{itemize}
+
+\
+
+\bookpath{kestrel/utilities/skip-in-book.lisp}:
+The utility, \code{skip-in-book}, wraps around a form to prevent its
+evaluation during book certification or inclusion.
 
 \
 
@@ -353,6 +370,29 @@ These are candidate extensions of the \code{xdoc} library.
 
 \newlibtitle
 
+\bookpath{projects/async/tools/convert-edif.lisp}:
+Convert between EDIF format and a convenient s-expression format.
+
+\
+
+\bookpath{projects/sat/zz-resolution-checker}:
+An early SAT proof-checker from 2011 based on resolution (see README).
+
+\
+
+\bookpath{tools/run-script.lisp}:
+This utility supports testing of evaluation of the forms
+  in a given file, to check that the output is as expected.  Several
+  community books utilize it.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
 \bookpath{workshops/2018/greve-gacek}:
 Supporting materials for Greve and Gacek's paper at this Workshop.
 
@@ -360,8 +400,7 @@ Supporting materials for Greve and Gacek's paper at this Workshop.
 
 \bookpath{workshops/2018/kaufmann}:
 Supporting materials for Kaufmann's paper at this Workshop.
-These form an archived version of a new tool for proving termination,
-{\tt defunt}; see \bookpath{kestrel/auto-termination/}.
+(Archived version of \code{defunt} in \code{kestrel/auto-termination}.
 
 \
 
@@ -392,23 +431,6 @@ are elsewhere, not under \code{workshops/2018}.)}
 \begin{frame}
 
 \newlibtitle
-
-\bookpath{projects/sat/zz-resolution-checker/}
-An early SAT proof-checker from 2011 based on resolution (see README).
-
-\
-
-\bookpath{projects/async/tools/convert-edif.lisp}
-Convert between EDIF format and a convenient s-expression format.
-
-\
-
-\bookpath{tools/run-script.lisp}:
-This utility supports testing of evaluation of the forms
-  in a given file, to check that the output is as expected.  Several
-  community books utilize it.
-
-\
 
 TODO: add more contributions
 
@@ -482,18 +504,24 @@ Started refactoring some of these utilities to reduce book dependencies.
 \
 
 \bookpath{kestrel/utilities/copy-def.lisp}:
-Made improvements: better handling of {\tt mutual-recursion} and of
-the {\tt :equiv} argument, and generated {\tt :expand} hint for better
+Made improvements: better handling of \code{mutual-recursion} and of
+the \code{:equiv} argument, and generated \code{:expand} hint for better
 handling of recursion.
 
 \
 
 \bookpath{kestrel/utilities/directed-untranslate.lisp}:
-Made several improvements to {\tt directed-untranslate}, in particular
-for {\tt let}, {\tt let*}, {\tt mv}, {\tt mv-let}, and {\tt b*},
+Made several improvements to \code{directed-untranslate}, in particular
+for \code{let}, \code{let*}, \code{mv}, \code{mv-let}, and \code{b*},
 including enhanced executability of the result.
 
-\
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
 
 \bookpath{kestrel/utilities/error-checking.lisp}:
 Utilities to check error conditions and return customizable error messages.
@@ -505,13 +533,7 @@ e.g.\ to support logic-mode error-checking functions.
 Added several error-checking functions.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
+\
 
 \bookpath{kestrel/utilities/osets.lisp}:
 Utilities for osets.
@@ -530,7 +552,13 @@ String manipulation libraries.
 \item Added several new rewrite rules.
 \end{itemize}
 
-\
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
 
 \bookpath{kestrel/utilities/user-interface.lisp}:
 Utilities for customizing screen output of user-defined events.
@@ -550,13 +578,7 @@ Added support for the recently added \code{:constrain} option.
 These could become part of a new \code{std/system} library.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
+\
 
 \bookpath{kestrel/utilities/system/terms.lisp}:
 Utilities to manipulate terms.
@@ -570,7 +592,13 @@ Moved some utilities to a separate file
 These could become part of a new \code{std/system} library.
 \end{itemize}
 
-\
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
 
 \bookpath{kestrel/utilities/system/world-queries.lisp}:
 Utilities to query worlds.
@@ -585,13 +613,7 @@ a ``fast'' one and a ``logic-friendly'' one
 These could become part of a new \code{std/system} library.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
+\
 
 \bookpath{misc/assert.lisp} \& \bookpath{misc/eval.lisp}:
 Testing utilities.
@@ -607,21 +629,6 @@ Renamed some utilities for greater uniformity
 Reduced book dependencies.
 \end{itemize}
 
-\
-
-\bookpath{misc/expander.lisp}:
-The expander has been improved in several ways.
-
-\
-
-\bookpath{misc/install-not-normalized.lisp}:
-Improved {\tt install-not-normalized} to handle cases in which
-  recursively-defined functions have non-recursive normalized
-  definitions.
-
-\bookpath{misc/profiling.lisp}:
-Profiling fixes for recent distributions of CCL.
-
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -630,8 +637,33 @@ Profiling fixes for recent distributions of CCL.
 
 \implibtitle
 
-\bookpath{projects/apply/}, \bookpath{projects/apply-model/}:
-Updated books pertaining to {\tt apply\$}.
+\bookpath{misc/expander.lisp}:
+The expander has been improved in several ways.
+
+\
+
+\bookpath{misc/install-not-normalized.lisp}:
+Improved \code{install-not-normalized} to handle cases in which
+recursively-defined functions have non-recursive normalized
+definitions.
+
+\
+
+\bookpath{misc/profiling.lisp}:
+Profiling fixes for recent distributions of CCL.
+
+\
+
+\bookpath{projects/apply} \& \bookpath{projects/apply-model}:
+Updated books pertaining to \code{apply\$}.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
 
 \bookpath{projects/async}:
 ASYNC, the framework for modeling and verifying the functional correctness
@@ -672,28 +704,9 @@ described in a paper at this Workshop.
 
 \
 
-\bookpath{projects/sat/lrat/}:
+\bookpath{projects/sat/lrat}:
 SAT proof-checker extensions (improved theorem, extension to
 cube-and-conquer; see README).
-
-\
-
-\bookpath{tools/flag.lisp}:
-The new keyword argument {\tt :last-body} of {\tt make-flag}
-specifies use of the most recent definition rule.
-
-\
-
-\bookpath{tools/include-raw.lisp}:
-Fixed an issue with option {\tt :do-not-compile t} by extending
-``fns-with-raw-code'' state globals.
-
-\
-
-\bookpath{tools/removable-runes.lisp}:
-Improved {\tt removable-runes} and added related utility, {\tt
-  minimal-runes}, which returns a list of runes to enable that is
-  sufficient for admitting a given event.
 
 \end{frame}
 
@@ -729,6 +742,31 @@ CPUID feature flags.
 \item
 Codewalker can now be used to reason about x86 programs.
 \end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{tools/flag.lisp}:
+The new keyword argument \code{:last-body} of \code{make-flag}
+specifies use of the most recent definition rule.
+
+\
+
+\bookpath{tools/include-raw.lisp}:
+Fixed an issue with option \code{:do-not-compile t} by extending
+``fns-with-raw-code'' state globals.
+
+\
+
+\bookpath{tools/removable-runes.lisp}:
+Improved \code{removable-runes} and added related utility,
+\code{minimal-runes}, which returns a list of runes to enable that is
+sufficient for admitting a given event.
 
 \end{frame}
 
