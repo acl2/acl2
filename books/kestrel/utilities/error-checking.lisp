@@ -1066,7 +1066,7 @@
   ((term pseudo-termp "Term to check."))
   "Cause an error if a term is not a call to @(tsee if)."
   (((and (nvariablep term) (eq (ffn-symb term) 'if))
-    "~@0 must start with IF." description))
+    "~@0 must be a call of IF." description))
   :returns (val (and (implies erp (equal val error-val))
                      (implies (and (not erp) error-erp (pseudo-termp term))
                               (and (pseudo-term-listp val)
