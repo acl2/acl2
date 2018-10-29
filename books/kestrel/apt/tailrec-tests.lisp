@@ -84,7 +84,7 @@
       (if (atom x) nil (f (car x)))))
   (must-fail (tailrec f)))
 
- ;; body if not (IF ...):
+ ;; body is not (IF ...):
  (must-succeed*
   (defun f (x)
     (declare (xargs :ruler-extenders :all))
