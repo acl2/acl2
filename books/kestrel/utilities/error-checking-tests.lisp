@@ -1226,6 +1226,28 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
+ (b* (((er x) (ensure-term-not-call-of 'var 'f "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-term-not-call-of ''44 'f "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-term-not-call-of '(car a) 'f "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-fail
+ (ensure-term-not-call-of '(f '1) 'f "This" t nil 'test state)
+ :with-output-off nil)
+
+(must-fail
+ (ensure-term-not-call-of '(fgh '1) 'fgh "This" t nil 'test state)
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-eval-to-t
  (b* (((er x) (ensure-lambda-logic-mode
                '(lambda (x y z) (cons x (len y))) "This" t nil 'test state)))
    (value (equal x nil))))

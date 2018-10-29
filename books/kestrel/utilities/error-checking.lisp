@@ -1078,6 +1078,15 @@
    return its test, `then' branch, and `else' branch.
    </p>")
 
+(def-error-checker ensure-term-not-call-of
+  ((term pseudo-termp "Term to check.")
+   (fn symbolp "Function that @('term') must not be a call of."))
+  "Cause an error if a term is a call of a given function."
+  (((or (variablep term)
+        (fquotep term)
+        (not (eq (ffn-symb term) fn)))
+    "~@0 must not be a call of ~x1." description fn)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-error-checker ensure-lambda-logic-mode
