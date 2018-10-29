@@ -1064,8 +1064,10 @@
 
 (def-error-checker ensure-term-if-call
   ((term pseudo-termp "Term to check."))
-  "Cause an error if a term is not a call to @(tsee if)."
-  (((and (nvariablep term) (eq (ffn-symb term) 'if))
+  "Cause an error if a term is not a call of @(tsee if)."
+  (((and (nvariablep term)
+         (not (fquotep term))
+         (eq (ffn-symb term) 'if))
     "~@0 must be a call of IF." description))
   :returns (val (and (implies erp (equal val error-val))
                      (implies (and (not erp) error-erp (pseudo-termp term))
