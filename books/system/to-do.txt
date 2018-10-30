@@ -21,6 +21,38 @@ questions.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
+{{Improve argument names for set-guard-checking.}}
+
+Alessandro Coglio had the following suggestions for renaming arguments
+of set-guard-checking:
+
+  :ignore instead of :none, since that mode ignores guards — nil and
+  :none sound almost like synonyms
+
+  :top instead of t, since that mode checks guards at the top-level —
+  t is a bit nondescript, given that there’s also :all
+
+Matt and J are happy with those new names, but want to keep the old
+names too since they have been around for so long.  Also, the old
+names are used throughout the code, and quite possibly in the books
+too; it could be a substantial effort to be sure to touch all uses of
+set-guard-checking and of state global 'guard-checking-on.
+
+Instead, the idea is just to add aliases for set-guard-checking, but
+continuing to use the old values of t and :none for state global
+'guard-checking-on.  It will then also be important to change the
+documentation, and also relevant output if any, to emphasize the
+preferred names of :ignore and :top, while probably mentioning the old
+names of :none and t as "aliases" or such (even though the aliasing is
+actually the other way around).
+
+I (Matt) suspect that this is a relatively simple development task,
+and I expect whoever takes it on to deal not only with the
+set-guard-checking implementation but also all relevant output and
+documentation.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
 {{Consider redefining take using mbe, so that the :logic has a standard recursion.}}
 
 This might involve fixing a bunch of community books, perhaps by
