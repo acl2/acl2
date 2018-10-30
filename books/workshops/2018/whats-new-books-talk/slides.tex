@@ -446,6 +446,57 @@ are elsewhere, not under \code{workshops/2018}.
 
 \newlibtitle
 
+\bookpath{centaur/glmc}:
+Interface to hardware model checkers
+
+\
+
+\bookpath{centaur/truth}:
+Integer-encoded truth table library
+
+\
+
+\bookpath{centaur/acre}:
+New regular expression implementation supporting features somewhat similar to Perl regexes
+
+\
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{std/util/termhints}:
+Hint utility described in \textit{Hint Orchestration Using ACL2's Simplifier}
+
+\
+
+\bookpath{std/stobjs/updater-independence}:
+Utility for defining stobj and stobj-like accessor/updater independence theorems
+
+\
+
+\bookpath{centaur/bitops/sparseint}:
+Library representing bignums as balanced trees to efficiently support
+operations that preserve large ranges of bits
+
+\
+
+\bookpath{build/ifdef}:
+Defines ifdef and ifndef forms which test environment variables;
+supported by the build system.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
 TODO: add more contributions
 
 \end{frame}
@@ -801,6 +852,50 @@ To do: make these invertibility theorems compatible with \code{part-select}.
 To do: prove similar theorems for \code{combine64u} as well as for the
 signed-integer functions, \code{combine16s} et al.
 \end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{centaur/aignet}:
+New verified AIGNET transforms including FRAIGing, DAG-aware balancing and rewriting
+
+AIGNET natively supports XORs, i.e. represents them using one node instead of three
+
+\
+
+\bookpath{centaur/vl}:
+Add new SystemVerilog lint check based on accurately determining
+used/set ranges of vectors
+
+\
+
+\bookpath{centaur/sv}:
+Many SV/SVEX algorithms now based on sparseints so that they scale
+when dealing with variables thousands/millions of bits in size
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{centaur/gl}:
+Add hooks in GL to allow calling AIGNET transforms before SAT
+
+\
+
+Improve GL counterexample generation for term-level reasoning
+
+\
+
+Added accumulated-persistence-like rule profiling
 
 \end{frame}
 
