@@ -42,20 +42,20 @@
 (local (in-theory (disable cons-equal)))
 
 
-(defxdoc vl-hierarchy-svex-translation
-  :parents (vl-design->svex-design)
+(defxdoc vl-hierarchy-sv-translation
+  :parents (vl-design->sv-design)
   :short "Discussion of the strategy for translating VL modules (and structs,
-interfaces, etc.) to SVEX modules."
+interfaces, etc.) to SV modules."
 
   :long "<p>This topic covers the general idea of how we translate a simplified
-VL design into an SVEX module alist.  The top-level function for this is @(see
+VL design into an SV module alist.  The top-level function for this is @(see
 vl-design->svex-modalist), not to be confused with @(see
-vl-design->svex-design) which additionally runs the series of transforms
+vl-design->sv-design) which additionally runs the series of transforms
 necessary to simplify a design once loaded.</p>
 
 <p>The input to this translation is a VL design which has had module parameters
 and generate blocks resolved, expressions sized, and always blocks eliminated,
-among other requirements.  (@(csee vl-design->svex-design) performs the
+among other requirements.  (@(csee vl-design->sv-design) performs the
 necessary transforms before calling @(see vl-design->svex-modalist).)</p>
 
 <p>The crux of this translation is the translation of VL expressions to svex
@@ -1785,7 +1785,7 @@ constructed separately.)</p>"
              (local (in-theory (enable sv::modname-p sv::name-p))))
   :short "Produces all the new svex module components associated with a VL module
           instance or instance array."
-  :long "<p>See @(see vl-hierarchy-svex-translation) for more information on
+  :long "<p>See @(see vl-hierarchy-sv-translation) for more information on
 how VL module instances are translated.</p>"
 
   (b* (((vl-modinst x) (vl-modinst-fix x))
@@ -2256,7 +2256,7 @@ how VL module instances are translated.</p>"
              (local (in-theory (enable sv::modname-p sv::name-p))))
   :short "Produces all the new svex module components associated with a VL module
           instance or instance array."
-  :long "<p>See @(see vl-hierarchy-svex-translation) for more information on
+  :long "<p>See @(see vl-hierarchy-sv-translation) for more information on
 how VL module instances are translated.</p>"
 
   (b* (((vl-gateinst x) (vl-gateinst-fix x))
@@ -5202,14 +5202,14 @@ the concatenation of all its other declared wires.</p>"
 
 (define vl-design->svex-modalist ((x vl-design-p)
                                   &key ((config vl-simpconfig-p) '*vl-default-simpconfig*))
-  :parents (vl-design->svex-design)
+  :parents (vl-design->sv-design)
   :short "Translate a simplified VL design into an SVEX modalist."
   :long "<p>This expects the input to be a VL modulelist that is
 unparametrized, with resolved selects/ranges, always blocks processed into
 flop/latch primitives, and all expressions sized.  A suitable series of
-transforms is implemented in @(see vl-simplify-svex).</p>
+transforms is implemented in @(see vl-simplify-sv).</p>
 
-<p>See @(see vl-hierarchy-svex-translation) for discussion of our approach to
+<p>See @(see vl-hierarchy-sv-translation) for discussion of our approach to
 this translation.</p>"
   :returns (mv (reportcard vl-reportcard-p)
                (svexmods (and (sv::modalist-p svexmods)
