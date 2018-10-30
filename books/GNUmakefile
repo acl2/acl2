@@ -686,7 +686,9 @@ CLEAN_FILES_EXPLICIT := \
 MORECLEAN_FILES_EXPLICIT := \
    doc/manual \
    system/doc/manual \
+   system/doc/manual-fast \
    doc/xdoc.sao \
+   centaur/getopt/demo2.dx86cl64 \
 
 .PHONY: clean_books clean
 
