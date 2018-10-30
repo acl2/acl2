@@ -8422,7 +8422,7 @@
     :rule-classes :forward-chaining))
 
 (defconst *opcode-descriptor-legal-keys*
-  '(:opcode :reg :prefix :mod :r/m :vex :evex :mode :feat))
+  '(:opcode :reg :prefix :mod :r/m :vex :mode :feat))
 
 (define opcode-descriptor-p (opcode-descriptor)
   (if (consp opcode-descriptor)
