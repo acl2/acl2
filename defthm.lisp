@@ -6830,6 +6830,10 @@
                         rst)
                   wrld)))
       ((null flg)
+
+; This case is unexpected, given the check on :congruence rules in
+; chk-acceptable-rules; see the comment there.
+
        (er hard! 'add-congruence-rule
            "Implementation error: ~x0 returned failure when attempting to ~
             apply ~x1.  Please contact the ACL2 implementors."
@@ -9521,12 +9525,12 @@
 
 (defun chk-acceptable-rules (name classes ctx ens wrld state)
 
-; The classes have already been translated, so we do not need to worry
-; about unrecognized classes.  Each class contains a :COROLLARY which
-; is a translated term.  We check that the :COROLLARY term can be used
-; as a rule of the class indicated.  We either cause an error or
-; return a ttree justifying whatever pre/post-processing is done to
-; store the rules.  If we are not doing proofs we skip the checks.
+; The classes have already been translated, so we do not need to worry about
+; unrecognized classes.  Each class contains a :COROLLARY which is a translated
+; term.  We check that the :COROLLARY term can be used as a rule of the class
+; indicated.  We either cause an error or return a ttree justifying whatever
+; pre/post-processing is done to store the rules.  If we are under include-book
+; or the second pass of encapsulate, we skip the checks.
 
   (let ((classes
          (cond ((or (eq (ld-skip-proofsp state) 'include-book)
@@ -9587,7 +9591,17 @@
 ;    :hints (("goal" :use qed :in-theory (enable goo)))
 ;    :rule-classes nil)
 
-                (collect-keys-eq '(:meta :clause-processor) classes))
+; We also check for :congruence rules even when skipping proofs.  Without this
+; check we can get a hard error during the local compatibility check of
+; certify-book.  Those hard errors appear to be rare (probably the first one
+; was reported by Nathan Guermond in October, 2018), but :congruence rules are
+; much less common than :rewrite rules, so we prefer to do the extra check here
+; so that a nice, soft error is reported.  Without this check we can get a hard
+; (implementation) error after a failed call of
+; interpret-term-as-congruence-rule in add-congruence-rule.
+
+                (collect-keys-eq '(:meta :clause-processor :congruence)
+                                 classes))
                (t classes))))
     (cond
      ((null classes) ; optimization

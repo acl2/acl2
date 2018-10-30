@@ -672,6 +672,7 @@ CLEAN_FILES_EXPLICIT := \
    centaur/getopt/demo2.gcl \
    centaur/getopt/demo2.lw \
    centaur/getopt/demo2.lx86cl64 \
+   centaur/getopt/demo2.dx86cl64 \
    centaur/getopt/demo2.ccl \
    nonstd/workshops/1999/calculus/book/outline/ \
    projects/sat/lrat/incremental/lrat-check \
@@ -687,8 +688,7 @@ MORECLEAN_FILES_EXPLICIT := \
    doc/manual \
    system/doc/manual \
    system/doc/manual-fast \
-   doc/xdoc.sao \
-   centaur/getopt/demo2.dx86cl64 \
+   doc/xdoc.sao
 
 .PHONY: clean_books clean
 
