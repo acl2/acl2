@@ -119,6 +119,39 @@
 
 \newlibtitle
 
+\bookpath{build/ifdef.lisp}:
+Defines \code{ifdef} and \code{ifndef} forms which test environment variables;
+supported by the build system.
+
+\
+
+\bookpath{centaur/acre}:
+New regular expression implementation supporting features somewhat similar to Perl regexes.
+
+\
+
+\bookpath{centaur/bitops/sparseint.lisp}:
+Library representing bignums as balanced trees to efficiently support
+operations that preserve large ranges of bits.
+
+\
+
+\bookpath{centaur/glmc}:
+Interface to hardware model checkers.
+
+\
+
+\bookpath{centaur/truth}:
+Integer-encoded truth table library.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
 \bookpath{kestrel/apt}:
 APT (Automated Program Transformations),
 a toolkit
@@ -380,10 +413,23 @@ An early SAT proof-checker from 2011 based on resolution (see README).
 
 \
 
+\bookpath{std/stobjs/updater-independence}:
+Utility for defining stobj and stobj-like accessor/updater
+independence theorems.
+
+\
+
+\bookpath{std/util/termhints}:
+Hint utility described in the
+\textit{Hint Orchestration Using ACL2's Simplifier} paper
+at this Workshop.
+
+\
+
 \bookpath{tools/run-script.lisp}:
 This utility supports testing of evaluation of the forms
-  in a given file, to check that the output is as expected.  Several
-  community books utilize it.
+in a given file, to check that the output is as expected.
+Several community books utilize it.
 
 \end{frame}
 
@@ -405,7 +451,7 @@ Supporting materials for Greve and Gacek's paper at this Workshop.
 
 \bookpath{workshops/2018/kaufmann}:
 Supporting materials for Kaufmann's paper at this Workshop.
-(Archived version of \code{defunt} in \code{kestrel/auto-termination}.
+(Archived version of \code{defunt} in \code{kestrel/auto-termination}).
 
 \end{frame}
 
@@ -446,57 +492,6 @@ are elsewhere, not under \code{workshops/2018}.
 
 \newlibtitle
 
-\bookpath{centaur/glmc}:
-Interface to hardware model checkers
-
-\
-
-\bookpath{centaur/truth}:
-Integer-encoded truth table library
-
-\
-
-\bookpath{centaur/acre}:
-New regular expression implementation supporting features somewhat similar to Perl regexes
-
-\
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\newlibtitle
-
-\bookpath{std/util/termhints}:
-Hint utility described in \textit{Hint Orchestration Using ACL2's Simplifier}
-
-\
-
-\bookpath{std/stobjs/updater-independence}:
-Utility for defining stobj and stobj-like accessor/updater independence theorems
-
-\
-
-\bookpath{centaur/bitops/sparseint}:
-Library representing bignums as balanced trees to efficiently support
-operations that preserve large ranges of bits
-
-\
-
-\bookpath{build/ifdef}:
-Defines ifdef and ifndef forms which test environment variables;
-supported by the build system.
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\newlibtitle
-
 TODO: add more contributions
 
 \end{frame}
@@ -506,6 +501,20 @@ TODO: add more contributions
 \begin{frame}
 
 \implibtitle
+
+\bookpath{centaur/aignet}:
+And-Inverter Graph (AIG) representation
+for Boolean functions and finite-state machines.
+\begin{itemize}
+\item
+New verified AIGNET transforms including FRAIGing, DAG-aware balancing
+and rewriting.
+\item
+AIGNET natively supports XORs, i.e.\ represents them using one node
+instead of three.
+\end{itemize}
+
+\
 
 \bookpath{centaur/bitops/rotate.lisp}:
 Bit-vector rotation libraries.
@@ -519,7 +528,13 @@ To do: Add theorems for compositions of \code{rotate-left} and
 \code{rotate-right} with each other.
 \end{itemize}
 
-\
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
 
 \bookpath{centaur/fty/bitstruct}:
 Define a bit vector type with accessor/updater functions for its fields.
@@ -532,6 +547,19 @@ bignum operations whenever possible.
 Accessor and updater functions can now be inlined.
 \end{itemize}
 
+\
+
+\bookpath{centaur/gl}:
+Symbolic simulation framework for solving finite theorems.
+\begin{itemize}
+\item
+Add hooks in GL to allow calling AIGNET transforms before SAT.
+\item
+Improve GL counterexample generation for term-level reasoning.
+\item
+Added accumulated-persistence-like rule profiling.
+\end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -539,6 +567,26 @@ Accessor and updater functions can now be inlined.
 \begin{frame}
 
 \implibtitle
+
+\bookpath{centaur/sv}:
+Hardware verification library with vector-based expression representation.
+\begin{itemize}
+\item
+Many SV/SVEX algorithms are now based on \code{sparseints} so that they scale
+when dealing with variables thousands/millions of bits in size.
+\end{itemize}
+
+\
+
+\bookpath{centaur/vl}:
+Library for SystemVerilog and regular Verilog.
+\begin{itemize}
+\item
+Add new SystemVerilog lint check based on accurately determining
+used/set ranges of vectors.
+\end{itemize}
+
+\
 
 \bookpath{coi/...}:
 TODO: add
@@ -816,31 +864,6 @@ Codewalker can now be used to reason about x86 programs.
 
 \implibtitle
 
-\bookpath{tools/flag.lisp}:
-The new keyword argument \code{:last-body} of \code{make-flag}
-specifies use of the most recent definition rule.
-
-\
-
-\bookpath{tools/include-raw.lisp}:
-Fixed an issue with option \code{:do-not-compile t} by extending
-``fns-with-raw-code'' state globals.
-
-\
-
-\bookpath{tools/removable-runes.lisp}:
-Improved \code{removable-runes} and added related utility,
-\code{minimal-runes}, which returns a list of runes to enable that is
-sufficient for admitting a given event.
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
 \bookpath{std/io/combine.lisp}:
 Byte-combining libraries.
 \begin{itemize}
@@ -861,41 +884,22 @@ signed-integer functions, \code{combine16s} et al.
 
 \implibtitle
 
-\bookpath{centaur/aignet}:
-New verified AIGNET transforms including FRAIGing, DAG-aware balancing and rewriting
-
-AIGNET natively supports XORs, i.e. represents them using one node instead of three
-
-\
-
-\bookpath{centaur/vl}:
-Add new SystemVerilog lint check based on accurately determining
-used/set ranges of vectors
+\bookpath{tools/flag.lisp}:
+The new keyword argument \code{:last-body} of \code{make-flag}
+specifies use of the most recent definition rule.
 
 \
 
-\bookpath{centaur/sv}:
-Many SV/SVEX algorithms now based on sparseints so that they scale
-when dealing with variables thousands/millions of bits in size
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{centaur/gl}:
-Add hooks in GL to allow calling AIGNET transforms before SAT
+\bookpath{tools/include-raw.lisp}:
+Fixed an issue with option \code{:do-not-compile t} by extending
+``fns-with-raw-code'' state globals.
 
 \
 
-Improve GL counterexample generation for term-level reasoning
-
-\
-
-Added accumulated-persistence-like rule profiling
+\bookpath{tools/removable-runes.lisp}:
+Improved \code{removable-runes} and added related utility,
+\code{minimal-runes}, which returns a list of runes to enable that is
+sufficient for admitting a given event.
 
 \end{frame}
 
