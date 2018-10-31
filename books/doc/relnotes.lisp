@@ -121,6 +121,11 @@
 
  </ul>
 
+ <h4><see topic='@(url irv::instant-runoff-voting)'>Instant Run-Off Voting</see></h4>
+
+ <p>Formalized an instant run-off voting scheme and proved that it
+ meets certain fairness criteria.</p>
+
  <h4>Other</h4>
 
  <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
