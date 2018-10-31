@@ -18826,10 +18826,11 @@
                    (t (value
                        (er hard ctx
                            "Defstobj-axiomatic-defs and defstobj-raw-defs are ~
-                            out of sync!  They should each define the same set ~
-                            of names.  Here are the functions with axiomatic ~
-                            defs that have no raw defs:  ~x0.  And here are ~
-                            the with raw defs but no axiomatic ones:  ~x1."
+                            out of sync!  They should each define the same ~
+                            set of names.  Here are the functions with ~
+                            axiomatic defs that have no raw defs:  ~x0.  And ~
+                            here are the functions with raw defs but no ~
+                            axiomatic ones:  ~x1."
                            (set-difference-equal
                             names
                             (strip-cars raw-def-lst))

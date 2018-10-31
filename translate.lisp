@@ -8303,15 +8303,6 @@
        (executable-suitably-tamep-listp (- n 1) (cdr flags) (cdr args) wrld)))))
 )
 
-(defun mapping-fnp (fn wrld)
-
-; We return t iff fn has a badge and at least one non-ordinary (:FN or :EXPR)
-; slot.  Recall that the :ilks of a badge is T iff all ilks are NIL.
-
-  (let ((bdg (executable-badge fn wrld)))
-    (and bdg
-         (not (eq t (access apply$-badge bdg :ilks))))))
-
 (mutual-recursion
 
 (defun all-unbadged-fnnames (term wrld acc)
