@@ -30,8 +30,7 @@
  
 (in-package "FGL")
 
-(include-book "nat-var-aig")
-(include-book "centaur/fty/fixequiv" :dir :system)
+(include-book "aig-pathcond-stobj")
 (include-book "std/basic/arith-equiv-defs" :dir :system)
 (local (include-book "theory"))
 (local (std::add-default-post-define-hook :fix))
@@ -61,17 +60,13 @@
          (implies (calistp x)
                   (iff (cdr (hons-assoc-equal k x))
                        (hons-assoc-equal k x)))
-         :hints(("Goal" :in-theory (enable calistp constraint-alist-p)))))
+         :hints(("Goal" :in-theory (enable calistp)))))
 
-
-(defthm constraint-alist-p-when-calistp
-  (implies (calistp x)
-           (constraint-alist-p x))
-  :hints(("Goal" :in-theory (enable calistp))))
 
 (defthm alistp-when-calistp
   (implies (calistp x)
            (alistp x))
+  :hints(("Goal" :in-theory (enable calistp)))
   :rule-classes :forward-chaining)
 
 (local (defthm consp-car-when-alistp
@@ -89,15 +84,16 @@
 (local (defthm cdr-car-calist-fix
          (iff (cdr (car (calist-fix x)))
               (consp (calist-fix x)))
-         :hints(("Goal" :in-theory (e/d (calistp constraint-alist-p)
+         :hints(("Goal" :in-theory (e/d (calistp)
                                         (calistp-of-calist-fix))
                  :use ((:instance calistp-of-calist-fix))))))
 
 (local (defthm bitp-cdr-car-of-calist-fix
          (equal (bitp (cdr (car (calist-fix x))))
                 (consp (calist-fix x)))
-         :hints(("Goal" :in-theory (e/d (calistp constraint-alist-p)
+         :hints(("Goal" :in-theory (e/d (calistp)
                                         (calistp-of-calist-fix))
+                 :expand ((calistp (calist-fix x)))
                  :use ((:instance calistp-of-calist-fix))))))
 
 
@@ -114,9 +110,7 @@
                                 (bfix (cdr pair)))
                           (calist-fix calist))
                   (calist-fix calist)))
-         :hints(("Goal" :in-theory (enable calist-fix
-                                           constraint-alist-fix
-                                           alist-remove-dups)))))
+         :hints(("Goal" :in-theory (enable calist-fix)))))
 
   (defthm calist-lookup-of-cons
     (equal (calist-lookup k1 (cons pair calist))
@@ -141,7 +135,7 @@
   (defthm calist-lookup-of-atom
     (implies (atom x)
              (equal (calist-lookup k x) nil))
-    :hints(("Goal" :in-theory (enable calist-fix constraint-alist-fix alist-remove-dups)))
+    :hints(("Goal" :in-theory (enable calist-fix)))
     :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
   (defthmd calist-lookup-redef
@@ -271,7 +265,10 @@
   (defthm calist-extension-implies-len-gte
     (implies (calist-extension-p x y)
              (>= (len (calist-fix x)) (len (calist-fix y))))
-    :rule-classes (:rewrite :linear)))
+    :rule-classes (:rewrite :linear))
+
+  (defthm calist-extension-p-self
+    (calist-extension-p x x)))
 
 
 ;; (define rewind-calist ((marker aig-p) (x calistp))
@@ -363,6 +360,13 @@
     (implies (not (calist-depends-on v x))
              (equal (calist-eval x (cons (cons (nfix v) val) env))
                     (calist-eval x env)))
+    :hints(("Goal" :in-theory (enable calist-eval))))
+
+  (defthm calist-eval-of-set-var-when-not-depends-on-natp
+    (implies (and (not (calist-depends-on v x))
+                  (natp v))
+             (equal (calist-eval x (cons (cons v val) env))
+                    (calist-eval x env)))
     :hints(("Goal" :in-theory (enable calist-eval)))))
 
 (define aig-norm ((x aig-p))
@@ -387,7 +391,11 @@
 
   (defret cdr-not-nil-of-aig-norm
     (implies (consp abs)
-             (cdr abs))))
+             (cdr abs)))
+
+  (defret member-vars-of-aig-norm
+    (implies (not (set::in v (acl2::aig-vars (aig-fix x))))
+             (not (set::in v (acl2::aig-vars abs))))))
        
 
 ;; Note: This is a less expensive version that stops when it gets to a
@@ -511,5 +519,30 @@
   (defret calist-assume-contradictionp-correct
     (implies (and contradictionp
                   (acl2::aig-eval (aig-fix x) env))
-             (not (calist-eval calist-stobj env)))))
+             (not (calist-eval calist-stobj env))))
+
+  (defret calist-extension-p-of-calist-assume
+    (calist-extension-p new-calist calist-stobj))
+
+  (local (include-book "tools/trivial-ancestors-check" :dir :system))
+  (local (acl2::use-trivial-ancestors-check))
+
+  (local (in-theory (disable acl2::aig-vars set::in-tail)))
+
+  (local (defthm aig-vars-of-car/cdr
+           (implies (and (not (set::in v (acl2::aig-vars x)))
+                         (not (acl2::aig-atom-p x)))
+                    (and (not (set::in v (acl2::aig-vars (car x))))
+                         (not (set::in v (acl2::aig-vars (cdr x))))))
+           :hints (("goal" :expand ((acl2::aig-vars x))))))
+
+
+  (defret calist-depends-on-of-calist-assume
+    (implies (and (not (calist-depends-on v calist-stobj))
+                  (not (set::in (nfix v) (acl2::aig-vars (aig-fix x)))))
+             (not (calist-depends-on v new-calist)))
+    :hints (("goal" :induct <call>
+             :expand (<call>))
+            (and stable-under-simplificationp
+                 '(:expand ((:free (a b) (calist-depends-on v (cons a b)))))))))
 

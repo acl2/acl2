@@ -30,30 +30,28 @@
 
 (in-package "FGL")
 
+;; Critpath: include aignet/semantics and move logic-building functions to separate book
 (include-book "centaur/aignet/construction" :dir :system)
+;; Critpath: factor out sat-lits stobj definition from aignet/cnf and include that + ipasir-logic instead
 (include-book "centaur/aignet/ipasir" :dir :system)
 (include-book "bvar-db")
 (include-book "gl-object")
-(include-book "centaur/ubdds/lite" :dir :system)
+(include-book "pathcond-stobj")
 (include-book "centaur/ubdds/deps" :dir :system)
-(include-book "nat-var-aig")
 (include-book "std/stobjs/updater-independence" :dir :system)
-(include-book "centaur/misc/intstack" :dir :system)
-(include-book "centaur/aignet/mark-impls" :dir :system)
 (local (include-book "theory"))
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 
-(std::defenum bfr-mode-p
-  (t nil :aignet))
+(fty::defalist nat-nat-alist :key-type natp :val-type natp :true-listp t)
 
-(defstobj pathcond
-  (pathcond-bdd :type (satisfies acl2::ubddp) :initially t)
-  (pathcond-calist :type calist-stobj)
-  (pathcond-valbits :type acl2::bitarr)
-  (pathcond-stack :type acl2::intstack)
-  (pathcond-memobits1 :type acl2::bitarr)
-  (pathcond-memobits0 :type acl2::bitarr)
-  (pathcond-memoseens :type aignet::eba))
+(defstobj interp-profiler
+  (prof-enabledp :type (satisfies booleanp))
+  (prof-indextable)
+  (prof-totalcount :type (integer 0 *) :initially 0)
+  (prof-nextindex :type (integer 0 *) :initially 0)
+  (prof-array :type (array (unsigned-byte 32) (0)) :initially 0 :resizable t)
+  (prof-stack :type (satisfies nat-nat-alist-p)))
+
 
 (defconst *logicman-fields*
   '((aignet :type aignet::aignet)
@@ -63,6 +61,7 @@
     (sat-lits :type aignet::sat-lits)
     (pathcond :type pathcond)
     (bvar-db :type bvar-db)
+    (prof :type interp-profiler)
     (mode :type (satisfies bfr-mode-p))))
 
 
@@ -93,6 +92,14 @@
 (defthm logicmanp-implies-aignetp
   (implies (logicmanp logicman)
            (aignet::node-listp (logicman->aignet logicman))))
+
+(defthm logicmanp-implies-bfr-mode-p
+  (implies (logicmanp logicman)
+           (bfr-mode-p (logicman->mode logicman))))
+
+(defthm logicmanp-implies-pathcondp
+  (implies (logicmanp logicman)
+           (pathcondp (logicman->pathcond logicman))))
 
 (in-theory (disable logicmanp))
 
