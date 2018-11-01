@@ -90,7 +90,16 @@
      :satisfies (<= x1 (len x3)))
 
 (include-book "arithmetic-5/top" :dir :system)
-(include-book "rtl/rel11/lib/top" :dir :system)
+
+#|
+PETE: adding something like this might be useful.
+Decided to leave out for now because
+
+1. Building the books takes long
+2. The use of rtl sometimes slows down proofs
+
+(include-book
+  "rtl/rel11/lib/top" :dir :system)
 (in-theory
  (disable
   acl2::|(mod (+ x y) z) where (<= 0 z)| acl2::|(mod (+ x (- (mod a b))) y)| 
@@ -99,6 +108,13 @@
   acl2::simplify-products-gather-exponents-<
   acl2::cancel-mod-+ acl2::reduce-additive-constant-< acl2::|(floor x 2)|
   acl2::|(equal x (if a b c))| acl2::|(equal (if a b c) x)|))
+|#
+
+#| 
+
+PETE: I'm sure there was a good reason for these rules but I am
+leaving them out for now since I think that they shouldn't be needed
+and they can slow things down.
 
 (defthm natp-implies-acl2-numberp
   (implies (natp x)
@@ -134,6 +150,7 @@
   (implies (integerp x)
            (rationalp x))
   :rule-classes ((:rewrite)))
+|#
 
 (defthm numerator-1-decreases
   (implies (rationalp n) 
@@ -141,16 +158,16 @@
               (numerator n)))
   :hints (("goal" 
            :use ((:instance ACL2::|(* r (denominator r))| 
-                  (acl2::r n))
+                            (acl2::r n))
                  (:instance ACL2::|(* r (denominator r))| 
-                  (acl2::r (- n 1)))
+                            (acl2::r (- n 1)))
                  )
            :in-theory (disable ACL2::|(* r (denominator r))|)))
   :rule-classes ((:linear) (:rewrite)))
 
 (defun posp-ind (n)
   (if (or (zp n) (equal n 1))
-    n
+      n
     (posp-ind (- n 1))))
 
 (defthm numerator-n-decreases
@@ -159,7 +176,7 @@
                 (integerp n)
                 (< 0 n))
            (< (numerator (+ (- n) r))
-                    (numerator r)))
+              (numerator r)))
   :hints (("goal" :induct (posp-ind n))
           ("subgoal *1/2.2" 
            :use ((:instance numerator-1-decreases 
@@ -170,4 +187,5 @@
   (implies (and (natp x)
                 (natp y))
            (equal (o< x y)
-                  (< x y))))
+                  (< x y)))
+  :hints (("goal" :in-theory (enable o<))))
