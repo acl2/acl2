@@ -189,3 +189,18 @@ and they can slow things down.
            (equal (o< x y)
                   (< x y)))
   :hints (("goal" :in-theory (enable o<))))
+
+(defmacro tlp (x)
+  `(true-listp ,x))
+
+(add-macro-fn tlp true-listp)
+
+(defmacro tl-fix (x)
+  `(acl2::true-list-fix ,x))
+
+(add-macro-fn tl-fix acl2::true-list-fix)
+
+(defmacro app (&rest rst)
+  `(append ,@rst))
+
+(add-macro-fn app binary-append)
