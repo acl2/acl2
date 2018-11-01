@@ -28,7 +28,7 @@ and associates the function name with the macro name using
  <p>where @('new-macro-name') is the name of the macro to define,
 @('binary-fun-name') is the name of an existing binary function and
 @('identity') is what the macro should return with no arguments.
-@('right-associate-p) is an optional argument, which 
+@('right-associate-p') is an optional argument, which 
  Given
 one argument, the macro will just return that argument. Given more
 than one argument, the macro will expand to a right-associated call of
