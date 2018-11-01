@@ -207,7 +207,7 @@
               (joint-act fin fout go)))
   :hints (("Goal" :in-theory (enable f-buf-delete-lemmas-2))))
 
-(defthmd joint-cntl$value
+(defthm joint-cntl$value
   (implies (joint-cntl& netlist)
            (equal (se 'joint-cntl (list fin fout go) sts netlist)
                   (list (joint-act fin fout go))))
@@ -242,7 +242,7 @@
         (net-arity-okp *click-link-st*)
         (click-link-st& *click-link-st*))))
 
-(defthmd click-link-st$value
+(defthm click-link-st$value
   (implies (click-link-st& netlist)
            (equal (se 'click-link-st (list fi dr) (list ff0 ff1) netlist)
                   (list (f-xor (car ff0) (car ff1)))))
@@ -252,7 +252,7 @@
                               click-link-st&
                               f-gates))))
 
-(defthmd click-link-st$state
+(defthm click-link-st$state
   (implies (click-link-st& netlist)
            (equal (de 'click-link-st (list fi dr) (list ff0 ff1) netlist)
                   (list (list (f-if fi
@@ -289,7 +289,7 @@
 
 ;; DE netlist containing LINK1
 
-(defun link1$netlist ()
+(defund link1$netlist ()
   (declare (xargs :guard t))
   (list (link1*)))
 
@@ -325,7 +325,7 @@
 
 ;; The value lemma for LINK1
 
-(defthmd link1$value
+(defthm link1$value
   (b* ((inputs (list fill$ drain bit-in))
        (s (get-field *link1$s* st))
        (d (get-field *link1$d* st)))
@@ -334,7 +334,6 @@
                     (list (f-buf (car s))
                           (f-if fill$ bit-in (car d))))))
   :hints (("Goal"
-           :do-not-induct t
            :expand (:free (inputs)
                           (se 'link1 inputs st netlist))
            :in-theory (e/d (de-rules
@@ -362,12 +361,11 @@
 
 ;; The state lemma for LINK1
 
-(defthmd link1$state
+(defthm link1$state
   (implies (link1& netlist)
            (equal (de 'link1 inputs st netlist)
                   (link1$step inputs st)))
   :hints (("Goal"
-           :do-not-induct t
            :expand (de 'link1 inputs st netlist)
            :in-theory (e/d (de-rules
                             link1&
@@ -422,7 +420,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; LINK.
 
-(defun link$netlist (data-width)
+(defund link$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (link* data-width)
         (union$ (latch-n$netlist data-width)
@@ -433,10 +431,10 @@
 (defund link& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'link data-width) netlist)
-              (link* data-width))
-       (b* ((netlist (delete-to-eq (si 'link data-width) netlist)))
-         (latch-n& netlist data-width))))
+  (b* ((subnetlist (delete-to-eq (si 'link data-width) netlist)))
+    (and (equal (assoc (si 'link data-width) netlist)
+                (link* data-width))
+         (latch-n& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -479,7 +477,7 @@
 
 ;; The value lemma for LINK
 
-(defthmd link$value
+(defthm link$value
   (b* ((inputs (list* fill$ drain data-in))
        (s (get-field *link$s* st))
        (d (get-field *link$d* st)))
@@ -491,16 +489,12 @@
                     (list* (f-buf (car s))
                            (fv-if fill$ data-in (strip-cars d))))))
   :hints (("Goal"
-           :do-not-induct t
            :expand (:free (inputs data-width)
                           (se (si 'link data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             link&
-                            link*$destructure
-                            link$st-format
-                            latch-n$value)
-                           ((link*)
-                            de-module-disabled-rules)))))
+                            link*$destructure)
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of LINK.
 
@@ -523,7 +517,7 @@
 
 ;; The state lemma for LINK
 
-(defthmd link$state
+(defthm link$state
   (implies (and (link& netlist data-width)
                 (true-listp inputs)
                 (equal (len inputs) (link$ins-len data-width))
@@ -531,17 +525,12 @@
            (equal (de (si 'link data-width) inputs st netlist)
                   (link$step inputs st data-width)))
   :hints (("Goal"
-           :do-not-induct t
            :expand (:free (data-width)
                           (de (si 'link data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             link&
-                            link*$destructure
-                            link$st-format
-                            latch-n$value
-                            latch-n$state)
-                           ((link*)
-                            de-module-disabled-rules)))))
+                            link*$destructure)
+                           (de-module-disabled-rules)))))
 
 ;;(in-theory (disable link$step))
 

@@ -107,7 +107,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; ALT-MERGE.
 
-(defun alt-merge$netlist (data-width)
+(defund alt-merge$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (alt-merge* data-width)
         (union$ (link1$netlist)
@@ -120,12 +120,12 @@
 (defund alt-merge& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'alt-merge data-width) netlist)
-              (alt-merge* data-width))
-       (b* ((netlist (delete-to-eq (si 'alt-merge data-width) netlist)))
-         (and (link1& netlist)
-              (joint-cntl& netlist)
-              (tv-if& netlist (make-tree data-width))))))
+  (b* ((subnetlist (delete-to-eq (si 'alt-merge data-width) netlist)))
+    (and (equal (assoc (si 'alt-merge data-width) netlist)
+                (alt-merge* data-width))
+         (link1& subnetlist)
+         (joint-cntl& subnetlist)
+         (tv-if& subnetlist (make-tree data-width)))))
 
 ;; Sanity check
 
@@ -249,7 +249,7 @@
 
 ;; The value lemma for ALT-MERGE
 
-(defthmd alt-merge$value
+(defthm alt-merge$value
   (b* ((inputs (list* full-in0 full-in1 empty-out-
                       (append data0-in data1-in go-signals)))
        (select (get-field *alt-merge$select* st))
@@ -274,14 +274,10 @@
            :in-theory (e/d (de-rules
                             alt-merge&
                             alt-merge*$destructure
-                            link1$value
-                            joint-cntl$value
-                            tv-if$value
                             alt-merge$act
                             alt-merge$act0
                             alt-merge$act1)
-                           ((alt-merge*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of ALT-MERGE.
 
@@ -314,7 +310,7 @@
 
 ;; The state lemma for ALT-MERGE
 
-(defthmd alt-merge$state
+(defthm alt-merge$state
   (b* ((inputs (list* full-in0 full-in1 empty-out-
                       (append data0-in data1-in go-signals))))
     (implies (and (alt-merge& netlist data-width)
@@ -333,13 +329,8 @@
                             alt-merge*$destructure
                             alt-merge$act
                             alt-merge$act0
-                            alt-merge$act1
-                            link1$value
-                            link1$state
-                            joint-cntl$value
-                            tv-if$value)
-                           ((alt-merge*)
-                            de-module-disabled-rules)))))
+                            alt-merge$act1)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable alt-merge$step))
 
@@ -378,7 +369,7 @@
                                      alt-merge$input-format
                                      alt-merge$valid-st
                                      alt-merge$act0)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-alt-merge$act1
   (implies (and (alt-merge$input-format inputs data-width)
@@ -388,14 +379,14 @@
                                      alt-merge$input-format
                                      alt-merge$valid-st
                                      alt-merge$act1)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-alt-merge$act
   (implies (and (alt-merge$input-format inputs data-width)
                 (alt-merge$valid-st st))
            (booleanp (alt-merge$act inputs st data-width)))
   :hints (("Goal" :in-theory (enable alt-merge$act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm alt-merge$valid-st-preserved
   (implies (and (alt-merge$input-format inputs data-width)

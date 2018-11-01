@@ -130,7 +130,7 @@
               *alu-simplified-good*
               *alu-simplified-bad*)
     (b* (((mv errmsg svex-design good bad)
-          (vl::vl-design->svex-design "alu16" *alu-vl-design* (vl::make-vl-simpconfig))))
+          (vl::vl-design->sv-design "alu16" *alu-vl-design* (vl::make-vl-simpconfig))))
       (and errmsg
            (raise "~@0~%" errmsg))
       (mv svex-design good bad))))
@@ -176,7 +176,7 @@ trouble parsing it, this doesn't print anything.</p>
 
 <p>The @('*alu-vl-design*') is basically a Verilog parse tree; we want to translate
 this into an svex module hierarchy.  We can do this using @(see
-vl::vl-design->svex-design):</p>
+vl::vl-design->sv-design):</p>
 
 @(`(:code ($ alu->svex-form))`)
 

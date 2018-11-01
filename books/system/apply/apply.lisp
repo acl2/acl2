@@ -224,7 +224,7 @@
 
 (defun apply$-lambda-measure (fn args)
   (declare (ignore args))
-  (llist (acl2-count (caddr fn)) 1))
+  (llist (acl2-count (lambda-object-body fn)) 1))
 
 ; We restrict the following to builds with #+acl2-devel (see :DOC
 ; verify-guards-for-system-functions), thus avoiding redefinition errors (due
@@ -362,7 +362,7 @@
        (executable-suitably-tamep-listp
         (declare (xargs :measure (acl2-count args)))))
 
-     (verify-termination WELL-FORMED-LAMBDAP)
+     (verify-termination WEAK-WELL-FORMED-LAMBDA-OBJECTP)
 
      (verify-termination CHANGED-FUNCTIONAL-OR-EXPRESSIONAL-FORMALP)
 
@@ -423,8 +423,8 @@
                    (not (equal fn (cadr term)))
                    (executable-tamep-functionp (cadr term) wrld))
               (and (consp (cadr term))
-                   (and (well-formed-lambdap (cadr term) wrld)
-                        (not (ffnnamep fn (lambda-body (cadr term))))
+                   (and (weak-well-formed-lambda-objectp (cadr term) wrld)
+                        (not (ffnnamep fn (lambda-object-body (cadr term))))
                         (executable-tamep-lambdap (cadr term) wrld)))))
          ((eq ilk :EXPR)
           (and (termp (cadr term) wrld)
@@ -473,7 +473,7 @@
    (in-theory (disable executable-badge
                        executable-tamep
                        executable-tamep-functionp
-                       well-formed-lambdap
+                       weak-well-formed-lambda-objectp
                        changed-functional-or-expressional-formalp))
 
    (make-flag checker guess-ilks-alist)
@@ -542,12 +542,16 @@
 
    (defthm apply$-badgep-executable-badge
      (implies (and (badge-table-okp
+                    (unquote
+                     (getpropc '*badge-prim-falist* 'const nil wrld)))
+                   (badge-table-okp
                     (cdr (assoc-equal :badge-userfn-structure
                                       (table-alist 'badge-table wrld))))
                    (executable-badge fn wrld))
               (apply$-badgep (executable-badge fn wrld)))
      :hints (("Goal" :in-theory (e/d (executable-badge)
-                                     (hons-get apply$-badgep))))
+                                     (hons-get
+                                      apply$-badgep))))
      :rule-classes nil)
 
    (defthm-checker
@@ -557,6 +561,9 @@
                       (mv-nth 0 (guess-ilks-alist fn new-badge term
                                                   ilk wrld alist)))
                      (alist-okp term formals new-badge alist wrld)
+                     (badge-table-okp
+                      (unquote
+                       (getpropc '*badge-prim-falist* 'const nil wrld)))
                      (badge-table-okp
                       (cdr (assoc-equal :badge-userfn-structure
                                         (table-alist 'badge-table wrld))))
@@ -571,6 +578,9 @@
                       (mv-nth 0 (guess-ilks-alist-list fn new-badge terms
                                                        ilks wrld alist)))
                      (alist-okp-list terms formals new-badge alist wrld)
+                     (badge-table-okp
+                      (unquote
+                       (getpropc '*badge-prim-falist* 'const nil wrld)))
                      (badge-table-okp
                       (cdr (assoc-equal :badge-userfn-structure
                                         (table-alist 'badge-table wrld))))

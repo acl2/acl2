@@ -678,6 +678,87 @@
        (equal (macro-args name w) args)
        (equal (guard name nil w) guard)))
 
+(defun collect-non-apply$-primps2 (fns acc badge-prim-falist)
+
+; Collect those members of fns that are not apply$-primp and add to acc.
+
+  (cond
+   ((endp fns) acc)
+   ((hons-get (car fns) badge-prim-falist)
+    (collect-non-apply$-primps2 (cdr fns) acc badge-prim-falist))
+   (t (collect-non-apply$-primps2 (cdr fns)
+                                  (add-to-set-eq (car fns) acc)
+                                  badge-prim-falist))))
+
+(mutual-recursion
+
+(defun collect-non-apply$-primps1 (term ilk badge-prim-falist wrld acc)
+
+; Collect every function that is not an apply$ primitive that occurs in a
+; quoted object (symbol or lambda object) in any :FN slot of term.  We also
+; collect ill-formed lambda objects in such slots because they may cause
+; apply$-time errors too.
+
+  (cond ((variablep term) acc)
+        ((fquotep term)
+         (cond
+          ((or (eq ilk :FN) (eq ilk :FN?))
+           (let ((fn (unquote term)))
+             (cond
+              ((symbolp fn)
+               (if (hons-get fn badge-prim-falist)
+                   acc
+                   (add-to-set-eq fn acc)))
+              ((well-formed-lambda-objectp fn wrld)
+               (let ((fns (all-fnnames1
+                           nil
+                           (lambda-object-guard fn)
+                           (all-fnnames1
+                            nil
+                            (lambda-object-body fn)
+                            nil))))
+                 (collect-non-apply$-primps2 fns acc badge-prim-falist)))
+              (t (add-to-set-equal fn acc)))))
+          (t acc)))
+        ((flambdap (ffn-symb term))
+         (collect-non-apply$-primps1
+          (lambda-body (ffn-symb term))
+          nil badge-prim-falist wrld
+          (collect-non-apply$-primps1-lst (fargs term) nil badge-prim-falist
+                                          wrld acc)))
+        (t (collect-non-apply$-primps1-lst
+            (fargs term)
+            (ilks-per-argument-slot (ffn-symb term) wrld)
+            badge-prim-falist wrld acc))))
+
+(defun collect-non-apply$-primps1-lst (terms ilks badge-prim-falist wrld acc)
+  (cond ((endp terms) acc)
+        (t (collect-non-apply$-primps1 (car terms)
+                                       (car ilks)
+                                       badge-prim-falist
+                                       wrld
+                                       (collect-non-apply$-primps1-lst
+                                        (cdr terms)
+                                        (cdr ilks)
+                                        badge-prim-falist wrld acc)))))
+)
+
+(defun collect-non-apply$-primps (term wrld)
+  (cond
+   ((global-val 'boot-strap-flg wrld)
+    nil)
+   (t
+    (collect-non-apply$-primps1 term
+                                nil
+
+ ; *badge-prim-falist* is not yet defined!
+
+                                (unquote (getpropc '*badge-prim-falist* 'const
+                                                   nil wrld))
+
+                                wrld
+                                nil))))
+
 (defun defmacro-fn (mdef state event-form)
 
 ; Important Note:  Don't change the formals of this function without
@@ -713,17 +794,41 @@
                ((edcls (collect-declarations
                         dcls (macro-vars args)
                         'defmacro state ctx)))
-             (let ((edcls (if (stringp (car edcls)) (cdr edcls) edcls)))
+             (let* ((edcls (if (stringp (car edcls)) (cdr edcls) edcls))
+                    (guard (conjoin-untranslated-terms
+                            (get-guards1 edcls '(guards types)
+                                         nil name wrld1))))
                (er-let*
                    ((tguard (translate
-                             (conjoin-untranslated-terms
-                              (get-guards1 edcls '(guards types)
-                                           nil name wrld1))
+                             guard
                              '(nil) nil nil ctx wrld1 state)))
                  (mv-let
                   (ctx1 tbody)
                   (translate-cmp body '(nil) nil nil ctx wrld1
                                  (default-state-vars t))
+                  (let ((non-apply$-primps-in-guard
+                         (and (not ctx1)
+                              (collect-non-apply$-primps tguard wrld1)))
+                        (non-apply$-primps-in-body
+                         (and (not ctx1)
+                              (collect-non-apply$-primps tbody wrld1)))
+                        (ancestral-lambda$s-in-guard
+                         (and (not ctx1)
+                              (ancestral-lambda$s-by-caller "the guard"
+                                                            tguard wrld1)))
+                        (ancestral-lambda$s-in-body
+                         (and (not ctx1)
+                              (ancestral-lambda$s-by-caller "the body"
+                                                            tbody wrld1))))
+
+; We collect any unsafe apply$ function objects literally in the guard or body
+; and any ancestral lambda$s in the guard or body, provided we successfully
+; translated guard and body.  If unsafe function objects are found we'll cause
+; an error.  We collect them even before testing ctx1 just because it is
+; convenient to have them in bound variables before the cond below.  We figure
+; the cost of collecting (but not using) them is swamped by the error
+; processing when ctx1 is true.
+
                   (cond
                    (ctx1 (cond ((null tbody)
 
@@ -748,6 +853,55 @@
                                      defmacro."
                                     tbody))
                                (t (er soft ctx "~@0" tbody))))
+                   ((or non-apply$-primps-in-guard
+                        non-apply$-primps-in-body)
+                    (er soft ctx
+                        "All quoted function objects in :FN slots in the ~
+                         :guard and in the body of a defmacro event, such as ~
+                         ~x0, must be apply$ primitives.  Apply$ cannot run ~
+                         user-defined functions or ill-formed or untame ~
+                         lambda objects while expanding macros.  Because of ~
+                         logical considerations, attachments (including ~
+                         CONCRETE-APPLY$-USERFN) must not be called in this ~
+                         context.  See :DOC ignored-attachment.  Thus it is ~
+                         illegal to use the quoted function object~#1~[~/s~] ~
+                         ~#2~[~&3 in the guard~/~&4 in the body~/~&3 in the ~
+                         guard and ~&4 in the body~] of ~x0."
+                        name
+                        (union-equal non-apply$-primps-in-guard
+                                     non-apply$-primps-in-body)
+                        (cond
+                         ((and non-apply$-primps-in-guard
+                               non-apply$-primps-in-body)
+                          2)
+                         (non-apply$-primps-in-body 1)
+                         (t 0))
+                        non-apply$-primps-in-guard
+                        non-apply$-primps-in-body))
+                   ((or ancestral-lambda$s-in-guard
+                        ancestral-lambda$s-in-body)
+                    (er soft ctx
+                        "We do not allow lambda$ expressions to be evaluated ~
+                         in certain events, including DEFCONST, DEFPKG, and ~
+                         DEFMACRO events.  This restriction has to do with ~
+                         the loading of compiled books before the events in ~
+                         the book are processed.  ~#0~[The :guard, ~x1, of ~
+                         this defmacro~/The body, ~x2, of this defmacro~/Both ~
+                         the guard, ~x1, and the body, ~x2~] ancestrally ~
+                         mention lambda$ expressions.  You should be able to ~
+                         remedy this by replacing the lambda$ expressions by ~
+                         their translations, as described below.~%~%~*3"
+                        (cond ((and ancestral-lambda$s-in-guard
+                                    ancestral-lambda$s-in-body)
+                               2)
+                              (ancestral-lambda$s-in-body 1)
+                              (t 0))
+                        guard
+                        body
+                        (tilde-*-lambda$-replacement-phrase5
+                         (union-equal ancestral-lambda$s-in-guard
+                                      ancestral-lambda$s-in-body)
+                         wrld1)))
                    ((redundant-defmacrop name args tguard tbody wrld1)
                     (cond ((and (not (f-get-global 'in-local-flg state))
                                 (not (f-get-global 'boot-strap-flg state))
@@ -789,7 +943,7 @@
                                          name
                                          nil
                                          (cons 'defmacro mdef)
-                                         nil nil wrld3 state)))))))))))))))))))
+                                         nil nil wrld3 state))))))))))))))))))))
 
 ; The following functions support boot-strapping.  Consider what
 ; happens when we begin to boot-strap.  The first form is read.
@@ -1419,7 +1573,9 @@
                     (defined-hereditarily-constrained-fns nil)
                     (attachment-records nil)
                     (attachments-at-ground-zero nil)
-                    (proof-supporters-alist nil))))
+                    (proof-supporters-alist nil)
+                    (lambda$-alist nil)
+                    (common-lisp-compliant-lambdas nil))))
              (list* `(operating-system ,operating-system)
                     `(command-number-baseline-info
                       ,(make command-number-baseline-info
@@ -17861,7 +18017,7 @@
 ; i.e., an unquoted constant like t, nil, 0 or undef (the latter meaning the
 ; symbol 'undef).  :Type defaults to the unrestricted type t and :initially
 ; defaults to nil.  Type is either a primitive type, as recognized by
-; translate-declaration-to-guard, or a stobj name, or else is of the form
+; translate-declaration-to-guard-gen, or a stobj name, or else is of the form
 ; (array ptype (n)), where ptype is a primitive type or stobj name and n is an
 ; positive integer constant.  If type is a stobj name or an array of such, then
 ; :initially must be omitted.
@@ -18670,10 +18826,11 @@
                    (t (value
                        (er hard ctx
                            "Defstobj-axiomatic-defs and defstobj-raw-defs are ~
-                            out of sync!  They should each define the same set ~
-                            of names.  Here are the functions with axiomatic ~
-                            defs that have no raw defs:  ~x0.  And here are ~
-                            the with raw defs but no axiomatic ones:  ~x1."
+                            out of sync!  They should each define the same ~
+                            set of names.  Here are the functions with ~
+                            axiomatic defs that have no raw defs:  ~x0.  And ~
+                            here are the functions with raw defs but no ~
+                            axiomatic ones:  ~x1."
                            (set-difference-equal
                             names
                             (strip-cars raw-def-lst))
@@ -26636,13 +26793,6 @@
                   (length warrant-fn-name))
           warrant-fn))))
 
-(defmacro get-badge (fn wrld)
-  `(cdr (assoc-eq ,fn
-                  (cdr (assoc-eq :badge-userfn-structure
-                                 (table-alist 'badge-table ,wrld))))))
-
-(defrec apply$-badge (authorization-flg arity . ilks) nil)
-
 (defun tameness-conditions (ilks var)
   (declare (xargs :mode :program))
   (cond ((endp ilks) nil)
@@ -30453,7 +30603,7 @@
 
   (declare (xargs :guard ; avoid re-evaluation
                   (symbolp fn)))
-  `(ev$ (ec-call (car (ec-call (cdr (cdr ,fn))))) ; = (lambda-body fn)
+  `(ev$ (lambda-object-body ,fn)
         (ec-call
-         (pairlis$ (ec-call (car (cdr ,fn))) ; = (lambda-formals fn)
+         (pairlis$ (lambda-object-formals ,fn)
                    ,args))))

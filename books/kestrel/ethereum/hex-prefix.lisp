@@ -29,11 +29,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define hp-encode ((nibbles ubyte4-listp) (flag booleanp))
-  :returns (bytes ubyte8-listp
-                  :hints (("Goal" :in-theory (enable ubyte8p
-                                                     ubyte4p
-                                                     ubyte4-fix))))
+(define hp-encode ((nibbles nibble-listp) (flag booleanp))
+  :returns (bytes byte-listp
+                  :hints (("Goal" :in-theory (enable bytep
+                                                     nibblep
+                                                     nibble-fix))))
   :parents (hex-prefix)
   :short "Hex-prefix encoding function."
   :long
@@ -41,18 +41,18 @@
    (xdoc::p
     "This corresponds to @($\\mathtt{HP}$) [YP:(186)] [YP:(187)].")
    (xdoc::p
-    "The @($t$) flag is effectively treated as a boolean (i.e. 0 or not 0),
+    "The @($t$) flag is treated as a boolean (i.e. 0 or not 0),
      so we use directly a boolean as argument to this function.
      Note also that @($\\mathtt{HP}$)
      is called with @($\\mathit{true}$) and @($\\mathit{false}$) in [YP:(194)],
      so perhaps [YP:(187)] should be rephrased
-     to treat @($t$) as an actual boolean."))
+     to treat @($t$) as an actual boolean (as opposed to 0 or not 0)."))
   (b* ((ft (if flag 2 0))
        (len-nibbles (len nibbles))
        (evenp (evenp len-nibbles))
        (first-byte (if evenp
                        (* 16 ft)
-                     (b* ((first-nibble (ubyte4-fix (car nibbles))))
+                     (b* ((first-nibble (nibble-fix (car nibbles))))
                        (+ (* 16 (1+ ft))
                           first-nibble))))
        (rest-nibbles (if evenp
@@ -63,12 +63,12 @@
   :hooks (:fix)
 
   :prepwork
-  ((define hp-encode-aux ((nibbles ubyte4-listp))
+  ((define hp-encode-aux ((nibbles nibble-listp))
      :guard (evenp (len nibbles))
-     :returns (bytes ubyte8-listp
-                     :hints (("Goal" :in-theory (enable ubyte8p
-                                                        ubyte4p
-                                                        ubyte4-fix))))
+     :returns (bytes byte-listp
+                     :hints (("Goal" :in-theory (enable bytep
+                                                        nibblep
+                                                        nibble-fix))))
      :parents (hp-encode hex-prefix)
      :short "Turn a even-length sequence of nibbles into a sequence of bytes."
      :long
@@ -77,8 +77,8 @@
        that come after the first byte,
        in the way described by [YP:(186)].")
      (b* (((when (endp nibbles)) nil)
-          (nibble-hi (ubyte4-fix (car nibbles)))
-          (nibble-lo (ubyte4-fix (cadr nibbles)))
+          (nibble-hi (nibble-fix (car nibbles)))
+          (nibble-lo (nibble-fix (cadr nibbles)))
           (byte (+ (* 16 nibble-hi) nibble-lo))
           (bytes (hp-encode-aux (cddr nibbles))))
        (cons byte bytes))

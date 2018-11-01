@@ -133,7 +133,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; COMP-GCD.
 
-(defun comp-gcd$netlist (data-width)
+(defund comp-gcd$netlist (data-width)
   (declare (xargs :guard (and (natp data-width)
                               (<= 2 data-width))))
   (cons (comp-gcd* data-width)
@@ -149,14 +149,14 @@
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width)
                               (<= 2 data-width))))
-  (and (equal (assoc (si 'comp-gcd data-width) netlist)
-              (comp-gcd* data-width))
-       (b* ((netlist (delete-to-eq (si 'comp-gcd data-width) netlist)))
-         (and (link1& netlist)
-              (link& netlist (* 2 data-width))
-              (comp-gcd-cond& netlist data-width)
-              (gcd-body& netlist data-width)
-              (merge& netlist (* 2 data-width))))))
+  (b* ((subnetlist (delete-to-eq (si 'comp-gcd data-width) netlist)))
+    (and (equal (assoc (si 'comp-gcd data-width) netlist)
+                (comp-gcd* data-width))
+         (link1& subnetlist)
+         (link& subnetlist (* 2 data-width))
+         (comp-gcd-cond& subnetlist data-width)
+         (gcd-body& subnetlist data-width)
+         (merge& subnetlist (* 2 data-width)))))
 
 ;; Sanity check
 
@@ -371,7 +371,7 @@
 
 ;; The value lemma for COMP-GCD
 
-(defthmd comp-gcd$value
+(defthm comp-gcd$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (comp-gcd& netlist data-width)
                   (true-listp data-in)
@@ -392,19 +392,13 @@
                             comp-gcd*$destructure
                             comp-gcd$data-in
                             merge$act0
-                            merge$value
-                            comp-gcd-cond$value
-                            gcd-body$value
-                            link1$value
-                            link$value
                             comp-gcd$st-format
                             comp-gcd$in-act
                             comp-gcd$out-act
                             comp-gcd$data-out
                             comp-gcd$br-inputs
                             comp-gcd$me-inputs)
-                           ((comp-gcd*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of COMP-GCD.
 
@@ -458,7 +452,7 @@
 
 ;; The state lemma for COMP-GCD
 
-(defthmd comp-gcd$state
+(defthm comp-gcd$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (comp-gcd& netlist data-width)
                   (true-listp data-in)
@@ -485,16 +479,8 @@
                             comp-gcd$data-in
                             comp-gcd$br-inputs
                             comp-gcd$me-inputs
-                            comp-gcd$body-inputs
-                            comp-gcd-cond$value
-                            comp-gcd-cond$state
-                            gcd-body$value
-                            link1$value
-                            link1$state
-                            link$value
-                            link$state)
-                           ((comp-gcd*)
-                            de-module-disabled-rules)))))
+                            comp-gcd$body-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable comp-gcd$step))
 
@@ -545,7 +531,7 @@
                                      comp-gcd$valid-st
                                      comp-gcd$in-act
                                      comp-gcd$me-inputs)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-comp-gcd$out-act
   (implies (and (comp-gcd$input-format inputs data-width)
@@ -556,7 +542,7 @@
            :in-theory (e/d (comp-gcd$valid-st
                             comp-gcd$out-act)
                            (comp-gcd$input-format=>br$input-format))))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma comp-gcd)
 
@@ -776,14 +762,14 @@
      (implies (comp-gcd$input-format inputs data-width)
               (booleanp (nth 0 inputs)))
      :hints (("Goal" :in-theory (enable comp-gcd$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm comp-gcd$input-format-lemma-2
      (implies (comp-gcd$input-format inputs data-width)
               (booleanp (nth 1 inputs)))
      :hints (("Goal" :in-theory (enable comp-gcd$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm comp-gcd$input-format-lemma-3
@@ -911,7 +897,7 @@
                                         gcd-body$act
                                         gcd-body$a<b
                                         comp-gcd$body-inputs)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm comp-gcd$body-act-inactive

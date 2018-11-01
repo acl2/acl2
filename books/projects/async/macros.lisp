@@ -450,10 +450,6 @@
                                 "$STEP"))
        (run (strings-to-symbol (symbol-name name)
                                "$RUN"))
-       (value-lemma (strings-to-symbol (symbol-name name)
-                                       "$VALUE"))
-       (state-lemma (strings-to-symbol (symbol-name name)
-                                       "$STATE"))
        (input-format (strings-to-symbol (symbol-name name)
                                         "$INPUT-FORMAT"))
        (input-format-n (strings-to-symbol (symbol-name name)
@@ -487,8 +483,7 @@
                   (equal (se (si ',name ,(car sizes)) inputs st netlist)
                          (,outputs inputs st ,(car sizes))))
          :hints (("Goal"
-                  :in-theory (enable ,input-format
-                                     ,value-lemma))))
+                  :in-theory (enable ,input-format))))
 
        (defthmd ,state-alt
          (implies (and (,recognizer netlist ,@sizes)
@@ -499,8 +494,7 @@
                   (equal (de (si ',name ,(car sizes)) inputs st netlist)
                          (,step inputs st ,@sizes)))
          :hints (("Goal"
-                  :in-theory (enable ,input-format
-                                     ,state-lemma))))
+                  :in-theory (enable ,input-format))))
 
        (run-gen ,name ,@sizes)
        ,(if clink

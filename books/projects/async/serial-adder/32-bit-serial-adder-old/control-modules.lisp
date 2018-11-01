@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; September 2018
+;; October 2018
 
 (in-package "ADE")
 
@@ -62,7 +62,7 @@
   (declare (xargs :guard (alistp netlist)))
   (netlist-hyps netlist unary-op-code-p))
 
-(defthmd unary-op-code-p$value
+(defthm unary-op-code-p$value
   (implies (unary-op-code-p& netlist)
            (equal (se 'unary-op-code-p op-code sts netlist)
                   (list (f$unary-op-code-p op-code))))
@@ -102,7 +102,7 @@
   (declare (xargs :guard (alistp netlist)))
   (netlist-hyps netlist decode-reg-mode))
 
-(defthmd decode-reg-mode$value
+(defthm decode-reg-mode$value
   (implies (decode-reg-mode& netlist)
            (equal (se 'decode-reg-mode mode sts netlist)
                   (f$decode-reg-mode mode)))
@@ -176,7 +176,7 @@
   (declare (xargs :guard (alistp netlist)))
   (netlist-hyps netlist select-op-code))
 
-(defthmd select-op-code$value
+(defthm select-op-code$value
   (implies (select-op-code& netlist)
            (equal (se 'select-op-code (list* select dec op) sts netlist)
                   (f$select-op-code select dec op)))
@@ -216,7 +216,7 @@
   (equal (len (f$v-if-f-4 c a))
          4))
 
-(defthmd v-if-f-4$value
+(defthm v-if-f-4$value
   (equal (se 'v-if-f-4 (list* c a) sts *v-if-f-4*)
          (f$v-if-f-4 c a))
   :hints (("Goal"
@@ -234,7 +234,7 @@
   (declare (xargs :guard (alistp netlist)))
   (netlist-hyps netlist v-if-f-4))
 
-(defthmd v-if-f-4$reset-value
+(defthm v-if-f-4$reset-value
   (implies (v-if-f-4& netlist)
            (equal (se 'v-if-f-4 (list* t a) sts netlist)
                   (make-list 4)))
@@ -269,7 +269,7 @@
   (declare (xargs :guard (alistp netlist)))
   (netlist-hyps netlist fanout-4))
 
-(defthmd fanout-4$value
+(defthm fanout-4$value
   (implies (fanout-4& netlist)
            (equal (se 'fanout-4 (list a) sts netlist)
                   (make-list 4 :initial-element (3v-fix a))))
@@ -296,7 +296,7 @@
   (declare (xargs :guard (alistp netlist)))
   (netlist-hyps netlist fanout-5))
 
-(defthmd fanout-5$value
+(defthm fanout-5$value
   (implies (fanout-5& netlist)
            (equal (se 'fanout-5 (list a) sts netlist)
                   (make-list 5 :initial-element (3v-fix a))))
@@ -357,7 +357,7 @@
 ;;   (and (netlist-hyps netlist fanout-32)
 ;;        (b-buf-pwr& (delete-to-eq 'fanout-32 netlist))))
 
-;; (defthmd fanout-32$value
+;; (defthm fanout-32$value
 ;;   (implies (fanout-32& netlist)
 ;;            (equal (se 'fanout-32 (list a) sts netlist)
 ;;                   (make-list 32 :initial-element (3v-fix a))))
@@ -365,7 +365,6 @@
 ;;            :expand (se 'fanout-32 (list a) sts netlist)
 ;;            :in-theory (enable de-rules
 ;;                               fanout-32&
-;;                               b-buf-pwr$value
 ;;                               3vp))))
 
 ;; ======================================================================
@@ -525,11 +524,11 @@
       (gs2- (s2-) b-not   (s2))
       (gs3- (s3-) b-not   (s3))
       (gs4- (s4-) b-not   (s4))
-      (gs0  (bs0)  b-not   (s0-))
-      (gs1  (bs1)  b-not   (s1-))
-      (gs2  (bs2)  b-not   (s2-))
-      (gs3  (bs3)  b-not   (s3-))
-      (gs4  (bs4)  b-not   (s4-))
+      (gs0  (bs0) b-not   (s0-))
+      (gs1  (bs1) b-not   (s1-))
+      (gs2  (bs2) b-not   (s2-))
+      (gs3  (bs3) b-not   (s3-))
+      (gs4  (bs4) b-not   (s4-))
       (gl0  (l0)  b-nand  (s0- s1-))
       (gl1  (l1)  b-nand  (bs0 s1-))
       (gl2  (l2)  b-nand  (s0- bs1))
@@ -582,7 +581,7 @@
   (declare (xargs :guard (alistp netlist)))
   (netlist-hyps netlist decode-5))
 
-(defthmd decode-5$value
+(defthm decode-5$value
   (implies (decode-5& netlist)
            (equal (se 'decode-5 s sts netlist)
                   (f$decode-5 s)))
@@ -713,7 +712,7 @@
                            (l ins))
            :do-not-induct t)))
 
-(defthmd encode-32$value-on-a-vector
+(defthm encode-32$value-on-a-vector
   (implies (and (encode-32& netlist)
                 (true-listp ins)
                 (equal (len ins) 32))
@@ -753,6 +752,6 @@
   :hints (("Goal"
            :use (:instance se-on-collected-nth-32
                            (name 'encode-32))
-           :in-theory (e/d (encode-32$value)
+           :in-theory (e/d ()
                            (nth)))))
 

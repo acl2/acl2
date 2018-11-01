@@ -119,7 +119,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; COMP-INTERL2.
 
-(defun comp-interl2$netlist (data-width)
+(defund comp-interl2$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (comp-interl2* data-width)
         (union$ (interl$netlist data-width)
@@ -131,11 +131,11 @@
 (defund comp-interl2& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'comp-interl2 data-width) netlist)
-              (comp-interl2* data-width))
-       (b* ((netlist (delete-to-eq (si 'comp-interl2 data-width) netlist)))
-         (and (interl& netlist data-width)
-              (interl-ll& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'comp-interl2 data-width) netlist)))
+    (and (equal (assoc (si 'comp-interl2 data-width) netlist)
+                (comp-interl2* data-width))
+         (interl& subnetlist data-width)
+         (interl-ll& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -529,7 +529,7 @@
 
 ;; The value lemma for COMP-INTERL2
 
-(defthmd comp-interl2$value
+(defthm comp-interl2$value
   (b* ((inputs (list* full-in0 full-in1 full-in2 full-in3 empty-out-
                       (append data0-in data1-in data2-in data3-in
                               selects go-signals))))
@@ -558,8 +558,6 @@
                             comp-interl2&
                             comp-interl2*$destructure
                             comp-interl2$st-format
-                            interl$value
-                            interl-ll$value
                             interl-ll$arb-merge-inputs
                             interl-ll$out-act0
                             interl-ll$out-act1
@@ -582,8 +580,7 @@
                             comp-interl2$out-act1
                             comp-interl2$out-act
                             comp-interl2$data-out)
-                           ((comp-interl2*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of COMP-INTERL2.
 
@@ -610,7 +607,7 @@
 
 ;; The state lemma for COMP-INTERL2
 
-(defthmd comp-interl2$state
+(defthm comp-interl2$state
   (b* ((inputs (list* full-in0 full-in1 full-in2 full-in3 empty-out-
                       (append data0-in data1-in data2-in data3-in
                               selects go-signals))))
@@ -639,10 +636,6 @@
                             comp-interl2&
                             comp-interl2*$destructure
                             comp-interl2$st-format
-                            interl$value
-                            interl$state
-                            interl-ll$value
-                            interl-ll$state
                             interl$out-act
                             comp-interl2$data0-in
                             comp-interl2$data1-in
@@ -659,8 +652,7 @@
                             comp-interl2$interl0-inputs
                             comp-interl2$interl1-inputs
                             comp-interl2$interl-ll-inputs)
-                           ((comp-interl2*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable comp-interl2$step))
 
@@ -850,73 +842,56 @@
                 (comp-interl2$valid-st st data-width))
            (booleanp (comp-interl2$in0-act inputs st data-width)))
   :hints (("Goal"
-           :use comp-interl2$input-format=>interl0$input-format
-           :in-theory
-           (e/d (comp-interl2$valid-st
-                 comp-interl2$in0-act)
-                (comp-interl2$input-format=>interl0$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable comp-interl2$valid-st
+                              comp-interl2$in0-act)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-comp-interl2$in1-act
   (implies (and (comp-interl2$input-format inputs data-width)
                 (comp-interl2$valid-st st data-width))
            (booleanp (comp-interl2$in1-act inputs st data-width)))
   :hints (("Goal"
-           :use comp-interl2$input-format=>interl0$input-format
-           :in-theory (e/d (comp-interl2$valid-st
-                            comp-interl2$in1-act)
-                           (comp-interl2$input-format=>interl0$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable comp-interl2$valid-st
+                              comp-interl2$in1-act)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-comp-interl2$in2-act
   (implies (and (comp-interl2$input-format inputs data-width)
                 (comp-interl2$valid-st st data-width))
            (booleanp (comp-interl2$in2-act inputs st data-width)))
   :hints (("Goal"
-           :use comp-interl2$input-format=>interl1$input-format
-           :in-theory
-           (e/d (comp-interl2$valid-st
-                 comp-interl2$in2-act)
-                (comp-interl2$input-format=>interl1$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable comp-interl2$valid-st
+                              comp-interl2$in2-act)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-comp-interl2$in3-act
   (implies (and (comp-interl2$input-format inputs data-width)
                 (comp-interl2$valid-st st data-width))
            (booleanp (comp-interl2$in3-act inputs st data-width)))
   :hints (("Goal"
-           :use comp-interl2$input-format=>interl1$input-format
-           :in-theory
-           (e/d (comp-interl2$valid-st
-                 comp-interl2$in3-act)
-                (comp-interl2$input-format=>interl1$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable comp-interl2$valid-st
+                              comp-interl2$in3-act)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-comp-interl2$out-act0
   (implies (and (comp-interl2$input-format inputs data-width)
                 (comp-interl2$valid-st st data-width))
            (booleanp (comp-interl2$out-act0 inputs st data-width)))
   :hints (("Goal"
-           :use comp-interl2$input-format=>interl-ll$input-format
-           :in-theory
-           (e/d (get-field
-                 comp-interl2$valid-st
-                 comp-interl2$out-act0)
-                (comp-interl2$input-format=>interl-ll$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable get-field
+                              comp-interl2$valid-st
+                              comp-interl2$out-act0)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-comp-interl2$out-act1
   (implies (and (comp-interl2$input-format inputs data-width)
                 (comp-interl2$valid-st st data-width))
            (booleanp (comp-interl2$out-act1 inputs st data-width)))
   :hints (("Goal"
-           :use comp-interl2$input-format=>interl-ll$input-format
-           :in-theory
-           (e/d (get-field
-                 comp-interl2$valid-st
-                 comp-interl2$out-act1)
-                (comp-interl2$input-format=>interl-ll$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable get-field
+                              comp-interl2$valid-st
+                              comp-interl2$out-act1)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-comp-interl2$out-act
   (implies (and (comp-interl2$input-format inputs data-width)
@@ -925,7 +900,7 @@
   :hints (("Goal"
            :in-theory (e/d (comp-interl2$out-act)
                            ())))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (encapsulate
   ()
@@ -969,7 +944,7 @@
   (implies (and (true-listp e)
                 (true-list-listp l))
            (true-list-listp (interleave-rec e l)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm interleave-is-subset-of-interleave-rec
   (implies (member e2 x)
@@ -1004,7 +979,7 @@
   (implies (and (true-list-listp l1)
                 (true-list-listp l2))
            (true-list-listp (interleave2 l1 l2)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm interleave-rec-is-subset-of-interleave2
   (implies (member e x)

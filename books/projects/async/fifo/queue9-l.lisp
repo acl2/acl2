@@ -104,7 +104,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; QUEUE9-L.
 
-(defun queue9-l$netlist (data-width)
+(defund queue9-l$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (queue9-l* data-width)
         (union$ (queue4-l$netlist data-width)
@@ -116,13 +116,13 @@
 (defund queue9-l& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'queue9-l data-width) netlist)
-              (queue9-l* data-width))
-       (b* ((netlist (delete-to-eq (si 'queue9-l data-width) netlist)))
-         (and (joint-cntl& netlist)
-              (v-buf& netlist data-width)
-              (queue4-l& netlist data-width)
-              (queue5-l& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'queue9-l data-width) netlist)))
+    (and (equal (assoc (si 'queue9-l data-width) netlist)
+                (queue9-l* data-width))
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist data-width)
+         (queue4-l& subnetlist data-width)
+         (queue5-l& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -252,7 +252,7 @@
              (booleanp (queue9-l$ready-in- st)))
     :hints (("Goal" :in-theory (enable queue9-l$valid-st
                                        queue9-l$ready-in-)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the "ready-out" signal
 
@@ -265,7 +265,7 @@
              (booleanp (queue9-l$ready-out st)))
     :hints (("Goal" :in-theory (enable queue9-l$valid-st
                                        queue9-l$ready-out)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the output data
 
@@ -308,7 +308,7 @@
 
 ;; The value lemma for QUEUE9-L
 
-(defthmd queue9-l$value
+(defthm queue9-l$value
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue9-l& netlist data-width)
                   (queue9-l$st-format st data-width))
@@ -321,16 +321,11 @@
            :in-theory (e/d (de-rules
                             queue9-l&
                             queue9-l*$destructure
-                            joint-cntl$value
-                            v-buf$value
-                            queue4-l$value
-                            queue5-l$value
                             queue9-l$st-format
                             queue9-l$ready-in-
                             queue9-l$ready-out
                             queue9-l$data-out)
-                           ((queue9-l*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of QUEUE9-L.
 
@@ -371,7 +366,7 @@
 
 ;; The state lemma for QUEUE9-L
 
-(defthmd queue9-l$state
+(defthm queue9-l$state
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue9-l& netlist data-width)
                   (true-listp data-in)
@@ -393,15 +388,8 @@
                             queue9-l$out-act
                             queue9-l$data-in
                             queue9-l$q4-l-inputs
-                            queue9-l$q5-l-inputs
-                            joint-cntl$value
-                            v-buf$value
-                            queue4-l$value
-                            queue4-l$state
-                            queue5-l$value
-                            queue5-l$state)
-                           ((queue9-l*)
-                            de-module-disabled-rules)))))
+                            queue9-l$q5-l-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable queue9-l$step))
 
@@ -480,14 +468,14 @@
            (booleanp (queue9-l$in-act inputs)))
   :hints (("Goal" :in-theory (enable queue9-l$input-format
                                      queue9-l$in-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue9-l$out-act
   (implies (queue9-l$input-format inputs st data-wisth)
            (booleanp (queue9-l$out-act inputs)))
   :hints (("Goal" :in-theory (enable queue9-l$input-format
                                      queue9-l$out-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma queue9-l :clink t)
 

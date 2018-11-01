@@ -149,7 +149,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; QUEUE5-L.
 
-(defun queue5-l$netlist (data-width)
+(defund queue5-l$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (queue5-l* data-width)
         (union$ (link$netlist data-width)
@@ -162,12 +162,12 @@
 (defund queue5-l& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'queue5-l data-width) netlist)
-              (queue5-l* data-width))
-       (b* ((netlist (delete-to-eq (si 'queue5-l data-width) netlist)))
-         (and (link& netlist data-width)
-              (joint-cntl& netlist)
-              (v-buf& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'queue5-l data-width) netlist)))
+    (and (equal (assoc (si 'queue5-l data-width) netlist)
+                (queue5-l* data-width))
+         (link& subnetlist data-width)
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -262,7 +262,7 @@
              (booleanp (queue5-l$ready-in- st)))
     :hints (("Goal" :in-theory (enable queue5-l$valid-st
                                        queue5-l$ready-in-)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the "ready-out" signal
 
@@ -276,7 +276,7 @@
              (booleanp (queue5-l$ready-out st)))
     :hints (("Goal" :in-theory (enable queue5-l$valid-st
                                        queue5-l$ready-out)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the output data
 
@@ -324,7 +324,7 @@
 
 ;; The value lemma for QUEUE5-L
 
-(defthmd queue5-l$value
+(defthm queue5-l$value
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue5-l& netlist data-width)
                   (queue5-l$st-format st data-width))
@@ -337,15 +337,11 @@
            :in-theory (e/d (de-rules
                             queue5-l&
                             queue5-l*$destructure
-                            link$value
-                            joint-cntl$value
-                            v-buf$value
                             queue5-l$st-format
                             queue5-l$ready-in-
                             queue5-l$ready-out
                             queue5-l$data-out)
-                           ((queue5-l*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of QUEUE5-L.
 
@@ -421,7 +417,7 @@
 
 ;; The state lemma for QUEUE5-L
 
-(defthmd queue5-l$state
+(defthm queue5-l$state
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue5-l& netlist data-width)
                   (true-listp data-in)
@@ -441,13 +437,8 @@
                             queue5-l$st-format
                             queue5-l$in-act
                             queue5-l$out-act
-                            queue5-l$data-in
-                            link$value
-                            link$state
-                            joint-cntl$value
-                            v-buf$value)
-                           ((queue5-l*)
-                            de-module-disabled-rules)))))
+                            queue5-l$data-in)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable queue5-l$step))
 
@@ -483,14 +474,14 @@
            (booleanp (queue5-l$in-act inputs)))
   :hints (("Goal" :in-theory (enable queue5-l$input-format
                                      queue5-l$in-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue5-l$out-act
   (implies (queue5-l$input-format inputs st data-wisth)
            (booleanp (queue5-l$out-act inputs)))
   :hints (("Goal" :in-theory (enable queue5-l$input-format
                                      queue5-l$out-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma queue5-l :clink t)
 

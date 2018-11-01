@@ -132,7 +132,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; QUEUE4-L.
 
-(defun queue4-l$netlist (data-width)
+(defund queue4-l$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (queue4-l* data-width)
         (union$ (link$netlist data-width)
@@ -145,12 +145,12 @@
 (defund queue4-l& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'queue4-l data-width) netlist)
-              (queue4-l* data-width))
-       (b* ((netlist (delete-to-eq (si 'queue4-l data-width) netlist)))
-         (and (joint-cntl& netlist)
-              (link& netlist data-width)
-              (v-buf& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'queue4-l data-width) netlist)))
+    (and (equal (assoc (si 'queue4-l data-width) netlist)
+                (queue4-l* data-width))
+         (joint-cntl& subnetlist)
+         (link& subnetlist data-width)
+         (v-buf& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -241,7 +241,7 @@
              (booleanp (queue4-l$ready-in- st)))
     :hints (("Goal" :in-theory (enable queue4-l$valid-st
                                        queue4-l$ready-in-)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the "ready-out" signal
 
@@ -255,7 +255,7 @@
              (booleanp (queue4-l$ready-out st)))
     :hints (("Goal" :in-theory (enable queue4-l$valid-st
                                        queue4-l$ready-out)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the output data
 
@@ -303,7 +303,7 @@
 
 ;; The value lemma for QUEUE4-L
 
-(defthmd queue4-l$value
+(defthm queue4-l$value
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue4-l& netlist data-width)
                   (queue4-l$st-format st data-width))
@@ -316,15 +316,11 @@
            :in-theory (e/d (de-rules
                             queue4-l&
                             queue4-l*$destructure
-                            link$value
-                            joint-cntl$value
-                            v-buf$value
                             queue4-l$st-format
                             queue4-l$ready-in-
                             queue4-l$ready-out
                             queue4-l$data-out)
-                           ((queue4-l*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of QUEUE4-L.
 
@@ -392,7 +388,7 @@
 
 ;; The state lemma for QUEUE4-L
 
-(defthmd queue4-l$state
+(defthm queue4-l$state
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue4-l& netlist data-width)
                   (true-listp data-in)
@@ -412,13 +408,8 @@
                             queue4-l$st-format
                             queue4-l$in-act
                             queue4-l$out-act
-                            queue4-l$data-in
-                            link$value
-                            link$state
-                            joint-cntl$value
-                            v-buf$value)
-                           ((queue4-l*)
-                            de-module-disabled-rules)))))
+                            queue4-l$data-in)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable queue4-l$step))
 
@@ -454,14 +445,14 @@
            (booleanp (queue4-l$in-act inputs)))
   :hints (("Goal" :in-theory (enable queue4-l$input-format
                                      queue4-l$in-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue4-l$out-act
   (implies (queue4-l$input-format inputs st data-wisth)
            (booleanp (queue4-l$out-act inputs)))
   :hints (("Goal" :in-theory (enable queue4-l$input-format
                                      queue4-l$out-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma queue4-l :clink t)
 

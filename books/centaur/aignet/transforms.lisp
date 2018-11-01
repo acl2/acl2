@@ -53,6 +53,7 @@ transforms.  The currently supported transforms are:</p>
 <li>@(see rewrite)</li>
 <li>@(see observability-fix)</li>
 <li>@(see constprop)</li>
+<li>@(see prune)</li>
 <li>@(see abc-comb-simplify)</li>
 </ul>
 

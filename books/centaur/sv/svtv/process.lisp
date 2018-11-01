@@ -1480,7 +1480,8 @@ decomposition proof.</li>
                   ((boolvars "For symbolic execution, assume inputs are Boolean-valued") 't)
                   ((simplify "For symbolic execution, apply svex rewriting to the SVTV") 'nil)
                   ((quiet "Don't print inputs/outputs")  'nil)
-                  ((readable "Print input/output alists readably") 't))
+                  ((readable "Print input/output alists readably") 't)
+                  ((allvars "For symbolic execution, bind all variables, instead of skipping those not bound in the inalist") 'nil))
   :parents (svex-stvs)
   :short "Run an SVTV and get the outputs."
   :long "
@@ -1516,10 +1517,9 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
        (inalist (ec-call (svex-env-fix$inline inalist)))
        ((with-fast inalist))
        (svtv.inmasks (make-fast-alist svtv.inmasks))
-       (keys (alist-keys inalist))
        (boolmasks (hons-copy
                    (and boolvars
-                        (svar-boolmasks-limit-to-bound-vars keys svtv.inmasks))))
+                        (svar-boolmasks-limit-to-bound-vars (alist-keys inalist) svtv.inmasks))))
        (outs (b* (((unless (or skip include)) svtv.outexprs)
                   (outkeys (or include
                                (difference (mergesort (svex-alist-keys svtv.outexprs))
@@ -1530,7 +1530,8 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                                                   inalist
                                                   `((:vars . ,(alist-keys svtv.inmasks))
                                                     (:boolmasks . ,boolmasks)
-                                                    (:simplify . ,simplify)))
+                                                    (:simplify . ,simplify)
+                                                    (:allvars . ,allvars)))
              :exec (svex-alist-eval outs inalist))))
     (clear-memoize-table 'svex-eval)
     (and (not quiet)
@@ -1556,7 +1557,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                                 (equal simplify ''nil)
                                 (equal readable ''t))))
              (equal (svtv-run svtv inalist
-                              :skip skip :include include :boolvars boolvars
+                              :skip skip :include include :boolvars boolvars :allvars allvars
                               :simplify simplify :quiet quiet :readable readable)
                     (svtv-run svtv inalist :skip skip :include include)))
     :hints(("Goal" :in-theory (enable svex-alist-eval-for-symbolic))))
@@ -1568,7 +1569,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
   (defthm alistp-of-svtv-run
     (alistp (svtv-run
              svtv inalist
-             :skip skip :include include :boolvars boolvars
+             :skip skip :include include :boolvars boolvars :allvars allvars
              :simplify simplify :quiet quiet :readable readable)))
 
   (local (defthm svex-lookup-iff-hons-assoc-equal
@@ -1598,7 +1599,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
   (defthm lookup-in-svtv-run-under-iff
     (iff (assoc key (svtv-run
                      svtv inalist
-                     :include include :skip skip :boolvars boolvars
+                     :include include :skip skip :boolvars boolvars :allvars allvars
                      :simplify simplify :quiet quiet :readable readable))
          (and (member key (svtv->outs svtv))
               (if include
@@ -1610,7 +1611,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
     (iff (consp
           (assoc key (svtv-run
                       svtv inalist
-                      :include include :skip skip :boolvars boolvars
+                      :include include :skip skip :boolvars boolvars :allvars allvars
                       :simplify simplify :quiet quiet :readable readable)))
          (and (member key (svtv->outs svtv))
               (if include
@@ -1621,7 +1622,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
   (defthm 4vec-p-lookup-in-svtv-run
     (iff (4vec-p (cdr (assoc key (svtv-run
                                   svtv inalist
-                                  :include include :skip skip :boolvars boolvars
+                                  :include include :skip skip :boolvars boolvars :allvars allvars
                                   :simplify simplify :quiet quiet :readable readable))))
          (and (member key (svtv->outs svtv))
               (if include
@@ -1635,7 +1636,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                   (member signal include))
              (equal (assoc signal (svtv-run
                                    svtv inalist
-                                   :include include :skip skip :boolvars boolvars
+                                   :include include :skip skip :boolvars boolvars :allvars allvars
                                    :simplify simplify :quiet quiet :readable readable))
                     (assoc signal (svtv-run svtv inalist)))))
 
@@ -1645,7 +1646,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                   (not (member signal skip)))
              (equal (assoc signal (svtv-run
                                    svtv inalist
-                                   :include nil :skip skip :boolvars boolvars
+                                   :include nil :skip skip :boolvars boolvars :allvars allvars
                                    :simplify simplify :quiet quiet :readable readable))
                     (assoc signal (svtv-run svtv inalist))))))
 

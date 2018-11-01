@@ -864,7 +864,7 @@ Mainly to be used for evaluating enum lists "
 
   (mv-let
    (erp term x)
-   (acl2::translate11 form nil nil nil nil nil
+   (acl2::translate11 form nil nil nil nil nil nil
                 ctx w (acl2::default-state-vars nil))
    (declare (ignore x))
    (if erp

@@ -125,7 +125,7 @@
 
 ;; DE netlist generator.  A generated netlist will contain an instance of Q2.
 
-(defun queue2$netlist (data-width)
+(defund queue2$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (queue2* data-width)
         (union$ (link$netlist data-width)
@@ -138,12 +138,12 @@
 (defund queue2& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'queue2 data-width) netlist)
-              (queue2* data-width))
-       (b* ((netlist (delete-to-eq (si 'queue2 data-width) netlist)))
-         (and (link& netlist data-width)
-              (joint-cntl& netlist)
-              (v-buf& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'queue2 data-width) netlist)))
+    (and (equal (assoc (si 'queue2 data-width) netlist)
+                (queue2* data-width))
+         (link& subnetlist data-width)
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -276,7 +276,7 @@
 
 ;; The value lemma for Q2
 
-(defthmd queue2$value
+(defthm queue2$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (queue2& netlist data-width)
                   (equal (len data-in) data-width)
@@ -292,15 +292,11 @@
            :in-theory (e/d (de-rules
                             queue2&
                             queue2*$destructure
-                            link$value
-                            joint-cntl$value
-                            v-buf$value
                             queue2$st-format
                             queue2$in-act
                             queue2$out-act
                             queue2$data-out)
-                           ((queue2*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of Q2, namely, the next states of two
 ;; links L0 and L1.
@@ -335,7 +331,7 @@
 
 ;; The state lemma for Q2
 
-(defthmd queue2$state
+(defthm queue2$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (queue2& netlist data-width)
                   (true-listp data-in)
@@ -355,13 +351,8 @@
                             queue2$st-format
                             queue2$data-in
                             queue2$in-act
-                            queue2$out-act
-                            link$value
-                            link$state
-                            joint-cntl$value
-                            v-buf$value)
-                           ((queue2*)
-                            de-module-disabled-rules)))))
+                            queue2$out-act)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable queue2$step))
 
@@ -394,7 +385,7 @@
   :hints (("Goal" :in-theory (enable queue2$input-format
                                      queue2$valid-st
                                      queue2$in-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue2$out-act
   (implies (and (queue2$input-format inputs data-width)
@@ -403,7 +394,7 @@
   :hints (("Goal" :in-theory (enable queue2$input-format
                                      queue2$valid-st
                                      queue2$out-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma queue2)
 

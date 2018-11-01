@@ -146,7 +146,7 @@
 
 ;; DE netlist generator.  A generated netlist will contain an instance of COMP-GCD2.
 
-(defun comp-gcd2$netlist (data-width cnt-width)
+(defund comp-gcd2$netlist (data-width cnt-width)
   (declare (xargs :guard (and (natp data-width)
                               (<= 2 data-width)
                               (natp cnt-width)
@@ -166,14 +166,14 @@
                               (<= 2 data-width)
                               (natp cnt-width)
                               (<= 3 cnt-width))))
-  (and (equal (assoc (si 'comp-gcd2 data-width) netlist)
-              (comp-gcd2* data-width))
-       (b* ((netlist (delete-to-eq (si 'comp-gcd2 data-width) netlist)))
-         (and (link1& netlist)
-              (link& netlist (* 2 data-width))
-              (gcd-cond& netlist data-width)
-              (comp-gcd-body& netlist data-width cnt-width)
-              (merge& netlist (* 2 data-width))))))
+  (b* ((subnetlist (delete-to-eq (si 'comp-gcd2 data-width) netlist)))
+    (and (equal (assoc (si 'comp-gcd2 data-width) netlist)
+                (comp-gcd2* data-width))
+         (link1& subnetlist)
+         (link& subnetlist (* 2 data-width))
+         (gcd-cond& subnetlist data-width)
+         (comp-gcd-body& subnetlist data-width cnt-width)
+         (merge& subnetlist (* 2 data-width)))))
 
 ;; Sanity check
 
@@ -395,7 +395,7 @@
 
 ;; The value lemma for COMP-GCD2
 
-(defthmd comp-gcd2$value
+(defthm comp-gcd2$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (comp-gcd2& netlist data-width cnt-width)
                   (true-listp data-in)
@@ -414,19 +414,13 @@
                             comp-gcd2&
                             comp-gcd2*$destructure
                             merge$act0
-                            merge$value
-                            gcd-cond$value
-                            comp-gcd-body$value
-                            link1$value
-                            link$value
                             comp-gcd2$st-format
                             comp-gcd2$in-act
                             comp-gcd2$out-act
                             comp-gcd2$data-out
                             comp-gcd2$br-inputs
                             comp-gcd2$me-inputs)
-                           ((comp-gcd2*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of COMP-GCD2.
 
@@ -479,7 +473,7 @@
 
 ;; The state lemma for COMP-GCD2
 
-(defthmd comp-gcd2$state
+(defthm comp-gcd2$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (comp-gcd2& netlist data-width cnt-width)
                   (true-listp data-in)
@@ -500,21 +494,12 @@
                             merge$act
                             merge$act0
                             merge$act1
-                            merge$value
                             comp-gcd2$st-format
                             comp-gcd2$data-in
                             comp-gcd2$br-inputs
                             comp-gcd2$me-inputs
-                            comp-gcd2$body-inputs
-                            gcd-cond$value
-                            comp-gcd-body$value
-                            comp-gcd-body$state
-                            link1$value
-                            link1$state
-                            link$value
-                            link$state)
-                           ((comp-gcd2*)
-                            de-module-disabled-rules)))))
+                            comp-gcd2$body-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable comp-gcd2$step))
 
@@ -565,7 +550,7 @@
                                      comp-gcd2$valid-st
                                      comp-gcd2$in-act
                                      comp-gcd2$me-inputs)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-comp-gcd2$out-act
   (implies (and (comp-gcd2$input-format inputs data-width)
@@ -581,7 +566,7 @@
                                    comp-gcd2$out-act
                                    comp-gcd2$br-inputs)
                                   (b-gates))))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma comp-gcd2 :sizes (data-width cnt-width))
 
@@ -842,14 +827,14 @@
      (implies (comp-gcd2$input-format inputs data-width)
               (booleanp (nth 0 inputs)))
      :hints (("Goal" :in-theory (enable comp-gcd2$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm comp-gcd2$input-format-lemma-2
      (implies (comp-gcd2$input-format inputs data-width)
               (booleanp (nth 1 inputs)))
      :hints (("Goal" :in-theory (enable comp-gcd2$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm comp-gcd2$input-format-lemma-3

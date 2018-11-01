@@ -148,7 +148,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; COMP-V-OR.
 
-(defun comp-v-or$netlist (data-width)
+(defund comp-v-or$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (comp-v-or* data-width)
         (union$ (queue2$netlist data-width)
@@ -161,15 +161,15 @@
 (defund comp-v-or& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'comp-v-or data-width) netlist)
-              (comp-v-or* data-width))
-       (b* ((netlist (delete-to-eq (si 'comp-v-or data-width) netlist)))
-         (and (link& netlist data-width)
-              (joint-cntl& netlist)
-              (v-buf& netlist data-width)
-              (v-or& netlist data-width)
-              (queue2& netlist data-width)
-              (queue3& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'comp-v-or data-width) netlist)))
+    (and (equal (assoc (si 'comp-v-or data-width) netlist)
+                (comp-v-or* data-width))
+         (link& subnetlist data-width)
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist data-width)
+         (v-or& subnetlist data-width)
+         (queue2& subnetlist data-width)
+         (queue3& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -387,7 +387,7 @@
 
 ;; The value lemma for COMP-V-OR
 
-(defthmd comp-v-or$value
+(defthm comp-v-or$value
   (b* ((inputs (list* full-in empty-out- (append a b go-signals))))
     (implies (and (comp-v-or& netlist data-width)
                   (equal (len a) data-width)
@@ -404,18 +404,11 @@
            :in-theory (e/d (de-rules
                             comp-v-or&
                             comp-v-or*$destructure
-                            queue2$value
-                            queue3$value
-                            link$value
-                            joint-cntl$value
-                            v-buf$value
-                            v-or$value
                             comp-v-or$st-format
                             comp-v-or$in-act
                             comp-v-or$out-act
                             comp-v-or$data-out)
-                           ((comp-v-or*)
-                            append
+                           (append
                             append-v-threefix
                             de-module-disabled-rules)))))
 
@@ -471,7 +464,7 @@
 
 ;; The state lemma for COMP-V-OR
 
-(defthmd comp-v-or$state
+(defthm comp-v-or$state
   (b* ((inputs (list* full-in empty-out- (append a b go-signals))))
     (implies (and (comp-v-or& netlist data-width)
                   (true-listp a)
@@ -496,18 +489,8 @@
                             comp-v-or$in-act
                             comp-v-or$out-act
                             comp-v-or$q2-inputs
-                            comp-v-or$q3-inputs
-                            queue2$value
-                            queue2$state
-                            queue3$value
-                            queue3$state
-                            link$value
-                            link$state
-                            joint-cntl$value
-                            v-buf$value
-                            v-or$value)
-                           ((comp-v-or*)
-                            append
+                            comp-v-or$q3-inputs)
+                           (append
                             de-module-disabled-rules)))))
 
 (in-theory (disable comp-v-or$step))
@@ -548,7 +531,6 @@
                              queue2$input-format
                              queue2$data-in
                              comp-v-or$valid-st
-                             comp-v-or$st-format
                              comp-v-or$q2-inputs)
                             (len
                              take-of-too-many))))))
@@ -565,7 +547,6 @@
                              queue3$input-format
                              queue3$data-in
                              comp-v-or$valid-st
-                             comp-v-or$st-format
                              comp-v-or$q3-inputs)
                             (len
                              take-of-too-many))))))
@@ -577,7 +558,7 @@
   :hints (("Goal" :in-theory (enable comp-v-or$input-format
                                      comp-v-or$valid-st
                                      comp-v-or$in-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-comp-v-or$out-act
   (implies (and (comp-v-or$input-format inputs data-width)
@@ -586,7 +567,7 @@
   :hints (("Goal" :in-theory (enable comp-v-or$input-format
                                      comp-v-or$valid-st
                                      comp-v-or$out-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma comp-v-or)
 
@@ -755,14 +736,14 @@
    (implies (comp-v-or$input-format inputs data-width)
             (booleanp (nth 0 inputs)))
    :hints (("Goal" :in-theory (enable comp-v-or$input-format)))
-   :rule-classes :type-prescription))
+   :rule-classes (:rewrite :type-prescription)))
 
 (local
  (defthm comp-v-or$input-format-lemma-2
    (implies (comp-v-or$input-format inputs data-width)
             (booleanp (nth 1 inputs)))
    :hints (("Goal" :in-theory (enable comp-v-or$input-format)))
-   :rule-classes :type-prescription))
+   :rule-classes (:rewrite :type-prescription)))
 
 (local
  (defthm comp-v-or$input-format-lemma-3

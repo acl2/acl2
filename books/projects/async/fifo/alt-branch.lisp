@@ -102,7 +102,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; ALT-BRANCH.
 
-(defun alt-branch$netlist (data-width)
+(defund alt-branch$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (alt-branch* data-width)
         (union$ (link1$netlist)
@@ -115,12 +115,12 @@
 (defund alt-branch& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'alt-branch data-width) netlist)
-              (alt-branch* data-width))
-       (b* ((netlist (delete-to-eq (si 'alt-branch data-width) netlist)))
-         (and (link1& netlist)
-              (joint-cntl& netlist)
-              (v-buf& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'alt-branch data-width) netlist)))
+    (and (equal (assoc (si 'alt-branch data-width) netlist)
+                (alt-branch* data-width))
+         (link1& subnetlist)
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -230,7 +230,7 @@
 
 ;; The value lemma for ALT-BRANCH
 
-(defthmd alt-branch$value
+(defthm alt-branch$value
   (b* ((inputs (list* full-in empty-out0- empty-out1-
                       (append data-in go-signals))))
     (implies (and (alt-branch& netlist data-width)
@@ -250,14 +250,10 @@
            :in-theory (e/d (de-rules
                             alt-branch&
                             alt-branch*$destructure
-                            link1$value
-                            joint-cntl$value
-                            v-buf$value
                             alt-branch$act
                             alt-branch$act0
                             alt-branch$act1)
-                           ((alt-branch*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of ALT-BRANCH.
 
@@ -290,7 +286,7 @@
 
 ;; The state lemma for ALT-BRANCH
 
-(defthmd alt-branch$state
+(defthm alt-branch$state
   (b* ((inputs (list* full-in empty-out0- empty-out1-
                       (append data-in go-signals))))
     (implies (and (alt-branch& netlist data-width)
@@ -308,13 +304,8 @@
                             alt-branch*$destructure
                             alt-branch$act
                             alt-branch$act0
-                            alt-branch$act1
-                            link1$value
-                            link1$state
-                            joint-cntl$value
-                            v-buf$value)
-                           ((alt-branch*)
-                            de-module-disabled-rules)))))
+                            alt-branch$act1)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable alt-branch$step))
 
@@ -350,7 +341,7 @@
   :hints (("Goal" :in-theory (enable alt-branch$input-format
                                      alt-branch$valid-st
                                      alt-branch$act0)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-alt-branch$act1
   (implies (and (alt-branch$input-format inputs data-width)
@@ -359,14 +350,14 @@
   :hints (("Goal" :in-theory (enable alt-branch$input-format
                                      alt-branch$valid-st
                                      alt-branch$act1)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-alt-branch$act
   (implies (and (alt-branch$input-format inputs data-width)
                 (alt-branch$valid-st st))
            (booleanp (alt-branch$act inputs st data-width)))
   :hints (("Goal" :in-theory (enable alt-branch$act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm alt-branch$valid-st-preserved
   (implies (and (alt-branch$input-format inputs data-width)

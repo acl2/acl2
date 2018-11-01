@@ -63,7 +63,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; BRANCH.
 
-(defun branch$netlist (data-width)
+(defund branch$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (branch* data-width)
         (union$ (v-buf$netlist data-width)
@@ -75,11 +75,11 @@
 (defund branch& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'branch data-width) netlist)
-              (branch* data-width))
-       (b* ((netlist (delete-to-eq (si 'branch data-width) netlist)))
-         (and (joint-cntl& netlist)
-              (v-buf& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'branch data-width) netlist)))
+    (and (equal (assoc (si 'branch data-width) netlist)
+                (branch* data-width))
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -165,7 +165,7 @@
 
 ;; The value lemma for BRANCH
 
-(defthmd branch$value
+(defthm branch$value
   (b* ((inputs (list* full-in empty-out0- empty-out1- select
                       (append data-in go-signals))))
     (implies (and (branch& netlist data-width)
@@ -185,12 +185,9 @@
            :in-theory (e/d (de-rules
                             branch&
                             branch*$destructure
-                            joint-cntl$value
-                            v-buf$value
                             branch$act
                             branch$act0
                             branch$act1)
-                           ((branch*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 

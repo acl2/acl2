@@ -276,7 +276,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; SHIFT-REGISTER2-PISO.
 
-(defun shift-register2-piso$netlist (data-width cnt-width)
+(defund shift-register2-piso$netlist (data-width cnt-width)
   (declare (xargs :guard (and (posp data-width)
                               (natp cnt-width)
                               (<= 2 cnt-width))))
@@ -299,19 +299,19 @@
                               (posp data-width)
                               (natp cnt-width)
                               (<= 2 cnt-width))))
-  (and (equal (assoc (si 'shift-register2-piso data-width) netlist)
-              (shift-register2-piso* data-width cnt-width))
-       (b* ((netlist (delete-to-eq (si 'shift-register2-piso data-width)
-                                   netlist)))
-         (and (link& netlist data-width)
-              (link& netlist cnt-width)
-              (joint-cntl& netlist)
-              (fast-zero& netlist cnt-width)
-              (counter& netlist cnt-width)
-              (v-buf& netlist data-width)
-              (v-buf& netlist cnt-width)
-              (tv-if& netlist (make-tree data-width))
-              (tv-if& netlist (make-tree cnt-width))))))
+  (b* ((subnetlist (delete-to-eq (si 'shift-register2-piso data-width)
+                                 netlist)))
+    (and (equal (assoc (si 'shift-register2-piso data-width) netlist)
+                (shift-register2-piso* data-width cnt-width))
+         (link& subnetlist data-width)
+         (link& subnetlist cnt-width)
+         (joint-cntl& subnetlist)
+         (fast-zero& subnetlist cnt-width)
+         (counter& subnetlist cnt-width)
+         (v-buf& subnetlist data-width)
+         (v-buf& subnetlist cnt-width)
+         (tv-if& subnetlist (make-tree data-width))
+         (tv-if& subnetlist (make-tree cnt-width)))))
 
 ;; Sanity check
 
@@ -535,7 +535,7 @@
      (implies (bvp v)
               (booleanp (f$fast-zero v)))
      :hints (("Goal" :in-theory (enable f-gates f$fast-zero)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (defthm shift-register2-piso$in-out-acts-mutually-exclusive
     (implies (and (shift-register2-piso$valid-st st data-width cnt-width)
@@ -567,7 +567,7 @@
                                      shift-register2-piso$bit0-out)
                                     (link$st-format
                                      shift-register2-piso$disabled-rules))))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   (defund shift-register2-piso$bit1-out (st)
     (b* ((r-reg1 (get-field *shift-register2-piso$r-reg1* st))
@@ -584,7 +584,7 @@
                                      shift-register2-piso$bit1-out)
                                     (link$st-format
                                      shift-register2-piso$disabled-rules))))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   (defun shift-register2-piso$outputs (inputs st data-width)
     (list (shift-register2-piso$in-act inputs st data-width)
@@ -600,7 +600,7 @@
 
 ;; The value lemma for SHIFT-REGISTER2-PISO
 
-(defthmd shift-register2-piso$value
+(defthm shift-register2-piso$value
   (b* ((inputs (list* full-in empty-out0- empty-out1-
                       (append data0-in data1-in go-signals))))
     (implies
@@ -622,12 +622,6 @@
            :in-theory (e/d (de-rules
                             shift-register2-piso&
                             shift-register2-piso*$destructure
-                            link$value
-                            joint-cntl$value
-                            fast-zero$value
-                            counter$value
-                            v-buf$value
-                            tv-if$value
                             shift-register2-piso$data0-in
                             shift-register2-piso$data1-in
                             shift-register2-piso$st-format
@@ -636,8 +630,7 @@
                             shift-register2-piso$out1-act
                             shift-register2-piso$bit0-out
                             shift-register2-piso$bit1-out)
-                           ((shift-register2-piso*)
-                            shift-register2-piso$disabled-rules
+                           (shift-register2-piso$disabled-rules
                             de-module-disabled-rules)))))
 
 ;; This function specifies the next state of SHIFT-REGISTER2-PISO.
@@ -757,7 +750,7 @@
 
 ;; The state lemma for SHIFT-REGISTER2-PISO
 
-(defthmd shift-register2-piso$state
+(defthm shift-register2-piso$state
   (b* ((inputs (list* full-in empty-out0- empty-out1-
                       (append data0-in data1-in go-signals))))
     (implies
@@ -779,21 +772,13 @@
            :in-theory (e/d (de-rules
                             shift-register2-piso&
                             shift-register2-piso*$destructure
-                            link$value
-                            link$state
-                            joint-cntl$value
-                            fast-zero$value
-                            counter$value
-                            v-buf$value
-                            tv-if$value
                             shift-register2-piso$data0-in
                             shift-register2-piso$data1-in
                             shift-register2-piso$in-act
                             shift-register2-piso$out0-act
                             shift-register2-piso$out1-act
                             shift-register2-piso$st-format)
-                           ((shift-register2-piso*)
-                            shift-register2-piso$disabled-rules
+                           (shift-register2-piso$disabled-rules
                             de-module-disabled-rules)))))
 
 (in-theory (disable shift-register2-piso$step))
@@ -831,21 +816,21 @@
    (implies (shift-register2-piso$input-format inputs data-width)
             (booleanp (nth 0 inputs)))
    :hints (("Goal" :in-theory (enable shift-register2-piso$input-format)))
-   :rule-classes :type-prescription))
+   :rule-classes (:rewrite :type-prescription)))
 
 (local
  (defthm shift-register2-piso$input-format-lemma-2
    (implies (shift-register2-piso$input-format inputs data-width)
             (booleanp (nth 1 inputs)))
    :hints (("Goal" :in-theory (enable shift-register2-piso$input-format)))
-   :rule-classes :type-prescription))
+   :rule-classes (:rewrite :type-prescription)))
 
 (local
  (defthm shift-register2-piso$input-format-lemma-3
    (implies (shift-register2-piso$input-format inputs data-width)
             (booleanp (nth 2 inputs)))
    :hints (("Goal" :in-theory (enable shift-register2-piso$input-format)))
-   :rule-classes :type-prescription))
+   :rule-classes (:rewrite :type-prescription)))
 
 (local
  (defthm shift-register2-piso$input-format-lemma-4
@@ -865,7 +850,7 @@
                             shift-register2-piso$in-act)
                            (shift-register2-piso$disabled-rules
                             link$st-format))))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-shift-register2-piso$out0-act
   (implies (and (shift-register2-piso$input-format inputs data-width)
@@ -877,7 +862,7 @@
                             shift-register2-piso$out0-act)
                            (shift-register2-piso$disabled-rules
                             link$st-format))))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-shift-register2-piso$out1-act
   (implies (and (shift-register2-piso$input-format inputs data-width)
@@ -889,7 +874,7 @@
                             shift-register2-piso$out1-act)
                            (shift-register2-piso$disabled-rules
                             link$st-format))))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma shift-register2-piso :sizes (data-width cnt-width))
 
@@ -1233,7 +1218,7 @@
            :use shift-register2-piso$extract0-lemma
            :in-theory (e/d ()
                            (shift-register2-piso$extract0-lemma))))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm shift-register2-piso$extract1-lemma
   (implies (and (shift-register2-piso$out1-act inputs st data-width)
@@ -1256,7 +1241,7 @@
            :use shift-register2-piso$extract1-lemma
            :in-theory (e/d ()
                            (shift-register2-piso$extract1-lemma))))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 ;; Extract the accepted input sequences
 

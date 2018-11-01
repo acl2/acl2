@@ -35,7 +35,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; COUNTER.
 
-(defun counter$netlist (data-width)
+(defund counter$netlist (data-width)
   (declare (xargs :guard (posp data-width)))
   (cons (counter* data-width)
         (union$ (ripple-sub$netlist data-width)
@@ -46,10 +46,10 @@
 (defund counter& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (posp data-width))))
-  (and (equal (assoc (si 'counter data-width) netlist)
-              (counter* data-width))
-       (b* ((netlist (delete-to-eq (si 'counter data-width) netlist)))
-         (ripple-sub& netlist data-width))))
+  (b* ((subnetlist (delete-to-eq (si 'counter data-width) netlist)))
+    (and (equal (assoc (si 'counter data-width) netlist)
+                (counter* data-width))
+         (ripple-sub& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -63,7 +63,7 @@
 
 ;; The value lemma for COUNTER
 
-(defthmd counter$value
+(defthm counter$value
   (implies
    (and (posp data-width)
         (counter& netlist data-width)
@@ -81,10 +81,8 @@
                           (se (si 'counter data-width) inputs st netlist))
            :in-theory (e/d (de-rules
                             counter&
-                            counter*$destructure
-                            ripple-sub$value)
-                           ((counter*)
-                            de-module-disabled-rules)))))
+                            counter*$destructure)
+                           (de-module-disabled-rules)))))
 
 (local
  (defthm counter-works-aux

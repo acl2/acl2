@@ -1596,13 +1596,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Note: In apply-raw.lisp we use a relaxed version of the expansion of
 ; defun-overrides that ignores the requirement that STATE be a formal!  We use
-; that relaxed code to define See concrete-badge-userfn and
-; concrete-apply$-userfn.  The basic argument is that it is ok to secretely
-; look at the current world as long as we cause an error if the current world
-; does not specify a value for the notion being ``defined'' and that once the
-; world does specify a value that value never changes.  If more functions like
-; these two arise in the future we may wish to relax defun-overrides or at
-; least define a relaxed version of it.
+; that relaxed code to define concrete-badge-userfn and concrete-apply$-userfn.
+; The basic argument is that it is ok to secretly look at the current world as
+; long as we cause an error if the current world does not specify a value for
+; the notion being ``defined'' and that once the world does specify a value
+; that value never changes.  If more functions like these two arise in the
+; future we may wish to relax defun-overrides or at least define a relaxed
+; version of it.
 
   (assert (member 'state formals :test 'eq))
   `(progn (push ',name *defun-overrides*) ; see add-trip
@@ -6832,6 +6832,151 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro unquote (x) (list 'cadr x))
 
+; Lambda Object Accessor Functions
+
+; The following functions access the formals, declare statement (if any), and
+; body of a well-formed lambda object.  However, they do not assume that their
+; arguments are well-formed.  They may return ill-formed results on ill-formed
+; ``lambdas''.  See the Essay on Lambda Objects and Lambda$ for some context
+; and conventions.  The formals are the *1* cadr of the ``lambda object,'' and
+; the dcl and body are either nil and the *1* caddr or the *1* caddr and the
+; *1* cadddr, depending on whether the object is a true-list of len 3 or 4.
+; The dcl and body are both nil for objects that are not true-lists of len 3 or
+; 4.
+
+; More verbosely, there are two forms of well-formed lambda objects (called
+; simple and declared), and three ``accessor'' functions:
+
+;                         simple                       declared
+;                   (LAMBDA vars body)         (LAMBDA vars dcl body)
+
+; lambda-object-formals     vars                       vars
+; lambda-object-dcl         nil                        dcl
+; lambda-object-body        body                       body
+
+; Put another way,
+
+; lambda-object-formals     cadr                       cadr
+; lambda-object-dcl         nil                        caddr
+; lambda-object-body        caddr                      cadddr
+
+; except we always mean the *1*-counterparts of those car/cdr nests so that
+; these accessors are guard verified with guards of T.  Insufficient
+; cons-structure can make lambda-object-dcl and lambda-object-body return nil.
+; A nil dcl is interpreted as though we'd seen a simple lambda with no dcl.
+; But a nil body is an ill-formed answer because nil is not a term.
+
+; Lambda-object-formals is always *1* cadr.  But lambda-object-dcl and
+; lambda-object-body have to decide whether an ill-formed lambda object, x, is
+; supposed to be treated like a simple lambda or a declared one.  The answer is
+; if it's a true-list of len 3, it's simple, if it's a true-list of len 4, it's
+; declared, and otherwise we return nil.
+
+(defun lambda-object-formals (x)
+
+; If x is a well-formed lambda object, e.g., something of the form (LAMBDA vars
+; dcl body) or (LAMBDA vars body), we return vars.  But x is not necessarily
+; well-formed and there is no guarantee that the answer is well-formed.  See
+; the discussion above.
+
+; This function has a guard of T so that it can be used without an ec-call in
+; apply$-lambda-logical and elsewhere.
+
+  (declare (xargs :guard t))
+
+; We could have defined this as indicated by the thm below, but we wanted to be
+; more efficient and guard-verified.
+
+; (thm (equal (lambda-object-formals x)
+;             (cadr x)))
+
+  (if (and (consp x)
+           (consp (cdr x)))
+      (cadr x)
+      nil))
+
+(defun lambda-object-dcl (x)
+
+; If x is a well-formed lambda object, e.g., something of the form (LAMBDA vars
+; dcl body) or (LAMBDA vars body), we return the dcl or nil if there's no dcl.
+; But x is not necessarily well-formed and there is no guarantee that the
+; answer is well-formed.  See the discussion above.
+
+; This function has a guard of T so that it can be used without an ec-call in
+; apply$-lambda-logical and elsewhere.
+
+; On Performance: One wonders whether this function would be faster if we
+; avoided repeated cdrs by let-binding.  We tried variations of this function
+; in which we bound temp successively to the cdr of temp in the obvious way so
+; as to avoid duplicated computations of cdr expressions.  We then compared
+; them on a billion well-formed lambdas of both lengths 3 and 4.  This was the
+; fastest.  The lesson: cdr is faster than let-binding/variable lookup.
+
+  (declare (xargs :guard t))
+
+; We could have used this definition:
+; (thm (equal (lambda-object-dcl x)
+;             (cond ((and (true-listp x) (= (len x) 3)) nil)
+;                   ((and (true-listp x) (= (len x) 4)) (caddr x))
+;                   (t nil))))
+; By the way, arithmetic-5/top and (equal (equal (len x) 0) (atom x)) are
+; needed to prove the thm above.
+
+  (cond ((and (consp x)               ; (= (len x) 4)
+              (consp (cdr x))
+              (consp (cddr x))
+              (consp (cdddr x))
+              (null (cddddr x)))
+         (caddr x))
+        (t nil)))
+
+(defun lambda-object-body (x)
+
+; If x is a well-formed lambda object, e.g., something of the form (LAMBDA vars
+; dcl body) or (LAMBDA vars body), we return the body.  But x is not
+; necessarily well-formed and there is no guarantee that the answer is
+; well-formed.  See the discussion above.
+
+; This function has a guard of T so that it can be used without an ec-call in
+; apply$-lambda-logical and elsewhere.
+
+  (declare (xargs :guard t))
+
+; We could have used this definition:
+; (thm (equal (lambda-object-body x)
+;             (cond
+;              ((and (true-listp x) (= (len x) 3)) (caddr x))
+;              ((and (true-listp x) (= (len x) 4)) (cadddr x))
+;              (t nil))))
+; By the way, arithmetic-5/top and (equal (equal (len x) 0) (atom x)) are
+; needed to prove the thm above.
+
+  (cond ((and (consp x)               ; (>= (len x) 3)
+              (consp (cdr x))
+              (consp (cddr x)))
+         (cond ((atom (cdddr x))      ; (= (len x) 3) 
+                (if (null (cdddr x)) (caddr x) nil))
+               ((null (cddddr x))     ; (= (len x) 4)
+                (cadddr x))
+               (t nil)))
+        (t nil)))
+
+(defun lambda-object-shapep (fn)
+  (declare (xargs :guard t))
+  (and (consp fn)
+       (eq (car fn) 'lambda)
+       (consp (cdr fn))
+       (consp (cddr fn))
+       (or (null (cdddr fn))
+           (and (consp (cdddr fn))
+                (null (cddddr fn))))))
+
+(defun make-lambda-object (formals dcl body)
+  (declare (xargs :guard t))
+  `(lambda ,formals
+     ,@(if dcl (list dcl) nil)
+     ,body))
+
 (defmacro ffn-symb (x) (list 'car x))
 
 (defun fn-symb (x)
@@ -10206,12 +10351,142 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (plist-worldp wrld))))
   (not (eq (getpropc sym 'formals t wrld) t)))
 
+(defmacro fcons-term* (&rest x)
+
+; ; Start experimental code mod, to check that calls of fcons-term are legitimate
+; ; shortcuts in place of the corresponding known-correct calls of cons-term.
+;   #-acl2-loop-only
+;   `(let* ((fn-used-only-in-fcons-term* ,(car x))
+;           (args-used-only-in-fcons-term* (list ,@(cdr x)))
+;           (result (cons fn-used-only-in-fcons-term*
+;                         args-used-only-in-fcons-term*)))
+;      (assert$ (equal result (cons-term fn-used-only-in-fcons-term*
+;                                        args-used-only-in-fcons-term*))
+;               result))
+;   #+acl2-loop-only
+; ; End experimental code mod.
+
+  (cons 'list x))
+
+(defun conjoin2 (t1 t2)
+
+; This function returns a term representing the logical conjunction of
+; t1 and t2.  The term is IFF-equiv to (AND t1 t2).  But, the term is
+; not EQUAL to (AND t1 t2) because if t2 is *t* we return t1's value,
+; while (AND t1 t2) would return *t* if t1's value were non-NIL.
+
+  (declare (xargs :guard t))
+  (cond ((equal t1 *nil*) *nil*)
+        ((equal t2 *nil*) *nil*)
+        ((equal t1 *t*) t2)
+        ((equal t2 *t*) t1)
+        (t (fcons-term* 'if t1 t2 *nil*))))
+
+(defun conjoin (l)
+  (declare (xargs :guard (true-listp l)))
+  (cond ((endp l) *t*)
+        ((endp (cdr l)) (car l))
+        (t (conjoin2 (car l) (conjoin (cdr l))))))
+
+(defun conjoin-untranslated-terms (l)
+
+; This function is analogous to conjoin, but where the terms need not be
+; translated.  Normally we expect that the result will be translated; but as a
+; courtesy to those who might want to use this utility, we attempt to return a
+; "pretty" untranslated term.
+
+  (declare (xargs :guard (true-listp l)))
+  (cond ((or (member nil l :test 'eq)
+             (member *nil* l :test 'equal))
+         nil)
+        (t (let* ((l2 (if (member t l :test 'eq)
+                          (remove t l :test 'eq)
+                        l))
+                  (l3 (if (member *t* l2 :test 'equal)
+                          (remove *t* l2 :test 'equal)
+                        l2)))
+             (cond ((null l3) t)
+                   ((null (cdr l3)) (car l3))
+                   (t (cons 'and l3)))))))
+
+(defun disjoin2 (t1 t2)
+
+; We return a term IFF-equiv (but not EQUAL) to (OR t1 t2).  For example,
+; if t1 is 'A and t2 is 'T, then we return 'T but (OR t1 t2) is 'A.
+; Note:  If you really want a term EQUAL to (OR t1 t2) see disjoin?!
+
+  (declare (xargs :guard t))
+  (cond ((equal t1 *t*) *t*)
+        ((equal t2 *t*) *t*)
+        ((equal t1 *nil*) t2)
+        ((equal t2 *nil*) t1)
+        (t (fcons-term* 'if t1 *t* t2))))
+
+(defun disjoin (lst)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) *nil*)
+        ((endp (cdr lst)) (car lst))
+        (t (disjoin2 (car lst) (disjoin (cdr lst))))))
+
+(defun disjoin-lst (clause-list)
+  (declare (xargs :guard (true-list-listp clause-list)))
+  (cond ((endp clause-list) nil)
+        (t (cons (disjoin (car clause-list))
+                 (disjoin-lst (cdr clause-list))))))
+
+; In the following tflg = T means we return a fully translated term; else
+; we are free to use abbreviations like AND, OR, T, NIL, and 23.
+
+(defun kwote? (tflg evg)
+  (declare (xargs :guard t))
+  (if tflg (kwote evg) evg))
+
+(defun conjoin? (tflg lst)
+  (declare (xargs :guard (true-listp lst)))
+  (cond
+   (tflg (conjoin lst))
+   ((null lst) T)
+   ((null (cdr lst)) (car lst))
+   (t (cons 'and lst))))
+
+(defun <=? (tflg x y)
+  (declare (xargs :guard t))
+  (if tflg
+      `(NOT (< ,y ,x))
+      `(<= ,x ,y)))
+
+(defun >? (tflg x y)
+  (declare (xargs :guard t))
+  (if tflg
+      `(< ,y ,x)
+      `(> ,x ,y)))
+
+(defun disjoin? (tflg lst)
+
+; We return a term that is EQUAL to (OR . lst).  If tflg is nil, the result is
+; not necessarily in translated form -- it may actually have the OR macro in
+; it.  If tflg is t, we return an IF-term instead of using OR.
+
+  (declare (xargs :guard (true-listp lst)))  
+  (cond
+   (tflg (or-macro lst))
+   ((null lst) NIL)
+   ((null (cdr lst)) (car lst))
+   (t (cons 'or lst))))
+
 ; We define translate-declaration-to-guard and accompanying functions in
 ; program mode, including the-fn, simply so that they take up a little less
 ; space in the image by avoiding the need to store 'def-bodies and
 ; 'unnormalized-body properties.
 
-(defun translate-declaration-to-guard/integer (lo var hi)
+; Use of the word ``translate'' in the names of the next few functions is a bit
+; misleading since the results can be UNtranslated terms if tflg is nil.  We
+; should have, perhaps, used the word ``transform''!
+
+(defun translate-declaration-to-guard/integer-gen (lo var hi tflg)
+
+; See get-guards2 for a discussion of tflg.
+
   (declare (xargs :guard t
                   :mode :program))
   (let ((lower-bound
@@ -10232,16 +10507,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                (t nil))))
     (cond ((and upper-bound lower-bound)
            (cond ((eq lower-bound '*)
-                  (cond ((eq upper-bound '*)
-                         (list 'integerp var))
-                        (t (list 'and
+                  (cond
+                   ((eq upper-bound '*)
+                    (list 'integerp var))
+                   (t (conjoin? tflg
+                                (list
                                  (list 'integerp var)
-                                 (list '<= var upper-bound)))))
-                 (t (cond ((eq upper-bound '*)
-                           (list 'and
+                                 (<=? tflg var (kwote? tflg upper-bound)))))))
+                 (t (cond
+                     ((eq upper-bound '*)
+                      (conjoin? tflg
+                                (list
                                  (list 'integerp var)
-                                 (list '<= lower-bound var)))
-                          (t
+                                 (<=? tflg (kwote? tflg lower-bound) var))))
+                     (t
 
 ; It is tempting to use integer-range-p below.  However, integer-range-p was
 ; introduced in Version_2.7 in support of signed-byte-p and unsigned-byte-p,
@@ -10251,11 +10530,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; needs.  (It feels wrong to use (< var (1+ upper-bound)), even though not
 ; unsound.)
 
-                           (list 'and
-                                 (list 'integerp var)
-                                 (list '<= lower-bound var)
-                                 (list '<= var upper-bound)))))))
+                      (conjoin?
+                       tflg
+                       (list
+                        (list 'integerp var)
+                        (<=? tflg (kwote? tflg lower-bound) var)
+                        (<=? tflg var (kwote? tflg upper-bound)))))))))
           (t nil))))
+
+(defun translate-declaration-to-guard/integer (lo var hi)
+
+; This is just the special case of translate-declaration-to-guard/integer-gen
+; for tflg = nil, for backwards compatibility.  See get-guard2 for a discussion
+; of tflg.
+
+  (declare (xargs :guard t
+                  :mode :program))
+  (translate-declaration-to-guard/integer-gen lo var hi nil))
 
 (defun weak-satisfies-type-spec-p (x)
   (declare (xargs :guard t))
@@ -10272,10 +10563,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; complexp.  I added a new declaration, 'complex-rational, to stand
 ;; for the old semantics of 'complex.
 
-(defun translate-declaration-to-guard1 (x var wrld)
+(defun translate-declaration-to-guard1-gen (x var tflg wrld)
 
 ; Wrld is either an ACL2 logical world or a symbol; see
-; translate-declaration-to-guard.
+; translate-declaration-to-guard.  If tflg is t we return a fully translated
+; term; else we return a user level term possibly containing the macros AND and
+; OR and unquoted Ts and NILs and numbers.  See get-guards2 for a discussion of
+; tflg.
 
   (declare (xargs :guard (or (symbolp wrld)
                              (plist-worldp wrld))
@@ -10287,7 +10581,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (eq (car x) 'integer)
               (true-listp x)
               (equal (length x) 3))
-         (translate-declaration-to-guard/integer (cadr x) var (caddr x)))
+         (translate-declaration-to-guard/integer-gen (cadr x) var
+                                                     (caddr x) tflg))
         ((eq x 'rational) (list 'rationalp var))
         ((eq x 'real) (list 'real/rationalp var))
         ((eq x 'complex) (list 'complex/complex-rationalp var))
@@ -10318,26 +10613,34 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                (cond
                 ((eq upper-bound '*)
                  (list 'rationalp var))
-                (t (list 'and
-                         (list 'rationalp var)
-                         (cond ((consp upper-bound)
-                                (list '< var (car upper-bound)))
-                               (t (list '<= var upper-bound)))))))
+                (t (conjoin?
+                    tflg
+                    (list
+                     (list 'rationalp var)
+                     (cond ((consp upper-bound)
+                            (list '< var (kwote? tflg (car upper-bound))))
+                           (t (<=? tflg var (kwote? tflg upper-bound)))))))))
               (t (cond
                   ((eq upper-bound '*)
-                   (list 'and
-                         (list 'rationalp var)
-                         (cond ((consp lower-bound)
-                                (list '< (car lower-bound) var))
-                               (t (list '<= lower-bound var)))))
-                  (t (list 'and
-                           (list 'rationalp var)
-                           (cond ((consp lower-bound)
-                                  (list '< (car lower-bound) var))
-                                 (t (list '<= lower-bound var)))
-                           (cond ((consp upper-bound)
-                                  (list '> (car upper-bound) var))
-                                 (t (list '<= var upper-bound)))))))))
+                   (conjoin?
+                    tflg
+                    (list
+                     (list 'rationalp var)
+                     (cond ((consp lower-bound)
+                            (list '< (kwote? tflg (car lower-bound)) var))
+                           (t (<=? tflg (kwote? tflg lower-bound) var))))))
+                  (t (conjoin?
+                      tflg
+                      (list
+                       (list 'rationalp var)
+                       (cond
+                        ((consp lower-bound)
+                         (list '< (kwote? tflg (car lower-bound)) var))
+                        (t (<=? tflg (kwote? tflg lower-bound) var)))
+                       (cond
+                        ((consp upper-bound)
+                         (>? tflg (kwote? tflg (car upper-bound)) var))
+                        (t (<=? tflg var (kwote? tflg upper-bound)))))))))))
             (t nil))))
         ((and (consp x)
               (eq (car x) 'real)
@@ -10366,36 +10669,46 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                (cond
                 ((eq upper-bound '*)
                  (list 'real/rationalp var))
-                (t (list 'and
-                         (list 'real/rationalp var)
-                         (cond ((consp upper-bound)
-                                (list '< var (car upper-bound)))
-                               (t (list '<= var upper-bound)))))))
+                (t (conjoin?
+                    tflg
+                    (list
+                     (list 'real/rationalp var)
+                     (cond ((consp upper-bound)
+                            (list '< var (kwote? tflg (car upper-bound))))
+                           (t (<=? tflg var (kwote? tflg upper-bound)))))))))
               (t (cond
                   ((eq upper-bound '*)
-                   (list 'and
-                         (list 'real/rationalp var)
-                         (cond ((consp lower-bound)
-                                (list '< (car lower-bound) var))
-                               (t (list '<= lower-bound var)))))
-                  (t (list 'and
-                           (list 'real/rationalp var)
-                           (cond ((consp lower-bound)
-                                  (list '< (car lower-bound) var))
-                                 (t (list '<= lower-bound var)))
-                           (cond ((consp upper-bound)
-                                  (list '> (car upper-bound) var))
-                                 (t (list '<= var upper-bound)))))))))
+                   (conjoin?
+                    tflg
+                    (list
+                     (list 'real/rationalp var)
+                     (cond ((consp lower-bound)
+                            (list '< (kwote? tflg (car lower-bound)) var))
+                           (t (<=? tflg (kwote? tflg lower-bound) var))))))
+                  (t (conjoin?
+                      tflg
+                      (list
+                       (list 'real/rationalp var)
+                       (cond
+                        ((consp lower-bound)
+                         (list '< (kwote? tflg (car lower-bound)) var))
+                        (t (<=? tflg (kwote? tflg lower-bound) var)))
+                       (cond
+                        ((consp upper-bound)
+                         (>? tflg (kwote? tflg (car upper-bound)) var))
+                        (t (<=? tflg var (kwote? tflg upper-bound)))))))))))
             (t nil))))
-        ((eq x 'bit) (list 'or
-                           (list 'equal var 1)
-                           (list 'equal var 0)))
+        ((eq x 'bit) (disjoin? tflg
+                               (list
+                                (list 'equal var (kwote? tflg 1))
+                                (list 'equal var (kwote? tflg 0)))))
         ((and (consp x)
               (eq (car x) 'mod)
               (true-listp x)
               (equal (length x) 2)
               (integerp (cadr x)))
-         (translate-declaration-to-guard/integer 0 var (1- (cadr x))))
+         (translate-declaration-to-guard/integer-gen 0 var
+                                                     (1- (cadr x)) tflg))
         ((and (consp x)
               (eq (car x) 'signed-byte)
               (true-listp x)
@@ -10404,7 +10717,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (> (cadr x) 0))
          (list 'signed-byte-p (cadr x) var))
         ((eq x 'unsigned-byte)
-         (translate-declaration-to-guard/integer 0 var '*))
+         (translate-declaration-to-guard/integer-gen 0 var '* tflg))
         ((and (consp x)
               (eq (car x) 'unsigned-byte)
               (true-listp x)
@@ -10422,10 +10735,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; look like we're saying "This is an unrecognized declaration."
 
          ''nil)
-        ((eq x 'null) (list 'eq var nil))
-        ((eq x 'ratio) (list 'and
-                             (list 'rationalp var)
-                             (list 'not (list 'integerp var))))
+        ((eq x 'null) (list 'eq var (kwote? tflg nil)))
+        ((eq x 'ratio) (conjoin? tflg
+                                 (list
+                                  (list 'rationalp var)
+                                  (list 'not (list 'integerp var)))))
         ((eq x 'standard-char) (list 'standard-charp var))
         ((eq x 'string) (list 'stringp var))
         ((and (consp x)
@@ -10434,13 +10748,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (equal (length x) 2)
               (integerp (cadr x))
               (>= (cadr x) 0))
-         (list 'and
-               (list 'stringp var)
-               (list 'equal
-                     (list 'length var)
-                     (cadr x))))
+         (conjoin? tflg
+                   (list
+                    (list 'stringp var)
+                    (list 'equal
+                          (list 'length var)
+                          (kwote? tflg (cadr x))))))
         ((eq x 'symbol) (list 'symbolp var))
-        ((eq x 't) t)
+        ((eq x 't) (kwote? tflg t))
         ((and (weak-satisfies-type-spec-p x)
               (or (symbolp wrld)
                   (eql (length (getpropc (cadr x) 'formals nil wrld))
@@ -10449,24 +10764,36 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((and (consp x)
               (eq (car x) 'member)
               (eqlable-listp (cdr x)))
-         (list 'member var (list 'quote (cdr x))))
+         (list (if tflg 'member-equal 'member) var (list 'quote (cdr x))))
         (t nil)))
+
+(defun translate-declaration-to-guard1 (x var wrld)
+
+; This is just the special case of translate-declaration-to-guard1-gen for tflg
+; = nil, for backwards compatibility.  See get-guards2 for a discussion of
+; tflg.
+
+  (declare (xargs :guard (or (symbolp wrld)
+                             (plist-worldp wrld))
+                  :mode :program))
+  (translate-declaration-to-guard1-gen x var nil wrld))
 
 (mutual-recursion
 
-;; Historical Comment from Ruben Gamboa:
-;; This was modified to change the moniker 'complex to use
-;; complexp instead of complex-rationalp.
+ ;; Historical Comment from Ruben Gamboa:
+ ;; This was modified to change the moniker 'complex to use
+ ;; complexp instead of complex-rationalp.
 
-(defun translate-declaration-to-guard (x var wrld)
+(defun translate-declaration-to-guard-gen (x var tflg wrld)
 
 ; This function is typically called on the sort of x you might write in a TYPE
 ; declaration, e.g., (DECLARE (TYPE x var1 ... varn)).  Thus, x might be
 ; something like '(or symbol cons (integer 0 128)) meaning that var is either a
 ; symbolp, a consp, or an integer in the given range.  X is taken as a
-; declaration about the variable symbol var and is converted into an
-; UNTRANSLATED term about var, except that we return nil if x is seen not to be
-; a valid type-spec for ACL2.
+; declaration about the variable symbol var and is converted into an either an
+; untranslated term or a translated term about var (depending on tflg), except
+; that we return nil if x is seen not to be a valid type-spec for ACL2.  See
+; get-guards2 for a discussion of tflg.
 
 ; Wrld is an ACL2 logical world or a symbol (typically, nil), the difference
 ; being that a symbol indicates that we should do a weaker check.  This extra
@@ -10479,83 +10806,124 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                              (plist-worldp wrld))
                   :mode :program
 
-; See the comment above translate-declaration-to-guard/integer.
+; See the comment above translate-declaration-to-guard/integer-gen.
 
 ;                  :measure (acl2-count x)
                   ))
-  (cond ((atom x) (translate-declaration-to-guard1 x var wrld))
+  (cond ((atom x) (translate-declaration-to-guard1-gen x var tflg wrld))
         ((eq (car x) 'not)
          (cond ((and (true-listp x)
                      (equal (length x) 2))
-                (let ((term (translate-declaration-to-guard (cadr x)
-                                                            var
-                                                            wrld)))
+                (let ((term (translate-declaration-to-guard-gen
+                             (cadr x)
+                             var
+                             tflg
+                             wrld)))
                   (and term
                        (list 'not term))))
                (t nil)))
         ((eq (car x) 'and)
          (cond ((true-listp x)
                 (cond ((null (cdr x)) t)
-                      (t (let ((args (translate-declaration-to-guard-lst
+                      (t (let ((args (translate-declaration-to-guard-gen-lst
                                       (cdr x)
                                       var
+                                      tflg
                                       wrld)))
-                           (cond (args (cons 'and args))
+                           (cond (args (conjoin? tflg args))
                                  (t nil))))))
                (t nil)))
         ((eq (car x) 'or)
          (cond ((true-listp x)
                 (cond ((null (cdr x)) ''nil)
-                      (t (let ((args (translate-declaration-to-guard-lst
+                      (t (let ((args (translate-declaration-to-guard-gen-lst
                                       (cdr x)
                                       var
+                                      tflg
                                       wrld)))
-                           (cond (args (cons 'or args))
+                           (cond (args (disjoin? tflg args))
                                  (t nil))))))
                (t nil)))
         ((eq (car x) 'complex)
          (cond ((and (consp (cdr x))
                      (null (cddr x)))
-                (let ((r (translate-declaration-to-guard (cadr x)
-                                                         (list 'realpart var)
-                                                         wrld))
-                      (i (translate-declaration-to-guard (cadr x)
-                                                         (list 'imagpart var)
-                                                         wrld)))
+                (let ((r (translate-declaration-to-guard-gen
+                          (cadr x)
+                          (list 'realpart var)
+                          tflg
+                          wrld))
+                      (i (translate-declaration-to-guard-gen
+                          (cadr x)
+                          (list 'imagpart var)
+                          tflg
+                          wrld)))
                   (cond ((and r i)
-                         (list 'and
-                               (list 'complex/complex-rationalp var)
-                               r
-                               i))
+                         (conjoin?
+                          tflg
+                          (list (list 'complex/complex-rationalp var) r i)))
                         (t nil))))
                (t nil)))
-        (t (translate-declaration-to-guard1 x var wrld))))
+        (t (translate-declaration-to-guard1-gen x var tflg wrld))))
 
-(defun translate-declaration-to-guard-lst (l var wrld)
+(defun translate-declaration-to-guard-gen-lst (l var tflg wrld)
 
 ; Wrld is an ACL2 logical world or a symbol; see
-; translate-declaration-to-guard.
+; translate-declaration-to-guard-gen.
 
   (declare (xargs ; :measure (acl2-count l)
-                  :guard (and (true-listp l)
-                              (consp l)
-                              (or (null wrld)
-                                  (plist-worldp wrld)))
-                  :mode :program))
+            :guard (and (true-listp l)
+                        (consp l)
+                        (or (null wrld)
+                            (plist-worldp wrld)))
+            :mode :program))
   (and (consp l)
-       (let ((frst (translate-declaration-to-guard (car l) var wrld)))
+       (let ((frst (translate-declaration-to-guard-gen
+                    (car l)
+                    var
+                    tflg
+                    wrld)))
          (cond ((null frst)
                 nil)
                ((endp (cdr l))
                 (list frst))
-               (t (let ((rst (translate-declaration-to-guard-lst
+               (t (let ((rst (translate-declaration-to-guard-gen-lst
                               (cdr l)
                               var
+                              tflg
                               wrld)))
                     (cond ((null rst) nil)
                           (t (cons frst rst)))))))))
 
-)
+ )
+
+(defun translate-declaration-to-guard (x var wrld)
+  (declare (xargs :guard (or (symbolp wrld)
+                             (plist-worldp wrld))
+                  :mode :program
+
+; See the comment above translate-declaration-to-guard/integer-gen.
+
+;                  :measure (acl2-count x)
+                  ))
+
+; This is just the special case of translate-declaration-to-guard-gen for tflg
+; = nil for backwards compatibility.  See get-guards2 for a discussion of tflg.
+
+  (translate-declaration-to-guard-gen x var nil wrld))
+
+(defun translate-declaration-to-guard-lst (l var wrld)
+  (declare (xargs ; :measure (acl2-count l)
+            :guard (and (true-listp l)
+                        (consp l)
+                        (or (null wrld)
+                            (plist-worldp wrld)))
+            :mode :program))
+
+; This is just the special case of translate-declaration-to-guard-gen-lst for
+; tflg = nil for backwards compatibility.  See get-guards2 for a discussion of
+; tflg.
+
+  (translate-declaration-to-guard-gen-lst l var nil wrld))
 
 (defun the-check (guard x y)
 
@@ -10570,8 +10938,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Warning: Keep this in sync with the-fn-for-*1*.
 
-; As noted above the definition of translate-declaration-to-guard/integer, we
-; are trying to save a little space in the image.
+; As noted above the definition of
+; translate-declaration-to-guard/integer-gen, we are trying to save a little
+; space in the image.
 
                   :mode :program))
   (let ((guard (translate-declaration-to-guard x 'var nil)))
@@ -12932,6 +13301,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     #+acl2-devel apply$-lambda
     fchecksum-obj2
     check-sum-obj
+    verify-guards-fn1 ; to update *cl-cache*
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -13068,6 +13438,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     concrete-apply$-userfn
 
     ev-fncall-w-guard1
+
+; Found in apply-raw so users can see the *cl-cache*:
+
+    print-cl-cache
 
 ; mfc functions
 
@@ -25101,88 +25475,6 @@ Lisp definition."
     (return-from mod-expt (si::powm base exp mod)))
   (mod (expt base exp) mod))
 
-(defmacro fcons-term* (&rest x)
-
-; ; Start experimental code mod, to check that calls of fcons-term are legitimate
-; ; shortcuts in place of the corresponding known-correct calls of cons-term.
-;   #-acl2-loop-only
-;   `(let* ((fn-used-only-in-fcons-term* ,(car x))
-;           (args-used-only-in-fcons-term* (list ,@(cdr x)))
-;           (result (cons fn-used-only-in-fcons-term*
-;                         args-used-only-in-fcons-term*)))
-;      (assert$ (equal result (cons-term fn-used-only-in-fcons-term*
-;                                        args-used-only-in-fcons-term*))
-;               result))
-;   #+acl2-loop-only
-; ; End experimental code mod.
-
-  (cons 'list x))
-
-(defun conjoin2 (t1 t2)
-
-; This function returns a term representing the logical conjunction of
-; t1 and t2.  The term is IFF-equiv to (AND t1 t2).  But, the term is
-; not EQUAL to (AND t1 t2) because if t2 is *t* we return t1's value,
-; while (AND t1 t2) would return *t* if t1's value were non-NIL.
-
-  (declare (xargs :guard t))
-  (cond ((equal t1 *nil*) *nil*)
-        ((equal t2 *nil*) *nil*)
-        ((equal t1 *t*) t2)
-        ((equal t2 *t*) t1)
-        (t (fcons-term* 'if t1 t2 *nil*))))
-
-(defun conjoin (l)
-  (declare (xargs :guard (true-listp l)))
-  (cond ((endp l) *t*)
-        ((endp (cdr l)) (car l))
-        (t (conjoin2 (car l) (conjoin (cdr l))))))
-
-(defun conjoin-untranslated-terms (l)
-
-; This function is analogous to conjoin, but where the terms need not be
-; translated.  Normally we expect that the result will be translated; but as a
-; courtesy to those who might want to use this utility, we attempt to return a
-; "pretty" untranslated term.
-
-  (declare (xargs :guard (true-listp l)))
-  (cond ((or (member nil l :test 'eq)
-             (member *nil* l :test 'equal))
-         nil)
-        (t (let* ((l2 (if (member t l :test 'eq)
-                          (remove t l :test 'eq)
-                        l))
-                  (l3 (if (member *t* l2 :test 'equal)
-                          (remove *t* l2 :test 'equal)
-                        l2)))
-             (cond ((null l3) t)
-                   ((null (cdr l3)) (car l3))
-                   (t (cons 'and l3)))))))
-
-(defun disjoin2 (t1 t2)
-
-; We return a term IFF-equiv (but not EQUAL) to (OR t1 t2).  For example,
-; if t1 is 'A and t2 is 'T, then we return 'T but (OR t1 t2) is 'A.
-
-  (declare (xargs :guard t))
-  (cond ((equal t1 *t*) *t*)
-        ((equal t2 *t*) *t*)
-        ((equal t1 *nil*) t2)
-        ((equal t2 *nil*) t1)
-        (t (fcons-term* 'if t1 *t* t2))))
-
-(defun disjoin (lst)
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) *nil*)
-        ((endp (cdr lst)) (car lst))
-        (t (disjoin2 (car lst) (disjoin (cdr lst))))))
-
-(defun disjoin-lst (clause-list)
-  (declare (xargs :guard (true-list-listp clause-list)))
-  (cond ((endp clause-list) nil)
-        (t (cons (disjoin (car clause-list))
-                 (disjoin-lst (cdr clause-list))))))
-
 (defun conjoin-clauses (clause-list)
   (declare (xargs :guard (true-list-listp clause-list)))
   (conjoin (disjoin-lst clause-list)))
@@ -27807,3 +28099,50 @@ Lisp definition."
           (set-compile-fns t)
           ,@x
           (set-compile-fns nil))))
+
+#+acl2-loop-only
+(defun print-cl-cache ()
+
+; -----------------------------------------------------------------
+; Reminders about print-cl-cache:
+
+; See the defrec of cl-cache-line for an explanation of the fields.
+
+; The :status of a line is valid ONLY for the current world and its retractions
+; represented by the :absolute-event-number in the line.
+
+; To re-validate line i for the current world use
+
+; (PING-CL-CACHE-LINE i)
+
+; in raw Lisp.  That will update the :status but also move the line to the
+; front of the cache and increase its :hit count.
+
+; We don't display the world, just its max-absolute-event-number.  To see the
+; number of wrld, do (MAX-ABSOLUTE-EVENT-NUMBER wrld).  But remember:
+; different worlds can have the same number!
+
+; To access field :x of cache line i use
+; (ACCESS CL-CACHE-LINE (NTH i (ACCESS CL-CACHE *CL-CACHE* :ALIST)) :x)
+
+; The cache involves a circular structure containing many worlds.  Do not print
+; it directly.
+
+; When (consp *cl-cache*), then the size of the ring is
+; (access cl-cache *cl-cache* :size).
+
+; To clear a cache, set it to some natural number greater than 2, e.g.,
+
+; (setq *cl-cache* 5)
+
+; -----------------------------------------------------------------
+
+; We want the user to be able to see the *cl-cache*, which is actually in raw
+; Lisp.  So we stub out a constant nil function and will define it in raw Lisp
+; in apply-raw.lisp to print the cache.
+
+; Warning: Keep the return values in sync for the logic and raw Lisp.
+
+  (declare (xargs :guard t))
+  nil)
+

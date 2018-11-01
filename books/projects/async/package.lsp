@@ -3,6 +3,8 @@
 ;; License: A 3-clause BSD license.  See the LICENSE file distributed with
 ;; ACL2.
 
+(include-book "std/strings/istrprefixp" :dir :system)
+
 ;; ======================================================================
 
 (defpkg "ADE"
@@ -35,6 +37,7 @@
 
        make-flag
        make-list-ac-removal
+       mod-zero
 
        nonlinearp-default-hint
 
@@ -57,7 +60,13 @@
 
        unsigned-byte-p
 
-       zp-open)
+       zp-open
+
+       str::basic-natchars
+       str::iprefixp
+       str::istrprefixp
+       str::natchars
+       str::natstr)
 
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)))

@@ -1080,14 +1080,14 @@
 
        (rsp (read-*sp proc-mode x86))
 
-       (eax/ax (rgfi-size operand-size *rax* 0 x86))
-       (ecx/cx (rgfi-size operand-size *rcx* 0 x86))
-       (edx/dx (rgfi-size operand-size *rdx* 0 x86))
-       (ebx/bx (rgfi-size operand-size *rbx* 0 x86))
-       (esp/sp (rgfi-size operand-size *rsp* 0 x86))
-       (ebp/bp (rgfi-size operand-size *rbp* 0 x86))
-       (esi/si (rgfi-size operand-size *rsi* 0 x86))
-       (edi/di (rgfi-size operand-size *rdi* 0 x86))
+       (eax/ax (rgfi-size operand-size #.*rax* 0 x86))
+       (ecx/cx (rgfi-size operand-size #.*rcx* 0 x86))
+       (edx/dx (rgfi-size operand-size #.*rdx* 0 x86))
+       (ebx/bx (rgfi-size operand-size #.*rbx* 0 x86))
+       (esp/sp (rgfi-size operand-size #.*rsp* 0 x86))
+       (ebp/bp (rgfi-size operand-size #.*rbp* 0 x86))
+       (esi/si (rgfi-size operand-size #.*rsi* 0 x86))
+       (edi/di (rgfi-size operand-size #.*rdi* 0 x86))
 
        ;; Because it suffices to check the initial stack pointer for
        ;; alignment just once here, we bypass alignment checking from

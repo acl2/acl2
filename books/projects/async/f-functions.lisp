@@ -796,7 +796,15 @@
    (equal (f-if c (3v-fix a) b)
           (f-if c a b))
    (equal (f-if c a (3v-fix b))
-          (f-if c a b))))
+          (f-if c a b))
+
+   (equal (ft-buf (3v-fix c) a)
+          (ft-buf c a))
+   (equal (ft-buf c (3v-fix a))
+          (ft-buf c a))
+
+   (equal (f-bool (3v-fix x))
+          (f-bool x))))
 
 ;; A 4-valued gate theory
 

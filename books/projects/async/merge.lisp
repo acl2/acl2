@@ -68,7 +68,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; MERGE.
 
-(defun merge$netlist (data-width)
+(defund merge$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (merge* data-width)
         (union$ (tv-if$netlist (make-tree data-width))
@@ -80,11 +80,11 @@
 (defund merge& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'merge data-width) netlist)
-              (merge* data-width))
-       (b* ((netlist (delete-to-eq (si 'merge data-width) netlist)))
-         (and (joint-cntl& netlist)
-              (tv-if& netlist (make-tree data-width))))))
+  (b* ((subnetlist (delete-to-eq (si 'merge data-width) netlist)))
+    (and (equal (assoc (si 'merge data-width) netlist)
+                (merge* data-width))
+         (joint-cntl& subnetlist)
+         (tv-if& subnetlist (make-tree data-width)))))
 
 ;; Sanity check
 
@@ -186,7 +186,7 @@
 
 ;; The value lemma for MERGE
 
-(defthmd merge$value
+(defthm merge$value
   (b* ((inputs (list* full-in0 full-in1 empty-out- select
                       (append data-in0 data-in1 go-signals))))
     (implies (and (posp data-width)
@@ -209,11 +209,8 @@
            :in-theory (e/d (de-rules
                             merge&
                             merge*$destructure
-                            joint-cntl$value
-                            tv-if$value
                             merge$act
                             merge$act0
                             merge$act1)
-                           ((merge*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 

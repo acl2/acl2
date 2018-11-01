@@ -209,30 +209,30 @@
 ; rewritten to a FOLDR.  Logically it makes no difference but The discerning
 ; reader may notice
 
-(defun$ collect (lst fn)
+(defun$ collect (fn lst)
   (cond ((endp lst) nil)
         (t (cons (apply$ fn (list (car lst)))
-                 (collect (cdr lst) fn)))))
+                 (collect fn (cdr lst))))))
 
 ; We'd use FORALL and EXISTS for ALL and XISTS below, but those names are
 ; already taken in Common Lisp.
 
-(defun$ all (lst fn)
+(defun$ all (fn lst)
   (cond ((endp lst) t)
         (t (and (apply$ fn (list (car lst)))
-                (all (cdr lst) fn)))))
+                (all fn (cdr lst))))))
 
-(defun$ xists (lst fn)
+(defun$ xists (fn lst)
   (cond ((endp lst) nil)
         ((apply$ fn (list (car lst)))
          t)
-        (t (xists (cdr lst) fn))))
+        (t (xists fn (cdr lst)))))
 
-(defun$ maxlist (lst fn)
+(defun$ maxlist (fn lst)
   (cond ((endp lst) nil)
         ((endp (cdr lst)) (apply$ fn (list (car lst))))
         (t (max (apply$ fn (list (car lst)))
-                (maxlist (cdr lst) fn)))))
+                (maxlist fn (cdr lst))))))
 
 (defthm T14
   (implies (force (ok-fnp fn))
@@ -240,7 +240,7 @@
                          `(LAMBDA (X Y)
                                   (CONS (,fn X) Y))
                          nil)
-                  (collect lst fn))))
+                  (collect fn lst))))
 
 ; T14 is like T9 and T10: it shows how FOLDR can do the job of another mapping
 ; function, in this case COLLECT.  Logically T14 just says that for any ``ok
@@ -267,7 +267,7 @@
                          `(lambda (,x ,y)
                             (cons (,fn ,x) ,y))
                          nil)
-                  (collect lst fn)))
+                  (collect fn lst)))
   :rule-classes nil)
 
 ; We don't store this as rule but prove it to illustrate the point.  As a
@@ -294,7 +294,7 @@
                          `(LAMBDA (X Y)
                                   (IF (,fn X) Y 'NIL))
                          t)
-                  (all lst fn))))
+                  (all fn lst))))
 
 (defthm T17
   (implies (force (ok-fnp fn))
@@ -302,7 +302,7 @@
                          `(LAMBDA (X Y)
                                   (IF (,fn X) 'T Y))
                          NIL)
-                  (xists lst fn))))
+                  (xists fn lst))))
 
 ; Maxlist cannot be expressed as a foldr without some additional hypotheses or
 ; special cases.  The problem is that maxlist never calls itself recursively on
@@ -315,9 +315,16 @@
 
 (defthm T18
   (let ((lst '(4 1))
-        (fn '(lambda (x) (binary-* '-5 x))))
+        (fn (cons 'lambda '((x) (binary-* '-5 x)))))
+
+; Note: The cons-expression above is just '(lambda (x) (binary-* '-5 x)).  That
+; used to be legal (in ACL2 Version_8.0).  But in order to provide more
+; convenient well-formedness checking and translation support, ACL2 now insists
+; that quoted lambda expressions occur only in :fn slots.  This is not a :fn
+; slot.  So we have to avoid the syntactic appearance of a quoted lambda.
+
     (implies (force (ok-fnp fn))
-             (NOT (equal (maxlist lst fn)
+             (NOT (equal (maxlist fn lst)
                          (if (endp lst)
                              nil
                              (if (endp (cdr lst))
@@ -344,19 +351,19 @@
 
 (defthm T19 ; a lemma needed for T20
   (implies (and (force (ok-fnp fn))
-                (all (collect lst fn) 'ACL2-NUMBERP))
-           (iff (maxlist lst fn)
+                (all 'ACL2-NUMBERP (collect fn lst)))
+           (iff (maxlist fn lst)
                 (consp lst))))
 
 (defthm T20
   (implies (and (force (ok-fnp fn))
-                (all (collect lst fn) 'ACL2-NUMBERP))
+                (all 'ACL2-NUMBERP (collect fn lst)))
            (equal (foldr lst `(LAMBDA (X Y)
                                 (IF (EQUAL Y 'NIL) 
                                     (,fn X)
                                     (MAX (,fn X) Y)))
                          nil)
-                  (maxlist lst fn))))
+                  (maxlist fn lst))))
 
 
 ; T21 shows how to move a multiplicative constant out of sum's LAMBDA, i.e., so
@@ -386,23 +393,27 @@
   :hints (("Goal" :do-not-induct t :in-theory (disable lamb (:e lamb))))
   :rule-classes nil)
 
-(defun$ collect* (lst fn)
+(defun$ collect* (fn lst)
   (if (endp lst)
       nil
       (cons (apply$ fn (car lst))
-            (collect* (cdr lst) fn))))
+            (collect* fn (cdr lst)))))
 
 ; T24 is really just a computation, but done with the rewriter.  It shows that
 ; TAME functions, e.g., the LAMBDAS below, can be data, and that we can supply
 ; mapping functions to mapping functions (COLLECT is the :FN argument to
-; COLLECT*).
+; COLLECT*).  However, because COLLECT is not tame translate would reject
+; (COLLECT* 'COLLECT '(((LAMBDA (X) (CONS 'A X)) (1 2 3)) ...)) so we have
+; to use the trick of defining a constant symbol to be COLLECT.
+
+(defconst *collect* 'collect)
 
 (defthm T24
   (implies (warrant collect)
-           (equal (collect* '(((1 2 3) (LAMBDA (X) (CONS 'A X)))
-                              ((4 5 6 7) (LAMBDA (Z) (CONS 'B Z)))
-                              ((8 9) (LAMBDA (Y) (CONS 'C Y))))
-                            'COLLECT)
+           (equal (collect* *collect* ; trick = 'collect
+                            '(((LAMBDA (X) (CONS 'A X)) (1 2 3))
+                              ((LAMBDA (Z) (CONS 'B Z)) (4 5 6 7))
+                              ((LAMBDA (Y) (CONS 'C Y)) (8 9))))
                   '(((A . 1)(A . 2)(A . 3))
                     ((B . 4) (B . 5) (B . 6) (B . 7))
                     ((C . 8) (C . 9)))))

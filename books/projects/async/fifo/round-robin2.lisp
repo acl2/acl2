@@ -125,7 +125,7 @@
 
 ;; DE netlist generator.  A generated netlist will contain an instance of RR2.
 
-(defun round-robin2$netlist (data-width)
+(defund round-robin2$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (round-robin2* data-width)
         (union$ (queue4-l$netlist data-width)
@@ -139,13 +139,13 @@
 (defund round-robin2& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'round-robin2 data-width) netlist)
-              (round-robin2* data-width))
-       (b* ((netlist (delete-to-eq (si 'round-robin2 data-width) netlist)))
-         (and (queue4-l& netlist data-width)
-              (queue5-l& netlist data-width)
-              (alt-branch& netlist data-width)
-              (alt-merge& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'round-robin2 data-width) netlist)))
+    (and (equal (assoc (si 'round-robin2 data-width) netlist)
+                (round-robin2* data-width))
+         (queue4-l& subnetlist data-width)
+         (queue5-l& subnetlist data-width)
+         (alt-branch& subnetlist data-width)
+         (alt-merge& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -389,7 +389,7 @@
 
 ;; The value lemma for RR2
 
-(defthmd round-robin2$value
+(defthm round-robin2$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (round-robin2& netlist data-width)
                   (true-listp data-in)
@@ -407,18 +407,13 @@
                             round-robin2&
                             round-robin2*$destructure
                             round-robin2$data-in
-                            queue4-l$value
-                            queue5-l$value
-                            alt-branch$value
-                            alt-merge$value
                             round-robin2$st-format
                             round-robin2$in-act
                             round-robin2$out-act
                             round-robin2$data-out
                             round-robin2$br-inputs
                             round-robin2$me-inputs)
-                           ((round-robin2*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of RR2.
 
@@ -449,7 +444,7 @@
 
 ;; The state lemma for RR2
 
-(defthmd round-robin2$state
+(defthm round-robin2$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies (and (round-robin2& netlist data-width)
                   (true-listp data-in)
@@ -471,17 +466,8 @@
                             round-robin2$q4-l-inputs
                             round-robin2$q5-l-inputs
                             round-robin2$br-inputs
-                            round-robin2$me-inputs
-                            queue4-l$value
-                            queue4-l$state
-                            queue5-l$value
-                            queue5-l$state
-                            alt-branch$value
-                            alt-branch$state
-                            alt-merge$value
-                            alt-merge$state)
-                           ((round-robin2*)
-                            de-module-disabled-rules)))))
+                            round-robin2$me-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable round-robin2$step))
 
@@ -608,22 +594,18 @@
                 (round-robin2$valid-st st data-width))
            (booleanp (round-robin2$in-act inputs st data-width)))
   :hints (("Goal"
-           :use round-robin2$input-format=>br$input-format
-           :in-theory (e/d (round-robin2$valid-st
-                            round-robin2$in-act)
-                           (round-robin2$input-format=>br$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable round-robin2$valid-st
+                              round-robin2$in-act)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-round-robin2$out-act
   (implies (and (round-robin2$input-format inputs data-width)
                 (round-robin2$valid-st st data-width))
            (booleanp (round-robin2$out-act inputs st data-width)))
   :hints (("Goal"
-           :use round-robin2$input-format=>me$input-format
-           :in-theory (e/d (round-robin2$valid-st
-                            round-robin2$out-act)
-                           (round-robin2$input-format=>me$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable round-robin2$valid-st
+                              round-robin2$out-act)))
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma round-robin2)
 
@@ -642,13 +624,13 @@
   (implies (or (consp l1) (consp l2)
                (< 0 (len l1)) (< 0 (len l2)))
            (consp (intertwine l1 l2)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm true-listp-intertwine
   (implies (and (true-listp l1)
                 (true-listp l2))
            (true-listp (intertwine l1 l2)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm len-intertwine
   (equal (len (intertwine l1 l2))
@@ -768,14 +750,14 @@
      (implies (round-robin2$input-format inputs data-width)
               (booleanp (nth 0 inputs)))
      :hints (("Goal" :in-theory (enable round-robin2$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm round-robin2$input-format-lemma-2
      (implies (round-robin2$input-format inputs data-width)
               (booleanp (nth 1 inputs)))
      :hints (("Goal" :in-theory (enable round-robin2$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm round-robin2$q4-l+q5-l-in-act-inactive

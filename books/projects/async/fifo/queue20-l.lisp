@@ -102,7 +102,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; QUEUE20-L.
 
-(defun queue20-l$netlist (data-width)
+(defund queue20-l$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (queue20-l* data-width)
         (union$ (queue10-l$netlist data-width)
@@ -113,12 +113,12 @@
 (defund queue20-l& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'queue20-l data-width) netlist)
-              (queue20-l* data-width))
-       (b* ((netlist (delete-to-eq (si 'queue20-l data-width) netlist)))
-         (and (joint-cntl& netlist)
-              (v-buf& netlist data-width)
-              (queue10-l& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'queue20-l data-width) netlist)))
+    (and (equal (assoc (si 'queue20-l data-width) netlist)
+                (queue20-l* data-width))
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist data-width)
+         (queue10-l& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -247,7 +247,7 @@
              (booleanp (queue20-l$ready-in- st)))
     :hints (("Goal" :in-theory (enable queue20-l$valid-st
                                        queue20-l$ready-in-)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the "ready-out" signal
 
@@ -260,7 +260,7 @@
              (booleanp (queue20-l$ready-out st)))
     :hints (("Goal" :in-theory (enable queue20-l$valid-st
                                        queue20-l$ready-out)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the output data
 
@@ -303,7 +303,7 @@
 
 ;; The value lemma for QUEUE20-L
 
-(defthmd queue20-l$value
+(defthm queue20-l$value
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue20-l& netlist data-width)
                   (queue20-l$st-format st data-width))
@@ -316,15 +316,11 @@
            :in-theory (e/d (de-rules
                             queue20-l&
                             queue20-l*$destructure
-                            joint-cntl$value
-                            v-buf$value
-                            queue10-l$value
                             queue20-l$st-format
                             queue20-l$ready-in-
                             queue20-l$ready-out
                             queue20-l$data-out)
-                           ((queue20-l*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of QUEUE20-L.
 
@@ -365,7 +361,7 @@
 
 ;; The state lemma for QUEUE20-L
 
-(defthmd queue20-l$state
+(defthm queue20-l$state
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue20-l& netlist data-width)
                   (true-listp data-in)
@@ -387,13 +383,8 @@
                             queue20-l$out-act
                             queue20-l$data-in
                             queue20-l$q10-l0-inputs
-                            queue20-l$q10-l1-inputs
-                            joint-cntl$value
-                            v-buf$value
-                            queue10-l$value
-                            queue10-l$state)
-                           ((queue20-l*)
-                            de-module-disabled-rules)))))
+                            queue20-l$q10-l1-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable queue20-l$step))
 
@@ -472,14 +463,14 @@
            (booleanp (queue20-l$in-act inputs)))
   :hints (("Goal" :in-theory (enable queue20-l$input-format
                                      queue20-l$in-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue20-l$out-act
   (implies (queue20-l$input-format inputs st data-wisth)
            (booleanp (queue20-l$out-act inputs)))
   :hints (("Goal" :in-theory (enable queue20-l$input-format
                                      queue20-l$out-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma queue20-l :clink t)
 

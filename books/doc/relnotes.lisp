@@ -121,6 +121,11 @@
 
  </ul>
 
+ <h4><see topic='@(url irv::instant-runoff-voting)'>Instant Run-Off Voting</see></h4>
+
+ <p>Formalized an instant run-off voting scheme and proved that it
+ meets certain fairness criteria.</p>
+
  <h4>Other</h4>
 
  <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
@@ -143,7 +148,10 @@
 
  <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
 
- <p>Improved the documentation of the Ethereum library.</p>
+ <p>Improved the documentation.</p>
+
+ <p>Improved several names by using @('byte') instead of @('ubyte8') and
+ @('nibble') instead of @('ubyte4').</p>
 
  <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
 
@@ -190,9 +198,9 @@
 
  <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
  moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
- and renamed.  The uses of the macro to generate return type theorems for
- specific power-of-2 bases have been split into several files so that they can
- be included individually as needed.</p>
+ and renamed.  Some files have been refactored into smaller files.  The macro
+ to generate additional return types for conversions from natural numbers to
+ digits has been generalized and renamed.</p>
 
  <h4>FTY Type Definition Library</h4>
 

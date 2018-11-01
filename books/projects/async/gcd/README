@@ -33,8 +33,8 @@ serial subtractor serial-sub.
 comp-gcd2.lisp: a GCD circuit, c-gcd2, that contains comp-gcd-body as
 a submodule.
 
-q3-gcd.lisp: a GCD circuit, q3-gcd, that concatenates Q3 and gcd.
+q10-gcd.lisp: a GCD circuit, q10-gcd, that concatenates Q10 and gcd.
 
-q3-comp-gcd.lisp: a GCD circuit, q3-c-gcd, that concatenates Q3 and
+q10-comp-gcd.lisp: a GCD circuit, q10-c-gcd, that concatenates Q10 and
 c-gcd.
 

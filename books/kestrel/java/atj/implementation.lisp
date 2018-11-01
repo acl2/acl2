@@ -10,6 +10,9 @@
 
 (in-package "JAVA")
 
+; Avoid failure for atj-gen-number-value in ACL2(r):
+; cert_param: non-acl2r
+
 (include-book "kestrel/utilities/error-checking" :dir :system)
 (include-book "kestrel/utilities/strings" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)

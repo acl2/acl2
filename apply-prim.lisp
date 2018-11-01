@@ -197,6 +197,11 @@
 ; books/projects/apply-model/ex1/doppelgangers.lisp.  But ACL2(r) does not
 ; permit recursive definitions of non-classical functions.
 
+; Even if we could work through that concern, it may well be wrong to give a
+; badge to a non-classical function, because the usual test for non-classical
+; functions in a body would not notice the first argument of a call, (apply
+; 'non-classical-function ...).
+
                #+:non-standard-analysis
                (classicalp fn wrld)
 
@@ -314,20 +319,6 @@
 ; We originally defined the apply$-badge record here.  But it is needed in
 ; warrantp, which is needed in defattach-constraint-rec.
 ; (defrec apply$-badge (authorization-flg arity . ilks) nil)
-
-; These constants are not actually used in this book but are used in several
-; books that include apply-prim.lisp so we define them once, here.
-
-(defconst *generic-tame-badge-1*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 1 :ILKS t))
-(defconst *generic-tame-badge-2*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS t))
-(defconst *generic-tame-badge-3*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 3 :ILKS t))
-(defconst *apply$-badge*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:FN NIL)))
-(defconst *ev$-badge*
-  (MAKE APPLY$-BADGE :AUTHORIZATION-FLG T :ARITY 2 :ILKS '(:EXPR NIL)))
 
 (defun compute-badge-of-primitives (terms-and-out-arities)
   (declare (xargs :mode :program))

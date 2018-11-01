@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; September 2018
+;; October 2018
 
 ;; VECTOR-MODULE name (occ-name outputs type inputs) specs &key enable
 
@@ -81,7 +81,7 @@
   (if (atom x)
       nil
     (cons `(assoc-eq-values (sis ',(car x) ,m ,n)
-                            bindings)
+                            wire-alist)
           (map-assoc-eq-values (cdr x) m n))))
 
 (defun map-equal-assoc-eq-values (x y m n)
@@ -90,8 +90,8 @@
       nil
     (cons `(equal (assoc-eq-values (sis ',(car x) ,m ,n)
                                    (se-occ body
-                                           bindings
-                                           state-bindings
+                                           wire-alist
+                                           st-alist
                                            netlist))
                   ,(let* ((spec (car y))
                           (fn (car spec))
@@ -122,7 +122,7 @@
          (type (caddr occ))
          (inputs (cadddr occ))
          (name-str (symbol-name name))
-         (body-defun (strings-to-symbol name-str "$BODY"))
+         (body-defun (strings-to-symbol name-str "-BODY"))
          (generator (strings-to-symbol name-str "*"))
          (destructor (strings-to-symbol (symbol-name generator)
                                         "$DESTRUCTURE"))
@@ -130,7 +130,7 @@
          (predicate (strings-to-symbol name-str "&"))
          (unbound-in-body-lemma (strings-to-symbol name-str
                                                    "$UNBOUND-IN-BODY"))
-         (body-value-lemma (strings-to-symbol name-str "$BODY-VALUE"))
+         (body-value-lemma (strings-to-symbol name-str "-BODY$VALUE"))
          (value-lemma (strings-to-symbol name-str "$VALUE"))
          (netlist (strings-to-symbol name-str "$NETLIST")))
 
@@ -158,36 +158,38 @@
        (,body-defun 0 N)
        :guard (natp n))
 
-      (DEFUN ,predicate (NETLIST N)
+      (DEFUND ,predicate (NETLIST N)
         (DECLARE (XARGS :GUARD (AND (ALISTP NETLIST)
                                     (NATP N))))
         (EQUAL (ASSOC ,module-name NETLIST)
                (,generator N)))
 
-      (DEFUN ,netlist (N)
+      (DEFUND ,netlist (N)
         (DECLARE (XARGS :GUARD (NATP N)))
         (LIST (,generator N)))
 
-      (DEFTHM ,unbound-in-body-lemma
-        (IMPLIES (and (NATP L)
-                      (NATP M)
-                      (< L M))
-                 ,(mapAND (map-unbound-in-body outputs body-defun 'L 'M 'N)))
-        :HINTS (("GOAL"
-                 :IN-THEORY (ENABLE OCC-OUTS))))
+      (LOCAL
+       (DEFTHM ,unbound-in-body-lemma
+         (IMPLIES (and (NATP L)
+                       (NATP M)
+                       (< L M))
+                  ,(mapAND (map-unbound-in-body outputs body-defun 'L 'M 'N)))
+         :HINTS (("GOAL"
+                  :IN-THEORY (ENABLE OCC-OUTS)))))
 
-      (DEFTHM ,body-value-lemma
-        (IMPLIES (AND (NATP M)
-                      (EQUAL BODY (,body-defun M N)))
-                 ,(mapAND
-                   (map-equal-assoc-eq-values outputs specs 'M 'N)))
-        :hints (("Goal"
-                 :INDUCT (VECTOR-MODULE-INDUCTION BODY
-                                                  M N
-                                                  BINDINGS
-                                                  STATE-BINDINGS
-                                                  NETLIST)
-                 :in-theory (ENABLE de-rules sis ,@enable))))
+      (LOCAL
+       (DEFTHM ,body-value-lemma
+         (IMPLIES (AND (NATP M)
+                       (EQUAL BODY (,body-defun M N)))
+                  ,(mapAND
+                    (map-equal-assoc-eq-values outputs specs 'M 'N)))
+         :hints (("Goal"
+                  :INDUCT (VECTOR-MODULE-INDUCTION BODY
+                                                   M N
+                                                   WIRE-ALIST
+                                                   ST-ALIST
+                                                   NETLIST)
+                  :in-theory (ENABLE de-rules sis ,@enable)))))
 
       (NOT-PRIMP-LEMMA ,name)
 
@@ -204,12 +206,5 @@
                  :expand (:free (inputs N)
                                 (SE ,module-name ,(mapAPPEND inputs)
                                     STS NETLIST))
-                 :in-theory (ENABLE de-rules
-                                    ,destructor))))
-
-      (IN-THEORY (DISABLE ,body-defun
-                          ,predicate
-                          ,unbound-in-body-lemma
-                          ,body-value-lemma
-                          ,value-lemma))
+                 :in-theory (ENABLE de-rules ,predicate ,destructor))))
       )))

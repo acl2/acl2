@@ -3519,6 +3519,10 @@
 ; cause LD to revert.  Therefore, DEFUN must manage the reversion
 ; itself.
 
+  #-acl2-loop-only
+  (declare (ftype (function (t t) (values t))
+                  invalidate-some-cl-cache-lines))
+
   #+acl2-loop-only
   (declare (xargs :guard
                   (and (or (eq flg 'extension)
@@ -3551,6 +3555,10 @@
                      (not (eq wrld (w *the-live-state*))))
                 (push-wormhole-undo-formi 'cloaked-set-w! (w *the-live-state*)
                                           nil)))
+         (and (not (f-get-global 'boot-strap-flg *the-live-state*))
+              (invalidate-some-cl-cache-lines
+               flg
+               wrld))
          (let (#+hons (*defattach-fns* nil))
            (cond ((eq flg 'extension)
                   (extend-world1 'current-acl2-world wrld)
@@ -12463,16 +12471,20 @@
         0
       1)))
 
-(defun guard-clauses-for-fn (name debug-p ens wrld safe-mode gc-off ttree)
+(defun guard-clauses-for-fn1 (name debug-p ens wrld safe-mode gc-off ttree)
 
-; Given a function name we generate the clauses that establish that
-; all the guards in both the unnormalized guard and unnormalized body are
-; satisfied.  While processing the guard we assume nothing.  But we
-; generate the guards for the unnormalized body under each of the
-; possible guard-hyp-segments derived from the assumption of the
-; normalized 'guard.  We return the resulting clause set and an extension
-; of ttree justifying it.  The resulting ttree is 'assumption-free,
-; provided the initial ttree is also.
+; Warning: name must be either the name of a function defined in wrld or a
+; well-formed lambda object.  Remember: not every lambda object is well-formed.
+; Use well-formed-lambda-objectp to check before calling this function!
+
+; Given a function name or a well-formed lambda object we generate the clauses
+; that establish that all the guards in both the unnormalized guard and
+; unnormalized body are satisfied.  While processing the guard we assume
+; nothing.  But we generate the guards for the unnormalized body under each of
+; the possible guard-hyp-segments derived from the assumption of the normalized
+; 'guard.  We return the resulting clause set and an extension of ttree
+; justifying it.  The resulting ttree is 'assumption-free, provided the initial
+; ttree is also.
 
 ; Notice that in the two calls of guard below, used while computing
 ; the guard conjectures for the guard of name itself, we use stobj-opt
@@ -12481,10 +12493,18 @@
 ; Ens may have the special value :do-not-simplify, in which case no
 ; simplification will take place in producing the guard clauses.
 
-  (mv-let
-    (cl-set1 ttree)
-    (guard-clauses+ (guard name nil wrld)
-                    (and debug-p `(:guard (:guard ,name)))
+  (let ((guard
+         (if (symbolp name)
+             (guard name nil wrld)
+             (lambda-object-guard name)))
+        (stobj-optp (not (and (symbolp name)
+                              (eq (getpropc name 'non-executablep
+                                            nil wrld)
+                                  t)))))
+    (mv-let
+      (cl-set1 ttree)
+      (guard-clauses+ guard
+                      (and debug-p `(:guard (:guard ,name)))
 
 ; Observe that when we generate the guard clauses for the guard we optimize
 ; the stobj recognizers away.  We restrict to the case that the named function
@@ -12503,72 +12523,153 @@
 ; So we actually have (stobp <stobj>) explicitly present when optimizing the
 ; guards on <specified-guard>.
 
-                    (not (eq (getpropc name 'non-executablep
-                                       nil wrld)
-                             t))
-                    nil ens wrld safe-mode gc-off ttree)
-    (let ((guard (guard name nil wrld))
-          (unnormalized-body
-           (getpropc name 'unnormalized-body
-                     '(:error "See GUARD-CLAUSES-FOR-FN.")
-                     wrld)))
-      (mv-let
-        (normal-guard ttree)
-        (cond ((eq ens :do-not-simplify)
-               (mv guard nil))
-              (t (normalize guard
-                            t   ; iff-flg
-                            nil ; type-alist
-                            ens wrld ttree
-                            (normalize-ts-backchain-limit-for-defs wrld))))
+                      stobj-optp
+                      nil ens wrld safe-mode gc-off ttree)
+      (let ((unnormalized-body
+             (if (symbolp name)
+                 (getpropc name 'unnormalized-body
+                           '(:error "See GUARD-CLAUSES-FOR-FN.")
+                           wrld)
+                 (lambda-object-body name))))
         (mv-let
-          (changedp body ttree)
+          (normal-guard ttree)
           (cond ((eq ens :do-not-simplify)
-                 (mv nil unnormalized-body nil))
-                (t (eval-ground-subexpressions1
-                    unnormalized-body
-                    ens wrld safe-mode gc-off ttree)))
-          (declare (ignore changedp))
-          (let ((hyp-segments
+                 (mv guard nil))
+                (t (normalize guard
+                              t ; iff-flg
+                              nil ; type-alist
+                              ens wrld ttree
+                              (normalize-ts-backchain-limit-for-defs wrld))))
+          (mv-let
+            (changedp body ttree)
+            (cond ((eq ens :do-not-simplify)
+                   (mv nil unnormalized-body nil))
+                  (t (eval-ground-subexpressions1
+                      unnormalized-body
+                      ens wrld safe-mode gc-off ttree)))
+            (declare (ignore changedp))
+            (let ((hyp-segments
 
 ; Should we expand lambdas here?  I say ``yes,'' but only to be
 ; conservative with old code.  Perhaps we should change the t to nil?
 
-                 (clausify (dumb-negate-lit normal-guard)
-                           nil t (sr-limit wrld))))
-            (mv-let
-              (cl-set2 ttree)
-              (guard-clauses-for-body hyp-segments
-                                      body
-                                      (and debug-p `(:guard (:body ,name)))
+                   (clausify (dumb-negate-lit normal-guard)
+                             nil t (sr-limit wrld))))
+              (mv-let
+                (cl-set2 ttree)
+                (guard-clauses-for-body hyp-segments
+                                        body
+                                        (and debug-p `(:guard (:body ,name)))
 
 ; Observe that when we generate the guard clauses for the body we optimize
 ; the stobj recognizers away, provided the named function is executable.
 
-                                      (not (eq (getpropc name 'non-executablep
-                                                         nil wrld)
-                                               t))
-                                      ens wrld safe-mode gc-off ttree)
-              (mv-let (type-clauses ttree)
-                (guard-clauses-for-body
-                 hyp-segments
-                 (fcons-term* 'insist
-                              (getpropc name 'split-types-term *t* wrld))
-                 (and debug-p `(:guard (:type ,name)))
+                                        stobj-optp
+                                        ens wrld safe-mode gc-off ttree)
+                (mv-let (type-clauses ttree)
+                  (guard-clauses-for-body
+                   hyp-segments
+                   (fcons-term* 'insist
+                                (if (symbolp name)
+                                    (getpropc name 'split-types-term *t* wrld)
+                                    *t*))
+                   (and debug-p `(:guard (:type ,name)))
 
 ; There seems to be no clear reason for setting stobj-optp here to t.  This
 ; decision could easily be reconsidered; we are being conservative here since
 ; as we write this comment in Oct. 2017, stobj-optp = nil has been probably
 ; been used here since the inception of split-types.
 
-                 nil
-                 ens wrld safe-mode gc-off ttree)
-                (let ((cl-set2
-                       (if type-clauses ; optimization
-                           (conjoin-clause-sets+ debug-p type-clauses cl-set2)
-                         cl-set2)))
-                  (mv (conjoin-clause-sets+ debug-p cl-set1 cl-set2)
-                      ttree))))))))))
+                   nil
+                   ens wrld safe-mode gc-off ttree)
+                  (let ((cl-set2
+                         (if type-clauses ; optimization
+                             (conjoin-clause-sets+ debug-p
+                                                   type-clauses cl-set2)
+                             cl-set2)))
+                    (mv (conjoin-clause-sets+ debug-p
+                                              cl-set1 cl-set2)
+                        ttree)))))))))))
+
+(defun guard-clauses-for-fn1-lst (fns debug-p ens wrld safe-mode gc-off ttree)
+
+; Fns here is a list of function names and/or well-formed lambda objects.
+; Remember: not every lambda object is well-formed.  Use
+; well-formed-lambda-objectp to check before calling this function!
+
+  (cond ((endp fns) (mv nil ttree))
+        (t (mv-let (cl-set1 ttree)
+             (guard-clauses-for-fn1 (car fns) debug-p ens wrld safe-mode gc-off
+                                    ttree)
+             (mv-let (cl-set2 ttree)
+               (guard-clauses-for-fn1-lst (cdr fns) debug-p ens wrld safe-mode
+                                          gc-off ttree)
+               (mv (conjoin-clause-sets+ debug-p cl-set1 cl-set2)
+                   ttree))))))
+
+(defun well-formed-lambda-objects-in-fn (fn wrld)
+
+; Warning: name must be either the name of a function defined in wrld or a
+; well-formed lambda object.  Remember: not every lambda object is well-formed.
+; Use well-formed-lambda-objectp to check before calling this function!  We
+; return the list of all well-formed lambda objects in fn.
+
+  (cond
+   ((global-val 'boot-strap-flg wrld)
+
+; We do not expect to find any well-formed lambda objects during the
+; boot-strap.  Without this case, we get an error during "make proofs" when
+; evaluating the form form (verify-guards observation1-cw) in
+; boot-strap-pass-2-a.lisp, because of its use of wormholes.
+
+    nil)
+   (t
+    (let* ((guard
+            (if (symbolp fn)
+                (guard fn nil wrld)
+              (lambda-object-guard fn)))
+           (unnormalized-body
+            (if (symbolp fn)
+                (getpropc fn 'unnormalized-body
+                          '(:error "See WELL-FORMED-LAMBDA-OBJECTS-IN-FN")
+                          wrld)
+              (lambda-object-body fn)))
+           (ans (collect-certain-lambda-objects-lst
+                 :well-formed
+                 (list guard unnormalized-body)
+                 wrld nil)))
+
+; If fn is a well-formed lambda object (i.e., a non-symbol in this context)
+; then add it to the list because the collector above looks only for lambdas
+; inside quotes.
+
+      (if (symbolp fn)
+          ans
+        (cons fn ans))))))
+
+(defun well-formed-lambda-objects-in-fns (fns wrld)
+  (cond ((endp fns) nil)
+        (t (union-equal (well-formed-lambda-objects-in-fn (car fns) wrld)
+                        (well-formed-lambda-objects-in-fns (cdr fns) wrld)))))
+
+(defun guard-clauses-for-fn (fn debug-p ens wrld safe-mode gc-off ttree)
+
+; Warning: fn must be either the name of a function defined in wrld or a
+; well-formed lambda object.  Remember: not every lambda object is well-formed.
+; Use well-formed-lambda-objectp to check before calling this function!
+
+; We generate the guard clauses for fn and all of the well-formed lambda
+; objects in fn, including lambda objects within lambda objects.  We avoid
+; generating guard clauses for any lambda object already on
+; common-lisp-compliant-lambdas.  (Verify-guards will have already checked that
+; fn itself -- whether a function symbol or lambda object -- is not already
+; known to be compliant.)
+
+  (guard-clauses-for-fn1-lst
+   (cons fn (set-difference-equal
+             (well-formed-lambda-objects-in-fn fn wrld)
+             (global-val 'common-lisp-compliant-lambdas wrld)))
+   debug-p ens wrld safe-mode gc-off ttree))
 
 (defun guard-clauses-for-clique (names debug-p ens wrld safe-mode gc-off ttree)
 

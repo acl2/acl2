@@ -1022,7 +1022,12 @@ the expression beginning at the margin.  Leaves one at the original point."
       (setq quit-point (point))
       (goto-char old-point)
       (while (not (equal (point) quit-point))
-        (setq result (cons (move-up-one-level) result)))
+        (let ((n (move-up-one-level)))
+; We drop trailing zeros.  It doesn't make sense to dive into a function
+; symbol, and anyhow, the ACL2 function expand-address ignores trailing zeros.
+          (unless (and (null result)
+                       (equal n 0))
+            (setq result (cons n result)))))
       (goto-char old-point)
       result)))
 

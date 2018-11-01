@@ -32,21 +32,21 @@
         (sis 'X 0 n)))
  :guard (natp n))
 
-(defund v-equal& (netlist n)
-  (declare (xargs :guard (and (alistp netlist)
-                              (natp n))))
-  (and (equal (assoc (si 'V-EQUAL n) netlist)
-              (v-equal* n))
-       (let ((netlist (delete-to-eq (si 'V-EQUAL n) netlist)))
-         (and (v-xor& netlist n)
-              (tv-zp& netlist (make-tree n))))))
-
-(defun v-equal$netlist (n)
+(defund v-equal$netlist (n)
   (declare (xargs :guard (natp n)))
   (cons (v-equal* n)
         (union$ (v-xor$netlist n)
                 (tv-zp$netlist (make-tree n))
                 :test 'equal)))
+
+(defund v-equal& (netlist n)
+  (declare (xargs :guard (and (alistp netlist)
+                              (natp n))))
+  (b* ((subnetlist (delete-to-eq (si 'V-EQUAL n) netlist)))
+    (and (equal (assoc (si 'V-EQUAL n) netlist)
+                (v-equal* n))
+         (v-xor& subnetlist n)
+         (tv-zp& subnetlist (make-tree n)))))
 
 (defund f$v-equal (a b)
   (f$tv-zp (fv-xor a b) (make-tree (len a))))
@@ -60,7 +60,7 @@
 
 (not-primp-lemma v-equal)
 
-(defthmd v-equal$value
+(defthm v-equal$value
   (implies (and (v-equal& netlist n)
                 (< 0 n)
                 (true-listp a) (true-listp b)
@@ -74,9 +74,7 @@
            :in-theory (e/d (de-rules
                             v-equal&
                             v-equal*$destructure
-                            f$v-equal
-                            v-xor$value
-                            tv-zp$value)
+                            f$v-equal)
                            (de-module-disabled-rules)))))
 
 (defthm f$v-equal=equal*

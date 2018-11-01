@@ -147,7 +147,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; ARB-MERGE.
 
-(defun arb-merge$netlist (data-width)
+(defund arb-merge$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (arb-merge* data-width)
         (union$ (link$netlist 2)
@@ -162,14 +162,14 @@
 (defund arb-merge& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'arb-merge data-width) netlist)
-              (arb-merge* data-width))
-       (b* ((netlist (delete-to-eq (si 'arb-merge data-width) netlist)))
-         (and (link& netlist 2)
-              (joint-cntl& netlist)
-              (v-buf& netlist 2)
-              (v-if& netlist 2)
-              (tv-if& netlist (make-tree data-width))))))
+  (b* ((subnetlist (delete-to-eq (si 'arb-merge data-width) netlist)))
+    (and (equal (assoc (si 'arb-merge data-width) netlist)
+                (arb-merge* data-width))
+         (link& subnetlist 2)
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist 2)
+         (v-if& subnetlist 2)
+         (tv-if& subnetlist (make-tree data-width)))))
 
 ;; Sanity check
 
@@ -333,7 +333,7 @@
      (implies (bvp x)
               (booleanp (cadr x)))
      :hints (("Goal" :in-theory (enable bvp)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (defthm arb-merge$act-mutually-exclusive
     (implies (and (booleanp (nth 0 inputs))
@@ -380,7 +380,7 @@
 
 ;; The value lemma for ARB-MERGE
 
-(defthmd arb-merge$value
+(defthm arb-merge$value
   (b* ((inputs (list* full-in0 full-in1 empty-out-
                       (append data0-in data1-in
                               (cons select go-signals)))))
@@ -405,19 +405,13 @@
                             arb-merge&
                             arb-merge*$destructure
                             arb-merge$st-format
-                            link$value
-                            joint-cntl$value
-                            v-buf$value
-                            v-if$value
-                            tv-if$value
                             arb-merge$act
                             arb-merge$act0
                             arb-merge$act1
                             arb-merge$data0-in
                             arb-merge$data1-in
                             arb-merge$data-out)
-                           ((arb-merge*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of ARB-MERGE.
 
@@ -470,7 +464,7 @@
               (equal (list (3v-fix (car x)) (3v-fix (cadr x)))
                      (v-threefix x)))))
 
-  (defthmd arb-merge$state
+  (defthm arb-merge$state
     (b* ((inputs (list* full-in0 full-in1 empty-out-
                         (append data0-in data1-in
                                 (cons select go-signals)))))
@@ -503,15 +497,8 @@
                               arb-merge$act
                               arb-merge$act0
                               arb-merge$act1
-                              list-rewrite-2
-                              link$value
-                              link$state
-                              joint-cntl$value
-                              v-buf$value
-                              ;;v-if$value
-                              tv-if$value)
-                             ((arb-merge*)
-                              3v-fix
+                              list-rewrite-2)
+                             (3v-fix
                               de-module-disabled-rules)))))
 
   (in-theory (disable arb-merge$step))

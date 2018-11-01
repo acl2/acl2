@@ -337,6 +337,10 @@
   Plans. In the Fourteenth International Workshop on the ACL2 Theorem
   Prover and Its Applications (ACL2 Workshop), 2017</li>
 
+ <li>Alessandro Coglio and Shilpi Goel. Adding 32-bit Mode to the ACL2 Model of
+  the x86 ISA. In the Fifteenth International Workshop on the ACL2 Theorem
+  Prover and Its Applications (ACL2 Workshop), 2018</li>
+
  </ol>")
 
 (defxdoc Contributors

@@ -171,7 +171,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; SERIAL-ADD.
 
-(defun serial-add$netlist (data-width cnt-width)
+(defund serial-add$netlist (data-width cnt-width)
   (declare (xargs :guard (and (posp data-width)
                               (natp cnt-width)
                               (<= 3 cnt-width))))
@@ -189,15 +189,15 @@
                               (posp data-width)
                               (natp cnt-width)
                               (<= 3 cnt-width))))
-  (and (equal (assoc (si 'serial-add data-width) netlist)
-              (serial-add* data-width cnt-width))
-       (b* ((netlist (delete-to-eq (si 'serial-add data-width) netlist)))
-         (and (link1& netlist)
-              (joint-cntl& netlist)
-              (fast-zero& netlist (1- cnt-width))
-              (full-adder& netlist)
-              (shift-register2-piso& netlist data-width cnt-width)
-              (shift-register-sipo& netlist data-width cnt-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'serial-add data-width) netlist)))
+    (and (equal (assoc (si 'serial-add data-width) netlist)
+                (serial-add* data-width cnt-width))
+         (link1& subnetlist)
+         (joint-cntl& subnetlist)
+         (fast-zero& subnetlist (1- cnt-width))
+         (full-adder& subnetlist)
+         (shift-register2-piso& subnetlist data-width cnt-width)
+         (shift-register-sipo& subnetlist data-width cnt-width))))
 
 ;; Sanity check
 
@@ -413,7 +413,7 @@
 
 ;; The value lemma for SERIAL-ADD
 
-(defthmd serial-add$value
+(defthm serial-add$value
   (b* ((inputs (list* full-in empty-out-
                       (append data0-in data1-in go-signals))))
     (implies (and (serial-add& netlist data-width cnt-width)
@@ -434,12 +434,6 @@
            :in-theory (e/d (de-rules
                             serial-add&
                             serial-add*$destructure
-                            link1$value
-                            joint-cntl$value
-                            fast-zero$value
-                            full-adder$value
-                            shift-register2-piso$value
-                            shift-register-sipo$value
                             serial-add$data0-in
                             serial-add$data1-in
                             serial-add$sregs2-inputs
@@ -448,8 +442,7 @@
                             serial-add$in-act
                             serial-add$out-act
                             serial-add$data-out)
-                           ((serial-add*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of SERIAL-ADD.
 
@@ -534,7 +527,7 @@
 
 ;; The state lemma for SERIAL-ADD
 
-(defthmd serial-add$state
+(defthm serial-add$state
   (b* ((inputs (list* full-in empty-out-
                       (append data0-in data1-in go-signals))))
     (implies
@@ -556,22 +549,12 @@
            :in-theory (e/d (de-rules
                             serial-add&
                             serial-add*$destructure
-                            link1$value
-                            link1$state
-                            joint-cntl$value
-                            fast-zero$value
-                            full-adder$value
-                            shift-register2-piso$value
-                            shift-register2-piso$state
-                            shift-register-sipo$value
-                            shift-register-sipo$state
                             serial-add$data0-in
                             serial-add$data1-in
                             serial-add$sregs2-inputs
                             serial-add$sreg-inputs
                             serial-add$st-format)
-                           ((serial-add*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable serial-add$step))
 
@@ -642,7 +625,7 @@
                             serial-add$in-act)
                            (serial-add$input-format=>sregs2$input-format
                             link1$valid-st))))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-serial-add$out-act
   (implies (and (serial-add$input-format inputs data-width)
@@ -654,7 +637,7 @@
                             serial-add$out-act)
                            (serial-add$input-format=>sreg$input-format
                             link1$valid-st))))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma serial-add :sizes (data-width cnt-width))
 

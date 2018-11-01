@@ -1254,6 +1254,26 @@
            x)
           ((atom x) (kwote x))
           (t x)))
+   ((eq (car x) 'lambda$)
+    (mv-let (flg tx bindings)
+      (translate11-lambda-object x
+                                 '(nil) ; stobjs-out
+                                 nil    ; bindings
+                                 nil    ; known-stobjs
+                                 nil    ; flet-alist
+                                 x
+                                 'oneify
+                                 w
+                                 *default-state-vars*)
+      (declare (ignore bindings))
+      (if flg
+          (interface-er "Implementation error: Translate11-lambda-object in ~
+                         oneify encountered an untranslatable LAMBDA$, ~x0, ~
+                         even though it was supposedly translated ~
+                         successfully earlier.  Please contact the ACL2 ~
+                         implementors." 
+                        x)
+          tx)))
    ((not (symbolp (car x)))
     (oneify
      (list* 'let (listlis (cadr (car x))
@@ -1539,7 +1559,7 @@
    ((eq (car x) 'wormhole-eval)
 
 ; We know that in a well-formed term (wormhole-eval x y z), x is a quoted
-; constant naming the wormhole, y is a quoted lambda of either the form (lambda
+; constant naming the wormhole, y is a lambda object of either the form (lambda
 ; (whs) body) or (lambda () body) that will be applied to the wormhole status,
 ; and z is some well-formed (irrelevant) term.  The oneify of a quote is
 ; itself, so we don't have to do anything to x.  But with y, we oneify the

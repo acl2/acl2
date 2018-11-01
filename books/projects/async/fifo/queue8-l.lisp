@@ -102,7 +102,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; QUEUE8-L.
 
-(defun queue8-l$netlist (data-width)
+(defund queue8-l$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (queue8-l* data-width)
         (union$ (queue4-l$netlist data-width)
@@ -113,12 +113,12 @@
 (defund queue8-l& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'queue8-l data-width) netlist)
-              (queue8-l* data-width))
-       (b* ((netlist (delete-to-eq (si 'queue8-l data-width) netlist)))
-         (and (joint-cntl& netlist)
-              (v-buf& netlist data-width)
-              (queue4-l& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'queue8-l data-width) netlist)))
+    (and (equal (assoc (si 'queue8-l data-width) netlist)
+                (queue8-l* data-width))
+         (joint-cntl& subnetlist)
+         (v-buf& subnetlist data-width)
+         (queue4-l& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -247,7 +247,7 @@
              (booleanp (queue8-l$ready-in- st)))
     :hints (("Goal" :in-theory (enable queue8-l$valid-st
                                        queue8-l$ready-in-)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the "ready-out" signal
 
@@ -260,7 +260,7 @@
              (booleanp (queue8-l$ready-out st)))
     :hints (("Goal" :in-theory (enable queue8-l$valid-st
                                        queue8-l$ready-out)))
-    :rule-classes :type-prescription)
+    :rule-classes (:rewrite :type-prescription))
 
   ;; Extract the output data
 
@@ -303,7 +303,7 @@
 
 ;; The value lemma for QUEUE8-L
 
-(defthmd queue8-l$value
+(defthm queue8-l$value
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue8-l& netlist data-width)
                   (queue8-l$st-format st data-width))
@@ -316,15 +316,11 @@
            :in-theory (e/d (de-rules
                             queue8-l&
                             queue8-l*$destructure
-                            joint-cntl$value
-                            v-buf$value
-                            queue4-l$value
                             queue8-l$st-format
                             queue8-l$ready-in-
                             queue8-l$ready-out
                             queue8-l$data-out)
-                           ((queue8-l*)
-                            de-module-disabled-rules)))))
+                           (de-module-disabled-rules)))))
 
 ;; This function specifies the next state of QUEUE8-L.
 
@@ -365,7 +361,7 @@
 
 ;; The state lemma for QUEUE8-L
 
-(defthmd queue8-l$state
+(defthm queue8-l$state
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
     (implies (and (queue8-l& netlist data-width)
                   (true-listp data-in)
@@ -387,13 +383,8 @@
                             queue8-l$out-act
                             queue8-l$data-in
                             queue8-l$q4-l0-inputs
-                            queue8-l$q4-l1-inputs
-                            joint-cntl$value
-                            v-buf$value
-                            queue4-l$value
-                            queue4-l$state)
-                           ((queue8-l*)
-                            de-module-disabled-rules)))))
+                            queue8-l$q4-l1-inputs)
+                           (de-module-disabled-rules)))))
 
 (in-theory (disable queue8-l$step))
 
@@ -472,14 +463,14 @@
            (booleanp (queue8-l$in-act inputs)))
   :hints (("Goal" :in-theory (enable queue8-l$input-format
                                      queue8-l$in-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue8-l$out-act
   (implies (queue8-l$input-format inputs st data-wisth)
            (booleanp (queue8-l$out-act inputs)))
   :hints (("Goal" :in-theory (enable queue8-l$input-format
                                      queue8-l$out-act)))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma queue8-l :clink t)
 

@@ -81,7 +81,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; GCD-BODY.
 
-(defun gcd-body$netlist (data-width)
+(defund gcd-body$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (gcd-body* data-width)
         (union$ (merge$netlist (* 2 data-width))
@@ -95,13 +95,13 @@
 (defund gcd-body& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'gcd-body data-width) netlist)
-              (gcd-body* data-width))
-       (b* ((netlist (delete-to-eq (si 'gcd-body data-width) netlist)))
-         (and (merge& netlist (* 2 data-width))
-              (v-buf& netlist (* 2 data-width))
-              (v-<& netlist data-width)
-              (ripple-sub& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'gcd-body data-width) netlist)))
+    (and (equal (assoc (si 'gcd-body data-width) netlist)
+                (gcd-body* data-width))
+         (merge& subnetlist (* 2 data-width))
+         (v-buf& subnetlist (* 2 data-width))
+         (v-<& subnetlist data-width)
+         (ripple-sub& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -240,7 +240,7 @@
               (equal (list (car l))
                      l))))
 
-  (defthmd gcd-body$value
+  (defthm gcd-body$value
     (b* ((inputs (list* full-in empty-out-
                         (append data-in go-signals))))
       (implies (and (posp data-width)
@@ -265,13 +265,8 @@
                               gcd-body$act
                               gcd-body$data-out
                               gcd-body$data0-out
-                              gcd-body$data1-out
-                              merge$value
-                              v-buf$value
-                              v-<$value
-                              ripple-sub$value)
-                             ((gcd-body*)
-                              append-take-nthcdr
+                              gcd-body$data1-out)
+                             (append-take-nthcdr
                               de-module-disabled-rules)))))
   )
 

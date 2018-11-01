@@ -15,4 +15,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm-digit-byte-return-types 2)
+(defruled dab-digit-listp-of-4-rewrite-ubyte2-listp
+  (equal (dab-digit-listp 4 x)
+         (ubyte2-listp x))
+  :enable (dab-digit-listp dab-digitp ubyte2-listp ubyte2p))
+
+(defthm-dab-return-types
+  dab-digit-listp-of-4-rewrite-ubyte2-listp
+  ubyte2-listp-of
+  :topic digit-ubyte2-return-types
+  :parents (digits-any-base-pow2)
+  :short "Additional return type theorems for conversions of natural numbers
+          to digits in base 4, with @(tsee ubyte2-listp).")

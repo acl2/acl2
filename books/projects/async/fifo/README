@@ -20,6 +20,13 @@ queue2.lisp: a queue, Q2, of 2 links.
 
 queue3.lisp:  a queue, Q3, of 3 links.
 
+queue4.lisp:  a queue, Q4, of 4 links.
+
+queue5.lisp:  a queue, Q5, of 5 links.
+
+queue10.lisp: a queue, Q10, of 10 links.  It is constructed by
+connecting Q4 with Q5 via a link.
+
 queue3-l.lisp: a queue, Q3', of 3 links. It is designed as a
 complex link.
 

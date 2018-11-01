@@ -352,7 +352,7 @@
        (r (genvar old$ "R" nil formals))
        (q (genvar old$ "Q" nil formals))
        (combine-nonrec (subst-expr r rec-call rec-branch))
-       ((er &) (ensure-term-does-not-call$
+       ((er &) (ensure-term-not-call-of$
                 combine-nonrec
                 'if
                 (msg "After translation and LET expansion, ~

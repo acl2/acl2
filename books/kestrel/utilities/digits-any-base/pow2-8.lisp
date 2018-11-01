@@ -15,4 +15,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm-digit-byte-return-types 8)
+(defruled dab-digit-listp-of-256-rewrite-ubyte8-listp
+  (equal (dab-digit-listp 256 x)
+         (ubyte8-listp x))
+  :enable (dab-digit-listp dab-digitp ubyte8-listp ubyte8p))
+
+(defthm-dab-return-types
+  dab-digit-listp-of-256-rewrite-ubyte8-listp
+  ubyte8-listp-of
+  :topic digit-ubyte8-return-types
+  :parents (digits-any-base-pow2)
+  :short "Additional return type theorems for conversions of natural numbers
+          to digits in base 256, with @(tsee ubyte8-listp).")
