@@ -10,7 +10,6 @@
 ;; that need to be certified for acl2s-mode to be used in emacs.
 (in-package "ACL2")
 
-
 (include-book "misc/expander" :dir :system)
 (include-book "misc/bash" :dir :system)
 (include-book "ordinals/lexicographic-ordering" :dir :system)
@@ -33,7 +32,11 @@
 (include-book "xdoc/topics" :dir :system)
 (include-book "system/doc/acl2-doc-wrap" :dir :system)
 (include-book "misc/eval" :dir :system)
-(include-book "rtl/rel11/lib/top" :dir :system)
+
+#|
+ (include-book 
+    "rtl/rel11/lib/top" :dir :system) 
+|#
 
 ; Added for fixers support. [2016-02-19 Fri]
 ;; (make-event
@@ -44,4 +47,3 @@
 ;;         (include-book "centaur/gl/bfr-satlink" :dir :system :ttags :all)
 ;;         (include-book "centaur/satlink/check-config" :dir :system))
 ;;    '(value-triple :invisible)))
-
