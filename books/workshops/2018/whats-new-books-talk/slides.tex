@@ -144,6 +144,11 @@ Interface to hardware model checkers.
 \bookpath{centaur/truth}:
 Integer-encoded truth table library.
 
+\
+
+\bookpath{coi/quantification/quantified-congruence.lisp}:
+A library for proving congruences about quantified formulae.
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -512,16 +517,6 @@ are elsewhere, not under \code{workshops/2018}.
 
 \begin{frame}
 
-\newlibtitle
-
-TODO: add more contributions
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
 \implibtitle
 
 \bookpath{centaur/aignet}:
@@ -608,10 +603,41 @@ Add new SystemVerilog lint check based on accurately determining
 used/set ranges of vectors.
 \end{itemize}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{coi/generalize/generalize.lisp}:
+A library that generalizes terms that appear as arguments to the
+function \code{(gensym::generalize term)}.
+\begin{itemize}
+\item
+Now supports one-step generalization of multiple terms.
+\end{itemize}
+
 \
 
-\bookpath{coi/...}:
-TODO: add
+\bookpath{coi/nary/nary.lisp}:
+A library supporting parametrized equivalence relations and related congruences.
+\begin{itemize}
+\item
+Improved support for non-traditional congruences involving
+implications rather than equalities.
+\end{itemize}
+
+\
+
+\bookpath{coi/util/deffix.lisp}:
+Given an equivalence relation, the macro \code{def::fix} witnesses an
+appropriate fixing function.
+\begin{itemize}
+\item
+Added support for witnessing fixing functions that preserve (fix) a type.
+\end{itemize}
 
 \end{frame}
 
@@ -944,16 +970,6 @@ Fixed an issue with option \code{:do-not-compile t} by extending
 Improved \code{removable-runes} and added related utility,
 \code{minimal-runes}, which returns a list of runes to enable that is
 sufficient for admitting a given event.
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-TODO: add more contributions
 
 \end{frame}
 
