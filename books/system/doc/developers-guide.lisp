@@ -37,10 +37,12 @@
  information.  It is at: <code><a
  href='http://www.cs.utexas.edu/users/moore/acl2/workshop-devel-2017/'>http://www.cs.utexas.edu/users/moore/acl2/workshop-devel-2017/</a></code></p>
 
- <p>Note that for the second Developer's Workshop some colors were added to
- help guide the discussion.  This <color rgb='#c00000'>red color</color>
- highlights passages that were to be given some emphasis.  Also, in some cases
- there is a note of the following form, for use in the workshop:</p>
+ <p>Note that for the second Developer's Workshop, some colors were added to
+ this Guide to help guide the discussion.  (Colors show up in the web version
+ but not in the @(see acl2-doc) browser.)  This <color rgb='#c00000'>red
+ color</color> highlights passages that were to be given some emphasis.  Also,
+ in some cases there is a note of the following form, for use in the
+ workshop:</p>
 
  <color rgb='#800080'><p>[...SOME NOTE FOR THE WORKSHOP...]</p></color>
 
@@ -56,7 +58,9 @@
  <p>The subtopics listed below are sometimes referred to as ``chapters'' of
  this (Developer's) Guide.  They can be read in any order, but on a first read,
  you may find it helpful to read them in the order in which they appear
- below.</p>")
+ below.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-introduction)</p>")
 
 (defxdoc developers-guide-introduction
   :parents (developers-guide)
@@ -89,9 +93,8 @@
 
  <ul><li>It is typical to read comments (which are sometimes extensive) when
  modifying the source code, often after reading some user-level documentation,
- to get up to speed.  When there are problems with the comments, they are
- typically updated.  There is no need to document the entire system in one
- place!</li></ul></li>
+ to get up to speed.  As we encounter comments that aren't clear (and correct),
+ we fix them.</li></ul></li>
 
  </ul>
 
@@ -227,7 +230,9 @@
  <p>Exploration of the ACL2 system is perhaps most efficient when
  goal-directed, i.e., when you are trying to understand specific aspects of the
  system.  That said, a quick browse of this entire guide is recommended for
- ACL2 system developers.</p>")
+ ACL2 system developers.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-emacs)</p>")
 
 (defxdoc developers-guide-emacs
   :parents (developers-guide)
@@ -279,7 +284,9 @@
  be sufficient for maintaining @('emacs/emacs-acl2.el') as well.  So avoid
  fancy Emacs features not already found in use in that file.</li>
 
- </ul>")
+ </ul>
+
+ <p>NEXT SECTION: @(see developers-guide-background)</p>")
 
 (defxdoc developers-guide-background
   :parents (developers-guide)
@@ -331,7 +338,47 @@
  a symbol, which is the value of constant @('*the-live-state*').</color>
  Sometimes we call this the ``<color rgb='#c00000'>live state</color>'', to
  distinguish it from its logical value, which is a list of fields.  See @(see
- state).  Note that the ACL2 state can be viewed a special, built-in case of a
+ state) for relevant background.</p>
+
+ <p><color rgb='#c00000'>It may seem impossible for a fixed symbol to represent
+ a changeable state.  But let us consider for example what happens when we
+ update a state global variable (see @(see f-put-global)) in raw Lisp.</color>
+ In the following example (where we elide code for the case of wormholes) there
+ are two cases.  The interesting case is the first one, in which the state is
+ the live state.  We see below that there is an associated global (special)
+ variable, in a package obtained by prefixing the string @('\"ACL2_GLOBAL_\"')
+ to the front of the symbol's package-name: <tt><color
+ rgb='#c00000'>ACL2_GLOBAL_</color>ACL2::XYZ</tt>.  The code below updates that
+ global.</p>
+
+ @({
+ ? (pprint (macroexpand '(f-put-global 'xyz (+ 3 4) state)))
+
+ (LET ((#:G128770 (+ 3 4)) (#:G128771 STATE))
+   (COND ((LIVE-STATE-P #:G128771)
+          (COND (*WORMHOLEP* ...))
+          (LET ()
+            (DECLARE (SPECIAL ACL2_GLOBAL_ACL2::XYZ))
+            (SETQ ACL2_GLOBAL_ACL2::XYZ #:G128770)
+            #:G128771))
+         (T (PUT-GLOBAL 'XYZ #:G128770 #:G128771))))
+ ?
+ })
+
+ <p>To read a state global from the live state, we simply read its associated
+ global variable.</p>
+
+ @({
+ ? (pprint (macroexpand '(f-get-global 'xyz state)))
+
+ (LET ((#:G128772 STATE))
+   (DECLARE (SPECIAL ACL2_GLOBAL_ACL2::XYZ))
+   (COND ((LIVE-STATE-P #:G128772) ACL2_GLOBAL_ACL2::XYZ)
+         (T (GET-GLOBAL 'XYZ #:G128772))))
+ ?
+ })
+
+ <p>Note that the ACL2 state can be viewed as a special, built-in case of a
  @(see stobj).  Indeed, we may also speak of ``<color rgb='#c00000'>live
  stobjs</color>'', to distinguish them from their logical, list-based
  representations, and a stobj, @('st'), is represented in the implementation as
@@ -355,13 +402,14 @@
  ?
  })
 
- <p>One of those (logical) fields is the <i>global-table</i>, which is an
- association list mapping symbols, called <i>state global variables</i> (or
- <i>state globals</i>), to values.  See also @(see programming-with-state).
+ <p>One of the logical fields of the state is the <i>global-table</i>, which is
+ an association list mapping symbols, namely state global variables (sometimes
+ called ``state globals''), to values.  See also @(see programming-with-state).
  One particular state global, the symbol @('current-acl2-world'), is mapped to
  the current logical @(see world), often just called ``the world''.  Here is
- the logical definition of the function @('(w state)') that returns this
- world.</p>
+ the logical definition of the function @('(w state)') that returns this world;
+ note that it calls the macro @(tsee f-get-global), which, as explained above,
+ generates a read of a Lisp global.</p>
 
  @(def w)
 
@@ -1061,7 +1109,9 @@
  incorporated into ACL2 by Kaufmann and Moore after an extensive code review.
  Since Kaufmann and Moore now stand behind the resulting system and are
  maintaining it, and with assent from its contributors, what was formerly
- ACL2(h) is now just ACL2.</p>")
+ ACL2(h) is now just ACL2.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-build)</p>")
 
 (defxdoc developers-guide-background-extra
   :parents (developers-guide-background)
@@ -1246,7 +1296,9 @@
  documentation topic @(see verify-guards-for-system-functions) provides
  details.  <color rgb='#c00000'>However, after you have some familiarity with
  this procedure you might prefer to follow a script given as a comment in
- @('*system-verify-guards-alist*').</color></p>")
+ @('*system-verify-guards-alist*').</color></p>
+
+ <p>NEXT SECTION: @(see developers-guide-maintenance)</p>")
 
 (defxdoc developers-guide-maintenance
   :parents (developers-guide)
@@ -1625,7 +1677,9 @@
  documentation, and output (e.g., for warnings and errors).</color> These are
  important and may take longer than the implementation work itself.</li>
 
- </ul>")
+ </ul>
+
+ <p>NEXT SECTION: @(see developers-guide-contributing)</p>")
 
 (defxdoc developers-guide-contributing
   :parents (developers-guide)
@@ -1723,7 +1777,8 @@
  git push https://github.com/acl2/acl2 master
  })</li>
  </ol>
- ")
+
+ <p>NEXT SECTION: @(see developers-guide-utilities)</p>")
 
 (defxdoc developers-guide-utilities
   :parents (developers-guide)
@@ -1984,7 +2039,9 @@
  you need.  For example, <color rgb='#c00000'>if you call
  @('assume-true-false') to extend an existing type-alist, then you are using a
  well-worn interface and you needn't be concerned about the well-formedness of
- the resulting type-alists</color>.</p>")
+ the resulting type-alists</color>.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-logic)</p>")
 
 (defxdoc developers-guide-logic
   :parents (developers-guide)
@@ -2391,7 +2448,9 @@
 
  <p>A few other features of ACL2 with interesting logical foundations are
  @(tsee defchoose), @(tsee defabsstobj), and the interaction of packages with
- @(tsee local) (see the ``Essay on Hidden Packages'').</p>")
+ @(tsee local) (see the ``Essay on Hidden Packages'').</p>
+
+ <p>NEXT SECTION: @(see developers-guide-programming)</p>")
 
 (defxdoc developers-guide-programming
   :parents (developers-guide)
@@ -2595,7 +2654,9 @@
  book, we check theory-invariants just once, at the end of the book inclusion
  process, for efficiency.  So one way to be careful is to do various checks
  even when @('(ld-skip-proofsp state)') is @('t'), even if these checks are to
- be skipped when including books.</p>")
+ be skipped when including books.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-prioritizing)</p>")
 
 (defxdoc developers-guide-prioritizing
   :parents (developers-guide)
@@ -2651,7 +2712,9 @@
  judgment, between introducing behavioral changes and maintaining the community
  books and private repositories.  There needs to be a guess about whether the
  benefit of the change outweighs the effort required to design and implement it
- and the fallout of requiring changes to books.</p>")
+ and the fallout of requiring changes to books.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-evaluation)</p>")
 
 (defxdoc developers-guide-evaluation
 
@@ -2823,7 +2886,9 @@
  <p>Do you see an inefficiency above?</p>
 
  <p>See code comments for how oneification deals with subtleties such as
- safe-mode, stobjs, and invariant-risk.</p>")
+ safe-mode, stobjs, and invariant-risk.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-miscellany)</p>")
 
 (defxdoc developers-guide-miscellany
   :parents (developers-guide)
@@ -2860,7 +2925,9 @@
  but it has probably been quite some time since it was tested.  Perhaps it is
  time to remove all such code; indeed, the release notes for Version 8.0 (see
  @(see note-8-0)) say that ``The (minimal) support for infix printing has been
- removed.''</p>")
+ removed.''</p>
+
+ <p>NEXT SECTION: @(see developers-guide-releases)</p>")
 
 (defxdoc developers-guide-releases
   :parents (developers-guide)
@@ -2883,7 +2950,9 @@
  numbered releases should talk with Matt Kaufmann about obtaining those
  instructions, which perhaps would become public at that point.  (It could take
  non-trivial effort to clarify those instructions for the ``public'', so let's
- wait till there is such a volunteer.)</p>")
+ wait till there is such a volunteer.)</p>
+
+ <p>NEXT SECTION: @(see developers-guide-style)</p>")
 
 (defxdoc developers-guide-style
   :parents (developers-guide)
@@ -2937,7 +3006,9 @@
  <p>We generally avoid capitalizing all letters in a single word, except
  perhaps for keywords or quoted constants.</p>
 
- <p>There are no multi-line comments: @('#|| ... ||#').</p>")
+ <p>There are no multi-line comments: @('#|| ... ||#').</p>
+
+ <p>NEXT SECTION: @(see developers-guide-other)</p>")
 
 (defxdoc developers-guide-other
   :parents (developers-guide)
@@ -2983,7 +3054,9 @@
 
  <p>Perhaps this Guide will be expanded in the future.  If so, the expansion
  should probably not duplicate code comments, but rather, provide overview
- information and perspective with pointers to those comments.</p>")
+ information and perspective with pointers to those comments.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-acl2-devel)</p>")
 
 (defxdoc developers-guide-acl2-devel
   :parents (developers-guide)
@@ -3000,7 +3073,8 @@
  also is not the right place; note that it is missing at least one important
  member of acl2-devel.</p>
 
- <p>Happy developing!</p>")
+ <p>This is the final topic under @(see developers-guide).<br/>HAPPY
+ DEVELOPING!</p>")
 
 (xdoc::order-subtopics developers-guide
                        ()
