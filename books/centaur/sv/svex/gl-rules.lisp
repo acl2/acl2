@@ -654,3 +654,75 @@
 (gl::def-gl-rewrite 4vec-of-self
   (equal (4vec x x) (ifix x))
   :hints(("Goal" :in-theory (enable 4vec-p 4vec->upper 4vec->lower))))
+
+
+
+(gl::def-gl-rewrite logbitp0-of-4vec
+  (equal (logbitp0 (4vec x y))
+         (if (equal (ifix x) (ifix y))
+             (logbitp0 x)
+           nil))
+  :hints(("Goal" :in-theory (enable 4vec logbitp0 logbitp))))
+
+(gl::def-gl-rewrite logcdr-of-4vec
+  (equal (logcdr (4vec x y))
+         (if (equal (ifix x) (ifix y))
+             (logcdr x)
+           0))
+  :hints(("Goal" :in-theory (enable 4vec logcdr))))
+
+(gl::def-gl-rewrite logtail-of-4vec
+  (equal (logtail n (4vec x y))
+         (if (equal (ifix x) (ifix y))
+             (logtail n x)
+           0))
+  :hints(("Goal" :in-theory (enable 4vec logtail))))
+
+(gl::def-gl-rewrite lognot-of-4vec
+  (equal (lognot (4vec x y))
+         (if (equal (ifix x) (ifix y))
+             (lognot x)
+           -1))
+  :hints(("Goal" :in-theory (enable 4vec lognot))))
+
+(gl::def-gl-rewrite plus-of-4vec-1
+  (equal (+ (4vec x y) z)
+         (if (equal (ifix x) (ifix y))
+             (+ (ifix x) z)
+           (+ 0 z)))
+  :hints(("Goal" :in-theory (enable 4vec))))
+
+(gl::def-gl-rewrite plus-of-4vec-2
+  (equal (+ z (4vec x y))
+         (if (equal (ifix x) (ifix y))
+             (+ z (ifix x))
+           (+ z 0)))
+  :hints(("Goal" :in-theory (enable 4vec))))
+
+(gl::def-gl-rewrite minus-of-4vec
+  (equal (- (4vec x y))
+         (if (equal (ifix x) (ifix y))
+             (- (ifix x))
+           0))
+  :hints(("Goal" :in-theory (enable 4vec))))
+
+(gl::def-gl-rewrite <-of-4vec-1
+  (equal (< (4vec x y) z)
+         (if (equal (ifix x) (ifix y))
+             (< (ifix x) z)
+           (< 0 z)))
+  :hints(("Goal" :in-theory (enable 4vec))))
+
+(gl::def-gl-rewrite <-of-4vec-2
+  (equal (< z (4vec x y))
+         (if (equal (ifix x) (ifix y))
+             (< z (ifix x))
+           (< z 0)))
+  :hints(("Goal" :in-theory (enable 4vec))))
+
+(gl::def-gl-rewrite ifix-of-4vec
+  (equal (ifix (4vec x y))
+         (if (equal (ifix x) (ifix y))
+             (ifix x)
+           0))
+  :hints(("Goal" :in-theory (enable 4vec))))
