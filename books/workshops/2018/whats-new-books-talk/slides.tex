@@ -17,6 +17,8 @@
 \newcommand{\newlibtitle}{\frametitle{New Libraries}}
 \newcommand{\implibtitle}{\frametitle{Improved Libraries}}
 
+\newcommand{\separation}{\vspace*{1ex}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
@@ -30,21 +32,21 @@
 \author{Cuong Chau\inst{9},
         Alessandro Coglio\inst{5},
         Jared Davis\inst{1},
-        \\
+        \\separation
         Andrew Gacek\inst{7},
         Shilpi Goel\inst{3},
         Mark Greenstreet\inst{8},
-        \\
+        \\separation
         David Greve\inst{7},
         Matt Kaufmann\inst{9},
         Keshav Kini\inst{6},
         Carl Kwan\inst{8},
-        \\
+        \\separation
         Mihir Mehta\inst{9},
         J Moore\inst{9},
         David Russinoff\inst{2},
         Julien Schmaltz\inst{4},
-        \\
+        \\separation
         Rob Sumners\inst{3},
         Sol Swords\inst{3}}
 
@@ -55,7 +57,7 @@
            \inst{5}Kestrel Institute,
            \inst{6}Oracle,
            \inst{7}Rockwell Collins,
-           \inst{8}University of British Columbia, \\
+           \inst{8}University of British Columbia, \\separation
            \inst{9}University of Texas at Austin}
 
 \date{ACL2-2018 Workshop}
@@ -82,7 +84,7 @@
 % in which case, there's little to say here at all.
 %\end{itemize}
 
-%\ % to separate the next entry, if any
+%\separation % to separate the next entry, if any
 
 %\bookpath{another/path}: % as above
 
@@ -123,28 +125,28 @@
 Defines \code{ifdef} and \code{ifndef} forms which test environment variables;
 supported by the build system.
 
-\
+\separation
 
 \bookpath{centaur/acre}:
 New regular expression implementation supporting features somewhat similar to Perl regexes.
 
-\
+\separation
 
 \bookpath{centaur/bitops/sparseint.lisp}:
 Library representing bignums as balanced trees to efficiently support
 operations that preserve large ranges of bits.
 
-\
+\separation
 
 \bookpath{centaur/glmc}:
 Interface to hardware model checkers.
 
-\
+\separation
 
 \bookpath{centaur/truth}:
 Integer-encoded truth table library.
 
-\
+\separation
 
 \bookpath{coi/quantification/quantified-congruence.lisp}:
 A library for proving congruences about quantified formulae.
@@ -170,7 +172,7 @@ Also includes some utilities used across transformations.
 More forthcoming.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{kestrel/auto-termination}:
 \code{defunt} is a variant of \code{defun} that can prove termination
@@ -180,7 +182,7 @@ community books, as described in the paper
 by Using the Community Books}
 at this workshop.
 
-\
+\separation
 
 \bookpath{kestrel/bitcoin}:
 A (small start towards a) library for the Bitcoin cryptocurrency and ecosystem.
@@ -212,7 +214,7 @@ Executable specification of hex-prefix encoding.
 Kestrel is actively working on this.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{kestrel/java}:
 A library for Java.
@@ -239,14 +241,14 @@ described in the paper just above.
 \bookpath{kestrel/utilities/apply-fn-if-known.lisp}:
 Apply a function, expressed as a package and a name, if it exists.
 
-\
+\separation
 
 \bookpath{kestrel/utilities/auto-instance.lisp}:
 \code{defthm<w} will attempt to prove a theorem directly
 from previously-proved theorems by generating
 suitable hints, using \code{previous-subsumer-hints}.
 
-\
+\separation
 
 \bookpath{kestrel/utilities/digits-any-base}:
 Conversions between natural numbers
@@ -260,7 +262,7 @@ Minimal, minimal non-zero, or specified length.
 Several theorems, e.g.\ about inversions.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{kestrel/utilities/er-soft-plus.lisp}:
 The logic-mode utilities \code{er-soft+} and \code{er-soft-logic} produce
@@ -287,7 +289,7 @@ Several instances available; just include the respective file(s).
 These are candidate extensions of the \code{fty} library.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{kestrel/utilities/include-book-paths.lisp}:
 List paths via \code{include-book} down to a given book; may be useful
@@ -313,18 +315,18 @@ Parameterized fixers
 Several theorems.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{kestrel/utilities/magic-macroexpand.lisp}:
 Logic-mode macroexpansion.
 
-\
+\separation
 
 \bookpath{kestrel/utilities/messages.lisp}:
 A few utilities for \code{msgp} values,
 e.g.\ to convert the first character to upper/lower case.
 
-\
+\separation
 
 \bookpath{kestrel/utilities/orelse.lisp}:
 Try one event, then a second one if the first fails.
@@ -352,13 +354,13 @@ a more general macro, \code{fancy-use}, for using lemma
 instances efficiently.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{kestrel/utilities/skip-in-book.lisp}:
 The utility, \code{skip-in-book}, wraps around a form to prevent its
 evaluation during book certification or inclusion.
 
-\
+\separation
 
 \bookpath{kestrel/utilities/symbols.lisp}:
 Some utilities for symbols.
@@ -380,13 +382,13 @@ Utilities for names consisting of
 two parts with a customizable separator in between.
 (Used by APT, but more general.)
 
-\
+\separation
 
 \bookpath{kestrel/utilities/untranslate-preprocessing.lisp}:
 A macro \code{add-const-to-untranslate-preprocess}
 to keep a named constant unexpanded in the screen output.
 
-\
+\separation
 
 \bookpath{kestrel/utilities/xdoc}:
 XDOCumentation utilities.
@@ -417,25 +419,25 @@ These are candidate extensions of the \code{xdoc} library.
 \bookpath{projects/async/tools/convert-edif.lisp}:
 Convert between EDIF format and a convenient s-expression format.
 
-\
+\separation
 
 \bookpath{projects/sat/zz-resolution-checker}:
 An early SAT proof-checker from 2011 based on resolution (see README).
 
-\
+\separation
 
 \bookpath{std/stobjs/updater-independence}:
 Utility for defining stobj and stobj-like accessor/updater
 independence theorems.
 
-\
+\separation
 
 \bookpath{std/util/termhints}:
 Hint utility described in the paper
 \textit{Hint Orchestration Using ACL2's Simplifier}
 at this Workshop.
 
-\
+\separation
 
 \bookpath{tools/run-script.lisp}:
 This utility supports testing of evaluation of the forms
@@ -455,14 +457,14 @@ Supporting materials for the paper
 \textit{The Fundamental Theorem of Algebra in ACL2}
 at this Workshop.
 
-\
+\separation
 
 \bookpath{workshops/2018/greve-gacek}:
 Supporting materials for the paper
 \textit{Trapezoidal Generalization over Linear Constraints}
 at this Workshop.
 
-\
+\separation
 
 \bookpath{workshops/2018/kaufmann}:
 Supporting materials for the paper
@@ -486,7 +488,7 @@ Supporting materials for the papers
 \textit{Convex Functions in ACL2(r)}
 at this Workshop.
 
-\
+\separation
 
 \bookpath{workshops/2018/mehta}:
 Supporting materials for the paper
@@ -495,18 +497,18 @@ an Application to FAT32}
 at this Workshop.
 (But see also \code{projects/filesystems}.)
 
-\
+\separation
 
 \bookpath{workshops/2018/sumners}:
 Supporting materials for the paper
 \textit{A Toolbox for Property Checking from Simulation Using Incremental SAT}
 at this Workshop.
 
-\
+\separation
 
-\
+\separation
 
-\
+\separation
 
 The supporting material for other papers at this Workshop
 are elsewhere, not under \code{workshops/2018}.
@@ -531,7 +533,7 @@ AIGNET natively supports XORs, i.e.\ represents them using one node
 instead of three.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{centaur/bitops/rotate.lisp}:
 Bit-vector rotation libraries.
@@ -564,7 +566,7 @@ bignum operations whenever possible.
 Accessor and updater functions can now be inlined.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{centaur/gl}:
 Symbolic simulation framework for solving finite theorems.
@@ -593,7 +595,7 @@ Many SV/SVEX algorithms are now based on \code{sparseints} so that they scale
 when dealing with variables thousands/millions of bits in size.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{centaur/vl}:
 Library for SystemVerilog and regular Verilog.
@@ -619,7 +621,7 @@ function \code{(gensym::generalize term)}.
 Now supports one-step generalization of multiple terms.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{coi/nary/nary.lisp}:
 A library supporting parametrized equivalence relations and related congruences.
@@ -629,7 +631,7 @@ Improved support for non-traditional congruences involving
 implications rather than equalities.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{coi/util/deffix.lisp}:
 Given an equivalence relation, the macro \code{def::fix} witnesses an
@@ -657,19 +659,19 @@ Added full support for \code{defun-sk2}.
 Improved user interface.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{kestrel/utilities/...}:
 Started refactoring some of these utilities to reduce book dependencies.
 
-\
+\separation
 
 \bookpath{kestrel/utilities/copy-def.lisp}:
 Made improvements: better handling of \code{mutual-recursion} and of
 the \code{:equiv} argument, and generated \code{:expand} hint for better
 handling of recursion.
 
-\
+\separation
 
 \bookpath{kestrel/utilities/directed-untranslate.lisp}:
 Made several improvements to \code{directed-untranslate}, in particular
@@ -694,7 +696,7 @@ e.g.\ to support logic-mode error-checking functions.
 Added several error-checking functions.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{kestrel/utilities/osets.lisp}:
 Utilities for osets.
@@ -705,7 +707,7 @@ Added a fixtype for osets.
 These are candidate extensions of the \code{std/osets} library.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{kestrel/utilities/strings}:
 String manipulation libraries.
@@ -728,7 +730,7 @@ Utilities for customizing screen output of user-defined events.
 Added several utilities.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{kestrel/utilities/system/defun-sk-queries.lisp}:
 Utilities to query \code{defun-sk} functions.
@@ -739,7 +741,7 @@ Added support for the recently added \code{:constrain} option.
 These could become part of a new \code{std/system} library.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{kestrel/utilities/system/terms.lisp}:
 Utilities to manipulate terms.
@@ -774,7 +776,7 @@ a ``fast'' one and a ``logic-friendly'' one
 These could become part of a new \code{std/system} library.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{misc/assert.lisp} \& \bookpath{misc/eval.lisp}:
 Testing utilities.
@@ -801,19 +803,19 @@ Reduced book dependencies.
 \bookpath{misc/expander.lisp}:
 The expander has been improved in several ways.
 
-\
+\separation
 
 \bookpath{misc/install-not-normalized.lisp}:
 Improved \code{install-not-normalized} to handle cases in which
 recursively-defined functions have non-recursive normalized
 definitions.
 
-\
+\separation
 
 \bookpath{misc/profiling.lisp}:
 Profiling fixes for recent distributions of CCL.
 
-\
+\separation
 
 \bookpath{projects/apply} \& \bookpath{projects/apply-model}:
 Updated books pertaining to \code{apply\$}.
@@ -866,13 +868,13 @@ an Application to FAT32}
 at this Workshop.
 \end{itemize}
 
-\
+\separation
 
 \bookpath{projects/sat/lrat}:
 SAT proof-checker extensions (improved theorem, extension to
 cube-and-conquer; see README).
 
-\
+\separation
 
 \bookpath{projects/smtlink}:
 Smtlink, a framework for integrating external SMT solvers into ACL2.
@@ -895,7 +897,7 @@ Added more toy examples and a ring oscillator proof example.
 
 \implibtitle
 
-{\small
+{\small % otherwise it doesn't fit the slide
 \bookpath{projects/x86isa}:
 X86ISA, the formal model of the x86 ISA.
 \begin{itemize}
@@ -958,13 +960,13 @@ signed-integer functions, \code{combine16s} et al.
 The new keyword argument \code{:last-body} of \code{make-flag}
 specifies use of the most recent definition rule.
 
-\
+\separation
 
 \bookpath{tools/include-raw.lisp}:
 Fixed an issue with option \code{:do-not-compile t} by extending
 ``fns-with-raw-code'' state globals.
 
-\
+\separation
 
 \bookpath{tools/removable-runes.lisp}:
 Improved \code{removable-runes} and added related utility,
@@ -983,13 +985,13 @@ sufficient for admitting a given event.
 BibTeX references for all the ACL2 Workshop papers,
 and a LaTeX document that shows them.
 
-\
+\separation
 
 \bookpath{xdoc/fancy/lib/katex}:
 KaTeX, a JavaScript library for TeX math rendering on the web,
 has been updated to version 0.8.3.
 
-\
+\separation
 
 \textbf{Developers Guide}:
 The topic \code{developers-guide} is, together with its subtopics, actually a
