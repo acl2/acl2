@@ -687,3 +687,42 @@ simulation.</p>"
                                     nil)
                                    (break$)))))
 
+
+
+
+;; gl-set-allowed-accessors -- add a hook to add-term-bvar$c to complain if we
+;; try to add a term that contains an IF or any functions outside of a
+;; given set.
+
+(mutual-recursion
+ (defun gobj-check-accessors (x fnlist)
+   (declare (xargs :guard (symbol-listp fnlist)))
+   (if (atom x)
+       t
+     (case (tag x)
+       (:g-boolean t)
+       (:g-integer t)
+       (:g-concrete t)
+       (:g-ite nil)
+       (:g-var t)
+       (:g-apply (and (member (g-apply->fn x) fnlist)
+                      (gobjlist-check-accessors (g-apply->args x) fnlist)))
+       (otherwise (and (gobj-check-accessors (car x) fnlist)
+                       (gobj-check-accessors (cdr x) fnlist))))))
+
+ (defun gobjlist-check-accessors (x fnlist)
+   (declare (xargs :guard (symbol-listp fnlist)))
+   (or (atom x)
+       (and (gobj-check-accessors (car x) fnlist)
+            (gobjlist-check-accessors (cdr x) fnlist)))))
+
+(defun check-bvar-term-accessors (x fnlist)
+  (if (gobj-check-accessors x fnlist)
+      nil
+    (prog2$ (cw "Bad term in add-term-bvar: ~x0~%" (gobj-abstract-top x))
+            (break$))))
+
+
+(defmacro gl-set-allowed-accessors (fns)
+  `(trace$ #!gl (add-term-bvar$c
+                 :cond (check-bvar-term-accessors x ,fns))))
