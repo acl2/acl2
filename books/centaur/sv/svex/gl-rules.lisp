@@ -43,7 +43,13 @@
 (define gl-non-term-p (x)
   (not (and (consp x)
             (or (eq (car x) :g-var)
-                (eq (car x) :g-apply)))))
+                (eq (car x) :g-apply)
+                (eq (car x) :g-ite)))))
+
+(define gl-term-p (x)
+  (and (consp x)
+       (or (eq (car x) :g-var)
+           (eq (car x) :g-apply))))
 
 (gl::gl-set-uninterpreted ifix)
 
@@ -86,9 +92,7 @@
          (4vec->lower x)))
 
 (gl::def-gl-rewrite 4vec->lower-of-non-term
-  (implies (syntaxp (not (and (consp x)
-                              (or (eq (car x) :g-var)
-                                  (eq (car x) :g-apply)))))
+  (implies (syntaxp (gl-non-term-p x))
            (equal (4vec->lower x)
                   (if (consp x)
                       (ifix (cdr x))
@@ -98,9 +102,7 @@
   :hints(("Goal" :in-theory (enable 4vec->lower))))
 
 (gl::def-gl-rewrite 4vec->upper-of-non-term
-  (implies (syntaxp (not (and (consp x)
-                              (or (eq (car x) :g-var)
-                                  (eq (car x) :g-apply)))))
+  (implies (syntaxp (gl-non-term-p x))
            (equal (4vec->upper x)
                   (if (consp x)
                       (ifix (car x))
@@ -117,34 +119,34 @@
   (equal (ifix (4vec->lower x))
          (4vec->lower x)))
 
-(gl::def-gl-rewrite 4vec-fix-of-non-term
-  (implies (syntaxp (not (and (consp x)
-                              (or (eq (car x) :g-var)
-                                  (eq (car x) :g-apply)))))
-           (equal (4vec-fix x)
-                  (if (consp x)
-                      (4vec (ifix (car x))
-                                (ifix (cdr x)))
-                    (if (integerp x)
-                        x
-                      (4vec-x)))))
-  :hints(("Goal" :in-theory (enable 4vec-fix))))
+;; (gl::def-gl-rewrite 4vec-fix-of-non-term
+;;   (implies (syntaxp (not (and (consp x)
+;;                               (or (eq (car x) :g-var)
+;;                                   (eq (car x) :g-apply)))))
+;;            (equal (4vec-fix x)
+;;                   (if (consp x)
+;;                       (4vec (ifix (car x))
+;;                                 (ifix (cdr x)))
+;;                     (if (integerp x)
+;;                         x
+;;                       (4vec-x)))))
+;;   :hints(("Goal" :in-theory (enable 4vec-fix))))
 
-(gl::def-gl-rewrite 4vec-of-non-term
-  (implies (syntaxp (and (not (and (consp upper)
-                                   (or (eq (car upper) :g-var)
-                                       (eq (car upper) :g-apply))))
-                         (not (and (consp lower)
-                                   (or (eq (car lower) :g-var)
-                                       (eq (car lower) :g-apply))))))
-           (equal (4vec upper lower)
-                  (B* (((THE INTEGER UPPER)
-                        (LIFIX UPPER))
-                       ((THE INTEGER LOWER)
-                        (LIFIX LOWER)))
-                    (IF (EQL UPPER LOWER)
-                        UPPER (CONS UPPER LOWER)))))
-  :hints(("Goal" :in-theory (enable 4vec))))
+;; (gl::def-gl-rewrite 4vec-of-non-term
+;;   (implies (syntaxp (and (not (and (consp upper)
+;;                                    (or (eq (car upper) :g-var)
+;;                                        (eq (car upper) :g-apply))))
+;;                          (not (and (consp lower)
+;;                                    (or (eq (car lower) :g-var)
+;;                                        (eq (car lower) :g-apply))))))
+;;            (equal (4vec upper lower)
+;;                   (B* (((THE INTEGER UPPER)
+;;                         (LIFIX UPPER))
+;;                        ((THE INTEGER LOWER)
+;;                         (LIFIX LOWER)))
+;;                     (IF (EQL UPPER LOWER)
+;;                         UPPER (CONS UPPER LOWER)))))
+;;   :hints(("Goal" :in-theory (enable 4vec))))
 
 (gl::add-gl-rewrite 4vec-fix-of-4vec)
 (gl::add-gl-rewrite 4vec->upper-of-4vec)
@@ -167,14 +169,15 @@
 (gl::add-gl-rewrite 4vec-p-of-4vec-fix)
 
 (gl::def-gl-rewrite 4vec-p-of-integer
-  (implies (integerp x)
+  (implies (and (syntaxp (not (and (consp x)
+                                   (eq (car x) :g-call)
+                                   (eq (gl::g-call->fn x) '4vec))))
+                (integerp x))
            (4vec-p x))
   :hints(("Goal" :in-theory (enable 4vec-p))))
 
 (gl::def-gl-rewrite 4vec-p-of-non-term
-  (implies (syntaxp (not (and (consp x)
-                              (or (eq (car x) :g-var)
-                                  (eq (car x) :g-apply)))))
+  (implies (syntaxp (gl-non-term-p x))
            (equal (4vec-p x)
                   (OR (INTEGERP X)
                       (AND (CONSP X)
@@ -197,19 +200,21 @@
   (logbitp 0 x)
   ///
   (gl::def-gl-rewrite split-logbitp-0
-    (implies (syntaxp (and (not (gl-non-term-p x))
-                           ;; (prog2$ (cw "split-logbitp-0 term: ~x0~%" (my-dumb-evisc x 3 5))
-                           ;;         t)
-                           ))
+    (implies (syntaxp (gl-term-p x))
              (equal (logbitp 0 x)
                     (if (logbitp0 x) t nil))))
   (gl::Def-gl-rewrite logbitp0-of-number
-    (implies (syntaxp (and (gl-non-term-p x)
-                           ;; (prog2$ (cw "logbitp0-of-number term: ~x0~%" (my-dumb-evisc x 3 5))
-                           ;;         t)
-                           ))
+    (implies (syntaxp (gl-non-term-p x))
              (equal (logbitp0 x)
                     (logbitp 0 x))))
+  (gl::def-gl-rewrite logbitp0-of-if
+    (equal (logbitp0 (if a b c))
+           (if a (logbitp0 b) (logbitp0 c))))
+
+  (gl::def-gl-rewrite logbitp-of-if
+    (equal (logbitp n (if a b c))
+           (if a (logbitp n b) (logbitp n c))))
+
   (gl::def-gl-rewrite logbitp0-of-ifix
     (equal (logbitp0 (ifix x)) (logbitp0 x)))
   (gl::gl-set-uninterpreted logbitp0))
@@ -601,3 +606,51 @@
                   (logcdr x)))
   :hints(("Goal" :in-theory (enable bitops::logtail**))))
 
+
+
+
+(gl::def-gl-rewrite 4vec->upper-of-integer
+  (implies (and (syntaxp (not (and (consp x)
+                                   (eq (car x) :g-call)
+                                   (eq (gl::g-call->fn x) '4vec))))
+                (integerp x))
+           (equal (4vec->upper x) x))
+  :hints(("Goal" :in-theory (enable 4vec->upper 4vec-p))))
+(gl::def-gl-rewrite 4vec->lower-of-integer
+  (implies (and (syntaxp (not (and (consp x)
+                                   (eq (car x) :g-call)
+                                   (eq (gl::g-call->fn x) '4vec))))
+                (integerp x))
+           (equal (4vec->lower x) x))
+  :hints(("Goal" :in-theory (enable 4vec->lower 4vec-p))))
+
+(gl::add-gl-rewrite integerp-of-4vec->upper)
+(gl::add-gl-rewrite integerp-of-4vec->lower)
+(gl::def-gl-rewrite integerp-of-4vec
+  (equal (integerp (4vec upper lower))
+         (equal (ifix upper) (ifix lower)))
+  :hints(("Goal" :in-theory (enable 4vec))))
+
+(gl::def-gl-rewrite 4vec-fix-of-non-4vec-call
+  (implies (syntaxp (not (and (consp x)
+                              (eq (car x) :g-call)
+                              (eq (gl::g-call->fn x) '4vec))))
+           (equal (4vec-fix x)
+                  (4vec (4vec->upper x)
+                        (4vec->lower x)))))
+
+
+
+(gl::def-gl-rewrite equal-of-4vecs
+  (and (equal (equal (4vec x y) z)
+              (and (4vec-p z)
+                   (equal (ifix x) (4vec->upper z))
+                   (equal (ifix y) (4vec->lower z))))
+       (equal (equal z (4vec x y))
+              (and (4vec-p z)
+                   (equal (ifix x) (4vec->upper z))
+                   (equal (ifix y) (4vec->lower z))))))
+
+(gl::def-gl-rewrite 4vec-of-self
+  (equal (4vec x x) (ifix x))
+  :hints(("Goal" :in-theory (enable 4vec-p 4vec->upper 4vec->lower))))
