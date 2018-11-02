@@ -182,7 +182,13 @@ community books, as described in the paper
 by Using the Community Books}
 at this workshop.
 
-\separation
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
 
 \bookpath{kestrel/bitcoin}:
 A (small start towards a) library for the Bitcoin cryptocurrency and ecosystem.
@@ -193,13 +199,7 @@ Executable specification of Base58 encoding and decoding.
 Executable specification of Base58Check encoding.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\newlibtitle
+\separation
 
 \bookpath{kestrel/ethereum}:
 A library for the Ethereum
@@ -214,20 +214,28 @@ Executable specification of hex-prefix encoding.
 Kestrel is actively working on this.
 \end{itemize}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
 \separation
 
 \bookpath{kestrel/java}:
 A library for Java.
 \begin{itemize}
 \item
-AIJ (ACL2 In Java), the deep embedding of ACL2 in Java
-described in the paper
+AIJ (ACL2 In Java), a deep embedding of ACL2 in Java.
+\item
+ATJ (ACL2 To Java), a Java code generator for ACL2.
+\item
+These are described in the paper
 \textit{A Simple Java Code Generator for ACL2
 Based on a Deep Embedding of ACL2 in Java}
 at this Workshop.
-\item
-ATJ (ACL2 To Java), the Java code generator for ACL2
-described in the paper just above.
 \end{itemize}
 
 \end{frame}
@@ -262,12 +270,6 @@ Minimal, minimal non-zero, or specified length.
 Several theorems, e.g.\ about inversions.
 \end{itemize}
 
-\separation
-
-\bookpath{kestrel/utilities/er-soft-plus.lisp}:
-The logic-mode utilities \code{er-soft+} and \code{er-soft-logic} produce
-soft errors with specified error triples.
-
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -275,6 +277,12 @@ soft errors with specified error triples.
 \begin{frame}
 
 \newlibtitle
+
+\bookpath{kestrel/utilities/er-soft-plus.lisp}:
+The logic-mode utilities \code{er-soft+} and \code{er-soft-logic} produce
+soft errors with specified error triples.
+
+\separation
 
 \bookpath{kestrel/utilities/fixbytes}:
 Fixtypes for unsigned and signed bytes, and true lists thereof.
@@ -354,7 +362,13 @@ a more general macro, \code{fancy-use}, for using lemma
 instances efficiently.
 \end{itemize}
 
-\separation
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
 
 \bookpath{kestrel/utilities/skip-in-book.lisp}:
 The utility, \code{skip-in-book}, wraps around a form to prevent its
@@ -369,13 +383,7 @@ Some utilities for symbols.
 These could become a new \code{std/symbols} library.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[fragile]
-
-\newlibtitle
+\separation
 
 \bookpath{kestrel/utilities/system/paired-names.lisp}:
 Utilities for names consisting of
@@ -387,6 +395,14 @@ two parts with a customizable separator in between.
 \bookpath{kestrel/utilities/untranslate-preprocessing.lisp}:
 A macro \code{add-const-to-untranslate-preprocess}
 to keep a named constant unexpanded in the screen output.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]
+
+\newlibtitle
 
 \separation
 
@@ -672,15 +688,6 @@ String manipulation libraries.
 
 \implibtitle
 
-\bookpath{kestrel/utilities/user-interface.lisp}:
-Utilities for customizing screen output of user-defined events.
-\begin{itemize}
-\item
-Added several utilities.
-\end{itemize}
-
-\separation
-
 \bookpath{kestrel/utilities/system/defun-sk-queries.lisp}:
 Utilities to query \code{defun-sk} functions.
 \begin{itemize}
@@ -727,6 +734,21 @@ These could become part of a new \code{std/system} library.
 
 \separation
 
+\bookpath{kestrel/utilities/user-interface.lisp}:
+Utilities for customizing screen output of user-defined events.
+\begin{itemize}
+\item
+Added several utilities.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{misc/assert.lisp} \& \bookpath{misc/eval.lisp}:
 Testing utilities.
 \begin{itemize}
@@ -741,6 +763,11 @@ Renamed some utilities for greater uniformity
 Reduced book dependencies.
 \end{itemize}
 
+\separation
+
+\bookpath{misc/expander.lisp}:
+The expander has been improved in several ways.
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -748,11 +775,6 @@ Reduced book dependencies.
 \begin{frame}
 
 \implibtitle
-
-\bookpath{misc/expander.lisp}:
-The expander has been improved in several ways.
-
-\separation
 
 \bookpath{misc/install-not-normalized.lisp}:
 Improved \code{install-not-normalized} to handle cases in which
