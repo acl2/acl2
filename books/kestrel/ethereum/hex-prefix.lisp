@@ -60,6 +60,7 @@
                        (cdr nibbles)))
        (rest-bytes (hp-encode-aux rest-nibbles)))
     (cons first-byte rest-bytes))
+  :no-function t
   :hooks (:fix)
 
   :prepwork
@@ -82,4 +83,5 @@
           (byte (+ (* 16 nibble-hi) nibble-lo))
           (bytes (hp-encode-aux (cddr nibbles))))
        (cons byte bytes))
+     :no-function t
      :hooks (:fix))))

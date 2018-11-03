@@ -210,6 +210,7 @@
                              (cons (+ 183 (len be))
                                    (append be bytes))))
           (t :error)))
+  :no-function t
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -271,7 +272,8 @@
                                          (cons (+ 247 (len be))
                                                (append be bytes))))
                       (t :error))))
-    :measure (rlp-tree-count tree))
+    :measure (rlp-tree-count tree)
+    :no-function t)
 
   (define rlp-encode-tree-list ((trees rlp-tree-listp))
     :returns (result bytelist/error-p)
@@ -281,7 +283,8 @@
          (bytes2 (rlp-encode-tree-list (cdr trees)))
          ((when (bytelist/error-case bytes2 :error)) :error))
       (append bytes1 bytes2))
-    :measure (rlp-tree-list-count trees))
+    :measure (rlp-tree-list-count trees)
+    :no-function t)
 
   :returns-hints (("Goal"
                    :in-theory (enable bytep))
@@ -315,6 +318,7 @@
     "Note that @(':error') is returned if the scalar is so large that
      its big-endian representation exceeds @($2^{64}$) in length."))
   (rlp-encode-bytes (nat=>bendian* 256 (lnfix nat)))
+  :no-function t
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -378,6 +382,7 @@
     (if (rlp-tree-encoding-p bytes)
         (rlp-tree-encoding-witness bytes)
       :error))
+  :no-function t
   :hooks (:fix)
   ///
 
@@ -439,6 +444,7 @@
     (if (rlp-bytes-encoding-p bytes)
         (rlp-bytes-encoding-witness bytes)
       :error))
+  :no-function t
   :hooks (:fix)
   ///
 
@@ -487,6 +493,7 @@
     (if (rlp-scalar-encoding-p bytes)
         (rlp-scalar-encoding-witness bytes)
       :error))
+  :no-function t
   :hooks (:fix)
   ///
 
