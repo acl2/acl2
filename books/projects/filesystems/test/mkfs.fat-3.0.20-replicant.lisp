@@ -5,7 +5,7 @@
       (getenv$ "DISK" state))
      ((unless (stringp disk)) (mv fat32-in-memory state))
      ((mv fat32-in-memory error-code)
-      (slurp-disk-image
+      (disk-image-to-fat32-in-memory
        fat32-in-memory disk state))
      ((unless (equal error-code 0)) (mv fat32-in-memory state))
      ((mv & output_file state)
