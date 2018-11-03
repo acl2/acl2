@@ -57,4 +57,10 @@
   (defrule len-of-string=>nats
     (implies (stringp string)
              (equal (len (string=>nats string))
-                    (length string)))))
+                    (length string))))
+
+  (defrule nth-of-string=>nats
+    (equal (nth n (string=>nats string))
+           (if (< (nfix n) (len (explode string)))
+               (char-code (char string n))
+             nil))))
