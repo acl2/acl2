@@ -950,6 +950,17 @@ Codewalker can now be used to reason about x86 programs.
 
 \implibtitle
 
+\bookpath{rtl}:
+The register-transfer logic library.
+\begin{itemize}
+\item
+Added an improved version of SRT division and square root.
+\item
+The old version was moved to \code{projects/srt}.
+\end{itemize}
+
+\separation
+
 \bookpath{std/io/combine.lisp}:
 Byte-combining libraries.
 \begin{itemize}
@@ -962,7 +973,13 @@ To do: prove similar theorems for \code{combine64u} as well as for the
 signed-integer functions, \code{combine16s} et al.
 \end{itemize}
 
-\separation
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
 
 \bookpath{tools/flag.lisp}:
 The new keyword argument \code{:last-body} of \code{make-flag}
