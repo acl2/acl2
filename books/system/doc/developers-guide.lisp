@@ -48,12 +48,13 @@
 
  <color rgb='#c00000'>
  <p>For a small list of potential ACL2 development tasks, see community books
- file @('books/system/to-do.txt').  If you decide to work on one of these
- tasks, please make a note (just below the one-line header at the top of the
- tasks's item) saying that you are doing so.  Before you start, ask Matt
- Kaufmann to commit to incorporating your changes; without a commitment from
- Matt, he reserves the right not to consider doing so.</p>
- </color>
+ file <a
+ href='https://github.com/acl2/acl2/blob/master/books/system/to-do.txt'>@('books/system/to-do.txt')</a>.
+ If you decide to work on one of these tasks, please make a note (just below
+ the one-line header at the top of the tasks's item) saying that you are doing
+ so.  Before you start, ask Matt Kaufmann to commit to incorporating your
+ changes; without a commitment from Matt, he reserves the right not to consider
+ doing so.</p> </color>
 
  <p>The subtopics listed below are sometimes referred to as ``chapters'' of
  this (Developer's) Guide.  They can be read in any order, but on a first read,
@@ -331,6 +332,59 @@
  existing function in @('rewrite.lisp')
  (@('tilde-@-failure-reason-phrase1')) that reports failures in the @(see
  break-rewrite) loop.</p>
+
+ <h3>Source file <tt>axioms.lisp</tt></h3>
+
+ <p>The source file @('axioms.lisp') is the place for defining most @(see
+ logic)-mode functions that form the core of the ACL2 programming language, and
+ also for some basic axioms and theorems about these functions as well as the
+ built-in primitives like @(see car) and @(see unary-/) that have no explicit
+ definition.  The theorems are stated as @(tsee defthm) @(see events), while
+ the axioms are stated as @(tsee defaxiom) events.  The axioms are intended to
+ completely specify the @(see ground-zero) theory.  However, it is less clear
+ when to include a @('defthm') event into @('axioms.lisp'), rather than simply
+ putting that theorem into a book.</p>
+
+ <p>The section on ``Build-time proofs'' in the topic, @(see
+ developers-guide-build), has a discussion of executing ``@('make proofs')'' to
+ admit events, including those in @('axioms.lisp').  Some @('defthm') events
+ are critical for this purpose, for example, for proving termination or
+ verifying guards.  Others are simply very basic: so useful that it seems a
+ pity to relegate them to books, rather than to include them in the build.
+ Moreover, the specific form of some axioms and theorems is chosen to be useful
+ for reasoning; for example, here is a rather critical @(':')@(tsee elim) rule
+ in addition to being an important axiom.</p>
+
+ @({
+ (defaxiom car-cdr-elim
+   (implies (consp x)
+            (equal (cons (car x) (cdr x)) x))
+   :rule-classes :elim)
+ })
+
+ <p>It is good to be careful when considering the addition of @('defthm')
+ events to @('axioms.lisp').  If @('defthm') events are to be added in order to
+ support termination or @(see guard) verification when doing ``@('make
+ proofs')'', you can consider making the events @(tsee local) so that they
+ don't make it into the build.  But you might leave some non-local if they seem
+ to be extremely useful, for example:</p>
+
+ @({
+ (defthm fold-consts-in-+
+   (implies (and (syntaxp (quotep x))
+                 (syntaxp (quotep y)))
+            (equal (+ x (+ y z))
+                   (+ (+ x y) z))))
+ })
+
+ <p>There is potential controversy here.  One could argue that such theorems
+ belong in books, not in the source code.  This can be argued either way:
+ putting in the source code is good because ACL2 can do obviously-expected
+ things at start-up, and is bad because it's inelegant and narrows user
+ choices.  These days, we tend to add @('defthm') events to @('axioms.lisp')
+ only sparingly, without removing any.  One could argue endlessly about this
+ controversy, but there are probably many more fruitful ways to spend limited
+ development resources!</p>
 
  <h3>The ACL2 state and logical world</h3>
 
