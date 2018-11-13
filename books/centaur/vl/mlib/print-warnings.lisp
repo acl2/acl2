@@ -209,7 +209,7 @@ warnings\".</p>"
    (acc        vl-warninglist-p))
   :returns (mv (acc        vl-warninglist-p)
                (counts-fal )
-               (suppressed symbol-listp :hyp (symbol-listp suppressed)))
+               (suppressed symbol-listp))
   :measure (len x)
   :guard-debug t
   (b* ((x          (vl-warninglist-fix x))
@@ -217,14 +217,14 @@ warnings\".</p>"
        (cutoff     (lnfix cutoff))
 
        ((when (atom x))
-        (mv acc cutoff suppressed))
+        (mv acc cutoff (acl2::symbol-list-fix suppressed)))
 
        ((vl-warning x1) (car x))
        (curr            (nfix (cdr (hons-get x1.type counts-fal))))
        (counts-fal      (hons-acons x1.type (+ 1 curr) counts-fal))
        (keep-p          (< curr cutoff))
        (acc             (if keep-p (cons x1 acc) acc))
-       (suppressed      (if keep-p suppressed (cons x1.type suppressed))))
+       (suppressed      (if keep-p suppressed (cons x1.type (acl2::symbol-list-fix suppressed)))))
     (vl-elide-warnings-main (cdr x) cutoff suppressed counts-fal acc)))
 
 (define vl-elide-warnings

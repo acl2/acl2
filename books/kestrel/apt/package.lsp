@@ -122,6 +122,7 @@
                          ensure-term-if-call$
                          ensure-term-logic-mode$
                          ensure-term-no-stobjs$
+                         ensure-term-not-call-of$
                          equivalence-relationp
                          er-soft+
                          ext-address-subterm-governors-lst

@@ -280,13 +280,19 @@
    <p>
    In 32-bit mode,
    the effective address is added to the base address of the segment;
-   the result is truncated to 32 bits, in case;
-   this truncation should not actually happen with well-formed segments.
+   the result is truncated to 32 bits,
+   because the addition should be modulo 2^32,
+   given that the result must be 32 bits
+   (cf. aforementioned figures in Intel and AMD manuals).
    In 64-bit mode,
    the addition of the base address of the segment is performed
    only if the segments are in registers FS and GS;
-   the result is truncated to 64 bits, in case;
-   this truncation should not actually happen with well-formed segments.
+   the result is truncated to 64 bits,
+   because the addition should be modulo 2^64,
+   given that the result must be 32 bits
+   (cf. aforementioned figures in Intel and AMD manuals);
+   since in our model addresses are signed,
+   we use @('i64') instead of @('n64') to perform this truncation.
    </p>
    <p>
    If the translation is successful,
@@ -326,7 +332,7 @@
     (#.*compatibility-mode* ;; Maybe also *protected-mode*?
      (b* (((mv (the (unsigned-byte 32) base)
 	       (the (unsigned-byte 33) lower-bound)
-	       (the (unsigned-byte 33) upper-bound))
+	       (the (unsigned-byte 32) upper-bound))
 	   (segment-base-and-bounds proc-mode seg-reg x86))
 	  ((unless (and (<= lower-bound eff-addr)
 			(<= eff-addr upper-bound)))
@@ -335,7 +341,7 @@
 	       0))
 	  ((the (unsigned-byte 32) lin-addr)
 	   (n32 (+ (the (unsigned-byte 32) base)
-		   (the (unsigned-byte 33) eff-addr)))))
+		   (the (unsigned-byte 32) eff-addr)))))
        (mv nil lin-addr)))
 
     (otherwise

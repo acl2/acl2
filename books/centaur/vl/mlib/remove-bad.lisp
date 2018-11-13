@@ -36,6 +36,8 @@
 ;(local (include-book "modname-sets"))
 (local (std::add-default-post-define-hook :fix))
 
+(local (in-theory (disable (tau-system))))
+
 (defxdoc propagating-errors
   :parents (warnings)
   :short "A mechanism for propagating fatal errors from submodules up to all
@@ -237,112 +239,121 @@ its removal.</p>")
 (define vl-modulelist-zombies
   :parents (vl-design-zombies)
   :short "Identify modules with fatal warnings."
-  ((x vl-modulelist-p))
+  ((x vl-modulelist-p)
+   (suppress-fatals symbol-listp))
   :returns (names string-listp)
   (cond ((atom x)
          nil)
-        ((vl-some-warning-fatalp (vl-module->warnings (car x)))
-         (cons (vl-module->name (car x)) (vl-modulelist-zombies (cdr x))))
+        ((vl-some-warning-fatalp (vl-module->warnings (car x)) suppress-fatals)
+         (cons (vl-module->name (car x)) (vl-modulelist-zombies (cdr x) suppress-fatals)))
         (t
-         (vl-modulelist-zombies (cdr x)))))
+         (vl-modulelist-zombies (cdr x) suppress-fatals))))
 
 (define vl-interfacelist-zombies
   :parents (vl-design-zombies)
   :short "Identify interfaces with fatal warnings."
-  ((x vl-interfacelist-p))
+  ((x vl-interfacelist-p)
+   (suppress-fatals symbol-listp))
   :returns (names string-listp)
   (cond ((atom x)
          nil)
-        ((vl-some-warning-fatalp (vl-interface->warnings (car x)))
-         (cons (vl-interface->name (car x)) (vl-interfacelist-zombies (cdr x))))
+        ((vl-some-warning-fatalp (vl-interface->warnings (car x)) suppress-fatals)
+         (cons (vl-interface->name (car x)) (vl-interfacelist-zombies (cdr x) suppress-fatals)))
         (t
-         (vl-interfacelist-zombies (cdr x)))))
+         (vl-interfacelist-zombies (cdr x) suppress-fatals))))
 
 (define vl-packagelist-zombies
   :parents (vl-design-zombies)
   :short "Identify packages with fatal warnings."
-  ((x vl-packagelist-p))
+  ((x vl-packagelist-p)
+   (suppress-fatals symbol-listp))
   :returns (names string-listp)
   (cond ((atom x)
          nil)
-        ((vl-some-warning-fatalp (vl-package->warnings (car x)))
-         (cons (vl-package->name (car x)) (vl-packagelist-zombies (cdr x))))
+        ((vl-some-warning-fatalp (vl-package->warnings (car x)) suppress-fatals)
+         (cons (vl-package->name (car x)) (vl-packagelist-zombies (cdr x) suppress-fatals)))
         (t
-         (vl-packagelist-zombies (cdr x)))))
+         (vl-packagelist-zombies (cdr x) suppress-fatals))))
 
 (define vl-udplist-zombies
   :parents (vl-design-zombies)
   :short "Identify udps with fatal warnings."
-  ((x vl-udplist-p))
+  ((x vl-udplist-p)
+   (suppress-fatals symbol-listp))
   :returns (names string-listp)
   (cond ((atom x)
          nil)
-        ((vl-some-warning-fatalp (vl-udp->warnings (car x)))
-         (cons (vl-udp->name (car x)) (vl-udplist-zombies (cdr x))))
+        ((vl-some-warning-fatalp (vl-udp->warnings (car x)) suppress-fatals)
+         (cons (vl-udp->name (car x)) (vl-udplist-zombies (cdr x) suppress-fatals)))
         (t
-         (vl-udplist-zombies (cdr x)))))
+         (vl-udplist-zombies (cdr x) suppress-fatals))))
 
 (define vl-programlist-zombies
   :parents (vl-design-zombies)
   :short "Identify programs with fatal warnings."
-  ((x vl-programlist-p))
+  ((x vl-programlist-p)
+   (suppress-fatals symbol-listp))
   :returns (names string-listp)
   (cond ((atom x)
          nil)
-        ((vl-some-warning-fatalp (vl-program->warnings (car x)))
-         (cons (vl-program->name (car x)) (vl-programlist-zombies (cdr x))))
+        ((vl-some-warning-fatalp (vl-program->warnings (car x)) suppress-fatals)
+         (cons (vl-program->name (car x)) (vl-programlist-zombies (cdr x) suppress-fatals)))
         (t
-         (vl-programlist-zombies (cdr x)))))
+         (vl-programlist-zombies (cdr x) suppress-fatals))))
 
 (define vl-classlist-zombies
   :parents (vl-design-zombies)
   :short "Identify classes with fatal warnings."
-  ((x vl-classlist-p))
+  ((x vl-classlist-p)
+   (suppress-fatals symbol-listp))
   :returns (names string-listp)
   (cond ((atom x)
          nil)
-        ((vl-some-warning-fatalp (vl-class->warnings (car x)))
-         (cons (vl-class->name (car x)) (vl-classlist-zombies (cdr x))))
+        ((vl-some-warning-fatalp (vl-class->warnings (car x)) suppress-fatals)
+         (cons (vl-class->name (car x)) (vl-classlist-zombies (cdr x) suppress-fatals)))
         (t
-         (vl-classlist-zombies (cdr x)))))
+         (vl-classlist-zombies (cdr x) suppress-fatals))))
 
 (define vl-configlist-zombies
   :parents (vl-design-zombies)
   :short "Identify configs with fatal warnings."
-  ((x vl-configlist-p))
+  ((x vl-configlist-p)
+   (suppress-fatals symbol-listp))
   :returns (names string-listp)
   (cond ((atom x)
          nil)
-        ((vl-some-warning-fatalp (vl-config->warnings (car x)))
-         (cons (vl-config->name (car x)) (vl-configlist-zombies (cdr x))))
+        ((vl-some-warning-fatalp (vl-config->warnings (car x)) suppress-fatals)
+         (cons (vl-config->name (car x)) (vl-configlist-zombies (cdr x) suppress-fatals)))
         (t
-         (vl-configlist-zombies (cdr x)))))
+         (vl-configlist-zombies (cdr x) suppress-fatals))))
 
 (define vl-typedeflist-zombies
   :parents (vl-design-zombies)
   :short "Identify typedefs with fatal warnings."
-  ((x vl-typedeflist-p))
+  ((x vl-typedeflist-p)
+   (suppress-fatals symbol-listp))
   :returns (names string-listp)
   (cond ((atom x)
          nil)
-        ((vl-some-warning-fatalp (vl-typedef->warnings (car x)))
-         (cons (vl-typedef->name (car x)) (vl-typedeflist-zombies (cdr x))))
+        ((vl-some-warning-fatalp (vl-typedef->warnings (car x)) suppress-fatals)
+         (cons (vl-typedef->name (car x)) (vl-typedeflist-zombies (cdr x) suppress-fatals)))
         (t
-         (vl-typedeflist-zombies (cdr x)))))
+         (vl-typedeflist-zombies (cdr x) suppress-fatals))))
 
 (define vl-design-zombies
   :short "Collect the names of design elements with fatal warnings."
-  ((x vl-design-p))
+  ((x vl-design-p)
+   (suppress-fatals symbol-listp))
   :returns (names string-listp)
   (b* (((vl-design x)))
-    (append (vl-modulelist-zombies x.mods)
-            (vl-udplist-zombies x.udps)
-            (vl-interfacelist-zombies x.interfaces)
-            (vl-packagelist-zombies x.packages)
-            (vl-programlist-zombies x.programs)
-            (vl-classlist-zombies x.classes)
-            (vl-configlist-zombies x.configs)
-            (vl-typedeflist-zombies x.typedefs))))
+    (append (vl-modulelist-zombies x.mods suppress-fatals)
+            (vl-udplist-zombies x.udps suppress-fatals)
+            (vl-interfacelist-zombies x.interfaces suppress-fatals)
+            (vl-packagelist-zombies x.packages suppress-fatals)
+            (vl-programlist-zombies x.programs suppress-fatals)
+            (vl-classlist-zombies x.classes suppress-fatals)
+            (vl-configlist-zombies x.configs suppress-fatals)
+            (vl-typedeflist-zombies x.typedefs suppress-fatals))))
 
 
 (define vl-design-filter-zombies
@@ -350,21 +361,22 @@ its removal.</p>")
   :short "Move modules and other design elements that have fatal warnings
 from the @('good') design into the @('bad') design."
   ((good vl-design-p)
-   (bad  vl-design-p))
+   (bad  vl-design-p)
+   (suppress-fatals symbol-listp))
   :returns
   (mv (good-- vl-design-p "Copy of @('good') except that zombies are removed.")
       (bad++  vl-design-p "Extension of @('bad') with zombies from @('good')."))
   (b* (((vl-design good))
        ((vl-design bad))
        ;; Pull all the zombies out of the different kinds of lists
-       ((mv bad-mods       good-mods)       (vl-filter-modules    (vl-modulelist-zombies    good.mods)       good.mods))
-       ((mv bad-interfaces good-interfaces) (vl-filter-interfaces (vl-interfacelist-zombies good.interfaces) good.interfaces))
-       ((mv bad-udps       good-udps)       (vl-filter-udps       (vl-udplist-zombies       good.udps)       good.udps))
-       ((mv bad-programs   good-programs)   (vl-filter-programs   (vl-programlist-zombies   good.programs)   good.programs))
-       ((mv bad-classes    good-classes)    (vl-filter-classes    (vl-classlist-zombies     good.classes)    good.classes))
-       ((mv bad-packages   good-packages)   (vl-filter-packages   (vl-packagelist-zombies   good.packages)   good.packages))
-       ((mv bad-configs    good-configs)    (vl-filter-configs    (vl-configlist-zombies    good.configs)    good.configs))
-       ((mv bad-typedefs   good-typedefs)   (vl-filter-typedefs   (vl-typedeflist-zombies   good.typedefs)   good.typedefs))
+       ((mv bad-mods       good-mods)       (vl-filter-modules    (vl-modulelist-zombies    good.mods suppress-fatals)       good.mods))
+       ((mv bad-interfaces good-interfaces) (vl-filter-interfaces (vl-interfacelist-zombies good.interfaces suppress-fatals) good.interfaces))
+       ((mv bad-udps       good-udps)       (vl-filter-udps       (vl-udplist-zombies       good.udps suppress-fatals)       good.udps))
+       ((mv bad-programs   good-programs)   (vl-filter-programs   (vl-programlist-zombies   good.programs suppress-fatals)   good.programs))
+       ((mv bad-classes    good-classes)    (vl-filter-classes    (vl-classlist-zombies     good.classes suppress-fatals)    good.classes))
+       ((mv bad-packages   good-packages)   (vl-filter-packages   (vl-packagelist-zombies   good.packages suppress-fatals)   good.packages))
+       ((mv bad-configs    good-configs)    (vl-filter-configs    (vl-configlist-zombies    good.configs suppress-fatals)    good.configs))
+       ((mv bad-typedefs   good-typedefs)   (vl-filter-typedefs   (vl-typedeflist-zombies   good.typedefs suppress-fatals)   good.typedefs))
        ;; Remove the zombies to create the new good design
        (good (change-vl-design good
                                :mods       good-mods
@@ -398,7 +410,10 @@ design."
           depends on them.")
    (bad  vl-design-p
          "The bad design which holds any faulty design elements.  We will move
-          the zombies into this design."))
+          the zombies into this design.")
+   (suppress-fatals
+          symbol-listp
+          "List of warning types that we should never treat as fatal."))
   :returns
   (mv (good-- vl-design-p
               "Cut down version of the good design, with any faulty elements and
@@ -407,7 +422,7 @@ design."
               "Extended version of the bad design, with any faulty elements from
                @('good') moved over into it."))
   ;; BOZO we should probably try to defend against name clashes here.
-  (b* ((zombies (vl-design-zombies good))
+  (b* ((zombies (vl-design-zombies good suppress-fatals))
        ((unless zombies)
         ;; Optimization: nothing to do, so do nothing.
         (mv (vl-design-fix good)
@@ -420,5 +435,5 @@ design."
        (reportcard    (vl-blame-alist-to-reportcard blame-alist nil))
        (good          (vl-apply-reportcard good reportcard)))
     (vl-hierarchy-free)
-    (vl-design-filter-zombies good bad)))
+    (vl-design-filter-zombies good bad suppress-fatals)))
 

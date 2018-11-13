@@ -129,7 +129,7 @@
       "The term @('combine<nonrec<x1,...,xn>,r>') is not just @('r')
        (otherwise @('old') would already be tail-recursive).")
      (xdoc::li
-      "The term @('combine<nonrec<x1,...,xn>,r>') does not call @(tsee if).")
+      "The term @('combine<nonrec<x1,...,xn>,r>') is not a call of @(tsee if).")
      (xdoc::li
       "All the occurrences of @('x1'), ..., @('xn')
        in @('combine<nonrec<x1,...,xn>,r>')

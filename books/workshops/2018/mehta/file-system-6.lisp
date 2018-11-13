@@ -6,6 +6,9 @@
 
 ;  file-system-6.lisp                                  Mihir Mehta
 
+; Avoid failure of guard verification for l6-file-index-list in ACL2(r):
+; cert_param: non-acl2r
+
 ; Here we build on model 4 to add a file allocation table. We follow exactly
 ; the allocation strategy laid out in model 4. To allow this to happen, we must
 ; set our cluster size to 1 sector, and our sector size to 8 bytes. This is

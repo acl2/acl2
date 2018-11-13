@@ -33,16 +33,35 @@
  href='mailto:kaufmann@cs.utexas.edu'>emailing Matt Kaufmann</a> with a request
  to be added.</p>
 
- <p>The website for the (first) Developer's Workshop is: <code><a
+ <p>The website for the (first) Developer's Workshop has quite a bit of useful
+ information.  It is at: <code><a
  href='http://www.cs.utexas.edu/users/moore/acl2/workshop-devel-2017/'>http://www.cs.utexas.edu/users/moore/acl2/workshop-devel-2017/</a></code></p>
 
+ <p>Note that for the second Developer's Workshop, some colors were added to
+ this Guide to help guide the discussion.  (Colors show up in the web version
+ but not in the @(see acl2-doc) browser.)  This <color rgb='#c00000'>red
+ color</color> highlights passages that were to be given some emphasis.  Also,
+ in some cases there is a note of the following form, for use in the
+ workshop:</p>
+
+ <color rgb='#800080'><p>[...SOME NOTE FOR THE WORKSHOP...]</p></color>
+
+ <color rgb='#c00000'>
  <p>For a small list of potential ACL2 development tasks, see community books
- file @('books/system/to-do.txt').</p>
+ file <a
+ href='https://github.com/acl2/acl2/blob/master/books/system/to-do.txt'>@('books/system/to-do.txt')</a>.
+ If you decide to work on one of these tasks, please make a note (just below
+ the one-line header at the top of the tasks's item) saying that you are doing
+ so.  Before you start, ask Matt Kaufmann to commit to incorporating your
+ changes; without a commitment from Matt, he reserves the right not to consider
+ doing so.</p> </color>
 
  <p>The subtopics listed below are sometimes referred to as ``chapters'' of
  this (Developer's) Guide.  They can be read in any order, but on a first read,
  you may find it helpful to read them in the order in which they appear
- below.</p>")
+ below.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-introduction)</p>")
 
 (defxdoc developers-guide-introduction
   :parents (developers-guide)
@@ -75,9 +94,8 @@
 
  <ul><li>It is typical to read comments (which are sometimes extensive) when
  modifying the source code, often after reading some user-level documentation,
- to get up to speed.  When there are problems with the comments, they are
- typically updated.  There is no need to document the entire system in one
- place!</li></ul></li>
+ to get up to speed.  As we encounter comments that aren't clear (and correct),
+ we fix them.</li></ul></li>
 
  </ul>
 
@@ -90,6 +108,8 @@
  href='https://github.com/acl2/acl2'>https://github.com/acl2/acl2</a></code></p>
 
  <h3>Some longer source code comments are called ``Essays''.</h3>
+
+ <color rgb='#800080'><p>[JUST TOUCH ON THIS SECTION]</p></color>
 
  <p>These essays can provide very helpful introductions, at a higher level than
  may be found in Lisp comments that are inside definitions.  You can search for
@@ -115,9 +135,11 @@
  being complete, but it is a good starting point before modifying source code
  that supports @('make-event').</p>
 
+ <color rgb='#c00000'>
  <p>As of this writing there are nearly 100 such essays!  This manual does not
  begin to cover them all; in fact it barely touches on most of them, at best.
  Moreover, some important components of ACL2 have no high-level essay.</p>
+ </color>
 
  <ul><li>For example, there is no essay on induction.  In such cases the
  relevant source comments are generally found inside definitions.  For example,
@@ -176,9 +198,11 @@
  provide helpful background; indeed, comments sometimes direct the reader to an
  Essay.</p>
 
+ <color rgb='#c00000'>
  <p>Please read the comments in a definition carefully before you modify it!
  In particular, there are often comments warning you to ``keep in sync'' with
  one or more other definitions, which need to be heeded.</p>
+ </color>
 
  <p>It is often helpful to read user-level documentation before reading
  system-level documentation when preparing to modify ACL2.  Often the
@@ -197,15 +221,19 @@
 
  <h3>This is a living document.</h3>
 
+ <color rgb='#c00000'>
  <p>Feel free to modify this guide!  You can, if you like, run modifications by
  the acl2-devel mailing list before making changes.</p>
+ </color>
 
  <h3>Do not feel obligated to read this guide linearly, cover-to-cover!</h3>
 
  <p>Exploration of the ACL2 system is perhaps most efficient when
  goal-directed, i.e., when you are trying to understand specific aspects of the
  system.  That said, a quick browse of this entire guide is recommended for
- ACL2 system developers.</p>")
+ ACL2 system developers.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-emacs)</p>")
 
 (defxdoc developers-guide-emacs
   :parents (developers-guide)
@@ -251,31 +279,35 @@
  ignoring whitespace (by providing a prefix argument for @('meta-x
  compare-windows')).</li>
 
- <li>Maintain @('emacs/emacs-acl2.el') with taste: avoid using fancy Emacs Lisp
- code that could be difficult for others to maintain.  If one is competent at
+ <li><color rgb='#c00000'>Maintain @('emacs/emacs-acl2.el') with taste: avoid using fancy Emacs Lisp
+ code that could be difficult for others to maintain.</color>  If one is competent at
  maintaining the ACL2 sources base, then a little Emacs Lisp competence should
  be sufficient for maintaining @('emacs/emacs-acl2.el') as well.  So avoid
  fancy Emacs features not already found in use in that file.</li>
 
- </ul>")
+ </ul>
+
+ <p>NEXT SECTION: @(see developers-guide-background)</p>")
 
 (defxdoc developers-guide-background
   :parents (developers-guide)
   :short "Some Implementation Background"
-  :long "<p>This chapter of the Developer's Guide may be particularly sketchy.
- When background is found to be lacking here, it might be acquired by querying
- the acl2-devel mailing list.  In that case it would probably be good to extend
- this chapter by adding the background that had been lacking.</p>
+  :long "<color rgb='#c00000'>
+ <p>When background is found to be lacking in this topic, it might be acquired
+ by querying the acl2-devel mailing list.  In that case it would probably be
+ good to extend this chapter by adding the background that had been
+ lacking.</p>
+ </color>
 
  <h3>Source files</h3>
 
- <p>ACL2 has many source files.  The definitive list of source files is the
- value of the constant @('*acl2-files*') found in source file @('acl2.lisp').
- This list is consistent with the list associated with the variable
- @('\"sources\"') in @('GNUmakefile'), with the exception of generated file
- @('doc.lisp') (which is discussed later in this Guide; see @(see
- developers-guide-build)).  Perhaps surprisingly, @('acl2.lisp') is not itself
- in either!  That's due to a traditional ambiguity in the use of the term
+ <p>ACL2 has many source files.  <color rgb='#c00000'>The definitive list of
+ source files is the value of the constant @('*acl2-files*') found in source
+ file @('acl2.lisp').</color> This list is consistent with the list associated
+ with the variable @('\"sources\"') in @('GNUmakefile'), with the exception of
+ generated file @('doc.lisp') (which is discussed later in this Guide; see
+ @(see developers-guide-build)).  Perhaps surprisingly, @('acl2.lisp') is not
+ in either list!  That's due to a traditional ambiguity in the use of the term
  ``source file'' for ACL2.  The files in the list @('*acl2-files*') are all
  written in ACL2 (with the exception of relatively little raw Lisp code, as
  discussed in the section on ``Readtime Conditionals'' below).  A few other
@@ -290,25 +322,120 @@
  during the build, but rather, are simply loaded directly into Common Lisp,
  perhaps after being compiled.</p>
 
- <p>The names of the source files are somewhat suggestive of their contents.
- However, over time this correspondence has weakened, in large part because of
- the requirement that a function must be defined before it is used.  For
- example, function @('find-rules-of-rune') was moved in git commit
- @('5647bd402e') from @('defthm.lisp') to an earlier file, @('rewrite.lisp'),
- in support of a new function, @('backchain-limit-enforcers'), which in turn
- was introduced in support of an existing function in @('rewrite.lisp')
+ <p><color rgb='#c00000'>The names of the source files are somewhat suggestive
+ of their contents.  However, over time this correspondence has weakened, in
+ large part because of the requirement that a function must be defined before
+ it is used.</color> For example, function @('find-rules-of-rune') was moved in
+ git commit @('5647bd402e') from @('defthm.lisp') to an earlier file,
+ @('rewrite.lisp'), in support of a new function,
+ @('backchain-limit-enforcers'), which in turn was introduced in support of an
+ existing function in @('rewrite.lisp')
  (@('tilde-@-failure-reason-phrase1')) that reports failures in the @(see
  break-rewrite) loop.</p>
 
+ <h3>Source file <tt>axioms.lisp</tt></h3>
+
+ <p>The source file @('axioms.lisp') is the place for defining most @(see
+ logic)-mode functions that form the core of the ACL2 programming language, and
+ also for some basic axioms and theorems about these functions as well as the
+ built-in primitives like @(see car) and @(see unary-/) that have no explicit
+ definition.  The theorems are stated as @(tsee defthm) @(see events), while
+ the axioms are stated as @(tsee defaxiom) events.  The axioms are intended to
+ completely specify the @(see ground-zero) theory.  However, it is less clear
+ when to include a @('defthm') event into @('axioms.lisp'), rather than simply
+ putting that theorem into a book.</p>
+
+ <p>The section on ``Build-time proofs'' in the topic, @(see
+ developers-guide-build), has a discussion of executing ``@('make proofs')'' to
+ admit events, including those in @('axioms.lisp').  Some @('defthm') events
+ are critical for this purpose, for example, for proving termination or
+ verifying guards.  Others are simply very basic: so useful that it seems a
+ pity to relegate them to books, rather than to include them in the build.
+ Moreover, the specific form of some axioms and theorems is chosen to be useful
+ for reasoning; for example, here is a rather critical @(':')@(tsee elim) rule
+ in addition to being an important axiom.</p>
+
+ @({
+ (defaxiom car-cdr-elim
+   (implies (consp x)
+            (equal (cons (car x) (cdr x)) x))
+   :rule-classes :elim)
+ })
+
+ <p>It is good to be careful when considering the addition of @('defthm')
+ events to @('axioms.lisp').  If @('defthm') events are to be added in order to
+ support termination or @(see guard) verification when doing ``@('make
+ proofs')'', you can consider making the events @(tsee local) so that they
+ don't make it into the build.  But you might leave some non-local if they seem
+ to be extremely useful, for example:</p>
+
+ @({
+ (defthm fold-consts-in-+
+   (implies (and (syntaxp (quotep x))
+                 (syntaxp (quotep y)))
+            (equal (+ x (+ y z))
+                   (+ (+ x y) z))))
+ })
+
+ <p>There is potential controversy here.  One could argue that such theorems
+ belong in books, not in the source code.  This can be argued either way:
+ putting in the source code is good because ACL2 can do obviously-expected
+ things at start-up, and is bad because it's inelegant and narrows user
+ choices.  These days, we tend to add @('defthm') events to @('axioms.lisp')
+ only sparingly, without removing any.  One could argue endlessly about this
+ controversy, but there are probably many more fruitful ways to spend limited
+ development resources!</p>
+
  <h3>The ACL2 state and logical world</h3>
 
- <p>The ACL2 state is represented in the implementation as a symbol, which is
- the value of constant @('*the-live-state*').  Sometimes we call this the
- ``live state'', to distinguish it from its logical value, which is a list of
- fields.  See @(see state).  Note that the ACL2 state can be viewed a special,
- built-in case of a @(see stobj).  Indeed, we may also speak of ``live
- stobjs'', to distinguish them from their logical, list-based representations,
- and a stobj, @('st'), is represented in the implementation as
+ <p><color rgb='#c00000'>The ACL2 state is represented in the implementation as
+ a symbol, which is the value of constant @('*the-live-state*').</color>
+ Sometimes we call this the ``<color rgb='#c00000'>live state</color>'', to
+ distinguish it from its logical value, which is a list of fields.  See @(see
+ state) for relevant background.</p>
+
+ <p><color rgb='#c00000'>It may seem impossible for a fixed symbol to represent
+ a changeable state.  But let us consider for example what happens when we
+ update a state global variable (see @(see f-put-global)) in raw Lisp.</color>
+ In the following example (where we elide code for the case of wormholes) there
+ are two cases.  The interesting case is the first one, in which the state is
+ the live state.  We see below that there is an associated global (special)
+ variable, in a package obtained by prefixing the string @('\"ACL2_GLOBAL_\"')
+ to the front of the symbol's package-name: <tt><color
+ rgb='#c00000'>ACL2_GLOBAL_</color>ACL2::XYZ</tt>.  The code below updates that
+ global.</p>
+
+ @({
+ ? (pprint (macroexpand '(f-put-global 'xyz (+ 3 4) state)))
+
+ (LET ((#:G128770 (+ 3 4)) (#:G128771 STATE))
+   (COND ((LIVE-STATE-P #:G128771)
+          (COND (*WORMHOLEP* ...))
+          (LET ()
+            (DECLARE (SPECIAL ACL2_GLOBAL_ACL2::XYZ))
+            (SETQ ACL2_GLOBAL_ACL2::XYZ #:G128770)
+            #:G128771))
+         (T (PUT-GLOBAL 'XYZ #:G128770 #:G128771))))
+ ?
+ })
+
+ <p>To read a state global from the live state, we simply read its associated
+ global variable.</p>
+
+ @({
+ ? (pprint (macroexpand '(f-get-global 'xyz state)))
+
+ (LET ((#:G128772 STATE))
+   (DECLARE (SPECIAL ACL2_GLOBAL_ACL2::XYZ))
+   (COND ((LIVE-STATE-P #:G128772) ACL2_GLOBAL_ACL2::XYZ)
+         (T (GET-GLOBAL 'XYZ #:G128772))))
+ ?
+ })
+
+ <p>Note that the ACL2 state can be viewed as a special, built-in case of a
+ @(see stobj).  Indeed, we may also speak of ``<color rgb='#c00000'>live
+ stobjs</color>'', to distinguish them from their logical, list-based
+ representations, and a stobj, @('st'), is represented in the implementation as
  @('*the-live-st*').  These ``live'' constants are illustrated below.</p>
 
  @({
@@ -329,13 +456,14 @@
  ?
  })
 
- <p>One of those (logical) fields is the <i>global-table</i>, which is an
- association list mapping symbols, called <i>state global variables</i> (or
- <i>state globals</i>), to values.  See also @(see programming-with-state).
+ <p>One of the logical fields of the state is the <i>global-table</i>, which is
+ an association list mapping symbols, namely state global variables (sometimes
+ called ``state globals''), to values.  See also @(see programming-with-state).
  One particular state global, the symbol @('current-acl2-world'), is mapped to
  the current logical @(see world), often just called ``the world''.  Here is
- the logical definition of the function @('(w state)') that returns this
- world.</p>
+ the logical definition of the function @('(w state)') that returns this world;
+ note that it calls the macro @(tsee f-get-global), which, as explained above,
+ generates a read of a Lisp global.</p>
 
  @(def w)
 
@@ -369,21 +497,22 @@
  <p>For relevant background on the notion of <i>term</i> in ACL2, see @(see
  term).  The ACL2 source code traffics in what that documentation topic calls
  ``translated terms''.  In any discussion at the implementation level,
- including this guide and source code comments, we just say ``term'' to refer
- to a translated term.  The source code traffics almost entirely in terms,
- though user input is in the form of what the documentation for @(see term)
- calls an ``untranslated term''.  The ACL2 functions @(tsee translate) and
- @(tsee untranslate) map from untranslated terms to terms and vice-versa,
- respectively.  These both take the @(see world) as a formal parameter, because
- they need to consult the world: for example, @('translate') consults the world
- to determine, for a call @('(f t1 t2 ...)'), whether @('f') is a function
- symbol, a macro, or (in the error case) neither of these; and @('untranslate')
- consults the world for more subtle reasons such as converting a call of @(tsee
- return-last) to something more readable.</p>
+ including this guide and source code comments, <color rgb='#c00000'>we just
+ say ``term'' to refer to a translated term.  The source code traffics almost
+ entirely in terms,</color> though user input is in the form of what the
+ documentation for @(see term) calls an ``untranslated term''.  <color
+ rgb='#c00000'>The ACL2 functions @(tsee translate) and @(tsee untranslate) map
+ from untranslated terms to terms and vice-versa, respectively.</color> These
+ both take the @(see world) as a formal parameter, because they need to consult
+ the world: for example, @('translate') consults the world to determine, for a
+ call @('(f t1 t2 ...)'), whether @('f') is a function symbol, a macro, or (in
+ the error case) neither of these; and @('untranslate') consults the world for
+ more subtle reasons such as converting a call of @(tsee return-last) to
+ something more readable.</p>
 
  <p>The definition of the function @('untranslate1'), which is the workhorse
- for @('untranslate'), is instructive for how ACL2 processes terms.  It has the
- following form.</p>
+ for @('untranslate'), is instructive for how ACL2 processes terms.  <color
+ rgb='#c00000'>It has the following form.</color></p>
 
  @({
  (defun untranslate1 (term iff-flg untrans-tbl preprocess-fn wrld)
@@ -401,13 +530,18 @@
            ...))))
  })
 
+ <color rgb='#c00000'>
+
  <p>This sort of structure is typical: handle the variable case, then the case
  of @('(quote _)'), then the case of a lambda application, and finally one or
  more cases for the call of a function symbol.  If you peruse the source code
  you will see handy term utilities.  Please strive for consistency by studying
  some of those (e.g., search the source code for @('\"variablep\"') or
  @('\"quotep\"')).  For example, don't build a new term with @('(cons fn
- args)'); use @('cons-term') or @('fcons-term') instead of @('cons').</p>
+ args)'); use <tt>cons-term</tt> or <tt>fcons-term</tt> instead of
+ <tt>cons</tt>.</p>
+
+ </color>
 
  <h3>The @(tsee defrec) macro</h3>
 
@@ -463,6 +597,10 @@
  @('rewrite-constant'), which are quite important in the prover code.</p>
 
  <h3>Commands and events</h3>
+
+ <color rgb='#800080'>
+ <p>DEMO: USING WALKABOUT TO EXPLORE THE WORLD</p>
+ </color>
 
  <p>Among the triples in the @(see world) are so-called <i>command
  landmarks</i> and <i>event landmarks</i>, which are put there at the
@@ -532,17 +670,17 @@
 
  </ul>
 
- <p>We turn now from commands to @(see events).  There are primitive events
- that modify the world such as a call of @(tsee defun), @(tsee defthm), and
- @(tsee table).  See @(see events) and especially see @(see
- embedded-event-form), which explain that events may go in calls of @(tsee
- encapsulate) and @(tsee progn), which themselves are also (compound) events,
- and events may also go in @(see books).  Several other utilities are events in
- the sense that they are allowed in compound events and books, but they are
- really just wrappers of sorts for actual events.  Here is a list of those,
- taken from a comment in the definition of function
- @('chk-embedded-event-form'), which is the recognizer for (embeddable)
- events.</p>
+ <p><color rgb='#c00000'>We turn now from commands to @(see events).</color>
+ There are primitive events that modify the world such as a call of @(tsee
+ defun), @(tsee defthm), and @(tsee table).  See @(see events) and especially
+ see @(see embedded-event-form), which explain that events may go in calls of
+ @(tsee encapsulate) and @(tsee progn), which themselves are also (compound)
+ events, and events may also go in @(see books).  Several other utilities are
+ events in the sense that they are allowed in compound events and books, but
+ they are really just wrappers of sorts for actual events.  <color
+ rgb='#c00000'>Here is a list of event macros, taken from a comment in the
+ definition of function @('chk-embedded-event-form'), which is the recognizer
+ for (embeddable) events.</color></p>
 
  <ul>
 
@@ -604,7 +742,9 @@
  ACL2 !>
  })
 
- <p>We conclude our discussion of command and events with a few
+ <color rgb='#c00000'>
+
+ <p>We conclude our discussion of commands and events with a few
  observations.</p>
 
  <ul>
@@ -620,6 +760,8 @@
  encapsulate), not arbitrary commands.</li>
 
  </ul>
+
+ </color>
 
  <h3>Exploring the source code with an example: prover flow</h3>
 
@@ -659,6 +801,14 @@
  on).</p>
 
  <p>Let's start with @(tsee thm):</p>
+
+ <color rgb='#800080'>
+
+ <p>DEMO: EXPLORE HOW THM ULTIMATELY CALLS THE REWRITER.  But unlike the
+ discussion below, I'll go bottom-up.  This may give us some idea of how the
+ prover is structured.  One result may be found in the documentation section,
+ @(see developers-guide-background-extra).</p>
+ </color>
 
  @(def thm)
 
@@ -739,10 +889,17 @@
  of the ACL2 build, or is first compiled into a compiled file before loading
  that compiled file.  (Files @('acl2.lisp') and @('acl2-init.lisp') are never
  subjected to file compilation, as noted in a comment near the top of each
- file.)  Thus, ACL2 macros including @(tsee defun), @(tsee defthm), @(tsee
- table), @(tsee defconst), @(tsee local), and @(tsee encapsulate) must be
- suitable for Common Lisp evaluation.  This is arranged differently for
- different macros, as illustrated by the following examples.</p>
+ file.)  Thus, <color rgb='#c00000'>ACL2 macros including @(tsee defun), @(tsee
+ defthm), @(tsee table), @(tsee defconst), @(tsee local), and @(tsee
+ encapsulate) must be suitable for Common Lisp evaluation.</color> This is
+ arranged differently for different macros, as illustrated by the following
+ examples.</p>
+
+ <color rgb='#800080'>
+ <p>DEMO: RATHER THAN GO THROUGH WHAT'S BELOW, I'LL JUST EXPLORE DEFUN,
+ DEFTHM, LOCAL, and QUIT, AND USE THEM TO EXPLAIN *features* AND SPECIFICALLY
+ acl2-loop-only.</p>
+ </color>
 
  <p>First consider @('defun').  We have only the following definition of
  @('defun') in the ACL2 source code.</p>
@@ -1006,7 +1163,47 @@
  incorporated into ACL2 by Kaufmann and Moore after an extensive code review.
  Since Kaufmann and Moore now stand behind the resulting system and are
  maintaining it, and with assent from its contributors, what was formerly
- ACL2(h) is now just ACL2.</p>")
+ ACL2(h) is now just ACL2.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-build)</p>")
+
+(defxdoc developers-guide-background-extra
+  :parents (developers-guide-background)
+  :short "Some Implementation Background Extra Information"
+  :long "<p>Here is a call tree built bottom-up when exploring how @('thm-fn')
+ calls the rewriter, which is an exercise suggested in the section, @(see
+ developers-guide-background).  There are a few extra nodes in this tree,
+ obtained by looking for callers of @('rewrite') and of @('prove').</p>
+
+ @({
+ rewrite
+   rewrite-atm
+     rewrite-clause, rewrite-clause-lst
+       simplify-clause1
+         simplify-clause
+           waterfall-step1
+             waterfall-step
+               waterfall0
+                 waterfall1
+                   waterfall
+                     prove-loop2
+                       prove-loop1
+                         prove-loop0
+                           prove-loop
+                             prove
+                               prove-termination
+                               prove-guard-clauses
+                               #+:non-standard-analysis verify-valid-std-usage
+                               prove-corollaries1
+                               defthm-fn1
+                                 defthm-fn
+                               thm-fn
+                               prove-defattach-guards1
+                               prove-defattach-constraint
+                             pc-prove
+   mfc-rw-raw
+   pc-rewrite*-1
+ })")
 
 (defxdoc developers-guide-build
   :parents (developers-guide)
@@ -1018,17 +1215,24 @@
  <h3>Building with `@('make')'</h3>
 
  <p>The preceding chapter (see @(see developers-guide-background)) notes five
- or six different Lisps on which ACL2 may be built.  There have been occasions
- when an ACL2 bug only showed up with one of those Lisps; so, it is a good idea
- to build ACL2 in each of them from time to time, when feasible.  Just specify
- @('LISP') on the command line, typically with @('PREFIX') specified as well,
- which is put on the front of @('saved_acl2').  For example, to build ACL2 in
- SBCL, you might issue the following shell command to create an SBCL-based ACL2
- executable named @('sbcl-saved_acl2').</p>
+ or six different Lisps on which ACL2 may be built.  <color rgb='#c00000'>There
+ have been occasions when an ACL2 bug only showed up with one of those Lisps;
+ so, it is a good idea to build ACL2 in each of them from time to time, when
+ feasible.</color> Just specify @('LISP') on the command line, typically with
+ @('PREFIX') specified as well, which is put on the front of @('saved_acl2').
+ For example, to build ACL2 in SBCL, you might issue the following shell
+ command to create an SBCL-based ACL2 executable named
+ @('sbcl-saved_acl2').</p>
 
+ <color rgb='#c00000'>
  @({
  (make PREFIX=sbcl- LISP=sbcl) >& make-sbcl.log&
  })
+ </color>
+
+ <color rgb='#800080'>
+ <p>DEMO: make-acl2 [alias].</p>
+ </color>
 
  <p>Check the log to see if the build seems to have completed normally, in
  particular with ``Initialization SUCCEEDED'' printed near the end of the log.
@@ -1093,6 +1297,10 @@
 
  <h3>Documentation</h3>
 
+ <color rgb='#800080'>
+ <p>DEMO: make-doc [alias] COVERS WHAT'S BELOW.</p>
+ </color>
+
  <p>The generated file @('doc.lisp') can be built in the ACL2 sources directory
  by invoking @('make DOC') or @('make update-doc.lisp').  These each will build
  that file in the ACL2 sources directory, which in turn supports the use of
@@ -1100,7 +1308,16 @@
  works is as follows: @('doc.lisp') is generated from
  @('books/system/doc/acl2-doc.lisp'), and then @('doc.lisp') is processed with
  @(tsee ld) as an ACL2 source file to populate the appropriate documentation
- database.</p>
+ database.  That database consists of the alist,
+ @('*acl2-system-documentation*'), whose keys are the built-in documented
+ topics.</p>
+
+ <p>Warning: If there are functions, macros, or constants that are keys of
+ @('*acl2-system-documentation*') but do not belong to the constant
+ @('*acl2-exports*'), then the community book
+ @('books/misc/check-acl2-exports.lisp') will probably fail to certify.  So
+ whenever @('doc.lisp') is regenerated, it is a good idea to recertify that
+ book after deleting its @('.cert') file.</p>
 
  <h3>Untouchables etc.</h3>
 
@@ -1114,13 +1331,16 @@
  <h3>Build-time proofs</h3>
 
  <p>ACL2 has the ability to ``prove its way through'' some of its source code.
- Most proofs are skipped by default.  To do such proofs, run ``@('make
- proofs')'', which should be done only after compiling the sources if that
- would normally be done for the host Lisp that is being used.  To be safe it
- might be best to build ACL2 first the normal way, even if CCL or SBCL is being
- used.</p>
+ Most proofs are skipped by default.  To do such proofs, run `<color
+ rgb='#c00000'><tt>make proofs</tt></color>', which should be done only after
+ compiling the sources if that would normally be done for the host Lisp that is
+ being used.  To be safe it might be best to build ACL2 first the normal way,
+ even if CCL or SBCL is being used and hence sources aren't subjected to
+ @('compile-file').</p>
 
  <h3>Proving termination and guards in books: Making a ``devel'' build</h3>
+
+ <color rgb='#800080'><p>[JUST TOUCH ON THIS SECTION]</p></color>
 
  <p>Just above, we talk about doing proofs during the build.  That is an
  admirable thing to do, but it can be difficult to carry out certain proofs,
@@ -1128,32 +1348,39 @@
  is no way to include helpful books during the build.  Fortunately, there is a
  procedure for deferring those proofs until after the build is complete.  The
  documentation topic @(see verify-guards-for-system-functions) provides
- details.  However, after you have some familiarity with this procedure you
- might prefer to follow a script given as a comment in
- @('*system-verify-guards-alist*').</p>")
+ details.  <color rgb='#c00000'>However, after you have some familiarity with
+ this procedure you might prefer to follow a script given as a comment in
+ @('*system-verify-guards-alist*').</color></p>
+
+ <p>NEXT SECTION: @(see developers-guide-maintenance)</p>")
 
 (defxdoc developers-guide-maintenance
   :parents (developers-guide)
   :short "Modifying, Testing, and Debugging"
-  :long "<p>Before working on changes to ACL2, consider sending email to the
- acl2-devel list (@('acl2-devel@utlists.utexas.edu')), explaining what you have
- in mind.  This will avoid duplication and also provide an opportunity for
- feedback.  In particular, you may want to wait for confirmation from Kaufmann
- or Moore that at least one of them will be willing to review your patch;
- otherwise they make no commitment to do so, and your efforts might be
- wasted!</p>
+  :long "<color rgb='#c00000'><p>Before working on changes to ACL2, consider
+ sending email to the acl2-devel list (@('acl2-devel@utlists.utexas.edu')),
+ explaining what you have in mind.  This will avoid duplication and also
+ provide an opportunity for feedback.  In particular, you may want to wait for
+ confirmation from Kaufmann or Moore that at least one of them will be willing
+ to review your patch; otherwise they make no commitment to do so, and your
+ efforts might be wasted!</p></color>
 
- <p>Please try to limit your modification to those that are directly related to
- what you intend to change.  For example, please don't delete comments in a
+ <p>Please try to limit your modifications to those that are directly related
+ to what you intend to change.  For example, please don't delete comments in a
  source file or a book.  (If you feel moved to do so, at least first check with
  an author of the file you propose to change.)  That said, it's certainly it's
  fine to fix typos.</p>
 
+ <p>Detailed steps for making a contribution are outlined in the topic, @(see
+ developers-guide-contributing).</p>
+
  <h3>Development</h3>
 
+ <color rgb='#c00000'>
  <p>The first step towards changing ACL2 is typically to create a patch file,
  which here we call @('patch.lisp').  It will typically have the following
  shape.</p>
+ </color>
 
  @({
  ;;; Github commit hash as of your starting ACL2 version (see below)
@@ -1171,9 +1398,8 @@
 
  <p>The reason to record the github commit hash is so that Kaufmann and Moore
  can correctly merge in your changes even after there have been several ACL2
- commits.  (The process for doing so is outlined in the topic, @(see
- developers-guide-contributing).)  You can get that hash by running the
- following command under the main ACL2 directory.</p>
+ commits.  You can get that hash by running the following command under the
+ main ACL2 directory.</p>
 
  @({
  git rev-parse HEAD
@@ -1216,11 +1442,13 @@
  (ld \"patch.lisp\" :ld-pre-eval-print t)
  })
 
+ <color rgb='#c00000'>
  <p>EXCEPTION: the form above may not work if your patch file has any
  occurrences of the @('acl2-loop-only') readtime conditional (preceded either
  by @('#+') or by @('#-')).  In that case, run @('LP!') as follows.  NOTE: if
  you are making changes that affect definition processing, then you may need to
  switch the order: first @('load'), then after @('(LP!)'), run @('ld').</p>
+ </color>
 
  @({
  :q
@@ -1271,6 +1499,7 @@
  new supporting definitions as necessary.  Then in your acl2-sources directory,
  build the system; see @(see developers-guide-build).</p>
 
+ <color rgb='#c00000'>
  <p>Since ACL2 insists that functions, macros, and constants are introduced
  before they are referenced, you might need to move some definitions around.
  You might even need to move then to ``earlier'' files (see @(see
@@ -1279,14 +1508,18 @@
  contains code that reflects the intent of the filename, nevertheless this is
  not a rule; ACL2 implementors often need to move definitions forward in
  support of other functions.</p>
+ </color>
 
  <h3>Regression testing</h3>
 
  <p>Now do a regression test.  The most complete regression is done using the
  @('regression-everything') target in the top-level ACL2 sources directory, or
- equivalently, the @('everything') target in the @('books/') directory.  This
- could take a few hours &mdash; perhaps more than 4 hours or even more than 6
- hours, depending on the Lisp and the machine.</p>
+ equivalently, the @('everything') target in the @('books/') directory.  But
+ note that this level of testing may only work for CCL and SBCL; for other
+ Lisps, or for ACL2(r), just use the @('regression') target in the top-level
+ ACL2 sources directory or, equivalently, the @('all') target in the
+ @('books/') directory.  This could take a few hours &mdash; perhaps more than
+ 5 hours or even more than 8a hours, depending on the Lisp and the machine.</p>
 
  @({
  make clean-books ; \\
@@ -1297,19 +1530,19 @@
  failures; equivalently, in most cases, a failure has occurred when there is a
  non-zero exit status.</p>
 
- <p>It is a good idea to keep a record of the time it takes to complete a
- regression using a given host Lisp and a given value for the @('-j') argument
- of `@('make')'.  If there is a jump of more than a percent or two that is not
- attributable to book changes, then perhaps the change is degrading
- performance.  Of course, that time increase could be noise; we have observed
- significantly more reliable timings, for example, on Linux than on Mac.  There
- are wonderful tools @('books/build/critpath.pl') and
+ <p><color rgb='#c00000'>It is a good idea to keep a record of the time it
+ takes to complete a regression</color> using a given host Lisp and a given
+ value for the @('-j') argument of `@('make')'.  If there is a jump of more
+ than a percent or two that is not attributable to book changes, then perhaps
+ the change is degrading performance.  Of course, that time increase could be
+ noise; we have observed significantly more reliable timings, for example, on
+ Linux than on Mac.  There are wonderful tools @('books/build/critpath.pl') and
  @('books/build/compare.pl') for narrowing time increases to the level of
  individual books, which you can investigate interactively, for example using
  profiling; see @(see profile-acl2) and @(see profile-all).  (Also, Allegro CL
  has a particularly nice statistical profiler.)  Here is the first step, to be
- run in two ACL2 directories, @('DIR1') and @('DIR2'), that you want to
- compare after having run a regression test in each.</p>
+ run in two ACL2 directories, @('DIR1') and @('DIR2'), that you want to compare
+ after having run a regression test in each.</p>
 
  @({
  cd books
@@ -1327,6 +1560,8 @@
  })
 
  <h3>Documentation</h3>
+
+ <color rgb='#800080'><p>[JUST TOUCH ON THIS SECTION]</p></color>
 
  <p>Be sure to document your changes.  This will typically involve adding a
  release note to a topic like @(see note-8-2).  The XDOC source code
@@ -1368,6 +1603,8 @@
 
  <h3>Debugging</h3>
 
+ <color rgb='#800080'><p>[JUST TOUCH ON THIS SECTION]</p></color>
+
  <p>The art of debugging is... an art.  Some tools that can help with debugging
  are @(tsee trace$), @(tsee trace!), @(tsee break-on-error), @(tsee
  set-debugger-enable), @(tsee walkabout), @(see iprinting), and (rarely) @(tsee
@@ -1378,8 +1615,8 @@
  the debugger when there is an error.  Each host Lisp has its own debugger
  commands for looking at the backtrace; for example, in CCL the command is
  @(':b'), while in SBCL it is @('backtrace').  CCL's debugger lets you easily
- explore individual forms in the backtrace.  Here is an edited log showing how
- that works.</p>
+ explore individual forms in the backtrace.  <color rgb='#c00000'>Here is an
+ edited log showing how that works.</color></p>
 
  @({
  ACL2 !>(defun f (x) (declare (xargs :mode :program)) (car x))
@@ -1444,6 +1681,10 @@
  getting someone else to review the changes could still be a good thing to
  do.</p>
 
+ <p>When you are ready to have your patch incorporated into ACL2, follow the
+ detailed steps for making a contribution outlined in the topic, @(see
+ developers-guide-contributing).</p>
+
  <h3>General guidance</h3>
 
  <p>We close this chapter with some relevant tips and observations, some of
@@ -1451,7 +1692,7 @@
 
  <ul>
 
- <li>Small examples help when testing new features or bug fixes.  For a bug fix
+ <li><color rgb='#c00000'>Small examples help when testing new features or bug fixes.</color>  For a bug fix
  it is important to have an example that exhibits the bug, both to guarantee
  that there really is a problem and to use to test your patch.  Ideally the
  example will be small, as this is useful for reading the output from tracing
@@ -1459,17 +1700,18 @@
  understanding the problem.  Consider adding one or more relevant tests to
  @('books/system/tests/') or perhaps, if appropriate, @('books/demos/').</li>
 
- <li>Often it is best to avoid making a more sweeping change than necessary,
- instead waiting for users to complain.  This process has several advantages:
+ <li><color rgb='#c00000'>Often it is best to avoid making a more sweeping change than necessary,
+ instead waiting for users to complain.</color>  This process has several advantages:
  it avoids needless code complications; the user's complaint may help to inform
  the nature of the additional changes; and it may take significantly less time
  to complete the implementation, especially if there is a simple fix that is
  clearly correct and solves the problem.</li>
 
- <li>Look for precedents.  ACL2 is a complex system with invariants that are
- not always explicit, so to the extent that you can follow the existing
- implementation of some feature, you may avoid introducing bugs or undesirable
- behavior.  For example, if you want to add a new key to the @(tsee
+ <li><color rgb='#c00000'>Look for precedents</color>, since new code is probably more likely to be correct
+ to the extent it is analogous to existing code.  ACL2 is a complex system with
+ invariants that are not always explicit, so to the extent that you can follow
+ the existing implementation of some feature, you may avoid introducing bugs or
+ undesirable behavior.  For example, if you want to add a new key to the @(tsee
  acl2-defaults-table), find an existing such key and do a tags-search for it,
  and mimic the implementation of that existing key to the extent it makes
  sense.  Try to pick a key that is little-used, so that the tags-search mainly
@@ -1485,11 +1727,13 @@
  specification slightly; so it is probably best to leave detailed documentation
  until after the other work is done, including testing.</li>
 
- <li>Expect to take considerable time writing comments, documentation, and
- output (e.g., for warnings and errors).  These are important and may take
- longer than the implementation work itself.</li>
+ <li><color rgb='#c00000'>Expect to take considerable time writing comments,
+ documentation, and output (e.g., for warnings and errors).</color> These are
+ important and may take longer than the implementation work itself.</li>
 
- </ul>")
+ </ul>
+
+ <p>NEXT SECTION: @(see developers-guide-contributing)</p>")
 
 (defxdoc developers-guide-contributing
   :parents (developers-guide)
@@ -1587,7 +1831,8 @@
  git push https://github.com/acl2/acl2 master
  })</li>
  </ol>
- ")
+
+ <p>NEXT SECTION: @(see developers-guide-utilities)</p>")
 
 (defxdoc developers-guide-utilities
   :parents (developers-guide)
@@ -1601,6 +1846,10 @@
  system-utilities).</p>
 
  <h3>@(csee State) and the logical @(see world).</h3>
+
+ <color rgb='#800080'>
+ <p>Much of this is covered in @(see developers-guide-background).</p>
+ </color>
 
  <p>The @('state') is, logically, a data structure with many fields.  However,
  it is represented in ACL2 by a symbol, which is the value of
@@ -1662,6 +1911,10 @@
 
  <h3>Enabled structures</h3>
 
+ <color rgb='#800080'>
+ <p>THIS SECTION IS WORTH COVERING IN ITS ENTIRETY.</p>
+ </color>
+
  <p>ACL2 handles @(see theories) using <i>enabled structures</i>.  Ideally you
  could learn about enabled structures by visiting the @(tsee defrec) form for
  @('enabled-structure').  As of this writing, there are virtually no comments
@@ -1685,6 +1938,10 @@
  this to learn about ACL2 data structures &mdash; sad, but true.</p>
 
  <h3>Tag trees</h3>
+
+ <color rgb='#800080'>
+ <p>PERHAPS WE'LL JUST LOOK AT A CALL OF PUSH-LEMMA IN REWRITE.</p>
+ </color>
 
  <p>A <i>tag tree</i>, or <i>ttree</i> (pronounced ``tee-tree''), is a
  structure that is used for recording information generated by the prover.
@@ -1769,6 +2026,10 @@
 
  <h3>Using @(tsee return-last)</h3>
 
+ <color rgb='#800080'>
+ <p>THIS SECTION IS WORTH COVERING IN ITS ENTIRETY.</p>
+ </color>
+
  <p>There are occasions in which a utility is naturally defined as a function
  in ACL2 but as a macro in Common Lisp.  Consider @(tsee mbe).  Even though
  @('mbe') is itself a macro, it must expand to a function call involving its
@@ -1825,30 +2086,34 @@
  that also serves to provide important system-level background; and
  @('assume-true-false'), which extends a type-alist as one dives into the true
  or false branch of a call of @('IF').  Before creating type-alists with
- lower-level or new utilities, be sure to read the ``Essay on the Invariants on
- Type-alists, and Canonicality.''  In general, look for essays on any topic
- that is relevant to changes that you are making, unless you are reasonably
- confident that the essay is at a lower level than you need.  For example, if
- you call @('assume-true-false') to extend an existing type-alist, then you are
- using a well-worn interface and you needn't be concerned about the
- well-formedness of the resulting type-alists.</p>")
+ lower-level or new utilities, be sure to <color rgb='#c00000'>read the ``Essay
+ on the Invariants on Type-alists, and Canonicality</color>.''  In general,
+ look for essays on any topic that is relevant to changes that you are making,
+ unless you are reasonably confident that the essay is at a lower level than
+ you need.  For example, <color rgb='#c00000'>if you call
+ @('assume-true-false') to extend an existing type-alist, then you are using a
+ well-worn interface and you needn't be concerned about the well-formedness of
+ the resulting type-alists</color>.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-logic)</p>")
 
 (defxdoc developers-guide-logic
   :parents (developers-guide)
   :short "Logical Considerations"
   :long "<p>This Developer's Guide may give the impression that ACL2
  maintenance is primarily a programming exercise, and that is probably true.
- However, there are some subtle logical considerations that need to be
- considered when working with some parts of the implementation.  This topic
- addresses an assortment of such considerations, often by pointing to source
- code comments.  Additional reading for those intrigued by logic is the paper:
- ``Structured Theory Development for a Mechanized Logic,'' Matt Kaufmann and J
- Strother Moore, Journal of Automated Reasoning 26, no. 2 (2001),
- pp. 161--203.</p>
+ However, <color rgb='#c00000'>there are some subtle logical
+ considerations</color> that need to be considered when working with some parts
+ of the implementation.  This topic addresses an assortment of such
+ considerations, often by pointing to source code comments.  Additional reading
+ for those intrigued by logic is the paper: ``Structured Theory Development for
+ a Mechanized Logic,'' Matt Kaufmann and J Strother Moore, Journal of Automated
+ Reasoning 26, no. 2 (2001), pp. 161--203.</p>
 
- <p><b>Note:</b> The examples below are by no means comprehensive!  You are
- encouraged to extend this documentation topic with additional logical
- considerations as they arise.  Also see the Essay on Soundness Threats.</p>
+ <p><b>Note:</b> <color rgb='#c00000'>The examples below are by no means
+ comprehensive!</color> You are encouraged to extend this documentation topic
+ with additional logical considerations as they arise.  Also see the Essay on
+ Soundness Threats.</p>
 
  <h3>Histories, chronologies, and theories</h3>
 
@@ -1856,26 +2121,29 @@
 
  <ul>
 
- <li>The corresponding <i>history</i>, which is the sequence of all
- <i>axiomatic @(see events)</i> from the session: this includes @(tsee defun),
- @(tsee defchoose), and @(tsee defaxiom) events, as well as @(tsee encapsulate)
- events with non-empty @(see signature)s.  It does not include @(tsee defthm)
- events.</li>
+ <li>The corresponding <color rgb='#c00000'><i>history</i></color>, which is
+ the sequence of all <i>axiomatic @(see events)</i> from the session: this
+ includes @(tsee defun), @(tsee defchoose), and @(tsee defaxiom) events, as
+ well as @(tsee encapsulate) events with non-empty @(see signature)s.  It does
+ not include @(tsee defthm) events.</li>
 
- <li>The corresponding <i>chronology</i>, which is the sequence of all events
- from the session with logical content.  Thus the history is a subsequence of
- the chronology, but the chronology also includes @('defthm') events.</li>
+ <li>The corresponding <color rgb='#c00000'><i>chronology</i></color>, which is
+ the sequence of all events from the session with logical content.  Thus the
+ history is a subsequence of the chronology, but the chronology also includes
+ @('defthm') events.</li>
 
- <li>The corresponding <i>theory</i> of the session, which is the first-order
- theory of its history, that is, axiomatized by the formulas in its
- history.  (Careful: This theory is not sensitive to which runes are enabled,
- unlike the macro, @(tsee current-theory).)  A basic property of ACL2 is that
- all formulas in the session's chronology are provable in the session's theory.
- In particular, by restricting to the chronology of events up to and including
- a given @('defthm') event, we see that the formula of that event is provable
- from the axiomatic events that precede it.</li>
+ <li>The corresponding <color rgb='#c00000'><i>theory</i></color> of the
+ session, which is the first-order theory of its history, that is, axiomatized
+ by the formulas in its history.  (Careful: This theory is not sensitive to
+ which runes are enabled, unlike the macro, @(tsee current-theory).)  A basic
+ property of ACL2 is that all formulas in the session's chronology are provable
+ in the session's theory.  In particular, by restricting to the chronology of
+ events up to and including a given @('defthm') event, we see that the formula
+ of that event is provable from the axiomatic events that precede it.</li>
 
  </ul>
+
+ <color rgb='#c00000'>
 
  <p>When a session @('S1') is extended to a session @('S2') without using
  @('defaxiom') events, then the theory @('T2') for @('S2') is a <i>conservative
@@ -1884,6 +2152,8 @@
  introduced in @('S1') &mdash; is a theorem of @('T1').  An important corollary
  is that if a session has no @('defaxiom') events, then its theory is
  consistent.</p>
+
+ </color>
 
  <p>Note that @(tsee defattach) events are ignored for all three notions listed
  above.  There is also a notion of <i>evaluation theory</i>, which is the
@@ -1907,40 +2177,27 @@
 
  <h3>@(tsee Local)</h3>
 
+ <color rgb='#800080'>
+ <p>IN THIS SECTION WE CAN FOCUS MAINLY ON THE DISPLAYS.</p>
+ </color>
+
+ <color rgb='#c00000'>
+
  <p>Many soundness bugs in past versions of ACL2 &mdash; indeed, perhaps the
  majority of them &mdash; can be attributed to a subtle mishandling of @(tsee
  local) @(see events).  Perhaps the only advice possible in this regard is the
  following: Think carefully about the effects of @('local') when making
  event-level changes to ACL2!</p>
 
+ </color>
+
  <p>Consider for example the following, seemingly innocuous ``enhancement'':
  allow @(tsee verify-guards) to comprehend macro-aliases (see @(see
- macro-aliases-table)).  Recall that @(tsee append) is a macro-alias for @(tsee
- binary-append); similarly, suppose for example that we define a function
- @('f') and make @('mac') a macro-alias for @('f').</p>
-
- @({
- (defun f (x)
-   (declare (xargs :guard (consp x) :verify-guards nil))
-   (car x))
- (defmacro mac (x)
-  `(f ,x))
- (add-macro-alias mac f)
- ; FAILS because mac is not a function:
- (verify-guards mac)
- ; Succeeds:
- (verify-guards f)
- })
-
- <p>When we mention above the possible enhancement to ``allow @(tsee
- verify-guards) to comprehend macro-aliases'', we mean in this instance that
- since @('mac') is a macro-alias for @('f'), then the enhancement would allow
- the event @('(verify-guards mac)') to be admitted.</p>
-
- <p>But such an ``enhancement'' would be unsound!  Instead, a similar but sound
- enhancement, @('verify-guards+'), was introduced (into Version 6.3).  See
- @(see verify-guards+) for an example, using @(tsee encapsulate) and @(tsee
- local), for why such an enhancement to @('verify-guards') would be unsound.</p>
+ macro-aliases-table)).  Such an ``enhancement'' would be unsound!  Instead, a
+ similar but sound enhancement, @('verify-guards+'), was introduced (into
+ Version 6.3).  <color rgb='#c00000'>See @(see verify-guards+) for an example,
+ using @(tsee encapsulate) and @(tsee local), for why such an enhancement to
+ @('verify-guards') would be unsound.</color></p>
 
  <p>We turn now to discuss a key mechanism for avoiding potential soundness
  issues caused by @('local'): the @(tsee acl2-defaults-table).  Because of the
@@ -2012,6 +2269,10 @@
 
  <h3>@(tsee Skip-proofs) vs. @(tsee defaxiom)</h3>
 
+ <color rgb='#800080'>
+ <p>IN THE WORKSHOP THE FOCUS WILL BE ONLY ON THE LOGICAL DIFFERENCE.</p>
+ </color>
+
  <p>There is a fundamental logical difference between wrapping @(tsee
  skip-proofs) around a @(tsee defthm) event and using @(tsee defaxiom).  When
  using @('skip-proofs'), the user is promising that the ensuing proof
@@ -2078,9 +2339,10 @@
  <p>Every proposed definition with recursion generates two related artifacts: a
  proof obligation that is generally described as the termination proof
  obligation, and an induction scheme to be stored if the definition is
- admitted.  A key soundness requirement is that the termination proof
- obligation justifies use of the induction scheme.  This produces a tension, as
- can be seen by the analysis below of the following example.</p>
+ admitted.  <color rgb='#c00000'>A key soundness requirement is that the
+ termination proof obligation justifies use of the induction scheme.</color>
+ This produces a tension, as can be seen by the analysis below of the following
+ example.</p>
 
  @({
  (defun f (x)
@@ -2240,7 +2502,9 @@
 
  <p>A few other features of ACL2 with interesting logical foundations are
  @(tsee defchoose), @(tsee defabsstobj), and the interaction of packages with
- @(tsee local) (see the ``Essay on Hidden Packages'').</p>")
+ @(tsee local) (see the ``Essay on Hidden Packages'').</p>
+
+ <p>NEXT SECTION: @(see developers-guide-programming)</p>")
 
 (defxdoc developers-guide-programming
   :parents (developers-guide)
@@ -2248,6 +2512,10 @@
   :long "<p>This chapter discusses some things to keep in mind when modifying
  the ACL2 sources.  It is not intended to discuss any particular aspects of the
  ACL2 source code, but rather, to highlight some general principles.</p>
+
+ <color rgb='#800080'>
+ <p>ALL OF THIS TOPIC IS VERY IMPORTANT.</p>
+ </color>
 
  <h3>Keep the user in mind</h3>
 
@@ -2437,12 +2705,12 @@
  when @('(ld-skip-proofsp state)') is @('t'), i.e., when we are skipping proofs
  but not including a book (as discussed in the chapter, @(see
  developers-guide-logic)).  The idea here is that when including a certified
- book, we are assuming that necessary checks were already done earlier when
- certifying the book (and if the book is uncertified, then the user is in some
- sense trusting that it could be certified); but when using @('skip-proofs'),
- no such assumption is justified.  So one way to be careful is to do various
- checks even when @('(ld-skip-proofsp state)') is @('t'), even if these checks
- are to be skipped when including books.</p>")
+ book, we check theory-invariants just once, at the end of the book inclusion
+ process, for efficiency.  So one way to be careful is to do various checks
+ even when @('(ld-skip-proofsp state)') is @('t'), even if these checks are to
+ be skipped when including books.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-prioritizing)</p>")
 
 (defxdoc developers-guide-prioritizing
   :parents (developers-guide)
@@ -2451,6 +2719,12 @@
  comes along for making an improvement.  There is something to be said for
  doing so: the immediate motivation may make the work fun and lead to good
  results.</p>
+
+ <color rgb='#800080'>
+ <p>SUMMARY THAT SHOULD SUFFICE: Fix bugs, prioritize what will actually be
+ used, and beware of massive regression failures.  Changes can be extremely
+ valuable, and can also be substantially more work than predicted.</p>
+ </color>
 
  <p>But there can be drawbacks to taking on every opportunity to make an
  improvement.  Heuristic improvements can be very difficult to work out without
@@ -2492,14 +2766,27 @@
  judgment, between introducing behavioral changes and maintaining the community
  books and private repositories.  There needs to be a guess about whether the
  benefit of the change outweighs the effort required to design and implement it
- and the fallout of requiring changes to books.</p>")
+ and the fallout of requiring changes to books.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-evaluation)</p>")
 
 (defxdoc developers-guide-evaluation
+
+; An "inefficiency" (referenced below) is getting the value of a special
+; variable twice: (F-GET-GLOBAL 'GUARD-CHECKING-ON *THE-LIVE-STATE*).  Instead
+; we could bind a lexical variable to that value, and use the lexical variable
+; twice.
+
   :parents (developers-guide)
   :short "How Evaluation Is Implemented in ACL2"
   :long "<p>Our focus here is primarily on evaluation in the top-level loop.
  Also see the section on ``Evaluators'' in the chapter, @(see
  developers-guide-utilities).</p>
+
+ <color rgb='#800080'>
+ <p>ALL OF THIS TOPIC IS IMPORTANT; coverage will depend on time available at
+ the workshop.</p>
+ </color>
 
  <h3>Introduction and further reading</h3>
 
@@ -2653,7 +2940,9 @@
  <p>Do you see an inefficiency above?</p>
 
  <p>See code comments for how oneification deals with subtleties such as
- safe-mode, stobjs, and invariant-risk.</p>")
+ safe-mode, stobjs, and invariant-risk.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-miscellany)</p>")
 
 (defxdoc developers-guide-miscellany
   :parents (developers-guide)
@@ -2690,7 +2979,9 @@
  but it has probably been quite some time since it was tested.  Perhaps it is
  time to remove all such code; indeed, the release notes for Version 8.0 (see
  @(see note-8-0)) say that ``The (minimal) support for infix printing has been
- removed.''</p>")
+ removed.''</p>
+
+ <p>NEXT SECTION: @(see developers-guide-releases)</p>")
 
 (defxdoc developers-guide-releases
   :parents (developers-guide)
@@ -2713,7 +3004,9 @@
  numbered releases should talk with Matt Kaufmann about obtaining those
  instructions, which perhaps would become public at that point.  (It could take
  non-trivial effort to clarify those instructions for the ``public'', so let's
- wait till there is such a volunteer.)</p>")
+ wait till there is such a volunteer.)</p>
+
+ <p>NEXT SECTION: @(see developers-guide-style)</p>")
 
 (defxdoc developers-guide-style
   :parents (developers-guide)
@@ -2767,7 +3060,9 @@
  <p>We generally avoid capitalizing all letters in a single word, except
  perhaps for keywords or quoted constants.</p>
 
- <p>There are no multi-line comments: @('#|| ... ||#').</p>")
+ <p>There are no multi-line comments: @('#|| ... ||#').</p>
+
+ <p>NEXT SECTION: @(see developers-guide-other)</p>")
 
 (defxdoc developers-guide-other
   :parents (developers-guide)
@@ -2813,11 +3108,13 @@
 
  <p>Perhaps this Guide will be expanded in the future.  If so, the expansion
  should probably not duplicate code comments, but rather, provide overview
- information and perspective with pointers to those comments.</p>")
+ information and perspective with pointers to those comments.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-acl2-devel)</p>")
 
 (defxdoc developers-guide-acl2-devel
   :parents (developers-guide)
-  :short "Use the acl2-devel List!"
+  :short "<color rgb='#c00000'>Use the acl2-devel List!</color>"
   :long "<p>For years, Kaufmann and Moore have had regular chats during which
  they collaborate on development issues.  Use the acl2-devel mailing list to
  continue that tradition.  For example, if you are trying to get oriented about
@@ -2830,7 +3127,8 @@
  also is not the right place; note that it is missing at least one important
  member of acl2-devel.</p>
 
- <p>Happy developing!</p>")
+ <p>This is the final topic under @(see developers-guide).<br/>HAPPY
+ DEVELOPING!</p>")
 
 (xdoc::order-subtopics developers-guide
                        ()

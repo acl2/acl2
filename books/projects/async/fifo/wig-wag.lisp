@@ -100,7 +100,7 @@
 
 ;; DE netlist generator.  A generated netlist will contain an instance of WW.
 
-(defun wig-wag$netlist (data-width)
+(defund wig-wag$netlist (data-width)
   (declare (xargs :guard (natp data-width)))
   (cons (wig-wag* data-width)
         (union$ (link$netlist data-width)
@@ -113,12 +113,12 @@
 (defund wig-wag& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-width))))
-  (and (equal (assoc (si 'wig-wag data-width) netlist)
-              (wig-wag* data-width))
-       (b* ((netlist (delete-to-eq (si 'wig-wag data-width) netlist)))
-         (and (link& netlist data-width)
-              (alt-branch& netlist data-width)
-              (alt-merge& netlist data-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'wig-wag data-width) netlist)))
+    (and (equal (assoc (si 'wig-wag data-width) netlist)
+                (wig-wag* data-width))
+         (link& subnetlist data-width)
+         (alt-branch& subnetlist data-width)
+         (alt-merge& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -455,22 +455,18 @@
                 (wig-wag$valid-st st data-width))
            (booleanp (wig-wag$in-act inputs st data-width)))
   :hints (("Goal"
-           :use wig-wag$input-format=>br$input-format
-           :in-theory (e/d (wig-wag$valid-st
-                            wig-wag$in-act)
-                           (wig-wag$input-format=>br$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable wig-wag$valid-st
+                              wig-wag$in-act)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-wig-wag$out-act
   (implies (and (wig-wag$input-format inputs data-width)
                 (wig-wag$valid-st st data-width))
            (booleanp (wig-wag$out-act inputs st data-width)))
   :hints (("Goal"
-           :use wig-wag$input-format=>me$input-format
-           :in-theory (e/d (wig-wag$valid-st
-                            wig-wag$out-act)
-                           (wig-wag$input-format=>me$input-format))))
-  :rule-classes :type-prescription)
+           :in-theory (enable wig-wag$valid-st
+                              wig-wag$out-act)))
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma wig-wag)
 
@@ -562,14 +558,14 @@
      (implies (wig-wag$input-format inputs data-width)
               (booleanp (nth 0 inputs)))
      :hints (("Goal" :in-theory (enable wig-wag$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm wig-wag$input-format-lemma-2
      (implies (wig-wag$input-format inputs data-width)
               (booleanp (nth 1 inputs)))
      :hints (("Goal" :in-theory (enable wig-wag$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm wig-wag$input-format-lemma-3

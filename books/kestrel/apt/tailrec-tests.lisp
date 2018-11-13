@@ -84,7 +84,7 @@
       (if (atom x) nil (f (car x)))))
   (must-fail (tailrec f)))
 
- ;; body if not (IF ...):
+ ;; body is not (IF ...):
  (must-succeed*
   (defun f (x)
     (declare (xargs :ruler-extenders :all))
@@ -126,12 +126,12 @@
   (defun f (x) (if (atom x) nil (f (cdr x))))
   (must-fail (tailrec f)))
 
- ;; recursive branch calls IF:
+ ;; recursive branch is (IF ...):
  (must-succeed*
   (defun f (x) (if (atom x) nil (if (atom (car x)) nil (f (cdr x)))))
   (must-fail (tailrec f)))
 
- ;; recursive branch calls IF via AND macro:
+ ;; recursive branch is (IF ...) via AND macro:
  (must-succeed*
   (defun f (x) (if (atom x) nil (and (atom (car x)) (f (cdr x)))))
   (must-fail (tailrec f)))

@@ -198,6 +198,7 @@
 
   '(quote
     lambda
+    lambda$
     let
     mv
     mv-let

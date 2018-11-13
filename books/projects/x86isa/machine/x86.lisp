@@ -114,7 +114,14 @@
  encountered --- we call @(tsee x86-illegal-instruction) in such cases.
  <i>Unimplemented</i> stands for legal x86 instructions that are not yet
  supported in @('x86isa') --- we call @(tsee x86-step-unimplemented) in such
- cases.</p>"
+ cases.</p>
+
+ <h4>AVX/AVX512 Extensions</h4>
+
+ <p>Though we haven't defined instruction semantic functions for VEX- and
+ EVEX-encoded instructions yet, we can decode these instructions and can also
+ detect some decode-time exceptions --- see @(see vex-decode-and-execute) and
+ @(see evex-decode-and-execute) for details.</p>"
 
   )
 
@@ -1163,12 +1170,13 @@
 			   ())))
 
   (b* ((ctx 'x86-fetch-decode-execute)
-       (proc-mode (x86-operation-mode x86))
-       (64-bit-modep (equal proc-mode #.*64-bit-mode*))
        ;; We don't want our interpreter to take a step if the machine is in a
        ;; bad state.  Such checks are made in x86-run but I am duplicating them
        ;; here in case this function is being used at the top-level.
        ((when (or (ms x86) (fault x86))) x86)
+
+       (proc-mode (x86-operation-mode x86))
+       (64-bit-modep (equal proc-mode #.*64-bit-mode*))
 
        (start-rip (the (signed-byte #.*max-linear-address-size*)
 		    (read-*ip proc-mode x86)))

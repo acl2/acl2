@@ -244,27 +244,27 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   (defconst *vex2-byte1-layout*
     '((:pp                0  2) ;; opcode extension providing
-				;; equivalent functionality of a SIMD
-				;; prefix
-				;; #b00: None
-				;; #b01: #x66
-				;; #b10: #xF3
-				;; #b11: #xF2
+      ;; equivalent functionality of a SIMD
+      ;; prefix
+      ;; #b00: None
+      ;; #b01: #x66
+      ;; #b10: #xF3
+      ;; #b11: #xF2
 
       (:l                 2  1) ;; Vector Length
-				;; 0: scalar or 128-bit vector
-				;; 1: 256-bit vector
+      ;; 0: scalar or 128-bit vector
+      ;; 1: 256-bit vector
 
       (:vvvv              3  4) ;; a register specifier (in 1's
-				;; complement form) or 1111 if unused.
+      ;; complement form) or 1111 if unused.
 
       (:r                 7  1) ;; REX.R in 1's complement (inverted) form
-				;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
-				;; 0: Same as REX.R=1 (64-bit mode only)
-				;; In protected and compatibility
-				;; modes the bit must be set to '1'
-				;; otherwise the instruction is LES or
-				;; LDS.
+      ;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
+      ;; 0: Same as REX.R=1 (64-bit mode only)
+      ;; In protected and compatibility
+      ;; modes the bit must be set to '1'
+      ;; otherwise the instruction is LES or
+      ;; LDS.
       ))
 
   (defthm vex2-byte1-table-ok
@@ -279,29 +279,29 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
   (defconst *vex3-byte1-layout*
     '((:m-mmmm            0  5) ;; 00000: Reserved for future use (will #UD)
-				;; 00001: implied 0F leading opcode byte
-				;; 00010: implied 0F 38 leading opcode bytes
-				;; 00011: implied 0F 3A leading opcode bytes
-				;; 00100-11111: Reserved for future use (will #UD)
+      ;; 00001: implied 0F leading opcode byte
+      ;; 00010: implied 0F 38 leading opcode bytes
+      ;; 00011: implied 0F 3A leading opcode bytes
+      ;; 00100-11111: Reserved for future use (will #UD)
 
       (:b                 5  1) ;; REX.B in 1's complement (inverted) form
-				;; 1: Same as REX.B=0 (Ignored in 32-bit mode).
-				;; 0: Same as REX.B=1 (64-bit mode only)
+      ;; 1: Same as REX.B=0 (Ignored in 32-bit mode).
+      ;; 0: Same as REX.B=1 (64-bit mode only)
 
       (:x                 6  1) ;; REX.X in 1's complement (inverted) form
-				;; 1: Same as REX.X=0 (must be 1 in 32-bit mode)
-				;; 0: Same as REX.X=1 (64-bit mode only)
-				;; In 32-bit modes, this bit must be
-				;; set to '1', otherwise the
-				;; instruction is LES or LDS.
+      ;; 1: Same as REX.X=0 (must be 1 in 32-bit mode)
+      ;; 0: Same as REX.X=1 (64-bit mode only)
+      ;; In 32-bit modes, this bit must be
+      ;; set to '1', otherwise the
+      ;; instruction is LES or LDS.
 
       (:r                 7  1) ;; REX.R in 1's complement (inverted) form
-				;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
-				;; 0: Same as REX.R=1 (64-bit mode only)
-				;; In protected and compatibility
-				;; modes the bit must be set to '1'
-				;; otherwise the instruction is LES or
-				;; LDS.
+      ;; 1: Same as REX.R=0 (must be 1 in 32-bit mode)
+      ;; 0: Same as REX.R=1 (64-bit mode only)
+      ;; In protected and compatibility
+      ;; modes the bit must be set to '1'
+      ;; otherwise the instruction is LES or
+      ;; LDS.
 
       ))
 
@@ -316,25 +316,25 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     (!slice flg val reg 8 *vex3-byte1-layout*))
 
   (defconst *vex3-byte2-layout*
-    '((:pp                0  2)  ;; opcode extension providing
-				 ;; equivalent functionality of a SIMD
-				 ;; prefix
-				 ;; #b00: None
-				 ;; #b01: #x66
-				 ;; #b10: #xF3
-				 ;; #b11: #xF2
+    '((:pp                0  2) ;; opcode extension providing
+      ;; equivalent functionality of a SIMD
+      ;; prefix
+      ;; #b00: None
+      ;; #b01: #x66
+      ;; #b10: #xF3
+      ;; #b11: #xF2
 
-      (:l                 2  1)  ;; Vector Length
-				 ;; 0: scalar or 128-bit vector
-				 ;; 1: 256-bit vector
+      (:l                 2  1) ;; Vector Length
+      ;; 0: scalar or 128-bit vector
+      ;; 1: 256-bit vector
 
-      (:vvvv              3  4)  ;; a register specifier (in 1's
-				 ;; complement form) or 1111 if unused.
+      (:vvvv              3  4) ;; a register specifier (in 1's
+      ;; complement form) or 1111 if unused.
 
       (:w                 7   1) ;; opcode specific (use like REX.W,
-				 ;; or used for opcode extension, or
-				 ;; ignored, depending on the opcode
-				 ;; byte)
+      ;; or used for opcode extension, or
+      ;; ignored, depending on the opcode
+      ;; byte)
       ))
 
   (defthm vex3-byte2-table-ok
@@ -428,19 +428,24 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
     :inline t
     :no-function t
     :returns (w (unsigned-byte-p 1 w)
-		:hyp (and (vex-prefixes-byte0-p vex-prefixes)
-			  (equal (vex-prefixes-slice :byte0 vex-prefixes) #.*vex3-byte0*))
+		:hyp (vex-prefixes-byte0-p vex-prefixes)
 		:hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
     (case (vex-prefixes-slice :byte0 vex-prefixes)
       (#.*vex3-byte0*
        (vex3-byte2-slice :w (vex-prefixes-slice :byte2 vex-prefixes)))
-      (otherwise -1))
+      ;; Source: Intel Vol. 2A, Section 3.1.1.2 --- Opcode Column in the
+      ;; Instruction Summary Table (Instructions with VEX Prefix):
+      ;; "The presence of W0 in the opcode column does not preclude the opcode
+      ;; to be encoded using the C5H form of the VEX prefix, if the semantics
+      ;; of the opcode does not require other VEX subfields not present in the
+      ;; two-byte form of the VEX prefix."
+      (otherwise 0))
 
     ///
 
-    (defret error-vex-w-slice
+    (defret if-not-vex3-byte0-then-vex-w-slice=0
       (implies (not (equal (vex-prefixes-slice :byte0 vex-prefixes) #.*vex3-byte0*))
-	       (equal (vex-w-slice vex-prefixes) -1)))))
+	       (equal (vex-w-slice vex-prefixes) 0)))))
 
 (defsection evex-prefixes-layout-structures
 

@@ -4213,8 +4213,13 @@
      (mv-let (col state)
              (io? event nil (mv col state)
                   (col names)
-                  (fmt1 "~&0 ~#0~[is~/are~] compliant with Common Lisp.~|"
-                        (list (cons #\0 names))
+                  (fmt1 "~#0~[This lambda expression~/~&1~] ~#1~[is~/are~] ~
+                         compliant with Common Lisp.~|"
+                        (list (cons #\0 (if (and (consp names)
+                                                 (consp (car names))
+                                                 (eq (car (car names)) 'lambda))
+                                            0 1))
+                              (cons #\1 names))
                         col
                         (proofs-co state)
                         state nil)
@@ -4356,15 +4361,44 @@
 
 (defun chk-acceptable-verify-guards-cmp (name rrp ctx wrld state-vars)
 
-; We check that name is acceptable input for verify-guards.  Normally rrp
-; ("return redundant p") is t.  In that case, we return either the list of
-; names in the clique of name (if name and every peer in the clique is :ideal
-; and every subroutine of every peer is :common-lisp-compliant), the symbol
-; 'redundant (if name and every peer is :common-lisp-compliant), or cause an
-; error.  But if rrp is nil then instead of returning 'redundant -- thus, name
-; is :common-lisp-compliant -- we return the list of names in the clique of
-; name, as in the :ideal case, but subject to the check for
-; :common-lisp-compliant subfunctions that we do in the :ideal case.
+; We check that name is acceptable input for verify-guards and either cause an
+; error or return the list of objects from which guard clauses should be
+; generated or (when rrp = t, we might return 'redundant).  We're more precise
+; below.
+
+; Below we describe a case analysis on name, a Test to perform, and the
+; Non-Erroneous Value to return if the test succeeds.  If a Test fails or the
+; case analysis on name is exhausted without specifying an answer, an error is
+; caused.  When name is a function symbol we'll use names to be the set of
+; function symbols in name's clique.
+
+; * if name is a :common-lisp-compliant function symbol or lambda expression
+;   and rrp = t:
+;   Test: T
+;   Non-Erroneous Value: 'redundant.
+
+; * if name is a function symbol:
+;   Test: is every subfunction in the definitions of names except possibly
+;   names themselves :common-lisp-compliant?
+;   Non-erroneous Value: names
+
+; * if name is a theorem name:
+;   Test: is every function used in the formula :common-lisp-compliant?
+;   Non-erroneous Value: (list name)
+
+; * if name is a lambda object:
+;   Test: is name a well-formed lambda object and every function symbol in it
+;   (including in the :guard and body) :common-lisp-compliant?
+;   Non-erroneous Value: (list name)
+
+; * if name is a lambda$ expression
+
+;   Test: can name be translated non-erroneously to name', where name' is a
+;   well-formed lambda object, and is every function in name' (including in the
+;   :guard and body) is :common-lisp-compliant?
+;   Non-erroneous Value: (list name')
+
+; Otherwise, an error is caused.
 
 ; One might wonder when two peers in a clique can have different symbol-classes,
 ; e.g., how is it possible (as implied above) for name to be :ideal but for one
@@ -4375,84 +4409,173 @@
 ; an error and say you can't verify the guards of any of the functions in the
 ; nest.
 
+; Motivation: When rrp is t, we get one of three answers: the redundancy signal
+; (if name is compliant), a list of objects (either names or well-formed lambda
+; expressions) from which to generate guard obligations (if such obligations
+; can be generated), or an error.  If rrp is nil, we get either the objects
+; from which to generate guard obligations or an error.  The ``objects'' are
+; all either names or well-formed lambda expressions.  We use rrp = nil when we
+; are trying to (re-)generate the guard obligations as by
+; verify-guards-formula.  Note that rrp = nil is more strict than rrp = t in
+; the sense that with rrp=t we might be 'redundant but with rrp=nil the same
+; name might generate an error because it's in a clique that, due to
+; redefinition, now has a :program mode function in it.
+
   (er-let*-cmp
-   ((symbol-class
-     (cond ((symbolp name)
-            (value-cmp (symbol-class name wrld)))
-           (t
-            (er-cmp ctx
-                    "~x0 is not a symbol.  See :DOC verify-guards."
-                    name)))))
-   (cond
-    ((and rrp
-          (eq symbol-class :common-lisp-compliant))
-     (value-cmp 'redundant))
-    ((getpropc name 'theorem nil wrld)
+   ((name
+     (cond
+      ((symbolp name)
+       (value-cmp name))
+      ((and (consp name)
+            (or (eq (car name) 'lambda)
+                (eq (car name) 'lambda$)))
+       (cond
+        ((eq (car name) 'lambda)
+         (cond
+          ((well-formed-lambda-objectp name wrld)
+           (value-cmp name))
+          (t (er-cmp ctx
+                     "~x0 is not a well-formed LAMBDA expression.  See :DOC ~
+                      verify-guards."
+                     name))))
+        (t
+         (mv-let (erp val bindings)
+           (translate11-lambda-object
+            name
+            '(nil) ; stobjs-out
+            nil    ; bindings
+            nil    ; known-stobjs
+            nil    ; flet-alist
+            name
+            'verify-guards
+            wrld
+            state-vars)
+           (declare (ignore bindings))
+           (mv erp (if erp val (unquote val)))))))
+      (t (er-cmp ctx
+                 "~x0 is not a symbol, a lambda object, or a lambda$ ~
+                  expression.  See :DOC verify-guards."
+                 name)))))
+
+; Name is now either a symbol or a consp, and if it is a consp it is a
+; well-formed lambda object.
+
+   (let ((symbol-class
+          (cond ((symbolp name)
+                 (symbol-class name wrld))
+                ((member-equal name
+                               (global-val 'common-lisp-compliant-lambdas wrld))
+                 :common-lisp-compliant)
+                (t
+
+; Since name is known to be a well-formed lambda, every function in it and its
+; guard is in :logic mode.
+
+                 :ideal))))
+     (cond
+      ((and rrp
+            (eq symbol-class :common-lisp-compliant))
+       (value-cmp 'redundant))
+      ((consp name)
+
+; Name is a well-formed lambda object.  If every fn in the guard and body is
+; compliant (so guard obligations can be computed) we return the list
+; containing the well-formed lambda expression derived from name which is now
+; the value of the variable of that name.
+
+       (let* ((guard (lambda-object-guard name))
+              (body (lambda-object-body name))
+              (bad-guard-fns
+               (collect-non-common-lisp-compliants (all-fnnames guard) wrld))
+              (bad-body-fns
+               (collect-non-common-lisp-compliants (all-fnnames body) wrld)))
+
+; Any non-compliant fns in the guard or body are known to be :ideal because
+; :program mode fns are not allowed in well-formed lambda objects.
+
+         (cond
+          (bad-guard-fns
+           (er-cmp ctx
+                   "This lambda expression cannot be guard verified because ~
+                    the guard mentions ~&0 which ~#0~[is~/are~] not guard ~
+                    verified: ~x1."
+                   bad-guard-fns
+                   name))
+          (bad-body-fns
+           (er-cmp ctx
+                   "This lambda expression cannot be guard verified because ~
+                    the body mentions ~&0 which ~#0~[is~/are~] not guard ~
+                    verified: ~x1."
+                   bad-body-fns
+                   name))
+          (t (value-cmp (list name))))))
+      ((getpropc name 'theorem nil wrld)
 
 ; Theorems are of either symbol-class :ideal or :common-lisp-compliant.
 
-     (er-progn-cmp
-      (chk-acceptable-verify-guards-formula-cmp
-       name
-       (getpropc name 'untranslated-theorem nil wrld)
-       ctx wrld state-vars)
-      (value-cmp (list name))))
-    ((function-symbolp name wrld)
-     (case symbol-class
-       (:program
-        (er-cmp ctx
-                "~x0 is in :program mode.  Only :logic mode functions can ~
-                 have their guards verified.  See :DOC verify-guards."
-                name))
-       ((:ideal :common-lisp-compliant)
-        (let* ((recp (getpropc name 'recursivep nil wrld))
-               (names (cond
-                       ((null recp)
-                        (list name))
-                       (t recp)))
-               (bad-names (if (eq symbol-class :ideal)
-                              (collect-non-ideals names wrld)
-                            (collect-programs names wrld))))
-          (cond (bad-names
-                 (er-cmp ctx
-                         "One or more of the mutually-recursive peers of ~x0 ~
-                          ~#1~[was not defined in :logic mode~/either was not ~
-                          defined in :logic mode or has already had its ~
-                          guards verified~].  The offending function~#2~[ ~
-                          is~/s are~] ~&2.  We thus cannot verify the guards ~
-                          of ~x0.  This situation can arise only through ~
-                          redefinition."
-                         name
-                         (if (eq symbol-class :ideal) 1 0)
-                         bad-names))
-                (t
-                 (er-progn-cmp
-                  (chk-common-lisp-compliant-subfunctions-cmp
-                   names names
-                   (guard-lst names nil wrld)
-                   wrld "guard" ctx)
-                  (chk-common-lisp-compliant-subfunctions-cmp
-                   names names
-                   (getprop-x-lst names 'unnormalized-body wrld)
-                   wrld "body" ctx)
-                  (value-cmp names))))))
-       (otherwise ; the symbol-class :common-lisp-compliant is handled above
-        (er-cmp ctx
-                "Implementation error: Unexpected symbol-class, ~x0, for the ~
-                 function symbol ~x1."
-                symbol-class name))))
-    (t (let ((fn (deref-macro-name name (macro-aliases wrld))))
-         (er-cmp ctx
-                 "~x0 is not a function symbol or a theorem name in the ~
-                  current ACL2 world.  ~@1"
-                 name
-                 (cond ((eq fn name) "See :DOC verify-guards.")
-                       (t (msg "Note that ~x0 is a macro-alias for ~x1.  ~
-                                Consider calling verify-guards with argument ~
-                                ~x1 instead, or use verify-guards+.  See :DOC ~
-                                verify-guards, see :DOC verify-guards+, and ~
-                                see :DOC macro-aliases-table."
-                               name fn)))))))))
+       (er-progn-cmp
+        (chk-acceptable-verify-guards-formula-cmp
+         name
+         (getpropc name 'untranslated-theorem nil wrld)
+         ctx wrld state-vars)
+        (value-cmp (list name))))
+      ((function-symbolp name wrld)
+       (case symbol-class
+         (:program
+          (er-cmp ctx
+                  "~x0 is in :program mode.  Only :logic mode functions can ~
+                   have their guards verified.  See :DOC verify-guards."
+                  name))
+         ((:ideal :common-lisp-compliant)
+          (let* ((recp (getpropc name 'recursivep nil wrld))
+                 (names (cond
+                         ((null recp)
+                          (list name))
+                         (t recp)))
+                 (bad-names (if (eq symbol-class :ideal)
+                                (collect-non-ideals names wrld)
+                                (collect-programs names wrld))))
+            (cond (bad-names
+                   (er-cmp ctx
+                           "One or more of the mutually-recursive peers of ~
+                            ~x0 ~#1~[was not defined in :logic mode~/either ~
+                            was not defined in :logic mode or has already had ~
+                            its guards verified~].  The offending ~
+                            function~#2~[ is~/s are~] ~&2.  We thus cannot ~
+                            verify the guards of ~x0.  This situation can ~
+                            arise only through redefinition."
+                           name
+                           (if (eq symbol-class :ideal) 1 0)
+                           bad-names))
+                  (t
+                   (er-progn-cmp
+                    (chk-common-lisp-compliant-subfunctions-cmp
+                     names names
+                     (guard-lst names nil wrld)
+                     wrld "guard" ctx)
+                    (chk-common-lisp-compliant-subfunctions-cmp
+                     names names
+                     (getprop-x-lst names 'unnormalized-body wrld)
+                     wrld "body" ctx)
+                    (value-cmp names))))))
+         (otherwise ; the symbol-class :common-lisp-compliant is handled above
+          (er-cmp ctx
+                  "Implementation error: Unexpected symbol-class, ~x0, for ~
+                   the function symbol ~x1."
+                  symbol-class name))))
+      (t (let ((fn (deref-macro-name name (macro-aliases wrld))))
+           (er-cmp ctx
+                   "~x0 is not a function symbol or a theorem name in the ~
+                    current ACL2 world.  ~@1"
+                   name
+                   (cond ((eq fn name) "See :DOC verify-guards.")
+                         (t (msg "Note that ~x0 is a macro-alias for ~x1.  ~
+                                  Consider calling verify-guards with ~
+                                  argument ~x1 instead, or use ~
+                                  verify-guards+.  See :DOC verify-guards, ~
+                                  see :DOC verify-guards+, and see :DOC ~
+                                  macro-aliases-table."
+                                 name fn))))))))))
 
 (defun chk-acceptable-verify-guards (name rrp ctx wrld state)
   (cmp-to-error-triple
@@ -4461,11 +4584,13 @@
 
 (defun guard-obligation-clauses (x guard-debug ens wrld state)
 
-; X is either a list of names corresponding to a defun, mutual-recursion nest,
-; or defthm, or else of the form (:term . y) where y is a translated term.
-; Returns a set of clauses justifying the guards for y in the latter case, else
-; x, together with an assumption-free tag-tree justifying that set of clauses.
-; (Do not view this as an error triple!)
+; X is of one of three forms: (i) a list of function names and/or well-formed
+; lambda object, (ii) a singleton list containing a theorem name, or (iii)
+; (:term . y) where y must be a translated term.  Returns two results.  The
+; first is a set of clauses justifying the guards x, i.e., in case (i) the
+; guards of all the functions in x, (ii) the guards of the theorem's formula,
+; or (iii) the guards of term y.  The second result is an assumption-free
+; tag-tree justifying that set of clauses.
 
   (mv-let (cl-set cl-set-ttree)
     (cond ((and (consp x)
@@ -4482,6 +4607,7 @@
              (mv cl-set cl-set-ttree)))
           ((and (consp x)
                 (null (cdr x))
+                (symbolp (car x))
                 (getpropc (car x) 'theorem nil wrld))
            (mv-let (cl-set cl-set-ttree)
              (guard-clauses+
@@ -4556,9 +4682,12 @@
   (let ((simp-phrase (tilde-*-simp-phrase cl-set-ttree)))
     (cond
      ((null cl-set)
-      (fmt "The guard conjecture for ~#0~[~&1~/the given term~] is trivial to ~
-            prove~#2~[~/, given ~*3~].~@4"
-           (list (cons #\0 (if names 0 1))
+      (fmt "The guard conjecture for ~#0~[this lambda expression~/~&1~/the ~
+            given term~] is trivial to prove~#2~[~/, given ~*3~].~@4"
+           (list (cons #\0 (if names
+                               (if (consp (car names))
+                                   0 1)
+                               2))
                  (cons #\1 names)
                  (cons #\2 (if (nth 4 simp-phrase) 1 0))
                  (cons #\3 simp-phrase)
@@ -4568,9 +4697,13 @@
            nil))
      (t
       (pprogn
-       (fms "The non-trivial part of the guard conjecture for ~#0~[~&1~/the ~
-             given term~]~#2~[~/, given ~*3,~] is~%~%Goal~%~Q45."
-            (list (cons #\0 (if names 0 1))
+       (fms "The non-trivial part of the guard conjecture for ~#0~[this ~
+             lambda expression~/~&1~/the given term~]~#2~[~/, given ~*3,~] ~
+             is~%~%Goal~%~Q45."
+            (list (cons #\0 (if names
+                                (if (consp (car names))
+                                    0 1)
+                                2))
                   (cons #\1 names)
                   (cons #\2 (if (nth 4 simp-phrase) 1 0))
                   (cons #\3 simp-phrase)
@@ -4617,13 +4750,13 @@
 (defun prove-guard-clauses (names hints otf-flg guard-debug ctx ens wrld state)
 
 ; Names is either a clique of mutually recursive functions or else a singleton
-; list containing a theorem name.  We generate and attempt to prove the guard
-; conjectures for the formulas in names.  We generate suitable output
-; explaining what we are doing.  This is an error/value/state producing
-; function that returns a pair of the form (col . ttree) when non-erroneous.
-; Col is the column in which the printer is left.  We always output something
-; and we always leave the printer ready to start a new sentence.  Ttree is a
-; tag-tree describing the proof.
+; list containing either a theorem name or a well-formed lambda object.  We
+; generate and attempt to prove the guard conjectures for the formulas in
+; names.  We generate suitable output explaining what we are doing.  This is an
+; error/value/state producing function that returns a pair of the form (col
+; . ttree) when non-erroneous.  Col is the column in which the printer is left.
+; We always output something and we always leave the printer ready to start a
+; new sentence.  Ttree is a tag-tree describing the proof.
 
 ; This function increments timers.  Upon entry, any accumulated time
 ; is charged to 'other-time.  The printing done herein is charged
@@ -4717,9 +4850,19 @@
                              ttree))))))))))))))))))
 
 (defun maybe-remove-invariant-risk (names wrld new-wrld)
+
+; Names is either a list of function names or a singleton containing a
+; well-formed lambda object.  All the elements of names have been guard
+; verified.  We ignore the lambdas and just focus on the function names and
+; remove (set to nil) the invariant-risk property if it has been set.  Note
+; that invariant-risk concerns :program mode functions (that might perform
+; unchecked modifications to stobjs or arrays).  But all well-formed lambda
+; objects are composed entirely of :logic mode functions.
+
   (cond ((endp names) new-wrld)
         (t (let ((new-wrld
-                  (if (and (getpropc (car names) 'invariant-risk nil wrld)
+                  (if (and (symbolp (car names))
+                           (getpropc (car names) 'invariant-risk nil wrld)
                            (equal (guard (car names) t wrld) *t*))
                       (putprop (car names) 'invariant-risk nil new-wrld)
                     new-wrld)))
@@ -7723,6 +7866,191 @@
                   (irrelevant-vars (fourth (car fives)))
                   (get-irrelevants-alist (cdr fives))))))
 
+(defun raw-lambda$s-to-lambdas (lst)
+
+; Lst is a list of logically translated well-formed lambda objects whose bodies
+; are tagged as having come from translated lambda$s.  We create a set of pairs
+; mapping ``raw Lisp lambda$s'' to their logic counterparts.  This set of pairs
+; will be added to the lambda$-alist by the function
+; chk-acceptable-lambda$-translations.
+
+; Here is a refresher course on the markings of macroexpanded lambda$s in raw
+; Lisp and the logic translations of those lambda$s.
+
+; Let x be a typical lambda$ expression, (lambda$ formals dcls* body).  After
+; macroexpansion in raw Lisp, x turns into
+
+; (QUOTE (,*lambda$-marker* . (lambda$ formals dcls* body))).
+;                             ---------------------------
+;                                   = x
+
+; We've underlined the original lambda$ expression, x, in this raw Lisp quoted
+; constant.
+
+; Meanwhile, in the logic, the translation of the lambda$ expression is
+
+; (QUOTE (lambda formals dcl' (return-last 'progn 'raw-x body'))).
+;        -------------------------------------------------------
+;                       = x'
+
+; The underlined evg is here named x'.  X' is a typical element of lst, i.e., a
+; logically translated well-formed lambda object whose body is tagged as having
+; come from a lambda$.
+
+; If x' is an element of lst then our set of pairs will contain the pair (x
+; . x').  We can construct this pair from x' because x is embedded in x'.
+
+  (cond ((endp lst) nil)
+        (t (cons (cons (unquote (fargn (lambda-object-body (car lst)) 2))
+                       (car lst))
+                 (raw-lambda$s-to-lambdas (cdr lst))))))
+
+(defconst *default-state-vars* (default-state-vars nil))
+
+(defun chk-acceptable-lambda$-translations1 (new-pairs ctx wrld state)
+  (cond
+   ((null new-pairs) (value nil))
+   (t (let* ((key (car (car new-pairs)))
+             (val (cdr (car new-pairs))))
+        (mv-let (erp tkey bindings)
+          (translate11-lambda-object key
+                                     '(nil) ; stobjs-out
+                                     nil    ; bindings
+                                     nil    ; known-stobjs
+                                     nil    ; flet-alist
+                                     key
+                                     ctx
+                                     wrld
+                                     *default-state-vars*)
+          (declare (ignore bindings))
+          (cond
+           (erp (er soft ctx
+                    "The attempt to translate a lambda$ to be stored as a key ~
+                     on lambda$-alist has caused an error, despite the fact ~
+                     that this very same lambda$ was successfully translated ~
+                     a moment ago!  The error caused is:~%~@0~%~%The ~
+                     offending lambda$ is ~x1.  This is an implementation ~
+                     error and you should contact the ACL2 developers."
+                    tkey ; (really, a msg)
+                    key))
+           ((equal (unquote tkey) val)
+            (chk-acceptable-lambda$-translations1 (cdr new-pairs) ctx wrld state))
+           (t (er soft ctx
+                  "Imperfect counterfeit translated lambda$, ~x0.  Unless you ~
+                   knowingly tried to construct a translated lambda$ (instead ~
+                   of using lambda$ and letting ACL2 generate the ~
+                   translation) this is an implementation error.  Please ~
+                   report such errors to the ACL2 developers.~%~%But if you ~
+                   tried to counterfeit a lambda$ we should point out that we ~
+                   don't understand why you would do such a thing!  Your ~
+                   counterfeit translated lambda$ won't enjoy the same ~
+                   runtime support as our translated lambda$ even if you did ~
+                   it perfectly.  The lambda object you created would be ~
+                   interpreted by *1*apply even in a guard-verified raw Lisp ~
+                   function while our lambda$ translation would produce ~
+                   compiled code.  Nevertheless, here's what's wrong with ~
+                   your counterfeit version:  the lambda$ expression ~x0 ~
+                   actually translates to ~x1 but your counterfeit claimed it ~
+                   translates to ~x2."
+                  key
+                  (unquote tkey)
+                  val))))))))
+
+(defun chk-acceptable-lambda$-translations2 (new-pairs lambda$-alist ctx state)
+
+; We check that no key in new-pairs occurs with a different value in either
+; lambda$-alist the rest of new-pairs.
+
+  (cond
+   ((null new-pairs) (value nil))
+   (t (let* ((key (car (car new-pairs)))
+             (val (cdr (car new-pairs)))
+             (temp1 (assoc-equal key lambda$-alist)))
+        (cond
+         ((and temp1 (not (equal val (cdr temp1))))
+          (er soft ctx
+              "A pair about to be added to lambda$-alist has the same key ~
+               associated with a different value on lambda$-alist already.  ~
+               This is an implementation error.  Please report it to the ACL2 ~
+               developers.  The duplicate key is ~x0.  On lambda$-alist that ~
+               key is mapped to the value ~x1.  But we were about to map it ~
+               to the value ~x2.  This shouldn't happen because both values ~
+               are allegedly the translation of the key!"
+              key
+              (cdr temp1)
+              val))
+         (t
+          (let ((temp2 (assoc-equal key (cdr new-pairs))))
+            (cond
+             ((and temp2 (not (equal val (cdr temp2))))
+              (er soft ctx
+              "Two pairs about to be added to lambda$-alist have the same key ~
+               but different values.  This is an implementation error.  ~
+               Please report it to the ACL2 developers.  The key is ~x0 and ~
+               the two values are ~x1 and ~x2.  This shouldn't happen because ~
+               both values are allegedly the translation of the key!"
+              key
+              (cdr temp2)
+              val))
+             (t (chk-acceptable-lambda$-translations2 (cdr new-pairs)
+                                                      lambda$-alist
+                                                      ctx state))))))))))
+
+(defun chk-acceptable-lambda$-translations
+  (symbol-class guards bodies ctx wrld state)
+
+; This function computes, checks, and returns the new pairs we should add to
+; lambda$-alist.  It does not add them.
+
+; To explain what this function does we first have to recap the world global
+; 'lambda$-alist.  Lambda$-alist maps the lambda expressions produced by the
+; raw Lisp macroexpansion of lambda$ expressions to the logic translations of
+; the lambda$ expressions.  For example, if a defun mentioned (lambda$ (x) (+ 1
+; x)) then the raw Lisp will contain (quote (,*lambda$-marker* . (lambda$ (x)
+; (+ 1 x)))), and the lambda$-alist will map (lambda$ (x) (+ 1 x)) to (lambda
+; (x) (binary-+ '1 x)).  The idea is that when apply$-lambda sees the quoted,
+; marked, untranslated lambda$ expression it will use lambda$-alist to map it
+; to its logical counterpart so we can do guard verification etc.
+
+; The first formal above is the symbol-class of the defuns being processed.
+; The next two are the guards and bodies, all of which ultimately get
+; transferred into raw Lisp.  We must find every translated lambda$ in these
+; terms and map their untranslated raw Lisp lambda$ counterparts to their logic
+; translations.  These pairs will be added to lambda$-alist.  But to guard
+; against the possibility that the user has incorrectly counterfeited a
+; translated lambda$, we must check that the alleged translations are actually
+; correct!
+
+; For example, the user could manufacture a tagged lambda object that alleges
+; that (lambda$ (x) (+ 1 x)) translated to:
+
+;   (LAMBDA (X)
+;           (RETURN-LAST 'PROGN
+;                        '(LAMBDA$ (X) (+ 1 X))
+;                        '23))
+
+; If we added such a pair to lambda$-alist then the raw Lisp apply$-lambda
+; would give the wrong answer when applying the untranslated (lambda$ (x) (+ 1
+; x)).
+
+  (cond
+   ((and (not (eq symbol-class :program))
+         (not (global-val 'boot-strap-flg wrld)))
+    (let ((new-pairs
+           (raw-lambda$s-to-lambdas
+            (collect-certain-lambda-objects-lst
+             :lambda$
+             (append guards bodies)
+             wrld
+             nil))))
+      (er-progn
+       (chk-acceptable-lambda$-translations1 new-pairs ctx wrld state)
+       (chk-acceptable-lambda$-translations2 new-pairs
+                                             (global-val 'lambda$-alist wrld)
+                                             ctx state)
+       (value new-pairs))))
+   (t (value nil))))
+
 (defun chk-acceptable-defuns1 (names fives stobjs-in-lst defun-mode
                                      symbol-class rc non-executablep ctx wrld
                                      state
@@ -7903,14 +8231,14 @@
 ; By prohibiting them from modifying state we don't have to answer the
 ; questions about when they run.
 
-                                                    '(nil)
+                                 '(nil)
 
 ; Logic-modep:
 ; Since guards have nothing to do with the logic, and since they may
 ; legitimately have mode :program, we set logic-modep to nil here.  This arg is
 ; used for each guard.
 
-                                                    nil
+                                 nil
 
 ; Known-stobjs-lst:
 ; Here is a slight abuse.  Translate-term-lst is expecting, in this
@@ -7923,7 +8251,7 @@
 ; stobjsp.  Technically we ought to map over the stobjs-in-lst and
 ; change each element to its collect-non-x nil.
 
-                                                    stobjs-in-lst ctx
+                                 stobjs-in-lst ctx
 
 ; Note the use of wrld3 instead of wrld2.  It is important that the proper
 ; stobjs-out be put on the new functions before we translate the guards!  When
@@ -7943,8 +8271,8 @@
 ;    :hints (("goal" :use ((:instance foo (x nil)))))
 ;    :rule-classes nil)
 
-                                                    wrld3
-                                                    state))
+                                 wrld3
+                                 state))
                         (split-types-terms
                          (translate-term-lst
                           (get-guards fives split-types-lst t wrld2)
@@ -8013,29 +8341,35 @@
                                              state)))))
                   (cond
                    (erp (mv erp val state))
-                   (t (value (list 'chk-acceptable-defuns
-                                   names
-                                   arglists
-                                   docs
-                                   nil ; doc-pairs
-                                   guards
-                                   measures
-                                   ruler-extenders-lst
-                                   mp
-                                   rel
-                                   hints
-                                   guard-hints
-                                   std-hints ;nil for non-std
-                                   otf-flg
-                                   bodies
-                                   symbol-class
-                                   normalizeps
-                                   reclassifying-all-programp
-                                   wrld3
-                                   non-executablep
-                                   guard-debug
-                                   measure-debug
-                                   split-types-terms))))))))))))))))
+                   (t (er-let* ((new-lambda$-alist-pairs
+                                 (chk-acceptable-lambda$-translations
+                                  symbol-class
+                                  guards bodies
+                                  ctx wrld state)))
+                        (value (list 'chk-acceptable-defuns
+                                     names
+                                     arglists
+                                     docs
+                                     nil ; doc-pairs
+                                     guards
+                                     measures
+                                     ruler-extenders-lst
+                                     mp
+                                     rel
+                                     hints
+                                     guard-hints
+                                     std-hints ;nil for non-std
+                                     otf-flg
+                                     bodies
+                                     symbol-class
+                                     normalizeps
+                                     reclassifying-all-programp
+                                     wrld3
+                                     non-executablep
+                                     guard-debug
+                                     measure-debug
+                                     split-types-terms
+                                     new-lambda$-alist-pairs)))))))))))))))))
 
 (defun conditionally-memoized-fns (fns memoize-table)
   (declare (xargs :guard (and (symbol-listp fns)
@@ -8112,6 +8446,8 @@
 ;              - list of translated terms, each corresponding to type
 ;                declarations made for a definition with XARGS keyword
 ;                :SPLIT-TYPES T
+;    new-lambda$-alist-pairs
+;              - list of pairs to add to the world global lambda$-alist
 
   (er-let*
    ((fives (chk-defuns-tuples lst nil ctx wrld state))
@@ -8339,6 +8675,7 @@
 (defun defuns-fn1 (tuple ens big-mutrec names arglists docs pairs guards
                          guard-hints std-hints otf-flg guard-debug bodies
                          symbol-class normalizeps split-types-terms
+                         new-lambda$-alist-pairs
                          non-executablep
                          #+:non-standard-analysis std-p
                          ctx state)
@@ -8400,79 +8737,89 @@
                                        ens wrld5 ttree2 state)
         (er-progn
          (update-w big-mutrec wrld6)
-         (er-let*
-          ((wrld7 (update-w big-mutrec
-                            (putprop-level-no-lst names wrld6)))
-           (wrld8 (update-w big-mutrec
-                            (putprop-primitive-recursive-defunp-lst
-                             names wrld7)))
-           (wrld9 (update-w big-mutrec
-                            (putprop-hereditarily-constrained-fnnames-lst
-                             names bodies wrld8)))
-           (wrld10 (update-w big-mutrec
-                             (put-invariant-risk
-                              names
-                              bodies
-                              non-executablep
-                              symbol-class
-                              guards
-                              wrld9)))
-           (wrld11 (update-w big-mutrec
-                             (putprop-x-lst1
-                              names 'pequivs nil
-                              (putprop-x-lst1 names 'congruences nil wrld10))))
-           (wrld11a (update-w big-mutrec
-                              (putprop-x-lst1 names 'coarsenings nil
-                                              wrld11)))
-           (wrld11b (update-w big-mutrec
-                              (if non-executablep
-                                  (putprop-x-lst1 names 'non-executablep
-                                                  non-executablep
-                                                  wrld11a)
-                                wrld11a))))
-          (let ((wrld12
-                 #+:non-standard-analysis
-                 (if std-p
-                     (putprop-x-lst1
-                      names 'unnormalized-body nil
-                      (putprop-x-lst1 names 'def-bodies nil wrld11b))
-                   wrld11b)
-                 #-:non-standard-analysis
-                 wrld11b))
-            (pprogn
-             (print-defun-msg names ttree2 wrld12 col state)
-             (set-w 'extension wrld12 state)
-             (cond
-              ((eq symbol-class :common-lisp-compliant)
-               (er-let*
-                ((guard-hints (if guard-hints
-                                  (translate-hints
-                                   (cons "Guard for" (car names))
-                                   guard-hints
-                                   ctx wrld12 state)
-                                (value nil)))
-                 (pair (verify-guards-fn1 names guard-hints otf-flg
-                                          guard-debug ctx state)))
+         (let ((wrld6a (global-set 'lambda$-alist
+                                  (union-equal new-lambda$-alist-pairs
+                                               (global-val 'lambda$-alist
+                                                           wrld6))
+                                  wrld6)))
+           (er-progn
+            (update-w big-mutrec wrld6a)
+            (er-let*
+                ((wrld7 (update-w big-mutrec
+                                  (putprop-level-no-lst names wrld6a)))
+                 (wrld8 (update-w big-mutrec
+                                  (putprop-primitive-recursive-defunp-lst
+                                   names wrld7)))
+                 (wrld9 (update-w big-mutrec
+                                  (putprop-hereditarily-constrained-fnnames-lst
+                                   names bodies wrld8)))
+                 (wrld10 (update-w big-mutrec
+                                   (put-invariant-risk
+                                    names
+                                    bodies
+                                    non-executablep
+                                    symbol-class
+                                    guards
+                                    wrld9)))
+                 (wrld11 (update-w big-mutrec
+                                   (putprop-x-lst1
+                                    names 'pequivs nil
+                                    (putprop-x-lst1 names 'congruences nil
+                                                    wrld10))))
+                 (wrld11a (update-w big-mutrec
+                                    (putprop-x-lst1 names 'coarsenings nil
+                                                    wrld11)))
+                 (wrld11b (update-w big-mutrec
+                                    (if non-executablep
+                                        (putprop-x-lst1
+                                         names 'non-executablep
+                                         non-executablep
+                                         wrld11a)
+                                        wrld11a))))
+              (let ((wrld12
+                     #+:non-standard-analysis
+                     (if std-p
+                         (putprop-x-lst1
+                          names 'unnormalized-body nil
+                          (putprop-x-lst1 names 'def-bodies nil wrld11b))
+                         wrld11b)
+                     #-:non-standard-analysis
+                     wrld11b))
+                (pprogn
+                 (print-defun-msg names ttree2 wrld12 col state)
+                 (set-w 'extension wrld12 state)
+                 (cond
+                  ((eq symbol-class :common-lisp-compliant)
+                   (er-let*
+                       ((guard-hints (if guard-hints
+                                         (translate-hints
+                                          (cons "Guard for" (car names))
+                                          guard-hints
+                                          ctx wrld12 state)
+                                         (value nil)))
+                        (pair (verify-guards-fn1 names guard-hints otf-flg
+                                                 guard-debug ctx state)))
 
 ; Pair is of the form (wrld . ttree3) and we return a pair of the same
 ; form, but we must combine this ttree with the ones produced by the
 ; termination proofs and type-prescriptions.
 
-                (value
-                 (cons (car pair)
-                       (cons-tag-trees ttree1
-                                       (cons-tag-trees
-                                        ttree2
-                                        (cdr pair)))))))
-              (t (value
-                  (cons wrld12
-                        (cons-tag-trees ttree1
-                                        ttree2)))))))))))))))
+                     (value
+                      (cons (car pair)
+                            (cons-tag-trees ttree1
+                                            (cons-tag-trees
+                                             ttree2
+                                             (cdr pair)))))))
+                  (t (value
+                      (cons wrld12
+                            (cons-tag-trees ttree1
+                                            ttree2)))))))))))))))))
 
 (defun defuns-fn0 (names arglists docs pairs guards measures
                          ruler-extenders-lst mp rel hints guard-hints std-hints
                          otf-flg guard-debug measure-debug bodies symbol-class
-                         normalizeps split-types-terms non-executablep
+                         normalizeps split-types-terms new-lambda$-alist-pairs
+                         non-executablep
                          #+:non-standard-analysis std-p
                          ctx wrld state)
 
@@ -8515,6 +8862,7 @@
          symbol-class
          normalizeps
          split-types-terms
+         new-lambda$-alist-pairs
          non-executablep
          #+:non-standard-analysis std-p
          ctx
@@ -8953,7 +9301,8 @@
                 (non-executablep (nth 19 tuple))
                 (guard-debug (nth 20 tuple))
                 (measure-debug (nth 21 tuple))
-                (split-types-terms (nth 22 tuple)))
+                (split-types-terms (nth 22 tuple))
+                (new-lambda$-alist-pairs (nth 23 tuple)))
             (er-let*
              ((pair (defuns-fn0
                       names
@@ -8975,6 +9324,7 @@
                       symbol-class
                       normalizeps
                       split-types-terms
+                      new-lambda$-alist-pairs
                       non-executablep
                       #+:non-standard-analysis std-p
                       ctx

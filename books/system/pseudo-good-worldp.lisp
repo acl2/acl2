@@ -1282,6 +1282,25 @@
   (symbol-listp val))
 
 ;-----------------------------------------------------------------
+; LAMBDA$-ALIST
+
+; Lambda$-alist maps the lambda expressions produced by the raw Lisp
+; macroexpansion of lambda$ expressions to the logic translations of the
+; lambda$ expressions.  See chk-acceptable-lambda$-translations.  But we just
+; insist it is an alist.
+
+(defun lambda$-alistp (val)
+  (alistp val))
+
+;-----------------------------------------------------------------
+; COMMON-LISP-COMPLIANT-LAMBDAS [GLOBAL-VALUE]
+(defun common-lisp-compliant-lambdasp (val)
+; This is really a list well-formed quoted lambda expressions (all of which
+; have been guard verified).  But we're just insisting it be a true list right
+; now!
+  (true-listp val))
+
+;-----------------------------------------------------------------
 ; ABSOLUTE-EVENT-NUMBER
 
 (defun absolute-event-numberp (sym val)
@@ -1792,6 +1811,8 @@
     (DEFINED-HEREDITARILY-CONSTRAINED-FNS
       (pseudo-defined-hereditarily-constrained-fnsp val))
     (WORLD-GLOBALS (world-globalsp val))
+    (LAMBDA$-ALIST (lambda$-alistp val))
+    (COMMON-LISP-COMPLIANT-LAMBDAS (common-lisp-compliant-lambdasp val))
     (NEVER-IRRELEVANT-FNS-ALIST (never-irrelevant-fns-alistp val))
     (otherwise nil)))
 

@@ -60,7 +60,7 @@ then
 fi
 
 echo "Rebuilding Quicklisp Bundle"
-BUILD_DIR=`cd ../../build; pwd`
+BUILD_DIR=`cd ../build; pwd`
 
 rm -f quicklisp.lsp
 rm -rf temp-quicklisp-inst

@@ -51,7 +51,7 @@
 
 (local (xdoc::set-default-parents sv::vl-to-svex))
 
-(define vl-simplify-svex
+(define vl-simplify-sv
   :short "Core transformation sequence for using VL to generate SVEX modules."
   ((design vl-design-p)
    (config vl-simpconfig-p)
@@ -71,7 +71,7 @@
 
        ;; Throw away problem modules before doing anything else.
        (good          (xf-cwtime (vl-design-problem-mods good config.problem-mods)))
-       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad config.suppress-fatal-warning-types)))
 
        ;; ((mv good ?use-set-report) (vl-simplify-maybe-use-set good config))
 
@@ -86,13 +86,13 @@
        ;; (good          (xf-cwtime (vl-design-check-reasonable good)))
        ;; (good          (xf-cwtime (vl-design-check-complete good)))
        ;; (good          (xf-cwtime (vl-design-check-good-paramdecls good)))
-       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad config.suppress-fatal-warning-types)))
        ;; We eliminate initial blocks early because they tend to have
        ;; constructs that we can't handle.
        (good          (xf-cwtime (vl-design-eliminitial good)))
        ;;(- (sneaky-save :pre-unparam good))
        (good          (xf-cwtime (vl-design-elaborate good config)))
-       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad config.suppress-fatal-warning-types)))
 
 
 ; PART 2 ----------------
@@ -144,7 +144,7 @@
 
        ;; (good          (xf-cwtime (vl-design-gatesplit good)))
        ;; (good          (xf-cwtime (vl-design-gate-elim good :primalist primalist)))
-       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
+       ;; ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
        ;; (good          (xf-cwtime (vl-design-elim-supplies good)))
        ;; ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
@@ -171,13 +171,17 @@
   (;; This is a pretty large definition.  We make special use of HIDE, which we
    ;; exploit using the rule vl-design-p-of-hide-meta.  See the documentation
    ;; there for more information.
-   (defmacro vl-design-propagate-errors* (good bad)
-     `(vl-design-propagate-errors (hide ,good) (hide ,bad)))
+   (defmacro vl-design-propagate-errors* (good bad suppress-fatals)
+     `(vl-design-propagate-errors (hide ,good) (hide ,bad) ,suppress-fatals))
    (local (in-theory (disable (:executable-counterpart tau-system)
                               acl2::mv-nth-cons-meta)))
    (set-default-hints '('(:do-not '(preprocess))))))
 
-(define vl-to-svex-main ((topmods string-listp)
+(defmacro vl-simplify-svex (&rest args)
+  `(vl-simplify-sv . ,args))
+(add-macro-alias vl-simplify-svex vl-simplify-sv)
+
+(define vl-to-sv-main ((topmods string-listp)
                          (x vl-design-p)
                          (config vl-simpconfig-p))
   :short "Turn a VL design into an SVEX hierarchical design, with a list of top modules."
@@ -201,7 +205,7 @@
 
        (x (cwtime (vl-remove-unnecessary-elements topmods x)))
 
-       ((mv good bad) (cwtime (vl-simplify-svex x config)))
+       ((mv good bad) (cwtime (vl-simplify-sv x config)))
        ((vl-design good) good)
        (bad-mods (difference (mergesort topmods)
                              (mergesort (vl-modulelist->names good.mods))))
@@ -240,11 +244,14 @@
     (cw "~%~%")
     (mv nil modalist good bad))
   ///
-  (defret modalist-addr-p-of-vl-to-svex-main
+  (defret modalist-addr-p-of-vl-to-sv-main
     (sv::svarlist-addr-p (sv::modalist-vars modalist))))
 
+(defmacro vl-to-svex-main (&rest args)
+  `(vl-to-sv-main . ,args))
+(add-macro-alias vl-to-svex-main vl-to-sv-main)
 
-(define vl-design->svex-design ((topmod stringp)
+(define vl-design->sv-design ((topmod stringp)
                                 (x vl-design-p)
                                 (config vl-simpconfig-p))
   :short "Turn a VL design into an SVEX hierarchical design."
@@ -255,10 +262,15 @@
                (bad vl-design-p))
   :prepwork ((local (in-theory (enable sv::modname-p))))
   (b* (((mv err modalist good bad)
-        (vl-to-svex-main (list topmod) x config))
+        (vl-to-sv-main (list topmod) x config))
        (design (sv::make-design :modalist modalist :top topmod)))
     (mv err design good bad))
   ///
-  (defret modalist-addr-p-of-vl-design->svex-design
+  (defret modalist-addr-p-of-vl-design->sv-design
     (sv::svarlist-addr-p
      (sv::modalist-vars (sv::design->modalist design)))))
+
+
+(defmacro vl-design->svex-design (&rest args)
+  `(vl-design->sv-design . ,args))
+(add-macro-alias vl-design->svex-design vl-design->sv-design)

@@ -21,11 +21,14 @@
 (defthm len-of-first-n-ac
   (implies (natp i) (equal (len (first-n-ac i l ac)) (+ i (len ac)))))
 
-(defthm nthcdr-of-binary-append-1
-  (implies (and (integerp n) (>= n (len x)))
-           (equal (nthcdr n (binary-append x y))
-                  (nthcdr (- n (len x)) y)))
-  :hints (("Goal" :induct (nthcdr n x)) ))
+;; The following is redundant with the definition in
+;; books/coi/lists/basic.lisp, from where it was taken with thanks.
+(defthm nthcdr-of-append
+  (equal (nthcdr n (append a b))
+         (if (<= (nfix n) (len a))
+             (append (nthcdr n a) b)
+           (nthcdr (- n (len a)) b)))
+  :hints(("Goal" :in-theory (enable nthcdr))))
 
 (defthm first-n-ac-of-binary-append-1
   (implies (and (natp i) (<= i (len x)))
@@ -108,7 +111,7 @@
          (nfix (- (len l) (nfix n))))
   :hints (("Goal" :induct (nthcdr n l))))
 
-(defthmd revappend-is-append-of-rev
+(defthm revappend-of-binary-append-1
   (equal (revappend x (binary-append y z))
          (binary-append (revappend x y) z)))
 
@@ -120,7 +123,8 @@
                   (revappend ac l)))
   :hints (("goal" :induct (first-n-ac i l ac))
           ("subgoal *1/1''"
-           :use (:instance revappend-is-append-of-rev (x ac)
+           :in-theory (disable revappend-of-binary-append-1)
+           :use (:instance revappend-of-binary-append-1 (x ac)
                            (y nil)
                            (z l)))))
 
@@ -304,10 +308,11 @@
      (binary-append l
                     (make-list-ac (- i (len l)) nil ac2)))))
   :hints
-  (("goal" :induct (first-n-ac i l ac1))
+  (("goal" :induct (first-n-ac i l ac1)
+    :in-theory (disable revappend-of-binary-append-1))
    ("subgoal *1/2" :expand (make-list-ac i nil ac2))
    ("subgoal *1/1"
-    :use (:instance revappend-is-append-of-rev (x ac1)
+    :use (:instance revappend-of-binary-append-1 (x ac1)
                     (y l)
                     (z ac2)))))
 
@@ -565,4 +570,127 @@
 
 (defthm revappend-of-revappend
   (equal (revappend (revappend x y1) y2)
-         (revappend y1 (append x y2))))
+         (revappend y1 (append x y2)))
+  :hints
+  (("goal" :in-theory (disable revappend-of-binary-append-1))))
+
+(defthm
+  character-listp-of-member-equal
+  (implies (character-listp lst)
+           (character-listp (member-equal x lst)))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary
+    (implies (and (character-listp lst)
+                  (consp (member-equal x lst)))
+             (character-listp (cdr (member-equal x lst)))))))
+
+(defthm true-listp-of-member-equal
+  (implies (true-listp lst)
+           (true-listp (member-equal x lst)))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary
+    (implies (and (true-listp lst)
+                  (consp (member-equal x lst)))
+             (true-listp (cdr (member-equal x lst)))))))
+
+(defthm len-of-member-equal
+  (<= (len (member-equal x lst))
+      (len lst))
+  :rule-classes :linear)
+
+(defthm len-of-delete-assoc-equal
+  (implies (consp (assoc-equal key alist))
+           (equal (len (delete-assoc-equal key alist))
+                  (- (len alist) 1))))
+
+(defthm len-of-remove1-equal
+  (equal (len (remove1-equal x l))
+         (if (member-equal x l)
+             (- (len l) 1)
+             (len l))))
+
+(defthm
+  assoc-equal-of-delete-assoc-equal
+  (implies
+   (and (not (equal key1 nil))
+        (not (consp (assoc-equal key1 alist))))
+   (not (consp (assoc-equal key1
+                            (delete-assoc-equal key2 alist))))))
+
+(defthm
+  assoc-equal-of-remove1-equal
+  (implies
+   (and (not (equal key1 nil))
+        (not (consp (assoc-equal key1 alist))))
+   (not (consp (assoc-equal key1 (remove1-equal x alist))))))
+
+(defthm assoc-equal-when-member-equal
+  (implies (and (member-equal x lst)
+                (consp x)
+                (not (equal (car x) nil)))
+           (consp (assoc-equal (car x) lst))))
+
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/nthcdr.lisp, from where it was taken with thanks.
+(defthm car-of-nthcdr
+    (equal (car (nthcdr i x))
+           (nth i x)))
+
+(defthm stringp-of-nth
+  (implies (string-listp l)
+           (iff (stringp (nth n l))
+                (< (nfix n) (len l)))))
+
+(defthm string-listp-of-update-nth
+  (implies (string-listp l)
+           (equal (string-listp (update-nth key val l))
+                  (and (<= (nfix key) (len l))
+                       (stringp val)))))
+
+(defthm revappend-of-binary-append-2
+  (equal (revappend (binary-append x y1) y2)
+         (revappend y1 (revappend x y2))))
+
+(defthm add-pair-of-add-pair-1
+  (equal (add-pair key value2 (add-pair key value1 l))
+         (add-pair key value2 l)))
+
+(defthm princ$-of-princ$
+  (implies (and (stringp x) (stringp y))
+           (equal (princ$ y channel (princ$ x channel state))
+                  (princ$ (string-append x y) channel state))))
+
+(defthmd
+  painful-debugging-lemma-1
+  (implies (and (integerp x) (integerp y))
+           (integerp (+ x y))))
+
+(defthmd
+  painful-debugging-lemma-2
+  (implies (and (integerp x) (integerp y))
+           (integerp (* x y))))
+
+(defthmd painful-debugging-lemma-3
+  (implies (integerp x)
+           (integerp (unary-- x))))
+
+(defthmd painful-debugging-lemma-4
+  (equal (<= x (+ x y)) (>= y 0))
+  :rule-classes
+  ((:rewrite :corollary (equal (< (+ x y) x) (< y 0)))))
+
+(defthmd painful-debugging-lemma-5
+  (implies (and (>= x 0) (>= y 0))
+           (not (< (+ x y) 0))))
+
+(defthmd
+  painful-debugging-lemma-6
+  (equal (< x (+ x y)) (> y 0))
+  :hints
+  (("goal"
+    :use (:instance painful-debugging-lemma-4 (x (+ x y))
+                    (y (- y))))))

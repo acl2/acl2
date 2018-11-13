@@ -672,6 +672,7 @@ CLEAN_FILES_EXPLICIT := \
    centaur/getopt/demo2.gcl \
    centaur/getopt/demo2.lw \
    centaur/getopt/demo2.lx86cl64 \
+   centaur/getopt/demo2.dx86cl64 \
    centaur/getopt/demo2.ccl \
    nonstd/workshops/1999/calculus/book/outline/ \
    projects/sat/lrat/incremental/lrat-check \
@@ -686,7 +687,8 @@ CLEAN_FILES_EXPLICIT := \
 MORECLEAN_FILES_EXPLICIT := \
    doc/manual \
    system/doc/manual \
-   doc/xdoc.sao \
+   system/doc/manual-fast \
+   doc/xdoc.sao
 
 .PHONY: clean_books clean
 
@@ -1347,7 +1349,7 @@ smtlink: $(filter workshops/2015/peng-greenstreet/%, $(OK_CERTS))
         workshop1999 workshop2000 workshop2001 workshop2002 \
         workshop2003 workshop2004 workshop2006 workshop2007 \
         workshop2009 workshop2011 workshop2013 workshop2014 \
-        workshop2015
+        workshop2015 workshop2017 workshop2018
 
 workshops: $(filter workshops/%, $(OK_CERTS))
 workshop1999: $(filter workshops/1999/%, $(OK_CERTS))
@@ -1363,6 +1365,8 @@ workshop2011: $(filter workshops/2011/%, $(OK_CERTS))
 workshop2013: $(filter workshops/2013/%, $(OK_CERTS))
 workshop2014: $(filter workshops/2014/%, $(OK_CERTS))
 workshop2015: $(filter workshops/2015/%, $(OK_CERTS))
+workshop2017: $(filter workshops/2017/%, $(OK_CERTS))
+workshop2018: $(filter workshops/2018/%, $(OK_CERTS))
 
 
 # Projects targets:

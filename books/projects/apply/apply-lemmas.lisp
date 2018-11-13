@@ -186,8 +186,8 @@
 
 (defthm apply$-lambda-opener
   (equal (apply$-lambda fn args)
-         (ev$ (lambda-body fn)
-              (pairlis$ (lambda-formals fn)
+         (ev$ (lambda-object-body fn)
+              (pairlis$ (lambda-object-formals fn)
                         args))))
 
 ; Redundant with system/apply/apply
@@ -464,10 +464,10 @@
 
 (defthm apply$-consp-arity-1
   (implies (and (consp fn)
-                (equal (len (cadr fn)) 1))
+                (equal (len (lambda-object-formals fn)) 1))
            (equal (apply$ fn (list (car args)))
                   (apply$ fn args)))
-  :hints (("Goal" :in-theory (enable apply$ badge))))
+  :hints (("Goal" :expand ((apply$ fn (list (car args)))))))
 
 ; Recall the discussion of the deprecated LAMB Hack in apply.lisp:
 
@@ -580,7 +580,9 @@
                 (ok-fnp g))
            (ok-fnp (compose f g)))
   :hints (("Goal" :in-theory (e/d (lamb) (badge))
-           :expand ((TAMEP (CONS G '(X))) (TAMEP (CONS G '(V)))))))
+           :expand ((tamep (cons g '(x)))
+                    (tamep (cons g '(v)))
+                    (tamep (list f (cons g '(v))))))))
 
 (defthm apply$-composition
   (implies (and (ok-fnp f)
@@ -591,7 +593,9 @@
            :expand ((ev$ (list f (cons g '(v)))
                          (list (cons 'v a)))
                     (ev$ (cons g '(v)) (list (cons 'v a)))
-                    (tamep (cons g '(x)))))))
+                    (tamep (cons g '(x)))
+                    (tamep (cons f '(x)))
+                    (tamep (list f (cons g '(v))))))))
 
 (in-theory (disable compose))
 
@@ -605,6 +609,16 @@
   (:DEFINITION APPLY$-PRIM)
   (:DEFINITION BADGE-PRIM)
   (:DEFINITION APPLY$-PRIMP)
+
+; Proofs seem to proceed more easily with these enabled.  We have our doubts
+; though, because they introduce a lot of cases.  Perhaps we're missing some
+; effective lemmas?  In any case, for the moment we'll leave them enabled!
+
+; (:DEFINITION LAMBDA-OBJECT-FORMALS)
+; (:DEFINITION LAMBDA-OBJECT-DCL)
+; (:DEFINITION LAMBDA-OBJECT-BODY)
+; (:DEFINITION LAMBDA-OBJECT-SHAPEP)
+
   (:EXECUTABLE-COUNTERPART APPLY$-EQUIVALENCE)
   (:EXECUTABLE-COUNTERPART APPLY$)
   (:EXECUTABLE-COUNTERPART SUITABLY-TAMEP-LISTP)

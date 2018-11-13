@@ -78,7 +78,7 @@
 ;    10. The LAMB Hack
 ;        Define (LAMB vars body) to be `(LAMBDA ,vars ,body) to provide a
 ;        rewrite target for functional-equivalence lemmas.  Since ACL2 doesn't
-;        rewrite constants, we won't even try to simplify a quoted lambda.  We
+;        rewrite constants, we won't even try to simplify a lambda object.  We
 ;        are not satisfied with the treatment of functional equivalence yet and
 ;        LAMB is sort of a reminder and placeholder for future work.
 
@@ -138,7 +138,7 @@
   (and (consp fn)
        (consp (cdr fn))
        (true-listp args)
-       (equal (len (cadr fn))
+       (equal (len (cadr fn)) ; (cadr fn) = (lambda-object-formals fn), here.
               (length args))))
 
 (defun apply$-guard (fn args)
@@ -184,7 +184,7 @@
 
 (defabbrev tamep-lambdap (fn)
 
-; Fn is allegedly a LAMBDA expression.  We know it's a consp!  We check that it
+; Fn is allegedly a lambda object.  We know it's a consp!  We check that it
 ; has just enough structure to allow guard checking of the tamep clique.  This
 ; does not actually assure us that the LAMBDA is well formed.  We don't check,
 ; for example, that the lambda formals are distinct or that the lambda-body is
@@ -195,12 +195,17 @@
 ; an abbreviation because we use it several times in the tamep clique and don't
 ; want to introduce another function into the mutual recursion.
 
-  (and (eq (car fn) 'LAMBDA)
-       (consp (cdr fn))
-       (symbol-listp (lambda-formals fn))
-       (consp (cddr fn))
-       (tamep (lambda-body fn))
-       (null (cdddr fn))))
+; See executable-tamep-lambdap for a discussion of an executable version of
+; this ``function,'' including an equivalent alternative definition using
+; case-match that is perhaps more perspicuous.
+
+; This function is one of the ways of recognizing a lambda object.  See the end
+; of the Essay on Lambda Objects and Lambda$ for a discussion of the various
+; recognizers and their purposes.
+
+  (and (lambda-object-shapep fn)
+       (symbol-listp (lambda-object-formals fn))
+       (tamep (lambda-object-body fn))))
 
 (mutual-recursion
 
@@ -227,6 +232,7 @@
          (let ((fn (car x)))
            (and (tamep-lambdap fn)
                 (suitably-tamep-listp (length (cadr fn))
+; Given (tamep-lambdap fn), (cadr fn) = (lambda-object-formals fn).
                                       nil
                                       (cdr x)))))
         (t nil)))
@@ -378,7 +384,7 @@
 
 ; So we have decided to go with :guard t, except for apply$ where we insist
 ; (true-listp args) and apply$-lambda where we additionally know that fn is a
-; cons (LAMBDA-expression).
+; cons.
 
 ; Essay on Applying APPLY$
 
@@ -456,7 +462,7 @@
 ;        [Pops finger out of the side of his mouth]
 
 ; The reason [3] is relevant is that it's really like [2] except we package the
-; collect and the tame lambda expression into a tame lambda and apply it
+; collect and the tame lambda object into a tame lambda object and apply it
 ; successfully.  Not exactly a shopping mall, but maybe a convenience store...
 ; and certainly better than a popping noise!
 
@@ -505,12 +511,13 @@
 ; don't write it quite that way because we need to prove termination.  That is,
 ; instead of calling ev$-list we actually write an explicit list of the two
 ; arguments (list (cadr (cadr x)) (EV$ (caddr x) a)).  Note in particular that
-; we do not ev$ the first argument but just take its cadr!  This insures
+; we do not ev$ the first argument but just take its cadr!  This ensures
 ; termination and is equivalent to (ev$ (cadr x) a) PROVIDED the argument is
-; tame!  Note also that we could have called (ev$-list (cdr x) a) had we known
-; (cdr x) was suitably tame but that would require admitting this clique as a
-; reflexive function: the fact that (ev$ (cadr x) a) is smaller than (cadr x)
-; when (cadr x) is tame requires reasoning about ev$ before it is admitted.
+; tame, because tameness guarantees that the first argument is quoted!  Note
+; also that we could have called (ev$-list (cdr x) a) had we known (cdr x) was
+; suitably tame but that would require admitting this clique as a reflexive
+; function: the fact that (ev$ (cadr x) a) is smaller than (cadr x) when (cadr
+; x) is tame requires reasoning about ev$ before it is admitted.
 
 #-acl2-devel
 (in-theory (disable badge
@@ -525,119 +532,10 @@
 ; define executable versions of badge and tamep that look at data structures
 ; maintained by def-warrant.
 
-(defun executable-badge (fn wrld)
-
-; Find the badge, if any, for fn in wrld; else return nil.  Aside from
-; primitives and the apply$ boot functions, all badges are stored in the
-; badge-table entry :badge-userfn-structure.
-
-; Aside: Finding a badge doesn't mean there is a warrant: if the
-; :authorization-flg of the badge is nil, there is no warrant, which means
-; badge-userfn and thus badge are logically undefined on fn.  But this
-; function is used during the analysis of a newly submitted function to
-; determine its badge and (possibly) its warrant.
-
-; There's nothing wrong with putting this in logic mode but we don't need it in
-; logic mode here.  This function is only used by def-warrant, to analyze and
-; determine the badge, if any, of a newly submitted function.  (To be accurate,
-; this function is called from several places, but all of them are only
-; involved in the def-warrant computation.)  Of course, the badge computed by a
-; non-erroneous (def-warrant fn) is then built into the defun of
-; APPLY$-WARRANT-fn and thus participates in logical reasoning; so the results
-; computed by this function are used in proofs.
-
-  (declare (xargs :mode :program))
-  (cond
-   ((symbolp fn)
-    (let ((temp (hons-get fn *badge-prim-falist*)))
-      (cond
-       (temp (cdr temp))
-       ((eq fn 'BADGE) *generic-tame-badge-1*)
-       ((eq fn 'TAMEP) *generic-tame-badge-1*)
-       ((eq fn 'TAMEP-FUNCTIONP) *generic-tame-badge-1*)
-       ((eq fn 'SUITABLY-TAMEP-LISTP) *generic-tame-badge-3*)
-       ((eq fn 'APPLY$) *apply$-badge*)
-       ((eq fn 'EV$) *ev$-badge*)
-       (t (get-badge fn wrld)))))
-   (t nil)))
-
-; Compare this to the TAMEP clique.
-
-(defabbrev executable-tamep-lambdap (fn wrld)
-  (and (eq (car fn) 'LAMBDA)
-       (consp (cdr fn))
-       (symbol-listp (lambda-formals fn))
-       (consp (cddr fn))
-       (executable-tamep (lambda-body fn) wrld)
-       (null (cdddr fn))))
-
-(mutual-recursion
-
-(defun executable-tamep (x wrld)
-  (declare (xargs :mode :program))
-  (cond ((atom x) (symbolp x))
-        ((eq (car x) 'quote)
-         (and (consp (cdr x))
-              (null (cddr x))))
-        ((symbolp (car x))
-         (let ((bdg (executable-badge (car x) wrld)))
-           (cond
-            ((null bdg) nil)
-            ((eq (access apply$-badge bdg :ilks)
-                 t)
-             (executable-suitably-tamep-listp
-              (access apply$-badge bdg :arity)
-              nil
-              (cdr x)
-              wrld))
-            (t (executable-suitably-tamep-listp
-                (access apply$-badge bdg :arity)
-                (access apply$-badge bdg :ilks)
-                (cdr x)
-                wrld)))))
-        ((consp (car x))
-         (let ((fn (car x)))
-           (and (executable-tamep-lambdap fn wrld)
-                (executable-suitably-tamep-listp (length (cadr fn))
-                                                 nil
-                                                 (cdr x)
-                                                 wrld))))
-        (t nil)))
-
-(defun executable-tamep-functionp (fn wrld)
-  (declare (xargs :mode :program))
-  (if (symbolp fn)
-      (let ((bdg (executable-badge fn wrld)))
-        (and bdg
-             (eq (access apply$-badge bdg :ilks)
-                 t)))
-    (and (consp fn)
-         (executable-tamep-lambdap fn wrld))))
-
-(defun executable-suitably-tamep-listp (n flags args wrld)
-  (declare (xargs :mode :program))
-  (cond
-   ((zp n) (null args))
-   ((atom args) nil)
-   (t (and
-       (let ((arg (car args)))
-         (case (car flags)
-           (:FN
-            (and (consp arg)
-                 (eq (car arg) 'QUOTE)
-                 (consp (cdr arg))
-                 (null (cddr arg))
-                 (executable-tamep-functionp (cadr arg) wrld)))
-           (:EXPR
-            (and (consp arg)
-                 (eq (car arg) 'QUOTE)
-                 (consp (cdr arg))
-                 (null (cddr arg))
-                 (executable-tamep (cadr arg) wrld)))
-           (otherwise
-            (executable-tamep arg wrld))))
-       (executable-suitably-tamep-listp (- n 1) (cdr flags) (cdr args) wrld)))))
-)
+; At one time the definitions were here for executable-badge,
+; executable-tamep-lambdap, executable-tamep, executable-tamep-functionp, and
+; executable-suitably-tamep-listp.  These definitions are now in
+; translate.lisp.
 
 ; -----------------------------------------------------------------
 ; 5. BADGER and the Badge-Table
@@ -722,7 +620,7 @@
 ;       (c) Every formal of ilk :FN is only passed into :FN slots and every :FN
 ;           slot in the body is either occupied by a formal of ilk :FN or by a
 ;           quoted tame function symbol other than fn itself, or a quoted
-;           well-formed (fully translated and closed), tame lambda expression
+;           well-formed (fully translated and closed), tame lambda object
 ;           that does not call fn.
 
 ;       (d) Every formal of ilk :EXPR is only passed into :EXPR slots and every
@@ -814,7 +712,7 @@
 ; applications in it.  [Important distinction: We really do mean we beta reduce
 ; the ACL2 lambda applications, not ``LAMBDA apply$'s''.  That is: One must
 ; distinguish ``ACL2 lambda applications,'' which are just ordinary first-class
-; terms, from ``apply$'s of quoted LAMBDA expressions.''  Here we're talking
+; terms, from ``apply$'s of lambda objects.''  Here we're talking
 ; just about expanding all of the former, i.e., getting rid of LET's, LET*'s,
 ; etc!]
 
@@ -838,7 +736,7 @@
 ; to replace our simple alist, mentioned above and used to track the ilks
 ; determined so far for the formals of fn, with something more complicated that
 ; keeps track of local variables within lambdas or ilks for each lambda
-; expression or something.  In any case, the presence of recursive calls both
+; object or something.  In any case, the presence of recursive calls both
 ; inside the lambdas and outside the lambdas complicates the inductive
 ; inference.  It is clearly simpler to just get rid of the lambda applications!
 
@@ -986,21 +884,31 @@
                                                   (cdr ilks)
                                                   (cdr actuals)))))
 
-(defun well-formed-lambdap (x wrld)
+(defun weak-well-formed-lambda-objectp (x wrld)
 
-; Check that x is (lambda vars body) where vars is a list of distinct legal
-; variable names, body is a well-formed term wrt wrld, and the free vars of
-; body are a subset of vars.
+; Check that x is (lambda vars body) or (lambda vars dcl body) where vars is a
+; list of distinct legal variable names, body is a well-formed term wrt wrld,
+; and the free vars of body are a subset of vars.  We omit the checks involving
+; dcl and the tameness check for body.
+
+; This function is one of the ways of recognizing a lambda object.  See the end
+; of the Essay on Lambda Objects and Lambda$ for a discussion of the various
+; recognizers and their purposes.
 
   (declare (xargs :mode :program))
-  (and (consp x)
-       (eq (car x) 'LAMBDA)
-       (consp (cdr x))
-       (arglistp (cadr x))
-       (consp (cddr x))
-       (termp (caddr x) wrld)
-       (null (cdddr x))
-       (subsetp-eq (all-vars (caddr x)) (cadr x))))
+  (case-match x
+    (('LAMBDA formals body)
+     (and (arglistp formals)
+          (termp body wrld)
+          (subsetp-eq (all-vars body) formals)
+          ))
+    (('LAMBDA formals dcl body)
+     (declare (ignore dcl))
+     (and (arglistp formals)
+          (termp body wrld)
+          (subsetp-eq (all-vars body) formals)
+          ))
+    (& nil)))
 
 (mutual-recursion
 
@@ -1008,11 +916,11 @@
 
 ; Fn is the name of a function being defined.  New-badge is either nil or a
 ; proposed badge for fn and term is a term (initally the body of fn) occuring
-; in a slot of ilk ilk.  Note: term contains no lambda applications!  We try to
-; determine the ilks of the free vars in term, extending alist to record what
-; we find.  We return (mv msg alist'), where either msg is an error message and
-; alist' is nil, or msg is nil and alist' is extension of alist assiging ilks
-; to free vars occurring in term.
+; in a slot of ilk ilk.  Note: term contains no ACL2 lambda applications!  We
+; try to determine the ilks of the free vars in term, extending alist to record
+; what we find.  We return (mv msg alist'), where either msg is an error
+; message and alist' is nil, or msg is nil and alist' is extension of alist
+; assiging ilks to free vars occurring in term.
 
 ; Foreshadowing: We will call this function twice on every name being badged:
 ; the first time new-badge is nil and the initial alist is nil, and the
@@ -1026,15 +934,16 @@
 ; We offer an informal but partially mechanically checked proof, below, that
 ; this rather complicated function is correct.  See the Essay on Check-Ilks
 ; after the defun of badger, which is the function that manages the
-; pre-conditions and two passes of this function.
+; pre-conditions and two passes of this function.  The function is more
+; complicated than its spec because we try to generate good error messages.
 
 ; A few details:
 
-; All lambda applications in the body of the function being analyzed should be
-; expanded away before this function is called.  There may still be QUOTEd
-; lambda expressions used as arguments to mapping functions, but no ACL2
-; lambda applications.  All free variables encountered in term are formals of
-; the function being analyzed!
+; All ACL2 lambda applications in the body of the function being analyzed
+; should be expanded away before this function is called.  There may still be
+; lambda objects used as arguments to mapping functions, but no ACL2 lambda
+; applications.  Lambda objects need not be well-formed.  All free variables
+; encountered in term are formals of the function being analyzed!
 
 ; Ilk is the ``occurrence ilk'' of the current occurrence of term; however, it
 ; is one of the values: NIL, :FN, :EXPR, or :UNKNOWN.  The last means the
@@ -1064,9 +973,11 @@
 
     (cond
      ((eq ilk :FN)
+
 ; The evg must be a tame function.  We could call executable-tamep-functionp
 ; but we want to check some additional properties and signal appropriate errors,
-; so we consider quoted LAMBDAs separately from quoted symbols...
+; so we consider lambda objects separately from quoted symbols...
+
       (cond
        ((symbolp (cadr term))
         (cond
@@ -1085,39 +996,48 @@
                      term)
                 nil))))
        ((consp (cadr term))
-        (cond ((well-formed-lambdap (cadr term) wrld)
+        (cond ((weak-well-formed-lambda-objectp (cadr term) wrld)
+
+; See the Essay on Lambda Objects and Lambda$, in particular, item (2) of the
+; ``confusing variety of concepts'' for recognizing lambda objects.  The check
+; above ensures that the formals of the object are legal distinct variables and
+; that the body is a term.  The dcl, if any, is unchecked and tameness and
+; closure are unchecked.
+
                (cond
-                ((ffnnamep fn (lambda-body (cadr term)))
-                 (mv (msg "~x0 cannot be warranted because a :FN slot ~
-                           in its body is occupied by a quoted LAMBDA ~
-                           expression, ~x1, that recursively calls ~x0; ~
-                           recursion through APPLY$ is not permitted!"
+                ((ffnnamep fn (lambda-object-body (cadr term)))
+                 (mv (msg "~x0 cannot be warranted because a :FN slot in its ~
+                           body is occupied by a lambda object, ~x1, that ~
+                           recursively calls ~x0; recursion through APPLY$ is ~
+                           not permitted!"
                           fn
                           term)
                      nil))
                 ((executable-tamep-lambdap (cadr term) wrld)
+
+; See item (3) of the above mentioned discussion.
+
                  (mv nil alist))
-                (t (mv (msg "~x0 cannot be warranted because a :FN slot ~
-                             in its body is occupied by a quoted LAMBDA ~
-                             expression, ~x1, whose body is not tame."
+                (t (mv (msg "~x0 cannot be warranted because a :FN slot in ~
+                             its body is occupied by a lambda object, ~x1, ~
+                             whose body is not tame."
                             fn
                             term)
                        nil))))
-              (t (mv (msg "~x0 will not be warranted because a :FN slot ~
-                           in its body is occupied by a quoted cons object, ~
-                           ~x1, that is not a well-formed, fully-translated, ~
-                           closed ACL2 lambda expression.  The default ~
-                           behavior of APPLY$ on ill-formed input is ~
-                           nonsensical, e.g., unquoted numbers are treated ~
-                           like variables and macros are treated like ~
-                           undefined functions.  It is unwise to exploit this ~
-                           default behavior!"
+              (t (mv (msg "~x0 will not be warranted because a :FN slot in ~
+                           its body is occupied by a quoted cons object, ~x1, ~
+                           that is not a well-formed, fully-translated, ~
+                           closed ACL2 lambda object.  The default behavior ~
+                           of APPLY$ on ill-formed input is nonsensical, ~
+                           e.g., unquoted numbers are treated like variables ~
+                           and macros are treated like undefined functions.  ~
+                           It is unwise to exploit this default behavior!"
                           fn
                           term)
                      nil))))
        (t (mv (msg "~x0 cannot be warranted because a :FN slot in its ~
                     body is occupied by a quoted constant, ~x1, that does not ~
-                    denote a tame function symbol or LAMBDA expression."
+                    denote a tame function symbol or LAMBDA object."
                    fn
                    term)
               nil))))
@@ -1139,7 +1059,7 @@
                           fn
                           term)
                      nil))))
-       (t (mv (msg "~x0 will be warranted because an :EXPR slot in its ~
+       (t (mv (msg "~x0 will not be warranted because an :EXPR slot in its ~
                     body is occupied by a quoted object, ~x1, that is not a ~
                     well-formed, fully-translated ACL2 term.  The default ~
                     behavior of EV$ on ill-formed input is nonsensical, e.g., ~
@@ -1682,7 +1602,7 @@
 ;     * a formal variable of ilk :FN in new-badge, or
 ;     * a quoted tame function symbol other than fn, or
 ;     * a quoted, well-formed (fully translated and closed), tame lambda
-;       expression that does not call fn.
+;       object that does not call fn.
 
 ; (d) Every formal of ilk :EXPR is only passed into :EXPR slots, and
 ;     every :EXPR slot in the body is occupied by
@@ -1848,7 +1768,8 @@
 
 ; The warrant for AP, illustrated above, is particularly simple because AP is
 ; tame.  All of its formals are vanilla.  The warrant for a mapping function
-; like COLLECT has a tameness condition imposed by the non-vanilla ilks, e.g.,
+; like COLLECT has a tameness condition imposed by the non-vanilla ilks, here
+; assumed to be (NIL :FN), e.g.,
 
 ; (defun-sk apply$-warrant-COLLECT nil
 ;   (forall (args)
@@ -1987,6 +1908,12 @@
 ; It is probably possible to implement a checker that leaves ACL2 lambda
 ; applications in place, since one knows the ilks of the actuals and can
 ; transfer them to the ilks of the lambda formals before diving into the body.
+
+; WARNING: Do not extend the functionality of def-warrant by making constrained
+; functions warrantable!  That opens a can of worms, namely tracking
+; attachments to guard against the calling of lambda$ expressions unbound by
+; lambda$-alist during pre-loading of compiled files.  There are probably a
+; dozen other reasons not to think about warranted attachable functions!
 
   `(with-output
      :off ; *valid-output-names* except for error

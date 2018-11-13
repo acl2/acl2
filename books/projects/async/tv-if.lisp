@@ -88,6 +88,15 @@
  ;; Occurrences
  (tv-if-body tree))
 
+(defund tv-if$netlist (tree)
+  (declare (xargs :guard (tv-guard tree)))
+  (if (atom tree)
+      (list (tv-if* tree))
+    (cons (tv-if* tree)
+          (union$ (tv-if$netlist (car tree))
+                  (tv-if$netlist (cdr tree))
+                  :test 'equal))))
+
 ;; Note that both the netlist generator and the netlist predicate are
 ;; recursive.
 
@@ -104,20 +113,20 @@
          (tv-if& (delete-to-eq (si 'tv-if (tree-number tree)) netlist)
                  (cdr tree)))))
 
-(defun tv-if$netlist (tree)
-  (declare (xargs :guard (tv-guard tree)))
-  (if (atom tree)
-      (list (tv-if* tree))
-    (cons (tv-if* tree)
-          (union$ (tv-if$netlist (car tree))
-                  (tv-if$netlist (cdr tree))
-                  :test 'equal))))
+;; Sanity check
+
+(local
+ (defthmd check-tv-if$netlist-64
+   (and (net-syntax-okp (tv-if$netlist (make-tree 64)))
+        (net-arity-okp (tv-if$netlist (make-tree 64)))
+        (tv-if& (tv-if$netlist (make-tree 64))
+                (make-tree 64)))))
 
 ;; The proofs require this special induction scheme.
 
-(defun tv-if-induction (tree n c a b sts netlist)
+(defun tv-if-induction (tree n c a b st netlist)
   (if (atom tree)
-      (list n c a b sts netlist)
+      (list n c a b st netlist)
     (and
      (tv-if-induction
       (car tree)
@@ -220,13 +229,13 @@
                 (equal (len b) (tree-size tree)))
            (equal (se (si 'tv-if n)
                       (cons c (append a b))
-                      sts
+                      st
                       netlist)
                   (fv-if c a b)))
   :hints (("Goal"
-           :induct (tv-if-induction tree n c a b sts netlist)
+           :induct (tv-if-induction tree n c a b st netlist)
            :expand (:free (inputs n)
-                          (se (si 'tv-if n) inputs sts netlist))
+                          (se (si 'tv-if n) inputs st netlist))
            :in-theory (e/d (de-rules
                             tv-if&
                             tv-if*$destructure

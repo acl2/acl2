@@ -20,17 +20,16 @@
 ;; VECTOR-MODULE-INDUCTION
 ;; The induction scheme for vector modules.
 
-(local
- (defun vector-module-induction (body m n bindings state-bindings netlist)
-   (if (zp n)
-       (list body m bindings state-bindings netlist)
-     (vector-module-induction
-      (cdr body)
-      (1+ m)
-      (1- n)
-      (se-occ-bindings 1 body bindings state-bindings netlist)
-      state-bindings
-      netlist))))
+(defun vector-module-induction (body m n wire-alist st-alist netlist)
+  (if (zp n)
+      (list body m wire-alist st-alist netlist)
+    (vector-module-induction
+     (cdr body)
+     (1+ m)
+     (1- n)
+     (se-occ-bindings 1 body wire-alist st-alist netlist)
+     st-alist
+     netlist)))
 
 ;; V-BUF
 ;; V-NOT
@@ -57,7 +56,7 @@
 
 ;; V-WIRE
 
-(defun v-wire$body (m n)
+(defun v-wire-body (m n)
   (declare (xargs :guard (and (natp m) (natp n))))
   (if (zp n)
       nil
@@ -65,7 +64,7 @@
                 (list (si 'y m))
                 'wire
                 (list (si 'a m)))
-          (v-wire$body (1+ m) (1- n)))))
+          (v-wire-body (1+ m) (1- n)))))
 
 (module-generator
  v-wire* (n)
@@ -73,15 +72,15 @@
  (sis 'a 0 n)
  (sis 'y 0 n)
  nil
- (v-wire$body 0 n)
+ (v-wire-body 0 n)
  :guard (natp n))
 
-(defun v-wire& (netlist n)
+(defund v-wire& (netlist n)
   (declare (xargs :guard (and (alistp netlist) (natp n))))
   (equal (assoc (si 'v-wire n) netlist)
          (v-wire* n)))
 
-(defun v-wire$netlist (n)
+(defund v-wire$netlist (n)
   (declare (xargs :guard (natp n)))
   (list (v-wire* n)))
 
@@ -89,21 +88,21 @@
  (defthm v-wire$unbound-in-body
    (implies (and (natp l) (natp m) (< l m))
             (unbound-in-body (si 'y l)
-                             (v-wire$body m n)))
+                             (v-wire-body m n)))
    :hints (("Goal" :in-theory (enable occ-outs)))))
 
 (local
- (defthm v-wire$body-value
+ (defthm v-wire-body$value
    (implies
     (and (natp m)
-         (equal body (v-wire$body m n)))
+         (equal body (v-wire-body m n)))
     (equal (assoc-eq-values (sis 'y m n)
-                            (se-occ body bindings state-bindings netlist))
+                            (se-occ body wire-alist st-alist netlist))
            (assoc-eq-values (sis 'a m n)
-                            bindings)))
+                            wire-alist)))
    :hints (("Goal"
             :induct (vector-module-induction
-                     body m n bindings state-bindings netlist)
+                     body m n wire-alist st-alist netlist)
             :in-theory (enable de-rules sis)))))
 
 (not-primp-lemma v-wire)
@@ -117,14 +116,11 @@
   :hints (("Goal"
            :expand (:free (n)
                           (se (si 'v-wire n) a sts netlist))
-           :in-theory (enable de-rules v-wire*$destructure))))
-
-(in-theory (disable v-wire$body
-                    v-wire&))
+           :in-theory (enable de-rules v-wire& v-wire*$destructure))))
 
 ;; V-IF
 
-(defun v-if$body (m n)
+(defun v-if-body (m n)
   (declare (xargs :guard (and (natp m) (natp n))))
   (if (zp n)
       nil
@@ -132,7 +128,7 @@
                 (list (si 'y m))
                 'b-if
                 (list 'c (si 'a m) (si 'b m)))
-          (v-if$body (1+ m) (1- n)))))
+          (v-if-body (1+ m) (1- n)))))
 
 (module-generator
  v-if* (n)
@@ -141,15 +137,15 @@
        (append (sis 'a 0 n) (sis 'b 0 n)))
  (sis 'y 0 n)
  nil
- (v-if$body 0 n)
+ (v-if-body 0 n)
  :guard (natp n))
 
-(defun v-if& (netlist n)
+(defund v-if& (netlist n)
   (declare (xargs :guard (and (alistp netlist) (natp n))))
   (equal (assoc (si 'v-if n) netlist)
          (v-if* n)))
 
-(defun v-if$netlist (n)
+(defund v-if$netlist (n)
   (declare (xargs :guard (natp n)))
   (list (v-if* n)))
 
@@ -157,22 +153,22 @@
  (defthm v-if$unbound-in-body
    (implies (and (natp l) (natp m) (< l m))
             (unbound-in-body (si 'y l)
-                             (v-if$body m n)))
+                             (v-if-body m n)))
    :hints (("Goal" :in-theory (enable occ-outs)))))
 
 (local
- (defthm v-if$body-value
+ (defthm v-if-body$value
    (implies
     (and (natp m)
-         (equal body (v-if$body m n)))
+         (equal body (v-if-body m n)))
     (equal (assoc-eq-values (sis 'y m n)
-                            (se-occ body bindings state-bindings netlist))
-           (fv-if (assoc-eq-value 'c bindings)
-                  (assoc-eq-values (sis 'a m n) bindings)
-                  (assoc-eq-values (sis 'b m n) bindings))))
+                            (se-occ body wire-alist st-alist netlist))
+           (fv-if (assoc-eq-value 'c wire-alist)
+                  (assoc-eq-values (sis 'a m n) wire-alist)
+                  (assoc-eq-values (sis 'b m n) wire-alist))))
    :hints (("Goal"
             :induct (vector-module-induction
-                     body m n bindings state-bindings netlist)
+                     body m n wire-alist st-alist netlist)
             :in-theory (enable de-rules sis fv-if)))))
 
 (not-primp-lemma v-if)
@@ -186,7 +182,4 @@
   :hints (("Goal"
            :expand (:free (inputs n)
                           (se (si 'v-if n) inputs sts netlist))
-           :in-theory (enable de-rules v-if*$destructure))))
-
-(in-theory (disable v-if$body
-                    v-if&))
+           :in-theory (enable de-rules v-if& v-if*$destructure))))

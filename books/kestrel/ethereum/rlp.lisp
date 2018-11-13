@@ -11,7 +11,7 @@
 (in-package "ETHEREUM")
 
 (include-book "kestrel/utilities/define-sk" :dir :system)
-(include-book "kestrel/utilities/digits-any-base/pow2-8" :dir :system)
+(include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
 
@@ -33,16 +33,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc rlp-big-endian-representations
+(defsection rlp-big-endian-representations
   :parents (rlp)
   :short "Big-endian representation of scalars in RLP."
   :long
-  (xdoc::topp
-   "The library function @(tsee nat=>bendian*),
-    when the @('base') argument is 256,
-    corresponds to @($\\mathtt{BE}$) [YP:(181)].
-    Note that no leading 0 is allowed, even for representing 0,
-    which is thus represented by the empty list of digits."))
+  (xdoc::topapp
+   (xdoc::p
+    "The library function @(tsee nat=>bendian*),
+     when the @('base') argument is 256,
+     corresponds to @($\\mathtt{BE}$) [YP:(181)].
+     Note that no leading 0 is allowed, even for representing 0,
+     which is thus represented by the empty list of digits.")
+   (xdoc::p
+    "Digits in base 256 are bytes.
+     We introduce return type theorems for @(tsee nat=>bendian*)
+     (and for the other number-to-digit conversions,
+     even though we do not use them here)."))
+
+  (defruled dab-digit-listp-of-256-is-byte-listp
+    (equal (acl2::dab-digit-listp 256 digits)
+           (byte-listp digits))
+    :enable (acl2::dab-digit-listp acl2::dab-digitp byte-listp bytep))
+
+  (acl2::defthm-dab-return-types
+   dab-digit-listp-of-256-is-byte-listp
+   byte-listp-of))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,7 +112,7 @@
      the code in [Wiki:RLP] treats those two empty sequences differently
      (one is a string, the other one is a list).
      </p>"
-    (:leaf ((bytes ubyte8-list)))
+    (:leaf ((bytes byte-list)))
     (:nonleaf ((subtrees rlp-tree-list)))
     :pred rlp-treep)
 
@@ -118,7 +133,7 @@
    These are the possible results of RLP decoding.
    </p>"
   (:error :fields () :ctor-body ':error :cond (eq x :error))
-  (:bytes :fields ((tree :type rlp-tree :acc-body x)) :ctor-body tree))
+  (:tree :fields ((tree :type rlp-tree :acc-body x)) :ctor-body tree))
 
 (defsection rlp-tree/error-ext
   :extension (rlp-tree/error)
@@ -129,7 +144,7 @@
                (rlp-treep x)))
     :enable rlp-tree/error-p)
 
-  (defrule disjoint-tree/error
+  (defrule disjoint-rlp-tree/error
     (not (and (eq x :error)
               (rlp-treep x)))
     :rule-classes nil)
@@ -150,11 +165,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rlp-encode-bytes ((bytes ubyte8-listp))
+(define rlp-encode-bytes ((bytes byte-listp))
   :parents (rlp)
-  :returns (result ubyte8list/error-p
+  :returns (result bytelist/error-p
                    :hints (("Goal"
-                            :in-theory (enable ubyte8p)
+                            :in-theory (enable bytep)
                             :use (:instance
                                   acl2::len-of-nat=>bendian*-leq-width
                                   (nat (len bytes))
@@ -185,7 +200,7 @@
      The encoding code in [Wiki:RLP] confirms this, via an explicit check.")
    (xdoc::p
     "If a byte array cannot be encoded, we return @(':error')."))
-  (b* ((bytes (ubyte8-list-fix bytes)))
+  (b* ((bytes (byte-list-fix bytes)))
     (cond ((and (= (len bytes) 1)
                 (< (car bytes) 128)) bytes)
           ((< (len bytes) 56) (cons (+ 128 (len bytes))
@@ -195,6 +210,7 @@
                              (cons (+ 183 (len be))
                                    (append be bytes))))
           (t :error)))
+  :no-function t
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -242,12 +258,12 @@
   :verify-guards nil ; done below
 
   (define rlp-encode-tree ((tree rlp-treep))
-    :returns (result ubyte8list/error-p)
+    :returns (result bytelist/error-p)
     (rlp-tree-case
      tree
      :leaf (rlp-encode-bytes tree.bytes)
      :nonleaf (b* ((bytes (rlp-encode-tree-list tree.subtrees))
-                   ((when (ubyte8list/error-case bytes :error)) :error))
+                   ((when (bytelist/error-case bytes :error)) :error))
                 (cond ((< (len bytes) 56) (cons (+ 192 (len bytes))
                                                 bytes))
                       ((< (len bytes)
@@ -256,20 +272,22 @@
                                          (cons (+ 247 (len be))
                                                (append be bytes))))
                       (t :error))))
-    :measure (rlp-tree-count tree))
+    :measure (rlp-tree-count tree)
+    :no-function t)
 
   (define rlp-encode-tree-list ((trees rlp-tree-listp))
-    :returns (result ubyte8list/error-p)
+    :returns (result bytelist/error-p)
     (b* (((when (endp trees)) nil)
          (bytes1 (rlp-encode-tree (car trees)))
-         ((when (ubyte8list/error-case bytes1 :error)) :error)
+         ((when (bytelist/error-case bytes1 :error)) :error)
          (bytes2 (rlp-encode-tree-list (cdr trees)))
-         ((when (ubyte8list/error-case bytes2 :error)) :error))
+         ((when (bytelist/error-case bytes2 :error)) :error))
       (append bytes1 bytes2))
-    :measure (rlp-tree-list-count trees))
+    :measure (rlp-tree-list-count trees)
+    :no-function t)
 
   :returns-hints (("Goal"
-                   :in-theory (enable ubyte8p))
+                   :in-theory (enable bytep))
                   '(:use (:instance
                           acl2::len-of-nat=>bendian*-leq-width
                           (nat (len
@@ -282,14 +300,14 @@
 
   (verify-guards rlp-encode-tree
     :hints (("Goal"
-             :in-theory (enable acl2::true-listp-when-ubyte8-listp-rewrite))))
+             :in-theory (enable true-listp-when-byte-listp-rewrite))))
 
   (fty::deffixequiv-mutual rlp-encode-tree))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define rlp-encode-scalar ((nat natp))
-  :returns (result ubyte8list/error-p)
+  :returns (result bytelist/error-p)
   :parents (rlp)
   :short "RLP encoding of a scalar."
   :long
@@ -300,6 +318,7 @@
     "Note that @(':error') is returned if the scalar is so large that
      its big-endian representation exceeds @($2^{64}$) in length."))
   (rlp-encode-bytes (nat=>bendian* 256 (lnfix nat)))
+  :no-function t
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -318,12 +337,12 @@
           (and (rlp-treep tree)
                (equal (rlp-encode-tree tree)
                       x)
-               (ubyte8-listp x)))
+               (byte-listp x)))
   :skolem-name rlp-tree-encoding-witness)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rlp-decode-tree ((bytes ubyte8-listp))
+(define rlp-decode-tree ((bytes byte-listp))
   :returns (result rlp-tree/error-p
                    :hints (("Goal" :in-theory (enable rlp-tree-encoding-p))))
   :parents (rlp)
@@ -359,17 +378,18 @@
     "The decoding code in [Wiki:RLP] provides a reference implementation.
      Note that it is considerably more complicated than the encoding code.
      Thus, our high-level specification of decoding seems appropriate."))
-  (b* ((bytes (ubyte8-list-fix bytes)))
+  (b* ((bytes (byte-list-fix bytes)))
     (if (rlp-tree-encoding-p bytes)
         (rlp-tree-encoding-witness bytes)
       :error))
+  :no-function t
   :hooks (:fix)
   ///
 
   (defrule rlp-encode-tree-of-rlp-decode-tree
     (implies (rlp-tree-encoding-p bytes)
              (equal (rlp-encode-tree (rlp-decode-tree bytes))
-                    (ubyte8-list-fix bytes)))
+                    (byte-list-fix bytes)))
     :enable rlp-tree-encoding-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -387,10 +407,10 @@
      is also the encoding of a tree consisting of a single leaf
      with that byte array."))
   (exists (bytes)
-          (and (ubyte8-listp bytes)
+          (and (byte-listp bytes)
                (equal (rlp-encode-bytes bytes)
                       x)
-               (ubyte8-listp x)))
+               (byte-listp x)))
   :skolem-name rlp-bytes-encoding-witness
   ///
 
@@ -403,8 +423,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rlp-decode-bytes ((bytes ubyte8-listp))
-  :returns (result ubyte8list/error-p
+(define rlp-decode-bytes ((bytes byte-listp))
+  :returns (result bytelist/error-p
                    :hints (("Goal" :in-theory (enable rlp-bytes-encoding-p))))
   :parents (rlp)
   :short "RLP decoding of a byte array."
@@ -420,17 +440,18 @@
      we need the injectivity of encoding;
      otherwise, the two witness functions could yield ``incompatible'' values.
      Thus, we defer the proof of this relationship for now."))
-  (b* ((bytes (ubyte8-list-fix bytes)))
+  (b* ((bytes (byte-list-fix bytes)))
     (if (rlp-bytes-encoding-p bytes)
         (rlp-bytes-encoding-witness bytes)
       :error))
+  :no-function t
   :hooks (:fix)
   ///
 
   (defrule rlp-encode-bytes-of-rlp-decode-bytes
     (implies (rlp-bytes-encoding-p bytes)
              (equal (rlp-encode-bytes (rlp-decode-bytes bytes))
-                    (ubyte8-list-fix bytes)))
+                    (byte-list-fix bytes)))
     :enable rlp-bytes-encoding-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -446,12 +467,12 @@
           (and (natp nat)
                (equal (rlp-encode-scalar nat)
                       x)
-               (ubyte8-listp x)))
+               (byte-listp x)))
   :skolem-name rlp-scalar-encoding-witness)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rlp-decode-scalar ((bytes ubyte8-listp))
+(define rlp-decode-scalar ((bytes byte-listp))
   :returns (result nat/error-p
                    :hints (("Goal" :in-theory (enable rlp-scalar-encoding-p))))
   :parents (rlp)
@@ -468,15 +489,16 @@
      we need the injectivity of encoding;
      otherwise, the two witness functions could yield ``incompatible'' values.
      Thus, we defer the proof of this relationship for now."))
-  (b* ((bytes (ubyte8-list-fix bytes)))
+  (b* ((bytes (byte-list-fix bytes)))
     (if (rlp-scalar-encoding-p bytes)
         (rlp-scalar-encoding-witness bytes)
       :error))
+  :no-function t
   :hooks (:fix)
   ///
 
   (defrule rlp-encode-scalar-of-rlp-decode-scalar
     (implies (rlp-scalar-encoding-p bytes)
              (equal (rlp-encode-scalar (rlp-decode-scalar bytes))
-                    (ubyte8-list-fix bytes)))
+                    (byte-list-fix bytes)))
     :enable rlp-scalar-encoding-p))

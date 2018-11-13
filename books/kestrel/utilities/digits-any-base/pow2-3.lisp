@@ -15,4 +15,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm-digit-byte-return-types 3)
+(defruled dab-digit-listp-of-8-rewrite-ubyte3-listp
+  (equal (dab-digit-listp 8 x)
+         (ubyte3-listp x))
+  :enable (dab-digit-listp dab-digitp ubyte3-listp ubyte3p))
+
+(defthm-dab-return-types
+  dab-digit-listp-of-8-rewrite-ubyte3-listp
+  ubyte3-listp-of
+  :topic digit-ubyte3-return-types
+  :parents (digits-any-base-pow2)
+  :short "Additional return type theorems for conversions of natural numbers
+          to digits in base 8, with @(tsee ubyte3-listp).")

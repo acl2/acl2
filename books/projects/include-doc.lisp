@@ -19,6 +19,7 @@
      (include-book "sat/proof-checker-itp13/top")
      (include-book "sat/proof-checker-array/top")
      (include-book "sat/dimacs-reader/reader")
+     (include-book "irv/top")
      (ifdef "OS_HAS_SMTLINK"
             (include-book "smtlink/doc")
             :endif)

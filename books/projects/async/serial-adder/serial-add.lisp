@@ -171,7 +171,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; SERIAL-ADD.
 
-(defun serial-add$netlist (data-width cnt-width)
+(defund serial-add$netlist (data-width cnt-width)
   (declare (xargs :guard (and (posp data-width)
                               (natp cnt-width)
                               (<= 3 cnt-width))))
@@ -189,15 +189,15 @@
                               (posp data-width)
                               (natp cnt-width)
                               (<= 3 cnt-width))))
-  (and (equal (assoc (si 'serial-add data-width) netlist)
-              (serial-add* data-width cnt-width))
-       (b* ((netlist (delete-to-eq (si 'serial-add data-width) netlist)))
-         (and (link1& netlist)
-              (joint-cntl& netlist)
-              (fast-zero& netlist (1- cnt-width))
-              (full-adder& netlist)
-              (shift-register2-piso& netlist data-width cnt-width)
-              (shift-register-sipo& netlist data-width cnt-width)))))
+  (b* ((subnetlist (delete-to-eq (si 'serial-add data-width) netlist)))
+    (and (equal (assoc (si 'serial-add data-width) netlist)
+                (serial-add* data-width cnt-width))
+         (link1& subnetlist)
+         (joint-cntl& subnetlist)
+         (fast-zero& subnetlist (1- cnt-width))
+         (full-adder& subnetlist)
+         (shift-register2-piso& subnetlist data-width cnt-width)
+         (shift-register-sipo& subnetlist data-width cnt-width))))
 
 ;; Sanity check
 
@@ -625,7 +625,7 @@
                             serial-add$in-act)
                            (serial-add$input-format=>sregs2$input-format
                             link1$valid-st))))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-serial-add$out-act
   (implies (and (serial-add$input-format inputs data-width)
@@ -637,7 +637,7 @@
                             serial-add$out-act)
                            (serial-add$input-format=>sreg$input-format
                             link1$valid-st))))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (simulate-lemma serial-add :sizes (data-width cnt-width))
 

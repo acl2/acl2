@@ -1064,9 +1064,11 @@
 
 (def-error-checker ensure-term-if-call
   ((term pseudo-termp "Term to check."))
-  "Cause an error if a term is not a call to @(tsee if)."
-  (((and (nvariablep term) (eq (ffn-symb term) 'if))
-    "~@0 must start with IF." description))
+  "Cause an error if a term is not a call of @(tsee if)."
+  (((and (nvariablep term)
+         (not (fquotep term))
+         (eq (ffn-symb term) 'if))
+    "~@0 must be a call of IF." description))
   :returns (val (and (implies erp (equal val error-val))
                      (implies (and (not erp) error-erp (pseudo-termp term))
                               (and (pseudo-term-listp val)
@@ -1075,8 +1077,17 @@
   :long
   "<p>
    If the term is a call to @(tsee if),
-   return its test, then&rdquo; branch, and else&rdquo; branch.
+   return its test, `then' branch, and `else' branch.
    </p>")
+
+(def-error-checker ensure-term-not-call-of
+  ((term pseudo-termp "Term to check.")
+   (fn symbolp "Function that @('term') must not be a call of."))
+  "Cause an error if a term is a call of a given function."
+  (((or (variablep term)
+        (fquotep term)
+        (not (eq (ffn-symb term) fn)))
+    "~@0 must not be a call of ~x1." description fn)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

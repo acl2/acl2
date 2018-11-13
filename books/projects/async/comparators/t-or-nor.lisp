@@ -64,6 +64,17 @@
  ;; Occurrences
  (t-or-nor-body tree parity))
 
+(defund t-or-nor$netlist (tree parity)
+  (declare (xargs :guard (tv-guard tree)))
+  (if (or (atom tree)
+          (and (atom (car tree))
+               (atom (cdr tree))))
+      (list (t-or-nor* tree parity))
+    (cons (t-or-nor* tree parity)
+          (union$ (t-or-nor$netlist (car tree) (not parity))
+                  (t-or-nor$netlist (cdr tree) (not parity))
+                  :test 'equal))))
+
 (defund t-or-nor& (netlist tree parity)
   (declare (xargs :guard (and (alistp netlist)
                               (tv-guard tree))))
@@ -82,17 +93,6 @@
       (and lookup-okp
            (t-or-nor& delete-result (car tree) (not parity))
            (t-or-nor& delete-result (cdr tree) (not parity))))))
-
-(defun t-or-nor$netlist (tree parity)
-  (declare (xargs :guard (tv-guard tree)))
-  (if (or (atom tree)
-          (and (atom (car tree))
-               (atom (cdr tree))))
-      (list (t-or-nor* tree parity))
-    (cons (t-or-nor* tree parity)
-          (union$ (t-or-nor$netlist (car tree) (not parity))
-                  (t-or-nor$netlist (cdr tree) (not parity))
-                  :test 'equal))))
 
 (defun t-or-nor-induction (tree parity call-name a sts netlist)
   (if (or (atom tree)
@@ -234,21 +234,20 @@
    (list
     (list 'g0 '(out) (si 't-nor (tree-number tree)) in-names))))
 
-(defund tv-zp& (netlist tree)
-  (declare (xargs :guard (and (alistp netlist)
-                              (tv-guard tree))))
-  (let ((odd-height (equal (mod (tree-height tree) 2) 1)))
-    (and (equal (assoc (si 'tv-zp (tree-number tree)) netlist)
-                (tv-zp* tree))
-         (let ((netlist
-                (delete-to-eq (si 'tv-zp (tree-number tree)) netlist)))
-           (t-or-nor& netlist tree (not odd-height))))))
-
-(defun tv-zp$netlist (tree)
+(defund tv-zp$netlist (tree)
   (declare (xargs :guard (tv-guard tree)))
   (let ((odd-height (equal (mod (tree-height tree) 2) 1)))
     (cons (tv-zp* tree)
           (t-or-nor$netlist tree (not odd-height)))))
+
+(defund tv-zp& (netlist tree)
+  (declare (xargs :guard (and (alistp netlist)
+                              (tv-guard tree))))
+  (b* ((odd-height (equal (mod (tree-height tree) 2) 1))
+       (subnetlist (delete-to-eq (si 'tv-zp (tree-number tree)) netlist)))
+    (and (equal (assoc (si 'tv-zp (tree-number tree)) netlist)
+                (tv-zp* tree))
+         (t-or-nor& subnetlist tree (not odd-height)))))
 
 (defund f$tv-zp (a tree)
   (declare (xargs :guard (and (true-listp a)

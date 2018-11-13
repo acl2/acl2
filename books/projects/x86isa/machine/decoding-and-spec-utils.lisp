@@ -498,7 +498,8 @@ the @('fault') field instead.</li>
      In 32-bit mode, a 32-bit or 16-bit stack pointer is read from
      ESP (i.e. the low 32 bits of RSP)
      or SP (i.e. the low 16 bits of RSP),
-     based on the SS.B bit, i.e. the B bit of the current code segment register.
+     based on the SS.B bit,
+     i.e. the B bit of the current stack segment register.
      Either way, this function returns an unsigned 32-bit or 16-bit integer,
      which is also a signed 64-bit integer.
      </p>

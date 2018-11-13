@@ -174,7 +174,7 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; SHIFT-REGISTER-SIPO.
 
-(defun shift-register-sipo$netlist (data-width cnt-width)
+(defund shift-register-sipo$netlist (data-width cnt-width)
   (declare (xargs :guard (and (posp data-width)
                               (natp cnt-width)
                               (<= 2 cnt-width))))
@@ -199,21 +199,21 @@
                               (posp data-width)
                               (natp cnt-width)
                               (<= 2 cnt-width))))
-  (and (equal (assoc (si 'shift-register-sipo data-width) netlist)
-              (shift-register-sipo* data-width cnt-width))
-       (b* ((netlist (delete-to-eq (si 'shift-register-sipo data-width)
-                                   netlist)))
-         (and (link& netlist data-width)
-              (link& netlist cnt-width)
-              (joint-cntl& netlist)
-              (fast-zero& netlist cnt-width)
-              (counter& netlist cnt-width)
-              (v-buf& netlist data-width)
-              (v-buf& netlist cnt-width)
-              (v-wire& netlist data-width)
-              (v-wire& netlist cnt-width)
-              (tv-if& netlist (make-tree data-width))
-              (tv-if& netlist (make-tree cnt-width))))))
+  (b* ((subnetlist (delete-to-eq (si 'shift-register-sipo data-width)
+                                 netlist)))
+    (and (equal (assoc (si 'shift-register-sipo data-width) netlist)
+                (shift-register-sipo* data-width cnt-width))
+         (link& subnetlist data-width)
+         (link& subnetlist cnt-width)
+         (joint-cntl& subnetlist)
+         (fast-zero& subnetlist cnt-width)
+         (counter& subnetlist cnt-width)
+         (v-buf& subnetlist data-width)
+         (v-buf& subnetlist cnt-width)
+         (v-wire& subnetlist data-width)
+         (v-wire& subnetlist cnt-width)
+         (tv-if& subnetlist (make-tree data-width))
+         (tv-if& subnetlist (make-tree cnt-width)))))
 
 ;; Sanity check
 
@@ -591,7 +591,7 @@
                             shift-register-sipo$valid-st
                             shift-register-sipo$in-act)
                            ())))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-shift-register-sipo$out-act
   (implies (and (shift-register-sipo$input-format inputs)
@@ -603,7 +603,7 @@
                             shift-register-sipo$valid-st
                             shift-register-sipo$out-act)
                            ())))
-  :rule-classes :type-prescription)
+  :rule-classes (:rewrite :type-prescription))
 
 ;;(simulate-lemma shift-register-sipo nil data-width cnt-width)
 
@@ -788,14 +788,14 @@
      (implies (shift-register-sipo$input-format inputs)
               (booleanp (nth 0 inputs)))
      :hints (("Goal" :in-theory (enable shift-register-sipo$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm shift-register-sipo$input-format-lemma-2
      (implies (shift-register-sipo$input-format inputs)
               (booleanp (nth 1 inputs)))
      :hints (("Goal" :in-theory (enable shift-register-sipo$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm shift-register-sipo$input-format-lemma-3
@@ -803,7 +803,7 @@
                    (nth 0 inputs))
               (booleanp (shift-register-sipo$bit-in inputs)))
      :hints (("Goal" :in-theory (enable shift-register-sipo$input-format)))
-     :rule-classes :type-prescription))
+     :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm v-to-nat-of-repeat-lemma

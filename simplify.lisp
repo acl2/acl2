@@ -6684,7 +6684,7 @@
 ; this function force or case-split, you must change its callers!
 
 ; Starting with Version_2.7, this function uses forward-chaining.  This idea
-; arose when changing translate-declaration-to-guard to output calls of
+; arose when changing translate-declaration-to-guard-gen to output calls of
 ; signed-byte-p, unsigned-byte-p, and integer-range-p.  Suddenly some guards
 ; proofs needed to be done that formerly were handled by built-in-clausep.  But
 ; that problem is reduced or eliminated when we forward-chain and have suitable

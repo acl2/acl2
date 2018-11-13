@@ -14,28 +14,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpkg "ETHEREUM" (append *std-pkg-symbols*
+(defpkg "ETHEREUM" (append (set-difference-eq *std-pkg-symbols*
+                                              '(byte))
                            '(bendian=>nat
                              defxdoc+
                              lnfix
                              nat=>bendian
-                             nat=>bendian*
                              nat
-                             ubyte4
-                             ubyte4-fix
-                             ubyte4-list
-                             ubyte4-list-fix
-                             ubyte4-listp
-                             ubyte4p
-                             ubyte8
-                             ubyte8-fix
-                             ubyte8-list
-                             ubyte8-list-fix
-                             ubyte8-listp
-                             ubyte8p
+                             nat=>bendian*
+                             set::map-assoc
                              set::map-empty
                              set::map-head
+                             set::map-keys
                              set::map-put-assoc
                              set::map-tail
+                             set::map-vals
                              set::mapp
                              std::define-sk)))
