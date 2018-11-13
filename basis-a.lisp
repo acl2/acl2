@@ -4579,6 +4579,13 @@
                               (list (cons #\c 15)))))
          *standard-co* state nil))
 
+(defconst *see-doc-set-iprint*
+
+; We give this string a name so that it can be referenced in books; see for
+; example community book books/misc/wet.lisp.
+
+  "~|(See :DOC set-iprint to be able to see elided values in this message.)")
+
 (defun fmt-abbrev1 (str alist col channel state suffix-msg)
   (pprogn
    (f-put-global 'evisc-hitp-without-iprint nil state)
@@ -4591,8 +4598,7 @@
                                              state)
                                (assert$
                                 (not (iprint-enabledp state))
-                                "~|(See :DOC set-iprint to be able to see ~
-                                 elided values in this message.)"))
+                                *see-doc-set-iprint*))
                               (t "")))
                   (cons #\1 suffix-msg))
                  col channel state nil))))
