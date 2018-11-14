@@ -55,6 +55,17 @@
 ;;
 ;; ===================================================================
 
+;; The term-type-alistp predicate describes the data structure
+;; term-types operates over ..
+
+(defun term-type-alistp (alist)
+  (if (not (consp alist)) (null alist)
+    (let ((entry (car alist)))
+      (and (consp entry)
+                                    ;; (pseudo-termp (car entry))
+           (true-listp (cdr entry)) ;; (pseudo-term-listp (cdr entry))
+           (term-type-alistp (cdr alist))))))
+
 (defun term-types (alist)
   (if (not (consp alist)) t
     (if (not (consp (car alist))) t
@@ -113,58 +124,6 @@
 
 ;; ===================================================================
 ;;
-;; (mf-term-types alist) and (mf-and-list) provide a logical
-;; interpretation of (term-types alist) relative to our evaluator ..
-;; the theorems eval-type-mf-and-list and eval-type-mf-term-types
-;; demonstrate what we mean by this.
-;; 
-;; ===================================================================
-
-(defun mf-and-list (list)
-  (case-match list
-    (('cons pred rst)
-     `(if (not ,pred) (quote nil)
-        ,(mf-and-list rst)))
-    (('quote nil)
-     *t*)
-    (&
-     `(and-list ,list))))
-
-(defun mf-term-types (alist)
-  (case-match alist
-    (('cons ('cons & pred) rst)
-     `(if (not ,(mf-and-list pred)) (quote nil)
-        ,(mf-term-types rst)))
-    (('quote nil)
-     *t*)
-    (&
-     `(term-types ,alist))))
-
-;;(trace$ mf-term-types)
-
-;; ===================================================================
-;;
-;; These functions translate our data structures from the logic into 
-;; the meta-logic.  They are the inverses of mv-and-list and 
-;; mf-term-types.
-;;
-;; ===================================================================
-
-(defun termify-list (list)
-  (if (not (consp list)) *nil*
-    `(cons ,(car list)
-           ,(termify-list (cdr list)))))
-
-(defun termify-alist (alist)
-  (if (not (consp alist)) *nil*
-    (let ((entry (car alist)))
-      (let ((key (car entry))
-            (val (cdr entry)))
-        `(cons (cons ,key ,(termify-list val))
-               ,(termify-alist (cdr alist)))))))
-
-;; ===================================================================
-;;
 ;; Our evaluator 
 ;; 
 ;; ===================================================================
@@ -183,20 +142,186 @@
    )
   )
 
-(defthm eval-type-mf-and-list
-  (iff (eval-type (mf-and-list list) a)
+;; ===================================================================
+;;
+;; (meta-term-types alist) and (meta-and-list) provide a logical
+;; interpretation of (term-types alist) relative to our evaluator ..
+;; the theorems eval-type-meta-and-list and eval-type-meta-term-types
+;; demonstrate what we mean by this.
+;; 
+;; ===================================================================
+
+(defun meta-and-list (list)
+  (case-match list
+    (('cons pred rst)
+     `(if (not ,pred) (quote nil)
+        ,(meta-and-list rst)))
+    (('quote nil)
+     *t*)
+    (&
+     `(and-list ,list))))
+
+(defthm eval-type-meta-and-list
+  (iff (eval-type (meta-and-list list) a)
        (and-list (eval-type list a))))
 
-(defthm eval-type-mf-term-types
-  (iff (eval-type (mf-term-types alist) a)
+(defun meta-term-types (alist)
+  (case-match alist
+    (('cons ('cons & pred) rst)
+     `(if (not ,(meta-and-list pred)) (quote nil)
+        ,(meta-term-types rst)))
+    (('quote nil)
+     *t*)
+    (&
+     `(term-types ,alist))))
+
+(defthm eval-type-meta-term-types
+  (iff (eval-type (meta-term-types alist) a)
        (term-types (eval-type alist a)))
   :hints (("Goal" :in-theory (enable term-types))))
 
-(defthm eval-type-termify-list
-  (equal (eval-type (termify-list list) a)
+;;(trace$ meta-term-types)
+
+;; ===================================================================
+;; meta-true-listp recognizes "well formed" true-lists and
+;; meta-term-type-alistp recognizes term-type-alists as they appear
+;; in the meta logic (as pseudo-termp in the clause).
+;; ===================================================================
+
+(defun meta-true-listp (list)
+  (case-match list
+    (('cons & rst)
+     (meta-true-listp rst))
+    (('quote null)
+     (not null))
+    (& nil)))
+
+(defun meta-term-type-alistp (list)
+  (case-match list
+    (('cons ('cons & preds) rst)
+     (and (meta-true-listp preds)
+          (meta-term-type-alistp rst)))
+    (('quote null)
+     (not null))
+    (& nil)))
+
+;; ===================================================================
+;;
+;; These functions translate our data structures from the logic into
+;; conjunctions in the meta-logic.
+;;
+;; ===================================================================
+
+(defun list-to-meta-conjunction (list)
+  (if (not (consp list)) *t*
+    `(if ,(car list) ,(list-to-meta-conjunction (cdr list))
+       (quote nil))))
+
+(defthm eval-type-list-to-meta-conjunction
+  (equal (eval-type (list-to-meta-conjunction list) a)
+         (and-list (eval-type-list list a))))
+
+(defun alist-to-meta-conjunction (alist)
+  (if (not (consp alist)) *t*
+    (let ((entry (car alist)))
+      `(if ,(list-to-meta-conjunction (cdr entry))
+           ,(alist-to-meta-conjunction (cdr alist))
+         (quote nil)))))
+
+;; ===================================================================
+;;
+;; These functions translate our data structures from expressions in
+;; the meta-logic into the logic.
+;;
+;; ===================================================================
+
+(defun meta-list-to-list (meta-list)
+  (case-match meta-list
+    (('cons entry rst)
+     (cons entry (meta-list-to-list rst)))
+    (& nil)))
+
+(defthm true-listp-meta-list-to-list
+  (true-listp (meta-list-to-list meta-list))
+  :rule-classes (:type-prescription))
+
+(defthm and-list-is-just-a-conjunction
+  (implies
+   (meta-true-listp arg)
+   (equal (eval-type `(and-list ,arg) a)
+          (eval-type (list-to-meta-conjunction (meta-list-to-list arg)) a))))
+
+
+(defun meta-alist-to-alist (meta-alist)
+  (case-match meta-alist
+    (('cons ('cons key list) rst)
+     (cons (cons key (meta-list-to-list list))
+           (meta-alist-to-alist rst)))
+    (& nil)))
+
+(defthm term-type-alistp-meta-list-to-alist
+  (term-type-alistp (meta-alist-to-alist meta-list))
+  :rule-classes ((:forward-chaining :trigger-terms ((meta-alist-to-alist meta-list)))))
+
+(defthm term-types-is-just-a-conjunction
+  (implies
+   (meta-term-type-alistp arg)
+   (equal (eval-type `(term-types ,arg) a)
+          (eval-type (alist-to-meta-conjunction (meta-alist-to-alist arg)) a)))
+  :hints (("Goal" :in-theory (enable term-types))))
+
+;; ===================================================================
+;;
+;; These functions translate our data structures from the logic into
+;; equivalent expressions in the meta-logic.  They are the inverses of
+;; meta-list-to-list and meta-alist-to-alist.
+;;
+;; ===================================================================
+
+(defun list-to-meta-list (list)
+  (if (not (consp list)) *nil*
+    `(cons ,(car list)
+           ,(list-to-meta-list (cdr list)))))
+
+(defthm meta-true-listp-list-to-meta-list
+  (meta-true-listp (list-to-meta-list list))
+  :rule-classes ((:forward-chaining :trigger-terms ((list-to-meta-list list)))))
+
+(defthm meta-list-to-list-list-to-meta-list
+  (implies
+   (true-listp list)
+   (equal (meta-list-to-list (list-to-meta-list list))
+          list)))
+
+(defthm eval-type-list-to-meta-list-conjunction
+  (equal (eval-type `(and-list ,(list-to-meta-list list)) a)
+         (eval-type (list-to-meta-conjunction list) a)))
+
+(defthm eval-type-list-to-meta-list
+  (equal (eval-type (list-to-meta-list list) a)
          (eval-type-list list a)))
 
-(set-state-ok t)
+(defun alist-to-meta-alist (alist)
+  (if (not (consp alist)) *nil*
+    (let ((entry (car alist)))
+      (let ((key (car entry))
+            (val (cdr entry)))
+        `(cons (cons ,key ,(list-to-meta-list val))
+               ,(alist-to-meta-alist (cdr alist)))))))
+
+(defthm meta-term-type-alistp-alist-to-meta-alist
+  (meta-term-type-alistp (alist-to-meta-alist alist))
+  :rule-classes ((:forward-chaining :trigger-terms ((alist-to-meta-alist alist)))))
+
+(defthm meta-alist-to-alist-alist-to-meta-alist
+  (implies
+   (term-type-alistp alist)
+   (equal (meta-alist-to-alist (alist-to-meta-alist alist))
+          alist)))
+
+(defthm eval-type-alist-to-meta-alist
+  (equal (eval-type `(term-types ,(alist-to-meta-alist alist)) a)
+         (eval-type (alist-to-meta-conjunction alist) a)))
 
 ;; ===================================================================
 ;;
@@ -379,6 +504,8 @@
 ;; term in explist and add it to our data structure (env).
 ;; ===================================================================
 
+(set-state-ok t)
+
 (defun type-alist-with-terms-rec (explist alist mfc state env)
   (if (not (consp explist)) env
     (let ((term (car explist)))
@@ -472,7 +599,7 @@
 ;; ===================================================================
 
 (defun type-alist-with-terms (alist mfc state)
-  (let ((explist (collect-explist-from-alist alist (invisible-theory) (include-theory))))
+  (let ((explist (collect-explist-from-alist alist (insert-all-equal (include-theory) (invisible-theory)) (include-theory))))
     (let ((env (collect-predicates alist nil)))
       (type-alist-with-terms-rec explist alist mfc state env))))
   
@@ -492,22 +619,22 @@
   ;; Extract the type-alist from the mfc ..
   (let ((alist (mfc-type-alist mfc)))
     ;; Process it and return our data structure
-    (termify-alist (type-alist-with-terms alist mfc state))))
+    (alist-to-meta-alist (type-alist-with-terms alist mfc state))))
 
 (defun mf-compute-type-alist-hyp (term mfc state)
   (let ((plist (access metafunction-context mfc :simplify-clause-pot-lst)))
-    (let ((pot-list (termify-list (poly-pot-list plist))))
+    (let ((pot-list (list-to-meta-list (poly-pot-list plist))))
       (case-match term
         ((`current-clause &)
          (let ((type-alist (process-term mfc state)))
-           `(force (if (not ,(mf-term-types type-alist)) (quote nil)
+           `(force (if (not ,(meta-term-types type-alist)) (quote nil)
                      (if (not (and-list ,pot-list)) (quote nil)
                      (quote t))))))
         (& *t*)))))
 
 (defun mf-compute-type-alist (term mfc state)
   (let ((plist (access metafunction-context mfc :simplify-clause-pot-lst)))
-    (let ((pot-list (termify-list (poly-pot-list plist))))
+    (let ((pot-list (list-to-meta-list (poly-pot-list plist))))
       (case-match term
         ((`current-clause &)
          (let ((type-alist (process-term mfc state)))
@@ -705,3 +832,135 @@
 ;;                         (< 0 (+ (* -1 (MOD B K)) K 0))
 ;;                         (< 0 (+ (MOD B K) (* -1 CC) 0))
 ;;                         (<= 0 (+ (MOD B K) (* -1 E) 0)))))
+
+
+;; ===================================================================
+;;
+;; Here we demonstrate how we would likley want to generalize the
+;; clause after computing the term types.
+;;
+;; ===================================================================
+
+;; Extract the (logical) term-types-alist from the clause 
+
+(defun get-term-types-alist (clause)
+  (if (not (consp clause)) (mv nil nil)
+    (let ((entry (car clause)))
+      (case-match entry
+        (('not ('term-types ('hide alist))) (mv t (meta-alist-to-alist alist)))
+        (& (get-term-types-alist (cdr clause)))))))
+
+;; ===================================================================
+;;
+;; The following functions are used to convert a list of predicates
+;; over some term into a single lambda expression, ie:
+;;
+;; `((pred1 term) (pred2 term))
+;;
+;; becomes:
+;;
+;; `(lambda (x) (and (pred1 x) (pred2 x)))
+;;
+;; ===================================================================
+
+(defun replace-term-with-x-in-args (term args)
+  (if (not (consp args)) nil
+    (let ((entry (car args)))
+      (let ((entry (if (equal term entry) 'x entry)))
+        (cons entry (replace-term-with-x-in-args term (cdr args)))))))
+
+(defun replace-term-with-x-in-true-pred (term pred)
+  (case-match pred
+    ((fn . args) `(,fn ,@(replace-term-with-x-in-args term args)))
+    (&            pred)))
+
+(defun replace-term-with-x-in-pred (term pred)
+  (case-match pred
+    (('not pred) `(not ,(replace-term-with-x-in-true-pred term pred)))
+    (&            (replace-term-with-x-in-true-pred term pred))))
+
+(defun replace-term-with-x-in-pred-list (term list)
+  (if (endp list) nil
+    (let ((entry (replace-term-with-x-in-pred term (car list))))
+      (cons entry (replace-term-with-x-in-pred-list term (cdr list))))))
+
+;; ===================================================================
+;;
+;; The generalization hint is of the form:
+;;
+;; '((term1 . type1) (term2 . type2) ..)
+;;
+;; This will cause the generalizer to replace each instance of each
+;; term (termI) with a fresh variable (varI) and to add the predicate 
+;; (typeI varI) to the clause.
+;;
+;; ===================================================================
+
+(defun alist-to-generalization-hint (alist)
+  (if (not (consp alist)) nil
+    (let ((entry (car alist)))
+      (let ((term   (car entry))
+            (preds (cdr entry)))
+        (case-match term
+          ((fn . &)
+           (if (member-eq fn (include-theory)) (alist-to-generalization-hint (cdr alist))
+             (cons (cons term `(lambda (x) ,(list-to-meta-conjunction (replace-term-with-x-in-pred-list term preds))))
+                   (alist-to-generalization-hint (cdr alist)))))
+          (& (alist-to-generalization-hint (cdr alist))))))))
+
+(defun construct-alist-generalization-hint (clause)
+  (met ((hit alist) (get-term-types-alist clause))
+    (if (not hit) nil
+      (alist-to-generalization-hint alist))))
+
+(include-book "coi/generalize/generalize" :dir :system)
+
+;; ===================================================================
+;;
+;; The following hint will generalize each term in the term-type-alist 
+;; that is 1) not a symbol and 2) not in the (include-theory) set of
+;; functions.
+;;
+;; ===================================================================
+
+(defun generalize-term-type-alist (clause)
+  (let ((hint (construct-alist-generalization-hint clause)))
+    (and hint `(:clause-processor (generalize-list-clause-processor-wrapper clause '(,@hint))))))
+
+;; ===================================================================
+;;
+;; In the following example, the functions (dec x) and (getv a b) 
+;; are generalized away.
+;;
+;; ===================================================================
+
+#+joe
+(thm
+  (implies
+   (and
+    (natp a)
+    (integerp b)
+    (rationalp c)
+    (rationalp cc)
+    (< cc c)
+    (rationalp ccc)
+    (<= 0 ccc)
+    (complex-rationalp d)
+    (acl2-numberp e)
+    (characterp f)
+    (symbolp xxx)
+    (stringp g)
+    (bitp h)
+    (posp k)
+    (equal (mod b k) c)
+    (pred v)
+    (equal (dec b) 3)
+    (pred (getv w z))
+    (rationalp zz)
+    (rationalp yy)
+    (< (* zz yy) zz)
+    (not (< c e)))
+   nil)
+  :hints ((get-type-alist)
+          (generalize-term-type-alist clause)
+          ))
