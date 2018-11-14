@@ -23848,10 +23848,10 @@
                       (show-rewrites-linears-fn
                        'show-rewrites rule-id nil ens term nil nil nil :none t
                        state)
+                      (show-meta-lemmas term rule-id ens state)
                       (show-rewrites-linears-fn
                        'show-linears rule-id nil ens term nil nil nil :none t
                        state)
-                      (show-meta-lemmas term rule-id ens state)
                       (show-type-prescription-rules term rule-id nil nil
                                                     ens state)
                       (value :invisible)))))))))))

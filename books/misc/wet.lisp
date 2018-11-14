@@ -153,6 +153,9 @@
   (print-numbered-list1 lst 1 (natp-digits-base-10 (length lst))
                         chan evisc-tuple state))
 
+(defconst *see-doc-set-iprint* ; redundant with ACL2 sources.
+  "~|(See :DOC set-iprint to be able to see elided values in this message.)")
+
 (defmacro wet! (form
                 &key
                 (evisc-tuple 'nil evisc-tuple-p)
@@ -202,10 +205,27 @@
                                          nil *standard-co* state nil)
                                     (fms "----------------~|"
                                          nil *standard-co* state nil)
+
+; We use 'evisc-hitp-without-iprint as it is used by ACL2 source function,
+; fmt-abbrev1.  We can't get the effect we want by calling fmt-abbrev1 directly
+; because we don't want to print the extra message until all printing calls
+; under the print-numbered-list call have completed.
+
+                                    (f-put-global 'evisc-hitp-without-iprint nil state)
                                     (print-numbered-list val
                                                          *standard-co*
                                                          evisc-tuple
                                                          state)
+                                    (cond ((f-get-global 'evisc-hitp-without-iprint
+                                                         state)
+                                           (assert$
+                                            (not (iprint-enabledp state))
+                                            (mv-let
+                                              (col state)
+                                              (fmx "~@0~|" *see-doc-set-iprint*)
+                                              (declare (ignore col))
+                                              state)))
+                                          (t state))
                                     (value (list 'value-triple
                                                  :invisible)))))
                                 (t (value (list 'value-triple

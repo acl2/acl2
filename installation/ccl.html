@@ -8,13 +8,15 @@
   those on
   the <a href="https://ccl.clozure.com/install.html">"Installing
   Clozure CL"</a> page.  A table on that page shows how to make small
-  changes in the names below if your platform is other than Linxu,
+  changes in the names below if your platform is other than Linux,
   e.g., Mac OS X (Darwin).</p>
 
 <hr size=3 noshade>
 
 <pre>
 # Obtain a ccl distribution in a fresh directory:
+mkdir temp
+cd temp
 git clone https://github.com/Clozure/ccl
 # Rename that directory as suggested below, after
 # executing the following three commands.
@@ -28,14 +30,6 @@ cd ../../
 mv temp 2017-12-07-6be8298fe5
 cd 2017-12-07-6be8298fe5/ccl
 
-# Build the lisp kernel in the appropriate directory:
-# NOTE: This is for linux; if you are on a Mac then instead
-# change instead to lisp-kernel/darwinx8664/.
-cd lisp-kernel/linuxx8664/
-make clean && make
-
-# Move back to ccl directory and fetch/unpack the heap image.
-cd ../../
 # If you don't have wget (e.g., on a Mac), skip this wget command and see just below).
 wget https://github.com/Clozure/ccl/releases/download/v1.12-dev.1/linuxx86.tar.gz
 # Or instead, if you don't have wget, e.g. on a Mac:
