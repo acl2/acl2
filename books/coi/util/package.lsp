@@ -54,3 +54,9 @@
 
 (defconst *util-exports*
   (append *mv-nth-exports* nil))
+
+(defpkg "TALIST"
+  (append '(acl2::*t* acl2::*nil* acl2::val acl2::met acl2::and-list
+            acl2::ts-union acl2::ts-subsetp acl2::ts-intersectp)
+          *acl2-exports*
+          *common-lisp-symbols-from-main-lisp-package*))

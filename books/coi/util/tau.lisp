@@ -57,7 +57,7 @@
   (let ((ens        (f-get-global 'global-enabled-structure state))
         (wrld       (w state)))
     ;; I'm probably not doing this right ..
-    (mv-let (hit res) (magic-ev-fncall 'get-term-tau-program `(,term ,mfc ,ens ,wrld) state t nil)
+    (mv-let (hit res) (magic-ev-fncall 'get-term-tau-program `(,term ,mfc ,ens ,wrld) state t t)
       (declare (ignore hit))
       res)))
 
@@ -120,8 +120,10 @@
 ;;
 ;; ===================================================================
 
-(trace$ mf-tau)
+#+joe
+(trace$ get-term-tau-program)
 
+#+joe
 (thm 
  (implies
   (and
