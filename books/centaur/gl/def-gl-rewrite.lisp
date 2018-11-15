@@ -84,8 +84,8 @@
          (rune (acl2::access acl2::rewrite-rule (car rules) :rune))
          (new-alist
           (acl2::put-assoc-eq fnsym (add-to-set-equal rune (cdr (assoc-eq fnsym alist))) alist)))
-      (alist-add-gl-rules (cdr rules) new-alist))))            
-                    
+      (alist-add-gl-rules (cdr rules) new-alist))))
+
 (defun alist-add-gl-rewrite (rune alist world)
   (declare (xargs :mode :program))
   (b* ((rune (if (symbolp rune) `(:rewrite ,rune) rune))
@@ -97,7 +97,7 @@
   (declare (xargs :mode :program))
   (b* ((rules (collect-lemmas-for-runes runes world)))
     (alist-add-gl-rules rules alist)))
-  
+
 
 
 (defmacro add-gl-rewrite (rune)
@@ -117,8 +117,8 @@
          (rune (acl2::access acl2::rewrite-rule (car rules) :rune))
          (new-alist
           (acl2::put-assoc-eq fnsym (remove-equal rune (cdr (assoc-eq fnsym alist))) alist)))
-      (alist-remove-gl-rules (cdr rules) new-alist))))            
-                    
+      (alist-remove-gl-rules (cdr rules) new-alist))))
+
 (defun alist-remove-gl-rewrite (rune alist world)
   (declare (xargs :mode :program))
   (b* ((rune (if (symbolp rune) `(:rewrite ,rune) rune))
@@ -130,7 +130,7 @@
   (declare (xargs :mode :program))
   (b* ((rules (collect-lemmas-for-runes runes world)))
     (alist-remove-gl-rules rules alist)))
-  
+
 
 
 (defmacro remove-gl-rewrite (rune)
@@ -190,7 +190,7 @@ reference.</p>"
                           (remove ',rune rules)
                         rules))))
           (gl-rewrite-table-entries-for-lemma-removals rune (cdr lemmas)))))
-                    
+
 
 
 (defun gl-set-uninterpreted-fn (fn val world)
@@ -232,7 +232,30 @@ call is not rewritten away, symbolic execution of a @('fnname') call will
 simply produce an object (of the :g-apply type) representing a call of
 @('fnname') on the given arguments.</p>
 
-<p>@('gl::gl-unset-uninterpreted') undoes the effect of @('gl::gl-set-uninterpreted').</p>"
+<p>@('gl::gl-unset-uninterpreted') undoes the effect of @('gl::gl-set-uninterpreted').</p>
+
+<p>Note that @('gl::gl-set-uninterpreted') has virtually no effect when
+applied to a GL primitive: a function that has its ``symbolic
+counterpart'' built into the GL clause processor you're using.  (It
+actually does do a little &mdash; it can prevent the function from being
+applied to concrete values before rewrite rules are applied.  But that
+could change in the future.)  But what is a GL primitive?  That
+depends on the current GL clause processor, and can only be determined
+reliably by looking at the definition of the following function
+symbol:</p>
+
+@({
+(cdr (assoc-eq 'gl::run-gified
+	       (table-alist 'gl::latest-greatest-gl-clause-proc (w state))))
+})
+
+<p>For example, this function symbol is 'gl::glcp-run-gified immediately after
+including the community-book @('\"centaur/gl/gl\"').  Now use @(':')@(tsee pe)
+on this function symbol.  The body of that definition should be of the form
+@('(case fn ...)'), which matches @('fn') against all the GL primitives for the
+current GL clause processor.</p>
+
+"
 
   (defmacro gl-set-uninterpreted (fn &optional (val 't))
     `(make-event
