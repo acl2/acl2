@@ -33,6 +33,7 @@
 (include-book "pathcond-aignet")
 (include-book "aig-pathcond-stobj")
 (include-book "centaur/ubdds/lite" :dir :system)
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 (acl2::defstobj-clone aignet-pathcond aignet::aignet-pathcond
   :strsubst (("abcd" . "abcd")) :pkg gl-package)
@@ -42,23 +43,5 @@
   (pathcond-aig :type calist-stobj)
   (pathcond-aignet :type aignet-pathcond))
 
-(std::defenum bfr-mode-p
-  (t nil :aignet))
 
-(defsection bfr-mode-case
-  :short "Choose behavior based on a bfr-mode object"
-  :long "<p>Usage:</p>
 
-@({
-     (bfr-mode-case :aig aig-code
-                    :bdd bdd-code
-                    :aignet aignet-code)
-})
-
-@(def bfr-mode-case)"
-
-  (defmacro bfr-mode-case (&key aig bdd aignet)
-    `(case (bfr-mode-fix bfr-mode)
-       ((nil) ,bdd)
-       (:aignet ,aignet)
-       (t ,aig))))
