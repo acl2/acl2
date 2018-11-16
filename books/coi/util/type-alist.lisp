@@ -14,7 +14,7 @@
 ;; extended meta rules.
 ;;
 ;; ===================================================================
-(in-package "ACL2")
+(in-package "TALIST")
 (include-book "mv-nth")
 
 ;; ===================================================================
@@ -100,9 +100,9 @@
                    ,(poly-alist-to-expr (cdr alist) const)))))))
 
 (defun poly-to-expr (poly)
-  (let* ((relation (access poly poly :relation))
-         (const    (access poly poly :constant))
-         (alist    (access poly poly :alist)))
+  (let* ((relation (access acl2::poly poly :relation))
+         (const    (access acl2::poly poly :constant))
+         (alist    (access acl2::poly poly :alist)))
     (case-match relation
       ('<  `(< (quote 0) ,(poly-alist-to-expr alist const)))
       (&   `(not (< ,(poly-alist-to-expr alist const) (quote 0)))))))
@@ -114,8 +114,8 @@
 
 (defun poly-pot (pot)
   (append
-   (poly-term-lst (access linear-pot pot :negatives))
-   (poly-term-lst (access linear-pot pot :positives))))
+   (poly-term-lst (access acl2::linear-pot pot :negatives))
+   (poly-term-lst (access acl2::linear-pot pot :positives))))
 
 (defun poly-pot-list (pot-list)
   (if (not (consp pot-list)) nil
@@ -353,38 +353,38 @@
     (('if . &) (mv nil nil))
     (&
      (cond
-      ((ts-subsetp ts *ts-zero*)                  (mv t `((integerp ,x) (equal ,x (quote 0)))))
-      ((ts-subsetp ts *ts-one*)                   (mv t `((integerp ,x) (equal ,x (quote 1)))))
-      ((ts-subsetp ts *ts-bit*)                   (mv t `((integerp ,x) (not (< ,x (quote 0))) (not (< (quote 1) ,x)))))
-      ((ts-subsetp ts *ts-negative-integer*)      (mv t `((integerp ,x) (< ,x (quote 0)))))
-      ((ts-subsetp ts *ts-positive-integer*)      (mv t `((integerp ,x) (< (quote 0) ,x))))
-      ((ts-subsetp ts *ts-non-negative-integer*)  (mv t `((integerp ,x) (not (< ,x (quote 0))))))
-      ((ts-subsetp ts *ts-non-positive-integer*)  (mv t `((integerp ,x) (not (< (quote 0) ,x)))))
-      ((ts-subsetp ts *ts-integer*)               (mv t `((integerp ,x))))
-      ((ts-subsetp ts *ts-negative-rational*)     (mv t `((rationalp ,x) (< ,x (quote 0)))))
-      ((ts-subsetp ts *ts-positive-rational*)     (mv t `((rationalp ,x) (< (quote 0) ,x))))
-      ((ts-subsetp ts *ts-non-negative-rational*) (mv t `((rationalp ,x) (not (< ,x (quote 0))))))
-      ((ts-subsetp ts *ts-non-positive-rational*) (mv t `((rationalp ,x) (not (< (quote 0) ,x)))))
-      ((ts-subsetp ts *ts-rational*)              (mv t `((rationalp ,x))))
+      ((ts-subsetp ts acl2::*ts-zero*)                  (mv t `((integerp ,x) (equal ,x (quote 0)))))
+      ((ts-subsetp ts acl2::*ts-one*)                   (mv t `((integerp ,x) (equal ,x (quote 1)))))
+      ((ts-subsetp ts acl2::*ts-bit*)                   (mv t `((integerp ,x) (not (< ,x (quote 0))) (not (< (quote 1) ,x)))))
+      ((ts-subsetp ts acl2::*ts-negative-integer*)      (mv t `((integerp ,x) (< ,x (quote 0)))))
+      ((ts-subsetp ts acl2::*ts-positive-integer*)      (mv t `((integerp ,x) (< (quote 0) ,x))))
+      ((ts-subsetp ts acl2::*ts-non-negative-integer*)  (mv t `((integerp ,x) (not (< ,x (quote 0))))))
+      ((ts-subsetp ts acl2::*ts-non-positive-integer*)  (mv t `((integerp ,x) (not (< (quote 0) ,x)))))
+      ((ts-subsetp ts acl2::*ts-integer*)               (mv t `((integerp ,x))))
+      ((ts-subsetp ts acl2::*ts-negative-rational*)     (mv t `((rationalp ,x) (< ,x (quote 0)))))
+      ((ts-subsetp ts acl2::*ts-positive-rational*)     (mv t `((rationalp ,x) (< (quote 0) ,x))))
+      ((ts-subsetp ts acl2::*ts-non-negative-rational*) (mv t `((rationalp ,x) (not (< ,x (quote 0))))))
+      ((ts-subsetp ts acl2::*ts-non-positive-rational*) (mv t `((rationalp ,x) (not (< (quote 0) ,x)))))
+      ((ts-subsetp ts acl2::*ts-rational*)              (mv t `((rationalp ,x))))
       #+non-standard-analysis
-      ((ts-subsetp ts *ts-negative-real*)         (mv t `((realp ,x) (< ,x (quote 0)))))
+      ((ts-subsetp ts acl2::*ts-negative-real*)         (mv t `((realp ,x) (< ,x (quote 0)))))
       #+non-standard-analysis
-      ((ts-subsetp ts *ts-positive-real*)         (mv t `((realp ,x) (< (quote 0) ,x))))
+      ((ts-subsetp ts acl2::*ts-positive-real*)         (mv t `((realp ,x) (< (quote 0) ,x))))
       #+non-standard-analysis
-      ((ts-subsetp ts *ts-non-negative-real*)     (mv t `((realp ,x) (not (< ,x (quote 0))))))
+      ((ts-subsetp ts acl2::*ts-non-negative-real*)     (mv t `((realp ,x) (not (< ,x (quote 0))))))
       #+non-standard-analysis
-      ((ts-subsetp ts *ts-non-positive-real*)     (mv t `((realp ,x) (not (< (quote 0) ,x)))))
+      ((ts-subsetp ts acl2::*ts-non-positive-real*)     (mv t `((realp ,x) (not (< (quote 0) ,x)))))
       #+non-standard-analysis
-      ((ts-subsetp ts *ts-real*)                  (mv t `((realp ,x))))
-      ((ts-subsetp ts *ts-complex-rational*)      (mv t `((complex-rationalp ,x))))
-      ((ts-subsetp ts *ts-acl2-number*)           (mv t `((acl2-numberp ,x))))
-      ((ts-subsetp ts *ts-cons*)                  (mv t `((consp ,x))))
-      ((ts-subsetp ts *ts-character*)             (mv t `((characterp ,x))))
-      ((ts-subsetp ts *ts-string*)                (mv t `((stringp ,x))))
-      ((ts-subsetp ts *ts-boolean*)               (mv t `((booleanp ,x))))
-      ((ts-subsetp ts *ts-symbol*)                (mv t `((symbolp ,x))))
-      (t                                          (mv nil nil))))))
-
+      ((ts-subsetp ts acl2::*ts-real*)                  (mv t `((realp ,x))))
+      ((ts-subsetp ts acl2::*ts-complex-rational*)      (mv t `((complex-rationalp ,x))))
+      ((ts-subsetp ts acl2::*ts-acl2-number*)           (mv t `((acl2-numberp ,x))))
+      ((ts-subsetp ts acl2::*ts-cons*)                  (mv t `((consp ,x))))
+      ((ts-subsetp ts acl2::*ts-character*)             (mv t `((characterp ,x))))
+      ((ts-subsetp ts acl2::*ts-string*)                (mv t `((stringp ,x))))
+      ((ts-subsetp ts acl2::*ts-boolean*)               (mv t `((booleanp ,x))))
+      ((ts-subsetp ts acl2::*ts-symbol*)                (mv t `((symbolp ,x))))
+      (t                                                (mv nil nil))))))
+                     
 ;; ===================================================================
 ;;
 ;; Functions for adding new predicates and terms to our data structure
@@ -556,7 +556,7 @@
 ;; ===================================================================
 
 (defun ts-predicatep (ts)
-  (ts-intersectp ts (ts-union *ts-boolean* *ts-cons*)))
+  (ts-intersectp ts (ts-union acl2::*ts-boolean* acl2::*ts-cons*)))
 
 ;; ===================================================================
 ;;
@@ -577,7 +577,7 @@
           ;;(let ((zed (cw "entry: ~x0" entry)))
           ;;(declare (ignore zed))
           (let ((pred (nth 0 entry)))
-            (let ((xpred (if (ts-subsetp ts *ts-nil*) `(not ,pred) pred)))
+            (let ((xpred (if (ts-subsetp ts acl2::*ts-nil*) `(not ,pred) pred)))
               (if (consp pred)
                   (let ((args (cdr pred)))
                     (let ((count (count-non-quotes args)))
@@ -622,7 +622,7 @@
     (alist-to-meta-alist (type-alist-with-terms alist mfc state))))
 
 (defun mf-compute-type-alist-hyp (term mfc state)
-  (let ((plist (access metafunction-context mfc :simplify-clause-pot-lst)))
+  (let ((plist (access acl2::metafunction-context mfc :simplify-clause-pot-lst)))
     (let ((pot-list (list-to-meta-list (poly-pot-list plist))))
       (case-match term
         ((`current-clause &)
@@ -633,7 +633,7 @@
         (& *t*)))))
 
 (defun mf-compute-type-alist (term mfc state)
-  (let ((plist (access metafunction-context mfc :simplify-clause-pot-lst)))
+  (let ((plist (access acl2::metafunction-context mfc :simplify-clause-pot-lst)))
     (let ((pot-list (list-to-meta-list (poly-pot-list plist))))
       (case-match term
         ((`current-clause &)
@@ -769,34 +769,34 @@
     (bitp h)
     (posp k)
     (equal (mod b k) c)
-    (pred v)
-    (equal (dec b) 3)
-    (pred (getv w z))
+    (talist::pred v)
+    (equal (talist::dec b) 3)
+    (talist::pred (talist::getv w z))
     (rationalp zz)
     (rationalp yy)
     (< (* zz yy) zz)
     (not (< c e)))
    nil)
-  :hints ((get-type-alist)
+  :hints ((talist::get-type-alist)
           ))
 
 ;; Our data structure maps terms into predicates over those terms.  In
-;; the following example, the term (getv w z) satisfies both (integerp
-;; (getv w z)) and (pred (getv w z)) while xxx satisfies (symbolp
+;; the following example, the term (talist::getv w z) satisfies both (integerp
+;; (talist::getv w z)) and (talist::pred (talist::getv w z)) while xxx satisfies (symbolp
 ;; xxx).  All of these properties are known to be true (and have been
 ;; verified) by virtue of the definition of the function "term-types".
 ;; In other words: a clause processor can extract them from the data
 ;; structure in this clause without the need for additional proof
 ;; case-splits.
 ;;
-;; (TERM-TYPES (HIDE (LIST (LIST (GETV W Z)
-;;                               (INTEGERP (GETV W Z))
-;;                               (PRED (GETV W Z)))
-;;                         (LIST (DEC B)
-;;                               (< 0 (DEC B))
-;;                               (INTEGERP (DEC B))
-;;                               (EQUAL (DEC B) 3))
-;;                         (LIST V (PRED V))
+;; (TERM-TYPES (HIDE (LIST (LIST (TALIST::GETV W Z)
+;;                               (INTEGERP (TALIST::GETV W Z))
+;;                               (TALIST::PRED (TALIST::GETV W Z)))
+;;                         (LIST (TALIST::DEC B)
+;;                               (< 0 (TALIST::DEC B))
+;;                               (INTEGERP (TALIST::DEC B))
+;;                               (EQUAL (TALIST::DEC B) 3))
+;;                         (LIST V (TALIST::PRED V))
 ;;                         (LIST K (INTEGERP K) (< 0 K))
 ;;                         (LIST H (INTEGERP H) (<= H 1) (<= 0 H))
 ;;                         (LIST CCC (RATIONALP CCC) (<= 0 CCC))
@@ -825,9 +825,9 @@
 ;;                         (< 0 (+ K (* -1 CC) 0))
 ;;                         (< 0 (+ K (* -1 E) 0))
 ;;                         (<= 0 (+ K -1))
-;;                         (<= 0 (+ (* -1 (DEC B)) 3))
-;;                         (<= 0 (+ (DEC B) (* -1 B) 2))
-;;                         (<= 0 (+ (DEC B) -3))
+;;                         (<= 0 (+ (* -1 (TALIST::DEC B)) 3))
+;;                         (<= 0 (+ (TALIST::DEC B) (* -1 B) 2))
+;;                         (<= 0 (+ (TALIST::DEC B) -3))
 ;;                         (< 0 (+ (* -1 YY ZZ) ZZ 0))
 ;;                         (< 0 (+ (* -1 (MOD B K)) K 0))
 ;;                         (< 0 (+ (MOD B K) (* -1 CC) 0))
@@ -925,11 +925,11 @@
 
 (defun generalize-term-type-alist (clause)
   (let ((hint (construct-alist-generalization-hint clause)))
-    (and hint `(:clause-processor (generalize-list-clause-processor-wrapper clause '(,@hint))))))
+    (and hint `(:clause-processor (acl2::generalize-list-clause-processor-wrapper clause '(,@hint))))))
 
 ;; ===================================================================
 ;;
-;; In the following example, the functions (dec x) and (getv a b) 
+;; In the following example, the functions (talist::dec x) and (talist::getv a b) 
 ;; are generalized away.
 ;;
 ;; ===================================================================
@@ -953,14 +953,79 @@
     (bitp h)
     (posp k)
     (equal (mod b k) c)
-    (pred v)
-    (equal (dec b) 3)
-    (pred (getv w z))
+    (talist::pred v)
+    (equal (talist::dec b) 3)
+    (talist::pred (talist::getv w z))
     (rationalp zz)
     (rationalp yy)
     (< (* zz yy) zz)
     (not (< c e)))
    nil)
-  :hints ((get-type-alist)
-          (generalize-term-type-alist clause)
+  :hints ((talist::get-type-alist)
+          (talist::generalize-term-type-alist clause)
           ))
+
+;; ===================================================================
+;;
+;; Computed Hint Staging
+;;
+;; ===================================================================
+
+;; :infer      : adds (current-clause (hide clause)) to the clause
+;;             : *meta* rule replaces this with (linear-pot) and (term-types)
+;; :generalize : performs generalization based on (term-types)
+;; :open       : removes (term-types) and (linear-pot)
+
+(defmacro infer-type-and-generalize ()
+  `(infer-type-and-generalize-hint stable-under-simplificationp clause :infer))
+
+(defun infer-type-and-generalize-hint (stable clause stage)
+  (cond
+   ((equal stage :infer)
+    `(:computed-hint-replacement
+      ((infer-type-and-generalize-hint stable-under-simplificationp clause :generalize))
+      :cases ((current-clause (hide (list ,@clause))))))
+   ((equal stage :generalize)
+    (let ((hint (generalize-term-type-alist clause)))
+      (and hint 
+           `(:computed-hint-replacement
+             ((infer-type-and-generalize-hint stable-under-simplificationp clause :open))
+             ,@hint))))
+   ((equal stage :open)
+    (and stable
+         `(:expand ((:free (x) (hide x))
+                    (:free (x) (and-list x))
+                    (:free (x) (term-types x))
+                    (:free (x) (linear-pot x))))))
+    ))
+
+#+joe
+(thm
+  (implies
+   (and
+    (natp a)
+    (integerp b)
+    (rationalp c)
+    (rationalp cc)
+    (< cc c)
+    (rationalp ccc)
+    (<= 0 ccc)
+    (complex-rationalp d)
+    (acl2-numberp e)
+    (characterp f)
+    (symbolp xxx)
+    (stringp g)
+    (bitp h)
+    (posp k)
+    (equal (mod b k) c)
+    (talist::pred v)
+    (equal (talist::dec b) 3)
+    (talist::pred (talist::getv w z))
+    (rationalp zz)
+    (rationalp yy)
+    (< (* zz yy) zz)
+    (not (< c e)))
+   nil)
+  :hints ((talist::infer-type-and-generalize))
+  )
+

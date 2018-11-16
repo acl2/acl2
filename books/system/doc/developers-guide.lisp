@@ -1165,6 +1165,289 @@
  maintaining it, and with assent from its contributors, what was formerly
  ACL2(h) is now just ACL2.</p>
 
+ <p>NEXT SECTION: @(see developers-guide-extending-knowledge)</p>")
+
+(defxdoc developers-guide-extending-knowledge
+  :parents (developers-guide)
+  :short "Illustration using tracing, comments and Essays to explore ACL2 behaviors"
+  :long "<p>This topic grew out of a discussion on the acl2-devel mailing list
+ in which some relevant background had already been presented.  It illustrates
+ how one might go about learning about specific features of ACL2, in this case
+ aspects of the @(see tau-system).</p>
+
+ <p>First,</p>
+
+ @({
+ (include-book ``tau/bounders/elementary-bounders'' :dir :system)
+ })
+
+ <p>and</p>
+
+ @({
+ (trace$ tau-term)
+ })
+
+ <p>and then submit the non-theorem:</p>
+
+ @({
+ (thm (implies (and (natp x)(<= 0 x) (<= x 15))
+               (equal xxx (+ 3 x))))
+ })
+
+ <p>The objective is to see what the tau of @('(+ 3 x)') is, under the
+ assumptions @('(and (natp x) (<= 0 x) (<= x 15))').  The idea is to attempt to
+ prove a non-theorem that lists the assumptions being made and then to see how
+ the ACL2 source function, @('tau-term'), is called on the term in question and
+ what @('tau-term') returns.  (We assume here the somehow we know that
+ @('tau-term') is relevant, perhaps by querying the acl2-devel mailing list.)
+ First let's consider what it returns because that gives us a chance to see a
+ tau object.  Then we'll explore how @('tau-term') was called.</p>
+
+ <p>If you search the failed proof for the first call of @('tau-term') on
+ @('(binary-+ '3 x)') &mdash; which is the translated form of @('(+ 3 x)') (see
+ @(see term)) &mdash; and look at what that call returns, you see:</p>
+
+ @({
+   <2 (TAU-TERM ((NIL)
+                 (INTEGERP (NIL . 3) NIL . 18)
+                 ((166 . FILE-CLOCK-P)
+                  (155 . 32-BIT-INTEGERP)
+                  (20 . O-FINP)
+                  (19 . POSP)
+                  (17 . NATP)
+                  (9 . EQLABLEP)
+                  (5 . RATIONALP)
+                  (4 . INTEGERP)
+                  (0 . ACL2-NUMBERP))
+                 (192 . BAD-ATOM)
+                 (182 . ZPF)
+                 (176 . WRITABLE-FILE-LISTP1)
+                 (173 . READ-FILE-LISTP1)
+                 (170 . WRITTEN-FILE)
+                 (167 . READABLE-FILE)
+                 (163 . OPEN-CHANNEL1)
+                 (137 . KEYWORDP)
+                 (129 . LOWER-CASE-P)
+                 (128 . UPPER-CASE-P)
+                 (127 . ALPHA-CHAR-P)
+                 (124 . STANDARD-CHAR-P)
+                 (118 . IMPROPER-CONSP)
+                 (117 . PROPER-CONSP)
+                 (104 . WEAK-ABSSTOBJ-INFO-P)
+                 (72 . WEAK-CURRENT-LITERAL-P)
+                 (34 . WEAK-IO-RECORD-P)
+                 (31 . BOOLEANP)
+                 (27 . MINUSP)
+                 (18 . BITP)
+                 (16 . ZIP)
+                 (15 . ZP)
+                 (7 . SYMBOLP)
+                 (6 . STRINGP)
+                 (3 . CONSP)
+                 (2 . COMPLEX-RATIONALP)
+                 (1 . CHARACTERP))
+                ...)
+ })
+
+ <p>The @('...') above is the second returned value of @('tau-term'), which is
+ the ``tau completion alist'', an efficiency hack that we'll ignore here.  The
+ first result returned is the tau of @('(+ 3 x)') under our assumptions.</p>
+
+ <p>You can decode it with @('(decode-tau <tau> <term>)') where @('<tau>') is a
+ tau and @('<term>') is a term that allegedly has that tau (i.e., has that
+ ``type'').</p>
+
+ @({
+ (decode-tau '((NIL)
+               (INTEGERP (NIL . 3) NIL . 18)
+               ((166 . FILE-CLOCK-P)
+                (155 . 32-BIT-INTEGERP)
+                (20 . O-FINP)
+                (19 . POSP)
+                (17 . NATP)
+                (9 . EQLABLEP)
+                (5 . RATIONALP)
+                (4 . INTEGERP)
+                (0 . ACL2-NUMBERP))
+               (192 . BAD-ATOM)
+               (182 . ZPF)
+               (176 . WRITABLE-FILE-LISTP1)
+               (173 . READ-FILE-LISTP1)
+               (170 . WRITTEN-FILE)
+               (167 . READABLE-FILE)
+               (163 . OPEN-CHANNEL1)
+               (137 . KEYWORDP)
+               (129 . LOWER-CASE-P)
+               (128 . UPPER-CASE-P)
+               (127 . ALPHA-CHAR-P)
+               (124 . STANDARD-CHAR-P)
+               (118 . IMPROPER-CONSP)
+               (117 . PROPER-CONSP)
+               (104 . WEAK-ABSSTOBJ-INFO-P)
+               (72 . WEAK-CURRENT-LITERAL-P)
+               (34 . WEAK-IO-RECORD-P)
+               (31 . BOOLEANP)
+               (27 . MINUSP)
+               (18 . BITP)
+               (16 . ZIP)
+               (15 . ZP)
+               (7 . SYMBOLP)
+               (6 . STRINGP)
+               (3 . CONSP)
+               (2 . COMPLEX-RATIONALP)
+               (1 . CHARACTERP))
+             '(binary-+ '3 x))
+ })
+
+ <p>If @('(tau-term <term> ...<assumptions>...)') returns @('<tau>'), then
+ @('(decode-tau <tau> <term>)') prints out everything the tau system can deduce
+ about @('<term>') under those @('<assumptions>').  It's a way of asking ``what
+ does this @('<tau>') mean?''  The answer is shown below, where the three
+ important facts have been indicated:</p>
+
+ @({
+ (AND (ACL2-NUMBERP (BINARY-+ '3 X))
+      (INTEGERP (BINARY-+ '3 X))                 ; <---
+      (RATIONALP (BINARY-+ '3 X))
+      (EQLABLEP (BINARY-+ '3 X))
+      (NATP (BINARY-+ '3 X))
+      (POSP (BINARY-+ '3 X))
+      (O-FINP (BINARY-+ '3 X))
+      (32-BIT-INTEGERP (BINARY-+ '3 X))
+      (FILE-CLOCK-P (BINARY-+ '3 X))
+      (<= 3 (BINARY-+ '3 X))                     ; <---
+      (<= (BINARY-+ '3 X) 18)                    ; <---
+      (NOT (CHARACTERP (BINARY-+ '3 X)))
+      (NOT (COMPLEX-RATIONALP (BINARY-+ '3 X)))
+      (NOT (CONSP (BINARY-+ '3 X)))
+      (NOT (STRINGP (BINARY-+ '3 X)))
+      (NOT (SYMBOLP (BINARY-+ '3 X)))
+      (NOT (ZP (BINARY-+ '3 X)))
+      (NOT (ZIP (BINARY-+ '3 X)))
+      (NOT (BITP (BINARY-+ '3 X)))
+      (NOT (MINUSP (BINARY-+ '3 X)))
+      (NOT (BOOLEANP (BINARY-+ '3 X)))
+      (NOT (WEAK-IO-RECORD-P (BINARY-+ '3 X)))
+      (NOT (WEAK-CURRENT-LITERAL-P (BINARY-+ '3 X)))
+      (NOT (WEAK-ABSSTOBJ-INFO-P (BINARY-+ '3 X)))
+      (NOT (PROPER-CONSP (BINARY-+ '3 X)))
+      (NOT (IMPROPER-CONSP (BINARY-+ '3 X)))
+      (NOT (STANDARD-CHAR-P (BINARY-+ '3 X)))
+      (NOT (ALPHA-CHAR-P (BINARY-+ '3 X)))
+      (NOT (UPPER-CASE-P (BINARY-+ '3 X)))
+      (NOT (LOWER-CASE-P (BINARY-+ '3 X)))
+      (NOT (KEYWORDP (BINARY-+ '3 X)))
+      (NOT (OPEN-CHANNEL1 (BINARY-+ '3 X)))
+      (NOT (READABLE-FILE (BINARY-+ '3 X)))
+      (NOT (WRITTEN-FILE (BINARY-+ '3 X)))
+      (NOT (READ-FILE-LISTP1 (BINARY-+ '3 X)))
+      (NOT (WRITABLE-FILE-LISTP1 (BINARY-+ '3 X)))
+      (NOT (ZPF (BINARY-+ '3 X)))
+      (NOT (BAD-ATOM (BINARY-+ '3 X))))
+ })
+
+ <p>Another way of thinking about a tau, @('<tau>'), is that it is a reasonably
+ fast and compact encoding of a predicate,</p>
+
+ @({
+ `(lambda (zzz) ,(decode-tau <tau> 'zzz))
+ })
+
+ <p>Of course, a tau is very redundant.  There is no reason to say that
+ something's NOT a bad-atom if you say it IS a NATP!  But by encoding
+ everything the tau system knows about a term it's easy to answer questions
+ about what we know.</p>
+
+ <p>Now, going back to that call of @('tau-term') on @('(binary-+ '3 x)') in
+ the trace, it was:</p>
+
+ @({
+  (TAU-TERM '(BINARY-+ '3 X)
+            <tau-alist>
+            '(((EQUAL (BINARY-+ '3 X) XXX)              ; type-alist
+               128
+               (LEMMA (:FAKE-RUNE-FOR-TYPE-SET NIL)))
+              ((< '15 X) 128)
+              ((< X '0) 128)
+              (X 7)
+              (X 23))
+            '(((0 (((((X . -1)) NIL) 15 <= T)))         ; linear pot list
+               X (((((X . 1)) NIL) 0 <= T))))
+            <ens>
+            <w>
+            <calist>)
+ })
+
+ <p>Let's assume that we already know about the @(see type-alist) and the
+ linear pot (see @(see linear-arithmetic)); they're set up when
+ @('tau-clausep') is called, by assuming all the literals of the clause false
+ and doing the initialization of the linear data base.</p>
+
+ <p>The @('<tau-alist>') basically repeats as much of that information as
+ possible in terms of tau.  That is, it records the known tau of various terms
+ computed so far by @('tau-clause1p').  It starts as @('nil') in
+ @('tau-clausep').</p>
+
+ <p>When playing with @('tau-term'), it is OK to just set @('tau-alist') to
+ @('nil').  If a term is on the @('tau-alist') and you ask for its tau,
+ @('tau-term') just returns the tau in the alist.  But if the term isn't on the
+ alist, @('tau-term') computes it.  So generally speaking, the @('tau-alist')
+ just saves time.  Since the tau system is complicated it could be that putting
+ an entry on the alist that tau can compute will cause @('tau-term') to compute
+ a stronger tau for that term, but this is unlikley.  In any case, a good
+ approximation and a perfectly sound way to use tau is to just set
+ @('tau-alist') to @('nil')!</p>
+
+ <p>It is also acceptable to use @('nil') for @('<calist>') in calls of
+ @('tau-term').</p>
+
+ <p>The general lesson here is simple: if you want to try to understand some
+ part of the prover, @(tsee trace$) it and give the prover a formula that will
+ exercise the part in question and look at how it's called and what it
+ returns.</p>
+
+ <p>Of course, you can also read the comments!  There is a good essay on the
+ tau system that is well worth reading if you're interested.</p>
+
+ @({
+ ; Essay on the Tau System
+
+ ; This essay touches on a wide variety of topics in the design of the tau
+ ; system.  It is consequently divided into many subsections with the following
+ ; headers.  We recommend scanning this list for subsections of interest; an
+ ; introduction to tau is provided by the first six or so, in order.
+
+ ; On Tau-Like Terms
+ ; On the Name ``tau''
+ ; On Some Basic Ideas
+ ; On Tau Recognizers -- Part 1
+ ; On the Tau Database and General Design
+ ; On Tau Recognizers -- Part 2
+ ; On Tau Intervals and < versus <=
+ ; On the Tau Data Structure
+ ; On the Built-in Tau and the Abuse of Tau Representation
+ ; On the Additional Restrictions on Tau Fields
+ ; On the Use of ENS by Function Evaluation in the Tau System
+ ; On the Most Basic Implications of Being in an Interval
+ ; On Firing Signature Rules
+ ; On Comparing Bounds
+ ; On the Proof of Correctness of upper-bound-<
+ ; On the Near-Subset Relation for Intervals
+ ; On the Tau Database
+ ; On Closing the Database under Conjunctive Rules
+ ; On Converting Theorems in the World to Tau Rules
+ ; On Tau-Like Terms
+ ; On Loops in Relieving Dependent Hyps in Tau Signature Rules
+ ; On the Tau Msgp Protocol
+ ; On Removal of Ancestor Literals -- The Satriani Hack Prequel
+ ; On the Motivation for Tau-Subrs
+ ; On the Tau Completion Alist (calist)
+ ; On Disjoining Tau
+ ; On the Role of Rewriting in Tau
+ ; On Tau-Clause -- Using Tau to Prove or Mangle Clauses
+ ; On Tau Debugging Features
+ })
+
  <p>NEXT SECTION: @(see developers-guide-build)</p>")
 
 (defxdoc developers-guide-background-extra
