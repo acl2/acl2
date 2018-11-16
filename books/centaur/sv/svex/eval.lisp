@@ -555,10 +555,13 @@ svex-eval).</p>"
 
   (defthm svex-eval-of-nth
     (4vec-equiv (nth n (svexlist-eval x env))
-                (svex-eval (nth n x) env))
-    :hints(("Goal" :in-theory (enable svexlist-eval nth))))
+                (svex-eval (nth n x) env)))
 
-  )
+  (defthm nthcdr-of-svexlist-eval
+    (equal (nthcdr n (sv::svexlist-eval x env))
+           (sv::svexlist-eval (nthcdr n x) env))
+    :hints (("Goal" :in-theory (e/d (nthcdr))
+             :induct (nthcdr n x)))))
 
 (defsection svex-eval-basics
   :parents (svex-eval)
