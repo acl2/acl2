@@ -38,6 +38,7 @@
 (include-book "../../mlib/blocks")
 (include-book "../../mlib/strip")
 (include-book "../../mlib/writer") ;; for generating the new module names...
+(include-book "../annotate/argresolve") ;; for supporting defer-argresolve
 (local (include-book "../../util/default-hints"))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
@@ -903,9 +904,12 @@ for each usertype is stored in the res field.</p>"
                       (implies (vl-interface-p x)
                                (vl-scope-p x)))))
 
-  (b* (((vl-modinst inst) (vl-modinst-fix inst))
+  (b* ((ss (vl-elabindex->ss))
+       ((vl-simpconfig config))
+       ((mv warnings inst)
+        (vl-modinst-maybe-argresolve config.defer-argresolve inst ss warnings))
+       ((vl-modinst inst) inst)
        (ledger (vl-unparam-ledger-fix ledger))
-       (ss (vl-elabindex->ss))
        (elabindex (vl-elabindex-sync-scopes))
        (scopes (vl-elabindex->scopes))
        ((mv mod mod-ss) (vl-scopestack-find-definition/ss inst.modname ss))

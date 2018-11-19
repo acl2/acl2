@@ -84,7 +84,7 @@
   :returns (data vls-data-p)
   :prepwork ((local (in-theory (enable vl-descalist-okp))))
   (b* (((vl-zipfile zip))
-       (orig           (cwtime (hons-copy (cwtime (vl-annotate-design zip.design)))))
+       (orig           (cwtime (hons-copy (cwtime (vl-annotate-design zip.design *vl-default-simpconfig*)))))
        (orig-descalist (fast-alist-free (vl-make-descalist (vl-design-descriptions orig)))))
     (make-vls-data
      :name           zip.name
