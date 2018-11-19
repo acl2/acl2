@@ -86,10 +86,11 @@
             (not (ill-formed-alistp x)))))
 
 (defun gi (i r)
-  (declare (xargs :guard (well-formed-alistp r)
+  (declare (xargs :guard t
                   :measure (acl2-count r)))
   (if (or (eql r 0)
-          (endp r)) ;; End of record reached
+          (atom r)
+          (atom (car r)))
       0
     (if (ACL2::<< i (caar r))
         0
@@ -100,13 +101,13 @@
           0)))))
 
 (defun si-aux (i v r)
-  (declare (xargs :guard (well-formed-alistp-aux r)))
-  (if (endp r) ;; End of record reached
-      (acons i v nil)
+  (declare (xargs :guard t))
+  (if (or (atom r) (atom (car r)))
+      (cons (cons i v) nil)
     (if (equal (caar r) i)
-        (acons i v (cdr r))
+        (cons (cons i v) (cdr r))
       (if (ACL2::<< i (caar r))
-          (acons i v r)
+          (cons (cons i v) r)
         (cons (car r) (si-aux i v (cdr r)))))))
 
 ;; (defthmd len-si-aux-1
@@ -116,19 +117,19 @@
 ;;                   (len r))))
 
 (defun si-kill (i r)
-  (declare (xargs :guard (well-formed-alistp-aux r)))
-  (if (endp r)
+  (declare (xargs :guard t))
+  (if (or (atom r) (atom (car r)))
       nil
     (if (equal (caar r) i)
         (cdr r)
       (cons (car r) (si-kill i (cdr r))))))
 
 (defun si (i v r)
-  (declare (xargs :guard (well-formed-alistp r)))
+  (declare (xargs :guard t))
   (if (eql r 0)
       (if (eql v 0)
           r
-        (acons i v nil))
+        (cons (cons i v) nil))
     (if (eql v 0)
         (or (si-kill i r) 0)
       (si-aux i v r))))
@@ -232,9 +233,11 @@
     x))
 
 (defun map->acl2 (x) ;; inverse of acl2->map.
-  (declare (xargs :guard (good-alistp x)))
-  (if (ill-formed-alistp x)
-      (cdar x)
+  (declare (xargs :guard t))
+  (if (well-formed-alistp x)
+      (if (ill-formed-alistp x)
+          (cdar x)
+        x)
     x))
 
 (local
@@ -264,37 +267,36 @@
 
 ;; ======================================================================
 
-;; Definition of g and s:
+;; Definition of gz and sz:
 
-(defun g (i x) ;; the generic record g(et) which works on any ACL2 object.
-  (declare (xargs :guard (good-alistp x)))
+(defun gz (i x) ;; the generic record g(et) which works on any ACL2 object.
+  (declare (xargs :guard t))
   (gi i (acl2->map x)))
 
-(defun s (i v x) ;; the generic record s(et) which works on any ACL2 object.
-  (declare (xargs :guard (and (not (equal i (ill-formed-key)))
-                              (good-alistp x))))
+(defun sz (i v x) ;; the generic record s(et) which works on any ACL2 object.
+  (declare (xargs :guard t))
   (map->acl2 (si i v (acl2->map x))))
 
 (local
- (defthmd good-alistp-aux-alst-s-preserves-good-alistp
+ (defthmd good-alistp-aux-alst-sz-preserves-good-alistp
    (implies (and (good-alistp-aux alst)
                  alst
                  (not (equal i (ill-formed-key))))
-            (good-alistp (s i v alst)))))
+            (good-alistp (sz i v alst)))))
 
 (local
- (defthmd s-preserves-good-alistp-0
+ (defthmd sz-preserves-good-alistp-0
    (implies (not (equal i (ill-formed-key)))
-            (good-alistp (s i v 0)))))
+            (good-alistp (sz i v 0)))))
 
-(defthm s-preserves-good-alistp
+(defthm sz-preserves-good-alistp
   (implies (and (good-alistp alst)
                 (not (equal i (ill-formed-key))))
-           (good-alistp (s i v alst)))
+           (good-alistp (sz i v alst)))
   :hints (("Goal" :use ((:instance
-                         good-alistp-aux-alst-s-preserves-good-alistp)
+                         good-alistp-aux-alst-sz-preserves-good-alistp)
                         (:instance
-                         s-preserves-good-alistp-0)))))
+                         sz-preserves-good-alistp-0)))))
 
 (in-theory (disable si gi acl2->map map->acl2))
 
@@ -302,57 +304,56 @@
 
 ;; Final exported properties of g and s:
 
-(defthm g-same-s
-  (equal (g i (s i v r))
-         v))
+(defthm gz-same-sz
+  (equal (gz i (sz i v r)) v))
 
-(defthm g-diff-s
+(defthm gz-diff-sz
   (implies (not (equal a b))
-           (equal (g a (s b v r))
-                  (g a r))))
+           (equal (gz a (sz b v r))
+                  (gz a r))))
 
 ;;;; NOTE: The following can be used instead of the above rules to force ACL2
 ;;;; to do a case-split. We disable this rule by default since it can lead to
 ;;;; an expensive case explosion, but in many cases, this rule may be more
 ;;;; effective than two rules above and should be enabled.
 
-(defthm g-of-s-redux
-  (equal (g a (s b v r))
+(defthm gz-of-sz-redux
+  (equal (gz a (sz b v r))
          (if (equal a b)
              v
-           (g a r))))
+           (gz a r))))
 
-(in-theory (disable g-of-s-redux))
+(in-theory (disable gz-of-sz-redux))
 
-(defthm s-same-g
-  (equal (s a (g a r) r)
+(defthm sz-same-gz
+  (equal (sz a (gz a r) r)
          r))
 
-(defthm s-same-s
-  (equal (s a y (s a x r))
-         (s a y r)))
+(defthm sz-same-sz
+  (equal (sz a y (sz a x r))
+         (sz a y r)))
 
-(defthm s-diff-s
+(defthm sz-diff-sz
   (implies (not (equal a b))
-           (equal (s b y (s a x r))
-                  (s a x (s b y r))))
-  :rule-classes ((:rewrite :loop-stopper ((b a s)))))
+           (equal (sz b y (sz a x r))
+                  (sz a x (sz b y r))))
+  :rule-classes ((:rewrite :loop-stopper ((b a sz)))))
 
 ;; The following theorems are less relevant but have been useful in
 ;; dealing with a default record of 0.
 
-(defthm g-of-0-is-0
-  (equal (g a 0) 0)
+(defthm gz-of-0-is-0
+  (equal (gz a 0) 0)
   :hints (("Goal" :in-theory (e/d (gi) ()))))
 
-(defthm non-0-if-g-non-0
-  (implies (not (equal (g a r) 0)) (not (equal r 0)))
+(defthm non-0-if-gz-non-0
+  (implies (not (equal (gz a r) 0)) (not (equal r 0)))
   :hints (("Goal" :in-theory (e/d (gi) ())))
   :rule-classes :forward-chaining)
 
-(defthm s-non-0-cannot-be-0
+(defthm sz-non-0-cannot-be-0
   (implies (not (equal v 0))
-           (not (equal (s a v r) 0)))
+           (not (equal (sz a v r) 0)))
   :hints (("Goal" :in-theory (e/d (map->acl2 si acl2->map) ()))))
 
 ;; Some functions to disable:
@@ -364,9 +365,9 @@
                     si-aux
                     si-kill))
 
-;; We disable s and g, assuming the rules proven in this book are sufficient to
+;; We disable sz and gz, assuming the rules proven in this book are sufficient to
 ;; manipulate record terms which are encountered.
 
-(in-theory (disable s g))
+(in-theory (disable sz gz))
 
 ;; ======================================================================
