@@ -158,6 +158,23 @@
            (>= (f x) y1))
   :hints (("Goal" :by f-geq-when-existsp-linear)))
 
+(defthm f-leq-when-existsp-linear
+  (implies (and (existsp x)
+                (uboundp x y1) ; bind free y1
+                (natp y1))
+           (<= (f x) y1))
+  :rule-classes :linear
+  :hints (("Goal"
+           :in-theory (disable f)
+           :use (:instance uboundp-necc (y1 (f x)) (y y1)))))
+
+(defthm f-leq-when-existsp-rewrite
+  (implies (and (existsp x)
+                (uboundp x y1) ; bind free y1
+                (natp y1))
+           (<= (f x) y1))
+  :hints (("Goal" :by f-leq-when-existsp-linear)))
+
 (in-theory (disable f))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

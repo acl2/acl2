@@ -258,7 +258,20 @@
      "  (implies (and (f.existsp x1 ... xn)"
      "                (f.elementp x1 ... xn y1)"
      "                (natp y1))"
-     "           (>= (f x1 ... xn) y1))"))
+     "           (>= (f x1 ... xn) y1))"
+     ""
+     "(defthm f-leq-when-f.existsp-linear"
+     "  (implies (and (f.existsp x1 ... xn)"
+     "                (f.uboundp x1 ... xn y1) ;; bind free y1"
+     "                (natp y1))"
+     "           (<= (f x1 ... xn) y1))"
+     "  :rule-classes :linear)"
+     ""
+     "(defthm f-leq-when-f.existsp-rewrite"
+     "  (implies (and (f.existsp x1 ... xn)"
+     "                (f.uboundp x1 ... xn y1)"
+     "                (natp y1))"
+     "           (<= (f x1 ... xn) y1))"))
 
    (xdoc::desc
     "@('f.existsp-when-nonempty-and-bounded')"

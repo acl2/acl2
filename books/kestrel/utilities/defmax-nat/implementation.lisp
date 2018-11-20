@@ -131,6 +131,12 @@
        (f-geq-when-existsp-rewrite (packn-pos
                                     (list f '-geq-when- existsp '-rewrite)
                                     pkgwit))
+       (f-leq-when-existsp-linear (packn-pos
+                                   (list f '-leq-when- existsp '-linear)
+                                   pkgwit))
+       (f-leq-when-existsp-rewrite (packn-pos
+                                    (list f '-leq-when- existsp '-rewrite)
+                                    pkgwit))
        (ubound-geq-member (packn-pos (list f '.ubound-geq-member) pkgwit))
        (ubound-nonmember-gt-member (packn-pos
                                     (list f '.ubound-nonmember-gt-member)
@@ -262,6 +268,35 @@
                        (,elementp ,@x1...xn ,y1)
                        (natp ,y1))
                   (>= (,f ,@x1...xn) ,y1)))
+       (local
+        (defthm ,f-leq-when-existsp-linear
+          (implies (and (,existsp ,@x1...xn)
+                        (,uboundp ,@x1...xn ,y1)
+                        (natp ,y1))
+                   (<= (,f ,@x1...xn) ,y1))
+          :rule-classes :linear
+          :hints (("Goal"
+                   :in-theory (disable ,f)
+                   :use (:instance ,uboundp-necc
+                         (,y1 (,f ,@x1...xn)) (,y ,y1))))))
+       (defthm ,f-leq-when-existsp-linear
+         (implies (and (,existsp ,@x1...xn)
+                       (,uboundp ,@x1...xn ,y1)
+                       (natp ,y1))
+                  (<= (,f ,@x1...xn) ,y1))
+         :rule-classes :linear)
+       (local
+        (defthm ,f-leq-when-existsp-rewrite
+          (implies (and (,existsp ,@x1...xn)
+                        (,uboundp ,@x1...xn ,y1)
+                        (natp ,y1))
+                   (<= (,f ,@x1...xn) ,y1))
+          :hints (("Goal" :by ,f-leq-when-existsp-linear))))
+       (defthm ,f-leq-when-existsp-rewrite
+         (implies (and (,existsp ,@x1...xn)
+                       (,uboundp ,@x1...xn ,y1)
+                       (natp ,y1))
+                  (<= (,f ,@x1...xn) ,y1)))
        (in-theory (disable ,f))
        ;; F.EXISTSP-WHEN-NONEMPTY-AND-BOUNDED (helper theorem #1):
        (local
