@@ -125,7 +125,12 @@
        (uboundp-of-f-when-existsp (packn-pos
                                    (list uboundp '-of- f '-when-' existsp)
                                    pkgwit))
-       (f-geq-when-existsp (packn-pos (list f '-geq-when- existsp) pkgwit))
+       (f-geq-when-existsp-linear (packn-pos
+                                   (list f '-geq-when- existsp '-linear)
+                                   pkgwit))
+       (f-geq-when-existsp-rewrite (packn-pos
+                                    (list f '-geq-when- existsp '-rewrite)
+                                    pkgwit))
        (ubound-geq-member (packn-pos (list f '.ubound-geq-member) pkgwit))
        (ubound-nonmember-gt-member (packn-pos
                                     (list f '.ubound-nonmember-gt-member)
@@ -230,7 +235,7 @@
          (implies (,existsp ,@x1...xn)
                   (,uboundp ,@x1...xn (,f ,@x1...xn))))
        (local
-        (defthm ,f-geq-when-existsp
+        (defthm ,f-geq-when-existsp-linear
           (implies (and (,existsp ,@x1...xn)
                         (,elementp ,@x1...xn ,y1)
                         (natp ,y1))
@@ -239,12 +244,24 @@
           :hints (("Goal"
                    :use (,uboundp-of-f-when-existsp
                          (:instance ,uboundp-necc (,y (,f ,@x1...xn))))))))
-       (defthm ,f-geq-when-existsp
+       (defthm ,f-geq-when-existsp-linear
          (implies (and (,existsp ,@x1...xn)
                        (,elementp ,@x1...xn ,y1)
                        (natp ,y1))
                   (>= (,f ,@x1...xn) ,y1))
          :rule-classes :linear)
+       (local
+        (defthm ,f-geq-when-existsp-rewrite
+          (implies (and (,existsp ,@x1...xn)
+                        (,elementp ,@x1...xn ,y1)
+                        (natp ,y1))
+                   (>= (,f ,@x1...xn) ,y1))
+          :hints (("Goal" :by ,f-geq-when-existsp-linear))))
+       (defthm ,f-geq-when-existsp-rewrite
+         (implies (and (,existsp ,@x1...xn)
+                       (,elementp ,@x1...xn ,y1)
+                       (natp ,y1))
+                  (>= (,f ,@x1...xn) ,y1)))
        (in-theory (disable ,f))
        ;; F.EXISTSP-WHEN-NONEMPTY-AND-BOUNDED (helper theorem #1):
        (local
@@ -334,9 +351,10 @@
                    (equal (,f ,@x1...xn) ,y))
           :rule-classes nil
           :hints (("Goal"
+                   :in-theory (disable ,f-geq-when-existsp-rewrite)
                    :use ((:instance ,existsp-when-nonempty-and-bounded
                           (,y0 ,y) (,y1 ,y))
-                         (:instance ,f-geq-when-existsp (,y1 ,y))
+                         (:instance ,f-geq-when-existsp-rewrite (,y1 ,y))
                          (:instance ,uboundp-necc (,y1 (,f ,@x1...xn))))))))
        (defthm ,equal-when-member-and-ubound
          (implies (and (natp ,y)

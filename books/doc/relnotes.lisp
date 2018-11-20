@@ -128,8 +128,8 @@
 
  <h4>Declarative Definitions of Maxima</h4>
 
- <p>Added a macro @(tsee defmax-nat) to declarative define the maximum of a set
- of natural numbers.</p>
+ <p>Added a macro @(tsee defmax-nat) to declaratively define the maximum of a
+ set of natural numbers.</p>
 
  <h4>Other</h4>
 

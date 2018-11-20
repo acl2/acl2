@@ -54,7 +54,8 @@
    (xdoc::p
     "Besides the function itself,
      this macro introduces auxiliary functions and theorems upon which
-     the function definition is based.
+     the function definition is based,
+     as well as theorems about the function.
      It also introduces theorems to help reason about the function,
      in particular to establish that the maximum exists
      without having to calculate it explicitly,
@@ -246,12 +247,18 @@
      "  (implies (f.existsp x1 ... xn)"
      "           (f.uboundp x1 ... xn (f x1 ... xn))))"
      ""
-     "(defthm f-geq-when-f.existsp"
+     "(defthm f-geq-when-f.existsp-linear"
      "  (implies (and (f.existsp x1 ... xn)"
      "                (f.elementp x1 ... xn y1) ;; bind free y1"
      "                (natp y1))"
      "           (>= (f x1 ... xn) y1))"
-     "  :rule-classes :linear)"))
+     "  :rule-classes :linear)"
+     ""
+     "(defthm f-geq-when-f.existsp-rewrite"
+     "  (implies (and (f.existsp x1 ... xn)"
+     "                (f.elementp x1 ... xn y1)"
+     "                (natp y1))"
+     "           (>= (f x1 ... xn) y1))"))
 
    (xdoc::desc
     "@('f.existsp-when-nonempty-and-bounded')"
@@ -299,5 +306,5 @@
      or to other suitably ordered domains.")
 
    (xdoc::p
-    "Besides maxima, similar macros could be introduced to declarative define
+    "Besides maxima, similar macros could be introduced to declaratively define
      minima, suprema, and infima.")))

@@ -141,7 +141,7 @@
            (uboundp x (f x)))
   :hints (("Goal" :in-theory (enable existsp))))
 
-(defthm f-geq-when-existsp
+(defthm f-geq-when-existsp-linear
   (implies (and (existsp x)
                 (elementp x y1) ; bind free Y1
                 (natp y1))
@@ -150,6 +150,13 @@
   :hints (("Goal"
            :use (uboundp-of-f-when-existsp
                  (:instance uboundp-necc (y (f x)))))))
+
+(defthm f-geq-when-existsp-rewrite
+  (implies (and (existsp x)
+                (elementp x y1)
+                (natp y1))
+           (>= (f x) y1))
+  :hints (("Goal" :by f-geq-when-existsp-linear)))
 
 (in-theory (disable f))
 
@@ -276,7 +283,7 @@
 ; This helper theorem is proved as follows.
 ; First, use the helper theorem #1 above to establish (EXISTSP X),
 ; using Y as both Y0 and Y1.
-; From F-GEQ-WHEN-EXISTSP, we have (F X) >= Y.
+; From F-GEQ-WHEN-EXISTSP-REWRITE, we have (F X) >= Y.
 ; From the (UBOUNDP X Y) hypothesis, we have Y >= (F X),
 ; because (F X) is in the set by ELEMENTP-OF-F-WHEN-EXISTSP.
 ; Since both (F X) and Y are natural numbers, they must be equal.
@@ -293,6 +300,7 @@
            (equal (f x) y))
   :rule-classes nil
   :hints (("Goal"
+           :in-theory (disable f-geq-when-existsp-rewrite)
            :use ((:instance existsp-when-nonempty-and-bounded (y0 y) (y1 y))
-                 (:instance f-geq-when-existsp (y1 y))
+                 (:instance f-geq-when-existsp-rewrite (y1 y))
                  (:instance uboundp-necc (y1 (f x)))))))
