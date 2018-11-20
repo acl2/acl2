@@ -221,6 +221,14 @@
  transformation, by relaxing a requirement on the function to be
  transformed.</p>
 
+ <h4>FTY Types for Bytes</h4>
+
+ <p>The @('acl2::defbyte') macro, which generated fixtypes and additional
+ theorems for both bytes and lists of bytes, has been split into two macros
+ @(tsee fty::defbyte), which generates a fixtype and some additional theorems
+ for bytes, and @(tsee fty::defbytelist), which generates a fixtype and some
+ additional theorems for lists of byte.  See the documentation for details.</p>
+
  <h4>Other</h4>
 
  <p>The utility, @(tsee directed-untranslate), has been improved in several
@@ -235,12 +243,6 @@
  @('\"books/std/lists/list-fix.lisp\"') has been incorporated into the ACL2
  sources in a way that minimizes changes to existing books.  See @(see
  note-8-2) for details.</p>
-
- <p>The @('acl2::defbyte') macro, which generated fixtypes and additional
- theorems for both bytes and lists of bytes, has been split into two macros
- @(tsee fty::defbyte), which generates a fixtype and some additional theorems
- for bytes, and @(tsee fty::defbytelist), which generates a fixtype and some
- additional theorems for lists of byte.  See the documentation for details.</p>
 
  <h3>Licensing Changes</h3>
 
