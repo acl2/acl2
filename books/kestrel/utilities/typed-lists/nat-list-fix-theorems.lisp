@@ -37,7 +37,7 @@
            (nat-list-fix (rev x)))
     :enable nat-list-fix)
 
-  (defrule nat-list-fix-of-list-fix
-    (equal (nat-list-fix (list-fix x))
+  (defrule nat-list-fix-of-true-list-fix
+    (equal (nat-list-fix (true-list-fix x))
            (nat-list-fix x))
     :enable nat-list-fix))

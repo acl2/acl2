@@ -180,8 +180,8 @@
   (more-returns
    (fixed-x nat-listp :name nat-listp-of-dab-digit-list-fix))
 
-  (defrule dab-digit-list-fix-of-list-fix
-    (equal (dab-digit-list-fix base (list-fix digits))
+  (defrule dab-digit-list-fix-of-true-list-fix
+    (equal (dab-digit-list-fix base (true-list-fix digits))
            (dab-digit-list-fix base digits)))
 
   (defrule dab-digit-list-fix-when-dab-digit-listp
@@ -317,8 +317,8 @@
              (equal (lendian=>nat base digits)
                     (lendian=>nat base (dab-digit-list-fix base digits)))))
 
-  (defrule lendian=>nat-of-list-fix
-    (equal (lendian=>nat base (list-fix digits))
+  (defrule lendian=>nat-of-true-list-fix
+    (equal (lendian=>nat base (true-list-fix digits))
            (lendian=>nat base digits)))
 
   (defruled lendian=>nat-of-append
@@ -610,8 +610,8 @@
                     (bendian=>nat base (dab-digit-list-fix base digits))))
     :enable rev-of-dab-digit-list-fix)
 
-  (defrule bendian=>nat-of-list-fix
-    (equal (bendian=>nat base (list-fix digits))
+  (defrule bendian=>nat-of-true-list-fix
+    (equal (bendian=>nat base (true-list-fix digits))
            (bendian=>nat base digits)))
 
   (defruled bendian=>nat-of-append
@@ -955,8 +955,8 @@
   :hooks (:fix)
   ///
 
-  (defrule trim-bendian*-of-list-fix
-    (equal (trim-bendian* (list-fix digits))
+  (defrule trim-bendian*-of-true-list-fix
+    (equal (trim-bendian* (true-list-fix digits))
            (trim-bendian* digits))
     :enable nat-list-fix)
 
@@ -1026,8 +1026,8 @@
   :hooks (:fix)
   ///
 
-  (defrule trim-lendian*-of-list-fix
-    (equal (trim-lendian* (list-fix digits))
+  (defrule trim-lendian*-of-true-list-fix
+    (equal (trim-lendian* (true-list-fix digits))
            (trim-lendian* digits)))
 
   (defrule trim-lendian*-when-zp-listp
@@ -1118,8 +1118,8 @@
   :hooks (:fix)
   ///
 
-  (defrule trim-bendian+-of-list-fix
-    (equal (trim-bendian+ (list-fix digits))
+  (defrule trim-bendian+-of-true-list-fix
+    (equal (trim-bendian+ (true-list-fix digits))
            (trim-bendian+ digits)))
 
   (defrule trim-bendian+-when-zp-listp
@@ -1156,8 +1156,8 @@
   :hooks (:fix)
   ///
 
-  (defrule trim-lendian+-of-list-fix
-    (equal (trim-lendian+ (list-fix digits))
+  (defrule trim-lendian+-of-true-list-fix
+    (equal (trim-lendian+ (true-list-fix digits))
            (trim-lendian+ digits)))
 
   (defrule trim-lendian+-when-zp-listp
