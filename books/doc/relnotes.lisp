@@ -126,6 +126,11 @@
  <p>Formalized an instant run-off voting scheme and proved that it
  meets certain fairness criteria.</p>
 
+ <h4>Declarative Definitions of Maxima</h4>
+
+ <p>Added a macro @(tsee defmax-nat) to declarative define the maximum of a set
+ of natural numbers.</p>
+
  <h4>Other</h4>
 
  <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
@@ -159,7 +164,7 @@
 
  <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
 
- <p>Added @(tsee ensure-string), an error-checking function for strings.</p>
+ <p>Added more error-checking functions.</p>
 
  <h4>Filesystem Books</h4>
 
@@ -209,6 +214,12 @@
 
  <p>Added a book @('[books]/centaur/fty/typegraph.lisp') containing a utility that
  writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
+
+ <h4><see topic='@(url apt::apt)'>APT</see></h4>
+
+ <p>Slightly extended the applicability of the @(tsee apt::tailrec)
+ transformation, by relaxing a requirement on the function to be
+ transformed.</p>
 
  <h4>Other</h4>
 
