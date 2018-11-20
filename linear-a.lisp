@@ -2120,15 +2120,20 @@
 ; poly1, then poly1 might be usable in a context where poly2 is not usable.
 ; Use parents-check = nil if such a consideration does not apply.
 
-  (let ((c1 (access poly poly2 :constant))
-        (c2 (access poly poly1 :constant)))
-    (and (or (logical-< c1 c2)
+  (let ((c1 (access poly poly1 :constant))
+        (c2 (access poly poly2 :constant)))
+    (and (or (logical-< c2 c1)
 
-; The above inequality test is potentially confusing.  In the comments, it is
-; said that (<= 3 (* x y)) is weaker than (<= 17/5 (* x y)).  Recall that the
-; polys are stored in a format suggested by: (< (+ constant (* k1 t1) ... (* kn
-; tn)) 0).  Thus, the two constants would be stored as a -3 and a -17/5, and
-; the above test is correct.  -17/5 < -3.
+; Let us see how the check (logical-< c2 c1) plays out for a case described in
+; the comments above: poly1, (<= 3 (* x y)), is weaker than poly2, (<= 17/5 (*
+; x y)).  Recall that the polys are stored in a format suggested by: (< 0 (+
+; constant (* k1 t1) ... (* kn tn))), so we have:
+
+; poly1: (<= 0 (+ -3 (* x y)))     ; so c1 = -3
+; poly2: (<= 0 (+ -17/5 (* x y)))  ; so c2 = -17/5
+
+; -17/5 is indeed less than -3, so (logical-< c2 c1) is true, which supports
+; the conclusion that poly1 is weaker than poly2.
 
              (and (eql c1 c2)
                   (or (eq (access poly poly1 :relation) '<=)
