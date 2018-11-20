@@ -3481,6 +3481,8 @@
 ; are produced.  It returns 2 values:  the standard contradictionp in the
 ; the first and the final pot-lst in the second.
 
+; See add-polys0 for a discussion of max-rounds.
+
   (cond ((eql max-rounds rounds-completed)
          (mv nil pot-lst))
         ((null lst)
@@ -3523,6 +3525,10 @@
 ; impossible ones) and then normalize and add the rest to pot-lst.
 ; Any new polys thereby produced are also added until there's nothing
 ; left to do.  We return the standard contradictionp and a new pot-lst.
+
+; If max-rounds is numeric, as it is when we use linear arithmetic in type-set,
+; then it limits the number of rounds.  Otherwise there is no bound on the
+; number of rounds; we keep adding polys until there are no new ones.
 
   (mv-let (contradictionp lst)
     (filter-polys lst nil)
