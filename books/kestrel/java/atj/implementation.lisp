@@ -1004,7 +1004,7 @@
    "Since ACL2 values have a recursive structure,
    these functions are mutually recursive.")
 
-  (define atj-gen-pair-value
+  (define atj-gen-cpair-value
     ((pair consp)
      (value-next-unused posp "Index of the next unused local variable.")
      (value-next-undecl posp "Index of the next undeclared local variable.")
@@ -1017,7 +1017,7 @@
                  state)
     :mode :program
     :parents (atj-file-generation atj-gen-values)
-    :short "Generate Java code to build an ACL2 pair value."
+    :short "Generate Java code to build an ACL2 @(tsee cons) pair value."
     :long
     (xdoc::topp
      "The generated code
@@ -1061,7 +1061,7 @@
                                       value-next-undecl
                                       channel
                                       state)))
-      (mv (msg "Acl2Cons.make(~s0, ~s1)" car-var cdr-var)
+      (mv (msg "Acl2ConsPair.make(~s0, ~s1)" car-var cdr-var)
           value-next-unused
           value-next-undecl
           state)))
@@ -1104,11 +1104,11 @@
                                 value-next-unused
                                 value-next-undecl
                                 state))
-          ((consp x) (atj-gen-pair-value x
-                                         value-next-unused
-                                         value-next-undecl
-                                         channel
-                                         state))
+          ((consp x) (atj-gen-cpair-value x
+                                          value-next-unused
+                                          value-next-undecl
+                                          channel
+                                          state))
           (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom." x)
                      (mv "" value-next-unused value-next-undecl state))))))
 

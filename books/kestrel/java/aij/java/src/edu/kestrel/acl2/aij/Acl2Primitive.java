@@ -270,9 +270,9 @@ class Acl2Primitive {
     /**
      * Native implementation of the {@code cons} ACL2 function.
      */
-    private static Acl2Cons execCons(Acl2Value x, Acl2Value y) {
+    private static Acl2ConsPair execCons(Acl2Value x, Acl2Value y) {
         assert x != null && y != null;
-        return Acl2Cons.make(x, y);
+        return Acl2ConsPair.make(x, y);
     }
 
     /**

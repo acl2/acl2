@@ -179,7 +179,7 @@ public final class Acl2Symbol extends Acl2Value {
             else
                 return this.packageName.compareTo(that.packageName);
         }
-        // symbols are less than pairs:
+        // symbols are less than cons pairs:
         return -1;
     }
 
