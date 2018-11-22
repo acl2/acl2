@@ -1112,7 +1112,7 @@
           (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom." x)
                      (mv "" value-next-unused value-next-undecl state))))))
 
-(define atj-gen-constant-term
+(define atj-gen-qconstant-term
   ((constant "(Unquoted) value of the ACL2 quoted constant.")
    (value-next-unused
     posp "Index of the next unused local variable for values.")
@@ -1126,7 +1126,7 @@
                (new-value-next-undecl "A @(tsee posp).")
                state)
   :mode :program
-  :short "Generate Java code to build an ACL2 constant term."
+  :short "Generate Java code to build an ACL2 quoted constant term."
   (b* (((mv value-expr
             value-next-unused
             value-next-undecl
@@ -1135,7 +1135,7 @@
                                   value-next-undecl
                                   channel
                                   state)))
-    (mv (msg "Acl2Constant.make(~@0)" value-expr)
+    (mv (msg "Acl2QuotedConstant.make(~@0)" value-expr)
         value-next-unused
         value-next-undecl
         state)))
@@ -1430,11 +1430,11 @@
                                     value-next-unused
                                     value-next-undecl
                                     state)
-                                (atj-gen-constant-term (unquote term)
-                                                       value-next-unused
-                                                       value-next-undecl
-                                                       channel
-                                                       state)))
+                                (atj-gen-qconstant-term (unquote term)
+                                                        value-next-unused
+                                                        value-next-undecl
+                                                        channel
+                                                        state)))
                             (mv expr
                                 value-next-unused
                                 value-next-undecl

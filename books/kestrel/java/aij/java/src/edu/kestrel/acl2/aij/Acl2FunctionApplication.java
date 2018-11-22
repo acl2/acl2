@@ -111,7 +111,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * This is not the order on terms documented in the ACL2 manual.
      * Instead, this order consists of:
      * first variables, ordered according to their underlying symbols;
-     * then constants, ordered according to their underlying values;
+     * then quoted constants, ordered according to their underlying values;
      * finally applications, ordered lexicographically according to
      * the function followed by the arguments.
      *
@@ -143,7 +143,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
             else
                 return 0;
         }
-        // applications are greater than variables and constants:
+        // applications are greater than variables and quoted constants:
         return 1;
     }
 
