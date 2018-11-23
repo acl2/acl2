@@ -49,7 +49,7 @@
          0)
         (t (floor x 1))))
 
-(defn power-of-2 (x count)
+(defun power-of-2 (x count)
   (declare (xargs :measure (power-of-2-measure x)
                   :guard (natp count)))
   (if (natp x)
@@ -140,7 +140,7 @@
 ;; ======================================================================
 ;; Prefixes (Intel manual, Mar'17, Vol. 2A, Section 2.1.1):
 
-(defconst *prefixes-width* 
+(defconst *prefixes-width*
   ;; Width of the prefixes layout structure; see :doc
   ;; legacy-prefixes-layout-structure.
   52)
