@@ -682,7 +682,7 @@
 ;; ======================================================================
 
 ;; Indices and length of fields in the x86 state (see
-;; machine/state-concrete.lisp):
+;; machine/concrete-state.lisp):
 
 (defun define-general-purpose-registers ()
 
