@@ -143,7 +143,7 @@
 (defconst *2^32-16*   (- *2^32* 16))
 
 ;; ======================================================================
-;; Prefixes (Intel manual, Mar'17, Vol. 2A, Section 2.1.1):
+;; Prefixes (Intel manual, Mar'17, Vol. 2A, Section 2):
 
 (defconst *prefixes-width*
   ;; Width of the prefixes layout structure; see :doc
