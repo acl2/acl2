@@ -43,12 +43,15 @@
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
+; Measure for power-of-2 below.
 (defun power-of-2-measure (x)
   (cond ((or (not (natp x))
              (<= x 1))
          0)
         (t (floor x 1))))
 
+; On powers of 2, this function is a base 2 logarithm:
+; it maps 2^n to n+count -- count is the accumulator.
 (defun power-of-2 (x count)
   (declare (xargs :measure (power-of-2-measure x)
                   :guard (natp count)))
@@ -58,6 +61,8 @@
         (power-of-2 (* 1/2 x) (1+ count)))
     count))
 
+; This function returns the list
+; (start (+ by start) (+ (* 2 by) start) ... (+ (* (1- count) by) start)).
 (defun gl-int (start by count)
   (declare (xargs :guard (and (natp start)
                               (natp by)
@@ -296,6 +301,7 @@
   (list *cf* *pf* *af* *zf* *sf* *tf* *if* *df*
         *of* *iopl* *nt* *rf* *vm* *ac* *vif* *vip* *id*))
 
+; Maximum of a list of numbers (NIL if the list is empty).
 (defun max-list (l)
   (if (or (endp l)
           (equal (len l) 1))
