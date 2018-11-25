@@ -7662,6 +7662,22 @@
 (defmacro trans1 (form)
   `(trans1-fn ,form state))
 
+(defmacro translam (x)
+  `(mv-let (flg val bindings state)
+     (cmp-and-value-to-error-quadruple
+      (translate11-lambda-object
+       ,x
+       '(nil) ; stobjs-out
+       nil    ; bindings
+       nil    ; known-stobjs
+       nil    ; flet-alist
+       nil    ; cform
+       'translam
+       (w state)
+       (default-state-vars state)))
+     (declare (ignore bindings))
+     (mv flg val state)))
+
 (defun tilde-*-props-fn-phrase1 (alist)
   (cond ((null alist) nil)
         (t (cons (msg "~y0~|~ ~y1~|"
