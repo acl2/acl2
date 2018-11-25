@@ -188,6 +188,7 @@
 ; Symbols below should probably be added to *acl2-exports*.
 
     TRUE-LIST-FIX
+    PARTIAL-ENCAPSULATE
     ))
 
 (defconst *special-ops*

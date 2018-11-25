@@ -9542,7 +9542,7 @@
 ; logic-mode function symbol fn of w whose input arity is the length of
 ; arglist.  But (fncall-term fn arglist st2) is the term (equal (fn . arglist)
 ; 'val) where (magic-ev-fncall fn arglist st2 ...) = (mv nil val).  We arrange
-; that magic-ev-fncall has unknown constraints, but we conceive of it as being
+; that magic-ev-fncall has unknown-constraints, but we conceive of it as being
 ; axiomatized using clocked, logic mode definitions that follow the definitions
 ; supporting ev-fncall -- in particular, a clocked, logic-mode version of
 ; ev-fncall-rec-logical -- such that (mv t nil) is returned when the clock

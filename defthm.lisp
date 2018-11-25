@@ -3660,7 +3660,7 @@
    (shallow-clausify
     (mv-let (sym x)
             (constraint-info ev wrld)
-            (assert$ (not (eq x *unknown-constraints*))
+            (assert$ (not (unknown-constraints-p x))
                      (cond
                       (sym (conjoin x))
                       (t x)))))))
@@ -4380,17 +4380,10 @@
     (mv-let (name x)
             (constraint-info fn wrld)
             (cond
-             ((eq x *unknown-constraints*)
-              (let* ((cl-proc
-                      (getpropc name 'constrainedp
-                                '(:error
-                                  "See immediate-canonical-ancestors:  ~
-                                   expected to find a 'constrainedp property ~
-                                   where we did not.")
-                                wrld))
-                     (supporters (unknown-constraint-supporters cl-proc wrld)))
-                (collect-canonical-siblings supporters wrld guard-anc
-                                            ignore-fns)))
+             ((unknown-constraints-p x)
+              (collect-canonical-siblings (unknown-constraints-supporters x)
+                                          wrld guard-anc
+                                          ignore-fns))
              (name (canonical-ffn-symbs-lst x wrld guard-anc ignore-fns rlp))
              (t (canonical-ffn-symbs x wrld guard-anc ignore-fns rlp))))))
 
@@ -4469,18 +4462,14 @@
     (constraint-info ev wrld)
     (declare (ignore fn))
     (cond
-     ((eq constraint *unknown-constraints*)
+     ((unknown-constraints-p constraint)
       (er soft ctx ; see comment in defaxiom-supporters
           "The proposed ~x0 rule, ~x1, is illegal because its evaluator ~
-           function symbol, ~x2, is constrained by the (unknown) theory of a ~
-           dependent clause-processor, ~x3.  See :DOC clause-processor."
+           function symbol, ~x2, has unknown-constraints.  See :DOC ~
+           partial-encapsulate."
           rule-type
           name
-          ev
-          (getpropc ev 'constrainedp
-                    '(:error "See chk-evaluator-use-in-rule:  expected to ~
-                              find a 'constrainedp property where we did not.")
-                    wrld)))
+          ev))
      (t
       (let* ((ev-lst (ev-lst-from-ev ev wrld))
              (ev-prop (getpropc ev 'defaxiom-supporter nil wrld))
@@ -7402,7 +7391,7 @@
 ; do with defthm, but it seems reasonable to place it immediately below code
 ; for verified clause-processors.
 
-(defun trusted-clause-processor-table-guard (key val wrld)
+(defun trusted-cl-proc-table-guard (key val wrld)
 
 ; There is not much point in checking whether the key is already designated as
 ; a clause-processor, because a redundant table event won't even result in such
@@ -7424,7 +7413,7 @@
   (let ((er-msg "The proposed designation of a trusted clause-processor is ~
                  illegal because ~@0.  See :DOC ~
                  define-trusted-clause-processor.")
-        (ctx 'trusted-clause-processor-table-guard))
+        (ctx 'trusted-cl-proc-table-guard))
     (cond
      ((not (or (ttag wrld)
                (global-val 'boot-strap-flg wrld)))
@@ -7438,36 +7427,15 @@
       (er hard ctx er-msg
           (msg "the clause-processor must be a function symbol, unlike ~x0"
                key)))
-     ((not (and (consp val)
-                (all-function-symbolps (car val) wrld)))
-      (cond ((not (symbol-listp (car val)))
+     ((not (all-function-symbolps val wrld))
+      (cond ((not (symbol-listp val))
              (er hard ctx er-msg
                  "the indicated supporters list is not a true list of symbols"))
             (t (er hard ctx er-msg
                    (msg "the indicated supporter~#0~[ ~&0 is not a function ~
                          symbol~/s ~&0 are not function symbols~] in the ~
                          current ACL2 world"
-                        (non-function-symbols (car val) wrld))))))
-     ((and (cdr val)
-           (not (eql (length (non-trivial-encapsulate-ee-entries
-                              (global-val 'embedded-event-lst wrld)))
-                     1)))
-      (let  ((ee-entries (non-trivial-encapsulate-ee-entries
-                          (global-val 'embedded-event-lst wrld))))
-        (cond
-         ((null ee-entries)
-          (er hard ctx er-msg
-              "there is no promised encapsulate to associate with this ~
-               dependent clause-processor"))
-         (t
-          (er hard ctx er-msg
-              (msg "there is not a unique encapsulate for the promised ~
-                    encapsulate to associate with this dependent ~
-                    clause-processor.  In particular, an enclosing ~
-                    encapsulate introduces function ~x0, while an encapsulate ~
-                    superior to that introduces function ~x1"
-                   (caar (cadr (car ee-entries)))
-                   (caar (cadr (cadr ee-entries)))))))))
+                        (non-function-symbols val wrld))))))
      (t
       (let ((failure-msg (tilde-@-illegal-clause-processor-sig-msg
                           key
@@ -7478,9 +7446,62 @@
           (er hard ctx er-msg failure-msg))
          (t t)))))))
 
-(table trusted-clause-processor-table nil nil
+(table trusted-cl-proc-table nil nil
        :guard
-       (trusted-clause-processor-table-guard key val world))
+       (trusted-cl-proc-table-guard key val world))
+
+(defun unknown-constraints-table-guard (key val wrld)
+  (let ((er-msg "The proposed attempt to add unknown-constraints is illegal ~
+                 because ~@0.  See :DOC partial-encapsulate.")
+        (ctx 'unknown-constraints-table-guard))
+    (and (eq key :supporters)
+         (let ((ee-entries (non-trivial-encapsulate-ee-entries
+                            (global-val 'embedded-event-lst wrld))))
+           (cond
+            ((null ee-entries)
+             (er hard ctx er-msg
+                 "it is not being made in the scope of a non-trivial ~
+                  encapsulate"))
+            ((cdr ee-entries)
+             (er hard ctx er-msg
+                 (msg "it is being made in the scope of nested non-trivial ~
+                       encapsulates.  In particular, an enclosing encapsulate ~
+                       introduces function ~x0, while an encapsulate superior ~
+                       to that one introduces function ~x1"
+                      (caar (cadr (car ee-entries)))
+                      (caar (cadr (cadr ee-entries))))))
+            ((not (all-function-symbolps val wrld))
+             (er hard ctx er-msg
+                 (msg "the value, ~x0, is not a list of known function symbols"
+                      val)))
+            ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
+                                 val))
+             (er hard ctx er-msg
+                 (msg "the value, ~x0, does not include all of the signature ~
+                       functions of the partial-encapsulate"
+                      val)))
+            (t t))))))
+
+(table unknown-constraints-table nil nil
+       :guard
+       (unknown-constraints-table-guard key val world))
+
+(defmacro set-unknown-constraints-supporters (&rest fns)
+  `(table unknown-constraints-table
+          :supporters
+
+; Notice that by including the newly-constrained functions in the supporters,
+; we are guaranteeing that this table event is not redundant.  To see this,
+; first note that we are inside a non-trivial encapsulate (see
+; trusted-cl-proc-table-guard), and for that encapsulate to succeed, the
+; newly-constrained functions must all be new.  So trusted-cl-proc-table-guard
+; would have rejected a previous attempt to set to these supporters, since they
+; were not function symbols at that time.
+
+          (let ((ee-entries (non-trivial-encapsulate-ee-entries
+                             (global-val 'embedded-event-lst world))))
+            (union-equal (strip-cars (cadr (car ee-entries)))
+                         ',fns))))
 
 (defmacro define-trusted-clause-processor
   (clause-processor supporters
@@ -7489,12 +7510,6 @@
                     partial-theory       ;;; optional
                     ttag                 ;;; optional; nil is same as missing
                     )
-
-; We could mention that unlike trusted clause-processors, no supporters need to
-; be specified for a verified clause-processor, as such a rule is guaranteed to
-; be a theorem even in if local events have been removed.  But that probably
-; would distract more than it would enlighten.
-
   (let* ((ctx 'define-trusted-clause-processor)
          (er-msg "The proposed use of define-trusted-clause-processor is ~
                   illegal because ~@0.  See :DOC ~
@@ -7502,7 +7517,7 @@
          (assert-check
           `(assert-event
             (not (assoc-eq ',clause-processor
-                           (table-alist 'trusted-clause-processor-table
+                           (table-alist 'trusted-cl-proc-table
                                         (w state))))
             :msg (msg "The function ~x0 is already indicated as a trusted ~
                        clause-processor."
@@ -7538,8 +7553,7 @@
             ()
             ,assert-check
             ,@extra
-            (table trusted-clause-processor-table ',clause-processor
-                   '(,supporters))))
+            (table trusted-cl-proc-table ',clause-processor ',supporters)))
         (('encapsulate sigs . events)
          (cond
           ((atom sigs)
@@ -7560,8 +7574,9 @@
                 (logic) ; to avoid skipping local events
                 ,@events
                 ,@extra
-                (table trusted-clause-processor-table ',clause-processor
-                       '(,supporters . t))))))
+                (set-unknown-constraints-supporters ,@supporters)
+                (table trusted-cl-proc-table ',clause-processor
+                       ',supporters)))))
         (& (er hard ctx er-msg
                "a supplied :partial-theory argument must be a call of ~
                 encapsulate")))))))

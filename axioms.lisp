@@ -1581,8 +1581,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro defun-overrides (name formals &rest rest)
 
 ; This defines the function symbol, name, in raw Lisp.  Name should include
-; STATE as a formal, have a guard of t and should have *unknown-constraints*.
-; We push name onto *defun-overrides* so that add-trip knows to leave the *1*
+; STATE as a formal, have a guard of t and should have unknown-constraints.  We
+; push name onto *defun-overrides* so that add-trip knows to leave the *1*
 ; definition in place.
 
 ; Warning: The generated definitions will replace both the raw Lisp and *1*
@@ -9254,6 +9254,38 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         'state
         (list 'quote event-form)))
 
+(defmacro partial-encapsulate (sigs supporters &rest cmd-lst)
+
+; We considered instead allowing an event like (make-unknown-constraint fn),
+; rather than providing partial-encapsulate as an interface to encapsulate with
+; an invocation of set-unknown-constraints-supporters.  But that would make it
+; too easy for users to introduce unsoundness with trust tags (always a
+; possibility, but as a courtesy we'd like to encourage sound use of trust
+; tags!).  Consider for example this book.
+
+;   (in-package "ACL2")
+;   (defstub f (x) t)
+;   (local (make-unknown-constraint f))
+;   (include-raw "f-raw")
+
+; After including the book, f no longer has unknown-constraints, yet if
+; f-raw.lsp provides a way to compute with f, we can now prove theorems that
+; don't follow from the (trivial) axioms of f.  A proof of nil with functional
+; instantiation would not be far behind!
+
+; So instead, we insist that unknown-constraints are put on the function as
+; part of the encapsulate that introduces it.
+
+  (declare (xargs :guard (symbol-listp supporters)))
+  (cond
+   ((null cmd-lst)
+    (er hard 'partial-encapsulate
+        "There must be at least one event form following the supporters in a ~
+         call of partial-encapsulate."))
+   (t `(encapsulate ,sigs
+         ,@cmd-lst
+         (set-unknown-constraints-supporters ,@supporters)))))
+
 (defconst *load-compiled-file-values*
   '(t nil :warn :default :comp))
 
@@ -13432,10 +13464,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     sys-call+ ; system-call+
     sys-call* ; system-call+
 
-    canonical-pathname ; under dependent clause-processor
+    canonical-pathname ; redefined from partial-encapsulate
 
-    concrete-badge-userfn
-    concrete-apply$-userfn
+    concrete-badge-userfn ; redefined from partial-encapsulate
+    concrete-apply$-userfn ; redefined from partial-encapsulate
 
     ev-fncall-w-guard1
 
@@ -13451,16 +13483,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     mfc-type-alist ; *metafunction-context*
     mfc-unify-subst ; *metafunction-context*
     mfc-world ; *metafunction-context*
-    mfc-ap-fn ; under dependent clause-processor
-    mfc-relieve-hyp-fn ; under dependent clause-processor
-    mfc-relieve-hyp-ttree ; under dependent clause-processor
-    mfc-rw+-fn ; under dependent clause-processor
-    mfc-rw+-ttree ; under dependent clause-processor
-    mfc-rw-fn ; under dependent clause-processor
-    mfc-rw-ttree ; under dependent clause-processor
-    mfc-ts-fn ; under dependent clause-processor
-    mfc-ts-ttree ; under dependent clause-processor
-    magic-ev-fncall ; under dependent clause-processor
+    mfc-ap-fn ; redefined from partial-encapsulate
+    mfc-relieve-hyp-fn ; redefined from partial-encapsulate
+    mfc-relieve-hyp-ttree ; redefined from partial-encapsulate
+    mfc-rw+-fn ; redefined from partial-encapsulate
+    mfc-rw+-ttree ; redefined from partial-encapsulate
+    mfc-rw-fn ; redefined from partial-encapsulate
+    mfc-rw-ttree ; redefined from partial-encapsulate
+    mfc-ts-fn ; redefined from partial-encapsulate
+    mfc-ts-ttree ; redefined from partial-encapsulate
+    magic-ev-fncall ; redefined from partial-encapsulate
     never-memoize-fn
 
 ; The following are introduced into the logic by an encapsulate, but have raw
@@ -24649,9 +24681,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;    because they are what they seem.  Such functions are defined here in
 ;    axioms.lisp.
 
-; 3. Functions of the second type are introduced with unknown constraints from
-;    a define-trusted-clause-processor event, and are defined in raw
-;    Lisp using the defun-overrides mechanism.
+; 3. Functions of the second type are introduced with unknown-constraints using
+;    a partial-encapsulate, and are defined in raw Lisp using the
+;    defun-overrides mechanism.
 
 ; In the next four paragraphs, we typically refer only to metafunctions, but
 ; most of the below applies to meta-level functions generally.

@@ -5807,17 +5807,17 @@
 ; not to rely on the presence of 'theorem properties for constraints.
 
             (let ((constraint-lst (cddr trip)))
-              (cond ((eq constraint-lst *unknown-constraints*)
+              (cond ((unknown-constraints-p constraint-lst)
 
-; This case should not happen.  The only symbols with *unknown-constraints* are
+; This case should not happen.  The only symbols with unknown-constraints are
 ; those introduced in a non-trivial encapsulate (one with non-empty signature
 ; list).  But we are in such an encapsulate already, for which we cannot yet
-; have computed the constraints as *unknown-constraints*.  So the
-; 'constraint-lst property in question is on a function symbol that was
-; introduced in an inner encapsulate, which should have been illegal since that
-; function symbol is in the scope of two (nested) non-trivial encapsulates,
-; where the inner one designates a dependent clause-processor, and such
-; non-unique promised encapsulates are illegal.
+; have computed the constraints as unknown-constraints.  So the 'constraint-lst
+; property in question is on a function symbol that was introduced in an inner
+; encapsulate, which should have been illegal since that function symbol is in
+; the scope of two (nested) non-trivial encapsulates, where the inner one
+; designates a dependent clause-processor, and such non-unique promised
+; encapsulates are illegal.
 
                      (er hard 'constraints-introduced
                          "Implementation error in constraints-introduced: ~
@@ -5842,7 +5842,7 @@
            (otherwise ans)))))))
 
 (defun putprop-constraints (fn constrained-fns constraint-lst
-                               dependent-clause-processor wrld3)
+                               unknown-constraints-p wrld3)
 
 ; Wrld3 is almost wrld3 of the encapsulation essay.  We have added all the
 ; exports, but we have not yet stored the 'constraint-lst properties of the
@@ -5867,11 +5867,11 @@
    (putprop
     fn 'constraint-lst constraint-lst
     (cond
-     (dependent-clause-processor
+     (unknown-constraints-p
       (putprop-x-lst1
-       constrained-fns 'constrainedp dependent-clause-processor
+       constrained-fns 'constrainedp *unknown-constraints*
        (putprop
-        fn 'constrainedp dependent-clause-processor
+        fn 'constrainedp *unknown-constraints*
         wrld3)))
      (t wrld3)))))
 
@@ -6379,8 +6379,8 @@
         (t (mv-let
             (name x)
             (constraint-info (car fns) wrld)
-            (cond ((eq x *unknown-constraints*)
-                   *unknown-constraints*)
+            (cond ((unknown-constraints-p x)
+                   x)
                   (name (cond ((member-eq name seen)
                                (constraints-list (cdr fns) wrld acc seen))
                               (t (constraints-list (cdr fns)
@@ -6499,23 +6499,6 @@
             (constraints-list infectious-fns wrld formula-lst1 nil))))
      (mv constraints constrained-fns subversive-fns infectious-fns fns))))
 
-(defun new-dependent-clause-processors (new-tbl old-tbl)
-
-; New-tbl and old-tbl are values of the trusted-clause-processor-table.  We
-; return a list of all dependent clause-processors from new-tbl that are not
-; identically specified in old-tbl.
-
-  (cond ((endp new-tbl)
-         nil)
-        ((and (cddr (car new-tbl)) ; dependent case
-              (not (equal (car new-tbl)
-                          (assoc-eq (caar new-tbl) old-tbl))))
-         (cons (caar new-tbl)
-               (new-dependent-clause-processors (cdr new-tbl)
-                                                old-tbl)))
-        (t (new-dependent-clause-processors (cdr new-tbl)
-                                            old-tbl))))
-
 (defun bogus-exported-compliants (names exports-with-sig-ancestors sig-fns
                                         wrld)
 
@@ -6606,8 +6589,8 @@
 ; rather use the standard state and error primitives and so it returns three.
 
   (let* ((wrld1 (w state))
-         (saved-trusted-clause-processor-table
-          (table-alist 'trusted-clause-processor-table wrld1)))
+         (saved-unknown-constraints-table
+          (table-alist 'unknown-constraints-table wrld1)))
     (er-let* ((expansion-alist-and-proto-wrld3
 
 ; The following process-embedded-events, which requires world reversion on
@@ -6667,7 +6650,7 @@
 ; When this encapsulate skips its first pass, it will encounter the indicated
 ; make-event, which has no expansion.
 
-                 (not only-pass-p)               ; make-event-chk
+                 (not only-pass-p) ; make-event-chk
                  (and (null insigs)
 
 ; By restricting the use of cert-data (from the first pass of the encapsulate,
@@ -6691,29 +6674,21 @@
           (let ((state (set-w 'retraction wrld1 state)))
             (value (cons :empty-encapsulate expansion-alist))))
          (t (let* ((exported-names (exported-function-names new-trips))
-                   (trusted-clause-processor-table
-                    (table-alist 'trusted-clause-processor-table (w state)))
-                   (new-dependent-cl-procs
-                    (and insigs ; else cl-procs belong to a parent encapsulate
-                         (not (equal ; optimization
-                               trusted-clause-processor-table
-                               saved-trusted-clause-processor-table))
-                         (new-dependent-clause-processors
-                          trusted-clause-processor-table
-                          saved-trusted-clause-processor-table))))
+                   (unknown-constraints-table
+                    (table-alist 'unknown-constraints-table (w state)))
+                   (unknown-constraints-p
+                    (and insigs ; unknown-constraints are for this encapsulate
+                         (not (equal unknown-constraints-table
+                                     saved-unknown-constraints-table)))))
               (cond
-               ((and new-dependent-cl-procs
+               ((and unknown-constraints-p
                      exported-names)
                 (er soft ctx
-                    "A dependent clause-processor that has a promised ~
-                     encapsulate (partial theory) must introduce only the ~
-                     functions listed in that encapsulate's signature.  ~
-                     However, the dependent clause-processor ~x0 is ~
-                     introduced with an encapsulate whose signature's list of ~
-                     names, ~x1, is missing the function name~#2~[~/s~] ~&2 ~
-                     that is also introduced by that encapsulate.  See :DOC ~
-                     define-trusted-clause-processor."
-                    (car new-dependent-cl-procs)
+                    "A partial-encapsulate must introduce only the functions ~
+                     listed in its signature.  However, the signature's list ~
+                     of names, ~x0, is missing the function name~#1~[~/s~] ~
+                     ~&1, also introduced by that encapsulate.  See :DOC ~
+                     partial-encapsulate."
                     (strip-cars insigs)
                     exported-names))
                ((and expansion-alist
@@ -6753,24 +6728,6 @@
                 (value (if only-pass-p
                            expansion-alist
                          (list nil nil exported-names))))
-               (new-dependent-cl-procs ; so (not exported-names) by test above
-                (let* ((sig-fns (strip-cars insigs))
-                       (state
-                        (set-w 'extension
-                               (putprop-constraints
-                                (car sig-fns)
-                                (cdr sig-fns)
-                                *unknown-constraints*
-                                (car new-dependent-cl-procs)
-                                wrld)
-                               state)))
-                  (value (if only-pass-p
-                             expansion-alist
-                           (list sig-fns
-                                 *unknown-constraints*
-                                 new-dependent-cl-procs
-                                 nil
-                                 nil)))))
                (t
 
 ; We are about to collect the constraint generated by this encapsulate on the
@@ -6787,51 +6744,67 @@
                 (let* ((new-trips (new-trips wrld wrld1 nil nil))
                        (sig-fns (strip-cars insigs)))
                   (mv-let
-                   (constraints constrained-fns subversive-fns infectious-fns
-                                exports-with-sig-ancestors)
-                   (encapsulate-constraint sig-fns exported-names new-trips
-                                           wrld)
-                   (let* ((wrld2 (putprop-constraints
-                                  (car sig-fns)
-                                  (remove1-eq (car sig-fns)
+                    (constraints constrained-fns subversive-fns infectious-fns
+                                 exports-with-sig-ancestors)
+                    (encapsulate-constraint sig-fns exported-names new-trips
+                                            wrld)
+                    (let* ((wrld2
+                            (putprop-constraints
+                             (car sig-fns)
+                             (remove1-eq (car sig-fns) constrained-fns)
+                             (if unknown-constraints-p
+                                 (cons *unknown-constraints*
+                                       (all-fnnames1
+                                        t
+                                        constraints
+
+; The following contains sig-fns.  That is arranged by
+; set-unknown-constraints-supporters, and is enforced (in case the table is set
+; directly rather than with set-unknown-constraints-supporters) aby
+; unknown-constraints-table-guard.
+
+                                        (cdr (assoc-eq
+                                              :supporters
+                                              unknown-constraints-table))))
+                               constraints)
+                             unknown-constraints-p
+                             (if constrained-fns
+                                 (assert$
+                                  (subsetp-eq subversive-fns
                                               constrained-fns)
-                                  constraints
-                                  nil
-                                  (if constrained-fns
-                                      (assert$
-                                       (subsetp-eq subversive-fns
-                                                   constrained-fns)
-                                       (assert$
-                                        (subsetp-eq infectious-fns
-                                                    constrained-fns)
-                                        (putprop-x-lst1 constrained-fns
-                                                        'siblings
-                                                        constrained-fns
-                                                        wrld)))
-                                    wrld)))
-                          (state (set-w 'extension wrld2 state))
-                          (bogus-exported-compliants
+                                  (assert$
+                                   (subsetp-eq infectious-fns
+                                               constrained-fns)
+                                   (putprop-x-lst1 constrained-fns
+                                                   'siblings
+                                                   constrained-fns
+                                                   wrld)))
+                               wrld)))
+                           (state (set-w 'extension wrld2 state))
                            (bogus-exported-compliants
-                            exported-names exports-with-sig-ancestors sig-fns
-                            wrld2)))
-                     (cond
-                      (bogus-exported-compliants
-                       (er soft ctx
-                           "For the following function~#0~[~/s~] introduced ~
+                            (bogus-exported-compliants
+                             exported-names exports-with-sig-ancestors sig-fns
+                             wrld2)))
+                      (cond
+                       (bogus-exported-compliants
+                        (er soft ctx
+                            "For the following function~#0~[~/s~] introduced ~
                             by this encapsulate event, guard verification may ~
                             depend on local properties that are not exported ~
                             from the encapsulate event: ~&0.  Consider ~
                             delaying guard verification until after the ~
                             encapsulate event, for example by using ~
                             :verify-guards nil."
-                           bogus-exported-compliants))
-                      (t (value (if only-pass-p
-                                    expansion-alist
-                                  (list constrained-fns
-                                        constraints
-                                        exported-names
-                                        subversive-fns
-                                        infectious-fns)))))))))))))))))
+                            bogus-exported-compliants))
+                       (t (value (if only-pass-p
+                                     expansion-alist
+                                   (list constrained-fns
+                                         (if unknown-constraints-p
+                                             *unknown-constraints*
+                                           constraints)
+                                         exported-names
+                                         subversive-fns
+                                         infectious-fns)))))))))))))))))
 
 ; Here I have collected a sequence of encapsulates to test the implementation.
 ; After each is an undo.  They are not meant to co-exist.  Just eval each
@@ -7514,12 +7487,9 @@
         (t (list (msg "We export ~&0.~|~%"
                       lst)))))
 
-(defun print-encapsulate-msg3/constraints (constrained-fns constraints
-                                                           clause-processors
-                                                           wrld)
+(defun print-encapsulate-msg3/constraints (constrained-fns constraints wrld)
 
-; The clause-processors argument is ignored unless constraints is
-; *unknown-constraints*.
+; Note that constraints can be *unknown-constraints*, with the obvious meaning.
 
   (cond
    ((null constraints)
@@ -7539,17 +7509,15 @@
          print-encapsulate-msg3/constraints."))
    ((eq constraints *unknown-constraints*)
     (list
-     (msg "An unknown constraint is associated with ~#0~[the function~/both ~
-           of the functions~/every one of the functions~] ~&1.  Note that ~
-           this encapsulate introduces dependent clause processor~#2~[~/s~] ~
-           ~&2.~|~%"
+     (msg "Unknown-constraints are associated with ~#0~[the function~/both of ~
+           the functions~/every one of the functions~] ~&1.  See :DOC ~
+           partial-encapsulate.~|~%"
           (let ((n (length constrained-fns)))
             (case n
               (1 0)
               (2 1)
               (otherwise 2)))
-          constrained-fns
-          clause-processors)))
+          constrained-fns)))
    (t (list
        (msg "The following constraint is associated with ~#0~[the ~
              function~/both of the functions~/every one of the functions~] ~
@@ -7570,10 +7538,6 @@
 ; This function prints a sequence of paragraphs, one devoted to each
 ; constrained function (its arities and constraint) and one devoted to
 ; a summary of the other names created by the encapsulation.
-
-; In the case that constrained-fns is *unknown-constraints*, exported-names is
-; actually the list of dependent clause-processors designated by the
-; encapsulate.
 
   (cond
    ((ld-skip-proofsp state) state)
@@ -7596,7 +7560,7 @@
                               insigs exported-names)
                              (print-encapsulate-msg3/constraints
                               constrained-fns constraints-introduced
-                              exported-names wrld)
+                              wrld)
                              ))))
                (proofs-co state)
                state
@@ -9419,36 +9383,26 @@
 
   (unix-truename-pathname pathname dir-p state))
 
-(defun acl2-magic-canonical-pathname (x)
-
-; This function is a sort of placeholder, used in a
-; define-trusted-clause-processor event for noting that canonical-pathname has
-; unknown constraints.
-
-  (declare (xargs :guard t))
-  (list x))
-
 #+acl2-loop-only
-(encapsulate
- ()
- (define-trusted-clause-processor
-   acl2-magic-canonical-pathname
-   (canonical-pathname)
-   :partial-theory
-   (encapsulate
-    (((canonical-pathname * * state) => *))
-    (logic)
-    (local (defun canonical-pathname (x dir-p state)
-             (declare (xargs :mode :logic))
-             (declare (ignore dir-p state))
-             (if (stringp x) x nil)))
-    (defthm canonical-pathname-is-idempotent
-      (equal (canonical-pathname (canonical-pathname x dir-p state) dir-p state)
-             (canonical-pathname x dir-p state)))
-    (defthm canonical-pathname-type
-      (or (equal (canonical-pathname x dir-p state) nil)
-          (stringp (canonical-pathname x dir-p state)))
-      :rule-classes :type-prescription))))
+(partial-encapsulate
+  (((canonical-pathname * * state) => *))
+
+; Supporters = nil since each missing axiom equates a call of
+; canonical-pathname on explicit arguments with its result.
+
+  nil
+  (logic)
+  (local (defun canonical-pathname (x dir-p state)
+           (declare (xargs :mode :logic))
+           (declare (ignore dir-p state))
+           (if (stringp x) x nil)))
+  (defthm canonical-pathname-is-idempotent
+    (equal (canonical-pathname (canonical-pathname x dir-p state) dir-p state)
+           (canonical-pathname x dir-p state)))
+  (defthm canonical-pathname-type
+    (or (equal (canonical-pathname x dir-p state) nil)
+        (stringp (canonical-pathname x dir-p state)))
+    :rule-classes :type-prescription))
 
 (defun canonical-dirname! (pathname ctx state)
   (declare (xargs :guard t))
@@ -26123,17 +26077,11 @@
 
   '(:hints :instructions :otf-flg :attach))
 
-(defun defattach-unknown-constraints-error (name wrld ctx state)
+(defun defattach-unknown-constraints-error (name ctx state)
   (er soft ctx
       "Attachment is disallowed in this context, because the function ~x0 has ~
-       unknown constraints provided by the dependent clause-processor ~x1.  ~
-       See :DOC define-trusted-clause-processor."
-      name
-      (getpropc name 'constrainedp
-                '(:error
-                  "See defattach-unknown-constraints-error:  expected to find ~
-                   a 'constrainedp property where we did not.")
-                wrld)))
+       unknown-constraints.  See :DOC partial-encapsulate."
+      name))
 
 (defun intersection-domains (a1 a2)
   (declare (xargs :guard (and (symbol-alistp a1)
@@ -26304,9 +26252,8 @@
                             (attach-pair (assoc-eq :ATTACH helper-alist)))
                        (cond
                         ((and (not skip-checks-t)
-                              (eq constraint-lst *unknown-constraints*))
-                         (defattach-unknown-constraints-error
-                           f wrld ctx state))
+                              (unknown-constraints-p constraint-lst))
+                         (defattach-unknown-constraints-error f ctx state))
                         ((null g)
                          (cond
                           (helper-alist
@@ -26988,14 +26935,14 @@
          (mv-let
           (name x)
           (constraint-info (caar alist) wrld)
-
-; Note that if x is not *unknown-constraints*, then x is a single constraint if
-; name is nil and otherwise x is a list of constraints.
-
           (cond
-           ((eq x *unknown-constraints*)
+           ((unknown-constraints-p x)
             (mv x name nil)) ; the nil is irrelevant
            (t
+
+; Note that -- ignoring the case of unknown-constraints -- x is a single
+; constraint if name is nil and otherwise x is a list of constraints.
+
             (let ((key (or name (caar alist))))
               (cond
                ((member-eq key seen)
@@ -27048,14 +26995,14 @@
    (goal event-names new-entries)
    (defattach-constraint-rec attachment-alist attachment-alist
      proved-fnl-insts-alist *t* nil nil nil wrld)
-   (cond ((eq goal *unknown-constraints*)
-          (defattach-unknown-constraints-error event-names wrld ctx state))
+   (cond ((unknown-constraints-p goal)
+          (defattach-unknown-constraints-error event-names ctx state))
          (t (value (list* goal event-names new-entries))))))
 
 (defun prove-defattach-constraint (goal event-names attachment-alist
                                         helper-alist ctx ens wrld state)
   (assert$
-   (not (eq goal *unknown-constraints*))
+   (not (unknown-constraints-p goal))
    (let ((constraint-bypass-string
           "  Note that we are bypassing constraints that have been proved ~
            when processing ~#0~[previous events~/events including ~&1~/the ~
@@ -29333,35 +29280,25 @@
   (cons 'defun def))
 
 ; The next three events define a :logic mode version of ev-fncall that has
-; unknown constraints.  We originally put this in boot-strap-pass-2.lisp (a
+; unknown-constraints.  We originally put this in boot-strap-pass-2.lisp (a
 ; precursor to the combination of boot-strap-pass-2-a.lisp and
 ; boot-strap-pass-2-b.lisp), but it didn't work there, because add-trip doesn't
 ; give special treatment for defun-overrides in pass 2 of the boot-strap, which
 ; is the only time that the events in boot-strap-pass-2.lisp were evaluated.
 
-(defun magic-ev-fncall-cl-proc (x)
-
-; This function is a sort of placeholder, used in a
-; define-trusted-clause-processor event for noting that magic-ev-fncall has
-; unknown constraints.
-
-  (declare (xargs :guard t))
-  (list x))
-
 #+acl2-loop-only
-(encapsulate
- ()
- (define-trusted-clause-processor
-   magic-ev-fncall-cl-proc
-   (magic-ev-fncall)
-   :partial-theory
-   (encapsulate
-    (((magic-ev-fncall * * state * *) => (mv * *)))
-    (logic)
-    (local (defun magic-ev-fncall (fn args state hard-error-returns-nilp aok)
-             (declare (xargs :mode :logic)
-                      (ignore fn args state hard-error-returns-nilp aok))
-             (mv nil nil))))))
+(partial-encapsulate
+  (((magic-ev-fncall * * state * *) => (mv * *)))
+
+; Supporters = nil since each missing axiom equates a call of
+; magic-ev-fncall on explicit arguments with its result.
+
+  nil
+  (logic)
+  (local (defun magic-ev-fncall (fn args state hard-error-returns-nilp aok)
+           (declare (xargs :mode :logic)
+                    (ignore fn args state hard-error-returns-nilp aok))
+           (mv nil nil))))
 
 #-acl2-loop-only
 (progn
@@ -30487,34 +30424,24 @@
                state))
           (t state)))))))
 
-; Below we define two ``acl2-magic-concrete...'' functions whose only uses are
-; to allow us to introduce concrete-badge-userfn and concrete-apply$-userfn as
-; partially constrained functions.  See the Essay on the APPLY$ Integration in
-; apply-prim.lisp for an overview.
-
-(defun acl2-magic-concrete-badge-userfn (x)
-
-; This function is a sort of placeholder, used in a
-; define-trusted-clause-processor event for noting that concrete-badge-userfn
-; has unknown constraints.
-
-  (declare (xargs :guard t))
-  (list x))
+; Below we introduce concrete-badge-userfn and concrete-apply$-userfn as
+; constrained functions.  See the Essay on the APPLY$ Integration in
+; apply-prim.lisp for an overview.  Note that in an ACL2 current-theory, all we
+; know about concrete-badge-userfn and concrete-apply$-userfn are the theorems
+; exported from these encapsulates.  Any extra properties are only known in the
+; evaluation theory; note that *aokp* is explicitly required to be true by the
+; raw Lisp definitions of those two functions.  Therefore, it is not necessary
+; to introduce these with partial-encapsulate; instead, we simply use
+; encapsulate.
 
 #+acl2-loop-only
 (encapsulate
-  ()
-  (define-trusted-clause-processor
-    acl2-magic-concrete-badge-userfn
-    (concrete-badge-userfn)
-    :partial-theory
-    (encapsulate
-      (((concrete-badge-userfn *) => *))
-      (logic)
-      (local (defun concrete-badge-userfn (fn)
-               (declare (xargs :mode :logic))
-               (declare (ignore fn))
-               nil))
+  (((concrete-badge-userfn *) => *))
+  (logic)
+  (local (defun concrete-badge-userfn (fn)
+           (declare (xargs :mode :logic))
+           (declare (ignore fn))
+           nil))
 
 ; The only purpose of this function is to serve as an executable attachment to
 ; badge-userfn.  So it must satisfy the constraint on that function.  That
@@ -30522,32 +30449,32 @@
 ; fn))).  See apply-prim.lisp for the defun of apply$-badgep.  Since it is not
 ; defined in the ACL2 sources, we just use its expansion below.
 
-      (defthm concrete-badge-userfn-type
-         (or
-          (null (concrete-badge-userfn fn))
-          (let ((x (concrete-badge-userfn fn)))
+  (defthm concrete-badge-userfn-type
+    (or
+     (null (concrete-badge-userfn fn))
+     (let ((x (concrete-badge-userfn fn)))
 ; Body of apply$-badgep, from apply-prim.lisp, with the access-terms
 ; replaced by car/cdr nests:
-            (and (consp x)
-                 (eq (car x) 'apply$-badge)
-                 (consp (cdr x))
-                 (booleanp
-                  (cadr x)) ; = (access apply$-badge x :authorization-flg)
-                 (consp (cddr x))
-                 (natp (caddr x) ; = (access apply$-badge x :arity)
-                       )
-                 (or (eq (cdddr x) ; = (access apply$-badge x :ilks)
-                         t)
-                     (and (true-listp
-                           (cdddr x)) ; = (access apply$-badge x :ilks)
-                          (equal
-                           (len (cdddr x)) ; = (access apply$-badge x :ilks)
-                           (caddr x)) ; = (access apply$-badge x :arity)
-                          (not
-                           (all-nils
-                            (cdddr x))) ; = (access apply$-badge x :ilks)
-                          (subsetp (cdddr x) ; = (access apply$-badge x :ilks)
-                                   '(nil :fn :expr)))))))
+       (and (consp x)
+            (eq (car x) 'apply$-badge)
+            (consp (cdr x))
+            (booleanp
+             (cadr x)) ; = (access apply$-badge x :authorization-flg)
+            (consp (cddr x))
+            (natp (caddr x) ; = (access apply$-badge x :arity)
+                  )
+            (or (eq (cdddr x) ; = (access apply$-badge x :ilks)
+                    t)
+                (and (true-listp
+                      (cdddr x)) ; = (access apply$-badge x :ilks)
+                     (equal
+                      (len (cdddr x)) ; = (access apply$-badge x :ilks)
+                      (caddr x))      ; = (access apply$-badge x :arity)
+                     (not
+                      (all-nils
+                       (cdddr x)))           ; = (access apply$-badge x :ilks)
+                     (subsetp (cdddr x)      ; = (access apply$-badge x :ilks)
+                              '(nil :fn :expr)))))))
 
 ; If badge-userfn has the requirement that it is nil on the built-ins, then you
 ; need to conjoin the following to what's above.  See the Note on Strengthening
@@ -30561,40 +30488,25 @@
 ;                      (assoc-eq fn *apply$-boot-fns-badge-alist*))
 ;                  (equal (concrete-badge-userfn fn) nil))
 
-        :rule-classes nil))))
-
-(defun acl2-magic-concrete-apply$-userfn (x)
-
-; This function is a sort of placeholder, used in a
-; define-trusted-clause-processor event for noting that concrete-apply$-userfn
-; has unknown constraints.
-
-  (declare (xargs :guard t))
-  (list x))
+    :rule-classes nil))
 
 #+acl2-loop-only
 (encapsulate
-  ()
-  (define-trusted-clause-processor
-    acl2-magic-concrete-apply$-userfn
-    (concrete-apply$-userfn)
-    :partial-theory
-    (encapsulate
-      (((concrete-apply$-userfn * *) => *))
-      (logic)
-      (local (defun concrete-apply$-userfn (fn args)
-               (declare (xargs :mode :logic))
-               (declare (ignore fn args))
-               nil))
-      (defthm concrete-apply$-userfn-takes-arity-args
-        (implies
-         (concrete-badge-userfn fn)
-         (equal (concrete-apply$-userfn fn args)
-                (concrete-apply$-userfn
-                 fn
-                 (take (caddr (concrete-badge-userfn fn))
-                       args))))
-        :rule-classes nil))))
+  (((concrete-apply$-userfn * *) => *))
+  (logic)
+  (local (defun concrete-apply$-userfn (fn args)
+           (declare (xargs :mode :logic))
+           (declare (ignore fn args))
+           nil))
+  (defthm concrete-apply$-userfn-takes-arity-args
+    (implies
+     (concrete-badge-userfn fn)
+     (equal (concrete-apply$-userfn fn args)
+            (concrete-apply$-userfn
+             fn
+             (take (caddr (concrete-badge-userfn fn))
+                   args))))
+    :rule-classes nil))
 
 (defmacro apply$-lambda-logical (fn args)
 

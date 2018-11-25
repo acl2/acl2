@@ -198,7 +198,7 @@
  'lisp-mode
  '(("(\\(\\([A-Za-z0-9-_]+::\\)?def[^ \t]*\\)\\>"
     . 1)
-   ("(\\(encapsulate\\|in-theory\\|include-book\\|local\\)\\>"
+   ("(\\(encapsulate\\|partial-encapsulate\\|in-theory\\|include-book\\|local\\)\\>"
     . 1)
    ("(\\(make-event\\|mutual-recursion\\|prog[^ \t]*\\)\\>"
     . 1)

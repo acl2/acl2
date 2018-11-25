@@ -1191,7 +1191,7 @@
   (or (getprop name 'theorem nil 'current-acl2-world wrld)
       (mv-let (flg prop)
         (constraint-info name wrld)
-        (cond ((eq prop *unknown-constraints*)
+        (cond ((unknown-constraints-p prop)
                *t*)
               (flg (ec-call (conjoin prop)))
               (t prop)))))

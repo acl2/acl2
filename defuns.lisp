@@ -9382,8 +9382,8 @@
                   (constraint (mv-let
                                (some-name constraint-lst)
                                (constraint-info name wrld)
-                               (cond ((eq constraint-lst *unknown-constraints*)
-                                      :unknown-from-dependent-clause-processor)
+                               (cond ((unknown-constraints-p constraint-lst)
+                                      '[UNKNOWN-CONSTRAINTS])
                                      (some-name
                                       (untranslate (conjoin constraint-lst)
                                                    t wrld))
@@ -9420,9 +9420,8 @@
                  (guard (untranslate (guard name nil wrld) t wrld)))
              (pprogn
               (fms "Macro ~x0~|~
-               Macro Args:  ~y1~|~
-               Guard:       ~Q23~|~
-               ~%"
+                    Macro Args:  ~y1~|~
+                    Guard:       ~Q23~|~~%"
                    (list (cons #\0 name)
                          (cons #\1 args)
                          (cons #\2 guard)
