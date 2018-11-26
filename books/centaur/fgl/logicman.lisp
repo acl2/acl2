@@ -35,12 +35,13 @@
 ;; Critpath: factor out sat-lits stobj definition from aignet/cnf and include that + ipasir-logic instead
 (include-book "centaur/aignet/ipasir" :dir :system)
 (include-book "bvar-db")
-(include-book "gl-object")
+(include-book "bfr")
 (include-book "pathcond-stobj")
 (include-book "centaur/ubdds/deps" :dir :system)
 (include-book "std/stobjs/updater-independence" :dir :system)
 (local (include-book "theory"))
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
+(local (include-book "std/util/termhints" :dir :system))
 
 (fty::defalist nat-nat-alist :key-type natp :val-type natp :true-listp t)
 
@@ -62,7 +63,7 @@
     (pathcond :type pathcond)
     (bvar-db :type bvar-db)
     (prof :type interp-profiler)
-    (mode :type (satisfies bfr-mode-p))))
+    (mode :type (satisfies bfr-mode-p) :initially 0)))
 
 
               
@@ -73,7 +74,8 @@
              nil
            (cons (acl2::make-tmplsubst :atoms `((<field> . ,(caar fields))
                                                 (:<field> . ,(intern$ (symbol-name (caar fields)) "KEYWORD"))
-                                                (<type> . ,(third (car fields))))
+                                                (<type> . ,(third (car fields)))
+                                                (<rest> . ,(cdddr (car fields))))
                                        :strs `(("<FIELD>" . ,(symbol-name (caar fields))))
                                        :pkg-sym 'fgl::foo)
                  (logicman-fields-to-templates (cdr fields))))))
@@ -86,7 +88,7 @@
 (make-event
  (acl2::template-subst
   '(defstobj logicman
-     (:@proj fields (logicman-><field> :type <type>)))
+     (:@proj fields (logicman-><field> :type <type> . <rest>)))
   :subsubsts `((fields . ,*logicman-field-templates*))))
 
 (defthm logicmanp-implies-aignetp
@@ -170,29 +172,76 @@
 
 
 
-(defmacro bfr-mode (&optional (logicman 'logicman))
+(defmacro lbfr-mode (&optional (logicman 'logicman))
   `(logicman->mode ,logicman))
 
-(defsection bfr-case
-  :short "Choose behavior based on the current @(see bfr) mode."
-  :long "<p>Usage:</p>
+(defsection lbfr-case
+  :short "Choose behavior based on the current @(see bfr) mode of a logicman."
+  :long "<p>Same as @(see bfr-mode-case), but implicitly uses the bfr mode
+setting of a logicman stobj.  If no logicman is given as the first
+argument (i.e., the first argument is a keyword), the variable named
+@('logicman') is implicitly used.</p>"
 
-@({
-     (brf-case :aig aigcode
-               :bdd bddcode)
-})
+  (defun lbfr-case-fn (args)
+    (if (keywordp (car args))
+        `(bfr-mode-case (lbfr-mode) . ,args)
+      `(bfr-mode-case (lbfr-mode ,(car args)) . ,(cdr args))))
 
-<p>expands to @('aigcode') if we are currently in AIG mode, or @('bddcode') if
-we are currently in BDD mode.  This is often used to implement basic wrappers
-like @(see bfr-and).</p>
+  (defmacro lbfr-case (&rest args)
+    (lbfr-case-fn args)))
 
-@(def bfr-case)"
+(defsection lbfr-mode-is
+  :short "Check the current bfr-mode of a logicman stobj"
+  :long "<p>Same as @(see bfr-mode-is), but gets the bfr mode object from a
+logicman stobj.  If no logicman argument is supplied, the variable named
+@('logicman') is implicitly used.</p>"
+  (defun lbfr-mode-is-fn (key lman)
+    `(bfr-mode-is ,key (lbfr-mode ,lman)))
+  
+  (defmacro lbfr-mode-is (key &optional (logicman 'logicman))
+    (lbfr-mode-is-fn key logicman)))
+  
 
-  (defmacro bfr-case (&key aig bdd aignet)
-    `(case (bfr-mode)
-       ((nil) ,bdd)
-       (:aignet ,aignet)
-       (t ,aig))))
+
+
+(define logicman->bfrstate (&optional (logicman 'logicman))
+  :returns (bfrstate bfrstate-p)
+  (b* ((bfr-mode (lbfr-mode)))
+    (bfr-mode-case
+      :aignet (stobj-let ((aignet (logicman->aignet logicman)))
+                         (bfrstate)
+                         (bfrstate bfr-mode (1- (aignet::num-fanins aignet)))
+                         bfrstate)
+      :otherwise (bfrstate bfr-mode 0)))
+  ///
+  (def-updater-independence-thm logicman->bfrstate-updater-independence
+    (implies (and (equal (aignet::fanin-count (logicman->aignet new))
+                         (aignet::fanin-count (logicman->aignet old)))
+                  (equal (logicman->mode new)
+                         (logicman->mode old)))
+             (equal (logicman->bfrstate new)
+                    (logicman->bfrstate old))))
+
+  (defret bfrstate->mode-of-logicman->bfrstate
+    (equal (bfrstate->mode bfrstate)
+           (bfr-mode-fix (lbfr-mode))))
+
+  (defret bfrstate->bound-of-logicman->bfrstate
+    (implies (lbfr-mode-is :aignet)
+             (equal (bfrstate->bound bfrstate)
+                    (aignet::fanin-count (logicman->aignet logicman)))))
+
+  (defthm aignet-litp-of-bfr->aignet-lit
+    (b* ((bfrstate (logicman->bfrstate)))
+      (implies (lbfr-mode-is :aignet)
+               (aignet::aignet-litp (bfr->aignet-lit x)
+                                    (logicman->aignet logicman))))
+    :hints(("Goal" :in-theory (enable logicman->bfrstate
+                                      bfr->aignet-lit
+                                      bfr-fix
+                                      aignet-lit->bfr
+                                      bounded-lit-fix
+                                      aignet::aignet-idp)))))
 
 ;; Include pathcond? parametrization hyp?
 
@@ -267,164 +316,212 @@ like @(see bfr-and).</p>
   (defthm logicman->mode-of-extension
     (implies (bind-logicman-extension x y)
              (equal (logicman->mode x)
-                    (logicman->mode y)))))
+                    (logicman->mode y))))
 
+  (defthm bfrstate>=-when-logicman-extension
+    (implies (logicman-extension-p new old)
+             (bfrstate>= (logicman->bfrstate new)
+                         (logicman->bfrstate old)))
+    :hints(("Goal" :in-theory (enable ;; logicman->bfrstate
+                                      bfrstate>=))))
 
-
-
-
-
-
-
-(define bfr-p (x &optional (logicman 'logicman))
-  (bfr-case
-    :aig (aig-p x)
-    :bdd (acl2::ubddp x)
-    :aignet
-    (or (booleanp x)
-        (and (satlink::litp x)
-             (not (eql x 0))
-             (not (eql x 1))
-             (stobj-let
-              ((aignet (logicman->aignet logicman)))
-              (ans)
-              (aignet::fanin-litp x aignet)
-              ans))))
-  ///
-  (defthm bfr-p-of-constants
-    (and (bfr-p t)
-         (bfr-p nil)))
-
-  (def-updater-independence-thm bfr-p-updater-independence
-    (implies (and (equal (logicman-get :aignet new)
-                         (logicman-get :aignet old))
-                  (equal (logicman-get :mode new)
-                         (logicman-get :mode old)))
-             (equal (bfr-p x new) (bfr-p x old))))
+  (local (in-theory (disable bfrstate>=-when-logicman-extension
+                             logicman-extension-p)))
 
   (defthm bfr-p-when-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (bfr-p x old))
-             (bfr-p x new))
-    :hints(("Goal" :in-theory (enable logicman-extension-p)))))
+                  (bfr-p x (logicman->bfrstate old)))
+             (bfr-p x (logicman->bfrstate new)))
+    :hints (("goal" :use bfrstate>=-when-logicman-extension)))
 
-(std::deflist bfr-listp$ (x logicman)
-  (bfr-p x)
-  :true-listp t
-  ///
+  (defthm bfr-fix-when-bfr-p-extension
+    (implies (and (bind-logicman-extension new old)
+                  (bfr-p x (logicman->bfrstate old)))
+             (equal (bfr-fix x (logicman->bfrstate new)) x))
+    :hints (("Goal" :use ((:instance bfr-p-when-logicman-extension))
+             :in-theory (disable bfr-p-when-logicman-extension))))
+
+  (defthm bfr->aignet-lit-when-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (bfr-p x (logicman->bfrstate old)))
+             (equal (bfr->aignet-lit x (logicman->bfrstate new))
+                    (bfr->aignet-lit x (logicman->bfrstate old))))
+    :hints(("Goal" :in-theory (enable bfr->aignet-lit))))
+
   (defthm bfr-listp-when-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (bfr-listp$ x old))
-             (bfr-listp$ x new))))
+                  (bfr-listp x (logicman->bfrstate old)))
+             (bfr-listp x (logicman->bfrstate new)))
+    :hints (("goal" :use bfrstate>=-when-logicman-extension)))
 
-(defmacro bfr-listp (x &optional (logicman 'logicman))
-  `(bfr-listp$ ,x ,logicman))
+  (defthm gl-bfr-object-p-when-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (gl-bfr-object-p x (logicman->bfrstate old)))
+             (gl-bfr-object-p x (logicman->bfrstate new)))
+    :hints (("goal" :use bfrstate>=-when-logicman-extension)))
 
-(add-macro-alias bfr-listp bfr-listp$)
+  (defthm gl-bfr-objectlist-p-when-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (gl-bfr-objectlist-p x (logicman->bfrstate old)))
+             (gl-bfr-objectlist-p x (logicman->bfrstate new)))
+    :hints (("goal" :use bfrstate>=-when-logicman-extension))))
 
 
 
-(define aignet-lit->bfr ((x satlink::litp) &optional (logicman 'logicman))
-  :guard (stobj-let ((aignet (logicman->aignet logicman)))
-                    (ans)
-                    (aignet::fanin-litp x aignet)
-                    ans)
-  :returns (bfr bfr-p :hyp (eq (bfr-mode) :aignet)
-                :hints(("Goal" :in-theory (enable bfr-p))))
-  (b* ((x (mbe :logic (non-exec (aignet::aignet-lit-fix x (logicman->aignet logicman)))
-               :exec x)))
-    (case x
-      (0 nil)
-      (1 t)
-      (t x)))
-  ///
+
+
+
+
+
+;; (define bfr-p (x &optional (logicman 'logicman))
+;;   (bfr-case
+;;     :aig (aig-p x)
+;;     :bdd (acl2::ubddp x)
+;;     :aignet
+;;     (or (booleanp x)
+;;         (and (satlink::litp x)
+;;              (not (eql x 0))
+;;              (not (eql x 1))
+;;              (stobj-let
+;;               ((aignet (logicman->aignet logicman)))
+;;               (ans)
+;;               (aignet::fanin-litp x aignet)
+;;               ans))))
+;;   ///
+;;   (defthm bfr-p-of-constants
+;;     (and (bfr-p t)
+;;          (bfr-p nil)))
+
+;;   (def-updater-independence-thm bfr-p-updater-independence
+;;     (implies (and (equal (logicman-get :aignet new)
+;;                          (logicman-get :aignet old))
+;;                   (equal (logicman-get :mode new)
+;;                          (logicman-get :mode old)))
+;;              (equal (bfr-p x new) (bfr-p x old))))
+
+;;   (defthm bfr-p-when-logicman-extension
+;;     (implies (and (bind-logicman-extension new old)
+;;                   (bfr-p x old))
+;;              (bfr-p x new))
+;;     :hints(("Goal" :in-theory (enable logicman-extension-p)))))
+
+;; (std::deflist bfr-listp$ (x logicman)
+;;   (bfr-p x)
+;;   :true-listp t
+;;   ///
+;;   (defthm bfr-listp-when-logicman-extension
+;;     (implies (and (bind-logicman-extension new old)
+;;                   (bfr-listp$ x old))
+;;              (bfr-listp$ x new))))
+
+;; (defmacro bfr-listp (x &optional (logicman 'logicman))
+;;   `(bfr-listp$ ,x ,logicman))
+
+;; (add-macro-alias bfr-listp bfr-listp$)
+
+
+
+;; (define aignet-lit->bfr ((x satlink::litp) &optional (logicman 'logicman))
+;;   :guard (stobj-let ((aignet (logicman->aignet logicman)))
+;;                     (ans)
+;;                     (aignet::fanin-litp x aignet)
+;;                     ans)
+;;   :returns (bfr bfr-p :hyp (eq (lbfr-mode) :aignet)
+;;                 :hints(("Goal" :in-theory (enable bfr-p))))
+;;   (b* ((x (mbe :logic (non-exec (aignet::aignet-lit-fix x (logicman->aignet logicman)))
+;;                :exec x)))
+;;     (case x
+;;       (0 nil)
+;;       (1 t)
+;;       (t x)))
+;;   ///
   
-  (defthm aignet-lit->bfr-of-logicman-extension
-    (implies (and (bind-logicman-extension new old)
-                  (aignet::aignet-litp x (logicman->aignet old)))
-             (equal (aignet-lit->bfr x new)
-                    (aignet-lit->bfr x old)))
-    :hints(("Goal" :in-theory (enable logicman-extension-p)))))
+;;   (defthm aignet-lit->bfr-of-logicman-extension
+;;     (implies (and (bind-logicman-extension new old)
+;;                   (aignet::aignet-litp x (logicman->aignet old)))
+;;              (equal (aignet-lit->bfr x new)
+;;                     (aignet-lit->bfr x old)))
+;;     :hints(("Goal" :in-theory (enable logicman-extension-p)))))
 
 
-(define bfr-fix ((x bfr-p) &optional (logicman 'logicman))
-  :returns (new-x bfr-p)
-  :prepwork ((local (in-theory (enable bfr-p aignet-lit->bfr))))
-  (mbe :logic (bfr-case
-                :aig (aig-fix x)
-                :bdd (acl2::ubdd-fix x)
-                :aignet
-                (if (booleanp x)
-                    x
-                  (aignet-lit->bfr x)))
-       :exec x)
-  ///
-  (std::defret bfr-fix-when-bfr-p
-    (implies (bfr-p x)
-             (equal new-x x))))
+;; (define bfr-fix ((x bfr-p) &optional (logicman 'logicman))
+;;   :returns (new-x bfr-p)
+;;   :prepwork ((local (in-theory (enable bfr-p aignet-lit->bfr))))
+;;   (mbe :logic (bfr-case
+;;                 :aig (aig-fix x)
+;;                 :bdd (acl2::ubdd-fix x)
+;;                 :aignet
+;;                 (if (booleanp x)
+;;                     x
+;;                   (aignet-lit->bfr x)))
+;;        :exec x)
+;;   ///
+;;   (std::defret bfr-fix-when-bfr-p
+;;     (implies (bfr-p x)
+;;              (equal new-x x))))
 
-(define bfr-list-fix ((x bfr-listp) &optional (logicman 'logicman))
-  :returns (new-x bfr-listp)
-  (if (atom x)
-      nil
-    (cons (bfr-fix (car x))
-          (bfr-list-fix (cdr x))))
-  ///
-  (defret bfr-list-fix-when-bfr-listp
-    (implies (bfr-listp x)
-             (equal (bfr-list-fix x) x)))
+;; (define bfr-list-fix ((x bfr-listp) &optional (logicman 'logicman))
+;;   :returns (new-x bfr-listp)
+;;   (if (atom x)
+;;       nil
+;;     (cons (bfr-fix (car x))
+;;           (bfr-list-fix (cdr x))))
+;;   ///
+;;   (defret bfr-list-fix-when-bfr-listp
+;;     (implies (bfr-listp x)
+;;              (equal (bfr-list-fix x) x)))
 
-  (defret car-of-bfr-list-fix
-    (implies (consp x)
-             (equal (car (bfr-list-fix x))
-                    (bfr-fix (car x)))))
+;;   (defret car-of-bfr-list-fix
+;;     (implies (consp x)
+;;              (equal (car (bfr-list-fix x))
+;;                     (bfr-fix (car x)))))
 
-  (defret cdr-of-bfr-list-fix
-    (implies (consp x)
-             (equal (cdr (bfr-list-fix x))
-                    (bfr-list-fix (cdr x)))))
+;;   (defret cdr-of-bfr-list-fix
+;;     (implies (consp x)
+;;              (equal (cdr (bfr-list-fix x))
+;;                     (bfr-list-fix (cdr x)))))
 
-  (defret consp-of-bfr-list-fix
-    (equal (consp (bfr-list-fix x))
-           (consp x)))
+;;   (defret consp-of-bfr-list-fix
+;;     (equal (consp (bfr-list-fix x))
+;;            (consp x)))
 
-  (defret len-of-bfr-list-fix
-    (equal (len (bfr-list-fix x))
-           (len x))))
+;;   (defret len-of-bfr-list-fix
+;;     (equal (len (bfr-list-fix x))
+;;            (len x))))
 
-(define bfr->aignet-lit ((x bfr-p) &optional (logicman 'logicman))
-  :guard (eq (bfr-mode) :aignet)
-  :returns (lit (implies (eq (bfr-mode) :aignet)
-                         (aignet::aignet-litp lit (logicman->aignet logicman))))
-  :prepwork ((local (in-theory (enable bfr-fix aignet-lit->bfr bfr-p))))
-  (b* ((x (bfr-fix x)))
-    (case x
-      ((nil) 0)
-      ((t) 1)
-      (t (satlink::lit-fix x))))
-  ///
-  (defthm bfr->aignet-lit-of-logicman-extension
-    (implies (and (bind-logicman-extension new old)
-                  (bfr-p x old))
-             (equal (bfr->aignet-lit x new)
-                    (bfr->aignet-lit x old))))
+;; (define bfr->aignet-lit ((x bfr-p) &optional (logicman 'logicman))
+;;   :guard (eq (lbfr-mode) :aignet)
+;;   :returns (lit (implies (eq (lbfr-mode) :aignet)
+;;                          (aignet::aignet-litp lit (logicman->aignet logicman))))
+;;   :prepwork ((local (in-theory (enable bfr-fix aignet-lit->bfr bfr-p))))
+;;   (b* ((x (bfr-fix x)))
+;;     (case x
+;;       ((nil) 0)
+;;       ((t) 1)
+;;       (t (satlink::lit-fix x))))
+;;   ///
+;;   (defthm bfr->aignet-lit-of-logicman-extension
+;;     (implies (and (bind-logicman-extension new old)
+;;                   (bfr-p x old))
+;;              (equal (bfr->aignet-lit x new)
+;;                     (bfr->aignet-lit x old))))
 
-  (defthm bfr->aignet-lit-of-aignet-lit->bfr
-    (implies (equal (bfr-mode) :aignet)
-             (equal (bfr->aignet-lit (aignet-lit->bfr x))
-                    (aignet::aignet-lit-fix x (logicman->aignet logicman))))
-    :hints(("Goal" :in-theory (enable aignet-lit->bfr))))
+;;   (defthm bfr->aignet-lit-of-aignet-lit->bfr
+;;     (implies (equal (lbfr-mode) :aignet)
+;;              (equal (bfr->aignet-lit (aignet-lit->bfr x))
+;;                     (aignet::aignet-lit-fix x (logicman->aignet logicman))))
+;;     :hints(("Goal" :in-theory (enable aignet-lit->bfr))))
 
-  (defthm aignet-lit->bfr-of-bfr->aignet-lit
-    (implies (equal (bfr-mode) :aignet)
-             (equal (aignet-lit->bfr (bfr->aignet-lit x))
-                    (bfr-fix x)))
-    :hints(("Goal" :in-theory (enable aignet-lit->bfr bfr-fix))))
+;;   (defthm aignet-lit->bfr-of-bfr->aignet-lit
+;;     (implies (equal (lbfr-mode) :aignet)
+;;              (equal (aignet-lit->bfr (bfr->aignet-lit x))
+;;                     (bfr-fix x)))
+;;     :hints(("Goal" :in-theory (enable aignet-lit->bfr bfr-fix))))
 
-  (defthm bfr->aignet-lit-of-bfr-fix
-    (equal (bfr->aignet-lit (bfr-fix x))
-           (bfr->aignet-lit x))
-    :hints(("Goal" :in-theory (enable bfr-fix)))))
+;;   (defthm bfr->aignet-lit-of-bfr-fix
+;;     (equal (bfr->aignet-lit (bfr-fix x))
+;;            (bfr->aignet-lit x))
+;;     :hints(("Goal" :in-theory (enable bfr-fix)))))
 
 
 
@@ -594,8 +691,27 @@ like @(see bfr-and).</p>
              :in-theory (enable aignet-idp)))))
 
 
+(defmacro lbfr-p (x &optional (logicman 'logicman))
+  `(bfr-p ,x (logicman->bfrstate ,logicman)))
+(defmacro lbfr-listp (x &optional (logicman 'logicman))
+  `(bfr-listp ,x (logicman->bfrstate ,logicman)))
+(defmacro lgl-bfr-object-p (x &optional (logicman 'logicman))
+  `(gl-bfr-object-p ,x (logicman->bfrstate ,logicman)))
+(defmacro lgl-bfr-objectlist-p (x &optional (logicman 'logicman))
+  `(gl-bfr-objectlist-p ,x (logicman->bfrstate ,logicman)))
 
-(define bfr-eval ((x bfr-p) env &optional (logicman 'logicman))
+(defmacro lbfr-fix (x &optional (logicman 'logicman))
+  `(bfr-fix ,x (logicman->bfrstate ,logicman)))
+(defmacro lbfr-list-fix (x &optional (logicman 'logicman))
+  `(bfr-list-fix ,x (logicman->bfrstate ,logicman)))
+(defmacro lgl-bfr-object-fix (x &optional (logicman 'logicman))
+  `(gl-bfr-object-fix ,x (logicman->bfrstate ,logicman)))
+(defmacro lgl-bfr-objectlist-fix (x &optional (logicman 'logicman))
+  `(gl-bfr-objectlist-fix ,x (logicman->bfrstate ,logicman)))
+
+
+
+(define bfr-eval ((x lbfr-p) env &optional (logicman 'logicman))
   :short "Evaluate a BFR under an appropriate BDD/AIG environment."
   :returns bool
   :prepwork (;; (local (include-book "std/lists/nth" :dir :system))
@@ -603,109 +719,66 @@ like @(see bfr-and).</p>
                       (aignet::bits-equiv (alist-to-bitarr max nil bitarr)
                                           nil)
                       :hints(("Goal" :in-theory (enable aignet::bits-equiv)))))
-             ;; (local (defthm bools-to-bits-of-take-under-bits-equiv
-             ;;          (aignet::bits-equiv (bools-to-bits (take n x))
-             ;;                              (take n (bools-to-bits x)))
-             ;;          :hints(("Goal" :in-theory (enable aignet::bits-equiv)))))
-             ;; (local (defthm bools-to-bits-of-repeat
-             ;;          (aignet::bits-equiv (bools-to-bits (acl2::repeat n nil))
-             ;;                              nil)
-             ;;          :hints(("Goal" :in-theory (enable aignet::bits-equiv)))))
-             ;; (local
-             ;;  #!aignet
-             ;;  (progn
-             ;;    ;; bozo, copied from aignet/copying.lisp
-             ;;    (defthm id-eval-of-take-num-ins
-             ;;      (equal (id-eval id (take (stype-count :pi aignet) invals)
-             ;;                      regvals aignet)
-             ;;             (id-eval id invals regvals aignet))
-             ;;      :hints (("goal" :induct (id-eval-ind id aignet)
-             ;;               :expand ((:free (invals regvals)
-             ;;                         (id-eval id invals regvals aignet)))
-             ;;               :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))))
-
-             ;;    (defthm id-eval-of-take-num-regs
-             ;;      (equal (id-eval id invals
-             ;;                      (take (stype-count :reg aignet) regvals)
-             ;;                      aignet)
-             ;;             (id-eval id invals regvals aignet))
-             ;;      :hints (("goal" :induct (id-eval-ind id aignet)
-             ;;               :expand ((:free (invals regvals)
-             ;;                         (id-eval id invals regvals aignet)))
-             ;;               :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))))
-
-             ;;    (defthm lit-eval-of-take-num-ins
-             ;;      (equal (lit-eval lit (take (stype-count :pi aignet) invals)
-             ;;                       regvals aignet)
-             ;;             (lit-eval lit invals regvals aignet))
-             ;;      :hints(("Goal"
-             ;;              :expand ((:free (invals regvals)
-             ;;                        (lit-eval lit invals regvals aignet))))))))
              )
-
-  (bfr-case
-    :bdd (acl2::eval-bdd (bfr-fix x) env)
-    :aig (acl2::aig-eval (bfr-fix x) env)
-    :aignet (mbe :logic (non-exec
-                         (acl2::bit->bool
-                          (aignet::lit-eval (bfr->aignet-lit x)
-                                            (alist-to-bitarr (aignet::num-ins (logicman->aignet logicman)) env nil)
-                                            nil
-                                            (logicman->aignet logicman))))
-                 :Exec
-                 (b* ((x (bfr->aignet-lit x))
-                      ((acl2::local-stobjs aignet::invals aignet::regvals)
-                       (mv ans aignet::invals aignet::regvals)))
-                   (stobj-let
-                    ((aignet (logicman->aignet logicman)))
-                    (ans aignet::invals aignet::regvals)
-                    (b* ((aignet::invals (alist-to-bitarr (aignet::num-ins aignet) env aignet::invals))
-                         (aignet::regvals (alist-to-bitarr (aignet::num-regs aignet) nil aignet::regvals)))
-                      (mv (acl2::bit->bool
-                           (aignet::lit-eval x aignet::invals aignet::regvals aignet::aignet))
-                          aignet::invals aignet::regvals))
-                    (mv ans aignet::invals aignet::regvals)))))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable aignet::aignet-idp bfr-p ;; logicman->bfrstate
+                                          ))))
+  (b* ((bfrstate (logicman->bfrstate)))
+    (bfrstate-case
+      :bdd (acl2::eval-bdd (bfr-fix x) env)
+      :aig (acl2::aig-eval (bfr-fix x) env)
+      :aignet (mbe :logic (non-exec
+                           (acl2::bit->bool
+                            (aignet::lit-eval (bfr->aignet-lit x)
+                                              (alist-to-bitarr (aignet::num-ins (logicman->aignet logicman)) env nil)
+                                              nil
+                                              (logicman->aignet logicman))))
+                   :Exec
+                   (b* ((x (bfr->aignet-lit x))
+                        ((acl2::local-stobjs aignet::invals aignet::regvals)
+                         (mv ans aignet::invals aignet::regvals)))
+                     (stobj-let
+                      ((aignet (logicman->aignet logicman)))
+                      (ans aignet::invals aignet::regvals)
+                      (b* ((aignet::invals (alist-to-bitarr (aignet::num-ins aignet) env aignet::invals))
+                           (aignet::regvals (alist-to-bitarr (aignet::num-regs aignet) nil aignet::regvals)))
+                        (mv (acl2::bit->bool
+                             (aignet::lit-eval x aignet::invals aignet::regvals aignet::aignet))
+                            aignet::invals aignet::regvals))
+                      (mv ans aignet::invals aignet::regvals))))))
   ///
   (defthm bfr-eval-consts
     (and (equal (bfr-eval t env) t)
          (equal (bfr-eval nil env) nil))
     :hints(("Goal" :in-theory (enable bfr->aignet-lit))))
 
-  (defthm bfr-eval-of-aignet-lit->bfr
-    (implies (equal (bfr-mode) :aignet)
-             (equal (bfr-eval (aignet-lit->bfr x) env)
-                    (acl2::bit->bool (aignet::lit-eval
-                                      x
-                                      (alist-to-bitarr (aignet::num-ins (logicman->aignet logicman)) env nil)
-                                      nil
-                                      (logicman->aignet logicman)))))
-    :hints(("Goal" :in-theory (enable aignet-lit->bfr bfr->aignet-lit
-                                      logicman-extension-p
-                                      bfr-fix)
-            :use ((:instance aignet::lit-eval-of-aignet-lit-fix
-                   (x x)
-                   (invals (alist-to-bitarr (aignet::num-ins (logicman->aignet logicman)) env nil))
-                   (regvals nil)
-                   (aignet (logicman->aignet logicman)))))))
-
   (defthm bfr-eval-of-bfr-fix
-    (equal (bfr-eval (bfr-fix x) env)
-           (bfr-eval x env))
-    :hints(("Goal" :in-theory (enable bfr-fix
-                                      bfr->aignet-lit
-                                      aignet-lit->bfr
-                                      aignet::lit-eval-of-aignet-lit-fix))))
-  
+    (b* ((bfrstate (logicman->bfrstate logicman)))
+      (equal (bfr-eval (bfr-fix x) env)
+             (bfr-eval x env)))
+    :hints((acl2::use-termhint
+            (b* ((bfrstate (logicman->bfrstate old-logicman)))
+              (bfrstate-case
+                :aignet '(:in-theory (enable aignet::lit-eval-of-aignet-lit-fix))
+                :otherwise '(:in-theory (enable bfr-fix ;; logicman->bfrstate
+                                                ))))))
+    :otf-flg t)
+
   (defthm bfr-eval-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (bfr-p x old))
+                  (lbfr-p x old))
              (equal (bfr-eval x env new)
                     (bfr-eval x env old)))
-    :hints((and stable-under-simplificationp
-                '(:in-theory (enable logicman-extension-p))))))
+    :hints((acl2::use-termhint
+            (b* ((bfrstate (logicman->bfrstate old)))
+              (bfrstate-case
+                :aignet (acl2::termhint-seq '(:in-theory (enable aignet::lit-eval-of-aignet-lit-fix))
+                                            '(:in-theory (enable logicman-extension-p)))
+                :otherwise '(:in-theory (enable bfr-fix ;; logicman->bfrstate
+                                                ))))))))
 
 
-(define bfr-list-eval ((x bfr-listp) env &optional (logicman 'logicman))
+(define bfr-list-eval ((x lbfr-listp) env &optional (logicman 'logicman))
   :returns bools
   (if (atom x)
       nil
@@ -713,12 +786,12 @@ like @(see bfr-and).</p>
           (bfr-list-eval (cdr x) env)))
   ///
   (defthm bfr-list-eval-of-bfr-list-fix
-    (equal (bfr-list-eval (bfr-list-fix x) env)
+    (equal (bfr-list-eval (lbfr-list-fix x) env)
            (bfr-list-eval x env)))
 
   (defthm bfr-list-eval-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (bfr-listp x old))
+                  (lbfr-listp x old))
              (equal (bfr-list-eval x env new)
                     (bfr-list-eval x env old)))))
 
@@ -730,13 +803,13 @@ like @(see bfr-and).</p>
        :exec (cond ((atom x) 0)
                    ((atom (cdr x)) (- (bool->bit (car x))))
                    (t (logcons (bool->bit (car x))
-                         (bools->int (cdr x)))))))
+                               (bools->int (cdr x)))))))
 
 
 
 
 (define logicman-nvars-ok (&optional (logicman 'logicman))
-  (bfr-case
+  (lbfr-case
     :bdd t
     :aig t
     :aignet
@@ -783,23 +856,23 @@ like @(see bfr-and).</p>
 
   (defthm logicman-nvars-ok-implies
     (implies (and (logicman-nvars-ok)
-                  (equal (bfr-mode) :aignet))
+                  (lbfr-mode-is :aignet))
              (equal (aignet::stype-count :pi (logicman->aignet logicman))
                     (bfr-nvars)))))
                     
 (define logicman-init ((base-nvars natp)
-                       (mode bfr-mode-p)
+                       (bfr-mode bfr-mode-p)
                        &optional (logicman 'logicman))
   :returns (new-logicman logicman-nvars-ok
                          :hints(("Goal" :in-theory (enable logicman-nvars-ok))))
-  (b* ((logicman (update-logicman->mode (bfr-mode-fix mode) logicman))
+  (b* ((logicman (update-logicman->mode (bfr-mode-fix bfr-mode) logicman))
        (logicman
         (stobj-let
          ((bvar-db (logicman->bvar-db logicman)))
          (bvar-db)
          (init-bvar-db base-nvars bvar-db)
          logicman))
-       ((unless (eq (bfr-mode-fix mode) :aignet))
+       ((unless (bfr-mode-is :aignet))
         logicman))
     (stobj-let
      ((aignet (logicman->aignet logicman)))
@@ -821,7 +894,7 @@ like @(see bfr-and).</p>
          (bvar-db)
          (add-term-bvar (gl-object-fix obj) bvar-db)
          logicman))
-       ((unless (eq (logicman->mode logicman) :aignet))
+       ((unless (lbfr-mode-is :aignet))
         logicman))
     (stobj-let
      ((aignet (logicman->aignet logicman)))
@@ -839,10 +912,10 @@ like @(see bfr-and).</p>
 
 (define bfr-varname-p (x &optional (logicman 'logicman))
   :guard (logicman-nvars-ok)
-  ;; :guard-hints (("goal" :in-theory (enable logicman-nvars-ok)))
+  ;; :guard-hints (("goal" :in-theory (enable logicman-nvars-ok bfr-nvars)))
   (and (natp x)
        (< x (bfr-nvars))
-       (mbt (or (not (equal (bfr-mode) :aignet))
+       (mbt (or (not (lbfr-mode-is :aignet))
                 (non-exec (< x (aignet::num-ins (logicman->aignet logicman)))))))
   ///
   ;; (def-updater-independence-thm bfr-varname-p-updater-independence
@@ -918,19 +991,19 @@ like @(see bfr-and).</p>
 
 (define bfr-lookup ((n (bfr-varname-p n logicman)) env &optional ((logicman logicman-nvars-ok) 'logicman))
   :prepwork ((local (in-theory (enable bfr-varname-p))))
-  (bfr-case
+  (lbfr-case
     :bdd (and (nth n (list-fix env)) t)
     :aig (acl2::aig-env-lookup (lnfix n) env)
     :aignet (bool-fix (cdr (hons-assoc-equal (lnfix n) env))))
   ///
   (def-updater-independence-thm bfr-lookup-logicman-updater-indep
-    (implies (equal (bfr-mode new) (bfr-mode old))
+    (implies (equal (lbfr-mode new) (lbfr-mode old))
              (equal (bfr-lookup n env new)
                     (bfr-lookup n env old)))))
 
 (define bfr-set-var ((n bfr-varname-p) val env &optional ((logicman logicman-nvars-ok) 'logicman))
   :short "Set the @('n')th BFR variable to some value in an AIG/BDD environment."
-  (bfr-case :bdd (acl2::with-guard-checking
+  (lbfr-case :bdd (acl2::with-guard-checking
                    nil
                    (ec-call (update-nth n (and val t) env)))
     :aig (hons-acons (lnfix n) (and val t) env)
@@ -1000,7 +1073,7 @@ like @(see bfr-and).</p>
      (boolean-listp (ubdd-deps x))
      :hints(("Goal" :in-theory (enable ubdd-deps))))))
 
-(define bfr-depends-on ((v bfr-varname-p) (x bfr-p) &optional ((logicman logicman-nvars-ok) 'logicman))
+(define bfr-depends-on ((v bfr-varname-p) (x lbfr-p) &optional ((logicman logicman-nvars-ok) 'logicman))
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable bfr-varname-p))))
   :returns (val booleanp :rule-classes :type-prescription)
@@ -1008,17 +1081,18 @@ like @(see bfr-and).</p>
                       (implies (boolean-listp x)
                                (booleanp (nth n x)))
                       :hints(("Goal" :in-theory (enable nth))))))
-  (bfr-case
-    :bdd (ec-call (nth v (acl2::ubdd-deps (acl2::ubdd-fix x))))
-    :aig (set::in (lnfix v) (acl2::aig-vars (bfr-fix x)))
-    :aignet
-    (b* ((lit (bfr->aignet-lit x)))
-      (stobj-let ((aignet (logicman->aignet logicman)))
-                 (depends-on)
-                 (aignet::depends-on (satlink::lit->var lit)
-                                     (aignet::innum->id v aignet)
-                                     aignet)
-                 depends-on)))
+  (b* ((bfrstate (logicman->bfrstate)))
+    (bfrstate-case
+      :bdd (ec-call (nth v (acl2::ubdd-deps (acl2::ubdd-fix x))))
+      :aig (set::in (lnfix v) (acl2::aig-vars (bfr-fix x)))
+      :aignet
+      (b* ((lit (bfr->aignet-lit x)))
+        (stobj-let ((aignet (logicman->aignet logicman)))
+                   (depends-on)
+                   (aignet::depends-on (satlink::lit->var lit)
+                                       (aignet::innum->id v aignet)
+                                       aignet)
+                   depends-on))))
   ///
   ;; (local (defthm alist-to-bitarr-aux-of-update-less
   ;;          (implies (< (nfix m) (nfix n))
@@ -1053,9 +1127,12 @@ like @(see bfr-and).</p>
            :hints(("Goal" :in-theory (enable acl2::aig-eval acl2::aig-vars)))))
 
   (defthm bfr-depends-on-of-bfr-fix
-    (equal (bfr-depends-on v (bfr-fix x))
-           (bfr-depends-on v x))
-    :hints(("Goal" :in-theory (enable bfr-fix bfr->aignet-lit))))
+    (b* ((bfrstate (logicman->bfrstate)))
+      (equal (bfr-depends-on v (bfr-fix x))
+             (bfr-depends-on v x)))
+    :hints ((acl2::use-termhint
+             (lbfr-case
+               :bdd '(:in-theory (enable bfr-fix))))))
 
   (defthm bfr-eval-of-bfr-set-var-when-not-depends-on
     (implies (not (bfr-depends-on v x))
@@ -1068,7 +1145,7 @@ like @(see bfr-and).</p>
   (defthm bfr-depends-on-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
                   (bfr-varname-p v old)
-                  (bfr-p x old))
+                  (lbfr-p x old))
              (equal (bfr-depends-on v x new)
                     (bfr-depends-on v x old)))
     :hints ((and stable-under-simplificationp
@@ -1076,7 +1153,7 @@ like @(see bfr-and).</p>
                                       bfr-p bfr-varname-p))))))
 
 
-(define bfr-list-depends-on ((v bfr-varname-p) (x bfr-listp) &optional ((logicman logicman-nvars-ok) 'logicman))
+(define bfr-list-depends-on ((v bfr-varname-p) (x lbfr-listp) &optional ((logicman logicman-nvars-ok) 'logicman))
   :returns (val booleanp :rule-classes :type-prescription)
   (if (atom x)
       nil
@@ -1086,7 +1163,7 @@ like @(see bfr-and).</p>
   ///
 
   (defthm bfr-list-depends-on-of-bfr-list-fix
-    (equal (bfr-list-depends-on v (bfr-list-fix x))
+    (equal (bfr-list-depends-on v (lbfr-list-fix x))
            (bfr-list-depends-on v x)))
 
   (fty::deffixcong acl2::list-equiv equal (bfr-list-depends-on v x) x)
@@ -1100,105 +1177,156 @@ like @(see bfr-and).</p>
   (defthm bfr-list-depends-on-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
                   (bfr-varname-p v old)
-                  (bfr-listp x old))
+                  (lbfr-listp x old))
              (equal (bfr-list-depends-on v x new)
                     (bfr-list-depends-on v x old)))))
                                 
 
 
 (define bfr-var ((n bfr-varname-p) &optional ((logicman logicman-nvars-ok) 'logicman))
-  :returns (bfr bfr-p :hints((and stable-under-simplificationp
-                                  '(:in-theory (enable bfr-p aig-p)))))
+  :returns (bfr lbfr-p :hints((acl2::use-termhint
+                               (lbfr-case
+                                 :aignet nil
+                                 :otherwise
+                                 '(:in-theory (enable bfr-p aig-p))))))
   :guard-hints (("goal" :in-theory (enable bfr-varname-p)))
-  (bfr-case
-    :bdd (acl2::qv n)
-    :aig (lnfix n)
-    :aignet (stobj-let
-             ((aignet (logicman->aignet logicman)))
-             (lit)
-             (aignet::make-lit (aignet::innum->id n aignet) 0)
-             (aignet-lit->bfr lit)))
+  (b* ((bfrstate (logicman->bfrstate)))
+    (bfrstate-case
+      :bdd (acl2::qv n)
+      :aig (lnfix n)
+      :aignet (stobj-let
+               ((aignet (logicman->aignet logicman)))
+               (lit)
+               (aignet::make-lit (aignet::innum->id n aignet) 0)
+               (aignet-lit->bfr lit))))
   ///
+  ;; (local (defthm bounded-lit-fix-is-aignet-lit-fix
+  ;;          (equal (
+
   (defthm bfr-eval-of-bfr-var
     (implies (bfr-varname-p n)
              (equal (bfr-eval (bfr-var n) env)
                     (bfr-lookup n env)))
-    :hints(("Goal" :in-theory (enable bfr-varname-p
-                                      bfr-eval
-                                      bfr-fix
-                                      aig-fix
-                                      bfr-lookup
-                                      aignet::lit-eval-of-aignet-lit-fix)
-            :expand ((:free (id invals regvals aignet)
-                      (aignet::lit-eval (aignet::make-lit id 0) invals regvals aignet))
-                     (:free (n invals regvals aignet)
-                      (aignet::id-eval (aignet::fanin-count (aignet::lookup-stype n :pi aignet))
-                                       invals regvals aignet))))))
+    :hints(;; ("Goal" :in-theory (enable bfr-varname-p
+           ;;                            bfr-eval
+           ;;                            bfr-fix
+           ;;                            aig-fix
+           ;;                            bfr-lookup
+           ;;                            aignet::lit-eval-of-aignet-lit-fix)
+           ;;  :expand ((:free (id invals regvals aignet)
+           ;;            (aignet::lit-eval (aignet::make-lit id 0) invals regvals aignet))
+           ;;           (:free (n invals regvals aignet)
+           ;;            (aignet::id-eval (aignet::fanin-count (aignet::lookup-stype n :pi aignet))
+           ;;                             invals regvals aignet))))
+           (acl2::use-termhint
+            (lbfr-case
+              :aignet '(:in-theory (enable bfr-eval ;; logicman->bfrstate
+                                           bfr-lookup bfr-varname-p)
+                        :expand ((:free (id invals regvals aignet)
+                                  (aignet::lit-eval (aignet::make-lit id 0) invals regvals aignet))
+                                 (:free (id invals regvals aignet)
+                                  (aignet::id-eval id invals regvals aignet))))
+              :otherwise '(:in-theory (enable bfr-varname-p
+                                              bfr-eval
+                                              bfr-fix
+                                              aig-fix
+                                              bfr-lookup)))))
+    :otf-flg t)
 
   (defthm bfr-var-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
                   (bfr-varname-p n old))
              (equal (bfr-var n new)
                     (bfr-var n old)))
-    :hints(("Goal" :in-theory (enable logicman-extension-p aignet-lit->bfr
-                                      bfr-varname-p))))
+    :hints((acl2::use-termhint
+            (lbfr-case old
+              :aignet '(:in-theory (enable ;; logicman->bfrstate
+                                           logicman-extension-p bfr-varname-p
+                                           aignet-lit->bfr bounded-lit-fix))
+              :otherwise '(:in-theory (enable logicman-extension-p aignet-lit->bfr
+                                              bfr-varname-p))))))
 
   (defthm bfr-depends-on-of-bfr-var
     (implies (and (bfr-varname-p v)
                   (bfr-varname-p n))
              (iff (bfr-depends-on v (bfr-var n))
                   (equal (nfix v) (nfix n))))
-    :hints(("Goal" :in-theory (enable bfr-depends-on bfr-varname-p bfr-fix aig-fix)
+    :hints(("Goal" :in-theory (enable bfr-depends-on bfr-varname-p bfr-fix aig-fix
+                                      bounded-lit-fix ;; logicman->bfrstate
+                                      )
             :expand ((:free (ci x) (aignet::depends-on
                                     (aignet::fanin-count x)
                                     ci
                                     (logicman->aignet logicman))))))))
 
+
 (local (defthm aig-p-when-bfr-p
-         (implies (and (bfr-mode)
-                       (not (equal (bfr-mode) :aignet))
-                       (bfr-p x))
+         (implies (and (bfr-p x)
+                       (bfrstate-mode-is :aig))
                   (aig-p x))
          :hints(("Goal" :in-theory (enable bfr-p)))))
 
+(local (defthm aig-p-of-bfr-fix
+         (implies (and (bfrstate-mode-is :aig))
+                  (aig-p (bfr-fix x)))
+         :hints (("goal" :use ((:instance aig-p-when-bfr-p
+                                (x (bfr-fix x))))
+                  :in-theory (disable aig-p-when-bfr-p)))))
+
 (local (defthm bfr-p-when-aig-p
-         (implies (and (bfr-mode)
-                       (not (equal (bfr-mode) :aignet))
+         (implies (and (bfrstate-mode-is :aig)
                        (aig-p x))
                   (bfr-p x))
          :hints(("Goal" :in-theory (enable bfr-p)))))
 
 (local (defthm ubdd-p-when-bfr-p
-         (implies (and (not (bfr-mode))
-                       (bfr-p x))
+         (implies (and (bfr-p x)
+                       (bfrstate-mode-is :bdd))
                   (acl2::ubddp x))
          :hints(("Goal" :in-theory (enable bfr-p)))))
 
+(local (defthm ubdd-p-of-bfr-fix
+         (implies (and (bfrstate-mode-is :bdd))
+                  (acl2::ubddp (bfr-fix x)))
+         :hints (("goal" :use ((:instance ubdd-p-when-bfr-p
+                                (x (bfr-fix x))))
+                  :in-theory (disable ubdd-p-when-bfr-p)))))
+
 (local (defthm bfr-p-when-ubdd-p
-         (implies (and (not (bfr-mode))
+         (implies (and (bfrstate-mode-is :bdd)
                        (acl2::ubddp x))
                   (bfr-p x))
          :hints(("Goal" :in-theory (enable bfr-p)))))
 
 (local (defthm aignet-litp-when-bfr-p
-         (implies (and (bfr-p x)
-                       (equal (bfr-mode) :aignet)
-                       (not (booleanp x)))
-                  (aignet::aignet-litp x (logicman->aignet logicman)))
-         :hints(("Goal" :in-theory (enable bfr-p)))))
+         (b* ((bfrstate (logicman->bfrstate)))
+           (implies (and (bfr-p x)
+                         (bfrstate-mode-is :aignet)
+                         (not (booleanp x)))
+                    (aignet::aignet-litp x (logicman->aignet logicman))))
+         :hints(("Goal" :in-theory (enable bfr-p aignet::aignet-idp)))))
 
 (local (defthm bfr-p-when-aignet-litp
-         (implies (and (equal (bfr-mode) :aignet)
-                       (aignet::aignet-litp x (logicman->aignet logicman))
-                       (satlink::litp x)
-                       (not (equal x 1))
-                       (not (equal x 0)))
-                  (bfr-p x))
-         :hints(("Goal" :in-theory (enable bfr-p)))))
+         (b* ((bfrstate (logicman->bfrstate)))
+           (implies (and (bfrstate-mode-is :aignet)
+                         (aignet::aignet-litp x (logicman->aignet logicman))
+                         (satlink::litp x)
+                         (not (equal x 1))
+                         (not (equal x 0)))
+                    (bfr-p x)))
+         :hints(("Goal" :in-theory (enable bfr-p aignet::aignet-idp)))))
+
+(local (defthm bfr-mode-is-possibilities
+         (or (bfr-mode-is :aig)
+             (bfr-mode-is :aignet)
+             (bfr-mode-is :bdd))
+         :rule-classes ((:forward-chaining :trigger-terms ((bfr-mode-fix bfr-mode))))))
 
 
-(define bfr-not ((x bfr-p) &optional (logicman 'logicman))
-  :returns (bfr bfr-p :hints(("Goal" :in-theory (enable bfr-p))))
+(define bfr-not ((x lbfr-p) &optional (logicman 'logicman))
+  :returns (bfr lbfr-p :hints(("Goal" :in-theory (enable bfr-p
+                                                         aignet-lit->bfr
+                                                         bfr->aignet-lit))))
   :prepwork ((local (defthm lit->var-not-0
                       (implies (and (satlink::litp x)
                                     (not (equal x 1))
@@ -1212,16 +1340,17 @@ like @(see bfr-and).</p>
                      '(:in-theory (enable bfr-p bfr->aignet-lit aignet-lit->bfr
                                           satlink::lit-negate
                                           satlink::equal-of-make-lit))))
-  (mbe :logic (b* ((x (bfr-fix x)))
-                (bfr-case
+  (mbe :logic (b* ((x (lbfr-fix x)))
+                (lbfr-case
                   :bdd (acl2::q-not x)
                   :aig (acl2::aig-not x)
-                  :aignet (aignet-lit->bfr
-                           (aignet::lit-negate
-                            (bfr->aignet-lit x)))))
+                  :aignet (b* ((bfrstate (logicman->bfrstate)))
+                            (aignet-lit->bfr
+                             (aignet::lit-negate
+                              (bfr->aignet-lit x))))))
        :exec (if (booleanp x)
                  (not x)
-               (bfr-case
+               (lbfr-case
                  :bdd (acl2::q-not x)
                  :aig (acl2::aig-not x)
                  :aignet (aignet::lit-negate x))))
@@ -1234,8 +1363,10 @@ like @(see bfr-and).</p>
     :otf-flg t)
 
   (defthm bfr-not-of-bfr-fix
-    (equal (bfr-not (bfr-fix x))
-           (bfr-not x)))
+    (equal (bfr-not (bfr-fix x (logicman->bfrstate)))
+           (bfr-not x))
+    :hints(("Goal" :in-theory (enable bfr-fix
+                                      aignet-lit->bfr))))
 
   (defthm bfr-depends-on-of-bfr-not
     (implies (not (bfr-depends-on v x))
@@ -1335,33 +1466,51 @@ like @(see bfr-and).</p>
 
 (local (in-theory (disable set::in-tail))) ;; incompatible with trivial ancestors check
 
-(define bfr-and ((x bfr-p)
-                 (y bfr-p)
+(local (defthm lit->var-lte-when-aignet-litp
+         (implies (aignet::aignet-litp x aignet)
+                  (<= (satlink::lit->var x) (aignet::fanin-count aignet)))
+         :hints(("Goal" :in-theory (enable aignet::aignet-idp)))))
+
+;; (defthm aignet-litp-of-bfr->aignet-lit-bfrstate
+;;   (aignet::aignet-litp (bfr->aignet-lit x (bfrstate 0 (aignet::fanin-count aignet))) aignet)
+;;   :hints(("Goal" :in-theory (enable bfr->aignet-lit aignet::aignet-idp bfr-fix aignet-lit->bfr))))
+
+;; (local (in-theory (disable (force)
+;;                            ;; acl2::q-and-of-t-slow
+;;                            )))
+
+
+
+(define bfr-and ((x lbfr-p)
+                 (y lbfr-p)
                  &optional (logicman 'logicman))
-  :returns (mv (and-bfr (bfr-p and-bfr new-logicman))
+  :returns (mv (and-bfr (lbfr-p and-bfr new-logicman))
                (new-logicman))
   :guard-hints (("goal" :do-not-induct t))
-
+  :guard-debug t
   (mbe :logic
-       (b* ((x (bfr-fix x))
-            (y (bfr-fix y)))
-         (bfr-case
+       (b* ((x (lbfr-fix x))
+            (y (lbfr-fix y)))
+         (lbfr-case
            :bdd (mv (acl2::q-binary-and x y) logicman)
            :aig (mv (acl2::aig-and x y) logicman)
-           :aignet (b* ((x (bfr->aignet-lit x))
+           :aignet (b* ((bfrstate (logicman->bfrstate))
+                        (x (bfr->aignet-lit x))
                         (y (bfr->aignet-lit y)))
                      (stobj-let
                       ((aignet (logicman->aignet logicman))
                        (aignet::strash (logicman->strash logicman)))
                       (lit aignet::strash aignet)
                       (aignet::aignet-hash-and x y (aignet::default-gatesimp) aignet::strash aignet)
-                      (mv (aignet-lit->bfr lit) logicman)))))
+                      (b* ((bfrstate (logicman->bfrstate)))
+                        (mv (aignet-lit->bfr lit) logicman))))))
        :exec
        (cond ((not x) (mv nil logicman))
              ((not y) (mv nil logicman))
              ((eq x t) (mv y logicman))
              ((eq y t) (mv x logicman))
-             (t (bfr-case
+             (t (b* ((bfrstate (logicman->bfrstate)))
+                  (bfrstate-case
                   :bdd (mv (acl2::q-binary-and x y) logicman)
                   :aig (mv (acl2::aig-and x y) logicman)
                   :aignet
@@ -1372,7 +1521,8 @@ like @(see bfr-and).</p>
                       (aignet::strash (logicman->strash logicman)))
                      (lit aignet::strash aignet)
                      (aignet::aignet-hash-and x y (aignet::default-gatesimp) aignet::strash aignet)
-                     (mv (aignet-lit->bfr lit) logicman)))))))
+                     (b* ((bfrstate (logicman->bfrstate)))
+                        (mv (aignet-lit->bfr lit) logicman)))))))))
   ///
   (local (acl2::use-trivial-ancestors-check))
 
@@ -1385,11 +1535,11 @@ like @(see bfr-and).</p>
     :otf-flg t)
 
   (defthm bfr-and-of-bfr-fix-x
-    (equal (bfr-and (bfr-fix x) y)
+    (equal (bfr-and (lbfr-fix x) y)
            (bfr-and x y)))
 
   (defthm bfr-and-of-bfr-fix-y
-    (equal (bfr-and x (bfr-fix y))
+    (equal (bfr-and x (lbfr-fix y))
            (bfr-and x y)))
 
   (defret logicman-extension-p-of-<fn>
@@ -1414,45 +1564,49 @@ like @(see bfr-and).</p>
 
 
 
-(define bfr-or ((x bfr-p)
-                (y bfr-p)
+(define bfr-or ((x lbfr-p)
+                (y lbfr-p)
                 &optional (logicman 'logicman))
-  :returns (mv (or-bfr (bfr-p or-bfr new-logicman))
+  :returns (mv (or-bfr (lbfr-p or-bfr new-logicman))
                (new-logicman))
   :guard-hints (("goal" :do-not-induct t
                  :in-theory (enable aignet::aignet-hash-or)))
 
   (mbe :logic
-       (b* ((x (bfr-fix x))
-            (y (bfr-fix y)))
-         (bfr-case
+       (b* ((x (lbfr-fix x))
+            (y (lbfr-fix y)))
+         (lbfr-case
            :bdd (mv (acl2::q-binary-or x y) logicman)
            :aig (mv (acl2::aig-or x y) logicman)
-           :aignet (b* ((x (bfr->aignet-lit x))
+           :aignet (b* ((bfrstate (logicman->bfrstate))
+                        (x (bfr->aignet-lit x))
                         (y (bfr->aignet-lit y)))
                      (stobj-let
                       ((aignet (logicman->aignet logicman))
                        (aignet::strash (logicman->strash logicman)))
                       (lit aignet::strash aignet)
                       (aignet::aignet-hash-or x y (aignet::default-gatesimp) aignet::strash aignet)
-                      (mv (aignet-lit->bfr lit) logicman)))))
+                      (b* ((bfrstate (logicman->bfrstate)))
+                        (mv (aignet-lit->bfr lit) logicman))))))
        :exec
        (cond ((eq x t) (mv t logicman))
              ((eq y t) (mv t logicman))
              ((eq x nil) (mv y logicman))
              ((eq y nil) (mv x logicman))
-             (t (bfr-case
+             (t (lbfr-case
                   :bdd (mv (acl2::q-binary-or x y) logicman)
                   :aig (mv (acl2::aig-or x y) logicman)
                   :aignet
-                  (b* ((x (bfr->aignet-lit x))
+                  (b* ((bfrstate (logicman->bfrstate))
+                       (x (bfr->aignet-lit x))
                        (y (bfr->aignet-lit y)))
                     (stobj-let
                      ((aignet (logicman->aignet logicman))
                       (aignet::strash (logicman->strash logicman)))
                      (lit aignet::strash aignet)
                      (aignet::aignet-hash-or x y (aignet::default-gatesimp) aignet::strash aignet)
-                     (mv (aignet-lit->bfr lit) logicman)))))))
+                     (b* ((bfrstate (logicman->bfrstate)))
+                       (mv (aignet-lit->bfr lit) logicman))))))))
   ///
   (local (acl2::use-trivial-ancestors-check))
 
@@ -1465,11 +1619,11 @@ like @(see bfr-and).</p>
     :otf-flg t)
 
   (defthm bfr-or-of-bfr-fix-x
-    (equal (bfr-or (bfr-fix x) y)
+    (equal (bfr-or (lbfr-fix x) y)
            (bfr-or x y)))
 
   (defthm bfr-or-of-bfr-fix-y
-    (equal (bfr-or x (bfr-fix y))
+    (equal (bfr-or x (lbfr-fix y))
            (bfr-or x y)))
 
   (defret logicman-extension-p-of-<fn>
@@ -1493,46 +1647,50 @@ like @(see bfr-and).</p>
                 '(:in-theory (enable bfr-fix acl2::aig-or))))))
 
 
-(define bfr-xor ((x bfr-p)
-                 (y bfr-p)
+(define bfr-xor ((x lbfr-p)
+                 (y lbfr-p)
                  &optional (logicman 'logicman))
-  :returns (mv (xor-bfr (bfr-p xor-bfr new-logicman))
+  :returns (mv (xor-bfr (lbfr-p xor-bfr new-logicman))
                (new-logicman))
   :guard-hints (("goal" :do-not-induct t
                  :in-theory (enable bfr-not acl2::aig-xor acl2::q-xor))
                 (and stable-under-simplificationp '(:in-theory (enable bfr-p))))
 
   (mbe :logic
-       (b* ((x (bfr-fix x))
-            (y (bfr-fix y)))
-         (bfr-case
+       (b* ((x (lbfr-fix x))
+            (y (lbfr-fix y)))
+         (lbfr-case
            :bdd (mv (acl2::q-binary-xor x y) logicman)
            :aig (mv (acl2::aig-xor x y) logicman)
-           :aignet (b* ((x (bfr->aignet-lit x))
+           :aignet (b* ((bfrstate (logicman->bfrstate))
+                        (x (bfr->aignet-lit x))
                         (y (bfr->aignet-lit y)))
                      (stobj-let
                       ((aignet (logicman->aignet logicman))
                        (aignet::strash (logicman->strash logicman)))
                       (lit aignet::strash aignet)
                       (aignet::aignet-hash-xor x y (aignet::default-gatesimp) aignet::strash aignet)
-                      (mv (aignet-lit->bfr lit) logicman)))))
+                      (b* ((bfrstate (logicman->bfrstate)))
+                        (mv (aignet-lit->bfr lit) logicman))))))
        :exec
        (cond ((eq x t) (mv (bfr-not y) logicman))
              ((eq x nil) (mv y logicman))
              ((eq y t) (mv (bfr-not x) logicman))
              ((eq y nil) (mv x logicman))
-             (t (bfr-case
+             (t (lbfr-case
                   :bdd (mv (acl2::q-binary-xor x y) logicman)
                   :aig (mv (acl2::aig-xor x y) logicman)
                   :aignet
-                  (b* ((x (bfr->aignet-lit x))
+                  (b* ((bfrstate (logicman->bfrstate))
+                       (x (bfr->aignet-lit x))
                        (y (bfr->aignet-lit y)))
                     (stobj-let
                      ((aignet (logicman->aignet logicman))
                       (aignet::strash (logicman->strash logicman)))
                      (lit aignet::strash aignet)
                      (aignet::aignet-hash-xor x y (aignet::default-gatesimp) aignet::strash aignet)
-                     (mv (aignet-lit->bfr lit) logicman)))))))
+                     (b* ((bfrstate (logicman->bfrstate)))
+                       (mv (aignet-lit->bfr lit) logicman))))))))
   ///
   (local (acl2::use-trivial-ancestors-check))
 
@@ -1545,11 +1703,11 @@ like @(see bfr-and).</p>
     :otf-flg t)
 
   (defthm bfr-xor-of-bfr-fix-x
-    (equal (bfr-xor (bfr-fix x) y)
+    (equal (bfr-xor (lbfr-fix x) y)
            (bfr-xor x y)))
 
   (defthm bfr-xor-of-bfr-fix-y
-    (equal (bfr-xor x (bfr-fix y))
+    (equal (bfr-xor x (lbfr-fix y))
            (bfr-xor x y)))
 
   (defret logicman-extension-p-of-<fn>
@@ -1573,10 +1731,10 @@ like @(see bfr-and).</p>
                 '(:in-theory (enable bfr-fix acl2::aig-xor acl2::aig-or))))))
 
 
-(define bfr-iff ((x bfr-p)
-                 (y bfr-p)
+(define bfr-iff ((x lbfr-p)
+                 (y lbfr-p)
                  &optional (logicman 'logicman))
-  :returns (mv (iff-bfr (bfr-p iff-bfr new-logicman))
+  :returns (mv (iff-bfr (lbfr-p iff-bfr new-logicman))
                (new-logicman))
   :guard-hints (("goal" :do-not-induct t
                  :in-theory (enable bfr-not acl2::aig-iff acl2::q-iff
@@ -1584,36 +1742,40 @@ like @(see bfr-and).</p>
                 (and stable-under-simplificationp '(:in-theory (enable bfr-p))))
 
   (mbe :logic
-       (b* ((x (bfr-fix x))
-            (y (bfr-fix y)))
-         (bfr-case
+       (b* ((x (lbfr-fix x))
+            (y (lbfr-fix y)))
+         (lbfr-case
            :bdd (mv (acl2::q-binary-iff x y) logicman)
            :aig (mv (acl2::aig-iff x y) logicman)
-           :aignet (b* ((x (bfr->aignet-lit x))
+           :aignet (b* ((bfrstate (logicman->bfrstate))
+                        (x (bfr->aignet-lit x))
                         (y (bfr->aignet-lit y)))
                      (stobj-let
                       ((aignet (logicman->aignet logicman))
                        (aignet::strash (logicman->strash logicman)))
                       (lit aignet::strash aignet)
                       (aignet::aignet-hash-iff x y (aignet::default-gatesimp) aignet::strash aignet)
-                      (mv (aignet-lit->bfr lit) logicman)))))
+                      (b* ((bfrstate (logicman->bfrstate)))
+                        (mv (aignet-lit->bfr lit) logicman))))))
        :exec
        (cond ((eq x nil) (mv (bfr-not y) logicman))
              ((eq x t) (mv y logicman))
              ((eq y nil) (mv (bfr-not x) logicman))
              ((eq y t) (mv x logicman))
-             (t (bfr-case
+             (t (lbfr-case
                   :bdd (mv (acl2::q-binary-iff x y) logicman)
                   :aig (mv (acl2::aig-iff x y) logicman)
                   :aignet
-                  (b* ((x (bfr->aignet-lit x))
+                  (b* ((bfrstate (logicman->bfrstate))
+                       (x (bfr->aignet-lit x))
                        (y (bfr->aignet-lit y)))
                     (stobj-let
                      ((aignet (logicman->aignet logicman))
                       (aignet::strash (logicman->strash logicman)))
                      (lit aignet::strash aignet)
                      (aignet::aignet-hash-iff x y (aignet::default-gatesimp) aignet::strash aignet)
-                     (mv (aignet-lit->bfr lit) logicman)))))))
+                     (b* ((bfrstate (logicman->bfrstate)))
+                       (mv (aignet-lit->bfr lit) logicman))))))))
   ///
   (local (acl2::use-trivial-ancestors-check))
 
@@ -1626,11 +1788,11 @@ like @(see bfr-and).</p>
     :otf-flg t)
 
   (defthm bfr-iff-of-bfr-fix-x
-    (equal (bfr-iff (bfr-fix x) y)
+    (equal (bfr-iff (lbfr-fix x) y)
            (bfr-iff x y)))
 
   (defthm bfr-iff-of-bfr-fix-y
-    (equal (bfr-iff x (bfr-fix y))
+    (equal (bfr-iff x (lbfr-fix y))
            (bfr-iff x y)))
 
   (defret logicman-extension-p-of-<fn>
@@ -1658,31 +1820,32 @@ like @(see bfr-and).</p>
 
 (local (defthm equal-of-bfr->aignet-lit
          (implies (and (bfr-p x) (bfr-p y)
-                       (equal (bfr-mode) :aignet))
+                       (bfrstate-mode-is :aignet))
                   (iff (equal (bfr->aignet-lit x) (bfr->aignet-lit y))
                        (equal x y)))
          :hints (("goal" :use ((:instance aignet-lit->bfr-of-bfr->aignet-lit (x x))
                                (:instance aignet-lit->bfr-of-bfr->aignet-lit (x y)))
                   :in-theory (disable aignet-lit->bfr-of-bfr->aignet-lit)))))
 
-(define bfr-ite ((x bfr-p)
-                 (y bfr-p)
-                 (z bfr-p)
+(define bfr-ite ((x lbfr-p)
+                 (y lbfr-p)
+                 (z lbfr-p)
                  &optional (logicman 'logicman))
-  :returns (mv (ite-bfr (bfr-p ite-bfr new-logicman))
+  :returns (mv (ite-bfr (lbfr-p ite-bfr new-logicman))
                (new-logicman))
   :guard-hints (("goal" :do-not-induct t
                  :in-theory (enable acl2::aig-ite-fn aignet::aignet-hash-mux
                                     aignet::aignet-hash-or)))
 
   (mbe :logic
-       (b* ((x (bfr-fix x))
-            (y (bfr-fix y))
-            (z (bfr-fix z)))
-         (bfr-case
+       (b* ((x (lbfr-fix x))
+            (y (lbfr-fix y))
+            (z (lbfr-fix z)))
+         (lbfr-case
            :bdd (mv (acl2::q-ite x y z) logicman)
            :aig (mv (acl2::aig-ite x y z) logicman)
-           :aignet (b* ((x (bfr->aignet-lit x))
+           :aignet (b* ((bfrstate (logicman->bfrstate))
+                        (x (bfr->aignet-lit x))
                         (y (bfr->aignet-lit y))
                         (z (bfr->aignet-lit z)))
                      (stobj-let
@@ -1690,16 +1853,18 @@ like @(see bfr-and).</p>
                        (aignet::strash (logicman->strash logicman)))
                       (lit aignet::strash aignet)
                       (aignet::aignet-hash-mux x y z (aignet::default-gatesimp) aignet::strash aignet)
-                      (mv (aignet-lit->bfr lit) logicman)))))
+                      (b* ((bfrstate (logicman->bfrstate)))
+                        (mv (aignet-lit->bfr lit) logicman))))))
        :exec
        (cond ((eq x t) (mv y logicman))
              ((eq x nil) (mv z logicman))
              ((hons-equal y z) (mv y logicman))
-             (t (bfr-case
+             (t (lbfr-case
                   :bdd (mv (acl2::q-ite x y z) logicman)
                   :aig (mv (acl2::aig-ite x y z) logicman)
                   :aignet
-                  (b* ((x (bfr->aignet-lit x))
+                  (b* ((bfrstate (logicman->bfrstate))
+                       (x (bfr->aignet-lit x))
                        (y (bfr->aignet-lit y))
                        (z (bfr->aignet-lit z)))
                     (stobj-let
@@ -1707,7 +1872,8 @@ like @(see bfr-and).</p>
                       (aignet::strash (logicman->strash logicman)))
                      (lit aignet::strash aignet)
                      (aignet::aignet-hash-mux x y z (aignet::default-gatesimp) aignet::strash aignet)
-                     (mv (aignet-lit->bfr lit) logicman)))))))
+                     (b* ((bfrstate (logicman->bfrstate)))
+                       (mv (aignet-lit->bfr lit) logicman))))))))
   ///
   (local (acl2::use-trivial-ancestors-check))
 
@@ -1721,15 +1887,15 @@ like @(see bfr-and).</p>
     :otf-flg t)
 
   (defthm bfr-ite-of-bfr-fix-x
-    (equal (bfr-ite (bfr-fix x) y z)
+    (equal (bfr-ite (lbfr-fix x) y z)
            (bfr-ite x y z)))
 
   (defthm bfr-ite-of-bfr-fix-y
-    (equal (bfr-ite x (bfr-fix y) z)
+    (equal (bfr-ite x (lbfr-fix y) z)
            (bfr-ite x y z)))
   
   (defthm bfr-ite-of-bfr-fix-z
-    (equal (bfr-ite x y (bfr-fix z))
+    (equal (bfr-ite x y (lbfr-fix z))
            (bfr-ite x y z)))
 
   (defret logicman-extension-p-of-<fn>
@@ -1785,7 +1951,7 @@ like @(see bfr-and).</p>
    (bfr-vals))
   :layout :tree)
 
-(define gobj-bfr-eval ((x bfr-p)
+(define gobj-bfr-eval ((x lbfr-p)
                        (env gl-env-p)
                        &optional (logicman 'logicman))
   :returns bool
@@ -1796,12 +1962,12 @@ like @(see bfr-and).</p>
          (equal (gobj-bfr-eval nil env) nil)))
 
   (defthm gobj-bfr-eval-of-bfr-fix
-    (equal (gobj-bfr-eval (bfr-fix x) env)
+    (equal (gobj-bfr-eval (lbfr-fix x) env)
            (gobj-bfr-eval x env)))
   
   (defthm gobj-bfr-eval-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (bfr-p x old))
+                  (lbfr-p x old))
              (equal (gobj-bfr-eval x env new)
                     (gobj-bfr-eval x env old))))
 
@@ -1846,7 +2012,7 @@ like @(see bfr-and).</p>
     :fn bfr-ite))
 
 
-(define gobj-bfr-list-eval ((x bfr-listp) (env gl-env-p) &optional (logicman 'logicman))
+(define gobj-bfr-list-eval ((x lbfr-listp) (env gl-env-p) &optional (logicman 'logicman))
   :returns bools
   (if (atom x)
       nil
@@ -1854,12 +2020,12 @@ like @(see bfr-and).</p>
           (gobj-bfr-list-eval (cdr x) env)))
   ///
   (defthm gobj-bfr-list-eval-of-gobj-bfr-list-fix
-    (equal (gobj-bfr-list-eval (bfr-list-fix x) env)
+    (equal (gobj-bfr-list-eval (lbfr-list-fix x) env)
            (gobj-bfr-list-eval x env)))
 
   (defthm gobj-bfr-list-eval-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (bfr-listp x old))
+                  (lbfr-listp x old))
              (equal (gobj-bfr-list-eval x env new)
                     (gobj-bfr-list-eval x env old))))
 
@@ -1891,7 +2057,7 @@ like @(see bfr-and).</p>
   (cdr (assoc-equal name (gl-env->obj-alist env))))
 
 (defines base-gl-object-eval
-  (define base-gl-object-eval ((x gl-bfr-object-p)
+  (define base-gl-object-eval ((x lgl-bfr-object-p)
                                (env gl-env-p)
                                &optional (logicman 'logicman))
     :measure (gl-object-count x)
@@ -1908,7 +2074,7 @@ like @(see bfr-and).</p>
       :g-var (gobj-var-lookup x.name env)
       :g-cons (cons (base-gl-object-eval x.car env)
                     (base-gl-object-eval x.cdr env))))
-  (define base-gl-objectlist-eval ((x gl-bfr-objectlist-p)
+  (define base-gl-objectlist-eval ((x lgl-bfr-objectlist-p)
                                    (env gl-env-p)
                                    &optional (logicman 'logicman))
     :measure (gl-objectlist-count x)
@@ -1922,14 +2088,14 @@ like @(see bfr-and).</p>
 
   (defret-mutual base-gl-object-eval-of-gl-bfr-object-fix
     (defret base-gl-object-eval-of-gl-bfr-object-fix
-      (equal (base-gl-object-eval (gl-bfr-object-fix x) env)
+      (equal (base-gl-object-eval (lgl-bfr-object-fix x) env)
              val)
-      :hints ('(:expand ((gl-bfr-object-fix x))))
+      :hints ('(:expand ((lgl-bfr-object-fix x))))
       :fn base-gl-object-eval)
     (defret base-gl-objectlist-eval-of-gl-bfr-object-fix
-      (equal (base-gl-objectlist-eval (gl-bfr-objectlist-fix x) env)
+      (equal (base-gl-objectlist-eval (lgl-bfr-objectlist-fix x) env)
              vals)
-      :hints ('(:expand ((gl-bfr-objectlist-fix x))))
+      :hints ('(:expand ((lgl-bfr-objectlist-fix x))))
       :fn base-gl-objectlist-eval))
 
   (defret-mutual base-gl-object-eval-of-gl-object-fix
@@ -1951,7 +2117,7 @@ like @(see bfr-and).</p>
   (defthm-base-gl-object-eval-flag
     (defthm base-gl-object-eval-of-logicman-extension
       (implies (and (bind-logicman-extension new old)
-                    (gl-bfr-object-p x old))
+                    (lgl-bfr-object-p x old))
                (equal (base-gl-object-eval x env new)
                       (base-gl-object-eval x env old)))
       :hints ('(:expand ((:free (logicman) (base-gl-object-eval x env logicman))
@@ -1959,7 +2125,7 @@ like @(see bfr-and).</p>
       :flag base-gl-object-eval)
     (defthm base-gl-objectlist-eval-of-logicman-extension
       (implies (and (bind-logicman-extension new old)
-                    (gl-bfr-objectlist-p x old))
+                    (lgl-bfr-objectlist-p x old))
                (equal (base-gl-objectlist-eval x env new)
                       (base-gl-objectlist-eval x env old)))
       :hints ('(:expand ((:free (logicman) (base-gl-objectlist-eval x env logicman))
@@ -2048,7 +2214,7 @@ like @(see bfr-and).</p>
 
 (defines gl-object-depends-on
   (define gl-object-depends-on ((v bfr-varname-p)
-                                (x gl-bfr-object-p)
+                                (x lgl-bfr-object-p)
                                &optional ((logicman logicman-nvars-ok) 'logicman))
     :measure (gl-object-count x)
     :verify-guards nil
@@ -2065,7 +2231,7 @@ like @(see bfr-and).</p>
       :g-cons (or (gl-object-depends-on v x.car)
                   (gl-object-depends-on v x.cdr))))
   (define gl-objectlist-depends-on ((v bfr-varname-p)
-                                   (x gl-bfr-objectlist-p)
+                                   (x lgl-bfr-objectlist-p)
                                    &optional ((logicman logicman-nvars-ok) 'logicman))
     :measure (gl-objectlist-count x)
     :returns (vals booleanp :rule-classes :type-prescription)
@@ -2078,14 +2244,14 @@ like @(see bfr-and).</p>
 
   (defret-mutual gl-object-depends-on-of-gl-bfr-object-fix
     (defret gl-object-depends-on-of-gl-bfr-object-fix
-      (equal (gl-object-depends-on v (gl-bfr-object-fix x))
+      (equal (gl-object-depends-on v (lgl-bfr-object-fix x))
              val)
-      :hints ('(:expand ((gl-bfr-object-fix x))))
+      :hints ('(:expand ((lgl-bfr-object-fix x))))
       :fn gl-object-depends-on)
     (defret gl-objectlist-depends-on-of-gl-bfr-object-fix
-      (equal (gl-objectlist-depends-on v (gl-bfr-objectlist-fix x))
+      (equal (gl-objectlist-depends-on v (lgl-bfr-objectlist-fix x))
              vals)
-      :hints ('(:expand ((gl-bfr-objectlist-fix x))))
+      :hints ('(:expand ((lgl-bfr-objectlist-fix x))))
       :fn gl-objectlist-depends-on))
 
   (defret-mutual gl-object-depends-on-of-gl-object-fix
@@ -2107,7 +2273,7 @@ like @(see bfr-and).</p>
   (defthm-gl-object-depends-on-flag
     (defthm gl-object-depends-on-of-logicman-extension
       (implies (and (bind-logicman-extension new old)
-                    (gl-bfr-object-p x old)
+                    (lgl-bfr-object-p x old)
                     (bfr-varname-p v old))
                (equal (gl-object-depends-on v x new)
                       (gl-object-depends-on v x old)))
@@ -2116,7 +2282,7 @@ like @(see bfr-and).</p>
       :flag gl-object-depends-on)
     (defthm gl-objectlist-depends-on-of-logicman-extension
       (implies (and (bind-logicman-extension new old)
-                    (gl-bfr-objectlist-p x old)
+                    (lgl-bfr-objectlist-p x old)
                     (bfr-varname-p v old))
                (equal (gl-objectlist-depends-on v x new)
                       (gl-objectlist-depends-on v x old)))

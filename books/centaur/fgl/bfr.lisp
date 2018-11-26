@@ -77,21 +77,35 @@ checking for these values.</p>")
   :long "<p>Usage:</p>
 
 @({
-     (bfr-mode-case :aig aig-code
+
+     ;; Different cases for all modes, explicit bfr-mode supplied
+     (bfr-mode-case my-bfr-mode
+                    :aig aig-code
                     :bdd bdd-code
-                    :aignet aignet-code
+                    :aignet aignet-code)
+
+     ;; Different case only for one mode with default for others,
+     ;; implicitly uses the bfr-mode variable
+     (bfr-mode-case :aig aig-code
                     :otherwise default-code)
+
 })
 
-@(def bfr-mode-case)"
+<h4>Notes</h4>
 
-  (defmacro bfr-mode-case (&key (aig 'nil aig-p)
-                                (bdd 'nil bdd-p)
-                                (aignet 'nil aignet-p)
-                                (otherwise 'nil otherwise-p))
+<p>The bfr-mode argument may be left out, in which case the first argument must
+be a keyword and the bfr-mode used is the variable @('bfr-mode').</p>
+
+<p>The keyword arguments accepted are @(':aig'), @(':bdd'), @(':aignet'), and
+@(':otherwise'), but you can't use all four in one form.</p>"
+
+  (defmacro bfr-mode-case1 (mode &key (aig 'nil aig-p)
+                                 (bdd 'nil bdd-p)
+                                 (aignet 'nil aignet-p)
+                                 (otherwise 'nil otherwise-p))
     (if (and aig-p bdd-p aignet-p otherwise-p)
         (er hard? 'bfr-mode-case "Provided :otherwise along with all three cases :aig, :bdd, :aignet.")
-      `(case (bfr-mode-fix bfr-mode)
+      `(case (bfr-mode-fix ,mode)
          ,@(and bdd-p `((1 ,bdd)))
          ,@(and aignet-p `((0 ,aignet)))
          ,@(and aig-p
@@ -101,11 +115,36 @@ checking for these values.</p>")
          ,@(and otherwise-p
                 `((t ,otherwise))))))
 
-  (defmacro bfr-mode-is (key)
-    (cond ((eq key :aignet) `(eql (bfr-mode-fix bfr-mode) 0))
-          ((eq key :bdd) `(eql (bfr-mode-fix bfr-mode) 1))
-          ((eq key :aig) `(eql (bfr-mode-fix bfr-mode) 2))
-          (t (er hard? 'bfr-mode-is "Bad key: ~x0" key)))))
+  (defun bfr-mode-case-fn (args)
+    (if (keywordp (car args))
+        `(bfr-mode-case1 bfr-mode . ,args)
+      `(bfr-mode-case1 ,(car args) . ,(cdr args))))
+
+  (defmacro bfr-mode-case (&rest args)
+    (bfr-mode-case-fn args)))
+
+(defsection bfr-mode-is
+  :short "Check the current bfr-mode."
+  :long "<p>Just returns T if the given bfr-mode matches the keyword.
+Like @(see bfr-mode-case), the bfr-mode argument is optional.  Usage:</p>
+
+@({
+ ;; Use the bfr-mode variable. T if aig mode, NIL if aignet or bdd.
+ (bfr-mode-case :aig) 
+
+ ;; Use the given bfr-mode object. T if bdd mode, NIL if aignet or aig.
+ (bfr-mode-case :bdd my-bfr-mode)
+})
+"
+
+  (defun bfr-mode-is-fn (key mode)
+    (cond ((eq key :aignet) `(eql (bfr-mode-fix ,mode) 0))
+          ((eq key :bdd) `(eql (bfr-mode-fix ,mode) 1))
+          ((eq key :aig) `(eql (bfr-mode-fix ,mode) 2))
+          (t (er hard? 'bfr-mode-is "Bad key: ~x0" key))))
+
+  (defmacro bfr-mode-is (key &optional (mode 'bfr-mode))
+    (bfr-mode-is-fn key mode)))
 
 
 (define bfrstate-p (x)
@@ -207,66 +246,86 @@ lower 2 bits and the node index bound in the upper bits of an integer.</p>"
     :hints(("Goal" :in-theory (enable bfrstate-fix bfrstate bfrstate->mode bfrstate->bound)))))
 
 
-(defmacro bfrstate-case (&rest args)
-  `(b* ((bfr-mode (bfrstate->mode bfrstate)))
-     (bfr-mode-case . ,args)))
+(defsection bfrstate-case
+  :short "Choose behavior based on the current @(see bfr) mode of the bfrstate"
+  :long "<p>Same as @(see bfr-mode-case), but gets the bfr mode from a bfrstate
+object.  If no bfrstate object is supplied (i.e., if the first argument is a
+keyword), the variable named @('bfrstate') is implicitly used.</p>"
 
-(defmacro bfrstate-mode-is (key)
-  `(b* ((bfr-mode (bfrstate->mode bfrstate)))
-     (bfr-mode-is ,key)))
+  (defun bfrstate-case-fn (args)
+    (if (keywordp (car args))
+        `(bfr-mode-case (bfrstate->mode bfrstate). ,args)
+      `(bfr-mode-case (bfrstate->mode ,(car args)) . ,(cdr args))))
 
-(defsection bfrstate>=-bind
-  :parents (bfrstate)
-  :short "Binding scheme for rewriting based on the bfrstate>= relation."
-  :long "<p>We want to have a rewriting scheme for bfrstates similar to the one
-for aignet extensions, whereby if a bfrstate is modified in a way that
-preserves the mode and may only increase the bound, then we can in some cases
-rewrite that modification away.</p>
+  (defmacro bfrstate-case (&rest args)
+    (bfrstate-case-fn args)))
 
-<p>What we'd like to be able to do is have simple rewrite rules like this:</p>
 
-@({
- (implies (and (bfrstate>=-bind new old)
-               (bfr-p x old))
-          (bfr-p x new))
- })
+(defsection bfrstate-mode-is
+  :short "Check the current bfr-mode of a bfrstate object."
+  :long "<p>Same as @(see bfr-mode-is), but gets the bfr mode object from a
+bfrstate object.  If no bfrstate object is supplied, the variable named
+@('bfrstate') is implicitly used.</p>"
+  (defun bfrstate-mode-is-fn (key bfrstate)
+    `(bfr-mode-is ,key (bfrstate->mode ,bfrstate)))
 
-<p>Where bfrstate>=-bind allows us to bind old based on the syntax of new.</p>
+  (defmacro bfrstate-mode-is (key &optional (bfrstate 'bfrstate))
+    (bfrstate-mode-is-fn key bfrstate)))
 
-<p>This is going to be a little more complicated for bfrstates than for
-aignets, because we're generally going to be pulling a bfrstate out of a
-logicman.  We'd like to be able to just prove something like this:</p>
+;; (defsection bfrstate>=-bind
+;;   :parents (bfrstate)
+;;   :short "Binding scheme for rewriting based on the bfrstate>= relation."
+;;   :long "<p>We want to have a rewriting scheme for bfrstates similar to the one
+;; for aignet extensions, whereby if a bfrstate is modified in a way that
+;; preserves the mode and may only increase the bound, then we can in some cases
+;; rewrite that modification away.</p>
 
-@({
- (implies (logicman-extension-p lnew lold)
-          (bfrstate>= (logicman-bfrstate lnew) (logicman-bfrstate lold)))
- })
+;; <p>What we'd like to be able to do is have simple rewrite rules like this:</p>
 
-<p>and use our rules about finding a logicman extension binding to find lold
-based on lnew, whenever the syntax of new is @('(logicman-bfrstate lnew)').</p>
+;; @({
+;;  (implies (and (bfrstate>=-bind new old)
+;;                (bfr-p x old))
+;;           (bfr-p x new))
+;;  })
 
-<p>To complicate things, we'd like to define bfrstate>=-bind before the
-relevant logicman stuff is in place, so we need some way to plug that stuff in
-after the fact.  So what we'll do for now is leave it as an attachable
-function; then later we can add the right mechanisms.</p>"
+;; <p>Where bfrstate>=-bind allows us to bind old based on the syntax of new.</p>
 
-  (defmacro bfrstate>=-bind (new old)
-    `(and (bfrstate>=-bind-fn ,new ',old mfc state)
-          (bfrstate>= ,new ,old)))
+;; <p>This is going to be a little more complicated for bfrstates than for
+;; aignets, because we're generally going to be pulling a bfrstate out of a
+;; logicman.  We'd like to be able to just prove something like this:</p>
 
-  (encapsulate
-    (((bfrstate>=-bind-fn * * * state) => *
-      :formals (new old mfc state)
-      :guard (symbolp old)))
-    (local (defun bfrstate>=-bind-fn (new old mfc state)
-             (declare (xargs :guard (symbolp old))
-                      (ignorable new old mfc state))
-             `((,old . ,new)))))
+;; @({
+;;  (implies (logicman-extension-p lnew lold)
+;;           (bfrstate>= (logicman-bfrstate lnew) (logicman-bfrstate lold)))
+;;  })
 
-  (define bfrstate>=-bind-fn-base (new
-                                   (old symbolp)
-                                   mfc state)
-    
+;; <p>and use our rules about finding a logicman extension binding to find lold
+;; based on lnew, whenever the syntax of new is @('(logicman-bfrstate lnew)').</p>
+
+;; <p>To complicate things, we'd like to define bfrstate>=-bind before the
+;; relevant logicman stuff is in place, so we need some way to plug that stuff in
+;; after the fact.  So what we'll do for now is leave it as an attachable
+;; function; then later we can add the right mechanisms.</p>"
+
+;;   (defmacro bfrstate>=-bind (new old)
+;;     `(and (bind-free (bfrstate>=-bind-fn ,new ',old mfc state))
+;;           (bfrstate>= ,new ,old)))
+
+;;   (encapsulate
+;;     (((bfrstate>=-bind-fn * * * state) => *
+;;       :formals (new old mfc state)
+;;       :guard (symbolp old)))
+;;     (local (defun bfrstate>=-bind-fn (new old mfc state)
+;;              (declare (xargs :guard (symbolp old))
+;;                       (ignorable new old mfc state))
+;;              `((,old . ,new)))))
+
+;;   (define bfrstate>=-bind-fn-base (new
+;;                                    (old symbolp)
+;;                                    mfc state)
+;;     (declare (ignore old mfc state))
+;;     '((some-unused-variable . 'nil))))
+
              
      
 
@@ -280,17 +339,17 @@ function; then later we can add the right mechanisms.</p>"
   (defthm bfrstate>=-self
     (bfrstate>= x x))
 
-
-
   (defthmd bfrstate>=-implies-mode
     (implies (bfrstate>= x y)
              (equal (bfrstate->mode x)
                     (bfrstate->mode y))))
 
-  (defthm bfrstate<=-implies-bound
-    (implies (and (bfrstate<= x y)
+  (defthmd bfrstate>=-implies-bound
+    (implies (and (bfrstate>= x y)
                   (b* ((bfr-mode (bfrstate->mode x)))
                     (bfr-mode-is :aignet)))
+             (>= (bfrstate->bound x) (bfrstate->bound y)))
+    :rule-classes (:rewrite :linear)))
 
 
 (define bfr-p (x &optional ((bfrstate bfrstate-p) 'bfrstate))
@@ -307,7 +366,14 @@ function; then later we can add the right mechanisms.</p>"
   ///
   (defthm bfr-p-of-constants
     (and (bfr-p t)
-         (bfr-p nil))))
+         (bfr-p nil)))
+
+  (defthm bfr-p-when-bfrstate>=
+    (implies (and (bfrstate>= new old)
+                  (bfr-p x old))
+             (bfr-p x new))
+    :hints(("Goal" :in-theory (enable bfrstate>=-implies-mode
+                                      bfrstate>=-implies-bound)))))
 
 (std::deflist bfr-listp$ (x bfrstate)
   :guard (bfrstate-p bfrstate)
@@ -319,16 +385,42 @@ function; then later we can add the right mechanisms.</p>"
 
   (add-macro-alias bfr-listp bfr-listp$)
 
-  (fty::deffixequiv bfr-listp$ :args ((bfrstate bfrstate-p))))
+  (fty::deffixequiv bfr-listp$ :args ((bfrstate bfrstate-p)))
+
+  (defthm bfr-listp-of-nil
+    (bfr-listp nil))
+
+  (defthm bfr-listp-when-bfrstate>=
+    (implies (and (bfrstate>= new old)
+                  (bfr-listp x old))
+             (bfr-listp x new))))
+
+
+
+(define bounded-lit-fix ((x satlink::litp)
+                         (bound natp))
+  :guard (<= (satlink::lit->var x) bound)
+  :returns (new-x satlink::litp :rule-classes :type-prescription)
+  :inline t
+  (mbe :logic (if (<= (satlink::lit->var x) (nfix bound))
+                  (satlink::lit-fix x)
+                (satlink::make-lit 0 (satlink::lit->neg x)))
+       :exec x)
+  ///
+  (defret bound-of-bounded-lit-fix
+    (<= (satlink::lit->var new-x) (nfix bound))
+    :rule-classes :linear)
+  (defret bounded-lit-fix-when-bounded
+    (implies (<= (satlink::lit->var x) (nfix bound))
+             (equal new-x (satlink::lit-fix x)))))
 
 (define aignet-lit->bfr ((x satlink::litp) &optional ((bfrstate bfrstate-p) 'bfrstate))
   :guard (and (bfrstate-mode-is :aignet)
               (<= (satlink::lit->var x) (bfrstate->bound bfrstate)))
-  (b* ((x (satlink::lit-fix x))
-       (x (mbe :logic (if (<= (satlink::lit->var x) (bfrstate->bound bfrstate))
-                          x
-                        (satlink::make-lit 0 (satlink::lit->neg x)))
-               :exec x)))
+  :returns (bfr (implies (bfrstate-mode-is :aignet)
+                         (bfr-p bfr))
+                :hints(("Goal" :in-theory (enable bfr-p))))
+  (b* ((x (bounded-lit-fix x (bfrstate->bound bfrstate))))
     (case x
       (0 nil)
       (1 t)
@@ -381,19 +473,6 @@ function; then later we can add the right mechanisms.</p>"
   (defret len-of-bfr-list-fix
     (equal (len (bfr-list-fix x))
            (len x))))
-
-(define bounded-lit-fix ((x satlink::litp)
-                         (bound natp))
-  :guard (<= (satlink::lit->var x) bound)
-  :returns (new-x satlink::litp :rule-classes :type-prescription)
-  (mbe :logic (if (<= (satlink::lit->var x) (nfix bound))
-                  (satlink::lit-fix x)
-                (satlink::make-lit 0 (satlink::lit->neg x)))
-       :exec x)
-  ///
-  (defret bound-of-bounded-lit-fix
-    (<= (satlink::lit->var new-x) (nfix bound))
-    :rule-classes :linear))
 
 
 (define bfr->aignet-lit ((x bfr-p) &optional ((bfrstate bfrstate-p) 'bfrstate))
@@ -621,7 +700,22 @@ function; then later we can add the right mechanisms.</p>"
                         (gl-bfr-object-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))
                         (gl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
                         (gl-bfr-objectlist-p-aux ,(acl2::hq (gl-objectlist-fix x)) ,(acl2::hq bfrstate))
-                        (gl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))))))))
+                        (gl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate))))))))
+
+  (defthm-gl-bfr-object-p-flag
+    (defthm gl-bfr-object-p-when-bfrstate>=
+      (implies (and (bfrstate>= new old)
+                    (gl-bfr-object-p x old))
+               (gl-bfr-object-p x new))
+      :hints ('(:expand ((:free (bfrstate) (gl-bfr-object-p x)))))
+      :flag gl-bfr-object-p)
+    (defthm gl-bfr-objectlist-p-when-bfrstate>=
+      (implies (and (bfrstate>= new old)
+                    (gl-bfr-objectlist-p x old))
+               (gl-bfr-objectlist-p x new))
+      :hints ('(:expand ((:free (bfrstate) (gl-bfr-objectlist-p x)))))
+      :flag gl-bfr-objectlist-p)
+    :hints (("goal" :induct (gl-bfr-object-p-flag flag x old)))))
 
 
 (defines gl-bfr-object-fix
