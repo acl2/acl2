@@ -54,6 +54,29 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * then either the second or third one,
      * based on the result of evaluating the first argument;
      * {@code if} is the only non-strict function in ACL2.
+     * <p>
+     * We handle calls to the ACL2 "pseudo-function" {@code or} specially.
+     * In ACL2, {@code or} is a macro:
+     * {@code (or a b)} expands to {@code (if a a b)},
+     * which would cause {@code a} to be evaluated twice in a "naive" execution.
+     * ACL2 relies on the underlying Common Lisp implementation
+     * to optimize this situation and evaluate {@code a} just once.
+     * In AIJ, {@code or} is treated like a non-strict primitive function,
+     * which evaluates the first argument and returns its value
+     * if it is not {@code nil},
+     * and otherwise evaluates the second argument and returns its value.
+     * This {@code or} pseudo-function can be viewed as
+     * an optimized version of {@code if}
+     * when test and "then" branch are the same.
+     * Java code external to AIJ can use this {@code or} pseudo-function
+     * to represent calls to the {@code or} macro,
+     * or more in general calls of the form {@code (if a a b)}.
+     * Note that the {@code acl2::or} symbol
+     * can never appear in an ACL2 translated term,
+     * because ACL2 prohibits the definition of functions
+     * with names in the {@code "COMMON-LISP"} package;
+     * thus, the use of this {@code or} pseudo-function in AIJ
+     * can never interfere with other ACL2 functions.
      *
      * @throws Acl2EvaluationException if the evaluation of an argument fails,
      *                                 or the application of
@@ -74,6 +97,16 @@ public final class Acl2FunctionApplication extends Acl2Term {
                 return arguments[2].eval(bindings);
             else
                 return arguments[1].eval(bindings);
+        } else if (function.isOr()) {
+            if (len != 2) // this should never happen
+                throw new Acl2EvaluationException
+                        ("Called OR on " + len +
+                                (len == 1 ? " argument." : " arguments."));
+            Acl2Value first = arguments[0].eval(bindings);
+            if (first.equals(Acl2Symbol.NIL))
+                return arguments[1].eval(bindings);
+            else
+                return first;
         } else {
             Acl2Value[] argumentValues = new Acl2Value[len];
             for (int i = 0; i < len; ++i)

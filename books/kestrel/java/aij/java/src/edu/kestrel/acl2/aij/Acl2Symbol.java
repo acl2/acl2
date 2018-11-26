@@ -472,6 +472,11 @@ public final class Acl2Symbol extends Acl2Value {
      */
     public static final Acl2Symbol BAD_ATOM_LESS_THAN_OR_EQUAL_TO;
 
+    /**
+     * The ACL2 symbol denoted by {@code acl2::or}.
+     */
+    public static final Acl2Symbol OR;
+
     static { // builds the pre-created symbols
         // names of the symbols:
         Acl2String stringT = Acl2String.make("T");
@@ -513,6 +518,7 @@ public final class Acl2Symbol extends Acl2Value {
         Acl2String stringEqual = Acl2String.make("EQUAL");
         Acl2String stringBadAtomLessThanOrEqualTo =
                 Acl2String.make("BAD-ATOM<=");
+        Acl2String stringOr = Acl2String.make("OR");
         // symbols:
         T = new Acl2Symbol(Acl2PackageName.LISP, stringT);
         NIL = new Acl2Symbol(Acl2PackageName.LISP, stringNil);
@@ -555,6 +561,7 @@ public final class Acl2Symbol extends Acl2Value {
         BAD_ATOM_LESS_THAN_OR_EQUAL_TO =
                 new Acl2Symbol(Acl2PackageName.ACL2,
                         stringBadAtomLessThanOrEqualTo);
+        OR = new Acl2Symbol(Acl2PackageName.LISP, stringOr);
         // initial inner map for the "COMMON-LISP" package:
         Map<Acl2String, Acl2Symbol> initialLispMap = new HashMap<>();
         initialLispMap.put(stringT, T);
@@ -580,7 +587,8 @@ public final class Acl2Symbol extends Acl2Value {
         initialLispMap.put(stringCar, CAR);
         initialLispMap.put(stringCdr, CDR);
         initialLispMap.put(stringEqual, EQUAL);
-        // initial inner map for the "ACL2" pacakge:
+        initialLispMap.put(stringOr, OR);
+        // initial inner map for the "ACL2" package:
         Map<Acl2String, Acl2Symbol> initialAcl2Map = new HashMap<>();
         initialAcl2Map.put(stringComplexRationalp, COMPLEX_RATIONALP);
         initialAcl2Map.put(stringAcl2Numberp, ACL2_NUMBERP);

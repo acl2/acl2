@@ -26,6 +26,7 @@ import java.util.Map;
  * All the ACL2 primitive functions are implemented here, except for {@code if}.
  * The ACL2 function {@code if} is non-strict:
  * thus, it is handled specially by the term evaluator,
+ *
  * see {@link Acl2FunctionApplication#eval(Map)}.
  */
 class Acl2Primitive {

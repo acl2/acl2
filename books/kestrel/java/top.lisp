@@ -88,4 +88,13 @@
       has been renamed to @('Acl2QuotedConstant').")
     (xdoc::li
      "The Java class @('Acl2Cons')
-      has been renamed to @('Acl2ConsPair')."))))
+      has been renamed to @('Acl2ConsPair').")
+    (xdoc::li
+     "AIJ's evaluator has been extended
+      to recognize a ``primitive pseudo-function'' @('or')
+      and to execute it non-strictly,
+      as an optimized version of an @(tsee if)
+      whose test and ``then'' branch are the same.
+      Accordingly, ATJ has been extended
+      to recognize translated terms of the form @('(if a a b)')
+      and to generate Java code to represent them as @('(or a b)')."))))

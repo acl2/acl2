@@ -1234,15 +1234,36 @@
     :parents (atj-file-generation atj-gen-terms+lambdas)
     :short "Generate Java code to build an ACL2 application term."
     :long
-    (xdoc::topp
-     "The generated code
-      builds the function (a named function or a lambda expression),
-      builds the arguments,
-      puts them into an array,
-      builds the application,
-      puts it to a local variable,
-      and returns the local variable.")
-    (b* (((mv function-expr
+    (xdoc::topapp
+     (xdoc::topp
+      "The generated code
+       builds the function (a named function or a lambda expression),
+       builds the arguments,
+       puts them into an array,
+       builds the application,
+       puts it to a local variable,
+       and returns the local variable.")
+     (xdoc::p
+      "Terms of the form @('(if a a b)') are treated as @('(or a b)'),
+       i.e. the generated code builds a term of the form @('(or a b)').
+       In ACL2, @(tsee or) is a macro:
+       an untranslated term @('(or a b)') is translated to @('(if a a b)'),
+       which, if executed as such by AIJ, would evaluate @('a') twice.
+       (ACL2 relies on the underlying Lisp platform to optimize this situation.)
+       AIJ provides support for a ``pseudo-function'' @('or')
+       that is treated like a primitive
+       and that evaluates its arguments non-strictly;
+       see the documentation of AIJ for details.
+       Thus, ATJ recognizes (translated) terms of the form @('(if a a b)'),
+       which are likely derived from @('(or a b)'),
+       and represents them in AIJ via the @('or') pseudo-function."))
+    (b* (((mv function arguments)
+          (if (and (eq function 'if)
+                   (= (len arguments) 3)
+                   (equal (first arguments) (second arguments)))
+              (mv 'or (list (first arguments) (third arguments)))
+            (mv function arguments)))
+         ((mv function-expr
               value-next-unused
               value-next-undecl
               term-next-unused
