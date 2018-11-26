@@ -668,12 +668,7 @@
   :mode :program
   :short "Gather the information about the ACL2 environment
           needed to generate Java code."
-  :long
-  (xdoc::topp
-   "The system utility @('known-package-alist') returns an alist
-    whose keys are all the known ACL2 packages
-    in reverse chronological order.")
-  (b* ((pkgs (reverse (strip-cars (known-package-alist state))))
+  (b* ((pkgs (known-packages state))
        ((run-when verbose)
         (cw "~%Known ACL2 packages:~%")
         (atj-show-pkgs pkgs))
