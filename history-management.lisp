@@ -12602,12 +12602,12 @@
                (mv (conjoin-clause-sets+ debug-p cl-set1 cl-set2)
                    ttree))))))
 
-(defun well-formed-lambda-objects-in-fn (fn wrld)
+(defun collect-well-formed-lambda-objects (fn wrld)
 
-; Warning: name must be either the name of a function defined in wrld or a
-; well-formed lambda object.  Remember: not every lambda object is well-formed.
-; Use well-formed-lambda-objectp to check before calling this function!  We
-; return the list of all well-formed lambda objects in fn.
+; Warning: name must be either the name of a function or theorem defined in
+; wrld or a well-formed lambda object.  Remember: not every lambda object is
+; well-formed.  Use well-formed-lambda-objectp to check before calling this
+; function!  We return the list of all well-formed lambda objects in fn.
 
   (cond
    ((global-val 'boot-strap-flg wrld)
@@ -12619,15 +12619,20 @@
 
     nil)
    (t
-    (let* ((guard
+    (let* ((theorem (and (symbolp fn)
+                         (getpropc fn 'theorem nil wrld)))
+           (guard
             (if (symbolp fn)
-                (guard fn nil wrld)
+                (if theorem
+                    *t* ; just a trivial term without lambda objects
+                  (guard fn nil wrld))
               (lambda-object-guard fn)))
            (unnormalized-body
             (if (symbolp fn)
-                (getpropc fn 'unnormalized-body
-                          '(:error "See WELL-FORMED-LAMBDA-OBJECTS-IN-FN")
-                          wrld)
+                (or theorem
+                    (getpropc fn 'unnormalized-body
+                              '(:error "See COLLECT-WELL-FORMED-LAMBDA-OBJECTS")
+                              wrld))
               (lambda-object-body fn)))
            (ans (collect-certain-lambda-objects-lst
                  :well-formed
@@ -12642,10 +12647,10 @@
           ans
         (cons fn ans))))))
 
-(defun well-formed-lambda-objects-in-fns (fns wrld)
+(defun collect-well-formed-lambda-objects-lst (fns wrld)
   (cond ((endp fns) nil)
-        (t (union-equal (well-formed-lambda-objects-in-fn (car fns) wrld)
-                        (well-formed-lambda-objects-in-fns (cdr fns) wrld)))))
+        (t (union-equal (collect-well-formed-lambda-objects (car fns) wrld)
+                        (collect-well-formed-lambda-objects-lst (cdr fns) wrld)))))
 
 (defun guard-clauses-for-fn (fn debug-p ens wrld safe-mode gc-off ttree)
 
@@ -12662,7 +12667,7 @@
 
   (guard-clauses-for-fn1-lst
    (cons fn (set-difference-equal
-             (well-formed-lambda-objects-in-fn fn wrld)
+             (collect-well-formed-lambda-objects fn wrld)
              (global-val 'common-lisp-compliant-lambdas wrld)))
    debug-p ens wrld safe-mode gc-off ttree))
 

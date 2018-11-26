@@ -4870,13 +4870,16 @@
 
 (defun verify-guards-fn1 (names hints otf-flg guard-debug ctx state)
 
-; This function is called on a clique of mutually recursively defined
-; fns whose guards have not yet been verified.  Hints is a properly
-; translated hints list.  This is an error/value/state producing
-; function.  We cause an error if some subroutine of names has not yet
-; had its guards checked or if we cannot prove the guards.  Otherwise,
-; the "value" is a pair of the form (wrld .  ttree), where wrld results
-; from storing symbol-class :common-lisp-compliant for each name and
+; This function is called on a either a singleton list containing a theorem
+; name or a well-formed lambda expression or a list of one or more recursively
+; defined fns.
+
+; In any case, we know the theorem/functions are composed entirely of compliant
+; subfunctions.  Hints is a properly translated hints list.  This is an
+; error/value/state producing function.  We cause an error if some subroutine
+; of names has not yet had its guards checked or if we cannot prove the guards.
+; Otherwise, the "value" is a pair of the form (wrld .  ttree), where wrld
+; results from storing symbol-class :common-lisp-compliant for each name and
 ; ttree is the ttree proving the guards.
 
 ; Note: In a series of conversations started around 13 Jun 94, with Bishop
@@ -5088,6 +5091,10 @@
 ;
 ; -- Matt
 
+  #-acl2-loop-only
+  (declare (ftype (function (t t t) (values t))
+                  add-good-lambda-objects-to-cl-cache))
+
   (let ((wrld (w state))
         (ens (ens state)))
     (er-let*
@@ -5099,11 +5106,46 @@
      (let* ((col (car pair))
             (ttree1 (cdr pair))
             (wrld1 (maybe-remove-invariant-risk names wrld wrld))
-            (wrld2 (putprop-x-lst1 names 'symbol-class
-                                   :common-lisp-compliant wrld1)))
+
+; The next line finds all the well-formed lambda objects in the fns whose guard
+; obligations have just been verified.  We put them all on the compliant
+; lambdas list.  But we also use the lambda-objects in the raw Lisp code below
+; to extend the cache.  If a defun has ill-formed lambdas and we verify guards
+; on the function the ill-formed lambdas are not verified.  And we don't add
+; them to the cache.  We could add :UGLY cache lines for them because they may
+; well reach apply$.  If and when they reach apply$ they'll be added to the
+; cache on an as-needed basis.  This may slow down evaluation, but they're
+; interpreted by *1* apply$ anyway so the user couldn't care much!
+
+            (lambda-objects
+             (and (not (global-val 'boot-strap-flg wrld1))
+                  (collect-well-formed-lambda-objects-lst names wrld1)))
+            (wrld2 (global-set 'common-lisp-compliant-lambdas
+                               (union-equal
+                                lambda-objects
+                                (global-val 'common-lisp-compliant-lambdas
+                                            wrld1))
+                               wrld1))
+; Now upgrade the symbol-class (except for the case where names is a
+; single lambda).
+
+            (wrld3 
+             (if (and (consp names)
+                      (consp (car names)))
+                 wrld2
+                 (putprop-x-lst1 names 'symbol-class
+                                 :common-lisp-compliant wrld2))))
+
+; Add a :GOOD cl-cache-line for each lambda-object just verified.  Ill-formed
+; lambda objects are ignored here but will be added to the cache (as :UGLY) if
+; and when they are apply$'d.
+
+       #-acl2-loop-only
+       (add-good-lambda-objects-to-cl-cache lambda-objects wrld3 state)
+
        (pprogn
         (print-verify-guards-msg names col state)
-        (value (cons wrld2 ttree1)))))))
+        (value (cons wrld3 ttree1)))))))
 
 (defun verify-guards-fn (name state hints otf-flg guard-debug event-form)
 
