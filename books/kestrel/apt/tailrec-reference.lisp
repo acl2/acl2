@@ -10,7 +10,7 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
+(include-book "utilities/xdoc-constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -67,18 +67,7 @@
 
    (xdoc::h3 "Inputs")
 
-   (xdoc::desc
-    "@('old')"
-    (xdoc::p
-     "Denotes the target function to transform.")
-    (xdoc::p
-     "It must be the name of a function,
-      or a <see topic='@(url acl2::numbered-names)'>numbered name</see>
-      with a wildcard index that
-      <see topic='@(url resolve-numbered-name-wildcard)'>resolves</see>
-      to the name of a function.
-      In the rest of this documentation page, for expository convenience,
-      it is assumed that @('old') is the name of the denoted function.")
+   (xdoc::desc-apt-input-old
     (xdoc::p
      "@('old') must
       be in logic mode,
@@ -221,162 +210,27 @@
      "In the rest of this documentation page,
       let @('domain') be the function or lambda expression."))
 
-   (xdoc::desc
-    "@(':new-name') &mdash; default @(':auto')"
-    (xdoc::p
-     "Determines the name of the generated new function:")
-    (xdoc::ul
-     (xdoc::li
-      "@(':auto'),
-       to use the <see topic='@(url acl2::numbered-names)'>numbered name</see>
-       obtained by <see topic='@(url next-numbered-name)'>incrementing</see>
-       the index of @('old').")
-     (xdoc::li
-      "Any other symbol
-       (that is not in the main Lisp package and that is not a keyword),
-       to use as the name of the function."))
-    (xdoc::p
-     "In the rest of this documentation page, let @('new') be this function."))
+   (xdoc::desc-apt-input-new-name)
 
-   (xdoc::desc
-    "@(':new-enable') &mdash; default @(':auto')"
-    (xdoc::p
-     "Determines whether @('new') is enabled:")
-    (xdoc::ul
-     (xdoc::li
-      "@('t'), to enable it.")
-     (xdoc::li
-      "@('nil'), to disable it.")
-     (xdoc::li
-      "@(':auto'), to enable it iff @('old') is enabled.")))
+   (xdoc::desc-apt-input-new-enable)
 
-   (xdoc::desc
-    "@(':wrapper-name') &mdash; default @(':auto')"
-    (xdoc::p
-     "Determines the name of the generated wrapper function:")
-    (xdoc::ul
-     (xdoc::li
-      "@(':auto'),
-       to use the concatenation of the name of @('new') with @('-wrapper').")
-     (xdoc::li
-      "Any other symbol
-       (that is not in the main Lisp package and that is not a keyword),
-       to use as the name of the function."))
-    (xdoc::p
-     "In the rest of this documentation page,
-      let @('wrapper') be this function."))
+   (xdoc::desc-apt-input-wrapper-name)
 
-   (xdoc::desc
-    "@(':wrapper-enable') &mdash; default @('t')"
-    (xdoc::p
-     "Determines whether @('wrapper') is enabled:")
-    (xdoc::ul
-     (xdoc::li
-      "@('t'), to enable it.")
-     (xdoc::li
-      "@('nil'), to disable it.")))
+   (xdoc::desc-apt-input-wrapper-enable)
 
-   (xdoc::desc
-    "@(':thm-name') &mdash; default @(':auto')"
-    (xdoc::p
-     "Determines the name of the theorem
-      that relates @('old') to @('wrapper'):")
-    (xdoc::ul
-     (xdoc::li
-      "@(':auto'),
-       to use the <see topic='@(url acl2::paired-names)'>paired name</see>
-       obtaining by <see topic='@(url make-paired-name)'>pairing</see>
-       the name of @('old') and the name of @('new'),
-       putting the result into the same package as @('new').")
-     (xdoc::li
-      "Any other symbol
-       (that is not in the main Lisp package and that is not a keyword),
-       to use as the name of the theorem."))
-    (xdoc::p
-     "In the rest of this documentation page,
-      let @('old-to-wrapper') be this theorem."))
+   (xdoc::desc-apt-input-thm-name t)
 
-   (xdoc::desc
-    "@(':thm-enable') &mdash; default @('t')"
-    (xdoc::p
-     "Determines whether @('old-to-wrapper') is enabled:")
-    (xdoc::ul
-     (xdoc::li
-      "@('t'), to enable it.")
-     (xdoc::li
-      "@('nil'), to disable it.")))
+   (xdoc::desc-apt-input-thm-enable t)
 
-   (xdoc::desc
-    "@(':non-executable') &mdash; default @(':auto')"
-    (xdoc::p
-     "Determines whether @('new') and @('wrapper') are
-      <see topic='@(url acl2::non-executable)'>non-executable</see>:")
-    (xdoc::ul
-     (xdoc::li
-      "@('t'), to make them non-executable.")
-     (xdoc::li
-      "@('nil'), to not make them non-executable.")
-     (xdoc::li
-      "@(':auto'), to make them non-executable
-       iff @('old') is non-executable.")))
+   (xdoc::desc-apt-input-non-executable t)
 
-   (xdoc::desc
-    "@(':verify-guards') &mdash; default @(':auto')"
-    (xdoc::p
-     "Determines whether  @('new') and @('wrapper') are guard-verified:")
-    (xdoc::ul
-     (xdoc::li
-      "@('t'), to guard-verify them.")
-     (xdoc::li
-      "@('nil'), to not guard-verify them.")
-     (xdoc::li
-      "@(':auto'), to guard-verify them iff @('old') is guard-verified.")))
+   (xdoc::desc-apt-input-verify-guards t)
 
-   (xdoc::desc
-    "@(':hints') &mdash; default @('nil')"
-    (xdoc::p
-     "Hints to prove the applicability conditions below.")
-    (xdoc::p
-     "It must be a
-      <see topic='@(url keyword-value-listp)'>keyword-value list</see>
-      @('(appcond1 hints1 ... appcondp hintsp)')
-      where each @('appcondk') is a keyword
-      that names one of the applicability conditions below,
-      and each @('hintsk') consists of hints as may appear
-      just after @(':hints') in a @(tsee defthm).
-      The hints @('hintsk') are used
-      to prove applicability condition @('appcondk').")
-    (xdoc::p
-     "The @('appcond1'), ..., @('appcondp') names must be all distinct.")
-    (xdoc::p
-     "An @('appcondk') is allowed in the @(':hints') input iff
-      the named applicability condition is present, as specified below."))
+   (xdoc::desc-apt-input-hints)
 
-   (xdoc::desc
-    "@(':print') &mdash; default @(':result')"
-    (xdoc::p
-     "A <see topic='@(url print-specifier)'>print specifier</see>."))
+   (xdoc::desc-apt-input-print)
 
-   (xdoc::desc
-    "@(':show-only') &mdash; default @('nil')"
-    (xdoc::p
-     "Determines whether the event expansion of @('tailrec')
-      is submitted to ACL2 or just printed on the screen:")
-    (xdoc::ul
-     (xdoc::li
-      "@('nil'), to submit it.")
-     (xdoc::li
-      "@('t'), to just print it.
-       In this case:
-       the event expansion is printed even if @(':print') is @('nil');
-       the generated function and theorem are not printed separately
-       (other than their appearance in the event expansion),
-       even if @(':print') is @(':result') or @(':info') or @(':all');
-       no ACL2 output is printed even if @(':print') is @(':all')
-       (because the event expansion is not submitted).
-       If the call to @('tailrec') is
-       <see topic='@(url redundancy)'>redundant</see>,
-       the event expansion generated by the existing call is printed.")))
+   (xdoc::desc-apt-input-show-only)
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
