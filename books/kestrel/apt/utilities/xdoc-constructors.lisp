@@ -270,7 +270,7 @@
                            "@('new') is"))
          (it/them (if wrapperp "them" "it")))
       `(xdoc::desc
-        "@(':non-executable') &mdash; default @(':auto')"
+        "@(':verify-guards') &mdash; default @(':auto')"
         (xdoc::p
          (concatenate 'string
                       "Determines whether "
