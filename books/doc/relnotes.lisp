@@ -144,6 +144,10 @@
  transformation, by relaxing a requirement on the function to be
  transformed.</p>
 
+ <p>Improved and extended some documentation.</p>
+
+ <p>Added XDOC constructor utilities tailored to APT transformations.</p>
+
  <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
 
  <p>Improved the documentation of the Bitcoin library.</p>
