@@ -1310,12 +1310,14 @@ between files.  In order to be correctly scannable by the build system, the @('i
 <p>or</p>
 @({
   (acl2::ifdef-define \"FOO\")
- }) ")
+ }) "
+  :pkg "ACL2")
 
 (defxdoc acl2::ifdef-undefine
   :parents (cert.pl)
   :short "Undefine an environment variable for use with @(see ifdef) and @(see ifndef)."
   :long "<p>Analogous to @(see ifdef-define), but sets the environment variable
 to the empty string instead of to @('\"1\"'), so that it will be unset for the
-purposes of @(see ifdef) and @(see ifndef).</p>")
+purposes of @(see ifdef) and @(see ifndef).</p>"
+  :pkg "ACL2")
 
