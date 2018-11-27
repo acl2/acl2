@@ -70,7 +70,8 @@ build time for multi-core environments.</li>
 systems.</li>
 
 <li>Ifdef/ifndef constructs are supported for conditional build features -- see
-@(see acl2::ifdef) and @(see acl2::ifndef).</li>
+@(see acl2::ifdef), @(see acl2::ifndef), @(see acl2::ifdef-define), and @(see
+acl2::ifdef-undefine).</li>
 
 </ul>
 
@@ -1291,3 +1292,30 @@ as expected:</p>
           with build system support."
   :long "<p>See @(see ifdef).</p>"
   :pkg "ACL2")
+
+(defxdoc acl2::ifdef-define
+  :parents (cert.pl)
+  :short "Define an environment variable for use with @(see ifdef) and @(see ifndef)."
+  :long "<p>This is simply a macro defined as follows:</p>
+@(def ifdef-define)
+
+<p>When this form is loaded, it will set the given environment variable to
+@('\"1\"'), affecting subsequent uses of @(see ifdef) and @(see ifndef).  The
+cert.pl build system tracks uses of this macro in order to determine which
+forms in the file are really used, so as to correctly compute the dependencies
+between files.  In order to be correctly scannable by the build system, the @('ifdef-define') form must occur all on one line:</p>
+@({
+  (ifdef-define \"FOO\")
+ })
+<p>or</p>
+@({
+  (acl2::ifdef-define \"FOO\")
+ }) ")
+
+(defxdoc acl2::ifdef-undefine
+  :parents (cert.pl)
+  :short "Undefine an environment variable for use with @(see ifdef) and @(see ifndef)."
+  :long "<p>Analogous to @(see ifdef-define), but sets the environment variable
+to the empty string instead of to @('\"1\"'), so that it will be unset for the
+purposes of @(see ifdef) and @(see ifndef).</p>")
+

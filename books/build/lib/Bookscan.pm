@@ -46,6 +46,7 @@ cert_param_event
 ld_event
 ifdef_event
 endif_event
+ifdef_define_event
 set_max_mem_event
 set_max_time_event
 pbs_event
@@ -70,6 +71,7 @@ sub cert_param_event () { return 'cert_param'; }
 sub ld_event () { return 'ld'; }
 sub ifdef_event () { return 'ifdef'; }
 sub endif_event () { return 'endif'; }
+sub ifdef_define_event () { return 'ifdef-define'; }
 sub set_max_mem_event () { return 'set-max-mem'; }
 sub set_max_time_event () { return 'set-max-time'; }
 sub pbs_event () { return 'pbs'; }
@@ -115,6 +117,21 @@ sub scan_endif {
                              /xi;
     if (@res) {
 	return [endif_event];
+    }
+    return 0;
+}
+
+sub scan_ifdef_define {
+    my ($base,$the_line) = @_;
+
+    my @res = $the_line =~ m/^[^;]* # not commented
+                             \(\s*
+                             (?:[^\s():]*::)? # package prefix
+                             ifdef-(?<negate>un)?define \s+
+                             "(?<var>\w*)"
+                             /xi;
+    if (@res) {
+	return [ifdef_define_event, $+{negate} ? 1 : 0, $+{var}];
     }
     return 0;
 }
@@ -347,6 +364,7 @@ sub scan_src {
 		|| scan_depends_rec($fname, $the_line)
 		|| scan_ifdef($fname, $the_line)
 		|| scan_endif($fname, $the_line)
+		|| scan_ifdef_define($fname, $the_line)
 		|| scan_loads($fname, $the_line)
 		|| scan_ld($fname, $the_line)
 		|| scan_add_dir($fname, $the_line)

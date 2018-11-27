@@ -1046,6 +1046,7 @@ sub src_deps {
 	$certinfo,          # certinfo accumulator
         $ldp,               # allow following LD commands
 	$portp,             # Add books to port rather than bookdeps
+        $defines,           # Hash of names that have been defined or undefined, overriding environment
 	$seen,              # seen table for detecting circular dependencies
 	$parent)            # file that required this one
 	= @_;
@@ -1085,7 +1086,7 @@ sub src_deps {
 	if ($type eq ifdef_event) {
 	    my $negate = $event->[1];
 	    my $var = $event->[2];
-	    my $value = $ENV{$var} || "";
+	    my $value = exists($defines->{$var}) ? $defines->{$var} : ($ENV{$var} || "");
 	    $ifdef_level = $ifdef_level + 1;
 	    print "ifdef_event: negate=$negate, var=$var, new level $ifdef_level\n" if $debugging;
 	    my $empty = $value eq "";
@@ -1195,7 +1196,7 @@ sub src_deps {
 		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
 						  $certinfo->include_dirs, "loads", "");
 		if ($fullname) {
-		    src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $seen, $fname);
+		    src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $defines, $seen, $fname);
 		} else {
 		    print "Bad path in (loads \"$srcname\""
 			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
@@ -1212,7 +1213,7 @@ sub src_deps {
 		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
 						  $certinfo->include_dirs, "ld", "");
 		if ($fullname) {
-		    src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $seen, $fname);
+		    src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $defines, $seen, $fname);
 		} else {
 		    print "Bad path in (ld \"$srcname\""
 			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
@@ -1222,6 +1223,10 @@ sub src_deps {
 		    print_event($event);
 		    print "\n";
 		}
+	    } elsif ($type eq ifdef_define_event) {
+		my $negate = $event->[1];
+		my $var = $event->[2];
+		$defines->{$var} = $negate ? "" : "1";
 	    } elsif (! ($type eq set_max_mem_event || $type eq set_max_time_event || $type eq pbs_event)) {
 		print "unknown event type: $type\n";
 	    }
@@ -1287,12 +1292,12 @@ sub find_deps {
 	# Scan the .acl2 file first so that we get the add-include-book-dir
 	# commands before the include-book commands.
 	if ($acl2file) {
-	    src_deps($acl2file, $depdb, $certinfo, 1, 1, {}, $lispfile);
+	    src_deps($acl2file, $depdb, $certinfo, 1, 1, {}, {}, $lispfile);
 	}
     }
 
     # Scan the lisp file for include-books.
-    src_deps($lispfile, $depdb, $certinfo, (! $certifiable), 0, {}, $parent);
+    src_deps($lispfile, $depdb, $certinfo, (! $certifiable), 0, {}, {}, $parent);
 
     if ($debugging) {
 	print "find_deps $lispfile: bookdeps:\n";
