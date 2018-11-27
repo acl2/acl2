@@ -37,7 +37,7 @@
 
 (define logicman-pathcond-checkpoint-p (x &optional (logicman 'logicman))
   :enabled t
-  (b* ((bfr-mode (bfr-mode)))
+  (b* ((bfr-mode (lbfr-mode)))
     (stobj-let ((pathcond (logicman->pathcond logicman)))
                (ok)
                (pathcond-checkpoint-p x bfr-mode pathcond)
@@ -54,7 +54,7 @@
 
 (define logicman-pathcond-checkpoint (&optional (logicman 'logicman))
   :enabled t
-  (b* ((bfr-mode (bfr-mode)))
+  (b* ((bfr-mode (lbfr-mode)))
     (stobj-let ((pathcond (logicman->pathcond logicman)))
                (chp)
                (pathcond-checkpoint bfr-mode pathcond)
@@ -73,8 +73,8 @@
   :non-executable t
   :verify-guards nil
   :enabled t
-  (b* ((bfr-mode (bfr-mode old)))
-    (and (equal (bfr-mode new) bfr-mode)
+  (b* ((bfr-mode (lbfr-mode old)))
+    (and (equal (lbfr-mode new) bfr-mode)
          (pathcond-rewindable bfr-mode (logicman->pathcond new) (logicman->pathcond old))))
   ;; ///
   ;; (defthm logicman-pathcond-checkpoint-p-when-rewindable
@@ -99,7 +99,7 @@
                                   &optional (logicman 'logicman))
   :returns (new-logicman)
   :guard-hints (("goal" :in-theory (enable logicman-pathcond-checkpoint-p)))
-  (b* ((bfr-mode (bfr-mode)))
+  (b* ((bfr-mode (lbfr-mode)))
     (stobj-let ((pathcond (logicman->pathcond logicman)))
                (pathcond)
                (pathcond-rewind chp bfr-mode pathcond)
@@ -131,11 +131,11 @@
   :no-function t
   :verify-guards nil
   (prog2$ (acl2::throw-nonexec-error 'logicman-pathcond-eval-fn (list env logicman))
-          (bfr-case
+          (lbfr-case
             :bdd (b* ((pathcond-bdd (stobj-let ((pathcond (logicman->pathcond logicman)))
                                                (bdd)
                                                (pathcond-bdd pathcond)
-                                               (bfr-fix bdd))))
+                                               (lbfr-fix bdd))))
                    (bfr-eval pathcond-bdd env))
             :aig (stobj-let ((pathcond (logicman->pathcond logicman)))
                             (ans)
@@ -158,12 +158,13 @@
                                   
 
 
-(define logicman-pathcond-implies-aignet-base ((x bfr-p)
+(define logicman-pathcond-implies-aignet-base ((x lbfr-p)
                                                &optional (logicman 'logicman))
   :prepwork ((local (in-theory (enable bfr->aignet-lit bfr-p aignet::aignet-idp))))
-  :guard (eq (bfr-mode) :aignet)
+  :guard (lbfr-mode-is :aignet)
   :enabled t
-  (b* ((lit (bfr->aignet-lit x)))
+  (b* ((bfrstate (logicman->bfrstate))
+       (lit (bfr->aignet-lit x)))
     (stobj-let ((pathcond (logicman->pathcond logicman))
                 (aignet   (logicman->aignet logicman)))
                (ans pathcond)
@@ -173,15 +174,23 @@
                           (mv (and ans (b-xor (aignet::lit->neg lit) ans)) pathcond))
                (mv ans logicman))))
 
-(define logicman-pathcond-implies ((x bfr-p)
+(defthm bounded-lit-fix-of-fanin-count
+  (equal (bounded-lit-fix x (aignet::fanin-count aignet))
+         (aignet::aignet-lit-fix x aignet))
+  :hints(("Goal" :in-theory (enable bounded-lit-fix aignet::aignet-lit-fix
+                                    aignet::aignet-idp
+                                    aignet::aignet-id-fix))))
+
+(define logicman-pathcond-implies ((x lbfr-p)
                                    &optional (logicman 'logicman))
   :returns (mv (ans acl2::maybe-bitp :rule-classes :type-prescription)
                (new-logicman (equal new-logicman logicman)))
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable bfr-p))))
   :prepwork ((local (in-theory (disable (force)))))
-  (b* ((x (bfr-fix x)))
-    (bfr-case
+  :guard-debug t
+  (b* ((x (lbfr-fix x)))
+    (lbfr-case
       :bdd (b* ((pathcond-bdd (stobj-let ((pathcond (logicman->pathcond logicman)))
                                          (bdd)
                                          (pathcond-bdd pathcond)
@@ -235,7 +244,7 @@
 
 (define logicman-pathcond-depends-on ((v bfr-varname-p)
                                       &optional ((logicman logicman-nvars-ok) 'logicman))
-  (bfr-case
+  (lbfr-case
     :bdd (stobj-let ((pathcond (logicman->pathcond logicman)))
                     (dep)
                     (ec-call (nth v (acl2::ubdd-deps (acl2::ubdd-fix (pathcond-bdd pathcond)))))
@@ -286,13 +295,13 @@
                                       bfr-set-var bfr-varname-p bfr-nvars)))))
 
 
-(define logicman-pathcond-assume ((x bfr-p)
+(define logicman-pathcond-assume ((x lbfr-p)
                                   &optional (logicman 'logicman))
   :returns (mv contradictionp
                new-logicman)
   :guard-hints (("goal" :in-theory (enable bfr-p bfr->aignet-lit aignet::aignet-idp)))
-  (b* ((x (bfr-fix x)))
-    (bfr-case
+  (b* ((x (lbfr-fix x)))
+    (lbfr-case
       :bdd (stobj-let ((pathcond (logicman->pathcond logicman)))
                       (contra pathcond)
                       (b* ((pathcond (pathcond-fix pathcond))
@@ -313,7 +322,8 @@
                                    (calist-assume x calist-stobj)
                                    (mv contra pathcond)))
                       (mv contra logicman))
-      :aignet (b* ((x (bfr->aignet-lit x)))
+      :aignet (b* ((bfrstate (logicman->bfrstate logicman))
+                   (x (bfr->aignet-lit x)))
                 (stobj-let ((pathcond (logicman->pathcond logicman))
                             (aignet (logicman->aignet logicman)))
                            (contra pathcond)
@@ -365,7 +375,7 @@
   (local (in-theory (disable (force))))
 
   (defret pathcond-rewindable-of-logicman-pathcond-assume
-    (implies (equal (bfr-mode-fix bfr-mode) (bfr-mode))
+    (implies (equal (bfr-mode-fix bfr-mode) (lbfr-mode))
              (pathcond-rewindable bfr-mode (logicman->pathcond new-logicman)  (logicman->pathcond logicman)))
     :hints(("Goal" :in-theory (enable pathcond-rewindable bfr-fix))))
 

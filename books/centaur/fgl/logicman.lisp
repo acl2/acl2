@@ -36,6 +36,7 @@
 (include-book "centaur/aignet/ipasir" :dir :system)
 (include-book "bvar-db")
 (include-book "bfr")
+(include-book "arith-base")
 (include-book "pathcond-stobj")
 (include-book "centaur/ubdds/deps" :dir :system)
 (include-book "std/stobjs/updater-independence" :dir :system)
@@ -794,16 +795,6 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                   (lbfr-listp x old))
              (equal (bfr-list-eval x env new)
                     (bfr-list-eval x env old)))))
-
-(define bools->int (x)
-  (mbe :logic (if (atom (cdr x))
-                  (- (bool->bit (car x)))
-                (logcons (bool->bit (car x))
-                         (bools->int (cdr x))))
-       :exec (cond ((atom x) 0)
-                   ((atom (cdr x)) (- (bool->bit (car x))))
-                   (t (logcons (bool->bit (car x))
-                               (bools->int (cdr x)))))))
 
 
 
@@ -2013,7 +2004,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
 
 (define gobj-bfr-list-eval ((x lbfr-listp) (env gl-env-p) &optional (logicman 'logicman))
-  :returns bools
+  :returns (bools boolean-listp)
   (if (atom x)
       nil
     (cons (gobj-bfr-eval (car x) env)
@@ -2210,163 +2201,4 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     (equal (base-gl-object-eval (g-cons car cdr) env)
            (cons (base-gl-object-eval car env)
                  (base-gl-object-eval cdr env)))))
-
-
-(defines gl-object-depends-on
-  (define gl-object-depends-on ((v bfr-varname-p)
-                                (x lgl-bfr-object-p)
-                               &optional ((logicman logicman-nvars-ok) 'logicman))
-    :measure (gl-object-count x)
-    :verify-guards nil
-    :returns (val booleanp :rule-classes :type-prescription)
-    (gl-object-case x
-      :g-concrete nil
-      :g-boolean (bfr-depends-on v x.bool)
-      :g-integer (bfr-list-depends-on v x.bits)
-      :g-ite (or (gl-object-depends-on v x.test)
-                 (gl-object-depends-on v x.then)
-                 (gl-object-depends-on v x.else))
-      :g-apply (gl-objectlist-depends-on v x.args)
-      :g-var nil
-      :g-cons (or (gl-object-depends-on v x.car)
-                  (gl-object-depends-on v x.cdr))))
-  (define gl-objectlist-depends-on ((v bfr-varname-p)
-                                   (x lgl-bfr-objectlist-p)
-                                   &optional ((logicman logicman-nvars-ok) 'logicman))
-    :measure (gl-objectlist-count x)
-    :returns (vals booleanp :rule-classes :type-prescription)
-    (if (atom x)
-        nil
-      (or (gl-object-depends-on v (car x))
-          (gl-objectlist-depends-on v (cdr x)))))
-  ///
-  (verify-guards gl-object-depends-on-fn)
-
-  (defret-mutual gl-object-depends-on-of-gl-bfr-object-fix
-    (defret gl-object-depends-on-of-gl-bfr-object-fix
-      (equal (gl-object-depends-on v (lgl-bfr-object-fix x))
-             val)
-      :hints ('(:expand ((lgl-bfr-object-fix x))))
-      :fn gl-object-depends-on)
-    (defret gl-objectlist-depends-on-of-gl-bfr-object-fix
-      (equal (gl-objectlist-depends-on v (lgl-bfr-objectlist-fix x))
-             vals)
-      :hints ('(:expand ((lgl-bfr-objectlist-fix x))))
-      :fn gl-objectlist-depends-on))
-
-  (defret-mutual gl-object-depends-on-of-gl-object-fix
-    (defret gl-object-depends-on-of-gl-object-fix
-      (equal (gl-object-depends-on v (gl-object-fix x))
-             val)
-      :hints ('(:expand ((gl-object-fix x))
-                :in-theory (e/d (gl-object-depends-on))))
-      :fn gl-object-depends-on)
-    (defret gl-objectlist-depends-on-of-gl-object-fix
-      (equal (gl-objectlist-depends-on v (gl-objectlist-fix x))
-             vals)
-      :hints ('(:expand ((gl-objectlist-fix x)
-                         (:free (a b) (gl-objectlist-depends-on v (cons a b)))
-                         (gl-objectlist-depends-on v nil)
-                         (gl-objectlist-depends-on v x))))
-      :fn gl-objectlist-depends-on))
-
-  (defthm-gl-object-depends-on-flag
-    (defthm gl-object-depends-on-of-logicman-extension
-      (implies (and (bind-logicman-extension new old)
-                    (lgl-bfr-object-p x old)
-                    (bfr-varname-p v old))
-               (equal (gl-object-depends-on v x new)
-                      (gl-object-depends-on v x old)))
-      :hints ('(:expand ((:free (logicman) (gl-object-depends-on v x logicman))
-                         (gl-bfr-object-p x old))))
-      :flag gl-object-depends-on)
-    (defthm gl-objectlist-depends-on-of-logicman-extension
-      (implies (and (bind-logicman-extension new old)
-                    (lgl-bfr-objectlist-p x old)
-                    (bfr-varname-p v old))
-               (equal (gl-objectlist-depends-on v x new)
-                      (gl-objectlist-depends-on v x old)))
-      :hints ('(:expand ((:free (logicman) (gl-objectlist-depends-on v x logicman))
-                         (gl-bfr-objectlist-p x old))))
-      :flag gl-objectlist-depends-on)
-    :hints (("goal" :induct (gl-object-depends-on-flag flag v x old))))
-
-  (defthm gl-object-depends-on-when-g-concrete
-    (implies (gl-object-case x :g-concrete)
-             (not (gl-object-depends-on v x)))
-    :hints (("goal" :expand ((gl-object-depends-on v x)))))
-
-  (defthm gl-object-depends-on-of-g-concrete
-    (not (gl-object-depends-on v (g-concrete val))))
-
-  (defthm gl-object-depends-on-when-g-boolean
-    (implies (gl-object-case x :g-boolean)
-             (equal (gl-object-depends-on v x)
-                    (bfr-depends-on v (g-boolean->bool x))))
-    :hints (("goal" :expand ((gl-object-depends-on v x)))))
-
-  (defthm gl-object-depends-on-of-g-boolean
-    (equal (gl-object-depends-on v (g-boolean bool))
-           (bfr-depends-on v bool)))
-
-  (defthm gl-object-depends-on-when-g-integer
-    (implies (gl-object-case x :g-integer)
-             (equal (gl-object-depends-on v x)
-                    (bfr-list-depends-on v (g-integer->bits x))))
-    :hints (("goal" :expand ((gl-object-depends-on v x)))))
-
-  (defthm gl-object-depends-on-of-g-integer
-    (equal (gl-object-depends-on v (g-integer bits))
-           (bfr-list-depends-on v bits)))
-
-  (defthm gl-object-depends-on-when-g-ite
-    (implies (gl-object-case x :g-ite)
-             (equal (gl-object-depends-on v x)
-                    (or (gl-object-depends-on v (g-ite->test x))
-                        (gl-object-depends-on v (g-ite->then x))
-                        (gl-object-depends-on v (g-ite->else x)))))
-    :hints (("goal" :expand ((gl-object-depends-on v x)))))
-
-  (defthm gl-object-depends-on-of-g-ite
-    (equal (gl-object-depends-on v (g-ite test then else))
-           (or (gl-object-depends-on v test)
-               (gl-object-depends-on v then)
-               (gl-object-depends-on v else))))
-
-  (defthm gl-object-depends-on-when-g-apply
-    (implies (gl-object-case x :g-apply)
-             (equal (gl-object-depends-on v x)
-                    (gl-objectlist-depends-on v (g-apply->args x))))
-    :hints (("goal" :expand ((gl-object-depends-on v x)))))
-
-  (defthm gl-object-depends-on-of-g-apply
-    (equal (gl-object-depends-on v (g-apply fn args))
-           (gl-objectlist-depends-on v args)))
-
-  (defthm gl-object-depends-on-when-g-var
-    (implies (gl-object-case x :g-var)
-             (not (gl-object-depends-on v x)))
-    :hints (("goal" :expand ((gl-object-depends-on v x)))))
-
-  (defthm gl-object-depends-on-of-g-var
-    (not (gl-object-depends-on v (g-var name))))
-
-  (defthm gl-object-depends-on-when-g-cons
-    (implies (gl-object-case x :g-cons)
-             (equal (gl-object-depends-on v x)
-                    (or (gl-object-depends-on v (g-cons->car x))
-                        (gl-object-depends-on v (g-cons->cdr x)))))
-    :hints (("goal" :expand ((gl-object-depends-on v x)))))
-
-  (defthm gl-object-depends-on-of-g-cons
-    (equal (gl-object-depends-on v (g-cons car cdr))
-           (or (gl-object-depends-on v car)
-               (gl-object-depends-on v cdr)))))
-
-
-
-
-                                   
-      
-
 

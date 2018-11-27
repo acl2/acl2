@@ -33,7 +33,7 @@
 (include-book "pathcond-aig")
 (include-book "pathcond-aignet")
 (include-book "pathcond-stobj")
-
+(include-book "bfr")
 (local (include-book "theory"))
 
 

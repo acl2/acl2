@@ -154,7 +154,7 @@
   (verify-guards aig-fix :hints(("Goal" :in-theory (enable aig-p))))
   (fty::deffixtype aig :pred aig-p :fix aig-fix :equiv aig-equiv :define t))
 
-       
+(fty::deflist aig-list :pred aig-listp :fix aig-list-fix :elt-type aig :true-listp t)       
         
 
 
