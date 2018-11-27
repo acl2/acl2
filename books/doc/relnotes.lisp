@@ -248,6 +248,10 @@
  only lets us catch exceptions early, but also allows us to specify them
  even if the semantic functions themselves are missing.</p>
 
+ <p>Improved incrementing and decrementing of the stack pointer to be modular:
+ 64, 32, or 16 bits, based on the current mode and on the SS.B bit of the
+ current stack segment.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
