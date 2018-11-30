@@ -150,7 +150,8 @@
                set-default-parents
                getprop formals justification def-bodies current-acl2-world def-body
                access theorem untranslated-theorem guard xdoc xdoc! unquote
-               undocumented assert! top explode implode)
+               undocumented assert! top explode implode
+               remove-equal-with-hint)
           set::*sets-exports*
           *standard-acl2-imports*))
 
