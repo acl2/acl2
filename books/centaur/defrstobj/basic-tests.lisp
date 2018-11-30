@@ -57,7 +57,10 @@
          :initially 0                         ; (set-pctr x m1)
          :fix (ifix x))
 
-  :inline t)
+  :inline t
+  ;; [Shilpi] Added top-level accessor and updater functions.
+  :accessor m1a
+  :updater  m1u)
 
 
 (defrstobj rstobj::m2 ;; weird package to see if we blow up
@@ -80,7 +83,9 @@
   (m2-actr :type integer :initially 0 :fix (ifix x))
   (m2-bctr :type integer :initially 1 :fix (ifix x))
 
-  :inline t)
+  :inline t
+  :accessor m2a
+  :updater  m2u)
 
 (defrstobj m21-no-arrays
 
@@ -91,7 +96,9 @@
   (m21-actr :type integer :initially 0 :fix (ifix x))
   (m21-bctr :type integer :initially 1 :fix (ifix x))
 
-  :inline t)
+  :inline t
+  :accessor m21a
+  :updater  m21u)
 
 
 (make-event
@@ -121,7 +128,9 @@
     (m3-actr :type integer :initially 0 :fix (ifix x))
     (m3-bctr :type integer :initially 1 :fix (ifix x))
 
-    :inline t))
+    :inline t
+    :accessor m3a
+    :updater  m3u))
 
 
 (defrstobj m41-no-scalars
@@ -157,7 +166,9 @@
              :resizable t
              :typed-record sb32-tr-p)
 
-  :inline t)
+  :inline t
+  :accessor m42a
+  :updater  m42u)
 
 (defrstobj m4
 
@@ -176,7 +187,9 @@
   (m4-flags :type (unsigned-byte 1234) :initially 0
             :fix (unsigned-byte-fix 1234 x))
 
-  :inline t)
+  :inline t
+  :accessor m4a
+  :updater  m4u)
 
 
 
@@ -313,5 +326,7 @@
 (defrstobj matt-example
   ;; Example stobj from Matt Kaufmann that previously did not work due to a
   ;; theory problem, which we have now fixed.
-  (fld1 :type integer :initially 0 :fix (ifix x)))
+  (fld1 :type integer :initially 0 :fix (ifix x))  
+  :accessor matta
+  :updater  mattu)
 
