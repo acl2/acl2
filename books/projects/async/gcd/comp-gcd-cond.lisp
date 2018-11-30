@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -144,7 +144,7 @@
                             *comp-gcd-cond$prim-go-num*
                             *gcd-cond$go-num*)))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -490,10 +490,6 @@
                    (comp-gcd-cond$data1-out inputs st data-width))))
   )
 
-;; Prove that COMP-GCD-COND is not a DE primitive.
-
-(not-primp-lemma comp-gcd-cond)
-
 (encapsulate
   ()
 
@@ -542,7 +538,6 @@
                             (se (si 'comp-gcd-cond data-width)
                                 inputs st netlist))
              :in-theory (e/d (de-rules
-                              nthcdr-of-pos-const-idx
                               comp-gcd-cond&
                               comp-gcd-cond*$destructure
                               gcd-cond$act
@@ -630,7 +625,6 @@
                             (de (si 'comp-gcd-cond data-width)
                                 inputs st netlist))
              :in-theory (e/d (de-rules
-                              nthcdr-of-pos-const-idx
                               comp-gcd-cond&
                               comp-gcd-cond*$destructure
                               comp-gcd-cond$st-format
@@ -1162,7 +1156,7 @@
                               comp-gcd-cond$out-act0
                               comp-gcd-cond$out-act1)
                              (acl2::append-of-cons
-                              acl2::associativity-of-append
+                              associativity-of-append
                               append)))))
   )
 

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -60,18 +60,17 @@
 
      (ripple-add/sub-body (1+ m) (1- n)))))
 
-(destructuring-lemma
+(module-generator
  ripple-add/sub* (n)
- (declare (xargs :guard (natp n)))
- nil                             ; Bindings
  (si 'ripple-add/sub n)          ; Name
  (cons (si 'carry 0)             ; Inputs are
        (append (sis 'a 0 n)      ; (carry_0 a_0    a_1    ... a_n-1
                (sis 'b-in 0 n))) ;          b-in_0 b-in_1 ... b-in_n-1)
  (append (sis 'sum 0 n)          ; Outputs are
          (list (si 'carry n)))   ; (sum_0 sum_1 ... sum_n-1 carry_n)
- nil                             ; State
- (ripple-add/sub-body 0 n))      ; Occurrences
+ ()                              ; State
+ (ripple-add/sub-body 0 n)       ; Occurrences
+ (declare (xargs :guard (natp n))))
 
 (defund ripple-add/sub$netlist (n)
   (declare (xargs :guard (natp n)))
@@ -207,8 +206,6 @@
                     (assoc-eq-values (sis 'a 0 n) wire-alist)
                     (fv-not
                      (assoc-eq-values (sis 'b-in 0 n) wire-alist)))))))
-
-(not-primp-lemma ripple-add/sub)
 
 (defthm ripple-add/sub$value-1
   (implies (and (ripple-add/sub& netlist n)

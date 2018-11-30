@@ -33,10 +33,10 @@
    </p>
    <ul>
      <li>
-     @('state') is the ACL2's @(see state).
+     @('state') is the ACL2 @(see state).
      </li>
      <li>
-     @('wrld') is the ACL2's @(see world).
+     @('wrld') is the ACL2 @(see world).
      </li>
      <li>
      @('ctx') is the context used for errors.

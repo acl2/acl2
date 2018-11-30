@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -85,7 +85,7 @@
                             *queue10$go-num*
                             *gcd$go-num*)))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -277,10 +277,6 @@
            (q10-gcd$out-act inputs st data-width)
            (q10-gcd$data-out inputs st data-width)))
   )
-
-;; Prove that Q10-GCD is not a DE primitive.
-
-(not-primp-lemma q10-gcd)
 
 ;; The value lemma for Q10-GCD
 

@@ -58,6 +58,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define xdoc::textp (x)
+  :returns (yes/no booleanp)
   :short "Recognize XDOC text."
   :long
   "<p>

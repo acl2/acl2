@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 ;; VECTOR-MODULE name (occ-name outputs type inputs) specs &key enable
 
@@ -156,7 +156,7 @@
          (map-sis outputs 0 'N))
        NIL
        (,body-defun 0 N)
-       :guard (natp n))
+       (declare (xargs :guard (natp N))))
 
       (DEFUND ,predicate (NETLIST N)
         (DECLARE (XARGS :GUARD (AND (ALISTP NETLIST)
@@ -190,8 +190,6 @@
                                                    ST-ALIST
                                                    NETLIST)
                   :in-theory (ENABLE de-rules sis ,@enable)))))
-
-      (NOT-PRIMP-LEMMA ,name)
 
       (DEFTHM ,value-lemma
         (IMPLIES (AND (,predicate NETLIST N)

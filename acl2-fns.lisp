@@ -973,6 +973,14 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; at the moment because in the usage we expect, the only serious costs
 ; will be small ones, during compilation.
 
+; Our backquote always returns a cons-expression on a cons.  In
+; particular, '`(a) returns (CONS 'A 'NIL) and not '(a), which would
+; be legal in any backquote that produces a constant, e.g., one
+; containing no commas.  We rely on the fact that the backquote of a
+; cons is a cons-expression in our documentation of methods of
+; bypassing the restrictions translate puts on LAMBDA objects in :FN
+; slots.  For example, see :DOC gratuitous-lambda-object-restrictions.
+
   (cond ((and (vectorp x) (not (stringp x)))
          (error "ACL2 does not handle vectors in backquote."))
         ((atom x) (list 'quote x))

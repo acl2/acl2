@@ -1791,7 +1791,7 @@
 ; this case, so that appropriate live stobj checks can be made.
 
                            (not (and stobj-flag
-; But is it an abstract concrete stobj?
+; But is it an abstract stobj?
                                      (getpropc stobj-flag 'absstobj-info nil
                                                wrld)))))
           (fn (car def))

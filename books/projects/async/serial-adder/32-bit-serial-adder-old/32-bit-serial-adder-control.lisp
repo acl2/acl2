@@ -341,7 +341,7 @@
         'encode-32
         (sis 'next-decoded-state 0 32)))
 
- :guard t)
+ (declare (xargs :guard t)))
 
 (defun next-cntl-state$netlist ()
   (declare (xargs :guard t))

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -123,7 +123,7 @@
   '(in-status (ready-in-) b-buf (l0-status))
   '(out-status (ready-out) b-buf (l3-status)))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -296,10 +296,6 @@
            (queue4-l$ready-out st)
            (queue4-l$data-out st)))
   )
-
-;; Prove that QUEUE4-L is not a DE primitive.
-
-(not-primp-lemma queue4-l)
 
 ;; The value lemma for QUEUE4-L
 
