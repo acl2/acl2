@@ -160,6 +160,10 @@
  to generate additional return types for conversions from natural numbers to
  digits has been generalized and renamed.</p>
 
+ <h4><see topic='@(url rstobj::defrstobj)'>defrstobj</see></h4>
+
+ <p>Added support for defining universal accessor and updater functions.</p>
+
  <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
 
  <p>Added more error-checking functions.</p>

@@ -39,7 +39,7 @@
 
 (defxdoc stobj-updater-independence
   :parents (std/stobjs)
-  :short "Discussion of the accessor/updater indepencence or <i>frame problem</i>,
+  :short "Discussion of the accessor/updater independence or <i>frame problem</i>,
           especially as it relates to the @(see def-updater-independence-thm) utility."
   :long "<p>Note: This is related to what is known as the frame problem in
 philosophy/artificial intelligence/logic; for a broader discussion see <a
