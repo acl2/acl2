@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -82,7 +82,7 @@
                                              (sis 'go
                                                   *queue4$go-num*
                                                   *queue5$go-num*)))))
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -264,10 +264,6 @@
            (queue10$out-act inputs st data-width)
            (queue10$data-out st)))
   )
-
-;; Prove that Q10 is not a DE primitive.
-
-(not-primp-lemma queue10)
 
 ;; The value lemma for Q10
 
@@ -537,7 +533,7 @@
                               queue10$extract)
                              (queue10$input-format=>q4$input-format
                               queue10$input-format=>q5$input-format
-                              acl2::associativity-of-append)))))
+                              associativity-of-append)))))
   )
 
 ;; ======================================================================

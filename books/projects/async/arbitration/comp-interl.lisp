@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -118,7 +118,7 @@
                        (cons (si 'select (* 2 *interl$select-num*))
                              (sis 'go (* 2 *interl$go-num*) *interl$go-num*))))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -530,10 +530,6 @@
            (comp-interl$out-act inputs st data-width)
            (comp-interl$data-out inputs st data-width)))
   )
-
-;; Prove that COMP-INTERL is not a DE primitive.
-
-(not-primp-lemma comp-interl)
 
 ;; The value lemma for COMP-INTERL
 

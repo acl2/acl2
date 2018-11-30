@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -19,7 +19,7 @@
  (si 'counter data-width)
  (sis 'data-in 0 data-width)
  (sis 'data-out 0 data-width)
- '()
+ ()
  (list
   '(g0 (low) vss ())
   '(g1 (high) vdd ())
@@ -30,7 +30,7 @@
                 (cons 'high
                       (make-list (1- data-width)
                                  :initial-element 'low)))))
- :guard (posp data-width))
+ (declare (xargs :guard (posp data-width))))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; COUNTER.
@@ -58,8 +58,6 @@
    (and (net-syntax-okp (counter$netlist 64))
         (net-arity-okp (counter$netlist 64))
         (counter& (counter$netlist 64) 64))))
-
-(not-primp-lemma counter) ;; Prove that COUNTER is not a DE primitive.
 
 ;; The value lemma for COUNTER
 

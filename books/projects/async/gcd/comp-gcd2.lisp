@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -138,7 +138,7 @@
                (append (sis 'd1-out 0 (* 2 data-width))
                        (sis 'go 2 *comp-gcd-body$go-num*)))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -389,10 +389,6 @@
            (comp-gcd2$data-out inputs st data-width)))
   )
 
-;; Prove that COMP-GCD2 is not a DE primitive.
-
-(not-primp-lemma comp-gcd2)
-
 ;; The value lemma for COMP-GCD2
 
 (defthm comp-gcd2$value
@@ -410,7 +406,6 @@
            :expand (:free (inputs data-width)
                           (se (si 'comp-gcd2 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            nthcdr-of-pos-const-idx
                             comp-gcd2&
                             comp-gcd2*$destructure
                             merge$act0
@@ -488,7 +483,6 @@
            :expand (:free (inputs data-width)
                           (de (si 'comp-gcd2 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            nthcdr-of-pos-const-idx
                             comp-gcd2&
                             comp-gcd2*$destructure
                             merge$act
@@ -1081,7 +1075,7 @@
                      (append (comp-gcd2$op-map seq)
                              y2 z)))
      :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
+                                     (associativity-of-append))))))
 
   (defthmd comp-gcd2$dataflow-correct
     (b* ((extracted-st (comp-gcd2$extract st data-width))

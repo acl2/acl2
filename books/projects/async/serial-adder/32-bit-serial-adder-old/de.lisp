@@ -5,7 +5,7 @@
 
 ;; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; September 2018
+;; November 2018
 
 ; This collection of things we need to define ACL2 version of DUAL-EVAL.
 
@@ -1474,6 +1474,7 @@
   '(open-nth
     get-field
     len-1-true-listp=>true-listp
+    nthcdr-of-pos-const-idx
     md-name md-ins md-outs md-sts md-occs
     occ-name occ-outs occ-fn occ-ins
     take-of-len-free))

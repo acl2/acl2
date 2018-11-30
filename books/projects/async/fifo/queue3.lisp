@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -114,7 +114,7 @@
         (si 'v-buf data-width)
         (sis 'd2-out 0 data-width)))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -270,10 +270,6 @@
            (queue3$out-act inputs st data-width)
            (queue3$data-out st)))
   )
-
-;; Prove that Q3 is not a DE primitive.
-
-(not-primp-lemma queue3)
 
 ;; The value lemma for Q3
 

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -27,15 +27,14 @@
            (list 'CLK (si 'D m)))      ; Inputs
      (latch-n-body (1+ m) (1- n)))))
 
-(destructuring-lemma
+(module-generator
  latch-n* (n)
- (declare (xargs :guard (natp n)))
- nil                       ; Bindings
  (si 'LATCH-N n)           ; Name
  (list* 'CLK (sis 'D 0 n)) ; Inputs
  (sis 'Q 0 n)              ; Outputs
  (sis 'G 0 n)              ; States
- (latch-n-body 0 n))       ; Body
+ (latch-n-body 0 n)        ; Body
+ (declare (xargs :guard (natp n))))
 
 (defund latch-n& (netlist n)
   (declare (xargs :guard (and (alistp netlist)
@@ -101,8 +100,6 @@
                                repeat
                                3vp
                                sis)))))
-
-(not-primp-lemma latch-n)
 
 (defthm latch-n$value
   (implies (and (latch-n& netlist n)
@@ -210,15 +207,14 @@
            (list 'CLK (si 'D m)))      ; Inputs
      (ff-n-body (1+ m) (1- n)))))
 
-(destructuring-lemma
+(module-generator
  ff-n* (n)
- (declare (xargs :guard (natp n)))
- nil                       ; Bindings
  (si 'FF-N n)              ; Name
  (list* 'CLK (sis 'D 0 n)) ; Inputs
  (sis 'Q 0 n)              ; Outputs
  (sis 'G 0 n)              ; States
- (ff-n-body 0 n))          ; Body
+ (ff-n-body 0 n)           ; Body
+ (declare (xargs :guard (natp n))))
 
 (defund ff-n& (netlist n)
   (declare (xargs :guard (and (alistp netlist)
@@ -279,8 +275,6 @@
             :induct (ff-n-body-induct m n wire-alist st-alist netlist)
             :in-theory (enable de-rules
                                sis)))))
-
-(not-primp-lemma ff-n)
 
 (defthm ff-n$value
   (implies (and (ff-n& netlist n)

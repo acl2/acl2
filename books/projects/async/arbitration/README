@@ -16,10 +16,12 @@ See Makefile file for the detail.
 Book Organization
 ----------------------------------------------------------------------
 
-arb-merge.lisp: an arbitrated merge joint arb-merge.
+arb-merge-1.lisp: a simple arbitrated merge joint arb-merge-1.
+
+arb-merge.lisp: a more complex arbitrated merge joint arb-merge.
 
 interl.lisp: a circuit, interl, that connects two instances of Q20' to
-the two input ports of arb-merge.
+the two input ports of arb-merge-1.
 
 interl-ll.lisp: a circuit, interl-ll, that connects Q9' and Q11' to
 the two input ports of arb-merge.  It is designed as a left

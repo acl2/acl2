@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -117,7 +117,7 @@
                                *alt-branch$go-num*)
                             *alt-merge$go-num*)))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -382,10 +382,6 @@
            (round-robin2$out-act inputs st data-width)
            (round-robin2$data-out st)))
   )
-
-;; Prove that RR2 is not a DE primitive.
-
-(not-primp-lemma round-robin2)
 
 ;; The value lemma for RR2
 

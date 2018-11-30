@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -108,7 +108,7 @@
                                      *queue11-l$go-num*)
                                   *arb-merge$go-num*))))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -404,10 +404,6 @@
            (interl-ll$out-act inputs st data-width)
            (interl-ll$data-out inputs st data-width)))
   )
-
-;; Prove that INTERL-LL is not a DE primitive.
-
-(not-primp-lemma interl-ll)
 
 ;; The value lemma for INTERL-LL
 

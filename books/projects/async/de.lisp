@@ -5,7 +5,7 @@
 
 ;; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 ; (ld "de.lisp" :ld-pre-eval-print t)
 
@@ -1353,6 +1353,7 @@
   '(open-nth
     get-field
     len-1-true-listp=>true-listp
+    nthcdr-of-pos-const-idx
     md-name md-ins md-outs md-sts md-occs
     occ-name occ-outs occ-fn occ-ins
     take-of-len-free))

@@ -4,7 +4,7 @@
 ;; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 ;; A zero detector optimized for quick detection of the last 2 bits of the
 ;; input vector.  It should save a few nanoseconds in the FM9001.
@@ -60,7 +60,7 @@
         (take (- n 2) (sis 'a 0 n)))
   (list 'result '(z) 'b-nor3
         (list 'zfront (si 'a (- n 2)) (si 'a (1- n)))))
- :guard (and (natp n) (<= 2 n)))
+ (declare (xargs :guard (and (natp n) (<= 2 n)))))
 
 (defund fast-zero$netlist (n)
   (declare (xargs :guard (and (natp n)
@@ -79,8 +79,6 @@
 
 (defthm check-fast-zero$netlist-5
   (fast-zero& (fast-zero$netlist 5) 5))
-
-(not-primp-lemma fast-zero)
 
 (defthm fast-zero$value
   (implies (and (fast-zero& netlist n)
