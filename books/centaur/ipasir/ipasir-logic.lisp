@@ -137,6 +137,10 @@
 
 (local (xdoc::set-default-parents ipasir$a))
 
+(define create-ipasir$a ()
+  :enabled t
+  (make-ipasir$a :status :undef))
+
 (define ipasir-get-status$a ((solver ipasir$a-p))
   :enabled t
   (ipasir$a->status solver))
@@ -515,36 +519,75 @@
  (defthm ipasir-get-curr-stats$a-mv-nth-4
    (natp (mv-nth 4 (ipasir-get-curr-stats$a solver)))))
 
+;; To avoid a soundness bug (discussed in soundness-bug2-fixed.lisp), we want
+;; the concrete basis for the ipasir abstract stobj to have non-executable base
+;; accessors and updaters.  Therefore, we use an abstract stobj for which the
+;; interface functions are non-executable as its concrete basis.
+
+;; The lowest-level stobj, which we call ipasir$c$c, is defined with seven
+;; fields, which will be used in the underlying backend interface but are
+;; mostly unimportant for the logical story.  The only field used in the
+;; logical story is field 0, which in the logic (but not in execution) contains
+;; the ipasir$a structure.
+
+;; The intermediate abstract stobj, ipasir$c, could be a straightforward copy
+;; of ipasir$c$c, only with non-executable wrappers for the accessors and
+;; updaters.  But instead to make things even simpler we'll use a logical
+;; representation of the ipasir$c consisting of just the ipasir$a object, with
+;; a non-executable accessor that returns that object and a non-executable
+;; updater that replaces that object.
 
 (make-event
- `(defstobj ipasir$c
+ `(defstobj ipasir$c$c
     (ipasir-val
      :type (satisfies ipasir$a-p)
      :initially ,(make-ipasir$a :status :undef))
-    (ipasir-limit)
+    (ipasir-limit-field)
     (ipasir-status-field :initially :undef)
     (ipasir-empty-new-clause-field :initially t)
     (ipasir-some-history-field :initially nil)
     (ipasir-assumption-field :initially nil)
     (ipasir-solved-assumption-field :initially nil)
-    :renaming ((ipasir-val                            ipasir-get)
-               (update-ipasir-val                     ipasir-set)
-               (ipasir-limit                          ipasir-limit-get)
-               (update-ipasir-limit                   ipasir-limit-set)
-               (ipasir-status-field                   ipasir-status-get)
-               (update-ipasir-status-field            ipasir-status-set)
-               (ipasir-assumption-field               ipasir-assumption-get)
-               (update-ipasir-assumption-field        ipasir-assumption-set)
-               (ipasir-some-history-field             ipasir-some-history-get)
-               (update-ipasir-some-history-field      ipasir-some-history-set)
-               (ipasir-empty-new-clause-field         ipasir-empty-new-clause-get)
-               (update-ipasir-empty-new-clause-field  ipasir-empty-new-clause-set)
-               (ipasir-solved-assumption-field        ipasir-solved-assumption-get)
-               (update-ipasir-solved-assumption-field ipasir-solved-assumption-set))))
+    :renaming ((ipasir-val                            ipasir-get1)
+               (update-ipasir-val                     ipasir-set1))))
 
-(define create-ipasir$a ()
+(define ipasir-get$a ((ipasir$a ipasir$a-p))
+  :returns (val ipasir$a-p)
   :enabled t
-  (make-ipasir$a :status :undef))
+  (ipasir$a-fix ipasir$a))
+
+(define ipasir-set$a ((val ipasir$a-p)
+                      (ipasir$a ipasir$a-p))
+  (declare (ignore ipasir$a))
+  :returns (new-ipasir$a ipasir$a-p)
+  :enabled t
+  (ipasir$a-fix val))
+
+(define ipasir-get$c (ipasir$c$c)
+  :non-executable t
+  :enabled t
+  (ipasir-get1 ipasir$c$c))
+
+(define ipasir-set$c ((val ipasir$a-p)
+                      ipasir$c$c)
+  :enabled t
+  ;; We really just want (non-exec (ipasir-set1 (ipasir$a-fix val)
+  ;; ipasir$c$c)), but we use this hack so that the stobjs-out will be
+  ;; (ipasir$c$c) and not NIL.
+  (b* ((ipasir$c$c (non-exec (ipasir-set1 (ipasir$a-fix val) ipasir$c$c))))
+    ipasir$c$c))
+
+(local (define ipasir$c-corr (ipasir$c$c ipasir$a)
+         :enabled t
+         (equal ipasir$a (ipasir-get1 ipasir$c$c))))
+
+(acl2::defabsstobj-events ipasir$c
+  :concrete ipasir$c$c
+  :recognizer (ipasir$cp :logic ipasir$a-p :exec ipasir$c$cp)
+  :creator (create-ipasir$c :logic create-ipasir$a :exec create-ipasir$c$c)
+  :corr-fn ipasir$c-corr
+  :exports ((ipasir-get :logic ipasir-get$a :exec ipasir-get$c)
+            (ipasir-set :logic ipasir-set$a :exec ipasir-set$c)))
 
 
 (define ipasir-init$c (ipasir$c state)
@@ -690,12 +733,20 @@
 (acl2::defstobj-clone ipasir2 ipasir :suffix "2")
 (acl2::defstobj-clone ipasir3 ipasir :suffix "3")
 
-;; Note: We need these interface functions to be untouchable because they don't
-;; behave consistently with other ipasir$c functions.  For example, the
-;; following function can be proven to return T, but its actual execution
-;; returns NIL once the backend is loaded.  Even if we smash ipasir-get and
-;; prevent its execution, ipasir$c can be cloned, creating a new function
-;; equivalent to ipasir-get, and which we haven't smashed.
+
+;; Note: Previously, ipasir$c was just a concrete stobj with executable base
+;; accessors/updaters.  But the behavior of the following $c interface
+;; functions wasn't consistent with the behavior of those base
+;; accessors/updaters once the backend was loaded.  In an attempt to close that
+;; soundness hole, we would therefore make both these interface functions and
+;; base accessors/updaters untouchable.  However, none of these untouchability
+;; settings really stuck.  The untouchability of the base accessors/updaters
+;; could be worked around by defining a new stobj congruent to ipasir$c, whose
+;; base accessors/updaters would then not be untouchable.  The untouchability
+;; of the interface functions could be worked around by replicating enough of
+;; this book to define a wrapper function (such as ipasir$c-contra, below),
+;; then load the backend.  At that point, ipasir$c-contra is proven to return T
+;; as its first value but its actual execution produces NIL.
 
 ;; (make-event
 ;;  `(defstobj ipasir$c2
@@ -716,42 +767,6 @@
 ;;   (defthm ipasir$c-contra-true
 ;;     (mv-nth 0 (ipasir$c-contra state))))
 
-(push-untouchable ipasir-get-status$c t)
-(push-untouchable ipasir-empty-new-clause$c t)
-(push-untouchable ipasir-some-history$c t)
-(push-untouchable ipasir-get-assumption$c t)
-(push-untouchable ipasir-solved-assumption$c t)
-(push-untouchable ipasir-init$c t)
-(push-untouchable ipasir-reinit$c t)
-(push-untouchable ipasir-release$c t)
-(push-untouchable ipasir-input$c t)
-(push-untouchable ipasir-add-lit$c t)
-(push-untouchable ipasir-finalize-clause$c t)
-(push-untouchable ipasir-assume$c t)
-(push-untouchable ipasir-val$c t)
-(push-untouchable ipasir-failed$c t)
-(push-untouchable ipasir-solve$c t)
-(push-untouchable ipasir-bump-activity-vars$c t)
-(push-untouchable ipasir-get-curr-stats$c t)
-(push-untouchable ipasir-set-limit$c t)
-(push-untouchable ipasir-callback-count$c t)
-
-;; Note: making the following base accessors/updaters untouchable is mostly
-;; useless since we can make a congruent stobj with its own accessors/updaters.
-(push-untouchable ipasir-get t)
-(push-untouchable ipasir-set t)
-(push-untouchable ipasir-limit-get t)
-(push-untouchable ipasir-limit-set t)
-(push-untouchable ipasir-status-get t)
-(push-untouchable ipasir-status-set t)
-(push-untouchable ipasir-assumption-get t)
-(push-untouchable ipasir-assumption-set t)
-(push-untouchable ipasir-some-history-get t)
-(push-untouchable ipasir-some-history-set t)
-(push-untouchable ipasir-empty-new-clause-get t)
-(push-untouchable ipasir-empty-new-clause-set t)
-(push-untouchable ipasir-solved-assumption-get t)
-(push-untouchable ipasir-solved-assumption-set t)
 
 (defun with-local-ipasir-core-fn (name bindings inner-form rest)
   (b* (((unless (symbolp name))

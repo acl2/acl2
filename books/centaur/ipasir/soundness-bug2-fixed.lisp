@@ -65,23 +65,25 @@
 (local (std::add-default-post-define-hook :fix))
 
 
-;; Dumb hack to prevent users from including this book.  First we use
-;; make-event to save the certify-book-info from when this book was certified.
-;; Then we check that the current certify-book-info is the same as that
-;; constant.  If not, complain.
+;; Note: Removed this because the soundness bug is fixed, we think.
 
-(make-event
- (let ((certinfo (f-get-global 'acl2::certify-book-info state)))
-   `(defconst *my-certify-book-info* ',certinfo)))
+;; ;; Dumb hack to prevent users from including this book.  First we use
+;; ;; make-event to save the certify-book-info from when this book was certified.
+;; ;; Then we check that the current certify-book-info is the same as that
+;; ;; constant.  If not, complain.
 
-(with-output :off :all
-  (make-event
-   (let* ((certinfo1 (f-get-global 'acl2::certify-book-info state))
-          (certinfo2 *my-certify-book-info*))
-     (if (equal certinfo1 certinfo2)
-         '(value-triple :ok)
-       (er hard? 'soundness-bug3 "Don't include this book! It contains a proof of NIL.")))
-   :check-expansion t))
+;; (make-event
+;;  (let ((certinfo (f-get-global 'acl2::certify-book-info state)))
+;;    `(defconst *my-certify-book-info* ',certinfo)))
+
+;; (with-output :off :all
+;;   (make-event
+;;    (let* ((certinfo1 (f-get-global 'acl2::certify-book-info state))
+;;           (certinfo2 *my-certify-book-info*))
+;;      (if (equal certinfo1 certinfo2)
+;;          '(value-triple :ok)
+;;        (er hard? 'soundness-bug3 "Don't include this book! It contains a proof of NIL.")))
+;;    :check-expansion t))
 
             
 (std::defenum ipasir-status-p
@@ -104,6 +106,10 @@
    (callback-count natp         "Number of times a callback function has been called during solve" :default 0)
    (history                     "Collects the history of all operations on this solver,
                                  so we can never execute the solver the same way twice")))
+
+(define create-ipasir$a ()
+  :enabled t
+  (make-ipasir$a :status :undef))
 
 (define ipasir-get-status$a ((solver ipasir$a-p))
   :enabled t
@@ -135,30 +141,57 @@
     (equal (ipasir$a->new-clause new-solver) nil)))
 
 (make-event
- `(defstobj ipasir$c
+ `(defstobj ipasir$c$c
     (ipasir-val
      :type (satisfies ipasir$a-p)
      :initially ,(make-ipasir$a :status :undef))
-    (ipasir-limit)
+    (ipasir-limit-field)
     (ipasir-status-field :initially :undef)
     (ipasir-empty-new-clause-field :initially t)
     (ipasir-some-history-field :initially nil)
     (ipasir-assumption-field :initially nil)
     (ipasir-solved-assumption-field :initially nil)
-    :renaming ((ipasir-val                            ipasir-get)
-               (update-ipasir-val                     ipasir-set)
-               (ipasir-limit                          ipasir-limit-get)
-               (update-ipasir-limit                   ipasir-limit-set)
-               (ipasir-status-field                   ipasir-status-get)
-               (update-ipasir-status-field            ipasir-status-set)
-               (ipasir-assumption-field               ipasir-assumption-get)
-               (update-ipasir-assumption-field        ipasir-assumption-set)
-               (ipasir-some-history-field             ipasir-some-history-get)
-               (update-ipasir-some-history-field      ipasir-some-history-set)
-               (ipasir-empty-new-clause-field         ipasir-empty-new-clause-get)
-               (update-ipasir-empty-new-clause-field  ipasir-empty-new-clause-set)
-               (ipasir-solved-assumption-field        ipasir-solved-assumption-get)
-               (update-ipasir-solved-assumption-field ipasir-solved-assumption-set))))
+    :renaming ((ipasir-val                            ipasir-get1)
+               (update-ipasir-val                     ipasir-set1))))
+
+(define ipasir-get$a ((ipasir$a ipasir$a-p))
+  :returns (val ipasir$a-p)
+  :enabled t
+  (ipasir$a-fix ipasir$a))
+
+(define ipasir-set$a ((val ipasir$a-p)
+                      (ipasir$a ipasir$a-p))
+  (declare (ignore ipasir$a))
+  :returns (new-ipasir$a ipasir$a-p)
+  :enabled t
+  (ipasir$a-fix val))
+
+(define ipasir-get$c (ipasir$c$c)
+  :non-executable t
+  :enabled t
+  (ipasir-get1 ipasir$c$c))
+
+(define ipasir-set$c ((val ipasir$a-p)
+                      ipasir$c$c)
+  :enabled t
+  ;; We really just want (non-exec (ipasir-set1 (ipasir$a-fix val)
+  ;; ipasir$c$c)), but we use this hack so that the stobjs-out will be
+  ;; (ipasir$c$c) and not NIL.
+  (b* ((ipasir$c$c (non-exec (ipasir-set1 (ipasir$a-fix val) ipasir$c$c))))
+    ipasir$c$c))
+
+(local (define ipasir$c-corr (ipasir$c$c ipasir$a)
+         :enabled t
+         (equal ipasir$a (ipasir-get1 ipasir$c$c))))
+
+(acl2::defabsstobj-events ipasir$c
+  :concrete ipasir$c$c
+  :recognizer (ipasir$cp :logic ipasir$a-p :exec ipasir$c$cp)
+  :creator (create-ipasir$c :logic create-ipasir$a :exec create-ipasir$c$c)
+  :corr-fn ipasir$c-corr
+  :exports ((ipasir-get :logic ipasir-get$a :exec ipasir-get$c)
+            (ipasir-set :logic ipasir-set$a :exec ipasir-set$c)))
+
 
 (define ipasir-init$c (ipasir$c state)
   :guard (eq (ipasir$a->status (ipasir-get ipasir$c)) :undef)
@@ -168,25 +201,21 @@
     (mv ipasir$c state)))
 
 
-(make-event
- `(defstobj ipasir2$c
-    (ipasir-val-2
-     :type (satisfies ipasir$a-p)
-     :initially ,(make-ipasir$a :status :undef))
-    (ipasir-limit-2)
-    (ipasir-status-field-2 :initially :undef)
-    (ipasir-empty-new-clause-field-2 :initially t)
-    (ipasir-some-history-field-2 :initially nil)
-    (ipasir-assumption-field-2 :initially nil)
-    (ipasir-solved-assumption-field-2 :initially nil)
-    :congruent-to ipasir$c))
+(defabsstobj ipasir$c2
+  :concrete ipasir$c$c
+  :recognizer (ipasir$c2p :logic ipasir$a-p :exec ipasir$c$cp)
+  :creator (create-ipasir$c2 :logic create-ipasir$a :exec create-ipasir$c$c)
+  :corr-fn ipasir$c-corr
+  :exports ((ipasir-get2 :logic ipasir-get$a :exec ipasir-get$c)
+            (ipasir-set2 :logic ipasir-set$a :exec ipasir-set$c))
+  :congruent-to ipasir$c)
 
 
 (define problem (state)
   (with-local-stobj ipasir$c
     (mv-let (ans state ipasir$c)
       (b* (((mv ipasir$c state) (ipasir-init$c ipasir$c state))
-           (solver (ipasir-val-2 ipasir$c)))
+           (solver (ipasir-get2 ipasir$c)))
         (mv (ipasir$a-p solver) state ipasir$c))
       (mv ans state)))
   ///
@@ -216,9 +245,16 @@
 
 (include-book "ipasir-backend")
 
-(defthm bad nil
-  :hints (("goal" :clause-processor (problem-clause-proc acl2::clause nil state)))
-  :rule-classes nil)
+(make-event
+ (b* (((mv erp ?val state)
+       (defthm bad nil
+         :hints (("goal" :clause-processor (problem-clause-proc acl2::clause nil state)))
+         :rule-classes nil))
+      ((unless erp)
+       (er soft 'ipasir-soundness-bug-check "Proof of unsoundness unexpectedly passed!~%")))
+   (value '(value-triple :proof-of-nil-did-not-succeed))))
+
+
 
 
 

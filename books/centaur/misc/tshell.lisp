@@ -131,8 +131,6 @@ API documentation</a> for details.</p>"
 (defun tshell-useless-clauseproc (clause)
   (list clause))
 
-(defttag tshell)
-
 (defsection tshell-call-fn1
   :parents (tshell)
   :short "Logical story for @(see tshell-call)."
@@ -146,22 +144,18 @@ tshell-call-fn1?  But those aren't necessarily satisfied by command-line
 programs.  We should probably be using oracle reads instead, but then we'll
 need to involve state.</p>"
 
-  (acl2::define-trusted-clause-processor
-   tshell-useless-clauseproc
-   (tshell-call-fn1)
-   :partial-theory
-   (encapsulate
-     (((tshell-call-fn1 * * *) => (mv * *)))
+  (partial-encapsulate
+   (((tshell-call-fn1 * * *) => (mv * *)))
+   nil ;; supporters
+   (local (defun tshell-call-fn1 (x y z)
+            (declare (ignorable x y z))
+            (mv 0 nil)))
 
-     (local (defun tshell-call-fn1 (x y z)
-              (declare (ignorable x y z))
-              (mv 0 nil)))
-
-     (defthm return-type-of-tshell-call-fn1
-       (b* (((mv status lines)
-             (tshell-call-fn1 cmd print save)))
-         (and (natp status)
-              (string-listp lines)))))))
+   (defthm return-type-of-tshell-call-fn1
+     (b* (((mv status lines)
+           (tshell-call-fn1 cmd print save)))
+       (and (natp status)
+            (string-listp lines))))))
 
 
 (define tshell-call
@@ -224,6 +218,8 @@ to finish and don't get any output from it. (never forks ACL2)."
  :ignore-ok t
  (cw "Warning: under-the-hood definition of ~s0 not installed?"
      __function__))
+
+(defttag tshell)
 
 (include-raw "tshell-raw.lsp")
 
