@@ -72,6 +72,9 @@ cert_to_pcert0
 cert_to_pcert1
 read_targets
 deps_dfs
+check_up_to_date
+collect_bottom_out_of_date
+collect_top_up_to_date
 );
 
 
