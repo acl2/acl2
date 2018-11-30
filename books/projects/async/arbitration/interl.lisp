@@ -4,11 +4,11 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
-(include-book "arb-merge")
+(include-book "arb-merge-1")
 (include-book "../fifo/queue20-l")
 
 (local (include-book "arithmetic-3/top" :dir :system))
@@ -34,12 +34,12 @@
 ;; circuits consist of two 20-link queues connected to the two input ports of
 ;; an arbitrated merge.
 
-(defconst *interl$select-num* *arb-merge$select-num*)
+(defconst *interl$select-num* *arb-merge-1$select-num*)
 (defconst *interl$prim-go-num* 2)
 (defconst *interl$go-num* (+ *interl$prim-go-num*
                              (* 2 *queue20-l$go-num*)
-                             *arb-merge$go-num*))
-(defconst *interl$st-len* 3)
+                             *arb-merge-1$go-num*))
+(defconst *interl$st-len* 2)
 
 (defun interl$data-ins-len (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -63,7 +63,7 @@
                 (cons 'select (sis 'go 0 *interl$go-num*))))
  (list* 'in0-act 'in1-act 'out-act
         (sis 'data-out 0 data-width))
- '(q20-l0 q20-l1 arb-merge)
+ '(q20-l0 q20-l1)
  (list
   ;; LINKS
   ;; 20-link queue Q20-L0
@@ -110,11 +110,11 @@
         (si 'v-buf data-width)
         (sis 'data1-in 0 data-width))
 
-  ;; Arb-merge
-  (list 'arb-merge
+  ;; arb-merge-1
+  (list 'arb-merge-1
         (list* 'out-act 'out-act0 'out-act1
                (sis 'data-out 0 data-width))
-        (si 'arb-merge data-width)
+        (si 'arb-merge-1 data-width)
         (list* 'q20-l0-ready-out 'q20-l1-ready-out 'empty-out-
                (append (sis 'q20-l0-data-out 0 data-width)
                        (sis 'q20-l1-data-out 0 data-width)
@@ -122,14 +122,14 @@
                              (sis 'go
                                   (+ *interl$prim-go-num*
                                      (* 2 *queue20-l$go-num*))
-                                  *arb-merge$go-num*))))))
+                                  *arb-merge-1$go-num*))))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
     ,@(state-accessors-gen 'interl
-                           '(q20-l0 q20-l1 arb-merge)
+                           '(q20-l0 q20-l1)
                            0)))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
@@ -139,7 +139,7 @@
   (declare (xargs :guard (natp data-width)))
   (cons (interl* data-width)
         (union$ (queue20-l$netlist data-width)
-                (arb-merge$netlist data-width)
+                (arb-merge-1$netlist data-width)
                 :test 'equal)))
 
 ;; Recognizer for INTERL
@@ -153,7 +153,7 @@
          (joint-cntl& subnetlist)
          (v-buf& subnetlist data-width)
          (queue20-l& subnetlist data-width)
-         (arb-merge& subnetlist data-width))))
+         (arb-merge-1& subnetlist data-width))))
 
 ;; Sanity check
 
@@ -167,12 +167,10 @@
 
 (defund interl$st-format (st data-width)
   (b* ((q20-l0 (get-field *interl$q20-l0* st))
-       (q20-l1 (get-field *interl$q20-l1* st))
-       (arb-merge (get-field *interl$arb-merge* st)))
+       (q20-l1 (get-field *interl$q20-l1* st)))
     (and (< 0 data-width)
          (queue20-l$st-format q20-l0 data-width)
-         (queue20-l$st-format q20-l1 data-width)
-         (arb-merge$st-format arb-merge))))
+         (queue20-l$st-format q20-l1 data-width))))
 
 (defthm interl$st-format=>data-width-constraint
   (implies (interl$st-format st data-width)
@@ -182,12 +180,10 @@
 
 (defund interl$valid-st (st data-width)
   (b* ((q20-l0 (get-field *interl$q20-l0* st))
-       (q20-l1 (get-field *interl$q20-l1* st))
-       (arb-merge (get-field *interl$arb-merge* st)))
+       (q20-l1 (get-field *interl$q20-l1* st)))
     (and (< 0 data-width)
          (queue20-l$valid-st q20-l0 data-width)
-         (queue20-l$valid-st q20-l1 data-width)
-         (arb-merge$valid-st arb-merge))))
+         (queue20-l$valid-st q20-l1 data-width))))
 
 (defthmd interl$valid-st=>data-width-constraint
   (implies (interl$valid-st st data-width)
@@ -200,7 +196,6 @@
   (implies (interl$valid-st st data-width)
            (interl$st-format st data-width))
   :hints (("Goal" :in-theory (e/d (queue20-l$valid-st=>st-format
-                                   arb-merge$valid-st=>st-format
                                    interl$st-format
                                    interl$valid-st)
                                   ()))))
@@ -279,16 +274,16 @@
              (not (interl$in1-act inputs st data-width)))
     :hints (("Goal" :in-theory (enable interl$in1-act))))
 
-  ;; Extract the inputs for joint ARB-MERGE
+  ;; Extract the inputs for joint ARB-MERGE-1
 
-  (defund interl$arb-merge-inputs (inputs st data-width)
+  (defund interl$arb-merge-1-inputs (inputs st data-width)
     (b* ((empty-out- (nth 2 inputs))
          (select     (nth (interl$data-ins-len data-width) inputs))
          (go-signals (nthcdr (+ (interl$data-ins-len data-width)
                                 *interl$select-num*)
                              inputs))
 
-         (arb-merge-go-signals (take *arb-merge$go-num*
+         (arb-merge-1-go-signals (take *arb-merge-1$go-num*
                                      (nthcdr (+ *interl$prim-go-num*
                                                 *queue20-l$go-num*
                                                 *queue20-l$go-num*)
@@ -303,32 +298,30 @@
          (q20-l1-data-out (queue20-l$data-out q20-l1)))
       (list* q20-l0-ready-out q20-l1-ready-out empty-out-
              (append q20-l0-data-out q20-l1-data-out
-                     (cons select arb-merge-go-signals)))))
+                     (cons select arb-merge-1-go-signals)))))
 
   ;; Extract the "out-act0" signal
 
   (defund interl$out-act0 (inputs st data-width)
-    (b* ((arb-merge-inputs (interl$arb-merge-inputs inputs st data-width))
-         (arb-merge (get-field *interl$arb-merge* st)))
-      (arb-merge$act0 arb-merge-inputs arb-merge data-width)))
+    (b* ((arb-merge-1-inputs (interl$arb-merge-1-inputs inputs st data-width)))
+      (arb-merge-1$act0 arb-merge-1-inputs data-width)))
 
   (defthm interl$out-act0-inactive
     (implies (equal (nth 2 inputs) t)
              (not (interl$out-act0 inputs st data-width)))
-    :hints (("Goal" :in-theory (enable interl$arb-merge-inputs
+    :hints (("Goal" :in-theory (enable interl$arb-merge-1-inputs
                                        interl$out-act0))))
 
   ;; Extract the "out-act1" signal
 
   (defund interl$out-act1 (inputs st data-width)
-    (b* ((arb-merge-inputs (interl$arb-merge-inputs inputs st data-width))
-         (arb-merge (get-field *interl$arb-merge* st)))
-      (arb-merge$act1 arb-merge-inputs arb-merge data-width)))
+    (b* ((arb-merge-1-inputs (interl$arb-merge-1-inputs inputs st data-width)))
+      (arb-merge-1$act1 arb-merge-1-inputs data-width)))
 
   (defthm interl$out-act1-inactive
     (implies (equal (nth 2 inputs) t)
              (not (interl$out-act1 inputs st data-width)))
-    :hints (("Goal" :in-theory (enable interl$arb-merge-inputs
+    :hints (("Goal" :in-theory (enable interl$arb-merge-1-inputs
                                        interl$out-act1))))
 
   (defthm interl$out-act-mutually-exclusive
@@ -336,7 +329,7 @@
                   (interl$out-act0 inputs st data-width))
              (not (interl$out-act1 inputs st data-width)))
     :hints (("Goal" :in-theory (enable interl$valid-st
-                                       interl$arb-merge-inputs
+                                       interl$arb-merge-1-inputs
                                        interl$out-act0
                                        interl$out-act1))))
 
@@ -364,10 +357,8 @@
                                   (nthcdr *interl$prim-go-num*
                                           go-signals)))
 
-         (arb-merge (get-field *interl$arb-merge* st))
-
-         (arb-merge-inputs (interl$arb-merge-inputs inputs st data-width))
-         (out-act0 (arb-merge$act0 arb-merge-inputs arb-merge data-width)))
+         (arb-merge-1-inputs (interl$arb-merge-1-inputs inputs st data-width))
+         (out-act0 (arb-merge-1$act0 arb-merge-1-inputs data-width)))
 
       (list* in0-act out-act0
              (append data0-in q20-l0-go-signals))))
@@ -386,10 +377,8 @@
                                              *queue20-l$go-num*)
                                           go-signals)))
 
-         (arb-merge (get-field *interl$arb-merge* st))
-
-         (arb-merge-inputs (interl$arb-merge-inputs inputs st data-width))
-         (out-act1 (arb-merge$act1 arb-merge-inputs arb-merge data-width)))
+         (arb-merge-1-inputs (interl$arb-merge-1-inputs inputs st data-width))
+         (out-act1 (arb-merge-1$act1 arb-merge-1-inputs data-width)))
 
       (list* in1-act out-act1
              (append data1-in q20-l1-go-signals))))
@@ -397,9 +386,8 @@
   ;; Extract the output data
 
   (defund interl$data-out (inputs st data-width)
-    (b* ((arb-merge-inputs (interl$arb-merge-inputs inputs st data-width))
-         (arb-merge (get-field *interl$arb-merge* st)))
-      (arb-merge$data-out arb-merge-inputs arb-merge data-width)))
+    (b* ((arb-merge-1-inputs (interl$arb-merge-1-inputs inputs st data-width)))
+      (arb-merge-1$data-out arb-merge-1-inputs data-width)))
 
   (defthm len-interl$data-out-1
     (implies (interl$st-format st data-width)
@@ -422,10 +410,6 @@
            (interl$out-act inputs st data-width)
            (interl$data-out inputs st data-width)))
   )
-
-;; Prove that INTERL is not a DE primitive.
-
-(not-primp-lemma interl)
 
 ;; The value lemma for INTERL
 
@@ -451,8 +435,8 @@
                             interl&
                             interl*$destructure
                             interl$st-format
-                            arb-merge$act
-                            interl$arb-merge-inputs
+                            arb-merge-1$act
+                            interl$arb-merge-1-inputs
                             interl$in0-act
                             interl$in1-act
                             interl$out-act0
@@ -466,18 +450,14 @@
 (defun interl$step (inputs st data-width)
   (b* ((q20-l0    (get-field *interl$q20-l0* st))
        (q20-l1    (get-field *interl$q20-l1* st))
-       (arb-merge (get-field *interl$arb-merge* st))
 
        (q20-l0-inputs (interl$q20-l0-inputs inputs st data-width))
-       (q20-l1-inputs (interl$q20-l1-inputs inputs st data-width))
-       (arb-merge-inputs (interl$arb-merge-inputs inputs st data-width)))
+       (q20-l1-inputs (interl$q20-l1-inputs inputs st data-width)))
     (list
       ;; Q20-L0
      (queue20-l$step q20-l0-inputs q20-l0 data-width)
      ;; Q20-L1
-     (queue20-l$step q20-l1-inputs q20-l1 data-width)
-     ;; Joint arb-merge
-     (arb-merge$step arb-merge-inputs arb-merge data-width))))
+     (queue20-l$step q20-l1-inputs q20-l1 data-width))))
 
 (defthm len-of-interl$step
   (equal (len (interl$step inputs st data-width))
@@ -511,7 +491,7 @@
                             interl$data1-in
                             interl$q20-l0-inputs
                             interl$q20-l1-inputs
-                            interl$arb-merge-inputs
+                            interl$arb-merge-1-inputs
                             interl$in0-act
                             interl$in1-act)
                            (de-module-disabled-rules)))))
@@ -548,15 +528,6 @@
             (list* full-in0 full-in1 empty-out-
                    (append data0-in data1-in (cons select go-signals)))))))
 
-(local (in-theory (enable booleanp-car-of-bv)))
-
-(local
- (defthm booleanp-cadr-of-bv
-   (implies (bvp x)
-            (booleanp (cadr x)))
-   :hints (("Goal" :in-theory (enable bvp)))
-   :rule-classes (:rewrite :type-prescription)))
-
 (local
  (defthm interl$input-format=>q20-l0$input-format
    (implies (and (interl$input-format inputs data-width)
@@ -567,18 +538,15 @@
              data-width))
    :hints (("Goal"
             :in-theory (e/d (get-field
-                             f-and4
-                             f-and5
                              queue20-l$input-format
                              queue20-l$in-act
                              queue20-l$out-act
                              queue20-l$data-in
-                             arb-merge$valid-st
-                             arb-merge$act0
+                             arb-merge-1$act0
                              interl$input-format
                              interl$valid-st
                              interl$q20-l0-inputs
-                             interl$arb-merge-inputs
+                             interl$arb-merge-1-inputs
                              interl$in0-act)
                             (nfix
                              link$st-format))))))
@@ -593,39 +561,18 @@
              data-width))
    :hints (("Goal"
             :in-theory (e/d (get-field
-                             f-and4
-                             f-and5
                              queue20-l$input-format
                              queue20-l$in-act
                              queue20-l$out-act
                              queue20-l$data-in
-                             arb-merge$valid-st
-                             arb-merge$act1
+                             arb-merge-1$act1
                              interl$input-format
                              interl$valid-st
                              interl$q20-l1-inputs
-                             interl$arb-merge-inputs
+                             interl$arb-merge-1-inputs
                              interl$in1-act)
                             (nfix
                              link$st-format))))))
-
-(local
- (defthm interl$input-format=>arb-merge$input-format
-   (implies (and (interl$input-format inputs data-width)
-                 (interl$valid-st st data-width))
-            (arb-merge$input-format
-             (interl$arb-merge-inputs inputs st data-width)
-             data-width))
-   :hints (("Goal"
-            :in-theory (e/d (open-nth
-                             queue20-l$valid-st=>data-width-constraint
-                             arb-merge$input-format
-                             arb-merge$data0-in
-                             arb-merge$data1-in
-                             interl$input-format
-                             interl$valid-st
-                             interl$arb-merge-inputs)
-                            ())))))
 
 (defthm booleanp-interl$in0-act
   (implies (and (interl$input-format inputs data-width)
@@ -649,13 +596,10 @@
   (implies (and (interl$input-format inputs data-width)
                 (interl$valid-st st data-width))
            (booleanp (interl$out-act0 inputs st data-width)))
-  :hints (("Goal" :in-theory (enable f-and4
-                                     f-and5
-                                     arb-merge$valid-st
-                                     arb-merge$act0
+  :hints (("Goal" :in-theory (enable arb-merge-1$act0
                                      interl$input-format
                                      interl$valid-st
-                                     interl$arb-merge-inputs
+                                     interl$arb-merge-1-inputs
                                      interl$out-act0
                                      interl$out-act)))
   :rule-classes (:rewrite :type-prescription))
@@ -664,13 +608,10 @@
   (implies (and (interl$input-format inputs data-width)
                 (interl$valid-st st data-width))
            (booleanp (interl$out-act1 inputs st data-width)))
-  :hints (("Goal" :in-theory (enable f-and4
-                                     f-and5
-                                     arb-merge$valid-st
-                                     arb-merge$act1
+  :hints (("Goal" :in-theory (enable arb-merge-1$act1
                                      interl$input-format
                                      interl$valid-st
-                                     interl$arb-merge-inputs
+                                     interl$arb-merge-1-inputs
                                      interl$out-act1
                                      interl$out-act)))
   :rule-classes (:rewrite :type-prescription))
@@ -688,20 +629,17 @@
                 (interl$out-act inputs st data-width))
            (bvp (interl$data-out inputs st data-width)))
   :hints (("Goal"
-           :in-theory (enable f-and4
-                              f-and5
-                              arb-merge$valid-st
-                              arb-merge$act0
-                              arb-merge$act1
-                              arb-merge$data0-in
-                              arb-merge$data1-in
-                              arb-merge$data-out
+           :in-theory (enable arb-merge-1$act0
+                              arb-merge-1$act1
+                              arb-merge-1$data0-in
+                              arb-merge-1$data1-in
+                              arb-merge-1$data-out
                               interl$input-format
                               interl$valid-st
                               interl$out-act0
                               interl$out-act1
                               interl$out-act
-                              interl$arb-merge-inputs
+                              interl$arb-merge-1-inputs
                               interl$data-out))))
 
 (simulate-lemma interl)
@@ -725,13 +663,8 @@
                 (interl$valid-st st data-width))
            (< 0 (len (interl$extract0 st))))
   :hints (("Goal"
-           :in-theory (e/d (f-and
-                            f-and4
-                            f-and5
-                            3v-fix
-                            arb-merge$valid-st
-                            arb-merge$act0
-                            interl$arb-merge-inputs
+           :in-theory (e/d (arb-merge-1$act0
+                            interl$arb-merge-1-inputs
                             interl$valid-st
                             interl$extract0
                             interl$out-act0)
@@ -743,13 +676,8 @@
                 (interl$valid-st st data-width))
            (< 0 (len (interl$extract1 st))))
   :hints (("Goal"
-           :in-theory (e/d (f-and
-                            f-and4
-                            f-and5
-                            3v-fix
-                            arb-merge$valid-st
-                            arb-merge$act1
-                            interl$arb-merge-inputs
+           :in-theory (e/d (arb-merge-1$act1
+                            interl$arb-merge-1-inputs
                             interl$valid-st
                             interl$extract1
                             interl$out-act1)
@@ -897,16 +825,13 @@
                      (queue20-l$data-out (nth *interl$q20-l0* st))))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 f-and4
-                                 f-and5
                                  queue20-l$valid-st=>data-width-constraint
-                                 arb-merge$valid-st
-                                 arb-merge$act0
-                                 arb-merge$act1
-                                 arb-merge$data0-in
-                                 arb-merge$data-out
+                                 arb-merge-1$act0
+                                 arb-merge-1$act1
+                                 arb-merge-1$data0-in
+                                 arb-merge-1$data-out
                                  interl$valid-st
-                                 interl$arb-merge-inputs
+                                 interl$arb-merge-1-inputs
                                  interl$out-act0
                                  interl$data-out)))))
 
@@ -919,17 +844,14 @@
                      (queue20-l$data-out (nth *interl$q20-l1* st))))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 f-and4
-                                 f-and5
                                  queue20-l$valid-st=>data-width-constraint
-                                 arb-merge$valid-st
-                                 arb-merge$act0
-                                 arb-merge$act1
-                                 arb-merge$data1-in
-                                 arb-merge$data-out
+                                 arb-merge-1$act0
+                                 arb-merge-1$act1
+                                 arb-merge-1$data1-in
+                                 arb-merge-1$data-out
                                  interl$input-format
                                  interl$valid-st
-                                 interl$arb-merge-inputs
+                                 interl$arb-merge-1-inputs
                                  interl$out-act1
                                  interl$data-out)))))
 

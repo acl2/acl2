@@ -86,7 +86,7 @@
   '(out-status (ready-out) b-and (ci-status s-status))
   )
 
- :guard t)
+ (declare (xargs :guard t)))
 
 (make-event
  `(progn
@@ -321,7 +321,7 @@
   '(out-status (ready-out) b-buf (reg2-status))
   )
 
- :guard t)
+ (declare (xargs :guard t)))
 
 (make-event
  `(progn
@@ -560,7 +560,7 @@
   '(out-status (ready-out) b-buf (result-status))
   )
 
- :guard t)
+ (declare (xargs :guard t)))
 
 (make-event
  `(progn

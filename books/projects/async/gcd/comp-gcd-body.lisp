@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -123,7 +123,7 @@
         (si 'v-wire (* 2 data-width))
         (append (sis 'd1-out 0 data-width)
                 (sis 'd2-out 0 data-width))))
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -348,10 +348,6 @@
            (comp-gcd-body$data-out st)))
   )
 
-;; Prove that COMP-GCD-BODY is not a DE primitive.
-
-(not-primp-lemma comp-gcd-body)
-
 ;; The value lemma for COMP-GCD-BODY
 
 (defthm comp-gcd-body$value
@@ -449,7 +445,7 @@
                             comp-gcd-body$sub-inputs
                             comp-gcd-body$in-act
                             comp-gcd-body$out-act)
-                           (acl2::associativity-of-append
+                           (associativity-of-append
                             append-take-nthcdr
                             de-module-disabled-rules)))))
 
@@ -816,7 +812,7 @@
                      (append (comp-gcd-body$op-map seq)
                              y2 z)))
      :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
+                                     (associativity-of-append))))))
 
   (defthmd comp-gcd-body$dataflow-correct
     (b* ((extracted-st (comp-gcd-body$extract st data-width))

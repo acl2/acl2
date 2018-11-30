@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -98,7 +98,7 @@
         (list 'select-buf-status 'select-status (si 'go 1)))
   '(buf-op (select-in) b-buf (select-buf-out)))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -242,10 +242,6 @@
              (not (alt-merge$act inputs st data-width)))
     :hints (("Goal" :in-theory (enable alt-merge$act))))
   )
-
-;; Prove that ALT-MERGE is not a DE primitive.
-
-(not-primp-lemma alt-merge)
 
 ;; The value lemma for ALT-MERGE
 

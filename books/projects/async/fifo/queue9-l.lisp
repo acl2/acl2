@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -95,7 +95,7 @@
         (si 'v-buf data-width)
         (sis 'q4-l-data-out 0 data-width)))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -301,10 +301,6 @@
            (queue9-l$ready-out st)
            (queue9-l$data-out st)))
   )
-
-;; Prove that QUEUE9-L is not a DE primitive.
-
-(not-primp-lemma queue9-l)
 
 ;; The value lemma for QUEUE9-L
 
@@ -619,7 +615,7 @@
                               queue9-l$ready-out
                               queue9-l$extract)
                              (queue9-l$input-format=>q4-l$input-format
-                              acl2::associativity-of-append)))))
+                              associativity-of-append)))))
   )
 
 ;; ======================================================================

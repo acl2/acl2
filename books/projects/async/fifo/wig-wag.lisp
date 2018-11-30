@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -92,7 +92,7 @@
                        (sis 'd1-out 0 data-width)
                        (sis 'go *alt-branch$go-num* *alt-merge$go-num*)))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -300,10 +300,6 @@
            (wig-wag$out-act inputs st data-width)
            (wig-wag$data-out st)))
   )
-
-;; Prove that WW is not a DE primitive.
-
-(not-primp-lemma wig-wag)
 
 ;; The value lemma for WW
 
