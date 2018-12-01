@@ -1869,17 +1869,27 @@
    (fns-to-translate symbol-listp "Result of @(tsee atj-gather-info).")
    (verbose booleanp "Result of @(tsee atj-process-inputs).")
    state)
-  :returns state
+  :returns (mv (erp "Always @('nil').")
+               (val "Always @('nil').")
+               state)
   :mode :program
   :short "Generate the Java file."
-  (b* (((mv channel state) (open-output-channel! output-file :character state))
-       (state (atj-gen-file-header channel state))
-       (state (atj-gen-package-decl java-package channel state))
-       (state (atj-gen-import-decls channel state))
-       (state (atj-gen-class pkgs pkg-witness
-                             fns-to-translate java-class verbose channel state))
-       (state (close-output-channel channel state)))
-    state)
+  :long
+  (xdoc::topp
+   "We set the soft and hard right margins to very large values
+    to avoid line breaks in virtually all cases.
+    Setting these margins to ``infinity'' is not supported.")
+  (state-global-let*
+   ((acl2::fmt-soft-right-margin 100000 set-fmt-soft-right-margin)
+    (acl2::fmt-hard-right-margin 100000 set-fmt-hard-right-margin))
+   (b* (((mv channel state) (open-output-channel! output-file :character state))
+        (state (atj-gen-file-header channel state))
+        (state (atj-gen-package-decl java-package channel state))
+        (state (atj-gen-import-decls channel state))
+        (state (atj-gen-class pkgs pkg-witness fns-to-translate java-class
+                              verbose channel state))
+        (state (close-output-channel channel state)))
+     (value nil)))
   :prepwork ((defttag :open-input-channel)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1913,14 +1923,14 @@
                   pkg-witness
                   fns-to-translate)) (atj-gather-info
                                       targets verbose ctx state))
-       (state (atj-gen-file java-package
-                            java-class
-                            output-file
-                            pkgs
-                            pkg-witness
-                            fns-to-translate
-                            verbose
-                            state))
+       ((er &) (atj-gen-file java-package
+                             java-class
+                             output-file
+                             pkgs
+                             pkg-witness
+                             fns-to-translate
+                             verbose
+                             state))
        (- (cw "~%Generated Java file:~%  ~x0~%" output-file)))
     (value '(value-triple :invisible))))
 
