@@ -82,10 +82,11 @@ This should be a term mentioning @('acl2::x').</li>
 <li>Array fields require an additional @(':typed-record') argument that names
 recognizer function for a typed record; see @(see def-typed-record).</li>
 
-<li>Optionally, you can have @('defrstobj') define a universal accessor and a
-universal updater function using keywords @(':accessor') and @(':updater')
-respectively.  These functions can come in handy when using @(see
-stobjs::stobj-updater-independence).</li>
+<li>Optionally, you can have @('defrstobj') define a universal
+accessor and a universal updater function using keywords
+@(':accessor') and @(':updater') respectively.  These functions can
+come in handy when using
+@('[books]/std/stobjs/updater-independence').</li>
 
 </ul>
 
@@ -149,11 +150,12 @@ define on top of the stobj so that you get the performance of the underlying
 concrete stobj while you reason about the universal accessor/updater
 functions.</p>
 
-<p>In addition to facilitating use with @(see
-stobjs::stobj-updater-independence), a benefit of this strategy is that it can
-reduce the term size during reasoning.  E.g., writing @('v') to the @('i')th
-location of the @('mem') field using @('set-mem') (which is enabled by default)
-would look like the following:</p>
+<p>In addition to facilitating use with
+@('stobjs::stobj-updater-independence'), a benefit of this strategy is
+that it can reduce the term size during reasoning.  E.g., writing
+@('v') to the @('i')th location of the @('mem') field using
+@('set-mem') (which is enabled by default) would look like the
+following:</p>
 
 <code>
 (s :mem (u8-tr-set i v (g :mem st)) st)
