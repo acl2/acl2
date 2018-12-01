@@ -165,6 +165,31 @@
 
 (add-ld-keyword-alias! :doc '(1 xdoc))
 
+
+;; Note about the importance of REMOVE-EQUAL-WITH-HINT.  At one point
+;; doc/top.lisp was taking upwards of 30 minutes to certify.  The culprit
+;; turned out to be all the uses of xdoc-prepend in std::define, each of which
+;; was duplicating the entire list of xdoc topics due to its use of
+;; REMOVE-EQUAL.  Since the ACL2 world stores the whole history of such table
+;; events, it therefore grew to include many copies of this list, totaling ~300
+;; million conses.  Since most uses of xdoc-prepend are replacing just the most
+;; recently added element of the table, using remove-equal-with-hint saves
+;; almost all of this consing.  (Similarly for xdoc-extend and order-subtopics,
+;; though these were less common.)
+
+;; Copied from the CONS-WITH-HINT doc topic, by Matt Kaufmann.
+(defun remove-equal-with-hint (x l)
+  (declare (xargs :guard (true-listp l)))
+  (mbe :logic (remove-equal x l)
+       :exec (cond ((endp l) nil)
+                   ((equal x (car l))
+                    (remove-equal-with-hint x (cdr l)))
+                   (t
+                    (cons-with-hint (car l)
+                                    (remove-equal-with-hint x (cdr l))
+                                    l)))))
+
+
 (defun xdoc-extend-fn (name long world)
   (declare (xargs :mode :program))
   (let* ((all-topics   (xdoc::get-xdoc-table world))
@@ -179,7 +204,7 @@
             (er hard? 'xdoc-extend "Topic ~x0 wasn't found." name)
             all-topics))
           (t
-           (let* ((other-topics (remove-equal old-topic all-topics))
+           (let* ((other-topics (remove-equal-with-hint old-topic all-topics))
                   (old-long     (or (cdr (assoc :long old-topic)) ""))
                   (new-long     (concatenate 'string old-long long))
                   (new-topic    (acons :long new-long (delete-assoc :long old-topic))))
@@ -204,7 +229,7 @@
     (cond ((not old-topic)
            (er hard? 'xdoc-prepend "Topic ~x0 wasn't found." name))
           (t
-           (let* ((other-topics (remove-equal old-topic all-topics))
+           (let* ((other-topics (remove-equal-with-hint old-topic all-topics))
                   (old-long     (or (cdr (assoc :long old-topic)) ""))
                   (new-long     (concatenate 'string long old-long))
                   (new-topic    (acons :long new-long (delete-assoc :long old-topic))))
@@ -226,7 +251,7 @@
           ((not (booleanp flg))
            (er hard? ctx "Optional argument is not Boolean: ~x0" flg))
           (t
-           (let* ((other-topics (remove-equal old-topic all-topics))
+           (let* ((other-topics (remove-equal-with-hint old-topic all-topics))
                   (new-topic    (acons :suborder
                                        (if flg
                                            (append order flg)

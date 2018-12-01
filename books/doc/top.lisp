@@ -233,7 +233,13 @@ book that depends on Glucose being installed.</p>")
 (include-book "tools/oracle-time" :dir :system)
 (include-book "tools/oracle-timelimit" :dir :system)
 (include-book "tools/defthmg" :dir :system)
+
+;; This book memoizes several functions including translate11, translate11-lst,
+;; translate11-call, which end up taking a lot of space and causing us to spend
+;; a lot of time GCing.
 (include-book "tools/memoize-prover-fns" :dir :system)
+(unmemoize-lst (f-get-global 'memoized-prover-fns state))
+
 (include-book "tools/untranslate-for-exec" :dir :system)
 (include-book "tools/er-soft-logic" :dir :system)
 (include-book "tools/run-script" :dir :system)
