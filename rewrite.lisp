@@ -9729,29 +9729,41 @@
 
 ; A hyp is a "good synp hyp" if either it does not mention SYNP as a function
 ; symbol or else it is a call of SYNP that we know how to handle in our
-; processing of rewrite and linear rules.  We return nil in this case, or else
-; an appropriate message explaining the problem.  See bad-synp-hyp-msg.
+; processing of rewrite and linear rules.  We return nil as the first value in
+; this case, or else an appropriate message explaining the problem.  See
+; bad-synp-hyp-msg.
 
   (if (ffnnamep 'synp hyp)
       (cond ((not (eq (ffn-symb hyp) 'synp))
+
+; Through Version_8.1, the message below seemed to suggest that we insist that
+; synp only occur as the top function symbol of hyp.  However, we can actually
+; allow it below that in a non-executable context, provided it also occurs as
+; the top function symbol.  So we changed "can occur only" to "should occur
+; only", since really, this weaker check is probably good enough.
+
              (mv (cons
-                  "a call of syntaxp or bind-free can occur only ~
+                  "a call of syntaxp or bind-free should occur only ~
                    at the top level of a hypothesis, but in ~x0 it ~
-                   appears elsewhere."
+                   appears elsewhere but not at the top level."
                   (list (cons #\0 (untranslate hyp t wrld))))
+                 bound-vars all-vars-bound-p))
+            ((not (all-quoteps (fargs hyp)))
+             (mv (cons
+                  "a call of ~x0 in a hypothesis should be made on quoted ~
+                   arguments, but that is not true for the hypothesis, ~x1."
+                  (list (cons #\0 'synp)
+                        (cons #\1 (untranslate hyp nil wrld))))
                  bound-vars all-vars-bound-p))
 
 ; Note that we check for the well-formedness of a call to synp in
 ; translate, so the following bindings should be safe.
 
             (t
-             (let* ((term-to-be-evaluated (get-evg (fargn hyp 3)
-                                                   'bad-synp-hyp-msg1-arg3))
+             (let* ((term-to-be-evaluated (unquote (fargn hyp 3)))
                     (vars (all-vars term-to-be-evaluated))
-                    (saved-term (get-evg (fargn hyp 2)
-                                         'bad-synp-hyp-msg1-arg2))
-                    (vars-to-be-bound (get-evg (fargn hyp 1)
-                                               'bad-synp-hyp-msg1-arg1)))
+                    (saved-term (unquote (fargn hyp 2)))
+                    (vars-to-be-bound (unquote (fargn hyp 1))))
                (cond ((not (termp term-to-be-evaluated wrld))
                       (mv (cons
                            "the term to be evaluated by the syntaxp or ~
@@ -10962,8 +10974,12 @@
 
                          (cond ((ffn-symb-p hyp 'synp)
                                 (let ((qterm (fargn hyp 3)))
-                                  (assert$ (quotep qterm)
-                                           (unquote qterm))))
+                                  (cond ((quotep qterm)
+
+; Probably qterm is always a quotep, but we prefer to be cautious here.
+
+                                         (unquote qterm))
+                                        (t hyp))))
                                (t hyp)))
                         :failure-reason failure-reason
                         :hyp-info hyp

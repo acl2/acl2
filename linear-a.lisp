@@ -47,11 +47,6 @@
 (defmacro ts-integerp (ts)
   `(ts-subsetp ,ts *ts-integer*))
 
-(defun all-quoteps (lst)
-  (cond ((null lst) t)
-        (t (and (quotep (car lst))
-                (all-quoteps (cdr lst))))))
-
 (mutual-recursion
 
 (defun dumb-occur (x y)

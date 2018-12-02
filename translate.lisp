@@ -2310,6 +2310,11 @@
                            (mv t ignored-vars))
                           (& (mv nil nil))))))))))
 
+(defun all-quoteps (lst)
+  (cond ((null lst) t)
+        (t (and (quotep (car lst))
+                (all-quoteps (cdr lst))))))
+
 (mutual-recursion
 
 ; These functions assume that the input world is "close to" the installed
@@ -3773,18 +3778,17 @@
           ((eq (ffn-symb term) 'cons) (untranslate-cons term untrans-tbl
                                                         preprocess-fn wrld))
           ((and (eq (ffn-symb term) 'synp)
-
-; Even though translate insists that the second argument of synp is quoted, can
-; we really guarantee that every termp given to untranslate came through
-; translate?  Not necessarily; for example, maybe substitution was performed
-; for some reason (say, in the proof-builder one replaces the quoted argument
-; by a variable known to be equal to it).
-
-                (quotep (fargn term 2)))
+                (all-quoteps (fargs term))
+                (let ((uarg2 (unquote (fargn term 2))))
+                  (and (consp uarg2)
+                       (member-eq (car uarg2) '(syntaxp bind-free)))))
 
 ; We store the quotation of the original form of a syntaxp or bind-free
 ; hypothesis in the second arg of its expansion.  We do this so that we
 ; can use it here and output something that the user will recognize.
+
+; One can certainly generate calls of synp where this result will be
+; misleading, but we aren't compelled to concern ourselves with such a case.
 
            (cadr (fargn term 2)))
           ((and (eq (ffn-symb term) 'return-last)
@@ -6642,12 +6646,6 @@
         (ffnnamep-lst fn (cdr l)))))
 
 )
-
-(defconst *synp-trans-err-string*
-  "A synp term must take three quoted arguments, unlike ~x0.  Normally, a call ~
-   to synp is the result of the macroexpansion of a call to syntaxp or ~
-   bind-free, but this does not seem to be the case here.  If you believe this ~
-   error message is itself in error please contact the maintainers of ACL2.")
 
 (defun unknown-binding-msg (stobjs-bound str1 str2 str3)
   (msg
@@ -11493,7 +11491,7 @@
                 loop.  Such forms are only allowed in the bodies of functions ~
                 and in theorems.  Also see :DOC with-local-stobj."
                (car x)))
-   ((equal (arity (car x) wrld) (length (cdr x)))
+   ((eql (arity (car x) wrld) (length (cdr x)))
     (cond ((untouchable-fn-p (car x)
                              wrld
                              (access state-vars state-vars
@@ -11558,18 +11556,22 @@
                                         stobjs-out bindings known-stobjs
                                         flet-alist x ctx wrld state-vars)))
                     (trans-value (fcons-term* 'if arg1 arg2 arg3)))))))))))
-          ((eq (car x) 'synp)
+          ((and (eq (car x) 'synp)
+                (eql (length x) 4) ; else fall through to normal error
+                (eq stobjs-out t))
 
-; Synp is a bit odd.  We store the quotation of the term to be evaluated in the
+; Synp is a bit odd.  We typically -- that is, from macroexpansion of syntaxp
+; and bind-free calls -- store the quotation of the term to be evaluated in the
 ; third arg of the synp form.  We store the quotation so that ACL2 will not see
 ; the term as a potential induction candidate.  (Eric Smith first pointed out
 ; this issue.)  This, however forces us to treat synp specially here in order
 ; to translate the term to be evaluated and thereby get a proper ACL2 term.
 ; Without this special treatment (cadr x), for instance, would be left alone
-; whereas it needs to be translated into (car (cdr x)).
-
-; This mangling of the third arg of synp is sound because synp always returns
-; t.
+; whereas it needs to be translated into (car (cdr x)).  This mangling of the
+; third arg of synp is sound because synp always returns t.  Note, however,
+; that after Version_8.1 we no longer insist that stobjs-out = t or that the
+; arguments to synp all be quoted, since these restrictions defeat the ability
+; to include synp as a function symbol supplied to defevaluator.
 
 ; Robert Krug has mentioned the possibility that the known-stobjs below could
 ; perhaps be t.  This would allow a function called by synp to use, although
@@ -11579,92 +11581,69 @@
 ; appear in the unifying substitution that binds variables in the evg of
 ; (cadddr x).  So it seems that such a relaxation would not be of much value.
 
-           (cond ((not (eq stobjs-out t))
-                  (trans-er ctx
-                            "A call to synp is not allowed here.  This ~
-                             call may have come from the use of syntaxp ~
-                             or bind-free within a function definition ~
-                             since these two macros expand into calls to ~
-                             synp.  The form we were translating when we ~
-                             encountered this problem is ~x0.  If you ~
-                             believe this error message is itself in error ~
-                             or that we have been too restrictive, please ~
-                             contact the maintainers of ACL2."
-                            x))
-                 ((eql (length x) 4)
-                  (mv-let
-                   (erp val bindings)
-                   (trans-er-let*
-                    ((quoted-vars (translate11 (cadr x)
-                                               nil ; ilk
-                                               '(nil) ; stobjs-out
-                                               bindings
-                                               '(state) ; known-stobjs
-                                               flet-alist x ctx wrld state-vars))
-                     (quoted-user-form (translate11 (caddr x)
-                                                    nil ; ilk
-                                                    '(nil) ; stobjs-out
-                                                    bindings
-                                                    '(state) ; known-stobjs
-                                                    flet-alist x ctx wrld
-                                                    state-vars))
-                     (quoted-term (translate11 (cadddr x)
-                                               nil ; ilk
-                                               '(nil) ; stobjs-out
-                                               bindings
-                                               '(state) ; known-stobjs
-                                               flet-alist x ctx wrld state-vars)))
-                    (let ((quoted-term (if (quotep quoted-term)
-                                           quoted-term
-                                         (sublis-var nil quoted-term))))
-                      (cond ((quotep quoted-term)
-                             (trans-er-let*
-                              ((term-to-be-evaluated
-                                (translate11 (cadr quoted-term)
-                                             nil ; ilk
-                                             '(nil) ; stobjs-out
-                                             bindings
-                                             '(state) ; known-stobjs
-                                             flet-alist x ctx wrld state-vars)))
-                              (let ((quoted-vars (if (quotep quoted-vars)
-                                                     quoted-vars
-                                                   (sublis-var nil quoted-vars)))
-                                    (quoted-user-form (if (quotep quoted-user-form)
-                                                          quoted-user-form
-                                                        (sublis-var nil
-                                                                    quoted-user-form))))
-                                (cond ((and (quotep quoted-vars)
-                                            (quotep quoted-user-form))
-                                       (trans-value
-                                        (fcons-term* 'synp quoted-vars
-                                                     quoted-user-form
-                                                     (kwote
-                                                      term-to-be-evaluated))))
-                                      (t (trans-er ctx
-                                                   *synp-trans-err-string*
-                                                   x))))))
-                            (t
-                             (trans-er ctx
-                                       *synp-trans-err-string*
-                                       x)))))
-                   (cond (erp
-                          (let ((quoted-user-form (caddr x)))
-                            (case-match quoted-user-form
-                              (('QUOTE ('SYNTAXP form))
-                               (mv erp
-                                   (msg "The form ~x0, from a ~x1 hypothesis, ~
-                                         is not suitable for evaluation in an ~
-                                         environment where its variables are ~
-                                         bound to terms.  See :DOC ~x1.  Here ~
-                                         is further explanation:~|~t2~@3"
-                                        form 'syntaxp 5 val)
-                                   bindings))
-                              (& (mv erp val bindings)))))
-                         (t (mv erp val bindings)))))
-                 (t
-                  (trans-er ctx
-                            *synp-trans-err-string*
-                            x))))
+           (mv-let
+             (erp val bindings)
+             (trans-er-let*
+              ((vars0 (translate11 (cadr x)
+                                   nil    ; ilk
+                                   '(nil) ; stobjs-out
+                                   bindings
+                                   '(state) ; known-stobjs
+                                   flet-alist x ctx wrld state-vars))
+               (user-form0 (translate11 (caddr x)
+                                        nil ; ilk
+                                        '(nil) ; stobjs-out
+                                        bindings
+                                        '(state) ; known-stobjs
+                                        flet-alist x ctx wrld
+                                        state-vars))
+               (term0 (translate11 (cadddr x)
+                                   nil    ; ilk
+                                   '(nil) ; stobjs-out
+                                   bindings
+                                   '(state) ; known-stobjs
+                                   flet-alist x ctx wrld state-vars)))
+              (let ((quoted-vars (if (quotep vars0)
+                                     vars0
+                                   (sublis-var nil vars0)))
+                    (quoted-user-form (if (quotep user-form0)
+                                          user-form0
+                                        (sublis-var nil user-form0)))
+                    (quoted-term (if (quotep term0)
+                                     term0
+                                   (sublis-var nil term0))))
+                (cond ((and (quotep quoted-vars)
+                            (quotep quoted-user-form)
+                            (quotep quoted-term))
+                       (trans-er-let*
+                        ((term-to-be-evaluated
+                          (translate11 (unquote quoted-term)
+                                       nil    ; ilk
+                                       '(nil) ; stobjs-out
+                                       bindings
+                                       '(state) ; known-stobjs
+                                       flet-alist x ctx wrld state-vars)))
+                        (trans-value
+                         (fcons-term* 'synp
+                                      quoted-vars
+                                      quoted-user-form
+                                      (kwote term-to-be-evaluated)))))
+                      (t (trans-value
+                          (fcons-term* 'synp vars0 user-form0 term0))))))
+             (cond (erp
+                    (let ((quoted-user-form-original (caddr x)))
+                      (case-match quoted-user-form-original
+                        (('QUOTE ('SYNTAXP form))
+                         (mv erp
+                             (msg "The form ~x0, from a ~x1 hypothesis, is ~
+                                   not suitable for evaluation in an ~
+                                   environment where its variables are bound ~
+                                   to terms.  See :DOC ~x1.  Here is further ~
+                                   explanation:~|~t2~@3"
+                                  form 'syntaxp 5 val)
+                             bindings))
+                        (& (mv erp val bindings)))))
+                   (t (mv erp val bindings)))))
           ((eq stobjs-out t)
            (trans-er-let*
             ((args (translate11-lst (cdr x)

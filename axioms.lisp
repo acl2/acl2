@@ -3969,21 +3969,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun synp (vars form term)
 
-; Top-level calls of this function in the hypothesis of a linear or
-; rewrite rule are given special treatment when relieving the rule's
-; hypotheses.  (When the rule class gives such special treatment, it
-; is an error to use synp in other than at the top-level.)  The
-; special treatment is as follows.  Term is evaluated, binding state
-; to the live state and mfc to the current metafunction context, as
-; with meta rules.  The result of this evaluation should be either t,
-; nil, or an alist binding variables to terms, else we get a hard
-; error.  Moreover, if we get an alist then either (1) vars should be
-; t, representing the set of all possible vars, and none of the keys
-; in the alist should already be bound; or else (2) vars should be of
-; the form (var1 ... vark), the keys of alist should all be among the
-; vari, and none of vari should already be bound (actually this is
-; checked when the rule is submitted) -- otherwise we get a hard
-; error.
+; Top-level calls of this function in the hypothesis of a linear or rewrite
+; rule on quoted arguments are given special treatment when relieving the
+; rule's hypotheses.  (When the rule class gives such special treatment, it is
+; an error to use synp in other than at the top-level.)  The special treatment
+; is as follows.  Term is evaluated, binding state to the live state and mfc to
+; the current metafunction context, as with meta rules.  The result of this
+; evaluation should be either t, nil, or an alist binding variables to terms,
+; else we get a hard error.  Moreover, if we get an alist then either (1) vars
+; should be t, representing the set of all possible vars, and none of the keys
+; in the alist should already be bound; or else (2) vars should be of the form
+; (var1 ... vark), the keys of alist should all be among the vari, and none of
+; vari should already be bound (actually this is checked when the rule is
+; submitted) -- otherwise we get a hard error.
 
 ; As of Version_2.7 there are two macros that expand into calls to synp:
 
@@ -3995,9 +3993,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;      `(synp (quote ,vars) (quote (bind-free ,form ,vars)) (quote ,form))
 ;    `(synp (quote t) (quote (bind-free ,form)) (quote ,form))))
 
-; Warning: This function must be defined to always return t in order
-; for our treatment of it (in particular, in translate) to be sound.
-; The special treatment referred to above happens within relieve-hyp.
+; Warning: This function must be defined to always return t in order for our
+; treatment of it (in particular, in translate) to be sound.  The special
+; treatment referred to above happens within relieve-hyp.
 
   (declare (xargs :mode :logic :guard t)
            (ignore vars form term))

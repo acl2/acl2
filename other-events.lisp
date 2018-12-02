@@ -23021,7 +23021,12 @@
 ; new-ttree), where lst is a list of binding alists, as for relieve-hyp.  This
 ; function is a No-Change Loser.
 
-  (cond ((ffn-symb-p hyp 'synp)
+  (cond ((and (ffn-symb-p hyp 'synp)
+
+; Skip special treatment here for type-prescription and other rule classes that
+; do not give special treatment to synp hypotheses.
+
+              (member-eq (car rune) '(:rewrite :meta :definition :linear)))
          (mv-let
           (wonp failure-reason unify-subst ttree)
           (relieve-hyp-synp rune hyp unify-subst
