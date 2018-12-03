@@ -211,6 +211,11 @@
                  fty::deffixtype
                  fty::defprod
                  fty::defflexsum
+
+                 ifdef
+                 ifndef
+                 ifdef-define
+                 ifdef-undefine
                  )))
 
 (defpkg "FGL-SYM" nil)

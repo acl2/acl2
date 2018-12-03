@@ -2200,5 +2200,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   (defthm base-gl-object-eval-of-g-cons
     (equal (base-gl-object-eval (g-cons car cdr) env)
            (cons (base-gl-object-eval car env)
-                 (base-gl-object-eval cdr env)))))
+                 (base-gl-object-eval cdr env))))
+
+  (fty::deffixequiv-mutual base-gl-object-eval))
 
