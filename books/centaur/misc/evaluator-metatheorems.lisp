@@ -44,12 +44,11 @@
 
 
 
-(include-book "std/util/bstar" :dir :system)
-(include-book "tools/mv-nth" :dir :system)
-(include-book "clause-processors/use-by-hint" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "tools/rulesets" :dir :system)
-(include-book "clause-processors/ev-theoremp" :dir :system)
-
+(include-book "clause-processors/meta-extract-user" :dir :system)
+(include-book "tools/match-tree" :dir :system)
+(local (in-theory (disable mv-nth)))
 
 
 (defevaluator evmeta-ev evmeta-ev-lst
@@ -58,8 +57,6 @@
    (implies a b)
    (if a b c)
    (not a)
-   (use-by-hint a)
-   (use-these-hints a)
    (car x)
    (cdr x)
    (nth n x)
@@ -80,13 +77,316 @@
    (iff a b)
    (binary-+ a b)
    (unary-- a)
-   (len x)))
+   (len x)
+
+   ;; (synp vars form term)
+   )
+  :namedp t)
 
 
 
 
 
-(def-ev-theoremp evmeta-ev)
+(def-meta-extract evmeta-ev evmeta-ev-lst)
+
+
+(local (defthm meta-extract-formula-w-elim
+         (equal (meta-extract-formula-w name (w st))
+                (meta-extract-formula name st))
+         :hints(("Goal" :in-theory (enable meta-extract-formula
+                                           meta-extract-formula-w)))))
+
+
+(local (in-theory (disable w)))
+
+(define check-synp-is-true ((world plist-worldp))
+  (equal (meta-extract-formula-w 'synp world)
+         '(equal (synp vars form term) 't))
+  ///
+  (defthm check-synp-is-true-correct
+    (implies (and (evmeta-ev-meta-extract-global-facts)
+                  (check-synp-is-true (w state)))
+             (equal (evmeta-ev (list 'synp x y z) a) t))
+    :hints (("goal" :use ((:instance evmeta-ev-meta-extract-formula
+                           (name 'synp) (st state)
+                           (a `((vars . ,(evmeta-ev x a))
+                                (form . ,(evmeta-ev y a))
+                                (term . ,(evmeta-ev z a))))))
+             :in-theory (e/d (evmeta-ev-of-fncall-args)
+                             (evmeta-ev-meta-extract-formula))))))
+  
+
+(local (defthm evmeta-ev-of-match-tree
+         (b* (((mv ok alist) (match-tree pat x alist)))
+           (implies ok
+                    (equal (evmeta-ev x a)
+                           (evmeta-ev (subst-tree pat alist) a))))
+         :hints(("Goal" :in-theory (enable match-tree-is-subst-tree)))))
+
+;; Constraint 0.
+(define check-ev-of-fncall-args ((evfn symbolp)
+                                 (evfn-lst symbolp)
+                                 (name symbolp)
+                                 (world plist-worldp))
+  (b* ((form (meta-extract-formula-w name world))
+       ((unless-match form
+                      (IMPLIES (IF (CONSP X)
+                                   (IF (SYNP 'NIL
+                                             '(SYNTAXP (NOT (EQUAL A ''NIL)))
+                                             '(IF (NOT (EQUAL A ''NIL)) 'T 'NIL))
+                                       (NOT (EQUAL (CAR X) 'QUOTE))
+                                       'NIL)
+                                   'NIL)
+                               (EQUAL ((:! evfn) X A)
+                                      ((:! evfn) (CONS (CAR X)
+                                                       (KWOTE-LST ((:! evfn-lst) (CDR X) A)))
+                                       'NIL))))
+        nil))
+    t)
+  ///
+  (local (def-match-tree-rewrites
+           (IMPLIES (IF (CONSP X)
+                        (IF (SYNP 'NIL
+                                  '(SYNTAXP (NOT (EQUAL A ''NIL)))
+                                  '(IF (NOT (EQUAL A ''NIL)) 'T 'NIL))
+                            (NOT (EQUAL (CAR X) 'QUOTE))
+                            'NIL)
+                        'NIL)
+                    (EQUAL ((:! evfn) X A)
+                           ((:! evfn) (CONS (CAR X)
+                                            (KWOTE-LST ((:! evfn-lst) (CDR X) A)))
+                            'NIL)))))
+
+  (defthm check-ev-of-fncall-args-correct
+    (implies (and (consp (evmeta-ev x1 a))
+                  (not (equal (car (evmeta-ev x1 a)) 'quote))
+                  (evmeta-ev-meta-extract-global-facts)
+                  (check-synp-is-true (w state))
+                  (check-ev-of-fncall-args evfn evfn-lst name (w state))
+                  (not (eq evfn 'quote))
+                  (not (eq evfn-lst 'quote)))
+             (equal (evmeta-ev (list evfn x1 a1) a)
+                    (evmeta-ev `(,evfn
+                                 (cons (car ,x1)
+                                       (kwote-lst
+                                        (,evfn-lst (cdr ,x1) ,a1)))
+                                 'nil)
+                               a)))
+    :hints (("goal" :use ((:instance evmeta-ev-meta-extract-formula
+                           (name name)
+                           (st state)
+                           (a `((x . ,(evmeta-ev x1 a))
+                                (a . ,(evmeta-ev a1 a))))))
+             :in-theory (e/d (evmeta-ev-of-fncall-args)
+                             (evmeta-ev-meta-extract-formula)))))
+
+  (assert-event (check-ev-of-fncall-args 'evmeta-ev 'evmeta-ev-lst
+                                         'evmeta-ev-of-fncall-args
+                                         (w state))))
+
+;; Constraint 1.
+(define check-ev-of-variable ((evfn symbolp)
+                              (name symbolp)
+                              (world plist-worldp))
+  (b* ((form (meta-extract-formula-w name world))
+       ((unless-match form
+                      (IMPLIES (SYMBOLP X)
+                               (EQUAL ((:! evfn) X A)
+                                      (IF X (CDR (ASSOC-EQUAL X A)) 'NIL))))
+        nil))
+    t)
+  ///
+  (defthm check-ev-of-variable-correct
+    (implies (and (symbolp (evmeta-ev x1 a))
+                  (evmeta-ev-meta-extract-global-facts)
+                  (check-ev-of-variable evfn name (w state))
+                  (not (eq evfn 'quote)))
+             (equal (evmeta-ev (list evfn x1 a1) a)
+                    (evmeta-ev `(if ,x1
+                                    (cdr (assoc-equal ,x1 ,a1))
+                                  'nil)
+                               a)))
+    :hints (("goal" :use ((:instance evmeta-ev-meta-extract-formula
+                           (name name)
+                           (st state)
+                           (a `((x . ,(evmeta-ev x1 a))
+                                (a . ,(evmeta-ev a1 a))))))
+             :in-theory (e/d (evmeta-ev-of-fncall-args)
+                             (evmeta-ev-meta-extract-formula)))))
+
+  (assert-event (check-ev-of-variable 'evmeta-ev 'evmeta-ev-of-variable (w state))))
+
+
+(define check-ev-of-quote ((evfn symbolp)
+                           (name symbolp)
+                           (world plist-worldp))
+  (b* ((form (meta-extract-formula-w name world))
+       ((unless-match form
+                      (IMPLIES (IF (CONSP X)
+                                   (EQUAL (CAR X) 'QUOTE)
+                                   'NIL)
+                               (EQUAL ((:! evfn) X A) (CAR (CDR X)))))
+        nil))
+    t)
+  ///
+  (defthm check-ev-of-quote-correct
+    (implies (and (consp (evmeta-ev x1 a))
+                  (equal (car (evmeta-ev x1 a)) 'quote)
+                  (evmeta-ev-meta-extract-global-facts)
+                  (check-ev-of-quote evfn name (w state))
+                  (not (eq evfn 'quote)))
+             (equal (evmeta-ev (list evfn x1 a1) a)
+                    (evmeta-ev `(car (cdr ,x1))
+                               a)))
+    :hints (("goal" :use ((:instance evmeta-ev-meta-extract-formula
+                           (name name)
+                           (st state)
+                           (a `((x . ,(evmeta-ev x1 a))
+                                (a . ,(evmeta-ev a1 a))))))
+             :in-theory (e/d (evmeta-ev-of-fncall-args)
+                             (evmeta-ev-meta-extract-formula)))))
+
+  (assert-event (check-ev-of-quote 'evmeta-ev 'evmeta-ev-of-quote (w state))))
+
+(define check-ev-of-lambda ((evfn symbolp)
+                            (evfn-lst symbolp)
+                            (name symbolp)
+                           (world plist-worldp))
+  (b* ((form (meta-extract-formula-w name world))
+       ((unless-match form
+                      (IMPLIES (IF (CONSP X) (CONSP (CAR X)) 'NIL)
+                               (EQUAL ((:! evfn) X A)
+                                      ((:! evfn) (CAR (CDR (CDR (CAR X))))
+                                                 (PAIRLIS$ (CAR (CDR (CAR X)))
+                                                           ((:! evfn-lst) (CDR X) A))))))
+        nil))
+    t)
+  ///
+  (defthm check-ev-of-lambda-correct
+    (implies (and (consp (evmeta-ev x1 a))
+                  (consp (car (evmeta-ev x1 a)))
+                  (evmeta-ev-meta-extract-global-facts)
+                  (check-ev-of-lambda evfn evfn-lst name (w state))
+                  (not (eq evfn 'quote))
+                  (not (eq evfn-lst 'quote)))
+             (equal (evmeta-ev (list evfn x1 a1) a)
+                    (evmeta-ev `(,evfn (car (cdr (cdr (car ,x1))))
+                                       (pairlis$ (car (cdr (car ,x1)))
+                                                 (,evfn-lst (cdr ,x1) ,a1)))
+                               a)))
+    :hints (("goal" :use ((:instance evmeta-ev-meta-extract-formula
+                           (name name)
+                           (st state)
+                           (a `((x . ,(evmeta-ev x1 a))
+                                (a . ,(evmeta-ev a1 a))))))
+             :in-theory (e/d (evmeta-ev-of-fncall-args)
+                             (evmeta-ev-meta-extract-formula)))))
+
+  (assert-event (check-ev-of-lambda 'evmeta-ev 'evmeta-ev-lst 'evmeta-ev-of-lambda (w state))))
+
+(define check-ev-of-nonsymbol-atom ((evfn symbolp)
+                            (name symbolp)
+                           (world plist-worldp))
+  (b* ((form (meta-extract-formula-w name world))
+       ((unless-match form
+                      (IMPLIES (IF (NOT (CONSP X))
+                                   (NOT (SYMBOLP X))
+                                   'NIL)
+                               (EQUAL ((:! evfn) X A) 'NIL)))
+        nil))
+    t)
+  ///
+  (defthm check-ev-of-nonsymbol-atom-correct
+    (implies (and (not (evmeta-ev x1 a))
+                  (not (symbolp (evmeta-ev x1 a)))
+                  (evmeta-ev-meta-extract-global-facts)
+                  (check-ev-of-nonsymbol-atom evfn name (w state))
+                  (not (eq evfn 'quote)))
+             (equal (evmeta-ev (list evfn x1 a1) a)
+                    nil))
+    :hints (("goal" :use ((:instance evmeta-ev-meta-extract-formula
+                           (name name)
+                           (st state)
+                           (a `((x . ,(evmeta-ev x1 a))
+                                (a . ,(evmeta-ev a1 a))))))
+             :in-theory (e/d (evmeta-ev-of-fncall-args)
+                             (evmeta-ev-meta-extract-formula)))))
+
+  (assert-event (check-ev-of-nonsymbol-atom 'evmeta-ev 'evmeta-ev-of-nonsymbol-atom (w state))))
+
+
+(define check-ev-of-bad-fncall ((evfn symbolp)
+                            (name symbolp)
+                           (world plist-worldp))
+  (b* ((form (meta-extract-formula-w name world))
+       ((unless-match form
+                      (IMPLIES (IF (CONSP X)
+                                   (IF (NOT (CONSP (CAR X)))
+                                       (NOT (SYMBOLP (CAR X)))
+                                       'NIL)
+                                   'NIL)
+                               (EQUAL ((:! evfn) X A) 'NIL)))
+        nil))
+    t)
+  ///
+  (defthm check-ev-of-bad-fncall-correct
+    (implies (and (consp (evmeta-ev x1 a))
+                  (not (consp (car (evmeta-ev x1 a))))
+                  (not (symbolp (car (evmeta-ev x1 a))))
+                  (evmeta-ev-meta-extract-global-facts)
+                  (check-ev-of-bad-fncall evfn name (w state))
+                  (not (eq evfn 'quote)))
+             (equal (evmeta-ev (list evfn x1 a1) a)
+                    nil))
+    :hints (("goal" :use ((:instance evmeta-ev-meta-extract-formula
+                           (name name)
+                           (st state)
+                           (a `((x . ,(evmeta-ev x1 a))
+                                (a . ,(evmeta-ev a1 a))))))
+             :in-theory (e/d (evmeta-ev-of-fncall-args)
+                             (evmeta-ev-meta-extract-formula)))))
+
+  (assert-event (check-ev-of-bad-fncall 'evmeta-ev 'evmeta-ev-of-bad-fncall (w state))))
+
+
+(
+
+(define check-ev-of-call ((evfn symbolp)
+                          (fn symbolp)
+                          (arity natp)
+                          (name symbolp)
+                          (world plist-worldp))
+  (b* ((form (meta-extract-formula-w name world))
+       ((unless-match form
+                      (IMPLIES (IF (CONSP X)
+                                   (EQUAL (CAR X) '(:!fn))
+                                   'NIL)
+                               (EQUAL ((:!evfn) X A)
+                                      ((:! fn) . (:? args)))))
+        nil))
+    (ev-of-call-check-args arity args evfn 'x))
+  ///
+  (defthm check-ev-of-bad-fncall-correct
+    (implies (and (consp (evmeta-ev x1 a))
+                  (not (consp (car (evmeta-ev x1 a))))
+                  (not (symbolp (car (evmeta-ev x1 a))))
+                  (evmeta-ev-meta-extract-global-facts)
+                  (check-ev-of-bad-fncall evfn name (w state))
+                  (not (eq evfn 'quote)))
+             (equal (evmeta-ev (list evfn x1 a1) a)
+                    nil))
+    :hints (("goal" :use ((:instance evmeta-ev-meta-extract-formula
+                           (name name)
+                           (st state)
+                           (a `((x . ,(evmeta-ev x1 a))
+                                (a . ,(evmeta-ev a1 a))))))
+             :in-theory (e/d (evmeta-ev-of-fncall-args)
+                             (evmeta-ev-meta-extract-formula)))))
+
+  (assert-event (check-ev-of-bad-fncall 'evmeta-ev 'evmeta-ev-of-bad-fncall (w state))))
+
+
+
 
 
 ;; Constraint 0.
@@ -127,7 +427,6 @@
 
 (in-theory (disable ev-expand-fncall-clause))
 
-;; Constraint 1.
 (defun ev-lookup-var-clause (evfn name)
   `((not (use-by-hint ',name))
     (not (symbolp x))

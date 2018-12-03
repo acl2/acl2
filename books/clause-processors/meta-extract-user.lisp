@@ -34,7 +34,6 @@
 ;; rules (and, not yet implemented, clause processors).
 
 ;(include-book "meta-extract-ttag")
-(include-book "tools/defevaluator-fast" :dir :system)
 (include-book "ev-theoremp")
 (include-book "tools/def-functional-instance" :dir :system)
 (include-book "tools/match-tree" :dir :system)
@@ -53,7 +52,7 @@
 ;; meta-extract facilities, i.e. to prove the theorems that follow.  We provide a
 ;; macro def-meta-extract below which proves these theorems for an extension of
 ;; this evaluator.
-(defevaluator-fast mextract-ev mextract-ev-lst
+(defevaluator mextract-ev mextract-ev-lst
   ((typespec-check ts x)
    (if a b c)
    (equal a b)
@@ -921,7 +920,7 @@
                     (car x)))
     :rule-classes nil)
 
-  (defevaluator-fast nthmeta-ev nthmeta-ev-lst
+  (defevaluator nthmeta-ev nthmeta-ev-lst
     ((typespec-check ts x)
      (if a b c)
      (equal a b)
@@ -1099,7 +1098,7 @@
          (value '(value-triple :failed))
        (er soft 'bar-of-baz-fails "Proof unexpectedly succeeded"))))
 
-  (defevaluator-fast foobar-ev foobar-ev-lst
+  (defevaluator foobar-ev foobar-ev-lst
     ((typespec-check ts x)
      (if a b c)
      (equal a b)
