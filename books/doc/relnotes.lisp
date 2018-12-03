@@ -200,6 +200,10 @@
  for bytes, and @(tsee fty::defbytelist), which generates a fixtype and some
  additional theorems for lists of byte.  See the documentation for details.</p>
 
+ <h4><see topic='@(url list-utilities)'>List Utilities</see></h4>
+
+ <p>Added some theorems about functions on lists.</p>
+
  <h4>@(csee std/io)</h4>
 
  <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
