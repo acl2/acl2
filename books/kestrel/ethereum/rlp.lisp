@@ -136,7 +136,7 @@
   (:tree :fields ((tree :type rlp-tree :acc-body x)) :ctor-body tree))
 
 (defsection rlp-tree/error-ext
-  :extension (rlp-tree/error)
+  :extension rlp-tree/error
 
   (defruled rlp-tree/error-p-alt-def
     (equal (rlp-tree/error-p x)
