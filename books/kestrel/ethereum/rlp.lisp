@@ -334,10 +334,9 @@
     (over trees that can be encoded,
     i.e. such that @(tsee rlp-encode-tree) does not return @(':error')).")
   (exists (tree)
-          (and (rlp-treep tree)
-               (equal (rlp-encode-tree tree)
-                      x)
-               (byte-listp x)))
+          (and (byte-listp x)
+               (rlp-treep tree)
+               (equal (rlp-encode-tree tree) x)))
   :skolem-name rlp-tree-encoding-witness)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -407,10 +406,9 @@
      is also the encoding of a tree consisting of a single leaf
      with that byte array."))
   (exists (bytes)
-          (and (byte-listp bytes)
-               (equal (rlp-encode-bytes bytes)
-                      x)
-               (byte-listp x)))
+          (and (byte-listp x)
+               (byte-listp bytes)
+               (equal (rlp-encode-bytes bytes) x)))
   :skolem-name rlp-bytes-encoding-witness
   ///
 
@@ -464,10 +462,9 @@
   (xdoc::topp
    "This is analogous to @(tsee rlp-tree-encoding-p).")
   (exists (nat)
-          (and (natp nat)
-               (equal (rlp-encode-scalar nat)
-                      x)
-               (byte-listp x)))
+          (and (byte-listp x)
+               (natp nat)
+               (equal (rlp-encode-scalar nat) x)))
   :skolem-name rlp-scalar-encoding-witness)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
