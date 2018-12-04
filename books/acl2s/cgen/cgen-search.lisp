@@ -173,11 +173,16 @@ Why is ACL2 not good at this?
   (for ((h in hyps)) (append (and (equiv-hyp? h)
                                   (list h)))))
 
-;let*/b* binding
+; B is a symbol-doublet-listp (let*/b* binding)
+; purpose: replace all values in B equal to 'other' to 'rep'.
+; returns a symbol-doublet-listp (let*/b* binding)
 (defun update-var-var-binding (rep other B)
   (if (endp B)
-      (acons other rep nil)
-    (cons (list (caar B) (if (eq other (second (car B))) rep (second (car B))))
+      (cons (list other rep) nil)
+    (cons (list (caar B)
+                (if (equal other (second (car B)))
+                    rep
+                  (second (car B))))
           (update-var-var-binding rep other (cdr B)))))
 
 (defun var-var-cc (var-var-eq-hyps bindings hyps)
