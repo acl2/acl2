@@ -42,7 +42,7 @@ Interpretation of the OP-CODE.
  0110  b <- b - a - c     Subtract with borrow
  0111  b <- b - a         Subtract
  1000  b <- a >> 1        Rotate right, shifted through carry
- 1001  b <- a >> 1        Arithmetic shift right, top bit copied 
+ 1001  b <- a >> 1        Arithmetic shift right, top bit copied
  1010  b <- a >> 1        Logical shift right, top bit zero
  1011  b <- b XOR a       Exclusive or
  1100  b <- b | a         Or
@@ -209,6 +209,8 @@ Register Numbers for "a" and "b".
 
 (defthm len-mode-b
   (equal (len (mode-b i-reg)) 2))
+
+(acl2::set-induction-depth-limit nil) ; 14 suffices, but 13 does not
 
 (defthm bvp-mode-b
   (implies (bvp i-reg)
@@ -531,12 +533,12 @@ Register Numbers for "a" and "b".
                             (if (post-inc-p mode-b)
                                 (write-mem rn-b regs reg+)
                               regs))))
-          
+
             (FM9001-alu-operation new-regs flags mem ins operand-a operand-b
                                   b-address)))))))
 
 ;; FM9001-OPERAND-A -- Readies the A operand, and side-effects the operand A
-;; register. 
+;; register.
 
 (defun fm9001-operand-a (regs flags mem ins)
   (let ((a-immediate-p (a-immediate-p ins))
@@ -614,7 +616,7 @@ Register Numbers for "a" and "b".
 (in-theory (disable FM9001-interpreter))
 
 ;; FM9001-INTR -- The PC-REG-INPUT is used to determine which register is the
-;; PC. 
+;; PC.
 
 (defund FM9001-intr (st pc-reg-input)
   (if (atom pc-reg-input)

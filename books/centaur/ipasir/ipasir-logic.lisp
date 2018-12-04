@@ -86,7 +86,7 @@
            (or (lit-cube-val lit cube)
                (eval-lit lit env$)))
     :hints(("Goal" :in-theory (enable lit-cube-val eval-lit eval-var)))))
-            
+
 (std::defenum ipasir-status-p
   (:undef :input :unsat :sat))
 
@@ -136,6 +136,10 @@
 (defattach ipasir-signature ipasir-signature-fake)
 
 (local (xdoc::set-default-parents ipasir$a))
+
+(define create-ipasir$a ()
+  :enabled t
+  (make-ipasir$a :status :undef))
 
 (define ipasir-get-status$a ((solver ipasir$a-p))
   :enabled t
@@ -393,86 +397,76 @@
   (ipasir$a->callback-count solver))
 
 
-(defun ipasir-useless-clauseproc (clause)
-  (list clause))
+(acl2::partial-encapsulate
+ (((ipasir-solve$a *) => (mv * *)
+   :guard (and (ipasir$a-p solver)
+               (not (equal (ipasir-get-status$a solver) :undef))
+               (ipasir-empty-new-clause$a solver))
+   :formals (solver)))
+ nil ;; supporters
 
-(defttag ipasir-solve$a)
+ (local (define ipasir-solve$a ((solver ipasir$a-p))
+          :enabled t
+          ;; returns (mv status solver)
+          (mv :failed
+              (change-ipasir$a solver
+                               :solution nil
+                               :assumption nil
+                               :status :input
+                               :new-clause nil
+                               ;; :solved-assumption (ipasir$a->assumption solver)
+                               :history (cons :solve (ipasir$a->history solver))))))
 
-(define-trusted-clause-processor
-  ipasir-useless-clauseproc
-  nil
-  :partial-theory
-  (encapsulate
-    (((ipasir-solve$a *) => (mv * *)
-      :guard (and (ipasir$a-p solver)
-                  (not (equal (ipasir-get-status$a solver) :undef))
-                  (ipasir-empty-new-clause$a solver))
-      :formals (solver)))
+ (defthm ipasir-solve$a-status
+   (let ((status (mv-nth 0 (ipasir-solve$a solver))))
+     (or (equal status :failed)
+         (equal status :unsat)
+         (equal status :sat)))
+   :rule-classes ((:forward-chaining :trigger-terms ((mv-nth 0 (ipasir-solve$a solver))))))
 
-    (local (define ipasir-solve$a ((solver ipasir$a-p))
-             :enabled t
-             ;; returns (mv status solver)
-             (mv :failed
-                 (change-ipasir$a solver
-                                  :solution nil
-                                  :assumption nil
-                                  :status :input
-                                  :new-clause nil
-                                  ;; :solved-assumption (ipasir$a->assumption solver)
-                                  :history (cons :solve (ipasir$a->history solver))))))
-    
-    (defthm ipasir-solve$a-status
-      (let ((status (mv-nth 0 (ipasir-solve$a solver))))
-        (or (equal status :failed)
-            (equal status :unsat)
-            (equal status :sat)))
-      :rule-classes ((:forward-chaining :trigger-terms ((mv-nth 0 (ipasir-solve$a solver))))))
+ (defthm ipasir-solve$a-general
+   (b* (((ipasir$a solver))
+        ((mv ?status (ipasir$a new-solver)) (ipasir-solve$a solver)))
+     (and (equal new-solver.formula solver.formula)
+          (not (equal new-solver.status :undef))
+          (equal new-solver.new-clause nil)
+          (ipasir$a-p new-solver)
+          ;; (equal new-solver.solved-assumption solver.assumption)
+          (equal new-solver.assumption nil)
+          (equal new-solver.history (cons :solve solver.history)))))
 
-    (defthm ipasir-solve$a-general
-      (b* (((ipasir$a solver))
-           ((mv ?status (ipasir$a new-solver)) (ipasir-solve$a solver)))
-        (and (equal new-solver.formula solver.formula)
-             (not (equal new-solver.status :undef))
-             (equal new-solver.new-clause nil)
-             (ipasir$a-p new-solver)
-             ;; (equal new-solver.solved-assumption solver.assumption)
-             (equal new-solver.assumption nil)
-             (equal new-solver.history (cons :solve solver.history)))))
-    
-    (defthm ipasir-solve$a-callback-count
-      (b* (((ipasir$a solver))
-           ((mv ?status (ipasir$a new-solver)) (ipasir-solve$a solver)))
-        (<= solver.callback-count new-solver.callback-count)))
+ (defthm ipasir-solve$a-callback-count
+   (b* (((ipasir$a solver))
+        ((mv ?status (ipasir$a new-solver)) (ipasir-solve$a solver)))
+     (<= solver.callback-count new-solver.callback-count)))
 
 
-    (defthm ipasir-solve$a-unsat
-      (b* (((ipasir$a solver))
-           ((mv status (ipasir$a new-solver)) (ipasir-solve$a solver)))
-        (implies (equal status :unsat)
-                 (and (subsetp new-solver.solution solver.assumption)
-                      (equal new-solver.solved-assumption solver.assumption)
-                      (equal new-solver.status :unsat)
-                      ;; no environment exists which satisfies the assumption (as an assignment) and the formula
-                      (implies (equal (eval-formula solver.formula env$) 1)
-                               (equal (eval-cube new-solver.solution env$) 0))))))
+ (defthm ipasir-solve$a-unsat
+   (b* (((ipasir$a solver))
+        ((mv status (ipasir$a new-solver)) (ipasir-solve$a solver)))
+     (implies (equal status :unsat)
+              (and (subsetp new-solver.solution solver.assumption)
+                   (equal new-solver.solved-assumption solver.assumption)
+                   (equal new-solver.status :unsat)
+                   ;; no environment exists which satisfies the assumption (as an assignment) and the formula
+                   (implies (equal (eval-formula solver.formula env$) 1)
+                            (equal (eval-cube new-solver.solution env$) 0))))))
 
-    (defthm ipasir-solve$a-sat
-      (b* (((ipasir$a solver))
-           ((mv status (ipasir$a new-solver)) (ipasir-solve$a solver)))
-        (implies (equal status :sat)
-                 (equal new-solver.status :sat))))
-    ;; Won't assume the solution is a correct assignment because we can just
-    ;; check it.  Note if we did want to assume something, the strongest
-    ;; assumption to make is that the cube-to-env of the assignment satisfies the
-    ;; formula/assumption (for any starting env).
+ (defthm ipasir-solve$a-sat
+   (b* (((ipasir$a solver))
+        ((mv status (ipasir$a new-solver)) (ipasir-solve$a solver)))
+     (implies (equal status :sat)
+              (equal new-solver.status :sat))))
+ ;; Won't assume the solution is a correct assignment because we can just
+ ;; check it.  Note if we did want to assume something, the strongest
+ ;; assumption to make is that the cube-to-env of the assignment satisfies the
+ ;; formula/assumption (for any starting env).
 
-    (defthm ipasir-solve$a-failed
-      (b* (((ipasir$a solver))
-           ((mv status (ipasir$a new-solver)) (ipasir-solve$a solver)))
-        (implies (equal status :failed)
-                 (equal new-solver.status :input))))))
-
-(defttag nil)
+ (defthm ipasir-solve$a-failed
+   (b* (((ipasir$a solver))
+        ((mv status (ipasir$a new-solver)) (ipasir-solve$a solver)))
+     (implies (equal status :failed)
+              (equal new-solver.status :input)))))
 
 (defthm symbolp-of-ipasir-solve$a-status
   (symbolp (mv-nth 0 (ipasir-solve$a solver)))
@@ -498,73 +492,103 @@
     (change-ipasir$a solver :history
                      (cons (list :bump-activity-vars vars (lnfix num-bumps)) solver.history))))
 
-(defun ipasir-useless-clauseproc2 (clause)
-  (list clause))
+(acl2::partial-encapsulate
+ (((ipasir-get-curr-stats$a *) => (mv * * * * *)
+   :guard (and (ipasir$a-p solver)
+               (not (equal (ipasir-get-status$a solver) :undef)))
+   :formals (solver)))
+ nil ;; supporters
 
-(defttag ipasir-get-curr-stats$a)
+ (local (define ipasir-get-curr-stats$a ((solver ipasir$a-p))
+          :enabled t
+          (declare (ignore solver))
+          (mv 0 0 0 0 0)))
 
-(define-trusted-clause-processor
-  ipasir-useless-clauseproc2
-  nil
-  :partial-theory
-  (encapsulate
-    (((ipasir-get-curr-stats$a *) => (mv * * * * *)
-      :guard (and (ipasir$a-p solver)
-                  (not (equal (ipasir-get-status$a solver) :undef)))
-      :formals (solver)))
+ (defthm ipasir-get-curr-stats$a-mv-nth-0
+   (natp (mv-nth 0 (ipasir-get-curr-stats$a solver))))
 
-    (local (define ipasir-get-curr-stats$a ((solver ipasir$a-p))
-             :enabled t
-             (declare (ignore solver))
-             (mv 0 0 0 0 0)))
-    
-    (defthm ipasir-get-curr-stats$a-mv-nth-0
-      (natp (mv-nth 0 (ipasir-get-curr-stats$a solver))))
-    
-    (defthm ipasir-get-curr-stats$a-mv-nth-1
-      (natp (mv-nth 1 (ipasir-get-curr-stats$a solver))))
-    
-    (defthm ipasir-get-curr-stats$a-mv-nth-2
-      (natp (mv-nth 2 (ipasir-get-curr-stats$a solver))))
-    
-    (defthm ipasir-get-curr-stats$a-mv-nth-3
-      (natp (mv-nth 3 (ipasir-get-curr-stats$a solver))))
-    
-    (defthm ipasir-get-curr-stats$a-mv-nth-4
-      (natp (mv-nth 4 (ipasir-get-curr-stats$a solver))))))
+ (defthm ipasir-get-curr-stats$a-mv-nth-1
+   (natp (mv-nth 1 (ipasir-get-curr-stats$a solver))))
 
-(defttag nil)
+ (defthm ipasir-get-curr-stats$a-mv-nth-2
+   (natp (mv-nth 2 (ipasir-get-curr-stats$a solver))))
 
+ (defthm ipasir-get-curr-stats$a-mv-nth-3
+   (natp (mv-nth 3 (ipasir-get-curr-stats$a solver))))
+
+ (defthm ipasir-get-curr-stats$a-mv-nth-4
+   (natp (mv-nth 4 (ipasir-get-curr-stats$a solver)))))
+
+;; To avoid a soundness bug (discussed in soundness-bug2-fixed.lisp), we want
+;; the concrete basis for the ipasir abstract stobj to have non-executable base
+;; accessors and updaters.  Therefore, we use an abstract stobj for which the
+;; interface functions are non-executable as its concrete basis.
+
+;; The lowest-level stobj, which we call ipasir$c$c, is defined with seven
+;; fields, which will be used in the underlying backend interface but are
+;; mostly unimportant for the logical story.  The only field used in the
+;; logical story is field 0, which in the logic (but not in execution) contains
+;; the ipasir$a structure.
+
+;; The intermediate abstract stobj, ipasir$c, could be a straightforward copy
+;; of ipasir$c$c, only with non-executable wrappers for the accessors and
+;; updaters.  But instead to make things even simpler we'll use a logical
+;; representation of the ipasir$c consisting of just the ipasir$a object, with
+;; a non-executable accessor that returns that object and a non-executable
+;; updater that replaces that object.
 
 (make-event
- `(defstobj ipasir$c
+ `(defstobj ipasir$c$c
     (ipasir-val
      :type (satisfies ipasir$a-p)
      :initially ,(make-ipasir$a :status :undef))
-    (ipasir-limit)
+    (ipasir-limit-field)
     (ipasir-status-field :initially :undef)
     (ipasir-empty-new-clause-field :initially t)
     (ipasir-some-history-field :initially nil)
     (ipasir-assumption-field :initially nil)
     (ipasir-solved-assumption-field :initially nil)
-    :renaming ((ipasir-val                            ipasir-get)
-               (update-ipasir-val                     ipasir-set)
-               (ipasir-limit                          ipasir-limit-get)
-               (update-ipasir-limit                   ipasir-limit-set)
-               (ipasir-status-field                   ipasir-status-get)
-               (update-ipasir-status-field            ipasir-status-set)
-               (ipasir-assumption-field               ipasir-assumption-get)
-               (update-ipasir-assumption-field        ipasir-assumption-set)
-               (ipasir-some-history-field             ipasir-some-history-get)
-               (update-ipasir-some-history-field      ipasir-some-history-set)
-               (ipasir-empty-new-clause-field         ipasir-empty-new-clause-get)
-               (update-ipasir-empty-new-clause-field  ipasir-empty-new-clause-set)
-               (ipasir-solved-assumption-field        ipasir-solved-assumption-get)
-               (update-ipasir-solved-assumption-field ipasir-solved-assumption-set))))
+    :renaming ((ipasir-val                            ipasir-get1)
+               (update-ipasir-val                     ipasir-set1))))
 
-(define create-ipasir$a ()
+(define ipasir-get$a ((ipasir$a ipasir$a-p))
+  :returns (val ipasir$a-p)
   :enabled t
-  (make-ipasir$a :status :undef))
+  (ipasir$a-fix ipasir$a))
+
+(define ipasir-set$a ((val ipasir$a-p)
+                      (ipasir$a ipasir$a-p))
+  (declare (ignore ipasir$a))
+  :returns (new-ipasir$a ipasir$a-p)
+  :enabled t
+  (ipasir$a-fix val))
+
+(define ipasir-get$c (ipasir$c$c)
+  :non-executable t
+  :enabled t
+  (ipasir-get1 ipasir$c$c))
+
+(define ipasir-set$c ((val ipasir$a-p)
+                      ipasir$c$c)
+  :enabled t
+  ;; We really just want (non-exec (ipasir-set1 (ipasir$a-fix val)
+  ;; ipasir$c$c)), but we use this hack so that the stobjs-out will be
+  ;; (ipasir$c$c) and not NIL.
+  (b* ((ipasir$c$c (non-exec (ipasir-set1 (ipasir$a-fix val) ipasir$c$c))))
+    ipasir$c$c))
+
+(local (define ipasir$c-corr (ipasir$c$c ipasir$a)
+         :enabled t
+         (equal ipasir$a (ipasir-get1 ipasir$c$c))))
+
+(acl2::defabsstobj-events ipasir$c
+  :concrete ipasir$c$c
+  :recognizer (ipasir$cp :logic ipasir$a-p :exec ipasir$c$cp)
+  :creator (create-ipasir$c :logic create-ipasir$a :exec create-ipasir$c$c)
+  :corr-fn ipasir$c-corr
+  :exports ((ipasir-get :logic ipasir-get$a :exec ipasir-get$c)
+            (ipasir-set :logic ipasir-set$a :exec ipasir-set$c)))
+
 
 (define ipasir-init$c (ipasir$c state)
   :guard (eq (ipasir$a->status (ipasir-get ipasir$c)) :undef)
@@ -683,9 +707,9 @@
             (ipasir-some-history
              :logic ipasir-some-history$a :exec ipasir-some-history$c)
             (ipasir-get-assumption
-             :logic ipasir-get-assumption$a :exec ipasir-get-assumption$c) 
+             :logic ipasir-get-assumption$a :exec ipasir-get-assumption$c)
             (ipasir-solved-assumption
-             :logic ipasir-solved-assumption$a :exec ipasir-solved-assumption$c) 
+             :logic ipasir-solved-assumption$a :exec ipasir-solved-assumption$c)
             (ipasir-init :logic ipasir-init$a :exec ipasir-init$c)
             (ipasir-reinit :logic ipasir-reinit$a :exec ipasir-reinit$c)
             (ipasir-release :logic ipasir-release$a :exec ipasir-release$c)
@@ -709,12 +733,20 @@
 (acl2::defstobj-clone ipasir2 ipasir :suffix "2")
 (acl2::defstobj-clone ipasir3 ipasir :suffix "3")
 
-;; Note: We need these interface functions to be untouchable because they don't
-;; behave consistently with other ipasir$c functions.  For example, the
-;; following function can be proven to return T, but its actual execution
-;; returns NIL once the backend is loaded.  Even if we smash ipasir-get and
-;; prevent its execution, ipasir$c can be cloned, creating a new function
-;; equivalent to ipasir-get, and which we haven't smashed.
+
+;; Note: Previously, ipasir$c was just a concrete stobj with executable base
+;; accessors/updaters.  But the behavior of the following $c interface
+;; functions wasn't consistent with the behavior of those base
+;; accessors/updaters once the backend was loaded.  In an attempt to close that
+;; soundness hole, we would therefore make both these interface functions and
+;; base accessors/updaters untouchable.  However, none of these untouchability
+;; settings really stuck.  The untouchability of the base accessors/updaters
+;; could be worked around by defining a new stobj congruent to ipasir$c, whose
+;; base accessors/updaters would then not be untouchable.  The untouchability
+;; of the interface functions could be worked around by replicating enough of
+;; this book to define a wrapper function (such as ipasir$c-contra, below),
+;; then load the backend.  At that point, ipasir$c-contra is proven to return T
+;; as its first value but its actual execution produces NIL.
 
 ;; (make-event
 ;;  `(defstobj ipasir$c2
@@ -734,27 +766,6 @@
 ;;   ///
 ;;   (defthm ipasir$c-contra-true
 ;;     (mv-nth 0 (ipasir$c-contra state))))
-
-(push-untouchable ipasir-get-status$c t)
-(push-untouchable ipasir-empty-new-clause$c t)
-(push-untouchable ipasir-some-history$c t)
-(push-untouchable ipasir-get-assumption$c t)
-(push-untouchable ipasir-solved-assumption$c t)
-(push-untouchable ipasir-init$c t)
-(push-untouchable ipasir-reinit$c t)
-(push-untouchable ipasir-release$c t)
-(push-untouchable ipasir-input$c t)
-(push-untouchable ipasir-add-lit$c t)
-(push-untouchable ipasir-finalize-clause$c t)
-(push-untouchable ipasir-assume$c t)
-(push-untouchable ipasir-val$c t)
-(push-untouchable ipasir-failed$c t)
-(push-untouchable ipasir-solve$c t)
-(push-untouchable ipasir-bump-activity-vars$c t)
-(push-untouchable ipasir-get-curr-stats$c t)
-(push-untouchable ipasir-set-limit$c t)
-(push-untouchable ipasir-callback-count$c t)
-
 
 
 (defun with-local-ipasir-core-fn (name bindings inner-form rest)
@@ -840,7 +851,7 @@ flags apply to the recursive make of the core solver library.</li>
 @({
 32,33c32,33
 < CXXFLAGS= -g -std=c++11 -Wall -DNDEBUG -O3
-< 
+<
 ---
 > CXXFLAGS= -g -std=c++11 -Wall -DNDEBUG -O3 -fPIC
 > export CXXFLAGS
@@ -982,7 +993,7 @@ performed and counted, but will not cause termination.  The frequency with
 which the callback is called varies by solver.</li>
 
 <li>@('(ipasir-get-status ipasir)') simply returns the current status :undef,
-:input, :sat, or :unsat. Mostly used in guards to allow executable guards for 
+:input, :sat, or :unsat. Mostly used in guards to allow executable guards for
 most of the ipasir functions.</li>
 
 <li>@('(ipasir-some-history ipasir) (ipasir-empty-new-clause ipasir)
@@ -1023,8 +1034,8 @@ callback mechanism of ipasir_set_terminate.</li>
 
 <h3>Logical story</h3>
 
-<p>There are several problems to solve when trying to soundly model an 
-interface with an external library in ACL2.  First, we need a logical 
+<p>There are several problems to solve when trying to soundly model an
+interface with an external library in ACL2.  First, we need a logical
 description of the behavior of the external library that is specific enough to
 be useful, but not so specific that unexpected behaviors produce soundness
 bugs.  Second, we need to restrict user access to functions that break the

@@ -46,6 +46,7 @@
                          formals
                          fquotep
                          implode
+                         known-packages
                          lambda-body
                          lambda-formals
                          lower-case-p

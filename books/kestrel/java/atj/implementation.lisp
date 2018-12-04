@@ -668,12 +668,7 @@
   :mode :program
   :short "Gather the information about the ACL2 environment
           needed to generate Java code."
-  :long
-  (xdoc::topp
-   "The system utility @('known-package-alist') returns an alist
-    whose keys are all the known ACL2 packages
-    in reverse chronological order.")
-  (b* ((pkgs (reverse (strip-cars (known-package-alist state))))
+  (b* ((pkgs (known-packages state))
        ((run-when verbose)
         (cw "~%Known ACL2 packages:~%")
         (atj-show-pkgs pkgs))
@@ -740,18 +735,16 @@
      which have a recursive structure analogously to @(tsee cons) pairs.")
    (xdoc::p
     "The @('atj-gen-...') functions that generate Java expressions
-     keep track of the next unused local variable via a numeric index.
+     keep track of the next local variable to use via a numeric index.
      For building ACL2 values,
      the Java variables @('value1'), @('value2'), etc. are used;
      for building ACL2 terms,
      the Java variables @('term1'), @('term2'), etc. are used;
      for building ACL2 lambda expressions,
      the Java variables @('lambda1'), @('lambda2'), etc. are used.
-     The numeric index of the next unused variable
+     The numeric index of the next variable to use
      is threaded through the functions.
-     New variables are declared as needed:
-     a second numeric index is threaded through,
-     which keeps track of the index of the next undeclared variable."))
+     The variable is declared as it is used."))
   :order-subtopics t
   :default-parent t)
 
@@ -838,14 +831,11 @@
   ((varbase stringp "Base name of the local variable.")
    (vartype stringp "Java type of the local variable.")
    (expression msgp "Java expression to set the variable to.")
-   (next-unused posp "Index of the next unused local variable.")
-   (next-undecl posp "Index of the next undeclared local variable.")
+   (next-var posp "Index of the next local variable to use.")
    (channel symbolp "Output channel of the generated Java file.")
    state)
-  :guard (<= next-unused next-undecl)
   :returns (mv (varname "A @(tsee stringp), the name of the local variable.")
-               (new-next-unused "A @(tsee posp), the updated unused index.")
-               (new-next-undecl "A @(tsee posp), the updated undeclared index.")
+               (new-next-var "A @(tsee posp), the updated variable index.")
                state)
   :mode :program
   :short "Generate Java code to set a local variable to an expression,
@@ -854,46 +844,24 @@
   :long
   (xdoc::topapp
    (xdoc::p
-    "If the next unused local variable index is undeclared,
-     we generate a local variable declaration
-     with the given expression as initializer;
-     otherwise, we generate an assignment expression statement.
-     The difference between the two cases, syntactically,
-     is that in the first case we print the Java type followed by a space.
-     If we declare a new variable,
-     we increment the next undeclared index,
-     because after this function returns the previous index
-     will be declared.")
+    "We generate a local variable declaration
+     with the given expression as initializer.")
    (xdoc::p
     "The name of the local variable to use is obtained by
-     adding the next unused index to the base name.
-     The index is incremented,
-     because after this function returns
-     the previous index will be used.")
+     adding the next variable index to the base name.
+     The index is incremented and returned.")
    (xdoc::p
     "We print the statement to the file,
      and we return the variable name."))
-  (b* (((mv column
-            next-undecl
-            state) (if (= next-undecl next-unused)
-                       (b* (((mv column state)
-                             (fmt1! "~s0~s1 "
-                                    (list (cons #\0 *atj-indent-2*)
-                                          (cons #\1 vartype))
-                                    0 channel state nil)))
-                         (mv column (1+ next-undecl) state))
-                     (b* (((mv column state)
-                           (fmt1! "~s0"
-                                  (list (cons #\0 *atj-indent-2*))
-                                  0 channel state nil)))
-                       (mv column next-undecl state))))
-       (varname (str::cat varbase (natstr next-unused)))
-       (next-unused (1+ next-unused))
-       ((mv & state) (fmt1! "~s0 = ~@1;~%"
-                            (list (cons #\0 varname)
-                                  (cons #\1 expression))
-                            column channel state nil)))
-    (mv varname next-unused next-undecl state)))
+  (b* ((varname (str::cat varbase (natstr next-var)))
+       (next-var (1+ next-var))
+       ((mv & state) (fmt1! "~s0~s1 ~s2 = ~@3;~%"
+                            (list (cons #\0 *atj-indent-2*)
+                                  (cons #\1 vartype)
+                                  (cons #\2 varname)
+                                  (cons #\3 expression))
+                            0 channel state nil)))
+    (mv varname next-var state)))
 
 (define atj-gen-package-name ((pkg stringp))
   :returns (java-expression msgp)
@@ -1004,20 +972,17 @@
    "Since ACL2 values have a recursive structure,
    these functions are mutually recursive.")
 
-  (define atj-gen-pair-value
+  (define atj-gen-cpair-value
     ((pair consp)
-     (value-next-unused posp "Index of the next unused local variable.")
-     (value-next-undecl posp "Index of the next undeclared local variable.")
+     (value-next-var posp "Index of the next local variable to use.")
      (channel symbolp "Output channel of the generated Java file.")
      state)
-    :guard (<= value-next-unused value-next-undecl)
     :returns (mv (java-expression "A @(tsee msgp).")
-                 (new-value-next-unused "A @(tsee posp).")
-                 (new-value-next-undecl "A @(tsee posp).")
+                 (new-value-next-var "A @(tsee posp).")
                  state)
     :mode :program
     :parents (atj-file-generation atj-gen-values)
-    :short "Generate Java code to build an ACL2 pair value."
+    :short "Generate Java code to build an ACL2 @(tsee cons) pair value."
     :long
     (xdoc::topp
      "The generated code
@@ -1028,116 +993,90 @@
       and returns an expression that builds the pair
       from the two local variables.")
     (b* (((mv car-expr
-              value-next-unused
-              value-next-undecl
+              value-next-var
               state) (atj-gen-value (car pair)
-                                    value-next-unused
-                                    value-next-undecl
+                                    value-next-var
                                     channel state))
          ((mv car-var
-              value-next-unused
-              value-next-undecl
+              value-next-var
               state) (atj-gen-set-var *atj-value-local-var*
                                       "Acl2Value"
                                       car-expr
-                                      value-next-unused
-                                      value-next-undecl
+                                      value-next-var
                                       channel
                                       state))
          ((mv cdr-expr
-              value-next-unused
-              value-next-undecl
+              value-next-var
               state) (atj-gen-value (cdr pair)
-                                    value-next-unused
-                                    value-next-undecl
+                                    value-next-var
                                     channel state))
          ((mv cdr-var
-              value-next-unused
-              value-next-undecl
+              value-next-var
               state) (atj-gen-set-var *atj-value-local-var*
                                       "Acl2Value"
                                       cdr-expr
-                                      value-next-unused
-                                      value-next-undecl
+                                      value-next-var
                                       channel
                                       state)))
-      (mv (msg "Acl2Cons.make(~s0, ~s1)" car-var cdr-var)
-          value-next-unused
-          value-next-undecl
+      (mv (msg "Acl2ConsPair.make(~s0, ~s1)" car-var cdr-var)
+          value-next-var
           state)))
 
   (define atj-gen-value
     ((x "Value.")
-     (value-next-unused posp "Index of the next unused local variable.")
-     (value-next-undecl posp "Index of the next undeclared local variable.")
+     (value-next-var posp "Index of the next local variable to use.")
      (channel symbolp "Output channel of the generated Java file.")
      state)
-    :guard (<= value-next-unused value-next-undecl)
     :returns (mv (java-expression "A @(tsee msgp).")
-                 (new-value-next-unused "A @(tsee posp).")
-                 (new-value-next-undecl "A @(tsee posp).")
+                 (new-value-next-var "A @(tsee posp).")
                  state)
     :mode :program
     :parents (atj-file-generation atj-gen-values)
     :short "Generate Java code to build an ACL2 value."
     (cond ((characterp x) (mv (atj-gen-character-value x)
-                              value-next-unused
-                              value-next-undecl
+                              value-next-var
                               state))
           ((stringp x) (mv (atj-gen-string-value x)
-                           value-next-unused
-                           value-next-undecl
+                           value-next-var
                            state))
           ((symbolp x) (mv (atj-gen-symbol-value x)
-                           value-next-unused
-                           value-next-undecl
+                           value-next-var
                            state))
           ((integerp x) (mv (atj-gen-integer-value x)
-                            value-next-unused
-                            value-next-undecl
+                            value-next-var
                             state))
           ((rationalp x) (mv (atj-gen-rational-value x)
-                             value-next-unused
-                             value-next-undecl
+                             value-next-var
                              state))
           ((acl2-numberp x) (mv (atj-gen-number-value x)
-                                value-next-unused
-                                value-next-undecl
+                                value-next-var
                                 state))
-          ((consp x) (atj-gen-pair-value x
-                                         value-next-unused
-                                         value-next-undecl
-                                         channel
-                                         state))
+          ((consp x) (atj-gen-cpair-value x
+                                          value-next-var
+                                          channel
+                                          state))
           (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom." x)
-                     (mv "" value-next-unused value-next-undecl state))))))
+                     (mv "" value-next-var state))))))
 
-(define atj-gen-constant-term
+(define atj-gen-qconstant-term
   ((constant "(Unquoted) value of the ACL2 quoted constant.")
-   (value-next-unused
-    posp "Index of the next unused local variable for values.")
-   (value-next-undecl
-    posp "Index of the next undeclared local variable for values.")
+   (value-next-var
+    posp "Index of the next local variable to use for values.")
    (channel symbolp "Output channel of the generated Java file.")
    state)
-  :guard (<= value-next-unused value-next-undecl)
   :returns (mv (java-expression "A @(tsee msgp).")
-               (new-value-next-unused "A @(tsee posp).")
-               (new-value-next-undecl "A @(tsee posp).")
+               (new-value-next-var "A @(tsee posp).")
                state)
   :mode :program
-  :short "Generate Java code to build an ACL2 constant term."
+  :short "Generate Java code to build an ACL2 quoted constant term."
   (b* (((mv value-expr
-            value-next-unused
-            value-next-undecl
+            value-next-var
             state) (atj-gen-value constant
-                                  value-next-unused
-                                  value-next-undecl
+                                  value-next-var
                                   channel
                                   state)))
-    (mv (msg "Acl2Constant.make(~@0)" value-expr)
-        value-next-unused
-        value-next-undecl
+    (mv (msg "Acl2QuotedConstant.make(~@0)" value-expr)
+        value-next-var
         state)))
 
 (define atj-gen-variable-term ((symbol symbolp "The ACL2 variable."))
@@ -1204,85 +1143,78 @@
   (define atj-gen-application-term
     ((function pseudo-termfnp)
      (arguments pseudo-term-listp)
-     (value-next-unused
-      posp "Index of the next unused local variable for values.")
-     (value-next-undecl
-      posp "Index of the next undeclared local variable for values.")
-     (term-next-unused
-      posp "Index of the next unused local variable for terms.")
-     (term-next-undecl
-      posp "Index of the next undeclared local variable for terms.")
-     (lambda-next-unused
-      posp "Index of the next unused local variable for lambda expressions.")
-     (lambda-next-undecl
-      posp
-      "Index of the next undeclared local variable for lambda expressions.")
+     (value-next-var
+      posp "Index of the next local variable to use for values.")
+     (term-next-var
+      posp "Index of the next local variable to use for terms.")
+     (lambda-next-var
+      posp "Index of the next local variable to use for lambda expressions.")
      (channel symbolp "Output channel of the generated Java file.")
      state)
-    :guard (and (<= value-next-unused value-next-undecl)
-                (<= term-next-unused term-next-undecl)
-                (<= lambda-next-unused lambda-next-undecl))
     :returns (mv (java-expression "A @(tsee msgp).")
-                 (new-value-next-unused "A @(tsee posp).")
-                 (new-value-next-undecl "A @(tsee posp).")
-                 (new-term-next-unused "A @(tsee posp).")
-                 (new-term-next-undecl "A @(tsee posp).")
-                 (new-lambda-next-unused "A @(tsee posp).")
-                 (new-lambda-next-undecl "A @(tsee posp).")
+                 (new-value-next-var "A @(tsee posp).")
+                 (new-term-next-var "A @(tsee posp).")
+                 (new-lambda-next-var "A @(tsee posp).")
                  state)
     :mode :program
     :parents (atj-file-generation atj-gen-terms+lambdas)
     :short "Generate Java code to build an ACL2 application term."
     :long
-    (xdoc::topp
-     "The generated code
-      builds the function (a named function or a lambda expression),
-      builds the arguments,
-      puts them into an array,
-      builds the application,
-      puts it to a local variable,
-      and returns the local variable.")
-    (b* (((mv function-expr
-              value-next-unused
-              value-next-undecl
-              term-next-unused
-              term-next-undecl
-              lambda-next-unused
-              lambda-next-undecl
+    (xdoc::topapp
+     (xdoc::topp
+      "The generated code
+       builds the function (a named function or a lambda expression),
+       builds the arguments,
+       puts them into an array,
+       builds the application,
+       puts it to a local variable,
+       and returns the local variable.")
+     (xdoc::p
+      "Terms of the form @('(if a a b)') are treated as @('(or a b)'),
+       i.e. the generated code builds a term of the form @('(or a b)').
+       In ACL2, @(tsee or) is a macro:
+       an untranslated term @('(or a b)') is translated to @('(if a a b)'),
+       which, if executed as such by AIJ, would evaluate @('a') twice.
+       (ACL2 relies on the underlying Lisp platform to optimize this situation.)
+       AIJ provides support for a ``pseudo-function'' @('or')
+       that is treated like a primitive
+       and that evaluates its arguments non-strictly;
+       see the documentation of AIJ for details.
+       Thus, ATJ recognizes (translated) terms of the form @('(if a a b)'),
+       which are likely derived from @('(or a b)'),
+       and represents them in AIJ via the @('or') pseudo-function."))
+    (b* (((mv function arguments)
+          (if (and (eq function 'if)
+                   (= (len arguments) 3)
+                   (equal (first arguments) (second arguments)))
+              (mv 'or (list (first arguments) (third arguments)))
+            (mv function arguments)))
+         ((mv function-expr
+              value-next-var
+              term-next-var
+              lambda-next-var
               state) (if (symbolp function)
                          (b* ((symbol-expr (atj-gen-symbol-value function)))
                            (mv (msg "Acl2NamedFunction.make(~@0)" symbol-expr)
-                               value-next-unused
-                               value-next-undecl
-                               term-next-unused
-                               term-next-undecl
-                               lambda-next-unused
-                               lambda-next-undecl
+                               value-next-var
+                               term-next-var
+                               lambda-next-var
                                state))
                        (atj-gen-lambda (lambda-formals function)
                                        (lambda-body function)
-                                       value-next-unused
-                                       value-next-undecl
-                                       term-next-unused
-                                       term-next-undecl
-                                       lambda-next-unused
-                                       lambda-next-undecl
+                                       value-next-var
+                                       term-next-var
+                                       lambda-next-var
                                        channel
                                        state)))
          ((mv argument-exprs
-              value-next-unused
-              value-next-undecl
-              term-next-unused
-              term-next-undecl
-              lambda-next-unused
-              lambda-next-undecl
+              value-next-var
+              term-next-var
+              lambda-next-var
               state) (atj-gen-terms arguments
-                                    value-next-unused
-                                    value-next-undecl
-                                    term-next-unused
-                                    term-next-undecl
-                                    lambda-next-unused
-                                    lambda-next-undecl
+                                    value-next-var
+                                    term-next-var
+                                    lambda-next-var
                                     channel
                                     state))
          (argument-array-expr (atj-gen-java-array argument-exprs "Acl2Term"))
@@ -1290,52 +1222,34 @@
                                 function-expr
                                 argument-array-expr))
          ((mv application-var
-              term-next-unused
-              term-next-undecl
+              term-next-var
               state) (atj-gen-set-var *atj-term-local-var*
                                       "Acl2Term"
                                       application-expr
-                                      term-next-unused
-                                      term-next-undecl
+                                      term-next-var
                                       channel
                                       state)))
       (mv application-var
-          value-next-unused
-          value-next-undecl
-          term-next-unused
-          term-next-undecl
-          lambda-next-unused
-          lambda-next-undecl
+          value-next-var
+          term-next-var
+          lambda-next-var
           state)))
 
   (define atj-gen-lambda
     ((formals symbol-listp)
      (body pseudo-termp)
-     (value-next-unused
-      posp "Index of the next unused local variable for values.")
-     (value-next-undecl
-      posp "Index of the next undeclared local variable for values.")
-     (term-next-unused
-      posp "Index of the next unused local variable for terms.")
-     (term-next-undecl
-      posp "Index of the next undeclared local variable for terms.")
-     (lambda-next-unused
-      posp "Index of the next unused local variable for lambda expressions.")
-     (lambda-next-undecl
-      posp
-      "Index of the next undeclared local variable for lambda expressions.")
+     (value-next-var
+      posp "Index of the next local variable to use for values.")
+     (term-next-var
+      posp "Index of the next local variable to use for terms.")
+     (lambda-next-var
+      posp "Index of the next local variable to use for lambda expressions.")
      (channel symbolp "Output channel of the generated Java file.")
      state)
-    :guard (and (<= value-next-unused value-next-undecl)
-                (<= term-next-unused term-next-undecl)
-                (<= lambda-next-unused lambda-next-undecl))
     :returns (mv (java-expression "A @(tsee msgp).")
-                 (new-value-next-unused "A @(tsee posp).")
-                 (new-value-next-undecl "A @(tsee posp).")
-                 (new-term-next-unused "A @(tsee posp).")
-                 (new-term-next-undecl "A @(tsee posp).")
-                 (new-lambda-next-unused "A @(tsee posp).")
-                 (new-lambda-next-undecl "A @(tsee posp).")
+                 (new-value-next-var "A @(tsee posp).")
+                 (new-term-next-var "A @(tsee posp).")
+                 (new-lambda-next-var "A @(tsee posp).")
                  state)
     :mode :program
     :parents (atj-file-generation atj-gen-terms+lambdas)
@@ -1350,189 +1264,123 @@
       and returns the local variable.")
     (b* ((formals-array-expr (atj-gen-formals-array formals))
          ((mv body-expr
-              value-next-unused
-              value-next-undecl
-              term-next-unused
-              term-next-undecl
-              lambda-next-unused
-              lambda-next-undecl
+              value-next-var
+              term-next-var
+              lambda-next-var
               state) (atj-gen-term body
-                                   value-next-unused
-                                   value-next-undecl
-                                   term-next-unused
-                                   term-next-undecl
-                                   lambda-next-unused
-                                   lambda-next-undecl
+                                   value-next-var
+                                   term-next-var
+                                   lambda-next-var
                                    channel
                                    state))
          (lambda-expr (msg "Acl2LambdaExpression.make(~@0, ~@1)"
                            formals-array-expr
                            body-expr))
          ((mv lambda-var
-              lambda-next-unused
-              lambda-next-undecl
+              lambda-next-var
               state) (atj-gen-set-var *atj-lambda-local-var*
                                       "Acl2LambdaExpression"
                                       lambda-expr
-                                      lambda-next-unused
-                                      lambda-next-undecl
+                                      lambda-next-var
                                       channel
                                       state)))
       (mv lambda-var
-          value-next-unused
-          value-next-undecl
-          term-next-unused
-          term-next-undecl
-          lambda-next-unused
-          lambda-next-undecl
+          value-next-var
+          term-next-var
+          lambda-next-var
           state)))
 
   (define atj-gen-term
     ((term pseudo-termp)
-     (value-next-unused
-      posp "Index of the next unused local variable for values.")
-     (value-next-undecl
-      posp "Index of the next undeclared local variable for values.")
-     (term-next-unused
-      posp "Index of the next unused local variable for terms.")
-     (term-next-undecl
-      posp "Index of the next undeclared local variable for terms.")
-     (lambda-next-unused
-      posp "Index of the next unused local variable for lambda expressions.")
-     (lambda-next-undecl
-      posp
-      "Index of the next undeclared local variable for lambda expressions.")
+     (value-next-var
+      posp "Index of the next local variable to use for values.")
+     (term-next-var
+      posp "Index of the next local variable to use for terms.")
+     (lambda-next-var
+      posp "Index of the next local variable to use for lambda expressions.")
      (channel symbolp "Output channel of the generated Java file.")
      state)
-    :guard (and (<= value-next-unused value-next-undecl)
-                (<= term-next-unused term-next-undecl)
-                (<= lambda-next-unused lambda-next-undecl))
     :returns (mv (java-expression "A @(tsee msgp).")
-                 (new-value-next-unused "A @(tsee posp).")
-                 (new-value-next-undecl "A @(tsee posp).")
-                 (new-term-next-unused "A @(tsee posp).")
-                 (new-term-next-undecl "A @(tsee posp).")
-                 (new-lambda-next-unused "A @(tsee posp).")
-                 (new-lambda-next-undecl "A @(tsee posp).")
+                 (new-value-next-var "A @(tsee posp).")
+                 (new-term-next-var "A @(tsee posp).")
+                 (new-lambda-next-var "A @(tsee posp).")
                  state)
     :mode :program
     :parents (atj-file-generation atj-gen-terms+lambdas)
     :short "Generate Java code to build an ACL2 term."
     (cond ((variablep term) (mv (atj-gen-variable-term term)
-                                value-next-unused
-                                value-next-undecl
-                                term-next-unused
-                                term-next-undecl
-                                lambda-next-unused
-                                lambda-next-undecl
+                                value-next-var
+                                term-next-var
+                                lambda-next-var
                                 state))
           ((fquotep term) (b* (((mv expr
-                                    value-next-unused
-                                    value-next-undecl
+                                    value-next-var
                                     state)
-                                (atj-gen-constant-term (unquote term)
-                                                       value-next-unused
-                                                       value-next-undecl
-                                                       channel
-                                                       state)))
+                                (atj-gen-qconstant-term (unquote term)
+                                                        value-next-var
+                                                        channel
+                                                        state)))
                             (mv expr
-                                value-next-unused
-                                value-next-undecl
-                                term-next-unused
-                                term-next-undecl
-                                lambda-next-unused
-                                lambda-next-undecl
+                                value-next-var
+                                term-next-var
+                                lambda-next-var
                                 state)))
           (t (atj-gen-application-term (ffn-symb term)
                                        (fargs term)
-                                       value-next-unused
-                                       value-next-undecl
-                                       term-next-unused
-                                       term-next-undecl
-                                       lambda-next-unused
-                                       lambda-next-undecl
+                                       value-next-var
+                                       term-next-var
+                                       lambda-next-var
                                        channel
                                        state))))
 
   (define atj-gen-terms
     ((terms pseudo-term-listp)
-     (value-next-unused
-      posp "Index of the next unused local variable for values.")
-     (value-next-undecl
-      posp "Index of the next undeclared local variable for values.")
-     (term-next-unused
-      posp "Index of the next unused local variable for terms.")
-     (term-next-undecl
-      posp "Index of the next undeclared local variable for terms.")
-     (lambda-next-unused
-      posp "Index of the next unused local variable for lambda expressions.")
-     (lambda-next-undecl
-      posp
-      "Index of the next undeclared local variable for lambda expressions.")
+     (value-next-var
+      posp "Index of the next local variable to use for values.")
+     (term-next-var
+      posp "Index of the next local variable to use for terms.")
+     (lambda-next-var
+      posp "Index of the next local variable to use for lambda expressions.")
      (channel symbolp "Output channel of the generated Java file.")
      state)
-    :guard (and (<= value-next-unused value-next-undecl)
-                (<= term-next-unused term-next-undecl)
-                (<= lambda-next-unused lambda-next-undecl))
     :returns (mv (java-expressions "A @(tsee msg-listp).")
-                 (new-value-next-unused "A @(tsee posp).")
-                 (new-value-next-undecl "A @(tsee posp).")
-                 (new-term-next-unused "A @(tsee posp).")
-                 (new-term-next-undecl "A @(tsee posp).")
-                 (new-lambda-next-unused "A @(tsee posp).")
-                 (new-lambda-next-undecl "A @(tsee posp).")
+                 (new-value-next-var "A @(tsee posp).")
+                 (new-term-next-var "A @(tsee posp).")
+                 (new-lambda-next-var "A @(tsee posp).")
                  state)
     :mode :program
     :parents (atj-file-generation atj-gen-terms+lambdas)
     :short "Generate Java code to build a sequence of ACL2 terms."
     (if (endp terms)
         (mv nil
-            value-next-unused
-            value-next-undecl
-            term-next-unused
-            term-next-undecl
-            lambda-next-unused
-            lambda-next-undecl
+            value-next-var
+            term-next-var
+            lambda-next-var
             state)
       (b* (((mv expr
-                value-next-unused
-                value-next-undecl
-                term-next-unused
-                term-next-undecl
-                lambda-next-unused
-                lambda-next-undecl
+                value-next-var
+                term-next-var
+                lambda-next-var
                 state) (atj-gen-term (car terms)
-                                     value-next-unused
-                                     value-next-undecl
-                                     term-next-unused
-                                     term-next-undecl
-                                     lambda-next-unused
-                                     lambda-next-undecl
+                                     value-next-var
+                                     term-next-var
+                                     lambda-next-var
                                      channel
                                      state))
            ((mv exprs
-                value-next-unused
-                value-next-undecl
-                term-next-unused
-                term-next-undecl
-                lambda-next-unused
-                lambda-next-undecl
+                value-next-var
+                term-next-var
+                lambda-next-var
                 state) (atj-gen-terms (cdr terms)
-                                      value-next-unused
-                                      value-next-undecl
-                                      term-next-unused
-                                      term-next-undecl
-                                      lambda-next-unused
-                                      lambda-next-undecl
+                                      value-next-var
+                                      term-next-var
+                                      lambda-next-var
                                       channel
                                       state)))
         (mv (cons expr exprs)
-            value-next-unused
-            value-next-undecl
-            term-next-unused
-            term-next-undecl
-            lambda-next-unused
-            lambda-next-undecl
+            value-next-var
+            term-next-var
+            lambda-next-var
             state)))))
 
 (define atj-gen-add-package-def-method-name ((pkg stringp))
@@ -1716,7 +1564,7 @@
      store the function's body into a local variable,
      and use these local variables to add the function's definition.")
    (xdoc::p
-    "The indices of the unused and undeclared local variables
+    "The indices of the next local variables
      to build the recursive structures
      (i.e. values, terms, and lambda expressions)
      are all reset to 1,
@@ -1741,8 +1589,8 @@
        (name-expr (atj-gen-symbol-value fn-to-translate))
        (formals-expr (atj-gen-formals-array formals))
        ((mv body-expr
-            & & & & & &
-            state) (atj-gen-term body 1 1 1 1 1 1 channel state))
+            & & &
+            state) (atj-gen-term body 1 1 1 channel state))
        ((mv & state) (fmt1! "~s0Acl2Symbol ~s1 = ~@2;~%"
                             (list (cons #\0 *atj-indent-2*)
                                   (cons #\1 *atj-name-local-var*)
@@ -2021,17 +1869,27 @@
    (fns-to-translate symbol-listp "Result of @(tsee atj-gather-info).")
    (verbose booleanp "Result of @(tsee atj-process-inputs).")
    state)
-  :returns state
+  :returns (mv (erp "Always @('nil').")
+               (val "Always @('nil').")
+               state)
   :mode :program
   :short "Generate the Java file."
-  (b* (((mv channel state) (open-output-channel! output-file :character state))
-       (state (atj-gen-file-header channel state))
-       (state (atj-gen-package-decl java-package channel state))
-       (state (atj-gen-import-decls channel state))
-       (state (atj-gen-class pkgs pkg-witness
-                             fns-to-translate java-class verbose channel state))
-       (state (close-output-channel channel state)))
-    state)
+  :long
+  (xdoc::topp
+   "We set the soft and hard right margins to very large values
+    to avoid line breaks in virtually all cases.
+    Setting these margins to ``infinity'' is not supported.")
+  (state-global-let*
+   ((acl2::fmt-soft-right-margin 100000 set-fmt-soft-right-margin)
+    (acl2::fmt-hard-right-margin 100000 set-fmt-hard-right-margin))
+   (b* (((mv channel state) (open-output-channel! output-file :character state))
+        (state (atj-gen-file-header channel state))
+        (state (atj-gen-package-decl java-package channel state))
+        (state (atj-gen-import-decls channel state))
+        (state (atj-gen-class pkgs pkg-witness fns-to-translate java-class
+                              verbose channel state))
+        (state (close-output-channel channel state)))
+     (value nil)))
   :prepwork ((defttag :open-input-channel)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2065,14 +1923,14 @@
                   pkg-witness
                   fns-to-translate)) (atj-gather-info
                                       targets verbose ctx state))
-       (state (atj-gen-file java-package
-                            java-class
-                            output-file
-                            pkgs
-                            pkg-witness
-                            fns-to-translate
-                            verbose
-                            state))
+       ((er &) (atj-gen-file java-package
+                             java-class
+                             output-file
+                             pkgs
+                             pkg-witness
+                             fns-to-translate
+                             verbose
+                             state))
        (- (cw "~%Generated Java file:~%  ~x0~%" output-file)))
     (value '(value-triple :invisible))))
 

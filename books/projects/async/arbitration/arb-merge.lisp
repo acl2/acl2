@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -24,13 +24,14 @@
 ;;;
 ;;; 1. DE Module Generator of ARB-MERGE
 ;;; 2. Specify and Prove a State Invariant
+;;; 3. Some Properties of ARB-MERGE
 
 ;; ======================================================================
 
 ;; 1. DE Module Generator of ARB-MERGE
 ;;
-;; Construct a DE module generator for first-come-first-served (FCFS)
-;; arbitrated merge modules using the link-joint model.  Prove the value and
+;; Construct a DE module generator for a first-come-first-served (FCFS)
+;; arbitrated merge model using the link-joint model.  Prove the value and
 ;; state lemmas for this module generator.
 
 ;; If two input sources are available at "approximately" the same time, the
@@ -38,7 +39,8 @@
 ;; merge will memorize this decision and use it as an indicator for servicing
 ;; the other source next.  Once the other source is serviced, the decision
 ;; information will be erased from the merge and the process will start over.
-;; In our modeling, we use an oracle signal to perform random selections.
+;; In our modeling, we use an oracle signal "select" to perform random
+;; selections when necessary.
 
 (defconst *arb-merge$select-num* 1)
 (defconst *arb-merge$go-num* 2)
@@ -138,7 +140,7 @@
         (si 'v-buf 2)
         '(excl-buf-out arb-buf-out)))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -374,10 +376,6 @@
     :hints (("Goal" :in-theory (enable arb-merge$data-out))))
   )
 
-;; Prove that ARB-MERGE is not a DE primitive.
-
-(not-primp-lemma arb-merge)
-
 ;; The value lemma for ARB-MERGE
 
 (defthm arb-merge$value
@@ -566,7 +564,9 @@
                             arb-merge$act1-inactive
                             arb-merge$act-inactive)))))
 
-;; Some properties of the ARB-MERGE's operation
+;; ======================================================================
+
+;; 3. Some Properties of ARB-MERGE
 
 (defthmd arb-merge$random-select
   (b* ((full-in0   (nth 0 inputs))

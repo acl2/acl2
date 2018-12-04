@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 ;; An n-bit, big-endian "greater than" comparator
 
@@ -25,7 +25,7 @@
    (neg (b~) b-not (b))
    (g (c) b-and3 (flag-in a b~))
    (h (ind-out) b-or (c ind-in)))
- :guard t)
+ (declare (xargs :guard t)))
 
 (defund 1-bit->$netlist ()
   (declare (xargs :guard t))
@@ -177,18 +177,18 @@
 
      (v->-body (1+ m) (1- n)))))
 
-(defun v->* (n)
-  (declare (xargs :guard (natp n)))
-  ;; n-bit wide input vectors
-  (list (si 'v-> n)
-        (append (sis 'a 0 n)
-                (sis 'b 0 n))
-        (list (si 'ind n))
-        ()
-        (list*
-         (list 'ind-in (list (si 'ind 0)) 'vss ())
-         (list 'flag-in (list (si 'flag 0)) 'vdd ())
-         (v->-body 0 n))))
+(module-generator
+ v->* (n)
+ (si 'v-> n)
+ (append (sis 'a 0 n)
+         (sis 'b 0 n))
+ (list (si 'ind n))
+ ()
+ (list*
+  (list 'ind-in (list (si 'ind 0)) 'vss ())
+  (list 'flag-in (list (si 'flag 0)) 'vdd ())
+  (v->-body 0 n))
+ (declare (xargs :guard (natp n))))
 
 (defund v->$netlist (n)
   (declare (xargs :guard (natp n)))
@@ -266,8 +266,6 @@
                     (assoc-eq-values (sis 'a 0 n) wire-alist)
                     (assoc-eq-values (sis 'b 0 n) wire-alist))))))
 
-(not-primp-lemma v->)
-
 (defthm v->$value
   (implies (and (v->& netlist n)
                 (natp n)
@@ -284,6 +282,7 @@
            :expand (:free (inputs n)
                           (se (si 'v-> n) inputs sts netlist))
            :in-theory (e/d* (de-rules
-                             v->&)
+                             v->&
+                             v->*$destructure)
                             (de-module-disabled-rules)))))
 

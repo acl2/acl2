@@ -12,6 +12,7 @@
 
 (include-book "utilities/top")
 
+(include-book "common-concepts")
 (include-book "common-options-reference")
 
 (include-book "restrict")

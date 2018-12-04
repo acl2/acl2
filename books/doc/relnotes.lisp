@@ -104,6 +104,21 @@
 
  <h3>New Libraries</h3>
 
+ <h4>Declarative Definitions of Maxima</h4>
+
+ <p>Added a macro @(tsee defmax-nat) to declaratively define the maximum of a
+ set of natural numbers.</p>
+
+ <h4>Graphviz</h4>
+
+ <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
+ for the Graphviz @('.dot') file syntax and a printer for that syntax.</p>
+
+ <h4><see topic='@(url irv::instant-runoff-voting)'>Instant Run-Off Voting</see></h4>
+
+ <p>Formalized an instant run-off voting scheme and proved that it
+ meets certain fairness criteria.</p>
+
  <h4><see topic='@(url java::java)'>Java</see></h4>
 
  <p>Added a library for Java-related formalizations and tools, including:</p>
@@ -121,17 +136,112 @@
 
  </ul>
 
- <h4><see topic='@(url irv::instant-runoff-voting)'>Instant Run-Off Voting</see></h4>
-
- <p>Formalized an instant run-off voting scheme and proved that it
- meets certain fairness criteria.</p>
-
- <h4>Other</h4>
-
- <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
- for the Graphviz @('.dot') file syntax and a printer for that syntax.</p>
-
  <h3>Changes to Existing Libraries</h3>
+
+ <h4><see topic='@(url apt::apt)'>APT</see></h4>
+
+ <p>Slightly extended the applicability of the @(tsee apt::tailrec)
+ transformation, by relaxing a requirement on the function to be
+ transformed.</p>
+
+ <p>Improved and extended some documentation.</p>
+
+ <p>Added XDOC constructor utilities tailored to APT transformations.</p>
+
+ <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
+
+ <p>Improved the documentation of the Bitcoin library.</p>
+
+ <h4>Digits in Arbitrary Bases</h4>
+
+ <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
+ moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
+ and renamed.  Some files have been refactored into smaller files.  The macro
+ to generate additional return types for conversions from natural numbers to
+ digits has been generalized and renamed.</p>
+
+ <h4><see topic='@(url rstobj::defrstobj)'>defrstobj</see></h4>
+
+ <p>Added support for defining universal accessor and updater functions.</p>
+
+ <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
+
+ <p>Added more error-checking functions.</p>
+
+ <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
+
+ <p>Improved the documentation.</p>
+
+ <p>Improved several names by using @('byte') instead of @('ubyte8') and
+ @('nibble') instead of @('ubyte4').</p>
+
+ <h4>Filesystem Books</h4>
+
+ <p>The filesystem books @('[books]/projects/filesystems/') have been
+ substantially expanded; in particular, they now contain a new model which
+ faithfully represents the state of a FAT32 disk image. More details about this
+ work are available in the paper <i>Formalising Filesystems in the ACL2 Theorem
+ Prover: an Application to FAT32</i>, to appear in the proceedings of
+ ACL2-2018.</p>
+
+ <h4>FTY Type Definition Library</h4>
+
+ <p>Added an option @(':non-emptyp') to @('fty::deflist') and @('std::deflist')
+ to define list types that must contain at least one element.</p>
+
+ <p>Added a book @('[books]/centaur/fty/typegraph.lisp') containing a utility that
+ writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
+
+ <h4>FTY Types for Bytes</h4>
+
+ <p>The @('acl2::defbyte') macro, which generated fixtypes and additional
+ theorems for both bytes and lists of bytes, has been split into two macros
+ @(tsee fty::defbyte), which generates a fixtype and some additional theorems
+ for bytes, and @(tsee fty::defbytelist), which generates a fixtype and some
+ additional theorems for lists of byte.  See the documentation for details.</p>
+
+ <h4><see topic='@(url list-utilities)'>List Utilities</see></h4>
+
+ <p>Added some theorems about functions on lists.</p>
+
+ <h4>@(csee std/io)</h4>
+
+ <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
+ byte-combining libraries</see>.</p>
+
+ <h4>@(csee std/lists)</h4>
+
+ <p>The definition of function @(see list-fix) from
+ @('\"books/std/lists/list-fix.lisp\"') has been incorporated into the ACL2
+ sources in a way that minimizes changes to existing books.  See @(see
+ note-8-2) for details.</p>
+
+ <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
+
+ <p>Added new lemmas and generalized some existing lemmas.</p>
+
+ <h4>System Utilities</h4>
+
+ <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
+ inside @('lambda') (@('let')) bodies.</p>
+
+ <p>Several files @('[books]/kestrel/utilities/*.lisp') that contain system
+ utilities have been moved to the subdirectory
+ @('[books]/kestrel/utilities/system/').</p>
+
+ <p>The utility, @(tsee directed-untranslate), has been improved in several
+ ways, including more complete handling of @(tsee mv-let), @(tsee let*), @(tsee
+ b*), @(tsee progn$), @(tsee er), @(tsee cw), and @(tsee mbe).</p>
+
+ <p>For the event macro @(tsee orelse*), the default for the @(':expansion?p')
+ argument has been changed from @('nil') to @('t'), for consistency with @(tsee
+ orelse).</p>
+
+ <h4>Typed List Utilities</h4>
+
+ <p>Refactored the old file
+ @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
+ under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
 
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
@@ -146,90 +256,9 @@
  only lets us catch exceptions early, but also allows us to specify them
  even if the semantic functions themselves are missing.</p>
 
- <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
-
- <p>Improved the documentation.</p>
-
- <p>Improved several names by using @('byte') instead of @('ubyte8') and
- @('nibble') instead of @('ubyte4').</p>
-
- <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
-
- <p>Improved the documentation of the Bitcoin library.</p>
-
- <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
-
- <p>Added @(tsee ensure-string), an error-checking function for strings.</p>
-
- <h4>Filesystem Books</h4>
-
- <p>The filesystem books @('[books]/projects/filesystems/') have been
- substantially expanded; in particular, they now contain a new model which
- faithfully represents the state of a FAT32 disk image. More details about this
- work are available in the paper <i>Formalising Filesystems in the ACL2 Theorem
- Prover: an Application to FAT32</i>, to appear in the proceedings of
- ACL2-2018.</p>
-
- <h4>System Utilities</h4>
-
- <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
- inside @('lambda') (@('let')) bodies.</p>
-
- <p>Several files @('[books]/kestrel/utilities/*.lisp') that contain system
- utilities have been moved to the subdirectory
- @('[books]/kestrel/utilities/system/').</p>
-
- <h4>Typed List Utilities</h4>
-
- <p>Refactored the old file
- @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
- under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
-
- <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
-
- <p>Added new lemmas and generalized some existing lemmas.</p>
-
- <h4>@(csee std/io)</h4>
-
- <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
- byte-combining libraries</see>.</p>
-
- <h4>Digits in Arbitrary Bases</h4>
-
- <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
- moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
- and renamed.  Some files have been refactored into smaller files.  The macro
- to generate additional return types for conversions from natural numbers to
- digits has been generalized and renamed.</p>
-
- <h4>FTY Type Definition Library</h4>
-
- <p>Added an option @(':non-emptyp') to @('fty::deflist') and @('std::deflist')
- to define list types that must contain at least one element.</p>
-
- <p>Added a book @('[books]/centaur/fty/typegraph.lisp') containing a utility that
- writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
-
- <h4>Other</h4>
-
- <p>The utility, @(tsee directed-untranslate), has been improved in several
- ways, including more complete handling of @(tsee mv-let), @(tsee let*), @(tsee
- b*), @(tsee progn$), @(tsee er), @(tsee cw), and @(tsee mbe).</p>
-
- <p>For the event macro @(tsee orelse*), the default for the @(':expansion?p')
- argument has been changed from @('nil') to @('t'), for consistency with @(tsee
- orelse).</p>
-
- <p>The definition of function @(see list-fix) from
- @('\"books/std/lists/list-fix.lisp\"') has been incorporated into the ACL2
- sources in a way that minimizes changes to existing books.  See @(see
- note-8-2) for details.</p>
-
- <p>The @('acl2::defbyte') macro, which generated fixtypes and additional
- theorems for both bytes and lists of bytes, has been split into two macros
- @(tsee fty::defbyte), which generates a fixtype and some additional theorems
- for bytes, and @(tsee fty::defbytelist), which generates a fixtype and some
- additional theorems for lists of byte.  See the documentation for details.</p>
+ <p>Improved incrementing and decrementing of the stack pointer to be modular:
+ 64, 32, or 16 bits, based on the current mode and on the SS.B bit of the
+ current stack segment.</p>
 
  <h3>Licensing Changes</h3>
 

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -70,23 +70,20 @@
                     (si 'tv-if (tree-number (cdr tree)))
                     (cons c-name (append right-a-names right-b-names)))))))))))
 
-(destructuring-lemma
+(module-generator
  tv-if* (tree)
- (declare (xargs :guard (listp tree)))
- ;; Bindings
- ((a-names (sis 'a 0 (tree-size tree)))
-  (b-names (sis 'b 0 (tree-size tree)))
-  (out-names (sis 'out 0 (tree-size tree))))
  ;; Name
  (si 'tv-if (tree-number tree))
  ;; Inputs
- (cons 'c (append a-names b-names))
+ (cons 'c (append (sis 'a 0 (tree-size tree))
+                  (sis 'b 0 (tree-size tree))))
  ;; Outputs
- out-names
+ (sis 'out 0 (tree-size tree))
  ;; States
  nil
  ;; Occurrences
- (tv-if-body tree))
+ (tv-if-body tree)
+ (declare (xargs :guard (listp tree))))
 
 (defund tv-if$netlist (tree)
   (declare (xargs :guard (tv-guard tree)))
@@ -218,8 +215,6 @@
                                            (pairlis$ (take i keys)
                                                      y)
                                            z)))))))
-
-(not-primp-lemma tv-if)
 
 (defthm tv-if$value
   (implies (and (tv-if& netlist tree)

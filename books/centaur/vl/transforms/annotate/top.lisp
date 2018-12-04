@@ -40,6 +40,7 @@
 (include-book "basicsanity")
 (include-book "increment-elim")
 (include-book "../../util/cwtime")
+(include-book "../../simpconfig")
 
 (defsection annotate
   :parents (transforms)
@@ -61,7 +62,8 @@ first step in any VL-based tool.</p>"
 
 (define vl-annotate-design
   :short "Top level @(see annotate) transform."
-  ((design vl-design-p))
+  ((design vl-design-p)
+   (config vl-simpconfig-p))
   :returns (new-design vl-design-p)
   (b* ((design (xf-cwtime (vl-design-resolve-ansi-portdecls design)))
        (design (xf-cwtime (vl-design-resolve-nonansi-interfaceports design)))
@@ -72,12 +74,15 @@ first step in any VL-based tool.</p>"
        (design (xf-cwtime (vl-design-udp-elim design)))
        (design (xf-cwtime (vl-design-basicsanity design)))
        (design (xf-cwtime (vl-design-increment-elim design)))
-       (design (xf-cwtime (vl-design-argresolve design)))
+       (design (if (vl-simpconfig->defer-argresolve config)
+                   design
+                 (xf-cwtime (vl-design-argresolve design))))
        (design (xf-cwtime (vl-design-type-disambiguate design))))
     design))
 
 (define vl-annotate-module ((x vl-module-p)
-                            (design vl-design-p))
+                            (design vl-design-p)
+                            (config vl-simpconfig-p))
   :returns (new-x vl-module-p)
   (b* ((ss (vl-scopestack-init (vl-design-fix design)))
        (x (vl-module-resolve-ansi-portdecls x ss))
@@ -89,7 +94,9 @@ first step in any VL-based tool.</p>"
        (x (vl-module-basicsanity x))
        (x (vl-module-increwrite x))
        (x (vl-module-prohibit-incexprs x))
-       (x (vl-module-argresolve x ss))
+       (x (if (vl-simpconfig->defer-argresolve config)
+              x
+            (vl-module-argresolve x ss)))
        ((mv warnings x) (vl-module-type-disambiguate x ss)))
     (change-vl-module x :warnings (append-without-guard warnings (vl-module->warnings x)))))
 

@@ -27,6 +27,8 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Shilpi Goel <shilpi@centtech.com>: added support for optional universal 
+;                                    accessor and updater functions
 
 (in-package "RSTOBJ")
 (include-book "def-typed-record")
@@ -80,6 +82,12 @@ This should be a term mentioning @('acl2::x').</li>
 <li>Array fields require an additional @(':typed-record') argument that names
 recognizer function for a typed record; see @(see def-typed-record).</li>
 
+<li>Optionally, you can have @('defrstobj') define a universal
+accessor and a universal updater function using keywords
+@(':accessor') and @(':updater') respectively.  These functions can
+come in handy when using
+@('[books]/std/stobjs/updater-independence').</li>
+
 </ul>
 
 <p>Example:</p>
@@ -99,14 +107,66 @@ recognizer function for a typed record; see @(see def-typed-record).</li>
 
       (mem  :type (array (unsigned-byte 8) (*mem-size*))
             :initially 0
-            :typed-record u8-tr-p)
+            :typed-record u8-tr-p)         
 
-      :inline t)
+      :inline t
+      ;; [Optional] Universal accessor and updater functions
+      :accessor sr 
+      :updater sw)
 })
 
 <p>See also @('centaur/defrstobj/basic-tests.lisp') for several more examples,
 including examples of how to use @('def-typed-record').</p>
 
+<h4>Working with Universal Accessor and Updater Functions</h4>
+
+<p>The universal accessor and updater functions have the following
+signature:</p>
+
+<code>
+(sr field index stobj)       -&gt; value
+(sw field index value stobj) -&gt; new-stobj
+</code>
+
+<p>where @('field') is a keyword corresponding to a stobj field (e.g.,
+@(':mem') in the above example).  Their definition is pretty straightforward
+--- depending on the @('field'), the appropriate accessor/updater (e.g.,
+@('get-mem/set-mem')) is called.  However, due to the case-split on @('field'),
+these two functions would be expensive for execution, so we've made them
+non-executable.</p>
+
+<p>In addition to these two functions, we also provide top-level field
+accessors and updaters (e.g., @('@mem/!mem') for the @('mem') field above)
+which have an @(see acl2::mbe) --- the @(':logic') definition is in terms of
+the universal accessor or updater, and the @(':exec') definition is the stobj
+field accessor or updater (e.g., @('get-mem/set-mem')).  These top-level field
+accessors and updaters are inlined for execution performance.</p>
+
+<p>We recommend the following strategy when working with the universal accessor
+and updater functions.  You probably want all your theorems to be in terms of
+the two universal accessor/updater functions.  Keep the top-level field
+accessors/updaters enabled --- you probably want to use them in functions you
+define on top of the stobj so that you get the performance of the underlying
+concrete stobj while you reason about the universal accessor/updater
+functions.</p>
+
+<p>In addition to facilitating use with
+@('stobjs::stobj-updater-independence'), a benefit of this strategy is
+that it can reduce the term size during reasoning.  E.g., writing
+@('v') to the @('i')th location of the @('mem') field using
+@('set-mem') (which is enabled by default) would look like the
+following:</p>
+
+<code>
+(s :mem (u8-tr-set i v (g :mem st)) st)
+</code>
+
+<p>When using the universal accessor/updater functions, it'll look like the
+following:</p>
+
+<code>
+(sw :mem i v st)
+</code>
 
 <h3>Notes</h3>
 
@@ -688,17 +748,232 @@ records book.  See @(see def-typed-record).</p>")
           congruent-to
           non-memoizable)))
 
+;; [Shilpi] Added support for (optional) top-level accessor/updater functions.
+
+(defun make-val-fixing-fn (ftas tr-table)
+  (declare (xargs :mode :program))
+  (b* (((when (atom ftas))
+        `((otherwise nil)))
+       (fta (car ftas))
+       (rest (make-val-fixing-fn (cdr ftas) tr-table))
+       (field-key (cdr (assoc :field-key fta)))
+       (fix (cdr (assoc :fix fta)))
+       (typed-rec (cdr (assoc :typed-record fta)))
+       ((when (and (not fix) (not typed-rec)))
+        ;; Fields of type T.
+        (cons `(,field-key x) rest))
+       ((when fix) ;; scalar field
+        (cons `(,field-key ,fix) rest))
+       ((unless typed-rec)
+        (er hard? 'make-val-fixing-fn
+            "make-val-fixing-fn: Expected a typed record for field: ~x0."
+            field-key))
+       (tr-fix
+        (third ;; Remove (lambda (x) ???) to get just the ??? form.
+         (second (assoc 'elem-fix
+                        (cdr (assoc :fi-pairs (cdr (assoc typed-rec tr-table)))))))))
+    (cons
+     `(,field-key ,tr-fix)
+     rest)))
+
+(defun top-level-getter-fns (name ftas mksym-pkg)
+  (declare (xargs :mode :program))
+  (b* (((when (atom ftas))
+        `((otherwise nil)))
+       (fta (car ftas))
+       (rest (top-level-getter-fns name (cdr ftas) mksym-pkg))
+       (field-key (cdr (assoc :field-key fta)))
+       (accessor (cdr (assoc :accessor-name fta)))
+       ((unless (cdr (assoc :size-key fta))) ;; continue if scalar
+        (append
+         `((,field-key (,accessor ,name)))
+         rest))
+       (index (mksym 'index)))
+    (append
+     `((,field-key (,accessor ,index ,name)))
+     rest)))
+
+(defun top-level-setter-fns (name ftas mksym-pkg)
+  (declare (xargs :mode :program))
+  (b* (((when (atom ftas))
+        `((otherwise ,name)))
+       (fta (car ftas))
+       (rest (top-level-setter-fns name (cdr ftas) mksym-pkg))
+       (field-key (cdr (assoc :field-key fta)))
+       (updater (cdr (assoc :updater-name fta)))
+       (value (mksym 'value))
+       ((unless (cdr (assoc :size-key fta))) ;; continue if scalar
+        (append
+         `((,field-key (,updater ,value ,name)))
+         rest))
+       (index (mksym 'index)))
+    (append
+     `((,field-key (,updater ,index ,value ,name)))
+     rest)))
+
+(defun guards-for-top-level-acc/upd (name setter/getter ftas mksym-pkg w)
+  (declare (xargs :mode :program))
+  (b* (((when (atom ftas))
+        `((otherwise t)))
+       (fta (car ftas))
+       (rest (guards-for-top-level-acc/upd name setter/getter (cdr ftas) mksym-pkg w))
+       (field (cdr (assoc :field-name fta)))
+       (type (cdr (assoc-equal :type fta)))
+       (field-key (cdr (assoc :field-key fta)))
+       (value (mksym 'value))
+       ((unless (cdr (assoc :size-key fta))) ;; scalar
+        (if (eq setter/getter :setter)
+            (b* ((recog (acl2::translate-declaration-to-guard
+                         type value w))
+                 ((unless (eq type 'T))
+                  ;; Fields with type T needn't be considered.
+                  (append `((,field-key ,recog)) rest)))
+              rest)
+          rest))
+       ((unless (and (eq (len type) 3)
+                     (consp (third type))))
+        (er hard? 'guards-for-top-level-acc/upd
+            "~% Expected an array declaration for ~p0, but got ~p1 instead."
+            field type))
+       (value-recog (acl2::translate-declaration-to-guard (second type) value w))
+       (len `(,(cdr (assoc :length-name fta)) ,name))
+       (index (mksym 'index))
+       (index-recog `(and (natp ,index)
+                          (< ,index ,len))))
+    (if (eq setter/getter :setter)
+        (append `((,field-key (and ,value-recog ,index-recog))) rest)
+      (append `((,field-key ,index-recog)) rest))))
+
+(defun mbe-accessor/updater-functions-aux (stname fta sr sw tr-table w mksym-pkg)
+  (declare (xargs :mode :program))
+  (b* ((size      (cdr (assoc :size-key fta)))
+       (field     (cdr (assoc :field-name fta)))
+       (key       (cdr (assoc :field-key fta)))
+       (type      (cdr (assoc :type fta)))
+       (accessor  (cdr (assoc :accessor-name fta)))
+       (updater   (cdr (assoc :updater-name fta)))
+       (acc       (mksym '@ field))
+       (upd       (mksym '! field))
+       (vvar      (mksym 'v))
+
+       ((unless size)
+        ;; scalar -- just getter and setter
+        (b* ((guard (acl2::translate-declaration-to-guard type vvar w))
+             (acc-concl
+              (acl2::translate-declaration-to-guard
+               type
+               `(,sr ,key nil ,stname)
+               w)))
+          `((defun-inline ,acc (,stname)
+              (declare (xargs :guard t
+                              :stobjs ,stname))
+              (mbe :logic (,sr ,key nil ,stname)
+                   :exec  (,accessor ,stname)))
+            ,@(if (equal type 'T)
+                  `()
+                `((defthm ,(mksym sr '- field '-well-formed-value)
+                    ,acc-concl)))
+            (defun-inline ,upd (,vvar ,stname)
+              (declare (xargs :guard ,guard
+                              :stobjs ,stname))
+              ;; fix is nil for fields of type 'T.
+              (mbe :logic (,sw ,key nil ,vvar ,stname)
+                   :exec  (,updater ,vvar ,stname))))))
+
+       ;; ((unless (and (eq (len type) 3)
+       ;;               (consp (third type))))
+       ;;  (er hard? 'mbe-accessor/updater-functions-aux
+       ;;      "~% Expected an array declaration for ~p0, but got ~p1 instead."
+       ;;      field type))
+       ;; (acc-concl
+       ;;  (acl2::translate-declaration-to-guard
+       ;;   (second type)
+       ;;   `(,sr ,key ,ivar ,stname)
+       ;;   w))
+       (typed-rec (cdr (assoc :typed-record fta)))
+       (tr-entry (cdr (assoc typed-rec tr-table)))
+       ((unless tr-entry)
+        (er hard? 'make-fta
+            "Field ~x0 is supposed to be a ~x1 typed record, but this ~
+                     doesn't appear to be a typed record: it must have an ~
+                     entry in the ~x2 table.  (Typically the name ends in ~
+                     -TR-P.)"
+            field typed-rec 'typed-records))
+       (tr-fi-pairs (cdr (assoc :fi-pairs tr-entry)))
+       (elem-p-recog (third (cadr (assoc 'elem-p tr-fi-pairs))))
+       (old-var
+        ;; Usually 'x, but might as well get it from the lambda.
+        (car (second (cadr (assoc 'elem-p tr-fi-pairs)))))
+       (ivar      (mksym 'i))
+       (acc-concl (subst `(,sr ,key ,ivar ,stname) old-var elem-p-recog))       
+       (length    (cdr (assoc :length-name fta)))
+       (guard     (acl2::translate-declaration-to-guard
+                   (second type) vvar w)))
+
+    `((defun-inline ,acc (,ivar ,stname)
+        (declare (xargs :stobjs ,stname
+                        :guard (and (natp ,ivar)
+                                    (< ,ivar (,length ,stname)))))
+        (mbe :logic (,sr ,key ,ivar ,stname)
+             :exec  (,accessor ,ivar ,stname)))
+      (defthm ,(mksym sr '- field '-well-formed-value)
+        ,acc-concl)
+      (defun-inline ,upd (,ivar ,vvar ,stname)
+        (declare (xargs :stobjs ,stname
+                        :guard (and (natp ,ivar)
+                                    (< ,ivar (,length ,stname))
+                                    ,guard)))
+        (mbe :logic (,sw ,key ,ivar ,vvar ,stname)
+             :exec  (,updater ,ivar ,vvar ,stname))))))
+
+(defun mbe-accessor/updater-functions (stname ftas sr sw tr-table w mksym-pkg)
+  (declare (xargs :mode :program))
+  (if (atom ftas)
+      nil
+    (append (mbe-accessor/updater-functions-aux
+             stname (car ftas) sr sw tr-table w mksym-pkg)
+            (mbe-accessor/updater-functions
+             stname (cdr ftas) sr sw tr-table w mksym-pkg))))
+
+(defun make-array-fields-kwd-list (ftas)
+  (declare (xargs :mode :program))
+  (b* (((when (atom ftas)) nil)
+       (fta (car ftas))
+       (rest (make-array-fields-kwd-list (cdr ftas)))
+       (field-key (cdr (assoc :field-key fta)))
+       ((when (cdr (assoc :size-key fta))) ;; array field
+        (cons field-key rest)))
+    rest))
+
+(defconst *defrstobj-keywords*
+  (append acl2::*defstobj-keywords*
+          (list :accessor ;; Top-level accessor
+                :updater  ;; Top-level updater
+                )))
+
 (defun defrstobj-fn (name args wrld)
   (declare (ignorable wrld)
            (xargs :mode :program))
   (b* ((mksym-pkg     name)
 
        ((mv erp rsfs st-kw-alist)
-        (partition-rest-and-keyword-args args *defstobj-keywords*))
+        (partition-rest-and-keyword-args args *defrstobj-keywords*))
        (- (or (not erp)
               (er hard? 'defrstobj-fn "Invalid DEFRSTOBJ syntax for ~x0." name)))
        (- (or (consp rsfs)
               (er hard? 'defrstobj-fn "Expected at least one field for ~x0." name)))
+       ((mv sr sw st-kw-alist)
+        ;; sr: state read
+        ;; sw: state write
+        (let* ((sr-pair (assoc-equal :accessor st-kw-alist))
+               (sw-pair (assoc-equal :updater st-kw-alist)))
+          (if (and sr-pair sw-pair)
+              (mv (cdr sr-pair)
+                  (cdr sw-pair)
+                  (delete-assoc-equal
+                   :updater
+                   (delete-assoc-equal :accessor st-kw-alist)))
+            (mv nil nil st-kw-alist))))
 
        (tr-alist      (tr-alist rsfs))
        (fix-alist     (fix-alist rsfs))
@@ -723,7 +998,9 @@ records book.  See @(see def-typed-record).</p>")
        (recog         (mksym name 'p))
        (recog$a       (mksym recog '$a))
        (create        (mksym 'create- name))
-       (create$a      (mksym create '$a)))
+       (create$a      (mksym create '$a))
+       (valfix        (mksym name '- 'valfix))
+       (array-fields-kwd-lst (make-array-fields-kwd-list ftas)))
 
     `(with-output
        :off (event acl2::prove)
@@ -1146,12 +1423,106 @@ records book.  See @(see def-typed-record).</p>")
            :recognizer (,recog :logic ,recog$a :exec ,recog$c)
            :exports
            ,(absstobj-exports ftas mksym-pkg))
-         ))))
+
+         ;; For the accessor/updater functions:
+
+         ,@(and sr sw
+                (b* ((fld (mksym 'fld))
+                     (fld1 (mksym 'fld1))
+                     (fld2 (mksym 'fld2))
+                     (index (mksym 'index))
+                     (value (mksym 'value))
+                     (i (mksym 'i))
+                     (j (mksym 'j))
+                     (v (mksym 'v))
+                     (x (mksym 'x))
+                     (i1 (mksym 'i1))
+                     (v1 (mksym 'v1))
+                     (i2 (mksym 'i2))
+                     (v2 (mksym 'v2))
+                     (st (mksym 'st)))
+
+                  `((progn
+
+                      (defun ,(mksym name '- 'valfix) (,fld ,x)
+                        (case ,fld
+                          ,@(make-val-fixing-fn ftas tr-table)))
+
+                      (defun-nx ,sr (,fld ,index ,name)
+                        (declare (xargs
+                                  :stobjs ,name
+                                  :guard (case ,fld
+                                           ,@(guards-for-top-level-acc/upd
+                                              name :getter ftas mksym-pkg wrld))))
+                        (case ,fld
+                          ,@(top-level-getter-fns name ftas mksym-pkg)))
+
+                      (defun-nx ,sw (,fld ,index ,value ,name)
+                        (declare (xargs :stobjs ,name
+                                        :guard (case ,fld
+                                                 ,@(guards-for-top-level-acc/upd
+                                                    name :setter ftas mksym-pkg wrld))))
+                        (case ,fld
+                          ,@(top-level-setter-fns name ftas mksym-pkg)))
+
+                      ;; Preservation Theorem
+                      (defthm ,(mksym recog '-of- sw)
+                        (,recog (,sw ,fld ,index ,value ,st)))
+
+                      (local (in-theory (e/d (acl2::g-same-s
+                                              acl2::g-diff-s
+                                              acl2::g-of-s-redux
+                                              acl2::s-same-g
+                                              acl2::s-same-s
+                                              acl2::s-diff-s)
+                                             ())))
+
+                      ;; RoW Theorems
+                      (defthm ,(mksym sr '- sw '-intra-field)
+                        (equal (,sr ,fld ,i (,sw ,fld ,j ,v ,st))
+                               (if (member ,fld ',array-fields-kwd-lst)
+                                   (if (equal ,i ,j)
+                                       (,valfix ,fld ,v)
+                                     (,sr ,fld ,i ,st))
+                                 (,valfix ,fld ,v)))
+                        :hints (("Goal" :in-theory (e/d (member) ()))))
+
+                      (defthm ,(mksym sr '- sw '-inter-field)
+                        (implies (case-split (not (equal ,fld1 ,fld2)))
+                                 (equal (,sr ,fld2 ,i2 (,sw ,fld1 ,i1 ,v ,st))
+                                        (,sr ,fld2 ,i2 ,st))))
+
+                      ;; WoW Theorems:
+                      (defthm ,(mksym sw '- sw '-shadow-writes)
+                        (equal (,sw ,fld ,i ,v2 (,sw ,fld ,i ,v1 ,st))
+                               (,sw ,fld ,i ,v2 ,st))
+                        :hints (("Goal" :in-theory (e/d (member) ()))))
+
+                      (defthm ,(mksym sw '- sw '-intra-field-arrange-writes)
+                        (implies (and (member ,fld ',array-fields-kwd-lst)
+                                      (not (equal ,i1 ,i2)))
+                                 (equal (,sw ,fld ,i2 ,v2 (,sw ,fld ,i1 ,v1 ,st))
+                                        (,sw ,fld ,i1 ,v1 (,sw ,fld ,i2 ,v2 ,st))))
+                        :hints (("Goal" :in-theory (e/d (member) ())))
+                        :rule-classes ((:rewrite :loop-stopper ((,i2 ,i1)))))
+
+                      (defthm ,(mksym sw '- sw '-inter-field-arrange-writes)
+                        (implies (not (equal ,fld1 ,fld2))
+                                 (equal (,sw ,fld2 ,i2 ,v2 (,sw ,fld1 ,i1 ,v1 ,st))
+                                        (,sw ,fld1 ,i1 ,v1 (,sw ,fld2 ,i2 ,v2 ,st))))
+                        :rule-classes ((:rewrite :loop-stopper ((,fld2 ,fld1)))))
+
+                      ;; From now on, use functions SR and SW for reasoning instead of
+                      ;; get-* and set-*.
+
+                      ,@(mbe-accessor/updater-functions
+                         name ftas sr sw tr-table wrld mksym-pkg)
+
+                      (in-theory (e/d () (,sr ,sw)))))))))))
 
 (defmacro defrstobj (name &rest args)
   `(make-event
     (defrstobj-fn ',name ',args (w state))))
-
 
 (logic)
 (local
@@ -1210,5 +1581,7 @@ records book.  See @(see def-typed-record).</p>")
 
      (natfld :type (integer 0 *)
              :initially 0
-             :fix (nonneg-fix x)))))
+             :fix (nonneg-fix x))
 
+     :accessor read-st
+     :updater  write-st)))

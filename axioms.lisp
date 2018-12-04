@@ -1581,8 +1581,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro defun-overrides (name formals &rest rest)
 
 ; This defines the function symbol, name, in raw Lisp.  Name should include
-; STATE as a formal, have a guard of t and should have *unknown-constraints*.
-; We push name onto *defun-overrides* so that add-trip knows to leave the *1*
+; STATE as a formal, have a guard of t and should have unknown-constraints.  We
+; push name onto *defun-overrides* so that add-trip knows to leave the *1*
 ; definition in place.
 
 ; Warning: The generated definitions will replace both the raw Lisp and *1*
@@ -3969,21 +3969,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun synp (vars form term)
 
-; Top-level calls of this function in the hypothesis of a linear or
-; rewrite rule are given special treatment when relieving the rule's
-; hypotheses.  (When the rule class gives such special treatment, it
-; is an error to use synp in other than at the top-level.)  The
-; special treatment is as follows.  Term is evaluated, binding state
-; to the live state and mfc to the current metafunction context, as
-; with meta rules.  The result of this evaluation should be either t,
-; nil, or an alist binding variables to terms, else we get a hard
-; error.  Moreover, if we get an alist then either (1) vars should be
-; t, representing the set of all possible vars, and none of the keys
-; in the alist should already be bound; or else (2) vars should be of
-; the form (var1 ... vark), the keys of alist should all be among the
-; vari, and none of vari should already be bound (actually this is
-; checked when the rule is submitted) -- otherwise we get a hard
-; error.
+; Top-level calls of this function in the hypothesis of a linear or rewrite
+; rule on quoted arguments are given special treatment when relieving the
+; rule's hypotheses.  (When the rule class gives such special treatment, it is
+; an error to use synp in other than at the top-level.)  The special treatment
+; is as follows.  Term is evaluated, binding state to the live state and mfc to
+; the current metafunction context, as with meta rules.  The result of this
+; evaluation should be either t, nil, or an alist binding variables to terms,
+; else we get a hard error.  Moreover, if we get an alist then either (1) vars
+; should be t, representing the set of all possible vars, and none of the keys
+; in the alist should already be bound; or else (2) vars should be of the form
+; (var1 ... vark), the keys of alist should all be among the vari, and none of
+; vari should already be bound (actually this is checked when the rule is
+; submitted) -- otherwise we get a hard error.
 
 ; As of Version_2.7 there are two macros that expand into calls to synp:
 
@@ -3995,9 +3993,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;      `(synp (quote ,vars) (quote (bind-free ,form ,vars)) (quote ,form))
 ;    `(synp (quote t) (quote (bind-free ,form)) (quote ,form))))
 
-; Warning: This function must be defined to always return t in order
-; for our treatment of it (in particular, in translate) to be sound.
-; The special treatment referred to above happens within relieve-hyp.
+; Warning: This function must be defined to always return t in order for our
+; treatment of it (in particular, in translate) to be sound.  The special
+; treatment referred to above happens within relieve-hyp.
 
   (declare (xargs :mode :logic :guard t)
            (ignore vars form term))
@@ -6954,7 +6952,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((and (consp x)               ; (>= (len x) 3)
               (consp (cdr x))
               (consp (cddr x)))
-         (cond ((atom (cdddr x))      ; (= (len x) 3) 
+         (cond ((atom (cdddr x))      ; (= (len x) 3)
                 (if (null (cdddr x)) (caddr x) nil))
                ((null (cddddr x))     ; (= (len x) 4)
                 (cadddr x))
@@ -9254,6 +9252,38 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         'state
         (list 'quote event-form)))
 
+(defmacro partial-encapsulate (sigs supporters &rest cmd-lst)
+
+; We considered instead allowing an event like (make-unknown-constraint fn),
+; rather than providing partial-encapsulate as an interface to encapsulate with
+; an invocation of set-unknown-constraints-supporters.  But that would make it
+; too easy for users to introduce unsoundness with trust tags (always a
+; possibility, but as a courtesy we'd like to encourage sound use of trust
+; tags!).  Consider for example this book.
+
+;   (in-package "ACL2")
+;   (defstub f (x) t)
+;   (local (make-unknown-constraint f))
+;   (include-raw "f-raw")
+
+; After including the book, f no longer has unknown-constraints, yet if
+; f-raw.lsp provides a way to compute with f, we can now prove theorems that
+; don't follow from the (trivial) axioms of f.  A proof of nil with functional
+; instantiation would not be far behind!
+
+; So instead, we insist that unknown-constraints are put on the function as
+; part of the encapsulate that introduces it.
+
+  (declare (xargs :guard (symbol-listp supporters)))
+  (cond
+   ((null cmd-lst)
+    (er hard 'partial-encapsulate
+        "There must be at least one event form following the supporters in a ~
+         call of partial-encapsulate."))
+   (t `(encapsulate ,sigs
+         ,@cmd-lst
+         (set-unknown-constraints-supporters ,@supporters)))))
+
 (defconst *load-compiled-file-values*
   '(t nil :warn :default :comp))
 
@@ -10467,7 +10497,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; not necessarily in translated form -- it may actually have the OR macro in
 ; it.  If tflg is t, we return an IF-term instead of using OR.
 
-  (declare (xargs :guard (true-listp lst)))  
+  (declare (xargs :guard (true-listp lst)))
   (cond
    (tflg (or-macro lst))
    ((null lst) NIL)
@@ -13432,10 +13462,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     sys-call+ ; system-call+
     sys-call* ; system-call+
 
-    canonical-pathname ; under dependent clause-processor
+    canonical-pathname ; redefined from partial-encapsulate
 
-    concrete-badge-userfn
-    concrete-apply$-userfn
+    concrete-badge-userfn ; redefined from partial-encapsulate
+    concrete-apply$-userfn ; redefined from partial-encapsulate
 
     ev-fncall-w-guard1
 
@@ -13451,16 +13481,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     mfc-type-alist ; *metafunction-context*
     mfc-unify-subst ; *metafunction-context*
     mfc-world ; *metafunction-context*
-    mfc-ap-fn ; under dependent clause-processor
-    mfc-relieve-hyp-fn ; under dependent clause-processor
-    mfc-relieve-hyp-ttree ; under dependent clause-processor
-    mfc-rw+-fn ; under dependent clause-processor
-    mfc-rw+-ttree ; under dependent clause-processor
-    mfc-rw-fn ; under dependent clause-processor
-    mfc-rw-ttree ; under dependent clause-processor
-    mfc-ts-fn ; under dependent clause-processor
-    mfc-ts-ttree ; under dependent clause-processor
-    magic-ev-fncall ; under dependent clause-processor
+    mfc-ap-fn ; redefined from partial-encapsulate
+    mfc-relieve-hyp-fn ; redefined from partial-encapsulate
+    mfc-relieve-hyp-ttree ; redefined from partial-encapsulate
+    mfc-rw+-fn ; redefined from partial-encapsulate
+    mfc-rw+-ttree ; redefined from partial-encapsulate
+    mfc-rw-fn ; redefined from partial-encapsulate
+    mfc-rw-ttree ; redefined from partial-encapsulate
+    mfc-ts-fn ; redefined from partial-encapsulate
+    mfc-ts-ttree ; redefined from partial-encapsulate
+    magic-ev-fncall ; redefined from partial-encapsulate
     never-memoize-fn
 
 ; The following are introduced into the logic by an encapsulate, but have raw
@@ -13497,7 +13527,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     delete-include-book-dir delete-include-book-dir! certify-book progn!
     f-put-global push-untouchable
     set-backchain-limit set-default-hints!
-    set-rw-cache-state! set-override-hints-macro
+    set-rw-cache-state! set-induction-depth-limit! set-override-hints-macro
     deftheory pstk verify-guards defchoose
     set-default-backchain-limit set-state-ok
     set-ignore-ok set-non-linearp set-tau-auto-mode with-output
@@ -20523,15 +20553,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (t (princ$ r channel state)))))))
 )
 
-(skip-proofs
 (defun print-timer (name channel state)
   (declare (xargs :guard (and (symbolp name)
                               (state-p state)
                               (boundp-global 'print-base state)
+                              (symbolp channel)
                               (open-output-channel-p channel :character state)
-                      (consp (get-timer name state)))))
+                              (equal (print-base) 10)
+                              (consp (get-timer name state))
+                              (rationalp (car (get-timer name state))))))
   (print-rational-as-decimal (car (get-timer name state)) channel state))
-)
 
 (defthm state-p1-update-print-base
   (implies (state-p1 state)
@@ -23416,6 +23447,36 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          ((t) (member-eq val *legal-rw-cache-states*))
          (t nil)))
 
+(table induction-depth-limit-table nil nil
+       :guard
+       (and (eq key t)
+            (or (null val) ; no limit
+                (natp val))))
+
+(defconst *induction-depth-limit-default*
+
+; By default, abort if we attempt to induction past 9 levels.  If this constant
+; is changed, then change :doc induction-depth-limit.
+
+  9)
+
+(table induction-depth-limit-table t *induction-depth-limit-default*)
+
+#-acl2-loop-only
+(defmacro set-induction-depth-limit! (x)
+  (declare (ignore x))
+  nil)
+
+#+acl2-loop-only
+(defmacro set-induction-depth-limit! (val)
+  `(with-output
+     :off (event summary)
+     (progn (table induction-depth-limit-table t ,val)
+            (table induction-depth-limit-table t))))
+
+(defmacro set-induction-depth-limit (val)
+  `(local (set-induction-depth-limit! ,val)))
+
 ; We thank Jared Davis for permission to adapt his function true-list-fix (and
 ; supporting function true-list-fix-exec), below.  See :DOC note-8-2 for
 ; further credits and explanation.
@@ -24649,9 +24710,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;    because they are what they seem.  Such functions are defined here in
 ;    axioms.lisp.
 
-; 3. Functions of the second type are introduced with unknown constraints from
-;    a define-trusted-clause-processor event, and are defined in raw
-;    Lisp using the defun-overrides mechanism.
+; 3. Functions of the second type are introduced with unknown-constraints using
+;    a partial-encapsulate, and are defined in raw Lisp using the
+;    defun-overrides mechanism.
 
 ; In the next four paragraphs, we typically refer only to metafunctions, but
 ; most of the below applies to meta-level functions generally.

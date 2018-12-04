@@ -6,6 +6,8 @@
 
 package edu.kestrel.acl2.aij;
 
+import java.util.Map;
+
 /**
  * Representation of ACL2 functions in ACL2 terms.
  * These are named functions (subclass {@link Acl2NamedFunction})
@@ -28,6 +30,13 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      * @throws IllegalStateException if the "ACL2" package is not defined yet
      */
     abstract boolean isIf();
+
+    /**
+     * Checks if this function is the {@code or} ACL2 "pseudo-function".
+     * This is not an ACL2 notion; it is an AIJ notion.
+     * See {@link Acl2FunctionApplication#eval(Map)} for details.
+     */
+    abstract boolean isOr();
 
     //////////////////////////////////////// public members:
 

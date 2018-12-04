@@ -61,16 +61,17 @@
 
     (xdoc::li
      "@(':all'), to print,
-       besides error output,
-       the result,
-       and the additional information (see @(':info') above),
-       also ACL2's output in response to all the submitted events
-       (the ones that form the result as well as some ancillary ones)."))
+      besides error output,
+      the result,
+      and the additional information (see @(':info') above),
+      also ACL2's output in response to all the submitted events
+      (the ones that form the result as well as some ancillary ones)."))
 
    (xdoc::p
-    "If the call to the transformation is redundant,
-      a message to that effect is printed on the screen,
-      unless @(':print') is @('nil').")))
+    "If the call to the transformation is
+     <see topic='@(url redundancy)'>redundant</see>,
+     a message to that effect is printed on the screen,
+     unless @(':print') is @('nil').")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

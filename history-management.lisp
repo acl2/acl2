@@ -1938,44 +1938,58 @@
 
 ; assuming that the cursor is at the left margin.
 
-; Once upon a time we considered extending fmt so that it knew how to
-; print timers.  However, fmt needs to know which column it is left in
-; and returns that to the user.  Thus, if fmt printed a timer (at
-; least in the most convenient way) the user could detect the number
-; of digits in it.  So we are doing it this way.
+; Once upon a time we considered extending fmt so that it knew how to print
+; timers.  However, fmt needs to know which column it is left in and returns
+; that to the user.  Thus, if fmt printed a timer (at least in the most
+; convenient way) the user could detect the number of digits in it.  So we are
+; doing it this way.
+
+; Through Version_8.1 we called print-timer to print timers.  However, :pso
+; then failed to print the original time.  Now we first obtain the times before
+; doing the printing, so that the io? call below can save the times originally
+; printed.
 
   (pprogn
-     (io? summary nil state
-          ()
-          (cond
-           ((member-eq 'time
-                       (f-get-global 'inhibited-summary-types
-                                     state))
-            state)
-           (t
-            (let ((channel (proofs-co state))
-                  (skip-proof-tree-time (skip-proof-tree-time state)))
-              (pprogn
-               (princ$ "Time:  " channel state)
-               (push-timer 'total-time 0 state)
-               (add-timers 'total-time 'prove-time state)
-               (add-timers 'total-time 'print-time state)
-               (add-timers 'total-time 'proof-tree-time state)
-               (add-timers 'total-time 'other-time state)
-               (print-timer 'total-time channel state)
-               (pop-timer 'total-time nil state)
-               (princ$ " seconds (prove: " channel state)
-               (print-timer 'prove-time channel state)
-               (princ$ ", print: " channel state)
-               (print-timer 'print-time channel state)
-               (if skip-proof-tree-time
-                   state
-                 (pprogn (princ$ ", proof tree: " channel state)
-                         (print-timer 'proof-tree-time channel state)))
-               (princ$ ", other: " channel state)
-               (print-timer 'other-time channel state)
-               (princ$ ")" channel state)
-               (newline channel state))))))
+     (cond
+      ((member-eq 'time
+                  (f-get-global 'inhibited-summary-types
+                                state))
+       state)
+      (t
+       (let ((skip-proof-tree-time (skip-proof-tree-time state)))
+         (pprogn
+          (push-timer 'total-time 0 state)
+          (add-timers 'total-time 'prove-time state)
+          (add-timers 'total-time 'print-time state)
+          (add-timers 'total-time 'proof-tree-time state)
+          (add-timers 'total-time 'other-time state)
+          (let ((total-time (car (get-timer 'total-time state)))
+                (prove-time (car (get-timer 'prove-time state)))
+                (print-time (car (get-timer 'print-time state)))
+                (proof-tree-time (and (not skip-proof-tree-time)
+                                      (car (get-timer 'proof-tree-time
+                                                      state))))
+                (other-time (car (get-timer 'other-time state))))
+            (io? summary nil state
+                 (total-time prove-time print-time proof-tree-time other-time)
+                 (let ((channel (proofs-co state)))
+                   (pprogn
+                    (princ$ "Time:  " channel state)
+                    (print-rational-as-decimal total-time channel state)
+                    (princ$ " seconds (prove: " channel state)
+                    (print-rational-as-decimal prove-time channel state)
+                    (princ$ ", print: " channel state)
+                    (print-rational-as-decimal print-time channel state)
+                    (if (null proof-tree-time)
+                        state
+                      (pprogn (princ$ ", proof tree: " channel state)
+                              (print-rational-as-decimal proof-tree-time channel
+                                                         state)))
+                    (princ$ ", other: " channel state)
+                    (print-rational-as-decimal other-time channel state)
+                    (princ$ ")" channel state)
+                    (newline channel state)))))
+          (pop-timer 'total-time nil state)))))
 
 ; The function initialize-summary-accumulators makes corresponding calls of
 ; push-timer, not under an io? call.  So the balancing calls of pop-timer below
@@ -2139,6 +2153,8 @@
           'nil))
     (do-not-induct
      "~|    before a :DO-NOT-INDUCT hint stopped the proof attempt")
+    (induction-depth-limit-exceeded
+     "~|    before the induction-depth-limit stopped the proof attempt")
     (otherwise "")))
 
 (defun print-gag-state1 (gag-state state)
@@ -7662,6 +7678,22 @@
 (defmacro trans1 (form)
   `(trans1-fn ,form state))
 
+(defmacro translam (x)
+  `(mv-let (flg val bindings state)
+     (cmp-and-value-to-error-quadruple
+      (translate11-lambda-object
+       ,x
+       '(nil) ; stobjs-out
+       nil    ; bindings
+       nil    ; known-stobjs
+       nil    ; flet-alist
+       nil    ; cform
+       'translam
+       (w state)
+       (default-state-vars state)))
+     (declare (ignore bindings))
+     (mv flg val state)))
+
 (defun tilde-*-props-fn-phrase1 (alist)
   (cond ((null alist) nil)
         (t (cons (msg "~y0~|~ ~y1~|"
@@ -10137,9 +10169,8 @@
 (defun instantiablep (fn wrld)
 
 ; This function returns t if fn is instantiable and nil otherwise; except, if
-; if it has been introduced with the designation of a dependent
-; clause-processor, then it returns the name of such a dependent
-; clause-processor.
+; if it has been introduced with unknown-constraints, then it returns the
+; the 'constrainedp property, i.e., *unknown-constraints*.
 
   (and (symbolp fn)
        (not (member-eq fn *non-instantiable-primitives*))
@@ -10162,9 +10193,10 @@
 ; 'unnormalized-body or 'constrainedp property.  For the forward implication,
 ; note that the symbol must have been introduced either in the signature of an
 ; encapsulate, in defuns, or in defchoose.  Note that the value of the
-; 'constrainedp property can be a clause-processor, in which case that is the
-; value we want to return here; so do not switch the order of the disjuncts
-; below!
+; 'constrainedp property can be *unknown-constraints*, in which case that is
+; the value we want to return here; so do not switch the order of the disjuncts
+; below!  (In particular, we take advantage of such an *unknown-constraints*
+; value in translate-functional-substitution.)
 
        (or (getpropc fn 'constrainedp nil wrld)
            (and (body fn nil wrld)
@@ -10186,8 +10218,9 @@
 ; this case, flg is nil, and x is the defining axiom for fn.  In the other
 ; case, flg is the name under which the actual constraint for fn is stored
 ; (possibly name itself), and x is the list of constraints stored there or else
-; the value *unknown-constraints* (indicating that the constraints cannot be
-; determined because they are associated with a dependent clause-processor).
+; a value (*unknown-constraints* . supporters), indicating that the constraints
+; cannot be determined but involve at most the indicated supporters (immediate
+; ancestors).
 
 ; We assume that if fn was introduced by a non-local defun or defchoose in the
 ; context of an encapsulate that introduced constraints, then the defining
@@ -10232,7 +10265,9 @@
                        *t*))))))
      ((and (symbolp prop)
            prop
-           (not (eq prop *unknown-constraints*)))
+; The following must be true since prop is a symbol:
+;          (not (unknown-constraints-p prop))
+           )
 
 ; Then prop is a name, and the constraints for fn are found under that name.
 
@@ -10241,7 +10276,7 @@
                     '(:error "See constraint-info:  expected to find a ~
                               'constraint-lst property where we did not.")
                     wrld)))
-     (t
+     (t ; includes the case of (unknown-constraints-p prop)
       (mv fn prop)))))
 
 (defun@par chk-equal-arities (fn1 n1 fn2 n2 ctx state)
@@ -10354,10 +10389,10 @@
             fn1
             (if (eq (instantiablep fn1 wrld) nil)
                 ""
-              (msg " because it was introduced in an encapsulate specifying a ~
-                    dependent clause-processor, ~x0 (see DOC ~
-                    define-trusted-clause-processor)"
-                   (instantiablep fn1 wrld)))))
+              (assert$
+               (eq (instantiablep fn1 wrld) *unknown-constraints*)
+               (msg " because it has unknown-constraints; see :DOC ~
+                     partial-encapsulate")))))
          (t
           (er-let*@par
            ((x
@@ -10585,8 +10620,7 @@
 (defun instantiable-ffn-symbs (term wrld ans ignore-fns)
 
 ; We collect every instantiablep ffn-symb occurring in term except those listed
-; in ignore-fns.  We include functions introduced by an encapsulate specifying
-; a dependent clause-processor.
+; in ignore-fns.  We include functions introduced by a partial-encapsulate.
 
   (cond
    ((variablep term) ans)
@@ -10620,25 +10654,14 @@
 
 )
 
-(defun unknown-constraint-supporters (fn wrld)
+(defun unknown-constraints-p (prop)
+  (declare (xargs :guard t))
+  (and (consp prop)
+       (eq (car prop) *unknown-constraints*)))
 
-; Fn is the constraint-lst property of some function g with a non-Boolean
-; constraint-lst property, indicating that g was introduced in a dependent
-; clause-processor.  The ancestors of g are guaranteed to be among the closure
-; under ancestors of the supporters stored for fn in the
-; trusted-clause-processor-table.
-
-  (let ((entry (assoc-eq fn (table-alist 'trusted-clause-processor-table
-                                         wrld))))
-    (cond ((or (null entry)
-               (not (eq (cddr entry) t)))
-           (er hard 'unknown-constraint-supporters
-               "Implementation error: Function ~x0 was called on ~x1, which ~
-                was expected to be a dependent clause-processor function, but ~
-                apparently is not."
-               'unknown-constraint-supporters
-               fn))
-          (t (cadr entry)))))
+(defun unknown-constraints-supporters (prop)
+  (declare (xargs :guard (unknown-constraints-p prop)))
+  (cdr prop))
 
 (defun collect-instantiablep1 (fns wrld ignore-fns)
 
@@ -10674,9 +10697,7 @@
 
 ; If there are (possibly empty) constraints associated with fn, then we get all
 ; of the instantiable function symbols used in the constraints, which includes
-; the definitional axiom if there is one.  Note that the case of a dependent
-; clause-processor with *unknown-constraints* is a bit different, as we use its
-; supporters appropriately stored in a table.
+; the definitional axiom if there is one.
 
 ; If fn was introduced by a defun or defchoose (it should be a non-primitive),
 ; we return the list of all instantiable functions used in its introduction.
@@ -10699,14 +10720,8 @@
   (mv-let (name x)
           (constraint-info fn wrld)
     (cond
-     ((eq x *unknown-constraints*)
-      (let* ((cl-proc
-              (getpropc name 'constrainedp
-                        '(:error
-                          "See immediate-instantiable-ancestors:  expected to ~
-                           find a 'constrainedp property where we did not.")
-                        wrld))
-             (supporters (unknown-constraint-supporters cl-proc wrld)))
+     ((unknown-constraints-p x)
+      (let ((supporters (unknown-constraints-supporters x)))
         (collect-instantiablep supporters wrld ignore-fns)))
      (name (instantiable-ffn-symbs-lst x wrld nil ignore-fns))
      (t (instantiable-ffn-symbs x wrld nil ignore-fns)))))
@@ -10715,8 +10730,7 @@
 
 ; Fns is a list of function symbols.  We compute the list of all instantiable
 ; function symbols that are ancestral to the functions in fns and accumulate
-; them in ans, including those introduced in an encapsulate specifying a
-; dependent clause-processor.
+; them in ans, including those introduced in a partial-encapsulate.
 
   (cond
    ((null fns) ans)
@@ -10824,11 +10838,9 @@
 ; the instantiable function symbols occurring in the constraint generated by
 ; name (in the sense of constraint-info).
 
-; Exception: We are free to return (mv *unknown-constraints* g cl-proc).
-; However, we only do so if the constraints cannot be determined because of the
-; presence of unknown constraints on some function g encountered, where g was
-; introduced with the designation of a dependent clause-processor, cl-proc.  We
-; ignore this exceptional case in the comments just below.
+; Exception: We are free to return (mv u g nil), where (unknown-constraints-p
+; u).  However, we only do so if the constraints cannot be determined because
+; of the presence of unknown-constraints on some function g encountered.
 
 ; Seen is a list of names already processed.  Suppose that foo and bar are both
 ; constrained by the same encapsulate, and that the 'constraint-lst property of
@@ -10854,21 +10866,21 @@
             (name x)
             (constraint-info (car names) wrld)
 
-; Note that if x is not *unknown-constraints*, then x is a single constraint if
-; name is nil and otherwise x is a list of constraints.
+; Note that -- ignoring the case of unknown-constraints -- x is a single
+; constraint if name is nil and otherwise x is a list of constraints.
 
             (cond
-             ((eq x *unknown-constraints*)
-              (let ((cl-proc
-                     (getpropc name 'constrainedp
-                               '(:error
-                                 "See relevant-constraints1: expected to find ~
-                                  a 'constrainedp property where we did not.")
-                               wrld)))
+             ((unknown-constraints-p x)
+
+; If there is a hit among the supporters, then we stop here, returning x to
+; indicate that there are unknown-constraints.  Otherwise, we recurs on (cdr
+; names), just as we do in the normal case (known constraints) when there is no
+; hit.
+
+              (let ((supporters (unknown-constraints-supporters x)))
                 (cond
-                 ((first-assoc-eq (unknown-constraint-supporters cl-proc wrld)
-                                  alist)
-                  (mv x name cl-proc))
+                 ((first-assoc-eq supporters alist)
+                  (mv x name nil))
                  (t (relevant-constraints1
                      (cdr names) alist proved-fnl-insts-alist
                      constraints event-names new-entries
@@ -11061,7 +11073,7 @@
       nil nil nil
       wrld)
      (assert$
-      (not (eq constraints *unknown-constraints*))
+      (not (unknown-constraints-p constraints))
       (let* ((instantiable-fns
               (instantiable-ffn-symbs-lst
                (cons thm (getprop-x-lst nonconstructive-axiom-names
@@ -11297,13 +11309,11 @@
    (mv-let (new-constraints new-event-names new-new-entries)
      (relevant-constraints formula alist proved-fnl-insts-alist wrld)
      (cond
-      ((eq new-constraints *unknown-constraints*)
+      ((unknown-constraints-p new-constraints)
        (er@par soft ctx
          "Functional instantiation is disallowed in this context, because the ~
-          function ~x0 has unknown constraints provided by the dependent ~
-          clause-processor ~x1.  See :DOC define-trusted-clause-processor."
-         new-event-names
-         new-new-entries))
+          function ~x0 has unknown-constraints.  See :DOC partial-encapsulate."
+         new-event-names))
       (t
        (mv-let (bad-vars-alist new-constraints)
 
@@ -11390,7 +11400,8 @@
                      (list formula0
                            (append constraints new-constraints0)
                            (union-equal new-event-names event-names)
-                           (union-equal new-new-entries new-entries)))))))))))))))
+                           (union-equal new-new-entries
+                                        new-entries)))))))))))))))
 
 ; We are trying to define termination-theorem-clauses, but for that, we need
 ; termination-machines.  The latter was originally defined in defuns.lisp, but
@@ -12607,12 +12618,12 @@
                (mv (conjoin-clause-sets+ debug-p cl-set1 cl-set2)
                    ttree))))))
 
-(defun well-formed-lambda-objects-in-fn (fn wrld)
+(defun collect-well-formed-lambda-objects (fn wrld)
 
-; Warning: name must be either the name of a function defined in wrld or a
-; well-formed lambda object.  Remember: not every lambda object is well-formed.
-; Use well-formed-lambda-objectp to check before calling this function!  We
-; return the list of all well-formed lambda objects in fn.
+; Warning: name must be either the name of a function or theorem defined in
+; wrld or a well-formed lambda object.  Remember: not every lambda object is
+; well-formed.  Use well-formed-lambda-objectp to check before calling this
+; function!  We return the list of all well-formed lambda objects in fn.
 
   (cond
    ((global-val 'boot-strap-flg wrld)
@@ -12624,15 +12635,20 @@
 
     nil)
    (t
-    (let* ((guard
+    (let* ((theorem (and (symbolp fn)
+                         (getpropc fn 'theorem nil wrld)))
+           (guard
             (if (symbolp fn)
-                (guard fn nil wrld)
+                (if theorem
+                    *t* ; just a trivial term without lambda objects
+                  (guard fn nil wrld))
               (lambda-object-guard fn)))
            (unnormalized-body
             (if (symbolp fn)
-                (getpropc fn 'unnormalized-body
-                          '(:error "See WELL-FORMED-LAMBDA-OBJECTS-IN-FN")
-                          wrld)
+                (or theorem
+                    (getpropc fn 'unnormalized-body
+                              '(:error "See COLLECT-WELL-FORMED-LAMBDA-OBJECTS")
+                              wrld))
               (lambda-object-body fn)))
            (ans (collect-certain-lambda-objects-lst
                  :well-formed
@@ -12647,10 +12663,10 @@
           ans
         (cons fn ans))))))
 
-(defun well-formed-lambda-objects-in-fns (fns wrld)
+(defun collect-well-formed-lambda-objects-lst (fns wrld)
   (cond ((endp fns) nil)
-        (t (union-equal (well-formed-lambda-objects-in-fn (car fns) wrld)
-                        (well-formed-lambda-objects-in-fns (cdr fns) wrld)))))
+        (t (union-equal (collect-well-formed-lambda-objects (car fns) wrld)
+                        (collect-well-formed-lambda-objects-lst (cdr fns) wrld)))))
 
 (defun guard-clauses-for-fn (fn debug-p ens wrld safe-mode gc-off ttree)
 
@@ -12667,7 +12683,7 @@
 
   (guard-clauses-for-fn1-lst
    (cons fn (set-difference-equal
-             (well-formed-lambda-objects-in-fn fn wrld)
+             (collect-well-formed-lambda-objects fn wrld)
              (global-val 'common-lisp-compliant-lambdas wrld)))
    debug-p ens wrld safe-mode gc-off ttree))
 
@@ -14168,7 +14184,7 @@
           (cond
            ((not (or verified-p
                      (assoc-eq (ffn-symb term)
-                               (table-alist 'trusted-clause-processor-table
+                               (table-alist 'trusted-cl-proc-table
                                             wrld))))
             (er@par soft ctx "~@0" err-msg
               "it is not a call of a clause-processor function"))

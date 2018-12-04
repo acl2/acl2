@@ -60,7 +60,7 @@ public class TestABNF {
         java.util.Collections.reverse(bytes);
         Acl2Value list = Acl2Symbol.NIL;
         for (Integer nat : bytes)
-            list = Acl2Cons.make(Acl2Integer.make(nat), list);
+            list = Acl2ConsPair.make(Acl2Integer.make(nat), list);
         return list;
     }
 

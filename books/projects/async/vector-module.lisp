@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 ;; Automatic definition and proofs for simple linear vector modules of
 ;; primitives or other modules.  VECTOR-MODULE is defined in
@@ -73,7 +73,7 @@
  (sis 'y 0 n)
  nil
  (v-wire-body 0 n)
- :guard (natp n))
+ (declare (xargs :guard (natp n))))
 
 (defund v-wire& (netlist n)
   (declare (xargs :guard (and (alistp netlist) (natp n))))
@@ -104,8 +104,6 @@
             :induct (vector-module-induction
                      body m n wire-alist st-alist netlist)
             :in-theory (enable de-rules sis)))))
-
-(not-primp-lemma v-wire)
 
 (defthm v-wire$value
   (implies (and (v-wire& netlist n)
@@ -138,7 +136,7 @@
  (sis 'y 0 n)
  nil
  (v-if-body 0 n)
- :guard (natp n))
+ (declare (xargs :guard (natp n))))
 
 (defund v-if& (netlist n)
   (declare (xargs :guard (and (alistp netlist) (natp n))))
@@ -170,8 +168,6 @@
             :induct (vector-module-induction
                      body m n wire-alist st-alist netlist)
             :in-theory (enable de-rules sis fv-if)))))
-
-(not-primp-lemma v-if)
 
 (defthm v-if$value
   (implies (and (v-if& netlist n)

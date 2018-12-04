@@ -12,10 +12,10 @@
 
 (include-book "print-specifiers")
 (include-book "untranslate-specifiers")
-(include-book "common-options")
 (include-book "transformation-table")
 (include-book "pattern-matching")
 (include-book "pattern-matching-ext")
+(include-book "xdoc-constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -188,6 +188,8 @@
 ; Symbols below should probably be added to *acl2-exports*.
 
     TRUE-LIST-FIX
+    PARTIAL-ENCAPSULATE
+    INDUCTION-DEPTH-LIMIT SET-INDUCTION-DEPTH-LIMIT SET-INDUCTION-DEPTH-LIMIT!
     ))
 
 (defconst *special-ops*

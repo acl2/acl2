@@ -38,11 +38,13 @@ use Getopt::Long qw(:config bundling);
 use File::Spec;
 use FindBin qw($RealBin);
 use Storable;
+use lib "$RealBin/lib";
+use Certlib;
 
 # Note: Trying out FindBin::$RealBin.  If breaks, we can go back to
 # the system below.
 
-(do "$RealBin/certlib.pl") or die("Error loading $RealBin/certlib.pl:\n $!");
+# (do "$RealBin/certlib.pl") or die("Error loading $RealBin/certlib.pl:\n $!");
 
 
 my $HELP_MESSAGE = "
@@ -266,7 +268,7 @@ if ($params_file && open (my $params, "<", $params_file)) {
 	my @parts = $pline =~ m/([^:]*):(.*)/;
 	if (@parts) {
 	    my ($certname, $paramstr) = @parts;
-	    my $certpars = cert_get_params($certname, $depdb);
+	    my $certpars = $depdb->cert_get_params($certname);
 	    if ($certpars) {
 		my $passigns = parse_params($paramstr);
 		foreach my $pair (@$passigns) {

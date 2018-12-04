@@ -47,11 +47,6 @@
 (defmacro ts-integerp (ts)
   `(ts-subsetp ,ts *ts-integer*))
 
-(defun all-quoteps (lst)
-  (cond ((null lst) t)
-        (t (and (quotep (car lst))
-                (all-quoteps (cdr lst))))))
-
 (mutual-recursion
 
 (defun dumb-occur (x y)
@@ -2120,15 +2115,20 @@
 ; poly1, then poly1 might be usable in a context where poly2 is not usable.
 ; Use parents-check = nil if such a consideration does not apply.
 
-  (let ((c1 (access poly poly2 :constant))
-        (c2 (access poly poly1 :constant)))
-    (and (or (logical-< c1 c2)
+  (let ((c1 (access poly poly1 :constant))
+        (c2 (access poly poly2 :constant)))
+    (and (or (logical-< c2 c1)
 
-; The above inequality test is potentially confusing.  In the comments, it is
-; said that (<= 3 (* x y)) is weaker than (<= 17/5 (* x y)).  Recall that the
-; polys are stored in a format suggested by: (< (+ constant (* k1 t1) ... (* kn
-; tn)) 0).  Thus, the two constants would be stored as a -3 and a -17/5, and
-; the above test is correct.  -17/5 < -3.
+; Let us see how the check (logical-< c2 c1) plays out for a case described in
+; the comments above: poly1, (<= 3 (* x y)), is weaker than poly2, (<= 17/5 (*
+; x y)).  Recall that the polys are stored in a format suggested by: (< 0 (+
+; constant (* k1 t1) ... (* kn tn))), so we have:
+
+; poly1: (<= 0 (+ -3 (* x y)))     ; so c1 = -3
+; poly2: (<= 0 (+ -17/5 (* x y)))  ; so c2 = -17/5
+
+; -17/5 is indeed less than -3, so (logical-< c2 c1) is true, which supports
+; the conclusion that poly1 is weaker than poly2.
 
              (and (eql c1 c2)
                   (or (eq (access poly poly1 :relation) '<=)
@@ -3476,6 +3476,8 @@
 ; are produced.  It returns 2 values:  the standard contradictionp in the
 ; the first and the final pot-lst in the second.
 
+; See add-polys0 for a discussion of max-rounds.
+
   (cond ((eql max-rounds rounds-completed)
          (mv nil pot-lst))
         ((null lst)
@@ -3518,6 +3520,10 @@
 ; impossible ones) and then normalize and add the rest to pot-lst.
 ; Any new polys thereby produced are also added until there's nothing
 ; left to do.  We return the standard contradictionp and a new pot-lst.
+
+; If max-rounds is numeric, as it is when we use linear arithmetic in type-set,
+; then it limits the number of rounds.  Otherwise there is no bound on the
+; number of rounds; we keep adding polys until there are no new ones.
 
   (mv-let (contradictionp lst)
     (filter-polys lst nil)

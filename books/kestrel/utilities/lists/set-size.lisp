@@ -211,8 +211,8 @@
     (equal (equal (set-size-equal x) 0)
            (atom x)))
 
-  (defthm set-size-of-list-fix
-    (equal (set-size-equal (list-fix x))
+  (defthm set-size-of-true-list-fix
+    (equal (set-size-equal (true-list-fix x))
            (set-size-equal x)))
 
   (defthm set-size-of-cons

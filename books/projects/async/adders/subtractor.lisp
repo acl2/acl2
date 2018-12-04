@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -37,7 +37,7 @@
         (si 'ripple-add n)
         (cons 'high (append (sis 'a 0 n) (sis 'b~ 0 n)))))
 
- :guard (natp n))
+ (declare (xargs :guard (natp n))))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; RIPPLE-SUB.
@@ -67,10 +67,6 @@
    (and (net-syntax-okp (ripple-sub$netlist 64))
         (net-arity-okp (ripple-sub$netlist 64))
         (ripple-sub& (ripple-sub$netlist 64) 64))))
-
-;; Prove that RIPPLE-SUB is not a DE primitive.
-
-(not-primp-lemma ripple-sub)
 
 ;; The value lemma for RIPPLE-SUB
 

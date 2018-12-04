@@ -48,3 +48,11 @@
 (fty::defbytelist nibble
   :pred nibble-listp
   :parents (nibble-arrays))
+
+(defsection nibble-list-fix-ext
+  :extension nibble-list-fix
+
+  (defrule nibble-list-fix-of-rcons
+    (equal (nibble-list-fix (rcons nibble nibbles))
+           (rcons (nibble-fix nibble) (nibble-list-fix nibbles)))
+    :enable rcons))
