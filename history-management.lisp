@@ -1938,44 +1938,58 @@
 
 ; assuming that the cursor is at the left margin.
 
-; Once upon a time we considered extending fmt so that it knew how to
-; print timers.  However, fmt needs to know which column it is left in
-; and returns that to the user.  Thus, if fmt printed a timer (at
-; least in the most convenient way) the user could detect the number
-; of digits in it.  So we are doing it this way.
+; Once upon a time we considered extending fmt so that it knew how to print
+; timers.  However, fmt needs to know which column it is left in and returns
+; that to the user.  Thus, if fmt printed a timer (at least in the most
+; convenient way) the user could detect the number of digits in it.  So we are
+; doing it this way.
+
+; Through Version_8.1 we called print-timer to print timers.  However, :pso
+; then failed to print the original time.  Now we first obtain the times before
+; doing the printing, so that the io? call below can save the times originally
+; printed.
 
   (pprogn
-     (io? summary nil state
-          ()
-          (cond
-           ((member-eq 'time
-                       (f-get-global 'inhibited-summary-types
-                                     state))
-            state)
-           (t
-            (let ((channel (proofs-co state))
-                  (skip-proof-tree-time (skip-proof-tree-time state)))
-              (pprogn
-               (princ$ "Time:  " channel state)
-               (push-timer 'total-time 0 state)
-               (add-timers 'total-time 'prove-time state)
-               (add-timers 'total-time 'print-time state)
-               (add-timers 'total-time 'proof-tree-time state)
-               (add-timers 'total-time 'other-time state)
-               (print-timer 'total-time channel state)
-               (pop-timer 'total-time nil state)
-               (princ$ " seconds (prove: " channel state)
-               (print-timer 'prove-time channel state)
-               (princ$ ", print: " channel state)
-               (print-timer 'print-time channel state)
-               (if skip-proof-tree-time
-                   state
-                 (pprogn (princ$ ", proof tree: " channel state)
-                         (print-timer 'proof-tree-time channel state)))
-               (princ$ ", other: " channel state)
-               (print-timer 'other-time channel state)
-               (princ$ ")" channel state)
-               (newline channel state))))))
+     (cond
+      ((member-eq 'time
+                  (f-get-global 'inhibited-summary-types
+                                state))
+       state)
+      (t
+       (let ((skip-proof-tree-time (skip-proof-tree-time state)))
+         (pprogn
+          (push-timer 'total-time 0 state)
+          (add-timers 'total-time 'prove-time state)
+          (add-timers 'total-time 'print-time state)
+          (add-timers 'total-time 'proof-tree-time state)
+          (add-timers 'total-time 'other-time state)
+          (let ((total-time (car (get-timer 'total-time state)))
+                (prove-time (car (get-timer 'prove-time state)))
+                (print-time (car (get-timer 'print-time state)))
+                (proof-tree-time (and (not skip-proof-tree-time)
+                                      (car (get-timer 'proof-tree-time
+                                                      state))))
+                (other-time (car (get-timer 'other-time state))))
+            (io? summary nil state
+                 (total-time prove-time print-time proof-tree-time other-time)
+                 (let ((channel (proofs-co state)))
+                   (pprogn
+                    (princ$ "Time:  " channel state)
+                    (print-rational-as-decimal total-time channel state)
+                    (princ$ " seconds (prove: " channel state)
+                    (print-rational-as-decimal prove-time channel state)
+                    (princ$ ", print: " channel state)
+                    (print-rational-as-decimal print-time channel state)
+                    (if (null proof-tree-time)
+                        state
+                      (pprogn (princ$ ", proof tree: " channel state)
+                              (print-rational-as-decimal proof-tree-time channel
+                                                         state)))
+                    (princ$ ", other: " channel state)
+                    (print-rational-as-decimal other-time channel state)
+                    (princ$ ")" channel state)
+                    (newline channel state)))))
+          (pop-timer 'total-time nil state)))))
 
 ; The function initialize-summary-accumulators makes corresponding calls of
 ; push-timer, not under an io? call.  So the balancing calls of pop-timer below
@@ -2139,6 +2153,8 @@
           'nil))
     (do-not-induct
      "~|    before a :DO-NOT-INDUCT hint stopped the proof attempt")
+    (induction-depth-limit-exceeded
+     "~|    before the induction-depth-limit stopped the proof attempt")
     (otherwise "")))
 
 (defun print-gag-state1 (gag-state state)

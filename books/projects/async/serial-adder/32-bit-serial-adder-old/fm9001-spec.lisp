@@ -193,6 +193,8 @@ Register Numbers for "a" and "b".
 (defthm len-mode-b
   (equal (len (mode-b i-reg)) 2))
 
+(acl2::set-induction-depth-limit nil) ; 14 suffices, but 13 does not
+
 (defthm bvp-mode-b
   (implies (bvp i-reg)
            (bvp (mode-b i-reg)))

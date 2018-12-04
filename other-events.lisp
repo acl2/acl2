@@ -14194,7 +14194,7 @@
 
 ; We bind the state global variable guard-checking-on to t in certify-book-fn
 ; and in include-book-fn (using state-global-let*), as well as in prove and
-; puff-fn1.  We bind it to nil pc-single-step-primitive.  We do not bind
+; puff-fn1.  We bind it to nil in pc-single-step-primitive.  We do not bind
 ; guard-checking-on in defconst-fn.  Here we explain these decisions.
 
 ; We prefer to bind guard-checking-on to a predetermined fixed value when

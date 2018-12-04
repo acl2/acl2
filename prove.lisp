@@ -1607,7 +1607,10 @@
                                        old-pspv-pool-lst forcing-round
                                        state)))))
 
-(defun@par push-clause (cl hist pspv wrld state)
+(defun induction-depth-limit (wrld)
+  (cdr (assoc-eq t (table-alist 'induction-depth-limit-table wrld))))
+
+(defun@par push-clause (cl-id cl hist pspv wrld state)
 
 ; Roughly speaking, we drop cl into the pool of pspv and return.
 ; However, we sometimes cause the waterfall to abort further
@@ -1679,7 +1682,16 @@
                                pool))))
       ((and (or (and (not (access prove-spec-var pspv :otf-flg))
                      (eq do-not-induct-hint-val t))
-                (eq do-not-induct-hint-val :otf-flg-override))
+                (eq do-not-induct-hint-val :otf-flg-override)
+                (let ((limit (induction-depth-limit wrld)))
+
+; It is tempting just to use eql instead of <= below.  But a hint of :induct t
+; takes priority, in which case we want to stop the next level of induction,
+; where we have already exceeded the "maximum".
+
+                  (and limit
+                       (<= limit
+                           (length (access clause-id cl-id :pool-lst))))))
             (not (assoc-eq :induct (access prove-spec-var pspv
                                            :hint-settings))))
 
@@ -1693,9 +1705,14 @@
        (mv 'abort
            nil
            (add-to-tag-tree! 'abort-cause
-                             (if (eq do-not-induct-hint-val :otf-flg-override)
-                                 'do-not-induct-otf-flg-override
+                             (cond
+                              ((eq do-not-induct-hint-val :otf-flg-override)
+                               'do-not-induct-otf-flg-override)
+                              ((and (not (access prove-spec-var pspv :otf-flg))
+                                    (eq do-not-induct-hint-val t))
                                'do-not-induct)
+                              (t
+                               'induction-depth-limit-exceeded))
                              nil)
            (change prove-spec-var pspv
                    :pool (cons (make pool-element
@@ -1978,6 +1995,12 @@
             (if (eq temp 'do-not-induct)
                 t
               :otf-flg-override)))
+      (induction-depth-limit-exceeded
+       (msg "Normally we would attempt to prove ~@0 by induction.  However, ~
+             that would cause the induction-depth-limit of ~x1 to be ~
+             exceeded.  See :DOC induction-depth-limit.~|"
+            cl-id-phrase
+            (length (access clause-id cl-id :pool-lst))))
       (otherwise
        (msg "Normally we would attempt to prove ~@0 by induction.  However, ~
              we prefer in this instance to focus on the original input ~
@@ -3550,6 +3573,10 @@
                                    '((do-not-induct)
                                      (do-not-induct-otf-flg-override)))
                      (change gag-state gagst :abort-stack 'do-not-induct))
+                    ((equal (tagged-objects 'abort-cause ttree)
+                            '(induction-depth-limit-exceeded))
+                     (change gag-state gagst :abort-stack
+                             'induction-depth-limit-exceeded))
                     (t gagst))
               (and msg-p
                    (msg "~@0~@1"
@@ -4960,7 +4987,7 @@
           (eliminate-irrelevance-clause clause hist pspv wrld state)))
         (otherwise
          (pstk
-          (push-clause@par clause hist pspv wrld state))))))))
+          (push-clause@par cl-id clause hist pspv wrld state))))))))
 
 (defun@par process-backtrack-hint (cl-id clause clauses processor new-hist
                                          new-pspv ctx wrld state)

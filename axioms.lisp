@@ -6952,7 +6952,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((and (consp x)               ; (>= (len x) 3)
               (consp (cdr x))
               (consp (cddr x)))
-         (cond ((atom (cdddr x))      ; (= (len x) 3) 
+         (cond ((atom (cdddr x))      ; (= (len x) 3)
                 (if (null (cdddr x)) (caddr x) nil))
                ((null (cddddr x))     ; (= (len x) 4)
                 (cadddr x))
@@ -10497,7 +10497,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; not necessarily in translated form -- it may actually have the OR macro in
 ; it.  If tflg is t, we return an IF-term instead of using OR.
 
-  (declare (xargs :guard (true-listp lst)))  
+  (declare (xargs :guard (true-listp lst)))
   (cond
    (tflg (or-macro lst))
    ((null lst) NIL)
@@ -13527,7 +13527,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     delete-include-book-dir delete-include-book-dir! certify-book progn!
     f-put-global push-untouchable
     set-backchain-limit set-default-hints!
-    set-rw-cache-state! set-override-hints-macro
+    set-rw-cache-state! set-induction-depth-limit! set-override-hints-macro
     deftheory pstk verify-guards defchoose
     set-default-backchain-limit set-state-ok
     set-ignore-ok set-non-linearp set-tau-auto-mode with-output
@@ -20553,15 +20553,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (t (princ$ r channel state)))))))
 )
 
-(skip-proofs
 (defun print-timer (name channel state)
   (declare (xargs :guard (and (symbolp name)
                               (state-p state)
                               (boundp-global 'print-base state)
+                              (symbolp channel)
                               (open-output-channel-p channel :character state)
-                      (consp (get-timer name state)))))
+                              (equal (print-base) 10)
+                              (consp (get-timer name state))
+                              (rationalp (car (get-timer name state))))))
   (print-rational-as-decimal (car (get-timer name state)) channel state))
-)
 
 (defthm state-p1-update-print-base
   (implies (state-p1 state)
@@ -23445,6 +23446,36 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (case key
          ((t) (member-eq val *legal-rw-cache-states*))
          (t nil)))
+
+(table induction-depth-limit-table nil nil
+       :guard
+       (and (eq key t)
+            (or (null val) ; no limit
+                (natp val))))
+
+(defconst *induction-depth-limit-default*
+
+; By default, abort if we attempt to induction past 9 levels.  If this constant
+; is changed, then change :doc induction-depth-limit.
+
+  9)
+
+(table induction-depth-limit-table t *induction-depth-limit-default*)
+
+#-acl2-loop-only
+(defmacro set-induction-depth-limit! (x)
+  (declare (ignore x))
+  nil)
+
+#+acl2-loop-only
+(defmacro set-induction-depth-limit! (val)
+  `(with-output
+     :off (event summary)
+     (progn (table induction-depth-limit-table t ,val)
+            (table induction-depth-limit-table t))))
+
+(defmacro set-induction-depth-limit (val)
+  `(local (set-induction-depth-limit! ,val)))
 
 ; We thank Jared Davis for permission to adapt his function true-list-fix (and
 ; supporting function true-list-fix-exec), below.  See :DOC note-8-2 for
