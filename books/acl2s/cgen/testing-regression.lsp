@@ -1100,3 +1100,28 @@
                
           (and (consp c)
                (<= x (len c)))))
+
+; Make sure the following doesn't give any errors.
+(defun fnc-2 (x y)
+  (equal x y))
+
+(thm
+  (implies
+   (and
+    (equal a0 a1)
+    (equal b0 b1))
+   (equal (fnc-2 a0 b0) (fnc-2 a1 b1))))
+
+(defun fnc-3 (x y z)
+  (and
+   (equal x y)
+   (equal y z)))
+
+(thm
+  (implies
+   (and
+    (equal a0 a1)
+    (equal b0 b1)
+    (equal c0 c1))
+   (equal (fnc-3 a0 b0 c0) (fnc-3 a1 b1 c1))))
+
