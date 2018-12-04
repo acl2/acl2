@@ -177,7 +177,7 @@ Why is ACL2 not good at this?
 (defun update-var-var-binding (rep other B)
   (if (endp B)
       (acons other rep nil)
-    (cons (cons (caar B) (if (eq other (second (car B))) rep (second (car B))))
+    (cons (list (caar B) (if (eq other (second (car B))) rep (second (car B))))
           (update-var-var-binding rep other (cdr B)))))
 
 (defun var-var-cc (var-var-eq-hyps bindings hyps)
