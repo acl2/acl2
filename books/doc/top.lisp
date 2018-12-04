@@ -30,6 +30,23 @@
 
 (in-package "ACL2")
 
+;; Note about the following commented-out form.  This allows a significant
+;; reduction of memory usage by this book: of ~130 million conses in the ACL2
+;; world after all books are loaded, 51 million are due to tau automatically
+;; computing implicants from theorems/definitions -- 42 million conses are
+;; stored in various POS-IMPLICANTS and 9.2 million in various NEG-IMPLICANTS
+;; properties.  So overriding the default setting of tau-auto-mode saves a
+;; significant amount of memory when loading this book.  Question is whether
+;; it's worth the cheating.
+
+#||
+(defttag :override-tau-auto-mode)
+(progn!
+ (set-raw-mode t)
+ (setf (cdr (assoc :tau-auto-modep *initial-acl2-defaults-table*)) nil)
+ (set-raw-mode nil))
+||#
+
 (include-book "build/ifdef" :dir :system)
 
 ; Note, 7/28/2014: if we include

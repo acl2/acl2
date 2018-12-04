@@ -79,7 +79,16 @@
 (defun entitytok-type (x) (second x))
 
 (defun texttok-p (x) (eq (first x) :TEXT))
-(defun texttok-text (x) (second x))
+(defun mcflatten (x acc)
+  (if (atom x)
+      (cons x acc)
+    (mcflatten (car x) (mcflatten (cdr x) acc))))
+(defun texttok-texttree (x) (second x))
+(defun texttok-text (x)
+  (let ((tree (texttok-texttree x)))
+    (if (atom tree) ;; optimization
+        tree
+      (str::fast-string-append-lst (mcflatten (texttok-texttree x) nil)))))
 
 (defconst *nls* (coerce (list #\Newline) 'string))
 
