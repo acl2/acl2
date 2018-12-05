@@ -22,12 +22,4 @@
                              nat=>bendian
                              nat
                              nat=>bendian*
-                             set::map-assoc
-                             set::map-empty
-                             set::map-head
-                             set::map-keys
-                             set::map-put-assoc
-                             set::map-tail
-                             set::map-vals
-                             set::mapp
                              std::define-sk)))
