@@ -140,7 +140,7 @@
     (and (queue3-l$st-format q3-l data-width)
          (queue8-l$st-format q8-l data-width))))
 
-(defthm queue11-l$st-format=>data-width-constraint
+(defthm queue11-l$st-format=>constraint
   (implies (queue11-l$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue11-l$st-format)))
@@ -152,10 +152,10 @@
     (and (queue3-l$valid-st q3-l data-width)
          (queue8-l$valid-st q8-l data-width))))
 
-(defthmd queue11-l$valid-st=>data-width-constraint
+(defthmd queue11-l$valid-st=>constraint
   (implies (queue11-l$valid-st st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable queue3-l$valid-st=>data-width-constraint
+  :hints (("Goal" :in-theory (enable queue3-l$valid-st=>constraint
                                      queue11-l$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -426,7 +426,7 @@
              data-width))
    :hints (("Goal"
             :in-theory (e/d (get-field
-                             queue3-l$valid-st=>data-width-constraint
+                             queue3-l$valid-st=>constraint
                              queue3-l$input-format
                              queue3-l$in-act
                              queue3-l$out-act
@@ -448,7 +448,7 @@
    :hints (("Goal"
             :in-theory (e/d (get-field
                              joint-act
-                             queue8-l$valid-st=>data-width-constraint
+                             queue8-l$valid-st=>constraint
                              queue8-l$input-format
                              queue8-l$in-act
                              queue8-l$out-act
@@ -602,7 +602,7 @@
     :hints (("Goal"
              :use queue11-l$input-format=>q3-l$input-format
              :in-theory (e/d (get-field
-                              queue3-l$valid-st=>data-width-constraint
+                              queue3-l$valid-st=>constraint
                               queue3-l$extracted-step
                               queue8-l$extracted-step
                               queue11-l$extracted-step
@@ -657,7 +657,7 @@
              :do-not-induct t
              :use queue11-l$input-format=>q8-l$input-format
              :in-theory (e/d (get-field
-                              queue8-l$valid-st=>data-width-constraint
+                              queue8-l$valid-st=>constraint
                               queue11-l$input-format
                               queue11-l$valid-st
                               queue11-l$extract

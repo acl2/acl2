@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; December 2018
 
 (in-package "ADE")
 
@@ -71,6 +71,10 @@
                (piso-sreg$valid-st st data-width cnt-width)
                (piso-sreg$inv st))
           state)))
+
+  (local
+   (defthm piso-sreg$ins-and-st-test-ok
+     (piso-sreg$ins-and-st-test 4 3 10 state)))
 
   (defund piso-sreg$sim (data-width cnt-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -177,6 +181,10 @@
                (piso2-sreg$inv st))
           state)))
 
+  (local
+   (defthm piso2-sreg$ins-and-st-test-ok
+     (piso2-sreg$ins-and-st-test 4 3 10 state)))
+
   (defund piso2-sreg$sim (data-width cnt-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp cnt-width)
@@ -276,6 +284,10 @@
                (sipo-sreg$valid-st st data-width cnt-width)
                (sipo-sreg$inv st))
           state)))
+
+  (local
+   (defthm sipo-sreg$ins-and-st-test-ok
+     (sipo-sreg$ins-and-st-test 4 3 10 state)))
 
   (defund sipo-sreg$sim (data-width cnt-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -380,6 +392,10 @@
                (serial-add$inv st data-width))
           state)))
 
+  (local
+   (defthm serial-add$ins-and-st-test-ok
+     (serial-add$ins-and-st-test 4 3 10 state)))
+
   (defund serial-add$sim (data-width cnt-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (posp cnt-width)
@@ -480,6 +496,10 @@
                (serial-sub$valid-st st data-width cnt-width)
                (serial-sub$inv st data-width))
           state)))
+
+  (local
+   (defthm serial-sub$ins-and-st-test-ok
+     (serial-sub$ins-and-st-test 4 3 10 state)))
 
   (defund serial-sub$sim (data-width cnt-width n state)
     (declare (xargs :guard (and (natp data-width)

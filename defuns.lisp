@@ -109,8 +109,8 @@
                                           ctx wrld state-vars)))
                    (trans-value (cons x y))))))))))
 
-(defun chk-non-executable-bodies (names arglists bodies non-executablep ctx
-                                        state)
+(defun chk-non-executable-bodies (names arglists bodies non-executablep
+                                        mut-rec-p ctx state)
 
 ; Note that bodies are in translated form.
 
@@ -133,17 +133,20 @@
                                            formals)
                     (chk-non-executable-bodies
                      (cdr names) (cdr arglists) (cdr bodies)
-                     non-executablep ctx state))
+                     non-executablep mut-rec-p ctx state))
                    (t (er soft ctx
                           "The body of a defun that is marked :non-executable ~
-                           (perhaps implicitly, by the use of defun-nx) must ~
+                           (perhaps implicitly, by the use of defun-nx~@1) must ~
                            be of the form (prog2$ (throw-nonexec-error ...) ~
-                           ...)~@1.  The definition of ~x0 is thus illegal.  ~
+                           ...)~@2.  The definition of ~x0 is thus illegal.  ~
                            See :DOC defun-nx."
                           (car names)
+                          (if mut-rec-p
+                              " in some definition under the mutual-recursion"
+                            "")
                           (if (eq non-executablep :program)
                               ""
-                            " that is laid down by defun-nx"))))))))
+                            ", as is laid down by defun-nx"))))))))
 
 (defun translate-bodies (non-executablep names arglists bodies known-stobjs-lst
                                          reclassifying-all-programp
@@ -181,7 +184,8 @@
                   (er soft erp "~@0" lst))
                  (non-executablep
                   (chk-non-executable-bodies names arglists lst
-                                             non-executablep ctx state))
+                                             non-executablep (cdr names)
+                                             ctx state))
                  (t (value nil)))
            (cond ((eq non-executablep t)
                   (value (cons lst (pairlis-x2 names '(nil)))))
@@ -5129,7 +5133,7 @@
 ; Now upgrade the symbol-class (except for the case where names is a
 ; single lambda).
 
-            (wrld3 
+            (wrld3
              (if (and (consp names)
                       (consp (car names)))
                  wrld2

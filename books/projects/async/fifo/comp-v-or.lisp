@@ -196,7 +196,7 @@
          (queue2$st-format q2 data-width)
          (queue3$st-format q3 data-width))))
 
-(defthm comp-v-or$st-format=>data-width-constraint
+(defthm comp-v-or$st-format=>constraint
   (implies (comp-v-or$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable comp-v-or$st-format)))
@@ -217,7 +217,7 @@
          (queue2$valid-st q2 data-width)
          (queue3$valid-st q3 data-width))))
 
-(defthmd comp-v-or$valid-st=>data-width-constraint
+(defthmd comp-v-or$valid-st=>constraint
   (implies (comp-v-or$valid-st st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable comp-v-or$valid-st)))

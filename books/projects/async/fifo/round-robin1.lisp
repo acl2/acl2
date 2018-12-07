@@ -217,7 +217,7 @@
          (queue2$st-format q2 data-width)
          (queue3$st-format q3 data-width))))
 
-(defthm round-robin1$st-format=>data-width-constraint
+(defthm round-robin1$st-format=>constraint
   (implies (round-robin1$st-format st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable round-robin1$st-format)))
@@ -245,7 +245,7 @@
          (alt-branch$valid-st br)
          (alt-merge$valid-st me))))
 
-(defthmd round-robin1$valid-st=>data-width-constraint
+(defthmd round-robin1$valid-st=>constraint
   (implies (round-robin1$valid-st st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable round-robin1$valid-st)))
@@ -1197,7 +1197,7 @@
                           (round-robin1$extract st))))
   :hints (("Goal"
            :do-not-induct t
-           :use round-robin1$valid-st=>data-width-constraint
+           :use round-robin1$valid-st=>constraint
            :in-theory (e/d (f-and3
                             len-0-is-atom
                             cons-append-instances

@@ -687,10 +687,10 @@ clause processor to prove theorems.</p>"
        ((('not ('gl-cp-hint ('quote name) . &) . &) . rest)
         (case name
           (coverage
-           (prog2$ (cw "Now proving coverage~%")
+           (prog2$ (obs-cw "Now proving coverage~%")
                    (glcp-remove-and-replace ',cov-hints)))
           (result
-           (prog2$ (cw "Now proving result (should be trivial)~%")
+           (prog2$ (obs-cw "Now proving result (should be trivial)~%")
                    ,(if res-hints
                         `(glcp-remove-and-replace ',res-hints)
                       '(case-match rest
@@ -698,11 +698,11 @@ clause processor to prove theorems.</p>"
                           (glcp-remove-and-replace
                            `('(:in-theory (enable ,eval)))))))))
           (param
-           (prog2$ (cw "Now proving hyp coverage~%")
+           (prog2$ (obs-cw "Now proving hyp coverage~%")
                    ,(and hyp-hints
                          `(glcp-remove-and-replace ',hyp-hints))))
           (casesplit
-           (prog2$ (cw "Now proving casesplit coverage~%")
+           (prog2$ (obs-cw "Now proving casesplit coverage~%")
                    ,(and casesplit-hints
                          `(glcp-remove-and-replace ',casesplit-hints))))))))
     :clause-processor ,call))

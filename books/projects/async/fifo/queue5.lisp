@@ -196,7 +196,7 @@
          (link$st-format l3 data-width)
          (link$st-format l4 data-width))))
 
-(defthm queue5$st-format=>data-width-constraint
+(defthm queue5$st-format=>constraint
   (implies (queue5$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue5$st-format)))
@@ -214,7 +214,7 @@
          (link$valid-st l3 data-width)
          (link$valid-st l4 data-width))))
 
-(defthmd queue5$valid-st=>data-width-constraint
+(defthmd queue5$valid-st=>constraint
   (implies (queue5$valid-st st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue5$valid-st)))
