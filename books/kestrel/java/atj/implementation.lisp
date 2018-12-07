@@ -675,7 +675,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-file-generation
+(defxdoc+ atj-code-generation
   :parents (atj-implementation)
   :short "Code generation performed by ATJ."
   :long
@@ -966,7 +966,7 @@
                  (new-value-next-var "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-file-generation atj-gen-values)
+    :parents (atj-code-generation atj-gen-values)
     :short "Generate Java code to build an ACL2 @(tsee cons) pair value."
     :long
     (xdoc::topp
@@ -1016,7 +1016,7 @@
                  (new-value-next-var "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-file-generation atj-gen-values)
+    :parents (atj-code-generation atj-gen-values)
     :short "Generate Java code to build an ACL2 value."
     (cond ((characterp x) (mv (atj-gen-character-value x)
                               value-next-var
@@ -1142,7 +1142,7 @@
                  (new-lambda-next-var "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-file-generation atj-gen-terms+lambdas)
+    :parents (atj-code-generation atj-gen-terms+lambdas)
     :short "Generate Java code to build an ACL2 application term."
     :long
     (xdoc::topapp
@@ -1237,7 +1237,7 @@
                  (new-lambda-next-var "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-file-generation atj-gen-terms+lambdas)
+    :parents (atj-code-generation atj-gen-terms+lambdas)
     :short "Generate Java code to build an ACL2 lambda expression."
     :long
     (xdoc::topp
@@ -1291,7 +1291,7 @@
                  (new-lambda-next-var "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-file-generation atj-gen-terms+lambdas)
+    :parents (atj-code-generation atj-gen-terms+lambdas)
     :short "Generate Java code to build an ACL2 term."
     (cond ((variablep term) (mv (atj-gen-variable-term term)
                                 value-next-var
@@ -1334,7 +1334,7 @@
                  (new-lambda-next-var "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-file-generation atj-gen-terms+lambdas)
+    :parents (atj-code-generation atj-gen-terms+lambdas)
     :short "Generate Java code to build a sequence of ACL2 terms."
     (if (endp terms)
         (mv nil
@@ -1845,7 +1845,7 @@
        ((mv & state) (fmt1! "~%" nil 0 channel state nil)))
     state))
 
-(define atj-gen-file
+(define atj-gen-everything
   ((java-package maybe-stringp "Result of @(tsee atj-process-inputs).")
    (java-class maybe-stringp "Result of @(tsee atj-process-inputs).")
    (output-file stringp "Result of @(tsee atj-process-inputs).")
@@ -1908,14 +1908,14 @@
                   pkg-witness
                   fns-to-translate)) (atj-gather-info
                                       targets verbose ctx state))
-       ((er &) (atj-gen-file java-package
-                             java-class
-                             output-file
-                             pkgs
-                             pkg-witness
-                             fns-to-translate
-                             verbose
-                             state))
+       ((er &) (atj-gen-everything java-package
+                                   java-class
+                                   output-file
+                                   pkgs
+                                   pkg-witness
+                                   fns-to-translate
+                                   verbose
+                                   state))
        (- (cw "~%Generated Java file:~%  ~x0~%" output-file)))
     (value '(value-triple :invisible))))
 
