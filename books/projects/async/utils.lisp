@@ -4,11 +4,11 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
-(include-book "std/lists/suffixp" :dir :system)
+;;(include-book "std/lists/suffixp" :dir :system)
 (include-book "std/lists/take" :dir :system)
 
 (local (include-book "std/lists/sets" :dir :system))
@@ -776,19 +776,19 @@
     (remove-lst (cdr x)
                 (remove-equal (car x) y))))
 
-;; SUFFIXP
+;; ;; SUFFIXP
 
-(defthm suffixp-nil
-  (implies (true-listp y)
-           (suffixp nil y))
-  :hints (("Goal" :in-theory (enable suffixp)))
-  :rule-classes :type-prescription)
+;; (defthm suffixp-nil
+;;   (implies (true-listp y)
+;;            (suffixp nil y))
+;;   :hints (("Goal" :in-theory (enable suffixp)))
+;;   :rule-classes :type-prescription)
 
-(defthm suffixp-append
-  (implies (suffixp x y)
-           (suffixp (append x z) (append y z)))
-  :hints (("Goal" :in-theory (enable suffixp)))
-  :rule-classes :type-prescription)
+;; (defthm suffixp-append
+;;   (implies (suffixp x y)
+;;            (suffixp (append x z) (append y z)))
+;;   :hints (("Goal" :in-theory (enable suffixp)))
+;;   :rule-classes :type-prescription)
 
 ;; TV-GUARD
 

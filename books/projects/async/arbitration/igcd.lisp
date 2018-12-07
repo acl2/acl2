@@ -140,7 +140,7 @@
          (interl$st-format interl (* 2 data-width))
          (gcd$st-format gcd data-width))))
 
-(defthm igcd$st-format=>data-width-constraint
+(defthm igcd$st-format=>constraint
   (implies (igcd$st-format st data-width)
            (and (natp data-width)
                 (<= 3 data-width)))
@@ -155,11 +155,11 @@
          (interl$valid-st interl (* 2 data-width))
          (gcd$valid-st gcd data-width))))
 
-(defthmd igcd$valid-st=>data-width-constraint
+(defthmd igcd$valid-st=>constraint
   (implies (igcd$valid-st st data-width)
            (and (natp data-width)
                 (<= 3 data-width)))
-  :hints (("Goal" :in-theory (enable gcd$valid-st=>data-width-constraint
+  :hints (("Goal" :in-theory (enable gcd$valid-st=>constraint
                                      igcd$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -482,7 +482,7 @@
              (* 2 data-width)))
    :hints (("Goal"
             :in-theory (e/d (open-nth
-                             gcd$valid-st=>data-width-constraint
+                             gcd$valid-st=>constraint
                              interl$input-format
                              interl$data0-in
                              interl$data1-in
@@ -499,7 +499,7 @@
              (igcd$gcd-inputs inputs st data-width)
              data-width))
    :hints (("Goal"
-            :in-theory (e/d (gcd$valid-st=>data-width-constraint
+            :in-theory (e/d (gcd$valid-st=>constraint
                              gcd$input-format
                              gcd$data-in
                              igcd$input-format
@@ -704,7 +704,7 @@
     :hints (("Goal"
              :in-theory (e/d (get-field
                               f-sr
-                              gcd$valid-st=>data-width-constraint
+                              gcd$valid-st=>constraint
                               interl$extracted0-step
                               interl$extracted1-step
                               igcd$extracted0-step
@@ -780,7 +780,7 @@
              :in-theory (e/d (get-field
                               f-sr
                               interl$out-act
-                              gcd$valid-st=>data-width-constraint
+                              gcd$valid-st=>constraint
                               gcd$extracted-step
                               igcd$extracted2-step
                               igcd$valid-st

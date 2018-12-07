@@ -167,7 +167,7 @@
          (interl$st-format interl1 data-width)
          (interl$st-format interl2 data-width))))
 
-(defthm comp-interl$st-format=>data-width-constraint
+(defthm comp-interl$st-format=>constraint
   (implies (comp-interl$st-format st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable comp-interl$st-format)))
@@ -186,7 +186,7 @@
          (interl$valid-st interl1 data-width)
          (interl$valid-st interl2 data-width))))
 
-(defthmd comp-interl$valid-st=>data-width-constraint
+(defthmd comp-interl$valid-st=>constraint
   (implies (comp-interl$valid-st st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable comp-interl$valid-st)))

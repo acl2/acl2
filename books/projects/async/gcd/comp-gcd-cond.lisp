@@ -206,7 +206,7 @@
          (queue2$st-format q2 data-width)
          (queue3$st-format q3 data-width))))
 
-(defthm comp-gcd-cond$st-format=>data-width-constraint
+(defthm comp-gcd-cond$st-format=>constraint
   (implies (comp-gcd-cond$st-format st data-width)
            (and (natp data-width)
                 (<= 3 data-width)))
@@ -230,7 +230,7 @@
          (queue2$valid-st q2 data-width)
          (queue3$valid-st q3 data-width))))
 
-(defthmd comp-gcd-cond$valid-st=>data-width-constraint
+(defthmd comp-gcd-cond$valid-st=>constraint
   (implies (comp-gcd-cond$valid-st st data-width)
            (and (natp data-width)
                 (<= 3 data-width)))

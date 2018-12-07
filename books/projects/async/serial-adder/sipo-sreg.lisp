@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; December 2018
 
 (in-package "ADE")
 
@@ -51,8 +51,7 @@
  (si 'sipo-sreg data-width)
  (list* 'full-in 'empty-out- 'bit-in
         (sis 'go 0 *sipo-sreg$go-num*))
- (list* 'in-act 'out-act (append (sis 'data-out 0 data-width)
-                                 (sis 'cnt-out 0 cnt-width)))
+ (list* 'in-act 'out-act 'cnt-out=1 (sis 'data-out 0 data-width))
  '(r-data r-cnt w-data w-cnt)
  (list
   ;; LINKS
@@ -158,10 +157,14 @@
         (sis 'data-out 0 data-width)
         (si 'v-wire data-width)
         (sis 'r-data-out 0 data-width))
-  (list 'cnt-out
-        (sis 'cnt-out 0 cnt-width)
-        (si 'v-wire cnt-width)
-        (sis 'r-cnt-out 0 cnt-width)))
+  (list 'cnt-out<2?
+        '(cnt-out<2)
+        (si 'fast-zero (1- cnt-width))
+        (sis 'r-cnt-out 1 (1- cnt-width)))
+  (list 'cnt-out=1?
+        '(cnt-out=1)
+        'b-and
+        (list (si 'r-cnt-out 0) 'cnt-out<2)))
 
  (declare (xargs :guard (and (posp data-width) (posp cnt-width)))))
 
@@ -177,11 +180,12 @@
 (defund sipo-sreg$netlist (data-width cnt-width)
   (declare (xargs :guard (and (posp data-width)
                               (natp cnt-width)
-                              (<= 2 cnt-width))))
+                              (<= 3 cnt-width))))
   (cons (sipo-sreg* data-width cnt-width)
         (union$ (link$netlist data-width)
                 (link$netlist cnt-width)
                 *joint-cntl*
+                (fast-zero$netlist (1- cnt-width))
                 (fast-zero$netlist cnt-width)
                 (counter$netlist cnt-width)
                 (v-buf$netlist data-width)
@@ -198,7 +202,7 @@
   (declare (xargs :guard (and (alistp netlist)
                               (posp data-width)
                               (natp cnt-width)
-                              (<= 2 cnt-width))))
+                              (<= 3 cnt-width))))
   (b* ((subnetlist (delete-to-eq (si 'sipo-sreg data-width)
                                  netlist)))
     (and (equal (assoc (si 'sipo-sreg data-width) netlist)
@@ -206,6 +210,7 @@
          (link& subnetlist data-width)
          (link& subnetlist cnt-width)
          (joint-cntl& subnetlist)
+         (fast-zero& subnetlist (1- cnt-width))
          (fast-zero& subnetlist cnt-width)
          (counter& subnetlist cnt-width)
          (v-buf& subnetlist data-width)
@@ -232,17 +237,17 @@
        (w-cnt (get-field *sipo-sreg$w-cnt* st)))
     (and (posp data-width)
          (natp cnt-width)
-         (<= 3 cnt-width)
+         (<= 4 cnt-width)
          (link$st-format r-data data-width)
          (link$st-format r-cnt cnt-width)
          (link$st-format w-data data-width)
          (link$st-format w-cnt cnt-width))))
 
-(defthm sipo-sreg$st-format=>contraints
+(defthm sipo-sreg$st-format=>constraint
   (implies (sipo-sreg$st-format st data-width cnt-width)
            (and (posp data-width)
                 (natp cnt-width)
-                (<= 3 cnt-width)))
+                (<= 4 cnt-width)))
   :hints (("Goal" :in-theory (enable sipo-sreg$st-format)))
   :rule-classes :forward-chaining)
 
@@ -260,17 +265,17 @@
 
 (local
  (defthm expt-linear-lower-<=-instance
-   (implies (and (<= 2 n)
+   (implies (and (<= 3 n)
                  (integerp n))
-            (<= 4 (expt 2 n)))
+            (<= 8 (expt 2 n)))
    :rule-classes :linear))
 
-(defthmd sipo-sreg$valid-st=>constraints
+(defthmd sipo-sreg$valid-st=>constraint
   (implies (sipo-sreg$valid-st st data-width cnt-width)
            (and (natp data-width)
-                (<= 4 data-width)
+                (<= 8 data-width)
                 (natp cnt-width)
-                (<= 3 cnt-width)))
+                (<= 4 cnt-width)))
   :hints (("Goal" :in-theory (enable sipo-sreg$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -358,6 +363,40 @@
 
   ;; Extract the output data
 
+  (defund sipo-sreg$cnt-out=1 (st)
+    (b* ((r-cnt (get-field *sipo-sreg$r-cnt* st))
+         (r-cnt.d (get-field *link$d* r-cnt)))
+      (f-and (car (strip-cars r-cnt.d))
+             (f$fast-zero (nthcdr 1 (strip-cars r-cnt.d))))))
+
+  (local
+   (defthm len-cdr
+     (implies (< 0 (len x))
+              (equal (len (cdr x))
+                     (1- (len x))))))
+
+  (defthm booleanp-sipo-sreg$cnt-out=1-1
+    (implies (and (sipo-sreg$valid-st st data-width cnt-width)
+                  (sipo-sreg$in-act inputs st))
+             (booleanp (sipo-sreg$cnt-out=1 st)))
+    :hints (("Goal" :in-theory (enable f-and4
+                                       bvp
+                                       sipo-sreg$valid-st
+                                       sipo-sreg$in-act
+                                       sipo-sreg$cnt-out=1)))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm booleanp-sipo-sreg$cnt-out=1-2
+    (implies (and (sipo-sreg$valid-st st data-width cnt-width)
+                  (sipo-sreg$out-act inputs st))
+             (booleanp (sipo-sreg$cnt-out=1 st)))
+    :hints (("Goal" :in-theory (enable f-and3
+                                       bvp
+                                       sipo-sreg$valid-st
+                                       sipo-sreg$out-act
+                                       sipo-sreg$cnt-out=1)))
+    :rule-classes (:rewrite :type-prescription))
+
   (defund sipo-sreg$data-out (st)
     (b* ((r-data (get-field *sipo-sreg$r-data* st))
          (r-data.d (get-field *link$d* r-data)))
@@ -395,48 +434,11 @@
                                        sipo-sreg$out-act
                                        sipo-sreg$data-out))))
 
-  (defund sipo-sreg$cnt-out (st)
-    (b* ((r-cnt (get-field *sipo-sreg$r-cnt* st))
-         (r-cnt.d (get-field *link$d* r-cnt)))
-      (v-threefix (strip-cars r-cnt.d))))
-
-  (defthm len-sipo-sreg$cnt-out-1
-    (implies (sipo-sreg$st-format st data-width cnt-width)
-             (equal (len (sipo-sreg$cnt-out st))
-                    cnt-width))
-    :hints (("Goal" :in-theory (enable sipo-sreg$st-format
-                                       sipo-sreg$cnt-out))))
-
-  (defthm len-sipo-sreg$cnt-out-2
-    (implies (sipo-sreg$valid-st st data-width cnt-width)
-             (equal (len (sipo-sreg$cnt-out st))
-                    cnt-width))
-    :hints (("Goal" :in-theory (enable sipo-sreg$valid-st
-                                       sipo-sreg$data-out))))
-
-  (defthm bvp-sipo-sreg$cnt-out-1
-    (implies (and (sipo-sreg$valid-st st data-width cnt-width)
-                  (sipo-sreg$in-act inputs st))
-             (bvp (sipo-sreg$cnt-out st)))
-    :hints (("Goal" :in-theory (enable f-and4
-                                       sipo-sreg$valid-st
-                                       sipo-sreg$in-act
-                                       sipo-sreg$cnt-out))))
-
-  (defthm bvp-sipo-sreg$cnt-out-2
-    (implies (and (sipo-sreg$valid-st st data-width cnt-width)
-                  (sipo-sreg$out-act inputs st))
-             (bvp (sipo-sreg$cnt-out st)))
-    :hints (("Goal" :in-theory (enable f-and3
-                                       sipo-sreg$valid-st
-                                       sipo-sreg$out-act
-                                       sipo-sreg$cnt-out))))
-
   (defun sipo-sreg$outputs (inputs st)
     (list* (sipo-sreg$in-act inputs st)
            (sipo-sreg$out-act inputs st)
-           (append (sipo-sreg$data-out st)
-                   (sipo-sreg$cnt-out st))))
+           (sipo-sreg$cnt-out=1 st)
+           (sipo-sreg$data-out st)))
   )
 
 ;; The value lemma for SIPO-SREG
@@ -460,8 +462,8 @@
                             sipo-sreg$st-format
                             sipo-sreg$in-act
                             sipo-sreg$out-act
-                            sipo-sreg$data-out
-                            sipo-sreg$cnt-out)
+                            sipo-sreg$cnt-out=1
+                            sipo-sreg$data-out)
                            (car-cdr-elim
                             de-module-disabled-rules)))))
 
@@ -526,12 +528,6 @@
 (defthm len-of-sipo-sreg$step
   (equal (len (sipo-sreg$step inputs st data-width cnt-width))
          *sipo-sreg$st-len*))
-
-(local
- (defthm len-cdr
-   (implies (< 0 (len x))
-            (equal (len (cdr x))
-                   (1- (len x))))))
 
 ;; The state lemma for SIPO-SREG
 
@@ -1023,7 +1019,7 @@
          (outputs (se (si 'sipo-sreg data-width)
                       inputs st netlist))
          (out-act (nth 1 outputs))
-         (data (take data-width (nthcdr 2 outputs))))
+         (data (take data-width (nthcdr 3 outputs))))
       (if (equal out-act t)
           (append (sipo-sreg$netlist-out-seq
                    (cdr inputs-seq)
@@ -1084,7 +1080,7 @@
      :hints
      (("Goal"
        :use len-of-sipo-sreg$extract-upper-bound
-       :in-theory (e/d (sipo-sreg$valid-st=>constraints
+       :in-theory (e/d (sipo-sreg$valid-st=>constraint
                         pack-rev)
                        (len-of-sipo-sreg$extract-upper-bound))))))
 
@@ -1110,7 +1106,7 @@
                       inputs-seq st data-width cnt-width n)
              :in-theory (enable append1
                                 pack-rev
-                                sipo-sreg$valid-st=>constraints
+                                sipo-sreg$valid-st=>constraint
                                 len-of-sipo-sreg$extract-lemma
                                 sipo-sreg$extracted-step))))
 

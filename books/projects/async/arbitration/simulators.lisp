@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; December 2018
 
 (in-package "ADE")
 
@@ -108,6 +108,10 @@
                (interl$valid-st st data-width))
           state)))
 
+  (local
+   (defthm interl$ins-and-st-test-ok
+     (interl$ins-and-st-test 4 10 state)))
+
   (defund interl$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
@@ -190,6 +194,10 @@
                (interl-ll$valid-st st data-width))
           state)))
 
+  (local
+   (defthm interl-ll$ins-and-st-test-ok
+     (interl-ll$ins-and-st-test 4 10 state)))
+
   (defund interl-ll$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
@@ -270,6 +278,10 @@
                (igcd$valid-st st data-width)
                (igcd$inv st))
           state)))
+
+  (local
+   (defthm igcd$ins-and-st-test-ok
+     (igcd$ins-and-st-test 4 10 state)))
 
   (defund igcd$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -357,6 +369,10 @@
       (mv (and (comp-interl$input-format-n inputs-seq data-width n)
                (comp-interl$valid-st st data-width))
           state)))
+
+  (local
+   (defthm comp-interl$ins-and-st-test-ok
+     (comp-interl$ins-and-st-test 4 10 state)))
 
   (defund comp-interl$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
