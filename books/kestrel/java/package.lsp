@@ -56,6 +56,7 @@
                          no-stobjs-p
                          partition-rest-and-keyword-args
                          patbind-run-when
+                         primitivep
                          printable-char-listp
                          pseudo-termfnp
                          sbyte8

@@ -430,21 +430,6 @@
   :order-subtopics t
   :default-parent t)
 
-(defval *atj-allowed-primitives*
-  :short "ACL2 primitive functions accepted by ATJ."
-  :long
-  "<p>
-   These are all the ACL2 primitive functions.
-   </p>
-   <p>
-   The functions in this list have native Java implementations in
-   <see topic='@(url aij)'>AIJ</see>.
-   </p>"
-  (strip-cars *primitive-formals-and-guards*)
-  ///
-  (assert-event (symbol-listp *atj-allowed-primitives*))
-  (assert-event (no-duplicatesp-eq *atj-allowed-primitives*)))
-
 (defval *atj-allowed-raws*
   :short "ACL2 functions with raw Lisp code that are accepted by ATJ."
   :long
@@ -619,7 +604,7 @@
      :parents nil
      (b* (((when (endp worklist)) (value current-fns))
           ((cons fn worklist) worklist)
-          ((when (member-eq fn *atj-allowed-primitives*))
+          ((when (primitivep fn))
            (atj-fns-to-translate-aux worklist current-fns verbose ctx state))
           ((when (and (or (member-eq fn (@ acl2::program-fns-with-raw-code))
                           (member-eq fn (@ acl2::logic-fns-with-raw-code)))
