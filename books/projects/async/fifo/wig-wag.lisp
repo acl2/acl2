@@ -137,7 +137,7 @@
          (link$st-format l0 data-width)
          (link$st-format l1 data-width))))
 
-(defthm wig-wag$st-format=>data-width-constraint
+(defthm wig-wag$st-format=>constraint
   (implies (wig-wag$st-format st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable wig-wag$st-format)))
@@ -156,7 +156,7 @@
          (alt-branch$valid-st br)
          (alt-merge$valid-st me))))
 
-(defthmd wig-wag$valid-st=>data-width-constraint
+(defthmd wig-wag$valid-st=>constraint
   (implies (wig-wag$valid-st st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable wig-wag$valid-st)))

@@ -136,7 +136,7 @@
     (and (queue10-l$st-format q10-l0 data-width)
          (queue10-l$st-format q10-l1 data-width))))
 
-(defthm queue20-l$st-format=>data-width-constraint
+(defthm queue20-l$st-format=>constraint
   (implies (queue20-l$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue20-l$st-format)))
@@ -148,10 +148,10 @@
     (and (queue10-l$valid-st q10-l0 data-width)
          (queue10-l$valid-st q10-l1 data-width))))
 
-(defthmd queue20-l$valid-st=>data-width-constraint
+(defthmd queue20-l$valid-st=>constraint
   (implies (queue20-l$valid-st st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable queue10-l$valid-st=>data-width-constraint
+  :hints (("Goal" :in-theory (enable queue10-l$valid-st=>constraint
                                      queue20-l$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -421,7 +421,7 @@
              data-width))
    :hints (("Goal"
             :in-theory (e/d (get-field
-                             queue10-l$valid-st=>data-width-constraint
+                             queue10-l$valid-st=>constraint
                              queue10-l$input-format
                              queue10-l$in-act
                              queue10-l$out-act
@@ -443,7 +443,7 @@
    :hints (("Goal"
             :in-theory (e/d (get-field
                              joint-act
-                             queue10-l$valid-st=>data-width-constraint
+                             queue10-l$valid-st=>constraint
                              queue10-l$input-format
                              queue10-l$in-act
                              queue10-l$out-act
@@ -545,7 +545,7 @@
                         data-width)
                        (queue10-l$data-out q10-l0))))
      :hints (("Goal"
-              :use (:instance queue10-l$valid-st=>data-width-constraint
+              :use (:instance queue10-l$valid-st=>constraint
                               (st (nth *queue20-l$q10-l0* st)))
               :in-theory (enable get-field
                                  queue10-l$valid-st
@@ -599,7 +599,7 @@
     :hints (("Goal"
              :use queue20-l$input-format=>q10-l0$input-format
              :in-theory (e/d (get-field
-                              queue10-l$valid-st=>data-width-constraint
+                              queue10-l$valid-st=>constraint
                               queue10-l$extracted-step
                               queue20-l$extracted-step
                               queue20-l$input-format
@@ -652,7 +652,7 @@
              :do-not-induct t
              :use queue20-l$input-format=>q10-l1$input-format
              :in-theory (e/d (get-field
-                              queue10-l$valid-st=>data-width-constraint
+                              queue10-l$valid-st=>constraint
                               queue20-l$input-format
                               queue20-l$valid-st
                               queue20-l$extract

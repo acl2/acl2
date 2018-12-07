@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; September 2018
+;; December 2018
 
 (in-package "ADE")
 
@@ -80,6 +80,10 @@
       (mv (and (queue2$input-format-n inputs-seq data-width n)
                (queue2$valid-st st data-width))
           state)))
+
+  (local
+   (defthm queue2$ins-and-st-test-ok
+     (queue2$ins-and-st-test 4 10 state)))
 
   (defund queue2$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -157,6 +161,10 @@
       (mv (and (queue3$input-format-n inputs-seq data-width n)
                (queue3$valid-st st data-width))
           state)))
+
+  (local
+   (defthm queue3$ins-and-st-test-ok
+     (queue3$ins-and-st-test 4 10 state)))
 
   (defund queue3$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -237,6 +245,10 @@
       (mv (and (queue4$input-format-n inputs-seq data-width n)
                (queue4$valid-st st data-width))
           state)))
+
+  (local
+   (defthm queue4$ins-and-st-test-ok
+     (queue4$ins-and-st-test 4 10 state)))
 
   (defund queue4$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -321,6 +333,10 @@
                (queue5$valid-st st data-width))
           state)))
 
+  (local
+   (defthm queue5$ins-and-st-test-ok
+     (queue5$ins-and-st-test 4 10 state)))
+
   (defund queue5$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
@@ -399,6 +415,10 @@
                (queue10$valid-st st data-width))
           state)))
 
+  (local
+   (defthm queue10$ins-and-st-test-ok
+     (queue10$ins-and-st-test 4 10 state)))
+
   (defund queue10$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
@@ -475,6 +495,10 @@
       (mv (and (queue3-l$input-format-n inputs-seq st data-width n)
                (queue3-l$valid-st st data-width))
           state)))
+
+  (local
+   (defthm queue3-l$ins-and-st-test-ok
+     (queue3-l$ins-and-st-test 4 10 state)))
 
   (defund queue3-l$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -555,6 +579,10 @@
       (mv (and (queue4-l$input-format-n inputs-seq st data-width n)
                (queue4-l$valid-st st data-width))
           state)))
+
+  (local
+   (defthm queue4-l$ins-and-st-test-ok
+     (queue4-l$ins-and-st-test 4 10 state)))
 
   (defund queue4-l$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -639,6 +667,10 @@
                (queue5-l$valid-st st data-width))
           state)))
 
+  (local
+   (defthm queue5-l$ins-and-st-test-ok
+     (queue5-l$ins-and-st-test 4 10 state)))
+
   (defund queue5-l$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
@@ -711,6 +743,10 @@
       (mv (and (queue8-l$input-format-n inputs-seq st data-width n)
                (queue8-l$valid-st st data-width))
           state)))
+
+  (local
+   (defthm queue8-l$ins-and-st-test-ok
+     (queue8-l$ins-and-st-test 4 10 state)))
 
   (defund queue8-l$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -785,6 +821,10 @@
                (queue9-l$valid-st st data-width))
           state)))
 
+  (local
+   (defthm queue9-l$ins-and-st-test-ok
+     (queue9-l$ins-and-st-test 4 10 state)))
+
   (defund queue9-l$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
@@ -857,6 +897,10 @@
       (mv (and (queue10-l$input-format-n inputs-seq st data-width n)
                (queue10-l$valid-st st data-width))
           state)))
+
+  (local
+   (defthm queue10-l$ins-and-st-test-ok
+     (queue10-l$ins-and-st-test 4 10 state)))
 
   (defund queue10-l$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -931,6 +975,10 @@
                (queue11-l$valid-st st data-width))
           state)))
 
+  (local
+   (defthm queue11-l$ins-and-st-test-ok
+     (queue11-l$ins-and-st-test 4 10 state)))
+
   (defund queue11-l$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
@@ -1003,6 +1051,10 @@
       (mv (and (queue20-l$input-format-n inputs-seq st data-width n)
                (queue20-l$valid-st st data-width))
           state)))
+
+  (local
+   (defthm queue20-l$ins-and-st-test-ok
+     (queue20-l$ins-and-st-test 4 10 state)))
 
   (defund queue20-l$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -1091,6 +1143,10 @@
                (comp-v-or$valid-st st data-width)
                (comp-v-or$inv st))
           state)))
+
+  (local
+   (defthm comp-v-or$ins-and-st-test-ok
+     (comp-v-or$ins-and-st-test 4 10 state)))
 
   (defund comp-v-or$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -1253,6 +1309,10 @@
                (wig-wag$inv st))
           state)))
 
+  (local
+   (defthm wig-wag$ins-and-st-test-ok
+     (wig-wag$ins-and-st-test 4 10 state)))
+
   (defund wig-wag$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
@@ -1350,6 +1410,10 @@
                (round-robin1$inv st))
           state)))
 
+  (local
+   (defthm round-robin1$ins-and-st-test-ok
+     (round-robin1$ins-and-st-test 4 10 state)))
+
   (defund round-robin1$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
@@ -1434,6 +1498,10 @@
                (round-robin2$inv st))
           state)))
 
+  (local
+   (defthm round-robin2$ins-and-st-test-ok
+     (round-robin2$ins-and-st-test 4 10 state)))
+
   (defund round-robin2$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
@@ -1517,6 +1585,10 @@
                (round-robin3$valid-st st data-width)
                (round-robin3$inv st))
           state)))
+
+  (local
+   (defthm round-robin3$ins-and-st-test-ok
+     (round-robin3$ins-and-st-test 4 10 state)))
 
   (defund round-robin3$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)

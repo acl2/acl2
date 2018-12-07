@@ -344,7 +344,7 @@
          (link$st-format w-data1 data-width)
          (link$st-format w-cnt1 cnt-width))))
 
-(defthm piso2-sreg$st-format=>contraints
+(defthm piso2-sreg$st-format=>constraint
   (implies (piso2-sreg$st-format st data-width cnt-width)
            (and (posp data-width)
                 (natp cnt-width)
@@ -379,7 +379,7 @@
             (<= 4 (expt 2 n)))
    :rule-classes :linear))
 
-(defthmd piso2-sreg$valid-st=>constraints
+(defthmd piso2-sreg$valid-st=>constraint
   (implies (piso2-sreg$valid-st st data-width cnt-width)
            (and (natp data-width)
                 (<= 4 data-width)

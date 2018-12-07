@@ -127,7 +127,7 @@
          (queue4$st-format q4 data-width)
          (queue5$st-format q5 data-width))))
 
-(defthm queue10$st-format=>data-width-constraint
+(defthm queue10$st-format=>constraint
   (implies (queue10$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue10$st-format)))
@@ -141,7 +141,7 @@
          (queue4$valid-st q4 data-width)
          (queue5$valid-st q5 data-width))))
 
-(defthmd queue10$valid-st=>data-width-constraint
+(defthmd queue10$valid-st=>constraint
   (implies (queue10$valid-st st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue10$valid-st)))

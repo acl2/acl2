@@ -172,7 +172,7 @@
          (queue20-l$st-format q20-l0 data-width)
          (queue20-l$st-format q20-l1 data-width))))
 
-(defthm interl$st-format=>data-width-constraint
+(defthm interl$st-format=>constraint
   (implies (interl$st-format st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable interl$st-format)))
@@ -185,10 +185,10 @@
          (queue20-l$valid-st q20-l0 data-width)
          (queue20-l$valid-st q20-l1 data-width))))
 
-(defthmd interl$valid-st=>data-width-constraint
+(defthmd interl$valid-st=>constraint
   (implies (interl$valid-st st data-width)
            (posp data-width))
-  :hints (("Goal" :in-theory (enable queue20-l$valid-st=>data-width-constraint
+  :hints (("Goal" :in-theory (enable queue20-l$valid-st=>constraint
                                      interl$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -400,7 +400,7 @@
     (implies (interl$valid-st st data-width)
              (equal (len (interl$data-out inputs st data-width))
                     data-width))
-    :hints (("Goal" :in-theory (enable queue20-l$valid-st=>data-width-constraint
+    :hints (("Goal" :in-theory (enable queue20-l$valid-st=>constraint
                                        interl$valid-st
                                        interl$data-out))))
 
@@ -825,7 +825,7 @@
                      (queue20-l$data-out (nth *interl$q20-l0* st))))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 queue20-l$valid-st=>data-width-constraint
+                                 queue20-l$valid-st=>constraint
                                  arb-merge-1$act0
                                  arb-merge-1$act1
                                  arb-merge-1$data0-in
@@ -844,7 +844,7 @@
                      (queue20-l$data-out (nth *interl$q20-l1* st))))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 queue20-l$valid-st=>data-width-constraint
+                                 queue20-l$valid-st=>constraint
                                  arb-merge-1$act0
                                  arb-merge-1$act1
                                  arb-merge-1$data1-in

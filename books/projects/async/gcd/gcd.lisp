@@ -194,7 +194,7 @@
          (link$st-format l1 (* 2 data-width))
          (link$st-format l2 (* 2 data-width)))))
 
-(defthm gcd$st-format=>data-width-constraint
+(defthm gcd$st-format=>constraint
   (implies (gcd$st-format st data-width)
            (and (natp data-width)
                 (<= 3 data-width)))
@@ -212,7 +212,7 @@
          (link$valid-st l1 (* 2 data-width))
          (link$valid-st l2 (* 2 data-width)))))
 
-(defthmd gcd$valid-st=>data-width-constraint
+(defthmd gcd$valid-st=>constraint
   (implies (gcd$valid-st st data-width)
            (and (natp data-width)
                 (<= 3 data-width)))
