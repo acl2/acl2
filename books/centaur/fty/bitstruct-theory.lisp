@@ -62,9 +62,8 @@
 
 (defthmd part-select-width-low-in-terms-of-loghead-and-logtail
   ;; [Shilpi] For the accessor guard proofs.
-  (implies (syntaxp (atom x))
-	   (equal (bitops::part-select-width-low x width low)
-		  (loghead width (logtail low x))))
+  (equal (bitops::part-select-width-low x width low)
+         (loghead width (logtail low x)))
   :hints (("Goal" :in-theory (e/d (bitops::part-select-width-low) ()))))
 
 (defthmd part-install-width-low-in-terms-of-logior-logmask-ash
@@ -77,6 +76,75 @@
 		  (logior (logand (lognot (ash (logmask width) (nfix low))) x)
 			  (ash (loghead width val) (nfix low)))))
   :hints (("Goal" :in-theory (e/d (bitops::part-install-width-low) ()))))
+
+(defthmd remove-inner-logext-from-logext-logtail-nest
+  ;; [Shilpi] For the subfield-related accesor guard proofs.
+  (implies (and (< i (- k j))
+                (posp i) (natp j) (natp k))
+           (equal (logext i (logtail j (logext k x)))
+                  (logext i (logtail j x))))
+  :hints ((logbitp-reasoning)))
+
+(encapsulate
+  ()
+
+  (local
+   (defthm crock
+     ;; Ugh, dumb arithmetic.
+     (equal (+ -1 i (- i) j k) (+ -1 j k))))
+
+  (defthmd pull-out-logext-from-logext-logtail-next
+    ;; [Shilpi] For the subfield-related accessor guard proofs.
+    (implies (and (< (+ i k) j)
+                  (natp i) (natp j) (natp k))
+             (equal (logtail i (logext j (logtail k x)))
+                    (logext (- j i) (logtail (+ i k) x))))
+    :hints ((logbitp-reasoning))))
+
+(defthmd simplify-subfield-updater-guard-expression-with-inner-logext
+  ;; [Shilpi] For subfield updater guard proofs 
+  ;; foo->bar and bar->a: foo->a.  This lemma is applicable when bar is a
+  ;; signed subfield of foo.
+  (implies (<= (+ (nfix i) (nfix width-a)) (nfix width))
+           (equal
+
+            (bitops::part-install-width-low
+             (bitops::part-install-width-low
+              a
+              (logext width (bitops::part-select-width-low x width low))
+              width-a i)
+             x width low)
+
+            (logior
+             (logand
+              (lognot (ash (logmask width-a) (+ (nfix i) (nfix low))))
+              x)
+             (ash (loghead width-a a) (+ (nfix i) (nfix low))))))
+  :hints ((logbitp-reasoning)))
+
+(defthmd simplify-subfield-updater-guard-expression-with-more-logext
+  ;; [Shilpi] For subfield updater guard proofs 
+  ;; foo->bar and bar->a: foo->a.  This lemma is applicable when bar is a
+  ;; signed subfield of foo,  and a is a signed subfield of foo.
+  (implies (<= (+ (nfix i) (nfix width-a)) (nfix width))
+           (equal
+
+            (bitops::part-install-width-low
+             (logext
+              width
+              (bitops::part-install-width-low
+               a
+               (logext width (bitops::part-select-width-low x width low))
+               width-a i))
+             x width low)
+
+            (logior
+             (logand
+              (lognot (ash (logmask width-a) (+ (nfix i) (nfix low))))
+              x)
+             (ash (loghead width-a a) (+ (nfix i) (nfix low))))))
+  :hints ((logbitp-reasoning)))
+
 
 (defthmd unsigned-byte-p-of-bool->bit
   (implies (and (<= 1 n) (natp n))
@@ -309,7 +377,7 @@
 
 
 ;; For update-is-change, we use fix-is-constructor and are left with a
-;; part-install of a logapp equalling a logapp, so wrewrite part-install of
+;; part-install of a logapp equalling a logapp, so we rewrite part-install of
 ;; logapp:
 
 (defthm part-install-of-logapp-here
