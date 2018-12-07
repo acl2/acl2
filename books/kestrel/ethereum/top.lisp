@@ -10,11 +10,10 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
-
 ; the order of the following INCLUDE-BOOKs determines
 ; the order of the subtopics of the ETHEREUM topic below:
 (include-book "basics")
+(include-book "crypto")
 (include-book "rlp")
 (include-book "hex-prefix")
 
