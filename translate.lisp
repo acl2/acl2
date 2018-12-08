@@ -8330,14 +8330,8 @@
             (all-unbadged-fnnames (car terms) wrld acc))))))
 
 (defconst *gratuitous-lambda-object-restriction-msg*
-
-; When relevant documentation exists, change to:
-; "See :DOC gratuitous-lambda-object-restrictions for a workaround if you ~
-;  really mean to have an ill-formed LAMBDA-like constant in your code."
-
-  "If you really want an ill-formed lambda-like object here, backquote the ~
-   constant or cons up a suitable constant from quoted parts, or refer to a ~
-   previously defined defconst containing such an object.")
+  "See :DOC gratuitous-lambda-object-restrictions for a workaround if you ~
+   really mean to have an ill-formed LAMBDA-like constant in your code.")
 
 (defun edcls-from-lambda-object-dcls (dcls x bindings cform ctx wrld)
 
