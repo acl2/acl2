@@ -48,6 +48,7 @@
 (include-book "kestrel/java/portcullis" :dir :system)
 (include-book "kestrel/ethereum/portcullis" :dir :system)
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
+(include-book "kestrel/utilities/omaps/portcullis" :dir :system)
 
 ; Please note:
 ;
@@ -135,6 +136,11 @@
  into AIJ representations that are evaluated by the AIJ interpreter.</li>
 
  </ul>
+
+ <h4><see topic='@(url omap::omaps)'>Omaps</see></h4>
+
+ <p>Added a library for omaps (ordered maps), analogous to @(see
+ set::std/osets).</p>
 
  <h3>Changes to Existing Libraries</h3>
 
