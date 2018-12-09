@@ -252,7 +252,8 @@
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>Finished adding support for 32-bit application-level execution for
- non-floating-point instructions.</p>
+ non-floating-point instructions.  Added support for 32-bit application-level
+ execution for the floating-point instruction BSF.</p>
 
  <p>Added support for enabling/disabling machine features that depend on CPUID
  flags.</p>
