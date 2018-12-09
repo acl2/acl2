@@ -16,6 +16,7 @@
 (include-book "crypto")
 (include-book "rlp")
 (include-book "hex-prefix")
+(include-book "mmp-trees")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

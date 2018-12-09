@@ -181,6 +181,8 @@
  <p>Improved several names by using @('byte') instead of @('ubyte8') and
  @('nibble') instead of @('ubyte4').</p>
 
+ <p>Added a formalization of Modified Merkle Patricia trees.</p>
+
  <h4>Filesystem Books</h4>
 
  <p>The filesystem books @('[books]/projects/filesystems/') have been
