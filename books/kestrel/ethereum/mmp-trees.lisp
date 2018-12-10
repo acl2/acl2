@@ -1468,7 +1468,7 @@
      and would never allow the empty byte sequence.")
    (xdoc::p
     "Note that, according to our disambiguation and definition,
-     the root hash of the @(tsee mmp-tree) returned by this function
+     the root hash returned by this function
      is not necessarily a Keccak-256 hash;
      it may be a shorter byte sequence."))
   (mmp-encode-n (bytelist-to-nibblelist-keys map) 0)
