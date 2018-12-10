@@ -17,6 +17,7 @@
 (defpkg "ETHEREUM" (append (set-difference-eq *std-pkg-symbols*
                                               '(byte))
                            '(bendian=>nat
+                             defmax-nat
                              defxdoc+
                              lnfix
                              nat=>bendian

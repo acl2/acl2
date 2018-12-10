@@ -27,6 +27,70 @@
 (defxdoc+ atj-implementation
   :parents (atj)
   :short "Implementation of @(tsee atj)."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The implementation functions have formal parameters
+     consistently named as follows:")
+   (xdoc::ul
+    (xdoc::li
+     "@('state') is the ACL2 @(see state).")
+    (xdoc::li
+     "@('ctx') is the context used for errors.")
+    (xdoc::li
+     "@('args') is the list of all the inputs to @(tsee atj),
+      before being processed.
+      The type of this formal parameter is just @(tsee true-listp)
+      because its elements may be any values.")
+    (xdoc::li
+     "@('targets') is the list @('(fn1 ... fnp)') of inputs to @(tsee atj),
+      before being processed.
+      The type of this formal parameter is just @(tsee true-listp)
+      because its elements may be any values.")
+    (xdoc::li
+     "@('targets$') is the result of processing @('targets').
+      It is identical to @('targets'),
+      but has a type implied by its successful validation,
+      performed when it is processed.")
+    (xdoc::li
+     "@('java-package'),
+      @('java-class'), and
+      @('output-dir')
+      are the homonymous inputs to @(tsee atj),
+      before being processed.
+      These formal parameters have no types because they may be any values.")
+    (xdoc::li
+     "@('java-package$'),
+      @('java-class$'),
+      @('verbose$')
+      are the results of processing
+      the homonymous inputs (without the @('$')) to @(tsee atj).
+      Some are identical to the corresponding inputs,
+      but they have types implied by their successful validation,
+      performed when they are processed.")
+    (xdoc::li
+     "@('output-file$') is the result of processing @('output-dir').")
+    (xdoc::li
+     "@('pkgs') is the list of names of all the currently known ACL2 packages,
+      in chronological order.")
+    (xdoc::li
+     "@('pkg-witness') is the name of the symbol
+      returned by @(tsee pkg-witness).")
+    (xdoc::li
+     "@('fns-to-translate') is the list of names
+      of all the non-primitive functions to be translated to Java.")
+    (xdoc::li
+     "@('channel') is the output channel of the generated Java file.")
+    (xdoc::li
+     "@('value-next-var'),
+      @('term-next-var'), and
+      @('lambda-next-var')
+      are the indices of the next local variables to use
+      to construct values, terms, and lambda expressions.
+      See @(tsee atj-code-generation)."))
+   (xdoc::p
+    "The parameters of implementation functions that are not listed above
+     are described in, or clear from, those functions' documentation."))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,9 +150,7 @@
   :order-subtopics t
   :default-parent t)
 
-(define atj-process-targets ((targets true-listp "Inputs to the macro.")
-                             (ctx "Context for errors.")
-                             state)
+(define atj-process-targets ((targets true-listp) ctx state)
   :returns (mv erp
                (result "Always @('nil').")
                state)
@@ -265,9 +327,7 @@
   ///
   (assert-event (atj-string-ascii-java-package-name-p *atj-aij-package*)))
 
-(define atj-process-java-package ((java-package "Input to the macro.")
-                                  (ctx "Context for errors.")
-                                  state)
+(define atj-process-java-package ((java-package) ctx state)
   :returns (mv erp
                (result "Always @('nil').")
                state)
@@ -290,9 +350,7 @@
                   java-package *atj-aij-package*)))
     (value nil)))
 
-(define atj-process-java-class ((java-class "Input to the macro.")
-                                (ctx "Context for errors.")
-                                state)
+(define atj-process-java-class (java-class ctx state)
   :returns (mv erp
                (java-class "A @(tsee stringp) to use as
                             the name of the class to generate.")
@@ -312,11 +370,7 @@
        (name (or java-class "ACL2")))
     (value name)))
 
-(define atj-process-output-dir ((output-dir "Input to the macro.")
-                                (java-class "Result of
-                                             @(tsee atj-process-java-class).")
-                                (ctx "Context for errors.")
-                                state)
+(define atj-process-output-dir (output-dir (java-class$ stringp) ctx state)
   :returns (mv erp
                (output-file$ "A @(tsee stringp) to use as
                               the path of the generated Java file.")
@@ -331,7 +385,7 @@
                   "The output directory ~x0 is invalid."
                   output-dir))
        (file (oslib::catpath output-dir
-                             (concatenate 'string java-class ".java")))
+                             (concatenate 'string java-class$ ".java")))
        ((er &) (b* (((mv err/msg exists state) (oslib::path-exists-p file))
                     ((when err/msg)
                      (er-soft+ ctx t nil
@@ -360,15 +414,13 @@
   (assert-event (symbol-listp *atj-allowed-options*))
   (assert-event (no-duplicatesp-eq *atj-allowed-options*)))
 
-(define atj-process-inputs ((args "All the inputs to the macro.")
-                            (ctx "Context for errors.")
-                            state)
+(define atj-process-inputs ((args true-listp) ctx state)
   :returns (mv erp
                (result "A tuple @('((fn1 ... fnp)
-                                    java-package
-                                    java-class
-                                    output-file
-                                    verbose)')
+                                    java-package$
+                                    java-class$
+                                    output-file$
+                                    verbose$)')
                         satisfying
                         @('(typed-tuplep symbol-listp
                                          maybe-stringp
@@ -378,12 +430,12 @@
                                          result)'),
                         where @('fn1'), ..., @('fnp') are
                         the names of the target functions,
-                        @('java-package') is the @(':java-package') input,
-                        @('java-class) is the result of
+                        @('java-package$') is the @(':java-package') input,
+                        @('java-class$) is the result of
                         @(tsee atj-process-java-class),
                         @('output-file$') is the result of
                         (tsee atj-process-output-dir), and
-                        @('verbose') is the @(':verbose') input.")
+                        @('verbose$') is the @(':verbose') input.")
                state)
   :mode :program
   :short "Ensure that the inputs to the macro are valid."
@@ -429,21 +481,6 @@
       as determined by @('fn1'), ..., @('fnp').")))
   :order-subtopics t
   :default-parent t)
-
-(defval *atj-allowed-primitives*
-  :short "ACL2 primitive functions accepted by ATJ."
-  :long
-  "<p>
-   These are all the ACL2 primitive functions.
-   </p>
-   <p>
-   The functions in this list have native Java implementations in
-   <see topic='@(url aij)'>AIJ</see>.
-   </p>"
-  (strip-cars *primitive-formals-and-guards*)
-  ///
-  (assert-event (symbol-listp *atj-allowed-primitives*))
-  (assert-event (no-duplicatesp-eq *atj-allowed-primitives*)))
 
 (defval *atj-allowed-raws*
   :short "ACL2 functions with raw Lisp code that are accepted by ATJ."
@@ -552,15 +589,12 @@
   (assert-event (symbol-listp *atj-allowed-raws*))
   (assert-event (no-duplicatesp-eq *atj-allowed-raws*)))
 
-(define atj-fns-to-translate
-  ((targets symbol-listp "Result of @(tsee atj-process-inputs).")
-   (verbose booleanp "Result of @(tsee atj-process-inputs).")
-   (ctx "Context for errors.")
-   state)
+(define atj-fns-to-translate ((targets$ symbol-listp)
+                              (verbose$ booleanp)
+                              ctx
+                              state)
   :returns (mv erp
-               (fns-to-translate
-                "A @(tsee symbol-listp) of
-                 the functions to be translated to Java.")
+               (fns-to-translate "A @(tsee symbol-listp).")
                state)
   :mode :program
   :short "Collect the names of all the ACL2 functions to be translated to Java."
@@ -596,9 +630,9 @@
     "The returned list of function names should have no duplicates,
      but we double-check that for robustness.
      The list is in no particular order."))
-  (b* (((run-when verbose)
+  (b* (((run-when verbose$)
         (cw "~%ACL2 functions to translate to Java:~%"))
-       ((er fns) (atj-fns-to-translate-aux targets nil verbose ctx state))
+       ((er fns) (atj-fns-to-translate-aux targets$ nil verbose$ ctx state))
        ((unless (no-duplicatesp-eq fns))
         (value (raise "Internal error: ~
                        the list ~x0 of collected function names ~
@@ -609,7 +643,7 @@
   :prepwork
   ((define atj-fns-to-translate-aux ((worklist symbol-listp)
                                      (current-fns symbol-listp)
-                                     (verbose booleanp)
+                                     (verbose$ booleanp)
                                      ctx
                                      state)
      :returns (mv erp ; BOOLEANP
@@ -619,8 +653,8 @@
      :parents nil
      (b* (((when (endp worklist)) (value current-fns))
           ((cons fn worklist) worklist)
-          ((when (member-eq fn *atj-allowed-primitives*))
-           (atj-fns-to-translate-aux worklist current-fns verbose ctx state))
+          ((when (primitivep fn))
+           (atj-fns-to-translate-aux worklist current-fns verbose$ ctx state))
           ((when (and (or (member-eq fn (@ acl2::program-fns-with-raw-code))
                           (member-eq fn (@ acl2::logic-fns-with-raw-code)))
                       (not (member-eq fn *atj-allowed-raws*))))
@@ -637,19 +671,15 @@
            (er-soft+ ctx t nil
                      "The function ~x0 has input or output stobjs; ~
                       therefore, code generation cannot proceed." fn))
-          ((run-when verbose)
+          ((run-when verbose$)
            (cw "  ~x0~%" fn))
           (current-fns (add-to-set-eq fn current-fns))
           (called-fns (all-ffn-symbs (atj-remove-mbe-exec-from-term body) nil))
           (fns-to-add-to-worklist (set-difference-eq called-fns current-fns))
           (worklist (union-eq fns-to-add-to-worklist worklist)))
-       (atj-fns-to-translate-aux worklist current-fns verbose ctx state)))))
+       (atj-fns-to-translate-aux worklist current-fns verbose$ ctx state)))))
 
-(define atj-gather-info
-  ((targets symbol-listp "Result of @(tsee atj-process-inputs).")
-   (verbose booleanp "Result of @(tsee atj-process-inputs).")
-   (ctx "Context for errors.")
-   state)
+(define atj-gather-info ((targets$ symbol-listp) (verbose$ booleanp) ctx state)
   :returns (mv erp
                (result "A tuple @('(pkgs
                                     pkg-witness
@@ -669,14 +699,15 @@
   :short "Gather the information about the ACL2 environment
           needed to generate Java code."
   (b* ((pkgs (known-packages state))
-       ((run-when verbose)
+       ((run-when verbose$)
         (cw "~%Known ACL2 packages:~%")
         (atj-show-pkgs pkgs))
        (pkg-witness *pkg-witness-name*)
-       ((run-when verbose)
+       ((run-when verbose$)
         (cw "~%Name of the ACL2 package witness symbol:~%  ~s0~%"
             pkg-witness))
-       ((er fns-to-translate) (atj-fns-to-translate targets verbose ctx state)))
+       ((er fns-to-translate)
+        (atj-fns-to-translate targets$ verbose$ ctx state)))
     (value (list pkgs pkg-witness fns-to-translate)))
 
   :prepwork
@@ -690,7 +721,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-file-generation
+(defxdoc+ atj-code-generation
   :parents (atj-implementation)
   :short "Code generation performed by ATJ."
   :long
@@ -832,7 +863,7 @@
    (vartype stringp "Java type of the local variable.")
    (expression msgp "Java expression to set the variable to.")
    (next-var posp "Index of the next local variable to use.")
-   (channel symbolp "Output channel of the generated Java file.")
+   (channel symbolp)
    state)
   :returns (mv (varname "A @(tsee stringp), the name of the local variable.")
                (new-next-var "A @(tsee posp), the updated variable index.")
@@ -972,16 +1003,15 @@
    "Since ACL2 values have a recursive structure,
    these functions are mutually recursive.")
 
-  (define atj-gen-cpair-value
-    ((pair consp)
-     (value-next-var posp "Index of the next local variable to use.")
-     (channel symbolp "Output channel of the generated Java file.")
-     state)
+  (define atj-gen-cpair-value ((pair consp)
+                               (value-next-var posp)
+                               (channel symbolp)
+                               state)
     :returns (mv (java-expression "A @(tsee msgp).")
                  (new-value-next-var "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-file-generation atj-gen-values)
+    :parents (atj-code-generation atj-gen-values)
     :short "Generate Java code to build an ACL2 @(tsee cons) pair value."
     :long
     (xdoc::topp
@@ -1022,16 +1052,15 @@
           value-next-var
           state)))
 
-  (define atj-gen-value
-    ((x "Value.")
-     (value-next-var posp "Index of the next local variable to use.")
-     (channel symbolp "Output channel of the generated Java file.")
-     state)
+  (define atj-gen-value ((x "Value.")
+                         (value-next-var posp)
+                         (channel symbolp)
+                         state)
     :returns (mv (java-expression "A @(tsee msgp).")
                  (new-value-next-var "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-file-generation atj-gen-values)
+    :parents (atj-code-generation atj-gen-values)
     :short "Generate Java code to build an ACL2 value."
     (cond ((characterp x) (mv (atj-gen-character-value x)
                               value-next-var
@@ -1060,9 +1089,8 @@
 
 (define atj-gen-qconstant-term
   ((constant "(Unquoted) value of the ACL2 quoted constant.")
-   (value-next-var
-    posp "Index of the next local variable to use for values.")
-   (channel symbolp "Output channel of the generated Java file.")
+   (value-next-var posp)
+   (channel symbolp)
    state)
   :returns (mv (java-expression "A @(tsee msgp).")
                (new-value-next-var "A @(tsee posp).")
@@ -1140,24 +1168,20 @@
    "Since ACL2 terms and lambda expressions have a recursive structure,
     these functions are mutually recursive.")
 
-  (define atj-gen-application-term
-    ((function pseudo-termfnp)
-     (arguments pseudo-term-listp)
-     (value-next-var
-      posp "Index of the next local variable to use for values.")
-     (term-next-var
-      posp "Index of the next local variable to use for terms.")
-     (lambda-next-var
-      posp "Index of the next local variable to use for lambda expressions.")
-     (channel symbolp "Output channel of the generated Java file.")
-     state)
+  (define atj-gen-application-term ((function pseudo-termfnp)
+                                    (arguments pseudo-term-listp)
+                                    (value-next-var posp)
+                                    (term-next-var posp)
+                                    (lambda-next-var posp)
+                                    (channel symbolp)
+                                    state)
     :returns (mv (java-expression "A @(tsee msgp).")
                  (new-value-next-var "A @(tsee posp).")
                  (new-term-next-var "A @(tsee posp).")
                  (new-lambda-next-var "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-file-generation atj-gen-terms+lambdas)
+    :parents (atj-code-generation atj-gen-terms+lambdas)
     :short "Generate Java code to build an ACL2 application term."
     :long
     (xdoc::topapp
@@ -1235,16 +1259,12 @@
           lambda-next-var
           state)))
 
-  (define atj-gen-lambda
-    ((formals symbol-listp)
-     (body pseudo-termp)
-     (value-next-var
-      posp "Index of the next local variable to use for values.")
-     (term-next-var
-      posp "Index of the next local variable to use for terms.")
-     (lambda-next-var
-      posp "Index of the next local variable to use for lambda expressions.")
-     (channel symbolp "Output channel of the generated Java file.")
+  (define atj-gen-lambda ((formals symbol-listp)
+                          (body pseudo-termp)
+                          (value-next-var posp)
+                          (term-next-var posp)
+                          (lambda-next-var posp)
+                          (channel symbolp)
      state)
     :returns (mv (java-expression "A @(tsee msgp).")
                  (new-value-next-var "A @(tsee posp).")
@@ -1252,7 +1272,7 @@
                  (new-lambda-next-var "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-file-generation atj-gen-terms+lambdas)
+    :parents (atj-code-generation atj-gen-terms+lambdas)
     :short "Generate Java code to build an ACL2 lambda expression."
     :long
     (xdoc::topp
@@ -1290,23 +1310,19 @@
           lambda-next-var
           state)))
 
-  (define atj-gen-term
-    ((term pseudo-termp)
-     (value-next-var
-      posp "Index of the next local variable to use for values.")
-     (term-next-var
-      posp "Index of the next local variable to use for terms.")
-     (lambda-next-var
-      posp "Index of the next local variable to use for lambda expressions.")
-     (channel symbolp "Output channel of the generated Java file.")
-     state)
+  (define atj-gen-term ((term pseudo-termp)
+                        (value-next-var posp)
+                        (term-next-var posp)
+                        (lambda-next-var posp)
+                        (channel symbolp)
+                        state)
     :returns (mv (java-expression "A @(tsee msgp).")
                  (new-value-next-var "A @(tsee posp).")
                  (new-term-next-var "A @(tsee posp).")
                  (new-lambda-next-var "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-file-generation atj-gen-terms+lambdas)
+    :parents (atj-code-generation atj-gen-terms+lambdas)
     :short "Generate Java code to build an ACL2 term."
     (cond ((variablep term) (mv (atj-gen-variable-term term)
                                 value-next-var
@@ -1333,23 +1349,19 @@
                                        channel
                                        state))))
 
-  (define atj-gen-terms
-    ((terms pseudo-term-listp)
-     (value-next-var
-      posp "Index of the next local variable to use for values.")
-     (term-next-var
-      posp "Index of the next local variable to use for terms.")
-     (lambda-next-var
-      posp "Index of the next local variable to use for lambda expressions.")
-     (channel symbolp "Output channel of the generated Java file.")
-     state)
+  (define atj-gen-terms ((terms pseudo-term-listp)
+                         (value-next-var posp)
+                         (term-next-var posp)
+                         (lambda-next-var posp)
+                         (channel symbolp)
+                         state)
     :returns (mv (java-expressions "A @(tsee msg-listp).")
                  (new-value-next-var "A @(tsee posp).")
                  (new-term-next-var "A @(tsee posp).")
                  (new-lambda-next-var "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-file-generation atj-gen-terms+lambdas)
+    :parents (atj-code-generation atj-gen-terms+lambdas)
     :short "Generate Java code to build a sequence of ACL2 terms."
     (if (endp terms)
         (mv nil
@@ -1402,11 +1414,10 @@
   (str::cat "addPackageDef_"
             (ubyte8s=>hexstring (string=>nats pkg))))
 
-(define atj-gen-add-package-def-method
-  ((pkg stringp)
-   (verbose booleanp "Result of @(tsee atj-process-inputs).")
-   (channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-add-package-def-method ((pkg stringp)
+                                        (verbose$ booleanp)
+                                        (channel symbolp)
+                                        state)
   :returns state
   :mode :program
   :short "Generate a Java method
@@ -1422,7 +1433,7 @@
     whose capacity is the length of the import list.
     After all the assignments, we generate a call statement
     to add the package to the environment with the calculated import list.")
-  (b* (((run-when verbose)
+  (b* (((run-when verbose$)
         (cw "  ~s0~%" pkg))
        (name (atj-gen-add-package-def-method-name pkg))
        ((mv & state) (fmt1! "~%~s0private static void ~s1() {~%"
@@ -1463,12 +1474,10 @@
                                  0 channel state nil)))
          (atj-gen-add-package-def-method-aux (cdr imports) channel state))))))
 
-(define atj-gen-add-package-def-methods
-  ((pkgs string-listp "Result of @(tsee atj-gather-info) initially,
-                       then a suffix of it in the recursive calls.")
-   (verbose booleanp "Result of @(tsee atj-process-inputs).")
-   (channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-add-package-def-methods ((pkgs string-listp)
+                                         (verbose$ booleanp)
+                                         (channel symbolp)
+                                         state)
   :returns state
   :mode :program
   :short "Generate all the Java methods
@@ -1476,14 +1485,12 @@
   (if (endp pkgs)
       state
     (b* ((state
-          (atj-gen-add-package-def-method (car pkgs) verbose channel state)))
-      (atj-gen-add-package-def-methods (cdr pkgs) verbose channel state))))
+          (atj-gen-add-package-def-method (car pkgs) verbose$ channel state)))
+      (atj-gen-add-package-def-methods (cdr pkgs) verbose$ channel state))))
 
-(define atj-gen-add-package-defs
-  ((pkgs string-listp "Result of @(tsee atj-gather-info) initially,
-                       then a suffix of it in the recursive calls.")
-   (channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-add-package-defs ((pkgs string-listp)
+                                  (channel symbolp)
+                                  state)
   :returns state
   :mode :program
   :short "Generate Java code
@@ -1503,10 +1510,9 @@
                               0 channel state nil)))
       (atj-gen-add-package-defs (cdr pkgs) channel state))))
 
-(define atj-gen-set-pkg-witness
-  ((pkg-witness stringp "Result of @(tsee atj-gather-info).")
-   (channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-set-pkg-witness ((pkg-witness stringp)
+                                 (channel symbolp)
+                                 state)
   :returns state
   :mode :program
   :short "Generate Java code to set the name of the ACL2 package witness."
@@ -1545,11 +1551,10 @@
    "_"
    (ubyte8s=>hexstring (string=>nats (symbol-name fn-to-translate)))))
 
-(define atj-gen-add-function-def-method
-  ((fn-to-translate symbolp)
-   (verbose booleanp "Result of @(tsee atj-process-inputs).")
-   (channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-add-function-def-method ((fn-to-translate symbolp)
+                                         (verbose$ booleanp)
+                                         (channel symbolp)
+                                         state)
   :returns state
   :mode :program
   :short "Generate a Java method
@@ -1576,7 +1581,7 @@
      prior to generating code.
      This is consistent with the fact that the Java counterpart of the function
      is executed ``in the logic''."))
-  (b* (((run-when verbose)
+  (b* (((run-when verbose$)
         (cw "  ~s0~%" fn-to-translate))
        (name (atj-gen-add-function-def-method-name fn-to-translate))
        ((mv & state) (fmt1! "~%~s0private static void ~s1() {~%"
@@ -1617,11 +1622,10 @@
                             0 channel state nil)))
     state))
 
-(define atj-gen-add-function-def-methods
-  ((fns-to-translate symbol-listp "Result of @(tsee atj-gather-info).")
-   (verbose booleanp "Result of @(tsee atj-process-inputs).")
-   (channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-add-function-def-methods ((fns-to-translate symbol-listp)
+                                          (verbose$ booleanp)
+                                          (channel symbolp)
+                                          state)
   :returns state
   :mode :program
   :short "Generate all the Java methods
@@ -1629,19 +1633,17 @@
   (if (endp fns-to-translate)
       state
     (b* ((state (atj-gen-add-function-def-method (car fns-to-translate)
-                                                 verbose
+                                                 verbose$
                                                  channel
                                                  state)))
       (atj-gen-add-function-def-methods (cdr fns-to-translate)
-                                        verbose
+                                        verbose$
                                         channel
                                         state))))
 
-(define atj-gen-add-function-defs
-  ((fns-to-translate symbol-listp "Result of @(tsee atj-gather-info) initially,
-                                   the a suffix of it in the recursive calls.")
-   (channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-add-function-defs ((fns-to-translate symbol-listp)
+                                   (channel symbolp)
+                                   state)
   :returns state
   :mode :program
   :short "Generate Java code
@@ -1662,12 +1664,11 @@
                               0 channel state nil)))
       (atj-gen-add-function-defs (cdr fns-to-translate) channel state))))
 
-(define atj-gen-init-method
-  ((pkgs string-listp "Result of @(tsee atj-gather-info).")
-   (pkg-witness stringp "Result of @(tsee atj-gather-info).")
-   (fns-to-translate symbol-listp "Result of @(tsee atj-gather-info).")
-   (channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-init-method ((pkgs string-listp)
+                             (pkg-witness stringp)
+                             (fns-to-translate symbol-listp)
+                             (channel symbolp)
+                             state)
   :returns state
   :mode :program
   :short "Generate the Java public method to initialize the ACL2 environment."
@@ -1705,9 +1706,7 @@
                             0 channel state nil)))
     state))
 
-(define atj-gen-call-method
-  ((channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-call-method ((channel symbolp) state)
   :returns state
   :mode :program
   :short "Generate the Java method to call ACL2 functions."
@@ -1747,9 +1746,7 @@
                             0 channel state nil)))
     state))
 
-(define atj-gen-init-field
-  ((channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-init-field ((channel symbolp) state)
   :returns state
   :mode :program
   :short "Generate the Java field for the initialization flag."
@@ -1764,14 +1761,13 @@
                             0 channel state nil)))
     state))
 
-(define atj-gen-class
-  ((pkgs string-listp "Result of @(tsee atj-gather-info).")
-   (pkg-witness stringp "Result of @(tsee atj-gather-info).")
-   (fns-to-translate symbol-listp "Result of @(tsee atj-gather-info).")
-   (java-class stringp "Result of @(tsee atj-process-inputs).")
-   (verbose booleanp "Result of @(tsee atj-process-inputs).")
-   (channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-class ((pkgs string-listp)
+                       (pkg-witness stringp)
+                       (fns-to-translate symbol-listp)
+                       (java-class$ stringp)
+                       (verbose$ booleanp)
+                       (channel symbolp)
+                       state)
   :returns state
   :mode :program
   :short "Generate the Java class declaration."
@@ -1782,25 +1778,23 @@
     public classes to be in files with the same names (plus extension).
     The code that we generate satisfies this requirement.")
   (b* (((mv & state) (fmt1! "public class ~s0 {~%"
-                            (list (cons #\0 java-class))
+                            (list (cons #\0 java-class$))
                             0 channel state nil))
        (state (atj-gen-init-field channel state))
-       ((run-when verbose)
+       ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 packages:~%"))
-       (state (atj-gen-add-package-def-methods pkgs verbose channel state))
-       ((run-when verbose)
+       (state (atj-gen-add-package-def-methods pkgs verbose$ channel state))
+       ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 functions:~%"))
        (state (atj-gen-add-function-def-methods fns-to-translate
-                                                verbose channel state))
+                                                verbose$ channel state))
        (state (atj-gen-init-method pkgs pkg-witness fns-to-translate
                                    channel state))
        (state (atj-gen-call-method channel state))
        ((mv & state) (fmt1! "}~%" nil 0 channel state nil)))
     state))
 
-(define atj-gen-file-header
-  ((channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-file-header ((channel symbolp) state)
   :returns state
   :mode :program
   :short "Generate the Java file header."
@@ -1814,10 +1808,9 @@
                nil 0 channel state nil)))
     state))
 
-(define atj-gen-package-decl
-  ((java-package maybe-stringp "Result of @(tsee atj-process-inputs).")
-   (channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-package-decl ((java-package$ maybe-stringp)
+                              (channel symbolp)
+                              state)
   :returns state
   :mode :program
   :short "Generate the Java package declaration (if any)."
@@ -1826,16 +1819,14 @@
    "This is generated only if the package is named,
     i.e. @('java-package') is not @('nil').
     If the package is unnamed, no declaration is generated.")
-  (if java-package
+  (if java-package$
       (b* (((mv & state) (fmt1! "package ~s0;~%~%"
-                                (list (cons #\0 java-package))
+                                (list (cons #\0 java-package$))
                                 0 channel state nil)))
         state)
     state))
 
-(define atj-gen-import-decls
-  ((channel symbolp "Output channel of the generated Java file.")
-   state)
+(define atj-gen-import-decls ((channel symbolp) state)
   :returns state
   :mode :program
   :short "Generate the Java import declarations."
@@ -1860,15 +1851,14 @@
        ((mv & state) (fmt1! "~%" nil 0 channel state nil)))
     state))
 
-(define atj-gen-file
-  ((java-package maybe-stringp "Result of @(tsee atj-process-inputs).")
-   (java-class maybe-stringp "Result of @(tsee atj-process-inputs).")
-   (output-file stringp "Result of @(tsee atj-process-inputs).")
-   (pkgs string-listp "Result of @(tsee atj-gather-info).")
-   (pkg-witness stringp "Result of @(tsee atj-gather-info).")
-   (fns-to-translate symbol-listp "Result of @(tsee atj-gather-info).")
-   (verbose booleanp "Result of @(tsee atj-process-inputs).")
-   state)
+(define atj-gen-everything ((java-package$ maybe-stringp)
+                            (java-class$ maybe-stringp)
+                            (output-file$ stringp)
+                            (pkgs string-listp)
+                            (pkg-witness stringp)
+                            (fns-to-translate symbol-listp)
+                            (verbose$ booleanp)
+                            state)
   :returns (mv (erp "Always @('nil').")
                (val "Always @('nil').")
                state)
@@ -1882,21 +1872,20 @@
   (state-global-let*
    ((acl2::fmt-soft-right-margin 100000 set-fmt-soft-right-margin)
     (acl2::fmt-hard-right-margin 100000 set-fmt-hard-right-margin))
-   (b* (((mv channel state) (open-output-channel! output-file :character state))
+   (b* (((mv channel state) (open-output-channel! output-file$
+                                                  :character state))
         (state (atj-gen-file-header channel state))
-        (state (atj-gen-package-decl java-package channel state))
+        (state (atj-gen-package-decl java-package$ channel state))
         (state (atj-gen-import-decls channel state))
-        (state (atj-gen-class pkgs pkg-witness fns-to-translate java-class
-                              verbose channel state))
+        (state (atj-gen-class pkgs pkg-witness fns-to-translate java-class$
+                              verbose$ channel state))
         (state (close-output-channel channel state)))
      (value nil)))
   :prepwork ((defttag :open-input-channel)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-fn ((args "Inputs to the macro.")
-                (ctx "Context for errors.")
-                state)
+(define atj-fn ((args true-listp) ctx state)
   :returns (mv erp
                (result "Always @('(value-triple :invisible)').")
                state)
@@ -1914,23 +1903,23 @@
      no return value is printed on the screen.
      A message of successful completion is printed,
      regardless of @(':verbose')."))
-  (b* (((er (list targets
-                  java-package
+  (b* (((er (list targets$
+                  java-package$
                   java-class
                   output-file
-                  verbose)) (atj-process-inputs args ctx state))
+                  verbose$)) (atj-process-inputs args ctx state))
        ((er (list pkgs
                   pkg-witness
                   fns-to-translate)) (atj-gather-info
-                                      targets verbose ctx state))
-       ((er &) (atj-gen-file java-package
-                             java-class
-                             output-file
-                             pkgs
-                             pkg-witness
-                             fns-to-translate
-                             verbose
-                             state))
+                                      targets$ verbose$ ctx state))
+       ((er &) (atj-gen-everything java-package$
+                                   java-class
+                                   output-file
+                                   pkgs
+                                   pkg-witness
+                                   fns-to-translate
+                                   verbose$
+                                   state))
        (- (cw "~%Generated Java file:~%  ~x0~%" output-file)))
     (value '(value-triple :invisible))))
 
