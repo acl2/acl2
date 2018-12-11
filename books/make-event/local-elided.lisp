@@ -83,4 +83,3 @@
  (my-local (defun g4 (x) x))
  (progn (my-local (defun g5 (x) x))
         (my-local (make-event (value '(defun g6 (x) x))))))
-
