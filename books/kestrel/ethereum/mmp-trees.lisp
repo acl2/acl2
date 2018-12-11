@@ -1335,9 +1335,9 @@
                 (rlp-tree-nonleaf (rcons v-tree u-trees))
                 u-database)))
          ((when error?) (mv error? nil nil))
-         (rlp-encoding? (rlp-encode-tree rlp-tree))
-         ((when (bytelist/error-case rlp-encoding? :error)) (mv :rlp nil nil)))
-      (mv nil rlp-encoding? database))
+         ((mv rlp-error? rlp-encoding) (rlp-encode-tree rlp-tree))
+         ((when rlp-error?) (mv :rlp nil nil)))
+      (mv nil rlp-encoding database))
     :measure (acl2::nat-list-measure
               (list (nfix (- (nibblelist-bytelist-map-sup-len-key map)
                              (nfix i)))

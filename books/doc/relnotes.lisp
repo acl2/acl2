@@ -183,6 +183,9 @@
 
  <p>Added a formalization of Modified Merkle Patricia trees.</p>
 
+ <p>Mofified the formalizations of RLP encoding and decoding to return an
+ explicit error flag.</p>
+
  <h4>Filesystem Books</h4>
 
  <p>The filesystem books @('[books]/projects/filesystems/') have been
