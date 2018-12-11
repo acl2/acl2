@@ -38,18 +38,20 @@
 
 ;; ===================================================================
 ;;
-;; meta-complex-rationalp tells us when to apply complex elimination
+;; pseudo-complex-rationalp tells us when to apply complex elimination
 ;; rules to an expression.  While technically the predicate is always
 ;; true, in practice we disable the definition and relay on the
 ;; following set of rules to determine whether a polynomial expression
-;; contains a complex number.
+;; contains a complex coefficient.
 ;;
-;; Note that we use "meta-complex-rationalp-realpart-imagpart" to
+;; Note that we use "pseudo-complex-rationalp-realpart-imagpart" to
 ;; suggest that arguments of (realpart x) and (imagpart x) are
-;; meta-complex-rationalp.  We use this to induce real/imag reduction
-;; of variables in otherwise rational expressions when they have
-;; already appeared in complex expressions.  Note that the example
-;; at the end of this file will fail to prove without such a rule.
+;; pseudo-complex-rationalp.  This can induce real/imag reduction of
+;; otherwise rational expressions when they contain terms that
+;; appeared in complex expressions.  The "complex-poly-test" theorem
+;; at the end of this file, for example, fails to prove without this
+;; rule because the third inequality in its hypothesis is otherwise
+;; not (pseudo) complex.
 ;;
 ;; ===================================================================
 
@@ -58,51 +60,58 @@
 
   (set-tau-auto-mode nil)
 
-  (defun meta-complex-rationalp (x)
+  (defun pesudo-complex-rationalp (x)
     (declare (ignore x))
     t)
   
-  (defthm complex-rationalp-implies-meta-complex-rationalp
+  ;; Leaf.
+  ;; 
+  ;; A mildly unfortunate side-effect of this rule is polys with
+  ;; rational coefficients but complex variables will still be split.
+  ;;
+  (defthm complex-rationalp-implies-pesudo-complex-rationalp
     (implies
      (complex-rationalp x)
-     (meta-complex-rationalp x))
+     (pesudo-complex-rationalp x))
     :rule-classes (:rewrite :type-prescription :forward-chaining))
   
-  (defthm meta-complex-rationalp-complex
-    (meta-complex-rationalp (complex x y)))
+  ;; Leaf
+  (defthm pesudo-complex-rationalp-complex
+    (pesudo-complex-rationalp (complex x y)))
   
-  (defthm meta-complex-rationalp-+
+  (defthm pesudo-complex-rationalp-+
     (implies
-     (or (meta-complex-rationalp x)
-         (meta-complex-rationalp y))
-     (meta-complex-rationalp (+ x y))))
+     (or (pesudo-complex-rationalp x)
+         (pesudo-complex-rationalp y))
+     (pesudo-complex-rationalp (+ x y))))
   
-  (defthm meta-complex-rationalp-*
+  (defthm pesudo-complex-rationalp-*
     (implies
-     (or (meta-complex-rationalp x)
-         (meta-complex-rationalp y))
-     (meta-complex-rationalp (* x y))))
+     (or (pesudo-complex-rationalp x)
+         (pesudo-complex-rationalp y))
+     (pesudo-complex-rationalp (* x y))))
   
-  (defthm meta-complex-rationalp--
+  (defthm pesudo-complex-rationalp--
     (implies
-     (meta-complex-rationalp x)
-     (meta-complex-rationalp (- x))))
+     (pesudo-complex-rationalp x)
+     (pesudo-complex-rationalp (- x))))
   
-  (defthm meta-complex-rationalp-/
+  (defthm pesudo-complex-rationalp-/
     (implies
-     (meta-complex-rationalp x)
-     (meta-complex-rationalp (/ x))))
+     (pesudo-complex-rationalp x)
+     (pesudo-complex-rationalp (/ x))))
   
-  (defthm meta-complex-rationalp-realpart-imagpart
-    (meta-complex-rationalp x)
+  ;; Induce pseudo-complexity on real/imag components
+  (defthm pesudo-complex-rationalp-realpart-imagpart
+    (pesudo-complex-rationalp x)
     :rule-classes ((:forward-chaining :trigger-terms ((realpart x)
                                                       (imagpart x)))))
 
   )
 
-(in-theory (disable meta-complex-rationalp
-                    (meta-complex-rationalp)
-                    (:type-prescription meta-complex-rationalp)))
+(in-theory (disable pesudo-complex-rationalp
+                    (pesudo-complex-rationalp)
+                    (:type-prescription pesudo-complex-rationalp)))
 
 ;; ===================================================================
 ;;
@@ -287,21 +296,21 @@
 ;;
 ;; ===================================================================
 
-(defthm <-meta-complex-rationalp
+(defthm <-pesudo-complex-rationalp
   (implies
-   (or (meta-complex-rationalp x)
-       (meta-complex-rationalp y))
+   (or (pesudo-complex-rationalp x)
+       (pesudo-complex-rationalp y))
    (iff (< x y)
         (or (< (realpart x) (realpart y))
             (and (equal (realpart x) (realpart y))
                  (< (imagpart x) (imagpart y))))))
   :hints (("Goal" :use completion-of-<)))
 
-(defthm equal-meta-complex-rationalp
+(defthm equal-pesudo-complex-rationalp
   (implies
    (and
-    (or (meta-complex-rationalp x)
-        (meta-complex-rationalp y))
+    (or (pesudo-complex-rationalp x)
+        (pesudo-complex-rationalp y))
     (or (acl2-numberp x)
         (acl2-numberp y)))
    (iff (equal x y)
