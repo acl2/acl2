@@ -1480,8 +1480,8 @@
 (define-sk mmp-encoding-p ((root byte-listp) (database bytelist-bytelist-mapp))
   :returns (yes/no booleanp)
   :parents (mmp-trees)
-  :short "Recognize MMP encodings
-          of finite maps from byte arrays to byte arrays."
+  :short "Check if a root and database are an MMP encoding
+          of a finite map from byte arrays to byte arrays."
   :long
   (xdoc::topapp
    (xdoc::p
