@@ -17,14 +17,6 @@
  (er-let* ((forms (read-list "local-requires-skip-check.cert" 'top state)))
           (let ((erp (not (equal (car (last (cadr (member-eq :expansion-alist
                                                              forms))))
-                                 '(9 RECORD-EXPANSION
-                                     (must-fail
-                                      (local
-                                       (make-event
-                                        '(defun test10 (x) (identity-macro x))
-                                        :check-expansion
-                                        (defun test10 (x) (cons x x)))
-                                       ))
-                                     (WITH-OUTPUT :OFF :ALL
-                                       (VALUE-TRIPLE 'T)))))))
+                                 '(9 WITH-OUTPUT :OFF :ALL
+                                     (VALUE-TRIPLE 'T))))))
             (mv erp nil state))))

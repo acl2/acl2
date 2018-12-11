@@ -9338,35 +9338,39 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; We use record-expansion (as described in :doc make-event-details) in order to
 ; support redundancy of encapsulate, as implemented by redundant-encapsulatep
-; and its subroutines.  Here is a summary of the issue.  Consider: (encapsulate
-; ((foo (x) t)) ... (make-event <form>)).  We have several goals.
-; + Be able to execute this form a second time and have it be redundant.
-; + If this form is redundant yet in a book, it cannot cause a new expansion
-;   result for the make-event or the encapsulate, and include-book has to do
-;   the right thing even, if possible, in raw mode.
-; + We want to store a proper expansion of an encapsulate.
-; + We want to recognize redundancy without having to execute the encapsulate.
-; + If an encapsulate form is redundant then its stored version is identical
-;   to the stored version of the earlier form for which it is redundant.
-; The last of these properties is important because otherwise unsoundness could
-; result!  Suppose for example that a book bar.lisp contains (local
-; (include-book "foo")), where foo.lisp contains an encapsulate that causes a
-; later encapsulate in bar.lisp to be redundant.  What should we know at the
-; point we see the later encapsulate?  We should know that the event logically
-; represented by the encapsulate is the same as the one logically represented
-; by the earlier encapsulate, so we certainly do not want to re-do its
-; expansion at include-book time.  Thus, when an encapsulate is redundant, we
-; store the expanded version of the earlier encapsulate as the expansion of the
-; current unexpanded encapsulate, unless the two are identical.  But how do we
-; expand a non-redundant encapsulate?  We expand it by replacing every
-; sub-event ev by (record-expansion ev exp), when ev has an expansion exp.
-; Then, we recognize a subsequent encapsulate as redundant with this one if
-; their signatures are equal and each of the subsequent encapsulate's events,
-; ev2, is either the same as the corresponding event ev1 of the old encapsulate
-; or else ev1 is of the form (record-expansion ev2 ...).
+; and its subroutines.  Here is a summary of the redundancy issue.
 
-; We elide local forms arising from make-event expansions when writing to book
-; certificates, in order to save space.  See elide-locals.
+; We have these two key goals regarding redundancy
+
+; + We prefer to recognize redundancy without having to execute the
+;   encapsulate.
+
+; + If an encapsulate form is redundant with an earlier form that is local, and
+;   thus including the book causes only the latter form to be processed, then
+;   the resulting event stored at include-book time should agree logically with
+;   the event stored at certification time.
+
+; The latter of these properties is important because otherwise unsoundness
+; could result!  Suppose for example that a book bar.lisp contains (local
+; (include-book "foo")), where foo.lisp contains an encapsulate that causes a
+; second encapsulate in bar.lisp to be redundant.  What should we know at the
+; point we see the second encapsulate as redundant?  We should know that the
+; event logically represented by the encapsulate is the same as the one
+; logically represented by the earlier encapsulate, so we certainly do not want
+; to re-do its expansion at include-book time.  Thus, when an encapsulate is
+; redundant, we store the expanded version of the earlier encapsulate as the
+; expansion of the current encapsulate.  But how do we expand a non-redundant
+; encapsulate?  We expand it by replacing every sub-event by its expansion (if
+; it has an expansion).  Then, we may recognize a subsequent encapsulate as
+; redundant with this one if their signatures are equal, they have the same
+; length, and each of the subsequent encapsulate's events, ev2, is either the
+; same as the corresponding event ev1 of the old encapsulate or their
+; expansions match up.  Note that two local events always "match up" in this
+; sense when each is under an encapsulate or in a book.
+
+; We elide local forms arising from make-event expansions when writing
+; expansion-alists to book certificates, in order to save space.  See
+; elide-locals.
 
 ; Note that when :puff (specifically puff-command-block) is applied to an
 ; include-book form, it uses the expansion-alist from the book's certificate if
