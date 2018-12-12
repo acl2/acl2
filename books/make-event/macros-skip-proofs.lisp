@@ -8,6 +8,12 @@
 
 (in-package "ACL2")
 
+; The following book reads the .cert file of the present book.  So recertify
+; the present book if the following book changes, in case that's because the
+; format of .cert files has changed.
+
+; (depends-on "macros-skip-proofs-include.lisp")
+
 (defmacro my-mac (x) x)
 
 (encapsulate

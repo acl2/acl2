@@ -4,6 +4,12 @@
 
 (in-package "ACL2")
 
+; The following book reads the .cert file of the present book.  So recertify
+; the present book if the following book changes, in case that's because the
+; format of .cert files has changed.
+
+; (depends-on "local-elided-include.lisp")
+
 ;; [Jared and Sol]: we want to make sure this book gets provisionally certified
 ;; if we're doing any provisional certification, because
 ;; local-elided-include.lisp is going to test whether its .pcert0 file exists

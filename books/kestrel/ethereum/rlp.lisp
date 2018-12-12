@@ -386,7 +386,7 @@
                   ((mv e-error? e-encoding) (rlp-encode-tree d-tree)))
                (and (not d-error?)
                     (not e-error?)
-                    (equal e-encoding (byte-list-fix encoding)))))
+                    (equal e-encoding encoding))))
     :enable rlp-tree-encoding-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -469,7 +469,7 @@
                   ((mv e-error? e-encoding) (rlp-encode-bytes d-bytes)))
                (and (not d-error?)
                     (not e-error?)
-                    (equal e-encoding (byte-list-fix encoding)))))
+                    (equal e-encoding encoding))))
     :enable rlp-bytes-encoding-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -542,5 +542,5 @@
                   ((mv e-error? e-encoding) (rlp-encode-scalar d-scalar)))
                (and (not d-error?)
                     (not e-error?)
-                    (equal e-encoding (byte-list-fix encoding)))))
+                    (equal e-encoding encoding))))
     :enable rlp-scalar-encoding-p))

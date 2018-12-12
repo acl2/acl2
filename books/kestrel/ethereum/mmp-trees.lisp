@@ -1605,8 +1605,8 @@
                   ((mv e-error? e-root e-database) (mmp-encode d-map)))
                (and (not d-error?)
                     (not e-error?)
-                    (equal e-root (byte-list-fix root))
-                    (omap::submap e-database (bytelist-bytelist-mfix database)))))
+                    (equal e-root root)
+                    (omap::submap e-database database))))
     :enable mmp-encoding-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

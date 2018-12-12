@@ -186,6 +186,9 @@
  <p>Mofified the formalizations of RLP encoding and decoding to return an
  explicit error flag.</p>
 
+ <p>Added a formalization of hex-prefix decoding, declaratively defined as the
+ inverse of hex-prefix encoding.</p>
+
  <h4>Filesystem Books</h4>
 
  <p>The filesystem books @('[books]/projects/filesystems/') have been
