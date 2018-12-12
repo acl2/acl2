@@ -485,20 +485,22 @@
 (defval *atj-allowed-raws*
   :short "ACL2 functions with raw Lisp code that are accepted by ATJ."
   :long
-  (xdoc::topapp
-   (xdoc::p
-    "This is the whitelist mentioned in the documentation.")
-   (xdoc::p
-    "The functions in this list have no side effects
-     and their execution is functionally equivalent to
-     their @('unnormalized-body') property.")
-   (xdoc::p
-    "@(tsee return-last) is not explicitly included in this list,
-     because it is only partially whitelisted,
-     as explained in the documentation.
-     Calls of @(tsee return-last) are handled specially in the code.")
-   (xdoc::p
-    "This whitelist will be extended as needed."))
+  "<p>
+   This is the whitelist mentioned in the documentation.
+   </p>
+   <p>
+   The functions in this list have no side effects
+   and their execution is functionally equivalent to
+   their @('unnormalized-body') property.
+   </p>
+   <p>
+   @(tsee return-last) is not explicitly included in this list,
+   because it is only partially whitelisted, as explained in the documentation.
+   Calls of @(tsee return-last) are handled specially in the code.
+   </p>
+   <p>
+   This whitelist will be extended as needed.
+   </p>"
   '(=
     /=
     abs
@@ -796,9 +798,10 @@
   :short "Base name of the Java local variables used to build
           Java representations of ACL2 values."
   :long
-  (xdoc::topp
-   "The local variables are obtained by adding numeric indices (decimal digits)
-    after this name.")
+  "<p>
+   The local variables are obtained by adding numeric indices (decimal digits)
+   after this name.
+   </p>"
   "value"
   ///
   (assert-event (atj-string-ascii-java-identifier-p *atj-value-local-var*)))
@@ -807,9 +810,10 @@
   :short "Base name of the Java local variables used to build
           Java representations of ACL2 terms."
   :long
-  (xdoc::topp
-   "The local variables are obtained by adding numeric indices (decimal digits)
-    after this name.")
+  "<p>
+   The local variables are obtained by adding numeric indices (decimal digits)
+   after this name.
+   </p>"
   "term"
   ///
   (assert-event (atj-string-ascii-java-identifier-p *atj-term-local-var*)))
@@ -818,9 +822,10 @@
   :short "Base name of the Java local variables used to build
           Java representations of ACL2 lambda expressions."
   :long
-  (xdoc::topp
-   "The local variables are obtained by adding numeric indices (decimal digits)
-    after this name.")
+  "<p>
+   The local variables are obtained by adding numeric indices (decimal digits)
+   after this name.
+   </p>"
   "lambda"
   ///
   (assert-event (atj-string-ascii-java-identifier-p *atj-lambda-local-var*)))
