@@ -116,7 +116,6 @@
     (case opcode
       ,@(avx-case-gen *vex-0F-opcodes*
                       *vex-0F-exc-types*
-                      *vex-0F-op-features*
                       t state))))
 
 (make-event
@@ -159,8 +158,7 @@
 
     (case opcode
       ,@(avx-case-gen *vex-0F38-opcodes*
-                      *vex-0F38-exc-types*
-                      *vex-0F38-op-features*
+                      *vex-0F38-exc-types*                     
                       t state))))
 
 (make-event
@@ -204,7 +202,6 @@
     (case opcode
       ,@(avx-case-gen *vex-0F3A-opcodes*
                       *vex-0F3A-exc-types*
-                      *vex-0F3A-op-features*
                       t state))))
 
 (define vex-decode-and-execute

@@ -102,14 +102,14 @@
 
   (b* ((ctx 'x86-call-E8-Op/En-M)
 
-       (p3? (equal #.*operand-size-override* (prefixes->opr prefixes)))
-
        ((the (integer 0 4) offset-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
 	  (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d (code-segment-descriptor-attributes-layout-slice
-		      :d cs-attr)))
+		      :d cs-attr))
+	       (p3? (equal #.*operand-size-override*
+			   (prefixes->opr prefixes))))
 	    ;; 16 or 32 bits (rel16 or rel32):
 	    (if (= cs.d 1)
 		(if p3? 2 4)
@@ -178,7 +178,6 @@
   ;; Note that FF/2 r/m16 and r/m32 are N.E. in 64-bit mode.
 
   :parents (one-byte-opcodes)
-  :guard-debug t
   :guard-hints (("Goal" :in-theory (e/d (riml08
 					 riml32
 					 select-address-size)
@@ -191,24 +190,23 @@
 
   (b* ((ctx ' x86-call-FF/2-Op/En-M)
 
-       (p2 (prefixes->seg prefixes))
-       (p3? (equal #.*operand-size-override* (prefixes->opr prefixes)))
-       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
-
-       (r/m (modr/m->r/m modr/m))
-       (mod (modr/m->mod modr/m))
-
        ((the (integer 2 8) operand-size)
 	(if (equal proc-mode #.*64-bit-mode*)
 	    8 ; Intel manual, Mar'17, Volume 1, Section 6.3.7
 	  (b* (((the (unsigned-byte 16) cs-attr)
-                (xr :seg-hidden-attr #.*cs* x86))
+		(xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d (code-segment-descriptor-attributes-layout-slice
-		      :d cs-attr)))
+		      :d cs-attr))
+	       (p3? (equal #.*operand-size-override*
+			   (prefixes->opr prefixes))))
 	    (if (= cs.d 1)
 		(if p3? 2 4)
 	      (if p3? 4 2)))))
 
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+       (mod (modr/m->mod modr/m))
+       (r/m (modr/m->r/m modr/m))
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        ;; Note that the reg field serves as an opcode extension for
@@ -247,10 +245,10 @@
        ;; manual.
        ((unless (if (equal proc-mode #.*64-bit-mode*)
 		    (canonical-address-p call-rip)
-                  (and (<= 0 call-rip) 
-                       (<= call-rip
-                           (the (unsigned-byte 32) 
-                             (xr :seg-hidden-limit #.*cs* x86))))))
+		  (and (<= 0 call-rip)
+		       (<= call-rip
+			   (the (unsigned-byte 32)
+			     (xr :seg-hidden-limit #.*cs* x86))))))
 	(!!fault-fresh :gp 0 :bad-return-address call-rip)) ;; #GP(0)
 
        (rsp (read-*sp proc-mode x86))
@@ -401,7 +399,7 @@
        ((unless (if (equal proc-mode #.*64-bit-mode*)
 		    (canonical-address-p tos)
 		  (b* (((the (unsigned-byte 32) cs.limit)
-                        (xr :seg-hidden-limit #.*cs* x86)))
+			(xr :seg-hidden-limit #.*cs* x86)))
 		    (and (<= 0 tos) (<= tos cs.limit)))))
 	(!!fault-fresh :gp 0 :bad-return-address tos)) ;; #GP(0)
 
@@ -454,12 +452,12 @@
 
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (;;riml08
-                                         ;;riml32
-                                         rme-size-of-2-to-rme16
-                                         rme-size-of-4-to-rme32
-                                         rme-size-of-8-to-rme64
-                                         rme64)
-                                        ())))
+					 ;;riml32
+					 rme-size-of-2-to-rme16
+					 rme-size-of-4-to-rme32
+					 rme-size-of-8-to-rme64
+					 rme64)
+					())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
 			       (canonical-address-p temp-rip)))
@@ -470,11 +468,11 @@
 
        (p3? (equal #.*operand-size-override* (prefixes->opr prefixes)))
        ((the (integer 2 8) operand-size)
-        (if (equal proc-mode #.*64-bit-mode*)
+	(if (equal proc-mode #.*64-bit-mode*)
 	    (if p3? 2 8)
 	  (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d (code-segment-descriptor-attributes-layout-slice
-                      :d cs-attr)))
+		      :d cs-attr)))
 	    (if (= cs.d 1)
 		(if p3? 2 4)
 	      (if p3? 4 2)))))
@@ -489,19 +487,19 @@
 
        (inst-ac? (alignment-checking-enabled-p x86))
        ((mv flg val x86) (rme-size-opt
-                          proc-mode
-                          operand-size
-                          (the (signed-byte 64) (i64 rbp/ebp/bp))
-                          #.*ss*
-                          :r
-                           inst-ac?
-                           x86
-                           :mem-ptr? nil
-                           :check-canonicity t))
+			  proc-mode
+			  operand-size
+			  (the (signed-byte 64) (i64 rbp/ebp/bp))
+			  #.*ss*
+			  :r
+			   inst-ac?
+			   x86
+			   :mem-ptr? nil
+			   :check-canonicity t))
        ((when flg) (!!fault-fresh :ss 0 :pop-error flg)) ;; #SS(0)
 
        ((mv flg (the (signed-byte 64) new-rsp))
-        (add-to-*sp proc-mode (i64 rbp/ebp/bp) operand-size x86))
+	(add-to-*sp proc-mode (i64 rbp/ebp/bp) operand-size x86))
        ((when flg) (!!ms-fresh :invalid-rsp new-rsp))
 
        ;; We don't need to check for valid length for one-byte
