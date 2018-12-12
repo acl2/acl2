@@ -11,6 +11,10 @@
 
 (in-package "ACL2")
 
+; The following comment line tells the build system that if *acl2-exports*
+; changes, this book should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
+
 (defun raw-acl2-exports1 (x pkg-witness wrld allp acc)
 
 ; Extend acc with a list of all documented symbols in the package of symbol
