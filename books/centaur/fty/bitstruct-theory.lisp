@@ -57,7 +57,7 @@
 (defthmd logbit-at-zero-is-loghead-of-1
   ;; [Shilpi] For guard proofs of accessors of fields of width 1.
   (equal (bool->bit (logbitp 0 x))
-	 (loghead 1 x))
+         (loghead 1 x))
   :hints ((logbitp-reasoning)))
 
 (defthmd part-select-width-low-in-terms-of-loghead-and-logtail
@@ -69,12 +69,12 @@
 (defthmd part-install-width-low-in-terms-of-logior-logmask-ash
   ;; [Shilpi] For the updater guard proofs.
   (implies (syntaxp (and (or (atom val)
-			     (and (consp val)
-				  (eql (car val) 'acl2::bool->bit$inline)))
-			 (atom x)))
-	   (equal (bitops::part-install-width-low val x width low)
-		  (logior (logand (lognot (ash (logmask width) (nfix low))) x)
-			  (ash (loghead width val) (nfix low)))))
+                             (and (consp val)
+                                  (eql (car val) 'acl2::bool->bit$inline)))
+                         (atom x)))
+           (equal (bitops::part-install-width-low val x width low)
+                  (logior (logand (lognot (ash (logmask width) (nfix low))) x)
+                          (ash (loghead width val) (nfix low)))))
   :hints (("Goal" :in-theory (e/d (bitops::part-install-width-low) ()))))
 
 (defthmd remove-inner-logext-from-logext-logtail-nest
@@ -93,7 +93,7 @@
      ;; Ugh, dumb arithmetic.
      (equal (+ -1 i (- i) j k) (+ -1 j k))))
 
-  (defthmd pull-out-logext-from-logext-logtail-next
+  (defthmd remove-outer-logtail-from-logtail-logext-nest
     ;; [Shilpi] For the subfield-related accessor guard proofs.
     (implies (and (< (+ i k) j)
                   (natp i) (natp j) (natp k))
@@ -102,7 +102,7 @@
     :hints ((logbitp-reasoning))))
 
 (defthmd simplify-subfield-updater-guard-expression-with-inner-logext
-  ;; [Shilpi] For subfield updater guard proofs 
+  ;; [Shilpi] For subfield updater guard proofs
   ;; foo->bar and bar->a: foo->a.  This lemma is applicable when bar is a
   ;; signed subfield of foo.
   (implies (<= (+ (nfix i) (nfix width-a)) (nfix width))
@@ -123,7 +123,7 @@
   :hints ((logbitp-reasoning)))
 
 (defthmd simplify-subfield-updater-guard-expression-with-more-logext
-  ;; [Shilpi] For subfield updater guard proofs 
+  ;; [Shilpi] For subfield updater guard proofs
   ;; foo->bar and bar->a: foo->a.  This lemma is applicable when bar is a
   ;; signed subfield of foo,  and a is a signed subfield of foo.
   (implies (<= (+ (nfix i) (nfix width-a)) (nfix width))
@@ -148,11 +148,11 @@
 
 (defthmd unsigned-byte-p-of-bool->bit
   (implies (and (<= 1 n) (natp n))
-	   (unsigned-byte-p n (bool->bit b))))
+           (unsigned-byte-p n (bool->bit b))))
 
 (defthmd signed-byte-p-of-bool->bit
   (implies (and (<= 2 n) (natp n))
-	   (signed-byte-p n (bool->bit b)))
+           (signed-byte-p n (bool->bit b)))
   :hints (("Goal" :in-theory (e/d (signed-byte-p) ()))))
 
 (defthm unsigned-byte-p-of-part-select
@@ -470,7 +470,7 @@
                (bitstruct-read-over-write-find-rule term (cdr lemmas))))
            (mv mask (acl2::sublis-var subst right))))
         (& (bitstruct-read-over-write-find-rule term (cdr lemmas)))))))
-                 
+
 
 (defun bitstruct-read-over-write-bind-free (write-term
                                             equiv-under-mask-fn
@@ -486,7 +486,7 @@
     `((,mask-var . ',mask)
       (,y-var . ,ans))))
 
-(defmacro bitstruct-read-over-write-hyps (write-term 
+(defmacro bitstruct-read-over-write-hyps (write-term
                                           equiv-under-mask-fn
                                           &key
                                           (mask-var 'mask)
@@ -589,7 +589,7 @@
                        x :width width :low low)
          (ifix x))
   :hints ((logbitp-reasoning)))
-    
+
 
 
 (defthm part-install-of-part-install-same
@@ -611,24 +611,24 @@
 
 (defthm signed-byte-p-2-when-bitp
   (implies (bitp x)
-	   (signed-byte-p 2 x))
+           (signed-byte-p 2 x))
   :hints (("Goal" :in-theory (e/d (signed-byte-p bitp) ()))))
 
 (defthmd signed-byte-p-+1
   ;; A less general version of bitops::signed-byte-p-incr.
   (implies (signed-byte-p (1- n) x)
-	   (signed-byte-p n x))
+           (signed-byte-p n x))
   :hints (("Goal" :in-theory (e/d (signed-byte-p) ()))))
 
 (defthmd signed-byte-p-one-bigger-when-unsigned-byte-p
   (implies (unsigned-byte-p (1- n) x)
-	   (signed-byte-p n x))
+           (signed-byte-p n x))
   :hints (("Goal" :in-theory (e/d (signed-byte-p unsigned-byte-p) ()))))
 
 (defthm part-select-width-1-type
   (bitp (part-select x :low n :width 1))
   :rule-classes :type-prescription)
-  
+
 (defthm logapp-natp
   (implies (not (negp b))
            (natp (logapp w a b)))
@@ -669,7 +669,7 @@
 ;;              (equal (logext width (part-select x :width width :low low))
 ;;                     (logtail low x)))
 ;;     :hints ((logbitp-reasoning))))
-                
+
 
 ;; ;; Then we need (logapp width (logtail n1 x) (logtail n2 x)) = (logtail n1 x) when n2 = n1+width
 ;; ;; and the variant for n1=0, (logapp width x (logtail width x)).

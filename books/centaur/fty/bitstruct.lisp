@@ -587,7 +587,7 @@
 		   signed-byte-p-of-bool->bit))
 	  part-select-width-low-in-terms-of-loghead-and-logtail
           remove-inner-logext-from-logext-logtail-nest
-          pull-out-logext-from-logext-logtail-next
+          remove-outer-logtail-from-logtail-logext-nest
 	  . ,subfield-accs)))
        ;; ,@(cond ((eql field.width 1)
        ;;          `(:guard-hints (("goal" :in-theory (enable part-select-is-logbit
