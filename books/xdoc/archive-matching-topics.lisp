@@ -34,7 +34,7 @@
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "xdoc-error")
-
+(include-book "std/strings/fast-cat" :dir :system) ;; needed to make string concatenations fast enough.
 (program)
 
 (defun remove-bound-topics (x fal acc)

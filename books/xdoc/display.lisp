@@ -783,7 +783,7 @@
                                               state
                                               nil ;; accumulator
                                               ))
-       (short (str::rchars-to-string short-acc))
+       (short (str::printtree->str short-acc))
 ;       (- (cw "Text is ~x0.~%" text))
 ;       (- (cw "Parsing xml...~%"))
        ((mv err tokens) (parse-xml short))

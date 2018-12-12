@@ -25,24 +25,20 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author (this file): Sol Swords <sswords@centtech.com>
+; Original author: Sol Swords <sswords@centtech.com>
 
-(in-package "ACL2")
+(in-package "STR")
 
-(include-book "xdoc/archive-matching-topics" :dir :system)
-(local
- (progn
-   (include-book "centaur/esim/stv/stv-top" :dir :system)
-   (include-book "centaur/esim/stv/stv-debug" :dir :system)
-   (include-book "centaur/esim/esim-sexpr-correct" :dir :system)
-   (include-book "centaur/esim/defmodules" :dir :system)
-   (include-book "centaur/esim/vcd/vcd" :dir :system)
-   (include-book "centaur/4v-sexpr/top" :dir :system)))
+(include-book "printtree")
 
-; Matt K. mod: Added the following to avoid stack overflow on calls of
-; generated function, xdoc::filter-matching-topics, in Allegro CL.
-(set-compile-fns t)
+(defthm printable->str-of-printable-fix
+  (equal (printable->str (printable-fix x))
+         (printable->str x))
+  :hints(("Goal" :in-theory (enable printable->str printable-fix))))
 
-(xdoc::archive-matching-topics
- (or (str::strprefixp "[books]/centaur/esim/" (cdr (assoc :from x)))
-     (str::strprefixp "[books]/centaur/4v-sexpr/" (cdr (assoc :from x)))))
+(defthm printtree->str-of-printtree-fix
+  (equal (printtree->str (printtree-fix x))
+         (printtree->str x))
+  :hints(("Goal" :in-theory (enable printtree->str printtree-fix))))
+
+

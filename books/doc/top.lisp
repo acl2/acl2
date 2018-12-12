@@ -47,6 +47,7 @@
  (set-raw-mode nil))
 ||#
 
+(progn ;; use progn to time including all the books
 (include-book "build/ifdef" :dir :system)
 
 ; Note, 7/28/2014: if we include
@@ -76,12 +77,17 @@
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (value-triple (set-max-mem (* 10 (expt 2 30))))
 
+;; this is included in some other books, but I'm putting it here so we never
+;; accidentally leave it out -- important for getting reasonable performance
+;; when building the final documentation.
+(include-book "std/strings/fast-cat" :dir :system)
 
 (include-book "relnotes")
 (include-book "practices")
 
 (include-book "xdoc/save" :dir :system)
 (include-book "xdoc/archive" :dir :system)
+(include-book "xdoc/archive-matching-topics" :dir :system)
 
 (include-book "build/doc" :dir :system)
 
@@ -340,7 +346,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "data-structures/top" :dir :system)
 (include-book "data-structures/memories/memory" :dir :system)
 
-
+) ;; end progn for including all the books
 #||
 
 ;; This is a nice place to put include-book scanner hacks that trick cert.pl
