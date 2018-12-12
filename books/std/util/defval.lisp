@@ -37,7 +37,7 @@
 
 (defxdoc defval
   :parents (std/util defconst)
-  :short "An replacement for @(see defconst) with @(see xdoc) integration."
+  :short "A replacement for @(see defconst) with @(see xdoc) integration."
 
   :long "<h5>Basic Example</h5>
 
