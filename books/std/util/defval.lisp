@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
@@ -186,24 +187,25 @@ macros to generate @('defval') forms, you will need to be careful.</p>")
         (raise ":prepwork must be a true-listp, but is ~x0." prepwork))
        ((unless (symbol-listp parents))
         (raise ":parents must be a symbol list, but is ~x0." parents))
-       ((unless (or (not long) (stringp long)))
-        (raise ":long must be a string or nil, but is ~x0." long))
+       ((unless (or (stringp long) (true-listp long)))
+        (raise ":long must be a string or a true-listp, but is ~x0." long))
        ((unless (or (not short) (stringp short)))
         (raise ":short must be a string or nil, but is ~x0." short))
 
        ;; Note that we always generate documentation: even if the user gives no
        ;; arguments and has no default-parents set, we'll put it into the
        ;; Undocumented topic.  Hence, we always want to extend long, etc.
+       ;; Note also that we treat long as a form, so that it can be evaluated.
 
        (long     (or long ""))
        (name-str (concatenate 'string (symbol-package-name name) "::" (symbol-name name)))
        (long     (if showdef
-                     (concatenate 'string long "@(def " name-str ")")
+                     `(concatenate 'string ,long "@(def " ,name-str ")")
                    long))
        (long     (if showval
-                     (concatenate 'string
-                                  long "<p><b>Value:</b></p>"
-                                  "@(`(:code " name-str ")`)")
+                     `(concatenate 'string
+                                   ,long "<p><b>Value:</b></p>"
+                                   "@(`(:code " ,name-str ")`)")
                    long)))
 
     `(defsection ,name
@@ -249,4 +251,3 @@ macros to generate @('defval') forms, you will need to be careful.</p>")
   :short "Example of a constant for @(see defval)."
   :long "<p>This number is not very important.</p>"
   (fib 5))
-
