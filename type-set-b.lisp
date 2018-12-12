@@ -11890,13 +11890,13 @@
 
 ; A good performance test is
 
-; (defthm ordered-symbol-alistp-delete-assoc-eq-test
+; (defthm ordered-symbol-alistp-remove1-assoc-eq-test
 ;   (implies (and (ordered-symbol-alistp l)
 ;                 (symbolp key)
 ;                 (assoc-eq key l))
-;            (ordered-symbol-alistp (delete-assoc-eq key l)))
+;            (ordered-symbol-alistp (remove1-assoc-eq key l)))
 ;   :hints (("Goal" :in-theory
-;            (disable ordered-symbol-alistp-delete-assoc-eq))))
+;            (disable ordered-symbol-alistp-remove1-assoc-eq))))
 
 ; The naive approach does this in about 3.4 seconds (prove time, on Rana, a
 ; Sparc 2).  The repetitious approach takes 5.6 seconds.  The reconsidering

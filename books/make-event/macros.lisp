@@ -79,3 +79,4 @@
   (my-mac (make-event '(defun foo2 (x) x)
                       :check-expansion
                       (defun foo2 (x) x)))))
+

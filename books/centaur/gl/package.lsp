@@ -34,7 +34,7 @@
 
 (defpkg "GL"
   (union-eq
-   *acl2-exports*
+   (remove1 'acl2::remove-assoc *acl2-exports*)
    *common-lisp-symbols-from-main-lisp-package*
    '(pkg-witness bad-atom<= b* quit exit
                  hons-acons hons-get hut het hqual hons-equal
