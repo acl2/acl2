@@ -11142,8 +11142,8 @@
                                       val
                                       (acons (car tail)
                                              val
-                                             (delete-assoc-eq bad-var
-                                                              alist)))))))
+                                             (remove1-assoc-eq bad-var
+                                                               alist)))))))
                          (t :failed)))))))))
 
 (defun@par translate-lmi/instance (formula constraints event-names new-entries

@@ -2767,8 +2767,8 @@
     (update-hint-settings
      (cdr new-hint-settings)
      (cons (car new-hint-settings)
-           (delete-assoc-eq (caar new-hint-settings)
-                            old-hint-settings))))
+           (remove1-assoc-eq (caar new-hint-settings)
+                             old-hint-settings))))
    (t (update-hint-settings
        (cdr new-hint-settings)
        (cons (car new-hint-settings) old-hint-settings)))))
@@ -2970,7 +2970,7 @@
      (load-hint-settings-into-pspv
       nil
       (if induct-hint-val
-          (delete-assoc-eq :induct hint-settings)
+          (remove1-assoc-eq :induct hint-settings)
         hint-settings)
       pspv nil wrld ctx state)
      (cond

@@ -4817,9 +4817,9 @@
   #+acl2-mv-as-values '(value nil)
   #-acl2-mv-as-values
   `(pprogn (f-put-global 'raw-arity-alist
-                         (delete-assoc-eq ',name
-                                          (f-get-global 'raw-arity-alist
-                                                        state))
+                         (remove1-assoc-eq ',name
+                                           (f-get-global 'raw-arity-alist
+                                                         state))
                          state)
            (value 'raw-arity-alist)))
 
@@ -11369,7 +11369,7 @@
     (cond (pair
            (acons :type-prescription
                   (make-fast-alist (cdr pair))
-                  (delete-assoc-eq :type-prescription cert-data)))
+                  (remove1-assoc-eq :type-prescription cert-data)))
           (t cert-data))))
 
 (defun chk-raise-portcullis (file1 file2 ch light-chkp caller
@@ -21763,7 +21763,7 @@
 ; form above will be a silent no-op.
 
   (f-put-global 'trace-specs
-                (delete-assoc-eq fn (f-get-global 'trace-specs state))
+                (remove1-assoc-eq fn (f-get-global 'trace-specs state))
                 state))
 
 (defun untrace$-rec (fns ctx state)
@@ -24041,7 +24041,7 @@
                         (null (cdr old-pair)))
                    (stop-redundant-event ctx state))
                   (t (let ((new (cond (dir (acons keyword dir old))
-                                      (t (delete-assoc-eq keyword old)))))
+                                      (t (remove1-assoc-eq keyword old)))))
                        (er-progn
                         (cond
                          (raw-p
@@ -24887,19 +24887,19 @@
                       (alist (cond ((not evisc-tuple-p)
                                     alist)
                                    ((eq evisc-tuple :restore)
-                                    (delete-assoc-eq :evisc-tuple alist))
+                                    (remove1-assoc-eq :evisc-tuple alist))
                                    (t
                                     (put-assoc-eq :evisc-tuple evisc-tuple alist))))
                       (alist (cond ((not conjunct-p)
                                     alist)
                                    ((eq conjunct :restore)
-                                    (delete-assoc-eq :conjunct alist))
+                                    (remove1-assoc-eq :conjunct alist))
                                    (t
                                     (put-assoc-eq :conjunct conjunct alist))))
                       (alist (cond ((not substitute-p)
                                     alist)
                                    ((eq substitute :restore)
-                                    (delete-assoc-eq :substitute alist))
+                                    (remove1-assoc-eq :substitute alist))
                                    (t
                                     (put-assoc-eq :substitute substitute
                                                   alist)))))
@@ -29117,7 +29117,7 @@
 
   (when (assoc-eq tag *time-tracker-alist*)
     (setq *time-tracker-alist*
-          (delete-assoc-eq tag *time-tracker-alist*))))
+          (remove1-assoc-eq tag *time-tracker-alist*))))
 
 (defun tt-print? (tag min-time msg)
 
@@ -30191,8 +30191,8 @@
            (let ((seq (make-string bytes)))
              (declare (type string seq))
              (read-sequence seq stream)
-             (let ((temp (delete-assoc-equal os-filename
-                                             *read-file-into-string-alist*)))
+             (let ((temp (remove1-assoc-equal os-filename
+                                              *read-file-into-string-alist*)))
                (cond
                 (finish-p
                  (close stream)
@@ -30232,8 +30232,8 @@
       (when triple
         (close (cadr triple)) ; close the stream
         (setq *read-file-into-string-alist*
-              (delete-assoc-equal os-filename
-                                  *read-file-into-string-alist*)))
+              (remove1-assoc-equal os-filename
+                                   *read-file-into-string-alist*)))
       (let ((stream
              (open os-filename :direction :input :if-does-not-exist nil)))
         (cond

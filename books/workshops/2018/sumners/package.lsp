@@ -125,13 +125,13 @@
             natarr get-nat set-nat nats-length resize-nats nats-equiv
             tshell-call tshell-start tshell-stop tshell-ensure
             satlink boolean-reasoning gl tshell)
-          (union-eq *acl2-exports*
-                    *common-lisp-symbols-from-main-lisp-package*
-                    *aignet-exports*
-                    *aignet-imports*
-                    satlink::*satlink-exports*
-                    std::*std-exports*
-                    *bitops-exports*
-                    *stobjs-exports*
-                    (remove-eq 'clause acl2::*standard-acl2-imports*))))
-
+          (remove1 'true-list-fix ; removed by Matt K. 12/2018, when added to *acl2-exports*
+                   (union-eq *acl2-exports*
+                             *common-lisp-symbols-from-main-lisp-package*
+                             *aignet-exports*
+                             *aignet-imports*
+                             satlink::*satlink-exports*
+                             std::*std-exports*
+                             *bitops-exports*
+                             *stobjs-exports*
+                             (remove-eq 'clause acl2::*standard-acl2-imports*)))))

@@ -59,6 +59,9 @@
              (union-eq *acl2-exports*
                        *common-lisp-symbols-from-main-lisp-package*))
    '(APPLY$ EV$ EV$-LIST ; now in *acl2-exports*
+     APPLY$-GUARD APPLY$-LAMBDA APPLY$-LAMBDA-GUARD APPLY$-USERFN ; now in *acl2-exports*
+     BADGE-USERFN SUITABLY-TAMEP-LISTP ; now in *acl2-exports*
+     TAMEP TAMEP-FUNCTIONP TAMEP-LAMBDAP ; now in *acl2-exports*
      *APPLY$-BADGE* *APPLY$-BOOT-FNS-BADGE-ALIST* *BADGE-PRIM-FALIST*
      *EV$-BADGE* *FIRST-ORDER-LIKE-TERMS-AND-OUT-ARITIES*
      *GENERIC-TAME-BADGE-1* *GENERIC-TAME-BADGE-2* *GENERIC-TAME-BADGE-3*

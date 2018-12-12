@@ -264,7 +264,7 @@
             (if (l5-regular-file-entry-p (cdr sd))
                 (if (or (cdr hns) (not (l5-regular-file-writable-p (cdr sd) user)))
                     (mv (cons (cons (car sd) (cdr sd))
-                              (delete-assoc (car hns) fs))
+                              (remove1-assoc (car hns) fs))
                         disk
                         alv) ;; error, so leave fs unchanged
                   (let* ((old-text
@@ -281,7 +281,7 @@
                         ;; we have an error because of insufficient disk space
                         ;; - so we leave the fs unchanged
                         (mv (cons (cons (car sd) contents)
-                                  (delete-assoc (car hns) fs))
+                                  (remove1-assoc (car hns) fs))
                             disk
                             alv)
                       (mv (cons (cons (car sd)
@@ -293,7 +293,7 @@
                                        (l5-regular-file-other-read (cdr sd))
                                        (l5-regular-file-other-write (cdr sd))
                                        (l5-regular-file-user (cdr sd))))
-                                (delete-assoc (car hns) fs))
+                                (remove1-assoc (car hns) fs))
                           ;; this (take) means we write as many blocks as we can
                           ;; if we run out of space
                           (set-indices disk new-indices new-blocks)
@@ -301,7 +301,7 @@
               (mv-let (new-contents new-disk new-alv)
                 (l5-wrchs (cdr hns) contents disk alv start text user)
                 (mv (cons (cons (car sd) new-contents)
-                          (delete-assoc (car hns) fs))
+                          (remove1-assoc (car hns) fs))
                     new-disk
                     new-alv)))
             ))))))
@@ -435,7 +435,7 @@
 
 (defthm l5-wrchs-returns-fs-lemma-1
   (implies (l5-fs-p fs)
-           (l5-fs-p (delete-assoc-equal name fs))))
+           (l5-fs-p (remove1-assoc-equal name fs))))
 
 (defthm
   l5-wrchs-returns-fs-lemma-2
@@ -551,8 +551,8 @@
 
 (defthm l5-wrchs-correctness-1-lemma-1
   (implies (l5-fs-p fs)
-           (equal (delete-assoc-equal name (l5-to-l4-fs fs))
-                  (l5-to-l4-fs (delete-assoc-equal name fs)))))
+           (equal (remove1-assoc-equal name (l5-to-l4-fs fs))
+                  (l5-to-l4-fs (remove1-assoc-equal name fs)))))
 
 ;; not provable
 ;; (thm
@@ -930,12 +930,12 @@
                  (let ((contents (cdr sd)))
                    (if (atom (cdr hns1))
                        (cons (cons (car sd) contents)
-                             (delete-assoc (car hns2) fs))
+                             (remove1-assoc (car hns2) fs))
                      (cons (cons (car sd)
                                  (induction-scheme (cdr hns1)
                                                    (cdr hns2)
                                                    contents))
-                           (delete-assoc (car hns2) fs))))))))))))
+                           (remove1-assoc (car hns2) fs))))))))))))
 
   (defthm
     l5-read-after-write-2-lemma-5
@@ -1038,7 +1038,7 @@
                (:definition boolean-listp)
                (:rewrite insert-text-correctness-1)
                (:rewrite l2-create-correctness-1-lemma-2)
-               (:definition delete-assoc-equal)
+               (:definition remove1-assoc-equal)
                (:definition set-indices)
                (:type-prescription fetch-blocks-by-indices)
                (:rewrite fetch-blocks-by-indices-correctness-2)
@@ -1231,7 +1231,7 @@
                         (:TYPE-PRESCRIPTION L3-FS-P)
                         (:REWRITE L5-FS-P-ASSOC)
                         (:REWRITE UNMAKE-MAKE-BLOCKS-LEMMA-1)
-                        (:DEFINITION DELETE-ASSOC-EQUAL)
+                        (:DEFINITION REMOVE1-ASSOC-EQUAL)
                         (:REWRITE
                          L3-REGULAR-FILE-ENTRY-P-CORRECTNESS-1)
                         (:DEFINITION BOOLEAN-LISTP)

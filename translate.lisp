@@ -9212,8 +9212,8 @@
                             stobjs-out)
                      (if (eq new-stobjs-out t)
                          bindings
-                       (delete-assoc-eq-all new-stobjs-out
-                                            bindings))))))))))))))))))
+                       (remove-assoc-eq new-stobjs-out
+                                        bindings))))))))))))))))))
 
 (defun translate11-flet (x stobjs-out bindings known-stobjs flet-alist
                            ctx wrld state-vars)

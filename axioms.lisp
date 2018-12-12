@@ -1006,7 +1006,7 @@
           entry)))
 
 (defmacro remove-package-entry (name known-package-alist)
-  `(delete-assoc-equal ,name ,known-package-alist))
+  `(remove1-assoc-equal ,name ,known-package-alist))
 
 (defmacro change-package-entry-hidden-p (entry value)
   `(let ((entry ,entry))
@@ -10124,66 +10124,106 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (cons (car l)
                  (add-pair key value (cdr l))))))
 
-; Delete-assoc
+; Remove1-assoc
 
-(defun-with-guard-check delete-assoc-eq-exec (key alist)
+(defun-with-guard-check remove1-assoc-eq-exec (key alist)
   (if (symbolp key)
       (alistp alist)
     (symbol-alistp alist))
   (cond ((endp alist) nil)
         ((eq key (caar alist)) (cdr alist))
-        (t (cons (car alist) (delete-assoc-eq-exec key (cdr alist))))))
+        (t (cons (car alist) (remove1-assoc-eq-exec key (cdr alist))))))
 
-(defun-with-guard-check delete-assoc-eql-exec (key alist)
+(defun-with-guard-check remove1-assoc-eql-exec (key alist)
   (if (eqlablep key)
       (alistp alist)
     (eqlable-alistp alist))
   (cond ((endp alist) nil)
         ((eql key (caar alist)) (cdr alist))
-        (t (cons (car alist) (delete-assoc-eql-exec key (cdr alist))))))
+        (t (cons (car alist) (remove1-assoc-eql-exec key (cdr alist))))))
 
-(defun delete-assoc-equal (key alist)
+(defun remove1-assoc-equal (key alist)
   (declare (xargs :guard (alistp alist)))
   (cond ((endp alist) nil)
         ((equal key (caar alist)) (cdr alist))
-        (t (cons (car alist) (delete-assoc-equal key (cdr alist))))))
+        (t (cons (car alist) (remove1-assoc-equal key (cdr alist))))))
 
-(defmacro delete-assoc-eq (key lst)
-  `(delete-assoc ,key ,lst :test 'eq))
+(defmacro remove1-assoc-eq (key lst)
+  `(remove1-assoc ,key ,lst :test 'eq))
 
-(defthm delete-assoc-eq-exec-is-delete-assoc-equal
-  (equal (delete-assoc-eq-exec key lst)
-         (delete-assoc-equal key lst)))
+(defthm remove1-assoc-eq-exec-is-remove1-assoc-equal
+  (equal (remove1-assoc-eq-exec key lst)
+         (remove1-assoc-equal key lst)))
 
-(defthm delete-assoc-eql-exec-is-delete-assoc-equal
-  (equal (delete-assoc-eql-exec key lst)
-         (delete-assoc-equal key lst)))
+(defthm remove1-assoc-eql-exec-is-remove1-assoc-equal
+  (equal (remove1-assoc-eql-exec key lst)
+         (remove1-assoc-equal key lst)))
 
-(defmacro delete-assoc (key alist &key (test ''eql))
+(defmacro remove1-assoc (key alist &key (test ''eql))
   (declare (xargs :guard (or (equal test ''eq)
                              (equal test ''eql)
                              (equal test ''equal))))
   (cond
    ((equal test ''eq)
     `(let-mbe ((key ,key) (alist ,alist))
-              :logic (delete-assoc-equal key alist)
-              :exec  (delete-assoc-eq-exec key alist)))
+              :logic (remove1-assoc-equal key alist)
+              :exec  (remove1-assoc-eq-exec key alist)))
    ((equal test ''eql)
     `(let-mbe ((key ,key) (alist ,alist))
-              :logic (delete-assoc-equal key alist)
-              :exec  (delete-assoc-eql-exec key alist)))
+              :logic (remove1-assoc-equal key alist)
+              :exec  (remove1-assoc-eql-exec key alist)))
    (t ; (equal test 'equal)
-    `(delete-assoc-equal ,key ,alist))))
+    `(remove1-assoc-equal ,key ,alist))))
 
-(defun delete-assoc-eq-all (key alist)
-  (declare (xargs :guard (if (symbolp key)
-                             (alistp alist)
-                           (symbol-alistp alist))))
+(defun-with-guard-check remove-assoc-eq-exec (x alist)
+  (if (symbolp x)
+      (alistp alist)
+    (symbol-alistp alist))
   (cond ((endp alist) nil)
-        ((eq key (caar alist))
-         (delete-assoc-eq-all key (cdr alist)))
+        ((eq x (car (car alist))) (remove-assoc-eq-exec x (cdr alist)))
         (t (cons (car alist)
-                 (delete-assoc-eq-all key (cdr alist))))))
+                 (remove-assoc-eq-exec x (cdr alist))))))
+
+(defun-with-guard-check remove-assoc-eql-exec (x alist)
+  (if (eqlablep x)
+      (alistp alist)
+    (eqlable-alistp alist))
+  (cond ((endp alist) nil)
+        ((eql x (car (car alist))) (remove-assoc-eql-exec x (cdr alist)))
+        (t (cons (car alist) (remove-assoc-eql-exec x (cdr alist))))))
+
+(defun remove-assoc-equal (x alist)
+  (declare (xargs :guard (alistp alist)))
+  (cond ((endp alist) nil)
+        ((equal x (car (car alist))) (remove-assoc-equal x (cdr alist)))
+        (t (cons (car alist) (remove-assoc-equal x (cdr alist))))))
+
+(defmacro remove-assoc-eq (x lst)
+  `(remove-assoc ,x ,lst :test 'eq))
+
+(defthm remove-assoc-eq-exec-is-remove-assoc-equal
+  (equal (remove-assoc-eq-exec x l)
+         (remove-assoc-equal x l)))
+
+(defthm remove-assoc-eql-exec-is-remove-assoc-equal
+  (equal (remove-assoc-eql-exec x l)
+         (remove-assoc-equal x l)))
+
+(defmacro remove-assoc (x alist &key (test ''eql))
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x) (alist ,alist))
+              :logic (remove-assoc-equal x alist)
+              :exec  (remove-assoc-eq-exec x alist)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x) (alist ,alist))
+              :logic (remove-assoc-equal x alist)
+              :exec  (remove-assoc-eql-exec x alist)))
+   (t ; (equal test 'equal)
+    `(remove-assoc-equal ,x ,alist))))
 
 (defun getprops1 (alist)
 
@@ -10227,7 +10267,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (let ((alist (getprops symb world-name (cdr world-alist))))
            (if (eq (cddar world-alist) *acl2-property-unbound*)
                (if (assoc-eq (cadar world-alist) alist)
-                   (delete-assoc-eq (cadar world-alist) alist)
+                   (remove1-assoc-eq (cadar world-alist) alist)
                  alist)
              (add-pair (cadar world-alist)
                        (cddar world-alist)
@@ -14758,7 +14798,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                             (get-global x state-state))))))
          (makunbound (global-symbol x))
          (return-from makunbound-global *the-live-state*)))
-  (update-global-table (delete-assoc-eq
+  (update-global-table (remove1-assoc-eq
                         x
                         (global-table state-state))
                        state-state))
@@ -15596,9 +15636,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (not (equal x y))))
    :hints (("Goal" :in-theory (enable symbol-< string<))))
 
- (defthm ordered-symbol-alistp-delete-assoc-eq
+ (defthm ordered-symbol-alistp-remove1-assoc-eq
    (implies (ordered-symbol-alistp l)
-            (ordered-symbol-alistp (delete-assoc-eq key l))))
+            (ordered-symbol-alistp (remove1-assoc-eq key l))))
 
  (defthm symbol-<-irreflexive
    (implies (symbolp x)
@@ -17705,7 +17745,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               state-state)))
         (let ((state-state
                (update-open-input-channels
-                (delete-assoc-eq channel (open-input-channels state-state))
+                (remove1-assoc-eq channel (open-input-channels state-state))
                 state-state)))
           state-state)))))
 
@@ -18267,7 +18307,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               state-state)))
         (let ((state-state
                (update-open-output-channels
-                (delete-assoc-eq channel (open-output-channels state-state))
+                (remove1-assoc-eq channel (open-output-channels state-state))
                 state-state)))
           state-state)))))
 
@@ -22010,7 +22050,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (let ((diff (set-difference-eq (cdr old-entry) unary-fns)))
                   (if diff
                       (put-assoc-eq top-fn diff tbl)
-                    (delete-assoc-eq top-fn tbl)))
+                    (remove1-assoc-eq top-fn tbl)))
               (prog2$ (cw "~%NOTE:  Remove-invisible-fns did not change the ~
                            invisible-fns-table.  Consider using :u or :ubt to ~
                            undo this event.~%")
@@ -22562,7 +22602,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(table untrans-table nil
           (let ((tbl (table-alist 'untrans-table world)))
             (if (assoc-eq ',macro-fn tbl)
-                (delete-assoc-eq-exec ',macro-fn tbl)
+                (remove1-assoc-eq-exec ',macro-fn tbl)
               (prog2$ (cw "~%NOTE:  the name ~x0 did not appear as a key in ~
                            untrans-table.  Consider using :u or :ubt to ~
                            undo this event, which is harmless but does not ~
@@ -23065,18 +23105,33 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (add-macro-alias put-assoc-eq put-assoc-equal)
 (add-macro-alias put-assoc-eql put-assoc-equal) ; for pre-v4-3 compatibility
 (add-macro-alias put-assoc put-assoc-equal)
-(add-macro-alias delete-assoc-eq delete-assoc-equal)
-(add-macro-alias delete-assoc delete-assoc-equal)
+(add-macro-alias remove1-assoc-eq remove1-assoc-equal)
+(add-macro-alias remove1-assoc remove1-assoc-equal)
 (add-macro-alias union-eq union-equal)
 (add-macro-alias union$ union-equal)
 (add-macro-alias intersection-eq intersection-equal)
 (add-macro-alias intersection$ intersection-equal)
 
+; The following, pertaining to delete-assoc, may be deprecated:
+(defmacro delete-assoc-eq-exec (key alist)
+  `(remove1-assoc-eq-exec ,key ,alist))
+(add-macro-alias delete-assoc-eq-exec remove1-assoc-eq-exec)
+(defmacro delete-assoc-eql-exec (key alist)
+  `(remove1-assoc-eql-exec ,key ,alist))
+(add-macro-alias delete-assoc-eql-exec remove1-assoc-eql-exec)
+(defmacro delete-assoc-equal (key alist)
+  `(remove1-assoc-equal ,key ,alist))
+(add-macro-alias delete-assoc-equal remove1-assoc-equal)
+(defmacro delete-assoc-eq (key alist)
+  `(remove1-assoc-eq ,key ,alist))
+(defmacro delete-assoc (key alist)
+  `(remove1-assoc ,key ,alist))
+
 (defmacro remove-macro-alias (macro-name)
   `(table macro-aliases-table nil
           (let ((tbl (table-alist 'macro-aliases-table world)))
             (if (assoc-eq ',macro-name tbl)
-                (delete-assoc-eq-exec ',macro-name tbl)
+                (remove1-assoc-eq-exec ',macro-name tbl)
               (prog2$ (cw "~%NOTE:  the name ~x0 did not appear as a key in ~
                            macro-aliases-table.  Consider using :u or :ubt to ~
                            undo this event, which is harmless but does not ~
@@ -23111,7 +23166,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(table nth-aliases-table nil
           (let ((tbl (table-alist 'nth-aliases-table world)))
             (if (assoc-eq ',alias-name tbl)
-                (delete-assoc-eq-exec ',alias-name tbl)
+                (remove1-assoc-eq-exec ',alias-name tbl)
               (prog2$ (cw "~%NOTE:  the name ~x0 did not appear as a key in ~
                            nth-aliases-table.  Consider using :u or :ubt to ~
                            undo this event, which is harmless but does not ~
@@ -25737,7 +25792,7 @@ Lisp definition."
   `(table custom-keywords-table nil
           (let ((tbl (table-alist 'custom-keywords-table world)))
             (if (assoc-eq ',keyword tbl)
-                (delete-assoc-eq-exec ',keyword tbl)
+                (remove1-assoc-eq-exec ',keyword tbl)
               (prog2$ (cw "~%NOTE:  the name ~x0 did not appear as a key in ~
                            custom-keywords-table.  Consider using :u or :ubt to ~
                            undo this event, which is harmless but does not ~

@@ -30,61 +30,15 @@
 
 (in-package "ACL2")
 
-; REMOVE-ASSOC-EQUAL is like DELETE-ASSOC-EQUAL, but removes all occurrences of
+; REMOVE-ASSOC-EQUAL is like REMOVE1-ASSOC-EQUAL, but removes all occurrences of
 ; the key from the alist instead of just removing the first occurrence.
 
-; Modifications below to remove-assoc-xxx are from Matt K., 5/19/2014, to
-; support changes in let-mbe that provide better guard-checking.
-
-(defun-with-guard-check remove-assoc-eq-exec (x alist)
-  (if (symbolp x)
-      (alistp alist)
-    (symbol-alistp alist))
-  (cond ((endp alist) nil)
-        ((eq x (car (car alist))) (remove-assoc-eq-exec x (cdr alist)))
-        (t (cons (car alist)
-                 (remove-assoc-eq-exec x (cdr alist))))))
-
-(defun-with-guard-check remove-assoc-eql-exec (x alist)
-  (if (eqlablep x)
-      (alistp alist)
-    (eqlable-alistp alist))
-  (cond ((endp alist) nil)
-        ((eql x (car (car alist))) (remove-assoc-eql-exec x (cdr alist)))
-        (t (cons (car alist) (remove-assoc-eql-exec x (cdr alist))))))
-
-(defun remove-assoc-equal (x alist)
-  (declare (xargs :guard (alistp alist)))
-  (cond ((endp alist) nil)
-        ((equal x (car (car alist))) (remove-assoc-equal x (cdr alist)))
-        (t (cons (car alist) (remove-assoc-equal x (cdr alist))))))
-
-(defmacro remove-assoc-eq (x lst)
-  `(remove-assoc ,x ,lst :test 'eq))
-
-(defthm remove-assoc-eq-exec-is-remove-assoc-equal
-  (equal (remove-assoc-eq-exec x l)
-         (remove-assoc-equal x l)))
-
-(defthm remove-assoc-eql-exec-is-remove-assoc-equal
-  (equal (remove-assoc-eql-exec x l)
-         (remove-assoc-equal x l)))
-
-(defmacro remove-assoc (x alist &key (test ''eql))
-  (declare (xargs :guard (or (equal test ''eq)
-                             (equal test ''eql)
-                             (equal test ''equal))))
-  (cond
-   ((equal test ''eq)
-    `(let-mbe ((x ,x) (alist ,alist))
-              :logic (remove-assoc-equal x alist)
-              :exec  (remove-assoc-eq-exec x alist)))
-   ((equal test ''eql)
-    `(let-mbe ((x ,x) (alist ,alist))
-              :logic (remove-assoc-equal x alist)
-              :exec  (remove-assoc-eql-exec x alist)))
-   (t ; (equal test 'equal)
-    `(remove-assoc-equal ,x ,alist))))
+; Virtually all of this file has been moved to ACL2 source file axioms.lisp,
+; after checking with Sol Swords and not getting an objection.  Note that
+; modifications to earlier versions were made anyhow by Matt Kaufmann,
+; 5/19/2014, to support changes in let-mbe that provide better guard-checking;
+; indeed, the results were completely analogous to ACL2 source functions and
+; macros delete-assoc*, renamed 12/2018 remove1-assoc*.
 
 (defthm assoc-of-remove-assoc-split
   (equal (assoc j (remove-assoc k a))

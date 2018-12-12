@@ -10778,16 +10778,16 @@
                        nil 0 0
                        nil)))
 
-(defun delete-assoc-equal? (key alist)
+(defun remove1-assoc-equal? (key alist)
   (cond ((assoc-equal key alist)
-         (delete-assoc-equal key alist))
+         (remove1-assoc-equal key alist))
         (t alist)))
 
-(defun delete-assoc-equal?-lst (lst alist)
+(defun remove1-assoc-equal?-lst (lst alist)
   (declare (xargs :guard (alistp alist)))
   (if (consp lst)
-      (delete-assoc-equal?-lst (cdr lst)
-                               (delete-assoc-equal? (car lst) alist))
+      (remove1-assoc-equal?-lst (cdr lst)
+                                (remove1-assoc-equal? (car lst) alist))
     alist))
 
 (defun monitor1 (x form ctx state)
@@ -10804,18 +10804,18 @@
      (pprogn
       (f-put-global 'brr-monitored-runes
                     (append (pairlis-x2 runes (list term))
-                            (delete-assoc-equal?-lst
+                            (remove1-assoc-equal?-lst
                              runes
                              (get-brr-global 'brr-monitored-runes
                                              state)))
                     state)
       (value (get-brr-global 'brr-monitored-runes state))))))
 
-(defun delete-assoc-equal-lst (lst alist)
+(defun remove1-assoc-equal-lst (lst alist)
   (declare (xargs :guard (alistp alist)))
   (if (consp lst)
-      (delete-assoc-equal-lst (cdr lst)
-                              (delete-assoc-equal (car lst) alist))
+      (remove1-assoc-equal-lst (cdr lst)
+                               (remove1-assoc-equal (car lst) alist))
     alist))
 
 (defun set-difference-assoc-equal (lst alist)
@@ -10863,7 +10863,7 @@
                         (value nil))))
          (pprogn
           (f-put-global 'brr-monitored-runes
-                        (delete-assoc-equal-lst runes monitored-runes-alist)
+                        (remove1-assoc-equal-lst runes monitored-runes-alist)
                         state)
           (prog2$
            (cond ((and (f-get-global 'gstackp state)
