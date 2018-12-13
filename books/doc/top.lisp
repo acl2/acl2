@@ -428,7 +428,7 @@ book that depends on Glucose being installed.</p>")
 ;                  (cw "; Note: Removing 'redundant' ACL2 parent for ~x0.~%"
 ;                      (cdr (assoc :name topic)))
 ;                  (cons (cons :parents '(acl2::top))
-;                        (delete-assoc-equal :parents topic)))
+;                        (remove1-assoc-equal :parents topic)))
 ;               topic)))
 ;   (cons topic
 ;         (fix-redundant-acl2-parents (cdr all-topics))))

@@ -761,8 +761,8 @@ executed \(whatever comes first\).</p>
   (if (endp key-list)
       breakpoints-lst
     (delete-breakpoint-fn (cdr key-list)
-                          (delete-assoc (car key-list)
-                                        breakpoints-lst))))
+                          (remove1-assoc (car key-list)
+                                         breakpoints-lst))))
 
 (defmacro delete-breakpoint (key-list)
   `(table breakpoints nil

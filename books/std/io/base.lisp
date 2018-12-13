@@ -108,9 +108,9 @@
            (open-channels-p (add-pair k v x)))
   :hints(("Goal" :in-theory (enable open-channels-p))))
 
-(defthm open-channels-p-of-delete-assoc-equal
+(defthm open-channels-p-of-remove1-assoc-equal
   (implies (open-channels-p x)
-           (open-channels-p (delete-assoc-equal k x)))
+           (open-channels-p (remove1-assoc-equal k x)))
   :hints(("Goal" :in-theory (enable open-channels-p
                                     open-channel-listp
                                     ordered-symbol-alistp))))

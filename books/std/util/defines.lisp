@@ -680,9 +680,9 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                 :long in the (~x2 ~x0 ...) form."))
 
        (kwd-alist guts1.kwd-alist)
-       (kwd-alist (delete-assoc :short kwd-alist))
-       (kwd-alist (delete-assoc :long  kwd-alist))
-       (kwd-alist (delete-assoc :parents kwd-alist))
+       (kwd-alist (remove1-assoc :short kwd-alist))
+       (kwd-alist (remove1-assoc :long  kwd-alist))
+       (kwd-alist (remove1-assoc :parents kwd-alist))
        (kwd-alist (acons :short (or short sub-short) kwd-alist))
        (kwd-alist (acons :long  (or long  sub-long) kwd-alist))
        (kwd-alist (acons :parents (or parents sub-parents) kwd-alist))
@@ -733,9 +733,9 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
             ;; Special case: move the documentation into the function;
             ;; don't produce our own section.
             (mv nil nil nil
-                (delete-assoc :parents
-                              (delete-assoc :short
-                                            (delete-assoc :long kwd-alist)))
+                (remove1-assoc :parents
+                               (remove1-assoc :short
+                                              (remove1-assoc :long kwd-alist)))
                 (maybe-inject-global-docs
                  name parents-p parents short long gutslist))
           ;; Normal case: have docs, no function with the same name,

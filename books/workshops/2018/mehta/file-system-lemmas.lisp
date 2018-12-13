@@ -44,9 +44,9 @@
   (implies (and (equal i (len l)) (true-listp l))
            (equal (take i l) l)))
 
-(defthm assoc-after-delete-assoc
+(defthm assoc-after-remove1-assoc
   (implies (not (equal name1 name2))
-           (equal (assoc-equal name1 (delete-assoc name2 alist))
+           (equal (assoc-equal name1 (remove1-assoc name2 alist))
                   (assoc-equal name1 alist))))
 
 (defthm character-listp-of-first-n-ac

@@ -3883,9 +3883,9 @@
                               (strip-cars alst)))))
 
     (local
-     (defthm len-of-delete-assoc-equal
+     (defthm len-of-remove1-assoc-equal
        (implies (member-equal key (strip-cars alst))
-                (< (len (delete-assoc-equal key alst))
+                (< (len (remove1-assoc-equal key alst))
                    (len alst)))))
 
     (local
@@ -3901,29 +3901,29 @@
            (if pair1
                (and (not (equal pair1 pair2))
                     (all-keys-ind-hint val1 val2
-                                       (delete-assoc-equal (car pair1) alst)))
+                                       (remove1-assoc-equal (car pair1) alst)))
              (if pair2
                  (not (equal pair1 pair2))
                ;; if both are nil:
                nil))))))
 
     (local
-     (defthm no-duplicatesp-equal-of-strip-cars-delete-assoc-equal
+     (defthm no-duplicatesp-equal-of-strip-cars-remove1-assoc-equal
        (implies (no-duplicatesp-equal (strip-cars alst))
-                (no-duplicatesp-equal (strip-cars (delete-assoc-equal key alst))))))
+                (no-duplicatesp-equal (strip-cars (remove1-assoc-equal key alst))))))
 
     (local
-     (defthm alistp-of-delete-assoc-equal
+     (defthm alistp-of-remove1-assoc-equal
        (implies (alistp alst)
-                (alistp (delete-assoc-equal key alst)))))
+                (alistp (remove1-assoc-equal key alst)))))
 
     (local
-     (defthm nat-listp-of-strip-cars-delete-assoc-equal
+     (defthm nat-listp-of-strip-cars-remove1-assoc-equal
        (implies (nat-listp (strip-cars alst))
-                (nat-listp (strip-cars (delete-assoc-equal key alst))))))
+                (nat-listp (strip-cars (remove1-assoc-equal key alst))))))
 
     (local
-     (defthm member-equal-of-strip-cdrs-delete-assoc-equal
+     (defthm member-equal-of-strip-cdrs-remove1-assoc-equal
        (implies (and
                  (not (equal val1 val2))
                  (no-duplicatesp-equal (strip-cars alst))
@@ -3931,14 +3931,14 @@
                  (member-equal val2 (strip-cdrs alst)))
                 (member-equal
                  val2
-                 (strip-cdrs (delete-assoc-equal
+                 (strip-cdrs (remove1-assoc-equal
                               (car (rassoc-equal val1 alst))
                               alst))))))
 
     (local
-     (defthm rassoc-equal-of-delete-assoc-equal
+     (defthm rassoc-equal-of-remove1-assoc-equal
        (implies (not (equal key (car (rassoc-equal val2 alst))))
-                (equal (rassoc-equal val2 (delete-assoc-equal key alst))
+                (equal (rassoc-equal val2 (remove1-assoc-equal key alst))
                        (rassoc-equal val2 alst)))))
 
     (local
