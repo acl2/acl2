@@ -13,10 +13,13 @@
 ; Avoid failure for atj-gen-number-value in ACL2(r):
 ; cert_param: non-acl2r
 
+(include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking" :dir :system)
 (include-book "kestrel/utilities/strings" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "oslib/top" :dir :system)
+(include-book "std/strings/charset" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
 
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
@@ -54,14 +57,16 @@
       performed when it is processed.")
     (xdoc::li
      "@('java-package'),
-      @('java-class'), and
-      @('output-dir')
+      @('java-class'),
+      @('output-dir'), and
+      @('tests')
       are the homonymous inputs to @(tsee atj),
       before being processed.
       These formal parameters have no types because they may be any values.")
     (xdoc::li
      "@('java-package$'),
       @('java-class$'),
+      @('tests$'), and
       @('verbose$')
       are the results of processing
       the homonymous inputs (without the @('$')) to @(tsee atj).
@@ -69,7 +74,10 @@
       but they have types implied by their successful validation,
       performed when they are processed.")
     (xdoc::li
-     "@('output-file$') is the result of processing @('output-dir').")
+     "@('output-file$') and @('output-file-test$')
+      are the results of processing @('output-dir').")
+    (xdoc::li
+     "@('test$') is an element of @('tests$').")
     (xdoc::li
      "@('pkgs') is the list of names of all the currently known ACL2 packages,
       in chronological order.")
@@ -80,7 +88,7 @@
      "@('fns-to-translate') is the list of names
       of all the non-primitive functions to be translated to Java.")
     (xdoc::li
-     "@('channel') is the output channel of the generated Java file.")
+     "@('channel') is the output channel of the generated Java file(s).")
     (xdoc::li
      "@('value-next-var'),
       @('term-next-var'), and
@@ -135,6 +143,19 @@
          (new-term (atj-remove-mbe-exec-from-term term))
          (new-terms (atj-remove-mbe-exec-from-terms terms)))
       (cons new-term new-terms))))
+
+(define atj-unquote-lst ((list acl2::quote-listp))
+  :returns (new-list true-listp)
+  :verify-guards nil
+  :short "Unquote all the elements of a list."
+  (cond ((endp list) nil)
+        (t (cons (unquote (car list))
+                 (atj-unquote-lst (cdr list))))))
+
+(str::defcharset alpha/digit
+                 (or (and (standard-char-p x)
+                          (alpha-char-p x))
+                     (and (digit-char-p x) t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -370,10 +391,159 @@
        (name (or java-class "ACL2")))
     (value name)))
 
-(define atj-process-output-dir (output-dir (java-class$ stringp) ctx state)
+(std::defaggregate atj-test
+  :short "Recognize a processed test specified by the @(':tests') input."
+  :long
+  "<p>
+   Each test specified by the @(':tests') input
+   must the form @('(namej termj)'),
+   where @('termj') must translate to @('(fn qc1 qc2 ...)'),
+   as explained in the documentation.
+   As the @(':tests') input is processed,
+   the information about each test is stored
+   into an aggregate of this type.
+   This aggregate stores
+   @('namej'),
+   @('fn'),
+   The list of values of the quoted constants @('qc1'), @('qc2'), etc.,
+   and the result of the ground call @('(fn qc1 qc2 ...)').
+   </p>"
+  ((name "This is @('namej')." stringp)
+   (function "This is @('fn')." symbolp)
+   (arguments "This is the list of values of @('qc1'), @('qc2'), etc."
+              true-listp)
+   (result "This is the result of @('(fn qc1 qc2 ...)')."))
+  :pred atj-testp)
+
+(std::deflist atj-test-listp (x)
+  (atj-testp x)
+  :short "Recognize true lists of processed tests
+          specified by the @(':tests') input.")
+
+(define atj-ensure-terms-quoted-constants
+  ((qcs pseudo-term-listp "@('qc1'), @('qc2'), etc.")
+   (fn symbolp "The @('fn') in @('(fn qc1 qc2 ...)'); just for error messages.")
+   (term "One of the test terms @('termj'); just for error messages.")
+   ctx
+   state)
+  :returns (mv erp (nothing null) state)
+  :short "Cause an error if
+          any argument of the call @('(fn qc1 qc2 ...)')
+          to which a test term translates
+          is not a quoted constant."
+  (b* (((when (endp qcs)) (value nil))
+       (qc (car qcs))
+       ((unless (quotep qc))
+        (er-soft+ ctx t nil
+                  "The term ~x0 that is an argument of ~
+                   the function call (~x1 ...) that translates ~
+                   the test term ~x2 in the :TESTS input, ~
+                   must be a quoted constant."
+                  qc fn term)))
+    (atj-ensure-terms-quoted-constants (cdr qcs) fn term ctx state)))
+
+(define atj-process-tests (tests (targets$ symbol-listp) ctx state)
   :returns (mv erp
-               (output-file$ "A @(tsee stringp) to use as
-                              the path of the generated Java file.")
+               (tests$ "An @(tsee atj-test-listp).")
+               state)
+  :mode :program
+  :short "Process the @(':tests') input."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "After evaluating @(':tests')
+     and ensuring that the result is a list of doublets,
+     we convert it into an alist and we ensure that the keys are unique.
+     Then we process each pair in the alist.")
+   (xdoc::p
+    "For each pair in the alist,
+     we first ensure that the name is a non-empty string
+     consisting only of letters and digits.
+     Then we translate the term (ensuring that the translation succeeds),
+     and we ensure that it has the form @('(fn qc1 qc2 ...)'),
+     where @('fn') is one of the target functions
+     and @('qc1'), @('qc2'), etc. are quoted constants.
+     (Note that these checks imply that the term is ground,
+     so this condition does not need to be checked explicitly.)
+     We unquote @('qc1'), @('qc2'), etc., obtaining a list of argument values.
+     We evaluate the call @('(fn qc1 qc2 ...)'), obtaining a result value.
+     We create an @(tsee atj-test) aggregate for each test."))
+  (b* (((er (cons & tests)) (acl2::trans-eval tests ctx state nil))
+       (description "The :TESTS input")
+       ((er &) (acl2::ensure-doublet-list$ tests description t nil))
+       (alist (acl2::doublets-to-alist tests))
+       (names (strip-cars alist))
+       (description (msg
+                     "The list ~x0 of names of the tests in the :TESTS input"
+                     names))
+       ((er &) (ensure-list-no-duplicates$ names description t nil)))
+    (atj-process-tests-aux alist targets$ ctx state))
+
+  :prepwork
+  ((define atj-process-tests-aux ((tests-alist alistp)
+                                  (targets$ symbol-listp)
+                                  ctx
+                                  state)
+     :returns (mv erp
+                  tests$ ; ATJ-TEST-LISTP
+                  state)
+     :mode :program
+     :parents nil
+     (b* (((when (endp tests-alist)) (value nil))
+          ((cons (cons name term) tests-alist) tests-alist)
+          ((er &) (ensure-string$ name
+                                  (msg "The test name ~x0 in the :TESTS input"
+                                       name)
+                                  t nil))
+          ((when (equal name ""))
+           (er-soft+ ctx t nil "The test name ~x0 in the :TESTS input ~
+                                cannot be the empty string." name))
+          ((unless (str::chars-in-charset-p (explode name) (alpha/digit-chars)))
+           (er-soft+ ctx t nil "The test name ~x0 in the :TESTS input ~
+                                must contain only letters and digits." name))
+          ((er (list term$ &))
+           (acl2::ensure-term$ term
+                               (msg "The test term ~x0 in the :TESTS input" term)
+                               t nil))
+          ((when (or (variablep term$)
+                     (fquotep term$)
+                     (flambda-applicationp term$)))
+           (er-soft+ ctx t nil
+                     "The test term ~x0 in the :TESTS input ~
+                      must translate to ~
+                      the application of a named function." term))
+          (fn (ffn-symb term$))
+          ((er &) (acl2::ensure-member-of-list$
+                   fn
+                   targets$
+                   (msg "among the target functions ~&0." targets$)
+                   (msg "The function ~x0 called by ~
+                         the test term ~x1 in the :TESTS input"
+                        fn term)
+                   t nil))
+          (qcs (fargs term$))
+          ((er &) (atj-ensure-terms-quoted-constants qcs fn term ctx state))
+          (args (atj-unquote-lst qcs))
+          ((er (cons & res)) (acl2::trans-eval term$ ctx state nil))
+          (agg (atj-test name fn args res))
+          ((er aggs) (atj-process-tests-aux tests-alist targets$ ctx state)))
+       (value (cons agg aggs))))))
+
+(define atj-process-output-dir (output-dir
+                                (java-class$ stringp)
+                                (tests$ atj-test-listp)
+                                ctx
+                                state)
+  :returns (mv erp
+               (result "A tuple @('(output-file$ output-file-test$)')
+                        satisfying
+                        @('(typed-tuplep stringp maybe-stringp)'),
+                        where @('output-file$') is the path
+                        of the generated main Java file,
+                        and @('output-file-test$') is
+                        @('nil') if the @(':tests') input is @('nil'),
+                        otherwise it is the path
+                        of the generated test Java file.")
                state)
   :mode :program
   :short "Process the @(':output-dir') input."
@@ -401,14 +571,38 @@
                      (er-soft+ ctx t nil
                                "The output path ~x0 ~
                                 exists but is not a regular file." file)))
+                 (value :this-is-irrelevant)))
+       (file-test (if tests$
+                      (oslib::catpath output-dir
+                                      (concatenate 'string
+                                                   java-class$
+                                                   "Test.java"))
+                    nil))
+       ((er &) (b* (((when (null file-test)) (value :this-is-irrelevant))
+                    ((mv err/msg exists state) (oslib::path-exists-p file-test))
+                    ((when err/msg)
+                     (er-soft+ ctx t nil
+                               "The existence of the output path ~x0 ~
+                                cannot be tested." file-test))
+                    ((when (not exists)) (value :this-is-irrelevant))
+                    ((mv err/msg kind state) (oslib::file-kind file-test))
+                    ((when err/msg)
+                     (er-soft+ ctx t nil
+                               "The kind of the output path ~x0 ~
+                                cannot be tested." file-test))
+                    ((when (not (eq kind :regular-file)))
+                     (er-soft+ ctx t nil
+                               "The output path ~x0 ~
+                                exists but is not a regular file." file-test)))
                  (value :this-is-irrelevant))))
-    (value file)))
+    (value (list file file-test))))
 
 (defval *atj-allowed-options*
   :short "Keyword options accepted by @(tsee atj)."
   (list :java-package
         :java-class
         :output-dir
+        :tests
         :verbose)
   ///
   (assert-event (symbol-listp *atj-allowed-options*))
@@ -420,12 +614,16 @@
                                     java-package$
                                     java-class$
                                     output-file$
+                                    output-file-test$
+                                    tests$
                                     verbose$)')
                         satisfying
                         @('(typed-tuplep symbol-listp
                                          maybe-stringp
                                          stringp
                                          stringp
+                                         maybe-stringp
+                                         atj-test-listp
                                          booleanp
                                          result)'),
                         where @('fn1'), ..., @('fnp') are
@@ -433,12 +631,20 @@
                         @('java-package$') is the @(':java-package') input,
                         @('java-class$) is the result of
                         @(tsee atj-process-java-class),
-                        @('output-file$') is the result of
-                        (tsee atj-process-output-dir), and
+                        @('output-file$') and @('output-file-test$')
+                        are the result of (tsee atj-process-output-dir),
+                        @('tests$') is the result of
+                        @(tsee atj-process-tests), and
                         @('verbose$') is the @(':verbose') input.")
                state)
   :mode :program
   :short "Ensure that the inputs to the macro are valid."
+  :long
+  (xdoc::topp
+   "We process the inputs in order,
+    except that @(':output-dir') is processed after @(':tests')
+    because the result of processing the latter
+    is used in processing the former.")
   (b* (((mv erp targets options) (partition-rest-and-keyword-args
                                   args *atj-allowed-options*))
        ((when erp) (er-soft+ ctx t nil
@@ -449,14 +655,23 @@
        (java-package (cdr (assoc-eq :java-package options)))
        (java-class (cdr (assoc-eq :java-class options)))
        (output-dir (or (cdr (assoc-eq :output-dir options)) "."))
+       (tests (cdr (assoc-eq :tests options)))
        (verbose (cdr (assoc-eq :verbose options)))
        ((er &) (atj-process-targets targets ctx state))
        ((er &) (atj-process-java-package java-package ctx state))
-       ((er java-class) (atj-process-java-class java-class ctx state))
-       ((er output-file) (atj-process-output-dir output-dir
-                                                 java-class ctx state))
+       ((er java-class$) (atj-process-java-class java-class ctx state))
+       ((er tests$) (atj-process-tests tests targets ctx state))
+       ((er (list output-file$
+                  output-file-test$)) (atj-process-output-dir
+                                       output-dir java-class$ tests$ ctx state))
        ((er &) (ensure-boolean$ verbose "The :VERBOSE input" t nil)))
-    (value (list targets java-package java-class output-file verbose))))
+    (value (list targets
+                 java-package
+                 java-class$
+                 output-file$
+                 output-file-test$
+                 tests$
+                 verbose))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -729,7 +944,7 @@
    (xdoc::p
     "We generate directly Java concrete syntax,
      without going through an abstraxt syntax.
-     We write to the output file, via an ACL2 output channel.")
+     We write to the output file(s), via an ACL2 output channel.")
    (xdoc::p
     "The @('atj-gen-...') functions
      that generate Java declarations and statements
@@ -748,7 +963,8 @@
      So the functions that generate Java expressions
      may take and return @(tsee state) as well.")
    (xdoc::p
-    "To illustrate the structure of the @('atj-gen-...') just described,
+    "To illustrate the structure of the @('atj-gen-...') functions
+     just described,
      consider the generation of a Java expression to build
      the Java representation of an ACL2 @(tsee cons) pair.
      The pair may be a large binary tree,
@@ -857,6 +1073,36 @@
   "body"
   ///
   (assert-event (atj-string-ascii-java-identifier-p *atj-body-local-var*)))
+
+(defval *atj-function-local-var*
+  :short "Name of the Java local variable used to build
+          the name of a function call."
+  "function"
+  ///
+  (assert-event (atj-string-ascii-java-identifier-p *atj-function-local-var*)))
+
+(defval *atj-arguments-local-var*
+  :short "Name of the Java local variables used to build
+          the array of argument values of a function call."
+  "arguments"
+  ///
+  (assert-event (atj-string-ascii-java-identifier-p *atj-arguments-local-var*)))
+
+(defval *atj-result-acl2-local-var*
+  :short "Name of the Java local variables used to build
+          the result of a test calculated in ACL2 (by ATJ)."
+  "resultAcl2"
+  ///
+  (assert-event
+   (atj-string-ascii-java-identifier-p *atj-result-acl2-local-var*)))
+
+(defval *atj-result-java-local-var*
+  :short "Name of the Java local variables used to build
+          the result of a test calculated in Java (by AIJ)."
+  "resultJava"
+  ///
+  (assert-event
+   (atj-string-ascii-java-identifier-p *atj-result-java-local-var*)))
 
 (define atj-gen-set-var
   ((varbase stringp "Base name of the local variable.")
@@ -1401,8 +1647,8 @@
           to add an ACL2 package definition to the environment."
   :long
   (xdoc::topp
-   "We generate a private method for each ACL2 package definition to add
-    to the Java representation of the ACL2 environment.
+   "We generate a private static method for each ACL2 package definition
+    to add to the Java representation of the ACL2 environment.
     This function generates the name of this method,
     which has the form @('addPackageDef_...'),
     where @('...') is a sequence of pairs of hexadecimal digits
@@ -1532,8 +1778,8 @@
           to add an ACL2 function definition to the environment."
   :long
   (xdoc::topp
-   "We generate a private method for each ACL2 function definition to add
-    to the Java representation of the ACL2 environment.
+   "We generate a private static method for each ACL2 function definition
+    to add to the Java representation of the ACL2 environment.
     This function generates the name of this method,
     which has the form @('addFunctionDef_..._...'),
     wher the first @('...') is a sequence of pairs of hexadecimal digits
@@ -1770,7 +2016,7 @@
                        state)
   :returns state
   :mode :program
-  :short "Generate the Java class declaration."
+  :short "Generate the main Java class declaration."
   :long
   (xdoc::topp
    "This is a public class that contains all the generated fields and methods.
@@ -1794,15 +2040,242 @@
        ((mv & state) (fmt1! "}~%" nil 0 channel state nil)))
     state))
 
+(define atj-gen-test-method-name ((name stringp))
+  :returns (method-name stringp)
+  :short "Name of the Java method to run one of the specified tests."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This is generated only if the @(':tests') input is not @('nil').")
+   (xdoc::p
+    "We generate a private static method for each test
+     specified by the @(':tests') input.
+     This function generates the name of this method,
+     which has the form @('test_...'),
+     where @('...') is the name of the test.
+     Since ATJ checks that the tests have unique names,
+     this scheme ensures that the method names are all distinct.")
+   (xdoc::p
+    "The argument of this function is the name of the test."))
+  (str::cat "test_" name))
+
+(define atj-gen-test-method ((test$ atj-testp)
+                             (java-class$ stringp)
+                             (verbose$ booleanp)
+                             (channel symbolp)
+                             state)
+  :returns state
+  :mode :program
+  :short "Generate a Java method to run one of the specified tests."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This is generated only if the @(':tests') input is not @('nil').")
+   (xdoc::p
+    "This is a private static method
+     that prints the name of the test,
+     builds the argument values of the test using AIJ,
+     builds the result value of the test using AIJ,
+     calls (the Java representation of) the function on them,
+     compares the obtained result value with the test's result value,
+     and prints a message of success or failure.")
+   (xdoc::p
+    "We use an auxiliary recursive function to build the argument values.
+     We initialize the local variable index for values to 1."))
+  (b* (((atj-test test) test$)
+       ((run-when verbose$)
+        (cw "  ~s0~%" test.name))
+       (method-name (atj-gen-test-method-name test.name))
+       ((mv & state) (fmt1! "~%~s0private static void ~s1()~%"
+                            (list (cons #\0 *atj-indent-1*)
+                                  (cons #\1 method-name))
+                            0 channel state nil))
+       ((mv & state) (fmt1! "~s0throws Acl2EvaluationException {~%"
+                            (list (cons #\0 *atj-indent-2*))
+                            0 channel state nil))
+       ((mv & state) (fmt1!
+                      "~s0System.out.print(\"Testing \" + ~x1 + \"... \");~%"
+                      (list (cons #\0 *atj-indent-2*)
+                            (cons #\1 test.name))
+                      0 channel state nil))
+       (fn-symbol-expr (atj-gen-symbol-value test.function))
+       ((mv & state) (fmt1! "~s0Acl2Symbol ~s1 = ~@2;~%"
+                            (list (cons #\0 *atj-indent-2*)
+                                  (cons #\1 *atj-function-local-var*)
+                                  (cons #\2 fn-symbol-expr))
+                            0 channel state nil))
+       ((mv args-exprs value-next-var state) (atj-gen-test-method-aux
+                                              test.arguments 1 channel state))
+       (args-expr (atj-gen-java-array args-exprs "Acl2Value"))
+       ((mv & state) (fmt1! "~s0Acl2Value[] ~s1 = ~@2;~%"
+                            (list (cons #\0 *atj-indent-2*)
+                                  (cons #\1 *atj-arguments-local-var*)
+                                  (cons #\2 args-expr))
+                            0 channel state nil))
+       ((mv res-expr & state) (atj-gen-value
+                               test.result value-next-var channel state))
+       ((mv & state) (fmt1! "~s0Acl2Value ~s1 = ~@2;~%"
+                            (list (cons #\0 *atj-indent-2*)
+                                  (cons #\1 *atj-result-acl2-local-var*)
+                                  (cons #\2 res-expr))
+                            0 channel state nil))
+       ((mv & state) (fmt1! "~s0Acl2Value ~s1 = ~s2.call(~s3, ~s4);~%"
+                            (list (cons #\0 *atj-indent-2*)
+                                  (cons #\1 *atj-result-java-local-var*)
+                                  (cons #\2 java-class$)
+                                  (cons #\3 *atj-function-local-var*)
+                                  (cons #\4 *atj-arguments-local-var*))
+                            0 channel state nil))
+       ((mv & state) (fmt1! "~s0if (~s1.equals(~s2))~%"
+                            (list (cons #\0 *atj-indent-2*)
+                                  (cons #\1 *atj-result-acl2-local-var*)
+                                  (cons #\2 *atj-result-java-local-var*))
+                            0 channel state nil))
+       ((mv & state) (fmt1! "~s0System.out.println(\"PASS\");~%"
+                            (list (cons #\0 *atj-indent-3*))
+                            0 channel state nil))
+       ((mv & state) (fmt1! "~s0else~%"
+                            (list (cons #\0 *atj-indent-2*))
+                            0 channel state nil))
+       ((mv & state) (fmt1! "~s0System.out.println(\"FAIL\");~%"
+                            (list (cons #\0 *atj-indent-3*))
+                            0 channel state nil))
+       ((mv & state) (fmt1! "~s0}~%" (list (cons #\0 *atj-indent-1*))
+                            0 channel state nil)))
+    state)
+
+  :prepwork
+  ((define atj-gen-test-method-aux ((args true-listp)
+                                    (value-next-var posp)
+                                    (channel symbolp)
+                                    state)
+     :returns (mv java-expressions ;; MSG-LISTP
+                  new-value-next-var ;; POSP
+                  state)
+     :mode :program
+     :parents nil
+     (b* (((when (endp args)) (mv nil value-next-var state))
+          (arg (car args))
+          ((mv java-expression new-value-next-var state)
+           (atj-gen-value arg value-next-var channel state))
+          ((mv java-expressions new-new-value-next-var state)
+           (atj-gen-test-method-aux
+            (cdr args) new-value-next-var channel state)))
+       (mv (cons java-expression java-expressions)
+           new-new-value-next-var
+           state)))))
+
+(define atj-gen-test-methods ((tests$ atj-test-listp)
+                              (java-class$ stringp)
+                              (verbose$ booleanp)
+                              (channel symbolp)
+                              state)
+  :returns state
+  :mode :program
+  :short "Generate all the Java methods to run the specified tests."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "These are generated only if the @(':tests') input is not @('nil')."))
+  (if (endp tests$)
+      state
+    (b* ((state (atj-gen-test-method
+                 (car tests$) java-class$ verbose$ channel state)))
+      (atj-gen-test-methods (cdr tests$) java-class$ verbose$ channel state))))
+
+(define atj-gen-run-tests ((tests$ atj-test-listp)
+                           (channel symbolp)
+                           state)
+  :returns state
+  :mode :program
+  :short "Generate Java code to run the specified tests."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This is generated only if the @(':tests') input is not @('nil').")
+   (xdoc::p
+    "This is a sequence of calls to the methods
+     generated by @(tsee atj-gen-test-methods).
+     These calls are part of the main method of the test Java class."))
+  (if (endp tests$)
+      state
+    (b* ((method-name (atj-gen-test-method-name (atj-test->name (car tests$))))
+         ((mv & state) (fmt1! "~s0~s1();~%"
+                              (list (cons #\0 *atj-indent-2*)
+                                    (cons #\1 method-name))
+                              0 channel state nil)))
+      (atj-gen-run-tests (cdr tests$) channel state))))
+
+(define atj-gen-main-method ((tests$ atj-test-listp)
+                             (java-class$ stringp)
+                             (channel symbolp)
+                             state)
+  :returns state
+  :mode :program
+  :short "Generate the main method of the Java test class."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This is generated only if the @(':tests') input is not @('nil').")
+   (xdoc::p
+    "This method initializes the ACL2 environment
+     and then calls each test method."))
+  (b* (((mv & state) (fmt1! "~%~s0public static void main(String[] args)~%"
+                            (list (cons #\0 *atj-indent-1*))
+                            0 channel state nil))
+       ((mv & state) (fmt1! "~s0throws Acl2EvaluationException {~%"
+                            (list (cons #\0 *atj-indent-2*))
+                            0 channel state nil))
+       ((mv & state) (fmt1! "~s0~s1.initialize();~%"
+                            (list (cons #\0 *atj-indent-2*)
+                                  (cons #\1 java-class$))
+                            0 channel state nil))
+       (state (atj-gen-run-tests tests$ channel state))
+       ((mv & state) (fmt1! "~s0}~%"
+                            (list (cons #\0 *atj-indent-1*))
+                            0 channel state nil)))
+    state))
+
+(define atj-gen-class-test ((tests$ atj-test-listp)
+                            (java-class$ stringp)
+                            (verbose$ booleanp)
+                            (channel symbolp)
+                            state)
+  :returns state
+  :mode :program
+  :short "Generate the test Java class declaration."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This is generated only if the @(':tests') input is not @('nil').")
+   (xdoc::p
+    "This is a public class that contains all the generated methods.
+    [JLS] says that a Java implementation may require
+    public classes to be in files with the same names (plus extension).
+    The code that we generate satisfies this requirement."))
+  (b* (((mv & state) (fmt1! "~%public class ~s0Test {~%"
+                            (list (cons #\0 java-class$))
+                            0 channel state nil))
+       ((run-when verbose$)
+        (cw "~%Generating Java code for the tests:~%"))
+       (state (atj-gen-test-methods tests$ java-class$ verbose$ channel state))
+       (state (atj-gen-main-method tests$ java-class$ channel state))
+       ((mv & state) (fmt1! "}~%" nil 0 channel state nil)))
+    state))
+
 (define atj-gen-file-header ((channel symbolp) state)
   :returns state
   :mode :program
   :short "Generate the Java file header."
   :long
-  (xdoc::topp
-   "For now this is just a comment indicating
-    the provenance of the generated file.
-    It could be extended and made customizable.")
+  (xdoc::topapp
+   (xdoc::p
+    "For now this is just a comment indicating
+     the provenance of the generated file.
+     It could be extended and made customizable.")
+   (xdoc::p
+    "This is common to the file of the main Java class
+     and (if generated) to the file of the test Java class."))
   (b* (((mv & state)
         (fmt1! "// This file is automatically generated by ATJ.~%~%"
                nil 0 channel state nil)))
@@ -1815,10 +2288,14 @@
   :mode :program
   :short "Generate the Java package declaration (if any)."
   :long
-  (xdoc::topp
-   "This is generated only if the package is named,
-    i.e. @('java-package') is not @('nil').
-    If the package is unnamed, no declaration is generated.")
+  (xdoc::topapp
+   (xdoc::p
+    "This is generated only if the package is named,
+     i.e. @('java-package') is not @('nil').
+     If the package is unnamed, no declaration is generated.")
+   (xdoc::p
+    "This is common to the file of the main Java class
+     and (if generated) to the file of the test Java class."))
   (if java-package$
       (b* (((mv & state) (fmt1! "package ~s0;~%~%"
                                 (list (cons #\0 java-package$))
@@ -1829,7 +2306,7 @@
 (define atj-gen-import-decls ((channel symbolp) state)
   :returns state
   :mode :program
-  :short "Generate the Java import declarations."
+  :short "Generate the Java import declarations for the main file."
   :long
   (xdoc::topapp
    (xdoc::p
@@ -1838,7 +2315,7 @@
      This way, those classes can be referenced in the generated code
      by their simple (i.e. unqualified) names.")
    (xdoc::p
-    "We also import some Java collection classes."))
+    "We also import some Java library classes."))
   (b* (((mv & state) (fmt1! "import ~s0.*;~%"
                             (list (cons #\0 *atj-aij-package*))
                             0 channel state nil))
@@ -1851,9 +2328,79 @@
        ((mv & state) (fmt1! "~%" nil 0 channel state nil)))
     state))
 
+(define atj-gen-import-decls-test ((channel symbolp) state)
+  :returns state
+  :mode :program
+  :short "Generate the Java import declarations for the test file."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This is generated only if the @(':tests') input is not @('nil').")
+   (xdoc::p
+    "We import all the public classes
+     in the Java package of AIJ.
+     This way, those classes can be referenced in the generated code
+     by their simple (i.e. unqualified) names.")
+   (xdoc::p
+    "We also import a Java library class."))
+  (b* (((mv & state) (fmt1! "import ~s0.*;~%"
+                            (list (cons #\0 *atj-aij-package*))
+                            0 channel state nil))
+       ((mv & state) (fmt1! "import java.math.BigInteger;~%"
+                            nil 0 channel state nil))
+       ((mv & state) (fmt1! "~%" nil 0 channel state nil)))
+    state))
+
+(define atj-gen-file ((java-package$ maybe-stringp)
+                      (java-class$ maybe-stringp)
+                      (output-file$ stringp)
+                      (pkgs string-listp)
+                      (pkg-witness stringp)
+                      (fns-to-translate symbol-listp)
+                      (verbose$ booleanp)
+                      state)
+  :returns (mv (erp "Always @('nil').")
+               (val "Always @('nil').")
+               state)
+  :mode :program
+  :short "Generate the main Java file."
+  (b* (((mv channel state) (open-output-channel! output-file$
+                                                 :character state))
+       (state (atj-gen-file-header channel state))
+       (state (atj-gen-package-decl java-package$ channel state))
+       (state (atj-gen-import-decls channel state))
+       (state (atj-gen-class pkgs pkg-witness fns-to-translate java-class$
+                             verbose$ channel state))
+       (state (close-output-channel channel state)))
+    (value nil))
+  :prepwork ((defttag :open-input-channel)))
+
+(define atj-gen-file-test ((java-package$ maybe-stringp)
+                           (java-class$ stringp)
+                           (output-file-test$ stringp)
+                           (tests$ atj-test-listp)
+                           (verbose$ booleanp)
+                           state)
+  :returns (mv (erp "Always @('nil').")
+               (val "Always @('nil').")
+               state)
+  :mode :program
+  :short "Generate the test Java file."
+  (b* (((mv channel state) (open-output-channel! output-file-test$
+                                                 :character state))
+       (state (atj-gen-file-header channel state))
+       (state (atj-gen-package-decl java-package$ channel state))
+       (state (atj-gen-import-decls-test channel state))
+       (state (atj-gen-class-test tests$ java-class$ verbose$ channel state))
+       (state (close-output-channel channel state)))
+    (value nil))
+  :prepwork ((defttag :open-input-channel)))
+
 (define atj-gen-everything ((java-package$ maybe-stringp)
                             (java-class$ maybe-stringp)
                             (output-file$ stringp)
+                            (output-file-test$ maybe-stringp)
+                            (tests$ atj-test-listp)
                             (pkgs string-listp)
                             (pkg-witness stringp)
                             (fns-to-translate symbol-listp)
@@ -1865,23 +2412,34 @@
   :mode :program
   :short "Generate the Java file."
   :long
-  (xdoc::topp
-   "We set the soft and hard right margins to very large values
-    to avoid line breaks in virtually all cases.
-    Setting these margins to ``infinity'' is not supported.")
+  (xdoc::topapp
+   (xdoc::p
+    "We set the soft and hard right margins to very large values
+     to avoid line breaks in virtually all cases.
+     Setting these margins to ``infinity'' is not supported.")
+   (xdoc::p
+    "We always generate the main Java file.
+     We generated the test Java file only if @(':tests') is not @('nil')."))
   (state-global-let*
    ((acl2::fmt-soft-right-margin 100000 set-fmt-soft-right-margin)
     (acl2::fmt-hard-right-margin 100000 set-fmt-hard-right-margin))
-   (b* (((mv channel state) (open-output-channel! output-file$
-                                                  :character state))
-        (state (atj-gen-file-header channel state))
-        (state (atj-gen-package-decl java-package$ channel state))
-        (state (atj-gen-import-decls channel state))
-        (state (atj-gen-class pkgs pkg-witness fns-to-translate java-class$
-                              verbose$ channel state))
-        (state (close-output-channel channel state)))
-     (value nil)))
-  :prepwork ((defttag :open-input-channel)))
+   (b* (((er &) (atj-gen-file java-package$
+                              java-class$
+                              output-file$
+                              pkgs
+                              pkg-witness
+                              fns-to-translate
+                              verbose$
+                              state))
+        ((er &) (if tests$
+                    (atj-gen-file-test java-package$
+                                       java-class$
+                                       output-file-test$
+                                       tests$
+                                       verbose$
+                                       state)
+                  (value :this-is-irrelevant))))
+     (value nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1906,7 +2464,9 @@
   (b* (((er (list targets$
                   java-package$
                   java-class
-                  output-file
+                  output-file$
+                  output-file-test$
+                  tests$
                   verbose$)) (atj-process-inputs args ctx state))
        ((er (list pkgs
                   pkg-witness
@@ -1914,13 +2474,18 @@
                                       targets$ verbose$ ctx state))
        ((er &) (atj-gen-everything java-package$
                                    java-class
-                                   output-file
+                                   output-file$
+                                   output-file-test$
+                                   tests$
                                    pkgs
                                    pkg-witness
                                    fns-to-translate
                                    verbose$
                                    state))
-       (- (cw "~%Generated Java file:~%  ~x0~%" output-file)))
+       (- (if output-file-test$
+              (cw "~%Generated Java files:~% ~x0~% ~x1~%"
+                  output-file$ output-file-test$)
+            (cw "~%Generated Java file:~%  ~x0~%" output-file$))))
     (value '(value-triple :invisible))))
 
 (defsection atj-macro-definition
