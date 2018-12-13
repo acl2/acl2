@@ -1997,14 +1997,12 @@
   (local (defthm vl-printedtree-fix-of-cons
            (equal (vl-printedtree-fix (cons a b))
                   (cons (vl-printedtree-fix a)
-                        (vl-printedlist-fix b)))
-           :hints(("Goal" :in-theory (enable vl-printedtree-fix
-                                             vl-printedlist-fix
-                                             vl-printedtree-kind)))))
-  (local (in-theory (enable vl-printedlist-p-of-cons)))
+                        (vl-printedtree-fix b)))
+           :hints(("Goal" :in-theory (enable vl-printedtree-fix)))))
+
   (local (defthm vl-printedtree-p-of-cons
            (implies (and (vl-printedtree-p x)
-                         (vl-printedlist-p y))
+                         (vl-printedtree-p y))
                     (vl-printedtree-p (cons x y)))
            :hints(("Goal" :in-theory (enable vl-printedtree-p)))))
 
@@ -2028,14 +2026,14 @@
                  '(:expand ((vl-dimensionlist-total-size dims)
                             (vl-dimensionlist-resolved-p dims))))))
 
-  (fty::deffixcong vl-printedlist-equiv equal (vl-printedlist->chars x acc) x
+  (fty::deffixcong str::printtree-equiv equal (vl-printedlist->chars x acc) x
     :hints(("Goal" :in-theory (e/d (vl-printedlist->chars)
                                    (vl-printedlist-p-when-string-listp
                                     vl-printedlist-p-when-character-listp))
             :induct t
             :expand ((vl-printedlist-fix x)))))
 
-  (fty::deffixcong vl-printedlist-equiv equal (vl-printedlist->string x) x
+  (fty::deffixcong str::printtree-equiv equal (vl-printedlist->string x) x
     :hints(("Goal" :in-theory (enable vl-printedlist->string))))
 
   (deffixequiv-mutual sv-range-to-vl-chunks-datatype))

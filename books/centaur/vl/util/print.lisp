@@ -42,6 +42,18 @@
 (local (in-theory (enable acl2::arith-equiv-forwarding)))
 
 
+(defxdoc vl-printedlist
+  :parents (printer)
+  :short "Backward-compatibility aliases for @(see str::printtree)."
+  :long "<p>Formerly, VL defined its own type @('vl-printedlist') which was
+basically a tree structure containing characters and strings.  A similar one is
+now defined in @('std/strings/printtree.lisp') and @('vl-printedlist')
+functions are now aliases for @('str::printtree') functions.</p>")
+
+(defxdoc vl-printedlist-p
+  :parents (vl-printedlist)
+  :short "Backward-compatibility alias for str::printtree-p (see @(see str::printtree)).")
+
 (defxdoc printer
   :parents (vl)
   :short "The VL printer is a tool for building strings.  It is generally used
@@ -91,12 +103,12 @@ printed.</li>
 </ul>")
 
 (defsection vl-printedlist-p-util
-  :extension vl-printedlist-p
 
   (local (in-theory (enable vl-printedlist-p)))
 
   (local (in-theory (e/d (str::repeated-revappend)
-                         ((:executable-counterpart force)))))
+                         ((:executable-counterpart force)
+                          acl2::revappend-removal))))
 
   (defthm vl-printedlist-p-of-repeated-revappend
     (implies (and (vl-printedlist-p x)
@@ -205,7 +217,7 @@ functions directly, but instead use these wrappers.</p>")
  `(defstobj ps
 
   ;; The accumulated characters
-  (rchars       :type (satisfies vl-printedlist-p))
+  (rchars       :type (satisfies str::printtree-p))
 
   ;; The current column number.
   (col          :initially 0 :type unsigned-byte)
@@ -743,29 +755,6 @@ the indicated file.</p>"
        (state (princ$ (vl-ps->string) channel state)))
     (close-output-channel channel state)))
 
-(define vl-print-to-file-and-clear-aux ((x       vl-printedlist-p "Should be already un-reversed")
-                                        (channel (and (symbolp channel)
-                                                      (open-output-channel-p channel :character state)))
-                                        (state))
-  :parents (vl-print-to-file-and-clear)
-  :hooks nil
-  :returns (state state-p1 :hyp :guard)
-  (if (atom x)
-      state
-    (let* ((x1    (car x))
-           (state (vl-printedtree-case x1
-                    (:leaf (princ$ x1.elt channel state))
-                    (:list (princ$ (vl-printedlist->string x1.list) channel state)))))
-      (vl-print-to-file-and-clear-aux (cdr x) channel state)))
-  ///
-  (defthm open-output-channel-p1-of-vl-print-to-file-and-clear-aux
-    (implies (and (force (vl-printedlist-p x))
-                  (force (symbolp channel))
-                  (force (open-output-channel-p channel :character state))
-                  (force (state-p1 state)))
-             (open-output-channel-p1 channel :character
-                                     (vl-print-to-file-and-clear-aux x channel state)))))
-
 (define vl-print-to-file-and-clear ((filename stringp) &key (ps 'ps) (state 'state))
   :parents (vl-print-to-file)
   :returns (mv (ps)
@@ -786,7 +775,7 @@ under the hood in various ways that wouldn't be sound for
        (ps     (vl-ps-update-col 0))
        ;; Under-the-hood version optimizes this to nreverse and uses raw
        ;; printing routines to speed up file output
-       (state  (vl-print-to-file-and-clear-aux (reverse rchars) channel state))
+       (state  (princ$ (str::printtree->str rchars) channel state))
        (state  (close-output-channel channel state)))
     (mv ps state))
   ///
