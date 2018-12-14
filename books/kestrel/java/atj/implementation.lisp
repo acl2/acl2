@@ -155,7 +155,8 @@
 (defcharset alpha/digit
   (or (and (standard-char-p x)
            (alpha-char-p x))
-      (and (digit-char-p x) t)))
+      (and (digit-char-p x) t))
+  :short "Recognize letters and digits.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
