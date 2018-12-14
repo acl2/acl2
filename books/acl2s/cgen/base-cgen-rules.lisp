@@ -334,7 +334,7 @@ date created: [2016-04-14 Thu]
 
 
 (cgen::define-rule assoc-equal-fixer2
-           :hyp (allp v) ;technical reason for putting this! TODO make polymorphic
+           :hyp (acl2s::allp v) ;technical reason for putting this! TODO make polymorphic
            :rule (let ((A (put-assoc-equal x v (alist-fixer A))))
                    (assoc-equal x A))
            :rule-classes :fixer)
