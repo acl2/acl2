@@ -11806,28 +11806,16 @@
                   even though this was the case when ~x2 was proved.  "
                  non-logic-fns nil name))))))
 
-(mutual-recursion
-
-(defun all-ffn-symbs (term ans)
-  (declare (xargs :guard (and (pseudo-termp term)
-                              (symbol-listp ans))))
-  (cond
-   ((variablep term) ans)
-   ((fquotep term) ans)
-   (t (all-ffn-symbs-lst (fargs term)
-                         (cond ((flambda-applicationp term)
-                                (all-ffn-symbs (lambda-body (ffn-symb term))
-                                               ans))
-                               (t (add-to-set-eq (ffn-symb term) ans)))))))
-
-(defun all-ffn-symbs-lst (lst ans)
-  (declare (xargs :guard (and (pseudo-term-listp lst)
-                              (symbol-listp ans))))
-  (cond ((endp lst) ans)
-        (t (all-ffn-symbs-lst (cdr lst)
-                              (all-ffn-symbs (car lst) ans)))))
-
-)
+; The following pair of macro definitions replaces function definitions that
+; unnecessarily duplicated all-fnnames1 (and all-fnnames, all-fnnames-lst).
+; This replacement doesn't perfectly preserve functionality, because the
+; original versions below could return the list of function symbols in a
+; different order than is returned by all-fnnames1 (and all-fnnames,
+; all-fnnames-lst).  Perhaps we will eliminate these macros in the future.
+(defmacro all-ffn-symbs (term ans)
+  `(all-fnnames1 nil ,term ,ans))
+(defmacro all-ffn-symbs-lst (lst ans)
+  `(all-fnnames1 t ,lst ,ans))
 
 (mutual-recursion
 

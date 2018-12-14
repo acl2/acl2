@@ -33,7 +33,6 @@
 (include-book "legal-variablep")
 (include-book "merge-sort-term-order")
 (include-book "termp")
-(include-book "all-ffn-symbs-logic")
 (include-book "kestrel")
 (include-book "remove-guard-holders")
 (include-book "merge-sort-symbol-lt")

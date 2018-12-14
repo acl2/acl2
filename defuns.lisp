@@ -262,11 +262,12 @@
 
 (defun ffnnamep-mod-mbe (fn term)
 
-; We determine whether the function fn (possibly a lambda-expression) is used
-; as a function in term', the result of expanding mbe calls (and equivalent
-; calls) in term.  Keep this in sync with the ffnnamep nest.  Unlike ffnnamep,
-; we assume here that fn is a symbolp.
+; We determine whether the function symbol fn is called after replacing each
+; mbe call in term by its :logic component.  Keep this in sync with the
+; ffnnamep nest.  Unlike ffnnamep, we assume here that fn is a symbolp.
 
+  (declare (xargs :guard (and (symbolp fn)
+                              (pseudo-termp term))))
   (cond ((variablep term) nil)
         ((fquotep term) nil)
         ((flambda-applicationp term)
