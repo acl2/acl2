@@ -125,56 +125,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflexsum rlp-tree/error
-  :parents (rlp)
-  :short "Union of @(':error') and RLP trees."
-  :long
-  "<p>
-   These are the possible results of RLP decoding.
-   </p>"
-  (:error :fields () :ctor-body ':error :cond (eq x :error))
-  (:tree :fields ((tree :type rlp-tree :acc-body x)) :ctor-body tree))
-
-(defsection rlp-tree/error-ext
-  :extension rlp-tree/error
-
-  (defruled rlp-tree/error-p-alt-def
-    (equal (rlp-tree/error-p x)
-           (or (eq x :error)
-               (rlp-treep x)))
-    :enable rlp-tree/error-p)
-
-  (defrule disjoint-rlp-tree/error
-    (not (and (eq x :error)
-              (rlp-treep x)))
-    :rule-classes nil)
-
-  (defrule rlp-tree/error-p-when-rlp-treep
-    (implies (rlp-treep x)
-             (rlp-tree/error-p x))
-    :enable rlp-tree/error-p)
-
-  (defrule rlp-tree/error-p-of-error
-    (rlp-tree/error-p :error))
-
-  (defrule rlp-treep-when-rlp-tree/error-p-and-not-error
-    (implies (and (rlp-tree/error-p x)
-                  (not (rlp-tree/error-case x :error)))
-             (rlp-treep x))
-    :enable rlp-tree/error-p))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define rlp-encode-bytes ((bytes byte-listp))
   :parents (rlp)
-  :returns (result bytelist/error-p
-                   :hints (("Goal"
-                            :in-theory (enable bytep)
-                            :use (:instance
-                                  acl2::len-of-nat=>bendian*-leq-width
-                                  (nat (len bytes))
-                                  (base 256)
-                                  (width 8)))))
+  :returns (mv (error? booleanp)
+               (encoding byte-listp
+                         :hints (("Goal"
+                                  :in-theory (enable bytep)
+                                  :use (:instance
+                                        acl2::len-of-nat=>bendian*-leq-width
+                                        (nat (len bytes))
+                                        (base 256)
+                                        (width 8))))))
   :short "RLP encoding of a byte array."
   :long
   (xdoc::topapp
@@ -199,17 +160,21 @@
      i.e. it must be below @($256^8$), which is @($2^{64}$).
      The encoding code in [Wiki:RLP] confirms this, via an explicit check.")
    (xdoc::p
-    "If a byte array cannot be encoded, we return @(':error')."))
+    "The first result of this function is an error flag,
+     which is @('t') if the argument byte array cannot be encoded;
+     in this case, @('nil') is returned as the (irrelevant) second result."))
   (b* ((bytes (byte-list-fix bytes)))
     (cond ((and (= (len bytes) 1)
-                (< (car bytes) 128)) bytes)
-          ((< (len bytes) 56) (cons (+ 128 (len bytes))
-                                    bytes))
+                (< (car bytes) 128)) (mv nil bytes))
+          ((< (len bytes) 56) (b* ((encoding (cons (+ 128 (len bytes))
+                                                   bytes)))
+                                (mv nil encoding)))
           ((< (len bytes)
-              (expt 2 64)) (b* ((be (nat=>bendian* 256 (len bytes))))
-                             (cons (+ 183 (len be))
-                                   (append be bytes))))
-          (t :error)))
+              (expt 2 64)) (b* ((be (nat=>bendian* 256 (len bytes)))
+                                (encoding (cons (+ 183 (len be))
+                                                (append be bytes))))
+                             (mv nil encoding)))
+          (t (mv t nil))))
   :no-function t
   :hooks (:fix))
 
@@ -252,37 +217,44 @@
      the supertree encoding is at least that long.
      The encoding code in [Wiki:RLP] confirms this, by propagating exceptions.")
    (xdoc::p
-    "If a tree cannot be encoded, we return @(':error').")
+    "The first result of this function is an error flag,
+     which is @('t') if the argument tree cannot be encoded;
+     in this case, @('nil') is returned as the (irrelevant) second result.")
    (xdoc::def "rlp-encode-tree")
    (xdoc::def "rlp-encode-tree-list"))
   :verify-guards nil ; done below
 
   (define rlp-encode-tree ((tree rlp-treep))
-    :returns (result bytelist/error-p)
+    :returns (mv (error? booleanp)
+                 (encoding byte-listp))
     (rlp-tree-case
      tree
      :leaf (rlp-encode-bytes tree.bytes)
-     :nonleaf (b* ((bytes (rlp-encode-tree-list tree.subtrees))
-                   ((when (bytelist/error-case bytes :error)) :error))
-                (cond ((< (len bytes) 56) (cons (+ 192 (len bytes))
-                                                bytes))
-                      ((< (len bytes)
-                          (expt 2 64)) (b* ((be (nat=>bendian* 256
-                                                               (len bytes))))
-                                         (cons (+ 247 (len be))
-                                               (append be bytes))))
-                      (t :error))))
+     :nonleaf (b* (((mv error? encoding) (rlp-encode-tree-list tree.subtrees))
+                   ((when error?) (mv t nil)))
+                (cond ((< (len encoding) 56)
+                       (b* ((encoding (cons (+ 192 (len encoding))
+                                            encoding)))
+                         (mv nil encoding)))
+                      ((< (len encoding)
+                          (expt 2 64))
+                       (b* ((be (nat=>bendian* 256 (len encoding)))
+                            (encoding (cons (+ 247 (len be))
+                                            (append be encoding))))
+                         (mv nil encoding)))
+                      (t (mv t nil)))))
     :measure (rlp-tree-count tree)
     :no-function t)
 
   (define rlp-encode-tree-list ((trees rlp-tree-listp))
-    :returns (result bytelist/error-p)
-    (b* (((when (endp trees)) nil)
-         (bytes1 (rlp-encode-tree (car trees)))
-         ((when (bytelist/error-case bytes1 :error)) :error)
-         (bytes2 (rlp-encode-tree-list (cdr trees)))
-         ((when (bytelist/error-case bytes2 :error)) :error))
-      (append bytes1 bytes2))
+    :returns (mv (error? booleanp)
+                 (encoding byte-listp))
+    (b* (((when (endp trees)) (mv nil nil))
+         ((mv error? encoding1) (rlp-encode-tree (car trees)))
+         ((when error?) (mv t nil))
+         ((mv error? encoding2) (rlp-encode-tree-list (cdr trees)))
+         ((when error?) (mv t nil)))
+      (mv nil (append encoding1 encoding2)))
     :measure (rlp-tree-list-count trees)
     :no-function t)
 
@@ -291,8 +263,8 @@
                   '(:use (:instance
                           acl2::len-of-nat=>bendian*-leq-width
                           (nat (len
-                                (rlp-encode-tree-list
-                                 (rlp-tree-nonleaf->subtrees tree))))
+                                (mv-nth 1 (rlp-encode-tree-list
+                                           (rlp-tree-nonleaf->subtrees tree)))))
                           (base 256)
                           (width 8))))
 
@@ -307,7 +279,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define rlp-encode-scalar ((nat natp))
-  :returns (result bytelist/error-p)
+  :returns (mv (error? booleanp)
+               (encoding byte-listp))
   :parents (rlp)
   :short "RLP encoding of a scalar."
   :long
@@ -315,7 +288,8 @@
    (xdoc::p
     "This corresponds to @($\\mathtt{RLP}$) [YP:(185)].")
    (xdoc::p
-    "Note that @(':error') is returned if the scalar is so large that
+    "The first result of this function is an error flag,
+     which is @('t') if the argument scalar is so large that
      its big-endian representation exceeds @($2^{64}$) in length."))
   (rlp-encode-bytes (nat=>bendian* 256 (lnfix nat)))
   :no-function t
@@ -323,34 +297,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk rlp-tree-encoding-p (x)
+(define-sk rlp-tree-encoding-p ((encoding byte-listp))
   :returns (yes/no booleanp)
   :parents (rlp)
-  :short "Recognize RLP encodings of trees."
+  :short "Check if a byte array is an RLP encoding of a tree."
   :long
   (xdoc::topp
    "This is a declarative, non-executable definition,
-    which characterizes the image of @(tsee rlp-encode-tree)
+    which essentially characterizes the image of @(tsee rlp-encode-tree)
     (over trees that can be encoded,
-    i.e. such that @(tsee rlp-encode-tree) does not return @(':error')).")
+    i.e. such that @(tsee rlp-encode-tree) returns a @('nil') error flag).")
   (exists (tree)
-          (and (byte-listp x)
-               (rlp-treep tree)
-               (equal (rlp-encode-tree tree) x)))
-  :skolem-name rlp-tree-encoding-witness)
+          (and (rlp-treep tree)
+               (b* (((mv tree-error? tree-encoding) (rlp-encode-tree tree)))
+                 (and (not tree-error?)
+                      (equal tree-encoding (byte-list-fix encoding))))))
+  :skolem-name rlp-tree-encoding-witness
+  ///
+
+  (fty::deffixequiv rlp-tree-encoding-p
+    :args ((encoding byte-listp))
+    :hints (("Goal"
+             :in-theory (disable rlp-tree-encoding-p-suff)
+             :use ((:instance rlp-tree-encoding-p-suff
+                    (tree (rlp-tree-encoding-witness (byte-list-fix encoding))))
+                   (:instance rlp-tree-encoding-p-suff
+                    (tree (rlp-tree-encoding-witness encoding))
+                    (encoding (byte-list-fix encoding))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rlp-decode-tree ((bytes byte-listp))
-  :returns (result rlp-tree/error-p
-                   :hints (("Goal" :in-theory (enable rlp-tree-encoding-p))))
+(define rlp-decode-tree ((encoding byte-listp))
+  :returns
+  (mv (error? booleanp)
+      (tree rlp-treep
+            :hints (("Goal"
+                     :in-theory
+                     (e/d
+                      (rlp-tree-encoding-p)
+                      (rlp-tree-encoding-p-of-byte-list-fix-encoding))))))
   :parents (rlp)
   :short "RLP decoding of a tree."
   :long
   (xdoc::topapp
    (xdoc::p
-    "If the byte array encodes some tree, we return that tree.
-     Otherwise, we return @(':error').")
+    "If the byte array encodes some tree, we return that tree,
+     along with a @('nil') error flag.
+     Otherwise, we return a @('t') error flag,
+     and an irrelevant tree as second result.")
    (xdoc::p
     "This is a declarative, non-executable definition,
      which says that decoding is the inverse of encoding.
@@ -377,26 +371,30 @@
     "The decoding code in [Wiki:RLP] provides a reference implementation.
      Note that it is considerably more complicated than the encoding code.
      Thus, our high-level specification of decoding seems appropriate."))
-  (b* ((bytes (byte-list-fix bytes)))
-    (if (rlp-tree-encoding-p bytes)
-        (rlp-tree-encoding-witness bytes)
-      :error))
+  (b* ((encoding (byte-list-fix encoding)))
+    (if (rlp-tree-encoding-p encoding)
+        (mv nil (rlp-tree-encoding-witness encoding))
+      (mv t (rlp-tree-leaf nil))))
   :no-function t
   :hooks (:fix)
   ///
 
   (defrule rlp-encode-tree-of-rlp-decode-tree
-    (implies (rlp-tree-encoding-p bytes)
-             (equal (rlp-encode-tree (rlp-decode-tree bytes))
-                    (byte-list-fix bytes)))
+    (implies (and (byte-listp encoding)
+                  (rlp-tree-encoding-p encoding))
+             (b* (((mv d-error? d-tree) (rlp-decode-tree encoding))
+                  ((mv e-error? e-encoding) (rlp-encode-tree d-tree)))
+               (and (not d-error?)
+                    (not e-error?)
+                    (equal e-encoding encoding))))
     :enable rlp-tree-encoding-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk rlp-bytes-encoding-p (x)
+(define-sk rlp-bytes-encoding-p ((encoding byte-listp))
   :returns (yes/no booleanp)
   :parents (rlp)
-  :short "Recognize RLP encodings of byte arrays."
+  :short "Check if a byte array is an RLP encoding of a byte array."
   :long
   (xdoc::topapp
    (xdoc::p
@@ -406,31 +404,49 @@
      is also the encoding of a tree consisting of a single leaf
      with that byte array."))
   (exists (bytes)
-          (and (byte-listp x)
-               (byte-listp bytes)
-               (equal (rlp-encode-bytes bytes) x)))
+          (and (byte-listp bytes)
+               (b* (((mv bytes-error? bytes-encoding) (rlp-encode-bytes bytes)))
+                 (and (not bytes-error?)
+                      (equal bytes-encoding (byte-list-fix encoding))))))
   :skolem-name rlp-bytes-encoding-witness
   ///
 
+  (fty::deffixequiv rlp-bytes-encoding-p
+    :args ((encoding byte-listp))
+    :hints (("Goal"
+             :in-theory (disable rlp-bytes-encoding-p-suff)
+             :use ((:instance rlp-bytes-encoding-p-suff
+                    (bytes (rlp-bytes-encoding-witness (byte-list-fix encoding))))
+                   (:instance rlp-bytes-encoding-p-suff
+                    (bytes (rlp-bytes-encoding-witness encoding))
+                    (encoding (byte-list-fix encoding)))))))
+
   (defruled rlp-tree-encoding-p-when-rlp-bytes-encoding-p
-    (implies (rlp-bytes-encoding-p x)
-             (rlp-tree-encoding-p x))
+    (implies (rlp-bytes-encoding-p encoding)
+             (rlp-tree-encoding-p encoding))
     :use (:instance rlp-tree-encoding-p-suff
-          (tree (rlp-tree-leaf (rlp-bytes-encoding-witness x))))
+          (tree (rlp-tree-leaf (rlp-bytes-encoding-witness encoding))))
     :enable rlp-encode-tree))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rlp-decode-bytes ((bytes byte-listp))
-  :returns (result bytelist/error-p
-                   :hints (("Goal" :in-theory (enable rlp-bytes-encoding-p))))
+(define rlp-decode-bytes ((encoding byte-listp))
+  :returns
+  (mv (error? booleanp)
+      (bytes byte-listp
+             :hints (("Goal"
+                      :in-theory
+                      (e/d (rlp-bytes-encoding-p)
+                           (rlp-bytes-encoding-p-of-byte-list-fix-encoding))))))
   :parents (rlp)
   :short "RLP decoding of a byte array."
   :long
   (xdoc::topapp
    (xdoc::p
     "This is analogous to @(tsee rlp-decode-tree).
-     An analogous remark about left inverse and injectivity applies here.")
+     An analogous remark about left inverse and injectivity applies here.
+     If the returned error flag is @('t'),
+     we return @('nil') as the (irrelevant) second result.")
    (xdoc::p
     "The encoding of a leaf tree via @(tsee rlp-encode-tree) is the same as
      the encoding of the byte array at the leaf via @(tsee rlp-encode-bytes).
@@ -438,47 +454,72 @@
      we need the injectivity of encoding;
      otherwise, the two witness functions could yield ``incompatible'' values.
      Thus, we defer the proof of this relationship for now."))
-  (b* ((bytes (byte-list-fix bytes)))
-    (if (rlp-bytes-encoding-p bytes)
-        (rlp-bytes-encoding-witness bytes)
-      :error))
+  (b* ((encoding (byte-list-fix encoding)))
+    (if (rlp-bytes-encoding-p encoding)
+        (mv nil (rlp-bytes-encoding-witness encoding))
+      (mv t nil)))
   :no-function t
   :hooks (:fix)
   ///
 
   (defrule rlp-encode-bytes-of-rlp-decode-bytes
-    (implies (rlp-bytes-encoding-p bytes)
-             (equal (rlp-encode-bytes (rlp-decode-bytes bytes))
-                    (byte-list-fix bytes)))
+    (implies (and (byte-listp encoding)
+                  (rlp-bytes-encoding-p encoding))
+             (b* (((mv d-error? d-bytes) (rlp-decode-bytes encoding))
+                  ((mv e-error? e-encoding) (rlp-encode-bytes d-bytes)))
+               (and (not d-error?)
+                    (not e-error?)
+                    (equal e-encoding encoding))))
     :enable rlp-bytes-encoding-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk rlp-scalar-encoding-p (x)
+(define-sk rlp-scalar-encoding-p ((encoding byte-listp))
   :returns (yes/no booleanp)
   :parents (rlp)
-  :short "Recognize RLP encodings of scalars."
+  :short "Check if a byte array is an RLP encoding of a scalar."
   :long
   (xdoc::topp
    "This is analogous to @(tsee rlp-tree-encoding-p).")
   (exists (nat)
-          (and (byte-listp x)
-               (natp nat)
-               (equal (rlp-encode-scalar nat) x)))
-  :skolem-name rlp-scalar-encoding-witness)
+          (and (natp nat)
+               (b* (((mv nat-error? nat-bytes) (rlp-encode-scalar nat)))
+                 (and (not nat-error?)
+                      (equal nat-bytes (byte-list-fix encoding))))))
+  :skolem-name rlp-scalar-encoding-witness
+  ///
+
+  (fty::deffixequiv rlp-scalar-encoding-p
+    :args ((encoding byte-listp))
+    :hints (("Goal"
+             :in-theory (disable rlp-scalar-encoding-p-suff)
+             :use ((:instance rlp-scalar-encoding-p-suff
+                    (nat (rlp-scalar-encoding-witness
+                          (byte-list-fix encoding))))
+                   (:instance rlp-scalar-encoding-p-suff
+                    (nat (rlp-scalar-encoding-witness encoding))
+                    (encoding (byte-list-fix encoding))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rlp-decode-scalar ((bytes byte-listp))
-  :returns (result nat/error-p
-                   :hints (("Goal" :in-theory (enable rlp-scalar-encoding-p))))
+(define rlp-decode-scalar ((encoding byte-listp))
+  :returns
+  (mv (error? booleanp)
+      (scalar natp
+              :hints (("Goal"
+                       :in-theory
+                       (e/d
+                        (rlp-scalar-encoding-p)
+                        (rlp-scalar-encoding-p-of-byte-list-fix-encoding))))))
   :parents (rlp)
   :short "RLP decoding of a scalar."
   :long
   (xdoc::topapp
    (xdoc::p
     "This is analogous to @(tsee rlp-decode-tree).
-     An analogous remark about left inverse and injectivity applies here.")
+     An analogous remark about left inverse and injectivity applies here.
+     If the returned error flag is @('t'),
+     we return 0 as the (irrelevant) second result.")
    (xdoc::p
     "The encoding of a scalar via @(tsee rlp-encode-scalar) is the same as
      the encoding of the big-endian byte array via @(tsee rlp-encode-bytes).
@@ -486,16 +527,20 @@
      we need the injectivity of encoding;
      otherwise, the two witness functions could yield ``incompatible'' values.
      Thus, we defer the proof of this relationship for now."))
-  (b* ((bytes (byte-list-fix bytes)))
-    (if (rlp-scalar-encoding-p bytes)
-        (rlp-scalar-encoding-witness bytes)
-      :error))
+  (b* ((encoding (byte-list-fix encoding)))
+    (if (rlp-scalar-encoding-p encoding)
+        (mv nil (rlp-scalar-encoding-witness encoding))
+      (mv t 0)))
   :no-function t
   :hooks (:fix)
   ///
 
   (defrule rlp-encode-scalar-of-rlp-decode-scalar
-    (implies (rlp-scalar-encoding-p bytes)
-             (equal (rlp-encode-scalar (rlp-decode-scalar bytes))
-                    (byte-list-fix bytes)))
+    (implies (and (byte-listp encoding)
+                  (rlp-scalar-encoding-p encoding))
+             (b* (((mv d-error? d-scalar) (rlp-decode-scalar encoding))
+                  ((mv e-error? e-encoding) (rlp-encode-scalar d-scalar)))
+               (and (not d-error?)
+                    (not e-error?)
+                    (equal e-encoding encoding))))
     :enable rlp-scalar-encoding-p))

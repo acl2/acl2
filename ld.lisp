@@ -1429,7 +1429,7 @@
                                            (our-merge-pathnames
                                             resolve-dir
                                             standard-oi-expanded)
-                                           (delete-assoc-eq 'dir alist)))
+                                           (remove1-assoc-eq 'dir alist)))
                             (t alist)))))))
           ((and (not (stringp standard-oi))
                 dir)
@@ -1441,7 +1441,7 @@
                 ld."
                standard-oi))
           ((assoc-eq 'dir alist)
-           (delete-assoc-eq 'dir alist))
+           (remove1-assoc-eq 'dir alist))
           (t alist))))
 
 (defun ld-fn0 (alist state bind-flg)
@@ -3702,12 +3702,13 @@
 
 ; This defthm has two forcing rounds and is very realistic.
 
-      (defthm ordered-symbol-alistp-delete-assoc-eq-test
+      (defthm ordered-symbol-alistp-remove1-assoc-eq-test
         (implies (and (ordered-symbol-alistp l)
                       (symbolp key)
                       (assoc-eq key l))
-                 (ordered-symbol-alistp (delete-assoc-eq key l)))
-        :hints (("Goal" :in-theory (disable ordered-symbol-alistp-delete-assoc-eq))))
+                 (ordered-symbol-alistp (remove1-assoc-eq key l)))
+        :hints (("Goal"
+                 :in-theory (disable ordered-symbol-alistp-remove1-assoc-eq))))
 
       (value-triple "Mini-proveall completed successfully.")
 

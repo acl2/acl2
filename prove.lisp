@@ -1423,13 +1423,13 @@
            t))
         (t t)))
 
-(defun delete-assoc-eq-lst (lst alist)
+(defun remove1-assoc-eq-lst (lst alist)
   (declare (xargs :guard (if (symbol-listp lst)
                              (alistp alist)
                            (symbol-alistp alist))))
   (if (consp lst)
-      (delete-assoc-eq-lst (cdr lst)
-                           (delete-assoc-eq (car lst) alist))
+      (remove1-assoc-eq-lst (cdr lst)
+                            (remove1-assoc-eq (car lst) alist))
     alist))
 
 (defun delete-assumptions-1 (recs only-immediatep)
@@ -1817,7 +1817,7 @@
 ; apply before we got to push-clause.
 
                                      :hint-settings
-                                     (delete-assoc-eq-lst
+                                     (remove1-assoc-eq-lst
                                       (cons ':reorder *top-hint-keywords*)
 
 ; We could also delete :induct, but we know it's not here!
@@ -1869,7 +1869,7 @@
 ; See above comment that starts with "Below we set the :hint-settings for..."
 
                                  :hint-settings
-                                 (delete-assoc-eq-lst
+                                 (remove1-assoc-eq-lst
                                   (cons ':reorder *top-hint-keywords*)
 
 ; We could also delete :induct, but we know it's not here!
@@ -2906,9 +2906,9 @@
                                 nil)
               (change prove-spec-var pspv
                       :hint-settings
-                      (delete-assoc-eq :or
-                                       (access prove-spec-var pspv
-                                               :hint-settings)))
+                      (remove1-assoc-eq :or
+                                        (access prove-spec-var pspv
+                                                :hint-settings)))
               state))
      ((eq (car temp) :clause-processor) ; special case as state can be returned
 
@@ -5747,7 +5747,7 @@
 
   (declare (ignorable state cl-id))
   (cond ((cdr (assoc-eq :no-thanks hint-settings))
-         (mv@par (delete-assoc-eq :no-thanks hint-settings) state))
+         (mv@par (remove1-assoc-eq :no-thanks hint-settings) state))
         ((alist-keys-subsetp hint-settings '(:backtrack))
          (mv@par hint-settings state))
         (t
@@ -7224,9 +7224,9 @@
 ; the tag-tree, which is part of the rewrite-constant of the pspv).
 
                      (change prove-spec-var pspv :hint-settings
-                             (delete-assoc-eq :backtrack
-                                              (access prove-spec-var pspv
-                                                      :hint-settings)))
+                             (remove1-assoc-eq :backtrack
+                                               (access prove-spec-var pspv
+                                                       :hint-settings)))
                      (cons :backtrack new-hist) ; see thanks-for-the-hint
                      ))
                 (t
@@ -9397,8 +9397,8 @@
        (pprogn
         (set-w! (cdr pair) state)
         (f-put-global 'acl2-world-alist
-                      (delete-assoc-eq name
-                                       (f-get-global 'acl2-world-alist state))
+                      (remove1-assoc-eq name
+                                        (f-get-global 'acl2-world-alist state))
                       state)))))))
 
 (defmacro revert-world (form)

@@ -159,7 +159,7 @@
          (queue11-l$st-format q11-l data-width)
          (arb-merge$st-format arb-merge))))
 
-(defthm interl-ll$st-format=>data-width-constraint
+(defthm interl-ll$st-format=>constraint
   (implies (interl-ll$st-format st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable interl-ll$st-format)))
@@ -174,10 +174,10 @@
          (queue11-l$valid-st q11-l data-width)
          (arb-merge$valid-st arb-merge))))
 
-(defthmd interl-ll$valid-st=>data-width-constraint
+(defthmd interl-ll$valid-st=>constraint
   (implies (interl-ll$valid-st st data-width)
            (posp data-width))
-  :hints (("Goal" :in-theory (enable queue9-l$valid-st=>data-width-constraint
+  :hints (("Goal" :in-theory (enable queue9-l$valid-st=>constraint
                                      interl-ll$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -394,7 +394,7 @@
     (implies (interl-ll$valid-st st data-width)
              (equal (len (interl-ll$data-out inputs st data-width))
                     data-width))
-    :hints (("Goal" :in-theory (enable queue9-l$valid-st=>data-width-constraint
+    :hints (("Goal" :in-theory (enable queue9-l$valid-st=>constraint
                                        interl-ll$valid-st
                                        interl-ll$data-out))))
 
@@ -605,7 +605,7 @@
              data-width))
    :hints (("Goal"
             :in-theory (e/d (open-nth
-                             queue9-l$valid-st=>data-width-constraint
+                             queue9-l$valid-st=>constraint
                              arb-merge$input-format
                              arb-merge$data0-in
                              arb-merge$data1-in
@@ -882,7 +882,7 @@
               :in-theory (enable get-field
                                  f-and4
                                  f-and5
-                                 queue9-l$valid-st=>data-width-constraint
+                                 queue9-l$valid-st=>constraint
                                  arb-merge$valid-st
                                  arb-merge$act0
                                  arb-merge$act1
@@ -904,7 +904,7 @@
               :in-theory (enable get-field
                                  f-and4
                                  f-and5
-                                 queue11-l$valid-st=>data-width-constraint
+                                 queue11-l$valid-st=>constraint
                                  arb-merge$valid-st
                                  arb-merge$act0
                                  arb-merge$act1

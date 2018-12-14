@@ -207,7 +207,7 @@
            (let* ((other-topics (remove-equal-with-hint old-topic all-topics))
                   (old-long     (or (cdr (assoc :long old-topic)) ""))
                   (new-long     (concatenate 'string old-long long))
-                  (new-topic    (acons :long new-long (delete-assoc :long old-topic))))
+                  (new-topic    (acons :long new-long (remove1-assoc :long old-topic))))
              (cons new-topic other-topics))))))
 
 (defmacro xdoc-extend (name long)
@@ -232,7 +232,7 @@
            (let* ((other-topics (remove-equal-with-hint old-topic all-topics))
                   (old-long     (or (cdr (assoc :long old-topic)) ""))
                   (new-long     (concatenate 'string long old-long))
-                  (new-topic    (acons :long new-long (delete-assoc :long old-topic))))
+                  (new-topic    (acons :long new-long (remove1-assoc :long old-topic))))
              (cons new-topic other-topics))))))
 
 (defmacro xdoc-prepend (name long)
@@ -256,7 +256,7 @@
                                        (if flg
                                            (append order flg)
                                          order)
-                                       (delete-assoc :suborder old-topic))))
+                                       (remove1-assoc :suborder old-topic))))
              (cons new-topic other-topics))))))
 
 (defmacro order-subtopics (name order &optional flg)
@@ -540,4 +540,3 @@
           (fullpath (acl2::extend-pathname (cbd) ,path state)))
       (value `(table xdoc 'resource-dirs
                      (add-resource-directory-fn ,dirname ,fullpath world))))))
-

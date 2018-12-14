@@ -36,6 +36,7 @@
    (include-book "centaur/esim/stv/stv-debug" :dir :system)
    (include-book "centaur/esim/esim-sexpr-correct" :dir :system)
    (include-book "centaur/esim/defmodules" :dir :system)
+   (include-book "centaur/esim/vcd/vcd" :dir :system)
    (include-book "centaur/4v-sexpr/top" :dir :system)))
 
 ; Matt K. mod: Added the following to avoid stack overflow on calls of

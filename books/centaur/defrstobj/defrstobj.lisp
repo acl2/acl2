@@ -27,7 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
-; Shilpi Goel <shilpi@centtech.com>: added support for optional universal 
+; Shilpi Goel <shilpi@centtech.com>: added support for optional universal
 ;                                    accessor and updater functions
 
 (in-package "RSTOBJ")
@@ -107,11 +107,11 @@ come in handy when using
 
       (mem  :type (array (unsigned-byte 8) (*mem-size*))
             :initially 0
-            :typed-record u8-tr-p)         
+            :typed-record u8-tr-p)
 
       :inline t
       ;; [Optional] Universal accessor and updater functions
-      :accessor sr 
+      :accessor sr
       :updater sw)
 })
 
@@ -905,7 +905,7 @@ records book.  See @(see def-typed-record).</p>")
         ;; Usually 'x, but might as well get it from the lambda.
         (car (second (cadr (assoc 'elem-p tr-fi-pairs)))))
        (ivar      (mksym 'i))
-       (acc-concl (subst `(,sr ,key ,ivar ,stname) old-var elem-p-recog))       
+       (acc-concl (subst `(,sr ,key ,ivar ,stname) old-var elem-p-recog))
        (length    (cdr (assoc :length-name fta)))
        (guard     (acl2::translate-declaration-to-guard
                    (second type) vvar w)))
@@ -970,9 +970,9 @@ records book.  See @(see def-typed-record).</p>")
           (if (and sr-pair sw-pair)
               (mv (cdr sr-pair)
                   (cdr sw-pair)
-                  (delete-assoc-equal
+                  (remove1-assoc-equal
                    :updater
-                   (delete-assoc-equal :accessor st-kw-alist)))
+                   (remove1-assoc-equal :accessor st-kw-alist)))
             (mv nil nil st-kw-alist))))
 
        (tr-alist      (tr-alist rsfs))

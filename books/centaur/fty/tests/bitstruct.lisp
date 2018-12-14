@@ -132,10 +132,10 @@
 (defbitstruct mxcsr
   ;; Note that mxcsr->ie is inlined, but fp-flags->ie is not.
   ((flags fp-flags
-	  :subfields (ie de ze oe ue pe))
+          :subfields (ie de ze oe ue pe))
    (daz bitp)
    (masks fp-flags
-	  :subfields (im dm zm om um pm))
+          :subfields (im dm zm om um pm))
    (rc  rc)
    (ftz bitp))
   :inline t)
@@ -148,22 +148,22 @@
   ///
   (defthm unsigned-byte-2-when-ternary-p
     (implies (ternary-p x)
-	     (unsigned-byte-p 2 x)))
+             (unsigned-byte-p 2 x)))
 
   (defthm ternary-p-compound-recognizer
     (implies (ternary-p x)
-	     (natp x))
+             (natp x))
     :rule-classes :compound-recognizer))
 
 (define ternary-fix ((x ternary-p))
   :prepwork ((local (in-theory (enable ternary-p))))
   :returns (xx ternary-p
-	       :rule-classes (:rewrite (:type-prescription :typed-term xx)))
+               :rule-classes (:rewrite (:type-prescription :typed-term xx)))
   (if (ternary-p x) x 0)
   ///
   (defthm ternary-fix-when-ternary-p
     (implies (ternary-p x)
-	     (equal (ternary-fix x) x)))
+             (equal (ternary-fix x) x)))
 
   (defthm unsigned-byte-p-of-ternary-fix
     (unsigned-byte-p 2 (ternary-fix x)))
@@ -205,23 +205,23 @@
   ///
   (defthm signed-byte-2-when-sternary-p
     (implies (sternary-p x)
-	     (signed-byte-p 2 x)))
+             (signed-byte-p 2 x)))
 
   (defthm sternary-p-compound-recognizer
     (implies (sternary-p x)
-	     (and (integerp x)
-		  (<= x 1)))
+             (and (integerp x)
+                  (<= x 1)))
     :rule-classes :compound-recognizer))
 
 (define sternary-fix ((x sternary-p))
   :prepwork ((local (in-theory (enable sternary-p))))
   :returns (xx sternary-p
-	       :rule-classes (:rewrite (:type-prescription :typed-term xx)))
+               :rule-classes (:rewrite (:type-prescription :typed-term xx)))
   (if (sternary-p x) x 0)
   ///
   (defthm sternary-fix-when-sternary-p
     (implies (sternary-p x)
-	     (equal (sternary-fix x) x)))
+             (equal (sternary-fix x) x)))
 
   (defthm signed-byte-p-of-sternary-fix
     (signed-byte-p 2 (sternary-fix x)))
@@ -246,3 +246,55 @@
    (d sternary)
    (e boolean)
    (f sternary)))
+
+;; [Shilpi] Added the following to check whether the mbe-related guard proofs
+;; of accessor/updater functions succeed when there are subfields of width > 1:
+(defbitstruct 3bitp 3)
+
+(defbitstruct subfield-helper-unsigned
+  ((three 3bitp)
+   (one bitp)
+   (two s2)
+   (bool booleanp)))
+
+(defbitstruct subfield-helper-signed
+  :signedp t
+  ((three 3bitp)
+   (one bitp)
+   (two s2)
+   (bool booleanp)))
+
+(defbitstruct subfield-test-unsigned-unsigned
+  ((a bitp)
+   (subfldtest subfield-helper-unsigned
+               :subfields (three one two bool))))
+
+(defbitstruct subfield-test-unsigned-signed
+  :signedp t
+  ((a bitp)
+   (subfldtest subfield-helper-unsigned
+               :subfields (three one two bool))))
+
+(defbitstruct subfield-test-signed-unsigned
+  ((a bitp)
+   (subfldtest subfield-helper-signed
+               :subfields (three one two bool))))
+
+(defbitstruct subfield-test-signed-signed
+  :signedp t
+  ((a bitp)
+   (subfldtest subfield-helper-signed
+               :subfields (three one two bool))))
+
+(defbitstruct nest1
+  ((d bitp)
+   (e subfield-test-signed-signed :subfields (a subfieldtest))))
+
+(defbitstruct nest2
+  ((f nest1 :subfields (d e))
+   (g 3bitp)))
+
+(defbitstruct nest3
+  :signedp t
+  ((h bitp)
+   (i nest2 :subfields (f g))))

@@ -896,6 +896,7 @@ unless ($no_makefile) {
     print $mf "all-cert-pl-certs:\n\n";
 
     # declare $var_prefix_CERTS to be the list of certificates
+    print $mf "# Note: This variable lists the certificates for all books to be built.\n";
     print $mf $var_prefix . "_CERTS :=";
 
     foreach my $cert (@certs) {
@@ -907,6 +908,35 @@ unless ($no_makefile) {
     }
 
     print $mf "\n\n";
+
+    print $mf "# Note: This variable lists the certificates for all books to be built \n";
+    print $mf "# along with any pcert or acl2x files to be built along the way.\n";
+    print $mf "${var_prefix}_ALLCERTS := \$(${var_prefix}_CERTS)";
+
+    my $pcert_all = $certlib_opts{"pcert_all"};
+    foreach my $cert (@certs) {
+        my $useacl2x = $depdb->cert_get_param($cert, "acl2x") || 0;
+        # BOZO acl2x implies no pcert
+        my $pcert_ok = (! $useacl2x && ($depdb->cert_get_param($cert, "pcert") || $pcert_all)) || 0;
+        if (! $pcert_ok && ! $useacl2x) {
+            next;
+        }
+	(my $base = $cert) =~ s/\.cert$//;
+	my $encbase = make_encode($base);
+	if ($useacl2x) {
+	    print $mf " \\\n     ${encbase}.acl2x";
+	}
+	if ($pcert_ok) {
+	    print $mf " \\\n     ${encbase}.pcert0";
+	    print $mf " \\\n     ${encbase}.pcert1";
+	}
+        # if (cert_get_param($cert, $depdb, "acl2x")) {
+        #     my $acl2xfile = cert_to_acl2x($cert);
+        #     print $mf " \\\n     $acl2xfile";
+        # }
+    }
+    print $mf "\n\n";
+    
 
     # print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
     # print $mf "${var_prefix}_CERTS := \$(${var_prefix}_CERTS)";
@@ -987,7 +1017,6 @@ unless ($no_makefile) {
     }
 
     my $warned_bindir = 0;
-    my $pcert_all = $certlib_opts{"pcert_all"};
 
     # write out the dependencies
     foreach my $cert (@certs) {
@@ -1125,6 +1154,13 @@ unless ($no_makefile) {
 
     # print $mf "\nendif\n\n";
 
+    # Add a dependency from every certificate to build/acl2-version.certdep and build/universal-dependency.certdep.
+    print $mf "\n";
+    my $builddir = make_encode(canonical_path("$acl2_books/build"));
+    print $mf "\$(${var_prefix}_ALLCERTS) : ${builddir}/acl2-version.certdep ${builddir}/universal-dependency.certdep\n\n";
+
+    # Add a trivial recipe to build the required files in case they're missing.
+    print $mf "${builddir}/%.certdep :\n\ttouch \$@\n\n";
 
     foreach my $incl (@include_afters) {
         print $mf "\ninclude $incl\n";

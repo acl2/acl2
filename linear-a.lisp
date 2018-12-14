@@ -303,7 +303,7 @@
 ; remove-tag-from-tag-tree, which does make that assumption.
 
   (cond ((assoc-eq tag ttree)
-         (delete-assoc-eq tag ttree))
+         (remove1-assoc-eq tag ttree))
         (t ttree)))
 
 (defun remove-tag-from-tag-tree! (tag ttree)
@@ -313,7 +313,7 @@
 ; In this function we assume that tag is a key of ttree.  See also
 ; remove-tag-from-tag-tree, which does not make that assumption.
 
-  (delete-assoc-eq tag ttree))
+  (remove1-assoc-eq tag ttree))
 
 ; To add a tagged object to a tree we use the following function.  Observe
 ; that it does nothing if the object is already present.
@@ -398,22 +398,22 @@
 ; ; from Eric Smith on getting stack overflows from tag-tree-occur, but this
 ; ; problem has also occurred in the past (as best Matt can recall).
 
-(defun delete-assoc-eq-assoc-eq-1 (alist1 alist2)
+(defun remove1-assoc-eq-assoc-eq-1 (alist1 alist2)
   (declare (xargs :guard (and (symbol-alistp alist1)
                               (symbol-alistp alist2))))
   (cond ((endp alist2)
          (mv nil nil))
         (t (mv-let (changedp x)
-                   (delete-assoc-eq-assoc-eq-1 alist1 (cdr alist2))
+                   (remove1-assoc-eq-assoc-eq-1 alist1 (cdr alist2))
                    (cond ((assoc-eq (caar alist2) alist1)
                           (mv t x))
                          (changedp
                           (mv t (cons (car alist2) x)))
                          (t (mv nil alist2)))))))
 
-(defun delete-assoc-eq-assoc-eq (alist1 alist2)
+(defun remove1-assoc-eq-assoc-eq (alist1 alist2)
   (mv-let (changedp x)
-          (delete-assoc-eq-assoc-eq-1 alist1 alist2)
+          (remove1-assoc-eq-assoc-eq-1 alist1 alist2)
           (declare (ignore changedp))
           x))
 
@@ -455,9 +455,9 @@
                 (pair1 (assoc-eq tag ttree1)))
            (cond (pair1 (acons tag
                                (union-equal (cdr pair1) (cdr pair2))
-                               (delete-assoc-eq tag ttree1)))
+                               (remove1-assoc-eq tag ttree1)))
                  (t (cons pair2 ttree1)))))
-        (t (let ((ttree3 (delete-assoc-eq-assoc-eq ttree1 ttree2)))
+        (t (let ((ttree3 (remove1-assoc-eq-assoc-eq ttree1 ttree2)))
              (cons-tag-trees1 ttree1 ttree2 ttree3)))))
 
 (defmacro tagged-objects (tag ttree)

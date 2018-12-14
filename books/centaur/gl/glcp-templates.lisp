@@ -1073,7 +1073,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
             (pathcond (bfr-hyp-init pathcond))
             ((mv contra pathcond ?undo) (bfr-assume pathcond-bfr pathcond))
             ((when contra)
-             (cw "Path condition is unsatisfiable~%")
+             (obs-cw "Path condition is unsatisfiable~%")
              (glcp-value nil)))
          (interp-test
           term alist . ,*glcp-common-inputs*)))
@@ -1103,7 +1103,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                                              interp-st))
             (interp-st (update-is-constraint-db constraint-db interp-st))
             ((when contra)
-             (cw "Constraints unsatisfiable~%")
+             (obs-cw "Constraints unsatisfiable~%")
              (glcp-value-nopathcond t))
 
             ((unless pathcond-bfr)
@@ -1331,7 +1331,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
                       hyp concl (simple-term-vars concl) bindings
                       "main theorem" nil config interp-st state))
                     ((when err) (mv err nil interp-st state)))
-                 (cw "GL symbolic simulation OK~%")
+                 (obs-cw "GL symbolic simulation OK~%")
                  (clear-memoize-table 'glcp-get-branch-merge-rules)
                  (mv nil (list* hyp-clause concl-clause
                                 res-clause cov-clause
@@ -1348,7 +1348,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
               ;; param-alist holds.
               (params-cov-term (disjoin (strip-cars param-alist)))
               (params-cov-vars (simple-term-vars params-cov-term))
-              (- (cw "Checking case split coverage ...~%"))
+              (- (obs-cw "Checking case split coverage ...~%"))
               ((mv err (list params-cov-res-clause
                              params-cov-cov-clause obligs0)
                    interp-st state)
@@ -1364,7 +1364,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
                   hyp params-cov-term params-cov-vars bindings
                   "case-split coverage" 'obligs config interp-st state)))
               ((when err) (mv err nil interp-st state))
-              (- (cw "Case-split coverage OK~%"))
+              (- (obs-cw "Case-split coverage OK~%"))
               ((mv err (cons cases-res-clauses obligs1) interp-st state)
                (run-cases
                 param-alist concl (simple-term-vars concl) obligs0 config interp-st state))

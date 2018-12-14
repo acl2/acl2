@@ -30,69 +30,22 @@
 
 (in-package "VL")
 
-(include-book "centaur/fty/deftypes" :dir :system)
-(include-book "std/util/deflist" :dir :system)
+(include-book "std/strings/printtree-fty" :dir :system)
 (include-book "std/strings/cat" :dir :system)
-(include-book "tools/include-raw" :dir :system)
-(include-book "std/basic/two-nats-measure" :dir :system)
 
-(define vl-printed-p (x)
-  :parents (vl-printedlist)
-  :short "Recognize a printed object (string or character)."
-  (or (characterp x)
-      (stringp x))
-  ///
-  (defthm vl-printed-p-cr
-    (equal (vl-printed-p x)
-           (or (characterp x)
-               (stringp x)))
-    :rule-classes :compound-recognizer
-    :hints(("Goal" :in-theory (enable vl-printed-p))))
+(defmacro def-alias (new orig)
+  `(progn (defmacro ,new (&rest args) (cons ',orig args))
+          (add-macro-alias ,new ,orig)))
 
-  (defthm vl-printed-p-by-backchaining
-    (implies (or (characterp x)
-                 (stringp x))
-             (vl-printed-p x))))
-
-(define vl-printed-fix
-  :parents (vl-printed-p)
-  :short "Fixing function for @(see vl-printed-p) objects."
-  ((x vl-printed-p))
-  :returns (x-fix vl-printed-p)
-  :inline t
-  (mbe :logic (if (vl-printed-p x)
-                  x
-                "")
-       :exec x)
-  ///
-  (defthm vl-printed-fix-when-vl-printed-p
-    (implies (vl-printed-p x)
-             (equal (vl-printed-fix x)
-                    x))))
-
-(fty::deffixtype vl-printed
-  :pred vl-printed-p
-  :fix vl-printed-fix
-  :equiv vl-printed-equiv
-  :define t
-  :forward t)
-
-(fty::deftypes vl-printedlist
-  (fty::defflexsum vl-printedtree
-    (:leaf
-     :cond (and (atom x) x)
-     :fields ((elt :type vl-printed :acc-body x))
-     :ctor-body elt)
-    (:list
-     :cond t
-     :fields ((list :type vl-printedlist :acc-body x))
-     :ctor-body list)
-    :measure (two-nats-measure (acl2-count x) 1))
-  (fty::deflist vl-printedlist :elt-type vl-printedtree :true-listp t
-    :measure (two-nats-measure (acl2-count x) 0)
-    :short "A list of strings/characters (and, recursively, printedlists) to print in reverse order."
-    :long "<p>Useful for formatting a long string to print.  Also the basis of
-the @(see ps) printer-state stobj.</p>"))
+(def-alias vl-printed-p str::printable-p)
+(def-alias vl-printed-fix str::printable-fix)
+(def-alias vl-printed-equiv str::printable-equiv)
+(def-alias vl-printedlist-p str::printtree-p)
+(def-alias vl-printedtree-p str::printtree-p)
+(def-alias vl-printedlist-fix str::printtree-fix)
+(def-alias vl-printedtree-fix str::printtree-fix)
+(def-alias vl-printedlist-equiv str::printtree-equiv)
+(def-alias vl-printedtree-equiv str::printtree-equiv)
 
 (defsection vl-printedlist-p
   (defthm vl-printedlist-p-when-character-listp
@@ -118,97 +71,44 @@ the @(see ps) printer-state stobj.</p>"))
                      (vl-printedtree-p (car x))
                      (vl-printedtree-p x)))))
 
+  (defthm vl-printedlist-p-of-append
+    (implies (and (vl-printedlist-p a)
+                  (vl-printedlist-p b))
+             (vl-printedlist-p (append a b))))
+
+  (defthm vl-printedlist-p-of-rev
+    (implies (vl-printedlist-p x)
+             (vl-printedlist-p (rev x)))
+    :hints(("Goal" :in-theory (enable rev))))
+
+  (defthm vl-printedlist-p-of-revappend
+    (implies (and (vl-printedlist-p x)
+                  (vl-printedlist-p y))
+             (vl-printedlist-p (revappend x y)))
+    :hints (("goal" :induct (revappend x y))))
+
+
+  (defthm vl-printedlist-p-of-repeat
+    (implies (vl-printedlist-p x)
+             (vl-printedlist-p (repeat n x)))
+    :hints(("Goal" :in-theory (enable repeat))))
+
   (defthm vl-printedlist-p-of-revappend-chars
     (implies (vl-printedlist-p acc)
              (vl-printedlist-p (str::revappend-chars x acc)))
-    :hints(("Goal" :in-theory (enable str::revappend-chars)
-            :induct (len x)
-            :expand ((vl-printedlist-p x)
-                     (vl-printedtree-p (car x)))))))
-
-
-
-(define vl-printedlist-length ((x vl-printedlist-p)
-                               (acc natp))
-  :returns (len natp :rule-classes :type-prescription)
-  :parents (vl-printedlist-p)
-  :short "Compute the total length of the list, in characters."
-  :long "<p>This is different than ordinary @(see len) because any strings
-within the list may have their own lengths.</p>"
-  :measure (vl-printedlist-count x)
-  :ruler-extenders (:lambdas)
-  (b* ((x (vl-printedlist-fix x))
-       ((when (atom x))
-        (lnfix acc))
-       (x1 (car x))
-       (acc (vl-printedtree-case x1
-              :leaf (+ (if (characterp x1.elt) 1 (length x1.elt)) (lnfix acc))
-              :list (vl-printedlist-length x1.list acc))))
-    (vl-printedlist-length (cdr x) acc)))
-
-
-
-(define vl-printedlist-peek
-  ((x vl-printedlist-p "The printed list, which we assume is in reverse order!"))
-  :returns (maybe-char (or (not maybe-char)
-                           (characterp maybe-char))
-                       :rule-classes :type-prescription)
-  :parents (vl-printedlist-p)
-  :short "Extract the last character that was printed."
-  :long "<p>This is generally useful for things like <i>insert a space unless
-we just printed a newline</i>, etc.</p>"
-  :measure (vl-printedlist-count x)
-  :ruler-extenders :all
-  (and (consp x)
-       (or (let ((x1 (vl-printedtree-fix (car x))))
-             (vl-printedtree-case x1
-               :leaf (if (characterp x1.elt)
-                         x1.elt
-                       (let ((len (length x1.elt)))
-                         (if (zp len)
-                             ;; Degenerate case where we printed an empty string, look
-                             ;; further.
-                             nil
-                           (char x1.elt (1- len)))))
-               :list (vl-printedlist-peek x1.list)))
-           (vl-printedlist-peek (cdr x)))))
+    :hints(("Goal" :in-theory (e/d (str::revappend-chars)
+                                   (acl2::revappend-removal))))))
 
 (define vl-printedlist->chars ((x vl-printedlist-p)
                                acc)
   :returns (chars character-listp :hyp (character-listp acc))
-  :parents (vl-ps->chars)
-  :short "Convert a printed list (in reverse order) into characters (in proper
-  order)."
-  :measure (vl-printedlist-count x)
-  (b* (((when (atom x))
-        acc)
-       (x1 (vl-printedtree-fix (car x))))
-    (vl-printedtree-case x1
-      :leaf (if (characterp x1.elt)
-                ;; Prefer to test characterp instead of stringp, since characters are
-                ;; immediates in CCL.
-                (vl-printedlist->chars (cdr x) (cons x1.elt acc))
-              ;; Subtle: the printedlist are in reverse order, but the strings within it are
-              ;; in proper order, so we need to use append-chars instead of
-              ;; revappend-chars here.
-              (vl-printedlist->chars (cdr x) (str::append-chars x1.elt acc)))
-      :list (vl-printedlist->chars (cdr x)
-                                   (vl-printedlist->chars x1.list acc)))))
+  :guard-hints (("goal" :in-theory (enable str::printtree-p)))
+  (if (atom x)
+      (str::append-chars (str::printable->str x) acc)
+    (vl-printedlist->chars (cdr x)
+                           (vl-printedlist->chars (car x) acc))))
 
-(define vl-printedlist->string ((x vl-printedlist-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :parents (vl-printedlist)
-  :short "@('(vl-printedlist->string)') returns the printed characters as a
-string in the proper, non-reversed, printed order."
-  :long "<p>This is logically just @('(implode (vl-printedlist->chars))'), but we
-install a more efficient definition under the hood in raw Lisp.</p>"
-  (implode (vl-printedlist->chars x nil))
-  ///
-  (defttag vl-optimize)
-  ;; (depends-on "printedlist-fast.lsp")
-  (acl2::include-raw "printedlist-fast.lsp")
-
-  (defttag nil))
+(def-alias vl-printedlist->string str::printtree->str)
 
 
 (defthm vl-printedlist-p-of-cons-printed
@@ -236,6 +136,3 @@ install a more efficient definition under the hood in raw Lisp.</p>"
            (equal (vl-printedlist-fix (cons x y))
                   (cons x (vl-printedlist-fix y))))
   :hints(("Goal" :in-theory (enable vl-printedtree-p))))
-
-(in-theory (disable vl::vl-printedlist-p-of-cons
-                    vl::vl-printedlist-fix-of-cons))

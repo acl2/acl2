@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; December 2018
 
 (in-package "ADE")
 
@@ -71,7 +71,7 @@
 ;; DE module generator of SERIAL-SUB
 
 (module-generator
- serial-sub* (data-width cnt-width)
+ serial-sub* (data-width)
  (si 'serial-sub data-width)
  (list* 'full-in 'empty-out-
         (append (sis 'data0-in 0 data-width)
@@ -110,7 +110,7 @@
   ;; DONE
   '(done (done-status done-out)
          link1
-         (sipo-in-act c-buf-act cnt-out<2))
+         (sipo-in-act c-buf-act cnt-out=1))
 
   ;; JOINTS
   ;; PISO2
@@ -129,18 +129,13 @@
   '(g0 (done-status~) b-not (done-status))
   '(g1 (sipo-full-in) b-and (s-status done-status~))
   (list 'sipo
-        (list* 'sipo-in-act 'out-act (append (sis 'data-out 0 data-width)
-                                             (sis 'cnt-out 0 cnt-width)))
+        (list* 'sipo-in-act 'out-act 'cnt-out=1 (sis 'data-out 0 data-width))
         (si 'sipo-sreg data-width)
         (list* 'sipo-full-in 'empty-out- 's-out
                (sis 'go
                     (+ *serial-sub$prim-go-num*
                        *piso2-sreg$go-num*)
                     *sipo-sreg$go-num*)))
-  (list 'cnt-out<2?
-        '(cnt-out<2)
-        (si 'fast-zero (1- cnt-width))
-        (sis 'cnt-out 1 (1- cnt-width)))
 
   ;; SUB
   '(g3 (sub-full-in) b-and3 (a-status b-status ci-status))
@@ -161,7 +156,7 @@
         (list 'c-buf-full-in 'ci-status (si 'go 1)))
   '(c-buf-op (ci-in) b-if (done-out high co-out)))
 
- (declare (xargs :guard (and (posp data-width) (posp cnt-width)))))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -176,9 +171,8 @@
   (declare (xargs :guard (and (posp data-width)
                               (natp cnt-width)
                               (<= 3 cnt-width))))
-  (cons (serial-sub* data-width cnt-width)
+  (cons (serial-sub* data-width)
         (union$ (link1$netlist)
-                (fast-zero$netlist (1- cnt-width))
                 (piso2-sreg$netlist data-width cnt-width)
                 (sipo-sreg$netlist data-width cnt-width)
                 :test 'equal)))
@@ -192,10 +186,9 @@
                               (<= 3 cnt-width))))
   (b* ((subnetlist (delete-to-eq (si 'serial-sub data-width) netlist)))
     (and (equal (assoc (si 'serial-sub data-width) netlist)
-                (serial-sub* data-width cnt-width))
+                (serial-sub* data-width))
          (link1& subnetlist)
          (joint-cntl& subnetlist)
-         (fast-zero& subnetlist (1- cnt-width))
          (full-adder& subnetlist)
          (piso2-sreg& subnetlist data-width cnt-width)
          (sipo-sreg& subnetlist data-width cnt-width))))
@@ -213,11 +206,10 @@
 (defund serial-sub$st-format (st data-width cnt-width)
   (b* ((piso2 (get-field *serial-sub$piso2* st))
        (sipo (get-field *serial-sub$sipo* st)))
-    (and (<= 4 cnt-width)
-         (piso2-sreg$st-format piso2 data-width cnt-width)
+    (and (piso2-sreg$st-format piso2 data-width cnt-width)
          (sipo-sreg$st-format sipo data-width cnt-width))))
 
-(defthm serial-sub$st-format=>contraints
+(defthm serial-sub$st-format=>constraint
   (implies (serial-sub$st-format st data-width cnt-width)
            (and (posp data-width)
                 (natp cnt-width)
@@ -234,8 +226,7 @@
        (done (get-field *serial-sub$done* st))
        (piso2 (get-field *serial-sub$piso2* st))
        (sipo (get-field *serial-sub$sipo* st)))
-    (and (<= 4 cnt-width)
-         (link1$valid-st a)
+    (and (link1$valid-st a)
          (link1$valid-st b)
          (link1$valid-st ci)
          (link1$valid-st s)
@@ -244,22 +235,14 @@
          (piso2-sreg$valid-st piso2 data-width cnt-width)
          (sipo-sreg$valid-st sipo data-width cnt-width))))
 
-(local
- (defthm expt-linear-lower-<=-instance
-   (implies (and (<= 3 n)
-                 (integerp n))
-            (<= 8 (expt 2 n)))
-   :rule-classes :linear))
-
-(defthmd serial-sub$valid-st=>constraints
+(defthmd serial-sub$valid-st=>constraint
   (implies (serial-sub$valid-st st data-width cnt-width)
            (and (natp data-width)
                 (<= 8 data-width)
                 (natp cnt-width)
                 (<= 4 cnt-width)))
   :hints (("Goal"
-           :in-theory (enable piso2-sreg$valid-st=>constraints
-                              sipo-sreg$valid-st
+           :in-theory (enable sipo-sreg$valid-st=>constraint
                               serial-sub$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -481,8 +464,7 @@
        (piso2-bit1-out (piso2-sreg$bit1-out piso2))
        (sipo-in-act
         (sipo-sreg$in-act sipo-inputs sipo))
-       (cnt-out (sipo-sreg$cnt-out sipo))
-       (cnt-out<2 (f$fast-zero (nthcdr 1 cnt-out)))
+       (cnt-out=1 (sipo-sreg$cnt-out=1 sipo))
        (sub-act (joint-act (f-and3 (car a.s) (car b.s) (car ci.s))
                            (f-or (car s.s) (car co.s))
                            go-sub))
@@ -500,7 +482,7 @@
        (ci-inputs (list c-buf-act sub-act ci-in))
        (s-inputs (list sub-act sipo-in-act s-in))
        (co-inputs (list sub-act c-buf-act co-in))
-       (done-inputs (list sipo-in-act c-buf-act cnt-out<2)))
+       (done-inputs (list sipo-in-act c-buf-act cnt-out=1)))
     (list
      ;; A
      (link1$step a-inputs a)
@@ -522,12 +504,6 @@
 (defthm len-of-serial-sub$step
   (equal (len (serial-sub$step inputs st data-width cnt-width))
          *serial-sub$st-len*))
-
-(local
- (defthm len-cdr
-   (implies (< 0 (len x))
-            (equal (len (cdr x))
-                   (1- (len x))))))
 
 ;; The state lemma for SERIAL-SUB
 
@@ -879,47 +855,29 @@
      :hints (("Goal" :in-theory (enable v-zp v-nzp v-to-nat)))))
 
   (local
-   (defthm bvp-of-cdr-sipo-sreg$cnt-out
-     (implies (and (sipo-sreg$valid-st st data-width cnt-width)
-                   (sipo-sreg$in-act inputs st))
-              (bvp (cdr (sipo-sreg$cnt-out st))))
-     :hints (("Goal" :in-theory (enable f-and4
-                                        bvp
-                                        sipo-sreg$valid-st
-                                        sipo-sreg$in-act
-                                        sipo-sreg$cnt-out)))))
+     (defthm len-cdr
+       (implies (< 0 (len x))
+                (equal (len (cdr x))
+                       (1- (len x))))))
 
   (encapsulate
     ()
 
     (local
-     (defthm v-to-nat-of-sipo-sreg$cnt-out
+     (defthm sipo-sreg$cnt-out=1-rewrite
        (implies (and (sipo-sreg$in-act inputs st)
                      (sipo-sreg$valid-st st data-width cnt-width)
                      (sipo-sreg$inv st))
-                (equal (v-to-nat (sipo-sreg$cnt-out st))
-                       (- data-width
-                          (len (sipo-sreg$extract st)))))
-       :hints (("Goal" :in-theory (enable sipo-sreg$in-act
+                (equal (sipo-sreg$cnt-out=1 st)
+                       (equal (len (sipo-sreg$extract st))
+                              (1- data-width))))
+       :hints (("Goal" :in-theory (enable bvp
+                                          v-to-nat
+                                          sipo-sreg$in-act
                                           sipo-sreg$valid-st
                                           sipo-sreg$inv
-                                          sipo-sreg$cnt-out
+                                          sipo-sreg$cnt-out=1
                                           sipo-sreg$extract)))))
-
-    (local
-     (defthm v-to-nat-of-cdr
-       (implies (< 0 (len x))
-                (equal (v-to-nat (cdr x))
-                       (/ (- (v-to-nat x)
-                             (if (integerp (/ (v-to-nat x) 2)) 0 1))
-                          2)))
-       :hints (("Goal" :in-theory (enable v-to-nat)))))
-
-    (local
-     (defthm serial-sub$inv-preserved-aux
-       (implies (and (equal (1+ x) y)
-                     (integerp x))
-                (not (integerp (+ (* 1/2 y) (* -1/2 x)))))))
 
     (defthm serial-sub$inv-preserved
       (implies (and (serial-sub$input-format inputs data-width)
@@ -934,7 +892,7 @@
                :in-theory (e/d (get-field
                                 f-sr
                                 pos-len=>cons
-                                sipo-sreg$valid-st=>constraints
+                                sipo-sreg$valid-st=>constraint
                                 piso2-sreg$extracted0-step
                                 piso2-sreg$extracted1-step
                                 sipo-sreg$extracted-step
@@ -1040,7 +998,7 @@
                               consp-is-pos-len
                               v-adder
                               v-not
-                              sipo-sreg$valid-st=>constraints
+                              sipo-sreg$valid-st=>constraint
                               piso2-sreg$extracted0-step
                               piso2-sreg$extracted1-step
                               sipo-sreg$extracted-step
@@ -1077,7 +1035,7 @@
                  serial-sub$input-format=>sipo$input-format)
            :in-theory (e/d (get-field
                             f-sr
-                            sipo-sreg$valid-st=>constraints
+                            sipo-sreg$valid-st=>constraint
                             serial-sub$valid-st
                             serial-sub$step)
                            (serial-sub$input-format=>piso2$input-format

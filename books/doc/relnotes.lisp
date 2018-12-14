@@ -48,6 +48,7 @@
 (include-book "kestrel/java/portcullis" :dir :system)
 (include-book "kestrel/ethereum/portcullis" :dir :system)
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
+(include-book "kestrel/utilities/omaps/portcullis" :dir :system)
 
 ; Please note:
 ;
@@ -136,6 +137,11 @@
 
  </ul>
 
+ <h4><see topic='@(url omap::omaps)'>Omaps</see></h4>
+
+ <p>Added a library for omaps (ordered maps), analogous to @(see
+ set::std/osets).</p>
+
  <h3>Changes to Existing Libraries</h3>
 
  <h4><see topic='@(url apt::apt)'>APT</see></h4>
@@ -174,6 +180,14 @@
 
  <p>Improved several names by using @('byte') instead of @('ubyte8') and
  @('nibble') instead of @('ubyte4').</p>
+
+ <p>Added a formalization of Modified Merkle Patricia trees.</p>
+
+ <p>Mofified the formalizations of RLP encoding and decoding to return an
+ explicit error flag.</p>
+
+ <p>Added a formalization of hex-prefix decoding, declaratively defined as the
+ inverse of hex-prefix encoding.</p>
 
  <h4>Filesystem Books</h4>
 
@@ -246,7 +260,8 @@
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>Finished adding support for 32-bit application-level execution for
- non-floating-point instructions.</p>
+ non-floating-point instructions.  Added support for 32-bit application-level
+ execution for the floating-point instruction BSF.</p>
 
  <p>Added support for enabling/disabling machine features that depend on CPUID
  flags.</p>

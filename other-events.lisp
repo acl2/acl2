@@ -4817,9 +4817,9 @@
   #+acl2-mv-as-values '(value nil)
   #-acl2-mv-as-values
   `(pprogn (f-put-global 'raw-arity-alist
-                         (delete-assoc-eq ',name
-                                          (f-get-global 'raw-arity-alist
-                                                        state))
+                         (remove1-assoc-eq ',name
+                                           (f-get-global 'raw-arity-alist
+                                                         state))
                          state)
            (value 'raw-arity-alist)))
 
@@ -5010,26 +5010,33 @@
 
   '(local (value-triple :elided)))
 
+(defmacro elide-locals (form)
+  `(mv-let (changed-p x)
+     (elide-locals-rec ,form)
+     (declare (ignore changed-p))
+     x))
+
 (mutual-recursion
 
-(defun elide-locals-rec (form strongp)
+(defun elide-locals-rec (form)
 
 ; WARNING: Keep this in sync with chk-embedded-event-form,
-; destructure-expansion, make-include-books-absolute, and
-; equal-mod-elide-locals.
+; destructure-expansion, and make-include-books-absolute.
 
 ; We assume that form is a legal event form and return (mv changed-p new-form),
 ; where new-form results from eliding top-level local events from form, and
-; changed-p is true exactly when such eliding has taken place.  Note that we do
-; not dive into encapsulate forms when strongp is nil, the assumption being
-; that such forms are handled already in the construction of record-expansion
-; calls in eval-event-lst.
+; changed-p is true exactly when such elision has taken place.
 
   (cond ((atom form) (mv nil form)) ; note that progn! can contain atoms
         ((equal form *local-value-triple-elided*)
          (mv nil form))
         ((eq (car form) 'local)
          (mv t *local-value-triple-elided*))
+        ((eq (car form) 'encapsulate)
+         (mv-let (changed-p x)
+           (elide-locals-lst (cddr form))
+           (cond (changed-p (mv t (list* (car form) (cadr form) x)))
+                 (t (mv nil form)))))
         ((member-eq (car form) '(skip-proofs
                                  with-guard-checking-event
                                  with-output
@@ -5045,71 +5052,52 @@
 
                                  time$))
          (mv-let (changed-p x)
-                 (elide-locals-rec (car (last form)) strongp)
-                 (cond (changed-p (mv t (append (butlast form 1) (list x))))
-                       (t (mv nil form)))))
+           (elide-locals-rec (car (last form)))
+           (cond ((and (consp x)
+                       (eq (car x) 'local)
+
+; A call of record-expansion was inserted by encapsulate, and needs to stay
+; there to support redundancy-checking.  See the Essay on Make-event.
+
+                       (not (eq (car form) 'record-expansion)))
+                  (mv t x))
+                 (changed-p (mv t (append (butlast form 1) (list x))))
+                 (t (mv nil form)))))
         ((or (eq (car form) 'progn)
              (and (eq (car form) 'progn!)
                   (not (and (consp (cdr form))
                             (eq (cadr form) :state-global-bindings)))))
          (mv-let (changed-p x)
-                 (elide-locals-lst (cdr form) strongp)
-                 (cond (changed-p (mv t (cons (car form) x)))
-                       (t (mv nil form)))))
+           (elide-locals-lst (cdr form))
+           (cond (changed-p (mv t (cons (car form) x)))
+                 (t (mv nil form)))))
         ((eq (car form) 'progn!) ; hence :state-global-bindings case
          (mv-let (changed-p x)
-                 (elide-locals-lst (cddr form) strongp)
-                 (cond (changed-p (mv t (list* (car form) (cadr form) x)))
-                       (t (mv nil form)))))
-        ((and strongp
-              (eq (car form) 'encapsulate))
-         (mv-let (changed-p x)
-                 (elide-locals-lst (cddr form) strongp)
-                 (cond (changed-p (mv t (list* (car form) (cadr form) x)))
-                       (t (mv nil form)))))
+           (elide-locals-lst (cddr form))
+           (cond (changed-p (mv t (list* (car form) (cadr form) x)))
+                 (t (mv nil form)))))
         (t (mv nil form))))
 
-(defun elide-locals-lst (x strongp)
+(defun elide-locals-lst (x)
   (cond ((endp x) (mv nil nil))
         (t (mv-let (changedp1 first)
-                   (elide-locals-rec (car x) strongp)
-                   (mv-let (changedp2 rest)
-                           (elide-locals-lst (cdr x) strongp)
-                           (cond ((or changedp1 changedp2)
-                                  (mv t (cons first rest)))
-                                 (t (mv nil x))))))))
+             (elide-locals-rec (car x))
+             (mv-let (changedp2 rest)
+               (elide-locals-lst (cdr x))
+               (cond ((or changedp1 changedp2)
+                      (mv t (cons first rest)))
+                     (t (mv nil x))))))))
 )
 
-(defun elide-locals (form environment strongp)
-
-; We do not elide locals if we are at the top level, as opposed to inside
-; certify-book, because we don't want to lose potential information about local
-; skip-proofs events.  (As of this writing, 3/15/09, it's not clear that such
-; risk exists; but we will play it safe.)  Note that our redundancy test for
-; encapsulates should work fine even if the same encapsulate form has a
-; different expansion in some certification world and in some book, since for
-; redundancy it suffices to compare the original make-event to the new one in
-; each case.  Note that we track skip-proofs events in the certification world,
-; even those under LOCAL; see the Essay on Skip-proofs.
-
-  (cond ((member-eq 'certify-book environment)
-
-; In this case, we know that certify-book has not been called only to write out
-; a .acl2x file (as documented in eval-event-lst).  If we are writing a .acl2x
-; file, then we need to keep local events to support certification.
-
-         (mv-let (changed-p x)
-                 (elide-locals-rec form strongp)
-                 (declare (ignore changed-p))
-                 x))
-        (t form)))
-
-(defun make-record-expansion (event expansion)
-  (case-match event
-    (('record-expansion a &) ; & is a partial expansion
-     (list 'record-expansion a expansion))
-    (&
-     (list 'record-expansion event expansion))))
+(defun make-record-expansion? (event expansion r-e-p)
+  (cond
+   ((not r-e-p)
+    expansion)
+   (t (case-match event
+        (('record-expansion a &) ; & is a partial expansion
+         (list 'record-expansion a expansion))
+        (&
+         (list 'record-expansion event expansion))))))
 
 (table acl2-system-table nil nil
 
@@ -5371,20 +5359,20 @@
                        (cond
                         (expansion0
                          (acons index
-                                (make-record-expansion
+                                (make-record-expansion?
                                  (car ev-lst)
-                                 (elide-locals
-                                  (mv-let (wrappers base-form)
-                                          (destructure-expansion form)
-                                          (declare (ignore base-form))
-                                          (rebuild-expansion wrappers
-                                                             expansion0))
-                                  environment
+                                 (mv-let (wrappers base-form)
+                                   (destructure-expansion form)
+                                   (declare (ignore base-form))
+                                   (rebuild-expansion wrappers
+                                                      expansion0))
 
-; We use strongp = nil here because sub-encapsulates are already taking care of
-; eliding their own locals.
+; We only need to add record-expansion when directly under an encapsulate, to
+; check redundancy.  See the Essay on Make-event.
 
-                                  nil))
+                                 (member-eq caller
+                                            '(encapsulate-pass-1
+                                              encapsulate-pass-2)))
                                 expansion-alist))
                         (t expansion-alist))
                        (cdr ev-lst) quietp
@@ -6627,28 +6615,13 @@
 ; If only-pass-p is t then we need to allow make-event with :check-expansion
 ; that is not a cons.  Consider the following example.
 
-; (make-event '(encapsulate ()
-;               (make-event '(defun test3 (x) (cons x x))))
-;             :check-expansion t)
-
-; This event has the following expansion (eliding uninteresting parts with #).
-
-; (record-expansion #
-;  (make-event '(encapsulate ()
-;                (make-event '(defun test3 (x) (cons x x))))
-;              :check-expansion
-;              (encapsulate ()
-;               (record-expansion #
-;                (defun test3 (x) (cons x x))))))
-
-; The outermost make-event will initially expand the value of the quoted
-; expression after it, yielding this expansion.
-
 ; (encapsulate ()
-;  (make-event '(defun test3 (x) (cons x x))))
+;   (make-event '(defun test3 (x) (cons x x))))
 
 ; When this encapsulate skips its first pass, it will encounter the indicated
-; make-event, which has no expansion.
+; make-event, for which :check-expansion is implicitly nil.  This would result
+; in an error from the call of chk-embedded-event-form in eval-event-lst if
+; that call were made with make-event-chk = t.
 
                  (not only-pass-p) ; make-event-chk
                  (and (null insigs)
@@ -6698,7 +6671,7 @@
 ; comment about redefinition in chk-embedded-event-form.  If you change
 ; anything here, consider changing that comment and associated code.
 
-; Note that when (not only-pass-p), we don't pass return an expansion-alist.
+; Note that when (not only-pass-p), we don't expect a non-nil expansion-alist.
 ; Consider here the first example from the aforementioned comment in
 ; chk-embedded-event-form.
 
@@ -7743,10 +7716,10 @@
 
 (defun equal-mod-elide-locals (ev1 ev2)
 
-; Warning: Keep this in sync with elide-locals-rec.
-
-; This function checks that (elide-locals-rec ev1 t) agrees with
-; (elide-locals-rec ev2 t), but without doing any consing.
+; This function will ideally return true when (elide-locals-rec ev1) agrees
+; with (elide-locals-rec ev2).  However, this function avoids consing.  This
+; function also does a bit more than ignore top-level local events, as it also
+; ignores certain wrappers even in non-local contexts.
 
   (let ((ev1 (equal-mod-elide-locals1 ev1))
         (ev2 (equal-mod-elide-locals1 ev2)))
@@ -11396,7 +11369,7 @@
     (cond (pair
            (acons :type-prescription
                   (make-fast-alist (cdr pair))
-                  (delete-assoc-eq :type-prescription cert-data)))
+                  (remove1-assoc-eq :type-prescription cert-data)))
           (t cert-data))))
 
 (defun chk-raise-portcullis (file1 file2 ch light-chkp caller
@@ -12330,15 +12303,14 @@
 
 ; This function supports provisional certification.  It takes alist, an
 ; expansion-alist that was produced during the Pcertify (not Pcertify+)
-; procedure without eliding locals (hence strongp=t in the call below of
-; elide-locals-rec).  It extends x and y (initially both nil) and reverses
-; each, to return (mv x y), where x is the result of eliding locals from alist,
-; and y is the result of accumulating original entries from alist that were
-; changed before going into x, but only those that do not already equal
-; corresponding entries in acl2x-alist (another expansion-alist).  We will
-; eventually write the elided expansion-alist (again, obtained by accumulating
-; into x) into the :EXPANSION-ALIST field of the .pcert0 file, and the
-; non-elided part (again, obtained by accumulating into y) will become the
+; procedure without eliding locals.  It extends x and y (initially both nil)
+; and reverses each, to return (mv x y), where x is the result of eliding
+; locals from alist, and y is the result of accumulating original entries from
+; alist that were changed before going into x, but only those that do not
+; already equal corresponding entries in acl2x-alist (another expansion-alist).
+; We will eventually write the elided expansion-alist (again, obtained by
+; accumulating into x) into the :EXPANSION-ALIST field of the .pcert0 file, and
+; the non-elided part (again, obtained by accumulating into y) will become the
 ; value of the :PCERT-INFO field of the .pcert0 file.  The latter will be
 ; important for providing a suitable expansion-alist for the Convert procedure
 ; of provisional certification, where local events are needed in order to
@@ -12355,7 +12327,7 @@
                           (cdr acl2x-alist))
                          (t acl2x-alist))))
               (mv-let (changedp form)
-                      (elide-locals-rec (cdar alist) t)
+                      (elide-locals-rec (cdar alist))
                       (cond
                        (changedp (elide-locals-and-split-expansion-alist
                                   (cdr alist)
@@ -14850,9 +14822,7 @@
 ;   to the generated expansion-alist, to make complete the recording of all
 ;   replacements of top-level forms from the source book.  Note that in this
 ;   case form is not subject to make-event expansion, or else index would have
-;   been included already in the generated expansion-alist.  (Even when an
-;   event is ultimately local and hence is modified by elide-locals, a
-;   record-expansion form is put into the expansion-alist.)
+;   been included already in the generated expansion-alist.
 
 ; - Note that one could create the .acl2x file manually to contain any forms
 ;   one likes, to be processed in place of forms in the source book.  There is
@@ -15004,19 +14974,11 @@
         (t expansion-alist)))
 
 (defun elide-locals-from-expansion-alist (alist acc)
-
-; Call this function on an expansion-alist that was not created by provisional
-; certification, and hence has already had elide-locals applied to encapsulate
-; events (hence strongp=nil in the call below of elide-locals-rec).
-
   (cond ((endp alist) (reverse acc))
         (t (elide-locals-from-expansion-alist
             (cdr alist)
             (cons (cons (caar alist)
-                        (mv-let (changedp form)
-                                (elide-locals-rec (cdar alist) nil)
-                                (declare (ignore changedp))
-                                form))
+                        (elide-locals (cdar alist)))
                   acc)))))
 
 (defun write-port-file (full-book-name cmds ctx state)
@@ -15422,11 +15384,7 @@
          (mv (car acl2x-expansion-alist) nil))
         ((eql (caar acl2x-expansion-alist)
               (caar elided-expansion-alist))
-         (cond ((equal (mv-let (changedp val)
-                               (elide-locals-rec (cdar acl2x-expansion-alist)
-                                                 t)
-                               (declare (ignore changedp))
-                               val)
+         (cond ((equal (elide-locals (cdar acl2x-expansion-alist))
                        (cdar elided-expansion-alist))
                 (expansion-alist-conflict (cdr acl2x-expansion-alist)
                                           (cdr elided-expansion-alist)))
@@ -21805,7 +21763,7 @@
 ; form above will be a silent no-op.
 
   (f-put-global 'trace-specs
-                (delete-assoc-eq fn (f-get-global 'trace-specs state))
+                (remove1-assoc-eq fn (f-get-global 'trace-specs state))
                 state))
 
 (defun untrace$-rec (fns ctx state)
@@ -24083,7 +24041,7 @@
                         (null (cdr old-pair)))
                    (stop-redundant-event ctx state))
                   (t (let ((new (cond (dir (acons keyword dir old))
-                                      (t (delete-assoc-eq keyword old)))))
+                                      (t (remove1-assoc-eq keyword old)))))
                        (er-progn
                         (cond
                          (raw-p
@@ -24929,19 +24887,19 @@
                       (alist (cond ((not evisc-tuple-p)
                                     alist)
                                    ((eq evisc-tuple :restore)
-                                    (delete-assoc-eq :evisc-tuple alist))
+                                    (remove1-assoc-eq :evisc-tuple alist))
                                    (t
                                     (put-assoc-eq :evisc-tuple evisc-tuple alist))))
                       (alist (cond ((not conjunct-p)
                                     alist)
                                    ((eq conjunct :restore)
-                                    (delete-assoc-eq :conjunct alist))
+                                    (remove1-assoc-eq :conjunct alist))
                                    (t
                                     (put-assoc-eq :conjunct conjunct alist))))
                       (alist (cond ((not substitute-p)
                                     alist)
                                    ((eq substitute :restore)
-                                    (delete-assoc-eq :substitute alist))
+                                    (remove1-assoc-eq :substitute alist))
                                    (t
                                     (put-assoc-eq :substitute substitute
                                                   alist)))))
@@ -29159,7 +29117,7 @@
 
   (when (assoc-eq tag *time-tracker-alist*)
     (setq *time-tracker-alist*
-          (delete-assoc-eq tag *time-tracker-alist*))))
+          (remove1-assoc-eq tag *time-tracker-alist*))))
 
 (defun tt-print? (tag min-time msg)
 
@@ -30233,8 +30191,8 @@
            (let ((seq (make-string bytes)))
              (declare (type string seq))
              (read-sequence seq stream)
-             (let ((temp (delete-assoc-equal os-filename
-                                             *read-file-into-string-alist*)))
+             (let ((temp (remove1-assoc-equal os-filename
+                                              *read-file-into-string-alist*)))
                (cond
                 (finish-p
                  (close stream)
@@ -30274,8 +30232,8 @@
       (when triple
         (close (cadr triple)) ; close the stream
         (setq *read-file-into-string-alist*
-              (delete-assoc-equal os-filename
-                                  *read-file-into-string-alist*)))
+              (remove1-assoc-equal os-filename
+                                   *read-file-into-string-alist*)))
       (let ((stream
              (open os-filename :direction :input :if-does-not-exist nil)))
         (cond

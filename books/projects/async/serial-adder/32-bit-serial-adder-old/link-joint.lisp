@@ -447,7 +447,7 @@
     (and (len-1-true-listp d)
          (equal (len d) data-width))))
 
-(defthm link$st-format=>data-width-constraint
+(defthm link$st-format=>constraint
   (implies (link$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable link$st-format)))
@@ -462,7 +462,7 @@
          (or (emptyp s)               ;; When the link is full,
              (bvp (strip-cars d)))))) ;; its data must be a bit vector.
 
-(defthmd link$valid-st=>data-width-constraint
+(defthmd link$valid-st=>constraint
   (implies (link$valid-st st data-width)
            (natp data-width))
   :rule-classes :forward-chaining)

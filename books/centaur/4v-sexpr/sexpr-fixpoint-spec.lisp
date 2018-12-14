@@ -99,33 +99,38 @@
 
 
 
-(defun remove-assoc (key al)
+;;; Matt K. mod, 12/2018: I'm renaming remove-assoc, formerly just below, as
+;;; remove-assoc-hons (not to conflict with hons-remove-assoc in
+;;; std/alists/hons-remove-assoc.lisp), to avoid conflict with remove-assoc now
+;;; built into ACl2.  I'm also replacing "remove-assoc" everywhere below by
+;;; "remove-assoc-hons".
+(defun remove-assoc-hons (key al)
   (declare (xargs :guard t))
   (if (atom al)
       nil
     (if (or (atom (car al))
             (hons-equal (caar al) key))
-        (remove-assoc key (cdr al))
-      (cons (car al) (remove-assoc key (cdr al))))))
+        (remove-assoc-hons key (cdr al))
+      (cons (car al) (remove-assoc-hons key (cdr al))))))
 
 (encapsulate nil
   (local (set-default-hints nil))
-  (defthm lookup-in-remove-assoc
-    (equal (hons-assoc-equal k (remove-assoc key al))
+  (defthm lookup-in-remove-assoc-hons
+    (equal (hons-assoc-equal k (remove-assoc-hons key al))
            (and (not (equal key k))
                 (hons-assoc-equal k al)))))
 
-(defthm alist-keys-remove-assoc
-  (equal (alist-keys (remove-assoc k a))
+(defthm alist-keys-remove-assoc-hons
+  (equal (alist-keys (remove-assoc-hons k a))
          (remove k (alist-keys a)))
   :hints (("goal" :induct t)))
 
-(defthm keys-equiv-cdr-remove-assoc-car
+(defthm keys-equiv-cdr-remove-assoc-hons-car
   (implies (and (keys-equiv a b)
                 (no-duplicatesp-equal (alist-keys a))
                 (consp (car a)))
            (equal (keys-equiv (cdr a)
-                              (remove-assoc (caar a) b))
+                              (remove-assoc-hons (caar a) b))
                   t))
   :hints (("goal" :in-theory (enable keys-equiv-iff-set-equiv-alist-keys
                                      alist-keys)
@@ -136,7 +141,7 @@
 (defthm alist-equiv-cons-append-remove
   (implies (hons-assoc-equal k a)
            (alist-equiv (cons (cons k (cdr (hons-assoc-equal k a)))
-                              (append (remove-assoc k a)
+                              (append (remove-assoc-hons k a)
                                       b))
                         (append a b)))
   :hints(("Goal" :in-theory (enable alist-equiv-iff-agree-on-bad-guy))))
@@ -154,8 +159,8 @@
                    (consp (car x)))
               (hons-assoc-equal (caar x) y))))
 
-  (defthm 4v-env-equiv-remove-assoc
-    (implies (and (not (4v-env-equiv a (remove-assoc k b)))
+  (defthm 4v-env-equiv-remove-assoc-hons
+    (implies (and (not (4v-env-equiv a (remove-assoc-hons k b)))
                   (not (hons-assoc-equal k a)))
              (not (4v-env-equiv (cons (cons k v) a)
                                 b)))
@@ -557,8 +562,8 @@
 ;;               (keys-equiv (cons (cons (caar x) v) (cdr x))
 ;;                           (double-rewrite x))))
 
-;;    (defthm key-and-env-equiv-remove-assoc
-;;      (implies (and (not (4v-env-equiv a (remove-assoc k b)))
+;;    (defthm key-and-env-equiv-remove-assoc-hons
+;;      (implies (and (not (4v-env-equiv a (remove-assoc-hons k b)))
 ;;                    (not (hons-assoc-equal k a)))
 ;;               (not (key-and-env-equiv (cons (cons k v) a) b)))
 ;;      :hints (("goal" :do-not-induct t
@@ -585,7 +590,7 @@
 ;;      (implies (not (hons-assoc-equal k a))
 ;;               (iff (4v-alist-<= (cons (cons k v) a) b)
 ;;                    (and (4v-<= v (4v-lookup k b))
-;;                         (4v-alist-<= a (remove-assoc k b)))))
+;;                         (4v-alist-<= a (remove-assoc-hons k b)))))
 ;;      :hints (("goal" :do-not-induct t
 ;;               :in-theory (disable 4v-fix))
 ;;              (witness :ruleset 4v-alist-<=-witnessing)
@@ -601,7 +606,7 @@
 ;;                                          (cdr (hons-assoc-equal (caar update-fns)
 ;;                                                                 fp0)))
 ;;                                    env0))
-;;         (remove-assoc (caar update-fns) fp0))
+;;         (remove-assoc-hons (caar update-fns) fp0))
 ;;        (consp update-fns)
 ;;        (consp (car update-fns))
 ;;        (4v-sexpr-fixpoint-lower-boundp (cdr update-fns)
@@ -640,7 +645,7 @@
      (implies (not (hons-assoc-equal k a))
               (iff (4v-alist-<= (cons (cons k v) a) b)
                    (and (4v-<= v (4v-lookup k b))
-                        (4v-alist-<= a (remove-assoc k b)))))
+                        (4v-alist-<= a (remove-assoc-hons k b)))))
      :hints (("goal" :do-not-induct t
               :in-theory (disable 4v-fix))
              (witness :ruleset 4v-alist-<=-witnessing)
@@ -746,7 +751,7 @@
 
 ;; Working from bottom up:
 (defthm |fp\s1 :: (s1 : X) <= fp|
-  (4v-alist-<= (append (remove-assoc s1 fp)
+  (4v-alist-<= (append (remove-assoc-hons s1 fp)
                        (list (cons s1 *4vx*)))
                fp)
   :hints ((witness :ruleset 4v-alist-<=-witnessing)))
@@ -785,14 +790,14 @@
 ;; upsr (fp\s1 :: (s1 : X) :: env) <= fp\s1.
 (defthm |upsr (fp\s1 :: (s1 : X) :: env) <= fp\s1|
   (implies (and (4v-alist-<= (4v-sexpr-eval-alist upsr (append fp env))
-                             (remove-assoc s1 fp))
+                             (remove-assoc-hons s1 fp))
                 (set-equiv (alist-keys fp)
                             (cons s1 (alist-keys upsr))))
            (4v-alist-<= (4v-sexpr-eval-alist upsr
-                                             (append (remove-assoc s1 fp)
+                                             (append (remove-assoc-hons s1 fp)
                                                      (cons (cons s1 *4vx*)
                                                            env)))
-                        (remove-assoc s1 fp)))
+                        (remove-assoc-hons s1 fp)))
   :hints(("Goal" :in-theory
           (e/d (4v-alist-<=-trans2
                 hons-assoc-equal-iff-member-alist-keys
@@ -814,7 +819,7 @@
   (implies (and (4v-sexpr-fixpoint-lower-boundp upsr lbr)
                 (4v-alist-<=
                  (4v-sexpr-eval-alist upsr (append fp env))
-                 (remove-assoc s1 fp))
+                 (remove-assoc-hons s1 fp))
                 (set-equiv (alist-keys fp)
                             (cons s1 (alist-keys upsr)))
                 (not (member-equal s1 (alist-keys upsr))))
@@ -822,12 +827,12 @@
             (4v-sexpr-eval-alist
              lbr
              (cons (cons s1 *4vx*) env))
-            (remove-assoc s1 fp)))
+            (remove-assoc-hons s1 fp)))
   :hints (("goal" :use
            ((:instance 4v-sexpr-fixpoint-lower-boundp-necc
                        (ups upsr)
                        (lb lbr)
-                       (fp (remove-assoc s1 fp))
+                       (fp (remove-assoc-hons s1 fp))
                        (env (cons (cons s1 *4vx*) env))))
            :in-theory (e/d (set-equiv-breakdown-cons)
                            (alist-keys-member-hons-assoc-equal
@@ -855,7 +860,7 @@
   (implies (4v-alist-<=
             (4v-sexpr-eval-alist
              lbr (cons (cons s1 *4vx*) env))
-            (remove-assoc s1 fp))
+            (remove-assoc-hons s1 fp))
            (4v-alist-<=
             (append (4v-sexpr-eval-alist
                      lbr (cons (cons s1 *4vx*) env))
@@ -874,7 +879,7 @@
   (implies (and (4v-alist-<=
                  (4v-sexpr-eval-alist
                   lbr (cons (cons s1 *4vx*) env))
-                 (remove-assoc s1 fp))
+                 (remove-assoc-hons s1 fp))
                 (4v-<= (4v-sexpr-eval up1 (append fp env))
                        (4v-lookup s1 fp))
                 (set-equiv (alist-keys fp)
@@ -899,7 +904,7 @@
      (implies (not (hons-assoc-equal k a))
               (iff (4v-alist-<= (append a (list (cons k v))) b)
                    (and (4v-<= v (4v-lookup k b))
-                        (4v-alist-<= a (remove-assoc k b)))))
+                        (4v-alist-<= a (remove-assoc-hons k b)))))
      :hints (("goal" :do-not-induct t
               :in-theory (disable 4v-fix))
              (witness :ruleset 4v-alist-<=-witnessing)
@@ -919,7 +924,7 @@
   |upsr (fp\s1 :: (s1 : up1(lbr((s1 : X) :: env) :: (s1 : X) :: env)) :: env) <= fp\s1|
   (implies (and (4v-alist-<=
                  (4v-sexpr-eval-alist upsr (append fp env))
-                 (remove-assoc s1 fp))
+                 (remove-assoc-hons s1 fp))
                 (4v-<= (4v-sexpr-eval up1 (append fp env))
                        (4v-lookup s1 fp))
                 (set-equiv (alist-keys fp)
@@ -931,7 +936,7 @@
            (4v-alist-<=
             (4v-sexpr-eval-alist
              upsr
-             (append (remove-assoc s1 fp)
+             (append (remove-assoc-hons s1 fp)
                      (cons (cons s1 (4v-sexpr-eval
                                      up1
                                      (append (4v-sexpr-eval-alist
@@ -940,7 +945,7 @@
                                              (cons (cons s1 *4vx*)
                                                    env))))
                            env)))
-            (remove-assoc s1 fp)))
+            (remove-assoc-hons s1 fp)))
   :hints(("Goal" :in-theory
           (e/d (4v-alist-<=-trans2
                 hons-assoc-equal-iff-member-alist-keys
@@ -967,7 +972,7 @@
 (defthm |lbr ((s1 : up1(lbr((s1 : X) :: env) :: (s1 : X) :: env)) :: env) <= fp\s1|
   (implies (and (4v-alist-<=
                  (4v-sexpr-eval-alist upsr (append fp env))
-                 (remove-assoc s1 fp))
+                 (remove-assoc-hons s1 fp))
                 (4v-<= (4v-sexpr-eval up1 (append fp env))
                        (4v-lookup s1 fp))
                 (set-equiv (alist-keys fp)
@@ -987,11 +992,11 @@
                                      (cons (cons s1 *4vx*)
                                            env))))
                    env))
-            (remove-assoc s1 fp)))
+            (remove-assoc-hons s1 fp)))
   :hints (("goal" :use ((:instance 4v-sexpr-fixpoint-lower-boundp-necc
                                    (ups upsr)
                                    (lb lbr)
-                                   (fp (remove-assoc s1 fp))
+                                   (fp (remove-assoc-hons s1 fp))
                                    (env (cons (cons s1 (4v-sexpr-eval
                                                         up1
                                                         (append (4v-sexpr-eval-alist
@@ -1094,7 +1099,7 @@
 ;;           (and stable-under-simplificationp
 ;;                '(:use ((:instance 4v-sexpr-fixpoint-lower-boundp-necc
 ;;                                   (ups (cdr update-fns))
-;;                                   (fp (remove-assoc (caar update-fns) fp0))
+;;                                   (fp (remove-assoc-hons (caar update-fns) fp0))
 ;;                                   (env (cons (cons (caar update-fns)
 ;;                                                    (cdr (hons-assoc-equal
 ;;                                                          (caar update-fns)

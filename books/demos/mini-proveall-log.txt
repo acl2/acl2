@@ -2640,37 +2640,37 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:TYPE-PRESCRIPTION PSEUDO-TERM-LISTP))
  PROPER-CONS-NEST-P
 ACL2 !>>>(DEFTHM
-          ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ-TEST
+          ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST
           (IMPLIES (AND (ORDERED-SYMBOL-ALISTP L)
                         (SYMBOLP KEY)
                         (ASSOC-EQ KEY L))
-                   (ORDERED-SYMBOL-ALISTP (DELETE-ASSOC-EQ KEY L)))
+                   (ORDERED-SYMBOL-ALISTP (REMOVE1-ASSOC-EQ KEY L)))
           :HINTS
           (("Goal"
-                :IN-THEORY (DISABLE ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ))))
+               :IN-THEORY (DISABLE ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ))))
 
 ACL2 Warning [Subsume] in ( DEFTHM 
-ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ-TEST ...):  The previously added
-rule ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ subsumes a newly proposed
-:REWRITE rule generated from ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ-TEST,
+ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST ...):  The previously added
+rule ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ subsumes a newly proposed
+:REWRITE rule generated from ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST,
 in the sense that the old rule rewrites a more general target.  Because
 the new rule will be tried first, it may nonetheless find application.
 
 
 Q.E.D.
 
-The storage of ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ-TEST depends upon
-the :type-prescription rule ORDERED-SYMBOL-ALISTP.
+The storage of ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST depends
+upon the :type-prescription rule ORDERED-SYMBOL-ALISTP.
 
 Summary
-Form:  ( DEFTHM ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ-TEST ...)
+Form:  ( DEFTHM ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST ...)
 Rules: ((:DEFINITION ASSOC-EQ-EXEC$GUARD-CHECK)
-        (:DEFINITION DELETE-ASSOC-EQ-EXEC$GUARD-CHECK)
+        (:DEFINITION REMOVE1-ASSOC-EQ-EXEC$GUARD-CHECK)
         (:DEFINITION RETURN-LAST)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
         (:TYPE-PRESCRIPTION ORDERED-SYMBOL-ALISTP))
 Warnings:  Subsume
- ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ-TEST
+ ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST
 ACL2 !>>>(VALUE-TRIPLE "Mini-proveall completed successfully.")
  "Mini-proveall completed successfully."
 ACL2 !>>>Bye.
