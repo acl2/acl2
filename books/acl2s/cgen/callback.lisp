@@ -526,15 +526,19 @@ Nested testing not allowed! Skipping testing of new goal...~%"
 ;Dont print the "Thanks" message:
 (defmacro acl2::dont-print-thanks-message-override-hint ()
 `(make-event  
-  '(acl2::add-override-hints 
-    '((cond ((or (null acl2::keyword-alist)
-                 (assoc-keyword :no-thanks acl2::keyword-alist))
-             acl2::keyword-alist)
-            (t
-             (append '(:no-thanks t) acl2::keyword-alist)))))))
-   
-
-
+  '(progn
+     (acl2::remove-override-hints 
+      '((cond ((or (null acl2::keyword-alist)
+                   (assoc-keyword :no-thanks acl2::keyword-alist))
+               acl2::keyword-alist)
+              (t
+               (append '(:no-thanks t) acl2::keyword-alist)))))
+     (acl2::add-override-hints 
+      '((cond ((or (null acl2::keyword-alist)
+                   (assoc-keyword :no-thanks acl2::keyword-alist))
+               acl2::keyword-alist)
+              (t
+               (append '(:no-thanks t) acl2::keyword-alist))))))))
 
 
 ;;; event pre and post functions

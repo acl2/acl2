@@ -302,10 +302,17 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (function-contract-strictp (defdata::get1 :function-contract-strictp kwd-alist))
        (contract-name (make-sym name 'CONTRACT))
        (recursivep (defdata::get1 :recursivep kwd-alist))
+       (hints (defdata::get1 :function-contract-hints kwd-alist))
+       (ihints `(:hints
+                 ,(append `(("Goal" :induct ,(cons name formals)))
+                          hints)))
+       (rhints (if recursivep
+                   ihints
+                 (and hints `(:HINTS ,hints))))
        (try-first-with-induct-and-tp
         `(DEFTHM ,contract-name
            (IMPLIES ,ic ,oc)
-           ,@(and recursivep `(:hints (("Goal" :induct ,(cons name formals)))))
+           ,@rhints
            :rule-classes (:rewrite
                           :type-prescription
                           ;; Let ACL2 decide the typed-term
@@ -314,27 +321,23 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (try-with-induct
         `(DEFTHM ,contract-name
            (IMPLIES ,ic ,oc)
-           :hints (("Goal" :induct ,(cons name formals)))))
-
+           ,@ihints))
 
        (final-contract-defthm (make-contract-defthm name ic oc kwd-alist)))
 
-    (if (or make-staticp function-contract-strictp)
-        `(MAKE-EVENT
-          '(:OR
-            ,try-first-with-induct-and-tp
-            ,@(and recursivep (list try-with-induct))
-            ,final-contract-defthm))
-
-      ;;else
-      `(MAKE-EVENT
-        '(:OR ,try-first-with-induct-and-tp
+      (if (or make-staticp function-contract-strictp)
+          `(MAKE-EVENT
+            '(:OR
+              ,try-first-with-induct-and-tp
               ,@(and recursivep (list try-with-induct))
-              ,final-contract-defthm
-              (value-triple :CONTRACT-FAILED))))))
+              ,final-contract-defthm))
 
-
-
+        ;;else
+        `(MAKE-EVENT
+          '(:OR ,try-first-with-induct-and-tp
+                ,@(and recursivep (list try-with-induct))
+                ,final-contract-defthm
+                (value-triple :CONTRACT-FAILED))))))
 
 (defun make-verify-guards-ev (name kwd-alist)
   (b* ((hints (defdata::get1 :body-contracts-hints kwd-alist)) ; (defdata::get1 :guard-hints xargs{})
@@ -786,7 +789,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          )
        :clear)
 
-(verify-termination defdata::delete-assoc-eq-lst)
+(verify-termination defdata::remove1-assoc-eq-lst)
 
 (defloop thereis-programp (fns wrld)
   (for ((fn in fns)) (thereis (acl2::programp fn wrld))))
@@ -815,7 +818,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (er hard? ctx "~| Function name ~x0 expected to be a proper symbol.~%" name))
 
        (defaults-alst (table-alist 'defunc-defaults-table wrld))
-       (defaults-alst (defdata::delete-assoc-eq-lst (filter-keywords args) defaults-alst))
+       (defaults-alst (defdata::remove1-assoc-eq-lst (filter-keywords args) defaults-alst))
        (defaults-alst (put-assoc :testing-enabled (get-acl2s-defaults 'testing-enabled wrld) defaults-alst))
        (defaults-alst (put-assoc :cgen-timeout (get-acl2s-defaults 'cgen-timeout wrld) defaults-alst))
        ((mv kwd-alist defun-rest) (defdata::extract-keywords ctx *defunc-keywords* args defaults-alst))

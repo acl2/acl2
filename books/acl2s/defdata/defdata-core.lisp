@@ -798,17 +798,17 @@ B is the builtin combinator table."
           *per-def-keywords*
           ))
 
-(defun delete-assoc-eq-lst (keys alst)
+(defun remove1-assoc-eq-lst (keys alst)
   (if (endp keys)
       alst
-    (delete-assoc-eq-lst (cdr keys) (remove1-assoc-eq (car keys) alst))))
+    (remove1-assoc-eq-lst (cdr keys) (remove1-assoc-eq (car keys) alst))))
 
 (defun parse-defdata (args curr-pkg wrld)
   (b* (((mv ds kwd-val-list) (separate-kwd-args args '()))
        (ctx 'parse)
 
       (defaults-alst (table-alist 'defdata-defaults-table wrld)) ;TODO chek
-      (defaults-alst (delete-assoc-eq-lst (evens kwd-val-list) defaults-alst))
+      (defaults-alst (remove1-assoc-eq-lst (evens kwd-val-list) defaults-alst))
       ((mv kwd-alist rest-args) (extract-keywords ctx *defdata-keywords* kwd-val-list defaults-alst))
       (acl2-defaults-tbl (table-alist 'acl2::acl2-defaults-table wrld))
       (current-termination-method-entry (assoc :termination-method acl2-defaults-tbl))
