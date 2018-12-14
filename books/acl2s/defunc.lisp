@@ -789,7 +789,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          )
        :clear)
 
-(verify-termination defdata::delete-assoc-eq-lst)
+(verify-termination defdata::remove1-assoc-eq-lst)
 
 (defloop thereis-programp (fns wrld)
   (for ((fn in fns)) (thereis (acl2::programp fn wrld))))
@@ -818,7 +818,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (er hard? ctx "~| Function name ~x0 expected to be a proper symbol.~%" name))
 
        (defaults-alst (table-alist 'defunc-defaults-table wrld))
-       (defaults-alst (defdata::delete-assoc-eq-lst (filter-keywords args) defaults-alst))
+       (defaults-alst (defdata::remove1-assoc-eq-lst (filter-keywords args) defaults-alst))
        (defaults-alst (put-assoc :testing-enabled (get-acl2s-defaults 'testing-enabled wrld) defaults-alst))
        (defaults-alst (put-assoc :cgen-timeout (get-acl2s-defaults 'cgen-timeout wrld) defaults-alst))
        ((mv kwd-alist defun-rest) (defdata::extract-keywords ctx *defunc-keywords* args defaults-alst))

@@ -477,10 +477,10 @@ into eq-constraint field and put interval into range constraint field")
           (cons (car replace-alist) (filter-splice-entries (cdr replace-alist)))
         (filter-splice-entries (cdr replace-alist))))))
 
-(defun delete-assoc-eq-lst (xs alist)
+(defun remove1-assoc-eq-lst (xs alist)
   (if (endp xs)
       alist
-    (delete-assoc-eq-lst (cdr xs) (remove1-assoc-eq (car xs) alist))))
+    (remove1-assoc-eq-lst (cdr xs) (remove1-assoc-eq (car xs) alist))))
 
 (defun eval-meta-replace (mc usigma vl wrld)
   (b* (((unless (consp mc)) (mv nil nil))
@@ -492,7 +492,7 @@ into eq-constraint field and put interval into range constraint field")
                                            ,(make-var-value-cons-bindings vars '()))
                                                'eval-meta-replace wrld nil))
         (splice-alist (filter-splice-entries replace-alist))
-        (atom-alist   (delete-assoc-eq-lst (strip-cars splice-alist) replace-alist))
+        (atom-alist   (remove1-assoc-eq-lst (strip-cars splice-alist) replace-alist))
         ((when erp)
          (prog2$
           (cw? (debug-flag vl)
