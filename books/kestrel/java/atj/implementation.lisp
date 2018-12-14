@@ -144,7 +144,7 @@
          (new-terms (atj-remove-mbe-exec-from-terms terms)))
       (cons new-term new-terms))))
 
-(define atj-unquote-lst ((list acl2::quote-listp))
+(define atj-unquote-lst ((list quote-listp))
   :returns (new-list true-listp)
   :verify-guards nil
   :short "Unquote all the elements of a list."
@@ -152,10 +152,10 @@
         (t (cons (unquote (car list))
                  (atj-unquote-lst (cdr list))))))
 
-(str::defcharset alpha/digit
-                 (or (and (standard-char-p x)
-                          (alpha-char-p x))
-                     (and (digit-char-p x) t)))
+(defcharset alpha/digit
+  (or (and (standard-char-p x)
+           (alpha-char-p x))
+      (and (digit-char-p x) t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -468,10 +468,10 @@
      We unquote @('qc1'), @('qc2'), etc., obtaining a list of argument values.
      We evaluate the call @('(fn qc1 qc2 ...)'), obtaining a result value.
      We create an @(tsee atj-test) aggregate for each test."))
-  (b* (((er (cons & tests)) (acl2::trans-eval tests ctx state nil))
+  (b* (((er (cons & tests)) (trans-eval tests ctx state nil))
        (description "The :TESTS input")
-       ((er &) (acl2::ensure-doublet-list$ tests description t nil))
-       (alist (acl2::doublets-to-alist tests))
+       ((er &) (ensure-doublet-list$ tests description t nil))
+       (alist (doublets-to-alist tests))
        (names (strip-cars alist))
        (description (msg
                      "The list ~x0 of names of the tests in the :TESTS input"
@@ -498,13 +498,13 @@
           ((when (equal name ""))
            (er-soft+ ctx t nil "The test name ~x0 in the :TESTS input ~
                                 cannot be the empty string." name))
-          ((unless (str::chars-in-charset-p (explode name) (alpha/digit-chars)))
+          ((unless (chars-in-charset-p (explode name) (alpha/digit-chars)))
            (er-soft+ ctx t nil "The test name ~x0 in the :TESTS input ~
                                 must contain only letters and digits." name))
           ((er (list term$ &))
-           (acl2::ensure-term$ term
-                               (msg "The test term ~x0 in the :TESTS input" term)
-                               t nil))
+           (ensure-term$ term
+                         (msg "The test term ~x0 in the :TESTS input" term)
+                         t nil))
           ((when (or (variablep term$)
                      (fquotep term$)
                      (flambda-applicationp term$)))
@@ -513,7 +513,7 @@
                       must translate to ~
                       the application of a named function." term))
           (fn (ffn-symb term$))
-          ((er &) (acl2::ensure-member-of-list$
+          ((er &) (ensure-member-of-list$
                    fn
                    targets$
                    (msg "among the target functions ~&0." targets$)
@@ -524,7 +524,7 @@
           (qcs (fargs term$))
           ((er &) (atj-ensure-terms-quoted-constants qcs fn term ctx state))
           (args (atj-unquote-lst qcs))
-          ((er (cons & res)) (acl2::trans-eval term$ ctx state nil))
+          ((er (cons & res)) (trans-eval term$ ctx state nil))
           (agg (atj-test name fn args res))
           ((er aggs) (atj-process-tests-aux tests-alist targets$ ctx state)))
        (value (cons agg aggs))))))
@@ -1511,7 +1511,7 @@
                           (term-next-var posp)
                           (lambda-next-var posp)
                           (channel symbolp)
-     state)
+                          state)
     :returns (mv (java-expression "A @(tsee msgp).")
                  (new-value-next-var "A @(tsee posp).")
                  (new-term-next-var "A @(tsee posp).")
