@@ -79,7 +79,7 @@
    (unary-- a)
    (len x)
 
-   ;; (synp vars form term)
+   (synp vars form term)
    )
   :namedp t)
 
@@ -99,21 +99,21 @@
 
 (local (in-theory (disable w)))
 
-(define check-synp-is-true ((world plist-worldp))
-  (equal (meta-extract-formula-w 'synp world)
-         '(equal (synp vars form term) 't))
-  ///
-  (defthm check-synp-is-true-correct
-    (implies (and (evmeta-ev-meta-extract-global-facts)
-                  (check-synp-is-true (w state)))
-             (equal (evmeta-ev (list 'synp x y z) a) t))
-    :hints (("goal" :use ((:instance evmeta-ev-meta-extract-formula
-                           (name 'synp) (st state)
-                           (a `((vars . ,(evmeta-ev x a))
-                                (form . ,(evmeta-ev y a))
-                                (term . ,(evmeta-ev z a))))))
-             :in-theory (e/d (evmeta-ev-of-fncall-args)
-                             (evmeta-ev-meta-extract-formula))))))
+;; (define check-synp-is-true ((world plist-worldp))
+;;   (equal (meta-extract-formula-w 'synp world)
+;;          '(equal (synp vars form term) 't))
+;;   ///
+;;   (defthm check-synp-is-true-correct
+;;     (implies (and (evmeta-ev-meta-extract-global-facts)
+;;                   (check-synp-is-true (w state)))
+;;              (equal (evmeta-ev (list 'synp x y z) a) t))
+;;     :hints (("goal" :use ((:instance evmeta-ev-meta-extract-formula
+;;                            (name 'synp) (st state)
+;;                            (a `((vars . ,(evmeta-ev x a))
+;;                                 (form . ,(evmeta-ev y a))
+;;                                 (term . ,(evmeta-ev z a))))))
+;;              :in-theory (e/d (evmeta-ev-of-fncall-args)
+;;                              (evmeta-ev-meta-extract-formula))))))
   
 
 (local (defthm evmeta-ev-of-match-tree
@@ -161,7 +161,6 @@
     (implies (and (consp (evmeta-ev x1 a))
                   (not (equal (car (evmeta-ev x1 a)) 'quote))
                   (evmeta-ev-meta-extract-global-facts)
-                  (check-synp-is-true (w state))
                   (check-ev-of-fncall-args evfn evfn-lst name (w state))
                   (not (eq evfn 'quote))
                   (not (eq evfn-lst 'quote)))
@@ -349,7 +348,45 @@
   (assert-event (check-ev-of-bad-fncall 'evmeta-ev 'evmeta-ev-of-bad-fncall (w state))))
 
 
-(
+(define ev-of-arglist ((n natp)
+                       (evfn symbolp)
+                       arglist-obj alist-obj)
+  (if (zp n)
+      nil
+    (cons `(,evfn ',(ec-call (car arglist-obj)) ',alist-obj)
+          (ev-of-arglist (1- n) evfn
+                         (ec-call (cdr arglist-obj)) alist-obj)))
+  ///
+  (defthm ev-of-arglist-is-gorund
+    (implies (and (syntaxp (not (equal a ''nil)))
+                  (not (equal evfn 'quote)))
+             (equal (evmeta-ev-lst (ev-of-arglist n evfn arglist alist) a)
+                    (evmeta-ev-lst (ev-of-arglist n evfn arglist alist) nil)))
+    :hints(("Goal" :in-theory (enable evmeta-ev-of-fncall-args)))))
+
+(define ev-of-call-check-args (args
+                               (evfn symbolp)
+                               (arglist-term pseudo-termp)
+                               (alist-var pseudo-termp))
+  (b* (((when (atom args)) t)
+       (form1 (car args))
+       ((unless-match form1
+                      ((:! evfn) (car (:! arglist-term)) (:! alist-var)))
+        nil))
+    (ev-of-call-check-args (cdr args) evfn `(cdr ,arglist-term) alist-var))
+  ///
+  (defthm ev-of-call-check-args-correct
+    (implies (and (ev-of-call-check-args args evfn arglist-term alist-var)
+                  (not (equal evfn 'quote)))
+             (equal (evmeta-ev-lst args a)
+                    (evmeta-ev-lst (ev-of-arglist
+                                    (len args)
+                                    evfn
+                                    (evmeta-ev arglist-term a)
+                                    (evmeta-ev alist-var a))
+                                   nil)))
+    :hints(("Goal" :in-theory (enable ev-of-arglist evmeta-ev-of-fncall-args)))))
+         
 
 (define check-ev-of-call ((evfn symbolp)
                           (fn symbolp)
@@ -359,22 +396,28 @@
   (b* ((form (meta-extract-formula-w name world))
        ((unless-match form
                       (IMPLIES (IF (CONSP X)
-                                   (EQUAL (CAR X) '(:!fn))
+                                   (EQUAL (CAR X) '(:! fn))
                                    'NIL)
-                               (EQUAL ((:!evfn) X A)
+                               (EQUAL ((:! evfn) X A)
                                       ((:! fn) . (:? args)))))
         nil))
-    (ev-of-call-check-args arity args evfn 'x))
+    (and (eql (mbe :logic (nfix arity) :exec arity)
+              (len args))
+         (ev-of-call-check-args args evfn '(cdr x) 'a)))
   ///
-  (defthm check-ev-of-bad-fncall-correct
+  (defthm check-ev-of-call-correct
     (implies (and (consp (evmeta-ev x1 a))
-                  (not (consp (car (evmeta-ev x1 a))))
-                  (not (symbolp (car (evmeta-ev x1 a))))
+                  (equal (car (evmeta-ev x1 a)) fn)
+                  (not (equal fn 'quote))
                   (evmeta-ev-meta-extract-global-facts)
-                  (check-ev-of-bad-fncall evfn name (w state))
-                  (not (eq evfn 'quote)))
+                  (check-ev-of-call evfn fn arity name (w state))
+                  (not (equal evfn 'quote)))
              (equal (evmeta-ev (list evfn x1 a1) a)
-                    nil))
+                    (evmeta-ev (cons fn
+                                     (ev-of-arglist (nfix arity) evfn
+                                                    (cdr (evmeta-ev x1 a))
+                                                    (evmeta-ev a1 a)))
+                               a)))
     :hints (("goal" :use ((:instance evmeta-ev-meta-extract-formula
                            (name name)
                            (st state)
@@ -383,7 +426,126 @@
              :in-theory (e/d (evmeta-ev-of-fncall-args)
                              (evmeta-ev-meta-extract-formula)))))
 
-  (assert-event (check-ev-of-bad-fncall 'evmeta-ev 'evmeta-ev-of-bad-fncall (w state))))
+  (assert-event (check-ev-of-call 'evmeta-ev 'synp 3 'evmeta-ev-of-synp-call (w state))))
+
+
+
+
+
+(defun is-n-cdrs-of-x (n term x)
+  (if (zp n)
+      (eq term x)
+    (case-match term
+      (('cdr inner)
+       (is-n-cdrs-of-x (1- n) inner x)))))
+
+(defun list-of-ev-apps-p (lst evfn index x)
+  (if (atom lst)
+      (eq lst nil)
+    (let ((first (car lst)))
+      (case-match first
+        ((!evfn ('car n-cdrs-of-x) 'a)
+         (and (is-n-cdrs-of-x (1+ index) n-cdrs-of-x x)
+              (list-of-ev-apps-p (cdr lst) evfn (1+ index) x)))))))
+
+(defun ev-collect-apply-lemmas1 (lemmas evfn evlstfn)
+  (if (atom lemmas)
+      nil
+    (b* ((rule (car lemmas))
+         (hyps (access rewrite-rule rule :hyps))
+         (equiv (access rewrite-rule rule :equiv))
+         (lhs (access rewrite-rule rule :lhs))
+         (rhs (access rewrite-rule rule :rhs))
+         (rune (access rewrite-rule rule :rune))
+         (aggregate (list hyps rhs))
+         (rest (ev-collect-apply-lemmas1 (cdr lemmas) evfn evlstfn)))
+      (if (eq equiv 'equal)
+          (case-match lhs
+            ((!evfn . '(x a))
+             (case-match aggregate
+               ;; constraint 0: ev-expand-fncall
+               (('((consp  x)
+                   (synp 'nil '(syntaxp (not (equal a ''nil)))
+                         '(if (not (equal a ''nil)) 't 'nil))
+                   (not (equal (car x) 'quote)))
+                 (!evfn ('cons '(car x)
+                               ('kwote-lst (!evlstfn . '((cdr x) a))))
+                        ''nil))
+                (hons-acons :expand-fncall rune rest))
+
+               ;; constraint 1: ev-lookup-var
+               (('((symbolp x))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced assoc-eq by assoc-equal).]
+                 '(if x (cdr (assoc-equal x a)) 'nil))
+                (hons-acons :lookup-var rune rest))
+
+               ;; constraint 2: ev-quote
+               (('((consp x) (equal (car x) 'quote))
+                 '(car (cdr x)))
+                (hons-acons :quote rune rest))
+
+               ;; constraint 3: ev-lambda
+               (('((consp x) (consp (car x)))
+                 (!evfn '(car (cdr (cdr (car x))))
+                        ('pairlis$ '(car (cdr (car x)))
+                                   (!evlstfn . '((cdr x) a)))))
+                (hons-acons :lambda rune rest))
+
+               ;; constraints 6+: ev-function
+               ;; special case 1: return-last
+               (((('consp 'x) ('equal ('car 'x) '(quote return-last)))
+                 (!evfn . '((car (cdr (cdr (cdr x)))) a)))
+                (hons-acons 'return-last (cons 3 rune)
+                            rest))
+
+               (((('consp 'x) ('equal ('car 'x) '(quote mv-list)))
+                 (!evfn . '((car (cdr (cdr x))) a)))
+                (hons-acons 'mv-list (cons 2 rune)
+                            rest))
+
+               (((('consp 'x) ('equal ('car 'x) ('quote fn)))
+                 (fn . list-of-ev-apps))
+                (if (list-of-ev-apps-p list-of-ev-apps evfn 0 'x)
+                    (hons-acons fn (cons (len list-of-ev-apps) rune)
+                                rest)
+                  rest))
+
+               (& rest)))
+
+            ;; constraint 4: evlst-atom
+            ((!evlstfn . '(x-lst a))
+             (case-match aggregate
+               (('((not (consp x-lst)))
+                 ''nil)
+                (hons-acons :lst-atom rune rest))
+               (('((consp x-lst))
+                 ('cons (!evfn . '((car x-lst) a))
+                        (!evlstfn . '((cdr x-lst) a))))
+                (hons-acons :lst-cons rune rest))
+               (& rest)))
+
+            (& rest))
+        rest))))
+
+(defun ev-collect-apply-lemmas (evfn evlstfn world)
+  (ev-collect-apply-lemmas1
+   (append (fgetprop evfn 'lemmas nil world)
+           (fgetprop evlstfn 'lemmas nil world))
+   evfn evlstfn))
+
+
+
+
+
+
+
+
+
+
+#||
+
+detritus
 
 
 
@@ -656,108 +818,4 @@
 
 (in-theory (disable ev-function-clause))
 
-
-
-(defun is-n-cdrs-of-x (n term x)
-  (if (zp n)
-      (eq term x)
-    (case-match term
-      (('cdr inner)
-       (is-n-cdrs-of-x (1- n) inner x)))))
-
-(defun list-of-ev-apps-p (lst evfn index x)
-  (if (atom lst)
-      (eq lst nil)
-    (let ((first (car lst)))
-      (case-match first
-        ((!evfn ('car n-cdrs-of-x) 'a)
-         (and (is-n-cdrs-of-x (1+ index) n-cdrs-of-x x)
-              (list-of-ev-apps-p (cdr lst) evfn (1+ index) x)))))))
-
-(defun ev-collect-apply-lemmas1 (lemmas evfn evlstfn)
-  (if (atom lemmas)
-      nil
-    (b* ((rule (car lemmas))
-         (hyps (access rewrite-rule rule :hyps))
-         (equiv (access rewrite-rule rule :equiv))
-         (lhs (access rewrite-rule rule :lhs))
-         (rhs (access rewrite-rule rule :rhs))
-         (rune (access rewrite-rule rule :rune))
-         (aggregate (list hyps rhs))
-         (rest (ev-collect-apply-lemmas1 (cdr lemmas) evfn evlstfn)))
-      (if (eq equiv 'equal)
-          (case-match lhs
-            ((!evfn . '(x a))
-             (case-match aggregate
-               ;; constraint 0: ev-expand-fncall
-               (('((consp  x)
-                   (synp 'nil '(syntaxp (not (equal a ''nil)))
-                         '(if (not (equal a ''nil)) 't 'nil))
-                   (not (equal (car x) 'quote)))
-                 (!evfn ('cons '(car x)
-                               ('kwote-lst (!evlstfn . '((cdr x) a))))
-                        ''nil))
-                (hons-acons :expand-fncall rune rest))
-
-               ;; constraint 1: ev-lookup-var
-               (('((symbolp x))
-; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
-;  (replaced assoc-eq by assoc-equal).]
-                 '(if x (cdr (assoc-equal x a)) 'nil))
-                (hons-acons :lookup-var rune rest))
-
-               ;; constraint 2: ev-quote
-               (('((consp x) (equal (car x) 'quote))
-                 '(car (cdr x)))
-                (hons-acons :quote rune rest))
-
-               ;; constraint 3: ev-lambda
-               (('((consp x) (consp (car x)))
-                 (!evfn '(car (cdr (cdr (car x))))
-                        ('pairlis$ '(car (cdr (car x)))
-                                   (!evlstfn . '((cdr x) a)))))
-                (hons-acons :lambda rune rest))
-
-               ;; constraints 6+: ev-function
-               ;; special case 1: return-last
-               (((('consp 'x) ('equal ('car 'x) '(quote return-last)))
-                 (!evfn . '((car (cdr (cdr (cdr x)))) a)))
-                (hons-acons 'return-last (cons 3 rune)
-                            rest))
-
-               (((('consp 'x) ('equal ('car 'x) '(quote mv-list)))
-                 (!evfn . '((car (cdr (cdr x))) a)))
-                (hons-acons 'mv-list (cons 2 rune)
-                            rest))
-
-               (((('consp 'x) ('equal ('car 'x) ('quote fn)))
-                 (fn . list-of-ev-apps))
-                (if (list-of-ev-apps-p list-of-ev-apps evfn 0 'x)
-                    (hons-acons fn (cons (len list-of-ev-apps) rune)
-                                rest)
-                  rest))
-
-               (& rest)))
-
-            ;; constraint 4: evlst-atom
-            ((!evlstfn . '(x-lst a))
-             (case-match aggregate
-               (('((not (consp x-lst)))
-                 ''nil)
-                (hons-acons :lst-atom rune rest))
-               (('((consp x-lst))
-                 ('cons (!evfn . '((car x-lst) a))
-                        (!evlstfn . '((cdr x-lst) a))))
-                (hons-acons :lst-cons rune rest))
-               (& rest)))
-
-            (& rest))
-        rest))))
-
-(defun ev-collect-apply-lemmas (evfn evlstfn world)
-  (ev-collect-apply-lemmas1
-   (append (fgetprop evfn 'lemmas nil world)
-           (fgetprop evlstfn 'lemmas nil world))
-   evfn evlstfn))
-
-
+||#
