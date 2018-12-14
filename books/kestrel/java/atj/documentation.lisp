@@ -61,8 +61,8 @@
     "ATJ accepts all the ACL2 functions that
      (1) have an @('unnormalized-body') property (see @(tsee body)) and
      (2) either do not have raw Lisp code
-     or have raw Lisp code but belong to a growing whitelist.
-     In general, the ACL2 functions with raw Lisp code
+     or have raw Lisp code but belong to a whitelist.
+     The ACL2 functions with raw Lisp code
      are the ones listed in the global variables
      @('program-fns-with-raw-code') and @('logic-fns-with-raw-code').
      The aforementioned whitelist consists of functions
@@ -206,7 +206,7 @@
 
    (xdoc::p
     "This translation approach is simple and thus fairly high-assurance.
-     On the other hand, the Java code is not inefficient or idiomatic.
+     On the other hand, the Java code is not efficient or idiomatic.
      However, the approach may work well for some simple applications,
      and provides a good starting point for optimization.
      In the future, we may translate ACL2 functions to
@@ -223,6 +223,7 @@
     "     :java-package  ; default nil"
     "     :java-class    ; default nil"
     "     :output-dir    ; default nil"
+    "     :tests         ; default nil"
     "     :verbose       ; default nil"
     "  )")
 
@@ -235,7 +236,7 @@
     (xdoc::p
      "Names of the target ACL2 functions to be translated to Java.")
     (xdoc::p
-     "Each must be the name of a function that
+     "Each @('fni') must be the name of a function that
       either has an @('unnormalized-body') property
       and no raw Lisp code (unless it is in the whitelist),
       or is a @(see acl2::primitive) function.
@@ -277,12 +278,18 @@
      "It must be either an ACL2 string or @('nil').
       If it is an ACL2 string,
       it must be a valid Java class name consisting of only ASCII characters.
-      If this input is @('nil'), the generated Java class is called \"ACL2\"."))
+      If this input is @('nil'), the generated Java class is called @('ACL2').")
+    (xdoc::p
+     "If the @(':tests') input (see below) is not @('nil'),
+      an additional Java class for testing is generated,
+      whose name is obtained by appending @('Test')
+      at the end of the name of the main class."))
 
    (xdoc::desc
     "@(':output-dir') &mdash; default @('\".\"')"
     (xdoc::p
-     "Path of the directory where the generated Java file is created.")
+     "Path of the directory where
+      the generated Java file/files is/are created.")
     (xdoc::p
      "It must be an ACL2 string that is
       a valid path to a directory in the file system;
@@ -290,10 +297,37 @@
       or relative to
       the <see topic='@(url cbd)'>current working directory</see>).")
     (xdoc::p
-     "The name of the generated file is
-      the name of the generated class (see @(':java-class') above),
-      followed by @('.java').
+     "The name of the generated file containing the main class
+      is the name of that class followed by @('.java').
+      If the file already exists, it is overwritten.")
+    (xdoc::p
+     "If the @(':tests') input (see below) is not @('nil'),
+      the name of the generated file containing the test class
+      is the name of that class followed by @('.java').
       If the file already exists, it is overwritten."))
+
+   (xdoc::desc
+    "@(':tests') &mdash; default @('nil')"
+    (xdoc::p
+     "Optional tests to generate Java code for.")
+    (xdoc::p
+     "It must evaluate to a list of doublets
+      @('((name1 term1) ... (nameq termq))'),
+      where each @('namej') is a string consisting of only letters and digits,
+      and each @('termj') is an untranslated ground term
+      whose translation is @('(fn qc1 qc2 ...)'),
+      where @('fn') is among the target functions @('fn1'), ..., @('fnp'),
+      and each @('qc1'), @('qc2'), etc. is a quoted constant.
+      All the @('namej') must be distinct.")
+    (xdoc::p
+     "Each doublet @('(namej termj)') specifies a test,
+      in which the result of @('(fn qc1 qc2 ...)') calculated by ACL2
+      is compared with the result of the same call
+      calculated via the generated Java code for @('fn').
+      These tests can be run via additional generated Java code
+      (see below).")
+    (xdoc::p
+     "Note that the @(':tests') input is evaluated."))
 
    (xdoc::desc
     "@(':verbose') &mdash; default @('nil')"
@@ -310,7 +344,7 @@
    (xdoc::h3 "Generated Java Code")
 
    (xdoc::p
-    "The generated Java file contains
+    "ATJ generates a Java file that contains
      a single public class named as specified by the @(':java-class') input,
      in the package specified by the @(':java-package') input.")
 
@@ -323,7 +357,7 @@
     "}")
 
    (xdoc::p
-    "The Java class has private static methods
+    "This Java class has private static methods
      that build the relevant portions of the ACL2 environment,
      including the definitions of the functions @('fn1'), ..., @('fnp')
      and of all the functions that they transitively call,
@@ -332,7 +366,7 @@
      the ACL2 environment is initialized or not.")
 
    (xdoc::p
-    "The Java class has a public static method @('initialize')
+    "This Java class has a public static method @('initialize')
      to initialize the relevant portions of the ACL2 environment,
      via the private methods mentioned just above.
      This public method must be called just once,
@@ -342,7 +376,7 @@
      before calling any of the public methods provided by AIJ.")
 
    (xdoc::p
-    "The Java class has a public static method @('call')
+    "This Java class has a public static method @('call')
      to call an ACL2 function on some ACL2 values.
      The method takes as arguments
      the name of the ACL2 function to call
@@ -350,4 +384,37 @@
      and returns an ACL2 value.
      The called ACL2 function must be among @('fn1'), ..., @('fnp')
      and the functions that they transitively call,
-     or it may be any of the primitive ACL2 functions.")))
+     or it may be any of the primitive ACL2 functions.")
+
+   (xdoc::h4 "Optional Test Class")
+
+   (xdoc::p
+    "If the @(':tests') input (see above) is not @('nil'),
+     ATJ also generates an additional Java file that contains
+     a single public class named as specified in
+     the description of the @(':java-class') input above,
+     in the package specified by the @(':java-package') input.")
+
+   (xdoc::code
+    "public class <name>Test {"
+    "    // private static methods"
+    "    public static void main(String[] args) ..."
+    "}")
+
+   (xdoc::p
+    "This Java class has a private static method
+     for each test @('(namej termj)')
+     specified via the @(':tests') input (see above).
+     Each such method prints @('namej'),
+     evaluates the call @('(fn qc1 1c2 ...)') (which @('termj') translates to)
+     in AIJ (via the @('call') public method described above),
+     compares the resulting value with the one that ACL2 returns
+     (this is calculated when ATJ is run),
+     and prints a success or failure message
+     depending on whether the comparison succeeds or fails.")
+
+   (xdoc::p
+    "This Java class has a public static @('main') method that
+     calls the @('initialize') public method described above
+     and then calls all the testing methods described just above.
+     Thus, this test class can be invoked as a Java application.")))
