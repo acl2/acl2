@@ -40,6 +40,7 @@
 (include-book "pathcond-stobj")
 (include-book "centaur/ubdds/deps" :dir :system)
 (include-book "std/stobjs/updater-independence" :dir :system)
+(include-book "defapply")
 (local (include-book "theory"))
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "std/util/termhints" :dir :system))
@@ -2025,6 +2026,8 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
 
   
+
+(defapply base-gl-object-apply 
     
 (encapsulate
   (((base-gl-object-apply * *) => *
@@ -2046,6 +2049,9 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                                (iff (consp (assoc key x))
                                     (assoc key x))))))
   (cdr (assoc-equal name (gl-env->obj-alist env))))
+
+
+
 
 (defines base-gl-object-eval
   (define base-gl-object-eval ((x lgl-bfr-object-p)
