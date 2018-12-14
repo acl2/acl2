@@ -47,9 +47,9 @@
        (stream (acl2::get-output-stream-from-channel channel))
        (- (loop for elem in rchars do
                 (if (atom elem)
-                    (if (characterp elem.elt)
-                        (write-char elem.elt stream)
-                      (write-string elem.elt stream))
+                    (cond ((characterp elem)
+                           (write-char elem stream))
+                          ((stringp elem) (write-string elem stream)))
                   (write-string (vl-printedlist->string elem)))))
        (state  (close-output-channel channel state)))
     (mv ps state)))
