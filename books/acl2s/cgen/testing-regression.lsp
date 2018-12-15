@@ -1030,7 +1030,7 @@
                 (member e A)
                 (< i (len A)))
            (equal (make-inverse-map (update-nth i e A) k)
-                  (put-assoc e (+ k i) (delete-assoc (nth i A) (make-inverse-map A k))))))
+                  (put-assoc e (+ k i) (remove1-assoc (nth i A) (make-inverse-map A k))))))
 )
 
 (acl2::must-fail
@@ -1046,7 +1046,7 @@
                 (< i (len A)))
            (acl2::alist-equiv (make-inverse-map (update-nth i (nth j A) A) k)
                         (put-assoc (nth j A) (+ k i) 
-                                   (delete-assoc (nth i A) (make-inverse-map A k))))))
+                                   (remove1-assoc (nth i A) (make-inverse-map A k))))))
 )
 
 
