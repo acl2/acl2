@@ -12,6 +12,8 @@
 
 (include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 
+(include-book "remove-assocs")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc alist-utilities
