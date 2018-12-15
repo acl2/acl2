@@ -41,7 +41,7 @@
      (or both).
      If the test is @(tsee eq),
      the first argument must satisfy @(tsee symbol-listp)
-     or the second argument must satisfy @(tsee symbol-alist)
+     or the second argument must satisfy @(tsee symbol-alistp)
      (or both).")
    (xdoc::p
     "See @(see equality-variants) for a discussion of
