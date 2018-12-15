@@ -267,7 +267,8 @@
  <p>Finished adding support for 32-bit application-level execution for
  non-floating-point instructions.  Added support for 32-bit application-level
  execution for the floating-point instructions ADDSS, ADDSD, SUBSS, SUBSD,
- MULSS, MULSD, DIVSS, DIVSD, MINSS, MINSD, MAXSS, MAXSD, and BSF.</p>
+ MULSS, MULSD, DIVSS, DIVSD, MINSS, MINSD, MAXSS, MAXSD, ADDPS, SUBPS, MULPS,
+ DIVPS, MINPS, MAXPS, and BSF.</p>
 
  <p>Added support for enabling/disabling machine features that depend on CPUID
  flags.</p>
