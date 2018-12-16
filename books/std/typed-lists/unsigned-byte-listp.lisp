@@ -126,7 +126,7 @@
            (unsigned-byte-listp n (list-fix bytes)))
     :hints (("goal" :in-theory (enable rev))))
 
-  (defthm unsigned-byte-p-of-nth-when-unsigned-byte-p
+  (defthm unsigned-byte-p-of-nth-when-unsigned-byte-listp
     (implies (unsigned-byte-listp bits l)
              (iff (unsigned-byte-p bits (nth n l))
                   (< (nfix n) (len l))))))
