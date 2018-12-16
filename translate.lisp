@@ -6959,6 +6959,7 @@
 
 (defconst *brr-globals*
   '(brr-monitored-runes
+    brr-evisc-tuple
     brr-stack
     brr-gstack
     brr-alist))

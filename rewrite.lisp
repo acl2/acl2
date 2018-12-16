@@ -6922,6 +6922,10 @@
                    (restore-brr-globals1 'brr-monitored-runes
                                          new-alist old-alist)
                    state)
+     (f-put-global 'brr-evisc-tuple
+                   (restore-brr-globals1 'brr-evisc-tuple
+                                         new-alist old-alist)
+                   state)
      (f-put-global 'brr-stack
                    (restore-brr-globals1 'brr-stack
                                          new-alist old-alist)
@@ -6951,6 +6955,8 @@
                  (list
                   (cons 'brr-monitored-runes
                         (f-get-global 'brr-monitored-runes state))
+                  (cons 'brr-evisc-tuple
+                        (f-get-global 'brr-evisc-tuple state))
                   (cons 'brr-stack
                         (f-get-global 'brr-stack state))
                   (cons 'brr-gstack
@@ -6980,6 +6986,8 @@
          (case var
                (brr-monitored-runes
                 (f-get-global 'brr-monitored-runes state))
+               (brr-evisc-tuple
+                (f-get-global 'brr-evisc-tuple state))
                (brr-stack
                 (f-get-global 'brr-stack state))
                (brr-gstack
@@ -7080,8 +7088,8 @@
 
 ; This is a no-op that returns nil.  But it has the secret side effect of
 ; setting the brr-global brr-stack to nil.  We don't want to reset all the
-; brr-globals: brr-monitored-runes should persist.  The others are irrelevant
-; because they will be assigned before they are read.
+; brr-globals: brr-monitored-runes and brr-evisc-tuple should persist.  The
+; others are irrelevant because they will be assigned before they are read.
 
   (and (f-get-global 'gstackp state)
        (brr-wormhole '(lambda (whs)
@@ -8057,13 +8065,69 @@
   (list "" "~@*" "~@*" "~@*"
          (tilde-*-ancestors-stack-msg1 0 ancestors wrld evisc-tuple)))
 
+(defun brr-evisc-tuple (state)
+  (cond
+   ((eq (f-get-global 'wormhole-name state) 'brr)
+    (let ((val (get-brr-global 'brr-evisc-tuple state)))
+      (if (eq val :DEFAULT)
+          (term-evisc-tuple t state)
+        val)))
+   (t (er hard 'brr-evisc-tuple
+          "It is illegal to call ~x0 unless you are under ~
+           break-rewrite and you are not.  Consider instead evaluating ~x1."
+          'brr-evisc-tuple
+          '(show-brr-evisc-tuple)))))
+
+(defun set-brr-evisc-tuple (val state)
+  (pprogn
+   (f-put-global 'brr-evisc-tuple-initialized t state)
+   (cond
+    ((eq (f-get-global 'wormhole-name state) 'brr)
+     (f-put-global 'brr-evisc-tuple val state))
+    (t (prog2$
+        (brr-wormhole
+         '(lambda (whs)
+            (set-wormhole-entry-code whs :ENTER))
+         nil
+         `(pprogn (f-put-global 'brr-evisc-tuple ',val state)
+                  (value nil))
+         nil)
+        state)))))
+
+(defun maybe-initialize-brr-evisc-tuple (state)
+  (cond ((f-get-global 'brr-evisc-tuple-initialized state)
+; The test above is always true inside :brr.
+         state)
+        (t (set-brr-evisc-tuple :DEFAULT state))))
+
+(defun show-brr-evisc-tuple-fn (state)
+  (pprogn
+   (maybe-initialize-brr-evisc-tuple state)
+   (cond
+    ((eq (f-get-global 'wormhole-name state) 'brr)
+     (prog2$ (cw "~Y01~|" (brr-evisc-tuple state) nil)
+             (value :invisible)))
+    (t
+     (prog2$
+      (brr-wormhole
+       '(lambda (whs)
+          (set-wormhole-entry-code whs :ENTER))
+       nil
+       `(prog2$ (cw "~Y01~|" (brr-evisc-tuple state) nil)
+                (value nil))
+       nil)
+      (value :invisible))))))
+
+(defmacro show-brr-evisc-tuple ()
+  '(show-brr-evisc-tuple-fn state))
+
 (defun show-ancestors-stack-msg (state)
   (msg "Ancestors stack (most recent entry on top):~%~*0~%Use ~x1 to see ~
         actual ancestors stack.~%"
        (tilde-*-ancestors-stack-msg
         (get-brr-local 'ancestors state)
         (w state)
-        (term-evisc-tuple t state))
+        (brr-evisc-tuple state))
        '(get-brr-local 'ancestors state)))
 
 (defun tilde-@-failure-reason-phrase1-backchain-limit (hyp-number
@@ -8354,7 +8418,7 @@
                          (get-rule-field (get-brr-local 'lemma state)
                                          :rune)
                          (get-brr-local 'target state)
-                         (term-evisc-tuple t state))
+                         (brr-evisc-tuple state))
                      (value t))))
            (t (pprogn
                (pop-brr-stack-frame state)
@@ -8457,7 +8521,7 @@
             (prog2$
              (cw "~*0"
                  (tilde-*-alist-phrase (get-brr-local 'unify-subst state)
-                                       (term-evisc-tuple t state)
+                                       (brr-evisc-tuple state)
                                        5))
              (value :invisible))))
        (:type-alist
@@ -8525,7 +8589,7 @@
              (value :invisible))))
        (:path
         0 (lambda nil
-            (prog2$ (cw-gstack)
+            (prog2$ (cw-gstack :evisc-tuple (brr-evisc-tuple state))
                     (value :invisible))))
        (:frame
         1 (lambda (n)
@@ -8595,6 +8659,9 @@
                  (f-put-global 'brr-monitored-runes
                                (get-brr-local 'saved-brr-monitored-runes state)
                                state)
+                 (f-put-global 'brr-evisc-tuple
+                               (get-brr-local 'saved-brr-evisc-tuple state)
+                               state)
                  (pop-brr-stack-frame state)
                  (value nil))))
        ((eq (get-brr-local 'action state) 'print)
@@ -8605,7 +8672,7 @@
                          (get-brr-local 'depth state)
                          (get-rule-field (get-brr-local 'lemma state) :rune)
                          (brr-result state)
-                         (term-evisc-tuple t state))
+                         (brr-evisc-tuple state))
                    (cw "~%~F0x ~F1 failed because ~@2~|~F0)~%"
                        (get-brr-local 'depth state)
                        (get-rule-field (get-brr-local 'lemma state) :rune)
@@ -8613,12 +8680,15 @@
                         (get-brr-local 'failure-reason state)
                         1
                         (get-brr-local 'unify-subst state)
-                        (term-evisc-tuple t state)
+                        (brr-evisc-tuple state)
                         (free-vars-display-limit state)
                         state)))
                  (pprogn
                   (f-put-global 'brr-monitored-runes
                                 (get-brr-local 'saved-brr-monitored-runes state)
+                                state)
+                  (f-put-global 'brr-evisc-tuple
+                                (get-brr-local 'saved-brr-evisc-tuple state)
                                 state)
                   (pop-brr-stack-frame state)
                   (value nil)))))
@@ -8635,13 +8705,17 @@
                                   (get-brr-local 'saved-brr-monitored-runes
                                                  state)
                                   state)
+                    (f-put-global 'brr-evisc-tuple
+                                  (get-brr-local 'saved-brr-evisc-tuple
+                                                 state)
+                                  state)
                     (prog2$
                      (if (get-brr-local 'wonp state)
                          (cw "~%~F0! ~F1 produced ~X23.~|~%"
                              (get-brr-local 'depth state)
                              (get-rule-field (get-brr-local 'lemma state) :rune)
                              (brr-result state)
-                             (term-evisc-tuple t state))
+                             (brr-evisc-tuple state))
                        (cw "~%~F0x ~F1 failed because ~@2~|~%"
                            (get-brr-local 'depth state)
                            (get-rule-field (get-brr-local 'lemma state) :rune)
@@ -8649,7 +8723,7 @@
                             (get-brr-local 'failure-reason state)
                             1
                             (get-brr-local 'unify-subst state)
-                            (term-evisc-tuple t state)
+                            (brr-evisc-tuple state)
                             (free-vars-display-limit state)
                             state)))
                      (value t)))))))
@@ -8736,7 +8810,7 @@
             (prog2$
              (cw "~*0"
                  (tilde-*-alist-phrase (get-brr-local 'unify-subst state)
-                                       (term-evisc-tuple t state)
+                                       (brr-evisc-tuple state)
                                        5))
              (value :invisible))))
        (:type-alist
@@ -8822,7 +8896,7 @@
                     (get-brr-local 'failure-reason state)
                     1
                     (get-brr-local 'unify-subst state)
-                    (term-evisc-tuple t state)
+                    (brr-evisc-tuple state)
                     (free-vars-display-limit state)
                     state)))
              (value :invisible))))
@@ -8837,7 +8911,7 @@
              (value :invisible))))
        (:path
         0 (lambda nil
-            (prog2$ (cw-gstack)
+            (prog2$ (cw-gstack :evisc-tuple (brr-evisc-tuple state))
                     (value :invisible))))
        (:frame
         1 (lambda (n)

@@ -199,6 +199,10 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    BRR-EVISC-TUPLE
+    SET-BRR-EVISC-TUPLE
+    SHOW-BRR-EVISC-TUPLE
+
   ))
 
 (defconst *special-ops*
