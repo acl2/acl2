@@ -26,7 +26,7 @@
 (include-book "doublets")
 (include-book "enumerations")
 (include-book "er-soft-plus")
-(include-book "error-checking")
+(include-book "error-checking/top")
 (include-book "fixbytes/instances")
 (include-book "include-book-paths")
 (include-book "integer-range-fixing")
