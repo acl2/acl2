@@ -10956,9 +10956,9 @@
      (f-put-global 'gstackp t state)
      (maybe-initialize-brr-evisc-tuple state)
      (prog2$
-      (cw "Use :a! to exit break-rewrite.~|See :DOC set-brr-evisc-tuple to ~
-           control suppression of details when printing.~|~%The monitored ~
-           runes are:~%")
+      (cw "Use :a! to exit break-rewrite.~|See :DOC set-brr-evisc-tuple and ~
+           :DOC iprint to control suppression of details when ~
+           printing.~|~%The monitored runes are:~%")
       (er-progn
        (monitored-runes-fn state)
        (value t)))))
