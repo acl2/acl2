@@ -15,6 +15,8 @@
 (include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
+(local (include-book "std/strings/make-character-list" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc charlist-codelist-conversions
@@ -186,9 +188,7 @@
                 (equal (nats=>chars (chars=>nats chars))
                        chars))
        :enable (nats=>chars chars=>nats)
-       :induct (chars=>nats chars))
-     (defrule character-listp-of-make-character-list
-       (character-listp (make-character-list x))))
+       :induct (chars=>nats chars)))
     :use
     (:instance nats=>chars-of-chars=>nats-when-character-listp
                (chars (make-character-list chars)))))
