@@ -13,12 +13,13 @@
 (include-book "kestrel/utilities/numbered-names" :dir :system)
 (include-book "kestrel/utilities/symbol-true-list-alists" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system)
+(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
 (include-book "def-error-checker")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc error-checking
+(defxdoc+ error-checking
   :parents (kestrel-utilities errors)
   :short "Utilities for error checking."
   :long
@@ -47,9 +48,8 @@
    When these functions are called,
    the strings in the description parameters
    should be capitalized based on where they occur in the error messages.
-   </p>")
-
-(local (set-default-parents error-checking))
+   </p>"
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
