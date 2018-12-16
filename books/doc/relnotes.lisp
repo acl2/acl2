@@ -269,7 +269,7 @@
  execution for the floating-point instructions ADDSS, ADDSD, SUBSS, SUBSD,
  MULSS, MULSD, DIVSS, DIVSD, MINSS, MINSD, MAXSS, MAXSD, ADDPS, ADDPD, SUBPS,
  SUBPD, MULPS, MULPD, DIVPS, DIVPD, MINPS, MINPD, MAXPS, MAXPD, SQRTSS, SQRTSD,
- SQRTPS, and BSF.</p>
+ SQRTPS, SQRTPD, and BSF.</p>
 
  <p>Added support for enabling/disabling machine features that depend on CPUID
  flags.</p>
