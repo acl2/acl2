@@ -76,4 +76,16 @@
   (defrule nats=>string-of-string=>nats
     (equal (nats=>string (string=>nats string))
            (str-fix string))
-    :enable (nats=>string string=>nats)))
+    :enable (nats=>string string=>nats))
+
+  (defrule string=>nats-of-nats=>string
+    (implies (unsigned-byte-listp 8 (true-list-fix nats))
+             (equal (string=>nats (nats=>string nats))
+                    (true-list-fix nats)))
+    :rule-classes
+    ((:rewrite
+      :corollary (implies (unsigned-byte-listp 8 nats)
+                          (equal (string=>nats (nats=>string nats))
+                                 nats))))
+    :enable (string=>nats nats=>string)
+    :use chars=>nats-of-nats=>chars))
