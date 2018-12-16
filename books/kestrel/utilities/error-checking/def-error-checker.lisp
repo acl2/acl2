@@ -14,7 +14,6 @@
 (include-book "kestrel/utilities/enumerations" :dir :system)
 (include-book "kestrel/utilities/event-forms" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
-(include-book "std/util/define" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,176 +26,143 @@
 
   :long
 
-  "<p>
-   This macro generates an error-checking function
-   and an associated macro abbreviation of the following form:
-   </p>
+  (xdoc::topapp
 
-   @({
-     (define <name> (<x1> ... <xn>
-                     (description msgp)
-                     (error-erp (not (null error-erp))
-                                \"Flag to return in case of error.\")
-                     (error-val \"Value to return in case of error.\")
-                     (ctx \"Context for errors.\")
-                     state)
-       :returns (mv <erp>
-                    <val>
-                    state)
-       :mode <mode>
-       :verify-guards <verify-guards> ; optional
-       :parents <parents>  ; optional
-       :short <short>
-       :long <long>  ; optional
-       (b* (((unless <condition1>) (er-soft+
-                                    ctx error-erp error-val . <message1>))
-            ...
-            ((unless <conditionm>) (er-soft+
-                                    ctx error-erp error-val . <messagem>)))
-         (value <result>))
-       :no-function t)
+   (xdoc::p
+    "This macro generates an error-checking function
+     and an associated macro abbreviation of the following form:")
+   (xdoc::code
+    "(define <name> (<x1> ... <xn>"
+    "                (description msgp)"
+    "                (error-erp (not (null error-erp))"
+    "                           \"Flag to return in case of error.\")"
+    "                (error-val \"Value to return in case of error.\")"
+    "                (ctx \"Context for errors.\")"
+    "                state)"
+    "  :returns (mv <erp>"
+    "               <val>"
+    "               state)"
+    "  :mode <mode>"
+    "  :verify-guards <verify-guards> ; optional"
+    "  :parents <parents>  ; optional"
+    "  :short <short>"
+    "  :long <long>  ; optional"
+    "  (b* (((unless <condition1>) (er-soft+"
+    "                               ctx error-erp error-val . <message1>))"
+    "       ..."
+    "       ((unless <conditionm>) (er-soft+"
+    "                               ctx error-erp error-val . <messagem>)))"
+    "    (value <result>))"
+    "  :no-function t)"
+    ""
+    "(defsection <name>$"
+    "  :parents (<name>)"
+    "  :short \"Calls @(tsee <name>) with"
+    "          @('ctx') and @('state') as the last two arguments.\""
+    "  :long \"@(def <name>$)\""
+    "  (defmacro <name>$ (<x1'> ... <xn'> description error-erp error-val)"
+    "    `(<name> ,<x1'> ... ,<xn'> description error-erp error-val ctx state)))")
+   (xdoc::p
+    "where each @('<...>') element,
+     except @('<erp>'), @('<val>'), and @('<x1\'>'), ..., @('<xn\'>'),
+     is supplied as argument to the macro:")
+   (xdoc::ul
+    (xdoc::li
+     "@('<name>') is the name of the function,
+      and, with a @('$') added at the end, the name of the macro.")
+    (xdoc::li
+     "Each @('<xi>') is a symbol or
+      an <see topic='@(url std::extended-formals)'>extended formal</see>.
+      Let @('<xi\'>') be:
+      @('<xi>') if @('<xi>') is a symbol;
+      the name of the @('<xi>') extended formal otherwise.")
+    (xdoc::li
+     "@('<erp>') is a
+      <see topic='@(url std::returns-specifiers)'>return specifier</see>
+      that describes the error flag returned
+      inside the <see topic='@(url error-triple)'>error triple</see>.
+      This return specifier is:
+      @('(erp (implies erp (equal erp error-erp)))')
+      if @('<mode>') is @(':logic'); and
+      @('(erp \"@('nil') or @('error-erp').\")')
+      if @('<mode>') is @(':program').")
+    (xdoc::li
+     "@('<val>') is a
+      <see topic='@(url std::returns-specifiers)'>return specifier</see>
+      that describes the value returned
+      inside the <see topic='@(url error-triple)'>error triple</see>.
+      This return specifier depends on the @('<returns>') argument to the macro
+      (see below for the complete list of arguments to the macro)
+      and on @('<mode>'):
+      if no @('<returns>') argument is supplied and @('<mode>') is @(':logic'),
+      then @('<val>') is
+      @('(val (and (implies erp (equal val error-val))
+                   (implies (and (not erp) error-erp) (not val))))');
+      if no @('<returns>') argument is supplied and @('<mode>') is @(':program'),
+      then @('<val>') is
+      @('(val \"@('nil') if @('erp') is @('nil'), otherwise @('error-val').\")');
+      if a @('<returns>') argument is supplied,
+      then @('<val>') is @('<returns>').")
+    (xdoc::li
+     "@('<mode>') is either @(':logic') or @(':program').")
+    (xdoc::li
+     "@('<verify-guards>') is either @('t') or @('nil').
+      If @('<verify-guards>') is not supplied as argument,
+      @(':verify-guards') is absent.")
+    (xdoc::li
+     "@('<parents>') is a list of parent <see topic='@(url xdoc)'>topics</see>.
+      If @('<parents>') is not supplied as argument, @(':parents') is absent.")
+    (xdoc::li
+     "@('<short>') and @('<long>') are strings that document the function.
+      If @('<long>') is not supplied as argument, @(':long') is absent.")
+    (xdoc::li
+     "Each @('<conditionj>') is a term
+      whose evaluation checks a condition
+      on the @('<x1>'), ..., @('<xn>') arguments.
+      The conditions are checked in order.")
+    (xdoc::li
+     "Each @('<messagej>') is a list that consists of
+      a <see topic='@(url fmt)'>format string</see>
+      followed by up to 10 terms,
+      whose values fill in the placeholders of the format string.
+      Generally, one of these terms should be @('description')
+      and it should correspond to a @('~@') placeholder
+      in the format string,
+      which is appropriate for the @(tsee msgp) type of @('description').
+      The @('<messagej>') list is inserted into the @(tsee er-soft+) call,
+      providing an error message when @('<conditionj>') is not satisfied
+      (but the previous conditions are).")
+    (xdoc::li
+     "@('<result>') is a term whose value is returned
+      when all the conditions are satisfied."))
 
-     (defsection <name>$
-       :parents (<name>)
-       :short \"Calls @(tsee <name>) with
-               @('ctx') and @('state') as the last two arguments.\"
-       :long \"@(def <name>$)\"
-       (defmacro <name>$ (<x1'> ... <xn'> description error-erp error-val)
-         `(<name> ,<x1'> ... ,<xn'> description error-erp error-val ctx state)))
-   })
+   (xdoc::p
+    "The generated formal arguments
+     @('description'), @('error-erp'), and @('error-val')
+     and the generated return variables @('erp') and @('val')
+     are symbols with those names in the same package as
+     the @('<name>') symbol used as the name of the generated function.")
 
-   <p>
-   where each @('<...>') element,
-   except @('<erp>'), @('<val>'), and @('<x1\'>'), ..., @('<xn\'>'),
-   is supplied as argument to the macro:
-   </p>
+   (xdoc::p
+    "The macro is called as follows:")
+   (xdoc::code
+    "(def-error-checker <name>"
+    "  (<x1> ... <xn>)"
+    "  <short>"
+    "  ((<condition1> . <message1>) ... (<conditionm> . <messagem>))"
+    "  :returns <val> ; default not used"
+    "  :result <result> ; default is nil"
+    "  :mode <mode> ; default is :logic"
+    "  :verify-guards <verify-guards> ; default not used"
+    "  :parents <parents> ; default not used"
+    "  :long <long> ; default not used"
+    "  )")
 
-   <ul>
+   (xdoc::p
+    "A table keeps track of all the successful calls to this macro,
+     for <see topic='@(url redundant-events)'>redundancy</see> checking.")
 
-     <li>
-     @('<name>') is the name of the function,
-     and, with a @('$') added at the end, the name of the macro.
-     </li>
-
-     <li>
-     Each @('<xi>') is a symbol or
-     an <see topic='@(url std::extended-formals)'>extended formal</see>.
-     Let @('<xi\'>') be:
-     @('<xi>') if @('<xi>') is a symbol;
-     the name of the @('<xi>') extended formal otherwise.
-     </li>
-
-     <li>
-     @('<erp>') is a
-     <see topic='@(url std::returns-specifiers)'>return specifier</see>
-     that describes the error flag returned
-     inside the <see topic='@(url error-triple)'>error triple</see>.
-     This return specifier is:
-     @('(erp (implies erp (equal erp error-erp)))')
-     if @('<mode>') is @(':logic'); and
-     @('(erp \"@('nil') or @('error-erp').\")')
-     if @('<mode>') is @(':program').
-     </li>
-
-     <li>
-     @('<val>') is a
-     <see topic='@(url std::returns-specifiers)'>return specifier</see>
-     that describes the value returned
-     inside the <see topic='@(url error-triple)'>error triple</see>.
-     This return specifier depends on the @('<returns>') argument to the macro
-     (see below for the complete list of arguments to the macro)
-     and on @('<mode>'):
-     if no @('<returns>') argument is supplied and @('<mode>') is @(':logic'),
-     then @('<val>') is
-     @('(val (and (implies erp (equal val error-val))
-                  (implies (and (not erp) error-erp) (not val))))');
-     if no @('<returns>') argument is supplied and @('<mode>') is @(':program'),
-     then @('<val>') is
-     @('(val \"@('nil') if @('erp') is @('nil'), otherwise @('error-val').\")');
-     if a @('<returns>') argument is supplied,
-     then @('<val>') is @('<returns>').
-     </li>
-
-     <li>
-     @('<mode>') is either @(':logic') or @(':program').
-     </li>
-
-     <li>
-     @('<verify-guards>') is either @('t') or @('nil').
-     If @('<verify-guards>') is not supplied as argument,
-     @(':verify-guards') is absent.
-     </li>
-
-     <li>
-     @('<parents>') is a list of parent <see topic='@(url xdoc)'>topics</see>.
-     If @('<parents>') is not supplied as argument, @(':parents') is absent.
-     </li>
-
-     <li>
-     @('<short>') and @('<long>') are strings that document the function.
-     If @('<long>') is not supplied as argument, @(':long') is absent.
-     </li>
-
-     <li>
-     Each @('<conditionj>') is a term
-     whose evaluation checks a condition
-     on the @('<x1>'), ..., @('<xn>') arguments.
-     The conditions are checked in order.
-     </li>
-
-     <li>
-     Each @('<messagej>') is a list that consists of
-     a <see topic='@(url fmt)'>format string</see>
-     followed by up to 10 terms,
-     whose values fill in the placeholders of the format string.
-     Generally, one of these terms should be @('description')
-     and it should correspond to a @('~@') placeholder
-     in the format string,
-     which is appropriate for the @(tsee msgp) type of @('description').
-     The @('<messagej>') list is inserted into the @(tsee er-soft+) call,
-     providing an error message when @('<conditionj>') is not satisfied
-     (but the previous conditions are).
-     </li>
-
-     <li>
-     @('<result>') is a term whose value is returned
-     when all the conditions are satisfied.
-     </li>
-
-   </ul>
-
-   <p>
-   The generated formal arguments
-   @('description'), @('error-erp'), and @('error-val')
-   and the generated return variables @('erp') and @('val')
-   are symbols with those names in the same package as
-   the @('<name>') symbol used as the name of the generated function.
-   </p>
-
-   <p>
-   The macro is called as follows:
-   </p>
-
-   @({
-     (def-error-checker <name>
-       (<x1> ... <xn>)
-       <short>
-       ((<condition1> . <message1>) ... (<conditionm> . <messagem>))
-       :returns <val> ; default not used
-       :result <result> ; default is nil
-       :mode <mode> ; default is :logic
-       :verify-guards <verify-guards> ; default not used
-       :parents <parents> ; default not used
-       :long <long> ; default not used
-       )
-   })
-
-   <p>
-   A table keeps track of all the successful calls to this macro,
-   for <see topic='@(url redundant-events)'>redundancy</see> checking.
-   </p>
-
-   @(def def-error-checker)"
+   (xdoc::def "def-error-checker"))
 
   ;; record successful calls to DEF-ERROR-CHECKER, for redundancy checking:
   (table def-error-checker-calls nil nil
@@ -212,17 +178,15 @@
     :parents (def-error-checker)
     :short "Generate the @(tsee b*) bindings of the error-checking function."
     :long
-    "<p>
-     These are the
-     </p>
-     @({
-       ((unless <conditionj>) (er-soft+ ctx error-erp error-val . <messagej>))
-     })
-     <p>
-     bindings,
-     but a binder of the form @('(unless (not <condition>))')
-     is turned into @('(when <condition>)') to improve readability.
-     </p>"
+    (xdoc::topapp
+     (xdoc::p
+      "These are the")
+     (xdoc::code
+      "((unless <conditionj>) (er-soft+ ctx error-erp error-val . <messagej>))")
+     (xdoc::p
+      "bindings,
+       but a binder of the form @('(unless (not <condition>))')
+       is turned into @('(when <condition>)') to improve readability."))
     (def-error-checker-bindings-aux conditions-messages error-erp error-val nil)
 
     :prepwork
