@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Mihir Mehta <mihir@cs.utexas.edu>
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -157,13 +158,14 @@
     (equal (chars=>nats (make-character-list x))
            (chars=>nats x))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection nats<=>chars-inversion-theorems
   :parents (nats=>chars chars=>nats)
   :short "@(tsee nats=>chars) and @(tsee chars=>nats)
           are mutual inverses."
 
-  (defrule
-    chars=>nats-of-nats=>chars
+  (defrule chars=>nats-of-nats=>chars
     (implies (unsigned-byte-listp 8 (true-list-fix nats))
              (equal (chars=>nats (nats=>chars nats))
                     (true-list-fix nats)))
@@ -174,8 +176,7 @@
                           (equal (chars=>nats (nats=>chars nats))
                                  nats)))))
 
-  (defrule
-    nats=>chars-of-chars=>nats
+  (defrule nats=>chars-of-chars=>nats
     (equal (nats=>chars (chars=>nats chars))
            (make-character-list chars))
     :prep-lemmas
