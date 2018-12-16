@@ -105,6 +105,11 @@
 
  <h3>New Libraries</h3>
 
+ <h4><see topic='@(url alist-utilities)'>Alist Utilities</see></h4>
+
+ <p>Added an operation @(tsee remove-assocs), which generalizes @(tsee
+ remove-assoc) from single keys to lists of keys.</p>
+
  <h4>Declarative Definitions of Maxima</h4>
 
  <p>Added a macro @(tsee defmax-nat) to declaratively define the maximum of a
