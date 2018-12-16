@@ -1411,37 +1411,37 @@
                            (list var) (list nat=>lendian-call) term))
        (theorems
         `((defthm ,nat=>bendian*-thm-name
-            ,nat=>bendian*-term
+            ,(untranslate nat=>bendian*-term t wrld)
             :hints (("Goal"
                      :use ((:instance return-type-of-nat=>bendian* (base ,base))
                            (:instance ,eq-thm-name (,var ,nat=>bendian*-call)))
                      :in-theory nil)))
           (defthm ,nat=>bendian+-thm-name
-            ,nat=>bendian+-term
+            ,(untranslate nat=>bendian+-term t wrld)
             :hints (("Goal"
                      :use ((:instance return-type-of-nat=>bendian+ (base ,base))
                            (:instance ,eq-thm-name (,var ,nat=>bendian+-call)))
                      :in-theory nil)))
           (defthm ,nat=>bendian-thm-name
-            ,nat=>bendian-term
+            ,(untranslate nat=>bendian-term t wrld)
             :hints (("Goal"
                      :use ((:instance return-type-of-nat=>bendian (base ,base))
                            (:instance ,eq-thm-name (,var ,nat=>bendian-call)))
                      :in-theory nil)))
           (defthm ,nat=>lendian*-thm-name
-            ,nat=>lendian*-term
+            ,(untranslate nat=>lendian*-term t wrld)
             :hints (("Goal"
                      :use ((:instance return-type-of-nat=>lendian* (base ,base))
                            (:instance ,eq-thm-name (,var ,nat=>lendian*-call)))
                      :in-theory nil)))
           (defthm ,nat=>lendian+-thm-name
-            ,nat=>lendian+-term
+            ,(untranslate nat=>lendian+-term t wrld)
             :hints (("Goal"
                      :use ((:instance return-type-of-nat=>lendian+ (base ,base))
                            (:instance ,eq-thm-name (,var ,nat=>lendian+-call)))
                      :in-theory nil)))
           (defthm ,nat=>lendian-thm-name
-            ,nat=>lendian-term
+            ,(untranslate nat=>lendian-term t wrld)
             :hints (("Goal"
                      :use ((:instance return-type-of-nat=>lendian (base ,base))
                            (:instance ,eq-thm-name (,var ,nat=>lendian-call)))
