@@ -497,6 +497,13 @@
 ; (defund drepp (x f) ... )
 ; (defund dencode (x f) ... )
 
+(defthmd drepp-exactp
+  (implies (drepp x f)
+           (exactp x (prec f)))
+  :hints (("Goal" :in-theory (enable drepp formatp prec bias expw)
+                  :use ((:instance exactp-<= (m (+ (1- (prec f)) (bias f) (expo
+                                                                           x))) (n (prec f)))))))
+
 (local-defthmd drepp-dencode-1
   (implies (denormp x f)
            (not (zerop (ddecode x f))))
@@ -713,6 +720,12 @@
   :hints (("Goal" :use (fp-rep (:instance fp-rep (x (ddecode (dencode x f) f))))
                   :in-theory (enable drepp ddecode-dencode-1 ddecode-dencode-5 ddecode-dencode-6))))
 
+
+(defthmd drepp<spn
+  (implies (drepp x f)
+           (< (abs x) (spn f)))
+  :hints (("Goal" :in-theory (enable formatp spn drepp bias expw)
+           :use ((:instance expo>= (x (abs x)) (n (- 1 (bias f))))))))
 
 ;; Smallest positive denormal:
 

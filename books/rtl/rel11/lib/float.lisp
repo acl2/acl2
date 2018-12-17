@@ -224,6 +224,18 @@
 		    (if (< (* (sig x) (sig y)) 2)
 			(* (sig x) (sig y))
 		      (* 1/2 (sig x) (sig y))))))
+
+(defthmd expo-fl
+  (implies (and (rationalp x)
+                (>= x 1))
+	   (equal (expo (fl x)) (expo x))))
+
+(defthmd expo-logior
+  (implies (and (natp x)
+                (natp y)
+		(<= (expo x) (expo y)))
+	   (equal (expo (logior x y))
+	          (expo y))))
 )
 
 ;;;**********************************************************************
