@@ -10,6 +10,7 @@
 (local (in-theory nil))
 
 (include-book "defs")
+(include-book "rac")
 
 ;;;**********************************************************************
 
@@ -58,3 +59,25 @@
    :rule-classes ())
 
 (gl::set-preferred-def binary-cat binary-cat-for-gl)
+
+(defthm expo-for-gl
+  (equal (expo x)
+         (if (integerp x)
+	     (if (= x 0)
+	         0
+	       (1- (integer-length (abs x))))
+           (let ((msg (cw "WARNING: guard violation for the function EXPO during a GL proof.~%")))
+             (declare (ignore msg))
+             (expo x))))
+  :rule-classes ())
+
+(gl::set-preferred-def expo expo-for-gl)
+
+(gl::def-gl-rewrite ag-of-as
+  (equal (ag a (as wa v r))
+         (if (equal a wa) v (ag a r))))
+
+(gl::gl-set-uninterpreted ag)
+
+(gl::gl-set-uninterpreted as)
+

@@ -618,10 +618,7 @@
 	          (fl (* (expt 2 (p)) (/ (x) (d))))))
   :hints (("Goal" :use (p-vals drnd-1 drnd-2 (:instance mod-def (x (fl (* (expt 2 (p)) (/ (x) (d))))) (y (expt 2 (p))))))))
 
-(local-defthmd ash-rewrite
-  (equal (ash i c)
-         (fl (* (IFIX I) (EXPT 2 C))))
-  :hints (("Goal" :in-theory (enable floor fl ash))))
+(local (in-theory (disable ash-rewrite)))
 
 (local-defthmd drnd-4
   (implies (not (specialp))

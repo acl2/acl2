@@ -45,3 +45,5 @@
 (include-book "./div")
 
 (include-book "./excps")
+
+(include-book "./rac")
