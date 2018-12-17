@@ -5,6 +5,7 @@
 
 (in-package "ACL2S")
 (include-book "cgen/top" :ttags :all)
+(include-book "utilities")
 
 #||
 Here is the top-level defunc control flow:
@@ -63,16 +64,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                    ,(make-show-failure-msg-ev ...))))))
 ||#
 
-
-(defun make-sym (s suf)
-; Returns the symbol s-suf.
-  (declare (xargs :guard (and (symbolp s) (symbolp suf))))
-  (intern-in-package-of-symbol
-   (concatenate 'acl2::string
-                (symbol-name s)
-                "-"
-                (symbol-name suf))
-   s))
 
 #!ACL2
 (defun function-guard-obligation (fun-name state)
@@ -1114,3 +1105,18 @@ To debug a failed defunc form, you can proceed in multiple ways:
   "<p>Set whether @('defunc') should abort or continue on failure to verify body contracts.</p>
    <p>The default is set to @('t').</p>
    ")
+
+(defmacro defuncd (name &rest args)
+  (let* ((defname (make-symbl `(,name -DEFINITION-RULE))))
+    `(progn
+      (defunc ,name ,@args)
+      (in-theory (disable ,defname)))))
+
+(defmacro set-defunc-skip-tests (r)
+  `(table defunc-defaults-table :skip-tests ,r :put))
+
+
+(defmacro defunc-no-test (name &rest args)
+  `(acl2::with-outer-locals
+    (local (acl2s-defaults :set testing-enabled nil))
+    (defunc ,name ,@args)))
