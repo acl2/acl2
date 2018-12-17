@@ -1,3 +1,7 @@
+; The following comment line tells the build system that if *acl2-exports*
+; changes, then every book that uses this file should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
+
 (defpkg "ACL2-HACKER"
  (append
   '(; things we want from ACL2 package that aren't in *acl2-exports*:

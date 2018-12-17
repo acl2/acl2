@@ -1,3 +1,7 @@
+; The following comment line tells the build system that if *acl2-exports*
+; changes, then every book that uses this file should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
+
 ; Section 10.6 Compiler for Stack Machine - certification instructions
 
 ; This file contains the certification instructions for compiler.lisp.  That

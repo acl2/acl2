@@ -30,6 +30,10 @@
 
 (in-package "ACL2")
 
+; The following comment line tells the build system that if *acl2-exports*
+; changes, then every book that uses this file should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
+
 (ld "symbols-defpkg.lsp")
 
 ;Is there a better way to do this? -ews
