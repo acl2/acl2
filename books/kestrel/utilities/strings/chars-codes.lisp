@@ -172,4 +172,22 @@
     ((:rewrite
       :corollary (implies (unsigned-byte-listp 8 nats)
                           (equal (chars=>nats (nats=>chars nats))
-                                 nats))))))
+                                 nats)))))
+
+  (defrule
+    nats=>chars-of-chars=>nats
+    (equal (nats=>chars (chars=>nats chars))
+           (make-character-list chars))
+    :prep-lemmas
+    ((defruled
+       nats=>chars-of-chars=>nats-when-character-listp
+       (implies (character-listp chars)
+                (equal (nats=>chars (chars=>nats chars))
+                       chars))
+       :enable (nats=>chars chars=>nats)
+       :induct (chars=>nats chars))
+     (defrule character-listp-of-make-character-list
+       (character-listp (make-character-list x))))
+    :use
+    (:instance nats=>chars-of-chars=>nats-when-character-listp
+               (chars (make-character-list chars)))))

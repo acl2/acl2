@@ -2,6 +2,10 @@
 ; Written by Matt Kaufmann and J Strother Moore, April 2, 2003
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; The following comment line tells the build system that if *acl2-exports*
+; changes, then every book that uses this file should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
+
 (defpkg "HANOI"
     (set-difference-equal
      (union-eq *acl2-exports*

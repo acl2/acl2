@@ -1,3 +1,7 @@
+; The following comment line tells the build system that if *acl2-exports*
+; changes, then every book that uses this file should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
+
 ;; ===================================================================
 ; We want a custom package because I'm stubborn and want the symbols read-line,
 ; parse-natural1, parse-natural, and parse-integer.

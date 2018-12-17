@@ -262,11 +262,12 @@
 
 (defun ffnnamep-mod-mbe (fn term)
 
-; We determine whether the function fn (possibly a lambda-expression) is used
-; as a function in term', the result of expanding mbe calls (and equivalent
-; calls) in term.  Keep this in sync with the ffnnamep nest.  Unlike ffnnamep,
-; we assume here that fn is a symbolp.
+; We determine whether the function symbol fn is called after replacing each
+; mbe call in term by its :logic component.  Keep this in sync with the
+; ffnnamep nest.  Unlike ffnnamep, we assume here that fn is a symbolp.
 
+  (declare (xargs :guard (and (symbolp fn)
+                              (pseudo-termp term))))
   (cond ((variablep term) nil)
         ((fquotep term) nil)
         ((flambda-applicationp term)
@@ -4282,15 +4283,41 @@
 (defmacro all-fnnames-exec (term)
   `(all-fnnames1-exec nil ,term nil))
 
+(defun collect-guards-and-bodies (lst)
+
+; Lst is a list of well-formed lambda objects.  We collect the set of all
+; guards and bodies.
+
+  (cond
+   ((endp lst) nil)
+   (t (add-to-set-equal
+       (lambda-object-guard (car lst))
+       (add-to-set-equal
+        (lambda-object-body (car lst))
+        (collect-guards-and-bodies (cdr lst)))))))
+
 (defun chk-common-lisp-compliant-subfunctions-cmp (names0 names terms wrld str
                                                           ctx)
 
-; See chk-common-lisp-compliant-subfunctions.
+; See chk-common-lisp-compliant-subfunctions and note especially its warning
+; about how not all names have been defined in wrld.
 
   (cond ((null names) (value-cmp nil))
         (t (let ((bad (collect-non-common-lisp-compliants
-                       (set-difference-eq (all-fnnames-exec (car terms))
-                                          names0)
+                       (set-difference-eq
+                        (all-fnnames1-exec
+                         t ; list of terms (all-fnnames-exec (car terms))
+                         (cons (car terms)
+                               (if (global-val 'boot-strap-flg wrld)
+                                   nil
+                                   (collect-guards-and-bodies
+                                    (collect-certain-lambda-objects
+                                     :well-formed
+                                     (car terms)
+                                     wrld
+                                     nil))))
+                         nil)
+                        names0)
                        wrld)))
              (cond
               (bad
@@ -4305,15 +4332,22 @@
 (defun chk-common-lisp-compliant-subfunctions (names0 names terms wrld str ctx
                                                       state)
 
-; Assume we are defining (or have defined) names with bodies or guards of terms
-; (1:1 correspondence).  We wish to make the definitions
-; :common-lisp-compliant.  Then we insist that every function used in terms
-; other than names0 be :common-lisp-compliant.  Str is a string used in our
-; error message and is "guard", "split-types expression", "body" or "auxiliary
-; function".  Note that this function is used by chk-acceptable-defuns and by
-; chk-acceptable-verify-guards and chk-stobj-field-descriptor.  In the first
-; usage, names have not been defined yet; in the other two they have.  So be
-; careful about using wrld to get properties of names.
+; Names0 is a list of function symbols being defined (or that have been
+; defined).  Names is a terminal sublist of names0 and terms is a list of the
+; guards or the bodies of the function symbols listed in names.  Names and
+; terms are in 1:1 correspondence.  We check that every function symbol (other
+; than those listed in names0) used in terms -- including symbols used in
+; quoted well-formed lambda objects! -- is Common Lisp compliant.  If not, we
+; cause an error.  (During boot-strapping, this function does not look for
+; well-formed lambda objects because we can't identify them prior to setting up
+; badges for all primitives.)
+
+; Str is a string used in our error message and is "guard", "split-types
+; expression", "body" or "auxiliary function".  Note that this function is used
+; by chk-acceptable-defuns and by chk-acceptable-verify-guards and
+; chk-stobj-field-descriptor.  In the first usage, names have not been defined
+; yet; in the other two they have.  So be careful about using wrld to get
+; properties of names.
 
   (cmp-to-error-triple (chk-common-lisp-compliant-subfunctions-cmp
                         names0 names terms wrld str ctx)))
@@ -4380,26 +4414,29 @@
 ;   and rrp = t:
 ;   Test: T
 ;   Non-Erroneous Value: 'redundant.
-
 ; * if name is a function symbol:
-;   Test: is every subfunction in the definitions of names except possibly
-;   names themselves :common-lisp-compliant?
+;   Test: is every subfunction in the definitions of names -- including symbols
+;   in quoted well-formed lambda objects -- except possibly names themselves
+;   :common-lisp-compliant?
 ;   Non-erroneous Value: names
 
 ; * if name is a theorem name:
 ;   Test: is every function used in the formula :common-lisp-compliant?
+;   Note: This test leaves out quoted well-formed lambda objects from consideration
+;   because we're not really interested in fast execution of instances of thms.
 ;   Non-erroneous Value: (list name)
 
 ; * if name is a lambda object:
 ;   Test: is name a well-formed lambda object and every function symbol in it
-;   (including in the :guard and body) :common-lisp-compliant?
+;   (including in the :guard and body) -- including symbols in quoted
+;   well-formed lambda objects :common-lisp-compliant?
 ;   Non-erroneous Value: (list name)
 
 ; * if name is a lambda$ expression
-
 ;   Test: can name be translated non-erroneously to name', where name' is a
 ;   well-formed lambda object, and is every function in name' (including in the
-;   :guard and body) is :common-lisp-compliant?
+;   :guard and body) -- including symbols in well-formed lambda objects
+;   :common-lisp-compliant?
 ;   Non-erroneous Value: (list name')
 
 ; Otherwise, an error is caused.
@@ -4487,32 +4524,42 @@
 ; containing the well-formed lambda expression derived from name which is now
 ; the value of the variable of that name.
 
-       (let* ((guard (lambda-object-guard name))
-              (body (lambda-object-body name))
-              (bad-guard-fns
-               (collect-non-common-lisp-compliants (all-fnnames guard) wrld))
-              (bad-body-fns
-               (collect-non-common-lisp-compliants (all-fnnames body) wrld)))
+       (let* ((names (list name))
+              (guards (list (lambda-object-guard name)))
+              (bodies (list (lambda-object-body name))))
+         (er-progn-cmp
+          (chk-common-lisp-compliant-subfunctions-cmp
+           names names guards wrld "guard" ctx)
+          (chk-common-lisp-compliant-subfunctions-cmp
+           names names bodies wrld "body" ctx)
+          (value-cmp names))))
 
-; Any non-compliant fns in the guard or body are known to be :ideal because
-; :program mode fns are not allowed in well-formed lambda objects.
-
-         (cond
-          (bad-guard-fns
-           (er-cmp ctx
-                   "This lambda expression cannot be guard verified because ~
-                    the guard mentions ~&0 which ~#0~[is~/are~] not guard ~
-                    verified: ~x1."
-                   bad-guard-fns
-                   name))
-          (bad-body-fns
-           (er-cmp ctx
-                   "This lambda expression cannot be guard verified because ~
-                    the body mentions ~&0 which ~#0~[is~/are~] not guard ~
-                    verified: ~x1."
-                   bad-body-fns
-                   name))
-          (t (value-cmp (list name))))))
+; Old stuff:
+;               (bad-guard-fns
+;                (collect-non-common-lisp-compliants (all-fnnames guard) wrld))
+;               (bad-body-fns
+;                (collect-non-common-lisp-compliants (all-fnnames body) wrld)))
+;
+; ; Any non-compliant fns in the guard or body are known to be :ideal because
+; ; :program mode fns are not allowed in well-formed lambda objects.
+;
+;          (cond
+;           (bad-guard-fns
+;            (er-cmp ctx
+;                    "This lambda expression cannot be guard verified because ~
+;                     the guard mentions ~&0 which ~#0~[is~/are~] not guard ~
+;                     verified: ~x1."
+;                    bad-guard-fns
+;                    name))
+;           (bad-body-fns
+;            (er-cmp ctx
+;                    "This lambda expression cannot be guard verified because ~
+;                     the body mentions ~&0 which ~#0~[is~/are~] not guard ~
+;                     verified: ~x1."
+;                    bad-body-fns
+;                    name))
+;           (t (value-cmp (list name))))
+;          ))
       ((getpropc name 'theorem nil wrld)
 
 ; Theorems are of either symbol-class :ideal or :common-lisp-compliant.
@@ -7659,7 +7706,7 @@
           redundant-events.  Consider wrapping this definition inside a call ~
           of LOCAL."
          (symbol-name name)
-	 (symbol-package-name name)
+         (symbol-package-name name)
          (if (equal pkg-name *main-lisp-package-name*)
              1
            0)

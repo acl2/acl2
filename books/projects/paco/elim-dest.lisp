@@ -1096,7 +1096,7 @@
                   (if top-flg
                       elim-vars1
                     (union-eq elim-vars1
-                              (delete1-eq
+                              (remove1-eq
                                (access elim-rule rule :rhs)
                                eliminables)))
                   avoid-vars

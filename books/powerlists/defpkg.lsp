@@ -3,6 +3,10 @@
 ;(value :q)
 ;(setq si::*multiply-stacks* 2)
 
+; The following comment line tells the build system that if *acl2-exports*
+; changes, then every book that uses this file should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
+
 (include-book "data-structures/portcullis" :dir :system)
 
 ; Before ACL2 Version 2.5 we unioned the following additional

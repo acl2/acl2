@@ -30,8 +30,9 @@
     "(set-size x :test 'equal) ; same, but equal is equality test")
    (xdoc::p
     "This is the number of unique elements in the set.
-     For example, @('(set-size '(1 3 3 2 7))') is equal to @('4').
-     The optional keyword, @(':test'), has no effect logically,
+     For example, @('(set-size '(1 3 3 2 7))') is equal to @('4').")
+   (xdoc::p
+    "The optional keyword, @(':test'), has no effect logically,
      but provides the test (default @(tsee eql)) used for comparing
      the elements of the list for duplicates.")
    (xdoc::p
@@ -59,7 +60,7 @@
 
 (defsection set-size-functions-and-macros
   :parents (set-size)
-  :short "Definitions of the @('set-size') functions and macros,
+  :short "Definitions of the @(tsee set-size) functions and macros,
           and basic theorems about them."
 
   ;; definitions:

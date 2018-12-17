@@ -64,3 +64,14 @@
            (if (< (nfix n) (len (explode string)))
                (char-code (char string n))
              nil))))
+
+(defsection nats<=>string-inversion-theorems
+  :parents (nats=>string string=>nats)
+  :short "@(tsee nats=>string) and @(tsee string=>nats)
+          are mutual inverses."
+
+  (defrule
+    nats=>string-of-string=>nats
+    (equal (nats=>string (string=>nats string))
+           (str-fix string))
+    :enable (nats=>string string=>nats)))

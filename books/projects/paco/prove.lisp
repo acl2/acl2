@@ -161,7 +161,7 @@
                cl
                (change prove-spec-var pspv
                        :hint-settings
-                       (delete1-equal temp
+                       (remove1-equal temp
                                       (access prove-spec-var pspv
                                               :hint-settings))))
               (mv 'HIT (list new-cl) nil new-pspv)))

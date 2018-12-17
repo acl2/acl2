@@ -25157,7 +25157,7 @@
 ; We develop code for setting evisc-tuples.
 
 (defconst *evisc-tuple-sites*
-  '(:TERM :LD :TRACE :ABBREV :GAG-MODE))
+  '(:TERM :LD :TRACE :ABBREV :GAG-MODE :BRR))
 
 (defun set-site-evisc-tuple (site evisc-tuple ctx state)
 
@@ -25183,6 +25183,7 @@
     (:TRACE    (set-trace-evisc-tuple
                 (if (eq evisc-tuple :default) nil evisc-tuple)
                 state))
+    (:BRR      (set-brr-evisc-tuple evisc-tuple state))
     (otherwise (prog2$ (er hard ctx
                            "Implementation Error: Unrecognized keyword, ~x0.  ~
                             Expected evisc-tuple site: ~v1"

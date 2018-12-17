@@ -105,6 +105,11 @@
 
  <h3>New Libraries</h3>
 
+ <h4><see topic='@(url alist-utilities)'>Alist Utilities</see></h4>
+
+ <p>Added an operation @(tsee remove-assocs), which generalizes @(tsee
+ remove-assoc) from single keys to lists of keys.</p>
+
  <h4>Declarative Definitions of Maxima</h4>
 
  <p>Added a macro @(tsee defmax-nat) to declaratively define the maximum of a
@@ -261,7 +266,10 @@
 
  <p>Finished adding support for 32-bit application-level execution for
  non-floating-point instructions.  Added support for 32-bit application-level
- execution for the floating-point instruction BSF.</p>
+ execution for the floating-point instructions ADDSS, ADDSD, SUBSS, SUBSD,
+ MULSS, MULSD, DIVSS, DIVSD, MINSS, MINSD, MAXSS, MAXSD, ADDPS, ADDPD, SUBPS,
+ SUBPD, MULPS, MULPD, DIVPS, DIVPD, MINPS, MINPD, MAXPS, MAXPD, SQRTSS, SQRTSD,
+ SQRTPS, SQRTPD, and BSF.</p>
 
  <p>Added support for enabling/disabling machine features that depend on CPUID
  flags.</p>

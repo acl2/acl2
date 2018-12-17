@@ -4824,7 +4824,8 @@
    (er-progn (ld (list form)
                  :ld-verbose nil
                  :ld-prompt nil
-                 :ld-evisc-tuple nil)
+                 :ld-evisc-tuple nil
+                 :ld-user-stobjs-modified-warning nil)
              (value :invisible))))
 
 (defmacro without-evisc (form)

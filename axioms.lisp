@@ -13916,6 +13916,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; corresponding state global.
 
                     t)
+    (brr-evisc-tuple-initialized . nil)
     (cert-data . nil)
     (certify-book-info .
 
