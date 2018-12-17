@@ -119,3 +119,54 @@ skip-proofs forms, without testing."
                (value `(progn! (acl2s::test? ,(second (third defthm)))
                                (skip-proofs ,',thm))))))
    (t `(skip-proofs ,thm))))
+
+(defmacro thm-no-test (&rest args)
+  `(acl2::with-outer-locals
+    (local (acl2s-defaults :set testing-enabled nil))
+    (make-event (mv-let (erp val state)
+                        (thm ,@args)
+                        (declare (ignore val))
+                        (cond (erp (er soft 'thm "The thm failed"))
+                              (t (value `(value-triple :passed))))))))
+
+(defmacro defthm-no-test (name &rest args)
+  `(acl2::with-outer-locals
+    (local (acl2s-defaults :set testing-enabled nil))
+    (defthm ,name ,@args)))
+
+#|
+(defunc symbol-string-app (l)
+  :input-contract (symbol-listp l)
+  :output-contract (stringp (symbol-string-app l))
+  (if (endp l)
+      ""
+    (concatenate 'string (symbol-name (car l))
+                 (symbol-string-app (cdr l)))))
+
+(defunc make-symbl (l)
+  :input-contract (and (symbol-listp l) l)
+  :output-contract (symbolp (make-symbl l))
+  (intern-in-package-of-symbol
+   (symbol-string-app l)
+   (car l)))
+|#
+
+(defun symbol-string-app (l)
+  (declare (xargs :guard (symbol-listp l)))
+  (if (endp l)
+      ""
+    (concatenate 'string (symbol-name (car l))
+                 (symbol-string-app (cdr l)))))
+
+(defun make-symbl (l)
+  (declare (xargs :guard (symbol-listp l)))
+  (intern-in-package-of-symbol
+   (symbol-string-app l)
+   (car l)))
+
+(defun make-sym (s suf)
+; Returns the symbol s-suf.
+  (declare (xargs :guard (and (symbolp s) (symbolp suf))))
+  (make-symbl (list s '- suf)))
+
+

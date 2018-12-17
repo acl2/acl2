@@ -620,3 +620,32 @@
 (assert-guard-verified another-guard-test-4)
 (assert-guard-verified another-guard-test-5)
 (assert-guard-verified another-guard-test-6)
+
+;; [Shilpi] Added some basic config and :after-returns related tests below.
+
+(make-define-config 
+ :inline t 
+ :no-function t)
+
+(define inline-and-no-function ((x natp))
+  :returns (new-x natp :hyp :guard)
+  (+ x 54))
+
+(define not-inline-and-no-function ((x natp))
+  ;; config object's :inline directive overridden.
+  :inline nil
+  :returns (new-x natp :hyp :guard)
+  (+ x 54))
+
+(make-define-config :inline t :no-function nil
+                    :ruler-extenders (cons)
+                    :verify-guards :after-returns)
+
+(define guards-after-ret ((x natp))
+  :returns (ret natp :hyp :guard)
+  (+ x 54)
+  ///
+  (defret natp-of-qux-alt
+    (implies (and (integerp x) (<= -54 x))
+             (natp ret))))
+

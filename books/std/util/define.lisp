@@ -29,6 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 ; Modified by David Rager <ragerdl@cs.utexas.edu> with minor improvements
 ; Modified by Sol Swords <sswords@centtech.com> to add untranslate support
+; Modified by Shilpi Goel <shilpi@centtech.com> to add config and :after-returns support
 
 (in-package "STD")
 (include-book "formals")
@@ -188,8 +189,9 @@ kinds of functions.  They are very weird, anyway.</p>
 
 <h4>Basic Extended Options</h4>
 
-<p>All @(see xargs) are available as extended options.  In practice this just
-makes things more concise and better looking, e.g., compare:</p>
+<p>All @(see xargs) are available as extended options (though we provide an
+additional option for @(':verify-guards') --- see below).  In practice this
+just makes things more concise and better looking, e.g., compare:</p>
 
 @({
  (defun strpos-fast (x y n xl yl)
@@ -255,6 +257,14 @@ But if @(':t-proof t') is provided, we will create a theorem without
 any rule-classes that holds the proof of termination for this function and
 measure.</dd>
 
+<dt>@(':verify-guards val')</dt>
+
+<dd>The value @('val') can be one of the following: @('t'), @('nil'), or
+@(':after-returns').  The first two correspond to what is described in @(see
+xargs), but the third option is specific to @('define').  The keyword
+@(':after-returns') indicates that the guards of the function are to be
+verified after the @(see returns-specifiers).</dd>
+
 <dt>@(':no-function bool')</dt>
 
 <dd>(Advanced/obscure) By default, @('define') will automatically bind
@@ -272,6 +282,30 @@ executed.  For instance, @(':hooks nil') can be used to disable all such
 hooks.</dd>
 
 </dl>
+
+<h5>Configuration Object</h5>
+
+<p>A configuration object can also be defined to specify some extended options;
+here's an example.</p>
+
+@({ (make-define-config 
+     :inline t 
+     :no-function t) })
+
+<p>As of now, the following options can be set through the configuration
+object:</p>
+
+@(`(:code *define-config-keywords*)`) <br/>
+
+<p>A configuration object can be used to set these options across multiple
+@('define')s.  However, <i>a configuration object's settings are local to a
+book.</i> Of course, the object can be changed inside a book as many times as
+you want.</p>
+
+<p>Extended options provided in a @('define') will override those set by the
+configuration object.  Additionally, the @(':hooks') option in the
+configuration object will override any default post-define hook specified using
+@('add-default-post-define-hook').</p>
 
 <h4>@('Returns') Specifications</h4>
 
@@ -805,6 +839,7 @@ form is usually an adequate work-around.</p>")
 
    rest-events ;; events in the /// part
    pe-entry    ;; raw form to use in the PE-table
+   guards-after-returns ;; verify guards after returnspecs
    ))
 
 (table define)
@@ -1094,6 +1129,30 @@ examples.</p>")
         (t (cons (car args)
                  (pe-entry-args (cdr args) returnspecs)))))
 
+(defun append-and-remove-clashes (alst1 alst2)
+  ;; [Shilpi] Added in support for a simple config object.
+  ;; Append two alists alst1 and alst2 --- but if there any overlapping keys in
+  ;; alst1 and alst2, then the keys in alst1 are retained and those in alst2
+  ;; are discarded.
+  (declare (xargs :guard (and (alistp alst1)
+                              (alistp alst2))))
+  (cond ((endp alst2) alst1)
+        ((endp alst1) alst2)
+        ((member-equal (caar alst1) (strip-cars alst2))
+         ;; Overlapping key: keep the pair in alst1 and discard all pairs with
+         ;; the matching key in alst2.
+         (cons (car alst1)
+               (append-and-remove-clashes
+                (cdr alst1)
+                (remove-assoc-equal (caar alst1) alst2))))
+        (t
+         (cons (car alst1)
+               (append-and-remove-clashes (cdr alst1) alst2)))))
+
+(defun get-define-config-alist (world)
+  ;; [Shilpi] Added in support for a simple config object.
+  (cdr (assoc 'define-config (table-alist 'define world))))
+
 (defun parse-define
   (name            ; User-level name, e.g., FOO
    args            ; Everything that comes after the name
@@ -1110,6 +1169,11 @@ examples.</p>")
        ((mv kwd-alist normal-defun-stuff)
         (extract-keywords name (append extra-keywords *define-keywords*)
                           main-stuff nil))
+       ;; [Shilpi] Added support for a simple config object.
+       (config-alist     (get-define-config-alist world))
+       ;; Append config-alist to kwd-alist --- if there are keywords common to
+       ;; both alists, those in kwd-alist override those in config-alist.
+       (kwd-alist        (append-and-remove-clashes kwd-alist config-alist))
        (raw-formals            (car normal-defun-stuff))
        (traditional-decls/docs (butlast (cdr normal-defun-stuff) 1))
        (body                   (car (last normal-defun-stuff)))
@@ -1177,7 +1241,14 @@ examples.</p>")
                                     ',name (list . ,formal-names))
                                    ,extended-body)
                         extended-body))
-
+       ;; [Shilpi] Added to support :verify-guards :after-returns.
+       (verify-guards-after-returns
+        (eq (cdr (assoc :verify-guards kwd-alist)) :after-returns))
+       ;; Modify kwd-alist so that 'nil is paired with :verify-guards in the
+       ;; main-def.
+       (kwd-alist     (if verify-guards-after-returns
+                          (put-assoc :verify-guards 'nil kwd-alist)
+                        kwd-alist))
        (xargs         (get-xargs-from-kwd-alist kwd-alist))
 
        ;; BOZO packn??  Probably should use the function's package instead.
@@ -1279,6 +1350,7 @@ examples.</p>")
                   :rest-events (xdoc::make-xdoc-fragments rest-events)
                   :t-proof     (if t-proof (cons t-proof-name nil) nil)
                   :pe-entry    pe-entry
+                  :guards-after-returns verify-guards-after-returns
                   )))
 
 (defun add-signature-from-guts (guts)
@@ -1387,6 +1459,13 @@ examples.</p>")
             (value (if events
                        `(with-output :stack :pop (progn . ,events))
                      '(value-triple :invisible)))))
+
+         ;; [Shilpi] Added to support :verify-guards :after-returns.  Note that
+         ;; the following verify-guards form will be generated whenever
+         ;; :after-returns is used, irrespective of whether returns are
+         ;; specified or not.
+         ,@(and guts.guards-after-returns
+                `((verify-guards ,guts.name-fn)))
 
          ;; BOZO using name-fn here is kind of weird, but otherwise we see ugly
          ;; output when there are macro arguments involved because ACL2 shows us
@@ -2170,4 +2249,56 @@ may not work with macros that generate names like @('args.extensions').</p>"
                                        nil world)
                              (fgetprop guts.name-fn 'acl2::formals
                                        nil world))
+
                        acl2::args acl2::forms acl2::rest-expr))))
+
+
+
+; ----------------- Config ----------------------------------------------------
+
+(logic)
+
+(defconst *define-config-keywords*
+  '(:inline
+    :t-proof
+    :no-function
+    :non-executable
+    :enabled
+    :verbosep
+    :progn
+    :ignore-ok
+    :irrelevant-formals-ok
+    :mode
+    :normalize
+    :split-types
+    :well-founded-relation
+    :hooks ;; precedence: local to define > config > hooks table
+    :ruler-extenders
+    :verify-guards))
+
+(local
+ (defthm define-config-keywords-okp
+   (subsetp-equal *define-config-keywords*
+                  *define-keywords*)))
+
+(defun define-config-keyword-value-listp (l)
+  (declare (xargs :guard t))
+  (cond ((atom l) (null l))
+        (t (and (keywordp (car l))
+                (member (car l) *define-config-keywords*)
+                (consp (cdr l))
+                (define-config-keyword-value-listp (cddr l))))))
+
+(defun make-define-config-fn (args)
+  (if (atom args)
+      nil
+    (cons (cons (first args) (second args))
+          (make-define-config-fn (cddr args)))))
+
+(defmacro make-define-config (&rest args)
+  (declare (xargs :guard (define-config-keyword-value-listp args)))
+  `(local
+    (table define 'define-config
+           (make-define-config-fn (quote ,args)))))
+
+;; ----------------------------------------------------------------------

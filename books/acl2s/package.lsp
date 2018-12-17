@@ -129,8 +129,10 @@
 ;community books
       u::defloop def-ruleset
       must-fail ;from misc/eval
-
-
+      must-succeed
+      must-prove
+      must-not-prove
+      
       )
    (union-eq
     (union-eq 
