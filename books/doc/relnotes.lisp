@@ -163,6 +163,17 @@
 
  <p>Improved the documentation of the Bitcoin library.</p>
 
+ <h4><see topic='@(url std::define)'>Define</see></h4>
+
+ <p>Added support for configuration objects that can be used to specify some
+ extended options.  Also added support for @(':verify-guards :after-returns')
+ that indicates that guards are to be verified after the returns
+ specifiers.</p>
+
+ <h4><see topic='@(url rstobj::defrstobj)'>Defrstobj</see></h4>
+
+ <p>Added support for defining universal accessor and updater functions.</p>
+
  <h4>Digits in Arbitrary Bases</h4>
 
  <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
@@ -170,10 +181,6 @@
  and renamed.  Some files have been refactored into smaller files.  The macro
  to generate additional return types for conversions from natural numbers to
  digits has been generalized and renamed.</p>
-
- <h4><see topic='@(url rstobj::defrstobj)'>defrstobj</see></h4>
-
- <p>Added support for defining universal accessor and updater functions.</p>
 
  <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
 
