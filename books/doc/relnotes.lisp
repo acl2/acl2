@@ -234,6 +234,18 @@
 
  <p>Added some theorems about functions on lists.</p>
 
+ <h4>RAC: Restricted Algorithmic C</h4>
+
+ <p>Minor modifications of @('projects/rac/') include a bug fix in the parser
+ and a rewrite of @('examples/hello.cpp')
+ (hat-tip to D. Hardin).</p>
+
+ <h4>@(csee rtl)</h4>
+
+ <p>A number of new lemmas have been added to @('rtl/rel11/lib/'), which were
+ required in the verification of an Arm FPU currently under development.  This
+ in turn required some minor modifications of @('projects/arm/*/').</p>
+
  <h4>@(csee std/io)</h4>
 
  <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
