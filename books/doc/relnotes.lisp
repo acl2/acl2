@@ -186,6 +186,10 @@
 
  <p>Added more error-checking functions.</p>
 
+ <p>The files @('[books]/kestrel/utilities/error-checking*.lisp') have been
+ moved to a new subdirectory @('[books]/kestrel/utilities/error-checking/')
+ and renamed.  Some files have been refactored into smaller files.</p>
+
  <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
 
  <p>Improved the documentation.</p>
